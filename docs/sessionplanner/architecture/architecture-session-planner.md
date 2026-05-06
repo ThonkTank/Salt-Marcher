@@ -1,26 +1,27 @@
 Status: Draft
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-28
+Last Reviewed: 2026-05-06
 Source of Truth: Feature architecture, owning boundaries, and allowed seams
-for the session planner workspace.
+for the session planner session record and planning workspace.
 
 # Session Planner Architecture
 
 ## Purpose
 
-This specification defines the first open architecture for the Session Planner
-feature.
+This specification defines the target architecture for the Session Planner
+feature as a persisted session owner.
 
 It owns:
 
 - the shell entrypoint and slot usage
-- the session planner runtime-service boundary
+- the session planner application-service boundary
+- the session-owned persistence boundary
 - the allowed party and encounter dependency seams
 - the rule that gold planning stays explicit placeholder state until a real
   owning rule exists
 
-It does not own party progression rules, encounter-plan persistence, or
-creature-detail truth.
+It does not own party progression rules, encounter-plan roster truth,
+creature-detail truth, or loot truth.
 
 ## Feature Topology
 
@@ -35,10 +36,25 @@ creature-detail truth.
 - passive `SessionPlannerControlsView` and `SessionPlannerMainView`
   render the controls pane and the planning timeline
 - `src/domain/sessionplanner/SessionPlannerApplicationService`
-  owns the transient planner session
-- `src/data/encounter/EncounterServiceContribution`
-  currently registers the planner runtime service because the feature owns no
-  persistence adapter of its own in the first iteration
+  is the only planner backend boundary exposed to the view layer
+- `src/domain/sessionplanner/session/aggregate/SessionPlan`
+  is the authored aggregate root for persisted session truth
+- `src/data/sessionplanner/SessionPlannerServiceContribution.java`
+  is the target feature-owned runtime entrypoint for planner persistence and
+  service registration
+
+Current state:
+
+- the current implementation still keeps planner state as transient runtime
+  orchestration inside `SessionPlannerApplicationService`
+- `src/data/encounter/EncounterServiceContribution.java` still hosts planner
+  service registration in the current code
+
+Target state:
+
+- `sessionplanner` owns its own persistence adapter and service contribution
+- `SessionPlannerApplicationService` becomes a thin orchestrator over a richer
+  session domain model and dedicated repository port
 
 ## Dependency Rules
 
@@ -46,10 +62,13 @@ creature-detail truth.
   contribution roles, and the `SessionPlannerApplicationService`
 - `SessionPlannerApplicationService` may depend only on
   `PartyApplicationService` and `EncounterApplicationService`
-- saved encounter-plan budget data must enter through the encounter public
+- session participant facts must enter through the party public boundary
+- encounter summaries and budget facts must enter through the encounter public
   boundary
-- the planner must not import creature services, encounter repositories, or
-  data adapters directly
+- the planner must not import creature services, encounter repositories, party
+  repositories, or foreign data adapters directly
+- the planner may persist only session-owned references, allocations, and
+  selection state
 - gold placeholder state must not pretend that a computed gold budget exists
 
 ## Slot Model
@@ -58,26 +77,34 @@ creature-detail truth.
 - it binds `COCKPIT_CONTROLS` for planning summary and imports
 - it binds `COCKPIT_MAIN` for encounter order, rest placement, and loot
   placeholders
-- it does not claim `COCKPIT_STATE` in this first iteration
+- it reserves `COCKPIT_STATE` for preparatory read-only session state context
 
-## Runtime Session Model
+## Session Record Model
 
-- planner state is transient domain-owned runtime state
-- the planner runtime service owns imported encounter cards, placed rests, loot
-  placeholders, and status feedback
-- the view layer observes planner state through one read-only snapshot model
-- mutations enter through explicit planner commands, not through mutable view
+- `SessionPlan` is authored session-owned truth, not transient-only workspace
   state
+- the planner aggregate owns participant references, encounter-day assumptions,
+  ordered session-encounter references, per-encounter budget allocations,
+  selected encounter, placed rests, loot placeholders, and session-local
+  status feedback
+- foreign domains remain foreign:
+  `party` owns character truth, `encounter` owns encounter-plan rosters,
+  `creatures` owns statblocks, and later `loot` owns loot internals
+- the view layer observes planner state through one read-only snapshot model
+- mutations enter through explicit planner workflows, not through mutable view
+  state or direct foreign application-service calls from the view layer
 
 ## Verification Notes
 
-- build correctness is currently `Mechanically Enforced` by `compileJava` and
-  `build`
-- feature-boundary and role placement remain partly `Review-Owned` until the
-  view and domain harnesses gain dedicated session-planner knowledge
+- the `sessionplanner` context-role contract and the canonical context map are
+  `Mechanically Enforced` by `./gradlew checkDomainContextEnforcement`
+- broader feature-boundary and role placement remain partly `Review-Owned`
+  until the view, domain, and data harnesses gain dedicated session-planner
+  knowledge
 
 ## References
 
 - [View Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/view-layer.md:1)
 - [Layering Architecture Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/layering-architecture.md:1)
+- [Session Planner Persistence Contract](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/sessionplanner/contract/contract-session-planner-persistence.md:1)
 - [Session Planner Requirements](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/sessionplanner/requirements/requirements-session-planner.md:1)

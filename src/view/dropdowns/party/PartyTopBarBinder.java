@@ -8,7 +8,7 @@ import shell.api.ShellBinding;
 import shell.api.ShellRuntimeContext;
 import shell.api.ShellSlot;
 import src.domain.encounter.EncounterApplicationService;
-import src.domain.encounter.published.ApplyEncounterSessionCommand;
+import src.domain.encounter.published.ApplyEncounterStateCommand;
 import src.domain.party.PartyApplicationService;
 import src.domain.party.published.LoadAdventuringDaySummaryQuery;
 import src.domain.party.published.LoadPartyMutationQuery;
@@ -99,10 +99,8 @@ final class PartyTopBarBinder {
     }
 
     private static void refreshEncounterSession(EncounterApplicationService encounters) {
-        encounters.applySession(new ApplyEncounterSessionCommand(
-                ApplyEncounterSessionCommand.Action.REFRESH,
-                null,
-                src.domain.encounter.published.EncounterSessionSnapshot.BuilderInputs.empty(),
+        encounters.applyState(new ApplyEncounterStateCommand(
+                ApplyEncounterStateCommand.Action.REFRESH,
                 0L,
                 0L,
                 0,

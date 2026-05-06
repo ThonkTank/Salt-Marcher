@@ -28,7 +28,7 @@ public final class DungeonAuthoredRuntimeAdapter {
 
     public DungeonAuthoredReadResult load(@Nullable DungeonAuthoredReadQuery query) {
         DungeonAuthoredReadQuery effectiveQuery = query == null
-                ? new DungeonAuthoredReadQuery.LoadSnapshot(null)
+                ? new DungeonAuthoredReadQuery.LoadSnapshot()
                 : query;
         if (effectiveQuery instanceof DungeonAuthoredReadQuery.LoadSnapshot loadSnapshot) {
             return new DungeonAuthoredReadResult.CommittedSnapshot(DungeonAuthoredProjector.committedSnapshot(
@@ -46,7 +46,9 @@ public final class DungeonAuthoredRuntimeAdapter {
 
     public DungeonAuthoredMutationResult mutate(@Nullable DungeonAuthoredMutationCommand command) {
         DungeonAuthoredMutationCommand effectiveCommand = command == null
-                ? new DungeonAuthoredMutationCommand.ApplyOperation(null, null)
+                ? new DungeonAuthoredMutationCommand.ApplyOperation(
+                        DungeonIdentityBoundaryTranslator.id(null),
+                        null)
                 : command;
         if (effectiveCommand instanceof DungeonAuthoredMutationCommand.PreviewOperation previewOperation) {
             return new DungeonAuthoredMutationResult.Operation(DungeonAuthoredProjector.operationResult(

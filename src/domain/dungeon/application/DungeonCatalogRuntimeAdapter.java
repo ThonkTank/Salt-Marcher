@@ -5,7 +5,7 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.map.value.DungeonMapIdentity;
-import src.domain.dungeon.published.DungeonMapCatalogRequest;
+import src.domain.dungeon.published.DungeonMapCatalogCommand;
 import src.domain.dungeon.published.DungeonMapCatalogResponse;
 
 public final class DungeonCatalogRuntimeAdapter {
@@ -27,22 +27,22 @@ public final class DungeonCatalogRuntimeAdapter {
         this.deleteMapPath = deleteDungeonMapUseCase::execute;
     }
 
-    public DungeonMapCatalogResponse handle(@Nullable DungeonMapCatalogRequest request) {
-        DungeonMapCatalogRequest effectiveRequest = request == null
-                ? new DungeonMapCatalogRequest.Search("")
-                : request;
-        if (effectiveRequest instanceof DungeonMapCatalogRequest.Search search) {
+    public DungeonMapCatalogResponse handle(@Nullable DungeonMapCatalogCommand command) {
+        DungeonMapCatalogCommand effectiveCommand = command == null
+                ? new DungeonMapCatalogCommand.Search("")
+                : command;
+        if (effectiveCommand instanceof DungeonMapCatalogCommand.Search search) {
             return DungeonCatalogProjector.mapList(searchMapsPath.apply(search.query()));
         }
-        if (effectiveRequest instanceof DungeonMapCatalogRequest.CreateMap createMap) {
+        if (effectiveCommand instanceof DungeonMapCatalogCommand.CreateMap createMap) {
             return DungeonCatalogProjector.created(createMapPath.apply(createMap.mapName()));
         }
-        if (effectiveRequest instanceof DungeonMapCatalogRequest.RenameMap renameMap) {
+        if (effectiveCommand instanceof DungeonMapCatalogCommand.RenameMap renameMap) {
             return DungeonCatalogProjector.renamed(renameMapPath.apply(
                     DungeonIdentityBoundaryTranslator.domainId(renameMap.mapId()),
                     renameMap.mapName()));
         }
-        DungeonMapCatalogRequest.DeleteMap deleteMap = (DungeonMapCatalogRequest.DeleteMap) effectiveRequest;
+        DungeonMapCatalogCommand.DeleteMap deleteMap = (DungeonMapCatalogCommand.DeleteMap) effectiveCommand;
         return DungeonCatalogProjector.deleted(
                 deleteMapPath.apply(DungeonIdentityBoundaryTranslator.domainId(deleteMap.mapId())));
     }

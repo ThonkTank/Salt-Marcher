@@ -22,19 +22,25 @@ Context Name: Encounter
 
 ## Published Language
 
-`published/` owns public generation and budget-load commands, difficulty
-bands, generator tuning, budget summaries, generated encounter results,
-encounter creature entries, saved encounter-plan commands and queries,
-saved-plan summaries, saved-plan budget summaries, status vocabulary, and the
-read-only encounter-session surface used by the state tab.
+`published/` owns the planner-facing saved-plan list and plan-budget read
+language plus two view-facing flat runtime surfaces:
+
+- `EncounterStateModel`, `LoadEncounterStateQuery`,
+  `ApplyEncounterStateCommand`, and `EncounterStateSnapshot`
+- `EncounterBuilderInputsModel`, `LoadEncounterBuilderInputsQuery`,
+  `UpdateEncounterBuilderInputsCommand`, and `EncounterBuilderInputs`
+
+It also owns shared request/read vocabulary such as difficulty bands, tuning
+preview labels, saved-plan summaries, saved-plan budget summaries, and status
+enums.
 
 `EncounterDifficultyBand.AUTO` and Auto tuning sentinels are public request
 language only. The application boundary resolves them into concrete generation
 values before invoking draft construction.
 
-Saved encounter plans publish only creature identity, quantity, display name,
-and generated label. Creature details remain owned by the creatures context and
-are reloaded when a saved plan is opened.
+Saved encounter plans publish only list-facing summary language plus
+planner-facing budget reads. Creature details remain owned by the creatures
+context and are reloaded when a saved plan is opened.
 
 The generation and plan models must not depend on any
 `src.domain.*.published.*` carriers as invariant inputs. The application
@@ -47,9 +53,9 @@ ports.
 `application/` coordinates foreign party, creature, and encounter-table
 application services, loads public inputs, translates foreign `published/`
 results into encounter application values, and delegates generation or
-saved-plan work. The root application service maps generated results and saved
-plans into encounter `published/` carriers and exposes the read-only current
-session surface for view observation.
+saved-plan work. The root application service maps runtime session state into
+the flat state-tab and builder-input publications instead of exporting the
+internal session carrier shape.
 
 `EncounterGenerationUseCase` remains orchestration and foreign-service
 coordination only. `LoadEncounterBudgetUseCase` exposes party-derived
@@ -181,7 +187,6 @@ runtime state.
 - `EncounterCandidateProfile`: creature candidate enriched for generation.
 - `GeneratedEncounter`: exported generated encounter suggestion.
 - `EncounterPlan`: saved encounter roster aggregate.
-- `SavedEncounterPlan`: published saved-plan snapshot.
 - `EncounterPlanBudgetSummary`: published saved-plan budget readout.
 
 ## Domain Policies
@@ -209,4 +214,6 @@ runtime state.
 - [Domain Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/domain-layer.md:1)
 - [Feature Spec](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/encounter/requirements/requirements-encounter.md:1)
 - [Encounter Persistence](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/encounter/contract/contract-encounter-persistence.md:1)
+- [Encounter Builder Inputs Contract](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/encounter/contract/contract-encounter-builder-inputs.md:1)
+- [Encounter State Contract](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/encounter/contract/contract-encounter-state.md:1)
 - [Encounter UI](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/encounter/requirements/requirements-encounter-state-tab.md:1)

@@ -2,31 +2,16 @@ package src.domain.dungeon;
 
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
-import src.domain.dungeon.application.ApplyDungeonEditorOperationUseCase;
-import src.domain.dungeon.application.AssembleDungeonSnapshotUseCase;
-import src.domain.dungeon.application.BuildDungeonDerivedStateUseCase;
-import src.domain.dungeon.application.CreateDungeonMapUseCase;
-import src.domain.dungeon.application.DeleteDungeonMapUseCase;
-import src.domain.dungeon.application.DungeonAuthoredRuntimeAdapter;
-import src.domain.dungeon.application.DungeonCatalogRuntimeAdapter;
-import src.domain.dungeon.application.DungeonTravelRuntimeAdapter;
-import src.domain.dungeon.application.InspectDungeonSelectionUseCase;
-import src.domain.dungeon.application.LoadDungeonMapUseCase;
-import src.domain.dungeon.application.LoadDungeonSnapshotUseCase;
-import src.domain.dungeon.application.LoadDungeonTravelSurfaceUseCase;
-import src.domain.dungeon.application.MoveDungeonTravelActionUseCase;
-import src.domain.dungeon.application.PublishDungeonEditorHandlesUseCase;
-import src.domain.dungeon.application.RenameDungeonMapUseCase;
-import src.domain.dungeon.application.SearchDungeonMapsUseCase;
+import src.domain.dungeon.application.DungeonBoundaryRuntimeAccess;
 import src.domain.dungeon.map.port.DungeonMapRepository;
 import src.domain.dungeon.map.port.DungeonMapSearch;
 import src.domain.dungeon.published.DungeonAuthoredMutationCommand;
 import src.domain.dungeon.published.DungeonAuthoredMutationResult;
 import src.domain.dungeon.published.DungeonAuthoredReadQuery;
 import src.domain.dungeon.published.DungeonAuthoredReadResult;
-import src.domain.dungeon.published.DungeonMapCatalogRequest;
+import src.domain.dungeon.published.DungeonMapCatalogCommand;
 import src.domain.dungeon.published.DungeonMapCatalogResponse;
-import src.domain.dungeon.published.DungeonTravelRequest;
+import src.domain.dungeon.published.DungeonTravelCommand;
 import src.domain.dungeon.published.DungeonTravelResponse;
 
 /**
@@ -34,9 +19,7 @@ import src.domain.dungeon.published.DungeonTravelResponse;
  */
 public final class DungeonApplicationService {
 
-    private final DungeonAuthoredRuntimeAdapter authoredRuntimeAdapter;
-    private final DungeonCatalogRuntimeAdapter catalogRuntimeAdapter;
-    private final DungeonTravelRuntimeAdapter travelRuntimeAdapter;
+    private final DungeonBoundaryRuntimeAccess runtime;
 
     public DungeonApplicationService(
             DungeonMapRepository mapRepository,
@@ -44,63 +27,22 @@ public final class DungeonApplicationService {
     ) {
         DungeonMapRepository repository = Objects.requireNonNull(mapRepository, "mapRepository");
         DungeonMapSearch search = Objects.requireNonNull(mapSearch, "mapSearch");
-        BuildDungeonDerivedStateUseCase derive = new BuildDungeonDerivedStateUseCase();
-        LoadDungeonMapUseCase loadDungeonMapUseCase = new LoadDungeonMapUseCase(repository, search);
-        PublishDungeonEditorHandlesUseCase publishDungeonEditorHandlesUseCase =
-                new PublishDungeonEditorHandlesUseCase();
-        AssembleDungeonSnapshotUseCase assembleDungeonSnapshotUseCase =
-                new AssembleDungeonSnapshotUseCase(derive);
-        InspectDungeonSelectionUseCase inspectDungeonSelectionUseCase =
-                new InspectDungeonSelectionUseCase(derive);
-        LoadDungeonSnapshotUseCase loadDungeonSnapshotUseCase = new LoadDungeonSnapshotUseCase(
-                loadDungeonMapUseCase,
-                assembleDungeonSnapshotUseCase,
-                publishDungeonEditorHandlesUseCase,
-                inspectDungeonSelectionUseCase);
-        ApplyDungeonEditorOperationUseCase applyDungeonEditorOperationUseCase =
-                new ApplyDungeonEditorOperationUseCase(
-                        loadDungeonMapUseCase,
-                        repository::save,
-                        derive::execute,
-                        assembleDungeonSnapshotUseCase,
-                        publishDungeonEditorHandlesUseCase);
-        SearchDungeonMapsUseCase searchDungeonMapsUseCase = new SearchDungeonMapsUseCase(search);
-        CreateDungeonMapUseCase createDungeonMapUseCase =
-                new CreateDungeonMapUseCase(repository::nextMapId, repository::save);
-        RenameDungeonMapUseCase renameDungeonMapUseCase =
-                new RenameDungeonMapUseCase(repository::findById, repository::save);
-        DeleteDungeonMapUseCase deleteDungeonMapUseCase = new DeleteDungeonMapUseCase(repository::delete);
-        LoadDungeonTravelSurfaceUseCase loadDungeonTravelSurfaceUseCase =
-                new LoadDungeonTravelSurfaceUseCase(loadDungeonMapUseCase, derive);
-        MoveDungeonTravelActionUseCase moveDungeonTravelActionUseCase =
-                new MoveDungeonTravelActionUseCase(loadDungeonMapUseCase, repository::findById, derive::execute);
-
-        this.authoredRuntimeAdapter = new DungeonAuthoredRuntimeAdapter(
-                loadDungeonSnapshotUseCase,
-                applyDungeonEditorOperationUseCase);
-        this.catalogRuntimeAdapter = new DungeonCatalogRuntimeAdapter(
-                searchDungeonMapsUseCase,
-                createDungeonMapUseCase,
-                renameDungeonMapUseCase,
-                deleteDungeonMapUseCase);
-        this.travelRuntimeAdapter = new DungeonTravelRuntimeAdapter(
-                loadDungeonTravelSurfaceUseCase,
-                moveDungeonTravelActionUseCase);
+        this.runtime = DungeonBoundaryRuntimeAccess.create(repository, search);
     }
 
     public DungeonAuthoredReadResult loadAuthored(@Nullable DungeonAuthoredReadQuery query) {
-        return authoredRuntimeAdapter.load(query);
+        return runtime.loadAuthored(query);
     }
 
     public DungeonAuthoredMutationResult mutateAuthored(@Nullable DungeonAuthoredMutationCommand command) {
-        return authoredRuntimeAdapter.mutate(command);
+        return runtime.mutateAuthored(command);
     }
 
-    public DungeonMapCatalogResponse catalog(@Nullable DungeonMapCatalogRequest request) {
-        return catalogRuntimeAdapter.handle(request);
+    public DungeonMapCatalogResponse catalog(@Nullable DungeonMapCatalogCommand command) {
+        return runtime.catalog(command);
     }
 
-    public DungeonTravelResponse travel(@Nullable DungeonTravelRequest request) {
-        return travelRuntimeAdapter.handle(request);
+    public DungeonTravelResponse travel(@Nullable DungeonTravelCommand command) {
+        return runtime.travel(command);
     }
 }

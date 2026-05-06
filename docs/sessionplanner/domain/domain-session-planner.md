@@ -1,87 +1,126 @@
 Status: Draft
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-28
-Source of Truth: Session planner context role, runtime state ownership, and
+Last Reviewed: 2026-05-06
+Source of Truth: Session planner context role, session-record ownership, and
 domain invariants.
 
 # Session Planner Domain Model
 
 ## Context Role
 
-Context Role: Generation Policy Context
+Context Role: Roster Truth Context
 Context Name: SessionPlanner
 
-- `sessionplanner` owns transient session-planning state for the active party
+- `sessionplanner` owns the authored planning record for one adventure session
 - its public backend boundary is
   `src/domain/sessionplanner/SessionPlannerApplicationService.java`
-- it does not own persisted write-model truth in the first iteration
+- it does not own party truth, encounter-plan roster truth, creature truth, or
+  loot truth
 
 ## Published Language
 
 `published/` owns planner queries, planner commands, rest-kind vocabulary, the
 read-only planner snapshot, and the planner session observation model.
 
-The feature does not publish encounter persistence carriers, creature-detail
-carriers, or party mutation carriers. Those stay owned by their original
-contexts.
+Current state:
+
+- the current published surface is still a coarse transient-session API
+
+Target state:
+
+- the feature keeps publishing planner-owned queries, workflow triggers,
+  snapshots, and read-only session observation models
+- it does not publish encounter persistence carriers, creature-detail carriers,
+  or party mutation carriers; those stay owned by their original contexts
 
 ## Application Boundary
 
 The root application service coordinates:
 
-- active-party composition reads
+- session-plan reads and writes through a planner-owned repository port
+- active-party composition reads needed to resolve participant references
 - party-based adventuring-day calculations
 - saved encounter-plan budget reads through the encounter public boundary
-- transient planner-session mutations and readback
-
-The root boundary remains runtime orchestration only. Party and encounter
-rules stay in their owning contexts.
-
-## Write Model And Derived State
-
-Write Model: none persisted
+- session-local workflow mutations and readback
 
 Current state:
 
-- the planner owns transient imported-encounter order
-- the planner owns transient rest placement between encounters
-- the planner owns transient loot placeholders
+- the current code still behaves as transient runtime orchestration
+
+Target state:
+
+- the root boundary remains orchestration only while `SessionPlan` owns the
+  authored planning truth
+- party and encounter rules stay in their owning contexts
+
+## Aggregate Model
+
+Aggregate Root: SessionPlan
+
+`SessionPlan` owns the persisted planning record for one session. It stores:
+
+- stable session identity
+- session-local participant references
+- exact `encounterDays` planning input
+- ordered session-encounter references
+- per-encounter budget allocations
+- selected encounter context
+- placed rests and loot placeholders
+- session-local status and selection truth
 
 It derives:
 
-- total planned encounter XP
+- total planned encounter XP from encounter-owned summaries
 - remaining and exceeded XP budget
 - recommended rest counts
 - importable saved encounter-plan budget summaries
 
-Target state:
-
-- later iterations may add persistent planner truth only if a new canonical
-  write-model owner is introduced explicitly
+The aggregate does not embed party membership, encounter rosters, creature
+detail, or loot-object internals.
 
 ## Commands And Invariants
 
 Commands entering the runtime model are:
 
-- refresh planner state
-- import saved encounter plan
-- remove imported encounter
-- reorder imported encounters
+- create session plan
+- load session plan
+- add or remove session participant reference
+- attach or detach saved encounter-plan reference
+- reorder attached encounter reference
+- change encounter allocation
 - set or clear a rest in one encounter gap
 - add or remove a loot placeholder
+- select the current session encounter context
 
 Core invariants:
 
 - planner XP math is based on public party and encounter reads only
-- imported encounters keep the saved-plan order chosen by the planner session
+- session participant count is the number of session participant references
+- attached encounters keep the session-local order chosen by the planner
 - rests can exist only between adjacent encounters
+- each attached encounter refers to exactly one encounter-owned saved plan
+- sessionplanner persists only references and planner-owned metadata, never
+  foreign encounter or party internals
 - loot placeholders do not contribute fake XP or fake gold values
-- the planner session is transient and separate from encounter-plan
-  persistence
+
+## Consistency Model
+
+Current state:
+
+- the current code still rebuilds planner state as transient runtime data
+
+Target state:
+
+- session plans are persisted through a planner-owned repository port
+- reopening a session restores session-owned participant refs, encounter order,
+  allocations, selection, rests, and placeholders
+- party, encounter, creature, and later loot truth are re-read through their
+  owning boundaries instead of being copied into session persistence
 
 ## References
 
 - [Session Planner Requirements](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/sessionplanner/requirements/requirements-session-planner.md:1)
 - [Session Planner Architecture](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/sessionplanner/architecture/architecture-session-planner.md:1)
+- [Session Planner Persistence Contract](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/sessionplanner/contract/contract-session-planner-persistence.md:1)
 - [Party Domain Model](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/party/domain/domain-party.md:1)
 - [Encounter Domain Model](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/encounter/domain/domain-encounter.md:1)

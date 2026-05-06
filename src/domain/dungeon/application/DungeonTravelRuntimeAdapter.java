@@ -5,7 +5,7 @@ import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.map.value.DungeonTravelMoveFacts;
 import src.domain.dungeon.map.value.DungeonTravelPositionFacts;
 import src.domain.dungeon.map.value.DungeonTravelSurfaceFacts;
-import src.domain.dungeon.published.DungeonTravelRequest;
+import src.domain.dungeon.published.DungeonTravelCommand;
 import src.domain.dungeon.published.DungeonTravelResponse;
 
 public final class DungeonTravelRuntimeAdapter {
@@ -22,15 +22,15 @@ public final class DungeonTravelRuntimeAdapter {
         this.moveTravelActionPath = moveDungeonTravelActionUseCase::execute;
     }
 
-    public DungeonTravelResponse handle(@Nullable DungeonTravelRequest request) {
-        DungeonTravelRequest effectiveRequest = request == null
-                ? new DungeonTravelRequest.LoadSurface(null)
-                : request;
-        if (effectiveRequest instanceof DungeonTravelRequest.LoadSurface loadSurface) {
+    public DungeonTravelResponse handle(@Nullable DungeonTravelCommand command) {
+        DungeonTravelCommand effectiveCommand = command == null
+                ? new DungeonTravelCommand.LoadSurface(null)
+                : command;
+        if (effectiveCommand instanceof DungeonTravelCommand.LoadSurface loadSurface) {
             return new DungeonTravelResponse.Surface(DungeonTravelProjector.surface(
                     loadTravelSurfacePath.apply(DungeonTravelProjector.domainPosition(loadSurface.position()))));
         }
-        DungeonTravelRequest.MoveAction moveAction = (DungeonTravelRequest.MoveAction) effectiveRequest;
+        DungeonTravelCommand.MoveAction moveAction = (DungeonTravelCommand.MoveAction) effectiveCommand;
         return new DungeonTravelResponse.Move(DungeonTravelProjector.move(moveTravelActionPath.apply(
                 new MoveDungeonTravelActionUseCase.Input(
                         DungeonTravelProjector.domainPosition(moveAction.position()),

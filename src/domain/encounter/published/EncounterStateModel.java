@@ -1,0 +1,27 @@
+package src.domain.encounter.published;
+
+import java.util.Objects;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Supplier;
+
+public record EncounterStateModel(
+        Supplier<EncounterStateSnapshot> currentSupplier,
+        Function<Consumer<EncounterStateSnapshot>, Runnable> subscribeAction
+) {
+
+    public EncounterStateModel {
+        currentSupplier = currentSupplier == null
+                ? () -> EncounterStateSnapshot.empty("Encounter state is not registered.")
+                : currentSupplier;
+        subscribeAction = subscribeAction == null ? listener -> () -> { } : subscribeAction;
+    }
+
+    public EncounterStateSnapshot current() {
+        return currentSupplier.get();
+    }
+
+    public Runnable subscribe(Consumer<EncounterStateSnapshot> listener) {
+        return subscribeAction.apply(Objects.requireNonNull(listener, "listener"));
+    }
+}

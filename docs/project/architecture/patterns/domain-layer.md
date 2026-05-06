@@ -191,9 +191,10 @@ make a context look more "DDD".
 - `travel`: `Context Role: Generation Policy Context`. Owns transient runtime
   travel-session composition derived from dungeon and party public boundaries
   without owning authored map persistence or party roster truth.
-- `sessionplanner`: `Context Role: Generation Policy Context`. Owns transient
-  session-planning policy and runtime orchestration derived from party and
-  encounter public boundaries without owning persistence truth.
+- `sessionplanner`: `Context Role: Roster Truth Context`. Owns authored
+  session-planning truth for participant references, encounter allocations,
+  rest placement, placeholders, and selection state while consuming party and
+  encounter public boundaries.
 
 ## Context Relationships
 
@@ -221,10 +222,10 @@ make a context look more "DDD".
   through their root application services and `published/` carriers to build
   one transient runtime travel workspace for dungeon traversal, overlay
   state, projection level, and overworld fallback handling.
-- `sessionplanner`: `Generation Policy Context`; consumes `party` and
-  `encounter` through their root application services and `published/`
-  carriers to build one transient planning workspace for encounter order, rest
-  placement, and open loot placeholders.
+- `sessionplanner`: `Roster Truth Context`; consumes `party` and `encounter`
+  through their root application services and `published/` carriers to
+  persist one session plan for participant references, encounter order,
+  allocations, rest placement, placeholders, and selected encounter context.
 
 ## Domain Document Contract
 

@@ -11,10 +11,9 @@ import shell.api.ShellSlot;
 import src.domain.creatures.CreaturesApplicationService;
 import src.domain.creatures.published.LoadCreatureDetailQuery;
 import src.domain.encounter.EncounterApplicationService;
-import src.domain.encounter.published.ApplyEncounterSessionCommand;
-import src.domain.encounter.published.EncounterSessionModel;
-import src.domain.encounter.published.EncounterSessionSnapshot;
-import src.domain.encounter.published.LoadEncounterSessionQuery;
+import src.domain.encounter.published.ApplyEncounterStateCommand;
+import src.domain.encounter.published.EncounterStateModel;
+import src.domain.encounter.published.LoadEncounterStateQuery;
 import src.view.slotcontent.details.creature.CreatureDetailsInspectorEntry;
 
 final class EncounterStateBinder {
@@ -28,7 +27,7 @@ final class EncounterStateBinder {
     ShellBinding bind() {
         CreaturesApplicationService creatures = runtimeContext.services().require(CreaturesApplicationService.class);
         EncounterApplicationService encounters = runtimeContext.services().require(EncounterApplicationService.class);
-        EncounterSessionModel sessionModel = encounters.loadSession(new LoadEncounterSessionQuery());
+        EncounterStateModel stateModel = encounters.loadStateModel(new LoadEncounterStateQuery());
         EncounterStateContributionModel presentationModel = new EncounterStateContributionModel();
         EncounterStateIntentHandler intentHandler = new EncounterStateIntentHandler(presentationModel);
         EncounterBuilderStateView builderView = new EncounterBuilderStateView();
@@ -36,8 +35,8 @@ final class EncounterStateBinder {
         EncounterCombatStateView combatView = new EncounterCombatStateView();
         EncounterResultsStateView resultsView = new EncounterResultsStateView();
         EncounterStateView state = new EncounterStateView();
-        sessionModel.subscribe(presentationModel::apply);
-        presentationModel.apply(sessionModel.current());
+        stateModel.subscribe(presentationModel::apply);
+        presentationModel.apply(stateModel.current());
         bindSessionActions(encounters, intentHandler);
         presentationModel.creatureDetailSelectionProperty().addListener((obs, before, after) -> {
             if (after == null || after.longValue() <= 0L) {
@@ -59,7 +58,7 @@ final class EncounterStateBinder {
             EncounterApplicationService encounters,
             EncounterStateIntentHandler intentHandler
     ) {
-        intentHandler.onPublishedEventRequested(event -> encounters.applySession(toCommand(event)));
+        intentHandler.onPublishedEventRequested(event -> encounters.applyState(toCommand(event)));
     }
 
     private static void openCreatureDetails(
@@ -75,7 +74,7 @@ final class EncounterStateBinder {
                 id -> creatures.loadCreatureDetail(new LoadCreatureDetailQuery(id))));
     }
 
-    private static ApplyEncounterSessionCommand toCommand(EncounterStatePublishedEvent event) {
+    private static ApplyEncounterStateCommand toCommand(EncounterStatePublishedEvent event) {
         if (event == null) {
             return refreshCommand();
         }
@@ -94,54 +93,52 @@ final class EncounterStateBinder {
         return refreshCommand();
     }
 
-    private static ApplyEncounterSessionCommand toBuilderCommand(EncounterStatePublishedEvent.BuilderMutation mutation) {
+    private static ApplyEncounterStateCommand toBuilderCommand(EncounterStatePublishedEvent.BuilderMutation mutation) {
         if (mutation.change() instanceof EncounterStatePublishedEvent.GeneratorMutation generator) {
             if (generator.generate()) {
-                return command(ApplyEncounterSessionCommand.Action.GENERATE);
+                return command(ApplyEncounterStateCommand.Action.GENERATE);
             }
-            return command(ApplyEncounterSessionCommand.Action.SHIFT_ALTERNATIVE, generator.alternativeShift());
+            return command(ApplyEncounterStateCommand.Action.SHIFT_ALTERNATIVE, generator.alternativeShift());
         }
         if (mutation.change() instanceof EncounterStatePublishedEvent.PlanMutation plan) {
             if (plan.saveCurrentPlan()) {
-                return command(ApplyEncounterSessionCommand.Action.SAVE_CURRENT_PLAN);
+                return command(ApplyEncounterStateCommand.Action.SAVE_CURRENT_PLAN);
             }
-            return command(ApplyEncounterSessionCommand.Action.OPEN_SAVED_PLAN, plan.selectedPlanId());
+            return command(ApplyEncounterStateCommand.Action.OPEN_SAVED_PLAN, plan.selectedPlanId());
         }
         if (mutation.change() instanceof EncounterStatePublishedEvent.RosterMutation roster) {
             if (roster.removeCreature()) {
-                return command(ApplyEncounterSessionCommand.Action.REMOVE_CREATURE, roster.creatureId());
+                return command(ApplyEncounterStateCommand.Action.REMOVE_CREATURE, roster.creatureId());
             }
             if (roster.delta() > 0) {
-                return command(ApplyEncounterSessionCommand.Action.INCREMENT_CREATURE, roster.creatureId());
+                return command(ApplyEncounterStateCommand.Action.INCREMENT_CREATURE, roster.creatureId());
             }
-            return command(ApplyEncounterSessionCommand.Action.DECREMENT_CREATURE, roster.creatureId());
+            return command(ApplyEncounterStateCommand.Action.DECREMENT_CREATURE, roster.creatureId());
         }
         if (mutation.change() instanceof EncounterStatePublishedEvent.UndoMutation undoMutation) {
-            return command(ApplyEncounterSessionCommand.Action.UNDO_REMOVE, undoMutation.token());
+            return command(ApplyEncounterStateCommand.Action.UNDO_REMOVE, undoMutation.token());
         }
         if (mutation.change() instanceof EncounterStatePublishedEvent.BuilderActionMutation builderAction) {
             if (builderAction.clearHistory()) {
-                return command(ApplyEncounterSessionCommand.Action.CLEAR_GENERATION_HISTORY);
+                return command(ApplyEncounterStateCommand.Action.CLEAR_GENERATION_HISTORY);
             }
-            return command(ApplyEncounterSessionCommand.Action.OPEN_INITIATIVE);
+            return command(ApplyEncounterStateCommand.Action.OPEN_INITIATIVE);
         }
         return refreshCommand();
     }
 
-    private static ApplyEncounterSessionCommand toInitiativeCommand(EncounterStatePublishedEvent.InitiativeSubmission submission) {
+    private static ApplyEncounterStateCommand toInitiativeCommand(EncounterStatePublishedEvent.InitiativeSubmission submission) {
         if (submission.backToBuilder()) {
-            return command(ApplyEncounterSessionCommand.Action.BACK_TO_BUILDER);
+            return command(ApplyEncounterStateCommand.Action.BACK_TO_BUILDER);
         }
-        return new ApplyEncounterSessionCommand(
-                ApplyEncounterSessionCommand.Action.CONFIRM_INITIATIVE,
-                null,
-                EncounterSessionSnapshot.BuilderInputs.empty(),
+        return new ApplyEncounterStateCommand(
+                ApplyEncounterStateCommand.Action.CONFIRM_INITIATIVE,
                 0L,
                 0L,
                 0,
                 0L,
                 submission.initiatives().stream()
-                        .map(entry -> new EncounterSessionSnapshot.InitiativeInput(entry.id(), entry.initiative()))
+                        .map(entry -> new ApplyEncounterStateCommand.InitiativeValue(entry.id(), entry.initiative()))
                         .toList(),
                 "",
                 0,
@@ -150,18 +147,16 @@ final class EncounterStateBinder {
                 false);
     }
 
-    private static ApplyEncounterSessionCommand toCombatCommand(EncounterStatePublishedEvent.CombatMutation mutation) {
+    private static ApplyEncounterStateCommand toCombatCommand(EncounterStatePublishedEvent.CombatMutation mutation) {
         if (mutation.change() instanceof EncounterStatePublishedEvent.AdvanceTurnMutation) {
-            return command(ApplyEncounterSessionCommand.Action.ADVANCE_TURN);
+            return command(ApplyEncounterStateCommand.Action.ADVANCE_TURN);
         }
         if (mutation.change() instanceof EncounterStatePublishedEvent.HpMutation hp) {
-            return new ApplyEncounterSessionCommand(
-                    ApplyEncounterSessionCommand.Action.MUTATE_HP,
-                    null,
-                    EncounterSessionSnapshot.BuilderInputs.empty(),
+            return new ApplyEncounterStateCommand(
+                    ApplyEncounterStateCommand.Action.MUTATE_HP,
                     0L,
                     0L,
-                    hp.amount(),
+                    0,
                     0L,
                     List.of(),
                     hp.combatantId(),
@@ -171,10 +166,8 @@ final class EncounterStateBinder {
                     hp.healing());
         }
         if (mutation.change() instanceof EncounterStatePublishedEvent.InitiativeAdjustment initiative) {
-            return new ApplyEncounterSessionCommand(
-                    ApplyEncounterSessionCommand.Action.SET_INITIATIVE,
-                    null,
-                    EncounterSessionSnapshot.BuilderInputs.empty(),
+            return new ApplyEncounterStateCommand(
+                    ApplyEncounterStateCommand.Action.ADJUST_INITIATIVE,
                     0L,
                     0L,
                     0,
@@ -187,10 +180,8 @@ final class EncounterStateBinder {
                     false);
         }
         if (mutation.change() instanceof EncounterStatePublishedEvent.PartyMemberAddition partyMember) {
-            return new ApplyEncounterSessionCommand(
-                    ApplyEncounterSessionCommand.Action.ADD_PARTY_MEMBER_TO_COMBAT,
-                    null,
-                    EncounterSessionSnapshot.BuilderInputs.empty(),
+            return new ApplyEncounterStateCommand(
+                    ApplyEncounterStateCommand.Action.ADD_PARTY_MEMBER_TO_COMBAT,
                     0L,
                     0L,
                     0,
@@ -203,17 +194,17 @@ final class EncounterStateBinder {
                     false);
         }
         if (mutation.change() instanceof EncounterStatePublishedEvent.EndCombatMutation) {
-            return command(ApplyEncounterSessionCommand.Action.END_COMBAT);
+            return command(ApplyEncounterStateCommand.Action.END_COMBAT);
         }
         return refreshCommand();
     }
 
-    private static ApplyEncounterSessionCommand toResultCommand(EncounterStatePublishedEvent.ResultMutation mutation) {
+    private static ApplyEncounterStateCommand toResultCommand(EncounterStatePublishedEvent.ResultMutation mutation) {
         if (mutation.change() instanceof EncounterStatePublishedEvent.AwardXpMutation) {
-            return command(ApplyEncounterSessionCommand.Action.AWARD_XP);
+            return command(ApplyEncounterStateCommand.Action.AWARD_XP);
         }
         if (mutation.change() instanceof EncounterStatePublishedEvent.ReturnToBuilderMutation) {
-            return command(ApplyEncounterSessionCommand.Action.RETURN_TO_BUILDER_AFTER_RESULTS);
+            return command(ApplyEncounterStateCommand.Action.RETURN_TO_BUILDER_AFTER_RESULTS);
         }
         return refreshCommand();
     }
@@ -266,15 +257,13 @@ final class EncounterStateBinder {
         }
     }
 
-    private static ApplyEncounterSessionCommand refreshCommand() {
-        return command(ApplyEncounterSessionCommand.Action.REFRESH);
+    private static ApplyEncounterStateCommand refreshCommand() {
+        return command(ApplyEncounterStateCommand.Action.REFRESH);
     }
 
-    private static ApplyEncounterSessionCommand command(ApplyEncounterSessionCommand.Action action) {
-        return new ApplyEncounterSessionCommand(
+    private static ApplyEncounterStateCommand command(ApplyEncounterStateCommand.Action action) {
+        return new ApplyEncounterStateCommand(
                 action,
-                null,
-                EncounterSessionSnapshot.BuilderInputs.empty(),
                 0L,
                 0L,
                 0,
@@ -287,14 +276,12 @@ final class EncounterStateBinder {
                 false);
     }
 
-    private static ApplyEncounterSessionCommand command(
-            ApplyEncounterSessionCommand.Action action,
+    private static ApplyEncounterStateCommand command(
+            ApplyEncounterStateCommand.Action action,
             int delta
     ) {
-        return new ApplyEncounterSessionCommand(
+        return new ApplyEncounterStateCommand(
                 action,
-                null,
-                EncounterSessionSnapshot.BuilderInputs.empty(),
                 0L,
                 0L,
                 delta,
@@ -307,15 +294,13 @@ final class EncounterStateBinder {
                 false);
     }
 
-    private static ApplyEncounterSessionCommand command(
-            ApplyEncounterSessionCommand.Action action,
+    private static ApplyEncounterStateCommand command(
+            ApplyEncounterStateCommand.Action action,
             long longValue
     ) {
         return switch (action) {
-            case OPEN_SAVED_PLAN -> new ApplyEncounterSessionCommand(
+            case OPEN_SAVED_PLAN -> new ApplyEncounterStateCommand(
                     action,
-                    null,
-                    EncounterSessionSnapshot.BuilderInputs.empty(),
                     0L,
                     longValue,
                     0,
@@ -328,10 +313,8 @@ final class EncounterStateBinder {
                     false);
             case INCREMENT_CREATURE,
                     DECREMENT_CREATURE,
-                    REMOVE_CREATURE -> new ApplyEncounterSessionCommand(
+                    REMOVE_CREATURE -> new ApplyEncounterStateCommand(
                     action,
-                    null,
-                    EncounterSessionSnapshot.BuilderInputs.empty(),
                     longValue,
                     0L,
                     0,
@@ -342,10 +325,8 @@ final class EncounterStateBinder {
                     0L,
                     0,
                     false);
-            case UNDO_REMOVE -> new ApplyEncounterSessionCommand(
+            case UNDO_REMOVE -> new ApplyEncounterStateCommand(
                     action,
-                    null,
-                    EncounterSessionSnapshot.BuilderInputs.empty(),
                     0L,
                     0L,
                     0,

@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-28
+Last Reviewed: 2026-05-06
 Source of Truth: Compatibility-visible domain contract for the session planner
 context.
 
@@ -8,76 +8,117 @@ context.
 
 ## Context Role
 
-Context Role: Generation Policy Context
+Context Role: Roster Truth Context
 Context Name: SessionPlanner
 
-- `sessionplanner` is the generation policy context for one transient session
-  planning workspace.
+- `sessionplanner` is the roster-truth context for one authored session plan.
 - Its public backend boundary is
   `src/domain/sessionplanner/SessionPlannerApplicationService.java`.
-- It owns runtime orchestration derived from public party and encounter reads
-  without owning persisted authored truth.
+- It owns session-local participant references, encounter allocations, rest
+  placement, placeholder state, and selection truth.
+- It does not own party truth, encounter-plan roster truth, creature truth, or
+  loot truth.
 
 ## Published Language
 
-`published/` owns planner queries, planner commands, rest-kind vocabulary, the
-read-only planner snapshot, and the planner session observation model.
+`published/` owns planner queries, planner commands, rest-kind vocabulary,
+session snapshots, and the read-only planner session observation model.
+
+Current state:
+
+- the current published API still exposes a coarse transient-session command
+  bag
+
+Target state:
+
+- the published surface narrows toward focused session workflows and read-only
+  models while remaining planner-owned public language only
 
 ## Application Boundary
 
 The root application service coordinates active-party composition reads,
-saved encounter-plan budget reads through the encounter public boundary, and
-transient planner-session mutations and readback.
+party-based adventuring-day calculations, saved encounter-plan budget reads
+through the encounter public boundary, planner-owned repository access, and
+session-local mutations and readback.
+
+Current state:
+
+- the current code still behaves as transient runtime orchestration
+
+Target state:
+
+- the root boundary remains orchestration only while `SessionPlan` owns the
+  authored planning record
+
+## Aggregate Model
+
+Aggregate Root: SessionPlan
+
+`SessionPlan` owns the persisted planning record for one session. It stores:
+
+- stable session identity
+- session-local participant references
+- exact `encounterDays`
+- ordered encounter-plan references
+- per-encounter budget allocations
+- selected encounter context
+- rests, placeholders, and planner-owned status state
+
+It does not embed foreign party membership truth, encounter rosters, creature
+detail, or loot-object internals.
 
 ## Commands And Invariants
 
-Write Model: None
-
 Commands entering the runtime model are:
 
-- refresh planner state
-- import saved encounter plan
-- remove imported encounter
-- reorder imported encounters
+- create session plan
+- load session plan
+- add or remove session participant reference
+- attach or detach encounter-plan reference
+- reorder attached encounter reference
+- change encounter allocation
 - set or clear a rest in one encounter gap
 - add or remove a loot placeholder
+- select the current session encounter context
 
 Core invariants:
 
 - planner XP math is based on public party and encounter reads only
-- imported encounters keep the saved-plan order chosen by the planner session
+- session participant count equals the number of session participant references
+- attached encounters keep the session-local order chosen by the planner
 - rests can exist only between adjacent encounters
+- each attached encounter refers to exactly one encounter-owned saved plan
+- sessionplanner persists only references and planner-owned metadata, not
+  foreign party or encounter internals
 - loot placeholders do not contribute fake XP or fake gold values
-- the planner session is transient and separate from encounter-plan
-  persistence
 
 ## Consistency Model
 
-The planner session is rebuilt from public party and encounter inputs and keeps
-its own transient ordering, rest placement, and placeholder state only for the
-current runtime session. It owns no persisted authored truth and therefore does
-not publish a durable write model.
+Current state:
 
-## Ephemeral Policy Rationale
+- the current implementation still rebuilds planner state as transient runtime
+  data
 
-The first session planner iteration exists only as transient orchestration over
-public party and encounter reads. Its owned decisions are runtime ordering,
-rest placement, and placeholder management, not a persisted authored planning
-record. A future persistent planner write model would require an explicit new
-domain owner instead of being smuggled into this generation-policy context.
+Target state:
+
+- session plans are persisted through a planner-owned repository port
+- reopening a session restores session-owned participant refs, encounter order,
+  allocations, selection, rests, and placeholders
+- party, encounter, creature, and later loot truth are reloaded through their
+  owning boundaries instead of being shadow-copied into session persistence
 
 ## Ubiquitous Language
 
-- `SessionPlanner`: runtime planning workspace for one adventure session
-- `Imported Encounter`: one saved encounter plan pulled into the transient
-  planner order
-- `Rest Gap`: a place between two adjacent imported encounters where a rest can
+- `SessionPlan`: authored planning record for one adventure session
+- `Session Encounter`: one encounter-owned saved plan attached to the session
+  with planner-owned metadata
+- `Rest Gap`: a place between two adjacent session encounters where a rest can
   be placed
-- `Loot Placeholder`: transient unresolved reward marker owned by the planner
-  session
+- `Loot Placeholder`: unresolved reward marker owned by the session plan
 
 ## References
 
 - [Session Planner Domain Model](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/sessionplanner/domain/domain-session-planner.md:1)
+- [Session Planner Persistence Contract](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/sessionplanner/contract/contract-session-planner-persistence.md:1)
 - [Party Domain Model](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/party/domain/domain-party.md:1)
 - [Encounter Domain Model](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/encounter/domain/domain-encounter.md:1)

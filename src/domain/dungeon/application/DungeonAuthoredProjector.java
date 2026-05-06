@@ -1,7 +1,6 @@
 package src.domain.dungeon.application;
 
 import src.domain.dungeon.map.entity.DungeonAggregate;
-import src.domain.dungeon.map.value.DungeonRoomExitDescription;
 import src.domain.dungeon.published.DungeonInspectorSnapshot;
 import src.domain.dungeon.published.DungeonMapMode;
 import src.domain.dungeon.published.DungeonOperationResult;

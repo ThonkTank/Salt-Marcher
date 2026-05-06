@@ -1,5 +1,7 @@
 package src.domain.encounter.session.entity;
 
+import static src.domain.encounter.session.value.EncounterSessionValues.*;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -10,6 +12,9 @@ import src.domain.encounter.generation.value.EncounterDifficultyIntent;
 import src.domain.encounter.generation.value.EncounterGenerationInputs;
 import src.domain.encounter.generation.value.EncounterGenerationRequest;
 import src.domain.encounter.generation.value.EncounterTuningIntent;
+import src.domain.encounter.plan.aggregate.EncounterPlan;
+import src.domain.encounter.plan.value.EncounterPlanCreature;
+import src.domain.encounter.plan.value.EncounterPlanSummary;
 
 public final class EncounterSession {
 
@@ -21,7 +26,7 @@ public final class EncounterSession {
 
         GenerationResultData generate(EncounterGenerationRequest request);
 
-        SavePlanOutcome savePlan(SavedPlanData plan);
+        SavePlanOutcome savePlan(EncounterPlan plan);
 
         LoadPlanOutcome loadPlan(long planId);
 
@@ -66,18 +71,19 @@ public final class EncounterSession {
             return;
         }
         GenerationResultData result = access.generate(request.orElseGet(this::generationRequest));
-        if (result.status() != GenerationStatus.SUCCESS || result.encounters().isEmpty()) {
+        if (!result.success() || result.alternatives().isEmpty()) {
             builder.generatedAlternatives.clear();
             builder.selectedAlternativeIndex = 0;
             builder.generationHistoryPresent = false;
             builder.generatedAdjustedXp = 0;
             builder.generatedDifficulty = "";
             builder.generatedTitle = "";
-            context.status = result.message().isBlank() ? generationStatusText(result.status()) : result.message();
+            builder.generatedAdvisories = List.of();
+            context.status = result.message().isBlank() ? "Encounter konnte nicht generiert werden." : result.message();
             return;
         }
         builder.generatedAlternatives.clear();
-        builder.generatedAlternatives.addAll(result.encounters());
+        builder.generatedAlternatives.addAll(result.alternatives());
         builder.generationHistoryPresent = true;
         builder.selectedAlternativeIndex = 0;
         applyGeneratedEncounter(builder.generatedAlternatives.getFirst());
@@ -89,19 +95,19 @@ public final class EncounterSession {
             context.status = "Speichern braucht mindestens eine Kreatur im Encounter.";
             return;
         }
-        SavePlanOutcome result = access.savePlan(new SavedPlanData(
+        SavePlanOutcome result = access.savePlan(new EncounterPlan(
                 builder.activeSavedPlanId.orElse(0L),
                 saveName(),
                 builder.generatedTitle,
                 builder.roster.stream()
-                        .map(creature -> new PlanCreatureData(creature.creatureId(), creature.count()))
+                        .map(creature -> new EncounterPlanCreature(creature.creatureId(), creature.count()))
                         .toList()));
-        if (result.status() != SavedPlanStatus.SUCCESS || result.plan().isEmpty()) {
+        if (!result.success()) {
             context.status = result.message().isBlank() ? "Encounter konnte nicht gespeichert werden." : result.message();
             refreshSavedPlans(access);
             return;
         }
-        SavedPlanData plan = result.plan().orElseThrow();
+        EncounterPlan plan = result.plan().orElseThrow();
         builder.activeSavedPlanId = OptionalLong.of(plan.id());
         context.status = plan.name() + " gespeichert.";
         refreshSavedPlans(access);
@@ -109,14 +115,14 @@ public final class EncounterSession {
 
     public void openSavedPlan(RuntimeAccess access, long planId) {
         LoadPlanOutcome result = access.loadPlan(planId);
-        if (result.status() != SavedPlanStatus.SUCCESS || result.plan().isEmpty()) {
+        if (!result.success()) {
             context.status = result.message().isBlank() ? "Encounter konnte nicht geöffnet werden." : result.message();
             refreshSavedPlans(access);
             return;
         }
-        SavedPlanData plan = result.plan().orElseThrow();
+        EncounterPlan plan = result.plan().orElseThrow();
         builder.roster.clear();
-        for (PlanCreatureData creature : plan.creatures()) {
+        for (EncounterPlanCreature creature : plan.creatures()) {
             access.loadCreature(creature.creatureId())
                     .ifPresent(detail -> builder.roster.add(fromDetail(detail, creature.quantity(), SAVED_PLAN_CREATURE_ROLE, List.of())));
         }
@@ -129,6 +135,7 @@ public final class EncounterSession {
         builder.generatedAdjustedXp = 0;
         builder.generatedDifficulty = "";
         builder.generatedTitle = plan.generatedLabel().isBlank() ? plan.name() : plan.generatedLabel();
+        builder.generatedAdvisories = List.of();
         builder.pendingUndo = Optional.empty();
         builder.activeSavedPlanId = OptionalLong.of(plan.id());
         combat.currentTurnIndex = OptionalInt.empty();
@@ -300,11 +307,11 @@ public final class EncounterSession {
                         currentCreature.creatureId(),
                         currentCreature.count(),
                         currentCreature.hp(),
-                        currentCreature.ac(),
+                        currentCreature.armorClass(),
                         currentCreature.xp(),
-                        currentCreature.cr(),
-                        currentCreature.type(),
-                        currentCreature.role(),
+                        currentCreature.challengeRating(),
+                        currentCreature.creatureType(),
+                        currentCreature.encounterRole(),
                         input.initiative(),
                         fallbackIndex);
             }
@@ -326,8 +333,8 @@ public final class EncounterSession {
         combat.round = turn.round();
     }
 
-    public void setInitiative(String combatantId, int initiative) {
-        combat.combatRuntime.setInitiative(combatantId, initiative);
+    public void adjustInitiative(String combatantId, int initiative) {
+        combat.combatRuntime.adjustInitiative(combatantId, initiative);
     }
 
     public void addPartyMemberToCombat(long partyMemberId, int initiative) {
@@ -446,6 +453,7 @@ public final class EncounterSession {
                 titleLabel(),
                 difficulty,
                 builder.builderInputs,
+                builder.generatedAdvisories,
                 context.savedPlans,
                 !builder.roster.isEmpty() && !context.activeParty.isEmpty(),
                 builder.generatedAlternatives.size() > 1,
@@ -479,7 +487,7 @@ public final class EncounterSession {
     private void refreshSavedPlans(RuntimeAccess access) {
         ListPlansOutcome result = access.listPlans();
         context.savedPlans.clear();
-        if (result.status() == SavedPlanStatus.SUCCESS) {
+        if (result.success()) {
             context.savedPlans.addAll(result.plans());
         } else if (!result.message().isBlank()) {
             context.status = result.message();
@@ -488,12 +496,11 @@ public final class EncounterSession {
 
     private void applyGeneratedEncounter(GeneratedEncounterData generated) {
         builder.roster.clear();
-        for (GeneratedCreatureData creature : generated.creatures()) {
-            builder.roster.add(fromGeneratedFallback(creature));
-        }
+        builder.roster.addAll(generated.roster());
         builder.generatedAdjustedXp = generated.adjustedXp();
-        builder.generatedDifficulty = difficultyLabel(generated.achievedDifficulty());
+        builder.generatedDifficulty = generated.difficultyLabel();
         builder.generatedTitle = generated.title();
+        builder.generatedAdvisories = generated.advisoryMessages();
     }
 
     private void clearGeneratedSelection() {
@@ -505,6 +512,7 @@ public final class EncounterSession {
         builder.generatedAdjustedXp = 0;
         builder.generatedDifficulty = "";
         builder.generatedTitle = "";
+        builder.generatedAdvisories = List.of();
     }
 
     private EncounterGenerationRequest generationRequest() {
@@ -618,13 +626,13 @@ public final class EncounterSession {
     }
 
     private static String generationSuccessText(GenerationResultData result) {
-        StringBuilder text = new StringBuilder(result.encounters().size() + " Encounter-Optionen generiert.");
+        StringBuilder text = new StringBuilder(result.alternatives().size() + " Encounter-Optionen generiert.");
         if (result.diagnostics().isPresent()) {
             GenerationDiagnosticsData diagnostics = result.diagnostics().orElseThrow();
             text.append(" Ziel: ")
-                    .append(difficultyLabel(diagnostics.resolvedDifficulty()))
+                    .append(diagnostics.difficultyLabel())
                     .append(", Tuning: ")
-                    .append(tuningLabel(diagnostics.resolvedTuning()))
+                    .append(diagnostics.tuningLabel())
                     .append('.');
         }
         if (result.fallbackUsed()) {
@@ -638,18 +646,6 @@ public final class EncounterSession {
         return "B" + effective.balanceLevel()
                 + "/M" + Math.round(effective.amountValue())
                 + "/D" + effective.diversityLevel();
-    }
-
-    private static String generationStatusText(GenerationStatus status) {
-        GenerationStatus effectiveStatus = status == null ? GenerationStatus.defaultFailure() : status;
-        return switch (effectiveStatus) {
-            case NO_ACTIVE_PARTY -> "Die aktive Party hat keine Mitglieder.";
-            case NO_CREATURES -> "Keine Kreaturen passen zu diesen Filtern.";
-            case NO_SOLUTION -> "Keine passende Encounter-Komposition gefunden.";
-            case INVALID_REQUEST -> "Encounter-Filter sind ungültig.";
-            case STORAGE_ERROR -> "Encounter konnte nicht generiert werden.";
-            case SUCCESS -> "Encounter generiert.";
-        };
     }
 
     private static EncounterCreatureData fromDetail(
@@ -673,459 +669,9 @@ public final class EncounterSession {
                 tags);
     }
 
-    private static EncounterCreatureData fromGeneratedFallback(GeneratedCreatureData creature) {
-        return new EncounterCreatureData(
-                "monster-" + creature.creatureId(),
-                creature.creatureId(),
-                creature.name(),
-                creature.challengeRating(),
-                creature.xp(),
-                1,
-                10,
-                0,
-                "",
-                creature.role(),
-                creature.quantity(),
-                creature.tags());
-    }
-
-    public enum Mode {
-        BUILDER,
-        INITIATIVE,
-        COMBAT,
-        RESULTS
-    }
-
-    public enum CombatantKind {
-        PLAYER_CHARACTER("SC"),
-        MONSTER("Monster");
-
-        private final String publishedLabel;
-
-        CombatantKind(String publishedLabel) {
-            this.publishedLabel = publishedLabel;
-        }
-
-        public String publishedLabel() {
-            return publishedLabel;
-        }
-    }
-
-    public enum GenerationStatus {
-        SUCCESS,
-        NO_ACTIVE_PARTY,
-        NO_CREATURES,
-        NO_SOLUTION,
-        INVALID_REQUEST,
-        STORAGE_ERROR;
-
-        public static GenerationStatus defaultFailure() {
-            return STORAGE_ERROR;
-        }
-    }
-
-    public enum SavedPlanStatus {
-        SUCCESS,
-        NOT_FOUND,
-        INVALID_REQUEST,
-        STORAGE_ERROR
-    }
-
-    public record PartyMemberData(String id, long numericId, String name, int level) {
-        public PartyMemberData {
-            id = id == null ? "" : id;
-            name = name == null ? "" : name;
-        }
-    }
-
-    public record EncounterCreatureData(
-            String id,
-            long creatureId,
-            String name,
-            String cr,
-            int xp,
-            int hp,
-            int ac,
-            int initiativeBonus,
-            String type,
-            String role,
-            int count,
-            List<String> tags
-    ) {
-        public EncounterCreatureData {
-            id = id == null ? "" : id;
-            name = name == null ? "" : name;
-            cr = cr == null ? "" : cr;
-            type = type == null ? "" : type;
-            role = role == null || role.isBlank() ? DEFAULT_CREATURE_ROLE : role;
-            count = Math.max(1, count);
-            tags = tags == null ? List.of() : List.copyOf(tags);
-        }
-
-        public int totalXp() {
-            return xp * count;
-        }
-
-        public EncounterCreatureData withCount(int nextCount, int maxCount) {
-            return new EncounterCreatureData(
-                    id,
-                    creatureId,
-                    name,
-                    cr,
-                    xp,
-                    hp,
-                    ac,
-                    initiativeBonus,
-                    type,
-                    role,
-                    Math.max(1, Math.min(maxCount, nextCount)),
-                    tags);
-        }
-    }
-
-    public record RemovedRosterEntryData(long token, int index, EncounterCreatureData creature) {
-    }
-
-    public record DifficultySummaryData(
-            int easy,
-            int medium,
-            int hard,
-            int deadly,
-            int adjustedXp,
-            String difficulty
-    ) {
-        public DifficultySummaryData {
-            difficulty = difficulty == null ? "" : difficulty;
-        }
-    }
-
-    public record BuilderStateData(
-            List<PartyMemberData> party,
-            List<EncounterCreatureData> roster,
-            String templateLabel,
-            DifficultySummaryData difficulty,
-            EncounterGenerationInputs builderInputs,
-            List<SavedPlanSummaryData> savedPlans,
-            boolean canStartCombat,
-            boolean canPreviousAlternative,
-            boolean canNextAlternative,
-            boolean canSavePlan,
-            boolean canClearGenerationHistory,
-            Optional<RemovedRosterEntryData> pendingUndo
-    ) {
-        public BuilderStateData {
-            party = party == null ? List.of() : List.copyOf(party);
-            roster = roster == null ? List.of() : List.copyOf(roster);
-            templateLabel = templateLabel == null ? "" : templateLabel;
-            difficulty = difficulty == null ? new DifficultySummaryData(0, 0, 0, 0, 0, "") : difficulty;
-            builderInputs = builderInputs == null ? EncounterGenerationInputs.empty() : builderInputs;
-            savedPlans = savedPlans == null ? List.of() : List.copyOf(savedPlans);
-            pendingUndo = pendingUndo == null ? Optional.empty() : pendingUndo;
-        }
-    }
-
-    public record InitiativeEntryData(String id, String label, CombatantKind kind, int initiative) {
-        public InitiativeEntryData {
-            id = id == null ? "" : id;
-            label = label == null ? "" : label;
-            kind = kind == null ? CombatantKind.MONSTER : kind;
-        }
-    }
-
-    public record InitiativeInput(String id, int initiative) {
-        public InitiativeInput {
-            id = id == null ? "" : id;
-        }
-    }
-
-    public record InitiativeStateData(List<InitiativeEntryData> entries) {
-        public InitiativeStateData {
-            entries = entries == null ? List.of() : List.copyOf(entries);
-        }
-    }
-
-    public record CombatProjectionData(
-            int currentTurnIndex,
-            int round,
-            String status,
-            List<CombatCardData> cards,
-            boolean allEnemiesDefeated
-    ) {
-        public CombatProjectionData {
-            status = status == null ? "" : status;
-            cards = cards == null ? List.of() : List.copyOf(cards);
-        }
-
-        public static CombatProjectionData empty() {
-            return new CombatProjectionData(CombatRuntime.NO_ACTIVE_TURN_INDEX, FIRST_COMBAT_ROUND, "", List.of(), false);
-        }
-    }
-
-    public record CombatCardData(
-            String id,
-            String name,
-            boolean playerCharacter,
-            boolean active,
-            boolean alive,
-            int currentHp,
-            int maxHp,
-            int armorClass,
-            int initiative,
-            int count,
-            String detail
-    ) {
-        public CombatCardData {
-            id = id == null ? "" : id;
-            name = name == null ? "" : name;
-            detail = detail == null ? "" : detail;
-        }
-    }
-
-    public record ResultEnemyData(
-            String name,
-            String status,
-            int hpLoss,
-            int xp,
-            boolean defeatedByDefault,
-            String loot
-    ) {
-        public ResultEnemyData {
-            name = name == null ? "" : name;
-            status = status == null ? "" : status;
-            loot = loot == null ? "" : loot;
-        }
-    }
-
-    public record ResultStateData(
-            List<ResultEnemyData> enemies,
-            long defeatedCount,
-            int eligibleXp,
-            int perPlayerXp,
-            String goldSummary,
-            String lootDetail,
-            String awardStatus,
-            boolean xpAwarded,
-            boolean canAwardXp,
-            int partySize
-    ) {
-        public ResultStateData {
-            enemies = enemies == null ? List.of() : List.copyOf(enemies);
-            goldSummary = goldSummary == null ? NO_LOOT : goldSummary;
-            lootDetail = lootDetail == null ? "" : lootDetail;
-            awardStatus = awardStatus == null ? "" : awardStatus;
-            partySize = Math.max(1, partySize);
-        }
-
-        public static ResultStateData empty() {
-            return new ResultStateData(List.of(), 0, 0, 0, NO_LOOT, "", "", false, false, 1);
-        }
-
-        public ResultStateData withAwardStatus(String nextAwardStatus, boolean awarded) {
-            return new ResultStateData(
-                    enemies,
-                    defeatedCount,
-                    eligibleXp,
-                    perPlayerXp,
-                    goldSummary,
-                    lootDetail,
-                    nextAwardStatus,
-                    awarded,
-                    !awarded && canAwardXp,
-                    partySize);
-        }
-    }
-
-    public record Snapshot(
-            Mode mode,
-            BuilderStateData builderState,
-            InitiativeStateData initiativeState,
-            CombatProjectionData combatState,
-            ResultStateData resultState,
-            String status,
-            List<PartyMemberData> missingCombatPartyMembers
-    ) {
-        public Snapshot {
-            mode = mode == null ? Mode.BUILDER : mode;
-            builderState = builderState == null
-                    ? new BuilderStateData(
-                    List.of(),
-                    List.of(),
-                    "",
-                    new DifficultySummaryData(0, 0, 0, 0, 0, ""),
-                    EncounterGenerationInputs.empty(),
-                    List.of(),
-                    false,
-                    false,
-                    false,
-                    false,
-                    false,
-                    Optional.empty())
-                    : builderState;
-            initiativeState = initiativeState == null ? new InitiativeStateData(List.of()) : initiativeState;
-            combatState = combatState == null ? CombatProjectionData.empty() : combatState;
-            resultState = resultState == null ? ResultStateData.empty() : resultState;
-            status = status == null ? "" : status;
-            missingCombatPartyMembers = missingCombatPartyMembers == null
-                    ? List.of()
-                    : List.copyOf(missingCombatPartyMembers);
-        }
-    }
-
-    public record BudgetData(
-            List<Integer> partyLevels,
-            int averageLevel,
-            int easyXp,
-            int mediumXp,
-            int hardXp,
-            int deadlyXp
-    ) {
-        public BudgetData {
-            partyLevels = partyLevels == null ? List.of() : List.copyOf(partyLevels);
-        }
-    }
-
-    public record CreatureDetailData(
-            long id,
-            String name,
-            String challengeRating,
-            int xp,
-            int hitPoints,
-            int armorClass,
-            int initiativeBonus,
-            String creatureType
-    ) {
-        public CreatureDetailData {
-            name = name == null ? "" : name;
-            challengeRating = challengeRating == null ? "" : challengeRating;
-            creatureType = creatureType == null ? "" : creatureType;
-        }
-    }
-
-    public record SavedPlanData(
-            long id,
-            String name,
-            String generatedLabel,
-            List<PlanCreatureData> creatures
-    ) {
-        public SavedPlanData {
-            name = name == null ? "" : name.trim();
-            generatedLabel = generatedLabel == null ? "" : generatedLabel.trim();
-            creatures = creatures == null ? List.of() : List.copyOf(creatures);
-        }
-    }
-
-    public record PlanCreatureData(long creatureId, int quantity) {
-        public PlanCreatureData {
-            quantity = Math.max(1, quantity);
-        }
-    }
-
-    public record SavedPlanSummaryData(long id, String name, String generatedLabel, int creatureCount) {
-        public SavedPlanSummaryData {
-            name = name == null ? "" : name.trim();
-            generatedLabel = generatedLabel == null ? "" : generatedLabel.trim();
-            creatureCount = Math.max(0, creatureCount);
-        }
-    }
-
-    public record SavePlanOutcome(
-            SavedPlanStatus status,
-            Optional<SavedPlanData> plan,
-            String message
-    ) {
-        public SavePlanOutcome {
-            status = status == null ? SavedPlanStatus.STORAGE_ERROR : status;
-            plan = plan == null ? Optional.empty() : plan;
-            message = message == null ? "" : message;
-        }
-    }
-
-    public record LoadPlanOutcome(
-            SavedPlanStatus status,
-            Optional<SavedPlanData> plan,
-            String message
-    ) {
-        public LoadPlanOutcome {
-            status = status == null ? SavedPlanStatus.STORAGE_ERROR : status;
-            plan = plan == null ? Optional.empty() : plan;
-            message = message == null ? "" : message;
-        }
-    }
-
-    public record ListPlansOutcome(
-            SavedPlanStatus status,
-            List<SavedPlanSummaryData> plans,
-            String message
-    ) {
-        public ListPlansOutcome {
-            status = status == null ? SavedPlanStatus.STORAGE_ERROR : status;
-            plans = plans == null ? List.of() : List.copyOf(plans);
-            message = message == null ? "" : message;
-        }
-    }
-
-    public record AwardXpOutcome(boolean success) {
-    }
-
-    public record GeneratedEncounterData(
-            String title,
-            EncounterDifficultyIntent achievedDifficulty,
-            int adjustedXp,
-            List<GeneratedCreatureData> creatures
-    ) {
-        public GeneratedEncounterData {
-            title = title == null ? "" : title;
-            achievedDifficulty = achievedDifficulty == null ? EncounterDifficultyIntent.MEDIUM : achievedDifficulty;
-            creatures = creatures == null ? List.of() : List.copyOf(creatures);
-        }
-    }
-
-    public record GeneratedCreatureData(
-            long creatureId,
-            String name,
-            String challengeRating,
-            int xp,
-            int quantity,
-            String role,
-            List<String> tags
-    ) {
-        public GeneratedCreatureData {
-            name = name == null ? "" : name;
-            challengeRating = challengeRating == null ? "" : challengeRating;
-            quantity = Math.max(1, quantity);
-            role = role == null || role.isBlank() ? DEFAULT_CREATURE_ROLE : role;
-            tags = tags == null ? List.of() : List.copyOf(tags);
-        }
-    }
-
-    public record GenerationDiagnosticsData(
-            EncounterDifficultyIntent resolvedDifficulty,
-            EncounterTuningIntent resolvedTuning
-    ) {
-        public GenerationDiagnosticsData {
-            resolvedDifficulty = resolvedDifficulty == null ? EncounterDifficultyIntent.MEDIUM : resolvedDifficulty;
-            resolvedTuning = resolvedTuning == null ? EncounterTuningIntent.defaultIntent() : resolvedTuning;
-        }
-    }
-
-    public record GenerationResultData(
-            GenerationStatus status,
-            List<GeneratedEncounterData> encounters,
-            String message,
-            Optional<GenerationDiagnosticsData> diagnostics,
-            boolean fallbackUsed
-    ) {
-        public GenerationResultData {
-            status = status == null ? GenerationStatus.defaultFailure() : status;
-            encounters = encounters == null ? List.of() : List.copyOf(encounters);
-            message = message == null ? "" : message;
-            diagnostics = diagnostics == null ? Optional.empty() : diagnostics;
-        }
-    }
-
     private static final class ContextState {
         private final List<PartyMemberData> activeParty = new ArrayList<>();
-        private final List<SavedPlanSummaryData> savedPlans = new ArrayList<>();
+        private final List<EncounterPlanSummary> savedPlans = new ArrayList<>();
         private Mode mode = Mode.BUILDER;
         private Optional<BudgetData> budget = Optional.empty();
         private String status = DEFAULT_STATUS;
@@ -1135,6 +681,7 @@ public final class EncounterSession {
         private final List<EncounterCreatureData> roster = new ArrayList<>();
         private final List<GeneratedEncounterData> generatedAlternatives = new ArrayList<>();
         private EncounterGenerationInputs builderInputs = EncounterGenerationInputs.empty();
+        private List<String> generatedAdvisories = List.of();
         private int selectedAlternativeIndex;
         private int generatedAdjustedXp;
         private String generatedDifficulty = "";

@@ -1,12 +1,14 @@
 package src.domain.dungeon.published;
 
+import org.jspecify.annotations.Nullable;
+
 public sealed interface DungeonAuthoredMutationCommand permits
         DungeonAuthoredMutationCommand.PreviewOperation,
         DungeonAuthoredMutationCommand.ApplyOperation {
 
     record PreviewOperation(
             DungeonMapId mapId,
-            DungeonEditorOperation operation
+            @Nullable DungeonEditorOperation operation
     ) implements DungeonAuthoredMutationCommand {
 
         public PreviewOperation {
@@ -16,7 +18,7 @@ public sealed interface DungeonAuthoredMutationCommand permits
 
     record ApplyOperation(
             DungeonMapId mapId,
-            DungeonEditorOperation operation
+            @Nullable DungeonEditorOperation operation
     ) implements DungeonAuthoredMutationCommand {
 
         public ApplyOperation {

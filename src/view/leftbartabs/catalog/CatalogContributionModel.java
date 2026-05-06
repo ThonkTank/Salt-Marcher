@@ -24,9 +24,7 @@ import src.domain.creatures.published.CreatureFilterOptionsResult;
 import src.domain.creatures.published.CreatureQueryStatus;
 import src.domain.creatures.published.CreatureReadStatus;
 import src.domain.creatures.published.CreatureSortDirection;
-import src.domain.encounter.published.EncounterDifficultyBand;
-import src.domain.encounter.published.EncounterGenerationTuning;
-import src.domain.encounter.published.EncounterSessionSnapshot;
+import src.domain.encounter.published.EncounterBuilderInputs;
 import src.domain.encounter.published.EncounterTuningPreviewLabels;
 import src.domain.encountertable.published.EncounterTableCatalogResult;
 import src.domain.encountertable.published.EncounterTableReadStatus;
@@ -360,7 +358,7 @@ public final class CatalogContributionModel {
         }
     }
 
-    public boolean applyEncounterBuilderInputs(EncounterSessionSnapshot.BuilderInputs builderInputs) {
+    public boolean applyEncounterBuilderInputs(EncounterBuilderInputs builderInputs) {
         ControlsState previousAuthoritative = authoritativeControls.get();
         ControlsState next = toControlsState(builderInputs, previousAuthoritative);
         authoritativeControls.set(next);
@@ -573,33 +571,32 @@ public final class CatalogContributionModel {
     }
 
     private static ControlsState toControlsState(
-            EncounterSessionSnapshot.BuilderInputs builderInputs,
+            EncounterBuilderInputs builderInputs,
             ControlsState source
     ) {
-        EncounterSessionSnapshot.BuilderInputs safeInputs = builderInputs == null
-                ? EncounterSessionSnapshot.BuilderInputs.empty()
+        EncounterBuilderInputs safeInputs = builderInputs == null
+                ? EncounterBuilderInputs.empty()
                 : builderInputs;
         ControlsState safeSource = source == null ? ControlsState.empty() : source;
-        EncounterGenerationTuning tuning = safeInputs.tuning();
         return new ControlsState(
                 safeInputs.creatureTypes(),
                 safeInputs.creatureSubtypes(),
                 safeInputs.biomes(),
                 safeInputs.encounterTableIds(),
-                difficultyProjection(safeInputs.targetDifficulty(), safeSource.difficulty().labels()),
+                difficultyProjection(safeInputs.autoDifficulty(), safeInputs.difficultyLevel(), safeSource.difficulty().labels()),
                 sliderProjection(
-                        tuning.isBalanceAuto(),
-                        tuning.isBalanceAuto() ? DEFAULT_BALANCE_VALUE : tuning.balanceLevel(),
+                        safeInputs.autoBalance(),
+                        safeInputs.autoBalance() ? DEFAULT_BALANCE_VALUE : safeInputs.balanceLevel(),
                         safeSource.balance().labels(),
                         DEFAULT_BALANCE_VALUE),
                 sliderProjection(
-                        tuning.isAmountAuto(),
-                        tuning.isAmountAuto() ? DEFAULT_AMOUNT_VALUE : tuning.amountValue(),
+                        safeInputs.autoAmount(),
+                        safeInputs.autoAmount() ? DEFAULT_AMOUNT_VALUE : safeInputs.amountValue(),
                         safeSource.amount().labels(),
                         DEFAULT_AMOUNT_VALUE),
                 sliderProjection(
-                        tuning.isDiversityAuto(),
-                        tuning.isDiversityAuto() ? DEFAULT_DIVERSITY_VALUE : tuning.diversityLevel(),
+                        safeInputs.autoDiversity(),
+                        safeInputs.autoDiversity() ? DEFAULT_DIVERSITY_VALUE : safeInputs.diversityLevel(),
                         safeSource.diversity().labels(),
                         DEFAULT_DIVERSITY_VALUE));
     }
@@ -656,13 +653,11 @@ public final class CatalogContributionModel {
                 DEFAULT_DIVERSITY_VALUE);
     }
 
-    private static SliderProjection difficultyProjection(EncounterDifficultyBand band, List<PreviewLabel> labels) {
-        EncounterDifficultyBand safeBand = band == null ? EncounterDifficultyBand.AUTO : band;
-        boolean auto = safeBand == EncounterDifficultyBand.AUTO;
-        double value = switch (safeBand) {
-            case EASY -> 1.0;
-            case HARD -> 3.0;
-            case DEADLY -> 4.0;
+    private static SliderProjection difficultyProjection(boolean auto, int difficultyLevel, List<PreviewLabel> labels) {
+        double value = switch (difficultyLevel) {
+            case 1 -> 1.0;
+            case 3 -> 3.0;
+            case 4 -> 4.0;
             default -> DEFAULT_DIFFICULTY_VALUE;
         };
         return sliderProjection(auto, value, labels, DEFAULT_DIFFICULTY_VALUE);

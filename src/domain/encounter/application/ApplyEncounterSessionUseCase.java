@@ -1,5 +1,7 @@
 package src.domain.encounter.application;
 
+import static src.domain.encounter.session.value.EncounterSessionValues.Snapshot;
+
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.Objects;
@@ -18,11 +20,11 @@ public final class ApplyEncounterSessionUseCase {
         session.refreshContext(runtimeAccess);
     }
 
-    public EncounterSession.Snapshot snapshot() {
+    public Snapshot snapshot() {
         return session.snapshot();
     }
 
-    public EncounterSession.Snapshot apply(EncounterSessionCommand command) {
+    public Snapshot apply(EncounterSessionCommand command) {
         EncounterSessionCommand effective = command == null ? EncounterSessionCommand.refresh() : command;
         return handlerFor(effective.action()).apply(session, runtimeAccess, effective);
     }
@@ -94,8 +96,8 @@ public final class ApplyEncounterSessionUseCase {
             session.advanceTurn();
             return session.snapshot();
         });
-        handlers.put(EncounterSessionCommand.Action.SET_INITIATIVE, (session, runtimeAccess, command) -> {
-            session.setInitiative(command.combatantId(), command.initiative());
+        handlers.put(EncounterSessionCommand.Action.ADJUST_INITIATIVE, (session, runtimeAccess, command) -> {
+            session.adjustInitiative(command.combatantId(), command.initiative());
             return session.snapshot();
         });
         handlers.put(EncounterSessionCommand.Action.ADD_PARTY_MEMBER_TO_COMBAT, (session, runtimeAccess, command) -> {
@@ -127,7 +129,7 @@ public final class ApplyEncounterSessionUseCase {
 
     @FunctionalInterface
     private interface SessionCommandHandler {
-        EncounterSession.Snapshot apply(
+        Snapshot apply(
                 EncounterSession session,
                 EncounterSession.RuntimeAccess runtimeAccess,
                 EncounterSessionCommand command

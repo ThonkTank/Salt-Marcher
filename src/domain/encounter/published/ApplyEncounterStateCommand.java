@@ -1,33 +1,34 @@
 package src.domain.encounter.published;
 
 import java.util.List;
-import org.jspecify.annotations.Nullable;
 
-public record ApplyEncounterSessionCommand(
+public record ApplyEncounterStateCommand(
         Action action,
-        @Nullable GenerateEncounterCommand generation,
-        EncounterSessionSnapshot.BuilderInputs builderInputs,
         long creatureId,
         long planId,
         int delta,
-        long token,
-        List<EncounterSessionSnapshot.InitiativeInput> initiativeInputs,
+        long undoToken,
+        List<InitiativeValue> initiativeValues,
         String combatantId,
         int initiative,
         long partyMemberId,
         int amount,
         boolean healing
 ) {
-    public ApplyEncounterSessionCommand {
+
+    public ApplyEncounterStateCommand {
         action = action == null ? Action.REFRESH : action;
-        builderInputs = builderInputs == null ? EncounterSessionSnapshot.BuilderInputs.empty() : builderInputs;
-        initiativeInputs = initiativeInputs == null ? List.of() : List.copyOf(initiativeInputs);
+        creatureId = Math.max(0L, creatureId);
+        planId = Math.max(0L, planId);
+        undoToken = Math.max(0L, undoToken);
+        initiativeValues = initiativeValues == null ? List.of() : List.copyOf(initiativeValues);
         combatantId = combatantId == null ? "" : combatantId;
+        partyMemberId = Math.max(0L, partyMemberId);
+        amount = Math.max(0, amount);
     }
 
     public enum Action {
         REFRESH,
-        UPDATE_BUILDER_INPUTS,
         GENERATE,
         SAVE_CURRENT_PLAN,
         OPEN_SAVED_PLAN,
@@ -42,11 +43,17 @@ public record ApplyEncounterSessionCommand(
         BACK_TO_BUILDER,
         CONFIRM_INITIATIVE,
         ADVANCE_TURN,
-        SET_INITIATIVE,
+        ADJUST_INITIATIVE,
         ADD_PARTY_MEMBER_TO_COMBAT,
         END_COMBAT,
         AWARD_XP,
         RETURN_TO_BUILDER_AFTER_RESULTS,
         MUTATE_HP
+    }
+
+    public record InitiativeValue(String id, int initiative) {
+        public InitiativeValue {
+            id = id == null ? "" : id;
+        }
     }
 }

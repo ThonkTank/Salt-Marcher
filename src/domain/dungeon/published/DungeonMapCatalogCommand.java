@@ -1,19 +1,19 @@
 package src.domain.dungeon.published;
 
-public sealed interface DungeonMapCatalogRequest permits
-        DungeonMapCatalogRequest.Search,
-        DungeonMapCatalogRequest.CreateMap,
-        DungeonMapCatalogRequest.RenameMap,
-        DungeonMapCatalogRequest.DeleteMap {
+public sealed interface DungeonMapCatalogCommand permits
+        DungeonMapCatalogCommand.Search,
+        DungeonMapCatalogCommand.CreateMap,
+        DungeonMapCatalogCommand.RenameMap,
+        DungeonMapCatalogCommand.DeleteMap {
 
-    record Search(String query) implements DungeonMapCatalogRequest {
+    record Search(String query) implements DungeonMapCatalogCommand {
 
         public Search {
             query = query == null ? "" : query;
         }
     }
 
-    record CreateMap(String mapName) implements DungeonMapCatalogRequest {
+    record CreateMap(String mapName) implements DungeonMapCatalogCommand {
 
         public CreateMap {
             mapName = mapName == null ? "" : mapName;
@@ -23,7 +23,7 @@ public sealed interface DungeonMapCatalogRequest permits
     record RenameMap(
             DungeonMapId mapId,
             String mapName
-    ) implements DungeonMapCatalogRequest {
+    ) implements DungeonMapCatalogCommand {
 
         public RenameMap {
             mapId = mapId == null ? new DungeonMapId(1L) : mapId;
@@ -31,7 +31,7 @@ public sealed interface DungeonMapCatalogRequest permits
         }
     }
 
-    record DeleteMap(DungeonMapId mapId) implements DungeonMapCatalogRequest {
+    record DeleteMap(DungeonMapId mapId) implements DungeonMapCatalogCommand {
 
         public DeleteMap {
             mapId = mapId == null ? new DungeonMapId(1L) : mapId;

@@ -6,9 +6,7 @@ import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.ReadOnlyStringProperty;
 import javafx.beans.property.ReadOnlyStringWrapper;
 import org.jspecify.annotations.Nullable;
-import src.domain.encounter.published.EncounterGenerationAdvisory;
-import src.domain.encounter.published.EncounterSessionSnapshot;
-import src.domain.encounter.published.SavedEncounterPlanSummary;
+import src.domain.encounter.published.EncounterStateSnapshot;
 
 public final class EncounterStateContributionModel {
 
@@ -73,18 +71,18 @@ public final class EncounterStateContributionModel {
         creatureDetailSelection.set(null);
     }
 
-    void apply(EncounterSessionSnapshot snapshot) {
-        EncounterSessionSnapshot safeSnapshot = snapshot == null ? EncounterSessionSnapshot.empty("") : snapshot;
-        mode.set(toMode(safeSnapshot.mode()));
-        builderState.set(toBuilderState(safeSnapshot.builderState(), safeSnapshot.status()));
-        initiativeState.set(toInitiativeState(safeSnapshot.initiativeState()));
-        combatState.set(toCombatState(safeSnapshot.combatState(), safeSnapshot.missingCombatPartyMembers()));
-        resultState.set(toResultState(safeSnapshot.resultState()));
-        status.set(safeSnapshot.status());
+    void apply(EncounterStateSnapshot snapshot) {
+        EncounterStateSnapshot safeSnapshot = snapshot == null ? EncounterStateSnapshot.empty("") : snapshot;
+        mode.set(toMode(safeSnapshot.activeMode()));
+        builderState.set(toBuilderState(safeSnapshot.builderPane(), safeSnapshot.statusLine()));
+        initiativeState.set(toInitiativeState(safeSnapshot.initiativePane()));
+        combatState.set(toCombatState(safeSnapshot.combatPane()));
+        resultState.set(toResultState(safeSnapshot.resolutionPane()));
+        status.set(safeSnapshot.statusLine());
     }
 
-    private static Mode toMode(EncounterSessionSnapshot.Mode source) {
-        return switch (source == null ? EncounterSessionSnapshot.Mode.BUILDER : source) {
+    private static Mode toMode(EncounterStateSnapshot.Mode source) {
+        return switch (source == null ? EncounterStateSnapshot.Mode.BUILDER : source) {
             case BUILDER -> Mode.BUILDER;
             case INITIATIVE -> Mode.INITIATIVE;
             case COMBAT -> Mode.COMBAT;
@@ -93,106 +91,95 @@ public final class EncounterStateContributionModel {
     }
 
     private static BuilderState toBuilderState(
-            EncounterSessionSnapshot.BuilderState source,
+            EncounterStateSnapshot.BuilderPane source,
             String statusMessage
     ) {
-        EncounterSessionSnapshot.BuilderState safeSource = source == null
-                ? EncounterSessionSnapshot.BuilderState.empty()
+        EncounterStateSnapshot.BuilderPane safeSource = source == null
+                ? EncounterStateSnapshot.BuilderPane.empty()
                 : source;
-        EncounterSessionSnapshot.DifficultySummary difficulty = safeSource.difficulty();
-        String partyLabel = "Party: " + safeSource.party().size() + ", Lv "
-                + Math.round(safeSource.party().stream()
-                .mapToInt(EncounterSessionSnapshot.PartyMember::level)
-                .average()
-                .orElse(1.0));
+        EncounterStateSnapshot.ThresholdMeter difficulty = safeSource.thresholds();
         return new BuilderState(
-                partyLabel,
-                safeSource.templateLabel(),
+                safeSource.partySummary(),
+                safeSource.templateTitle(),
                 new DifficultySummary(
-                        difficulty.easy(),
-                        difficulty.medium(),
-                        difficulty.hard(),
-                        difficulty.deadly(),
+                        difficulty.easyThreshold(),
+                        difficulty.mediumThreshold(),
+                        difficulty.hardThreshold(),
+                        difficulty.deadlyThreshold(),
                         difficulty.adjustedXp(),
-                        difficulty.difficulty()),
+                        difficulty.difficultyLabel()),
                 statusMessage,
-                toAdvisoryMessages(safeSource.generationAdvisories()),
-                safeSource.savedPlans().stream()
+                safeSource.generationHints(),
+                safeSource.savedPlanChoices().stream()
                         .map(EncounterStateContributionModel::toSavedPlan)
                         .toList(),
-                toBuilderSettings(safeSource.builderInputs()),
-                safeSource.roster().stream()
+                toBuilderSettings(safeSource.currentSettings()),
+                safeSource.rosterCards().stream()
                         .map(EncounterStateContributionModel::toRosterCard)
                         .toList(),
-                safeSource.roster().isEmpty(),
-                safeSource.canStartCombat(),
-                safeSource.canPreviousAlternative(),
-                safeSource.canNextAlternative(),
-                safeSource.canSavePlan(),
-                safeSource.canClearGenerationHistory(),
-                safeSource.pendingUndo() == null
+                safeSource.rosterEmpty(),
+                safeSource.startCombatEnabled(),
+                safeSource.previousAlternativeEnabled(),
+                safeSource.nextAlternativeEnabled(),
+                safeSource.savePlanEnabled(),
+                safeSource.clearHistoryEnabled(),
+                safeSource.undoNotice() == null
                         ? null
-                        : new UndoRemoveView(safeSource.pendingUndo().token(), safeSource.pendingUndo().creature().name()));
+                        : new UndoRemoveView(safeSource.undoNotice().undoToken(), safeSource.undoNotice().creatureName()));
     }
 
-    private static InitiativeStateView toInitiativeState(EncounterSessionSnapshot.InitiativeState source) {
-        EncounterSessionSnapshot.InitiativeState safeSource = source == null
-                ? EncounterSessionSnapshot.InitiativeState.empty()
+    private static InitiativeStateView toInitiativeState(EncounterStateSnapshot.InitiativePane source) {
+        EncounterStateSnapshot.InitiativePane safeSource = source == null
+                ? EncounterStateSnapshot.InitiativePane.empty()
                 : source;
-        return new InitiativeStateView(safeSource.entries().stream()
+        return new InitiativeStateView(safeSource.rows().stream()
                 .map(entry -> new InitiativeEntryView(
-                        entry.id(),
-                        entry.label(),
-                        entry.kind(),
-                        entry.initiative()))
+                        entry.combatantId(),
+                        entry.displayLabel(),
+                        entry.kindLabel(),
+                        entry.initiativeValue()))
                 .toList());
     }
 
-    private static CombatStateView toCombatState(
-            EncounterSessionSnapshot.CombatProjection source,
-            List<EncounterSessionSnapshot.PartyMember> missingPartyMembers
-    ) {
-        EncounterSessionSnapshot.CombatProjection safeSource = source == null
-                ? EncounterSessionSnapshot.CombatProjection.empty()
+    private static CombatStateView toCombatState(EncounterStateSnapshot.CombatPane source) {
+        EncounterStateSnapshot.CombatPane safeSource = source == null
+                ? EncounterStateSnapshot.CombatPane.empty()
                 : source;
-        List<EncounterSessionSnapshot.PartyMember> safeMissing = missingPartyMembers == null
-                ? List.of()
-                : List.copyOf(missingPartyMembers);
         return new CombatStateView(
-                safeSource.round(),
-                safeSource.status(),
-                safeSource.cards().stream()
+                safeSource.roundIndex(),
+                safeSource.combatStatus(),
+                safeSource.combatCards().stream()
                         .map(card -> new CombatCardView(
-                                card.id(),
-                                card.name(),
+                                card.combatantId(),
+                                card.displayName(),
                                 card.playerCharacter(),
-                                card.active(),
+                                card.activeTurn(),
                                 card.alive(),
                                 card.currentHp(),
                                 card.maxHp(),
                                 card.armorClass(),
-                                card.initiative(),
+                                card.initiativeValue(),
                                 card.count(),
-                                card.detail()))
+                                card.detailText()))
                         .toList(),
                 safeSource.allEnemiesDefeated(),
-                safeMissing.stream()
+                safeSource.addablePartyMembers().stream()
                         .map(member -> new PartyMemberCandidate(
-                                member.numericId(),
-                                member.name(),
+                                member.partyMemberId(),
+                                member.displayName(),
                                 member.level()))
                         .toList());
     }
 
-    private static ResultStateView toResultState(EncounterSessionSnapshot.ResultState source) {
-        EncounterSessionSnapshot.ResultState safeSource = source == null
-                ? EncounterSessionSnapshot.ResultState.empty()
+    private static ResultStateView toResultState(EncounterStateSnapshot.ResolutionPane source) {
+        EncounterStateSnapshot.ResolutionPane safeSource = source == null
+                ? EncounterStateSnapshot.ResolutionPane.empty()
                 : source;
         return new ResultStateView(
-                safeSource.enemies().stream()
+                safeSource.enemyResults().stream()
                         .map(enemy -> new ResultEnemyView(
-                                enemy.name(),
-                                enemy.status(),
+                                enemy.displayName(),
+                                enemy.statusLabel(),
                                 enemy.hpLoss(),
                                 enemy.xp(),
                                 enemy.defeatedByDefault(),
@@ -209,55 +196,35 @@ public final class EncounterStateContributionModel {
                 safeSource.partySize());
     }
 
-    private static SavedEncounterPlanView toSavedPlan(SavedEncounterPlanSummary plan) {
+    private static SavedEncounterPlanView toSavedPlan(EncounterStateSnapshot.PlanChoice plan) {
         return new SavedEncounterPlanView(
-                plan.id(),
-                plan.name(),
-                plan.generatedLabel(),
-                plan.creatureCount());
+                plan.planId(),
+                plan.displayName(),
+                plan.generatedName(),
+                plan.totalCreatureCount());
     }
 
-    private static RosterCardView toRosterCard(EncounterSessionSnapshot.EncounterCreature creature) {
+    private static RosterCardView toRosterCard(EncounterStateSnapshot.RosterCard creature) {
         return new RosterCardView(
                 creature.creatureId(),
-                creature.name(),
-                creature.cr(),
-                creature.totalXp(),
-                creature.ac(),
-                creature.type(),
-                creature.role(),
+                creature.displayName(),
+                creature.challengeRating(),
+                creature.xpTotal(),
+                creature.armorClass(),
+                creature.creatureType(),
+                creature.encounterRole(),
                 creature.count());
     }
 
-    private static BuilderSettings toBuilderSettings(EncounterSessionSnapshot.BuilderInputs builderInputs) {
-        EncounterSessionSnapshot.BuilderInputs safeInputs = builderInputs == null
-                ? EncounterSessionSnapshot.BuilderInputs.empty()
+    private static BuilderSettings toBuilderSettings(EncounterStateSnapshot.BuilderSettings builderInputs) {
+        EncounterStateSnapshot.BuilderSettings safeInputs = builderInputs == null
+                ? EncounterStateSnapshot.BuilderSettings.defaultSettings()
                 : builderInputs;
         return new BuilderSettings(
-                difficultyLabel(safeInputs.targetDifficulty()),
-                safeInputs.tuning().balanceLevel(),
-                safeInputs.tuning().amountValue(),
-                safeInputs.tuning().diversityLevel());
-    }
-
-    private static String difficultyLabel(src.domain.encounter.published.EncounterDifficultyBand difficulty) {
-        if (difficulty == null || difficulty.isAuto()) {
-            return "Auto";
-        }
-        return difficulty.name();
-    }
-
-    private static List<String> toAdvisoryMessages(List<EncounterGenerationAdvisory> advisories) {
-        return advisories == null ? List.of() : advisories.stream()
-                .map(EncounterStateContributionModel::advisoryMessage)
-                .toList();
-    }
-
-    private static String advisoryMessage(EncounterGenerationAdvisory advisory) {
-        if (advisory == EncounterGenerationAdvisory.AUTO_RESOLVED) {
-            return "Auto-Einstellungen wurden fuer diese Generierung auf konkrete Zielwerte aufgeloest.";
-        }
-        return "Kein exakter Treffer war verfuegbar. Die beste gefundene Alternative wurde uebernommen.";
+                safeInputs.difficultyLabel(),
+                safeInputs.balanceLevel(),
+                safeInputs.amountValue(),
+                safeInputs.diversityLevel());
     }
 
     public record BuilderSettings(

@@ -67,7 +67,7 @@ public final class DomainContextEnforcementCoverageRules implements Architecture
             row("domain-context-encounter-owned-roster-truth", "Review-Owned"),
             row("domain-context-encountertable-owned-reference-scope", "Review-Owned"),
             row("domain-context-dungeon-owned-world-space-truth", "Review-Owned"),
-            row("domain-context-sessionplanner-owned-transient-policy", "Review-Owned"),
+            row("domain-context-sessionplanner-owned-session-record-truth", "Review-Owned"),
             row(
                     "domain-context-authored-truth-write-model-required",
                     "Enforced",
@@ -76,7 +76,7 @@ public final class DomainContextEnforcementCoverageRules implements Architecture
             row("domain-context-creatures-no-encounter-or-lifecycle-truth", "Review-Owned"),
             row("domain-context-encounter-no-foreign-truth-ownership", "Review-Owned"),
             row("domain-context-encountertable-no-creature-or-generation-policy-truth", "Review-Owned"),
-            row("domain-context-sessionplanner-no-persistence-truth", "Review-Owned"),
+            row("domain-context-sessionplanner-no-foreign-truth-ownership", "Review-Owned"),
             row(
                     "domain-context-standard-relationship-coverage",
                     "Enforced",

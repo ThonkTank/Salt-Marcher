@@ -4,7 +4,7 @@ import java.util.List;
 import java.util.Optional;
 import src.domain.encounter.generation.value.EncounterGenerationInputs;
 import src.domain.encounter.generation.value.EncounterGenerationRequest;
-import src.domain.encounter.session.entity.EncounterSession;
+import src.domain.encounter.session.value.EncounterSessionValues.InitiativeInput;
 
 public record EncounterSessionCommand(
         Action action,
@@ -14,7 +14,7 @@ public record EncounterSessionCommand(
         long planId,
         int delta,
         long token,
-        List<EncounterSession.InitiativeInput> initiativeInputs,
+        List<InitiativeInput> initiativeInputs,
         String combatantId,
         int initiative,
         long partyMemberId,
@@ -63,7 +63,7 @@ public record EncounterSessionCommand(
         BACK_TO_BUILDER,
         CONFIRM_INITIATIVE,
         ADVANCE_TURN,
-        SET_INITIATIVE,
+        ADJUST_INITIATIVE,
         ADD_PARTY_MEMBER_TO_COMBAT,
         END_COMBAT,
         AWARD_XP,

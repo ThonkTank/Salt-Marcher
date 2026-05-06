@@ -13,13 +13,12 @@ import src.domain.creatures.published.CreatureCatalogQuery;
 import src.domain.creatures.published.LoadCreatureDetailQuery;
 import src.domain.creatures.published.LoadCreatureFilterOptionsQuery;
 import src.domain.encounter.EncounterApplicationService;
-import src.domain.encounter.published.ApplyEncounterSessionCommand;
-import src.domain.encounter.published.EncounterDifficultyBand;
-import src.domain.encounter.published.EncounterGenerationTuning;
-import src.domain.encounter.published.EncounterSessionModel;
-import src.domain.encounter.published.EncounterSessionSnapshot;
-import src.domain.encounter.published.LoadEncounterSessionQuery;
+import src.domain.encounter.published.ApplyEncounterStateCommand;
+import src.domain.encounter.published.EncounterBuilderInputs;
+import src.domain.encounter.published.EncounterBuilderInputsModel;
+import src.domain.encounter.published.LoadEncounterBuilderInputsQuery;
 import src.domain.encounter.published.LoadEncounterTuningPreviewQuery;
+import src.domain.encounter.published.UpdateEncounterBuilderInputsCommand;
 import src.domain.encountertable.EncounterTableApplicationService;
 import src.domain.encountertable.published.LoadEncounterTableSummariesQuery;
 import src.view.slotcontent.details.creature.CreatureDetailsInspectorEntry;
@@ -37,7 +36,8 @@ final class CatalogBinder {
         EncounterTableApplicationService encounterTables =
                 runtimeContext.services().require(EncounterTableApplicationService.class);
         EncounterApplicationService encounters = runtimeContext.services().require(EncounterApplicationService.class);
-        EncounterSessionModel sessionModel = encounters.loadSession(new LoadEncounterSessionQuery());
+        EncounterBuilderInputsModel builderInputsModel =
+                encounters.loadBuilderInputsModel(new LoadEncounterBuilderInputsQuery());
         var filterOptionsModel = creatures.loadFilterOptionsModel(new LoadCreatureFilterOptionsQuery());
         var catalogModel = creatures.loadCatalogModel(CreatureCatalogQuery.defaults());
         var encounterTableModel = encounterTables.loadCatalogModel(new LoadEncounterTableSummariesQuery());
@@ -48,7 +48,7 @@ final class CatalogBinder {
         CatalogControlsView controls = new CatalogControlsView(presentationModel);
         CatalogMainView main = new CatalogMainView();
 
-        bindControls(intentHandler, controls, sessionModel, encounters);
+        bindControls(intentHandler, controls, encounters);
         bindMain(main, presentationModel, intentHandler);
 
         presentationModel.searchCycleProperty().addListener((obs, before, after) -> runSearch(creatures, presentationModel));
@@ -64,8 +64,8 @@ final class CatalogBinder {
         catalogModel.subscribe(presentationModel::applySearchResult);
         encounterTableModel.subscribe(presentationModel::applyEncounterTables);
         tuningPreviewModel.subscribe(result -> presentationModel.applyEncounterTuningPreview(result.labels()));
-        sessionModel.subscribe(snapshot -> {
-            if (presentationModel.applyEncounterBuilderInputs(builderInputs(snapshot))) {
+        builderInputsModel.subscribe(builderInputs -> {
+            if (presentationModel.applyEncounterBuilderInputs(builderInputs)) {
                 presentationModel.beginSearch();
                 presentationModel.advanceSearchCycle();
             }
@@ -74,7 +74,7 @@ final class CatalogBinder {
         presentationModel.applyCreatureFilterOptions(filterOptionsModel.current());
         presentationModel.applyEncounterTables(encounterTableModel.current());
         presentationModel.applyEncounterTuningPreview(tuningPreviewModel.current().labels());
-        presentationModel.applyEncounterBuilderInputs(currentBuilderInputs(sessionModel));
+        presentationModel.applyEncounterBuilderInputs(builderInputsModel.current());
 
         creatures.loadFilterOptions(new LoadCreatureFilterOptionsQuery());
         encounterTables.loadSummaries(new LoadEncounterTableSummariesQuery());
@@ -87,11 +87,10 @@ final class CatalogBinder {
     private static void bindControls(
             CatalogIntentHandler intentHandler,
             CatalogControlsView controls,
-            EncounterSessionModel sessionModel,
             EncounterApplicationService encounters
     ) {
         controls.onViewInputEvent(intentHandler::consume);
-        intentHandler.onPublishedEventRequested(event -> applyPublishedEvent(encounters, sessionModel, event));
+        intentHandler.onPublishedEventRequested(event -> applyPublishedEvent(encounters, event));
     }
 
     private static void bindMain(
@@ -134,54 +133,28 @@ final class CatalogBinder {
                 presentationModel.currentPageOffset()));
     }
 
-    private static EncounterSessionSnapshot.BuilderInputs currentBuilderInputs(
-            EncounterSessionModel sessionModel
-    ) {
-        return builderInputs(sessionModel.current());
-    }
-
-    private static EncounterSessionSnapshot.BuilderInputs builderInputs(
-            EncounterSessionSnapshot snapshot
-    ) {
-        EncounterSessionSnapshot safeSnapshot = snapshot == null ? EncounterSessionSnapshot.empty("") : snapshot;
-        EncounterSessionSnapshot.BuilderState builderState = safeSnapshot.builderState();
-        return builderState == null
-                ? EncounterSessionSnapshot.BuilderInputs.empty()
-                : builderState.builderInputs();
-    }
-
     private static void updateBuilderInputs(
             EncounterApplicationService encounters,
             CatalogPublishedEvent event
     ) {
-        encounters.applySession(new ApplyEncounterSessionCommand(
-                ApplyEncounterSessionCommand.Action.UPDATE_BUILDER_INPUTS,
-                null,
-                new EncounterSessionSnapshot.BuilderInputs(
+        encounters.updateBuilderInputs(new UpdateEncounterBuilderInputsCommand(
+                new EncounterBuilderInputs(
                         event.creatureTypes(),
                         event.creatureSubtypes(),
                         event.biomes(),
-                        toDifficultyBand(event.difficultyAuto(), event.difficultyValue()),
-                        new EncounterGenerationTuning(
-                                toBalanceLevel(event.balanceAuto(), event.balanceValue()),
-                                toAmountValue(event.amountAuto(), event.amountValue()),
-                                toDiversityLevel(event.diversityAuto(), event.diversityValue())),
-                        event.encounterTableIds()),
-                0L,
-                0L,
-                0,
-                0L,
-                List.of(),
-                "",
-                0,
-                0L,
-                0,
-                false));
+                        event.difficultyAuto(),
+                        toDifficultyLevel(event.difficultyValue()),
+                        event.balanceAuto(),
+                        toBalanceLevel(event.balanceValue()),
+                        event.amountAuto(),
+                        event.amountValue(),
+                        event.diversityAuto(),
+                        toDiversityLevel(event.diversityValue()),
+                        event.encounterTableIds())));
     }
 
     private static void applyPublishedEvent(
             EncounterApplicationService encounters,
-            EncounterSessionModel sessionModel,
             CatalogPublishedEvent event
     ) {
         if (event == null) {
@@ -189,51 +162,41 @@ final class CatalogBinder {
         }
         switch (event.kind()) {
             case UPDATE_BUILDER_INPUTS -> updateBuilderInputs(encounters, event);
-            case ADD_CREATURE -> encounters.applySession(
-                    new ApplyEncounterSessionCommand(
-                            ApplyEncounterSessionCommand.Action.ADD_CREATURE,
-                            null,
-                            currentBuilderInputs(sessionModel),
-                            event.creatureId(),
-                            0L,
-                            0,
-                            0L,
-                            List.of(),
-                            "",
-                            0,
-                            0L,
-                            0,
-                            false));
+            case ADD_CREATURE -> encounters.applyState(new ApplyEncounterStateCommand(
+                    ApplyEncounterStateCommand.Action.ADD_CREATURE,
+                    event.creatureId(),
+                    0L,
+                    0,
+                    0L,
+                    List.of(),
+                    "",
+                    0,
+                    0L,
+                    0,
+                    false));
         }
     }
 
-    private static EncounterDifficultyBand toDifficultyBand(boolean auto, double value) {
-        if (auto) {
-            return EncounterDifficultyBand.AUTO;
-        }
+    private static int toDifficultyLevel(double value) {
         int rounded = (int) Math.round(value);
         if (rounded <= 1) {
-            return EncounterDifficultyBand.EASY;
+            return 1;
         }
         if (rounded == 3) {
-            return EncounterDifficultyBand.HARD;
+            return 3;
         }
         if (rounded >= 4) {
-            return EncounterDifficultyBand.DEADLY;
+            return 4;
         }
-        return EncounterDifficultyBand.MEDIUM;
+        return 2;
     }
 
-    private static int toBalanceLevel(boolean auto, double value) {
-        return auto ? EncounterGenerationTuning.AUTO_BALANCE_LEVEL : (int) Math.round(value);
+    private static int toBalanceLevel(double value) {
+        return (int) Math.round(value);
     }
 
-    private static double toAmountValue(boolean auto, double value) {
-        return auto ? EncounterGenerationTuning.AUTO_AMOUNT_VALUE : value;
-    }
-
-    private static int toDiversityLevel(boolean auto, double value) {
-        return auto ? EncounterGenerationTuning.AUTO_DIVERSITY_LEVEL : (int) Math.round(value);
+    private static int toDiversityLevel(double value) {
+        return (int) Math.round(value);
     }
 
     private record Binding(Node controls, Node main) implements ShellBinding {

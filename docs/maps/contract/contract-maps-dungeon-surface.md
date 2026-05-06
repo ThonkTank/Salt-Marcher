@@ -61,15 +61,15 @@ variants.
 
 ### Map Catalog
 
-- `DungeonMapCatalogRequest.Search`
-- `DungeonMapCatalogRequest.CreateMap`
-- `DungeonMapCatalogRequest.RenameMap`
-- `DungeonMapCatalogRequest.DeleteMap`
+- `DungeonMapCatalogCommand.Search`
+- `DungeonMapCatalogCommand.CreateMap`
+- `DungeonMapCatalogCommand.RenameMap`
+- `DungeonMapCatalogCommand.DeleteMap`
 
 ### Travel
 
-- `DungeonTravelRequest.LoadSurface`
-- `DungeonTravelRequest.MoveAction`
+- `DungeonTravelCommand.LoadSurface`
+- `DungeonTravelCommand.MoveAction`
 
 Required fields:
 

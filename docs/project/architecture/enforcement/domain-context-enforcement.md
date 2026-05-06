@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-29
+Last Reviewed: 2026-05-06
 Source of Truth: Complete architecture-enforcement catalog for domain context
 documents and the canonical context-role and context-relationship maps in the
 Domain Layer Standard.
@@ -52,7 +52,7 @@ docs.
 | `domain-context-encounter-owned-roster-truth` | Review-Owned | the `encounter` bullet in `## Context Roles` and the matching `src/domain/encounter/DOMAIN.md` contract | none | none | The `encounter` roster-truth contract explicitly owns saved encounter-plan roster truth and keeps encounter-generation policy inside the encounter context. |
 | `domain-context-encountertable-owned-reference-scope` | Review-Owned | the `encountertable` bullet in `## Context Roles` and the matching `src/domain/encountertable/DOMAIN.md` contract | none | none | The `encountertable` reference-catalog contract explicitly scopes itself to authored encounter-table membership as read-only reference-catalog truth. |
 | `domain-context-dungeon-owned-world-space-truth` | Review-Owned | the `dungeon` bullet in `## Context Roles` and the matching `src/domain/dungeon/DOMAIN.md` contract | none | none | The `dungeon` authored world-space contract explicitly owns dungeon world-space truth, map topology, rooms or spaces, connections, stable identity, and map mutation rules. |
-| `domain-context-sessionplanner-owned-transient-policy` | Review-Owned | the `sessionplanner` bullet in `## Context Roles` and the matching `src/domain/sessionplanner/DOMAIN.md` contract | none | none | The `sessionplanner` generation-policy contract explicitly owns one transient planning workspace for session-planning policy, encounter order, rest placement, and open loot placeholders. |
+| `domain-context-sessionplanner-owned-session-record-truth` | Review-Owned | the `sessionplanner` bullet in `## Context Roles` and the matching `src/domain/sessionplanner/DOMAIN.md` contract | none | none | The `sessionplanner` roster-truth contract explicitly owns one persisted session plan for participant references, encounter allocations, rest placement, placeholders, and selected-encounter state. |
 
 ### Must Not Contain
 
@@ -63,7 +63,7 @@ docs.
 | `domain-context-creatures-no-encounter-or-lifecycle-truth` | Review-Owned | the `creatures` bullet in `## Context Roles` and the matching `src/domain/creatures/DOMAIN.md` contract | none | none | The `creatures` reference-catalog contract does not claim encounter ranking, encounter choice, or creature lifecycle truth. |
 | `domain-context-encounter-no-foreign-truth-ownership` | Review-Owned | the `encounter` bullet in `## Context Roles` and the matching `src/domain/encounter/DOMAIN.md` contract | none | none | The `encounter` roster-truth contract does not claim party truth, creature truth, or encounter-table membership truth. |
 | `domain-context-encountertable-no-creature-or-generation-policy-truth` | Review-Owned | the `encountertable` bullet in `## Context Roles` and the matching `src/domain/encountertable/DOMAIN.md` contract | none | none | The `encountertable` reference-catalog contract does not claim creature truth, table mutation policy, or encounter-generation policy. |
-| `domain-context-sessionplanner-no-persistence-truth` | Review-Owned | the `sessionplanner` bullet in `## Context Roles` and the matching `src/domain/sessionplanner/DOMAIN.md` contract | none | none | The `sessionplanner` generation-policy contract does not claim persistence truth or a durable authored write model. |
+| `domain-context-sessionplanner-no-foreign-truth-ownership` | Review-Owned | the `sessionplanner` bullet in `## Context Roles` and the matching `src/domain/sessionplanner/DOMAIN.md` contract | none | none | The `sessionplanner` roster-truth contract does not claim party membership truth, encounter rosters, creature detail, or loot-object internals as session-owned persistence. |
 
 ### Communication Contract
 
@@ -75,7 +75,7 @@ docs.
 | `domain-context-encounter-consumes-foreign-public-boundaries` | Review-Owned | the `encounter` bullet in `## Context Relationships` and the matching `src/domain/encounter/DOMAIN.md` contract | none | none | The `encounter` context documents its foreign communication as consuming only `party`, `creatures`, and `encountertable` through their root application services and `published/` carriers. |
 | `domain-context-encountertable-data-adapter-ingest-and-public-export` | Review-Owned | the `encountertable` bullet in `## Context Relationships` and the matching `src/domain/encountertable/DOMAIN.md` contract | none | none | The `encountertable` context documents its non-domain ingest as creature persistence snapshots through its data source adapter and its public export as table summaries and weighted candidate rows through its root application service. |
 | `domain-context-dungeon-no-domain-relationship-to-other-active-contexts` | Review-Owned | the `dungeon` bullet in `## Context Relationships` and the matching `src/domain/dungeon/DOMAIN.md` contract | none | none | The `dungeon` context documents no domain communication relationship to `party`, `creatures`, or `encounter`; view-level composition with presentation state remains explicitly out of scope for domain relationships. |
-| `domain-context-sessionplanner-consumes-party-and-encounter-public-boundaries` | Review-Owned | the `sessionplanner` bullet in `## Context Relationships` and the matching `src/domain/sessionplanner/DOMAIN.md` contract | none | none | The `sessionplanner` context documents its foreign communication as consuming only `party` and `encounter` through their root application services and `published/` carriers to build one transient planning workspace for encounter order, rest placement, and open loot placeholders. |
+| `domain-context-sessionplanner-consumes-party-and-encounter-public-boundaries` | Review-Owned | the `sessionplanner` bullet in `## Context Relationships` and the matching `src/domain/sessionplanner/DOMAIN.md` contract | none | none | The `sessionplanner` context documents its foreign communication as consuming only `party` and `encounter` through their root application services and `published/` carriers while keeping authored session truth local to sessionplanner. |
 
 ## References
 

@@ -14,7 +14,7 @@ import src.domain.dungeon.published.DungeonAuthoredMutationCommand;
 import src.domain.dungeon.published.DungeonAuthoredMutationResult;
 import src.domain.dungeon.published.DungeonAuthoredReadQuery;
 import src.domain.dungeon.published.DungeonAuthoredReadResult;
-import src.domain.dungeon.published.DungeonMapCatalogRequest;
+import src.domain.dungeon.published.DungeonMapCatalogCommand;
 import src.domain.dungeon.published.DungeonMapCatalogResponse;
 import src.domain.dungeon.published.DungeonMapId;
 import src.domain.dungeon.published.DungeonMapSnapshot;
@@ -48,12 +48,12 @@ final class BuildDungeonEditorSnapshotUseCase {
         }
     }
 
-    private final Function<DungeonMapCatalogRequest, DungeonMapCatalogResponse> catalog;
+    private final Function<DungeonMapCatalogCommand, DungeonMapCatalogResponse> catalog;
     private final Function<DungeonAuthoredMutationCommand, DungeonAuthoredMutationResult> mutateAuthored;
     private final Function<DungeonAuthoredReadQuery, DungeonAuthoredReadResult> loadAuthored;
 
     BuildDungeonEditorSnapshotUseCase(
-            Function<DungeonMapCatalogRequest, DungeonMapCatalogResponse> catalog,
+            Function<DungeonMapCatalogCommand, DungeonMapCatalogResponse> catalog,
             Function<DungeonAuthoredMutationCommand, DungeonAuthoredMutationResult> mutateAuthored,
             Function<DungeonAuthoredReadQuery, DungeonAuthoredReadResult> loadAuthored
     ) {
@@ -74,7 +74,7 @@ final class BuildDungeonEditorSnapshotUseCase {
                 ApplyDungeonEditorSessionUseCase.PreviewData.none(),
                 "")
                 : state;
-        List<DungeonMapSummary> maps = mapSummaries(catalog.apply(new DungeonMapCatalogRequest.Search("")));
+        List<DungeonMapSummary> maps = mapSummaries(catalog.apply(new DungeonMapCatalogCommand.Search("")));
         DungeonMapId resolvedMapId = resolveSelectedMapId(safeState.selectedMapId(), maps);
         ApplyDungeonEditorSessionUseCase.SurfaceData surface = loadCurrentSurface(
                 resolvedMapId,

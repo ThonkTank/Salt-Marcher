@@ -6,6 +6,10 @@ public sealed interface DungeonAuthoredReadQuery permits
 
     record LoadSnapshot(DungeonMapId mapId) implements DungeonAuthoredReadQuery {
 
+        public LoadSnapshot() {
+            this(new DungeonMapId(1L));
+        }
+
         public LoadSnapshot {
             mapId = mapId == null ? new DungeonMapId(1L) : mapId;
         }

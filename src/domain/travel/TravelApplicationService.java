@@ -15,7 +15,7 @@ import src.domain.dungeon.published.DungeonTravelActionSnapshot;
 import src.domain.dungeon.published.DungeonTravelExternalTarget;
 import src.domain.dungeon.published.DungeonTravelMoveResult;
 import src.domain.dungeon.published.DungeonTravelPosition;
-import src.domain.dungeon.published.DungeonTravelRequest;
+import src.domain.dungeon.published.DungeonTravelCommand;
 import src.domain.dungeon.published.DungeonTravelResponse;
 import src.domain.dungeon.published.DungeonTravelSurfaceSnapshot;
 import src.domain.party.PartyApplicationService;
@@ -766,7 +766,7 @@ public final class TravelApplicationService {
                 ApplyTravelDungeonSessionUseCase.@Nullable PositionData position
         ) {
             return toInternalSurface(surfaceResponse(dungeonApplicationService.travel(
-                    new DungeonTravelRequest.LoadSurface(toDungeonPosition(position)))));
+                    new DungeonTravelCommand.LoadSurface(toDungeonPosition(position)))));
         }
 
         private static ApplyTravelDungeonSessionUseCase.MoveResultData moveDungeonAction(
@@ -775,7 +775,7 @@ public final class TravelApplicationService {
                 String actionId
         ) {
             return toInternalMoveResult(moveResponse(dungeonApplicationService.travel(
-                    new DungeonTravelRequest.MoveAction(toDungeonPosition(position), actionId))));
+                    new DungeonTravelCommand.MoveAction(toDungeonPosition(position), actionId))));
         }
 
         private static ApplyTravelDungeonSessionUseCase.SurfaceData toInternalSurface(

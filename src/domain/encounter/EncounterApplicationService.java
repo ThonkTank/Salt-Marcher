@@ -4,47 +4,47 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
+import java.util.Optional;
 import org.jspecify.annotations.Nullable;
 import src.domain.creatures.CreaturesApplicationService;
 import src.domain.encounter.application.ApplyEncounterSessionUseCase;
+import src.domain.encounter.application.EncounterBuilderInputsBoundaryTranslator;
 import src.domain.encounter.application.EncounterBudgetBoundaryTranslator;
-import src.domain.encounter.application.EncounterGenerationBoundaryTranslator;
 import src.domain.encounter.application.EncounterGenerationUseCase;
 import src.domain.encounter.application.EncounterPlanBoundaryTranslator;
-import src.domain.encounter.application.EncounterSessionBoundaryTranslator;
 import src.domain.encounter.application.EncounterSessionRuntimeAdapter;
-import src.domain.encounter.application.EncounterSessionSnapshotProjector;
+import src.domain.encounter.application.EncounterStateBoundaryTranslator;
+import src.domain.encounter.application.EncounterStateSnapshotProjector;
 import src.domain.encounter.application.ListSavedEncounterPlansUseCase;
 import src.domain.encounter.application.LoadEncounterBudgetUseCase;
 import src.domain.encounter.application.LoadEncounterPlanBudgetUseCase;
 import src.domain.encounter.application.LoadSavedEncounterPlanUseCase;
 import src.domain.encounter.application.SaveEncounterPlanUseCase;
 import src.domain.encounter.plan.port.EncounterPlanRepository;
-import src.domain.encounter.published.ApplyEncounterSessionCommand;
-import src.domain.encounter.published.EncounterBudgetResult;
+import src.domain.encounter.published.ApplyEncounterStateCommand;
+import src.domain.encounter.published.EncounterBuilderInputs;
+import src.domain.encounter.published.EncounterBuilderInputsModel;
 import src.domain.encounter.published.EncounterBudgetSummary;
-import src.domain.encounter.published.EncounterGenerationResult;
 import src.domain.encounter.published.EncounterGenerationStatus;
 import src.domain.encounter.published.EncounterPlanBudgetResult;
 import src.domain.encounter.published.EncounterPlanBudgetStatus;
-import src.domain.encounter.published.EncounterSessionModel;
-import src.domain.encounter.published.EncounterSessionSnapshot;
+import src.domain.encounter.published.EncounterStateModel;
+import src.domain.encounter.published.EncounterStateSnapshot;
 import src.domain.encounter.published.EncounterTuningPreviewLabels;
 import src.domain.encounter.published.EncounterTuningPreviewModel;
 import src.domain.encounter.published.EncounterTuningPreviewResult;
-import src.domain.encounter.published.GenerateEncounterCommand;
 import src.domain.encounter.published.ListSavedEncounterPlansQuery;
-import src.domain.encounter.published.LoadEncounterBudgetQuery;
+import src.domain.encounter.published.LoadEncounterBuilderInputsQuery;
 import src.domain.encounter.published.LoadEncounterPlanBudgetQuery;
-import src.domain.encounter.published.LoadEncounterSessionQuery;
+import src.domain.encounter.published.LoadEncounterStateQuery;
 import src.domain.encounter.published.LoadEncounterTuningPreviewQuery;
-import src.domain.encounter.published.LoadSavedEncounterPlanQuery;
-import src.domain.encounter.published.SaveEncounterPlanCommand;
 import src.domain.encounter.published.SavedEncounterPlanListResult;
-import src.domain.encounter.published.SavedEncounterPlanResult;
 import src.domain.encounter.published.SavedEncounterPlanStatus;
+import src.domain.encounter.published.UpdateEncounterBuilderInputsCommand;
 import src.domain.encountertable.EncounterTableApplicationService;
 import src.domain.party.PartyApplicationService;
+import src.domain.encounter.session.value.EncounterSessionCommand;
+import src.domain.encounter.session.value.EncounterSessionValues.Snapshot;
 
 /**
  * Public encounter facade that owns generation, saved-plan persistence, and
@@ -56,19 +56,21 @@ public final class EncounterApplicationService {
     private static final String QUERY_PARAMETER = "query";
     private static final String LISTENER_PARAMETER = "listener";
     private static final String PLAN_STORAGE_NOT_REGISTERED = "Encounter plan storage is not registered.";
+    private static final String SESSION_NOT_REGISTERED = "Encounter session is not registered.";
 
-    private final @Nullable EncounterGenerationUseCase generator;
     private final @Nullable LoadEncounterBudgetUseCase loadBudgetUseCase;
     private final @Nullable LoadEncounterPlanBudgetUseCase loadPlanBudgetUseCase;
-    private final @Nullable SaveEncounterPlanUseCase savePlanUseCase;
-    private final @Nullable LoadSavedEncounterPlanUseCase loadSavedPlanUseCase;
     private final @Nullable ListSavedEncounterPlansUseCase listSavedPlansUseCase;
     private final @Nullable ApplyEncounterSessionUseCase applySessionUseCase;
-    private final List<Consumer<EncounterSessionSnapshot>> sessionListeners = new ArrayList<>();
+    private final List<Consumer<EncounterStateSnapshot>> stateListeners = new ArrayList<>();
+    private final List<Consumer<EncounterBuilderInputs>> builderInputsListeners = new ArrayList<>();
     private final List<Consumer<EncounterTuningPreviewResult>> tuningPreviewListeners = new ArrayList<>();
-    private final EncounterSessionModel sessionModel = new EncounterSessionModel(
-            this::currentSessionSnapshot,
-            this::subscribeSessionListener);
+    private final EncounterStateModel stateModel = new EncounterStateModel(
+            this::currentStateSnapshot,
+            this::subscribeStateListener);
+    private final EncounterBuilderInputsModel builderInputsModel = new EncounterBuilderInputsModel(
+            this::currentBuilderInputs,
+            this::subscribeBuilderInputsListener);
     private final EncounterTuningPreviewModel tuningPreviewModel = new EncounterTuningPreviewModel(
             this::currentTuningPreview,
             this::subscribeTuningPreviewListener);
@@ -124,7 +126,6 @@ public final class EncounterApplicationService {
             nextLoadBudgetUseCase = null;
             nextApplySessionUseCase = null;
         }
-        this.generator = nextGenerator;
         this.loadBudgetUseCase = nextLoadBudgetUseCase;
         this.applySessionUseCase = nextApplySessionUseCase;
         if (party != null && creatures != null && encounterPlans != null) {
@@ -132,25 +133,7 @@ public final class EncounterApplicationService {
         } else {
             this.loadPlanBudgetUseCase = null;
         }
-        this.savePlanUseCase = nextSavePlanUseCase;
-        this.loadSavedPlanUseCase = nextLoadSavedPlanUseCase;
         this.listSavedPlansUseCase = nextListSavedPlansUseCase;
-    }
-
-    public EncounterBudgetResult loadBudget(LoadEncounterBudgetQuery query) {
-        Objects.requireNonNull(query, QUERY_PARAMETER);
-        if (loadBudgetUseCase == null) {
-            return new EncounterBudgetResult(EncounterGenerationStatus.STORAGE_ERROR, null, "Encounter budget service is not registered.");
-        }
-        try {
-            LoadEncounterBudgetUseCase.Result result = loadBudgetUseCase.execute();
-            return new EncounterBudgetResult(
-                    EncounterBudgetBoundaryTranslator.mapBudgetStatus(result.status()),
-                    EncounterBudgetBoundaryTranslator.toPublishedBudget(result.budget()),
-                    result.message());
-        } catch (RuntimeException exception) {
-            return new EncounterBudgetResult(EncounterGenerationStatus.STORAGE_ERROR, null, "Encounter budget could not be loaded.");
-        }
     }
 
     public EncounterTuningPreviewResult loadTuningPreview(LoadEncounterTuningPreviewQuery query) {
@@ -204,69 +187,6 @@ public final class EncounterApplicationService {
         }
     }
 
-    public EncounterGenerationResult generate(GenerateEncounterCommand request) {
-        if (generator == null) {
-            return new EncounterGenerationResult(
-                    EncounterGenerationStatus.STORAGE_ERROR,
-                    null,
-                    List.of(),
-                    "Encounter generator service is not registered.");
-        }
-        try {
-            EncounterGenerationUseCase.GenerateResult result = generator.execute(
-                    EncounterGenerationBoundaryTranslator.toGenerateRequest(request));
-            return new EncounterGenerationResult(
-                    EncounterGenerationBoundaryTranslator.mapStatus(result.status()),
-                    EncounterBudgetBoundaryTranslator.toPublishedBudget(result.budget()),
-                    result.encounters().stream().map(EncounterGenerationBoundaryTranslator::toPublishedEncounter).toList(),
-                    result.message(),
-                    EncounterGenerationBoundaryTranslator.toPublishedDiagnostics(result.diagnostics()),
-                    result.advisories().stream().map(EncounterGenerationBoundaryTranslator::toPublishedAdvisory).toList());
-        } catch (RuntimeException exception) {
-            return new EncounterGenerationResult(EncounterGenerationStatus.defaultFailure(), null, List.of(), "Encounter generation failed.");
-        }
-    }
-
-    public SavedEncounterPlanResult savePlan(SaveEncounterPlanCommand command) {
-        SaveEncounterPlanUseCase useCase = savePlanUseCase;
-        if (useCase == null) {
-            return new SavedEncounterPlanResult(
-                    SavedEncounterPlanStatus.STORAGE_ERROR,
-                    null,
-                    PLAN_STORAGE_NOT_REGISTERED);
-        }
-        SaveEncounterPlanCommand effective = command == null
-                ? new SaveEncounterPlanCommand(null, "", "", List.of())
-                : command;
-        SaveEncounterPlanUseCase.Result result = useCase.execute(
-                Math.max(0L, effective.planId() == null ? 0L : effective.planId()),
-                effective.name(),
-                effective.generatedLabel(),
-                effective.creatures().stream()
-                        .filter(Objects::nonNull)
-                        .map(EncounterPlanBoundaryTranslator::toPlanCreature)
-                        .toList());
-        return new SavedEncounterPlanResult(
-                EncounterPlanBoundaryTranslator.toPublishedSavePlanStatus(result.status()),
-                result.plan() == null ? null : EncounterPlanBoundaryTranslator.toPublishedPlan(result.plan()),
-                result.message());
-    }
-
-    public SavedEncounterPlanResult loadPlan(LoadSavedEncounterPlanQuery query) {
-        LoadSavedEncounterPlanUseCase useCase = loadSavedPlanUseCase;
-        if (useCase == null) {
-            return new SavedEncounterPlanResult(
-                    SavedEncounterPlanStatus.STORAGE_ERROR,
-                    null,
-                    PLAN_STORAGE_NOT_REGISTERED);
-        }
-        LoadSavedEncounterPlanUseCase.Result result = useCase.execute(query == null ? 0L : query.planId());
-        return new SavedEncounterPlanResult(
-                EncounterPlanBoundaryTranslator.toPublishedLoadPlanStatus(result.status()),
-                result.plan() == null ? null : EncounterPlanBoundaryTranslator.toPublishedPlan(result.plan()),
-                result.message());
-    }
-
     public SavedEncounterPlanListResult listPlans(ListSavedEncounterPlansQuery query) {
         Objects.requireNonNull(query, QUERY_PARAMETER);
         ListSavedEncounterPlansUseCase useCase = listSavedPlansUseCase;
@@ -283,9 +203,14 @@ public final class EncounterApplicationService {
                 result.message());
     }
 
-    public EncounterSessionModel loadSession(LoadEncounterSessionQuery query) {
+    public EncounterStateModel loadStateModel(LoadEncounterStateQuery query) {
         Objects.requireNonNull(query, QUERY_PARAMETER);
-        return sessionModel;
+        return stateModel;
+    }
+
+    public EncounterBuilderInputsModel loadBuilderInputsModel(LoadEncounterBuilderInputsQuery query) {
+        Objects.requireNonNull(query, QUERY_PARAMETER);
+        return builderInputsModel;
     }
 
     public EncounterTuningPreviewModel loadTuningPreviewModel(LoadEncounterTuningPreviewQuery query) {
@@ -293,31 +218,67 @@ public final class EncounterApplicationService {
         return tuningPreviewModel;
     }
 
-    public EncounterSessionSnapshot applySession(ApplyEncounterSessionCommand command) {
+    public EncounterStateSnapshot applyState(ApplyEncounterStateCommand command) {
         ApplyEncounterSessionUseCase useCase = applySessionUseCase;
         if (useCase == null) {
-            return EncounterSessionSnapshot.empty("Encounter session is not registered.");
+            return EncounterStateSnapshot.empty(SESSION_NOT_REGISTERED);
         }
-        EncounterSessionSnapshot snapshot = EncounterSessionSnapshotProjector.toPublishedSnapshot(
-                useCase.apply(EncounterSessionBoundaryTranslator.toInternalCommand(command)));
-        notifySessionListeners(snapshot);
-        currentTuningPreview = refreshTuningPreview();
-        notifyTuningPreviewListeners(currentTuningPreview);
-        return snapshot;
+        Snapshot snapshot = useCase.apply(EncounterStateBoundaryTranslator.toInternalCommand(command));
+        return publishSnapshot(snapshot);
     }
 
-    private EncounterSessionSnapshot currentSessionSnapshot() {
+    public EncounterBuilderInputs updateBuilderInputs(UpdateEncounterBuilderInputsCommand command) {
         ApplyEncounterSessionUseCase useCase = applySessionUseCase;
         if (useCase == null) {
-            return EncounterSessionSnapshot.empty("Encounter session is not registered.");
+            return EncounterBuilderInputs.empty();
         }
-        return EncounterSessionSnapshotProjector.toPublishedSnapshot(useCase.snapshot());
+        UpdateEncounterBuilderInputsCommand effective = command == null
+                ? new UpdateEncounterBuilderInputsCommand(EncounterBuilderInputs.empty())
+                : command;
+        Snapshot snapshot = useCase.apply(new EncounterSessionCommand(
+                EncounterSessionCommand.Action.UPDATE_BUILDER_INPUTS,
+                Optional.empty(),
+                EncounterBuilderInputsBoundaryTranslator.toInternal(effective.inputs()),
+                0L,
+                0L,
+                0,
+                0L,
+                List.of(),
+                "",
+                0,
+                0L,
+                0,
+                false));
+        publishSnapshot(snapshot);
+        return EncounterStateSnapshotProjector.toPublishedBuilderInputs(snapshot);
     }
 
-    private Runnable subscribeSessionListener(Consumer<EncounterSessionSnapshot> listener) {
-        Consumer<EncounterSessionSnapshot> safeListener = Objects.requireNonNull(listener, LISTENER_PARAMETER);
-        sessionListeners.add(safeListener);
-        return () -> sessionListeners.remove(safeListener);
+    private EncounterStateSnapshot currentStateSnapshot() {
+        ApplyEncounterSessionUseCase useCase = applySessionUseCase;
+        if (useCase == null) {
+            return EncounterStateSnapshot.empty(SESSION_NOT_REGISTERED);
+        }
+        return EncounterStateSnapshotProjector.toPublishedSnapshot(useCase.snapshot());
+    }
+
+    private EncounterBuilderInputs currentBuilderInputs() {
+        ApplyEncounterSessionUseCase useCase = applySessionUseCase;
+        if (useCase == null) {
+            return EncounterBuilderInputs.empty();
+        }
+        return EncounterStateSnapshotProjector.toPublishedBuilderInputs(useCase.snapshot());
+    }
+
+    private Runnable subscribeStateListener(Consumer<EncounterStateSnapshot> listener) {
+        Consumer<EncounterStateSnapshot> safeListener = Objects.requireNonNull(listener, LISTENER_PARAMETER);
+        stateListeners.add(safeListener);
+        return () -> stateListeners.remove(safeListener);
+    }
+
+    private Runnable subscribeBuilderInputsListener(Consumer<EncounterBuilderInputs> listener) {
+        Consumer<EncounterBuilderInputs> safeListener = Objects.requireNonNull(listener, LISTENER_PARAMETER);
+        builderInputsListeners.add(safeListener);
+        return () -> builderInputsListeners.remove(safeListener);
     }
 
     private EncounterTuningPreviewResult currentTuningPreview() {
@@ -330,10 +291,25 @@ public final class EncounterApplicationService {
         return () -> tuningPreviewListeners.remove(safeListener);
     }
 
-    private void notifySessionListeners(EncounterSessionSnapshot snapshot) {
-        List<Consumer<EncounterSessionSnapshot>> listeners = List.copyOf(sessionListeners);
-        for (Consumer<EncounterSessionSnapshot> listener : listeners) {
+    private EncounterStateSnapshot publishSnapshot(Snapshot snapshot) {
+        EncounterStateSnapshot state = EncounterStateSnapshotProjector.toPublishedSnapshot(snapshot);
+        EncounterBuilderInputs builderInputs = EncounterStateSnapshotProjector.toPublishedBuilderInputs(snapshot);
+        notifyStateListeners(state);
+        notifyBuilderInputsListeners(builderInputs);
+        currentTuningPreview = refreshTuningPreview();
+        notifyTuningPreviewListeners(currentTuningPreview);
+        return state;
+    }
+
+    private void notifyStateListeners(EncounterStateSnapshot snapshot) {
+        for (Consumer<EncounterStateSnapshot> listener : List.copyOf(stateListeners)) {
             listener.accept(snapshot);
+        }
+    }
+
+    private void notifyBuilderInputsListeners(EncounterBuilderInputs builderInputs) {
+        for (Consumer<EncounterBuilderInputs> listener : List.copyOf(builderInputsListeners)) {
+            listener.accept(builderInputs);
         }
     }
 

@@ -14,7 +14,7 @@ import src.domain.dungeon.published.DungeonAuthoredReadQuery;
 import src.domain.dungeon.published.DungeonAuthoredReadResult;
 import src.domain.dungeon.published.DungeonEdgeRef;
 import src.domain.dungeon.published.DungeonInspectorSnapshot;
-import src.domain.dungeon.published.DungeonMapCatalogRequest;
+import src.domain.dungeon.published.DungeonMapCatalogCommand;
 import src.domain.dungeon.published.DungeonMapCatalogResponse;
 import src.domain.dungeon.published.DungeonMapId;
 import src.domain.dungeon.published.DungeonMapSnapshot;
@@ -27,7 +27,7 @@ import src.domain.dungeoneditor.session.entity.DungeonEditorSession;
 
 public final class ApplyDungeonEditorSessionUseCase {
 
-    private final Function<DungeonMapCatalogRequest, DungeonMapCatalogResponse> catalog;
+    private final Function<DungeonMapCatalogCommand, DungeonMapCatalogResponse> catalog;
     private final Function<DungeonAuthoredMutationCommand, DungeonAuthoredMutationResult> mutateAuthored;
     private final BuildDungeonEditorSnapshotUseCase snapshotBuilder;
     private final InterpretDungeonEditorMainViewInputUseCase mainViewInterpreter =
@@ -35,7 +35,7 @@ public final class ApplyDungeonEditorSessionUseCase {
     private DungeonEditorSession session = DungeonEditorSession.empty();
 
     public ApplyDungeonEditorSessionUseCase(
-            Function<DungeonMapCatalogRequest, DungeonMapCatalogResponse> catalog,
+            Function<DungeonMapCatalogCommand, DungeonMapCatalogResponse> catalog,
             Function<DungeonAuthoredMutationCommand, DungeonAuthoredMutationResult> mutateAuthored,
             Function<DungeonAuthoredReadQuery, DungeonAuthoredReadResult> loadAuthored
     ) {
@@ -95,14 +95,14 @@ public final class ApplyDungeonEditorSessionUseCase {
 
     private void createSelectedMap(Command command) {
         session = session.withSelectedMap(toSelectedMap(requireMutationMapId(
-                catalog.apply(new DungeonMapCatalogRequest.CreateMap(command.mapName())))))
+                catalog.apply(new DungeonMapCatalogCommand.CreateMap(command.mapName())))))
                 .clearSelection();
         clearTransientState("Dungeon-Map erstellt.");
     }
 
     private void renameSelectedMap(Command command) {
         session = session.withSelectedMap(toSelectedMap(requireMutationMapId(catalog.apply(
-                new DungeonMapCatalogRequest.RenameMap(
+                new DungeonMapCatalogCommand.RenameMap(
                         requireMapId(command.mapId()),
                         command.mapName())))))
                 .withStatusText("Dungeon-Map umbenannt.");
@@ -110,7 +110,7 @@ public final class ApplyDungeonEditorSessionUseCase {
 
     private void deleteSelectedMap(Command command) {
         DungeonMapId deletedMapId = requireMutationMapId(catalog.apply(
-                new DungeonMapCatalogRequest.DeleteMap(requireMapId(command.mapId()))));
+                new DungeonMapCatalogCommand.DeleteMap(requireMapId(command.mapId()))));
         if (deletedMapId != null && deletedMapId.equals(toDomainMapId(session.selectedMap()))) {
             session = session.withSelectedMap(DungeonEditorSession.SelectedMap.none());
         }
