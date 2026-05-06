@@ -9,8 +9,8 @@ final class LoadTravelDungeonSessionSurfaceUseCase {
             ApplyTravelDungeonSessionUseCase.@Nullable PositionData requestedTravelPosition
     ) {
         ApplyTravelDungeonSessionUseCase.ActiveTravelStateData activeTravel = runtimeAccess.loadActiveTravelState();
-        if (activeTravel.partyLocation() instanceof ApplyTravelDungeonSessionUseCase.OverworldPartyLocationData overworld) {
-            return ApplyTravelDungeonSessionUseCase.outsideDungeonSurface(overworld.tileId());
+        if (activeTravel.partyLocation() != null && activeTravel.partyLocation().outsideDungeon()) {
+            return ApplyTravelDungeonSessionUseCase.outsideDungeonSurface(activeTravel.partyLocation().overworldTileId());
         }
         ApplyTravelDungeonSessionUseCase.PositionData effectivePosition = requestedTravelPosition != null
                 ? requestedTravelPosition

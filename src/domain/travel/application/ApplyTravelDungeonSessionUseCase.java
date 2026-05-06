@@ -22,7 +22,7 @@ public final class ApplyTravelDungeonSessionUseCase {
     private final LoadTravelDungeonSessionSurfaceUseCase loadTravelDungeonSessionSurfaceUseCase;
     private final ApplyTravelDungeonMovementUseCase applyTravelDungeonMovementUseCase;
     private final StabilizeTravelDungeonProjectionUseCase stabilizeTravelDungeonProjectionUseCase;
-    private OverlayData overlaySettings = OverlayData.defaults();
+    private TravelOverlayState overlayState = TravelOverlayState.defaults();
     private int projectionLevel;
     private boolean projectionLevelInitialized;
     private @Nullable PositionData requestedPosition;
@@ -41,22 +41,23 @@ public final class ApplyTravelDungeonSessionUseCase {
         }
     }
 
-    public void apply(@Nullable Command command) {
-        Command effectiveCommand = command == null
-                ? new Command(Action.REFRESH, "", projectionLevel, overlaySettings)
-                : command;
-        switch (effectiveCommand.action()) {
-            case REFRESH -> currentSurface = loadTravelDungeonSessionSurfaceUseCase.load(
-                    runtimeAccess,
-                    currentPosition());
-            case ACTION -> currentSurface = applyTravelDungeonMovementUseCase.move(
-                    runtimeAccess,
-                    currentPosition(),
-                    effectiveCommand.actionId());
-            case SET_PROJECTION_LEVEL -> projectionLevel = effectiveCommand.projectionLevel();
-            case SET_OVERLAY -> overlaySettings = effectiveCommand.overlaySettings();
-        }
+    public void refresh() {
+        currentSurface = loadTravelDungeonSessionSurfaceUseCase.load(runtimeAccess, currentPosition());
         stabilizeProjectionLevel();
+    }
+
+    public void move(String actionId) {
+        currentSurface = applyTravelDungeonMovementUseCase.move(runtimeAccess, currentPosition(), actionId);
+        stabilizeProjectionLevel();
+    }
+
+    public void setProjectionLevel(int nextProjectionLevel) {
+        projectionLevel = nextProjectionLevel;
+        stabilizeProjectionLevel();
+    }
+
+    public void setOverlay(String modeKey, int levelRange, double opacity, List<Integer> selectedLevels) {
+        overlayState = TravelOverlayState.of(modeKey, levelRange, opacity, selectedLevels);
     }
 
     public SnapshotData snapshot() {
@@ -64,7 +65,7 @@ public final class ApplyTravelDungeonSessionUseCase {
             currentSurface = loadTravelDungeonSessionSurfaceUseCase.load(runtimeAccess, requestedPosition);
         }
         stabilizeProjectionLevel();
-        return new SnapshotData(currentSurface, overlaySettings, projectionLevel);
+        return new SnapshotData(currentSurface, overlayState, projectionLevel);
     }
 
     private @Nullable PositionData currentPosition() {
@@ -85,15 +86,7 @@ public final class ApplyTravelDungeonSessionUseCase {
     }
 
     static @Nullable PositionData toTravelPosition(@Nullable PartyLocationData location) {
-        if (!(location instanceof DungeonPartyLocationData dungeonLocation)) {
-            return null;
-        }
-        return new PositionData(
-                dungeonLocation.mapId(),
-                dungeonLocation.locationKind(),
-                dungeonLocation.ownerId(),
-                dungeonLocation.tile(),
-                dungeonLocation.heading());
+        return location == null || location.outsideDungeon() ? null : location.dungeonPosition();
     }
 
     static SurfaceData outsideDungeonSurface(long tileId) {
@@ -107,7 +100,7 @@ public final class ApplyTravelDungeonSessionUseCase {
                         LocationKind.TILE,
                         0L,
                         new CellData(0, 0, 0),
-                        Heading.SOUTH),
+                        Direction.SOUTH),
                 "Overworld",
                 "Overworld-Feld " + tileId,
                 "-",
@@ -117,70 +110,50 @@ public final class ApplyTravelDungeonSessionUseCase {
                 List.of());
     }
 
-    public record Command(
-            Action action,
-            String actionId,
-            int projectionLevel,
-            OverlayData overlaySettings
-    ) {
-        public Command {
-            action = action == null ? Action.REFRESH : action;
-            actionId = actionId == null ? "" : actionId.trim();
-            overlaySettings = overlaySettings == null ? OverlayData.defaults() : overlaySettings;
-        }
-    }
-
-    public enum Action {
-        REFRESH,
-        ACTION,
-        SET_PROJECTION_LEVEL,
-        SET_OVERLAY
-    }
-
     public record SnapshotData(
             @Nullable SurfaceData surface,
-            OverlayData overlaySettings,
+            TravelOverlayState overlayState,
             int projectionLevel
     ) {
         public SnapshotData {
-            overlaySettings = overlaySettings == null ? OverlayData.defaults() : overlaySettings;
+            overlayState = overlayState == null ? TravelOverlayState.defaults() : overlayState;
         }
     }
 
-    public record OverlayData(
-            String modeKey,
-            int levelRange,
-            double opacity,
-            List<Integer> selectedLevels
-    ) {
-        public OverlayData {
-            modeKey = normalizeModeKey(modeKey);
-            levelRange = normalizeLevelRange(levelRange);
-            opacity = normalizeOpacity(opacity);
-            selectedLevels = normalizeSelectedLevels(selectedLevels);
+    public static final class TravelOverlayState {
+
+        private final String modeKey;
+        private final int levelRange;
+        private final double opacity;
+        private final List<Integer> selectedLevels;
+
+        private TravelOverlayState(String modeKey, int levelRange, double opacity, List<Integer> selectedLevels) {
+            this.modeKey = modeKey == null || modeKey.isBlank() ? "OFF" : modeKey;
+            this.levelRange = Math.max(0, levelRange);
+            this.opacity = Math.max(0.0, Math.min(1.0, opacity));
+            this.selectedLevels = selectedLevels == null ? List.of() : List.copyOf(selectedLevels);
         }
 
-        public static OverlayData defaults() {
-            return new OverlayData("OFF", 2, 0.35, List.of());
+        public static TravelOverlayState defaults() {
+            return new TravelOverlayState("OFF", 2, 0.35, List.of());
         }
 
-        private static String normalizeModeKey(String modeKey) {
-            return modeKey == null || modeKey.isBlank() ? "OFF" : modeKey;
+        public static TravelOverlayState of(String modeKey, int levelRange, double opacity, List<Integer> selectedLevels) {
+            return new TravelOverlayState(modeKey, levelRange, opacity, selectedLevels);
         }
 
-        private static int normalizeLevelRange(int levelRange) {
-            return Math.max(0, levelRange);
+        public String modeKey() {
+            return modeKey;
         }
 
-        private static double normalizeOpacity(double opacity) {
-            return Math.max(0.0, Math.min(1.0, opacity));
+        public int levelRange() {
+            return levelRange;
         }
 
-        private static List<Integer> normalizeSelectedLevels(List<Integer> selectedLevels) {
-            return selectedLevels == null ? List.of() : List.copyOf(selectedLevels);
+        public double opacity() {
+            return opacity;
         }
 
-        @Override
         public List<Integer> selectedLevels() {
             return List.copyOf(selectedLevels);
         }
@@ -198,7 +171,7 @@ public final class ApplyTravelDungeonSessionUseCase {
             String headingLabel,
             String statusLabel,
             String visualDescription,
-            List<ActionData> actions
+            List<AvailableAction> actions
     ) {
         public SurfaceData {
             contextKind = normalizeContextKind(contextKind);
@@ -233,7 +206,7 @@ public final class ApplyTravelDungeonSessionUseCase {
 
         private static PositionData normalizePosition(PositionData position) {
             return position == null
-                    ? new PositionData(1L, LocationKind.TILE, 0L, new CellData(0, 0, 0), Heading.SOUTH)
+                    ? new PositionData(1L, LocationKind.TILE, 0L, new CellData(0, 0, 0), Direction.SOUTH)
                     : position;
         }
 
@@ -253,12 +226,12 @@ public final class ApplyTravelDungeonSessionUseCase {
             return visualDescription == null ? "" : visualDescription.trim();
         }
 
-        private static List<ActionData> normalizeActions(List<ActionData> actions) {
+        private static List<AvailableAction> normalizeActions(List<AvailableAction> actions) {
             return actions == null ? List.of() : List.copyOf(actions);
         }
 
         @Override
-        public List<ActionData> actions() {
+        public List<AvailableAction> actions() {
             return List.copyOf(actions);
         }
     }
@@ -273,14 +246,14 @@ public final class ApplyTravelDungeonSessionUseCase {
             LocationKind locationKind,
             long ownerId,
             CellData tile,
-            Heading heading
+            Direction heading
     ) {
         public PositionData {
             mapId = Math.max(1L, mapId);
             locationKind = locationKind == null ? LocationKind.TILE : locationKind;
             ownerId = Math.max(0L, ownerId);
             tile = tile == null ? new CellData(0, 0, 0) : tile;
-            heading = heading == null ? Heading.SOUTH : heading;
+            heading = heading == null ? Direction.SOUTH : heading;
         }
     }
 
@@ -289,15 +262,39 @@ public final class ApplyTravelDungeonSessionUseCase {
         TRANSITION
     }
 
-    public enum Heading {
-        NORTH,
-        EAST,
-        SOUTH,
-        WEST
+    public static final class Direction {
+
+        public static final Direction NORTH = new Direction("NORTH");
+        public static final Direction EAST = new Direction("EAST");
+        public static final Direction SOUTH = new Direction("SOUTH");
+        public static final Direction WEST = new Direction("WEST");
+
+        private final String name;
+
+        private Direction(String name) {
+            this.name = name;
+        }
+
+        public static Direction fromName(String directionName) {
+            if ("NORTH".equals(directionName)) {
+                return NORTH;
+            }
+            if ("EAST".equals(directionName)) {
+                return EAST;
+            }
+            if ("WEST".equals(directionName)) {
+                return WEST;
+            }
+            return SOUTH;
+        }
+
+        public String name() {
+            return name;
+        }
     }
 
     public record MapData(
-            TopologyKind topology,
+            GridTopology topology,
             int width,
             int height,
             List<AreaData> areas,
@@ -305,7 +302,7 @@ public final class ApplyTravelDungeonSessionUseCase {
             List<FeatureData> features
     ) {
         public MapData {
-            topology = topology == null ? TopologyKind.SQUARE : topology;
+            topology = topology == null ? GridTopology.SQUARE : topology;
             width = Math.max(1, width);
             height = Math.max(1, height);
             areas = areas == null ? List.of() : List.copyOf(areas);
@@ -314,7 +311,7 @@ public final class ApplyTravelDungeonSessionUseCase {
         }
 
         public static MapData empty() {
-            return new MapData(TopologyKind.SQUARE, 1, 1, List.of(), List.of(), List.of());
+            return new MapData(GridTopology.SQUARE, 1, 1, List.of(), List.of(), List.of());
         }
 
         @Override
@@ -333,9 +330,24 @@ public final class ApplyTravelDungeonSessionUseCase {
         }
     }
 
-    public enum TopologyKind {
-        SQUARE,
-        HEX
+    public static final class GridTopology {
+
+        public static final GridTopology SQUARE = new GridTopology("SQUARE");
+        public static final GridTopology HEX = new GridTopology("HEX");
+
+        private final String name;
+
+        private GridTopology(String name) {
+            this.name = name;
+        }
+
+        public static GridTopology fromName(String topologyName) {
+            return "HEX".equals(topologyName) ? HEX : SQUARE;
+        }
+
+        public String name() {
+            return name;
+        }
     }
 
     public record AreaData(
@@ -376,16 +388,23 @@ public final class ApplyTravelDungeonSessionUseCase {
         }
     }
 
-    public enum BoundaryKind {
-        WALL,
-        DOOR;
+    public static final class BoundaryKind {
+
+        public static final BoundaryKind WALL = new BoundaryKind("wall");
+        public static final BoundaryKind DOOR = new BoundaryKind("door");
+
+        private final String externalKind;
+
+        private BoundaryKind(String externalKind) {
+            this.externalKind = externalKind;
+        }
 
         public static BoundaryKind fromExternalKind(String kind) {
             return "door".equalsIgnoreCase(kind) ? DOOR : WALL;
         }
 
         public String externalKind() {
-            return this == DOOR ? "door" : "wall";
+            return externalKind;
         }
     }
 
@@ -417,15 +436,15 @@ public final class ApplyTravelDungeonSessionUseCase {
         TRANSITION
     }
 
-    public record ActionData(
-            String actionId,
-            String label,
-            String description
+    public record AvailableAction(
+            String id,
+            String displayLabel,
+            String helpText
     ) {
-        public ActionData {
-            actionId = actionId == null ? "" : actionId.trim();
-            label = label == null || label.isBlank() ? "Aktion" : label.trim();
-            description = description == null ? "" : description.trim();
+        public AvailableAction {
+            id = id == null ? "" : id.trim();
+            displayLabel = displayLabel == null || displayLabel.isBlank() ? "Aktion" : displayLabel.trim();
+            helpText = helpText == null ? "" : helpText.trim();
         }
     }
 
@@ -453,26 +472,14 @@ public final class ApplyTravelDungeonSessionUseCase {
         }
     }
 
-    public sealed interface PartyLocationData permits DungeonPartyLocationData, OverworldPartyLocationData {
-    }
-
-    public record DungeonPartyLocationData(
-            long mapId,
-            LocationKind locationKind,
-            long ownerId,
-            CellData tile,
-            Heading heading
-    ) implements PartyLocationData {
-        public DungeonPartyLocationData {
-            mapId = Math.max(1L, mapId);
-            locationKind = locationKind == null ? LocationKind.TILE : locationKind;
-            ownerId = Math.max(0L, ownerId);
-            tile = tile == null ? new CellData(0, 0, 0) : tile;
-            heading = heading == null ? Heading.SOUTH : heading;
+    public record PartyLocationData(
+            @Nullable PositionData dungeonPosition,
+            long overworldTileId,
+            boolean outsideDungeon
+    ) {
+        public PartyLocationData {
+            overworldTileId = Math.max(0L, overworldTileId);
         }
-    }
-
-    public record OverworldPartyLocationData(long mapId, long tileId) implements PartyLocationData {
     }
 
     public record MoveResultData(
@@ -503,5 +510,9 @@ public final class ApplyTravelDungeonSessionUseCase {
     }
 
     public record OverworldTargetData(long mapId, long tileId) {
+        public OverworldTargetData {
+            mapId = Math.max(1L, mapId);
+            tileId = Math.max(0L, tileId);
+        }
     }
 }

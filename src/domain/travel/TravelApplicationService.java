@@ -12,10 +12,10 @@ import src.domain.dungeon.published.DungeonCellRef;
 import src.domain.dungeon.published.DungeonFeatureSnapshot;
 import src.domain.dungeon.published.DungeonMapSnapshot;
 import src.domain.dungeon.published.DungeonTravelActionSnapshot;
+import src.domain.dungeon.published.DungeonTravelCommand;
 import src.domain.dungeon.published.DungeonTravelExternalTarget;
 import src.domain.dungeon.published.DungeonTravelMoveResult;
 import src.domain.dungeon.published.DungeonTravelPosition;
-import src.domain.dungeon.published.DungeonTravelCommand;
 import src.domain.dungeon.published.DungeonTravelResponse;
 import src.domain.dungeon.published.DungeonTravelSurfaceSnapshot;
 import src.domain.party.PartyApplicationService;
@@ -38,17 +38,10 @@ import src.domain.travel.application.ApplyTravelDungeonSessionUseCase;
 import src.domain.travel.published.ApplyTravelDungeonSessionCommand;
 import src.domain.travel.published.LoadTravelDungeonQuery;
 import src.domain.travel.published.TravelDungeonAction;
-import src.domain.travel.published.TravelDungeonArea;
-import src.domain.travel.published.TravelDungeonBoundary;
-import src.domain.travel.published.TravelDungeonCell;
-import src.domain.travel.published.TravelDungeonEdge;
-import src.domain.travel.published.TravelDungeonFeature;
 import src.domain.travel.published.TravelDungeonMapProjectionSnapshot;
-import src.domain.travel.published.TravelDungeonMapSnapshot;
 import src.domain.travel.published.TravelDungeonModel;
-import src.domain.travel.published.TravelDungeonPosition;
 import src.domain.travel.published.TravelDungeonSnapshot;
-import src.domain.travel.published.TravelDungeonSurface;
+import src.domain.travel.published.TravelDungeonWorkspaceState;
 import src.domain.travel.published.TravelOverlaySettings;
 
 /**
@@ -109,12 +102,32 @@ public final class TravelApplicationService {
     }
 
     public TravelDungeonModel loadDungeonTravel(LoadTravelDungeonQuery query) {
-        applyTravelDungeonSessionUseCase.primeRequestedPosition(CommandTranslation.requestedPosition(query));
+        Objects.requireNonNullElse(query, new LoadTravelDungeonQuery());
         return dungeonTravelModel;
     }
 
     public TravelDungeonSnapshot applyDungeonTravelSession(ApplyTravelDungeonSessionCommand command) {
-        applyTravelDungeonSessionUseCase.apply(CommandTranslation.toInternalCommand(command));
+        ApplyTravelDungeonSessionCommand effectiveCommand = command == null
+                ? new ApplyTravelDungeonSessionCommand(
+                ApplyTravelDungeonSessionCommand.Action.REFRESH,
+                "",
+                0,
+                TravelOverlaySettings.defaults())
+                : command;
+        switch (effectiveCommand.action()) {
+            case REFRESH -> applyTravelDungeonSessionUseCase.refresh();
+            case ACTION -> applyTravelDungeonSessionUseCase.move(effectiveCommand.actionId());
+            case SET_PROJECTION_LEVEL ->
+                    applyTravelDungeonSessionUseCase.setProjectionLevel(effectiveCommand.projectionLevel());
+            case SET_OVERLAY -> {
+                TravelOverlaySettings overlaySettings = effectiveCommand.overlaySettings();
+                applyTravelDungeonSessionUseCase.setOverlay(
+                        overlaySettings.modeKey(),
+                        overlaySettings.levelRange(),
+                        overlaySettings.opacity(),
+                        overlaySettings.selectedLevels());
+            }
+        }
         TravelDungeonSnapshot snapshot = currentDungeonTravelSnapshot();
         notifyDungeonTravelListeners(snapshot);
         return snapshot;
@@ -137,66 +150,6 @@ public final class TravelApplicationService {
         }
     }
 
-    private static final class CommandTranslation {
-
-        private CommandTranslation() {
-        }
-
-        private static ApplyTravelDungeonSessionUseCase.@Nullable PositionData requestedPosition(
-                @Nullable LoadTravelDungeonQuery query
-        ) {
-            LoadTravelDungeonQuery effectiveQuery = query == null ? new LoadTravelDungeonQuery(null) : query;
-            return toInternalPosition(effectiveQuery.position());
-        }
-
-        private static ApplyTravelDungeonSessionUseCase.Command toInternalCommand(
-                @Nullable ApplyTravelDungeonSessionCommand command
-        ) {
-            ApplyTravelDungeonSessionCommand effectiveCommand = command == null
-                    ? new ApplyTravelDungeonSessionCommand(
-                    ApplyTravelDungeonSessionCommand.Action.REFRESH,
-                    "",
-                    0,
-                    TravelOverlaySettings.defaults())
-                    : command;
-            return new ApplyTravelDungeonSessionUseCase.Command(
-                    ApplyTravelDungeonSessionUseCase.Action.valueOf(effectiveCommand.action().name()),
-                    effectiveCommand.actionId(),
-                    effectiveCommand.projectionLevel(),
-                    toInternalOverlay(effectiveCommand.overlaySettings()));
-        }
-
-        private static ApplyTravelDungeonSessionUseCase.OverlayData toInternalOverlay(
-                @Nullable TravelOverlaySettings overlaySettings
-        ) {
-            TravelOverlaySettings safeOverlay = overlaySettings == null
-                    ? TravelOverlaySettings.defaults()
-                    : overlaySettings;
-            return new ApplyTravelDungeonSessionUseCase.OverlayData(
-                    safeOverlay.modeKey(),
-                    safeOverlay.levelRange(),
-                    safeOverlay.opacity(),
-                    safeOverlay.selectedLevels());
-        }
-
-        private static ApplyTravelDungeonSessionUseCase.@Nullable PositionData toInternalPosition(
-                @Nullable TravelDungeonPosition position
-        ) {
-            if (position == null) {
-                return null;
-            }
-            return new ApplyTravelDungeonSessionUseCase.PositionData(
-                    position.mapId(),
-                    ApplyTravelDungeonSessionUseCase.LocationKind.valueOf(position.locationKind().name()),
-                    position.ownerId(),
-                    new ApplyTravelDungeonSessionUseCase.CellData(
-                            position.tile().q(),
-                            position.tile().r(),
-                            position.tile().level()),
-                    ApplyTravelDungeonSessionUseCase.Heading.valueOf(position.heading().name()));
-        }
-    }
-
     private static final class SnapshotTranslation {
 
         private SnapshotTranslation() {
@@ -208,22 +161,23 @@ public final class TravelApplicationService {
             ApplyTravelDungeonSessionUseCase.SnapshotData safeSnapshot = snapshot == null
                     ? new ApplyTravelDungeonSessionUseCase.SnapshotData(
                     null,
-                    ApplyTravelDungeonSessionUseCase.OverlayData.defaults(),
+                    ApplyTravelDungeonSessionUseCase.TravelOverlayState.defaults(),
                     0)
                     : snapshot;
+            ApplyTravelDungeonSessionUseCase.SurfaceData surface = safeSnapshot.surface();
             return new TravelDungeonSnapshot(
-                    toPublishedSurface(safeSnapshot.surface()),
-                    ProjectionTranslation.projection(safeSnapshot.surface()),
-                    toPublishedOverlay(safeSnapshot.overlaySettings()),
+                    toPublishedWorkspaceState(surface),
+                    ProjectionTranslation.projection(surface),
+                    toPublishedOverlay(safeSnapshot.overlayState()),
                     safeSnapshot.projectionLevel());
         }
 
         private static TravelOverlaySettings toPublishedOverlay(
-                ApplyTravelDungeonSessionUseCase.@Nullable OverlayData overlaySettings
+                ApplyTravelDungeonSessionUseCase.TravelOverlayState overlayState
         ) {
-            ApplyTravelDungeonSessionUseCase.OverlayData safeOverlay = overlaySettings == null
-                    ? ApplyTravelDungeonSessionUseCase.OverlayData.defaults()
-                    : overlaySettings;
+            ApplyTravelDungeonSessionUseCase.TravelOverlayState safeOverlay = overlayState == null
+                    ? ApplyTravelDungeonSessionUseCase.TravelOverlayState.defaults()
+                    : overlayState;
             return new TravelOverlaySettings(
                     safeOverlay.modeKey(),
                     safeOverlay.levelRange(),
@@ -231,138 +185,32 @@ public final class TravelApplicationService {
                     safeOverlay.selectedLevels());
         }
 
-        private static @Nullable TravelDungeonSurface toPublishedSurface(
+        private static @Nullable TravelDungeonWorkspaceState toPublishedWorkspaceState(
                 ApplyTravelDungeonSessionUseCase.@Nullable SurfaceData surface
         ) {
             if (surface == null) {
                 return null;
             }
-            return new TravelDungeonSurface(
-                    TravelDungeonSurface.ContextKind.valueOf(surface.contextKind().name()),
+            return new TravelDungeonWorkspaceState(
                     surface.mapName(),
-                    surface.revision(),
-                    toPublishedMap(surface.map()),
-                    toPublishedPosition(surface.position()),
-                    surface.surfaceTitle(),
                     surface.areaLabel(),
                     surface.tileLabel(),
                     surface.headingLabel(),
                     surface.statusLabel(),
-                    surface.visualDescription(),
+                    surface.contextKind() == ApplyTravelDungeonSessionUseCase.ContextKind.OVERWORLD,
                     surface.actions().stream().map(SnapshotTranslation::toPublishedAction).toList());
         }
 
-        private static TravelDungeonMapSnapshot toPublishedMap(ApplyTravelDungeonSessionUseCase.@Nullable MapData map) {
-            ApplyTravelDungeonSessionUseCase.MapData safeMap = map == null
-                    ? ApplyTravelDungeonSessionUseCase.MapData.empty()
-                    : map;
-            return new TravelDungeonMapSnapshot(
-                    TravelDungeonMapSnapshot.TopologyKind.valueOf(safeMap.topology().name()),
-                    safeMap.width(),
-                    safeMap.height(),
-                    safeMap.areas().stream().map(SnapshotTranslation::toPublishedArea).toList(),
-                    safeMap.boundaries().stream().map(SnapshotTranslation::toPublishedBoundary).toList(),
-                    safeMap.features().stream().map(SnapshotTranslation::toPublishedFeature).toList());
-        }
-
-        private static TravelDungeonArea toPublishedArea(ApplyTravelDungeonSessionUseCase.@Nullable AreaData area) {
-            ApplyTravelDungeonSessionUseCase.AreaData safeArea = area == null
-                    ? new ApplyTravelDungeonSessionUseCase.AreaData(
-                    ApplyTravelDungeonSessionUseCase.AreaKind.ROOM,
-                    1L,
-                    "ROOM",
-                    List.of())
-                    : area;
-            return new TravelDungeonArea(
-                    TravelDungeonArea.Kind.valueOf(safeArea.kind().name()),
-                    safeArea.id(),
-                    safeArea.label(),
-                    safeArea.cells().stream().map(SnapshotTranslation::toPublishedCell).toList());
-        }
-
-        private static TravelDungeonBoundary toPublishedBoundary(
-                ApplyTravelDungeonSessionUseCase.@Nullable BoundaryData boundary
+        private static TravelDungeonAction toPublishedAction(
+                ApplyTravelDungeonSessionUseCase.@Nullable AvailableAction action
         ) {
-            ApplyTravelDungeonSessionUseCase.BoundaryData safeBoundary = boundary == null
-                    ? new ApplyTravelDungeonSessionUseCase.BoundaryData(
-                    ApplyTravelDungeonSessionUseCase.BoundaryKind.WALL,
-                    1L,
-                    "wall",
-                    new ApplyTravelDungeonSessionUseCase.EdgeData(
-                            new ApplyTravelDungeonSessionUseCase.CellData(0, 0, 0),
-                            new ApplyTravelDungeonSessionUseCase.CellData(0, 0, 0)))
-                    : boundary;
-            return new TravelDungeonBoundary(
-                    safeBoundary.kind().externalKind(),
-                    safeBoundary.id(),
-                    safeBoundary.label(),
-                    toPublishedEdge(safeBoundary.edge()));
-        }
-
-        private static TravelDungeonFeature toPublishedFeature(
-                ApplyTravelDungeonSessionUseCase.@Nullable FeatureData feature
-        ) {
-            ApplyTravelDungeonSessionUseCase.FeatureData safeFeature = feature == null
-                    ? new ApplyTravelDungeonSessionUseCase.FeatureData(
-                    ApplyTravelDungeonSessionUseCase.FeatureKind.STAIR,
-                    1L,
-                    "STAIR",
-                    List.of(),
-                    "",
-                    "")
-                    : feature;
-            return new TravelDungeonFeature(
-                    TravelDungeonFeature.Kind.valueOf(safeFeature.kind().name()),
-                    safeFeature.id(),
-                    safeFeature.label(),
-                    safeFeature.cells().stream().map(SnapshotTranslation::toPublishedCell).toList(),
-                    safeFeature.description(),
-                    safeFeature.destinationLabel());
-        }
-
-        private static TravelDungeonAction toPublishedAction(ApplyTravelDungeonSessionUseCase.@Nullable ActionData action) {
-            ApplyTravelDungeonSessionUseCase.ActionData safeAction = action == null
-                    ? new ApplyTravelDungeonSessionUseCase.ActionData("", "Aktion", "")
+            ApplyTravelDungeonSessionUseCase.AvailableAction safeAction = action == null
+                    ? new ApplyTravelDungeonSessionUseCase.AvailableAction("", "Aktion", "")
                     : action;
             return new TravelDungeonAction(
-                    safeAction.actionId(),
-                    safeAction.label(),
-                    safeAction.description());
-        }
-
-        private static TravelDungeonPosition toPublishedPosition(
-                ApplyTravelDungeonSessionUseCase.@Nullable PositionData position
-        ) {
-            ApplyTravelDungeonSessionUseCase.PositionData safePosition = position == null
-                    ? new ApplyTravelDungeonSessionUseCase.PositionData(
-                    1L,
-                    ApplyTravelDungeonSessionUseCase.LocationKind.TILE,
-                    0L,
-                    new ApplyTravelDungeonSessionUseCase.CellData(0, 0, 0),
-                    ApplyTravelDungeonSessionUseCase.Heading.SOUTH)
-                    : position;
-            return new TravelDungeonPosition(
-                    safePosition.mapId(),
-                    TravelDungeonPosition.LocationKind.valueOf(safePosition.locationKind().name()),
-                    safePosition.ownerId(),
-                    toPublishedCell(safePosition.tile()),
-                    TravelDungeonPosition.Heading.valueOf(safePosition.heading().name()));
-        }
-
-        private static TravelDungeonCell toPublishedCell(ApplyTravelDungeonSessionUseCase.@Nullable CellData cell) {
-            ApplyTravelDungeonSessionUseCase.CellData safeCell = cell == null
-                    ? new ApplyTravelDungeonSessionUseCase.CellData(0, 0, 0)
-                    : cell;
-            return new TravelDungeonCell(safeCell.q(), safeCell.r(), safeCell.level());
-        }
-
-        private static TravelDungeonEdge toPublishedEdge(ApplyTravelDungeonSessionUseCase.@Nullable EdgeData edge) {
-            ApplyTravelDungeonSessionUseCase.EdgeData safeEdge = edge == null
-                    ? new ApplyTravelDungeonSessionUseCase.EdgeData(
-                    new ApplyTravelDungeonSessionUseCase.CellData(0, 0, 0),
-                    new ApplyTravelDungeonSessionUseCase.CellData(0, 0, 0))
-                    : edge;
-            return new TravelDungeonEdge(toPublishedCell(safeEdge.from()), toPublishedCell(safeEdge.to()));
+                    safeAction.id(),
+                    safeAction.displayLabel(),
+                    safeAction.helpText());
         }
     }
 
@@ -606,9 +454,9 @@ public final class TravelApplicationService {
         }
 
         private static TravelDungeonMapProjectionSnapshot.TopologyKind topology(
-                ApplyTravelDungeonSessionUseCase.TopologyKind topologyKind
+                ApplyTravelDungeonSessionUseCase.GridTopology topology
         ) {
-            return topologyKind == ApplyTravelDungeonSessionUseCase.TopologyKind.HEX
+            return ApplyTravelDungeonSessionUseCase.GridTopology.HEX.equals(topology)
                     ? TravelDungeonMapProjectionSnapshot.TopologyKind.HEX
                     : TravelDungeonMapProjectionSnapshot.TopologyKind.SQUARE;
         }
@@ -640,13 +488,16 @@ public final class TravelApplicationService {
         }
 
         private static TravelDungeonMapProjectionSnapshot.Heading heading(
-                ApplyTravelDungeonSessionUseCase.@Nullable Heading heading
+                ApplyTravelDungeonSessionUseCase.@Nullable Direction heading
         ) {
-            return switch (heading == null ? ApplyTravelDungeonSessionUseCase.Heading.SOUTH : heading) {
-                case NORTH -> TravelDungeonMapProjectionSnapshot.Heading.NORTH;
-                case EAST -> TravelDungeonMapProjectionSnapshot.Heading.EAST;
-                case SOUTH -> TravelDungeonMapProjectionSnapshot.Heading.SOUTH;
-                case WEST -> TravelDungeonMapProjectionSnapshot.Heading.WEST;
+            String directionName = heading == null
+                    ? ApplyTravelDungeonSessionUseCase.Direction.SOUTH.name()
+                    : heading.name();
+            return switch (directionName) {
+                case "NORTH" -> TravelDungeonMapProjectionSnapshot.Heading.NORTH;
+                case "EAST" -> TravelDungeonMapProjectionSnapshot.Heading.EAST;
+                case "WEST" -> TravelDungeonMapProjectionSnapshot.Heading.WEST;
+                default -> TravelDungeonMapProjectionSnapshot.Heading.SOUTH;
             };
         }
 
@@ -737,20 +588,24 @@ public final class TravelApplicationService {
                 @Nullable PartyTravelLocationSnapshot location
         ) {
             if (location instanceof PartyDungeonTravelLocationSnapshot dungeonLocation) {
-                return new ApplyTravelDungeonSessionUseCase.DungeonPartyLocationData(
-                        dungeonLocation.mapId(),
-                        ApplyTravelDungeonSessionUseCase.LocationKind.valueOf(dungeonLocation.locationKind().name()),
-                        dungeonLocation.ownerId(),
-                        new ApplyTravelDungeonSessionUseCase.CellData(
-                                dungeonLocation.tile().q(),
-                                dungeonLocation.tile().r(),
-                                dungeonLocation.tile().level()),
-                        ApplyTravelDungeonSessionUseCase.Heading.valueOf(dungeonLocation.heading().name()));
+                return new ApplyTravelDungeonSessionUseCase.PartyLocationData(
+                        new ApplyTravelDungeonSessionUseCase.PositionData(
+                                dungeonLocation.mapId(),
+                                ApplyTravelDungeonSessionUseCase.LocationKind.valueOf(dungeonLocation.locationKind().name()),
+                                dungeonLocation.ownerId(),
+                                new ApplyTravelDungeonSessionUseCase.CellData(
+                                        dungeonLocation.tile().q(),
+                                        dungeonLocation.tile().r(),
+                                        dungeonLocation.tile().level()),
+                                ApplyTravelDungeonSessionUseCase.Direction.fromName(dungeonLocation.heading().name())),
+                        0L,
+                        false);
             }
             if (location instanceof PartyOverworldTravelLocationSnapshot overworldLocation) {
-                return new ApplyTravelDungeonSessionUseCase.OverworldPartyLocationData(
-                        overworldLocation.mapId(),
-                        overworldLocation.tileId());
+                return new ApplyTravelDungeonSessionUseCase.PartyLocationData(
+                        null,
+                        overworldLocation.tileId(),
+                        true);
             }
             return null;
         }
@@ -820,10 +675,10 @@ public final class TravelApplicationService {
                     externalTarget);
         }
 
-        private static ApplyTravelDungeonSessionUseCase.ActionData toInternalAction(
+        private static ApplyTravelDungeonSessionUseCase.AvailableAction toInternalAction(
                 @Nullable DungeonTravelActionSnapshot action
         ) {
-            return new ApplyTravelDungeonSessionUseCase.ActionData(
+            return new ApplyTravelDungeonSessionUseCase.AvailableAction(
                     action == null ? "" : action.actionId(),
                     action == null ? "" : action.displayLabel(),
                     action == null ? "" : action.description());
@@ -832,7 +687,7 @@ public final class TravelApplicationService {
         private static ApplyTravelDungeonSessionUseCase.MapData toInternalMap(@Nullable DungeonMapSnapshot map) {
             DungeonMapSnapshot safeMap = map == null ? DungeonMapSnapshot.empty() : map;
             return new ApplyTravelDungeonSessionUseCase.MapData(
-                    ApplyTravelDungeonSessionUseCase.TopologyKind.valueOf(safeMap.topology().name()),
+                    ApplyTravelDungeonSessionUseCase.GridTopology.fromName(safeMap.topology().name()),
                     safeMap.width(),
                     safeMap.height(),
                     safeMap.areas().stream().map(DungeonBoundaryTranslation::toInternalArea).toList(),
@@ -921,8 +776,8 @@ public final class TravelApplicationService {
                             position == null ? 0 : position.tile().r(),
                             position == null ? 0 : position.tile().level()),
                     position == null
-                            ? ApplyTravelDungeonSessionUseCase.Heading.SOUTH
-                            : ApplyTravelDungeonSessionUseCase.Heading.valueOf(position.heading().name()));
+                            ? ApplyTravelDungeonSessionUseCase.Direction.SOUTH
+                            : ApplyTravelDungeonSessionUseCase.Direction.fromName(position.heading().name()));
         }
 
         private static @Nullable DungeonTravelPosition toDungeonPosition(
@@ -953,7 +808,7 @@ public final class TravelApplicationService {
                             ApplyTravelDungeonSessionUseCase.LocationKind.TILE,
                             0L,
                             new ApplyTravelDungeonSessionUseCase.CellData(0, 0, 0),
-                            ApplyTravelDungeonSessionUseCase.Heading.SOUTH),
+                            ApplyTravelDungeonSessionUseCase.Direction.SOUTH),
                     "Overworld",
                     "Overworld-Feld " + tileId,
                     "-",

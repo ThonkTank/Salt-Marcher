@@ -1,13 +1,16 @@
 package src.domain.sessionplanner.published;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 public record SessionPlannerSnapshot(
         PartyState party,
+        SessionState session,
         XpBudgetState xpBudget,
         RestAdviceState restAdvice,
         GoldBudgetState goldBudget,
         List<AvailableEncounterPlan> availableEncounterPlans,
+        List<SessionParticipant> participants,
         List<PlannedEncounter> plannedEncounters,
         List<RestGap> restGaps,
         List<LootPlaceholder> lootPlaceholders,
@@ -16,22 +19,26 @@ public record SessionPlannerSnapshot(
 
     public SessionPlannerSnapshot {
         party = party == null ? PartyState.empty() : party;
+        session = session == null ? SessionState.empty() : session;
         xpBudget = xpBudget == null ? XpBudgetState.empty() : xpBudget;
         restAdvice = restAdvice == null ? RestAdviceState.empty() : restAdvice;
         goldBudget = goldBudget == null ? GoldBudgetState.placeholder(0) : goldBudget;
-        availableEncounterPlans = availableEncounterPlans == null ? List.of() : List.copyOf(availableEncounterPlans);
-        plannedEncounters = plannedEncounters == null ? List.of() : List.copyOf(plannedEncounters);
-        restGaps = restGaps == null ? List.of() : List.copyOf(restGaps);
-        lootPlaceholders = lootPlaceholders == null ? List.of() : List.copyOf(lootPlaceholders);
+        availableEncounterPlans = copy(availableEncounterPlans);
+        participants = copy(participants);
+        plannedEncounters = copy(plannedEncounters);
+        restGaps = copy(restGaps);
+        lootPlaceholders = copy(lootPlaceholders);
         status = status == null ? "" : status;
     }
 
     public static SessionPlannerSnapshot empty(String status) {
         return new SessionPlannerSnapshot(
                 PartyState.empty(),
+                SessionState.empty(),
                 XpBudgetState.empty(),
                 RestAdviceState.empty(),
                 GoldBudgetState.placeholder(0),
+                List.of(),
                 List.of(),
                 List.of(),
                 List.of(),
@@ -49,7 +56,7 @@ public record SessionPlannerSnapshot(
     ) {
 
         public PartyState {
-            activePartyLevels = activePartyLevels == null ? List.of() : List.copyOf(activePartyLevels);
+            activePartyLevels = copy(activePartyLevels);
             headline = headline == null ? "" : headline;
             detail = detail == null ? "" : detail;
             activePartySize = Math.max(0, activePartySize);
@@ -57,7 +64,27 @@ public record SessionPlannerSnapshot(
         }
 
         public static PartyState empty() {
-            return new PartyState(List.of(), 0, 0, false, "Keine aktive Party", "Session Planner ist ohne aktive Party deaktiviert.");
+            return new PartyState(List.of(), 0, 0, false, "Keine Session-Teilnehmer", "Session hat noch keine Teilnehmer.");
+        }
+    }
+
+    public record SessionState(
+            long sessionId,
+            BigDecimal encounterDays,
+            String encounterDaysText,
+            long selectedEncounterId,
+            boolean hasSelectedEncounter
+    ) {
+
+        public SessionState {
+            sessionId = Math.max(0L, sessionId);
+            encounterDays = encounterDays == null ? BigDecimal.ONE : encounterDays;
+            encounterDaysText = encounterDaysText == null ? encounterDays.stripTrailingZeros().toPlainString() : encounterDaysText;
+            selectedEncounterId = Math.max(0L, selectedEncounterId);
+        }
+
+        public static SessionState empty() {
+            return new SessionState(0L, BigDecimal.ONE, "1", 0L, false);
         }
     }
 
@@ -86,7 +113,7 @@ public record SessionPlannerSnapshot(
         }
 
         public static XpBudgetState empty() {
-            return new XpBudgetState(false, 0, 0, 0, 0, 0, 0, 0.0, false, "Kein XP-Budget verfügbar.");
+            return new XpBudgetState(false, 0, 0, 0, 0, 0, 0, 0.0, false, "Kein XP-Budget verfuegbar.");
         }
     }
 
@@ -108,7 +135,7 @@ public record SessionPlannerSnapshot(
         }
 
         public static RestAdviceState empty() {
-            return new RestAdviceState(false, 0, 0, 0, 0, "Keine Rastempfehlung verfügbar.");
+            return new RestAdviceState(false, 0, 0, 0, 0, "Keine Rastempfehlung verfuegbar.");
         }
     }
 
@@ -154,6 +181,22 @@ public record SessionPlannerSnapshot(
         }
     }
 
+    public record SessionParticipant(
+            long characterId,
+            String name,
+            int level,
+            boolean available,
+            String statusText
+    ) {
+
+        public SessionParticipant {
+            characterId = Math.max(0L, characterId);
+            name = name == null ? "" : name.trim();
+            level = Math.max(0, level);
+            statusText = statusText == null ? "" : statusText.trim();
+        }
+    }
+
     public record PlannedEncounter(
             long token,
             long planId,
@@ -163,10 +206,15 @@ public record SessionPlannerSnapshot(
             int totalBaseXp,
             int adjustedXp,
             double xpMultiplier,
-            String difficultyLabel
+            String difficultyLabel,
+            BigDecimal budgetPercentage,
+            int targetXp,
+            boolean selected
     ) {
 
         public PlannedEncounter {
+            token = Math.max(0L, token);
+            planId = Math.max(0L, planId);
             name = name == null ? "" : name.trim();
             generatedLabel = generatedLabel == null ? "" : generatedLabel.trim();
             creatureCount = Math.max(0, creatureCount);
@@ -174,16 +222,22 @@ public record SessionPlannerSnapshot(
             adjustedXp = Math.max(0, adjustedXp);
             xpMultiplier = xpMultiplier <= 0.0 ? 1.0 : xpMultiplier;
             difficultyLabel = difficultyLabel == null ? "" : difficultyLabel.trim();
+            budgetPercentage = budgetPercentage == null ? BigDecimal.ZERO : budgetPercentage;
+            targetXp = Math.max(0, targetXp);
         }
     }
 
     public record RestGap(
             int gapIndex,
+            long leftEncounterId,
+            long rightEncounterId,
             SessionPlannerRestKind restKind
     ) {
 
         public RestGap {
             gapIndex = Math.max(0, gapIndex);
+            leftEncounterId = Math.max(0L, leftEncounterId);
+            rightEncounterId = Math.max(0L, rightEncounterId);
             restKind = restKind == null ? SessionPlannerRestKind.NONE : restKind;
         }
     }
@@ -194,7 +248,12 @@ public record SessionPlannerSnapshot(
     ) {
 
         public LootPlaceholder {
+            token = Math.max(0L, token);
             label = label == null ? "" : label.trim();
         }
+    }
+
+    private static <T> List<T> copy(List<T> values) {
+        return values == null ? List.of() : List.copyOf(values);
     }
 }

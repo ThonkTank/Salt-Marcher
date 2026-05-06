@@ -8,7 +8,7 @@ import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.ReadOnlyStringProperty;
 import javafx.beans.property.ReadOnlyStringWrapper;
 import src.domain.travel.published.TravelDungeonSnapshot;
-import src.domain.travel.published.TravelDungeonSurface;
+import src.domain.travel.published.TravelDungeonWorkspaceState;
 import src.domain.travel.published.TravelOverlaySettings;
 
 public final class DungeonTravelContributionModel {
@@ -58,23 +58,23 @@ public final class DungeonTravelContributionModel {
         TravelDungeonSnapshot safeSnapshot = snapshot == null
                 ? TravelDungeonSnapshot.empty()
                 : snapshot;
-        TravelDungeonSurface surface = safeSnapshot.surface();
+        TravelDungeonWorkspaceState workspaceState = safeSnapshot.workspaceState();
         overlaySettings.set(toOverlaySettings(safeSnapshot.overlaySettings()));
         projectionLevel.set(safeSnapshot.projectionLevel());
-        if (surface == null) {
+        if (workspaceState == null) {
             actions.set(List.of());
             mapName.set("Dungeon");
             refreshStateText();
             return;
         }
-        mapName.set(surface.mapName());
-        actions.set(surface.actions().stream()
+        mapName.set(workspaceState.mapName());
+        actions.set(workspaceState.actions().stream()
                         .map(action -> new ActionProjection(
                                 action.actionId(),
                                 action.label(),
                                 action.description()))
                         .toList());
-        refreshStateText(surface);
+        refreshStateText(workspaceState);
     }
 
     int currentProjectionLevel() {
@@ -93,19 +93,19 @@ public final class DungeonTravelContributionModel {
                 + overlaySettings.get().overlayLabel());
     }
 
-    private void refreshStateText(TravelDungeonSurface surface) {
-        if (surface == null) {
+    private void refreshStateText(TravelDungeonWorkspaceState workspaceState) {
+        if (workspaceState == null) {
             refreshStateText();
             return;
         }
-        state.set("Position: " + surface.areaLabel() + "\n"
-                + "Tile: " + surface.tileLabel() + "\n"
-                + "Heading: " + surface.headingLabel() + "\n"
-                + "Status: " + (surface.statusLabel().isBlank()
-                ? (surface.contextKind() == TravelDungeonSurface.ContextKind.OVERWORLD
+        state.set("Position: " + workspaceState.areaLabel() + "\n"
+                + "Tile: " + workspaceState.tileLabel() + "\n"
+                + "Heading: " + workspaceState.headingLabel() + "\n"
+                + "Status: " + (workspaceState.statusLabel().isBlank()
+                ? (workspaceState.outsideDungeon()
                         ? "Gruppe befindet sich ausserhalb des Dungeons"
                         : "Token auf der Karte ziehen")
-                : surface.statusLabel()) + "\n"
+                : workspaceState.statusLabel()) + "\n"
                 + overlaySettings.get().overlayLabel());
     }
 

@@ -18,8 +18,8 @@ Context Name: Travel
 
 ## Published Language
 
-`published/` owns the runtime-travel boundary for active workspaces and session
-state snapshots.
+`published/` owns the runtime-travel boundary for active workspaces, workflow
+commands, workspace-state readback, and map-projection snapshots.
 
 Published travel carriers must not own:
 
@@ -37,7 +37,9 @@ application services from `party` and `dungeon`.
 The root boundary owns all same-context and foreign published-carrier
 translation. Runtime session orchestration lives below that boundary in
 `travel/application/*UseCase` code and does not consume `travel.published/**`,
-`party.published/**`, or `dungeon.published/**` carriers directly.
+`party.published/**`, or `dungeon.published/**` carriers directly. Raw authored
+dungeon travel families stay dungeon-owned; `travel` publishes only its own
+workflow and readback language.
 
 ## Commands And Invariants
 
@@ -60,7 +62,7 @@ Core invariants:
 
 - overlay settings are session-local
 - projection level is session-local
-- current runtime dungeon surface is rebuilt from dungeon truth plus party
+- current runtime workspace state is rebuilt from dungeon truth plus party
   position
 - party and dungeon carrier translation happens only at the root boundary
 - no separate `travel` persistence store is introduced
@@ -76,7 +78,9 @@ instead of being absorbed into this generation-policy context.
 
 ## Ubiquitous Language
 
-- `TravelDungeonSnapshot`: current runtime dungeon-travel session surface
-- `TravelDungeonSurface`: projected runtime dungeon surface for one current
-  position
+- `TravelDungeonSnapshot`: current runtime dungeon-travel session readback
+- `TravelDungeonWorkspaceState`: projected runtime workspace state for one
+  current position
+- `TravelDungeonMapProjectionSnapshot`: projection-only map payload for shared
+  map rendering consumers
 - `TravelOverlaySettings`: session-local overlay projection controls

@@ -1,10 +1,9 @@
 package src.domain.travel.published;
 
 import org.jspecify.annotations.Nullable;
-import src.domain.travel.published.TravelDungeonMapProjectionSnapshot;
 
 public record TravelDungeonSnapshot(
-        @Nullable TravelDungeonSurface surface,
+        @Nullable TravelDungeonWorkspaceState workspaceState,
         @Nullable TravelDungeonMapProjectionSnapshot mapProjection,
         TravelOverlaySettings overlaySettings,
         int projectionLevel

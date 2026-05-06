@@ -25,7 +25,7 @@ final class DungeonTravelBinder {
 
     ShellBinding bind() {
         TravelApplicationService travel = runtimeContext.services().require(TravelApplicationService.class);
-        TravelDungeonModel travelModel = travel.loadDungeonTravel(new LoadTravelDungeonQuery(null));
+        TravelDungeonModel travelModel = travel.loadDungeonTravel(new LoadTravelDungeonQuery());
         DungeonTravelContributionModel contributionModel = new DungeonTravelContributionModel();
         DungeonMapContentModel mapContentModel = new DungeonMapContentModel("Travel workspace", false);
         DungeonTravelIntentHandler intentHandler = new DungeonTravelIntentHandler(contributionModel);

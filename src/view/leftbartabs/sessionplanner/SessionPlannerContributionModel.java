@@ -83,6 +83,8 @@ public final class SessionPlannerContributionModel {
         restGaps.setAll(safe.restGaps().stream()
                 .map(gap -> new RestGapModel(
                         gap.gapIndex(),
+                        gap.leftEncounterId(),
+                        gap.rightEncounterId(),
                         restLabel(gap.restKind()),
                         gap.restKind() != null && gap.restKind() != SessionPlannerRestKind.NONE))
                 .toList());
@@ -270,6 +272,8 @@ public final class SessionPlannerContributionModel {
 
     public record RestGapModel(
             int gapIndex,
+            long leftEncounterId,
+            long rightEncounterId,
             String label,
             boolean hasAssignedRest
     ) {

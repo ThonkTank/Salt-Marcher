@@ -8,10 +8,18 @@ import shell.api.ShellBinding;
 import shell.api.ShellRuntimeContext;
 import shell.api.ShellSlot;
 import src.domain.sessionplanner.SessionPlannerApplicationService;
-import src.domain.sessionplanner.published.ApplySessionPlannerCommand;
+import src.domain.sessionplanner.published.AddSessionLootPlaceholderCommand;
+import src.domain.sessionplanner.published.AttachSessionEncounterCommand;
+import src.domain.sessionplanner.published.ClearSessionRestGapCommand;
 import src.domain.sessionplanner.published.LoadSessionPlannerQuery;
+import src.domain.sessionplanner.published.MoveSessionEncounterDownCommand;
+import src.domain.sessionplanner.published.MoveSessionEncounterUpCommand;
+import src.domain.sessionplanner.published.RefreshSessionPlannerCommand;
+import src.domain.sessionplanner.published.RemoveSessionEncounterCommand;
+import src.domain.sessionplanner.published.RemoveSessionLootPlaceholderCommand;
 import src.domain.sessionplanner.published.SessionPlannerModel;
 import src.domain.sessionplanner.published.SessionPlannerRestKind;
+import src.domain.sessionplanner.published.SetSessionRestGapCommand;
 
 final class SessionPlannerBinder {
 
@@ -32,7 +40,7 @@ final class SessionPlannerBinder {
         SessionPlannerLootMainView lootView = new SessionPlannerLootMainView();
         SessionPlannerMainView mainView = new SessionPlannerMainView(timelineView, lootView);
 
-        bindRequests(planner, intentHandler);
+        bindRequests(planner, contributionModel, intentHandler);
         bindControls(contributionModel, intentHandler, controlsView);
         bindMain(contributionModel, intentHandler, timelineView, lootView);
 
@@ -43,9 +51,10 @@ final class SessionPlannerBinder {
 
     private static void bindRequests(
             SessionPlannerApplicationService planner,
+            SessionPlannerContributionModel contributionModel,
             SessionPlannerIntentHandler intentHandler
     ) {
-        intentHandler.onPublishedEventRequested(event -> planner.applySession(toCommand(event)));
+        intentHandler.onPublishedEventRequested(event -> applyPublishedEvent(planner, contributionModel, event));
     }
 
     private static void bindControls(
@@ -96,40 +105,41 @@ final class SessionPlannerBinder {
                         lootView.showLootPlaceholders(contributionModel.lootPlaceholdersProperty().get()));
     }
 
-    private static ApplySessionPlannerCommand refreshCommand() {
-        return new ApplySessionPlannerCommand(
-                ApplySessionPlannerCommand.Action.REFRESH,
-                0L,
-                0L,
-                -1,
-                SessionPlannerRestKind.NONE,
-                0L);
-    }
-
-    private static ApplySessionPlannerCommand toCommand(SessionPlannerPublishedEvent event) {
+    private static void applyPublishedEvent(
+            SessionPlannerApplicationService planner,
+            SessionPlannerContributionModel contributionModel,
+            SessionPlannerPublishedEvent event
+    ) {
         if (event == null) {
-            return refreshCommand();
+            planner.refreshSession(new RefreshSessionPlannerCommand());
+            return;
         }
-        return new ApplySessionPlannerCommand(
-                toAction(event.kind()),
-                event.planId(),
-                event.encounterToken(),
-                event.gapIndex(),
-                toRestKind(event.restSelection()),
-                event.lootToken());
-    }
-
-    private static ApplySessionPlannerCommand.Action toAction(SessionPlannerPublishedEvent.Kind kind) {
-        return switch (kind) {
-            case IMPORT_PLAN -> ApplySessionPlannerCommand.Action.IMPORT_ENCOUNTER_PLAN;
-            case REMOVE_ENCOUNTER -> ApplySessionPlannerCommand.Action.REMOVE_ENCOUNTER;
-            case MOVE_ENCOUNTER_UP -> ApplySessionPlannerCommand.Action.MOVE_ENCOUNTER_UP;
-            case MOVE_ENCOUNTER_DOWN -> ApplySessionPlannerCommand.Action.MOVE_ENCOUNTER_DOWN;
-            case SET_REST_GAP -> ApplySessionPlannerCommand.Action.SET_REST_GAP;
-            case CLEAR_REST_GAP -> ApplySessionPlannerCommand.Action.CLEAR_REST_GAP;
-            case ADD_LOOT_PLACEHOLDER -> ApplySessionPlannerCommand.Action.ADD_LOOT_PLACEHOLDER;
-            case REMOVE_LOOT_PLACEHOLDER -> ApplySessionPlannerCommand.Action.REMOVE_LOOT_PLACEHOLDER;
-        };
+        switch (event.kind()) {
+            case IMPORT_PLAN -> planner.attachEncounter(new AttachSessionEncounterCommand(event.planId()));
+            case REMOVE_ENCOUNTER -> planner.removeEncounter(new RemoveSessionEncounterCommand(event.encounterToken()));
+            case MOVE_ENCOUNTER_UP -> planner.moveEncounterUp(new MoveSessionEncounterUpCommand(event.encounterToken()));
+            case MOVE_ENCOUNTER_DOWN -> planner.moveEncounterDown(new MoveSessionEncounterDownCommand(event.encounterToken()));
+            case SET_REST_GAP -> {
+                SessionPlannerContributionModel.RestGapModel gap = resolveGap(contributionModel, event.gapIndex());
+                if (gap != null) {
+                    planner.setRestGap(new SetSessionRestGapCommand(
+                            gap.leftEncounterId(),
+                            gap.rightEncounterId(),
+                            toRestKind(event.restSelection())));
+                }
+            }
+            case CLEAR_REST_GAP -> {
+                SessionPlannerContributionModel.RestGapModel gap = resolveGap(contributionModel, event.gapIndex());
+                if (gap != null) {
+                    planner.clearRestGap(new ClearSessionRestGapCommand(
+                            gap.leftEncounterId(),
+                            gap.rightEncounterId()));
+                }
+            }
+            case ADD_LOOT_PLACEHOLDER -> planner.addLootPlaceholder(new AddSessionLootPlaceholderCommand());
+            case REMOVE_LOOT_PLACEHOLDER ->
+                    planner.removeLootPlaceholder(new RemoveSessionLootPlaceholderCommand(event.lootToken()));
+        }
     }
 
     private static SessionPlannerRestKind toRestKind(SessionPlannerPublishedEvent.RestSelection selection) {
@@ -138,6 +148,16 @@ final class SessionPlannerBinder {
             case SHORT_REST -> SessionPlannerRestKind.SHORT_REST;
             case LONG_REST -> SessionPlannerRestKind.LONG_REST;
         };
+    }
+
+    private static SessionPlannerContributionModel.RestGapModel resolveGap(
+            SessionPlannerContributionModel contributionModel,
+            int gapIndex
+    ) {
+        if (gapIndex < 0 || gapIndex >= contributionModel.restGapsProperty().size()) {
+            return null;
+        }
+        return contributionModel.restGapsProperty().get(gapIndex);
     }
 
     private record Binding(
@@ -165,7 +185,7 @@ final class SessionPlannerBinder {
 
         @Override
         public void onActivate() {
-            planner.applySession(refreshCommand());
+            planner.refreshSession(new RefreshSessionPlannerCommand());
         }
     }
 }
