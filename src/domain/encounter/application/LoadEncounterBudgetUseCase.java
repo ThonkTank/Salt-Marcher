@@ -3,35 +3,28 @@ package src.domain.encounter.application;
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 import src.domain.encounter.generation.policy.EncounterDifficultyMath;
-import src.domain.party.PartyApplicationService;
-import src.domain.party.published.ActivePartyCompositionResult;
-import src.domain.party.published.AdventuringDayResult;
-import src.domain.party.published.LoadActivePartyCompositionQuery;
-import src.domain.party.published.LoadAdventuringDaySummaryQuery;
-import src.domain.party.published.ReadStatus;
+import src.domain.encounter.session.port.EncounterPartyFactsRepository;
 
 public final class LoadEncounterBudgetUseCase {
 
-    private final PartyApplicationService party;
+    private final EncounterPartyFactsRepository party;
 
-    public LoadEncounterBudgetUseCase(PartyApplicationService party) {
+    public LoadEncounterBudgetUseCase(EncounterPartyFactsRepository party) {
         this.party = Objects.requireNonNull(party, "party");
     }
 
     public Result execute() {
-        ActivePartyCompositionResult compositionResult =
-                party.loadActivePartyComposition(new LoadActivePartyCompositionQuery());
-        AdventuringDayResult dayResult = party.loadAdventuringDaySummary(new LoadAdventuringDaySummaryQuery());
-        if (compositionResult.status() != ReadStatus.SUCCESS || dayResult.status() != ReadStatus.SUCCESS) {
+        EncounterPartyFactsRepository.PartyBudgetFacts facts = party.loadPartyBudgetFacts();
+        if (facts.status() == EncounterPartyFactsRepository.Status.STORAGE_ERROR) {
             return Result.storageError();
         }
-        if (compositionResult.composition().activePartyLevels().isEmpty()) {
+        if (facts.status() == EncounterPartyFactsRepository.Status.NO_ACTIVE_PARTY) {
             return Result.noActiveParty();
         }
         EncounterDifficultyMath.BudgetSummary summary = EncounterDifficultyMath.summarizeBudget(
-                compositionResult.composition().activePartyLevels(),
-                dayResult.summary().consumedXp(),
-                dayResult.summary().totalBudgetXp());
+                facts.activePartyLevels(),
+                facts.consumedDailyXp(),
+                facts.totalBudgetXp());
         return Result.success(summary);
     }
 

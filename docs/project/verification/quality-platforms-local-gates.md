@@ -391,8 +391,9 @@ Focused investigation entrypoints are `compileJava`, `pmdMain`,
 `checkViewInspectorEntryEnforcement`, `checkViewLayerEnforcement`,
 `checkViewInputEventEnforcement`, `checkViewPublishedEventEnforcement`,
 `checkViewIntentHandlerEnforcement`, `checkLayeringArchitectureEnforcement`,
-`checkLayeringIndirectionCandidates`, `checkDocumentationEnforcement`, and
-`jqassistantEffectiveRules`, each run through
+`checkLayeringIndirectionEnforcement`, `checkLayeringIndirectionCandidates`,
+`checkDocumentationEnforcement`, and `jqassistantEffectiveRules`, each run
+through
 `./gradlew <task> --console=plain`.
 
 `pmdMain` and `spotbugsMain` are central blocking gates and may also be run as
@@ -509,6 +510,12 @@ Architecture-focused entrypoints:
   Aggregates the dedicated `Layering Architecture` bundle through
   `:build-harness:layeringArchitectureTopologyCheck` and
   `:build-harness:layeringArchitectureDocumentationEnforcementCheck`.
+- `./gradlew checkLayeringIndirectionEnforcement --console=plain`
+  Aggregates the dedicated `Layering Indirection` bundle through the focused
+  `jqassistantAnalyzeLayeringIndirectionEnforcement` path. It blocks on the
+  compiled relay-only substantive-role constraint and reports warning-only thin
+  relay-stack candidates without attaching that direct entrypoint to
+  `checkArchitecture`, `check`, or `build`.
 - `./gradlew checkLayeringIndirectionCandidates --console=plain`
   Runs the descriptor-owned report-only thin-role candidate PMD scan through
   the dedicated `Layering Architecture` bundle without attaching that

@@ -2,7 +2,6 @@ package src.domain.encounter.application;
 
 import static src.domain.encounter.session.value.EncounterSessionValues.*;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import org.jspecify.annotations.Nullable;
@@ -14,20 +13,13 @@ import src.domain.encounter.generation.value.EncounterGenerationRequest;
 import src.domain.encounter.plan.aggregate.EncounterPlan;
 import src.domain.encounter.plan.value.EncounterPlanCreature;
 import src.domain.encounter.session.entity.EncounterSession;
-import src.domain.party.PartyApplicationService;
-import src.domain.party.published.ActivePartyResult;
-import src.domain.party.published.AwardPartyXpCommand;
-import src.domain.party.published.LoadActivePartyQuery;
-import src.domain.party.published.MutationResult;
-import src.domain.party.published.MutationStatus;
-import src.domain.party.published.PartyMemberSummary;
-import src.domain.party.published.ReadStatus;
+import src.domain.encounter.session.port.EncounterPartyFactsRepository;
 
 public final class EncounterSessionRuntimeAdapter implements EncounterSession.RuntimeAccess {
 
     private static final String DEFAULT_CREATURE_ROLE = "Creature";
 
-    private final PartyApplicationService party;
+    private final EncounterPartyFactsRepository party;
     private final CreaturesApplicationService creatures;
     private final @Nullable EncounterGenerationUseCase generator;
     private final @Nullable LoadEncounterBudgetUseCase loadBudgetUseCase;
@@ -36,7 +28,7 @@ public final class EncounterSessionRuntimeAdapter implements EncounterSession.Ru
     private final @Nullable ListSavedEncounterPlansUseCase listSavedPlansUseCase;
 
     public EncounterSessionRuntimeAdapter(
-            PartyApplicationService party,
+            EncounterPartyFactsRepository party,
             CreaturesApplicationService creatures,
             @Nullable EncounterGenerationUseCase generator,
             @Nullable LoadEncounterBudgetUseCase loadBudgetUseCase,
@@ -55,21 +47,7 @@ public final class EncounterSessionRuntimeAdapter implements EncounterSession.Ru
 
     @Override
     public List<PartyMemberData> loadActiveParty() {
-        ActivePartyResult result = party.loadActiveParty(new LoadActivePartyQuery());
-        if (result.status() != ReadStatus.SUCCESS) {
-            return List.of();
-        }
-        List<PartyMemberData> members = new ArrayList<>();
-        for (PartyMemberSummary member : result.members()) {
-            if (member != null) {
-                members.add(new PartyMemberData(
-                        "pc-" + member.id(),
-                        member.id(),
-                        member.name(),
-                        member.level()));
-            }
-        }
-        return List.copyOf(members);
+        return party.loadActiveParty();
     }
 
     @Override
@@ -157,8 +135,7 @@ public final class EncounterSessionRuntimeAdapter implements EncounterSession.Ru
 
     @Override
     public AwardXpOutcome awardXp(List<Long> partyMemberIds, int xpPerCharacter) {
-        MutationResult result = party.awardXp(new AwardPartyXpCommand(partyMemberIds, xpPerCharacter));
-        return new AwardXpOutcome(result != null && result.status() == MutationStatus.SUCCESS);
+        return new AwardXpOutcome(party.awardXp(partyMemberIds, xpPerCharacter));
     }
 
     private GeneratedEncounterData toSessionGeneratedEncounter(

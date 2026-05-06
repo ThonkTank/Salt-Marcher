@@ -1,8 +1,8 @@
 package src.domain.dungeoneditor.interaction.service;
 
 import java.util.ArrayList;
-import java.util.List;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.published.DungeonAreaKind;
@@ -11,7 +11,6 @@ import src.domain.dungeon.published.DungeonCellRef;
 import src.domain.dungeon.published.DungeonSnapshot;
 import src.domain.dungeoneditor.interaction.value.DungeonEditorInteractionValues.CellKey;
 import src.domain.dungeoneditor.interaction.value.DungeonEditorInteractionValues.TravelHeading;
-import src.domain.dungeoneditor.interaction.value.DungeonEditorMainViewInteractionValues;
 import src.domain.dungeoneditor.interaction.value.DungeonEditorMainViewInteractionValues.BoundaryRoomTouch;
 import src.domain.dungeoneditor.interaction.value.DungeonEditorMainViewInteractionValues.BoundaryTarget;
 import src.domain.dungeoneditor.interaction.value.DungeonEditorMainViewInteractionValues.EdgeKey;
@@ -39,7 +38,9 @@ public final class DungeonEditorBoundaryRoomTouchService {
         if (requireDoorBoundary != boundary.doorKind()) {
             return null;
         }
-        List<DungeonCellRef> touchingCells = touchingCells(boundary.start().toDungeonCellRef(), boundary.end().toDungeonCellRef());
+        List<DungeonCellRef> touchingCells = DungeonEditorBoundaryRoomTouchSupport.touchingCells(
+                boundary.start().toDungeonCellRef(),
+                boundary.end().toDungeonCellRef());
         List<BoundaryRoomTouch> touches = roomTouches(snapshot.map().areas(), touchingCells);
         return touches.size() == 1 ? touches.getFirst() : null;
     }
@@ -60,7 +61,9 @@ public final class DungeonEditorBoundaryRoomTouchService {
             return 0;
         }
         Set<Long> roomIds = new LinkedHashSet<>();
-        List<CellKey> touchingCells = touchingCells(boundary.start().toDungeonCellRef(), boundary.end().toDungeonCellRef()).stream()
+        List<CellKey> touchingCells = DungeonEditorBoundaryRoomTouchSupport.touchingCells(
+                boundary.start().toDungeonCellRef(),
+                boundary.end().toDungeonCellRef()).stream()
                 .map(cell -> new CellKey(cell.q(), cell.r(), cell.level()))
                 .toList();
         for (DungeonAreaSnapshot area : snapshot.map().areas()) {
@@ -93,40 +96,5 @@ public final class DungeonEditorBoundaryRoomTouchService {
             }
         }
         return List.copyOf(touches);
-    }
-
-    private static List<DungeonCellRef> touchingCells(DungeonCellRef start, DungeonCellRef end) {
-        if (start.level() != end.level()) {
-            return List.of();
-        }
-        if (start.r() == end.r()) {
-            return horizontalTouchingCells(start, end);
-        }
-        if (start.q() == end.q()) {
-            return verticalTouchingCells(start, end);
-        }
-        return List.of();
-    }
-
-    private static List<DungeonCellRef> horizontalTouchingCells(DungeonCellRef start, DungeonCellRef end) {
-        int minQ = Math.min(start.q(), end.q());
-        int maxQ = Math.max(start.q(), end.q());
-        List<DungeonCellRef> result = new ArrayList<>();
-        for (int q = minQ; q < maxQ; q++) {
-            result.add(new DungeonCellRef(q, start.r() - 1, start.level()));
-            result.add(new DungeonCellRef(q, start.r(), start.level()));
-        }
-        return List.copyOf(result);
-    }
-
-    private static List<DungeonCellRef> verticalTouchingCells(DungeonCellRef start, DungeonCellRef end) {
-        int minR = Math.min(start.r(), end.r());
-        int maxR = Math.max(start.r(), end.r());
-        List<DungeonCellRef> result = new ArrayList<>();
-        for (int r = minR; r < maxR; r++) {
-            result.add(new DungeonCellRef(start.q() - 1, r, start.level()));
-            result.add(new DungeonCellRef(start.q(), r, start.level()));
-        }
-        return List.copyOf(result);
     }
 }

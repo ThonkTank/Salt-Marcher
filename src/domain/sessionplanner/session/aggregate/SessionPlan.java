@@ -201,8 +201,7 @@ public record SessionPlan(
         Iterator<SessionRestPlacement> iterator = nextRestPlacements.iterator();
         while (iterator.hasNext()) {
             SessionRestPlacement placement = iterator.next();
-            if (placement.leftEncounterId() == leftEncounterId
-                    && placement.rightEncounterId() == rightEncounterId) {
+            if (placement.matchesGap(leftEncounterId, rightEncounterId)) {
                 iterator.remove();
                 removed = true;
             }

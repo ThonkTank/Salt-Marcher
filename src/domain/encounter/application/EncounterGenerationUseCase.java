@@ -6,7 +6,7 @@ import src.domain.encountertable.EncounterTableApplicationService;
 import src.domain.encounter.generation.value.EncounterGenerationRequest;
 import src.domain.encounter.generation.value.EncounterDifficultyIntent;
 import src.domain.encounter.generation.value.EncounterTuningIntent;
-import src.domain.party.PartyApplicationService;
+import src.domain.encounter.session.port.EncounterPartyFactsRepository;
 
 import java.util.List;
 import java.util.Objects;
@@ -15,16 +15,16 @@ public final class EncounterGenerationUseCase {
 
     private static final int SEARCH_LIMIT = 240;
 
-    private final PartyApplicationService party;
+    private final EncounterPartyFactsRepository party;
     private final CreaturesApplicationService creatures;
     private final @Nullable EncounterTableApplicationService encounterTables;
 
-    public EncounterGenerationUseCase(PartyApplicationService party, CreaturesApplicationService creatures) {
+    public EncounterGenerationUseCase(EncounterPartyFactsRepository party, CreaturesApplicationService creatures) {
         this(party, creatures, null);
     }
 
     public EncounterGenerationUseCase(
-            PartyApplicationService party,
+            EncounterPartyFactsRepository party,
             CreaturesApplicationService creatures,
             @Nullable EncounterTableApplicationService encounterTables
     ) {

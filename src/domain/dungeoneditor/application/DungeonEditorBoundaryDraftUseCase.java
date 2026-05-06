@@ -10,10 +10,12 @@ import src.domain.dungeoneditor.interaction.service.DungeonEditorBoundaryCluster
 import src.domain.dungeoneditor.interaction.service.DungeonEditorBoundaryGraphService;
 import src.domain.dungeoneditor.interaction.service.DungeonEditorBoundaryRoomTouchService;
 import src.domain.dungeoneditor.interaction.value.DungeonEditorInteractionValues.VertexKey;
+import src.domain.dungeoneditor.interaction.value.DungeonEditorMainViewEffect;
 import src.domain.dungeoneditor.interaction.value.DungeonEditorMainViewInteractionValues.BoundaryDraft;
 import src.domain.dungeoneditor.interaction.value.DungeonEditorMainViewInteractionValues.BoundaryTarget;
 import src.domain.dungeoneditor.interaction.value.DungeonEditorMainViewInteractionValues.EdgeKey;
 import src.domain.dungeoneditor.interaction.value.DungeonEditorMainViewInteractionValues.InteractionState;
+import src.domain.dungeoneditor.interaction.value.DungeonEditorMainViewInterpretation;
 import src.domain.dungeoneditor.interaction.value.DungeonEditorMainViewInteractionValues.PathResult;
 import src.domain.dungeoneditor.interaction.value.DungeonEditorMainViewInteractionValues.PointerState;
 import src.domain.dungeoneditor.session.value.DungeonEditorSessionValues;

@@ -545,7 +545,7 @@ public final class SessionPlannerApplicationService {
             List<SessionRestPlacement> placements
     ) {
         for (SessionRestPlacement placement : placements) {
-            if (placement.leftEncounterId() != leftEncounterId || placement.rightEncounterId() != rightEncounterId) {
+            if (!placement.matchesGap(leftEncounterId, rightEncounterId)) {
                 continue;
             }
             return placement.isLongRest()

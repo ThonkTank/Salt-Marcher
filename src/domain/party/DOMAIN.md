@@ -25,14 +25,15 @@ Context Name: Party
 
 `published/` owns public party commands, results, snapshots, status enums,
 membership states, rest carriers, adventuring-day calculation carriers, and
-party snapshots returned by `PartyApplicationService`.
+published read models exported by the party runtime surface.
 
 ## Application Boundary
 
-`application/` contains party use cases. Use cases load one `PartyRoster`,
-delegate mutation or query decisions to the roster model and policies, save
-through the domain-owned outbound port, and return application or model
-results to the root application service for `published/` mapping.
+`application/` contains party use cases and party-owned boundary projection.
+Use cases load one `PartyRoster`, delegate mutation or query decisions to the
+roster model and policies, save through the domain-owned outbound port, and
+publish command or read-side results through the root boundary and exported
+party models.
 
 ## Aggregate Model
 
@@ -68,7 +69,8 @@ Core invariants:
 
 One roster mutation changes one `PartyRoster` aggregate instance and is saved
 by the party roster port. Other contexts consume party state through the
-application service and exported carriers instead of sharing roster internals.
+party command boundary and exported party models instead of sharing roster
+internals.
 
 ## Ubiquitous Language
 

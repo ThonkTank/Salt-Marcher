@@ -314,6 +314,11 @@ Operationally, architecture checks enter local quality through:
   dedicated build-harness topology, passive-carrier mirror, and
   documentation-coverage checks for repository-wide layer roots and
   included-build taxonomy
+- `checkLayeringIndirectionEnforcement`
+  runs the focused `Layering Indirection` enforcement bundle through the
+  dedicated jQAssistant relay-only blocker and warning-only thin relay-stack
+  diagnostics, and stays intentionally outside `checkArchitecture`, `check`,
+  and `build`
 - `checkArchitecture`
   aggregates the focused Domain Layer, Domain ApplicationService,
   Data ServiceContribution,

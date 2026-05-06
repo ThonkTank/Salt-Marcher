@@ -13,13 +13,18 @@ This document is normative for the `party` feature's persistence path.
 - `src/data/party/PartyServiceContribution.java` is the only root service
   entrypoint for the feature.
 - Bootstrap discovers it generically under `src/data/<feature>/`.
-- The contribution registers the exported root application service through the
+- The contribution registers the exported party runtime services through the
   shell-owned service registry, `shell.api.ServiceRegistry`.
-- The exported party runtime surface is `PartyApplicationService.class`.
-  Domain ports and other implementation collaborators are implementation
+- `PartyApplicationService.class` is the party command boundary only. Party
+  readback is exported through the published runtime models
+  `PartySnapshotModel.class`, `ActivePartyModel.class`,
+  `ActivePartyCompositionModel.class`, `AdventuringDaySummaryModel.class`,
+  `PartyTravelPositionsModel.class`, `PartyMutationModel.class`, and
+  `AdventuringDayCalculationModel.class`.
+- Domain ports and other implementation collaborators are implementation
   details and must not be registered as runtime services.
-- View assembly code reads that root service only through the shell-owned
-  service lookup on `ShellRuntimeContext.services()`.
+- View assembly code and foreign feature adapters read those services only
+  through the shell-owned service lookup on `ShellRuntimeContext.services()`.
 
 ## Mandatory Schema
 
@@ -73,12 +78,15 @@ truth only; it does not persist character positions.
   `RuntimeServiceRegistry` is forbidden.
 - Character-specific runtime state belongs in party persistence unless another
   bounded context owns the character information itself.
+- Foreign features must not depend on party root return values for readback.
+  They must use owner-local adapters backed by the exported party models.
 
 ## Verification Notes
 
 - This contract is currently `Review-Owned`.
-- Review must reject public runtime-service exports other than
-  `PartyApplicationService.class`.
+- Review must reject runtime-service exports of domain ports or internal
+  collaborators while allowing the party command root plus the published party
+  read models.
 - Review must reject authored dungeon truth leaking into party-owned
   character-travel persistence.
 

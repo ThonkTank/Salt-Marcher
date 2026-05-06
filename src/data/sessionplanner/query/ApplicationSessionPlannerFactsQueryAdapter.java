@@ -11,10 +11,11 @@ import src.domain.encounter.published.SavedEncounterPlanListResult;
 import src.domain.encounter.published.SavedEncounterPlanStatus;
 import src.domain.encounter.published.SavedEncounterPlanSummary;
 import src.domain.party.PartyApplicationService;
+import src.domain.party.published.ActivePartyModel;
 import src.domain.party.published.ActivePartyResult;
+import src.domain.party.published.AdventuringDayCalculationModel;
 import src.domain.party.published.AdventuringDayCalculationResult;
-import src.domain.party.published.CalculateAdventuringDayQuery;
-import src.domain.party.published.LoadActivePartyQuery;
+import src.domain.party.published.CalculateAdventuringDayCommand;
 import src.domain.party.published.PartyMemberSummary;
 import src.domain.party.published.ReadStatus;
 import src.domain.sessionplanner.session.port.SessionEncounterFactsLookup;
@@ -24,19 +25,26 @@ public final class ApplicationSessionPlannerFactsQueryAdapter
         implements SessionPartyFactsLookup, SessionEncounterFactsLookup {
 
     private final PartyApplicationService party;
+    private final ActivePartyModel activePartyModel;
+    private final AdventuringDayCalculationModel adventuringDayCalculationModel;
     private final EncounterApplicationService encounters;
 
     public ApplicationSessionPlannerFactsQueryAdapter(
             PartyApplicationService party,
+            ActivePartyModel activePartyModel,
+            AdventuringDayCalculationModel adventuringDayCalculationModel,
             EncounterApplicationService encounters
     ) {
         this.party = Objects.requireNonNull(party, "party");
+        this.activePartyModel = Objects.requireNonNull(activePartyModel, "activePartyModel");
+        this.adventuringDayCalculationModel =
+                Objects.requireNonNull(adventuringDayCalculationModel, "adventuringDayCalculationModel");
         this.encounters = Objects.requireNonNull(encounters, "encounters");
     }
 
     @Override
     public ActivePartyMembersFact loadActivePartyMembers() {
-        ActivePartyResult result = party.loadActiveParty(new LoadActivePartyQuery());
+        ActivePartyResult result = activePartyModel.current();
         if (result.status() != ReadStatus.SUCCESS) {
             return new ActivePartyMembersFact(false, List.of(), "Aktive Party konnte nicht geladen werden.");
         }
@@ -48,8 +56,8 @@ public final class ApplicationSessionPlannerFactsQueryAdapter
 
     @Override
     public AdventuringDayFact calculateAdventuringDay(List<Integer> levels, int plannedEncounterXp) {
-        AdventuringDayCalculationResult result =
-                party.calculateAdventuringDay(new CalculateAdventuringDayQuery(levels, plannedEncounterXp));
+        party.calculateAdventuringDay(new CalculateAdventuringDayCommand(levels, plannedEncounterXp));
+        AdventuringDayCalculationResult result = adventuringDayCalculationModel.current();
         if (result.status() != ReadStatus.SUCCESS
                 || result.calculation() == null
                 || result.calculation().budget() == null) {

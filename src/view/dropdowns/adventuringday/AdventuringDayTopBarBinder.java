@@ -11,9 +11,9 @@ import shell.api.ShellBinding;
 import shell.api.ShellRuntimeContext;
 import shell.api.ShellSlot;
 import src.domain.party.PartyApplicationService;
-import src.domain.party.published.CalculateAdventuringDayQuery;
-import src.domain.party.published.LoadAdventuringDayCalculationModelQuery;
-import src.domain.party.published.LoadAdventuringDaySummaryQuery;
+import src.domain.party.published.AdventuringDayCalculationModel;
+import src.domain.party.published.AdventuringDaySummaryModel;
+import src.domain.party.published.CalculateAdventuringDayCommand;
 
 @SuppressWarnings("PMD.TooManyMethods")
 final class AdventuringDayTopBarBinder {
@@ -28,8 +28,9 @@ final class AdventuringDayTopBarBinder {
 
     ShellBinding bind() {
         PartyApplicationService party = runtimeContext.services().require(PartyApplicationService.class);
-        var summaryModel = party.loadAdventuringDaySummaryModel(new LoadAdventuringDaySummaryQuery());
-        var calculationModel = party.loadAdventuringDayCalculationModel(new LoadAdventuringDayCalculationModelQuery());
+        AdventuringDaySummaryModel summaryModel = runtimeContext.services().require(AdventuringDaySummaryModel.class);
+        AdventuringDayCalculationModel calculationModel =
+                runtimeContext.services().require(AdventuringDayCalculationModel.class);
         AdventuringDayTopBarContributionModel presentationModel = new AdventuringDayTopBarContributionModel();
         AdventuringDayTopBarIntentHandler intentHandler = new AdventuringDayTopBarIntentHandler(presentationModel);
         AdventuringDayTopBarView view = new AdventuringDayTopBarView();
@@ -58,7 +59,7 @@ final class AdventuringDayTopBarBinder {
                 return;
             }
             intentHandler.storePendingTotalGroupXp(event.totalGroupXp());
-            party.calculateAdventuringDay(new CalculateAdventuringDayQuery(
+            party.calculateAdventuringDay(new CalculateAdventuringDayCommand(
                     List.copyOf(event.levels()),
                     event.totalGroupXp()));
         });

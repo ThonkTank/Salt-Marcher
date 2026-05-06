@@ -20,10 +20,11 @@ Context Name: Party
 
 `published/` owns public party commands, results, snapshots, status enums,
 membership states, rest carriers, adventuring-day calculation carriers, and
-party snapshots returned by `PartyApplicationService`. Character detail
-snapshots publish current XP, current-level XP floor, next-level XP threshold,
-and rest cadence facts so downstream views can render progression without
-depending on roster internals.
+published read models. `PartyApplicationService` is the command boundary;
+party readback is consumed through the exported published models. Character
+detail snapshots publish current XP, current-level XP floor, next-level XP
+threshold, and rest cadence facts so downstream views can render progression
+without depending on roster internals.
 
 The `roster/` domain module must not depend on any `src.domain.*.published.*`
 carriers. The application boundary translates public carriers into roster
@@ -31,10 +32,11 @@ values before delegating to the model.
 
 ## Application Boundary
 
-`application/` contains party use cases. Use cases load one `PartyRoster`,
-delegate mutation or query decisions to the roster model and policies, save
-through the domain-owned outbound port, and return application/model results
-to the root application service for `published/` mapping.
+`application/` contains party use cases and party-owned boundary projection.
+Use cases load one `PartyRoster`, delegate mutation or query decisions to the
+roster model and policies, save through the domain-owned outbound port, and
+publish mapped command or read-side results through the root boundary and the
+exported party models.
 
 ## Write Model
 
@@ -93,8 +95,9 @@ Core invariants:
 ## Consistency Model
 
 One roster mutation changes one `PartyRoster` aggregate instance and is saved by
-the party roster port. Other contexts consume party state through the
-application service and exported carriers instead of sharing roster internals.
+the party roster port. Other contexts consume party state through the party
+command boundary and exported party read models instead of sharing roster
+internals.
 
 ## Ubiquitous Language
 
@@ -115,8 +118,8 @@ Current state:
 - `roster/` is moving into explicit role subpackages.
 - `aggregate/`, `entity/`, `value/`, `policy/`, and `port/` own the
   roster model roles.
-- `application/` coordinates port access and returns application/model results
-  to the root boundary.
+- `application/` coordinates port access and publishes command or read-side
+  results to the root boundary and exported party models.
 - Dungeon travel now persists active character positions through the party
   application boundary instead of storing them in shell runtime session state
   or a campaign-level model.

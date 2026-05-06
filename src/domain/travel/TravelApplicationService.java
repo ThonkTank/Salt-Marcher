@@ -18,22 +18,6 @@ import src.domain.dungeon.published.DungeonTravelMoveResult;
 import src.domain.dungeon.published.DungeonTravelPosition;
 import src.domain.dungeon.published.DungeonTravelResponse;
 import src.domain.dungeon.published.DungeonTravelSurfaceSnapshot;
-import src.domain.party.PartyApplicationService;
-import src.domain.party.published.ActivePartyResult;
-import src.domain.party.published.LoadActivePartyQuery;
-import src.domain.party.published.LoadPartyTravelPositionsQuery;
-import src.domain.party.published.MovePartyCharactersCommand;
-import src.domain.party.published.MutationStatus;
-import src.domain.party.published.PartyDungeonTravelLocationKind;
-import src.domain.party.published.PartyDungeonTravelLocationSnapshot;
-import src.domain.party.published.PartyMemberSummary;
-import src.domain.party.published.PartyOverworldTravelLocationSnapshot;
-import src.domain.party.published.PartyTravelHeading;
-import src.domain.party.published.PartyTravelLocationSnapshot;
-import src.domain.party.published.PartyTravelPositionSnapshot;
-import src.domain.party.published.PartyTravelPositionsResult;
-import src.domain.party.published.PartyTravelTile;
-import src.domain.party.published.ReadStatus;
 import src.domain.travel.application.ApplyTravelDungeonSessionUseCase;
 import src.domain.travel.published.ApplyTravelDungeonSessionCommand;
 import src.domain.travel.published.LoadTravelDungeonQuery;
@@ -43,6 +27,7 @@ import src.domain.travel.published.TravelDungeonModel;
 import src.domain.travel.published.TravelDungeonSnapshot;
 import src.domain.travel.published.TravelDungeonWorkspaceState;
 import src.domain.travel.published.TravelOverlaySettings;
+import src.domain.travel.session.port.TravelPartyStateRepository;
 
 /**
  * Public backend facade for runtime travel composition.
@@ -56,16 +41,16 @@ public final class TravelApplicationService {
             this::subscribeDungeonTravelListener);
 
     public TravelApplicationService(
-            PartyApplicationService partyApplicationService,
+            TravelPartyStateRepository partyStateRepository,
             DungeonApplicationService dungeonApplicationService
     ) {
-        PartyApplicationService party = Objects.requireNonNull(partyApplicationService, "partyApplicationService");
+        TravelPartyStateRepository party = Objects.requireNonNull(partyStateRepository, "partyStateRepository");
         DungeonApplicationService dungeon = Objects.requireNonNull(dungeonApplicationService, "dungeonApplicationService");
         this.applyTravelDungeonSessionUseCase = new ApplyTravelDungeonSessionUseCase(
                 new ApplyTravelDungeonSessionUseCase.RuntimeAccess() {
                     @Override
                     public ApplyTravelDungeonSessionUseCase.ActiveTravelStateData loadActiveTravelState() {
-                        return PartyBoundaryTranslation.loadActiveTravelState(party);
+                        return party.loadActiveTravelState();
                     }
 
                     @Override
@@ -88,7 +73,7 @@ public final class TravelApplicationService {
                             ApplyTravelDungeonSessionUseCase.PositionData position,
                             List<Long> characterIds
                     ) {
-                        PartyBoundaryTranslation.saveDungeonPosition(party, position, characterIds);
+                        party.saveDungeonPosition(position, characterIds);
                     }
 
                     @Override
@@ -96,7 +81,7 @@ public final class TravelApplicationService {
                             ApplyTravelDungeonSessionUseCase.OverworldTargetData target,
                             List<Long> characterIds
                     ) {
-                        return PartyBoundaryTranslation.saveOverworldPosition(party, target, characterIds);
+                        return party.saveOverworldPosition(target, characterIds);
                     }
                 });
     }
@@ -510,104 +495,6 @@ public final class TravelApplicationService {
             }
             int count = Math.max(1, cells.size());
             return new CellCenter(q / count, r / count);
-        }
-    }
-
-    private static final class PartyBoundaryTranslation {
-
-        private PartyBoundaryTranslation() {
-        }
-
-        private static ApplyTravelDungeonSessionUseCase.ActiveTravelStateData loadActiveTravelState(
-                PartyApplicationService partyApplicationService
-        ) {
-            ActivePartyResult activeParty = partyApplicationService.loadActiveParty(new LoadActivePartyQuery());
-            List<Long> activeCharacterIds = activeParty.status() == ReadStatus.SUCCESS
-                    ? activeParty.members().stream()
-                    .map(PartyMemberSummary::id)
-                    .filter(id -> id != null && id > 0L)
-                    .toList()
-                    : List.of();
-            PartyTravelPositionsResult travelPositions = partyApplicationService.loadTravelPositions(
-                    new LoadPartyTravelPositionsQuery(activeCharacterIds));
-            List<Long> travelCharacterIds = travelPositions.status() == ReadStatus.SUCCESS
-                    ? attachedCharacterIds(travelPositions.positions(), activeCharacterIds)
-                    : activeCharacterIds;
-            return new ApplyTravelDungeonSessionUseCase.ActiveTravelStateData(
-                    travelCharacterIds,
-                    toInternalPartyLocation(travelPositions.partyTokenLocation()));
-        }
-
-        private static List<Long> attachedCharacterIds(
-                List<PartyTravelPositionSnapshot> positions,
-                List<Long> fallbackIds
-        ) {
-            List<Long> attachedIds = (positions == null ? List.<PartyTravelPositionSnapshot>of() : positions).stream()
-                    .filter(PartyTravelPositionSnapshot::attachedToPartyToken)
-                    .map(PartyTravelPositionSnapshot::characterId)
-                    .toList();
-            return attachedIds.isEmpty() ? fallbackIds : attachedIds;
-        }
-
-        private static void saveDungeonPosition(
-                PartyApplicationService partyApplicationService,
-                ApplyTravelDungeonSessionUseCase.PositionData position,
-                List<Long> characterIds
-        ) {
-            if (position == null || characterIds == null || characterIds.isEmpty()) {
-                return;
-            }
-            partyApplicationService.moveCharacters(new MovePartyCharactersCommand(
-                    characterIds,
-                    new PartyDungeonTravelLocationSnapshot(
-                            position.mapId(),
-                            position.locationKind() == ApplyTravelDungeonSessionUseCase.LocationKind.TRANSITION
-                                    ? PartyDungeonTravelLocationKind.TRANSITION
-                                    : PartyDungeonTravelLocationKind.TILE,
-                            position.ownerId(),
-                            new PartyTravelTile(position.tile().q(), position.tile().r(), position.tile().level()),
-                            PartyTravelHeading.valueOf(position.heading().name())),
-                    true));
-        }
-
-        private static boolean saveOverworldPosition(
-                PartyApplicationService partyApplicationService,
-                ApplyTravelDungeonSessionUseCase.OverworldTargetData target,
-                List<Long> characterIds
-        ) {
-            if (target == null || characterIds == null || characterIds.isEmpty()) {
-                return false;
-            }
-            return partyApplicationService.moveCharacters(new MovePartyCharactersCommand(
-                    characterIds,
-                    new PartyOverworldTravelLocationSnapshot(target.mapId(), target.tileId()),
-                    true)).status() == MutationStatus.SUCCESS;
-        }
-
-        private static ApplyTravelDungeonSessionUseCase.@Nullable PartyLocationData toInternalPartyLocation(
-                @Nullable PartyTravelLocationSnapshot location
-        ) {
-            if (location instanceof PartyDungeonTravelLocationSnapshot dungeonLocation) {
-                return new ApplyTravelDungeonSessionUseCase.PartyLocationData(
-                        new ApplyTravelDungeonSessionUseCase.PositionData(
-                                dungeonLocation.mapId(),
-                                ApplyTravelDungeonSessionUseCase.LocationKind.valueOf(dungeonLocation.locationKind().name()),
-                                dungeonLocation.ownerId(),
-                                new ApplyTravelDungeonSessionUseCase.CellData(
-                                        dungeonLocation.tile().q(),
-                                        dungeonLocation.tile().r(),
-                                        dungeonLocation.tile().level()),
-                                ApplyTravelDungeonSessionUseCase.Direction.fromName(dungeonLocation.heading().name())),
-                        0L,
-                        false);
-            }
-            if (location instanceof PartyOverworldTravelLocationSnapshot overworldLocation) {
-                return new ApplyTravelDungeonSessionUseCase.PartyLocationData(
-                        null,
-                        overworldLocation.tileId(),
-                        true);
-            }
-            return null;
         }
     }
 

@@ -1,12 +1,12 @@
-package src.domain.dungeoneditor.application;
+package src.domain.dungeoneditor.interaction.value;
 
 import src.domain.dungeoneditor.interaction.value.DungeonEditorMainViewInteractionValues.InteractionState;
 
-record DungeonEditorMainViewInterpretation(
+public record DungeonEditorMainViewInterpretation(
         InteractionState nextState,
         DungeonEditorMainViewEffect effect
 ) {
-    DungeonEditorMainViewInterpretation {
+    public DungeonEditorMainViewInterpretation {
         nextState = nextState == null ? InteractionState.empty() : nextState;
         effect = effect == null ? DungeonEditorMainViewEffect.none() : effect;
     }

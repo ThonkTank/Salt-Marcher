@@ -22,6 +22,7 @@ import src.domain.encounter.application.LoadSavedEncounterPlanUseCase;
 import src.domain.encounter.application.SaveEncounterPlanUseCase;
 import src.domain.encounter.plan.port.EncounterPlanRepository;
 import src.domain.encounter.session.entity.EncounterSession;
+import src.domain.encounter.session.port.EncounterPartyFactsRepository;
 import src.domain.encounter.published.ApplyEncounterStateCommand;
 import src.domain.encounter.published.EncounterBuilderInputs;
 import src.domain.encounter.published.EncounterBuilderInputsModel;
@@ -43,7 +44,6 @@ import src.domain.encounter.published.SavedEncounterPlanListResult;
 import src.domain.encounter.published.SavedEncounterPlanStatus;
 import src.domain.encounter.published.UpdateEncounterBuilderInputsCommand;
 import src.domain.encountertable.EncounterTableApplicationService;
-import src.domain.party.PartyApplicationService;
 import src.domain.encounter.session.value.EncounterSessionCommand;
 
 /**
@@ -79,12 +79,12 @@ public final class EncounterApplicationService {
             new EncounterTuningPreviewLabels(List.of(), List.of(), List.of(), List.of()),
             "");
 
-    public EncounterApplicationService(PartyApplicationService party, CreaturesApplicationService creatures) {
+    public EncounterApplicationService(EncounterPartyFactsRepository party, CreaturesApplicationService creatures) {
         this(party, creatures, null, null);
     }
 
     public EncounterApplicationService(
-            PartyApplicationService party,
+            EncounterPartyFactsRepository party,
             CreaturesApplicationService creatures,
             @Nullable EncounterTableApplicationService encounterTables
     ) {
@@ -96,7 +96,7 @@ public final class EncounterApplicationService {
     }
 
     public EncounterApplicationService(
-            @Nullable PartyApplicationService party,
+            @Nullable EncounterPartyFactsRepository party,
             @Nullable CreaturesApplicationService creatures,
             @Nullable EncounterTableApplicationService encounterTables,
             @Nullable EncounterPlanRepository encounterPlans

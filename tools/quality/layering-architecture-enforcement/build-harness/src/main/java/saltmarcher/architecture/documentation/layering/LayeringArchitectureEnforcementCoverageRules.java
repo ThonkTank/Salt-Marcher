@@ -58,8 +58,8 @@ public final class LayeringArchitectureEnforcementCoverageRules implements Archi
             row(
                     "layering-no-substantive-domain-role-pass-through-wrapper",
                     "Enforced Elsewhere",
-                    List.of("CeremonialIndirectionRule"),
-                    List.of("./gradlew checkDomainServiceEnforcement", "./gradlew checkDomainPolicyEnforcement")),
+                    List.of("CeremonialIndirectionRule", "saltmarcher:NonThinRelayOnlyRole"),
+                    List.of("./gradlew checkDomainServiceEnforcement", "./gradlew checkLayeringIndirectionEnforcement")),
             row("layering-no-adjacent-layer-pass-through-wrapper-outside-explicit-thin-roles", "Review-Owned"),
             row(
                     "layering-source-code-dependencies-point-inward",
@@ -80,6 +80,7 @@ public final class LayeringArchitectureEnforcementCoverageRules implements Archi
                     List.of("data-service-contribution-register-export-shape", "domain-applicationservice-constructor-composition-boundary"),
                     List.of("./gradlew compileJava", "./gradlew checkDomainApplicationServiceEnforcement")),
             row("layering-explicit-cross-layer-public-boundary-diagnostic", "Candidate"),
+            row("layering-thin-role-relay-stack-diagnostic", "Candidate"),
             row("layering-thin-role-indirection-candidate-scan", "Candidate"));
 
     @Override

@@ -29,6 +29,11 @@ Focused bundle entrypoint:
   documentation-coverage checks. `checkArchitecture`, `check`, and `build`
   include the same proof surface transitively, and the neighboring `Enforced
   Elsewhere` rows below stay in their owner-specific bundles.
+- `./gradlew checkLayeringIndirectionEnforcement --console=plain` runs the
+  focused jQAssistant relay-only blocker and thin relay-stack diagnostics for
+  indirection shapes that the older single-class PMD source-pattern checks can
+  miss when the relay is spread across owner-local helper methods. This direct
+  entrypoint stays outside `checkArchitecture`, `check`, and `build`.
 - `./gradlew checkLayeringIndirectionCandidates --console=plain` runs the
   report-only diagnostic PMD surface for thin adapter and orchestration roles
   that are allowed to stay narrow but may still be worth reviewing.
@@ -55,7 +60,7 @@ Focused bundle entrypoint:
 | `layering-no-direct-view-domain-connection-outside-documented-seams` | Enforced Elsewhere | every direct connection between `src/view/**` and `src/domain/**` | view `view-binder-dependency-boundary`, `view-binder-publishedevent-sink-injection-only`, `view-intenthandler-no-direct-backend-communication`, `view-viewinputevent-view-origin-and-intenthandler-target-only`, `view-contributionmodel-read-side-only-direct-boundary`, and `view-contentmodel-read-side-only-direct-boundary` | see neighboring owner docs and their listed entrypoints | View/domain connections occur only through the documented Binder-owned write seam to root `*ApplicationService` boundaries and the Binder-owned readback seam from root-domain `published/**` facts. |
 | `layering-no-non-applicationservice-public-backend-boundary-below-view` | Review-Owned | every public callable backend surface below `src/view/**` | none | none | Below the view layer, the only intended public backend boundary is a root domain `*ApplicationService`; current domain and data blockers constrain parts of that expectation, but they do not prove the absence of every alternate public backend entrypoint as one hard gate. |
 | `layering-no-outer-format-object-leak-inward` | Review-Owned | every boundary translation from shell, view, data, or source-facing code into inner layers | none | none | JavaFX scene-graph types, shell host classes, SQL rows, gateway records, and similar outer-format carriers do not leak inward across layer boundaries. |
-| `layering-no-substantive-domain-role-pass-through-wrapper` | Enforced Elsewhere | every tactical domain `service/`, `policy/`, or `factory/` role under `src/domain/**` | domain-service, domain-policy, and domain-factory bundle PMD `CeremonialIndirectionRule` configured for their respective blocker surfaces | `./gradlew checkDomainServiceEnforcement`, `./gradlew checkDomainPolicyEnforcement`, and `./gradlew checkDomainFactoryEnforcement` | Substantive domain tactical roles do not survive only as relay or constructor-wrapper ceremony when they are expected to own real domain behavior or construction work. |
+| `layering-no-substantive-domain-role-pass-through-wrapper` | Enforced Elsewhere | every tactical domain `service/`, `policy/`, or `factory/` role under `src/domain/**` | domain-service, domain-policy, and domain-factory bundle PMD `CeremonialIndirectionRule` for direct source-pattern relay wrappers, plus layering-indirection bundle jQAssistant `saltmarcher:NonThinRelayOnlyRole` for owner-local helper-chain relay wrappers | `./gradlew checkDomainServiceEnforcement`, `./gradlew checkDomainPolicyEnforcement`, `./gradlew checkDomainFactoryEnforcement`, and `./gradlew checkLayeringIndirectionEnforcement` | Substantive domain tactical roles do not survive only as relay or constructor-wrapper ceremony, including helper-split relay chains whose concrete methods still collapse into one foreign owner instead of owning real policy or construction behavior. |
 | `layering-no-adjacent-layer-pass-through-wrapper-outside-explicit-thin-roles` | Review-Owned | every legal dependency-clean wrapper placed only to mirror adjacent layers outside the explicitly thin role families | none | none | Outside the documented thin adapter and orchestration families, the layering topology does not retain ceremony-only pass-through abstractions whose only purpose is diagram symmetry rather than a real boundary responsibility. |
 
 ### Communication Contract
@@ -74,7 +79,13 @@ Focused bundle entrypoint:
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
 | `layering-explicit-cross-layer-public-boundary-diagnostic` | Candidate | every future change that adds or removes one documented cross-layer boundary family | none | none | The architecture stack could emit a dedicated blocker when a boundary family disappears or a new one appears, instead of inferring that drift from several neighboring owner docs. |
+| `layering-thin-role-relay-stack-diagnostic` | Candidate | every root `*ApplicationService`, `application/*UseCase`, `*Binder`, `*IntentHandler`, and `*ServiceContribution` surface that relays through at least one deeper relay-only owner | none | none | Thin adapter and orchestration roles that currently form a multi-hop relay stack are reported for review without turning intentional thinness itself into a blocker. |
 | `layering-thin-role-indirection-candidate-scan` | Candidate | every root `*ApplicationService`, `application/*UseCase`, `*Binder`, `*IntentHandler`, and `*ServiceContribution` surface | layering-architecture bundle descriptor-owned report-only PMD `CeremonialIndirectionRule` configured for the thin-role candidate surface | `./gradlew checkLayeringIndirectionCandidates` | Thin adapter and orchestration roles that currently look like pure relay or wrapper ceremony are reported for review without turning that heuristic into a blocker. |
+
+`./gradlew checkLayeringIndirectionEnforcement --console=plain` also runs the
+warning-only jQAssistant diagnostic `saltmarcher:ThinRelayStackCandidate` so
+reviewers can inspect thin multi-hop relay stacks without promoting that
+surface to a blocker.
 
 ## References
 

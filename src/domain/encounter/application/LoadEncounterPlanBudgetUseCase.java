@@ -13,20 +13,17 @@ import src.domain.encounter.generation.policy.EncounterDifficultyTargets;
 import src.domain.encounter.plan.aggregate.EncounterPlan;
 import src.domain.encounter.plan.port.EncounterPlanRepository;
 import src.domain.encounter.plan.value.EncounterPlanCreature;
-import src.domain.party.PartyApplicationService;
-import src.domain.party.published.ActivePartyCompositionResult;
-import src.domain.party.published.LoadActivePartyCompositionQuery;
-import src.domain.party.published.ReadStatus;
+import src.domain.encounter.session.port.EncounterPartyFactsRepository;
 
 public final class LoadEncounterPlanBudgetUseCase {
 
     private final EncounterPlanRepository plans;
-    private final PartyApplicationService party;
+    private final EncounterPartyFactsRepository party;
     private final CreaturesApplicationService creatures;
 
     public LoadEncounterPlanBudgetUseCase(
             EncounterPlanRepository plans,
-            PartyApplicationService party,
+            EncounterPartyFactsRepository party,
             CreaturesApplicationService creatures
     ) {
         this.plans = Objects.requireNonNull(plans, "plans");
@@ -42,15 +39,14 @@ public final class LoadEncounterPlanBudgetUseCase {
         if (maybePlan.isEmpty()) {
             return Result.notFound("Encounter plan was not found.");
         }
-        ActivePartyCompositionResult compositionResult =
-                party.loadActivePartyComposition(new LoadActivePartyCompositionQuery());
-        if (compositionResult.status() != ReadStatus.SUCCESS) {
+        EncounterPartyFactsRepository.PartyBudgetFacts facts = party.loadPartyBudgetFacts();
+        if (facts.status() == EncounterPartyFactsRepository.Status.STORAGE_ERROR) {
             return Result.storageError("Party data could not be loaded.");
         }
-        List<Integer> activeLevels = compositionResult.composition().activePartyLevels();
-        if (activeLevels.isEmpty()) {
+        if (facts.status() == EncounterPartyFactsRepository.Status.NO_ACTIVE_PARTY) {
             return Result.noActiveParty("No active party is available.");
         }
+        List<Integer> activeLevels = facts.activePartyLevels();
         EncounterPlan plan = maybePlan.get();
         int totalBaseXp = totalBaseXp(plan.creatures());
         int creatureCount = plan.creatureCount();
@@ -62,7 +58,7 @@ public final class LoadEncounterPlanBudgetUseCase {
                 plan.name(),
                 plan.generatedLabel(),
                 List.copyOf(activeLevels),
-                compositionResult.composition().averageLevel(),
+                facts.averageLevel(),
                 thresholds.easy(),
                 thresholds.medium(),
                 thresholds.hard(),

@@ -27,12 +27,7 @@ import src.domain.encounter.generation.policy.EncounterDifficultyMath;
 import src.domain.encounter.generation.policy.EncounterDifficultyTargets;
 import src.domain.encounter.generation.value.EncounterDraft;
 import src.domain.encounter.generation.factory.EncounterDraftFactory;
-import src.domain.party.published.ActivePartyCompositionResult;
-import src.domain.party.published.AdventuringDayResult;
-import src.domain.party.published.LoadActivePartyCompositionQuery;
-import src.domain.party.published.LoadAdventuringDaySummaryQuery;
-import src.domain.party.published.ReadStatus;
-import src.domain.party.PartyApplicationService;
+import src.domain.encounter.session.port.EncounterPartyFactsRepository;
 
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -53,7 +48,7 @@ final class PrepareEncounterGenerationUseCase {
     }
 
     static EncounterGenerationPreparationUseCase prepare(
-            PartyApplicationService party,
+            EncounterPartyFactsRepository party,
             CreaturesApplicationService creatures,
             @Nullable EncounterTableApplicationService encounterTables,
             EncounterGenerationRequest request,
@@ -158,22 +153,20 @@ final class PrepareEncounterGenerationUseCase {
                 request.lockedCreatures()));
     }
 
-    private static PartyLoadResult loadPartyState(PartyApplicationService party) {
-        ActivePartyCompositionResult compositionResult =
-                party.loadActivePartyComposition(new LoadActivePartyCompositionQuery());
-        AdventuringDayResult dayResult = party.loadAdventuringDaySummary(new LoadAdventuringDaySummaryQuery());
-        if (compositionResult.status() != ReadStatus.SUCCESS || dayResult.status() != ReadStatus.SUCCESS) {
+    private static PartyLoadResult loadPartyState(EncounterPartyFactsRepository party) {
+        EncounterPartyFactsRepository.PartyBudgetFacts facts = party.loadPartyBudgetFacts();
+        if (facts.status() == EncounterPartyFactsRepository.Status.STORAGE_ERROR) {
             return PartyLoadResult.failure(EncounterGenerationUseCase.GenerateStatus.STORAGE_ERROR, "Party data could not be loaded.");
         }
-        List<Integer> partyLevels = compositionResult.composition().activePartyLevels();
-        if (partyLevels.isEmpty()) {
+        if (facts.status() == EncounterPartyFactsRepository.Status.NO_ACTIVE_PARTY) {
             return PartyLoadResult.failure(EncounterGenerationUseCase.GenerateStatus.NO_ACTIVE_PARTY, "No active party is available.");
         }
+        List<Integer> partyLevels = facts.activePartyLevels();
         EncounterDifficultyMath.Thresholds thresholds = EncounterDifficultyMath.thresholdsFor(partyLevels);
         EncounterDifficultyMath.BudgetSummary budgetSummary = EncounterDifficultyMath.summarizeBudget(
                 partyLevels,
-                dayResult.summary().consumedXp(),
-                dayResult.summary().totalBudgetXp());
+                facts.consumedDailyXp(),
+                facts.totalBudgetXp());
         EncounterGenerationUseCase.BudgetSummary budget = toBudgetSummary(budgetSummary);
         return PartyLoadResult.success(thresholds, budget, partyLevels.size());
     }

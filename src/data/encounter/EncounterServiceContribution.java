@@ -2,12 +2,17 @@ package src.data.encounter;
 
 import shell.api.ServiceContribution;
 import shell.api.ServiceRegistry;
+import src.data.encounter.ApplicationEncounterPartyFactsRepository;
 import src.data.encounter.repository.SqliteEncounterPlanRepository;
 import src.domain.creatures.CreaturesApplicationService;
 import src.domain.encounter.EncounterApplicationService;
 import src.domain.encounter.plan.port.EncounterPlanRepository;
 import src.domain.encountertable.EncounterTableApplicationService;
 import src.domain.party.PartyApplicationService;
+import src.domain.party.published.ActivePartyCompositionModel;
+import src.domain.party.published.ActivePartyModel;
+import src.domain.party.published.AdventuringDaySummaryModel;
+import src.domain.party.published.PartyMutationModel;
 
 public final class EncounterServiceContribution implements ServiceContribution {
 
@@ -22,7 +27,12 @@ public final class EncounterServiceContribution implements ServiceContribution {
         builder.registerFactory(
                 EncounterApplicationService.class,
                 services -> new EncounterApplicationService(
-                        services.require(PartyApplicationService.class),
+                        new ApplicationEncounterPartyFactsRepository(
+                                services.require(PartyApplicationService.class),
+                                services.require(ActivePartyModel.class),
+                                services.require(ActivePartyCompositionModel.class),
+                                services.require(AdventuringDaySummaryModel.class),
+                                services.require(PartyMutationModel.class)),
                         services.require(CreaturesApplicationService.class),
                         services.require(EncounterTableApplicationService.class),
                         repository));
