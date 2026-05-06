@@ -1,4 +1,4 @@
-package src.domain.sessionplanner.application;
+package src.data.sessionplanner.runtime;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -6,31 +6,35 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import src.domain.sessionplanner.published.SessionPlannerEncountersProjection;
+import src.domain.sessionplanner.published.SessionPlannerParticipantsProjection;
 import src.domain.sessionplanner.published.SessionPlannerRestKind;
-import src.domain.sessionplanner.published.SessionPlannerSnapshot;
+import src.domain.sessionplanner.published.SessionPlannerSessionSnapshot;
+import src.domain.sessionplanner.published.SessionPlannerStatePanelProjection;
 import src.domain.sessionplanner.session.aggregate.SessionPlan;
 import src.domain.sessionplanner.session.port.SessionEncounterFactsLookup;
 import src.domain.sessionplanner.session.port.SessionPartyFactsLookup;
 import src.domain.sessionplanner.session.value.SessionEncounter;
 import src.domain.sessionplanner.session.value.SessionRestPlacement;
 
-public final class SessionPlannerSnapshotProjector {
+final class SessionPlannerPublishedStateProjector {
 
     private static final BigDecimal HUNDRED = new BigDecimal("100");
 
-    public SessionPlannerSnapshot project(
+    SessionPlannerPublishedState project(
             SessionPlan session,
             SessionPartyFactsLookup partyFacts,
             SessionEncounterFactsLookup encounterFacts
     ) {
         SessionPartyFactsLookup.ActivePartyMembersFact partyMembersFact = partyFacts.loadActivePartyMembers();
-        List<SessionPlannerSnapshot.SessionParticipant> participants = buildParticipants(session, partyMembersFact);
+        List<SessionPlannerParticipantsProjection.SessionParticipant> participants =
+                buildParticipants(session, partyMembersFact);
         List<Integer> resolvedLevels = participants.stream()
-                .filter(SessionPlannerSnapshot.SessionParticipant::available)
-                .map(SessionPlannerSnapshot.SessionParticipant::level)
+                .filter(SessionPlannerParticipantsProjection.SessionParticipant::available)
+                .map(SessionPlannerParticipantsProjection.SessionParticipant::level)
                 .toList();
         boolean sessionReady = !participants.isEmpty()
-                && participants.stream().allMatch(SessionPlannerSnapshot.SessionParticipant::available);
+                && participants.stream().allMatch(SessionPlannerParticipantsProjection.SessionParticipant::available);
         Map<Long, SessionEncounterFactsLookup.EncounterPlanFact> loadedEncounters =
                 loadSessionEncounterFacts(session, encounterFacts);
         SessionPartyFactsLookup.AdventuringDayFact budgetFact = sessionReady
@@ -38,15 +42,14 @@ public final class SessionPlannerSnapshotProjector {
                 : SessionPartyFactsLookup.AdventuringDayFact.unavailable();
         int scaledBudgetXp = budgetFact.available() ? session.encounterDays().scaleBudget(budgetFact.totalBudgetXp()) : 0;
         SessionEncounterFactsLookup.EncounterPlanListFact encounterPlansFact = encounterFacts.listEncounterPlans();
-        List<SessionPlannerSnapshot.AvailableEncounterPlan> availablePlans =
+        List<SessionPlannerSessionSnapshot.AvailableEncounterPlan> availablePlans =
                 buildAvailablePlans(encounterPlansFact, loadedEncounters, encounterFacts);
-        List<SessionPlannerSnapshot.PlannedEncounter> plannedEncounters =
+        List<SessionPlannerEncountersProjection.PlannedEncounter> plannedEncounters =
                 buildPlannedEncounters(session, scaledBudgetXp, loadedEncounters, encounterFacts);
         int placedShortRests = countShortRests(session.restPlacements());
         int placedLongRests = countLongRests(session.restPlacements());
-        return new SessionPlannerSnapshot(
-                buildPartyState(session, resolvedLevels, participants, partyMembersFact),
-                new SessionPlannerSnapshot.SessionState(
+        SessionPlannerSessionSnapshot sessionSnapshot = new SessionPlannerSessionSnapshot(
+                new SessionPlannerSessionSnapshot.SessionState(
                         session.sessionId(),
                         session.encounterDays().value(),
                         session.encounterDays().displayText(),
@@ -54,22 +57,30 @@ public final class SessionPlannerSnapshotProjector {
                         session.selectedEncounterId() > 0L),
                 buildXpBudgetState(session, budgetFact, scaledBudgetXp, loadedEncounters),
                 buildRestAdviceState(budgetFact, placedShortRests, placedLongRests),
-                SessionPlannerSnapshot.GoldBudgetState.placeholder(session.lootPlaceholders().size()),
+                SessionPlannerSessionSnapshot.GoldBudgetState.placeholder(session.lootPlaceholders().size()),
                 availablePlans,
+                resolveStatus(participants, partyMembersFact, encounterPlansFact, session.statusText()));
+        SessionPlannerParticipantsProjection participantsProjection = new SessionPlannerParticipantsProjection(
+                buildPartyState(session, resolvedLevels, participants, partyMembersFact),
                 buildActivePartyMembers(partyMembersFact.members()),
-                participants,
+                participants);
+        SessionPlannerEncountersProjection encountersProjection = new SessionPlannerEncountersProjection(
                 plannedEncounters,
                 buildRestGaps(session),
                 session.lootPlaceholders().stream()
-                        .map(loot -> new SessionPlannerSnapshot.LootPlaceholder(loot.lootId(), loot.label()))
-                        .toList(),
-                resolveStatus(participants, partyMembersFact, encounterPlansFact, session.statusText()));
+                        .map(loot -> new SessionPlannerEncountersProjection.LootPlaceholder(loot.lootId(), loot.label()))
+                        .toList());
+        return new SessionPlannerPublishedState(
+                sessionSnapshot,
+                participantsProjection,
+                encountersProjection,
+                buildStatePanel(sessionSnapshot, plannedEncounters));
     }
 
-    private static SessionPlannerSnapshot.PartyState buildPartyState(
+    private static SessionPlannerParticipantsProjection.PartyState buildPartyState(
             SessionPlan session,
             List<Integer> resolvedLevels,
-            List<SessionPlannerSnapshot.SessionParticipant> participants,
+            List<SessionPlannerParticipantsProjection.SessionParticipant> participants,
             SessionPartyFactsLookup.ActivePartyMembersFact partyMembersFact
     ) {
         int sessionSize = session.participantRefs().size();
@@ -94,29 +105,29 @@ public final class SessionPlannerSnapshotProjector {
                 detail = "Durchschnittsstufe " + averageLevel + " · Level " + joinLevels(resolvedLevels);
             }
         }
-        return new SessionPlannerSnapshot.PartyState(
+        return new SessionPlannerParticipantsProjection.PartyState(
                 resolvedLevels,
                 sessionSize,
                 averageLevel,
-                sessionSize > 0 && participants.stream().allMatch(SessionPlannerSnapshot.SessionParticipant::available),
+                sessionSize > 0 && participants.stream().allMatch(SessionPlannerParticipantsProjection.SessionParticipant::available),
                 headline,
                 detail);
     }
 
-    private static SessionPlannerSnapshot.XpBudgetState buildXpBudgetState(
+    private static SessionPlannerSessionSnapshot.XpBudgetState buildXpBudgetState(
             SessionPlan session,
             SessionPartyFactsLookup.AdventuringDayFact budgetFact,
             int scaledBudgetXp,
             Map<Long, SessionEncounterFactsLookup.EncounterPlanFact> loadedEncounters
     ) {
         if (!budgetFact.available()) {
-            return SessionPlannerSnapshot.XpBudgetState.empty();
+            return SessionPlannerSessionSnapshot.XpBudgetState.empty();
         }
         int plannedXp = plannedEncounterXp(session, loadedEncounters);
         int remainingXp = Math.max(0, scaledBudgetXp - plannedXp);
         int overBudgetXp = Math.max(0, plannedXp - scaledBudgetXp);
         boolean overBudget = overBudgetXp > 0;
-        return new SessionPlannerSnapshot.XpBudgetState(
+        return new SessionPlannerSessionSnapshot.XpBudgetState(
                 true,
                 scaledBudgetXp,
                 plannedXp,
@@ -129,15 +140,15 @@ public final class SessionPlannerSnapshotProjector {
                 overBudget ? overBudgetXp + " XP ueber Budget" : remainingXp + " XP verbleibend");
     }
 
-    private static SessionPlannerSnapshot.RestAdviceState buildRestAdviceState(
+    private static SessionPlannerSessionSnapshot.RestAdviceState buildRestAdviceState(
             SessionPartyFactsLookup.AdventuringDayFact budgetFact,
             int placedShortRests,
             int placedLongRests
     ) {
         if (!budgetFact.available()) {
-            return SessionPlannerSnapshot.RestAdviceState.empty();
+            return SessionPlannerSessionSnapshot.RestAdviceState.empty();
         }
-        return new SessionPlannerSnapshot.RestAdviceState(
+        return new SessionPlannerSessionSnapshot.RestAdviceState(
                 true,
                 budgetFact.recommendedShortRests(),
                 budgetFact.recommendedLongRests(),
@@ -147,7 +158,7 @@ public final class SessionPlannerSnapshotProjector {
                         + " LR · platziert " + placedShortRests + " SR / " + placedLongRests + " LR");
     }
 
-    private static List<SessionPlannerSnapshot.AvailableEncounterPlan> buildAvailablePlans(
+    private static List<SessionPlannerSessionSnapshot.AvailableEncounterPlan> buildAvailablePlans(
             SessionEncounterFactsLookup.EncounterPlanListFact encounterPlansFact,
             Map<Long, SessionEncounterFactsLookup.EncounterPlanFact> loadedEncounters,
             SessionEncounterFactsLookup encounterFacts
@@ -155,11 +166,11 @@ public final class SessionPlannerSnapshotProjector {
         if (!encounterPlansFact.available()) {
             return List.of();
         }
-        List<SessionPlannerSnapshot.AvailableEncounterPlan> availablePlans = new ArrayList<>();
+        List<SessionPlannerSessionSnapshot.AvailableEncounterPlan> availablePlans = new ArrayList<>();
         for (SessionEncounterFactsLookup.SavedEncounterPlanFact plan : encounterPlansFact.plans()) {
             SessionEncounterFactsLookup.EncounterPlanFact detail = encounterFacts.loadEncounterPlan(plan.planId());
             loadedEncounters.put(plan.planId(), detail);
-            availablePlans.add(new SessionPlannerSnapshot.AvailableEncounterPlan(
+            availablePlans.add(new SessionPlannerSessionSnapshot.AvailableEncounterPlan(
                     plan.planId(),
                     detail.name().isBlank() ? plan.name() : detail.name(),
                     detail.generatedLabel().isBlank() ? plan.generatedLabel() : detail.generatedLabel(),
@@ -183,22 +194,22 @@ public final class SessionPlannerSnapshotProjector {
         return loadedEncounters;
     }
 
-    private static List<SessionPlannerSnapshot.SessionParticipant> buildParticipants(
+    private static List<SessionPlannerParticipantsProjection.SessionParticipant> buildParticipants(
             SessionPlan session,
             SessionPartyFactsLookup.ActivePartyMembersFact activeMembers
     ) {
-        List<SessionPlannerSnapshot.SessionParticipant> participants = new ArrayList<>();
+        List<SessionPlannerParticipantsProjection.SessionParticipant> participants = new ArrayList<>();
         for (Long participantRef : session.participantRefs()) {
             SessionPartyFactsLookup.PartyMemberProfile member = activeMembers.resolve(participantRef);
             if (member == null) {
-                participants.add(new SessionPlannerSnapshot.SessionParticipant(
+                participants.add(new SessionPlannerParticipantsProjection.SessionParticipant(
                         participantRef,
                         "Charakter #" + participantRef,
                         0,
                         false,
                         "Nicht mehr in der aktiven Party verfuegbar."));
             } else {
-                participants.add(new SessionPlannerSnapshot.SessionParticipant(
+                participants.add(new SessionPlannerParticipantsProjection.SessionParticipant(
                         member.characterId(),
                         member.displayName(),
                         member.currentLevel(),
@@ -209,13 +220,13 @@ public final class SessionPlannerSnapshotProjector {
         return List.copyOf(participants);
     }
 
-    private static List<SessionPlannerSnapshot.ActivePartyMember> buildActivePartyMembers(
+    private static List<SessionPlannerParticipantsProjection.ActivePartyMember> buildActivePartyMembers(
             List<SessionPartyFactsLookup.PartyMemberProfile> members
     ) {
-        List<SessionPlannerSnapshot.ActivePartyMember> activePartyMembers = new ArrayList<>();
+        List<SessionPlannerParticipantsProjection.ActivePartyMember> activePartyMembers = new ArrayList<>();
         for (SessionPartyFactsLookup.PartyMemberProfile member
                 : members == null ? List.<SessionPartyFactsLookup.PartyMemberProfile>of() : members) {
-            activePartyMembers.add(new SessionPlannerSnapshot.ActivePartyMember(
+            activePartyMembers.add(new SessionPlannerParticipantsProjection.ActivePartyMember(
                     member.characterId(),
                     member.displayName(),
                     member.currentLevel()));
@@ -223,13 +234,13 @@ public final class SessionPlannerSnapshotProjector {
         return List.copyOf(activePartyMembers);
     }
 
-    private static List<SessionPlannerSnapshot.PlannedEncounter> buildPlannedEncounters(
+    private static List<SessionPlannerEncountersProjection.PlannedEncounter> buildPlannedEncounters(
             SessionPlan session,
             int scaledBudgetXp,
             Map<Long, SessionEncounterFactsLookup.EncounterPlanFact> loadedEncounters,
             SessionEncounterFactsLookup encounterFacts
     ) {
-        List<SessionPlannerSnapshot.PlannedEncounter> plannedEncounters = new ArrayList<>();
+        List<SessionPlannerEncountersProjection.PlannedEncounter> plannedEncounters = new ArrayList<>();
         for (SessionEncounter encounter : session.encounters()) {
             SessionEncounterFactsLookup.EncounterPlanFact detail = loadedEncounters.computeIfAbsent(
                     encounter.encounterPlanId(),
@@ -238,7 +249,7 @@ public final class SessionPlannerSnapshotProjector {
                     .multiply(BigDecimal.valueOf(scaledBudgetXp))
                     .divide(HUNDRED, 0, RoundingMode.HALF_UP)
                     .intValue();
-            plannedEncounters.add(new SessionPlannerSnapshot.PlannedEncounter(
+            plannedEncounters.add(new SessionPlannerEncountersProjection.PlannedEncounter(
                     encounter.encounterId(),
                     encounter.encounterPlanId(),
                     detail.name(),
@@ -255,13 +266,13 @@ public final class SessionPlannerSnapshotProjector {
         return List.copyOf(plannedEncounters);
     }
 
-    private static List<SessionPlannerSnapshot.RestGap> buildRestGaps(SessionPlan session) {
-        List<SessionPlannerSnapshot.RestGap> gaps = new ArrayList<>();
+    private static List<SessionPlannerEncountersProjection.RestGap> buildRestGaps(SessionPlan session) {
+        List<SessionPlannerEncountersProjection.RestGap> gaps = new ArrayList<>();
         List<SessionEncounter> encounters = session.encounters();
         for (int index = 0; index < encounters.size() - 1; index++) {
             SessionEncounter left = encounters.get(index);
             SessionEncounter right = encounters.get(index + 1);
-            gaps.add(new SessionPlannerSnapshot.RestGap(
+            gaps.add(new SessionPlannerEncountersProjection.RestGap(
                     index,
                     left.encounterId(),
                     right.encounterId(),
@@ -270,8 +281,42 @@ public final class SessionPlannerSnapshotProjector {
         return List.copyOf(gaps);
     }
 
+    private static SessionPlannerStatePanelProjection buildStatePanel(
+            SessionPlannerSessionSnapshot session,
+            List<SessionPlannerEncountersProjection.PlannedEncounter> encounters
+    ) {
+        SessionPlannerEncountersProjection.PlannedEncounter selectedEncounter = encounters.stream()
+                .filter(SessionPlannerEncountersProjection.PlannedEncounter::selected)
+                .findFirst()
+                .orElse(null);
+        if (selectedEncounter == null) {
+            return new SessionPlannerStatePanelProjection(
+                    false,
+                    "Kein Session-Encounter ausgewaehlt",
+                    "Waehle im Planner einen Encounter aus, um den vorbereitenden State-Kontext zu sehen.",
+                    "",
+                    session.session().hasSelectedEncounter()
+                            ? "Encounter fuer State-Panel ausgewaehlt"
+                            : "Noch kein Encounter fuer State-Panel ausgewaehlt",
+                    "Katalog-Vorbereitung",
+                    "Der generische Katalog folgt spaeter. Dieser Slice reserviert nur die planner-eigene read-only Flaeche.");
+        }
+        String detail = selectedEncounter.creatureCount() + " Kreaturen"
+                + (selectedEncounter.generatedLabel().isBlank() ? "" : " · " + selectedEncounter.generatedLabel());
+        String xpSummary = selectedEncounter.budgetPercentage().stripTrailingZeros().toPlainString() + "% Budget · Ziel "
+                + selectedEncounter.targetXp() + " XP · Ist " + selectedEncounter.adjustedXp() + " XP";
+        return new SessionPlannerStatePanelProjection(
+                true,
+                selectedEncounter.name(),
+                detail,
+                xpSummary,
+                "Ausgewaehlter Encounter #" + selectedEncounter.token(),
+                "Katalog-Vorbereitung",
+                "Read-only Placeholder fuer spaetere Monster-, Spell- und Loot-Aktionen. Noch keine echte Catalog-Boundary und keine Mutation.");
+    }
+
     private static String resolveStatus(
-            List<SessionPlannerSnapshot.SessionParticipant> participants,
+            List<SessionPlannerParticipantsProjection.SessionParticipant> participants,
             SessionPartyFactsLookup.ActivePartyMembersFact partyMembersFact,
             SessionEncounterFactsLookup.EncounterPlanListFact encounterPlansFact,
             String sessionStatusText

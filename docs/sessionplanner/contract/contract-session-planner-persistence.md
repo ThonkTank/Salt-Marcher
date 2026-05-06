@@ -32,8 +32,11 @@ Target state:
 - The contribution registers the exported root application service through the
   shell-owned service registry, `shell.api.ServiceRegistry`.
 - The exported planner runtime surfaces are
-  `SessionPlannerApplicationService.class` for write workflows and
-  `SessionPlannerModel.class` for read-only observation.
+  `SessionPlannerApplicationService.class` for write workflows,
+  `SessionPlannerCurrentSessionModel.class`,
+  `SessionPlannerParticipantsModel.class`,
+  `SessionPlannerEncountersModel.class`, and
+  `SessionPlannerStatePanelModel.class` for read-only observation.
 - Domain ports, repositories, gateways, mappers, and schema classes remain
   implementation details and must not be registered as runtime services.
 - View assembly code reads planner behavior only through
@@ -90,7 +93,8 @@ The session record does not persist:
 - Adding planner persistence must not require feature-specific bootstrap
   wiring outside the normal `src/data/<feature>/` contribution path
 - `SessionPlanRepository` remains a planner-owned outbound collaborator
-  injected into `SessionPlannerApplicationService`
+  beneath the planner-owned `SessionPlannerRuntimeRepository` injected into
+  `SessionPlannerApplicationService`
 - sessionplanner persistence stays the canonical home for session-owned
   allocations and selection state even when later workflows trigger encounter
   or loot mutations through foreign boundaries
@@ -104,8 +108,11 @@ The session record does not persist:
 - Review must reject persisted fields that duplicate encounter rosters, party
   character internals, creature detail, or loot internals.
 - Review must reject runtime-service exports other than
-  `SessionPlannerApplicationService.class` and
-  `SessionPlannerModel.class`.
+  `SessionPlannerApplicationService.class`,
+  `SessionPlannerCurrentSessionModel.class`,
+  `SessionPlannerParticipantsModel.class`,
+  `SessionPlannerEncountersModel.class`, and
+  `SessionPlannerStatePanelModel.class`.
 
 ## References
 

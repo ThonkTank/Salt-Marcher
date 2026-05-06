@@ -37,8 +37,11 @@ creature-detail truth, or loot truth.
   render the controls pane and the planning timeline
 - `src/domain/sessionplanner/SessionPlannerApplicationService`
   is the only planner backend boundary exposed to the view layer
-- `src/domain/sessionplanner/published/SessionPlannerModel`
-  is the direct read-only planner observation export
+- the exported read-only planner observation surfaces are:
+  `SessionPlannerCurrentSessionModel`,
+  `SessionPlannerParticipantsModel`,
+  `SessionPlannerEncountersModel`, and
+  `SessionPlannerStatePanelModel`
 - `src/domain/sessionplanner/session/aggregate/SessionPlan`
   is the authored aggregate root for persisted session truth
 - `src/data/sessionplanner/SessionPlannerServiceContribution.java`
@@ -55,23 +58,25 @@ Current state:
 - `src/data/sessionplanner/SessionPlannerServiceContribution.java` now owns
   planner registration, repository assembly, and read-only foreign-facts
   adapter assembly
-- the current planner binder reads `SessionPlannerModel` directly from the
-  runtime service registry instead of loading it through the root service
+- the current planner binder reads the four published planner read models
+  directly from the runtime service registry instead of loading readback
+  through the root service
 - the current planner persistence stores exactly one current session record,
   not a session list or explicit load UI
 
 Target state:
 
 - `SessionPlannerApplicationService` is command-only and stays a thin
-  orchestrator over a richer session domain model and dedicated repository
+  orchestrator over a richer session domain model and one runtime repository
   port
-- `SessionPlannerModel` is exported directly as the feature readback surface
+- published planner readback is exported directly as four feature-owned
+  models, not through the root service
 
 ## Dependency Rules
 
 - the planner view layer may depend only on shell contracts, its own
   contribution roles, the `SessionPlannerApplicationService`, and the
-  planner-owned `SessionPlannerModel`
+  planner-owned published planner read models
 - `SessionPlannerApplicationService` may depend only on planner-owned ports,
   planner-owned use cases, and planner-owned published carriers
 - session participant facts must enter through the party public boundary

@@ -20,8 +20,11 @@ import src.domain.sessionplanner.published.RemoveSessionEncounterCommand;
 import src.domain.sessionplanner.published.RemoveSessionLootPlaceholderCommand;
 import src.domain.sessionplanner.published.RemoveSessionParticipantCommand;
 import src.domain.sessionplanner.published.SelectSessionEncounterCommand;
-import src.domain.sessionplanner.published.SessionPlannerModel;
+import src.domain.sessionplanner.published.SessionPlannerCurrentSessionModel;
+import src.domain.sessionplanner.published.SessionPlannerEncountersModel;
+import src.domain.sessionplanner.published.SessionPlannerParticipantsModel;
 import src.domain.sessionplanner.published.SessionPlannerRestKind;
+import src.domain.sessionplanner.published.SessionPlannerStatePanelModel;
 import src.domain.sessionplanner.published.SetSessionEncounterAllocationCommand;
 import src.domain.sessionplanner.published.SetSessionEncounterDaysCommand;
 import src.domain.sessionplanner.published.SetSessionRestGapCommand;
@@ -37,7 +40,14 @@ final class SessionPlannerBinder {
     ShellBinding bind() {
         SessionPlannerApplicationService planner =
                 runtimeContext.services().require(SessionPlannerApplicationService.class);
-        SessionPlannerModel sessionModel = runtimeContext.services().require(SessionPlannerModel.class);
+        SessionPlannerCurrentSessionModel sessionModel =
+                runtimeContext.services().require(SessionPlannerCurrentSessionModel.class);
+        SessionPlannerParticipantsModel participantsModel =
+                runtimeContext.services().require(SessionPlannerParticipantsModel.class);
+        SessionPlannerEncountersModel encountersModel =
+                runtimeContext.services().require(SessionPlannerEncountersModel.class);
+        SessionPlannerStatePanelModel statePanelModel =
+                runtimeContext.services().require(SessionPlannerStatePanelModel.class);
         SessionPlannerContributionModel contributionModel = new SessionPlannerContributionModel();
         SessionPlannerIntentHandler intentHandler = new SessionPlannerIntentHandler();
         SessionPlannerControlsView controlsView = new SessionPlannerControlsView();
@@ -51,8 +61,14 @@ final class SessionPlannerBinder {
         bindMain(contributionModel, intentHandler, timelineView, lootView);
         bindState(contributionModel, stateView);
 
-        sessionModel.subscribe(contributionModel::apply);
-        contributionModel.apply(sessionModel.current());
+        sessionModel.subscribe(contributionModel::applySession);
+        participantsModel.subscribe(contributionModel::applyParticipants);
+        encountersModel.subscribe(contributionModel::applyEncounters);
+        statePanelModel.subscribe(contributionModel::applyStatePanel);
+        contributionModel.applySession(sessionModel.current());
+        contributionModel.applyParticipants(participantsModel.current());
+        contributionModel.applyEncounters(encountersModel.current());
+        contributionModel.applyStatePanel(statePanelModel.current());
         return new Binding(planner, controlsView, mainView, stateView);
     }
 

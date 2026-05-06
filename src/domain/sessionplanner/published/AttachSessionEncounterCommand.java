@@ -1,14 +1,8 @@
 package src.domain.sessionplanner.published;
 
-public final class AttachSessionEncounterCommand {
+public record AttachSessionEncounterCommand(long encounterPlanId) {
 
-    private final long encounterPlanId;
-
-    public AttachSessionEncounterCommand(long encounterPlanId) {
-        this.encounterPlanId = Math.max(0L, encounterPlanId);
-    }
-
-    public long encounterPlanId() {
-        return encounterPlanId;
+    public AttachSessionEncounterCommand {
+        encounterPlanId = Math.max(0L, encounterPlanId);
     }
 }

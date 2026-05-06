@@ -27,7 +27,7 @@ and the read-only planner session observation model.
 Current state:
 
 - the current published API already exposes focused planner workflow commands
-  plus one directly exported read-only `SessionPlannerModel`
+  plus four directly exported read-only planner models
 
 Target state:
 
@@ -40,7 +40,7 @@ The root application service coordinates active-party composition reads,
 party-based adventuring-day calculations, saved encounter-plan budget reads
 through the encounter public boundary, planner-owned repository access, and
 session-local mutations. Readback is published separately through the exported
-`SessionPlannerModel`.
+planner read models.
 
 Current state:
 

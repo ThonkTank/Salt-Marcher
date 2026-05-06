@@ -25,7 +25,8 @@ planner snapshot, and the planner session observation model.
 Current state:
 
 - the current published surface already exposes focused planner workflow
-  commands and one directly exported read-only `SessionPlannerModel`
+  commands plus four directly exported read-only planner models for session,
+  participants, encounters, and state-panel context
 
 Target state:
 
@@ -43,15 +44,15 @@ The root application service coordinates:
 - party-based adventuring-day calculations
 - saved encounter-plan budget reads through the encounter public boundary
 - session-local workflow mutations
-- publication of the planner-owned read-only observation model
+- publication of the planner-owned read-only observation models
 
 Current state:
 
 - the current code already routes planner writes through dedicated
   `application/*UseCase` owners over `SessionPlan`
 - it now keeps exactly one repository-backed current session through a
-  planner-owned repository port and current-session access seam
-- the read-only planner state model is exported directly instead of being
+  planner-owned runtime repository port and current-session access seam
+- the read-only planner state models are exported directly instead of being
   loaded through a root query method
 
 Target state:

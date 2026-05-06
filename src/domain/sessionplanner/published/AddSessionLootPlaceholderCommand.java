@@ -1,4 +1,4 @@
 package src.domain.sessionplanner.published;
 
-public final class AddSessionLootPlaceholderCommand {
+public record AddSessionLootPlaceholderCommand() {
 }
