@@ -1,8 +1,14 @@
 package src.domain.sessionplanner.published;
 
-public record RemoveSessionLootPlaceholderCommand(long lootId) {
+public final class RemoveSessionLootPlaceholderCommand {
 
-    public RemoveSessionLootPlaceholderCommand {
-        lootId = Math.max(0L, lootId);
+    private final long lootId;
+
+    public RemoveSessionLootPlaceholderCommand(long lootId) {
+        this.lootId = Math.max(0L, lootId);
+    }
+
+    public long lootId() {
+        return lootId;
     }
 }

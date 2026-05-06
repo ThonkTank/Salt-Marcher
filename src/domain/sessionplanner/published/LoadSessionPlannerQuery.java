@@ -1,4 +1,4 @@
 package src.domain.sessionplanner.published;
 
-public record LoadSessionPlannerQuery() {
+public final class LoadSessionPlannerQuery {
 }

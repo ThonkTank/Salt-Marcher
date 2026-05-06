@@ -12,7 +12,7 @@ public record DungeonEditorControlsViewInputEvent(
 ) {
 
     public DungeonEditorControlsViewInputEvent {
-        viewModeKey = viewModeKey == null ? null : viewModeKey.strip();
+        viewModeKey = normalizedOptionalText(viewModeKey);
     }
 
     enum ToolFamily {
@@ -50,7 +50,7 @@ public record DungeonEditorControlsViewInputEvent(
             boolean dismissRequested
     ) {
         public ToolInput {
-            selectedToolLabel = selectedToolLabel == null ? null : selectedToolLabel.strip();
+            selectedToolLabel = normalizedOptionalText(selectedToolLabel);
         }
     }
 
@@ -66,5 +66,13 @@ public record DungeonEditorControlsViewInputEvent(
             opacity = Math.max(0.0, Math.min(1.0, opacity));
             selectedLevelsText = selectedLevelsText == null ? "" : selectedLevelsText.strip();
         }
+    }
+
+    private static @Nullable String normalizedOptionalText(@Nullable String rawText) {
+        if (rawText == null) {
+            return null;
+        }
+        String stripped = rawText.strip();
+        return stripped.isEmpty() ? null : stripped;
     }
 }

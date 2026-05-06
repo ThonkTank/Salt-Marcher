@@ -1,8 +1,14 @@
 package src.domain.sessionplanner.published;
 
-public record MoveSessionEncounterDownCommand(long encounterId) {
+public final class MoveSessionEncounterDownCommand {
 
-    public MoveSessionEncounterDownCommand {
-        encounterId = Math.max(0L, encounterId);
+    private final long encounterId;
+
+    public MoveSessionEncounterDownCommand(long encounterId) {
+        this.encounterId = Math.max(0L, encounterId);
+    }
+
+    public long encounterId() {
+        return encounterId;
     }
 }

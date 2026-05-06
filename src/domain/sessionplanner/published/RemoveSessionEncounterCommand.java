@@ -1,8 +1,14 @@
 package src.domain.sessionplanner.published;
 
-public record RemoveSessionEncounterCommand(long encounterId) {
+public final class RemoveSessionEncounterCommand {
 
-    public RemoveSessionEncounterCommand {
-        encounterId = Math.max(0L, encounterId);
+    private final long encounterId;
+
+    public RemoveSessionEncounterCommand(long encounterId) {
+        this.encounterId = Math.max(0L, encounterId);
+    }
+
+    public long encounterId() {
+        return encounterId;
     }
 }

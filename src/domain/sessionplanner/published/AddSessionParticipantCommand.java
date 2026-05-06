@@ -1,8 +1,14 @@
 package src.domain.sessionplanner.published;
 
-public record AddSessionParticipantCommand(long characterId) {
+public final class AddSessionParticipantCommand {
 
-    public AddSessionParticipantCommand {
-        characterId = Math.max(0L, characterId);
+    private final long characterId;
+
+    public AddSessionParticipantCommand(long characterId) {
+        this.characterId = Math.max(0L, characterId);
+    }
+
+    public long characterId() {
+        return characterId;
     }
 }

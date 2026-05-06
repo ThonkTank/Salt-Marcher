@@ -1,8 +1,14 @@
 package src.domain.sessionplanner.published;
 
-public record RemoveSessionParticipantCommand(long characterId) {
+public final class RemoveSessionParticipantCommand {
 
-    public RemoveSessionParticipantCommand {
-        characterId = Math.max(0L, characterId);
+    private final long characterId;
+
+    public RemoveSessionParticipantCommand(long characterId) {
+        this.characterId = Math.max(0L, characterId);
+    }
+
+    public long characterId() {
+        return characterId;
     }
 }

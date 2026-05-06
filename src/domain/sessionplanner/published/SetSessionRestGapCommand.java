@@ -1,14 +1,30 @@
 package src.domain.sessionplanner.published;
 
-public record SetSessionRestGapCommand(
-        long leftEncounterId,
-        long rightEncounterId,
-        SessionPlannerRestKind restKind
-) {
+public final class SetSessionRestGapCommand {
 
-    public SetSessionRestGapCommand {
-        leftEncounterId = Math.max(0L, leftEncounterId);
-        rightEncounterId = Math.max(0L, rightEncounterId);
-        restKind = restKind == null ? SessionPlannerRestKind.NONE : restKind;
+    private final long leftEncounterId;
+    private final long rightEncounterId;
+    private final SessionPlannerRestKind restKind;
+
+    public SetSessionRestGapCommand(
+            long leftEncounterId,
+            long rightEncounterId,
+            SessionPlannerRestKind restKind
+    ) {
+        this.leftEncounterId = Math.max(0L, leftEncounterId);
+        this.rightEncounterId = Math.max(0L, rightEncounterId);
+        this.restKind = restKind == null ? SessionPlannerRestKind.NONE : restKind;
+    }
+
+    public long leftEncounterId() {
+        return leftEncounterId;
+    }
+
+    public long rightEncounterId() {
+        return rightEncounterId;
+    }
+
+    public SessionPlannerRestKind restKind() {
+        return restKind;
     }
 }

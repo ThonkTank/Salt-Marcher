@@ -10,6 +10,9 @@ final class DungeonEditorControlsListeners {
 
     private static final String PMD_LAW_OF_DEMETER = "PMD.LawOfDemeter";
 
+    private DungeonEditorControlsListeners() {
+    }
+
     @SuppressWarnings(PMD_LAW_OF_DEMETER)
     static <T> void onSelectedItemChanged(ComboBox<T> comboBox, ChangeListener<? super T> changeListener) {
         comboBox.getSelectionModel().selectedItemProperty().addListener(changeListener);
@@ -29,7 +32,6 @@ final class DungeonEditorControlsListeners {
         }
     }
 
-    @SuppressWarnings(PMD_LAW_OF_DEMETER)
     static void withDetachedTextUpdate(TextField textField, ChangeListener<String> changeListener, Runnable action) {
         textField.textProperty().removeListener(changeListener);
         try {
@@ -39,7 +41,6 @@ final class DungeonEditorControlsListeners {
         }
     }
 
-    @SuppressWarnings(PMD_LAW_OF_DEMETER)
     static void withDetachedToggleUpdate(ToggleGroup toggleGroup, ChangeListener<Toggle> changeListener, Runnable action) {
         toggleGroup.selectedToggleProperty().removeListener(changeListener);
         try {

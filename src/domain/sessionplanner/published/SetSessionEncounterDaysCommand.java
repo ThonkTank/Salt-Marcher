@@ -2,9 +2,15 @@ package src.domain.sessionplanner.published;
 
 import java.math.BigDecimal;
 
-public record SetSessionEncounterDaysCommand(BigDecimal encounterDays) {
+public final class SetSessionEncounterDaysCommand {
 
-    public SetSessionEncounterDaysCommand {
-        encounterDays = encounterDays == null ? BigDecimal.ONE : encounterDays;
+    private final BigDecimal encounterDays;
+
+    public SetSessionEncounterDaysCommand(BigDecimal encounterDays) {
+        this.encounterDays = encounterDays == null ? BigDecimal.ONE : encounterDays;
+    }
+
+    public BigDecimal encounterDays() {
+        return encounterDays;
     }
 }

@@ -1,6 +1,5 @@
 package src.view.leftbartabs.dungeoneditor;
 
-import java.util.List;
 import java.util.function.Consumer;
 import javafx.scene.Node;
 import javafx.scene.control.Label;

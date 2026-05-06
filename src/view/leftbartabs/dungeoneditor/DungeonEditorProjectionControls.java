@@ -11,12 +11,15 @@ import src.view.slotcontent.controls.dungeoncontrol.DungeonControlPanelView.Over
 
 final class DungeonEditorProjectionControls {
 
+    private static final String VIEW_GRID = "Grid";
+    private static final String VIEW_GRAPH = "Graph";
+
     private final javafx.scene.control.Label levelLabel = new javafx.scene.control.Label("Ebene z=0");
     private final Button previousLevelButton = new Button("-");
     private final Button nextLevelButton = new Button("+");
     private final OverlayControlsPanel overlayControls;
-    private final ToggleButton gridButton = createToolToggle(DungeonEditorControlsView.VIEW_GRID);
-    private final ToggleButton graphButton = createToolToggle(DungeonEditorControlsView.VIEW_GRAPH);
+    private final ToggleButton gridButton = createToolToggle(VIEW_GRID);
+    private final ToggleButton graphButton = createToolToggle(VIEW_GRAPH);
     private final ToggleGroup viewModeGroup = new ToggleGroup();
     private final ChangeListener<Toggle> viewModeListener = (ignored, oldToggle, newToggle) ->
             handleViewModeChanged(oldToggle, newToggle);
@@ -76,8 +79,8 @@ final class DungeonEditorProjectionControls {
 
     void showViewMode(String viewMode) {
         DungeonEditorControlsListeners.withDetachedToggleUpdate(viewModeGroup, viewModeListener, () -> {
-            graphButton.setSelected(DungeonEditorControlsView.VIEW_GRAPH.equals(viewMode));
-            gridButton.setSelected(!DungeonEditorControlsView.VIEW_GRAPH.equals(viewMode));
+            graphButton.setSelected(VIEW_GRAPH.equals(viewMode));
+            gridButton.setSelected(!VIEW_GRAPH.equals(viewMode));
         });
     }
 
@@ -88,9 +91,7 @@ final class DungeonEditorProjectionControls {
             }
             return;
         }
-        events.viewModeSelected(graphButton.equals(newToggle)
-                ? DungeonEditorControlsView.VIEW_GRAPH
-                : DungeonEditorControlsView.VIEW_GRID);
+        events.viewModeSelected(graphButton.equals(newToggle) ? VIEW_GRAPH : VIEW_GRID);
     }
 
     private static ToggleButton createToolToggle(String text) {

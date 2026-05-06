@@ -1,4 +1,4 @@
 package src.domain.sessionplanner.published;
 
-public record RefreshSessionPlannerCommand() {
+public final class RefreshSessionPlannerCommand {
 }

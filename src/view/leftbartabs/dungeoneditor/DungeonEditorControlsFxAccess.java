@@ -11,6 +11,9 @@ final class DungeonEditorControlsFxAccess {
 
     private static final String PMD_LAW_OF_DEMETER = "PMD.LawOfDemeter";
 
+    private DungeonEditorControlsFxAccess() {
+    }
+
     @SuppressWarnings(PMD_LAW_OF_DEMETER)
     static void addStyle(Node node, String styleClass) {
         node.getStyleClass().add(styleClass);
