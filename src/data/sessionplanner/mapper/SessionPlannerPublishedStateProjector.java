@@ -1,4 +1,4 @@
-package src.data.sessionplanner.runtime;
+package src.data.sessionplanner.mapper;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import src.data.sessionplanner.model.SessionPlannerPublishedState;
 import src.domain.sessionplanner.published.SessionPlannerEncountersProjection;
 import src.domain.sessionplanner.published.SessionPlannerParticipantsProjection;
 import src.domain.sessionplanner.published.SessionPlannerRestKind;
@@ -17,11 +18,11 @@ import src.domain.sessionplanner.session.port.SessionPartyFactsLookup;
 import src.domain.sessionplanner.session.value.SessionEncounter;
 import src.domain.sessionplanner.session.value.SessionRestPlacement;
 
-final class SessionPlannerPublishedStateProjector {
+public final class SessionPlannerPublishedStateProjector {
 
     private static final BigDecimal HUNDRED = new BigDecimal("100");
 
-    SessionPlannerPublishedState project(
+    public SessionPlannerPublishedState project(
             SessionPlan session,
             SessionPartyFactsLookup partyFacts,
             SessionEncounterFactsLookup encounterFacts

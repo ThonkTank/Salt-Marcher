@@ -1,4 +1,4 @@
-package src.data.sessionplanner.runtime;
+package src.data.sessionplanner.repository;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -6,6 +6,8 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Consumer;
 import org.jspecify.annotations.Nullable;
+import src.data.sessionplanner.mapper.SessionPlannerPublishedStateProjector;
+import src.data.sessionplanner.model.SessionPlannerPublishedState;
 import src.domain.sessionplanner.application.CurrentSessionPlanRuntimeAccess;
 import src.domain.sessionplanner.published.SessionPlannerCurrentSessionModel;
 import src.domain.sessionplanner.published.SessionPlannerEncountersModel;

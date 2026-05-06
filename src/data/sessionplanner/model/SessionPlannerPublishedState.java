@@ -1,11 +1,11 @@
-package src.data.sessionplanner.runtime;
+package src.data.sessionplanner.model;
 
 import src.domain.sessionplanner.published.SessionPlannerEncountersProjection;
 import src.domain.sessionplanner.published.SessionPlannerParticipantsProjection;
 import src.domain.sessionplanner.published.SessionPlannerSessionSnapshot;
 import src.domain.sessionplanner.published.SessionPlannerStatePanelProjection;
 
-record SessionPlannerPublishedState(
+public record SessionPlannerPublishedState(
         SessionPlannerSessionSnapshot session,
         SessionPlannerParticipantsProjection participants,
         SessionPlannerEncountersProjection encounters,
