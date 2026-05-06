@@ -13,18 +13,21 @@ feature.
 
 Current state:
 
-- no dedicated `sessionplanner` data adapter is implemented yet
-- the current planner runtime remains transient
+- `sessionplanner` now owns its own data feature under
+  `src/data/sessionplanner/**`
+- the current implementation persists exactly one current session record
+- `LoadSessionPlannerQuery` remains implicit and does not yet expose a session
+  list or explicit session identifier
 
 Target state:
 
-- `sessionplanner` persists its own session record without storing foreign
-  domain internals
+- `sessionplanner` keeps persisting its own session record without storing
+  foreign domain internals
 
 ## Root Contract
 
 - `src/data/sessionplanner/SessionPlannerServiceContribution.java` is the
-  target root service entrypoint for the feature.
+  root service entrypoint for the feature.
 - Bootstrap discovers it generically under `src/data/<feature>/`.
 - The contribution registers the exported root application service through the
   shell-owned service registry, `shell.api.ServiceRegistry`.
@@ -78,6 +81,8 @@ The session record does not persist:
 - storage and schema failures MUST surface through sessionplanner-owned
   published result statuses instead of leaking adapter exceptions to the view
   layer
+- failed writes MUST keep the last stable planner-owned current session state
+  visible instead of publishing a half-persisted mutation
 
 ## Stability Rules
 
@@ -88,6 +93,9 @@ The session record does not persist:
 - sessionplanner persistence stays the canonical home for session-owned
   allocations and selection state even when later workflows trigger encounter
   or loot mutations through foreign boundaries
+- the current pointer model for one active session is an implementation detail,
+  not a claim that sessionplanner owns foreign loading UX or a permanent
+  single-session domain limit
 
 ## Verification Notes
 

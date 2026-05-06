@@ -21,6 +21,7 @@ import src.domain.encounter.application.LoadEncounterPlanBudgetUseCase;
 import src.domain.encounter.application.LoadSavedEncounterPlanUseCase;
 import src.domain.encounter.application.SaveEncounterPlanUseCase;
 import src.domain.encounter.plan.port.EncounterPlanRepository;
+import src.domain.encounter.session.entity.EncounterSession;
 import src.domain.encounter.published.ApplyEncounterStateCommand;
 import src.domain.encounter.published.EncounterBuilderInputs;
 import src.domain.encounter.published.EncounterBuilderInputsModel;
@@ -44,7 +45,6 @@ import src.domain.encounter.published.UpdateEncounterBuilderInputsCommand;
 import src.domain.encountertable.EncounterTableApplicationService;
 import src.domain.party.PartyApplicationService;
 import src.domain.encounter.session.value.EncounterSessionCommand;
-import src.domain.encounter.session.value.EncounterSessionValues.Snapshot;
 
 /**
  * Public encounter facade that owns generation, saved-plan persistence, and
@@ -223,8 +223,8 @@ public final class EncounterApplicationService {
         if (useCase == null) {
             return EncounterStateSnapshot.empty(SESSION_NOT_REGISTERED);
         }
-        Snapshot snapshot = useCase.apply(EncounterStateBoundaryTranslator.toInternalCommand(command));
-        return publishSnapshot(snapshot);
+        EncounterSession session = useCase.apply(EncounterStateBoundaryTranslator.toInternalCommand(command));
+        return publishSnapshot(session);
     }
 
     public EncounterBuilderInputs updateBuilderInputs(UpdateEncounterBuilderInputsCommand command) {
@@ -235,7 +235,7 @@ public final class EncounterApplicationService {
         UpdateEncounterBuilderInputsCommand effective = command == null
                 ? new UpdateEncounterBuilderInputsCommand(EncounterBuilderInputs.empty())
                 : command;
-        Snapshot snapshot = useCase.apply(new EncounterSessionCommand(
+        EncounterSession session = useCase.apply(new EncounterSessionCommand(
                 EncounterSessionCommand.Action.UPDATE_BUILDER_INPUTS,
                 Optional.empty(),
                 EncounterBuilderInputsBoundaryTranslator.toInternal(effective.inputs()),
@@ -249,8 +249,8 @@ public final class EncounterApplicationService {
                 0L,
                 0,
                 false));
-        publishSnapshot(snapshot);
-        return EncounterStateSnapshotProjector.toPublishedBuilderInputs(snapshot);
+        publishSnapshot(session);
+        return EncounterStateSnapshotProjector.toPublishedBuilderInputs(session);
     }
 
     private EncounterStateSnapshot currentStateSnapshot() {
@@ -258,7 +258,7 @@ public final class EncounterApplicationService {
         if (useCase == null) {
             return EncounterStateSnapshot.empty(SESSION_NOT_REGISTERED);
         }
-        return EncounterStateSnapshotProjector.toPublishedSnapshot(useCase.snapshot());
+        return EncounterStateSnapshotProjector.toPublishedSnapshot(useCase.session());
     }
 
     private EncounterBuilderInputs currentBuilderInputs() {
@@ -266,7 +266,7 @@ public final class EncounterApplicationService {
         if (useCase == null) {
             return EncounterBuilderInputs.empty();
         }
-        return EncounterStateSnapshotProjector.toPublishedBuilderInputs(useCase.snapshot());
+        return EncounterStateSnapshotProjector.toPublishedBuilderInputs(useCase.session());
     }
 
     private Runnable subscribeStateListener(Consumer<EncounterStateSnapshot> listener) {
@@ -291,9 +291,9 @@ public final class EncounterApplicationService {
         return () -> tuningPreviewListeners.remove(safeListener);
     }
 
-    private EncounterStateSnapshot publishSnapshot(Snapshot snapshot) {
-        EncounterStateSnapshot state = EncounterStateSnapshotProjector.toPublishedSnapshot(snapshot);
-        EncounterBuilderInputs builderInputs = EncounterStateSnapshotProjector.toPublishedBuilderInputs(snapshot);
+    private EncounterStateSnapshot publishSnapshot(EncounterSession session) {
+        EncounterStateSnapshot state = EncounterStateSnapshotProjector.toPublishedSnapshot(session);
+        EncounterBuilderInputs builderInputs = EncounterStateSnapshotProjector.toPublishedBuilderInputs(session);
         notifyStateListeners(state);
         notifyBuilderInputsListeners(builderInputs);
         currentTuningPreview = refreshTuningPreview();

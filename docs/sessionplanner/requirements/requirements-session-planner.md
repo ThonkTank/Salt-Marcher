@@ -74,8 +74,7 @@ Provide one session-owned planning surface that:
 Current state:
 
 - the first implementation is an open scaffold
-- the planner runtime is still transient and does not yet persist a session
-  record
+- the planner now persists one current session record as planner-owned truth
 - XP budget and rest recommendation are real party-based calculations
 - imported encounter cards use real encounter-plan budget reads
 - gold budgeting remains a visible placeholder

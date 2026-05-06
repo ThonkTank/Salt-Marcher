@@ -48,8 +48,8 @@ Current state:
 
 - the current code already routes planner writes through dedicated
   `application/*UseCase` owners over `SessionPlan`
-- it still keeps exactly one current runtime session until step 3 adds the
-  repository and data contribution
+- it now keeps exactly one repository-backed current session through a
+  planner-owned repository port and current-session access seam
 
 Target state:
 
@@ -100,7 +100,7 @@ Core invariants:
 
 - planner XP math is based on public party and encounter reads only
 - session participant count is the number of session participant references
-- the current runtime holds exactly one current session record
+- the current persistence model holds exactly one current session record
 - attached encounters keep the session-local order chosen by the planner
 - rests can exist only between adjacent encounters
 - each attached encounter refers to exactly one encounter-owned saved plan
@@ -112,15 +112,15 @@ Core invariants:
 
 Current state:
 
-- the current code keeps one current runtime session through a planner-owned
-  runtime access seam
-- reopening the planner in the same runtime preserves planner-owned
+- the current code keeps one current persisted session through a planner-owned
+  repository port plus current-session access seam
+- reopening the planner after reload or application restart preserves
+  planner-owned
   participant refs, encounter order, allocations, rests, placeholders, and
   selection for that current session only
 
 Target state:
 
-- session plans are persisted through a planner-owned repository port
 - reopening a session restores session-owned participant refs, encounter order,
   allocations, selection, rests, and placeholders
 - party, encounter, creature, and later loot truth are re-read through their

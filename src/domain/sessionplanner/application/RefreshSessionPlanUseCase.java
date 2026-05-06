@@ -9,6 +9,6 @@ public final class RefreshSessionPlanUseCase {
     }
 
     public void execute() {
-        runtime.replaceCurrent(runtime.loadOrCreateCurrent().clearStatus());
+        runtime.reloadCurrent();
     }
 }

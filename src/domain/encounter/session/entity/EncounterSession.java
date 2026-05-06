@@ -8,10 +8,8 @@ import java.util.Locale;
 import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.OptionalLong;
-import src.domain.encounter.generation.value.EncounterDifficultyIntent;
 import src.domain.encounter.generation.value.EncounterGenerationInputs;
 import src.domain.encounter.generation.value.EncounterGenerationRequest;
-import src.domain.encounter.generation.value.EncounterTuningIntent;
 import src.domain.encounter.plan.aggregate.EncounterPlan;
 import src.domain.encounter.plan.value.EncounterPlanCreature;
 import src.domain.encounter.plan.value.EncounterPlanSummary;
@@ -39,7 +37,6 @@ public final class EncounterSession {
 
     private static final String DEFAULT_STATUS = "Encounter bereit.";
     private static final String NO_LOOT = "Kein Loot";
-    private static final String DEFAULT_CREATURE_ROLE = "Creature";
     private static final String MANUAL_CREATURE_ROLE = "Manual";
     private static final String SAVED_PLAN_CREATURE_ROLE = "Saved";
     private static final String REINFORCEMENT_CREATURE_ROLE = "Reinforcement";
@@ -414,18 +411,15 @@ public final class EncounterSession {
         }
     }
 
-    public Snapshot snapshot() {
-        return new Snapshot(
-                context.mode,
-                builderState(),
-                new InitiativeStateData(combat.pendingInitiativeRows),
-                combatProjection(),
-                combat.resultState,
-                context.status,
-                missingCombatPartyMembers());
+    public int mode() {
+        return context.mode;
     }
 
-    private BuilderStateData builderState() {
+    public String status() {
+        return context.status;
+    }
+
+    public BuilderStateData builderState() {
         int adjustedXp = builder.generatedAdjustedXp > 0
                 ? builder.generatedAdjustedXp
                 : builder.roster.stream().mapToInt(EncounterCreatureData::totalXp).sum();
@@ -463,7 +457,15 @@ public final class EncounterSession {
                 builder.pendingUndo);
     }
 
-    private CombatProjectionData combatProjection() {
+    public List<InitiativeEntryData> initiativeEntries() {
+        return List.copyOf(combat.pendingInitiativeRows);
+    }
+
+    public EncounterGenerationInputs builderInputs() {
+        return builder.builderInputs;
+    }
+
+    public CombatProjectionData combatProjection() {
         if (!combat.combatRuntime.hasTurnEntries()) {
             return CombatProjectionData.empty();
         }
@@ -474,8 +476,12 @@ public final class EncounterSession {
         return projection;
     }
 
-    private List<PartyMemberData> missingCombatPartyMembers() {
-        List<String> activePcIds = combatProjection().cards().stream()
+    public ResultStateData resultState() {
+        return combat.resultState;
+    }
+
+    public List<PartyMemberData> missingCombatPartyMembers(CombatProjectionData projection) {
+        List<String> activePcIds = projection.cards().stream()
                 .filter(CombatCardData::playerCharacter)
                 .map(CombatCardData::id)
                 .toList();
@@ -616,15 +622,6 @@ public final class EncounterSession {
         return adjustedXp <= 0 ? "" : "Easy";
     }
 
-    private static String difficultyLabel(EncounterDifficultyIntent band) {
-        return switch (band == null ? EncounterDifficultyIntent.MEDIUM : band) {
-            case EASY -> "Easy";
-            case MEDIUM -> "Medium";
-            case HARD -> "Hard";
-            case DEADLY -> "Deadly";
-        };
-    }
-
     private static String generationSuccessText(GenerationResultData result) {
         StringBuilder text = new StringBuilder(result.alternatives().size() + " Encounter-Optionen generiert.");
         if (result.diagnostics().isPresent()) {
@@ -639,13 +636,6 @@ public final class EncounterSession {
             text.append(" Fallback verwendet.");
         }
         return text.toString();
-    }
-
-    private static String tuningLabel(EncounterTuningIntent tuning) {
-        EncounterTuningIntent effective = tuning == null ? EncounterTuningIntent.defaultIntent() : tuning;
-        return "B" + effective.balanceLevel()
-                + "/M" + Math.round(effective.amountValue())
-                + "/D" + effective.diversityLevel();
     }
 
     private static EncounterCreatureData fromDetail(
@@ -672,7 +662,7 @@ public final class EncounterSession {
     private static final class ContextState {
         private final List<PartyMemberData> activeParty = new ArrayList<>();
         private final List<EncounterPlanSummary> savedPlans = new ArrayList<>();
-        private Mode mode = Mode.BUILDER;
+        private int mode = Mode.BUILDER;
         private Optional<BudgetData> budget = Optional.empty();
         private String status = DEFAULT_STATUS;
     }

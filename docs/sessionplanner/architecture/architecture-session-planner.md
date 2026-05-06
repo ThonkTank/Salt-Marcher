@@ -46,16 +46,18 @@ creature-detail truth, or loot truth.
 Current state:
 
 - the current implementation now uses `SessionPlan` plus
-  `src/domain/sessionplanner/application/*UseCase.java`
-  under one current-session runtime holder inside the domain layer
+  `src/domain/sessionplanner/application/*UseCase.java` under one
+  repository-backed current-session access seam inside the domain layer
 - `SessionPlannerApplicationService` now exposes focused planner workflows
   instead of one generic apply-command bag
-- `src/data/encounter/EncounterServiceContribution.java` still hosts planner
-  service registration in the current code
+- `src/data/sessionplanner/SessionPlannerServiceContribution.java` now owns
+  planner registration, repository assembly, and read-only foreign-facts
+  adapter assembly
+- the current planner persistence stores exactly one current session record,
+  not a session list or explicit load UI
 
 Target state:
 
-- `sessionplanner` owns its own persistence adapter and service contribution
 - `SessionPlannerApplicationService` becomes a thin orchestrator over a richer
   session domain model and dedicated repository port
 
@@ -63,13 +65,16 @@ Target state:
 
 - the planner view layer may depend only on shell contracts, its own
   contribution roles, and the `SessionPlannerApplicationService`
-- `SessionPlannerApplicationService` may depend only on
-  `PartyApplicationService` and `EncounterApplicationService`
+- `SessionPlannerApplicationService` may depend only on planner-owned ports,
+  planner-owned use cases, and planner-owned published carriers
 - session participant facts must enter through the party public boundary
 - encounter summaries and budget facts must enter through the encounter public
   boundary
 - the planner must not import creature services, encounter repositories, party
   repositories, or foreign data adapters directly
+- the planner data feature may adapt `PartyApplicationService` and
+  `EncounterApplicationService` only behind planner-owned read-only query
+  ports
 - the planner may persist only session-owned references, allocations, and
   selection state
 - gold placeholder state must not pretend that a computed gold budget exists
@@ -96,8 +101,8 @@ Target state:
 - the view layer observes planner state through one read-only snapshot model
 - mutations enter through explicit planner workflows, not through mutable view
   state or direct foreign application-service calls from the view layer
-- until step 3, the planner still keeps exactly one current runtime session
-  rather than a persisted session list
+- the current persistence model keeps exactly one current session record rather
+  than a persisted session list
 
 ## Verification Notes
 

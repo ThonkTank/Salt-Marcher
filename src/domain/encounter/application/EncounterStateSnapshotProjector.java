@@ -2,53 +2,73 @@ package src.domain.encounter.application;
 
 import src.domain.encounter.published.EncounterBuilderInputs;
 import src.domain.encounter.published.EncounterStateSnapshot;
+import src.domain.encounter.session.entity.EncounterSession;
 import src.domain.encounter.session.value.EncounterSessionValues.BuilderStateData;
 import src.domain.encounter.session.value.EncounterSessionValues.CombatProjectionData;
 import src.domain.encounter.session.value.EncounterSessionValues.Mode;
+import src.domain.encounter.session.value.EncounterSessionValues.PartyMemberData;
 import src.domain.encounter.session.value.EncounterSessionValues.ResultStateData;
-import src.domain.encounter.session.value.EncounterSessionValues.Snapshot;
 
 public final class EncounterStateSnapshotProjector {
 
     private EncounterStateSnapshotProjector() {
     }
 
-    public static EncounterStateSnapshot toPublishedSnapshot(Snapshot snapshot) {
-        if (snapshot == null) {
+    public static EncounterStateSnapshot toPublishedSnapshot(EncounterSession session) {
+        if (session == null) {
             return EncounterStateSnapshot.empty("");
         }
+        BuilderStateData builderState = session.builderState();
+        CombatProjectionData combatState = session.combatProjection();
         return new EncounterStateSnapshot(
-                toPublishedMode(snapshot.mode()),
-                toPublishedBuilderPane(snapshot.builderState()),
-                new EncounterStateSnapshot.InitiativePane(snapshot.initiativeState().entries().stream()
+                toPublishedMode(session.mode()),
+                toPublishedBuilderPane(builderState),
+                new EncounterStateSnapshot.InitiativePane(session.initiativeEntries().stream()
                         .map(entry -> new EncounterStateSnapshot.InitiativeRow(
                                 entry.id(),
                                 entry.label(),
                                 entry.kind().label(),
                                 entry.initiative()))
                         .toList()),
-                toPublishedCombatPane(snapshot.combatState(), snapshot.missingCombatPartyMembers()),
-                toPublishedResolutionPane(snapshot.resultState()),
-                snapshot.status());
+                toPublishedCombatPane(combatState, session.missingCombatPartyMembers(combatState)),
+                toPublishedResolutionPane(session.resultState()),
+                session.status());
     }
 
-    public static EncounterBuilderInputs toPublishedBuilderInputs(Snapshot snapshot) {
-        Snapshot safeSnapshot = snapshot == null ? new Snapshot(null, null, null, null, null, "", null) : snapshot;
-        return EncounterBuilderInputsBoundaryTranslator.toPublished(safeSnapshot.builderState().builderInputs());
+    public static EncounterBuilderInputs toPublishedBuilderInputs(EncounterSession session) {
+        return session == null
+                ? EncounterBuilderInputs.empty()
+                : EncounterBuilderInputsBoundaryTranslator.toPublished(session.builderInputs());
     }
 
-    private static EncounterStateSnapshot.Mode toPublishedMode(Mode mode) {
-        Mode effective = mode == null ? Mode.BUILDER : mode;
+    private static EncounterStateSnapshot.Mode toPublishedMode(int mode) {
+        int effective = mode;
         return switch (effective) {
-            case BUILDER -> EncounterStateSnapshot.Mode.BUILDER;
-            case INITIATIVE -> EncounterStateSnapshot.Mode.INITIATIVE;
-            case COMBAT -> EncounterStateSnapshot.Mode.COMBAT;
-            case RESULTS -> EncounterStateSnapshot.Mode.RESULTS;
+            case Mode.BUILDER -> EncounterStateSnapshot.Mode.BUILDER;
+            case Mode.INITIATIVE -> EncounterStateSnapshot.Mode.INITIATIVE;
+            case Mode.COMBAT -> EncounterStateSnapshot.Mode.COMBAT;
+            case Mode.RESULTS -> EncounterStateSnapshot.Mode.RESULTS;
+            default -> EncounterStateSnapshot.Mode.BUILDER;
         };
     }
 
     private static EncounterStateSnapshot.BuilderPane toPublishedBuilderPane(BuilderStateData builderState) {
-        BuilderStateData safeState = builderState == null ? new Snapshot(null, null, null, null, null, "", null).builderState() : builderState;
+        BuilderStateData safeState = builderState == null
+                ? new BuilderStateData(
+                        java.util.List.of(),
+                        java.util.List.of(),
+                        "",
+                        null,
+                        null,
+                        java.util.List.of(),
+                        java.util.List.of(),
+                        false,
+                        false,
+                        false,
+                        false,
+                        false,
+                        java.util.Optional.empty())
+                : builderState;
         return new EncounterStateSnapshot.BuilderPane(
                 partySummary(safeState),
                 safeState.templateLabel(),
@@ -103,7 +123,7 @@ public final class EncounterStateSnapshotProjector {
 
     private static EncounterStateSnapshot.CombatPane toPublishedCombatPane(
             CombatProjectionData combatState,
-            java.util.List<src.domain.encounter.session.value.EncounterSessionValues.PartyMemberData> missingCombatPartyMembers
+            java.util.List<PartyMemberData> missingCombatPartyMembers
     ) {
         CombatProjectionData safeState = combatState == null ? CombatProjectionData.empty() : combatState;
         return new EncounterStateSnapshot.CombatPane(

@@ -66,6 +66,10 @@ public record SessionPlan(
         return copy(participantRefs, encounterDays, encounters, restPlacements, lootPlaceholders, selectedEncounterId, "", nextEncounterId, nextLootId);
     }
 
+    public SessionPlan withStatus(String statusText) {
+        return copy(participantRefs, encounterDays, encounters, restPlacements, lootPlaceholders, selectedEncounterId, statusText, nextEncounterId, nextLootId);
+    }
+
     public SessionPlan addParticipant(long characterId) {
         if (characterId <= 0L) {
             return this;
@@ -249,10 +253,6 @@ public record SessionPlan(
         List<SessionRestPlacement> nextRestPlacements = pruneRestPlacements(nextEncounters, restPlacements);
         return copy(participantRefs, encounterDays, nextEncounters, nextRestPlacements, lootPlaceholders, selectedEncounterId,
                 "Encounter verschoben.", nextEncounterId, nextLootId);
-    }
-
-    private SessionPlan withStatus(String statusText) {
-        return copy(participantRefs, encounterDays, encounters, restPlacements, lootPlaceholders, selectedEncounterId, statusText, nextEncounterId, nextLootId);
     }
 
     private SessionPlan copy(

@@ -41,6 +41,7 @@ import src.domain.sessionplanner.published.SetSessionEncounterDaysCommand;
 import src.domain.sessionplanner.published.SetSessionRestGapCommand;
 import src.domain.sessionplanner.session.port.SessionEncounterFactsLookup;
 import src.domain.sessionplanner.session.port.SessionPartyFactsLookup;
+import src.domain.sessionplanner.session.port.SessionPlanRepository;
 import src.domain.sessionplanner.session.value.SessionRestKind;
 
 public final class SessionPlannerApplicationService {
@@ -67,10 +68,12 @@ public final class SessionPlannerApplicationService {
     private final AssembleSessionPlannerSnapshotUseCase assembleSnapshotUseCase;
 
     public SessionPlannerApplicationService(
+            SessionPlanRepository repository,
             SessionPartyFactsLookup partyFacts,
             SessionEncounterFactsLookup encounterFacts
     ) {
         CurrentSessionPlanRuntimeAccess runtime = new CurrentSessionPlanRuntimeAccess(
+                Objects.requireNonNull(repository, "repository"),
                 Objects.requireNonNull(partyFacts, "partyFacts"),
                 Objects.requireNonNull(encounterFacts, "encounterFacts"));
         this.createSessionUseCase = new CreateSessionPlanUseCase(runtime);
