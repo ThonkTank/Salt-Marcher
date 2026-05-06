@@ -54,21 +54,21 @@ public final class DungeonAuthoredRuntimeAdapter {
             return new DungeonAuthoredMutationResult.Operation(DungeonAuthoredProjector.operationResult(
                     previewOperationPath.execute(
                             DungeonIdentityBoundaryTranslator.domainId(previewOperation.mapId()),
-                            DungeonOperationBoundaryTranslator.operationInput(previewOperation.operation()))));
+                            DungeonOperationBoundaryTranslator.operationMutation(previewOperation.operation()))));
         }
         DungeonAuthoredMutationCommand.ApplyOperation applyOperation =
                 (DungeonAuthoredMutationCommand.ApplyOperation) effectiveCommand;
         return new DungeonAuthoredMutationResult.Operation(DungeonAuthoredProjector.operationResult(
                 applyOperationPath.execute(
                         DungeonIdentityBoundaryTranslator.domainId(applyOperation.mapId()),
-                        DungeonOperationBoundaryTranslator.operationInput(applyOperation.operation()))));
+                        DungeonOperationBoundaryTranslator.operationMutation(applyOperation.operation()))));
     }
 
     @FunctionalInterface
     private interface EditorOperationPath {
         ApplyDungeonEditorOperationUseCase.OperationResultData execute(
                 @Nullable DungeonMapIdentity mapId,
-                ApplyDungeonEditorOperationUseCase.OperationInput input
+                ApplyDungeonEditorOperationUseCase.OperationMutation mutation
         );
     }
 

@@ -1,10 +1,16 @@
 package src.domain.dungeon.application;
 
-import java.util.Optional;
 import org.jspecify.annotations.Nullable;
+import src.domain.dungeon.map.value.DungeonCell;
+import src.domain.dungeon.map.value.DungeonClusterBoundaryKind;
+import src.domain.dungeon.map.value.DungeonCorridorAnchorEndpoint;
+import src.domain.dungeon.map.value.DungeonCorridorDoorEndpoint;
+import src.domain.dungeon.map.value.DungeonCorridorEndpoint;
+import src.domain.dungeon.map.value.DungeonCorridorRoomEndpoint;
 import src.domain.dungeon.map.value.DungeonEdgeDirection;
-import src.domain.dungeon.map.value.DungeonRoomExitDescription;
+import src.domain.dungeon.map.value.DungeonRoomNarration;
 import src.domain.dungeon.map.value.DungeonTopologyRef;
+import src.domain.dungeon.map.value.DungeonRoomExitDescription;
 import src.domain.dungeon.published.DungeonEditorOperation;
 import src.domain.dungeon.published.DungeonInspectorSnapshot;
 
@@ -13,139 +19,112 @@ public final class DungeonOperationBoundaryTranslator {
     private DungeonOperationBoundaryTranslator() {
     }
 
-    public static ApplyDungeonEditorOperationUseCase.OperationInput operationInput(
+    public static ApplyDungeonEditorOperationUseCase.OperationMutation operationMutation(
             @Nullable DungeonEditorOperation operation
     ) {
-        return movementInput(operation)
-                .or(() -> roomShapeInput(operation))
-                .or(() -> corridorInput(operation))
-                .or(() -> narrationInput(operation))
-                .orElseGet(ApplyDungeonEditorOperationUseCase.OperationInput.NoChange::new);
+        return switch (operation) {
+            case null -> ApplyDungeonEditorOperationUseCase.OperationMutation.identity();
+            case DungeonEditorOperation.MoveTopologyElement moveTopologyElement -> {
+                var ref = DungeonTopologyBoundaryTranslator.domainTopologyRef(moveTopologyElement.ref());
+                yield current -> current.moveTopologyElement(
+                        ref,
+                        moveTopologyElement.deltaQ(),
+                        moveTopologyElement.deltaR(),
+                        moveTopologyElement.deltaLevel());
+            }
+            case DungeonEditorOperation.MoveEditorHandle moveEditorHandle -> {
+                var handle = DungeonEditorHandleBoundaryTranslator.domainHandle(moveEditorHandle.ref());
+                yield current -> current.moveEditorHandle(
+                        handle,
+                        moveEditorHandle.deltaQ(),
+                        moveEditorHandle.deltaR(),
+                        moveEditorHandle.deltaLevel());
+            }
+            case DungeonEditorOperation.MoveBoundaryStretch moveBoundaryStretch -> {
+                var sourceEdges = moveBoundaryStretch.sourceEdges()
+                        .stream()
+                        .map(DungeonCellEdgeBoundaryTranslator::domainEdge)
+                        .toList();
+                yield current -> current.moveBoundaryStretch(
+                        moveBoundaryStretch.clusterId(),
+                        sourceEdges,
+                        moveBoundaryStretch.deltaQ(),
+                        moveBoundaryStretch.deltaR(),
+                        moveBoundaryStretch.deltaLevel());
+            }
+            case DungeonEditorOperation.MoveRoomAnchor moveRoomAnchor ->
+                    current -> current.moveRoomAnchor(moveRoomAnchor.deltaQ(), moveRoomAnchor.deltaR());
+            case DungeonEditorOperation.PaintRoomRectangle paintRoomRectangle -> {
+                DungeonCell start = DungeonCellEdgeBoundaryTranslator.domainCell(paintRoomRectangle.start());
+                DungeonCell end = DungeonCellEdgeBoundaryTranslator.domainCell(paintRoomRectangle.end());
+                yield current -> current.paintRoomRectangle(start, end);
+            }
+            case DungeonEditorOperation.DeleteRoomRectangle deleteRoomRectangle -> {
+                DungeonCell start = DungeonCellEdgeBoundaryTranslator.domainCell(deleteRoomRectangle.start());
+                DungeonCell end = DungeonCellEdgeBoundaryTranslator.domainCell(deleteRoomRectangle.end());
+                yield current -> current.deleteRoomRectangle(start, end);
+            }
+            case DungeonEditorOperation.EditClusterBoundaries editClusterBoundaries -> {
+                var edges = editClusterBoundaries.edges().stream().map(DungeonCellEdgeBoundaryTranslator::domainEdge).toList();
+                DungeonClusterBoundaryKind kind =
+                        DungeonTopologyBoundaryTranslator.domainBoundaryKind(editClusterBoundaries.kind());
+                yield current -> current.editClusterBoundaries(
+                        editClusterBoundaries.clusterId(),
+                        edges,
+                        kind,
+                        editClusterBoundaries.deleteBoundary());
+            }
+            case DungeonEditorOperation.CreateCorridor createCorridor -> {
+                DungeonCorridorEndpoint start = corridorEndpoint(createCorridor.start());
+                DungeonCorridorEndpoint end = corridorEndpoint(createCorridor.end());
+                yield current -> current.createCorridor(start, end);
+            }
+            case DungeonEditorOperation.ExtendCorridor extendCorridor -> {
+                DungeonCorridorRoomEndpoint endpoint = corridorRoomEndpoint(extendCorridor.endpoint());
+                yield current -> current.extendCorridor(extendCorridor.corridorId(), endpoint);
+            }
+            case DungeonEditorOperation.MergeCorridors mergeCorridors ->
+                    current -> current.mergeCorridors(mergeCorridors.corridorId(), mergeCorridors.mergedCorridorId());
+            case DungeonEditorOperation.DeleteCorridor deleteCorridor ->
+                    current -> current.deleteCorridor(deleteCorridor.corridorId());
+            case DungeonEditorOperation.SaveRoomNarration saveRoomNarration -> {
+                var exits = saveRoomNarration.exits().stream()
+                        .map(DungeonOperationBoundaryTranslator::domainExitNarration)
+                        .toList();
+                DungeonRoomNarration narration = new DungeonRoomNarration(saveRoomNarration.visualDescription(), exits);
+                yield current -> current.saveRoomNarration(saveRoomNarration.roomId(), narration);
+            }
+        };
     }
 
-    private static Optional<ApplyDungeonEditorOperationUseCase.OperationInput> movementInput(
-            @Nullable DungeonEditorOperation operation
-    ) {
-        if (operation instanceof DungeonEditorOperation.MoveTopologyElement moveTopologyElement) {
-            return Optional.of(new ApplyDungeonEditorOperationUseCase.OperationInput.MoveTopologyElement(
-                    DungeonTopologyBoundaryTranslator.domainTopologyRef(moveTopologyElement.ref()),
-                    moveTopologyElement.deltaQ(),
-                    moveTopologyElement.deltaR(),
-                    moveTopologyElement.deltaLevel()));
-        }
-        if (operation instanceof DungeonEditorOperation.MoveEditorHandle moveEditorHandle) {
-            return Optional.of(new ApplyDungeonEditorOperationUseCase.OperationInput.MoveEditorHandle(
-                    DungeonEditorHandleBoundaryTranslator.domainHandle(moveEditorHandle.ref()),
-                    moveEditorHandle.deltaQ(),
-                    moveEditorHandle.deltaR(),
-                    moveEditorHandle.deltaLevel()));
-        }
-        if (operation instanceof DungeonEditorOperation.MoveBoundaryStretch moveBoundaryStretch) {
-            return Optional.of(new ApplyDungeonEditorOperationUseCase.OperationInput.MoveBoundaryStretch(
-                    moveBoundaryStretch.clusterId(),
-                    moveBoundaryStretch.sourceEdges().stream().map(DungeonCellEdgeBoundaryTranslator::domainEdge).toList(),
-                    moveBoundaryStretch.deltaQ(),
-                    moveBoundaryStretch.deltaR(),
-                    moveBoundaryStretch.deltaLevel()));
-        }
-        if (operation instanceof DungeonEditorOperation.MoveRoomAnchor moveRoomAnchor) {
-            return Optional.of(new ApplyDungeonEditorOperationUseCase.OperationInput.MoveRoomAnchor(
-                    moveRoomAnchor.deltaQ(),
-                    moveRoomAnchor.deltaR()));
-        }
-        return Optional.empty();
-    }
-
-    private static Optional<ApplyDungeonEditorOperationUseCase.OperationInput> roomShapeInput(
-            @Nullable DungeonEditorOperation operation
-    ) {
-        if (operation instanceof DungeonEditorOperation.PaintRoomRectangle paintRoomRectangle) {
-            return Optional.of(new ApplyDungeonEditorOperationUseCase.OperationInput.PaintRoomRectangle(
-                    DungeonCellEdgeBoundaryTranslator.domainCell(paintRoomRectangle.start()),
-                    DungeonCellEdgeBoundaryTranslator.domainCell(paintRoomRectangle.end())));
-        }
-        if (operation instanceof DungeonEditorOperation.DeleteRoomRectangle deleteRoomRectangle) {
-            return Optional.of(new ApplyDungeonEditorOperationUseCase.OperationInput.DeleteRoomRectangle(
-                    DungeonCellEdgeBoundaryTranslator.domainCell(deleteRoomRectangle.start()),
-                    DungeonCellEdgeBoundaryTranslator.domainCell(deleteRoomRectangle.end())));
-        }
-        if (operation instanceof DungeonEditorOperation.EditClusterBoundaries editClusterBoundaries) {
-            return Optional.of(new ApplyDungeonEditorOperationUseCase.OperationInput.EditClusterBoundaries(
-                    editClusterBoundaries.clusterId(),
-                    editClusterBoundaries.edges().stream().map(DungeonCellEdgeBoundaryTranslator::domainEdge).toList(),
-                    DungeonTopologyBoundaryTranslator.domainBoundaryKind(editClusterBoundaries.kind()),
-                    editClusterBoundaries.deleteBoundary()));
-        }
-        return Optional.empty();
-    }
-
-    private static Optional<ApplyDungeonEditorOperationUseCase.OperationInput> corridorInput(
-            @Nullable DungeonEditorOperation operation
-    ) {
-        if (operation instanceof DungeonEditorOperation.CreateCorridor createCorridor) {
-            return Optional.of(new ApplyDungeonEditorOperationUseCase.OperationInput.CreateCorridor(
-                    corridorEndpoint(createCorridor.start()),
-                    corridorEndpoint(createCorridor.end())));
-        }
-        if (operation instanceof DungeonEditorOperation.ExtendCorridor extendCorridor) {
-            return Optional.of(new ApplyDungeonEditorOperationUseCase.OperationInput.ExtendCorridor(
-                    extendCorridor.corridorId(),
-                    corridorRoomEndpoint(extendCorridor.endpoint())));
-        }
-        if (operation instanceof DungeonEditorOperation.MergeCorridors mergeCorridors) {
-            return Optional.of(new ApplyDungeonEditorOperationUseCase.OperationInput.MergeCorridors(
-                    mergeCorridors.corridorId(),
-                    mergeCorridors.mergedCorridorId()));
-        }
-        if (operation instanceof DungeonEditorOperation.DeleteCorridor deleteCorridor) {
-            return Optional.of(
-                    new ApplyDungeonEditorOperationUseCase.OperationInput.DeleteCorridor(deleteCorridor.corridorId()));
-        }
-        return Optional.empty();
-    }
-
-    private static Optional<ApplyDungeonEditorOperationUseCase.OperationInput> narrationInput(
-            @Nullable DungeonEditorOperation operation
-    ) {
-        if (operation instanceof DungeonEditorOperation.SaveRoomNarration saveRoomNarration) {
-            return Optional.of(new ApplyDungeonEditorOperationUseCase.OperationInput.SaveRoomNarration(
-                    saveRoomNarration.roomId(),
-                    saveRoomNarration.visualDescription(),
-                    saveRoomNarration.exits().stream().map(DungeonOperationBoundaryTranslator::domainExitNarration).toList()));
-        }
-        return Optional.empty();
-    }
-
-    private static ApplyDungeonEditorOperationUseCase.OperationInput.CorridorEndpoint corridorEndpoint(
+    private static DungeonCorridorEndpoint corridorEndpoint(
             DungeonEditorOperation.CorridorEndpoint endpoint
     ) {
-        if (endpoint instanceof DungeonEditorOperation.CorridorDoorEndpoint doorEndpoint) {
-            return new ApplyDungeonEditorOperationUseCase.OperationInput.CorridorDoorEndpoint(
+        return switch (endpoint) {
+            case DungeonEditorOperation.CorridorDoorEndpoint doorEndpoint -> new DungeonCorridorDoorEndpoint(
                     doorEndpoint.roomId(),
                     doorEndpoint.clusterId(),
                     DungeonCellEdgeBoundaryTranslator.domainCell(doorEndpoint.roomCell()),
                     DungeonCellEdgeBoundaryTranslator.direction(doorEndpoint.direction()),
                     DungeonTopologyBoundaryTranslator.domainTopologyRef(doorEndpoint.topologyRef()));
-        }
-        if (endpoint instanceof DungeonEditorOperation.CorridorAnchorEndpoint anchorEndpoint) {
-            return new ApplyDungeonEditorOperationUseCase.OperationInput.CorridorAnchorEndpoint(
+            case DungeonEditorOperation.CorridorAnchorEndpoint anchorEndpoint -> new DungeonCorridorAnchorEndpoint(
                     anchorEndpoint.hostCorridorId(),
                     DungeonCellEdgeBoundaryTranslator.domainCell(anchorEndpoint.anchorCell()),
                     DungeonTopologyBoundaryTranslator.domainTopologyRef(anchorEndpoint.topologyRef()));
-        }
-        return new ApplyDungeonEditorOperationUseCase.OperationInput.CorridorDoorEndpoint(
-                0L,
-                0L,
-                DungeonCellEdgeBoundaryTranslator.emptyCell(),
-                DungeonEdgeDirection.NORTH,
-                DungeonTopologyRef.empty());
+            case null -> new DungeonCorridorDoorEndpoint(
+                    0L,
+                    0L,
+                    DungeonCellEdgeBoundaryTranslator.emptyCell(),
+                    DungeonEdgeDirection.NORTH,
+                    DungeonTopologyRef.empty());
+        };
     }
 
-    private static ApplyDungeonEditorOperationUseCase.OperationInput.CorridorRoomEndpoint corridorRoomEndpoint(
+    private static DungeonCorridorRoomEndpoint corridorRoomEndpoint(
             DungeonEditorOperation.@Nullable CorridorRoomEndpoint endpoint
     ) {
         if (endpoint == null) {
-            return new ApplyDungeonEditorOperationUseCase.OperationInput.CorridorRoomEndpoint(
+            return new DungeonCorridorRoomEndpoint(
                     0L,
                     0L,
                     false,
@@ -153,7 +132,7 @@ public final class DungeonOperationBoundaryTranslator {
                     DungeonEdgeDirection.NORTH,
                     DungeonTopologyRef.empty());
         }
-        return new ApplyDungeonEditorOperationUseCase.OperationInput.CorridorRoomEndpoint(
+        return new DungeonCorridorRoomEndpoint(
                 endpoint.roomId(),
                 endpoint.clusterId(),
                 endpoint.fixedDoor(),
