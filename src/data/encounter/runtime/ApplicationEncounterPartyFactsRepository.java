@@ -1,4 +1,4 @@
-package src.data.encounter;
+package src.data.encounter.runtime;
 
 import java.util.List;
 import java.util.Objects;

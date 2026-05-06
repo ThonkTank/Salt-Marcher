@@ -5,16 +5,19 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-public record PartyTravelPositionsModel(
-        Supplier<PartyTravelPositionsResult> currentSupplier,
-        Function<Consumer<PartyTravelPositionsResult>, Runnable> subscribeAction
-) {
+public final class PartyTravelPositionsModel {
 
-    public PartyTravelPositionsModel {
-        currentSupplier = currentSupplier == null
+    private final Supplier<PartyTravelPositionsResult> currentSupplier;
+    private final Function<Consumer<PartyTravelPositionsResult>, Runnable> subscribeAction;
+
+    public PartyTravelPositionsModel(
+            Supplier<PartyTravelPositionsResult> currentSupplier,
+            Function<Consumer<PartyTravelPositionsResult>, Runnable> subscribeAction
+    ) {
+        this.currentSupplier = currentSupplier == null
                 ? () -> new PartyTravelPositionsResult(ReadStatus.STORAGE_ERROR, java.util.List.of(), null)
                 : currentSupplier;
-        subscribeAction = subscribeAction == null
+        this.subscribeAction = subscribeAction == null
                 ? listener -> () -> { }
                 : subscribeAction;
     }

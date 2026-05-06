@@ -1,4 +1,4 @@
-package src.data.travel;
+package src.data.travel.runtime;
 
 import java.util.List;
 import java.util.Objects;

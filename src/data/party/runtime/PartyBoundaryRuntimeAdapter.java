@@ -1,10 +1,15 @@
-package src.data.party;
+package src.data.party.runtime;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
-import org.jspecify.annotations.Nullable;
+import src.domain.party.application.CalculateAdventuringDayUseCase;
+import src.domain.party.application.LoadActivePartyCompositionUseCase;
+import src.domain.party.application.LoadActivePartyUseCase;
+import src.domain.party.application.LoadAdventuringDaySummaryUseCase;
+import src.domain.party.application.LoadPartySnapshotUseCase;
+import src.domain.party.application.LoadPartyTravelPositionsUseCase;
 import src.domain.party.published.ActivePartyCompositionModel;
 import src.domain.party.published.ActivePartyCompositionResult;
 import src.domain.party.published.ActivePartyModel;
@@ -13,7 +18,6 @@ import src.domain.party.published.AdventuringDayCalculationModel;
 import src.domain.party.published.AdventuringDayCalculationResult;
 import src.domain.party.published.AdventuringDayResult;
 import src.domain.party.published.AdventuringDaySummaryModel;
-import src.domain.party.published.CalculateAdventuringDayCommand;
 import src.domain.party.published.MutationResult;
 import src.domain.party.published.PartyMutationModel;
 import src.domain.party.published.PartySnapshotModel;
@@ -22,8 +26,10 @@ import src.domain.party.published.PartyTravelPositionsModel;
 import src.domain.party.published.PartyTravelPositionsResult;
 import src.domain.party.roster.aggregate.PartyRoster;
 import src.domain.party.roster.port.PartyRosterRepository;
+import src.domain.party.roster.port.PartyRuntimeFeedback;
+import src.domain.party.roster.value.PartyMutationStatus;
 
-public final class PartyBoundaryRuntimeAdapter implements PartyRosterRepository {
+public final class PartyBoundaryRuntimeAdapter implements PartyRosterRepository, PartyRuntimeFeedback {
 
     private static final String LISTENER_PARAMETER = "listener";
 
@@ -122,13 +128,21 @@ public final class PartyBoundaryRuntimeAdapter implements PartyRosterRepository 
         return adventuringDayCalculationModel;
     }
 
-    public void recordMutationResult(MutationResult result) {
-        currentPartyMutation = result == null ? PartyBoundaryProjector.defaultMutationResult() : result;
+    @Override
+    public void recordMutationStatus(PartyMutationStatus status) {
+        currentPartyMutation = new MutationResult(PartyBoundaryProjector.mapMutationStatus(status));
         notifyPartyMutationListeners(currentPartyMutation);
     }
 
-    public void publishAdventuringDayCalculation(@Nullable CalculateAdventuringDayCommand command) {
-        currentAdventuringDayCalculation = readAdventuringDayCalculationResult(command);
+    @Override
+    public void recordStorageErrorMutation() {
+        currentPartyMutation = PartyBoundaryProjector.storageErrorMutationResult();
+        notifyPartyMutationListeners(currentPartyMutation);
+    }
+
+    @Override
+    public void publishAdventuringDayCalculation(List<Integer> levels, int totalGroupXp) {
+        currentAdventuringDayCalculation = readAdventuringDayCalculationResult(levels, totalGroupXp);
         notifyAdventuringDayCalculationListeners(currentAdventuringDayCalculation);
     }
 
@@ -190,15 +204,13 @@ public final class PartyBoundaryRuntimeAdapter implements PartyRosterRepository 
     }
 
     private AdventuringDayCalculationResult readAdventuringDayCalculationResult(
-            @Nullable CalculateAdventuringDayCommand command
+            List<Integer> levels,
+            int totalGroupXp
     ) {
         try {
-            CalculateAdventuringDayCommand effectiveCommand = command == null
-                    ? new CalculateAdventuringDayCommand(List.of(), 0)
-                    : command;
             return PartyBoundaryProjector.mapAdventuringDayCalculationResult(calculateAdventuringDayUseCase.execute(
-                    effectiveCommand.levels(),
-                    effectiveCommand.totalGroupXp()));
+                    levels == null ? List.of() : levels,
+                    totalGroupXp));
         } catch (IllegalStateException exception) {
             return PartyBoundaryProjector.mapAdventuringDayCalculationResult(
                     calculateAdventuringDayUseCase.execute(List.of(), 0));

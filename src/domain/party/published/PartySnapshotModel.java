@@ -6,16 +6,19 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-public record PartySnapshotModel(
-        Supplier<PartySnapshotResult> currentSupplier,
-        Function<Consumer<PartySnapshotResult>, Runnable> subscribeAction
-) {
+public final class PartySnapshotModel {
 
-    public PartySnapshotModel {
-        currentSupplier = currentSupplier == null
+    private final Supplier<PartySnapshotResult> currentSupplier;
+    private final Function<Consumer<PartySnapshotResult>, Runnable> subscribeAction;
+
+    public PartySnapshotModel(
+            Supplier<PartySnapshotResult> currentSupplier,
+            Function<Consumer<PartySnapshotResult>, Runnable> subscribeAction
+    ) {
+        this.currentSupplier = currentSupplier == null
                 ? PartySnapshotModel::emptyResult
                 : currentSupplier;
-        subscribeAction = subscribeAction == null
+        this.subscribeAction = subscribeAction == null
                 ? listener -> () -> { }
                 : subscribeAction;
     }

@@ -1,7 +1,12 @@
-package src.data.party;
+package src.data.party.runtime;
 
 import java.util.List;
 import org.jspecify.annotations.Nullable;
+import src.domain.party.application.CalculateAdventuringDayUseCase;
+import src.domain.party.application.LoadActivePartyCompositionUseCase;
+import src.domain.party.application.LoadAdventuringDaySummaryUseCase;
+import src.domain.party.application.LoadPartySnapshotUseCase;
+import src.domain.party.application.LoadPartyTravelPositionsUseCase;
 import src.domain.party.published.ActivePartyComposition;
 import src.domain.party.published.ActivePartyCompositionResult;
 import src.domain.party.published.ActivePartyResult;
@@ -75,6 +80,10 @@ public final class PartyBoundaryProjector {
 
     public static MutationResult defaultMutationResult() {
         return new MutationResult(MutationStatus.SUCCESS);
+    }
+
+    public static MutationResult storageErrorMutationResult() {
+        return new MutationResult(MutationStatus.STORAGE_ERROR);
     }
 
     public static AdventuringDayCalculationResult failedAdventuringDayCalculationResult() {

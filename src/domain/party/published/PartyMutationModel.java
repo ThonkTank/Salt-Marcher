@@ -5,16 +5,19 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-public record PartyMutationModel(
-        Supplier<MutationResult> currentSupplier,
-        Function<Consumer<MutationResult>, Runnable> subscribeAction
-) {
+public final class PartyMutationModel {
 
-    public PartyMutationModel {
-        currentSupplier = currentSupplier == null
+    private final Supplier<MutationResult> currentSupplier;
+    private final Function<Consumer<MutationResult>, Runnable> subscribeAction;
+
+    public PartyMutationModel(
+            Supplier<MutationResult> currentSupplier,
+            Function<Consumer<MutationResult>, Runnable> subscribeAction
+    ) {
+        this.currentSupplier = currentSupplier == null
                 ? () -> new MutationResult(MutationStatus.SUCCESS)
                 : currentSupplier;
-        subscribeAction = subscribeAction == null
+        this.subscribeAction = subscribeAction == null
                 ? listener -> () -> { }
                 : subscribeAction;
     }

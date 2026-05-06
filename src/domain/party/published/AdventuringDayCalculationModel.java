@@ -5,20 +5,23 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-public record AdventuringDayCalculationModel(
-        Supplier<AdventuringDayCalculationResult> currentSupplier,
-        Function<Consumer<AdventuringDayCalculationResult>, Runnable> subscribeAction
-) {
+public final class AdventuringDayCalculationModel {
 
-    public AdventuringDayCalculationModel {
-        currentSupplier = currentSupplier == null
+    private final Supplier<AdventuringDayCalculationResult> currentSupplier;
+    private final Function<Consumer<AdventuringDayCalculationResult>, Runnable> subscribeAction;
+
+    public AdventuringDayCalculationModel(
+            Supplier<AdventuringDayCalculationResult> currentSupplier,
+            Function<Consumer<AdventuringDayCalculationResult>, Runnable> subscribeAction
+    ) {
+        this.currentSupplier = currentSupplier == null
                 ? () -> new AdventuringDayCalculationResult(
                         ReadStatus.STORAGE_ERROR,
                         new AdventuringDayCalculation(
                                 new AdventuringDayBudget(0, 0, 0, 0, 0),
                                 new AdventuringDayProgress(0, 0, 0, 0, 0.0, 0, 0, java.util.List.of(), java.util.List.of())))
                 : currentSupplier;
-        subscribeAction = subscribeAction == null
+        this.subscribeAction = subscribeAction == null
                 ? listener -> () -> { }
                 : subscribeAction;
     }

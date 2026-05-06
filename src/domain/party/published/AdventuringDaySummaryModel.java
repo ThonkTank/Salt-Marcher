@@ -6,16 +6,19 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-public record AdventuringDaySummaryModel(
-        Supplier<AdventuringDayResult> currentSupplier,
-        Function<Consumer<AdventuringDayResult>, Runnable> subscribeAction
-) {
+public final class AdventuringDaySummaryModel {
 
-    public AdventuringDaySummaryModel {
-        currentSupplier = currentSupplier == null
+    private final Supplier<AdventuringDayResult> currentSupplier;
+    private final Function<Consumer<AdventuringDayResult>, Runnable> subscribeAction;
+
+    public AdventuringDaySummaryModel(
+            Supplier<AdventuringDayResult> currentSupplier,
+            Function<Consumer<AdventuringDayResult>, Runnable> subscribeAction
+    ) {
+        this.currentSupplier = currentSupplier == null
                 ? AdventuringDaySummaryModel::emptyResult
                 : currentSupplier;
-        subscribeAction = subscribeAction == null
+        this.subscribeAction = subscribeAction == null
                 ? listener -> () -> { }
                 : subscribeAction;
     }

@@ -6,18 +6,21 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-public record ActivePartyCompositionModel(
-        Supplier<ActivePartyCompositionResult> currentSupplier,
-        Function<Consumer<ActivePartyCompositionResult>, Runnable> subscribeAction
-) {
+public final class ActivePartyCompositionModel {
 
-    public ActivePartyCompositionModel {
-        currentSupplier = currentSupplier == null
+    private final Supplier<ActivePartyCompositionResult> currentSupplier;
+    private final Function<Consumer<ActivePartyCompositionResult>, Runnable> subscribeAction;
+
+    public ActivePartyCompositionModel(
+            Supplier<ActivePartyCompositionResult> currentSupplier,
+            Function<Consumer<ActivePartyCompositionResult>, Runnable> subscribeAction
+    ) {
+        this.currentSupplier = currentSupplier == null
                 ? () -> new ActivePartyCompositionResult(
                         ReadStatus.STORAGE_ERROR,
                         new ActivePartyComposition(List.of(), 1))
                 : currentSupplier;
-        subscribeAction = subscribeAction == null
+        this.subscribeAction = subscribeAction == null
                 ? listener -> () -> { }
                 : subscribeAction;
     }
