@@ -21,18 +21,6 @@ public final class EncounterPlanBoundaryTranslator {
         return SavedEncounterPlanStatus.STORAGE_ERROR;
     }
 
-    public static SavedEncounterPlan toPublishedPlan(EncounterPlan plan) {
-        return new SavedEncounterPlan(
-                plan.id(),
-                plan.name(),
-                plan.generatedLabel(),
-                plan.creatures().stream()
-                        .map(creature -> new SavedEncounterPlanCreature(
-                                creature.creatureId(),
-                                creature.quantity()))
-                        .toList());
-    }
-
     public static SavedEncounterPlanSummary toPublishedSummary(EncounterPlanSummary summary) {
         return new SavedEncounterPlanSummary(
                 summary.id(),
