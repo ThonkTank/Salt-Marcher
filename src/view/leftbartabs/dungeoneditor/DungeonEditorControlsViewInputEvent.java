@@ -5,14 +5,31 @@ import org.jspecify.annotations.Nullable;
 public record DungeonEditorControlsViewInputEvent(
         @Nullable MapSelectionInput mapSelection,
         @Nullable MapEditorInput mapEditor,
-        @Nullable String viewModeKey,
+        String viewModeKey,
         @Nullable ToolInput toolInput,
         int projectionLevelShift,
         @Nullable OverlayInput overlay
 ) {
 
-    public DungeonEditorControlsViewInputEvent {
-        viewModeKey = normalizedOptionalText(viewModeKey);
+    public DungeonEditorControlsViewInputEvent(
+            @Nullable MapSelectionInput mapSelection,
+            @Nullable MapEditorInput mapEditor,
+            @Nullable String viewModeKey,
+            @Nullable ToolInput toolInput,
+            int projectionLevelShift,
+            @Nullable OverlayInput overlay
+    ) {
+        this.mapSelection = mapSelection;
+        this.mapEditor = mapEditor;
+        this.viewModeKey = normalizedOptionalTextOrEmpty(viewModeKey);
+        this.toolInput = toolInput;
+        this.projectionLevelShift = projectionLevelShift;
+        this.overlay = overlay;
+    }
+
+    @Override
+    public @Nullable String viewModeKey() {
+        return emptyToNull(viewModeKey);
     }
 
     enum ToolFamily {
@@ -46,11 +63,22 @@ public record DungeonEditorControlsViewInputEvent(
 
     public record ToolInput(
             @Nullable ToolFamily requestedFamily,
-            @Nullable String selectedToolLabel,
+            String selectedToolLabel,
             boolean dismissRequested
     ) {
-        public ToolInput {
-            selectedToolLabel = normalizedOptionalText(selectedToolLabel);
+        public ToolInput(
+                @Nullable ToolFamily requestedFamily,
+                @Nullable String selectedToolLabel,
+                boolean dismissRequested
+        ) {
+            this.requestedFamily = requestedFamily;
+            this.selectedToolLabel = normalizedOptionalTextOrEmpty(selectedToolLabel);
+            this.dismissRequested = dismissRequested;
+        }
+
+        @Override
+        public @Nullable String selectedToolLabel() {
+            return emptyToNull(selectedToolLabel);
         }
     }
 
@@ -68,11 +96,15 @@ public record DungeonEditorControlsViewInputEvent(
         }
     }
 
-    private static @Nullable String normalizedOptionalText(@Nullable String rawText) {
+    private static String normalizedOptionalTextOrEmpty(@Nullable String rawText) {
         if (rawText == null) {
-            return null;
+            return "";
         }
         String stripped = rawText.strip();
-        return stripped.isEmpty() ? null : stripped;
+        return stripped.isEmpty() ? "" : stripped;
+    }
+
+    private static @Nullable String emptyToNull(String text) {
+        return text.isEmpty() ? null : text;
     }
 }

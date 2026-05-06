@@ -9,7 +9,6 @@ import src.domain.sessionplanner.session.port.SessionEncounterFactsLookup;
 import src.domain.sessionplanner.session.port.SessionPartyFactsLookup;
 import src.domain.sessionplanner.session.port.SessionPlanRepository;
 import src.domain.sessionplanner.session.value.EncounterDays;
-import src.domain.sessionplanner.session.value.SessionParticipantRef;
 
 public final class CurrentSessionPlanRuntimeAccess {
 
@@ -108,12 +107,12 @@ public final class CurrentSessionPlanRuntimeAccess {
     }
 
     private SessionPlan createSeededSession(long sessionId) {
-        List<SessionParticipantRef> participantRefs = new ArrayList<>();
+        List<Long> participantRefs = new ArrayList<>();
         try {
             SessionPartyFactsLookup.ActivePartyMembersFact activeParty = partyFacts.loadActivePartyMembers();
             if (activeParty.available()) {
-                for (SessionPartyFactsLookup.PartyMemberFact member : activeParty.members()) {
-                    participantRefs.add(new SessionParticipantRef(member.characterId()));
+                for (SessionPartyFactsLookup.PartyMemberProfile member : activeParty.members()) {
+                    participantRefs.add(member.characterId());
                 }
             }
         } catch (RuntimeException exception) {

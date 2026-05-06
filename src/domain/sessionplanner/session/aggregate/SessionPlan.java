@@ -9,15 +9,12 @@ import java.util.List;
 import src.domain.sessionplanner.session.value.EncounterDays;
 import src.domain.sessionplanner.session.value.SessionEncounter;
 import src.domain.sessionplanner.session.value.SessionEncounterAllocation;
-import src.domain.sessionplanner.session.value.SessionEncounterId;
 import src.domain.sessionplanner.session.value.SessionLootPlaceholder;
-import src.domain.sessionplanner.session.value.SessionParticipantRef;
-import src.domain.sessionplanner.session.value.SessionRestKind;
 import src.domain.sessionplanner.session.value.SessionRestPlacement;
 
 public record SessionPlan(
         long sessionId,
-        List<SessionParticipantRef> participantRefs,
+        List<Long> participantRefs,
         EncounterDays encounterDays,
         List<SessionEncounter> encounters,
         List<SessionRestPlacement> restPlacements,
@@ -46,7 +43,7 @@ public record SessionPlan(
 
     public static SessionPlan seeded(
             long sessionId,
-            List<SessionParticipantRef> participantRefs,
+            List<Long> participantRefs,
             EncounterDays encounterDays
     ) {
         return new SessionPlan(
@@ -74,12 +71,11 @@ public record SessionPlan(
         if (characterId <= 0L) {
             return this;
         }
-        SessionParticipantRef nextRef = new SessionParticipantRef(characterId);
-        if (participantRefs.contains(nextRef)) {
+        if (participantRefs.contains(characterId)) {
             return withStatus("Charakter ist bereits Teil der Session.");
         }
-        List<SessionParticipantRef> nextParticipants = new ArrayList<>(participantRefs);
-        nextParticipants.add(nextRef);
+        List<Long> nextParticipants = new ArrayList<>(participantRefs);
+        nextParticipants.add(characterId);
         return copy(nextParticipants, encounterDays, encounters, restPlacements, lootPlaceholders, selectedEncounterId,
                 "Charakter zur Session hinzugefuegt.", nextEncounterId, nextLootId);
     }
@@ -88,8 +84,8 @@ public record SessionPlan(
         if (characterId <= 0L) {
             return this;
         }
-        List<SessionParticipantRef> nextParticipants = new ArrayList<>(participantRefs);
-        boolean removed = nextParticipants.remove(new SessionParticipantRef(characterId));
+        List<Long> nextParticipants = new ArrayList<>(participantRefs);
+        boolean removed = nextParticipants.remove(Long.valueOf(characterId));
         if (!removed) {
             return this;
         }
@@ -106,11 +102,11 @@ public record SessionPlan(
         if (encounterPlanId <= 0L) {
             return this;
         }
-        SessionEncounterId encounterId = new SessionEncounterId(nextEncounterId);
+        long encounterId = nextEncounterId;
         List<SessionEncounter> nextEncounters = new ArrayList<>(encounters);
         nextEncounters.add(new SessionEncounter(encounterId, encounterPlanId, SessionEncounterAllocation.zero()));
         List<SessionEncounter> rebalanced = rebalanceAllocationsEvenly(nextEncounters);
-        long nextSelected = selectedEncounterId <= 0L ? encounterId.value() : selectedEncounterId;
+        long nextSelected = selectedEncounterId <= 0L ? encounterId : selectedEncounterId;
         return copy(participantRefs, encounterDays, rebalanced, restPlacements, lootPlaceholders, nextSelected,
                 "Encounter an Session angehaengt.", nextEncounterId + 1, nextLootId);
     }
@@ -128,7 +124,7 @@ public record SessionPlan(
         if (selectedEncounterId == encounterId) {
             nextSelected = normalized.isEmpty()
                     ? 0L
-                    : normalized.get(Math.min(index, normalized.size() - 1)).encounterId().value();
+                    : normalized.get(Math.min(index, normalized.size() - 1)).encounterId();
         }
         return copy(participantRefs, encounterDays, normalized, nextRestPlacements, lootPlaceholders, nextSelected,
                 "Encounter entfernt.", nextEncounterId, nextLootId);
@@ -188,20 +184,13 @@ public record SessionPlan(
                 "Encounter ausgewaehlt.", nextEncounterId, nextLootId);
     }
 
-    public SessionPlan setRestPlacement(long leftEncounterId, long rightEncounterId, SessionRestKind restKind) {
-        if (!isAdjacent(encounters, leftEncounterId, rightEncounterId)) {
+    public SessionPlan setRestPlacement(SessionRestPlacement placement) {
+        if (placement == null || !isAdjacent(encounters, placement.leftEncounterId(), placement.rightEncounterId())) {
             return this;
         }
-        SessionPlan cleared = clearRestPlacement(leftEncounterId, rightEncounterId);
-        SessionRestKind effectiveKind = restKind == null ? SessionRestKind.NONE : restKind;
-        if (effectiveKind == SessionRestKind.NONE) {
-            return cleared.withStatus("Rast entfernt.");
-        }
+        SessionPlan cleared = clearRestPlacement(placement.leftEncounterId(), placement.rightEncounterId());
         List<SessionRestPlacement> nextRestPlacements = new ArrayList<>(cleared.restPlacements);
-        nextRestPlacements.add(new SessionRestPlacement(
-                new SessionEncounterId(leftEncounterId),
-                new SessionEncounterId(rightEncounterId),
-                effectiveKind));
+        nextRestPlacements.add(placement);
         return cleared.copy(cleared.participantRefs, cleared.encounterDays, cleared.encounters, nextRestPlacements, cleared.lootPlaceholders,
                 cleared.selectedEncounterId, "Rast aktualisiert.", cleared.nextEncounterId, cleared.nextLootId);
     }
@@ -212,8 +201,8 @@ public record SessionPlan(
         Iterator<SessionRestPlacement> iterator = nextRestPlacements.iterator();
         while (iterator.hasNext()) {
             SessionRestPlacement placement = iterator.next();
-            if (placement.leftEncounterId().value() == leftEncounterId
-                    && placement.rightEncounterId().value() == rightEncounterId) {
+            if (placement.leftEncounterId() == leftEncounterId
+                    && placement.rightEncounterId() == rightEncounterId) {
                 iterator.remove();
                 removed = true;
             }
@@ -256,7 +245,7 @@ public record SessionPlan(
     }
 
     private SessionPlan copy(
-            List<SessionParticipantRef> participantRefs,
+            List<Long> participantRefs,
             EncounterDays encounterDays,
             List<SessionEncounter> encounters,
             List<SessionRestPlacement> restPlacements,
@@ -281,7 +270,7 @@ public record SessionPlan(
 
     private static int encounterIndex(List<SessionEncounter> encounters, long encounterId) {
         for (int index = 0; index < encounters.size(); index++) {
-            if (encounters.get(index).encounterId().value() == encounterId) {
+            if (encounters.get(index).encounterId() == encounterId) {
                 return index;
             }
         }
@@ -292,8 +281,8 @@ public record SessionPlan(
         for (int index = 0; index < encounters.size() - 1; index++) {
             SessionEncounter left = encounters.get(index);
             SessionEncounter right = encounters.get(index + 1);
-            if (left.encounterId().value() == leftEncounterId
-                    && right.encounterId().value() == rightEncounterId) {
+            if (left.encounterId() == leftEncounterId
+                    && right.encounterId() == rightEncounterId) {
                 return true;
             }
         }
@@ -307,8 +296,8 @@ public record SessionPlan(
         List<SessionRestPlacement> nextRestPlacements = new ArrayList<>(restPlacements);
         nextRestPlacements.removeIf(placement -> !isAdjacent(
                 encounters,
-                placement.leftEncounterId().value(),
-                placement.rightEncounterId().value()));
+                placement.leftEncounterId(),
+                placement.rightEncounterId()));
         return nextRestPlacements;
     }
 

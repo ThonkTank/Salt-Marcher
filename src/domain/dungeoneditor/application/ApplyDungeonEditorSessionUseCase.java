@@ -157,7 +157,7 @@ public final class ApplyDungeonEditorSessionUseCase {
                 ? DungeonEditorSessionCommand.MainViewInput.empty()
                 : mainViewInput;
         DungeonSnapshot committedSnapshot = snapshotBuilder.loadCommittedSnapshot(session.selectedMapId());
-        if (input.source() == DungeonEditorSessionCommand.MainViewInputSource.LEVEL_SCROLLED) {
+        if (input.isLevelScrolled()) {
             applyInteractionEffect(mainViewInterpreter.consume(
                     input,
                     committedSnapshot,
@@ -181,7 +181,7 @@ public final class ApplyDungeonEditorSessionUseCase {
                 session.projectionLevel()));
     }
 
-    private void applyInteractionEffect(InterpretDungeonEditorMainViewInputUseCase.Effect effect) {
+    private void applyInteractionEffect(DungeonEditorMainViewEffect effect) {
         if (effect == null) {
             return;
         }

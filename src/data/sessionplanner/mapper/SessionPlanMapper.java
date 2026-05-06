@@ -12,10 +12,7 @@ import src.domain.sessionplanner.session.aggregate.SessionPlan;
 import src.domain.sessionplanner.session.value.EncounterDays;
 import src.domain.sessionplanner.session.value.SessionEncounter;
 import src.domain.sessionplanner.session.value.SessionEncounterAllocation;
-import src.domain.sessionplanner.session.value.SessionEncounterId;
 import src.domain.sessionplanner.session.value.SessionLootPlaceholder;
-import src.domain.sessionplanner.session.value.SessionParticipantRef;
-import src.domain.sessionplanner.session.value.SessionRestKind;
 import src.domain.sessionplanner.session.value.SessionRestPlacement;
 
 public final class SessionPlanMapper {
@@ -43,20 +40,20 @@ public final class SessionPlanMapper {
         return new SessionPlan(
                 plan.sessionId(),
                 snapshot.participants().stream()
-                        .map(record -> new SessionParticipantRef(record.characterId()))
+                        .map(SessionParticipantRecord::characterId)
                         .toList(),
                 new EncounterDays(parseDecimal(plan.encounterDays())),
                 snapshot.encounters().stream()
                         .map(record -> new SessionEncounter(
-                                new SessionEncounterId(record.encounterId()),
+                                record.encounterId(),
                                 record.encounterPlanId(),
                                 new SessionEncounterAllocation(parseDecimal(record.budgetPercentage()))))
                         .toList(),
                 snapshot.rests().stream()
-                        .map(record -> new SessionRestPlacement(
-                                new SessionEncounterId(record.leftEncounterId()),
-                                new SessionEncounterId(record.rightEncounterId()),
-                                SessionRestKind.valueOf(record.restKind())))
+                        .map(record -> SessionRestPlacement.fromPersistence(
+                                record.leftEncounterId(),
+                                record.rightEncounterId(),
+                                record.restKind()))
                         .toList(),
                 snapshot.lootPlaceholders().stream()
                         .map(record -> new SessionLootPlaceholder(record.lootId(), record.label()))
@@ -69,13 +66,13 @@ public final class SessionPlanMapper {
 
     private static List<SessionParticipantRecord> toParticipantRecords(SessionPlan plan) {
         return mapIndexed(plan.participantRefs(), (participant, index) -> new SessionParticipantRecord(
-                participant.characterId(),
+                participant,
                 index));
     }
 
     private static List<SessionEncounterRecord> toEncounterRecords(SessionPlan plan) {
         return mapIndexed(plan.encounters(), (encounter, index) -> new SessionEncounterRecord(
-                encounter.encounterId().value(),
+                encounter.encounterId(),
                 encounter.encounterPlanId(),
                 encounter.allocation().budgetPercentage().toPlainString(),
                 index));
@@ -83,9 +80,9 @@ public final class SessionPlanMapper {
 
     private static List<SessionRestPlacementRecord> toRestRecords(SessionPlan plan) {
         return mapIndexed(plan.restPlacements(), (placement, index) -> new SessionRestPlacementRecord(
-                placement.leftEncounterId().value(),
-                placement.rightEncounterId().value(),
-                placement.restKind().name(),
+                placement.leftEncounterId(),
+                placement.rightEncounterId(),
+                placement.persistenceKind(),
                 index));
     }
 

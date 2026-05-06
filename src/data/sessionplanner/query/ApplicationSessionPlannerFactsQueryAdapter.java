@@ -98,8 +98,8 @@ public final class ApplicationSessionPlannerFactsQueryAdapter
                 "Adj. XP " + result.summary().adjustedXp() + " · " + result.summary().difficultyLabel());
     }
 
-    private static PartyMemberFact toPartyMemberFact(PartyMemberSummary member) {
-        return new PartyMemberFact(
+    private static PartyMemberProfile toPartyMemberFact(PartyMemberSummary member) {
+        return new PartyMemberProfile(
                 member == null || member.id() == null ? 0L : member.id(),
                 member == null ? "" : member.name(),
                 member == null ? 0 : member.level());

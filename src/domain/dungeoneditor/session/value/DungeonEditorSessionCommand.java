@@ -195,6 +195,26 @@ public record DungeonEditorSessionCommand(
             return levelDelta;
         }
 
+        public boolean isPointerPressed() {
+            return source.equals(MainViewInputSource.POINTER_PRESSED);
+        }
+
+        public boolean isPointerDragged() {
+            return source.equals(MainViewInputSource.POINTER_DRAGGED);
+        }
+
+        public boolean isPointerReleased() {
+            return source.equals(MainViewInputSource.POINTER_RELEASED);
+        }
+
+        public boolean isPointerMoved() {
+            return source.equals(MainViewInputSource.POINTER_MOVED);
+        }
+
+        public boolean isLevelScrolled() {
+            return source.equals(MainViewInputSource.LEVEL_SCROLLED);
+        }
+
         @Override
         public boolean equals(Object other) {
             if (this == other) {
