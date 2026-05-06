@@ -62,7 +62,6 @@ final class SessionPlannerBinder {
             SessionPlannerControlsView controlsView
     ) {
         controlsView.onViewInputEvent(intentHandler::consume);
-        intentHandler.onRestGapResolutionRequested(gapIndex -> resolveGap(contributionModel, gapIndex));
         controlsView.showParty(contributionModel.partyProperty().get());
         controlsView.showBudget(contributionModel.budgetProperty().get());
         controlsView.showRestAdvice(contributionModel.restAdviceProperty().get());
@@ -86,6 +85,7 @@ final class SessionPlannerBinder {
     ) {
         timelineView.onViewInputEvent(intentHandler::consume);
         lootView.onViewInputEvent(intentHandler::consume);
+        intentHandler.replaceRestGaps(contributionModel.restGapsProperty().get());
         timelineView.showTimeline(
                 contributionModel.plannedEncountersProperty().get(),
                 contributionModel.restGapsProperty().get());
@@ -97,9 +97,12 @@ final class SessionPlannerBinder {
                                 contributionModel.restGapsProperty().get()));
         contributionModel.restGapsProperty().addListener(
                 (ListChangeListener<SessionPlannerContributionModel.RestGapModel>) change ->
-                        timelineView.showTimeline(
-                                contributionModel.plannedEncountersProperty().get(),
-                                contributionModel.restGapsProperty().get()));
+                {
+                    intentHandler.replaceRestGaps(contributionModel.restGapsProperty().get());
+                    timelineView.showTimeline(
+                            contributionModel.plannedEncountersProperty().get(),
+                            contributionModel.restGapsProperty().get());
+                });
         contributionModel.lootPlaceholdersProperty().addListener(
                 (ListChangeListener<SessionPlannerContributionModel.LootModel>) change ->
                         lootView.showLootPlaceholders(contributionModel.lootPlaceholdersProperty().get()));
@@ -137,16 +140,6 @@ final class SessionPlannerBinder {
             case SHORT_REST -> SessionPlannerRestKind.SHORT_REST;
             case LONG_REST -> SessionPlannerRestKind.LONG_REST;
         };
-    }
-
-    private static SessionPlannerContributionModel.RestGapModel resolveGap(
-            SessionPlannerContributionModel contributionModel,
-            int gapIndex
-    ) {
-        if (gapIndex < 0 || gapIndex >= contributionModel.restGapsProperty().size()) {
-            return new SessionPlannerContributionModel.RestGapModel(-1, 0L, 0L, "", false);
-        }
-        return contributionModel.restGapsProperty().get(gapIndex);
     }
 
     private record Binding(

@@ -1,19 +1,19 @@
 package src.view.leftbartabs.sessionplanner;
 
 import java.util.function.Consumer;
-import java.util.function.IntFunction;
+import java.util.List;
 
 final class SessionPlannerIntentHandler {
 
     private Consumer<SessionPlannerPublishedEvent> publishedEventListener = ignored -> { };
-    private IntFunction<SessionPlannerContributionModel.RestGapModel> restGapResolver = ignored -> unresolvedGap();
+    private List<SessionPlannerContributionModel.RestGapModel> restGaps = List.of();
 
     void onPublishedEventRequested(Consumer<SessionPlannerPublishedEvent> listener) {
         publishedEventListener = listener == null ? ignored -> { } : listener;
     }
 
-    void onRestGapResolutionRequested(IntFunction<SessionPlannerContributionModel.RestGapModel> resolver) {
-        restGapResolver = resolver == null ? ignored -> unresolvedGap() : resolver;
+    void replaceRestGaps(List<SessionPlannerContributionModel.RestGapModel> restGaps) {
+        this.restGaps = restGaps == null ? List.of() : List.copyOf(restGaps);
     }
 
     void consume(SessionPlannerControlsViewInputEvent event) {
@@ -50,7 +50,7 @@ final class SessionPlannerIntentHandler {
             return;
         }
         if (event.clearRestRequested()) {
-            SessionPlannerContributionModel.RestGapModel gap = restGapResolver.apply(event.gapIndex());
+            SessionPlannerContributionModel.RestGapModel gap = restGap(event.gapIndex());
             if (isResolvedGap(gap)) {
                 publishedEventListener.accept(
                         SessionPlannerPublishedEvent.clearRestGap(
@@ -74,7 +74,7 @@ final class SessionPlannerIntentHandler {
     }
 
     private void publishRestGap(int gapIndex, SessionPlannerPublishedEvent.RestSelection selection) {
-        SessionPlannerContributionModel.RestGapModel gap = restGapResolver.apply(gapIndex);
+        SessionPlannerContributionModel.RestGapModel gap = restGap(gapIndex);
         if (!isResolvedGap(gap)) {
             return;
         }
@@ -87,6 +87,13 @@ final class SessionPlannerIntentHandler {
 
     private static boolean isResolvedGap(SessionPlannerContributionModel.RestGapModel gap) {
         return gap.leftEncounterId() > 0L && gap.rightEncounterId() > 0L;
+    }
+
+    private SessionPlannerContributionModel.RestGapModel restGap(int gapIndex) {
+        if (gapIndex < 0 || gapIndex >= restGaps.size()) {
+            return unresolvedGap();
+        }
+        return restGaps.get(gapIndex);
     }
 
     private static SessionPlannerContributionModel.RestGapModel unresolvedGap() {

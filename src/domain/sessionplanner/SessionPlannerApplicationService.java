@@ -4,8 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
-import src.domain.encounter.EncounterApplicationService;
-import src.domain.party.PartyApplicationService;
 import src.domain.sessionplanner.application.AddSessionLootPlaceholderUseCase;
 import src.domain.sessionplanner.application.AddSessionParticipantUseCase;
 import src.domain.sessionplanner.application.AssembleSessionPlannerSnapshotUseCase;
@@ -20,7 +18,6 @@ import src.domain.sessionplanner.application.RemoveSessionEncounterUseCase;
 import src.domain.sessionplanner.application.RemoveSessionLootPlaceholderUseCase;
 import src.domain.sessionplanner.application.RemoveSessionParticipantUseCase;
 import src.domain.sessionplanner.application.SelectSessionEncounterUseCase;
-import src.domain.sessionplanner.application.SessionPlannerRuntimeAdapter;
 import src.domain.sessionplanner.application.SetSessionEncounterAllocationUseCase;
 import src.domain.sessionplanner.application.SetSessionEncounterDaysUseCase;
 import src.domain.sessionplanner.application.SetSessionRestGapUseCase;
@@ -42,6 +39,8 @@ import src.domain.sessionplanner.published.SessionPlannerSnapshot;
 import src.domain.sessionplanner.published.SetSessionEncounterAllocationCommand;
 import src.domain.sessionplanner.published.SetSessionEncounterDaysCommand;
 import src.domain.sessionplanner.published.SetSessionRestGapCommand;
+import src.domain.sessionplanner.session.port.SessionEncounterFactsLookup;
+import src.domain.sessionplanner.session.port.SessionPartyFactsLookup;
 import src.domain.sessionplanner.session.value.SessionRestKind;
 
 public final class SessionPlannerApplicationService {
@@ -68,13 +67,12 @@ public final class SessionPlannerApplicationService {
     private final AssembleSessionPlannerSnapshotUseCase assembleSnapshotUseCase;
 
     public SessionPlannerApplicationService(
-            PartyApplicationService party,
-            EncounterApplicationService encounters
+            SessionPartyFactsLookup partyFacts,
+            SessionEncounterFactsLookup encounterFacts
     ) {
-        PartyApplicationService partyService = Objects.requireNonNull(party, "party");
-        EncounterApplicationService encounterService = Objects.requireNonNull(encounters, "encounters");
-        SessionPlannerRuntimeAdapter runtimeAdapter = new SessionPlannerRuntimeAdapter(partyService, encounterService);
-        CurrentSessionPlanRuntimeAccess runtime = new CurrentSessionPlanRuntimeAccess(runtimeAdapter, runtimeAdapter);
+        CurrentSessionPlanRuntimeAccess runtime = new CurrentSessionPlanRuntimeAccess(
+                Objects.requireNonNull(partyFacts, "partyFacts"),
+                Objects.requireNonNull(encounterFacts, "encounterFacts"));
         this.createSessionUseCase = new CreateSessionPlanUseCase(runtime);
         this.refreshSessionUseCase = new RefreshSessionPlanUseCase(runtime);
         this.addParticipantUseCase = new AddSessionParticipantUseCase(runtime);
@@ -99,89 +97,89 @@ public final class SessionPlannerApplicationService {
         return sessionModel;
     }
 
-    public SessionPlannerSnapshot createSession(CreateSessionPlanCommand command) {
+    public void createSession(CreateSessionPlanCommand command) {
         createSessionUseCase.execute();
-        return publishCurrentSnapshot();
+        publishCurrentSnapshot();
     }
 
-    public SessionPlannerSnapshot refreshSession(RefreshSessionPlannerCommand command) {
+    public void refreshSession(RefreshSessionPlannerCommand command) {
         refreshSessionUseCase.execute();
-        return publishCurrentSnapshot();
+        publishCurrentSnapshot();
     }
 
-    public SessionPlannerSnapshot addParticipant(AddSessionParticipantCommand command) {
+    public void addParticipant(AddSessionParticipantCommand command) {
         AddSessionParticipantCommand effective = command == null
                 ? new AddSessionParticipantCommand(0L)
                 : command;
         addParticipantUseCase.execute(effective.characterId());
-        return publishCurrentSnapshot();
+        publishCurrentSnapshot();
     }
 
-    public SessionPlannerSnapshot removeParticipant(RemoveSessionParticipantCommand command) {
+    public void removeParticipant(RemoveSessionParticipantCommand command) {
         RemoveSessionParticipantCommand effective = command == null
                 ? new RemoveSessionParticipantCommand(0L)
                 : command;
         removeParticipantUseCase.execute(effective.characterId());
-        return publishCurrentSnapshot();
+        publishCurrentSnapshot();
     }
 
-    public SessionPlannerSnapshot setEncounterDays(SetSessionEncounterDaysCommand command) {
+    public void setEncounterDays(SetSessionEncounterDaysCommand command) {
         SetSessionEncounterDaysCommand effective = command == null
                 ? new SetSessionEncounterDaysCommand(java.math.BigDecimal.ONE)
                 : command;
         setEncounterDaysUseCase.execute(effective.encounterDays());
-        return publishCurrentSnapshot();
+        publishCurrentSnapshot();
     }
 
-    public SessionPlannerSnapshot attachEncounter(AttachSessionEncounterCommand command) {
+    public void attachEncounter(AttachSessionEncounterCommand command) {
         AttachSessionEncounterCommand effective = command == null
                 ? new AttachSessionEncounterCommand(0L)
                 : command;
         attachEncounterUseCase.execute(effective.encounterPlanId());
-        return publishCurrentSnapshot();
+        publishCurrentSnapshot();
     }
 
-    public SessionPlannerSnapshot removeEncounter(RemoveSessionEncounterCommand command) {
+    public void removeEncounter(RemoveSessionEncounterCommand command) {
         RemoveSessionEncounterCommand effective = command == null
                 ? new RemoveSessionEncounterCommand(0L)
                 : command;
         removeEncounterUseCase.execute(effective.encounterId());
-        return publishCurrentSnapshot();
+        publishCurrentSnapshot();
     }
 
-    public SessionPlannerSnapshot moveEncounterUp(MoveSessionEncounterUpCommand command) {
+    public void moveEncounterUp(MoveSessionEncounterUpCommand command) {
         MoveSessionEncounterUpCommand effective = command == null
                 ? new MoveSessionEncounterUpCommand(0L)
                 : command;
         moveEncounterUpUseCase.execute(effective.encounterId());
-        return publishCurrentSnapshot();
+        publishCurrentSnapshot();
     }
 
-    public SessionPlannerSnapshot moveEncounterDown(MoveSessionEncounterDownCommand command) {
+    public void moveEncounterDown(MoveSessionEncounterDownCommand command) {
         MoveSessionEncounterDownCommand effective = command == null
                 ? new MoveSessionEncounterDownCommand(0L)
                 : command;
         moveEncounterDownUseCase.execute(effective.encounterId());
-        return publishCurrentSnapshot();
+        publishCurrentSnapshot();
     }
 
-    public SessionPlannerSnapshot setEncounterAllocation(SetSessionEncounterAllocationCommand command) {
+    public void setEncounterAllocation(SetSessionEncounterAllocationCommand command) {
         SetSessionEncounterAllocationCommand effective = command == null
                 ? new SetSessionEncounterAllocationCommand(0L, java.math.BigDecimal.ZERO)
                 : command;
         setEncounterAllocationUseCase.execute(effective.encounterId(), effective.budgetPercentage());
-        return publishCurrentSnapshot();
+        publishCurrentSnapshot();
     }
 
-    public SessionPlannerSnapshot selectEncounter(SelectSessionEncounterCommand command) {
+    public void selectEncounter(SelectSessionEncounterCommand command) {
         SelectSessionEncounterCommand effective = command == null
                 ? new SelectSessionEncounterCommand(0L)
                 : command;
         selectEncounterUseCase.execute(effective.encounterId());
-        return publishCurrentSnapshot();
+        publishCurrentSnapshot();
     }
 
-    public SessionPlannerSnapshot setRestGap(SetSessionRestGapCommand command) {
+    public void setRestGap(SetSessionRestGapCommand command) {
         SetSessionRestGapCommand effective = command == null
                 ? new SetSessionRestGapCommand(0L, 0L, src.domain.sessionplanner.published.SessionPlannerRestKind.NONE)
                 : command;
@@ -189,34 +187,33 @@ public final class SessionPlannerApplicationService {
                 effective.leftEncounterId(),
                 effective.rightEncounterId(),
                 toSessionRestKind(effective.restKind()));
-        return publishCurrentSnapshot();
+        publishCurrentSnapshot();
     }
 
-    public SessionPlannerSnapshot clearRestGap(ClearSessionRestGapCommand command) {
+    public void clearRestGap(ClearSessionRestGapCommand command) {
         ClearSessionRestGapCommand effective = command == null
                 ? new ClearSessionRestGapCommand(0L, 0L)
                 : command;
         clearRestGapUseCase.execute(effective.leftEncounterId(), effective.rightEncounterId());
-        return publishCurrentSnapshot();
+        publishCurrentSnapshot();
     }
 
-    public SessionPlannerSnapshot addLootPlaceholder(AddSessionLootPlaceholderCommand command) {
+    public void addLootPlaceholder(AddSessionLootPlaceholderCommand command) {
         addLootPlaceholderUseCase.execute();
-        return publishCurrentSnapshot();
+        publishCurrentSnapshot();
     }
 
-    public SessionPlannerSnapshot removeLootPlaceholder(RemoveSessionLootPlaceholderCommand command) {
+    public void removeLootPlaceholder(RemoveSessionLootPlaceholderCommand command) {
         RemoveSessionLootPlaceholderCommand effective = command == null
                 ? new RemoveSessionLootPlaceholderCommand(0L)
                 : command;
         removeLootPlaceholderUseCase.execute(effective.lootId());
-        return publishCurrentSnapshot();
+        publishCurrentSnapshot();
     }
 
-    private SessionPlannerSnapshot publishCurrentSnapshot() {
+    private void publishCurrentSnapshot() {
         SessionPlannerSnapshot snapshot = currentSessionSnapshot();
         notifySessionListeners(snapshot);
-        return snapshot;
     }
 
     private SessionPlannerSnapshot currentSessionSnapshot() {
