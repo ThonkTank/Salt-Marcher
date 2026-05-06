@@ -14,16 +14,14 @@ public final class SessionPlannerTimelineMainView extends VBox {
     private static final String STYLE_COMPACT = "compact";
     private static final String STYLE_FLAT = "flat";
 
-    private final VBox timelineBox = new VBox(8);
-    private final Label emptyTimelineLabel = new Label("Noch keine Encounter importiert.");
+    private final TimelineSection timelineSection = new TimelineSection();
     private List<SessionPlannerContributionModel.EncounterModel> encounters = List.of();
     private List<SessionPlannerContributionModel.RestGapModel> gaps = List.of();
     private Consumer<SessionPlannerTimelineMainViewInputEvent> viewInputEventHandler = ignored -> { };
 
     public SessionPlannerTimelineMainView() {
         getStyleClass().add("session-planner-main");
-        getChildren().add(timelineSection());
-        emptyTimelineLabel.getStyleClass().addAll("text-secondary", "session-planner-empty");
+        getChildren().add(timelineSection);
     }
 
     public void showTimeline(
@@ -39,144 +37,241 @@ public final class SessionPlannerTimelineMainView extends VBox {
         viewInputEventHandler = handler == null ? ignored -> { } : handler;
     }
 
-    private VBox timelineSection() {
-        Label header = new Label("Abenteuerablauf");
-        header.getStyleClass().addAll("section-header", "text-muted");
-        return new VBox(8, header, timelineBox);
+    private void renderTimeline() {
+        timelineSection.show(encounters, gaps, this::publish);
     }
 
-    private void renderTimeline() {
-        timelineBox.getChildren().clear();
-        if (encounters.isEmpty()) {
-            timelineBox.getChildren().add(emptyTimelineLabel);
-            return;
+    private void publish(SessionPlannerTimelineMainViewInputEvent event) {
+        viewInputEventHandler.accept(event);
+    }
+
+    private static final class TimelineSection extends VBox {
+
+        private final TimelineRows rows = new TimelineRows();
+
+        private TimelineSection() {
+            super(8);
+            getChildren().addAll(new SectionHeader("Abenteuerablauf"), rows);
         }
-        for (int index = 0; index < encounters.size(); index++) {
-            SessionPlannerContributionModel.EncounterModel encounter = encounters.get(index);
-            timelineBox.getChildren().add(encounterCard(encounter, index + 1));
-            if (index < gaps.size()) {
-                timelineBox.getChildren().add(restGapCard(gaps.get(index), index + 1, index + 2));
+
+        private void show(
+                List<SessionPlannerContributionModel.EncounterModel> encounters,
+                List<SessionPlannerContributionModel.RestGapModel> gaps,
+                Consumer<SessionPlannerTimelineMainViewInputEvent> publisher
+        ) {
+            rows.show(encounters, gaps, publisher);
+        }
+    }
+
+    private static final class TimelineRows extends VBox {
+
+        private final EmptyTimelineLabel emptyLabel = new EmptyTimelineLabel();
+
+        private TimelineRows() {
+            super(8);
+        }
+
+        private void show(
+                List<SessionPlannerContributionModel.EncounterModel> encounters,
+                List<SessionPlannerContributionModel.RestGapModel> gaps,
+                Consumer<SessionPlannerTimelineMainViewInputEvent> publisher
+        ) {
+            getChildren().clear();
+            if (encounters.isEmpty()) {
+                getChildren().add(emptyLabel);
+                return;
+            }
+            for (int index = 0; index < encounters.size(); index++) {
+                SessionPlannerContributionModel.EncounterModel encounter = encounters.get(index);
+                getChildren().add(new EncounterCard(encounter, index + 1, publisher));
+                if (index < gaps.size()) {
+                    getChildren().add(new RestGapCard(gaps.get(index), index + 1, index + 2, publisher));
+                }
             }
         }
     }
 
-    private VBox encounterCard(SessionPlannerContributionModel.EncounterModel encounter, int position) {
-        Label title = new Label(position + ". " + encounter.name());
-        title.getStyleClass().add("session-planner-encounter-title");
-        Label meta = new Label(encounter.creatureCount() + " Kreaturen"
-                + (encounter.generatedLabel().isBlank() ? "" : " · " + encounter.generatedLabel()));
-        meta.getStyleClass().add(STYLE_TEXT_SECONDARY);
-        Label budget = new Label(encounter.budgetPercentageText()
-                + " Budget · Ziel " + encounter.targetXpText() + " XP");
-        budget.getStyleClass().add("session-planner-encounter-budget");
-        Label comparison = new Label(encounter.comparisonText() + " · " + encounter.difficultyLabel());
-        comparison.getStyleClass().add(STYLE_TEXT_SECONDARY);
-        Label multiplier = new Label("Base " + encounter.totalBaseXp()
-                + " XP · Multiplikator x" + String.format(java.util.Locale.US, "%.2f", encounter.xpMultiplier()));
-        multiplier.getStyleClass().add(STYLE_TEXT_SECONDARY);
+    private static final class EncounterCard extends VBox {
 
-        Button select = new Button(encounter.selected() ? "Ausgewaehlt" : "Auswaehlen");
-        select.getStyleClass().addAll(STYLE_COMPACT, encounter.selected() ? STYLE_FLAT : "accent");
-        select.setDisable(encounter.selected());
-        select.setOnAction(event -> viewInputEventHandler.accept(
-                new SessionPlannerTimelineMainViewInputEvent(
-                        SessionPlannerTimelineMainViewInputEvent.Kind.SELECT_ENCOUNTER,
-                        encounter.token(),
-                        -1)));
+        private EncounterCard(
+                SessionPlannerContributionModel.EncounterModel encounter,
+                int position,
+                Consumer<SessionPlannerTimelineMainViewInputEvent> publisher
+        ) {
+            super(6);
+            Label title = new StyledLabel(position + ". " + encounter.name(), "session-planner-encounter-title");
+            Label meta = new StyledLabel(encounter.creatureCount() + " Kreaturen"
+                    + generatedLabelSuffix(encounter), STYLE_TEXT_SECONDARY);
+            Label budget = new StyledLabel(encounter.budgetPercentageText()
+                    + " Budget · Ziel " + encounter.targetXpText() + " XP", "session-planner-encounter-budget");
+            Label comparison = new StyledLabel(
+                    encounter.comparisonText() + " · " + encounter.difficultyLabel(),
+                    STYLE_TEXT_SECONDARY);
+            Label multiplier = new StyledLabel(
+                    "Base " + encounter.totalBaseXp()
+                            + " XP · Multiplikator x"
+                            + String.format(java.util.Locale.US, "%.2f", encounter.xpMultiplier()),
+                    STYLE_TEXT_SECONDARY);
+            Label stateHint = encounter.selected()
+                    ? new StyledLabel("Dieser Encounter speist aktuell das State-Panel.", "session-planner-gap-active")
+                    : new StyledLabel(
+                            "Wird im State-Panel sichtbar, sobald er ausgewaehlt ist.",
+                            STYLE_TEXT_SECONDARY);
 
-        Button decreaseAllocation = new Button("-10%");
-        decreaseAllocation.getStyleClass().addAll(STYLE_COMPACT, STYLE_FLAT);
-        decreaseAllocation.setOnAction(event -> viewInputEventHandler.accept(
-                new SessionPlannerTimelineMainViewInputEvent(
-                        SessionPlannerTimelineMainViewInputEvent.Kind.DECREASE_ALLOCATION,
-                        encounter.token(),
-                        -1)));
+            Button select = new ActionButton(
+                    encounter.selected() ? "Ausgewaehlt" : "Auswaehlen",
+                    event(SessionPlannerTimelineMainViewInputEvent.Kind.SELECT_ENCOUNTER, encounter.token(), -1),
+                    encounter.selected() ? STYLE_FLAT : "accent");
+            select.setDisable(encounter.selected());
 
-        Button increaseAllocation = new Button("+10%");
-        increaseAllocation.getStyleClass().addAll(STYLE_COMPACT, STYLE_FLAT);
-        increaseAllocation.setOnAction(event -> viewInputEventHandler.accept(
-                new SessionPlannerTimelineMainViewInputEvent(
-                        SessionPlannerTimelineMainViewInputEvent.Kind.INCREASE_ALLOCATION,
-                        encounter.token(),
-                        -1)));
+            Button decreaseAllocation = new ActionButton(
+                    "-10%",
+                    event(SessionPlannerTimelineMainViewInputEvent.Kind.DECREASE_ALLOCATION, encounter.token(), -1),
+                    STYLE_FLAT);
+            Button increaseAllocation = new ActionButton(
+                    "+10%",
+                    event(SessionPlannerTimelineMainViewInputEvent.Kind.INCREASE_ALLOCATION, encounter.token(), -1),
+                    STYLE_FLAT);
 
-        Button up = new Button("Hoch");
-        up.getStyleClass().addAll(STYLE_COMPACT, STYLE_FLAT);
-        up.setDisable(!encounter.canMoveUp());
-        up.setOnAction(event -> viewInputEventHandler.accept(
-                new SessionPlannerTimelineMainViewInputEvent(
-                        SessionPlannerTimelineMainViewInputEvent.Kind.MOVE_ENCOUNTER_UP,
-                        encounter.token(),
-                        -1)));
+            Button up = new ActionButton(
+                    "Hoch",
+                    event(SessionPlannerTimelineMainViewInputEvent.Kind.MOVE_ENCOUNTER_UP, encounter.token(), -1),
+                    STYLE_FLAT);
+            up.setDisable(!encounter.canMoveUp());
 
-        Button down = new Button("Runter");
-        down.getStyleClass().addAll(STYLE_COMPACT, STYLE_FLAT);
-        down.setDisable(!encounter.canMoveDown());
-        down.setOnAction(event -> viewInputEventHandler.accept(
-                new SessionPlannerTimelineMainViewInputEvent(
-                        SessionPlannerTimelineMainViewInputEvent.Kind.MOVE_ENCOUNTER_DOWN,
-                        encounter.token(),
-                        -1)));
+            Button down = new ActionButton(
+                    "Runter",
+                    event(SessionPlannerTimelineMainViewInputEvent.Kind.MOVE_ENCOUNTER_DOWN, encounter.token(), -1),
+                    STYLE_FLAT);
+            down.setDisable(!encounter.canMoveDown());
 
-        Button remove = new Button("Entfernen");
-        remove.getStyleClass().addAll(STYLE_COMPACT, STYLE_FLAT);
-        remove.setOnAction(event -> viewInputEventHandler.accept(
-                new SessionPlannerTimelineMainViewInputEvent(
-                        SessionPlannerTimelineMainViewInputEvent.Kind.REMOVE_ENCOUNTER,
-                        encounter.token(),
-                        -1)));
+            Button remove = new ActionButton(
+                    "Entfernen",
+                    event(SessionPlannerTimelineMainViewInputEvent.Kind.REMOVE_ENCOUNTER, encounter.token(), -1),
+                    STYLE_FLAT);
 
-        HBox primaryActions = new HBox(6, select, decreaseAllocation, increaseAllocation);
-        HBox secondaryActions = new HBox(6, up, down, remove);
-        Label stateHint = new Label(encounter.selected()
-                ? "Dieser Encounter speist aktuell das State-Panel."
-                : "Wird im State-Panel sichtbar, sobald er ausgewaehlt ist.");
-        stateHint.getStyleClass().add(encounter.selected()
-                ? "session-planner-gap-active"
-                : STYLE_TEXT_SECONDARY);
-        VBox card = new VBox(6, title, meta, budget, comparison, multiplier, stateHint, primaryActions, secondaryActions);
-        card.getStyleClass().add("session-planner-encounter-card");
-        card.setPadding(new Insets(10));
-        return card;
+            bind(select, publisher);
+            bind(decreaseAllocation, publisher);
+            bind(increaseAllocation, publisher);
+            bind(up, publisher);
+            bind(down, publisher);
+            bind(remove, publisher);
+
+            getChildren().addAll(
+                    title,
+                    meta,
+                    budget,
+                    comparison,
+                    multiplier,
+                    stateHint,
+                    new ActionRow(select, decreaseAllocation, increaseAllocation),
+                    new ActionRow(up, down, remove));
+            getStyleClass().add("session-planner-encounter-card");
+            setPadding(new Insets(10));
+        }
+
+        private static String generatedLabelSuffix(SessionPlannerContributionModel.EncounterModel encounter) {
+            return encounter.generatedLabel().isBlank() ? "" : " · " + encounter.generatedLabel();
+        }
     }
 
-    private VBox restGapCard(SessionPlannerContributionModel.RestGapModel gap, int leftEncounter, int rightEncounter) {
-        Label title = new Label("Zwischen Encounter " + leftEncounter + " und " + rightEncounter);
-        title.getStyleClass().add("session-planner-gap-title");
-        Label current = new Label(gap.label());
-        current.getStyleClass().add(gap.hasAssignedRest()
-                ? "session-planner-gap-active"
-                : STYLE_TEXT_SECONDARY);
+    private static final class RestGapCard extends VBox {
 
-        Button shortRest = new Button("Kurze Rast");
-        shortRest.getStyleClass().addAll(STYLE_COMPACT, STYLE_FLAT);
-        shortRest.setOnAction(event -> viewInputEventHandler.accept(
-                new SessionPlannerTimelineMainViewInputEvent(
-                        SessionPlannerTimelineMainViewInputEvent.Kind.SET_SHORT_REST,
-                        0L,
-                        gap.gapIndex())));
+        private RestGapCard(
+                SessionPlannerContributionModel.RestGapModel gap,
+                int leftEncounter,
+                int rightEncounter,
+                Consumer<SessionPlannerTimelineMainViewInputEvent> publisher
+        ) {
+            super(6);
+            Label title = new StyledLabel(
+                    "Zwischen Encounter " + leftEncounter + " und " + rightEncounter,
+                    "session-planner-gap-title");
+            Label current = new StyledLabel(
+                    gap.label(),
+                    gap.hasAssignedRest() ? "session-planner-gap-active" : STYLE_TEXT_SECONDARY);
 
-        Button longRest = new Button("Lange Rast");
-        longRest.getStyleClass().addAll(STYLE_COMPACT, STYLE_FLAT);
-        longRest.setOnAction(event -> viewInputEventHandler.accept(
-                new SessionPlannerTimelineMainViewInputEvent(
-                        SessionPlannerTimelineMainViewInputEvent.Kind.SET_LONG_REST,
-                        0L,
-                        gap.gapIndex())));
+            Button shortRest = new ActionButton(
+                    "Kurze Rast",
+                    event(SessionPlannerTimelineMainViewInputEvent.Kind.SET_SHORT_REST, 0L, gap.gapIndex()),
+                    STYLE_FLAT);
+            Button longRest = new ActionButton(
+                    "Lange Rast",
+                    event(SessionPlannerTimelineMainViewInputEvent.Kind.SET_LONG_REST, 0L, gap.gapIndex()),
+                    STYLE_FLAT);
+            Button clear = new ActionButton(
+                    "Leeren",
+                    event(SessionPlannerTimelineMainViewInputEvent.Kind.CLEAR_REST, 0L, gap.gapIndex()),
+                    STYLE_FLAT);
+            clear.setDisable(!gap.hasAssignedRest());
 
-        Button clear = new Button("Leeren");
-        clear.getStyleClass().addAll(STYLE_COMPACT, STYLE_FLAT);
-        clear.setDisable(!gap.hasAssignedRest());
-        clear.setOnAction(event -> viewInputEventHandler.accept(
-                new SessionPlannerTimelineMainViewInputEvent(
-                        SessionPlannerTimelineMainViewInputEvent.Kind.CLEAR_REST,
-                        0L,
-                        gap.gapIndex())));
+            bind(shortRest, publisher);
+            bind(longRest, publisher);
+            bind(clear, publisher);
 
-        HBox actions = new HBox(6, shortRest, longRest, clear);
-        VBox card = new VBox(6, title, current, actions);
-        card.getStyleClass().add("session-planner-gap-card");
-        card.setPadding(new Insets(8, 10, 8, 10));
-        return card;
+            getChildren().addAll(title, current, new ActionRow(shortRest, longRest, clear));
+            getStyleClass().add("session-planner-gap-card");
+            setPadding(new Insets(8, 10, 8, 10));
+        }
+    }
+
+    private static final class StyledLabel extends Label {
+
+        private StyledLabel(String text, String... styleClasses) {
+            super(text);
+            getStyleClass().addAll(styleClasses);
+        }
+    }
+
+    private static final class SectionHeader extends StyledLabel {
+
+        private SectionHeader(String text) {
+            super(text, "section-header", "text-muted");
+        }
+    }
+
+    private static final class EmptyTimelineLabel extends StyledLabel {
+
+        private EmptyTimelineLabel() {
+            super("Noch keine Encounter importiert.", STYLE_TEXT_SECONDARY, "session-planner-empty");
+        }
+    }
+
+    private static final class ActionButton extends Button {
+
+        private final SessionPlannerTimelineMainViewInputEvent event;
+
+        private ActionButton(
+                String text,
+                SessionPlannerTimelineMainViewInputEvent event,
+                String emphasisStyle
+        ) {
+            super(text);
+            this.event = event;
+            getStyleClass().addAll(STYLE_COMPACT, emphasisStyle);
+        }
+    }
+
+    private static final class ActionRow extends HBox {
+
+        private ActionRow(Button... actions) {
+            super(6);
+            getChildren().addAll(actions);
+        }
+    }
+
+    private static void bind(
+            ActionButton button,
+            Consumer<SessionPlannerTimelineMainViewInputEvent> publisher
+    ) {
+        button.setOnAction(ignored -> publisher.accept(button.event));
+    }
+
+    private static SessionPlannerTimelineMainViewInputEvent event(
+            SessionPlannerTimelineMainViewInputEvent.Kind kind,
+            long encounterToken,
+            int gapIndex
+    ) {
+        return new SessionPlannerTimelineMainViewInputEvent(kind, encounterToken, gapIndex);
     }
 }
