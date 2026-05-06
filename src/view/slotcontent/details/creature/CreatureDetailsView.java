@@ -66,7 +66,7 @@ public final class CreatureDetailsView extends VBox {
     }
 
     private void showMessage(@Nullable String text) {
-        if (hasText(text)) {
+        if (NodeSupport.hasText(text)) {
             getChildren().setAll(new MessageLabel(text));
         }
     }
@@ -88,7 +88,7 @@ public final class CreatureDetailsView extends VBox {
             List<Node> nodes,
             @Nullable List<CreatureDetailsContentModel.PropertyLine> properties
     ) {
-        for (CreatureDetailsContentModel.PropertyLine property : safeList(properties)) {
+        for (CreatureDetailsContentModel.PropertyLine property : NodeSupport.safeList(properties)) {
             nodes.add(new PropertyFlow(property));
         }
     }
@@ -97,17 +97,17 @@ public final class CreatureDetailsView extends VBox {
             List<Node> nodes,
             @Nullable List<CreatureDetailsContentModel.ActionGroup> sections
     ) {
-        for (CreatureDetailsContentModel.ActionGroup section : safeList(sections)) {
-            Node title = sectionTitle(section.title());
+        for (CreatureDetailsContentModel.ActionGroup section : NodeSupport.safeList(sections)) {
+            Node title = NodeSupport.sectionTitle(section.title());
             if (title != null) {
                 nodes.add(title);
             }
-            Node description = sectionDescription(section.description());
+            Node description = NodeSupport.sectionDescription(section.description());
             if (description != null) {
                 nodes.add(description);
             }
-            for (CreatureDetailsContentModel.ActionLine action : safeList(section.actions())) {
-                Node actionView = actionFlow(action);
+            for (CreatureDetailsContentModel.ActionLine action : NodeSupport.safeList(section.actions())) {
+                Node actionView = NodeSupport.actionFlow(action);
                 if (actionView != null) {
                     nodes.add(actionView);
                 }
@@ -119,29 +119,6 @@ public final class CreatureDetailsView extends VBox {
         Region separator = new Separator();
         setMargin(separator, SEPARATOR_MARGIN);
         nodes.add(separator);
-    }
-
-    private static @Nullable Node sectionTitle(@Nullable String text) {
-        return hasText(text) ? new SectionTitleLabel(text) : null;
-    }
-
-    private static @Nullable Node sectionDescription(@Nullable String text) {
-        return hasText(text) ? new MetaLabel(text) : null;
-    }
-
-    private static @Nullable Node actionFlow(CreatureDetailsContentModel.ActionLine action) {
-        if (!hasText(action.name()) && !hasText(action.description())) {
-            return null;
-        }
-        return new ActionFlow(action);
-    }
-
-    private static boolean hasText(@Nullable String text) {
-        return text != null && !text.isBlank();
-    }
-
-    private static <T> List<T> safeList(@Nullable List<T> values) {
-        return values == null ? List.of() : values;
     }
 
     private static class WrappedLabel extends Label {
@@ -206,7 +183,7 @@ public final class CreatureDetailsView extends VBox {
     private static final class AbilityGrid extends GridPane {
 
         AbilityGrid(@Nullable List<CreatureDetailsContentModel.AbilityScore> scores) {
-            List<CreatureDetailsContentModel.AbilityScore> safeScores = safeList(scores);
+            List<CreatureDetailsContentModel.AbilityScore> safeScores = NodeSupport.safeList(scores);
             getStyleClass().add("stat-block-abilities");
             setAlignment(Pos.CENTER);
             setHgap(0);
@@ -250,12 +227,37 @@ public final class CreatureDetailsView extends VBox {
 
         ActionFlow(CreatureDetailsContentModel.ActionLine action) {
             setPadding(ACTION_PADDING);
-            if (hasText(action.name())) {
+            if (NodeSupport.hasText(action.name())) {
                 getChildren().add(new StyledText(action.name() + ". ", "stat-block-action-name"));
             }
-            if (hasText(action.description())) {
+            if (NodeSupport.hasText(action.description())) {
                 getChildren().add(new StyledText(action.description(), "stat-block-action-desc"));
             }
+        }
+    }
+
+    private static final class NodeSupport {
+        private static @Nullable Node sectionTitle(@Nullable String text) {
+            return hasText(text) ? new SectionTitleLabel(text) : null;
+        }
+
+        private static @Nullable Node sectionDescription(@Nullable String text) {
+            return hasText(text) ? new MetaLabel(text) : null;
+        }
+
+        private static @Nullable Node actionFlow(CreatureDetailsContentModel.ActionLine action) {
+            if (!hasText(action.name()) && !hasText(action.description())) {
+                return null;
+            }
+            return new ActionFlow(action);
+        }
+
+        private static boolean hasText(@Nullable String text) {
+            return text != null && !text.isBlank();
+        }
+
+        private static <T> List<T> safeList(@Nullable List<T> values) {
+            return values == null ? List.of() : values;
         }
     }
 

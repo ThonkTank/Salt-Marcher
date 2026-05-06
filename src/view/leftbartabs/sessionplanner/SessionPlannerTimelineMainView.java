@@ -118,34 +118,34 @@ public final class SessionPlannerTimelineMainView extends VBox {
                             "Wird im State-Panel sichtbar, sobald er ausgewaehlt ist.",
                             STYLE_TEXT_SECONDARY);
 
-            Button select = new ActionButton(
+            ActionButton select = new ActionButton(
                     encounter.selected() ? "Ausgewaehlt" : "Auswaehlen",
                     event(SessionPlannerTimelineMainViewInputEvent.Kind.SELECT_ENCOUNTER, encounter.token(), -1),
                     encounter.selected() ? STYLE_FLAT : "accent");
             select.setDisable(encounter.selected());
 
-            Button decreaseAllocation = new ActionButton(
+            ActionButton decreaseAllocation = new ActionButton(
                     "-10%",
                     event(SessionPlannerTimelineMainViewInputEvent.Kind.DECREASE_ALLOCATION, encounter.token(), -1),
                     STYLE_FLAT);
-            Button increaseAllocation = new ActionButton(
+            ActionButton increaseAllocation = new ActionButton(
                     "+10%",
                     event(SessionPlannerTimelineMainViewInputEvent.Kind.INCREASE_ALLOCATION, encounter.token(), -1),
                     STYLE_FLAT);
 
-            Button up = new ActionButton(
+            ActionButton up = new ActionButton(
                     "Hoch",
                     event(SessionPlannerTimelineMainViewInputEvent.Kind.MOVE_ENCOUNTER_UP, encounter.token(), -1),
                     STYLE_FLAT);
             up.setDisable(!encounter.canMoveUp());
 
-            Button down = new ActionButton(
+            ActionButton down = new ActionButton(
                     "Runter",
                     event(SessionPlannerTimelineMainViewInputEvent.Kind.MOVE_ENCOUNTER_DOWN, encounter.token(), -1),
                     STYLE_FLAT);
             down.setDisable(!encounter.canMoveDown());
 
-            Button remove = new ActionButton(
+            ActionButton remove = new ActionButton(
                     "Entfernen",
                     event(SessionPlannerTimelineMainViewInputEvent.Kind.REMOVE_ENCOUNTER, encounter.token(), -1),
                     STYLE_FLAT);
@@ -191,15 +191,15 @@ public final class SessionPlannerTimelineMainView extends VBox {
                     gap.label(),
                     gap.hasAssignedRest() ? "session-planner-gap-active" : STYLE_TEXT_SECONDARY);
 
-            Button shortRest = new ActionButton(
+            ActionButton shortRest = new ActionButton(
                     "Kurze Rast",
                     event(SessionPlannerTimelineMainViewInputEvent.Kind.SET_SHORT_REST, 0L, gap.gapIndex()),
                     STYLE_FLAT);
-            Button longRest = new ActionButton(
+            ActionButton longRest = new ActionButton(
                     "Lange Rast",
                     event(SessionPlannerTimelineMainViewInputEvent.Kind.SET_LONG_REST, 0L, gap.gapIndex()),
                     STYLE_FLAT);
-            Button clear = new ActionButton(
+            ActionButton clear = new ActionButton(
                     "Leeren",
                     event(SessionPlannerTimelineMainViewInputEvent.Kind.CLEAR_REST, 0L, gap.gapIndex()),
                     STYLE_FLAT);
@@ -215,7 +215,7 @@ public final class SessionPlannerTimelineMainView extends VBox {
         }
     }
 
-    private static final class StyledLabel extends Label {
+    private static class StyledLabel extends Label {
 
         private StyledLabel(String text, String... styleClasses) {
             super(text);
