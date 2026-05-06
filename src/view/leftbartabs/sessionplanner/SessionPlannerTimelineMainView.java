@@ -6,8 +6,6 @@ import javafx.geometry.Insets;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.layout.HBox;
-import javafx.scene.layout.Priority;
-import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 
 public final class SessionPlannerTimelineMainView extends VBox {
@@ -68,53 +66,75 @@ public final class SessionPlannerTimelineMainView extends VBox {
         Label meta = new Label(encounter.creatureCount() + " Kreaturen"
                 + (encounter.generatedLabel().isBlank() ? "" : " · " + encounter.generatedLabel()));
         meta.getStyleClass().add(STYLE_TEXT_SECONDARY);
-        Label budget = new Label("Adj. XP " + encounter.adjustedXp()
-                + " · Base XP " + encounter.totalBaseXp()
-                + " · " + encounter.difficultyLabel());
+        Label budget = new Label(encounter.budgetPercentageText()
+                + " Budget · Ziel " + encounter.targetXpText() + " XP");
         budget.getStyleClass().add("session-planner-encounter-budget");
-        Label multiplier = new Label("Multiplikator x" + String.format(java.util.Locale.US, "%.2f", encounter.xpMultiplier()));
+        Label comparison = new Label(encounter.comparisonText() + " · " + encounter.difficultyLabel());
+        comparison.getStyleClass().add(STYLE_TEXT_SECONDARY);
+        Label multiplier = new Label("Base " + encounter.totalBaseXp()
+                + " XP · Multiplikator x" + String.format(java.util.Locale.US, "%.2f", encounter.xpMultiplier()));
         multiplier.getStyleClass().add(STYLE_TEXT_SECONDARY);
+
+        Button select = new Button(encounter.selected() ? "Ausgewaehlt" : "Auswaehlen");
+        select.getStyleClass().addAll(STYLE_COMPACT, encounter.selected() ? STYLE_FLAT : "accent");
+        select.setDisable(encounter.selected());
+        select.setOnAction(event -> viewInputEventHandler.accept(
+                new SessionPlannerTimelineMainViewInputEvent(
+                        SessionPlannerTimelineMainViewInputEvent.Kind.SELECT_ENCOUNTER,
+                        encounter.token(),
+                        -1)));
+
+        Button decreaseAllocation = new Button("-10%");
+        decreaseAllocation.getStyleClass().addAll(STYLE_COMPACT, STYLE_FLAT);
+        decreaseAllocation.setOnAction(event -> viewInputEventHandler.accept(
+                new SessionPlannerTimelineMainViewInputEvent(
+                        SessionPlannerTimelineMainViewInputEvent.Kind.DECREASE_ALLOCATION,
+                        encounter.token(),
+                        -1)));
+
+        Button increaseAllocation = new Button("+10%");
+        increaseAllocation.getStyleClass().addAll(STYLE_COMPACT, STYLE_FLAT);
+        increaseAllocation.setOnAction(event -> viewInputEventHandler.accept(
+                new SessionPlannerTimelineMainViewInputEvent(
+                        SessionPlannerTimelineMainViewInputEvent.Kind.INCREASE_ALLOCATION,
+                        encounter.token(),
+                        -1)));
 
         Button up = new Button("Hoch");
         up.getStyleClass().addAll(STYLE_COMPACT, STYLE_FLAT);
         up.setDisable(!encounter.canMoveUp());
         up.setOnAction(event -> viewInputEventHandler.accept(
                 new SessionPlannerTimelineMainViewInputEvent(
+                        SessionPlannerTimelineMainViewInputEvent.Kind.MOVE_ENCOUNTER_UP,
                         encounter.token(),
-                        -1,
-                        -1,
-                        false,
-                        false,
-                        false,
-                        false)));
+                        -1)));
 
         Button down = new Button("Runter");
         down.getStyleClass().addAll(STYLE_COMPACT, STYLE_FLAT);
         down.setDisable(!encounter.canMoveDown());
         down.setOnAction(event -> viewInputEventHandler.accept(
                 new SessionPlannerTimelineMainViewInputEvent(
+                        SessionPlannerTimelineMainViewInputEvent.Kind.MOVE_ENCOUNTER_DOWN,
                         encounter.token(),
-                        1,
-                        -1,
-                        false,
-                        false,
-                        false,
-                        false)));
+                        -1)));
 
         Button remove = new Button("Entfernen");
         remove.getStyleClass().addAll(STYLE_COMPACT, STYLE_FLAT);
         remove.setOnAction(event -> viewInputEventHandler.accept(
                 new SessionPlannerTimelineMainViewInputEvent(
+                        SessionPlannerTimelineMainViewInputEvent.Kind.REMOVE_ENCOUNTER,
                         encounter.token(),
-                        0,
-                        -1,
-                        true,
-                        false,
-                        false,
-                        false)));
+                        -1)));
 
-        HBox actions = new HBox(6, up, down, remove);
-        VBox card = new VBox(6, title, meta, budget, multiplier, actions);
+        HBox primaryActions = new HBox(6, select, decreaseAllocation, increaseAllocation);
+        HBox secondaryActions = new HBox(6, up, down, remove);
+        Label stateHint = new Label(encounter.selected()
+                ? "Dieser Encounter speist aktuell das State-Panel."
+                : "Wird im State-Panel sichtbar, sobald er ausgewaehlt ist.");
+        stateHint.getStyleClass().add(encounter.selected()
+                ? "session-planner-gap-active"
+                : STYLE_TEXT_SECONDARY);
+        VBox card = new VBox(6, title, meta, budget, comparison, multiplier, stateHint, primaryActions, secondaryActions);
         card.getStyleClass().add("session-planner-encounter-card");
         card.setPadding(new Insets(10));
         return card;
@@ -132,38 +152,26 @@ public final class SessionPlannerTimelineMainView extends VBox {
         shortRest.getStyleClass().addAll(STYLE_COMPACT, STYLE_FLAT);
         shortRest.setOnAction(event -> viewInputEventHandler.accept(
                 new SessionPlannerTimelineMainViewInputEvent(
+                        SessionPlannerTimelineMainViewInputEvent.Kind.SET_SHORT_REST,
                         0L,
-                        0,
-                        gap.gapIndex(),
-                        false,
-                        true,
-                        false,
-                        false)));
+                        gap.gapIndex())));
 
         Button longRest = new Button("Lange Rast");
         longRest.getStyleClass().addAll(STYLE_COMPACT, STYLE_FLAT);
         longRest.setOnAction(event -> viewInputEventHandler.accept(
                 new SessionPlannerTimelineMainViewInputEvent(
+                        SessionPlannerTimelineMainViewInputEvent.Kind.SET_LONG_REST,
                         0L,
-                        0,
-                        gap.gapIndex(),
-                        false,
-                        false,
-                        true,
-                        false)));
+                        gap.gapIndex())));
 
         Button clear = new Button("Leeren");
         clear.getStyleClass().addAll(STYLE_COMPACT, STYLE_FLAT);
         clear.setDisable(!gap.hasAssignedRest());
         clear.setOnAction(event -> viewInputEventHandler.accept(
                 new SessionPlannerTimelineMainViewInputEvent(
+                        SessionPlannerTimelineMainViewInputEvent.Kind.CLEAR_REST,
                         0L,
-                        0,
-                        gap.gapIndex(),
-                        false,
-                        false,
-                        false,
-                        true)));
+                        gap.gapIndex())));
 
         HBox actions = new HBox(6, shortRest, longRest, clear);
         VBox card = new VBox(6, title, current, actions);

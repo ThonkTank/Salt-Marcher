@@ -28,6 +28,7 @@ public final class AssembleSessionPlannerSnapshotUseCase {
         SessionPlan session = runtime.loadOrCreateCurrent();
         SessionPartyFactsLookup.ActivePartyMembersFact partyMembersFact = runtime.partyFacts().loadActivePartyMembers();
         Map<Long, SessionPartyFactsLookup.PartyMemberFact> activeMembers = indexMembers(partyMembersFact.members());
+        List<ReadData.ActivePartyMemberData> activePartyMembers = buildActivePartyMembers(partyMembersFact.members());
         List<ReadData.ParticipantData> participants = buildParticipants(session, activeMembers);
         List<Integer> resolvedLevels = participants.stream()
                 .filter(ReadData.ParticipantData::available)
@@ -59,6 +60,7 @@ public final class AssembleSessionPlannerSnapshotUseCase {
                 buildRestAdviceState(budgetFact, placedShortRests, placedLongRests),
                 ReadData.GoldBudgetData.placeholder(session.lootPlaceholders().size()),
                 availablePlans,
+                activePartyMembers,
                 participants,
                 plannedEncounters,
                 restGaps,
@@ -207,6 +209,19 @@ public final class AssembleSessionPlannerSnapshotUseCase {
         return List.copyOf(participants);
     }
 
+    private static List<ReadData.ActivePartyMemberData> buildActivePartyMembers(
+            List<SessionPartyFactsLookup.PartyMemberFact> members
+    ) {
+        List<ReadData.ActivePartyMemberData> activePartyMembers = new ArrayList<>();
+        for (SessionPartyFactsLookup.PartyMemberFact member : members == null ? List.<SessionPartyFactsLookup.PartyMemberFact>of() : members) {
+            activePartyMembers.add(new ReadData.ActivePartyMemberData(
+                    member.characterId(),
+                    member.name(),
+                    member.level()));
+        }
+        return List.copyOf(activePartyMembers);
+    }
+
     private List<ReadData.PlannedEncounterData> buildPlannedEncounters(
             SessionPlan session,
             int scaledBudgetXp,
@@ -336,6 +351,7 @@ public final class AssembleSessionPlannerSnapshotUseCase {
             RestAdviceData restAdvice,
             GoldBudgetData goldBudget,
             List<AvailableEncounterPlanData> availableEncounterPlans,
+            List<ActivePartyMemberData> activePartyMembers,
             List<ParticipantData> participants,
             List<PlannedEncounterData> plannedEncounters,
             List<RestGapData> restGaps,
@@ -350,6 +366,7 @@ public final class AssembleSessionPlannerSnapshotUseCase {
             restAdvice = restAdvice == null ? RestAdviceData.empty() : restAdvice;
             goldBudget = goldBudget == null ? GoldBudgetData.placeholder(0) : goldBudget;
             availableEncounterPlans = copy(availableEncounterPlans);
+            activePartyMembers = copy(activePartyMembers);
             participants = copy(participants);
             plannedEncounters = copy(plannedEncounters);
             restGaps = copy(restGaps);
@@ -480,6 +497,13 @@ public final class AssembleSessionPlannerSnapshotUseCase {
                 String difficultyLabel,
                 String statusText,
                 boolean importEnabled
+        ) {
+        }
+
+        public record ActivePartyMemberData(
+                long characterId,
+                String name,
+                int level
         ) {
         }
 

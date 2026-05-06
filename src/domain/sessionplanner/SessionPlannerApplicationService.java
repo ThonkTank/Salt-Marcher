@@ -257,6 +257,7 @@ public final class SessionPlannerApplicationService {
                 List.of(),
                 List.of(),
                 List.of(),
+                List.of(),
                 "")
                 : readData;
         return new SessionPlannerSnapshot(
@@ -305,6 +306,12 @@ public final class SessionPlannerApplicationService {
                                 plan.difficultyLabel(),
                                 plan.statusText(),
                                 plan.importEnabled()))
+                        .toList(),
+                safe.activePartyMembers().stream()
+                        .map(member -> new SessionPlannerSnapshot.ActivePartyMember(
+                                member.characterId(),
+                                member.name(),
+                                member.level()))
                         .toList(),
                 safe.participants().stream()
                         .map(participant -> new SessionPlannerSnapshot.SessionParticipant(

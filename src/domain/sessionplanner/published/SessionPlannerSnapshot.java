@@ -10,6 +10,7 @@ public record SessionPlannerSnapshot(
         RestAdviceState restAdvice,
         GoldBudgetState goldBudget,
         List<AvailableEncounterPlan> availableEncounterPlans,
+        List<ActivePartyMember> activePartyMembers,
         List<SessionParticipant> participants,
         List<PlannedEncounter> plannedEncounters,
         List<RestGap> restGaps,
@@ -24,6 +25,7 @@ public record SessionPlannerSnapshot(
         restAdvice = restAdvice == null ? RestAdviceState.empty() : restAdvice;
         goldBudget = goldBudget == null ? GoldBudgetState.placeholder(0) : goldBudget;
         availableEncounterPlans = copy(availableEncounterPlans);
+        activePartyMembers = copy(activePartyMembers);
         participants = copy(participants);
         plannedEncounters = copy(plannedEncounters);
         restGaps = copy(restGaps);
@@ -38,6 +40,7 @@ public record SessionPlannerSnapshot(
                 XpBudgetState.empty(),
                 RestAdviceState.empty(),
                 GoldBudgetState.placeholder(0),
+                List.of(),
                 List.of(),
                 List.of(),
                 List.of(),
@@ -178,6 +181,19 @@ public record SessionPlannerSnapshot(
             adjustedXp = Math.max(0, adjustedXp);
             difficultyLabel = difficultyLabel == null ? "" : difficultyLabel.trim();
             statusText = statusText == null ? "" : statusText.trim();
+        }
+    }
+
+    public record ActivePartyMember(
+            long characterId,
+            String name,
+            int level
+    ) {
+
+        public ActivePartyMember {
+            characterId = Math.max(0L, characterId);
+            name = name == null ? "" : name.trim();
+            level = Math.max(0, level);
         }
     }
 

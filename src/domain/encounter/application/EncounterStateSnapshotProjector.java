@@ -3,6 +3,7 @@ package src.domain.encounter.application;
 import src.domain.encounter.published.EncounterBuilderInputs;
 import src.domain.encounter.published.EncounterStateSnapshot;
 import src.domain.encounter.session.entity.EncounterSession;
+import src.domain.encounter.session.value.EncounterSessionSnapshotData;
 import src.domain.encounter.session.value.EncounterSessionValues.BuilderStateData;
 import src.domain.encounter.session.value.EncounterSessionValues.CombatProjectionData;
 import src.domain.encounter.session.value.EncounterSessionValues.Mode;
@@ -18,21 +19,22 @@ public final class EncounterStateSnapshotProjector {
         if (session == null) {
             return EncounterStateSnapshot.empty("");
         }
-        BuilderStateData builderState = session.builderState();
-        CombatProjectionData combatState = session.combatProjection();
+        EncounterSessionSnapshotData snapshot = session.snapshot();
+        BuilderStateData builderState = snapshot.builderState();
+        CombatProjectionData combatState = snapshot.combatProjection();
         return new EncounterStateSnapshot(
-                toPublishedMode(session.mode()),
+                toPublishedMode(snapshot.mode()),
                 toPublishedBuilderPane(builderState),
-                new EncounterStateSnapshot.InitiativePane(session.initiativeEntries().stream()
+                new EncounterStateSnapshot.InitiativePane(snapshot.initiativeEntries().stream()
                         .map(entry -> new EncounterStateSnapshot.InitiativeRow(
                                 entry.id(),
                                 entry.label(),
                                 entry.kind().label(),
                                 entry.initiative()))
                         .toList()),
-                toPublishedCombatPane(combatState, session.missingCombatPartyMembers(combatState)),
-                toPublishedResolutionPane(session.resultState()),
-                session.status());
+                toPublishedCombatPane(combatState, snapshot.missingCombatPartyMembers()),
+                toPublishedResolutionPane(snapshot.resultState()),
+                snapshot.status());
     }
 
     public static EncounterBuilderInputs toPublishedBuilderInputs(EncounterSession session) {
