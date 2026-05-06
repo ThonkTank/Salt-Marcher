@@ -23,7 +23,8 @@ owner-pure and bundle-local:
 This bundle owns only the data `*ServiceContribution` role itself: discovery
 entrypoint shape, stateless public surface, source-mechanics bans,
 constructor-wiring purity, shell seam subset, and direct `register(...)`
-export shape. Data feature-root placement, broad layer topology, non-root
+and `registerFactory(...)` export shape. Data feature-root placement, broad
+layer topology, non-root
 shell bans, repository/query/gateway/model/mapper rules, and layer-wide
 `ServiceRegistry` placement stay in neighboring owner bundles and documents.
 

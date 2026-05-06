@@ -64,7 +64,15 @@ public final class DataServiceContributionEnforcementCoverageRules implements Ar
                             "./gradlew compileJava",
                             "./gradlew pmdDataServiceContributionEnforcement",
                             "./gradlew checkDataServiceContributionEnforcement")),
-            row("data-service-contribution-factory-export-shape", "Review-Owned"),
+            row(
+                    "data-service-contribution-factory-export-shape",
+                    "Enforced",
+                    List.of(
+                            "data-service-contribution bundle Error Prone",
+                            "DataServiceContributionRegisterExportShape"),
+                    List.of(
+                            "./gradlew compileJava",
+                            "./gradlew checkDataServiceContributionEnforcement")),
             row("data-service-contribution-composition-collaborator-assembly-only", "Review-Owned"));
 
     @Override

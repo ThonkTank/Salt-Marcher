@@ -7,14 +7,19 @@ import java.util.function.Consumer;
 final class DungeonTravelIntentHandler {
 
     private final DungeonTravelContributionModel presentationModel;
-    private Consumer<DungeonTravelStatePublishedEvent> actionListener = ignored -> {};
+    private Consumer<DungeonTravelStatePublishedEvent> publishedEventListener = ignored -> {};
+    private Consumer<ViewEffect> viewEffectListener = ignored -> {};
 
     DungeonTravelIntentHandler(DungeonTravelContributionModel presentationModel) {
         this.presentationModel = Objects.requireNonNull(presentationModel, "presentationModel");
     }
 
     void onPublishedEventRequested(Consumer<DungeonTravelStatePublishedEvent> listener) {
-        actionListener = listener == null ? ignored -> {} : listener;
+        publishedEventListener = listener == null ? ignored -> {} : listener;
+    }
+
+    void onViewEffectRequested(Consumer<ViewEffect> listener) {
+        viewEffectListener = listener == null ? ignored -> {} : listener;
     }
 
     void consume(DungeonTravelControlsViewInputEvent event) {
@@ -22,15 +27,15 @@ final class DungeonTravelIntentHandler {
             return;
         }
         if (event.resetViewRequested()) {
-            presentationModel.requestCameraReset();
+            viewEffectListener.accept(ViewEffect.RESET_CAMERA);
             return;
         }
         if (event.projectionLevelShift() != 0) {
-            actionListener.accept(DungeonTravelStatePublishedEvent.setProjectionLevel(
+            publishedEventListener.accept(DungeonTravelStatePublishedEvent.setProjectionLevel(
                     presentationModel.currentProjectionLevel() + event.projectionLevelShift()));
             return;
         }
-        actionListener.accept(DungeonTravelStatePublishedEvent.setOverlay(
+        publishedEventListener.accept(DungeonTravelStatePublishedEvent.setOverlay(
                 event.overlayModeKey(),
                 event.overlayRange(),
                 event.overlayOpacity(),
@@ -41,7 +46,7 @@ final class DungeonTravelIntentHandler {
         if (event == null) {
             return;
         }
-        actionListener.accept(DungeonTravelStatePublishedEvent.action(event.actionId()));
+        publishedEventListener.accept(DungeonTravelStatePublishedEvent.action(event.actionId()));
     }
 
     private static List<Integer> parseLevels(String rawLevelsText) {
@@ -59,5 +64,9 @@ final class DungeonTravelIntentHandler {
         } catch (NumberFormatException exception) {
             return List.of();
         }
+    }
+
+    enum ViewEffect {
+        RESET_CAMERA
     }
 }

@@ -20,8 +20,6 @@ public final class DungeonTravelContributionModel {
     private final ReadOnlyObjectWrapper<OverlayProjection> overlaySettings =
             new ReadOnlyObjectWrapper<>(OverlayProjection.defaults());
     private final ReadOnlyIntegerWrapper projectionLevel = new ReadOnlyIntegerWrapper(0);
-    private final ReadOnlyIntegerWrapper cameraResetSignal = new ReadOnlyIntegerWrapper(0);
-
     public DungeonTravelContributionModel() {
         refreshStateText();
     }
@@ -44,14 +42,6 @@ public final class DungeonTravelContributionModel {
 
     public ReadOnlyIntegerProperty projectionLevelProperty() {
         return projectionLevel.getReadOnlyProperty();
-    }
-
-    public ReadOnlyIntegerProperty cameraResetSignalProperty() {
-        return cameraResetSignal.getReadOnlyProperty();
-    }
-
-    public void requestCameraReset() {
-        cameraResetSignal.set(cameraResetSignal.get() + 1);
     }
 
     void apply(TravelDungeonSnapshot snapshot) {

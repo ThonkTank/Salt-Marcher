@@ -7,7 +7,6 @@ import src.domain.dungeon.published.DungeonAuthoredMutationResult;
 import src.domain.dungeon.published.DungeonAuthoredReadQuery;
 import src.domain.dungeon.published.DungeonAuthoredReadResult;
 import src.domain.dungeon.published.DungeonEditorOperation;
-import src.domain.dungeon.published.DungeonInspectorSnapshot;
 import src.domain.dungeon.published.DungeonMapCatalogCommand;
 import src.domain.dungeon.published.DungeonMapCatalogResponse;
 import src.domain.dungeon.published.DungeonMapId;

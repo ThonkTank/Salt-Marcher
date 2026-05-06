@@ -2,7 +2,6 @@ package src.domain.dungeoneditor.published;
 
 import java.util.List;
 import org.jspecify.annotations.Nullable;
-import src.domain.dungeoneditor.published.DungeonEditorMapProjectionSnapshot;
 
 public record DungeonEditorSnapshot(
         List<DungeonEditorMapSummary> maps,

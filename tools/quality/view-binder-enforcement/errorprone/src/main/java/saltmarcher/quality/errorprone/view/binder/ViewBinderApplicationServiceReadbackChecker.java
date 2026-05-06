@@ -15,22 +15,15 @@ import com.sun.source.util.TreePathScanner;
 import com.sun.tools.javac.code.Symbol;
 import java.util.LinkedHashSet;
 import java.util.Set;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import javax.lang.model.type.TypeKind;
 import saltmarcher.quality.errorprone.view.ViewArchitectureSupport;
 
 @BugPattern(
         name = "ViewBinderApplicationServiceReadback",
-        summary = "Binders may only value-consume same-context published/*Model handles from ApplicationServices.",
+        summary = "Binders must not consume ApplicationService return values for readback.",
         severity = BugPattern.SeverityLevel.ERROR)
 public final class ViewBinderApplicationServiceReadbackChecker extends BugChecker
         implements BugChecker.CompilationUnitTreeMatcher {
-
-    private static final Pattern APPLICATION_SERVICE_CONTEXT =
-            Pattern.compile("^src\\.domain\\.([^.]+)\\.[^.]+ApplicationService(?:\\$.*)?$");
-    private static final Pattern PUBLISHED_MODEL_CONTEXT =
-            Pattern.compile("^src\\.domain\\.([^.]+)\\.published\\.[^.]+Model(?:<.*>)?$");
 
     @Override
     public Description matchCompilationUnit(CompilationUnitTree tree, VisitorState state) {
@@ -58,9 +51,6 @@ public final class ViewBinderApplicationServiceReadbackChecker extends BugChecke
                     return super.visitMethodInvocation(methodInvocationTree, unused);
                 }
                 String returnType = symbol.getReturnType().toString();
-                if (isSameContextPublishedModel(ownerType, returnType)) {
-                    return super.visitMethodInvocation(methodInvocationTree, unused);
-                }
                 violations.add(ownerType + "#" + symbol.getSimpleName() + " -> " + returnType);
                 return super.visitMethodInvocation(methodInvocationTree, unused);
             }
@@ -71,9 +61,9 @@ public final class ViewBinderApplicationServiceReadbackChecker extends BugChecke
         }
         return buildDescription(tree)
                 .setMessage("Binder package '" + sourcePackageName
-                        + "' value-consumes non-model ApplicationService results: "
+                        + "' value-consumes ApplicationService results: "
                         + String.join(", ", violations)
-                        + ". Binders may only read same-context src.domain.<context>.published.*Model handles and then use current()/subscribe(); all other ApplicationService results must be ignored.")
+                        + ". Binders may send commands to ApplicationServices only; same-context readback and feedback must come from direct published/*Model runtime services, never from ApplicationService return values.")
                 .build();
     }
 
@@ -92,13 +82,5 @@ public final class ViewBinderApplicationServiceReadbackChecker extends BugChecke
             return false;
         }
         return lambdaExpressionTree.getBody() == currentPath.getLeaf();
-    }
-
-    private static boolean isSameContextPublishedModel(String ownerType, String returnType) {
-        Matcher serviceMatcher = APPLICATION_SERVICE_CONTEXT.matcher(ownerType == null ? "" : ownerType);
-        Matcher modelMatcher = PUBLISHED_MODEL_CONTEXT.matcher(returnType == null ? "" : returnType);
-        return serviceMatcher.matches()
-                && modelMatcher.matches()
-                && serviceMatcher.group(1).equals(modelMatcher.group(1));
     }
 }

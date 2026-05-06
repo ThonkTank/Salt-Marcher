@@ -4,13 +4,15 @@ This bundle co-locates all currently active SaltMarcher checks that back
 `docs/project/architecture/enforcement/view-binder-enforcement.md`.
 
 It keeps the existing engines, checker identities, and rule names unchanged
-while making this directory the canonical home for Binder host wiring and
-bundle-local registration metadata:
+while making this directory the canonical home for Binder host wiring,
+command-sink ownership, direct readback-service intake, and bundle-local
+registration metadata:
 
 - `errorprone/`
   `ViewBinderDependencyBoundary`,
   `ViewBinderViewInputEventWiring`,
-  `ViewBinderApplicationSinkWiring`
+  `ViewBinderApplicationSinkWiring`,
+  `ViewBinderApplicationServiceReadback`
 - `archunit/`
   `architecture.view.binder.ViewBinderArchitectureTest`
 - `jqassistant/`

@@ -55,7 +55,6 @@ public final class DomainLayerEnforcementCoverageRules implements ArchitectureRu
                     List.of(
                             "domain-applicationservice-root-presence",
                             "domain-applicationservice-public-input-carriers",
-                            "domain-applicationservice-query-returns-read-model-handle",
                             "domain-applicationservice-command-no-direct-return",
                             "domain-published-direct-file-placement",
                             "domain-published-carrier-shape",

@@ -1,8 +1,8 @@
 package src.domain.dungeon.map.service;
 
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.Deque;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -76,7 +76,7 @@ final class DungeonRoomBoundaryPartitionService {
             DungeonCell start = remaining.iterator().next();
             Set<DungeonCell> component = new LinkedHashSet<>();
             Set<DungeonCell> frontier = new LinkedHashSet<>(remaining);
-            ArrayDeque<DungeonCell> queue = new ArrayDeque<>();
+            Deque<DungeonCell> queue = new java.util.ArrayDeque<>();
             queue.add(start);
             frontier.remove(start);
             remaining.remove(start);

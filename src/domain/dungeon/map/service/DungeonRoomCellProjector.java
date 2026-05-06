@@ -135,6 +135,16 @@ public final class DungeonRoomCellProjector {
         return List.copyOf(components);
     }
 
+    public static Map<Integer, DungeonCell> anchorsByLevel(Map<Integer, List<DungeonCell>> cellsByLevel) {
+        Map<Integer, DungeonCell> result = new LinkedHashMap<>();
+        for (Map.Entry<Integer, List<DungeonCell>> entry : cellsByLevel.entrySet()) {
+            if (!entry.getValue().isEmpty()) {
+                result.put(entry.getKey(), sortedCells(entry.getValue()).getFirst());
+            }
+        }
+        return Map.copyOf(result);
+    }
+
     private static Map<Long, List<DungeonCell>> normalizeCellsByRoom(Map<Long, List<DungeonCell>> source) {
         Map<Long, List<DungeonCell>> normalized = new LinkedHashMap<>();
         for (Map.Entry<Long, List<DungeonCell>> entry : source.entrySet()) {

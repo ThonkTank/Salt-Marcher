@@ -45,7 +45,7 @@ final class DungeonRoomClusterWorkService {
     DungeonRoomTopologyClusterWork newClusterWork(ClusterRoomIds ids, long mapId, Set<DungeonCell> cells) {
         return new DungeonRoomTopologyClusterWork(
                 newCluster(ids.clusterId(), mapId, cells),
-                List.of(newRoom(ids.roomId(), mapId, ids.clusterId(), cells, null)),
+                List.of(newRoom(ids.roomId(), mapId, ids.clusterId(), cells)),
                 cellsByLevel(cells));
     }
 
@@ -63,20 +63,14 @@ final class DungeonRoomClusterWorkService {
         return new DungeonRoomCluster(clusterId, mapId, center, Map.of(), Map.of());
     }
 
-    private DungeonRoom newRoom(
-            long roomId,
-            long mapId,
-            long clusterId,
-            Set<DungeonCell> cells,
-            DungeonRoom template
-    ) {
+    private DungeonRoom newRoom(long roomId, long mapId, long clusterId, Set<DungeonCell> cells) {
         return new DungeonRoom(
                 roomId,
                 mapId,
                 clusterId,
-                template == null ? "Raum " + roomId : template.name(),
-                anchorsByLevel(cellsByLevel(cells)),
-                template == null ? DungeonRoomNarration.empty() : template.narration());
+                "Raum " + roomId,
+                DungeonRoomCellProjector.anchorsByLevel(cellsByLevel(cells)),
+                DungeonRoomNarration.empty());
     }
 
     private Map<Integer, List<DungeonCell>> cellsByLevel(Iterable<DungeonCell> cells) {
@@ -87,16 +81,6 @@ final class DungeonRoomClusterWorkService {
         Map<Integer, List<DungeonCell>> result = new LinkedHashMap<>();
         for (Map.Entry<Integer, List<DungeonCell>> entry : grouped.entrySet()) {
             result.put(entry.getKey(), DungeonRoomCellProjector.sortedCells(entry.getValue()));
-        }
-        return Map.copyOf(result);
-    }
-
-    private Map<Integer, DungeonCell> anchorsByLevel(Map<Integer, List<DungeonCell>> cellsByLevel) {
-        Map<Integer, DungeonCell> result = new LinkedHashMap<>();
-        for (Map.Entry<Integer, List<DungeonCell>> entry : cellsByLevel.entrySet()) {
-            if (!entry.getValue().isEmpty()) {
-                result.put(entry.getKey(), DungeonRoomCellProjector.sortedCells(entry.getValue()).getFirst());
-            }
         }
         return Map.copyOf(result);
     }

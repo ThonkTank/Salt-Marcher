@@ -16,7 +16,6 @@ import src.domain.dungeon.map.value.DungeonClusterBoundary;
 import src.domain.dungeon.map.value.DungeonClusterBoundaryKind;
 import src.domain.dungeon.map.value.DungeonEdge;
 import src.domain.dungeon.map.value.DungeonEdgeDirection;
-import src.domain.dungeon.map.value.DungeonRoomTopologyClusterWork;
 import src.domain.dungeon.map.value.DungeonTopologyRef;
 
 final class DungeonClusterBoundaryGeometryService {
@@ -66,23 +65,6 @@ final class DungeonClusterBoundaryGeometryService {
     }
 
     @Nullable DungeonClusterBoundary boundaryForEdge(
-            DungeonRoomTopologyClusterWork target,
-            DungeonEdge edge,
-            DungeonClusterBoundaryKind kind
-    ) {
-        if (edge == null || edge.from() == null) {
-            return null;
-        }
-        return boundaryForEdge(
-                Set.copyOf(target.cellsAt(edge.from().level())),
-                target.cluster().center(),
-                target.cluster().clusterId(),
-                edge,
-                kind,
-                null);
-    }
-
-    @Nullable DungeonClusterBoundary boundaryForEdge(
             Set<DungeonCell> clusterCells,
             DungeonCell center,
             long clusterId,
@@ -90,17 +72,17 @@ final class DungeonClusterBoundaryGeometryService {
             DungeonClusterBoundaryKind kind,
             @Nullable DungeonTopologyRef topologyRef
     ) {
-        if (edge == null || edge.from() == null || edge.to() == null) {
+        if (invalidBoundaryEdge(edge)) {
             return null;
         }
         List<DungeonCell> touchingCells = DungeonRoomCellProjector.sortedCells(edge.touchingCells());
-        if (!formsBoundaryPair(touchingCells) || spansLevels(touchingCells)) {
+        if (invalidTouchingCells(touchingCells)) {
             return null;
         }
         List<DungeonCell> insideCells = touchingCells.stream()
                 .filter(clusterCells::contains)
                 .toList();
-        if (!supportsBoundaryKind(insideCells, kind)) {
+        if (!supportsBoundaryKind(kind, insideCells)) {
             return null;
         }
         DungeonCell baseCell = insideCells.getFirst();
@@ -122,30 +104,22 @@ final class DungeonClusterBoundaryGeometryService {
                 && (boundary.kind() == DungeonClusterBoundaryKind.DOOR || touch.hasTwoInsideCells());
     }
 
-    private boolean formsBoundaryPair(List<DungeonCell> touchingCells) {
-        return touchingCells.size() == 2;
+    private boolean invalidBoundaryEdge(DungeonEdge edge) {
+        return edge == null || edge.from() == null || edge.to() == null;
     }
 
-    private boolean spansLevels(List<DungeonCell> touchingCells) {
-        return touchingCells.getFirst().level() != touchingCells.get(1).level();
+    private boolean invalidTouchingCells(List<DungeonCell> touchingCells) {
+        return touchingCells.size() != 2 || touchingCells.getFirst().level() != touchingCells.get(1).level();
     }
 
-    private boolean supportsBoundaryKind(List<DungeonCell> insideCells, DungeonClusterBoundaryKind kind) {
+    private boolean supportsBoundaryKind(DungeonClusterBoundaryKind kind, List<DungeonCell> insideCells) {
         if (insideCells.isEmpty()) {
             return false;
         }
         if (kind == DungeonClusterBoundaryKind.DOOR) {
-            return !touchesMoreThanTwoCells(insideCells);
+            return insideCells.size() <= 2;
         }
-        return touchesExactlyTwoCells(insideCells);
-    }
-
-    private boolean touchesExactlyTwoCells(List<DungeonCell> cells) {
-        return cells.size() == 2;
-    }
-
-    private boolean touchesMoreThanTwoCells(List<DungeonCell> cells) {
-        return cells.size() > 2;
+        return insideCells.size() == 2;
     }
 
     private DungeonBoundaryTouch touch(DungeonEdge edge, Set<DungeonCell> clusterCells) {

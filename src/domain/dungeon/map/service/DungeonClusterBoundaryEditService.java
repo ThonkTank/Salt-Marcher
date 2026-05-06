@@ -3,6 +3,7 @@ package src.domain.dungeon.map.service;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.map.aggregate.DungeonMap;
 import src.domain.dungeon.map.entity.DungeonRoom;
@@ -11,11 +12,17 @@ import src.domain.dungeon.map.value.DungeonCell;
 import src.domain.dungeon.map.value.DungeonClusterBoundary;
 import src.domain.dungeon.map.value.DungeonClusterBoundaryKind;
 import src.domain.dungeon.map.value.DungeonEdge;
-import src.domain.dungeon.map.value.DungeonEdgeDirection;
 import src.domain.dungeon.map.value.DungeonRoomTopologyClusterWork;
 
 final class DungeonClusterBoundaryEditService {
 
+    private static final DungeonCorridorBindingLookupService CORRIDOR_BINDING_LOOKUP_SERVICE =
+            new DungeonCorridorBindingLookupService();
+    private static final DungeonClusterBoundaryGeometryService GEOMETRY_SERVICE =
+            new DungeonClusterBoundaryGeometryService();
+    private static final DungeonRoomBoundaryPartitionService PARTITION_SERVICE =
+            new DungeonRoomBoundaryPartitionService();
+    private static final DungeonRoomClusterWorkService WORK_SERVICE = new DungeonRoomClusterWorkService();
     private static final DungeonRoomClusterRebuildService REBUILD_SERVICE = new DungeonRoomClusterRebuildService();
     private static final DungeonRoomCellProjector CELL_PROJECTOR = new DungeonRoomCellProjector();
 
@@ -29,7 +36,7 @@ final class DungeonClusterBoundaryEditService {
         if (invalidBoundaryEditRequest(clusterId, edges)) {
             return dungeonMap;
         }
-        List<DungeonRoomTopologyClusterWork> clusters = REBUILD_SERVICE.workClusters(dungeonMap);
+        List<DungeonRoomTopologyClusterWork> clusters = WORK_SERVICE.workClusters(dungeonMap);
         DungeonRoomTopologyClusterWork target = clusters.stream()
                 .filter(work -> work.cluster().clusterId() == clusterId)
                 .findFirst()
@@ -41,8 +48,8 @@ final class DungeonClusterBoundaryEditService {
         if (!edit.changed()) {
             return dungeonMap;
         }
-        DungeonRoomClusterRebuildService.IdAllocation ids = REBUILD_SERVICE.newIdAllocation(dungeonMap);
-        List<DungeonRoom> rooms = REBUILD_SERVICE.roomsForBoundaryEdit(target, edit.boundariesByLevel(), ids);
+        DungeonRoomClusterWorkService.IdAllocation ids = WORK_SERVICE.newIdAllocation(dungeonMap);
+        List<DungeonRoom> rooms = PARTITION_SERVICE.roomsForBoundaryEdit(target, edit.boundariesByLevel(), ids);
         List<DungeonRoomTopologyClusterWork> nextClusters = new ArrayList<>();
         for (DungeonRoomTopologyClusterWork work : clusters) {
             nextClusters.add(work.cluster().clusterId() == clusterId
@@ -63,11 +70,17 @@ final class DungeonClusterBoundaryEditService {
             boolean deleteBoundary
     ) {
         DungeonClusterBoundaryKind resolvedKind = kind == null ? DungeonClusterBoundaryKind.WALL : kind;
-        Map<DungeonBoundaryKey, DungeonClusterBoundary> boundaries = REBUILD_SERVICE.boundaryMap(target.cluster());
+        Map<DungeonBoundaryKey, DungeonClusterBoundary> boundaries = GEOMETRY_SERVICE.boundaryMap(target.cluster());
         Map<Long, List<DungeonCell>> roomCells = CELL_PROJECTOR.cellsByRoom(target.cluster(), target.rooms());
         boolean changed = false;
         for (DungeonEdge edge : edges) {
-            DungeonClusterBoundary candidate = boundaryForEdge(target, edge, resolvedKind);
+            DungeonClusterBoundary candidate = GEOMETRY_SERVICE.boundaryForEdge(
+                    edge == null || edge.from() == null ? Set.of() : Set.copyOf(target.cellsAt(edge.from().level())),
+                    target.cluster().center(),
+                    target.cluster().clusterId(),
+                    edge,
+                    resolvedKind,
+                    null);
             if (candidate == null) {
                 continue;
             }
@@ -77,7 +90,7 @@ final class DungeonClusterBoundaryEditService {
                     ? removeBoundaryIfAllowed(dungeonMap, target, boundaries, resolvedKind, key, existing) || changed
                     : upsertBoundaryIfAllowed(roomCells, boundaries, resolvedKind, edge, key, existing, candidate) || changed;
         }
-        return new BoundaryEditResult(REBUILD_SERVICE.boundariesByLevel(boundaries.values()), changed);
+        return new BoundaryEditResult(GEOMETRY_SERVICE.boundariesByLevel(boundaries.values()), changed);
     }
 
     private boolean removeBoundaryIfAllowed(
@@ -92,12 +105,12 @@ final class DungeonClusterBoundaryEditService {
             return false;
         }
         if (resolvedKind == DungeonClusterBoundaryKind.DOOR
-                && REBUILD_SERVICE.touchesCorridorBinding(
+                && CORRIDOR_BINDING_LOOKUP_SERVICE.touchesCorridorBinding(
                 dungeonMap,
                 target.cluster().center(),
                 target.cluster().clusterId(),
                 existing.level(),
-                java.util.Set.of(key))) {
+                Set.of(key))) {
             return false;
         }
         boundaries.remove(key);
@@ -129,49 +142,6 @@ final class DungeonClusterBoundaryEditService {
         return true;
     }
 
-    private @Nullable DungeonClusterBoundary boundaryForEdge(
-            DungeonRoomTopologyClusterWork target,
-            DungeonEdge edge,
-            DungeonClusterBoundaryKind kind
-    ) {
-        if (edge == null || edge.from() == null || edge.to() == null) {
-            return null;
-        }
-        List<DungeonCell> touchingCells = DungeonRoomCellProjector.sortedCells(edge.touchingCells());
-        if (!formsBoundaryPair(touchingCells) || spansLevels(touchingCells)) {
-            return null;
-        }
-        List<DungeonCell> clusterCells = target.cellsAt(touchingCells.getFirst().level());
-        List<DungeonCell> insideCells = touchingCells.stream()
-                .filter(clusterCells::contains)
-                .toList();
-        if (!supportsBoundaryKind(insideCells, kind)) {
-            return null;
-        }
-        DungeonCell baseCell = insideCells.getFirst();
-        DungeonEdgeDirection direction = directionFrom(baseCell, edge);
-        if (direction == null) {
-            return null;
-        }
-        DungeonCell center = target.cluster().center();
-        return new DungeonClusterBoundary(
-                target.cluster().clusterId(),
-                baseCell.level(),
-                new DungeonCell(baseCell.q() - center.q(), baseCell.r() - center.r(), baseCell.level()),
-                direction,
-                kind);
-    }
-
-    private @Nullable DungeonEdgeDirection directionFrom(DungeonCell cell, DungeonEdge edge) {
-        DungeonBoundaryKey key = DungeonBoundaryKey.from(edge);
-        for (DungeonEdgeDirection direction : DungeonEdgeDirection.values()) {
-            if (DungeonBoundaryKey.from(DungeonEdge.sideOf(cell, direction)).equals(key)) {
-                return direction;
-            }
-        }
-        return null;
-    }
-
     private boolean editableDoorBoundary(
             @Nullable DungeonClusterBoundary existing,
             DungeonEdge edge,
@@ -188,7 +158,7 @@ final class DungeonClusterBoundaryEditService {
         if (edge == null || cellsByRoom.isEmpty()) {
             return 0L;
         }
-        java.util.Set<DungeonCell> touching = java.util.Set.copyOf(edge.touchingCells());
+        Set<DungeonCell> touching = Set.copyOf(edge.touchingCells());
         return cellsByRoom.values().stream()
                 .filter(roomCells -> roomCells.stream().anyMatch(touching::contains))
                 .limit(2L)
@@ -199,34 +169,8 @@ final class DungeonClusterBoundaryEditService {
         return clusterId <= 0L || edges == null || edges.isEmpty();
     }
 
-    private boolean formsBoundaryPair(List<DungeonCell> touchingCells) {
-        return touchingCells.size() == 2;
-    }
-
-    private boolean spansLevels(List<DungeonCell> touchingCells) {
-        return touchingCells.getFirst().level() != touchingCells.get(1).level();
-    }
-
-    private boolean supportsBoundaryKind(List<DungeonCell> insideCells, DungeonClusterBoundaryKind kind) {
-        if (insideCells.isEmpty()) {
-            return false;
-        }
-        if (kind == DungeonClusterBoundaryKind.DOOR) {
-            return !touchesMoreThanTwoCells(insideCells);
-        }
-        return touchesExactlyTwoCells(insideCells);
-    }
-
     private boolean touchesMultipleRooms(long touchingRoomCount) {
         return touchingRoomCount >= 2;
-    }
-
-    private boolean touchesExactlyTwoCells(List<DungeonCell> cells) {
-        return cells.size() == 2;
-    }
-
-    private boolean touchesMoreThanTwoCells(List<DungeonCell> cells) {
-        return cells.size() > 2;
     }
 
     private record BoundaryEditResult(

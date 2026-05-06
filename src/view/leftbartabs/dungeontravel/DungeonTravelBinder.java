@@ -33,13 +33,13 @@ final class DungeonTravelBinder {
         DungeonMapView main = new DungeonMapView();
         DungeonTravelStateView state = new DungeonTravelStateView();
         bindTravelRequests(travel, intentHandler);
+        bindViewEffects(intentHandler, main);
         main.bind(mapContentModel);
         controls.bind(contributionModel);
         state.bind(contributionModel);
         controls.onViewInputEvent(intentHandler::consume);
         main.onViewportChanged(() -> controls.showZoom(main.zoom()));
         state.onViewInputEvent(intentHandler::consume);
-        contributionModel.cameraResetSignalProperty().addListener((ignored, before, after) -> main.resetCamera());
         travelModel.subscribe(snapshot -> applySnapshot(snapshot, contributionModel, mapContentModel));
         applySnapshot(travelModel.current(), contributionModel, mapContentModel);
         controls.showZoom(main.zoom());
@@ -52,6 +52,17 @@ final class DungeonTravelBinder {
     ) {
         intentHandler.onPublishedEventRequested(actionEvent -> {
             travel.applyDungeonTravelSession(toCommand(actionEvent));
+        });
+    }
+
+    private static void bindViewEffects(
+            DungeonTravelIntentHandler intentHandler,
+            DungeonMapView main
+    ) {
+        intentHandler.onViewEffectRequested(effect -> {
+            if (effect == DungeonTravelIntentHandler.ViewEffect.RESET_CAMERA) {
+                main.resetCamera();
+            }
         });
     }
 

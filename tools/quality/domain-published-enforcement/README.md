@@ -20,7 +20,9 @@ It keeps the `published/**` proof route owner-pure and bundle-local:
 This bundle owns only the exported `published/**` boundary-carrier role.
 Root `ApplicationService` public-boundary constraints, `application/*UseCase`
 orchestration, outbound `port/` rules, and generic domain-layer communication
-boundaries stay in their neighboring owner bundles and documents.
+boundaries stay in their neighboring owner bundles and documents. Within this
+bundle, direct read-side `*Model` publication handles keep their public API to
+`current()` and `subscribe(...)` only.
 
 Unified root entrypoint:
 

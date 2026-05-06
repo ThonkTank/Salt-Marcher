@@ -58,7 +58,7 @@ public final class DomainPublishedEnforcementCoverageRules implements Architectu
             row("domain-published-read-model-feedback-ownership",
                     "Enforced Elsewhere",
                     List.of(
-                            "domain-applicationservice-query-returns-read-model-handle",
+                            "domain-applicationservice-public-input-carriers",
                             "domain-applicationservice-command-no-direct-return",
                             "domain-usecase-no-same-context-published-dependencies",
                             "view-layer-no-direct-applicationservice-result-to-viewstate-readback"),

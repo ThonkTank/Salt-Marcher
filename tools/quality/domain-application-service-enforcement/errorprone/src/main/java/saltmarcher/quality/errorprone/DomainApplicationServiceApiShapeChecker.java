@@ -20,7 +20,7 @@ import javax.lang.model.type.TypeMirror;
 
 @BugPattern(
         name = "DomainApplicationServiceApiShape",
-        summary = "Root domain ApplicationService APIs must use same-context published command/query carriers with inbound-only command returns.",
+        summary = "Root domain ApplicationService APIs must expose inbound-only same-context published commands.",
         severity = BugPattern.SeverityLevel.ERROR)
 public final class DomainApplicationServiceApiShapeChecker extends BugChecker
         implements BugChecker.MethodTreeMatcher, BugChecker.ClassTreeMatcher {
@@ -104,33 +104,19 @@ public final class DomainApplicationServiceApiShapeChecker extends BugChecker
         String feature = matcher.group(1);
         if (methodSymbol.getParameters().size() != 1) {
             return violation(tree, methodSymbol, feature,
-                    "declare exactly one published command/query parameter");
+                    "declare exactly one same-feature published command parameter");
         }
         VariableElement parameter = methodSymbol.getParameters().get(0);
-        if (!isSameFeaturePublishedType(parameter.asType(), feature)) {
+        if (!isSameFeaturePublishedType(parameter.asType(), feature)
+                || !hasSimpleNameEnding(parameter.asType(), "Command")) {
             return violation(tree, methodSymbol, feature,
-                    "accept one same-feature published command/query parameter");
+                    "accept one same-feature published carrier whose simple name ends with Command");
         }
-        if (hasSimpleNameEnding(parameter.asType(), "Command")) {
-            if (methodSymbol.getReturnType().getKind() == TypeKind.VOID) {
-                return Description.NO_MATCH;
-            }
-            return violation(tree, methodSymbol, feature,
-                    "return void for same-feature published command carriers so command feedback stays on read-side published/*Model handles");
-        }
-        if (hasSimpleNameEnding(parameter.asType(), "Query")) {
-            if (!isSameFeaturePublishedType(methodSymbol.getReturnType(), feature)) {
-                return violation(tree, methodSymbol, feature,
-                        "return one same-feature published read-model handle for query carriers");
-            }
-            if (!hasSimpleNameEnding(methodSymbol.getReturnType(), "Model")) {
-                return violation(tree, methodSymbol, feature,
-                        "return one same-feature published carrier whose simple name ends with Model for query carriers");
-            }
+        if (methodSymbol.getReturnType().getKind() == TypeKind.VOID) {
             return Description.NO_MATCH;
         }
         return violation(tree, methodSymbol, feature,
-                "accept one same-feature published carrier whose simple name ends with Command or Query");
+                "return void so same-context readback never crosses the root ApplicationService boundary");
     }
 
     private Description violation(MethodTree tree, Symbol.MethodSymbol methodSymbol, String feature, String requirement) {
@@ -141,9 +127,9 @@ public final class DomainApplicationServiceApiShapeChecker extends BugChecker
                         + methodSymbol.getSimpleName()
                         + "' must "
                         + requirement
-                        + "; expected src.domain."
+                        + "; expected exactly one src.domain."
                         + feature
-                        + ".published.* carriers on both sides of the public boundary.")
+                        + ".published.*Command parameter and no direct return surface.")
                 .build();
     }
 
@@ -154,15 +140,6 @@ public final class DomainApplicationServiceApiShapeChecker extends BugChecker
         }
         String qualifiedName = typeElement.getQualifiedName().toString();
         return qualifiedName.startsWith("src.domain." + feature + ".published.");
-    }
-
-    private static boolean hasSimpleNameEnding(TypeMirror typeMirror, String firstSuffix, String secondSuffix) {
-        if (!(typeMirror instanceof DeclaredType declaredType)
-                || !(declaredType.asElement() instanceof TypeElement typeElement)) {
-            return false;
-        }
-        String simpleName = typeElement.getSimpleName().toString();
-        return simpleName.endsWith(firstSuffix) || simpleName.endsWith(secondSuffix);
     }
 
     private static boolean hasSimpleNameEnding(TypeMirror typeMirror, String suffix) {

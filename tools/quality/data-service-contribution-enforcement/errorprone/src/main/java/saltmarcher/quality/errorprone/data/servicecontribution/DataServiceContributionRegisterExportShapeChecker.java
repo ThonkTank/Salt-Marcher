@@ -19,7 +19,7 @@ import javax.lang.model.type.TypeMirror;
 
 @BugPattern(
         name = "DataServiceContributionRegisterExportShape",
-        summary = "Data ServiceContribution roots may export only same-feature root domain ApplicationServices through ServiceRegistry.register(...).",
+        summary = "Data ServiceContribution roots may export only same-feature ApplicationServices and published/*Model readback services.",
         severity = BugPattern.SeverityLevel.ERROR)
 public final class DataServiceContributionRegisterExportShapeChecker extends BugChecker
         implements BugChecker.CompilationUnitTreeMatcher {
@@ -37,14 +37,16 @@ public final class DataServiceContributionRegisterExportShapeChecker extends Bug
         }
 
         String feature = packageMatcher.group(1);
-        String expectedService = "src.domain." + feature + ".*ApplicationService";
+        String expectedService = "src.domain." + feature + ".*ApplicationService or src.domain."
+                + feature + ".published.*Model";
         List<String> violations = new ArrayList<>();
         new TreePathScanner<Void, Void>() {
             @Override
             public Void visitMethodInvocation(MethodInvocationTree methodInvocation, Void unused) {
                 Symbol symbol = ASTHelpers.getSymbol(methodInvocation);
                 if (symbol == null
-                        || !"register".contentEquals(symbol.getSimpleName())
+                        || (!"register".contentEquals(symbol.getSimpleName())
+                        && !"registerFactory".contentEquals(symbol.getSimpleName()))
                         || !SERVICE_REGISTRY_BUILDER.equals(ownerTypeName(symbol))
                         || methodInvocation.getArguments().isEmpty()) {
                     return super.visitMethodInvocation(methodInvocation, null);
@@ -52,10 +54,11 @@ public final class DataServiceContributionRegisterExportShapeChecker extends Bug
 
                 Tree serviceKeyArgument = methodInvocation.getArguments().getFirst();
                 String serviceKey = classLiteralTypeName(serviceKeyArgument);
-                if (!isSameFeatureRootApplicationService(serviceKey, feature)) {
+                if (!isAllowedServiceKey(serviceKey, feature)) {
+                    String methodName = symbol.getSimpleName().toString();
                     violations.add(serviceKey.isBlank()
-                            ? "<unresolved service key: " + serviceKeyArgument + ">"
-                            : serviceKey);
+                            ? methodName + "(<unresolved service key: " + serviceKeyArgument + ">)"
+                            : methodName + "(" + serviceKey + ")");
                 }
                 return super.visitMethodInvocation(methodInvocation, null);
             }
@@ -67,7 +70,7 @@ public final class DataServiceContributionRegisterExportShapeChecker extends Bug
         return buildDescription(tree)
                 .setMessage("Data ServiceContribution root for feature '" + feature
                         + "' may export only " + expectedService
-                        + " through shell.api.ServiceRegistry.register(...). Forbidden service keys: "
+                        + " through shell.api.ServiceRegistry register/registerFactory seams. Forbidden service keys: "
                         + String.join(", ", violations))
                 .build();
     }
@@ -96,6 +99,11 @@ public final class DataServiceContributionRegisterExportShapeChecker extends Bug
         return "";
     }
 
+    private static boolean isAllowedServiceKey(String serviceKey, String feature) {
+        return isSameFeatureRootApplicationService(serviceKey, feature)
+                || isSameFeaturePublishedModel(serviceKey, feature);
+    }
+
     private static boolean isSameFeatureRootApplicationService(String serviceKey, String feature) {
         String expectedPrefix = "src.domain." + feature + ".";
         if (!serviceKey.startsWith(expectedPrefix)) {
@@ -103,6 +111,15 @@ public final class DataServiceContributionRegisterExportShapeChecker extends Bug
         }
         String simpleName = serviceKey.substring(expectedPrefix.length());
         return !simpleName.contains(".") && simpleName.endsWith("ApplicationService");
+    }
+
+    private static boolean isSameFeaturePublishedModel(String serviceKey, String feature) {
+        String expectedPrefix = "src.domain." + feature + ".published.";
+        if (!serviceKey.startsWith(expectedPrefix)) {
+            return false;
+        }
+        String simpleName = serviceKey.substring(expectedPrefix.length());
+        return !simpleName.contains(".") && simpleName.endsWith("Model");
     }
 
     private static String ownerTypeName(Symbol symbol) {

@@ -13,6 +13,7 @@ import src.domain.dungeon.map.value.DungeonRoomTopologyClusterWork;
 
 final class DungeonRoomRectangleMutationService {
 
+    private static final DungeonRoomClusterWorkService WORK_SERVICE = new DungeonRoomClusterWorkService();
     private static final DungeonRoomClusterRebuildService REBUILD_SERVICE = new DungeonRoomClusterRebuildService();
     private static final DungeonRoomCellProjector CELL_PROJECTOR = new DungeonRoomCellProjector();
 
@@ -21,11 +22,11 @@ final class DungeonRoomRectangleMutationService {
         if (paintedCells.isEmpty()) {
             return dungeonMap;
         }
-        List<DungeonRoomTopologyClusterWork> clusters = REBUILD_SERVICE.workClusters(dungeonMap);
-        List<DungeonRoomTopologyClusterWork> affected = REBUILD_SERVICE.affectedClusters(clusters, paintedCells);
+        List<DungeonRoomTopologyClusterWork> clusters = WORK_SERVICE.workClusters(dungeonMap);
+        List<DungeonRoomTopologyClusterWork> affected = WORK_SERVICE.affectedClusters(clusters, paintedCells);
         if (affected.isEmpty()) {
-            DungeonRoomClusterRebuildService.IdAllocation ids = REBUILD_SERVICE.newIdAllocation(dungeonMap);
-            clusters.add(REBUILD_SERVICE.newClusterWork(
+            DungeonRoomClusterWorkService.IdAllocation ids = WORK_SERVICE.newIdAllocation(dungeonMap);
+            clusters.add(WORK_SERVICE.newClusterWork(
                     ids.reserveClusterAndRoom(),
                     dungeonMap.metadata().mapId().value(),
                     paintedCells));
@@ -57,11 +58,11 @@ final class DungeonRoomRectangleMutationService {
         if (deletedCells.isEmpty()) {
             return dungeonMap;
         }
-        List<DungeonRoomTopologyClusterWork> clusters = REBUILD_SERVICE.workClusters(dungeonMap);
-        DungeonRoomClusterRebuildService.IdAllocation ids = REBUILD_SERVICE.newIdAllocation(dungeonMap);
+        List<DungeonRoomTopologyClusterWork> clusters = WORK_SERVICE.workClusters(dungeonMap);
+        DungeonRoomClusterWorkService.IdAllocation ids = WORK_SERVICE.newIdAllocation(dungeonMap);
         List<DungeonRoomTopologyClusterWork> nextClusters = new ArrayList<>();
         for (DungeonRoomTopologyClusterWork work : clusters) {
-            if (!REBUILD_SERVICE.intersects(work.cellsAt(start.level()), deletedCells)) {
+            if (!WORK_SERVICE.intersects(work.cellsAt(start.level()), deletedCells)) {
                 nextClusters.add(work);
                 continue;
             }
@@ -88,7 +89,7 @@ final class DungeonRoomRectangleMutationService {
                     continue;
                 }
                 componentCells.put(start.level(), DungeonRoomCellProjector.sortedCells(component));
-                nextClusters.add(REBUILD_SERVICE.newClusterWork(
+                nextClusters.add(WORK_SERVICE.newClusterWork(
                         ids.reserveClusterAndRoom(),
                         work.cluster().mapId(),
                         component).withCellsByLevel(componentCells));

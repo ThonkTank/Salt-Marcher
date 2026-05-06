@@ -48,11 +48,16 @@ public final class DomainPublishedCarrierShapeChecker extends BugChecker
 
         return buildDescription(tree)
                 .setMessage("Public domain published type '" + typeElement.getQualifiedName()
-                        + "' must be a record, enum, or sealed abstraction so published/ remains a boundary-carrier surface.")
+                        + "' must be a boundary-carrier shape: non-model carriers stay record/enum/sealed, while *Model handles may stay records or final classes.")
                 .build();
     }
 
     private static boolean isAllowedCarrierShape(TypeElement typeElement) {
+        if (typeElement.getSimpleName().toString().endsWith("Model")) {
+            ElementKind kind = typeElement.getKind();
+            return kind == ElementKind.RECORD
+                    || (kind == ElementKind.CLASS && typeElement.getModifiers().contains(Modifier.FINAL));
+        }
         ElementKind kind = typeElement.getKind();
         if (kind == ElementKind.RECORD || kind == ElementKind.ENUM) {
             return true;

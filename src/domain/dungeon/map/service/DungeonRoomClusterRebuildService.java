@@ -116,18 +116,8 @@ final class DungeonRoomClusterRebuildService {
                 work.cluster().mapId(),
                 work.cluster().clusterId(),
                 template == null ? "Raum " + roomId : template.name(),
-                anchorsByLevel(work.cellsByLevel()),
+                DungeonRoomCellProjector.anchorsByLevel(work.cellsByLevel()),
                 template == null ? DungeonRoomNarration.empty() : template.narration()));
-    }
-
-    private Map<Integer, DungeonCell> anchorsByLevel(Map<Integer, List<DungeonCell>> cellsByLevel) {
-        Map<Integer, DungeonCell> result = new LinkedHashMap<>();
-        for (Map.Entry<Integer, List<DungeonCell>> entry : cellsByLevel.entrySet()) {
-            if (!entry.getValue().isEmpty()) {
-                result.put(entry.getKey(), DungeonRoomCellProjector.sortedCells(entry.getValue()).getFirst());
-            }
-        }
-        return Map.copyOf(result);
     }
 
     private Map<Integer, List<DungeonClusterBoundary>> preservedBoundaries(

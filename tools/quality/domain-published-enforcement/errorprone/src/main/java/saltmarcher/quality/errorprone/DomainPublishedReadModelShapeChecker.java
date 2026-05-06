@@ -9,7 +9,6 @@ import com.sun.source.tree.ClassTree;
 import com.sun.tools.javac.code.Symbol;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.DeclaredType;
@@ -17,7 +16,7 @@ import javax.lang.model.type.TypeMirror;
 
 @BugPattern(
         name = "DomainPublishedReadModelShape",
-        summary = "Only published/*Model handles may own current()/subscribe() read-side publication.",
+        summary = "Published/*Model handles may expose readback only through current()/subscribe().",
         severity = BugPattern.SeverityLevel.ERROR)
 public final class DomainPublishedReadModelShapeChecker extends BugChecker
         implements BugChecker.ClassTreeMatcher {
@@ -52,14 +51,8 @@ public final class DomainPublishedReadModelShapeChecker extends BugChecker
     }
 
     private Description validateModelHandle(ClassTree tree, TypeElement typeElement, String feature) {
-        if (typeElement.getKind() != ElementKind.RECORD) {
-            return buildDescription(tree)
-                    .setMessage("Published read-model handle '" + typeElement.getQualifiedName()
-                            + "' must be a public record so same-context readback stays a passive handle surface.")
-                    .build();
-        }
-
         Symbol.MethodSymbol currentMethod = null;
+        Symbol.MethodSymbol subscribeMethod = null;
         for (var enclosedElement : typeElement.getEnclosedElements()) {
             if (!(enclosedElement instanceof Symbol.MethodSymbol methodSymbol)
                     || !methodSymbol.getModifiers().contains(Modifier.PUBLIC)) {
@@ -68,7 +61,10 @@ public final class DomainPublishedReadModelShapeChecker extends BugChecker
             if (methodSymbol.getSimpleName().contentEquals("current")
                     && methodSymbol.getParameters().isEmpty()) {
                 currentMethod = methodSymbol;
-                break;
+                continue;
+            }
+            if (methodSymbol.getSimpleName().contentEquals("subscribe")) {
+                subscribeMethod = methodSymbol;
             }
         }
         if (currentMethod == null) {
@@ -85,24 +81,39 @@ public final class DomainPublishedReadModelShapeChecker extends BugChecker
         }
 
         String currentReturnType = currentMethod.getReturnType().toString();
+        if (subscribeMethod == null
+                || subscribeMethod.getParameters().size() != 1
+                || !RUNNABLE_TYPE.equals(subscribeMethod.getReturnType().toString())
+                || !isMatchingConsumerParameter(subscribeMethod.getParameters().get(0).asType(), currentReturnType)) {
+            return buildDescription(tree)
+                    .setMessage("Published read-model handle '" + typeElement.getQualifiedName()
+                            + "' must expose public subscribe(Consumer<" + currentReturnType
+                            + ">) returning Runnable.")
+                    .build();
+        }
+
         for (var enclosedElement : typeElement.getEnclosedElements()) {
             if (!(enclosedElement instanceof Symbol.MethodSymbol methodSymbol)
                     || !methodSymbol.getModifiers().contains(Modifier.PUBLIC)
-                    || !methodSymbol.getSimpleName().contentEquals("subscribe")) {
+                    || methodSymbol.isConstructor()
+                    || methodSymbol.isStatic()) {
                 continue;
             }
-            if (methodSymbol.getParameters().size() == 1
-                    && RUNNABLE_TYPE.equals(methodSymbol.getReturnType().toString())
-                    && isMatchingConsumerParameter(methodSymbol.getParameters().get(0).asType(), currentReturnType)) {
-                return Description.NO_MATCH;
+            String methodName = methodSymbol.getSimpleName().toString();
+            if (methodName.equals("current")
+                    || methodName.equals("subscribe")
+                    || methodName.equals("toString")
+                    || methodName.equals("hashCode")
+                    || methodName.equals("equals")) {
+                continue;
             }
+            return buildDescription(tree)
+                    .setMessage("Published read-model handle '" + typeElement.getQualifiedName()
+                            + "' must keep its public instance API to current()/subscribe() only. Extra public method: "
+                            + methodName + "().")
+                    .build();
         }
-
-        return buildDescription(tree)
-                .setMessage("Published read-model handle '" + typeElement.getQualifiedName()
-                        + "' must expose public subscribe(Consumer<" + currentReturnType
-                        + ">) returning Runnable.")
-                .build();
+        return Description.NO_MATCH;
     }
 
     private Description validatePassiveCarrier(ClassTree tree, TypeElement typeElement) {

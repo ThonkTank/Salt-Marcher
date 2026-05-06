@@ -214,14 +214,18 @@ Additional rules:
 - direct `View` callback APIs, direct `IntentHandler -> ApplicationService`
   calls, direct Binder subscriptions to request/token protocols on projection
   models, and any third presentation-state mutation route are forbidden
+- if one same-root `ViewInputEvent` interpretation needs a purely local
+  passive-View effect that neither mutates presentation state nor crosses a
+  domain boundary, the Binder may install one same-root local effect sink on
+  the `IntentHandler`; that effect stays view-local and must not be modeled as
+  a `PublishedEvent` or as a projection-model request/backchannel protocol
 - a Binder must not treat direct `ApplicationService` return values such as
   `*Result`, `*Snapshot`, `*Payload`, `*CalculationResult`, `*SearchResult`,
   `*Preview`, or similar one-shot carriers as authoritative view-state input
   or as a feedback protocol for rendering or projection-model updates
-- if a view root needs domain-backed observable state, the Binder loads only
-  a same-context read-side `published/*Model` handle from the root
-  `*ApplicationService` boundary and then reads it only through
-  `current()` and `subscribe(...)`
+- if a view root needs domain-backed observable state, the Binder acquires
+  only a direct same-context read-side `published/*Model` runtime service and
+  then reads it only through `current()` and `subscribe(...)`
 
 ## Canonical Interaction Model
 
@@ -275,8 +279,9 @@ Binder-mediated domain-write roundtrip:
 
 Domain read-side contract:
 
-1. a Binder may load a same-context read-side `published/*Model` handle from a
-   root `*ApplicationService`
+1. a Binder may acquire a same-context read-side `published/*Model` handle
+   only as a direct runtime service, not by calling back into a root
+   `*ApplicationService`
 2. the Binder may read the initial domain state from that handle only through
    `current()`
 3. the Binder may continue readback only through `subscribe(...)`

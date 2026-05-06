@@ -48,7 +48,7 @@ The standard domain concepts are deliberately small:
 | Use Case | Application coordination behind the root boundary. |
 | Domain Model | Business objects, facts, rules, invariants, and policies owned by the context. |
 | Port | A domain-owned outbound need expressed in business language. |
-| Published Contract | Public commands, queries, results, IDs, statuses, snapshots, and read-only boundary handles exposed to outer layers. |
+| Published Contract | Public commands, results, IDs, statuses, snapshots, and read-only publication handles exposed to outer layers. |
 
 Other names are subordinate. `aggregate`, `entity`, `value`, `policy`,
 `factory`, `service`, `event`, and `specification` are optional tactical roles
@@ -59,8 +59,8 @@ inside a domain module. `repository`, `query`, `gateway`, `mapper`, `model`,
 
 - each real domain context exposes exactly one public callable backend
   boundary: `<PascalContext>ApplicationService.java`
-- `published/` is exported published language: commands, queries, results,
-  ids, statuses, snapshots, and read-only boundary handles when a context must
+- `published/` is exported published language: commands, results, ids,
+  statuses, snapshots, and read-only publication handles when a context must
   expose observable current state without leaking private model internals;
   such boundary handles may appear as same-context `published/*Model` types
   that outer layers observe only through read-side methods like `current()`
@@ -75,7 +75,7 @@ inside a domain module. `repository`, `query`, `gateway`, `mapper`, `model`,
   SQL rows, source-local records, JavaFX, shell APIs, filesystem paths,
   network clients, transaction objects, or adapter lifecycle
 - named domain modules must not depend on any `src.domain.*.published.*`
-  carrier, same-context or foreign. Same-context published command/query
+  carrier, same-context or foreign. Same-context published command
   language stops at the root boundary, and same-context published feedback
   leaves only through read-side `published/*Model` owners rather than
   top-level internal application files or named domain modules
@@ -94,10 +94,12 @@ one domain context.
 
 - it is a public final top-level class named
   `<PascalContext>ApplicationService`
-- it accepts same-context `published/` command or query carriers
+- it accepts exactly one same-context `published/*Command` carrier per public
+  boundary method
 - command methods return `void`
-- query methods return same-context read-side `published/*Model` handles only
-- it translates public command/query carriers into internal types before
+- it exposes no same-context read/load/open/query return path; read-side
+  publication must not cross the root boundary a second time
+- it translates public command carriers into internal types before
   control enters top-level application workflows or named domain modules
 - it does not directly publish same-context mutation feedback, snapshots, or
   result carriers; outward feedback stays on read-side `published/*Model`
@@ -109,12 +111,13 @@ one domain context.
 
 `published/` owns exported boundary carriers only.
 
-- allowed: commands, queries, results, snapshots, ids, statuses, enums,
-  sealed carrier abstractions, simple public boundary records, and read-only
+- allowed: commands, results, snapshots, ids, statuses, enums, sealed
+  carrier abstractions, simple public boundary records, and read-only
   same-context `*Model` handles for observable current domain state
 - same-context `*Model` handles expose outward readback through `current()`
   and `subscribe(...)` only and may carry the status/error/success payloads
-  consumers need for feedback
+  consumers need for feedback; they are the upward publication seam and not a
+  callback wrapper around `*ApplicationService`
 - forbidden: callable services, facades, repositories, ports, gateways,
   factories, locators, policy helpers, or invariant-owning objects
 - public non-`*Model` carriers remain passive domain facts rather than

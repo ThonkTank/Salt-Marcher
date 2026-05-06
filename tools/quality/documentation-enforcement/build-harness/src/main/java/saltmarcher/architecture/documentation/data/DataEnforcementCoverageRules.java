@@ -96,7 +96,9 @@ public final class DataEnforcementCoverageRules implements ArchitectureRule {
                                     List.of("Error Prone", "PMD"),
                                     List.of("./gradlew compileJava", "./gradlew checkArchitecture")),
                             row("data-service-contribution-factory-export-shape",
-                                    "Review-Owned"),
+                                    "Enforced",
+                                    List.of("Error Prone"),
+                                    List.of("./gradlew compileJava")),
                             row("data-service-contribution-composition-collaborator-assembly-only",
                                     "Review-Owned"))),
             Map.entry(

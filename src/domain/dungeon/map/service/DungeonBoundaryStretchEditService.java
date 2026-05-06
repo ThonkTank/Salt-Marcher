@@ -11,6 +11,7 @@ import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.map.aggregate.DungeonMap;
 import src.domain.dungeon.map.entity.DungeonRoom;
 import src.domain.dungeon.map.value.DungeonBoundaryKey;
+import src.domain.dungeon.map.value.DungeonBoundaryTouch;
 import src.domain.dungeon.map.value.DungeonCell;
 import src.domain.dungeon.map.value.DungeonClusterBoundary;
 import src.domain.dungeon.map.value.DungeonClusterBoundaryKind;
@@ -20,6 +21,13 @@ import src.domain.dungeon.map.value.DungeonTopologyRef;
 
 final class DungeonBoundaryStretchEditService {
 
+    private static final DungeonCorridorBindingLookupService CORRIDOR_BINDING_LOOKUP_SERVICE =
+            new DungeonCorridorBindingLookupService();
+    private static final DungeonClusterBoundaryGeometryService GEOMETRY_SERVICE =
+            new DungeonClusterBoundaryGeometryService();
+    private static final DungeonRoomBoundaryPartitionService PARTITION_SERVICE =
+            new DungeonRoomBoundaryPartitionService();
+    private static final DungeonRoomClusterWorkService WORK_SERVICE = new DungeonRoomClusterWorkService();
     private static final DungeonRoomClusterRebuildService REBUILD_SERVICE = new DungeonRoomClusterRebuildService();
 
     DungeonMap moveBoundaryStretch(
@@ -33,7 +41,7 @@ final class DungeonBoundaryStretchEditService {
         if (invalidStretchRequest(clusterId, sourceEdges)) {
             return dungeonMap;
         }
-        List<DungeonRoomTopologyClusterWork> clusters = REBUILD_SERVICE.workClusters(dungeonMap);
+        List<DungeonRoomTopologyClusterWork> clusters = WORK_SERVICE.workClusters(dungeonMap);
         DungeonRoomTopologyClusterWork target = clusters.stream()
                 .filter(work -> work.cluster().clusterId() == clusterId)
                 .findFirst()
@@ -60,7 +68,7 @@ final class DungeonBoundaryStretchEditService {
         if (changesLevel(deltaLevel)) {
             return Optional.empty();
         }
-        Map<DungeonBoundaryKey, DungeonClusterBoundary> boundaries = REBUILD_SERVICE.boundaryMap(target.cluster());
+        Map<DungeonBoundaryKey, DungeonClusterBoundary> boundaries = GEOMETRY_SERVICE.boundaryMap(target.cluster());
         Optional<StretchSeed> seed = stretchSeed(target, boundaries, sourceEdges);
         if (seed.isEmpty()) {
             return Optional.empty();
@@ -102,15 +110,16 @@ final class DungeonBoundaryStretchEditService {
         if (!validInnerStretchSource(dungeonMap, target, stretch, levelCells)) {
             return dungeonMap;
         }
-        Map<DungeonBoundaryKey, DungeonClusterBoundary> boundaries = new LinkedHashMap<>(REBUILD_SERVICE.boundaryMap(target.cluster()));
+        Map<DungeonBoundaryKey, DungeonClusterBoundary> boundaries =
+                new LinkedHashMap<>(GEOMETRY_SERVICE.boundaryMap(target.cluster()));
         if (!innerStretchCanMove(boundaries, stretch)
                 || !applyStretchConnectors(dungeonMap, target, stretch, levelCells, boundaries, true)
                 || !replaceStretchEdges(target, stretch, levelCells, boundaries)) {
             return dungeonMap;
         }
-        Map<Integer, List<DungeonClusterBoundary>> nextBoundaries = REBUILD_SERVICE.boundariesByLevel(boundaries.values());
-        DungeonRoomClusterRebuildService.IdAllocation ids = REBUILD_SERVICE.newIdAllocation(dungeonMap);
-        List<DungeonRoom> rooms = REBUILD_SERVICE.roomsForBoundaryEdit(target, nextBoundaries, ids);
+        Map<Integer, List<DungeonClusterBoundary>> nextBoundaries = GEOMETRY_SERVICE.boundariesByLevel(boundaries.values());
+        DungeonRoomClusterWorkService.IdAllocation ids = WORK_SERVICE.newIdAllocation(dungeonMap);
+        List<DungeonRoom> rooms = PARTITION_SERVICE.roomsForBoundaryEdit(target, nextBoundaries, ids);
         List<DungeonRoomTopologyClusterWork> nextClusters = new ArrayList<>();
         for (DungeonRoomTopologyClusterWork work : clusters) {
             nextClusters.add(work.cluster().clusterId() == target.cluster().clusterId()
@@ -144,7 +153,8 @@ final class DungeonBoundaryStretchEditService {
             return dungeonMap;
         }
         nextCellsByLevel.put(stretch.level(), DungeonRoomCellProjector.sortedCells(currentLevelCells));
-        Map<DungeonBoundaryKey, DungeonClusterBoundary> boundaries = new LinkedHashMap<>(REBUILD_SERVICE.boundaryMap(target.cluster()));
+        Map<DungeonBoundaryKey, DungeonClusterBoundary> boundaries =
+                new LinkedHashMap<>(GEOMETRY_SERVICE.boundaryMap(target.cluster()));
         for (BoundaryVertex vertex : stretch.vertices()) {
             if (!hasPerpendicularBoundary(boundaries, stretch.sourceKeys(), vertex, stretch.orientation())) {
                 continue;
@@ -153,14 +163,14 @@ final class DungeonBoundaryStretchEditService {
                 return dungeonMap;
             }
         }
-        Map<Integer, List<DungeonClusterBoundary>> nextBoundaries = REBUILD_SERVICE.filterBoundaries(
+        Map<Integer, List<DungeonClusterBoundary>> nextBoundaries = GEOMETRY_SERVICE.filterBoundaries(
                 boundaries.values(),
                 nextCellsByLevel,
                 target.cluster().center());
-        DungeonRoomClusterRebuildService.IdAllocation ids = REBUILD_SERVICE.newIdAllocation(dungeonMap);
+        DungeonRoomClusterWorkService.IdAllocation ids = WORK_SERVICE.newIdAllocation(dungeonMap);
         DungeonRoomTopologyClusterWork nextWork =
                 new DungeonRoomTopologyClusterWork(target.cluster(), target.rooms(), nextCellsByLevel);
-        List<DungeonRoom> rooms = REBUILD_SERVICE.roomsForBoundaryEdit(nextWork, nextBoundaries, ids);
+        List<DungeonRoom> rooms = PARTITION_SERVICE.roomsForBoundaryEdit(nextWork, nextBoundaries, ids);
         List<DungeonRoomTopologyClusterWork> nextClusters = new ArrayList<>();
         for (DungeonRoomTopologyClusterWork work : clusters) {
             nextClusters.add(work.cluster().clusterId() == target.cluster().clusterId()
@@ -204,7 +214,7 @@ final class DungeonBoundaryStretchEditService {
             return Optional.empty();
         }
         int fixedCoordinate = fixedCoordinate(orientation.get(), edge);
-        BoundaryTouch touch = touch(edge, clusterCells);
+        DungeonBoundaryTouch touch = touch(edge, clusterCells);
         if (!touch.valid()) {
             return Optional.empty();
         }
@@ -237,7 +247,7 @@ final class DungeonBoundaryStretchEditService {
                 || fixedCoordinate(orientation.get(), edge) != seed.fixedCoordinate()) {
             return Optional.empty();
         }
-        BoundaryTouch touch = touch(edge, seed.clusterCells());
+        DungeonBoundaryTouch touch = touch(edge, seed.clusterCells());
         if (!touch.valid()
                 || seed.outer() != (touch.insideCount() == 1)
                 || seed.side() != BoundarySide.resolve(orientation.get(), touch, seed.fixedCoordinate())) {
@@ -286,7 +296,7 @@ final class DungeonBoundaryStretchEditService {
             Set<DungeonCell> levelCells
     ) {
         return sourceStaysInternal(stretch, levelCells)
-                && !REBUILD_SERVICE.touchesCorridorBinding(
+                && !CORRIDOR_BINDING_LOOKUP_SERVICE.touchesCorridorBinding(
                 dungeonMap,
                 target.cluster().center(),
                 target.cluster().clusterId(),
@@ -341,7 +351,7 @@ final class DungeonBoundaryStretchEditService {
         if (connectorPath.isEmpty()) {
             return true;
         }
-        if (REBUILD_SERVICE.touchesCorridorBinding(
+        if (CORRIDOR_BINDING_LOOKUP_SERVICE.touchesCorridorBinding(
                 dungeonMap,
                 target.cluster().center(),
                 target.cluster().clusterId(),
@@ -372,7 +382,7 @@ final class DungeonBoundaryStretchEditService {
             if (boundaries.containsKey(movedKey)) {
                 return false;
             }
-            DungeonClusterBoundary moved = REBUILD_SERVICE.boundaryForEdge(
+            DungeonClusterBoundary moved = GEOMETRY_SERVICE.boundaryForEdge(
                     levelCells,
                     target.cluster().center(),
                     target.cluster().clusterId(),
@@ -432,7 +442,7 @@ final class DungeonBoundaryStretchEditService {
             if (boundaries.containsKey(key)) {
                 continue;
             }
-            DungeonClusterBoundary connector = REBUILD_SERVICE.boundaryForEdge(
+            DungeonClusterBoundary connector = GEOMETRY_SERVICE.boundaryForEdge(
                     clusterCells,
                     center,
                     clusterId,
@@ -447,7 +457,8 @@ final class DungeonBoundaryStretchEditService {
 
     private boolean sourceStaysInternal(StretchSelection stretch, Set<DungeonCell> clusterCells) {
         for (StretchEdge edge : stretch.edges()) {
-            BoundaryTouch movedTouch = touch(moveEdge(edge.edge(), stretch.orientation(), stretch.movement()), clusterCells);
+            DungeonBoundaryTouch movedTouch =
+                    touch(moveEdge(edge.edge(), stretch.orientation(), stretch.movement()), clusterCells);
             if (!movedTouch.valid() || !movedTouch.hasTwoInsideCells()) {
                 return false;
             }
@@ -539,11 +550,11 @@ final class DungeonBoundaryStretchEditService {
         return Set.copyOf(result);
     }
 
-    private BoundaryTouch touch(DungeonEdge edge, Set<DungeonCell> clusterCells) {
+    private DungeonBoundaryTouch touch(DungeonEdge edge, Set<DungeonCell> clusterCells) {
         List<DungeonCell> insideCells = edge.touchingCells().stream()
                 .filter(clusterCells::contains)
                 .toList();
-        return new BoundaryTouch(insideCells);
+        return new DungeonBoundaryTouch(insideCells);
     }
 
     private int fixedCoordinate(Orientation orientation, DungeonEdge edge) {
@@ -621,7 +632,7 @@ final class DungeonBoundaryStretchEditService {
         EAST,
         WEST;
 
-        private static BoundarySide resolve(Orientation orientation, BoundaryTouch touch, int fixedCoordinate) {
+        private static BoundarySide resolve(Orientation orientation, DungeonBoundaryTouch touch, int fixedCoordinate) {
             if (orientation == Orientation.VERTICAL) {
                 return touch.insideCells().stream().anyMatch(cell -> cell.q() == fixedCoordinate - 1)
                         ? WEST
@@ -639,24 +650,6 @@ final class DungeonBoundaryStretchEditService {
     }
 
     private record ConnectorAction(ConnectorMode mode, List<DungeonEdge> path) {
-    }
-
-    private record BoundaryTouch(List<DungeonCell> insideCells) {
-        private BoundaryTouch {
-            insideCells = insideCells == null ? List.of() : List.copyOf(insideCells);
-        }
-
-        private boolean valid() {
-            return insideCount() == 1 || insideCount() == 2;
-        }
-
-        private int insideCount() {
-            return insideCells.size();
-        }
-
-        private boolean hasTwoInsideCells() {
-            return insideCount() == 2;
-        }
     }
 
     private record StretchEdge(
