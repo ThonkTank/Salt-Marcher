@@ -1,6 +1,6 @@
 Status: Draft
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-26
+Last Reviewed: 2026-05-06
 Source of Truth: Authored dungeon map boundary language between
 `DungeonApplicationService` and downstream runtime-workspace contexts for map
 read, preview, apply, inspector, travel, and catalog work.
@@ -10,7 +10,7 @@ read, preview, apply, inspector, travel, and catalog work.
 ## Purpose
 
 This contract defines the canonical dungeon-native request and response
-language for committed map reads, authored edit preview and apply, selection
+families for committed map reads, authored edit preview and apply, selection
 inspection, travel action, and catalog behavior as the dungeon adoption of
 the generic maps feature.
 
@@ -23,44 +23,53 @@ Owners:
 
 ## Rules
 
-- committed dungeon map read MUST use one snapshot read family
-- preview and apply MUST reuse one authored dungeon operation vocabulary
-- selection inspection MUST use one authored selection-describe family
-- travel action execution MUST use one travel-action request family
-- map catalog requests and results remain separate from the authored read and
-  mutation result families
-- `DungeonSnapshot` is the committed authored map read root for dungeon map
-  work
-- `DungeonOperationResult` is the authored preview and apply result root for
-  dungeon map work
+- committed dungeon map read and selection inspection MUST use the authored
+  read family
+- preview and apply MUST reuse one authored dungeon mutation family and one
+  shared `DungeonEditorOperation` body
+- map catalog work MUST use one catalog request and response family
+- travel surface reads and travel moves MUST use one travel request and
+  response family
+- `DungeonSnapshot` remains the committed authored map read payload root
+- `DungeonOperationResult` remains the authored preview and apply payload root
+- catalog behavior remains separate from authored read, authored mutation, and
+  travel families
 
-## Inbound Request Family
+## Inbound Request Families
 
-### Committed Map Read
+### Authored Read
 
-- `LoadDungeonSnapshotQuery`
+- `DungeonAuthoredReadQuery.LoadSnapshot`
+- `DungeonAuthoredReadQuery.DescribeSelection`
 
 Required context:
 
 - `mapId`
 
-### Authored Edit Preview And Apply
+Optional context:
 
-- `PreviewDungeonEditorOperationQuery`
-- `ApplyDungeonEditorOperationCommand`
+- topology ref, cluster id, and cluster-selection flag for selection reads
+
+### Authored Mutation
+
+- `DungeonAuthoredMutationCommand.PreviewOperation`
+- `DungeonAuthoredMutationCommand.ApplyOperation`
 
 `DungeonEditorOperation` is the one canonical authored dungeon edit body.
-Preview and apply wrap the same body through their dedicated boundary
-carriers.
+Preview and apply wrap the same body through their dedicated mutation-family
+variants.
 
-### Selection Inspection
+### Map Catalog
 
-- `DescribeDungeonSelectionQuery`
+- `DungeonMapCatalogRequest.Search`
+- `DungeonMapCatalogRequest.CreateMap`
+- `DungeonMapCatalogRequest.RenameMap`
+- `DungeonMapCatalogRequest.DeleteMap`
 
-### Surface Travel Action
+### Travel
 
-- `LoadDungeonTravelSurfaceQuery`
-- `MoveDungeonTravelActionCommand`
+- `DungeonTravelRequest.LoadSurface`
+- `DungeonTravelRequest.MoveAction`
 
 Required fields:
 
@@ -70,50 +79,45 @@ Optional fields:
 
 - current travel position context for raw travel reads and travel moves
 
-### Map Catalog
+## Outbound Payload Families
 
-- `SearchMapsQuery`
-- `CreateDungeonMapCommand`
-- `RenameDungeonMapCommand`
-- `DeleteDungeonMapCommand`
+### Authored Read Result
 
-## Outbound Payload Family
+- `DungeonAuthoredReadResult.CommittedSnapshot`
+- `DungeonAuthoredReadResult.SelectionInspector`
 
-### Authored Map Reads
-
-Required sections:
-
-- map identity or name context
-- committed map projection
-- aggregate and relation summaries
-- revision
+Payload roots:
 
 - `DungeonSnapshot`
+- `DungeonInspectorSnapshot`
 
-### Authored Preview Or Apply Result
+### Authored Mutation Result
+
+- `DungeonAuthoredMutationResult.Operation`
+
+Payload root:
 
 - `DungeonOperationResult`
 
-Optional sections:
+### Catalog Response
 
-- validation messages
-- reaction messages
+- `DungeonMapCatalogResponse.MapList`
+- `DungeonMapCatalogResponse.MapMutation`
 
-### Selection Inspection
+Payload roots:
 
-- `DungeonInspectorSnapshot`
+- `List<DungeonMapSummary>`
+- mutation kind plus `DungeonMapId`
 
-### Travel Read Or Action Result
+### Travel Response
+
+- `DungeonTravelResponse.Surface`
+- `DungeonTravelResponse.Move`
+
+Payload roots:
 
 - `DungeonTravelSurfaceSnapshot`
 - `DungeonTravelMoveResult`
-
-### Catalog Results
-
-- `SearchMapsResult`
-- `CreateDungeonMapResult`
-- `RenameDungeonMapResult`
-- `DeleteDungeonMapResult`
 
 ## Validation And Error Behavior
 
@@ -134,15 +138,16 @@ Optional sections:
 
 ## Compatibility Notes
 
-The former editor-colored `DungeonSurface*` carrier family is removed.
-Runtime-workspace contexts now compose their own workspace surfaces from
-authored snapshot, operation-result, inspector, and travel-result carriers.
+The former one-off command, query, and result carrier set is superseded by the
+family-based authored-read, authored-mutation, catalog, and travel families.
+Runtime-workspace contexts now compose their own workspace surfaces from the
+authored family results they actually consume.
 
 ## Verification Notes
 
 - This contract is currently `Review-Owned`.
-- Review must reject reintroduction of an editor-colored `DungeonSurface*`
-  compatibility family under `dungeon`.
+- Review must reject reintroduction of standalone one-off dungeon boundary
+  carriers that bypass the four canonical families.
 - Review must reject a second canonical authored dungeon edit body beside
   `DungeonEditorOperation`.
 

@@ -6,21 +6,22 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.function.Function;
 import org.jspecify.annotations.Nullable;
-import src.domain.dungeon.published.DescribeDungeonSelectionQuery;
 import src.domain.dungeon.published.DungeonCellRef;
 import src.domain.dungeon.published.DungeonFeatureSnapshot;
 import src.domain.dungeon.published.DungeonInspectorSnapshot;
 import src.domain.dungeon.published.DungeonEditorOperation;
+import src.domain.dungeon.published.DungeonAuthoredMutationCommand;
+import src.domain.dungeon.published.DungeonAuthoredMutationResult;
+import src.domain.dungeon.published.DungeonAuthoredReadQuery;
+import src.domain.dungeon.published.DungeonAuthoredReadResult;
+import src.domain.dungeon.published.DungeonMapCatalogRequest;
+import src.domain.dungeon.published.DungeonMapCatalogResponse;
 import src.domain.dungeon.published.DungeonMapId;
 import src.domain.dungeon.published.DungeonMapSnapshot;
 import src.domain.dungeon.published.DungeonMapSummary;
 import src.domain.dungeon.published.DungeonOperationResult;
 import src.domain.dungeon.published.DungeonSnapshot;
 import src.domain.dungeon.published.DungeonTopologyElementRef;
-import src.domain.dungeon.published.LoadDungeonSnapshotQuery;
-import src.domain.dungeon.published.PreviewDungeonEditorOperationQuery;
-import src.domain.dungeon.published.SearchMapsQuery;
-import src.domain.dungeon.published.SearchMapsResult;
 import src.domain.dungeoneditor.session.entity.DungeonEditorSession;
 
 final class BuildDungeonEditorSnapshotUseCase {
@@ -47,21 +48,18 @@ final class BuildDungeonEditorSnapshotUseCase {
         }
     }
 
-    private final Function<SearchMapsQuery, SearchMapsResult> searchMaps;
-    private final Function<PreviewDungeonEditorOperationQuery, DungeonOperationResult> previewOperation;
-    private final Function<DescribeDungeonSelectionQuery, DungeonInspectorSnapshot> describeSelection;
-    private final Function<LoadDungeonSnapshotQuery, DungeonSnapshot> loadSnapshot;
+    private final Function<DungeonMapCatalogRequest, DungeonMapCatalogResponse> catalog;
+    private final Function<DungeonAuthoredMutationCommand, DungeonAuthoredMutationResult> mutateAuthored;
+    private final Function<DungeonAuthoredReadQuery, DungeonAuthoredReadResult> loadAuthored;
 
     BuildDungeonEditorSnapshotUseCase(
-            Function<SearchMapsQuery, SearchMapsResult> searchMaps,
-            Function<PreviewDungeonEditorOperationQuery, DungeonOperationResult> previewOperation,
-            Function<DescribeDungeonSelectionQuery, DungeonInspectorSnapshot> describeSelection,
-            Function<LoadDungeonSnapshotQuery, DungeonSnapshot> loadSnapshot
+            Function<DungeonMapCatalogRequest, DungeonMapCatalogResponse> catalog,
+            Function<DungeonAuthoredMutationCommand, DungeonAuthoredMutationResult> mutateAuthored,
+            Function<DungeonAuthoredReadQuery, DungeonAuthoredReadResult> loadAuthored
     ) {
-        this.searchMaps = searchMaps;
-        this.previewOperation = previewOperation;
-        this.describeSelection = describeSelection;
-        this.loadSnapshot = loadSnapshot;
+        this.catalog = catalog;
+        this.mutateAuthored = mutateAuthored;
+        this.loadAuthored = loadAuthored;
     }
 
     ApplyDungeonEditorSessionUseCase.SnapshotData execute(State state) {
@@ -76,8 +74,7 @@ final class BuildDungeonEditorSnapshotUseCase {
                 ApplyDungeonEditorSessionUseCase.PreviewData.none(),
                 "")
                 : state;
-        SearchMapsResult mapsResult = searchMaps.apply(new SearchMapsQuery(""));
-        List<DungeonMapSummary> maps = mapsResult == null ? List.of() : mapsResult.maps();
+        List<DungeonMapSummary> maps = mapSummaries(catalog.apply(new DungeonMapCatalogRequest.Search("")));
         DungeonMapId resolvedMapId = resolveSelectedMapId(safeState.selectedMapId(), maps);
         ApplyDungeonEditorSessionUseCase.SurfaceData surface = loadCurrentSurface(
                 resolvedMapId,
@@ -104,7 +101,11 @@ final class BuildDungeonEditorSnapshotUseCase {
         if (mapId == null) {
             return null;
         }
-        return loadSnapshot.apply(new LoadDungeonSnapshotQuery(mapId));
+        DungeonAuthoredReadResult result = loadAuthored.apply(new DungeonAuthoredReadQuery.LoadSnapshot(mapId));
+        if (result instanceof DungeonAuthoredReadResult.CommittedSnapshot committedSnapshot) {
+            return committedSnapshot.snapshot();
+        }
+        throw new IllegalStateException("Dungeon-Read-Antwort enthielt keinen Snapshot.");
     }
 
     private ApplyDungeonEditorSessionUseCase.@Nullable SurfaceData loadCurrentSurface(
@@ -149,7 +150,8 @@ final class BuildDungeonEditorSnapshotUseCase {
         if (operation == null) {
             return null;
         }
-        return previewOperation.apply(new PreviewDungeonEditorOperationQuery(mapId, operation));
+        return ApplyDungeonEditorSessionUseCase.requireOperationResult(mutateAuthored.apply(
+                new DungeonAuthoredMutationCommand.PreviewOperation(mapId, operation)));
     }
 
     private @Nullable DungeonInspectorSnapshot loadInspector(
@@ -159,11 +161,15 @@ final class BuildDungeonEditorSnapshotUseCase {
         if (selection.topologyRef().equals(DungeonTopologyElementRef.empty()) && !selection.clusterSelection()) {
             return null;
         }
-        return describeSelection.apply(new DescribeDungeonSelectionQuery(
+        DungeonAuthoredReadResult result = loadAuthored.apply(new DungeonAuthoredReadQuery.DescribeSelection(
                 mapId,
                 selection.topologyRef(),
                 selection.clusterId(),
                 selection.clusterSelection()));
+        if (result instanceof DungeonAuthoredReadResult.SelectionInspector selectionInspector) {
+            return selectionInspector.inspector();
+        }
+        throw new IllegalStateException("Dungeon-Read-Antwort enthielt keinen Inspektor.");
     }
 
     private static @Nullable DungeonMapId resolveSelectedMapId(
@@ -216,5 +222,12 @@ final class BuildDungeonEditorSnapshotUseCase {
         for (DungeonCellRef cell : cells == null ? List.<DungeonCellRef>of() : cells) {
             levels.add(cell.level());
         }
+    }
+
+    private static List<DungeonMapSummary> mapSummaries(@Nullable DungeonMapCatalogResponse response) {
+        if (response instanceof DungeonMapCatalogResponse.MapList mapList) {
+            return mapList.maps();
+        }
+        return List.of();
     }
 }

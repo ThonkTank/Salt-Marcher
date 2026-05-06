@@ -15,9 +15,9 @@ import src.domain.dungeon.published.DungeonTravelActionSnapshot;
 import src.domain.dungeon.published.DungeonTravelExternalTarget;
 import src.domain.dungeon.published.DungeonTravelMoveResult;
 import src.domain.dungeon.published.DungeonTravelPosition;
+import src.domain.dungeon.published.DungeonTravelRequest;
+import src.domain.dungeon.published.DungeonTravelResponse;
 import src.domain.dungeon.published.DungeonTravelSurfaceSnapshot;
-import src.domain.dungeon.published.LoadDungeonTravelSurfaceQuery;
-import src.domain.dungeon.published.MoveDungeonTravelActionCommand;
 import src.domain.party.PartyApplicationService;
 import src.domain.party.published.ActivePartyResult;
 import src.domain.party.published.LoadActivePartyQuery;
@@ -765,8 +765,8 @@ public final class TravelApplicationService {
                 DungeonApplicationService dungeonApplicationService,
                 ApplyTravelDungeonSessionUseCase.@Nullable PositionData position
         ) {
-            return toInternalSurface(dungeonApplicationService.loadTravelSurface(
-                    new LoadDungeonTravelSurfaceQuery(toDungeonPosition(position))));
+            return toInternalSurface(surfaceResponse(dungeonApplicationService.travel(
+                    new DungeonTravelRequest.LoadSurface(toDungeonPosition(position)))));
         }
 
         private static ApplyTravelDungeonSessionUseCase.MoveResultData moveDungeonAction(
@@ -774,8 +774,8 @@ public final class TravelApplicationService {
                 ApplyTravelDungeonSessionUseCase.@Nullable PositionData position,
                 String actionId
         ) {
-            return toInternalMoveResult(dungeonApplicationService.moveTravelAction(
-                    new MoveDungeonTravelActionCommand(toDungeonPosition(position), actionId)));
+            return toInternalMoveResult(moveResponse(dungeonApplicationService.travel(
+                    new DungeonTravelRequest.MoveAction(toDungeonPosition(position), actionId))));
         }
 
         private static ApplyTravelDungeonSessionUseCase.SurfaceData toInternalSurface(
@@ -961,6 +961,20 @@ public final class TravelApplicationService {
                     "Gruppe befindet sich ausserhalb des Dungeons",
                     "",
                     List.of());
+        }
+
+        private static @Nullable DungeonTravelSurfaceSnapshot surfaceResponse(@Nullable DungeonTravelResponse response) {
+            if (response instanceof DungeonTravelResponse.Surface surface) {
+                return surface.surface();
+            }
+            return null;
+        }
+
+        private static @Nullable DungeonTravelMoveResult moveResponse(@Nullable DungeonTravelResponse response) {
+            if (response instanceof DungeonTravelResponse.Move move) {
+                return move.result();
+            }
+            return null;
         }
     }
 

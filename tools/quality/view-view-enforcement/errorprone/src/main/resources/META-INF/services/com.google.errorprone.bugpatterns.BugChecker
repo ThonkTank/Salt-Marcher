@@ -1,3 +1,5 @@
+saltmarcher.quality.errorprone.view.view.PassiveViewLocalStateBoundaryChecker
+saltmarcher.quality.errorprone.view.view.PassiveViewProjectionConstructionBoundaryChecker
 saltmarcher.quality.errorprone.view.view.PassiveViewModelReadApisChecker
 saltmarcher.quality.errorprone.view.view.PassiveViewModelMutationBoundaryChecker
 saltmarcher.quality.errorprone.view.view.ViewPresentationDecisionLeakChecker

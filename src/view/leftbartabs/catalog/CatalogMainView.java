@@ -1,19 +1,19 @@
 package src.view.leftbartabs.catalog;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Consumer;
-import java.util.function.LongConsumer;
-import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.SimpleStringProperty;
-import javafx.beans.property.StringProperty;
-import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
+import javafx.collections.ListChangeListener;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.SelectionMode;
+import javafx.scene.control.SingleSelectionModel;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
@@ -26,18 +26,33 @@ import javafx.scene.layout.Region;
 
 public final class CatalogMainView extends BorderPane {
 
-    private final ObservableList<RowItem> items = FXCollections.observableArrayList();
-    private final TableView<RowItem> table = new TableView<>(items);
+    private static final int FIRST_COLUMN_INDEX = 0;
+    private static final int PREVIOUS_PAGE_SHIFT = -1;
+    private static final int NEXT_PAGE_SHIFT = 1;
+    private static final int NO_PAGE_SHIFT = 0;
+    private static final long NO_CREATURE_ID = 0L;
+    private static final String EMPTY_SORT_KEY = "";
+    private static final String ACTION_LABEL = "+Add";
+    private static final String ACTION_TOOLTIP = "Zum Encounter hinzufügen";
+    private static final String CREATURE_ACCESSIBLE_TEXT_PREFIX = "Stat Block: ";
+    private static final String ACTION_ACCESSIBLE_TEXT_PREFIX = ACTION_LABEL + ": ";
+    private static final String COLUMN_KEY_CHALLENGE_RATING = "cr";
+    private static final String COLUMN_KEY_TYPE = "type";
+    private static final String COLUMN_KEY_SIZE = "size";
+    private static final String COLUMN_KEY_XP = "xp";
+
+    private final TableView<CatalogContributionModel.CatalogRow> table = new TableView<>();
     private final Label placeholder = new Label("Lade Monster...");
     private final Label countLabel = new Label("0 Monster gefunden");
     private final Label pageLabel = new Label("Seite 1 / 1");
     private final Button previousButton = new Button("◀ Zurück");
     private final Button nextButton = new Button("Weiter ▶");
-    private final ComboBox<SortSelection> sortCombo = new ComboBox<>();
+    private final ComboBox<CatalogContributionModel.KeyLabel> sortCombo = new ComboBox<>();
+    private final TableView.TableViewSelectionModel<CatalogContributionModel.CatalogRow> tableSelectionModel =
+            table.getSelectionModel();
+    private final SingleSelectionModel<CatalogContributionModel.KeyLabel> sortSelectionModel =
+            sortCombo.getSelectionModel();
     private Consumer<CatalogMainViewInputEvent> viewInputEventHandler = ignored -> { };
-    private String rowActionLabel = "";
-    private String rowActionTooltip = "";
-    private boolean rowActionEnabled;
     private boolean suppressSortEvents;
 
     public CatalogMainView() {
@@ -54,258 +69,235 @@ public final class CatalogMainView extends BorderPane {
         Label sortLabel = new Label("Sortierung:");
         sortLabel.getStyleClass().add("text-muted");
         sortCombo.setOnAction(event -> {
-            SortSelection selection = sortCombo.getValue();
+            CatalogContributionModel.KeyLabel selection = sortSelectionModel.getSelectedItem();
             if (!suppressSortEvents && selection != null) {
                 viewInputEventHandler.accept(new CatalogMainViewInputEvent(
                         selection.key(),
-                        0L,
-                        0L,
-                        0));
+                        NO_CREATURE_ID,
+                        NO_CREATURE_ID,
+                        NO_PAGE_SHIFT));
             }
         });
         topBar.getChildren().addAll(countLabel, spacer, sortLabel, sortCombo);
         setTop(topBar);
 
         table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
-        table.getSelectionModel().setSelectionMode(SelectionMode.SINGLE);
+        tableSelectionModel.setSelectionMode(SelectionMode.SINGLE);
         table.setPlaceholder(placeholder);
         table.setOnKeyPressed(event -> {
-            RowItem row = table.getSelectionModel().getSelectedItem();
-            if (row == null) {
+            if (event.getCode() != KeyCode.ENTER) {
                 return;
             }
-            if (event.getCode() == KeyCode.ENTER && !event.isShiftDown()) {
-                fireOpen(row.id());
-                event.consume();
-            } else if (event.getCode() == KeyCode.ENTER && event.isShiftDown()) {
-                if (rowActionEnabled) {
-                    viewInputEventHandler.accept(new CatalogMainViewInputEvent(
-                            "",
-                            0L,
-                            row.id(),
-                            0));
-                }
-                event.consume();
+            CatalogContributionModel.CatalogRow selectedRow = tableSelectionModel.getSelectedItem();
+            if (selectedRow == null) {
+                return;
             }
+            viewInputEventHandler.accept(event.isShiftDown()
+                    ? new CatalogMainViewInputEvent(EMPTY_SORT_KEY, NO_CREATURE_ID, selectedRow.id(), NO_PAGE_SHIFT)
+                    : new CatalogMainViewInputEvent(EMPTY_SORT_KEY, selectedRow.id(), NO_CREATURE_ID, NO_PAGE_SHIFT));
+            event.consume();
         });
         setCenter(table);
 
         previousButton.setOnAction(event -> viewInputEventHandler.accept(new CatalogMainViewInputEvent(
-                "",
-                0L,
-                0L,
-                -1)));
+                EMPTY_SORT_KEY,
+                NO_CREATURE_ID,
+                NO_CREATURE_ID,
+                PREVIOUS_PAGE_SHIFT)));
         nextButton.setOnAction(event -> viewInputEventHandler.accept(new CatalogMainViewInputEvent(
-                "",
-                0L,
-                0L,
-                1)));
+                EMPTY_SORT_KEY,
+                NO_CREATURE_ID,
+                NO_CREATURE_ID,
+                NEXT_PAGE_SHIFT)));
         HBox pagination = new HBox(8, previousButton, pageLabel, nextButton);
         pagination.setAlignment(Pos.CENTER);
         pagination.setPadding(new Insets(6, 0, 0, 0));
         setBottom(pagination);
     }
 
-    public void setColumns(List<ColumnItem> columns) {
-        table.getColumns().clear();
-        List<ColumnItem> safeColumns = columns == null ? List.of() : List.copyOf(columns);
-        for (int index = 0; index < safeColumns.size(); index++) {
-            ColumnItem column = safeColumns.get(index);
-            TableColumn<RowItem, String> tableColumn = new TableColumn<>(column.label());
-            tableColumn.setUserData(column);
-            int cellIndex = index;
-            tableColumn.setCellValueFactory(data ->
-                    new SimpleStringProperty(data.getValue().cell(cellIndex)));
-            configureColumn(tableColumn, column, index);
-            table.getColumns().add(tableColumn);
+    public void bind(CatalogContributionModel contributionModel) {
+        if (contributionModel == null) {
+            return;
         }
-        if (rowActionEnabled) {
-            table.getColumns().add(actionColumn());
-        }
-    }
-
-    public void setRows(List<RowItem> rows) {
-        items.setAll(rows == null ? List.of() : rows);
-    }
-
-    public void setPlaceholderText(String text) {
-        placeholder.setText(text == null ? "" : text);
-    }
-
-    public void setSortOptions(List<SortSelection> selections) {
-        sortCombo.setItems(FXCollections.observableArrayList(selections == null ? List.of() : selections));
-    }
-
-    public void selectSort(String key) {
-        suppressSortEvents = true;
-        for (SortSelection selection : sortCombo.getItems()) {
-            if (selection.key().equals(key)) {
-                sortCombo.getSelectionModel().select(selection);
-                suppressSortEvents = false;
-                return;
-            }
-        }
-        suppressSortEvents = false;
-    }
-
-    public StringProperty countTextProperty() {
-        return countLabel.textProperty();
-    }
-
-    public StringProperty pageTextProperty() {
-        return pageLabel.textProperty();
-    }
-
-    public BooleanProperty previousDisableProperty() {
-        return previousButton.disableProperty();
-    }
-
-    public BooleanProperty nextDisableProperty() {
-        return nextButton.disableProperty();
+        countLabel.textProperty().bind(contributionModel.countLabelProperty());
+        pageLabel.textProperty().bind(contributionModel.pageLabelProperty());
+        placeholder.textProperty().bind(contributionModel.placeholderTextProperty());
+        previousButton.disableProperty().bind(contributionModel.previousPageAvailableProperty().not());
+        nextButton.disableProperty().bind(contributionModel.nextPageAvailableProperty().not());
+        sortCombo.setItems(contributionModel.sortOptionsProperty());
+        table.setItems(contributionModel.rowsProperty());
+        contributionModel.columnsProperty().addListener(
+                (ListChangeListener<CatalogContributionModel.KeyLabel>) change ->
+                        refreshColumns(contributionModel.columnsProperty()));
+        contributionModel.selectedSortKeyProperty().addListener((obs, before, after) -> selectSortKey(after));
+        refreshColumns(contributionModel.columnsProperty());
+        selectSortKey(contributionModel.selectedSortKeyProperty().get());
     }
 
     public void onViewInputEvent(Consumer<CatalogMainViewInputEvent> handler) {
         viewInputEventHandler = handler == null ? ignored -> { } : handler;
     }
 
-    public void setRowAction(String label, String tooltip, boolean enabled) {
-        rowActionLabel = label == null ? "" : label;
-        rowActionTooltip = tooltip == null ? "" : tooltip;
-        rowActionEnabled = enabled;
-        List<ColumnItem> existingColumns = table.getColumns().stream()
-                .map(TableColumn::getUserData)
-                .filter(ColumnItem.class::isInstance)
-                .map(ColumnItem.class::cast)
-                .toList();
-        if (!existingColumns.isEmpty()) {
-            setColumns(existingColumns);
+    private void refreshColumns(List<CatalogContributionModel.KeyLabel> columns) {
+        List<CatalogContributionModel.KeyLabel> safeColumns = columns == null ? List.of() : List.copyOf(columns);
+        List<TableColumn<CatalogContributionModel.CatalogRow, ?>> configuredColumns =
+                new ArrayList<>(safeColumns.size() + 1);
+        for (int index = 0; index < safeColumns.size(); index++) {
+            configuredColumns.add(createColumn(safeColumns.get(index), index));
         }
+        configuredColumns.add(createActionColumn());
+        table.getColumns().setAll(configuredColumns);
     }
 
-    private void configureColumn(TableColumn<RowItem, String> column, ColumnItem item, int index) {
-        if (index == 0) {
-            column.setMinWidth(120);
-            column.setPrefWidth(200);
-            column.setCellFactory(ignored -> new LinkCell());
-        } else if ("cr".equals(item.key())) {
-            column.setMinWidth(40);
-            column.setPrefWidth(50);
-            column.setMaxWidth(60);
-        } else if ("type".equals(item.key())) {
-            column.setMinWidth(80);
-            column.setPrefWidth(110);
-            column.setMaxWidth(150);
-        } else if ("size".equals(item.key())) {
-            column.setMinWidth(65);
-            column.setPrefWidth(85);
-            column.setMaxWidth(100);
-        } else if ("xp".equals(item.key())) {
-            column.setMinWidth(45);
-            column.setPrefWidth(60);
-            column.setMaxWidth(75);
-        } else {
-            column.setMinWidth(70);
-            column.setPrefWidth(110);
+    private TableColumn<CatalogContributionModel.CatalogRow, ?> createColumn(
+            CatalogContributionModel.KeyLabel column,
+            int index
+    ) {
+        return index == FIRST_COLUMN_INDEX ? createLinkColumn(column) : createTextColumn(column, index);
+    }
+
+    private TableColumn<CatalogContributionModel.CatalogRow, String> createTextColumn(
+            CatalogContributionModel.KeyLabel column,
+            int index
+    ) {
+        TableColumn<CatalogContributionModel.CatalogRow, String> textColumn = new TableColumn<>(column.label());
+        textColumn.setCellValueFactory(data -> {
+            CatalogContributionModel.CatalogRow row = data.getValue();
+            return new SimpleStringProperty(row == null ? "" : row.cell(index));
+        });
+        double minWidth = 70;
+        double prefWidth = 110;
+        double maxWidth = Double.NaN;
+        switch (column.key()) {
+            case COLUMN_KEY_CHALLENGE_RATING -> {
+                minWidth = 40;
+                prefWidth = 50;
+                maxWidth = 60;
+            }
+            case COLUMN_KEY_TYPE -> {
+                minWidth = 80;
+                prefWidth = 110;
+                maxWidth = 150;
+            }
+            case COLUMN_KEY_SIZE -> {
+                minWidth = 65;
+                prefWidth = 85;
+                maxWidth = 100;
+            }
+            case COLUMN_KEY_XP -> {
+                minWidth = 45;
+                prefWidth = 60;
+                maxWidth = 75;
+            }
+            default -> {
+            }
         }
+        textColumn.setMinWidth(minWidth);
+        textColumn.setPrefWidth(prefWidth);
+        if (!Double.isNaN(maxWidth)) {
+            textColumn.setMaxWidth(maxWidth);
+        }
+        return textColumn;
     }
 
-    private void fireOpen(long id) {
-        viewInputEventHandler.accept(new CatalogMainViewInputEvent(
-                "",
-                id,
-                0L,
-                0));
+    private TableColumn<CatalogContributionModel.CatalogRow, CatalogContributionModel.CatalogRow> createLinkColumn(
+            CatalogContributionModel.KeyLabel column
+    ) {
+        TableColumn<CatalogContributionModel.CatalogRow, CatalogContributionModel.CatalogRow> linkColumn =
+                new TableColumn<>(column.label());
+        linkColumn.setMinWidth(120);
+        linkColumn.setPrefWidth(200);
+        linkColumn.setCellValueFactory(data -> new ReadOnlyObjectWrapper<>(data.getValue()));
+        linkColumn.setCellFactory(ignored -> new LinkCell(row ->
+                viewInputEventHandler.accept(new CatalogMainViewInputEvent(
+                        EMPTY_SORT_KEY,
+                        row.id(),
+                        NO_CREATURE_ID,
+                        NO_PAGE_SHIFT))));
+        return linkColumn;
     }
 
-    private TableColumn<RowItem, Void> actionColumn() {
-        TableColumn<RowItem, Void> column = new TableColumn<>("");
-        column.setUserData("action");
+    private TableColumn<CatalogContributionModel.CatalogRow, CatalogContributionModel.CatalogRow> createActionColumn() {
+        TableColumn<CatalogContributionModel.CatalogRow, CatalogContributionModel.CatalogRow> column =
+                new TableColumn<>("");
         column.setMinWidth(55);
         column.setPrefWidth(65);
         column.setMaxWidth(75);
         column.setSortable(false);
-        column.setCellFactory(ignored -> new TableCell<>() {
-            private final Button button = new Button();
-            private final Tooltip tooltip = new Tooltip();
-
-            {
-                button.getStyleClass().addAll("accent", "compact");
-                button.setTooltip(tooltip);
-                button.setOnAction(event -> {
-                    RowItem row = getTableRow() == null ? null : getTableRow().getItem();
-                    if (row != null && rowActionEnabled) {
-                        viewInputEventHandler.accept(new CatalogMainViewInputEvent(
-                                "",
-                                0L,
-                                row.id(),
-                                0));
-                    }
-                });
-            }
-
-            @Override
-            protected void updateItem(Void value, boolean empty) {
-                super.updateItem(null, empty);
-                RowItem row = getTableRow() == null ? null : getTableRow().getItem();
-                if (empty || row == null) {
-                    setGraphic(null);
-                    return;
-                }
-                button.setText(rowActionLabel);
-                tooltip.setText(rowActionTooltip);
-                button.setAccessibleText(rowActionLabel + ": " + row.cell(0));
-                setGraphic(button);
-            }
-        });
+        column.setCellValueFactory(data -> new ReadOnlyObjectWrapper<>(data.getValue()));
+        column.setCellFactory(ignored -> new ActionCell(row ->
+                viewInputEventHandler.accept(new CatalogMainViewInputEvent(
+                        EMPTY_SORT_KEY,
+                        NO_CREATURE_ID,
+                        row.id(),
+                        NO_PAGE_SHIFT))));
         return column;
     }
 
-    public record ColumnItem(String key, String label) {
-    }
-
-    public record RowItem(long id, List<String> cells) {
-        public RowItem {
-            cells = cells == null ? List.of() : List.copyOf(cells);
-        }
-
-        String cell(int index) {
-            return index >= 0 && index < cells.size() ? cells.get(index) : "";
-        }
-    }
-
-    public record SortSelection(String key, String label) {
-        @Override
-        public String toString() {
-            return label;
+    private void selectSortKey(String key) {
+        suppressSortEvents = true;
+        try {
+            for (CatalogContributionModel.KeyLabel selection : sortCombo.getItems()) {
+                if (Objects.equals(selection.key(), key)) {
+                    sortSelectionModel.select(selection);
+                    return;
+                }
+            }
+        } finally {
+            suppressSortEvents = false;
         }
     }
 
-    private final class LinkCell extends TableCell<RowItem, String> {
+    private static final class LinkCell extends TableCell<CatalogContributionModel.CatalogRow, CatalogContributionModel.CatalogRow> {
 
         private final Button button = new Button();
 
-        LinkCell() {
+        LinkCell(Consumer<CatalogContributionModel.CatalogRow> openAction) {
             button.getStyleClass().addAll("creature-link", "flat");
             button.setOnAction(event -> {
-                RowItem row = getTableRow() == null ? null : getTableRow().getItem();
+                CatalogContributionModel.CatalogRow row = getItem();
                 if (row != null) {
-                    fireOpen(row.id());
+                    openAction.accept(row);
                 }
             });
         }
 
         @Override
-        protected void updateItem(String value, boolean empty) {
-            super.updateItem(value, empty);
-            if (empty || value == null) {
-                setText(null);
-                setGraphic(null);
-                return;
-            }
-            button.setText(value);
-            button.setAccessibleText("Stat Block: " + value);
+        protected void updateItem(CatalogContributionModel.CatalogRow row, boolean empty) {
+            super.updateItem(row, empty);
+            CatalogContributionModel.CatalogRow displayRow = empty ? null : row;
+            String creatureName = displayRow == null ? "" : displayRow.cell(FIRST_COLUMN_INDEX);
+            button.setText(creatureName);
+            button.setAccessibleText(displayRow == null ? "" : CREATURE_ACCESSIBLE_TEXT_PREFIX + creatureName);
             setText(null);
-            setGraphic(button);
+            setGraphic(displayRow == null ? null : button);
+        }
+    }
+
+    private static final class ActionCell extends TableCell<CatalogContributionModel.CatalogRow, CatalogContributionModel.CatalogRow> {
+
+        private final Button button = new Button(ACTION_LABEL);
+        private final Tooltip tooltip = new Tooltip(ACTION_TOOLTIP);
+
+        ActionCell(Consumer<CatalogContributionModel.CatalogRow> action) {
+            button.getStyleClass().addAll("accent", "compact");
+            button.setTooltip(tooltip);
+            button.setOnAction(event -> {
+                CatalogContributionModel.CatalogRow row = getItem();
+                if (row != null) {
+                    action.accept(row);
+                }
+            });
+        }
+
+        @Override
+        protected void updateItem(CatalogContributionModel.CatalogRow row, boolean empty) {
+            super.updateItem(row, empty);
+            CatalogContributionModel.CatalogRow displayRow = empty ? null : row;
+            button.setAccessibleText(displayRow == null
+                    ? ""
+                    : ACTION_ACCESSIBLE_TEXT_PREFIX + displayRow.cell(FIRST_COLUMN_INDEX));
+            setGraphic(displayRow == null ? null : button);
         }
     }
 }

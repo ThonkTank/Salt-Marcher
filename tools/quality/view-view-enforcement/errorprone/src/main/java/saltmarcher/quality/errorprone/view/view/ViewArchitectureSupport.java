@@ -1,10 +1,12 @@
 package saltmarcher.quality.errorprone.view.view;
 
 import com.google.errorprone.util.ASTHelpers;
+import com.sun.source.tree.ClassTree;
 import com.sun.source.tree.CompilationUnitTree;
 import com.sun.source.tree.MemberSelectTree;
 import com.sun.source.tree.Tree;
 import com.sun.source.util.TreePathScanner;
+import com.sun.source.util.TreeScanner;
 import com.sun.tools.javac.code.Symbol;
 import java.util.LinkedHashSet;
 import java.util.Set;
@@ -74,6 +76,26 @@ final class ViewArchitectureSupport {
         return sourceFileName;
     }
 
+    static String qualifiedTopLevelTypeName(CompilationUnitTree tree) {
+        String packageName = packageName(tree);
+        String topLevelSimpleName = topLevelSimpleName(tree);
+        return packageName.isBlank() ? topLevelSimpleName : packageName + "." + topLevelSimpleName;
+    }
+
+    static ClassTree topLevelClass(CompilationUnitTree tree) {
+        ClassTree[] result = {null};
+        new TreeScanner<Void, Void>() {
+            @Override
+            public Void visitClass(ClassTree classTree, Void unused) {
+                if (result[0] == null) {
+                    result[0] = classTree;
+                }
+                return null;
+            }
+        }.scan(tree, null);
+        return result[0];
+    }
+
     private static String sourceFileName(CompilationUnitTree tree) {
         if (tree.getSourceFile() == null) {
             return "";
@@ -118,7 +140,7 @@ final class ViewArchitectureSupport {
         }
     }
 
-    private static String getQualifiedTypeName(Symbol symbol) {
+    static String getQualifiedTypeName(Symbol symbol) {
         if (symbol instanceof Symbol.ClassSymbol classSymbol) {
             return classSymbol.getQualifiedName().toString();
         }
@@ -136,6 +158,11 @@ final class ViewArchitectureSupport {
             return classSymbol.getQualifiedName().toString();
         }
         return null;
+    }
+
+    static boolean isApplicationServiceReference(String referencedType) {
+        return referencedType != null
+                && referencedType.matches("^src\\.domain\\.[^.]+\\.[^.]+ApplicationService((\\$|\\.).*)?$");
     }
 
     static boolean isPrimitiveViewPackage(String packageName) {
@@ -363,6 +390,36 @@ final class ViewArchitectureSupport {
     private static boolean isTargetViewInputEventReference(String referencedType) {
         ViewTypeInfo viewType = parseViewType(referencedType);
         return viewType != null && "VIEW_INPUT_EVENT".equals(viewType.bucket());
+    }
+
+    static boolean isTopLevelViewInputEventReference(String referencedType) {
+        return isTargetViewInputEventReference(referencedType)
+                && referencedType != null
+                && referencedType.equals(topLevelQualifiedTypeNameOf(referencedType))
+                && topLevelQualifiedTypeNameOf(referencedType).endsWith("ViewInputEvent");
+    }
+
+    static boolean isTargetPublishedEventReference(String referencedType) {
+        ViewTypeInfo viewType = parseViewType(referencedType);
+        return viewType != null && "PUBLISHED_EVENT".equals(viewType.bucket());
+    }
+
+    static String topLevelQualifiedTypeNameOf(String referencedType) {
+        if (referencedType == null || referencedType.isBlank()) {
+            return "";
+        }
+        String sanitizedType = referencedType.replaceFirst("\\$.*$", "");
+        int nestedSeparator = sanitizedType.indexOf('.', packageNameOf(sanitizedType).length() + 1);
+        if (nestedSeparator < 0) {
+            return sanitizedType;
+        }
+        return sanitizedType.substring(0, nestedSeparator);
+    }
+
+    static Set<String> collectTypeReferences(TypeMirror typeMirror) {
+        Set<String> referencedTypes = new LinkedHashSet<>();
+        collectTypeReferences(typeMirror, referencedTypes);
+        return referencedTypes;
     }
 
     static boolean isFunctionalInterface(TypeMirror typeMirror) {

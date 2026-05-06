@@ -42,8 +42,9 @@ runtime position path as action-driven movement.
 
 - the shared map-canvas seam is now implemented through `MapCanvasView`,
   `MapRenderScene`, and `DungeonMapCanvasAdapter`
-- public dungeon surface-family cleanup inside `DungeonApplicationService`
-  remains separate compatibility debt and is not yet part of this delivery pass
+- remaining parity debt is now outside the old `DungeonApplicationService`
+  one-off boundary-carrier cleanup, which has been replaced by the four
+  canonical dungeon boundary families
 
 ## Open Delivery Questions
 

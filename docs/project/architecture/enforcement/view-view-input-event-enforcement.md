@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-05-02
+Last Reviewed: 2026-05-05
 Source of Truth: Mechanically enforced and review-owned invariants for
 `*ViewInputEvent` carriers in `src/view/**`.
 
@@ -63,6 +63,7 @@ Unified focused bundle entrypoint:
 | `view-viewinputevent-no-foreign-view-role-references` | Enforced | every `*ViewInputEvent.java` under `src/view/**` | Error Prone `ViewInputEventBoundary` | `./gradlew compileJava` | A `*ViewInputEvent` does not reference foreign `src/view/**` role families such as `*View`, `*Binder`, `*ContributionModel`, `*ContentModel`, `*IntentHandler`, `*PublishedEvent`, legacy view-role buckets, or support files outside the carrier's own type boundary. |
 | `view-viewinputevent-no-outer-layer-dependencies` | Enforced | every `*ViewInputEvent.java` under `src/view/**` | Error Prone `ViewInputEventBoundary` and ArchUnit `viewInputEventsMustStayShellDomainDataAndServiceFree` | `./gradlew compileJava` and `./gradlew checkViewInputEventEnforcement` | A `*ViewInputEvent` does not depend on `shell/**`, `bootstrap/**`, `src/domain/**`, `src/data/**`, or root `*ApplicationService` boundaries. |
 | `view-viewinputevent-no-nonview-top-level-production` | Enforced | every top-level `*ViewInputEvent` construction or top-level static `*ViewInputEvent` API call in `src/view/**` | Error Prone `ViewInputEventBoundary` | `./gradlew compileJava` | Top-level `*ViewInputEvent` carriers are constructed only by their same-stem passive `View`; Binder, `IntentHandler`, model, contribution, and foreign `View` code do not synthesize or factory-call those carriers. |
+| `view-viewinputevent-no-pre-intenthandler-semantic-snapshot-reconstruction` | Enforced | every top-level same-stem `*ViewInputEvent` construction in a passive `*View.java` | Error Prone `ViewInputEventRawSnapshotBoundary` | `./gradlew compileJava` and `./gradlew checkViewInputEventEnforcement` | The same-stem passive `View` constructs its top-level `*ViewInputEvent` directly from current raw widget or raw event state rather than through same-view semantic helper methods, same-view sentinel constants, or hidden model/published/domain/data dependencies. |
 | `view-viewinputevent-no-dead-snapshot-components` | Enforced | every record-shaped `*ViewInputEvent.java` with a co-located `IntentHandler.consume(...)` overload | ArchUnit `viewInputEventsMustNotDeclareDeadSnapshotComponents` | `./gradlew checkViewInputEventEnforcement` | Every top-level `*ViewInputEvent` record component is read somewhere by the co-located `IntentHandler.consume(...)` entrypoint instead of remaining dead carrier baggage. |
 
 ### Review-Owned Carrier Semantics

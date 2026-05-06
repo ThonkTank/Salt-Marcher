@@ -34,31 +34,19 @@ public record CatalogControlsViewInputEvent(
 ) {
 
     public CatalogControlsViewInputEvent {
-        nameQuery = normalized(nameQuery);
-        challengeRatingMin = normalized(challengeRatingMin);
-        challengeRatingMax = normalized(challengeRatingMax);
-        sizes = copyStrings(sizes);
-        types = copyStrings(types);
-        subtypes = copyStrings(subtypes);
-        biomes = copyStrings(biomes);
-        alignments = copyStrings(alignments);
-        sizePopupQuery = normalized(sizePopupQuery);
-        typePopupQuery = normalized(typePopupQuery);
-        subtypePopupQuery = normalized(subtypePopupQuery);
-        biomePopupQuery = normalized(biomePopupQuery);
-        alignmentPopupQuery = normalized(alignmentPopupQuery);
-        encounterTableIds = copyLongs(encounterTableIds);
-    }
-
-    private static String normalized(String value) {
-        return value == null ? "" : value;
-    }
-
-    private static List<String> copyStrings(List<String> values) {
-        return values == null ? List.of() : List.copyOf(values);
-    }
-
-    private static List<Long> copyLongs(List<Long> values) {
-        return values == null ? List.of() : List.copyOf(values);
+        nameQuery = nameQuery == null ? "" : nameQuery;
+        challengeRatingMin = challengeRatingMin == null ? "" : challengeRatingMin;
+        challengeRatingMax = challengeRatingMax == null ? "" : challengeRatingMax;
+        sizes = sizes == null ? List.of() : List.copyOf(sizes);
+        types = types == null ? List.of() : List.copyOf(types);
+        subtypes = subtypes == null ? List.of() : List.copyOf(subtypes);
+        biomes = biomes == null ? List.of() : List.copyOf(biomes);
+        alignments = alignments == null ? List.of() : List.copyOf(alignments);
+        sizePopupQuery = sizePopupQuery == null ? "" : sizePopupQuery;
+        typePopupQuery = typePopupQuery == null ? "" : typePopupQuery;
+        subtypePopupQuery = subtypePopupQuery == null ? "" : subtypePopupQuery;
+        biomePopupQuery = biomePopupQuery == null ? "" : biomePopupQuery;
+        alignmentPopupQuery = alignmentPopupQuery == null ? "" : alignmentPopupQuery;
+        encounterTableIds = encounterTableIds == null ? List.of() : List.copyOf(encounterTableIds);
     }
 }

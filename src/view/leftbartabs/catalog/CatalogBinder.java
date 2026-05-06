@@ -3,8 +3,6 @@ package src.view.leftbartabs.catalog;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import javafx.beans.property.ReadOnlyListProperty;
-import javafx.collections.ListChangeListener;
 import javafx.scene.Node;
 import shell.api.InspectorSink;
 import shell.api.ShellBinding;
@@ -50,7 +48,7 @@ final class CatalogBinder {
         CatalogControlsView controls = new CatalogControlsView(presentationModel);
         CatalogMainView main = new CatalogMainView();
 
-        bindControls(presentationModel, intentHandler, controls, sessionModel, encounters);
+        bindControls(intentHandler, controls, sessionModel, encounters);
         bindMain(main, presentationModel, intentHandler);
 
         presentationModel.searchCycleProperty().addListener((obs, before, after) -> runSearch(creatures, presentationModel));
@@ -71,7 +69,6 @@ final class CatalogBinder {
                 presentationModel.beginSearch();
                 presentationModel.advanceSearchCycle();
             }
-            encounters.loadTuningPreview(new LoadEncounterTuningPreviewQuery());
         });
 
         presentationModel.applyCreatureFilterOptions(filterOptionsModel.current());
@@ -88,7 +85,6 @@ final class CatalogBinder {
     }
 
     private static void bindControls(
-            CatalogContributionModel presentationModel,
             CatalogIntentHandler intentHandler,
             CatalogControlsView controls,
             EncounterSessionModel sessionModel,
@@ -103,22 +99,8 @@ final class CatalogBinder {
             CatalogContributionModel presentationModel,
             CatalogIntentHandler intentHandler
     ) {
-        main.setRowAction("+Add", "Zum Encounter hinzufügen", true);
-        main.setSortOptions(presentationModel.sortOptionsProperty().stream().map(CatalogBinder::toMainSort).toList());
-        main.selectSort(presentationModel.selectedSortKeyProperty().get());
-        main.setColumns(presentationModel.columnsProperty().stream().map(CatalogBinder::toMainColumn).toList());
-        ReadOnlyListProperty<CatalogContributionModel.CatalogRow> rows = presentationModel.rowsProperty();
-        main.setRows(rows.stream().map(CatalogBinder::toMainRow).toList());
-        main.setPlaceholderText(presentationModel.placeholderTextProperty().get());
+        main.bind(presentationModel);
         main.onViewInputEvent(intentHandler::consume);
-        main.countTextProperty().bind(presentationModel.countLabelProperty());
-        main.pageTextProperty().bind(presentationModel.pageLabelProperty());
-        main.previousDisableProperty().bind(presentationModel.previousPageAvailableProperty().not());
-        main.nextDisableProperty().bind(presentationModel.nextPageAvailableProperty().not());
-        rows.addListener((ListChangeListener<CatalogContributionModel.CatalogRow>) change ->
-                main.setRows(rows.stream().map(CatalogBinder::toMainRow).toList()));
-        presentationModel.placeholderTextProperty().addListener((obs, oldValue, newValue) -> main.setPlaceholderText(newValue));
-        presentationModel.selectedSortKeyProperty().addListener((obs, oldValue, newValue) -> main.selectSort(newValue));
     }
 
     private static void openCreatureDetails(
@@ -179,11 +161,11 @@ final class CatalogBinder {
                         event.creatureTypes(),
                         event.creatureSubtypes(),
                         event.biomes(),
-                        toDifficultyBand(event.difficultyKey()),
+                        toDifficultyBand(event.difficultyAuto(), event.difficultyValue()),
                         new EncounterGenerationTuning(
-                                event.balanceLevel(),
-                                event.amountValue(),
-                                event.diversityLevel()),
+                                toBalanceLevel(event.balanceAuto(), event.balanceValue()),
+                                toAmountValue(event.amountAuto(), event.amountValue()),
+                                toDiversityLevel(event.diversityAuto(), event.diversityValue())),
                         event.encounterTableIds()),
                 0L,
                 0L,
@@ -225,32 +207,33 @@ final class CatalogBinder {
         }
     }
 
-    private static CatalogMainView.ColumnItem toMainColumn(CatalogContributionModel.CatalogColumn column) {
-        return new CatalogMainView.ColumnItem(column.key(), column.label());
-    }
-
-    private static CatalogMainView.SortSelection toMainSort(CatalogContributionModel.SortSelection selection) {
-        return new CatalogMainView.SortSelection(selection.key(), selection.label());
-    }
-
-    private static CatalogMainView.RowItem toMainRow(CatalogContributionModel.CatalogRow row) {
-        return new CatalogMainView.RowItem(row.id(), row.cells());
-    }
-
-    private static EncounterDifficultyBand toDifficultyBand(String key) {
-        if ("auto".equals(key)) {
+    private static EncounterDifficultyBand toDifficultyBand(boolean auto, double value) {
+        if (auto) {
             return EncounterDifficultyBand.AUTO;
         }
-        if ("easy".equals(key)) {
+        int rounded = (int) Math.round(value);
+        if (rounded <= 1) {
             return EncounterDifficultyBand.EASY;
         }
-        if ("hard".equals(key)) {
+        if (rounded == 3) {
             return EncounterDifficultyBand.HARD;
         }
-        if ("deadly".equals(key)) {
+        if (rounded >= 4) {
             return EncounterDifficultyBand.DEADLY;
         }
         return EncounterDifficultyBand.MEDIUM;
+    }
+
+    private static int toBalanceLevel(boolean auto, double value) {
+        return auto ? EncounterGenerationTuning.AUTO_BALANCE_LEVEL : (int) Math.round(value);
+    }
+
+    private static double toAmountValue(boolean auto, double value) {
+        return auto ? EncounterGenerationTuning.AUTO_AMOUNT_VALUE : value;
+    }
+
+    private static int toDiversityLevel(boolean auto, double value) {
+        return auto ? EncounterGenerationTuning.AUTO_DIVERSITY_LEVEL : (int) Math.round(value);
     }
 
     private record Binding(Node controls, Node main) implements ShellBinding {

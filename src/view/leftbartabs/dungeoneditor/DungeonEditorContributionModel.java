@@ -37,7 +37,7 @@ public final class DungeonEditorContributionModel {
     private final ReadOnlyBooleanWrapper busy = new ReadOnlyBooleanWrapper(false);
     private final ReadOnlyStringWrapper viewModeLabel = new ReadOnlyStringWrapper("Grid");
     private final ReadOnlyObjectWrapper<OverlayProjection> overlayProjection =
-            new ReadOnlyObjectWrapper<>(new OverlayProjection("OFF", 2, 0.35, List.of()));
+            new ReadOnlyObjectWrapper<>(new OverlayProjection("OFF", 2, 0.35, List.of(), ""));
     private final ReadOnlyObjectWrapper<List<RoomNarrationCardProjection>> narrationCards =
             new ReadOnlyObjectWrapper<>(List.of());
     private final ReadOnlyIntegerWrapper projectionLevel = new ReadOnlyIntegerWrapper(0);
@@ -181,10 +181,6 @@ public final class DungeonEditorContributionModel {
         return mapEditorUiState.get();
     }
 
-    ToolPaletteUiState currentToolPaletteUiState() {
-        return toolPaletteUiState.get();
-    }
-
     void openCreateMapEditor() {
         mapEditorUiState.set(MapEditorUiState.create("Dungeon"));
     }
@@ -231,15 +227,14 @@ public final class DungeonEditorContributionModel {
         }
     }
 
-    void openToolPalette(DungeonEditorControlsViewInputEvent.ToolFamily family) {
+    void openToolPalette(ToolFamily family) {
         if (family == null) {
             return;
         }
-        ToolFamily paletteFamily = ToolFamily.valueOf(family.name());
-        if (toolPaletteUiState.get().visible() && toolPaletteUiState.get().family() == paletteFamily) {
+        if (toolPaletteUiState.get().visible() && toolPaletteUiState.get().family() == family) {
             return;
         }
-        toolPaletteUiState.set(ToolPaletteUiState.open(paletteFamily));
+        toolPaletteUiState.set(ToolPaletteUiState.open(family));
     }
 
     void closeToolPalette() {
@@ -271,7 +266,7 @@ public final class DungeonEditorContributionModel {
 
     private static String overlayLabel(@Nullable OverlayProjection overlayProjection) {
         OverlayProjection safeOverlay = overlayProjection == null
-                ? new OverlayProjection("OFF", 2, 0.35, List.of())
+                ? new OverlayProjection("OFF", 2, 0.35, List.of(), "")
                 : overlayProjection;
         return switch (safeOverlay.modeKey()) {
             case "NEARBY" -> "Nahe Ebenen";
@@ -397,7 +392,17 @@ public final class DungeonEditorContributionModel {
                 safeOverlay.modeKey(),
                 safeOverlay.levelRange(),
                 safeOverlay.opacity(),
-                safeOverlay.selectedLevels());
+                safeOverlay.selectedLevels(),
+                formatSelectedLevels(safeOverlay.selectedLevels()));
+    }
+
+    private static String formatSelectedLevels(@Nullable List<Integer> selectedLevels) {
+        if (selectedLevels == null || selectedLevels.isEmpty()) {
+            return "";
+        }
+        return selectedLevels.stream()
+                .map(String::valueOf)
+                .collect(java.util.stream.Collectors.joining(", "));
     }
 
     private static List<RoomNarrationCardProjection> toNarrationCards(@Nullable DungeonEditorInspectorSnapshot inspector) {
@@ -463,13 +468,15 @@ public final class DungeonEditorContributionModel {
             String modeKey,
             int levelRange,
             double opacity,
-            List<Integer> selectedLevels
+            List<Integer> selectedLevels,
+            String selectedLevelsText
     ) {
         public OverlayProjection {
             modeKey = modeKey == null || modeKey.isBlank() ? "OFF" : modeKey;
             levelRange = Math.max(0, levelRange);
             opacity = Math.max(0.0, Math.min(1.0, opacity));
             selectedLevels = selectedLevels == null ? List.of() : List.copyOf(selectedLevels);
+            selectedLevelsText = selectedLevelsText == null ? "" : selectedLevelsText.strip();
         }
     }
 

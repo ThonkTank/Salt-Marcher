@@ -1,1 +1,2 @@
 saltmarcher.quality.errorprone.view.viewinputevent.ViewInputEventBoundaryChecker
+saltmarcher.quality.errorprone.view.viewinputevent.ViewInputEventRawSnapshotBoundaryChecker

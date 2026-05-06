@@ -1,3 +1,8 @@
+val repoRootDir = file("../../../..").canonicalFile
+if (System.getProperty("saltmarcher.repoRootDir").isNullOrBlank()) {
+    System.setProperty("saltmarcher.repoRootDir", repoRootDir.absolutePath)
+}
+
 pluginManagement {
     repositories {
         gradlePluginPortal()

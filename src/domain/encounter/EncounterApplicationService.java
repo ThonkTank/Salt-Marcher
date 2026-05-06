@@ -155,29 +155,31 @@ public final class EncounterApplicationService {
 
     public EncounterTuningPreviewResult loadTuningPreview(LoadEncounterTuningPreviewQuery query) {
         Objects.requireNonNull(query, QUERY_PARAMETER);
+        currentTuningPreview = refreshTuningPreview();
+        notifyTuningPreviewListeners(currentTuningPreview);
+        return currentTuningPreview;
+    }
+
+    private EncounterTuningPreviewResult refreshTuningPreview() {
         if (loadBudgetUseCase == null) {
-            currentTuningPreview = new EncounterTuningPreviewResult(
+            return new EncounterTuningPreviewResult(
                     EncounterGenerationStatus.STORAGE_ERROR,
                     EncounterBudgetBoundaryTranslator.tuningPreviewLabels(null),
                     "Encounter tuning preview service is not registered.");
-            notifyTuningPreviewListeners(currentTuningPreview);
-            return currentTuningPreview;
         }
         try {
             LoadEncounterBudgetUseCase.Result result = loadBudgetUseCase.execute();
             EncounterBudgetSummary budget = EncounterBudgetBoundaryTranslator.toPublishedBudget(result.budget());
-            currentTuningPreview = new EncounterTuningPreviewResult(
+            return new EncounterTuningPreviewResult(
                     EncounterBudgetBoundaryTranslator.mapBudgetStatus(result.status()),
                     EncounterBudgetBoundaryTranslator.tuningPreviewLabels(budget),
                     result.message());
         } catch (RuntimeException exception) {
-            currentTuningPreview = new EncounterTuningPreviewResult(
+            return new EncounterTuningPreviewResult(
                     EncounterGenerationStatus.STORAGE_ERROR,
                     EncounterBudgetBoundaryTranslator.tuningPreviewLabels(null),
                     "Encounter tuning preview could not be loaded.");
         }
-        notifyTuningPreviewListeners(currentTuningPreview);
-        return currentTuningPreview;
     }
 
     public EncounterPlanBudgetResult loadPlanBudget(LoadEncounterPlanBudgetQuery query) {
@@ -299,6 +301,8 @@ public final class EncounterApplicationService {
         EncounterSessionSnapshot snapshot = EncounterSessionSnapshotProjector.toPublishedSnapshot(
                 useCase.apply(EncounterSessionBoundaryTranslator.toInternalCommand(command)));
         notifySessionListeners(snapshot);
+        currentTuningPreview = refreshTuningPreview();
+        notifyTuningPreviewListeners(currentTuningPreview);
         return snapshot;
     }
 

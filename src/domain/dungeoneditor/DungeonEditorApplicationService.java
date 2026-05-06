@@ -52,14 +52,9 @@ public final class DungeonEditorApplicationService {
     public DungeonEditorApplicationService(DungeonApplicationService dungeonApplicationService) {
         DungeonApplicationService dungeon = Objects.requireNonNull(dungeonApplicationService, "dungeonApplicationService");
         this.applyDungeonEditorSessionUseCase = new ApplyDungeonEditorSessionUseCase(
-                dungeon::createMap,
-                dungeon::renameMap,
-                dungeon::deleteMap,
-                dungeon::applyOperation,
-                dungeon::searchMaps,
-                dungeon::previewOperation,
-                dungeon::describeSelection,
-                dungeon::loadSnapshot);
+                dungeon::catalog,
+                dungeon::mutateAuthored,
+                dungeon::loadAuthored);
     }
 
     public DungeonEditorModel loadEditor(LoadDungeonEditorQuery query) {

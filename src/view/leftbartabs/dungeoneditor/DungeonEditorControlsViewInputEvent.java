@@ -5,34 +5,14 @@ import org.jspecify.annotations.Nullable;
 public record DungeonEditorControlsViewInputEvent(
         @Nullable MapSelectionInput mapSelection,
         @Nullable MapEditorInput mapEditor,
-        @Nullable ViewMode viewMode,
+        @Nullable String viewModeKey,
         @Nullable ToolInput toolInput,
         int projectionLevelShift,
         @Nullable OverlayInput overlay
 ) {
 
     public DungeonEditorControlsViewInputEvent {
-    }
-
-    enum ViewMode {
-        GRID,
-        GRAPH
-    }
-
-    enum Tool {
-        SELECT,
-        ROOM_PAINT,
-        ROOM_DELETE,
-        WALL_CREATE,
-        WALL_DELETE,
-        DOOR_CREATE,
-        DOOR_DELETE,
-        CORRIDOR_CREATE,
-        CORRIDOR_DELETE,
-        STAIR_CREATE,
-        STAIR_DELETE,
-        TRANSITION_CREATE,
-        TRANSITION_DELETE
+        viewModeKey = viewModeKey == null ? null : viewModeKey.strip();
     }
 
     enum ToolFamily {
@@ -57,20 +37,21 @@ public record DungeonEditorControlsViewInputEvent(
             boolean dismissRequested,
             boolean submitRequested,
             boolean confirmDeleteRequested,
-            long selectedMapIdValue,
             String draftName
     ) {
         public MapEditorInput {
-            selectedMapIdValue = Math.max(0L, selectedMapIdValue);
             draftName = draftName == null ? "" : draftName.strip();
         }
     }
 
     public record ToolInput(
             @Nullable ToolFamily requestedFamily,
-            @Nullable Tool selectedTool,
+            @Nullable String selectedToolLabel,
             boolean dismissRequested
     ) {
+        public ToolInput {
+            selectedToolLabel = selectedToolLabel == null ? null : selectedToolLabel.strip();
+        }
     }
 
     public record OverlayInput(

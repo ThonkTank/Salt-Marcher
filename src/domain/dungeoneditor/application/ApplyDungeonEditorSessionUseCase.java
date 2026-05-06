@@ -3,19 +3,19 @@ package src.domain.dungeoneditor.application;
 import java.util.List;
 import java.util.function.Function;
 import org.jspecify.annotations.Nullable;
-import src.domain.dungeon.published.ApplyDungeonEditorOperationCommand;
-import src.domain.dungeon.published.CreateDungeonMapCommand;
-import src.domain.dungeon.published.CreateDungeonMapResult;
-import src.domain.dungeon.published.DeleteDungeonMapCommand;
-import src.domain.dungeon.published.DeleteDungeonMapResult;
-import src.domain.dungeon.published.DescribeDungeonSelectionQuery;
 import src.domain.dungeon.published.DungeonBoundaryKind;
 import src.domain.dungeon.published.DungeonCellRef;
 import src.domain.dungeon.published.DungeonEditorHandleKind;
 import src.domain.dungeon.published.DungeonEditorHandleRef;
 import src.domain.dungeon.published.DungeonEditorOperation;
+import src.domain.dungeon.published.DungeonAuthoredMutationCommand;
+import src.domain.dungeon.published.DungeonAuthoredMutationResult;
+import src.domain.dungeon.published.DungeonAuthoredReadQuery;
+import src.domain.dungeon.published.DungeonAuthoredReadResult;
 import src.domain.dungeon.published.DungeonEdgeRef;
 import src.domain.dungeon.published.DungeonInspectorSnapshot;
+import src.domain.dungeon.published.DungeonMapCatalogRequest;
+import src.domain.dungeon.published.DungeonMapCatalogResponse;
 import src.domain.dungeon.published.DungeonMapId;
 import src.domain.dungeon.published.DungeonMapSnapshot;
 import src.domain.dungeon.published.DungeonMapSummary;
@@ -23,44 +23,25 @@ import src.domain.dungeon.published.DungeonOperationResult;
 import src.domain.dungeon.published.DungeonSnapshot;
 import src.domain.dungeon.published.DungeonTopologyElementKind;
 import src.domain.dungeon.published.DungeonTopologyElementRef;
-import src.domain.dungeon.published.LoadDungeonSnapshotQuery;
-import src.domain.dungeon.published.PreviewDungeonEditorOperationQuery;
-import src.domain.dungeon.published.RenameDungeonMapCommand;
-import src.domain.dungeon.published.RenameDungeonMapResult;
-import src.domain.dungeon.published.SearchMapsQuery;
-import src.domain.dungeon.published.SearchMapsResult;
 import src.domain.dungeoneditor.session.entity.DungeonEditorSession;
 
 public final class ApplyDungeonEditorSessionUseCase {
 
-    private final Function<CreateDungeonMapCommand, CreateDungeonMapResult> createMap;
-    private final Function<RenameDungeonMapCommand, RenameDungeonMapResult> renameMap;
-    private final Function<DeleteDungeonMapCommand, DeleteDungeonMapResult> deleteMap;
-    private final Function<ApplyDungeonEditorOperationCommand, DungeonOperationResult> applyOperation;
+    private final Function<DungeonMapCatalogRequest, DungeonMapCatalogResponse> catalog;
+    private final Function<DungeonAuthoredMutationCommand, DungeonAuthoredMutationResult> mutateAuthored;
     private final BuildDungeonEditorSnapshotUseCase snapshotBuilder;
     private final InterpretDungeonEditorMainViewInputUseCase mainViewInterpreter =
             new InterpretDungeonEditorMainViewInputUseCase();
     private DungeonEditorSession session = DungeonEditorSession.empty();
 
     public ApplyDungeonEditorSessionUseCase(
-            Function<CreateDungeonMapCommand, CreateDungeonMapResult> createMap,
-            Function<RenameDungeonMapCommand, RenameDungeonMapResult> renameMap,
-            Function<DeleteDungeonMapCommand, DeleteDungeonMapResult> deleteMap,
-            Function<ApplyDungeonEditorOperationCommand, DungeonOperationResult> applyOperation,
-            Function<SearchMapsQuery, SearchMapsResult> searchMaps,
-            Function<PreviewDungeonEditorOperationQuery, DungeonOperationResult> previewOperation,
-            Function<DescribeDungeonSelectionQuery, DungeonInspectorSnapshot> describeSelection,
-            Function<LoadDungeonSnapshotQuery, DungeonSnapshot> loadSnapshot
+            Function<DungeonMapCatalogRequest, DungeonMapCatalogResponse> catalog,
+            Function<DungeonAuthoredMutationCommand, DungeonAuthoredMutationResult> mutateAuthored,
+            Function<DungeonAuthoredReadQuery, DungeonAuthoredReadResult> loadAuthored
     ) {
-        this.createMap = createMap;
-        this.renameMap = renameMap;
-        this.deleteMap = deleteMap;
-        this.applyOperation = applyOperation;
-        this.snapshotBuilder = new BuildDungeonEditorSnapshotUseCase(
-                searchMaps,
-                previewOperation,
-                describeSelection,
-                loadSnapshot);
+        this.catalog = catalog;
+        this.mutateAuthored = mutateAuthored;
+        this.snapshotBuilder = new BuildDungeonEditorSnapshotUseCase(catalog, mutateAuthored, loadAuthored);
     }
 
     public void primeSelectedMap(@Nullable DungeonMapId mapId) {
@@ -113,20 +94,23 @@ public final class ApplyDungeonEditorSessionUseCase {
     }
 
     private void createSelectedMap(Command command) {
-        session = session.withSelectedMap(toSelectedMap(createMap.apply(new CreateDungeonMapCommand(command.mapName())).mapId()))
+        session = session.withSelectedMap(toSelectedMap(requireMutationMapId(
+                catalog.apply(new DungeonMapCatalogRequest.CreateMap(command.mapName())))))
                 .clearSelection();
         clearTransientState("Dungeon-Map erstellt.");
     }
 
     private void renameSelectedMap(Command command) {
-        session = session.withSelectedMap(toSelectedMap(renameMap.apply(new RenameDungeonMapCommand(
-                requireMapId(command.mapId()),
-                command.mapName())).mapId()))
+        session = session.withSelectedMap(toSelectedMap(requireMutationMapId(catalog.apply(
+                new DungeonMapCatalogRequest.RenameMap(
+                        requireMapId(command.mapId()),
+                        command.mapName())))))
                 .withStatusText("Dungeon-Map umbenannt.");
     }
 
     private void deleteSelectedMap(Command command) {
-        DungeonMapId deletedMapId = deleteMap.apply(new DeleteDungeonMapCommand(requireMapId(command.mapId()))).mapId();
+        DungeonMapId deletedMapId = requireMutationMapId(catalog.apply(
+                new DungeonMapCatalogRequest.DeleteMap(requireMapId(command.mapId()))));
         if (deletedMapId != null && deletedMapId.equals(toDomainMapId(session.selectedMap()))) {
             session = session.withSelectedMap(DungeonEditorSession.SelectedMap.none());
         }
@@ -157,12 +141,13 @@ public final class ApplyDungeonEditorSessionUseCase {
         if (roomNarration == null || roomNarration.roomId() <= 0L) {
             return;
         }
-        DungeonOperationResult result = applyOperation.apply(new ApplyDungeonEditorOperationCommand(
-                requireMapId(session.selectedMap()),
-                new DungeonEditorOperation.SaveRoomNarration(
-                        roomNarration.roomId(),
-                        roomNarration.visualDescription(),
-                        roomNarration.exits())));
+        DungeonOperationResult result = requireOperationResult(mutateAuthored.apply(
+                new DungeonAuthoredMutationCommand.ApplyOperation(
+                        requireMapId(session.selectedMap()),
+                        new DungeonEditorOperation.SaveRoomNarration(
+                                roomNarration.roomId(),
+                                roomNarration.visualDescription(),
+                                roomNarration.exits()))));
         session = session.clearPreview().withStatusText(statusFromMessages(result));
     }
 
@@ -216,11 +201,26 @@ public final class ApplyDungeonEditorSessionUseCase {
                     .withStatusText("");
         }
         if (effect.applyOperation() != null) {
-            DungeonOperationResult result = applyOperation.apply(new ApplyDungeonEditorOperationCommand(
-                    requireMapId(session.selectedMap()),
-                    effect.applyOperation()));
+            DungeonOperationResult result = requireOperationResult(mutateAuthored.apply(
+                    new DungeonAuthoredMutationCommand.ApplyOperation(
+                            requireMapId(session.selectedMap()),
+                            effect.applyOperation())));
             session = session.clearPreview().withStatusText(statusFromMessages(result));
         }
+    }
+
+    private static DungeonMapId requireMutationMapId(@Nullable DungeonMapCatalogResponse response) {
+        if (response instanceof DungeonMapCatalogResponse.MapMutation mutation) {
+            return mutation.mapId();
+        }
+        throw new IllegalStateException("Dungeon-Katalog-Antwort enthielt keine Mutation.");
+    }
+
+    static @Nullable DungeonOperationResult requireOperationResult(@Nullable DungeonAuthoredMutationResult result) {
+        if (result instanceof DungeonAuthoredMutationResult.Operation operation) {
+            return operation.result();
+        }
+        return null;
     }
 
     private static DungeonMapId requireMapId(@Nullable DungeonMapId mapId) {

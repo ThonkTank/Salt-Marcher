@@ -19,7 +19,7 @@ class SaltmarcherViewViewEnforcementPlugin : Plugin<Project> {
 }
 
 internal fun Project.configureViewViewEnforcement() {
-    val passiveViewCallbackSeamTechnicalBaseViews = listOf(
+    val passiveViewTechnicalBaseViews = listOf(
         "src.view.slotcontent.primitives.mapcanvas.MapCanvasView",
         "src.view.slotcontent.primitives.popup.AnchoredPopupView",
         "src.view.slotcontent.topbar.dropdown.DropdownPopupView"
@@ -31,8 +31,10 @@ internal fun Project.configureViewViewEnforcement() {
 
     val viewCheckerNames = listOf(
         "PassiveViewDependencyBoundaries",
+        "PassiveViewLocalStateBoundary",
         "PassiveViewModelReadApis",
         "PassiveViewModelMutationBoundary",
+        "PassiveViewProjectionConstructionBoundary",
         "ViewPresentationDecisionLeak",
         "ViewInputEventApi",
         "PassiveViewCallbackSeamBoundary"
@@ -47,7 +49,11 @@ internal fun Project.configureViewViewEnforcement() {
         errorproneOptions.withGroovyBuilder {
             "option"(
                 "PassiveViewCallbackSeamBoundary:TechnicalBaseViews",
-                passiveViewCallbackSeamTechnicalBaseViews
+                passiveViewTechnicalBaseViews
+            )
+            "option"(
+                "PassiveViewLocalStateBoundary:TechnicalBaseViews",
+                passiveViewTechnicalBaseViews
             )
         }
     }
@@ -65,7 +71,11 @@ internal fun Project.configureViewViewEnforcement() {
             }
             "option"(
                 "PassiveViewCallbackSeamBoundary:TechnicalBaseViews",
-                passiveViewCallbackSeamTechnicalBaseViews
+                passiveViewTechnicalBaseViews
+            )
+            "option"(
+                "PassiveViewLocalStateBoundary:TechnicalBaseViews",
+                passiveViewTechnicalBaseViews
             )
         }
     }

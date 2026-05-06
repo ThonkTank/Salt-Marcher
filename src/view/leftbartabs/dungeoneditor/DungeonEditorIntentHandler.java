@@ -44,8 +44,8 @@ final class DungeonEditorIntentHandler {
             handleMapEditor(event.mapEditor());
             return;
         }
-        if (event.viewMode() != null) {
-            handleViewMode(event.viewMode());
+        if (event.viewModeKey() != null) {
+            handleViewMode(event.viewModeKey());
             return;
         }
         if (event.toolInput() != null) {
@@ -69,12 +69,6 @@ final class DungeonEditorIntentHandler {
                 event.roomId(),
                 event.visualDescription(),
                 event.exits().stream().map(DungeonEditorIntentHandler::toPublishedExit).toList())));
-    }
-
-    private void publishIfMapSelected(long mapId, java.util.function.LongFunction<DungeonEditorPublishedEvent> factory) {
-        if (mapId > 0L) {
-            publish(factory.apply(mapId));
-        }
     }
 
     private void handleMapSelection(DungeonEditorControlsViewInputEvent.MapSelectionInput mapSelection) {
@@ -101,11 +95,11 @@ final class DungeonEditorIntentHandler {
             return;
         }
         if (mapEditor.openRenameRequested()) {
-            presentationModel.openRenameMapEditor(mapEditor.selectedMapIdValue());
+            presentationModel.openRenameMapEditor(presentationModel.currentSelectedMapIdValue());
             return;
         }
         if (mapEditor.openDeleteRequested()) {
-            presentationModel.openDeleteMapEditor(mapEditor.selectedMapIdValue());
+            presentationModel.openDeleteMapEditor(presentationModel.currentSelectedMapIdValue());
             return;
         }
         if (mapEditor.confirmDeleteRequested()) {
@@ -150,12 +144,12 @@ final class DungeonEditorIntentHandler {
         }
     }
 
-    private void handleViewMode(DungeonEditorControlsViewInputEvent.ViewMode viewMode) {
-        if (viewMode == null) {
+    private void handleViewMode(@Nullable String viewModeKey) {
+        if (viewModeKey == null || viewModeKey.isBlank()) {
             return;
         }
         String selectedViewMode = presentationModel.currentViewModeKey();
-        if (viewMode == DungeonEditorControlsViewInputEvent.ViewMode.GRAPH) {
+        if ("Graph".equals(viewModeKey)) {
             if (!"Graph".equals(selectedViewMode)) {
                 publish(DungeonEditorPublishedEvent.setViewMode(DungeonEditorPublishedEvent.ViewMode.GRAPH));
             }
@@ -175,13 +169,14 @@ final class DungeonEditorIntentHandler {
             return;
         }
         if (toolInput.requestedFamily() != null) {
-            presentationModel.openToolPalette(toolInput.requestedFamily());
+            presentationModel.openToolPalette(DungeonEditorContributionModel.ToolFamily.valueOf(toolInput.requestedFamily().name()));
         } else {
             presentationModel.closeToolPalette();
         }
-        if (toolInput.selectedTool() != null
-                && !presentationModel.currentSelectedToolLabel().equals(toolLabel(toolInput.selectedTool()))) {
-            publish(DungeonEditorPublishedEvent.setTool(toPublishedTool(toolInput.selectedTool())));
+        if (toolInput.selectedToolLabel() != null
+                && !toolInput.selectedToolLabel().isBlank()
+                && !presentationModel.currentSelectedToolLabel().equals(toolInput.selectedToolLabel())) {
+            publish(DungeonEditorPublishedEvent.setTool(toPublishedTool(toolInput.selectedToolLabel())));
         }
     }
 
@@ -194,7 +189,7 @@ final class DungeonEditorIntentHandler {
         if (currentOverlay.modeKey().equals(overlayInput.modeKey())
                 && currentOverlay.levelRange() == overlayInput.levelRange()
                 && Double.compare(currentOverlay.opacity(), overlayInput.opacity()) == 0
-                && currentOverlay.selectedLevels().equals(selectedLevels)) {
+                && parseLevels(currentOverlay.selectedLevelsText()).equals(selectedLevels)) {
             return;
         }
         publish(new DungeonEditorPublishedEvent(
@@ -233,16 +228,6 @@ final class DungeonEditorIntentHandler {
                 safeExit.description());
     }
 
-    private static DungeonEditorPublishedEvent.OverlaySettings toOverlaySettings(
-            DungeonEditorControlsViewInputEvent.OverlayInput overlayInput
-    ) {
-        return new DungeonEditorPublishedEvent.OverlaySettings(
-                overlayInput == null ? "OFF" : overlayInput.modeKey(),
-                overlayInput == null ? 0 : overlayInput.levelRange(),
-                overlayInput == null ? 0.0 : overlayInput.opacity(),
-                parseLevels(overlayInput == null ? "" : overlayInput.selectedLevelsText()));
-    }
-
     private static DungeonEditorPublishedEvent.MainViewInput.Source toMainViewSource(
             String pointerPhaseKey,
             int levelDelta
@@ -258,35 +243,21 @@ final class DungeonEditorIntentHandler {
         };
     }
 
-    private static DungeonEditorPublishedEvent.ViewMode toPublishedViewMode(
-            DungeonEditorControlsViewInputEvent.ViewMode viewMode
-    ) {
-        return viewMode == DungeonEditorControlsViewInputEvent.ViewMode.GRAPH
-                ? DungeonEditorPublishedEvent.ViewMode.GRAPH
-                : DungeonEditorPublishedEvent.ViewMode.GRID;
-    }
-
-    private static DungeonEditorPublishedEvent.Tool toPublishedTool(
-            DungeonEditorControlsViewInputEvent.Tool tool
-    ) {
-        return tool == null ? DungeonEditorPublishedEvent.Tool.SELECT : DungeonEditorPublishedEvent.Tool.valueOf(tool.name());
-    }
-
-    private static String toolLabel(DungeonEditorControlsViewInputEvent.Tool tool) {
-        return switch (tool == null ? DungeonEditorControlsViewInputEvent.Tool.SELECT : tool) {
-            case ROOM_PAINT -> "Raum malen";
-            case ROOM_DELETE -> "Raum löschen";
-            case WALL_CREATE -> "Wand setzen";
-            case WALL_DELETE -> "Wand löschen";
-            case DOOR_CREATE -> "Tür setzen";
-            case DOOR_DELETE -> "Tür löschen";
-            case CORRIDOR_CREATE -> "Korridor erstellen";
-            case CORRIDOR_DELETE -> "Korridor löschen";
-            case STAIR_CREATE -> "Treppe erstellen";
-            case STAIR_DELETE -> "Treppe löschen";
-            case TRANSITION_CREATE -> "Übergang erstellen";
-            case TRANSITION_DELETE -> "Übergang löschen";
-            case SELECT -> "Auswahl";
+    private static DungeonEditorPublishedEvent.Tool toPublishedTool(String selectedToolLabel) {
+        return switch (selectedToolLabel == null ? "Auswahl" : selectedToolLabel) {
+            case "Raum malen" -> DungeonEditorPublishedEvent.Tool.ROOM_PAINT;
+            case "Raum löschen" -> DungeonEditorPublishedEvent.Tool.ROOM_DELETE;
+            case "Wand setzen" -> DungeonEditorPublishedEvent.Tool.WALL_CREATE;
+            case "Wand löschen" -> DungeonEditorPublishedEvent.Tool.WALL_DELETE;
+            case "Tür setzen" -> DungeonEditorPublishedEvent.Tool.DOOR_CREATE;
+            case "Tür löschen" -> DungeonEditorPublishedEvent.Tool.DOOR_DELETE;
+            case "Korridor erstellen" -> DungeonEditorPublishedEvent.Tool.CORRIDOR_CREATE;
+            case "Korridor löschen" -> DungeonEditorPublishedEvent.Tool.CORRIDOR_DELETE;
+            case "Treppe erstellen" -> DungeonEditorPublishedEvent.Tool.STAIR_CREATE;
+            case "Treppe löschen" -> DungeonEditorPublishedEvent.Tool.STAIR_DELETE;
+            case "Übergang erstellen" -> DungeonEditorPublishedEvent.Tool.TRANSITION_CREATE;
+            case "Übergang löschen" -> DungeonEditorPublishedEvent.Tool.TRANSITION_DELETE;
+            default -> DungeonEditorPublishedEvent.Tool.SELECT;
         };
     }
 

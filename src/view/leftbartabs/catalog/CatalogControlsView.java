@@ -9,7 +9,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import javafx.animation.PauseTransition;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
@@ -77,11 +76,10 @@ public final class CatalogControlsView extends VBox {
             filterStrip.applyFilters(presentationModel.creatureFiltersProperty().get());
             applyDropdownStates();
             encounterTablePicker.setEncounterTables(presentationModel.encounterTableOptionsProperty());
-            encounterTablePicker.setSelectedEncounterTableIds(
-                    presentationModel.encounterBuilderInputsProperty().get().encounterTableIds());
+            CatalogContributionModel.ControlsState controlsState = presentationModel.controlsStateProperty().get();
+            encounterTablePicker.setSelectedEncounterTableIds(controlsState.encounterTableIds());
             encounterTablePicker.setPopupOpen(presentationModel.encounterTableDropdownStateProperty().get().open());
-            tuningView.setEncounterTuningPreview(presentationModel.encounterTuningPreviewProperty().get());
-            tuningView.applyEncounterBuilderInputs(presentationModel.encounterBuilderInputsProperty().get());
+            tuningView.applyControlsState(controlsState);
             chipsView.setChips(presentationModel.chipsProperty());
         });
 
@@ -89,13 +87,11 @@ public final class CatalogControlsView extends VBox {
                 runWithSuppressedInput(() -> filterStrip.setFilterOptions(newValue)));
         presentationModel.creatureFiltersProperty().addListener((obs, oldValue, newValue) ->
                 runWithSuppressedInput(() -> filterStrip.applyFilters(newValue)));
-        presentationModel.encounterBuilderInputsProperty().addListener((obs, oldValue, newValue) ->
+        presentationModel.controlsStateProperty().addListener((obs, oldValue, newValue) ->
                 runWithSuppressedInput(() -> {
                     encounterTablePicker.setSelectedEncounterTableIds(newValue.encounterTableIds());
-                    tuningView.applyEncounterBuilderInputs(newValue);
+                    tuningView.applyControlsState(newValue);
                 }));
-        presentationModel.encounterTuningPreviewProperty().addListener((obs, oldValue, newValue) ->
-                runWithSuppressedInput(() -> tuningView.setEncounterTuningPreview(newValue)));
         presentationModel.sizeDropdownStateProperty().addListener((obs, oldValue, newValue) ->
                 runWithSuppressedInput(() -> filterStrip.setSizeDropdownState(newValue)));
         presentationModel.typeDropdownStateProperty().addListener((obs, oldValue, newValue) ->
@@ -162,10 +158,14 @@ public final class CatalogControlsView extends VBox {
                 alignmentState.open(),
                 alignmentState.searchQuery(),
                 encounterTablePicker.popupOpen(),
-                tuningView.difficultyKey(),
-                tuningView.balanceLevel(),
+                tuningView.difficultyAuto(),
+                tuningView.difficultyValue(),
+                tuningView.balanceAuto(),
+                tuningView.balanceValue(),
+                tuningView.amountAuto(),
                 tuningView.amountValue(),
-                tuningView.diversityLevel(),
+                tuningView.diversityAuto(),
+                tuningView.diversityValue(),
                 encounterTablePicker.selectedEncounterTableIds()));
     }
 
@@ -477,8 +477,6 @@ public final class CatalogControlsView extends VBox {
 
     private static final class EncounterTuningSection extends VBox {
 
-        private static final int AUTO_LEVEL = -1;
-        private static final double AUTO_AMOUNT = -1.0;
         private static final double DEFAULT_DIFFICULTY_SLIDER_VALUE = 2.0;
         private static final double DEFAULT_BALANCE_SLIDER_VALUE = 3.0;
         private static final double DEFAULT_AMOUNT_SLIDER_VALUE = 3.0;
@@ -486,26 +484,12 @@ public final class CatalogControlsView extends VBox {
         private static final double MIN_ENDPOINT_VALUE = 1.0;
         private static final double MAX_DIVERSITY_ENDPOINT_VALUE = 4.0;
         private static final double MAX_BALANCE_ENDPOINT_VALUE = 5.0;
-        private static final String AUTO_DIFFICULTY_KEY = "auto";
-        private static final String EASY_DIFFICULTY_KEY = "easy";
-        private static final String MEDIUM_DIFFICULTY_KEY = "medium";
-        private static final String HARD_DIFFICULTY_KEY = "hard";
-        private static final String DEADLY_DIFFICULTY_KEY = "deadly";
         private static final String STYLE_TEXT_MUTED = "text-muted";
         private static final String STYLE_TEXT_SECONDARY = "text-secondary";
         private static final String STYLE_COMPACT = "compact";
         private static final String STYLE_ACTIVE = "active";
         private static final String DIFFICULTY_SLIDER_STYLE = "difficulty-slider";
         private static final String MAX_DIVERSITY_LABEL = "4";
-
-        private final Map<Integer, String> difficultyPreviewLabels =
-                new LinkedHashMap<>(defaultDifficultyPreviewLabels());
-        private final Map<Integer, String> balancePreviewLabels =
-                new LinkedHashMap<>(defaultBalancePreviewLabels());
-        private final Map<Integer, String> amountPreviewLabels =
-                new LinkedHashMap<>(defaultAmountPreviewLabels());
-        private final Map<Integer, String> diversityPreviewLabels =
-                new LinkedHashMap<>(defaultDiversityPreviewLabels());
 
         private final TuningControl difficultyControl;
         private final TuningControl balanceControl;
@@ -521,7 +505,6 @@ public final class CatalogControlsView extends VBox {
                     true,
                     "Schwierigkeitsbereich des Encounters",
                     new DifficultyTickLabelFormatter(),
-                    value -> previewLabel(difficultyPreviewLabels, value, difficultyLabel((int) Math.round(value))),
                     1.0,
                     onInteraction);
             balanceControl = new TuningControl(
@@ -532,7 +515,6 @@ public final class CatalogControlsView extends VBox {
                     true,
                     "1: CR-Extreme bevorzugen, 5: CR-Durchschnitt bevorzugen",
                     new EndpointTickLabelFormatter("Extreme", "Durchschnitt"),
-                    value -> previewLabel(balancePreviewLabels, value, balanceLabel((int) Math.round(value))),
                     null,
                     onInteraction);
             amountControl = new TuningControl(
@@ -543,7 +525,6 @@ public final class CatalogControlsView extends VBox {
                     false,
                     "1: Bosse bevorzugen, 5: Minions bevorzugen",
                     new EndpointTickLabelFormatter("Boss", "Minions"),
-                    CatalogControlsView.EncounterTuningSection::amountLabel,
                     1.0,
                     onInteraction);
             diversityControl = new TuningControl(
@@ -554,7 +535,6 @@ public final class CatalogControlsView extends VBox {
                     true,
                     "1: ein Statblock, 4: vier unterschiedliche Statblocks",
                     new EndpointTickLabelFormatter("1", MAX_DIVERSITY_LABEL),
-                    value -> previewLabel(diversityPreviewLabels, value, diversityLabel((int) Math.round(value))),
                     null,
                     onInteraction);
 
@@ -571,80 +551,48 @@ public final class CatalogControlsView extends VBox {
             getChildren().add(controlRow);
         }
 
-        void setEncounterTuningPreview(CatalogContributionModel.EncounterTuningPreviewProjection preview) {
-            CatalogContributionModel.EncounterTuningPreviewProjection safePreview =
-                    preview == null ? CatalogContributionModel.EncounterTuningPreviewProjection.empty() : preview;
-            replacePreviewLabels(difficultyPreviewLabels, safePreview.difficultyLabels(), defaultDifficultyPreviewLabels());
-            replacePreviewLabels(balancePreviewLabels, safePreview.balanceLabels(), defaultBalancePreviewLabels());
-            replacePreviewLabels(amountPreviewLabels, safePreview.amountLabels(), defaultAmountPreviewLabels());
-            replacePreviewLabels(diversityPreviewLabels, safePreview.diversityLabels(), defaultDiversityPreviewLabels());
-            difficultyControl.refreshDisplay();
-            balanceControl.refreshDisplay();
-            amountControl.refreshDisplay();
-            diversityControl.refreshDisplay();
+        void applyControlsState(CatalogContributionModel.ControlsState state) {
+            CatalogContributionModel.ControlsState safeState =
+                    state == null ? CatalogContributionModel.ControlsState.empty() : state;
+            difficultyControl.applyProjection(safeState.difficulty());
+            balanceControl.applyProjection(safeState.balance());
+            amountControl.applyProjection(safeState.amount());
+            diversityControl.applyProjection(safeState.diversity());
         }
 
-        void applyEncounterBuilderInputs(CatalogContributionModel.EncounterBuilderInputsViewState state) {
-            CatalogContributionModel.EncounterBuilderInputsViewState safeState =
-                    state == null ? CatalogContributionModel.EncounterBuilderInputsViewState.empty() : state;
-            difficultyControl.setAutoValue(
-                    isAutoDifficulty(safeState.difficultyKey()),
-                    difficultySliderValue(safeState.difficultyKey()));
-            balanceControl.setAutoValue(
-                    safeState.balanceLevel() == AUTO_LEVEL,
-                    safeState.balanceLevel() == AUTO_LEVEL ? DEFAULT_BALANCE_SLIDER_VALUE : safeState.balanceLevel());
-            amountControl.setAutoValue(
-                    safeState.amountValue() == AUTO_AMOUNT,
-                    safeState.amountValue() == AUTO_AMOUNT ? DEFAULT_AMOUNT_SLIDER_VALUE : safeState.amountValue());
-            diversityControl.setAutoValue(
-                    safeState.diversityLevel() == AUTO_LEVEL,
-                    safeState.diversityLevel() == AUTO_LEVEL ? DEFAULT_DIVERSITY_SLIDER_VALUE : safeState.diversityLevel());
+        boolean difficultyAuto() {
+            return difficultyControl.isAuto();
         }
 
-        String difficultyKey() {
-            return difficultyControl.isAuto()
-                    ? AUTO_DIFFICULTY_KEY
-                    : difficultyKey((int) Math.round(difficultyControl.rawValue()));
+        double difficultyValue() {
+            return difficultyControl.rawValue();
         }
 
-        int balanceLevel() {
-            return balanceControl.isAuto() ? AUTO_LEVEL : (int) Math.round(balanceControl.rawValue());
+        boolean balanceAuto() {
+            return balanceControl.isAuto();
+        }
+
+        double balanceValue() {
+            return balanceControl.rawValue();
+        }
+
+        boolean amountAuto() {
+            return amountControl.isAuto();
         }
 
         double amountValue() {
-            return amountControl.isAuto() ? AUTO_AMOUNT : amountControl.rawValue();
+            return amountControl.rawValue();
         }
 
-        int diversityLevel() {
-            return diversityControl.isAuto() ? AUTO_LEVEL : (int) Math.round(diversityControl.rawValue());
+        boolean diversityAuto() {
+            return diversityControl.isAuto();
         }
 
-        private static boolean isAutoDifficulty(@Nullable String value) {
-            return value == null || value.isBlank() || AUTO_DIFFICULTY_KEY.equalsIgnoreCase(value);
+        double diversityValue() {
+            return diversityControl.rawValue();
         }
 
-        private static double difficultySliderValue(@Nullable String value) {
-            if (value == null) {
-                return DEFAULT_DIFFICULTY_SLIDER_VALUE;
-            }
-            return switch (value.trim().toLowerCase(Locale.ROOT)) {
-                case EASY_DIFFICULTY_KEY -> 1.0;
-                case HARD_DIFFICULTY_KEY -> 3.0;
-                case DEADLY_DIFFICULTY_KEY -> 4.0;
-                default -> DEFAULT_DIFFICULTY_SLIDER_VALUE;
-            };
-        }
-
-        private static String difficultyKey(int value) {
-            return switch (Math.max(1, Math.min(4, value))) {
-                case 1 -> EASY_DIFFICULTY_KEY;
-                case 3 -> HARD_DIFFICULTY_KEY;
-                case 4 -> DEADLY_DIFFICULTY_KEY;
-                default -> MEDIUM_DIFFICULTY_KEY;
-            };
-        }
-
-        private static String difficultyLabel(int value) {
+        private static String difficultyTickLabel(int value) {
             return switch (Math.max(1, Math.min(4, value))) {
                 case 1 -> "Easy";
                 case 3 -> "Hard";
@@ -653,77 +601,12 @@ public final class CatalogControlsView extends VBox {
             };
         }
 
-        private static String diversityLabel(int value) {
-            int rounded = Math.max(1, Math.min(4, value));
-            return rounded == 1 ? "1 Typ" : rounded + " Typen";
-        }
-
-        private static String amountLabel(double value) {
-            int rounded = Math.max(1, Math.min(5, (int) Math.round(value)));
-            return switch (rounded) {
-                case 1 -> "Boss++";
-                case 2 -> "Boss+";
-                case 3 -> "Ausgeglichen";
-                case 4 -> "Minions+";
-                default -> "Minions++";
-            };
-        }
-
-        private static String balanceLabel(int value) {
-            return switch (Math.max(1, Math.min(5, value))) {
-                case 1 -> "Extreme++";
-                case 2 -> "Extreme+";
-                case 3 -> "Neutral";
-                case 4 -> "Durchschnitt+";
-                default -> "Durchschnitt++";
-            };
-        }
-
-        private static String previewLabel(Map<Integer, String> labels, double value, String fallback) {
-            String label = labels.get((int) Math.round(value));
-            return label == null || label.isBlank() ? fallback : label;
-        }
-
-        private static void replacePreviewLabels(
-                Map<Integer, String> target,
-                List<CatalogContributionModel.PreviewLabel> labels,
-                Map<Integer, String> fallback
-        ) {
-            target.clear();
-            target.putAll(fallback);
-            if (labels == null || labels.isEmpty()) {
-                return;
-            }
-            for (CatalogContributionModel.PreviewLabel label : labels) {
-                if (label == null || label.label().isBlank()) {
-                    continue;
-                }
-                target.put((int) Math.round(label.value()), label.label());
-            }
-        }
-
-        private static Map<Integer, String> defaultDifficultyPreviewLabels() {
-            return Map.of(1, "25-49 XP", 2, "50-74 XP", 3, "75-99 XP", 4, "100-125 XP");
-        }
-
-        private static Map<Integer, String> defaultBalancePreviewLabels() {
-            return Map.of(1, "Extreme++", 2, "Extreme+", 3, "Neutral", 4, "Durchschnitt+", 5, "Durchschnitt++");
-        }
-
-        private static Map<Integer, String> defaultAmountPreviewLabels() {
-            return Map.of(1, "Boss++", 2, "Boss+", 3, "Ausgeglichen", 4, "Minions+", 5, "Minions++");
-        }
-
-        private static Map<Integer, String> defaultDiversityPreviewLabels() {
-            return Map.of(1, "1 Typ", 2, "2 Typen", 3, "3 Typen", 4, "4 Typen");
-        }
-
         private static final class TuningControl extends HBox {
 
+            private final Map<Integer, String> previewLabels = new LinkedHashMap<>();
             private final Slider slider;
             private final Button autoButton;
             private final Label valueLabel;
-            private final Function<Double, String> valueLabelFormatter;
             private final Runnable onInteraction;
             private boolean autoMode = true;
             private int internalUpdateDepth;
@@ -736,13 +619,11 @@ public final class CatalogControlsView extends VBox {
                     boolean snapToTicks,
                     String tooltip,
                     StringConverter<Double> labelFormatter,
-                    Function<Double, String> valueLabelFormatter,
                     @Nullable Double majorTickUnitOverride,
                     Runnable onInteraction
             ) {
                 setSpacing(4);
                 setAlignment(Pos.CENTER_LEFT);
-                this.valueLabelFormatter = valueLabelFormatter;
                 this.onInteraction = onInteraction;
 
                 Label titleLabel = new Label(title);
@@ -790,10 +671,14 @@ public final class CatalogControlsView extends VBox {
                 return slider.getValue();
             }
 
-            void setAutoValue(boolean auto, double value) {
+            void applyProjection(CatalogContributionModel.SliderProjection projection) {
+                CatalogContributionModel.SliderProjection safeProjection = projection == null
+                        ? new CatalogContributionModel.SliderProjection(true, slider.getValue(), List.of())
+                        : projection;
                 runInternalUpdate(() -> {
-                    autoMode = auto;
-                    slider.setValue(value);
+                    replacePreviewLabels(safeProjection.labels());
+                    autoMode = safeProjection.auto();
+                    slider.setValue(safeProjection.value());
                     slider.setDisable(autoMode);
                     updateAutoButtonState();
                     updateValueLabel();
@@ -804,10 +689,6 @@ public final class CatalogControlsView extends VBox {
                 if (styleClass != null && !styleClass.isBlank() && !slider.getStyleClass().contains(styleClass)) {
                     slider.getStyleClass().add(styleClass);
                 }
-            }
-
-            void refreshDisplay() {
-                updateValueLabel();
             }
 
             private void configureSliderTicks(
@@ -838,7 +719,8 @@ public final class CatalogControlsView extends VBox {
                     valueLabel.setText("");
                     return;
                 }
-                valueLabel.setText(valueLabelFormatter == null ? "" : valueLabelFormatter.apply(slider.getValue()));
+                String label = previewLabels.get((int) Math.round(slider.getValue()));
+                valueLabel.setText(label == null ? "" : label);
             }
 
             private void updateAutoButtonState() {
@@ -866,12 +748,25 @@ public final class CatalogControlsView extends VBox {
             private boolean isInternalUpdate() {
                 return internalUpdateDepth > 0;
             }
+
+            private void replacePreviewLabels(List<CatalogContributionModel.PreviewLabel> labels) {
+                previewLabels.clear();
+                if (labels == null) {
+                    return;
+                }
+                for (CatalogContributionModel.PreviewLabel label : labels) {
+                    if (label == null || label.label().isBlank()) {
+                        continue;
+                    }
+                    previewLabels.put((int) Math.round(label.value()), label.label());
+                }
+            }
         }
 
         private static final class DifficultyTickLabelFormatter extends StringConverter<Double> {
             @Override
             public String toString(Double value) {
-                return difficultyLabel(value == null ? 2 : (int) Math.round(value));
+                return difficultyTickLabel(value == null ? 2 : (int) Math.round(value));
             }
 
             @Override

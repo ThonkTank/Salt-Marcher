@@ -62,9 +62,8 @@ invariants.
 `Dungeon*Binder -> DungeonEditorApplicationService or TravelApplicationService -> dungeoneditor or travel published/*Model -> Dungeon*Snapshot -> DungeonEditorMapProjectionSnapshot or TravelDungeonMapProjectionSnapshot -> DungeonMapContentModel -> MapRenderScene -> DungeonMapMainView -> Dungeon*MainView`
 
 For the editor workspace, `DungeonEditorApplicationService` composes that
-runtime snapshot from authored `DungeonApplicationService` reads such as
-`loadSnapshot(...)`, `describeSelection(...)`, `previewOperation(...)`, and
-`applyOperation(...)`.
+runtime snapshot from authored `DungeonApplicationService` family seams such
+as `loadAuthored(...)`, `mutateAuthored(...)`, and `catalog(...)`.
 
 ### Preview And Apply
 
@@ -82,7 +81,7 @@ backend movement path.
 
 ### Map Catalog
 
-`editor controls -> DungeonEditorBinder -> DungeonApplicationService -> catalog result`
+`editor controls -> DungeonEditorBinder -> DungeonApplicationService.catalog(...) -> catalog result`
 
 Catalog behavior remains separate from the shared canvas scene path.
 

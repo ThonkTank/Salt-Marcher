@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-05-03
+Last Reviewed: 2026-05-05
 Source of Truth: Complete invariant catalog for passive `*View` surfaces in
 `src/view/**`, limited to constraints proven directly on `*View.java` files,
 passive-`View`-owned FXML resources, or review-owned passive-`View`
@@ -41,8 +41,10 @@ same-stem carrier built by the `View` itself rather than by a foreign role.
 | Invariant ID | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- |
 | `view-view-dependency-boundary` | every passive `*View.java` under `src/view/**` | Error Prone `PassiveViewDependencyBoundaries`, ArchUnit `passiveViewsMustNotReachShellDomainDataOrBootstrap`, and jQAssistant `saltmarcher:PassiveViewAllowedDependencies` | `./gradlew checkViewEnforcement` | A passive `View` references only JavaFX UI APIs, its co-located observable `ContributionModel` or `ContentModel`, same-root `*ViewInputEvent` types, same-surface support values, and the documented passive reusable view seam. It does not reference `shell/**`, `bootstrap/**`, `src/domain/**`, `src/data/**`, `*PublishedEvent`, foreign roots, or foreign non-`View` role families. |
+| `view-view-no-local-semantic-state` | every passive `*View.java` outside the documented low-level technical-base allowlist | Error Prone `PassiveViewLocalStateBoundary` | `./gradlew checkViewEnforcement` | Outside the documented low-level technical-base allowlist, a passive `View` does not keep mutable local semantic state bags such as scalar mode flags, string mirrors, collection selections, same-root model mirrors, or nested same-surface helper state objects. The remaining legal mutable fields are limited to widget/popup/scene objects, the same-stem `Consumer<SameStemViewInputEvent>` seam, and narrow technical reentrancy guards. |
 | `view-view-model-read-api` | every passive `*View.java` that invokes methods on a co-located model | Error Prone `PassiveViewModelReadApis` | `./gradlew checkViewEnforcement` | Passive `View` code reads its co-located `ContributionModel` or `ContentModel` only through JavaFX observable or binding surfaces instead of imperative non-observable read APIs. |
 | `view-view-no-model-mutation` | every passive `*View.java` that reaches its co-located model through JavaFX writable surfaces | Error Prone `PassiveViewModelMutationBoundary` | `./gradlew checkViewEnforcement` | Passive `View` code does not mutate its co-located `ContributionModel` or `ContentModel` through writable properties, writable values, or observable collections, maps, or sets returned by model accessors. |
+| `view-view-no-projection-carrier-construction` | every passive `*View.java` under `src/view/**` | Error Prone `PassiveViewProjectionConstructionBoundary` | `./gradlew checkViewEnforcement` | A passive `View` does not construct same-root projection-model support carriers, same-root `*PublishedEvent` carriers, or domain/data/application-service carriers. The only authored passive-View carrier construction that remains legal is its own same-stem `*ViewInputEvent` snapshot. |
 | `view-view-presentation-decision-leak` | every passive `*View.java` under `src/view/**` | Error Prone `ViewPresentationDecisionLeak` | `./gradlew checkViewEnforcement` | Passive `View` code does not branch on same-root model-derived state while directly mutating shared widget presentation such as visibility, managed state, enablement, or shared labels. |
 
 ### Communication Contract
@@ -67,12 +69,13 @@ same-stem carrier built by the `View` itself rather than by a foreign role.
   passive `View`s react to model changes through bindings or listeners; they do
   not receive presenter-style imperative commands as an alternate presentation
   protocol.
-- `view-view-local-viewinputevent-snapshot-authorship`
-  a mechanically legal passive `View` still authors its own same-stem
-  `*ViewInputEvent` snapshot from current widget/raw-event state rather than
-  delegating carrier construction to Binder, `IntentHandler`, or helper
-  protocols, and does not fill the carrier with semantic fallback values that
-  hide missing current UI state.
+- `view-view-local-viewinputevent-snapshot-authorship-residual`
+  neighboring `ViewInputEvent` enforcement now blocks same-view helper
+  reconstruction, forbidden model/domain dependencies, and same-view sentinel
+  constants when a passive `View` constructs its same-stem top-level
+  `*ViewInputEvent`; the remaining judgment about whether a mechanically legal
+  snapshot still over-encodes or under-encodes local intent remains
+  review-owned.
 - `view-view-presentation-branching-locality`
   `ViewPresentationDecisionLeak` blocks the narrow proxy case where a passive
   `View` branches on same-root model-derived state while mutating shared widget

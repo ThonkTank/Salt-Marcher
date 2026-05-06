@@ -2,7 +2,11 @@ package src.view.leftbartabs.sessionplanner;
 
 import java.util.List;
 import java.util.function.Consumer;
+import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.StringProperty;
+import javafx.collections.ObservableList;
+import javafx.event.ActionEvent;
+import javafx.event.EventHandler;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
@@ -15,53 +19,52 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 
+@SuppressWarnings("PMD.CouplingBetweenObjects")
 public final class SessionPlannerControlsView extends ScrollPane {
 
     private static final long NO_PLAN_SELECTED = 0L;
+    private static final String PMD_LAW_OF_DEMETER = "PMD.LawOfDemeter";
     private static final String STYLE_TEXT_SECONDARY = "text-secondary";
     private static final String XP_SUFFIX = " XP";
     private static final String STYLE_BUDGET_OK = "session-planner-budget-ok";
     private static final String STYLE_BUDGET_OVER = "session-planner-budget-over";
 
-    private final StatusLabel statusLabel = new StatusLabel();
-    private final Label partyHeadlineLabel = new WrappingLabel();
-    private final Label partyDetailLabel = new SecondaryWrappingLabel();
-    private final Label totalBudgetLabel = new WrappingLabel();
-    private final Label plannedXpLabel = new WrappingLabel();
-    private final Label remainingXpLabel = new WrappingLabel();
-    private final Label milestonesLabel = new SecondaryWrappingLabel();
-    private final Label restAdviceLabel = new WrappingLabel();
-    private final Label goldHeadlineLabel = new WrappingLabel();
-    private final Label goldDetailLabel = new SecondaryWrappingLabel();
-    private final BudgetCard budgetCard;
-    private final AvailablePlansBox availablePlansBox = new AvailablePlansBox();
+    private final Label statusLabel = Factory.createStatusLabel();
+    private final Label partyHeadlineLabel = Factory.createLabel("", true);
+    private final Label partyDetailLabel = Factory.createLabel("", true, STYLE_TEXT_SECONDARY);
+    private final Label restAdviceLabel = Factory.createLabel("", true);
+    private final Label goldHeadlineLabel = Factory.createLabel("", true);
+    private final Label goldDetailLabel = Factory.createLabel("", true, STYLE_TEXT_SECONDARY);
+    private final BudgetSection budgetSection = new BudgetSection();
+    private final PlansSection plansSection = new PlansSection();
     private Consumer<SessionPlannerControlsViewInputEvent> viewInputEventHandler = ignored -> { };
 
+    @SuppressWarnings(PMD_LAW_OF_DEMETER)
     public SessionPlannerControlsView() {
-        budgetCard = new BudgetCard(
-                totalBudgetLabel,
-                plannedXpLabel,
-                remainingXpLabel,
-                milestonesLabel);
-        availablePlansBox.setImportHandler(planId -> viewInputEventHandler.accept(
+        plansSection.onImportRequested(planId -> viewInputEventHandler.accept(
                 new SessionPlannerControlsViewInputEvent(
                         true,
                         planId)));
-
-        setContent(new ContentColumn(
-                new HeaderRow(
-                        new StyledLabel("SESSION PLANNER", "section-header", "text-muted"),
-                        new StyledButton("Aktualisieren", "compact", "flat", event -> viewInputEventHandler.accept(
-                                new SessionPlannerControlsViewInputEvent(
-                                        false,
-                                        NO_PLAN_SELECTED)))),
+        Label headerLabel = Factory.createLabel("SESSION PLANNER", false, "section-header", "text-muted");
+        Button refreshButton = Factory.createButton(
+                "Aktualisieren",
+                event -> viewInputEventHandler.accept(new SessionPlannerControlsViewInputEvent(false, NO_PLAN_SELECTED)),
+                "compact",
+                "flat");
+        VBox content = new VBox(12);
+        ObservableList<Node> contentChildren = content.getChildren();
+        Factory.addStyles(content, "session-planner-controls");
+        content.setPadding(new Insets(8));
+        contentChildren.addAll(
+                Factory.createHeaderRow(headerLabel, refreshButton),
                 statusLabel,
-                new SectionCard("Aktive Party", partyHeadlineLabel, partyDetailLabel),
-                budgetCard,
-                new SectionCard("Rastempfehlung", restAdviceLabel),
-                new SectionCard("Gold & Loot", goldHeadlineLabel, goldDetailLabel),
-                new PlansCard(availablePlansBox)));
-        getStyleClass().add("session-planner-controls-scroll");
+                Factory.createSectionCard("Aktive Party", partyHeadlineLabel, partyDetailLabel),
+                budgetSection.root,
+                Factory.createSectionCard("Rastempfehlung", restAdviceLabel),
+                Factory.createSectionCard("Gold & Loot", goldHeadlineLabel, goldDetailLabel),
+                plansSection.root);
+        setContent(content);
+        Factory.addStyles(this, "session-planner-controls-scroll");
         setFitToWidth(true);
         setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
     }
@@ -82,15 +85,7 @@ public final class SessionPlannerControlsView extends ScrollPane {
         SessionPlannerContributionModel.BudgetModel safe = model == null
                 ? SessionPlannerContributionModel.BudgetModel.empty()
                 : model;
-        totalBudgetLabel.setText("Budget " + safe.totalBudgetText() + XP_SUFFIX);
-        plannedXpLabel.setText("Geplant " + safe.plannedXpText() + XP_SUFFIX);
-        remainingXpLabel.setText(safe.overBudget()
-                ? safe.overBudgetText() + XP_SUFFIX + " ueber"
-                : safe.remainingXpText() + XP_SUFFIX + " frei");
-        budgetCard.setSummaryText(safe.summaryText());
-        milestonesLabel.setText(safe.milestonesText());
-        budgetCard.setProgress(Math.max(0.0, Math.min(1.0, safe.progressFraction())));
-        budgetCard.setOverBudget(safe.overBudget());
+        budgetSection.show(safe);
     }
 
     public void showRestAdvice(SessionPlannerContributionModel.RestAdviceModel model) {
@@ -110,248 +105,169 @@ public final class SessionPlannerControlsView extends ScrollPane {
 
     public void showAvailablePlans(List<SessionPlannerContributionModel.AvailablePlanModel> plans) {
         List<SessionPlannerContributionModel.AvailablePlanModel> safePlans = plans == null ? List.of() : List.copyOf(plans);
-        availablePlansBox.setPlans(safePlans);
+        plansSection.showPlans(safePlans);
     }
 
     public void onViewInputEvent(Consumer<SessionPlannerControlsViewInputEvent> handler) {
         viewInputEventHandler = handler == null ? ignored -> { } : handler;
     }
 
-    private static final class ContentColumn extends VBox {
+    private static final class BudgetSection {
 
-        private ContentColumn(Node... children) {
-            super(12, children);
-            getStyleClass().add("session-planner-controls");
-            setPadding(new Insets(8));
+        private final Label totalBudgetLabel = Factory.createLabel("", true);
+        private final Label plannedXpLabel = Factory.createLabel("", true);
+        private final Label remainingXpLabel = Factory.createLabel("", true);
+        private final Label milestonesLabel = Factory.createLabel("", true, STYLE_TEXT_SECONDARY);
+        private final Label summaryLabel = Factory.createLabel("", true, "session-planner-budget-summary");
+        private final ProgressBar budgetBar = createBudgetBar();
+        private final VBox root = Factory.createSectionCard(
+                "XP-Budget",
+                totalBudgetLabel,
+                plannedXpLabel,
+                remainingXpLabel,
+                budgetBar,
+                summaryLabel,
+                milestonesLabel);
+
+        private BudgetSection() {
+            root.setSpacing(6);
+        }
+
+        @SuppressWarnings(PMD_LAW_OF_DEMETER)
+        private void show(SessionPlannerContributionModel.BudgetModel model) {
+            totalBudgetLabel.setText("Budget " + model.totalBudgetText() + XP_SUFFIX);
+            plannedXpLabel.setText("Geplant " + model.plannedXpText() + XP_SUFFIX);
+            remainingXpLabel.setText(model.overBudget()
+                    ? model.overBudgetText() + XP_SUFFIX + " ueber"
+                    : model.remainingXpText() + XP_SUFFIX + " frei");
+            summaryLabel.setText(model.summaryText());
+            milestonesLabel.setText(model.milestonesText());
+            budgetBar.setProgress(Math.max(0.0, Math.min(1.0, model.progressFraction())));
+            ObservableList<String> styleClasses = budgetBar.getStyleClass();
+            styleClasses.removeAll(STYLE_BUDGET_OK, STYLE_BUDGET_OVER);
+            styleClasses.add(model.overBudget() ? STYLE_BUDGET_OVER : STYLE_BUDGET_OK);
+        }
+
+        private static ProgressBar createBudgetBar() {
+            ProgressBar progressBar = new ProgressBar(0.0);
+            Factory.addStyles(progressBar, "session-planner-budget-bar");
+            return progressBar;
         }
     }
 
-    private static final class HeaderRow extends HBox {
+    private static final class PlansSection {
 
-        private HeaderRow(Node titleLabel, Node actionButton) {
-            super(8, titleLabel, spacer(), actionButton);
-            setAlignment(Pos.CENTER_LEFT);
-        }
-
-        private static Region spacer() {
-            Region spacer = new Region();
-            setHgrow(spacer, Priority.ALWAYS);
-            return spacer;
-        }
-    }
-
-    private static final class StyledLabel extends Label {
-
-        private StyledLabel(String text, String... styleClasses) {
-            super(text);
-            getStyleClass().addAll(styleClasses);
-        }
-    }
-
-    private static class WrappingLabel extends Label {
-
-        private WrappingLabel() {
-            setWrapText(true);
-        }
-    }
-
-    private static class SecondaryWrappingLabel extends WrappingLabel {
-
-        private SecondaryWrappingLabel() {
-            getStyleClass().add(STYLE_TEXT_SECONDARY);
-        }
-
-        private SecondaryWrappingLabel(String text) {
-            this();
-            setText(text);
-        }
-    }
-
-    private static final class StatusLabel extends SecondaryWrappingLabel {
-
-        private StatusLabel() {
-            getStyleClass().add("session-planner-status");
-            setVisible(false);
-            textProperty().addListener((ignored, before, after) -> setVisible(after != null && !after.isBlank()));
-            managedProperty().bind(visibleProperty());
-        }
-    }
-
-    private static final class CardTitleLabel extends Label {
-
-        private CardTitleLabel(String text) {
-            super(text);
-            getStyleClass().add("session-planner-card-title");
-        }
-    }
-
-    private static final class SectionCard extends VBox {
-
-        private SectionCard(String title, Label... body) {
-            super(4, sectionNodes(title, body));
-            getStyleClass().add("session-planner-card");
-            setPadding(new Insets(10));
-        }
-
-        private static Node[] sectionNodes(String title, Label[] body) {
-            Node[] nodes = new Node[body.length + 1];
-            nodes[0] = new CardTitleLabel(title);
-            for (int index = 0; index < body.length; index++) {
-                Label label = body[index];
-                label.setWrapText(true);
-                nodes[index + 1] = label;
-            }
-            return nodes;
-        }
-    }
-
-    private static final class BudgetSummaryLabel extends WrappingLabel {
-
-        private BudgetSummaryLabel() {
-            getStyleClass().add("session-planner-budget-summary");
-        }
-    }
-
-    private static final class BudgetProgressBar extends ProgressBar {
-
-        private BudgetProgressBar() {
-            super(0.0);
-            getStyleClass().add("session-planner-budget-bar");
-        }
-
-        private void setOverBudget(boolean overBudget) {
-            getStyleClass().removeAll(STYLE_BUDGET_OK, STYLE_BUDGET_OVER);
-            getStyleClass().add(overBudget ? STYLE_BUDGET_OVER : STYLE_BUDGET_OK);
-        }
-    }
-
-    private static final class BudgetCard extends VBox {
-
-        private final Label summaryLabel = new BudgetSummaryLabel();
-        private final BudgetProgressBar budgetBar = new BudgetProgressBar();
-
-        private BudgetCard(
-                Label totalBudgetLabel,
-                Label plannedXpLabel,
-                Label remainingXpLabel,
-                Label milestonesLabel
-        ) {
-            super(6);
-            getStyleClass().add("session-planner-card");
-            setPadding(new Insets(10));
-            getChildren().addAll(
-                    new CardTitleLabel("XP-Budget"),
-                    totalBudgetLabel,
-                    plannedXpLabel,
-                    remainingXpLabel,
-                    budgetBar,
-                    summaryLabel,
-                    milestonesLabel);
-        }
-
-        private void setSummaryText(String text) {
-            summaryLabel.setText(text);
-        }
-
-        private void setProgress(double progress) {
-            budgetBar.setProgress(progress);
-        }
-
-        private void setOverBudget(boolean overBudget) {
-            budgetBar.setOverBudget(overBudget);
-        }
-    }
-
-    private static final class PlansCard extends VBox {
-
-        private PlansCard(AvailablePlansBox availablePlansBox) {
-            super(8, new CardTitleLabel("Gespeicherte Encounter"), availablePlansBox);
-            getStyleClass().add("session-planner-card");
-            setPadding(new Insets(10));
-        }
-    }
-
-    private static final class AvailablePlansBox extends VBox {
-
+        private final VBox plansBox = new VBox(6);
+        private final VBox root = Factory.createSectionCard("Gespeicherte Encounter", plansBox);
         private Consumer<Long> importHandler = ignored -> { };
 
-        private AvailablePlansBox() {
-            super(6);
+        private PlansSection() {
+            root.setSpacing(8);
         }
 
-        private void setImportHandler(Consumer<Long> handler) {
+        private void onImportRequested(Consumer<Long> handler) {
             importHandler = handler == null ? ignored -> { } : handler;
         }
 
-        private void setPlans(List<SessionPlannerContributionModel.AvailablePlanModel> plans) {
-            getChildren().setAll(planNodes(plans));
+        @SuppressWarnings(PMD_LAW_OF_DEMETER)
+        private void showPlans(List<SessionPlannerContributionModel.AvailablePlanModel> plans) {
+            ObservableList<Node> children = plansBox.getChildren();
+            children.setAll(planNodes(plans));
         }
 
         private List<Node> planNodes(List<SessionPlannerContributionModel.AvailablePlanModel> plans) {
             if (plans.isEmpty()) {
-                return List.of(new EmptyPlansLabel());
+                return List.of(Factory.createLabel(
+                        "Keine gespeicherten Encounter-Plaene.",
+                        true,
+                        STYLE_TEXT_SECONDARY,
+                        "session-planner-empty"));
             }
             return plans.stream()
-                    .map(plan -> (Node) new PlanCard(plan, importHandler))
+                    .map(this::planCard)
                     .toList();
         }
-    }
 
-    private static final class EmptyPlansLabel extends SecondaryWrappingLabel {
-
-        private EmptyPlansLabel() {
-            super();
-            setText("Keine gespeicherten Encounter-Plaene.");
-            getStyleClass().add("session-planner-empty");
+        @SuppressWarnings(PMD_LAW_OF_DEMETER)
+        private Node planCard(SessionPlannerContributionModel.AvailablePlanModel plan) {
+            VBox card = new VBox(4);
+            ObservableList<Node> children = card.getChildren();
+            Button importButton = Factory.createButton(
+                    "Importieren",
+                    event -> importHandler.accept(plan.planId()),
+                    "compact",
+                    "accent");
+            importButton.setDisable(!plan.importEnabled());
+            Factory.addStyles(card, "session-planner-plan-card");
+            children.addAll(
+                    Factory.createLabel(plan.name(), false, "session-planner-plan-name"),
+                    Factory.createLabel(
+                            plan.creatureCount() + " Kreaturen"
+                                    + (plan.generatedLabel().isBlank() ? "" : " · " + plan.generatedLabel()),
+                            true,
+                            STYLE_TEXT_SECONDARY),
+                    Factory.createLabel(plan.statusText(), true, STYLE_TEXT_SECONDARY),
+                    importButton);
+            return card;
         }
     }
 
-    private static final class PlanNameLabel extends Label {
+    private static final class Factory {
 
-        private PlanNameLabel(String text) {
-            super(text);
-            getStyleClass().add("session-planner-plan-name");
+        private static Label createLabel(String text, boolean wrap, String... styleClasses) {
+            Label label = new Label(text);
+            label.setWrapText(wrap);
+            addStyles(label, styleClasses);
+            return label;
         }
-    }
 
-    private static class StyledButton extends Button {
-
-        private StyledButton(
-                String text,
-                String primaryStyle,
-                String secondaryStyle,
-                javafx.event.EventHandler<javafx.event.ActionEvent> action
-        ) {
-            super(text);
-            getStyleClass().addAll(primaryStyle, secondaryStyle);
-            setOnAction(action);
+        private static Button createButton(String text, EventHandler<ActionEvent> action, String... styleClasses) {
+            Button button = new Button(text);
+            addStyles(button, styleClasses);
+            button.setOnAction(action);
+            return button;
         }
-    }
 
-    private static final class ImportButton extends StyledButton {
-
-        private ImportButton(
-                SessionPlannerContributionModel.AvailablePlanModel plan,
-                Consumer<Long> importHandler
-        ) {
-            super("Importieren", "compact", "accent", event -> importHandler.accept(plan.planId()));
-            setDisable(!plan.importEnabled());
+        private static Label createStatusLabel() {
+            Label label = createLabel("", true, STYLE_TEXT_SECONDARY, "session-planner-status");
+            StringProperty text = label.textProperty();
+            BooleanProperty managed = label.managedProperty();
+            label.setVisible(false);
+            text.addListener((ignored, before, after) -> label.setVisible(after != null && !after.isBlank()));
+            managed.bind(label.visibleProperty());
+            return label;
         }
-    }
 
-    private static final class PlanCard extends VBox {
+        @SuppressWarnings(PMD_LAW_OF_DEMETER)
+        private static HBox createHeaderRow(Node titleLabel, Node actionButton) {
+            HBox row = new HBox(8);
+            ObservableList<Node> children = row.getChildren();
+            children.addAll(titleLabel, spacer(), actionButton);
+            row.setAlignment(Pos.CENTER_LEFT);
+            return row;
+        }
 
-        private PlanCard(
-                SessionPlannerContributionModel.AvailablePlanModel plan,
-                Consumer<Long> importHandler
-        ) {
-            super(4,
-                    new PlanNameLabel(plan.name()),
-                    new SecondaryWrappingLabel(plan.creatureCount() + " Kreaturen"
-                            + (plan.generatedLabel().isBlank() ? "" : " · " + plan.generatedLabel())),
-                    new SecondaryWrappingLabel(plan.statusText()),
-                    new ImportButton(plan, importHandler));
-            getStyleClass().add("session-planner-plan-card");
+        @SuppressWarnings(PMD_LAW_OF_DEMETER)
+        private static VBox createSectionCard(String title, Node... body) {
+            VBox card = new VBox(4);
+            ObservableList<Node> children = card.getChildren();
+            children.add(createLabel(title, false, "session-planner-card-title"));
+            children.addAll(body);
+            addStyles(card, "session-planner-card");
+            card.setPadding(new Insets(10));
+            return card;
+        }
+
+        @SuppressWarnings(PMD_LAW_OF_DEMETER)
+        private static void addStyles(Node node, String... styleClasses) {
+            ObservableList<String> appliedStyles = node.getStyleClass();
+            appliedStyles.addAll(styleClasses);
+        }
+
+        private static Region spacer() {
+            Region region = new Region();
+            HBox.setHgrow(region, Priority.ALWAYS);
+            return region;
         }
     }
 

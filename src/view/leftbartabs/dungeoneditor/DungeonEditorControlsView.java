@@ -5,7 +5,6 @@ import java.util.Objects;
 import java.util.function.Consumer;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
-import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
@@ -20,9 +19,9 @@ import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.util.StringConverter;
 import org.jspecify.annotations.Nullable;
+import src.view.slotcontent.controls.dungeoncontrol.DungeonControlPanelView;
 import src.view.slotcontent.primitives.dialog.DialogSurfaceView;
 import src.view.slotcontent.primitives.dialog.DialogSurfaceView.BodyPolicy;
-import src.view.slotcontent.controls.dungeoncontrol.DungeonControlPanelView;
 import src.view.slotcontent.primitives.popup.AnchoredPopupView;
 
 public final class DungeonEditorControlsView extends DungeonControlPanelView {
@@ -85,9 +84,9 @@ public final class DungeonEditorControlsView extends DungeonControlPanelView {
     private Consumer<DungeonEditorControlsViewInputEvent> viewInputEventHandler = ignored -> {};
     private boolean syncingMaps;
     private boolean syncingViewMode;
-    private boolean createMode;
-    private boolean deleteMode;
-    private long editingMapIdValue;
+    private boolean syncingMapEditorDraft;
+    private boolean syncingMapEditorVisibility;
+    private boolean syncingToolPopupVisibility;
 
     @SuppressWarnings("PMD.ConstructorCallsOverridableMethod")
     public DungeonEditorControlsView() {
@@ -120,9 +119,13 @@ public final class DungeonEditorControlsView extends DungeonControlPanelView {
                 showOverlaySettings(toOverlaySettings(after), contributionModel.busyProperty().get()));
         contributionModel.viewModeLabelProperty().addListener((ignored, before, after) -> showViewMode(after));
         contributionModel.selectedToolProperty().addListener((ignored, before, after) -> showTool(after));
+        contributionModel.mapEditorUiStateProperty().addListener((ignored, before, after) -> showMapEditor(after));
+        contributionModel.toolPaletteUiStateProperty().addListener((ignored, before, after) -> showToolPalette(after));
         refreshProjection(contributionModel);
         showViewMode(contributionModel.viewModeLabelProperty().get());
         showTool(contributionModel.selectedToolProperty().get());
+        showMapEditor(contributionModel.mapEditorUiStateProperty().get());
+        showToolPalette(contributionModel.toolPaletteUiStateProperty().get());
     }
 
     public void showMaps(List<MapItem> maps, String selectedKey, boolean busy, String statusText) {
@@ -172,22 +175,12 @@ public final class DungeonEditorControlsView extends DungeonControlPanelView {
     public void showTool(String tool) {
         String selectedTool = normalizeTool(tool);
         selectButton.setSelected(SELECT_TOOL.equals(selectedTool));
-        roomButton.setUserData(isRoomTool(selectedTool) ? selectedTool : ROOM_PAINT_TOOL);
-        wallButton.setUserData(isWallTool(selectedTool) ? selectedTool : WALL_CREATE_TOOL);
-        doorButton.setUserData(isDoorTool(selectedTool) ? selectedTool : DOOR_CREATE_TOOL);
-        corridorButton.setUserData(isCorridorTool(selectedTool) ? selectedTool : CORRIDOR_CREATE_TOOL);
-        stairButton.setUserData(isStairTool(selectedTool) ? selectedTool : STAIR_CREATE_TOOL);
-        transitionButton.setUserData(isTransitionTool(selectedTool) ? selectedTool : TRANSITION_CREATE_TOOL);
         markSelected(roomButton, isRoomTool(selectedTool));
         markSelected(wallButton, isWallTool(selectedTool));
         markSelected(doorButton, isDoorTool(selectedTool));
         markSelected(corridorButton, isCorridorTool(selectedTool));
         markSelected(stairButton, isStairTool(selectedTool));
         markSelected(transitionButton, isTransitionTool(selectedTool));
-    }
-
-    public void hideMapEditor() {
-        mapEditorPopup.hide();
     }
 
     private void configureMapControls() {
@@ -208,19 +201,22 @@ public final class DungeonEditorControlsView extends DungeonControlPanelView {
             editMapItem.setDisable(after == null);
             deleteMapItem.setDisable(after == null);
             if (!syncingMaps && after != null) {
-                publishSnapshot(true, false, false, false, after.mapId(), currentMapName(),
-                        false, currentViewModeKey(), false, currentTool(), 0, false,
-                        overlayControls.overlayModeKey(), overlayControls.overlayRange(),
-                        overlayControls.overlayOpacity(), overlayControls.overlayLevelsText());
+                publish(new DungeonEditorControlsViewInputEvent(
+                        new DungeonEditorControlsViewInputEvent.MapSelectionInput(after.mapId()),
+                        null,
+                        null,
+                        null,
+                        0,
+                        null));
             }
         });
         mapActionButton.setText("Neu");
         mapActionButton.getItems().setAll(editMapItem, deleteMapItem);
         mapActionButton.getStyleClass().addAll("toolbar-action-button", "dungeon-toolbar-menu");
         mapActionButton.setMinWidth(Region.USE_PREF_SIZE);
-        mapActionButton.setOnAction(event -> showCreatePopup(mapActionButton));
-        editMapItem.setOnAction(event -> showEditPopup(mapActionButton));
-        deleteMapItem.setOnAction(event -> showDeletePopup(mapActionButton));
+        mapActionButton.setOnAction(event -> publishMapEditorInput(true, false, false, false, false, false));
+        editMapItem.setOnAction(event -> publishMapEditorInput(false, true, false, false, false, false));
+        deleteMapItem.setOnAction(event -> publishMapEditorInput(false, false, true, false, false, false));
         describe(mapActionButton, "Neuen Dungeon erstellen; weitere Dungeon-Aktionen im Menü");
         statusLabel.getStyleClass().add("text-muted");
         statusLabel.setWrapText(false);
@@ -230,14 +226,8 @@ public final class DungeonEditorControlsView extends DungeonControlPanelView {
         statusLabel.setMaxWidth(160.0);
         previousLevelButton.getStyleClass().add("toolbar-action-button");
         nextLevelButton.getStyleClass().add("toolbar-action-button");
-        previousLevelButton.setOnAction(event -> publishSnapshot(false, false, false, false, currentMapIdValue(), currentMapName(),
-                false, currentViewModeKey(), false, currentTool(), -1, false,
-                overlayControls.overlayModeKey(), overlayControls.overlayRange(),
-                overlayControls.overlayOpacity(), overlayControls.overlayLevelsText()));
-        nextLevelButton.setOnAction(event -> publishSnapshot(false, false, false, false, currentMapIdValue(), currentMapName(),
-                false, currentViewModeKey(), false, currentTool(), 1, false,
-                overlayControls.overlayModeKey(), overlayControls.overlayRange(),
-                overlayControls.overlayOpacity(), overlayControls.overlayLevelsText()));
+        previousLevelButton.setOnAction(event -> publishProjectionShift(-1));
+        nextLevelButton.setOnAction(event -> publishProjectionShift(1));
         levelLabel.getStyleClass().add("text-muted");
         describe(previousLevelButton, "Vorherige Dungeon-Ebene anzeigen");
         describe(nextLevelButton, "Nächste Dungeon-Ebene anzeigen");
@@ -257,30 +247,20 @@ public final class DungeonEditorControlsView extends DungeonControlPanelView {
                 }
                 return;
             }
-            publishSnapshot(
-                    false,
-                    false,
-                    false,
-                    false,
-                    currentMapIdValue(),
-                    currentMapName(),
-                    true,
+            publish(new DungeonEditorControlsViewInputEvent(
+                    null,
+                    null,
                     newToggle == graphButton ? VIEW_GRAPH : VIEW_GRID,
-                    false,
-                    currentTool(),
+                    null,
                     0,
-                    false,
-                    overlayControls.overlayModeKey(),
-                    overlayControls.overlayRange(),
-                    overlayControls.overlayOpacity(),
-                    overlayControls.overlayLevelsText());
+                    null));
         });
     }
 
     private void configureToolControls() {
         selectButton.setToggleGroup(toolGroup);
         selectButton.setSelected(true);
-        selectButton.setOnAction(event -> selectTool(SELECT_TOOL));
+        selectButton.setOnAction(event -> publishToolSelection(SELECT_TOOL));
         describe(selectButton, "Auswahlwerkzeug aktivieren");
         describe(roomButton, "Raumwerkzeug waehlen");
         describe(wallButton, "Wandwerkzeug waehlen");
@@ -288,15 +268,24 @@ public final class DungeonEditorControlsView extends DungeonControlPanelView {
         describe(corridorButton, "Korridorwerkzeug waehlen");
         describe(stairButton, "Treppenwerkzeug waehlen");
         describe(transitionButton, "Übergangswerkzeug wählen");
-        roomButton.setOnAction(event -> activateToolFamily(roomButton, ROOM_PAINT_TOOL, ROOM_DELETE_TOOL));
-        wallButton.setOnAction(event -> activateToolFamily(wallButton, WALL_CREATE_TOOL, WALL_DELETE_TOOL));
-        doorButton.setOnAction(event -> activateToolFamily(doorButton, DOOR_CREATE_TOOL, DOOR_DELETE_TOOL));
-        corridorButton.setOnAction(event -> activateToolFamily(corridorButton, CORRIDOR_CREATE_TOOL, CORRIDOR_DELETE_TOOL));
-        stairButton.setOnAction(event -> activateToolFamily(stairButton, STAIR_CREATE_TOOL, STAIR_DELETE_TOOL));
-        transitionButton.setOnAction(event -> activateToolFamily(
-                transitionButton,
-                TRANSITION_CREATE_TOOL,
-                TRANSITION_DELETE_TOOL));
+        roomButton.setOnAction(event -> publishToolFamilySelection(
+                DungeonEditorControlsViewInputEvent.ToolFamily.ROOM,
+                ROOM_PAINT_TOOL));
+        wallButton.setOnAction(event -> publishToolFamilySelection(
+                DungeonEditorControlsViewInputEvent.ToolFamily.WALL,
+                WALL_CREATE_TOOL));
+        doorButton.setOnAction(event -> publishToolFamilySelection(
+                DungeonEditorControlsViewInputEvent.ToolFamily.DOOR,
+                DOOR_CREATE_TOOL));
+        corridorButton.setOnAction(event -> publishToolFamilySelection(
+                DungeonEditorControlsViewInputEvent.ToolFamily.CORRIDOR,
+                CORRIDOR_CREATE_TOOL));
+        stairButton.setOnAction(event -> publishToolFamilySelection(
+                DungeonEditorControlsViewInputEvent.ToolFamily.STAIR,
+                STAIR_CREATE_TOOL));
+        transitionButton.setOnAction(event -> publishToolFamilySelection(
+                DungeonEditorControlsViewInputEvent.ToolFamily.TRANSITION,
+                TRANSITION_CREATE_TOOL));
     }
 
     private void configureMapEditorPopup() {
@@ -318,9 +307,8 @@ public final class DungeonEditorControlsView extends DungeonControlPanelView {
 
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
-        HBox actionRow = new HBox(8, cancelMapEditButton, spacer, saveMapButton);
-        actionRow.setAlignment(Pos.CENTER_LEFT);
-        mapEditorActionRow = actionRow;
+        mapEditorActionRow = new HBox(8, cancelMapEditButton, spacer, saveMapButton);
+        mapEditorActionRow.setAlignment(Pos.CENTER_LEFT);
 
         VBox body = new VBox(10, mapNameField, mapEditorError, deleteConfirmRow);
         DialogSurfaceView panel = new DialogSurfaceView();
@@ -328,41 +316,27 @@ public final class DungeonEditorControlsView extends DungeonControlPanelView {
         panel.getStyleClass().addAll("dropdown-window", "dropdown-form");
         panel.setHeader(mapEditorTitle);
         panel.setBody(body, BodyPolicy.FIXED);
-        panel.setFooter(actionRow);
+        panel.setFooter(mapEditorActionRow);
         mapEditorPopup.setContent(panel);
-        cancelMapEditButton.setOnAction(event -> mapEditorPopup.hide());
-        cancelDeleteButton.setOnAction(event -> {
-            if (deleteMode) {
-                mapEditorPopup.hide();
-            } else {
-                showDeleteConfirmation(false);
+        mapEditorPopup.addOnHidden(event -> {
+            if (!syncingMapEditorVisibility) {
+                publishMapEditorInput(false, false, false, true, false, false);
             }
         });
-        confirmDeleteButton.setOnAction(event -> {
-            publishSnapshot(false, false, false, true, editingMapIdValue, currentMapName(),
-                    false, currentViewModeKey(), false, currentTool(), 0, false,
-                    overlayControls.overlayModeKey(), overlayControls.overlayRange(),
-                    overlayControls.overlayOpacity(), overlayControls.overlayLevelsText());
-            mapEditorPopup.hide();
+        cancelMapEditButton.setOnAction(event -> publishMapEditorInput(false, false, false, true, false, false));
+        cancelDeleteButton.setOnAction(event -> publishMapEditorInput(false, false, false, true, false, false));
+        confirmDeleteButton.setOnAction(event -> publishMapEditorInput(false, false, false, false, false, true));
+        saveMapButton.setOnAction(event -> publishMapEditorInput(false, false, false, false, true, false));
+        mapNameField.setOnAction(event -> publishMapEditorInput(false, false, false, false, true, false));
+        mapNameField.textProperty().addListener((ignored, before, after) -> {
+            if (!syncingMapEditorDraft) {
+                publishMapEditorInput(false, false, false, false, false, false);
+            }
         });
-        saveMapButton.setOnAction(event -> submitMapEditor());
-        mapNameField.setOnAction(event -> submitMapEditor());
-        overlayControls.setOnModeChanged(mode -> publishSnapshot(false, false, false, false, currentMapIdValue(), currentMapName(),
-                false, currentViewModeKey(), false, currentTool(), 0, true,
-                overlayControls.overlayModeKey(), overlayControls.overlayRange(),
-                overlayControls.overlayOpacity(), overlayControls.overlayLevelsText()));
-        overlayControls.setOnRangeChanged(levelRange -> publishSnapshot(false, false, false, false, currentMapIdValue(), currentMapName(),
-                false, currentViewModeKey(), false, currentTool(), 0, true,
-                overlayControls.overlayModeKey(), overlayControls.overlayRange(),
-                overlayControls.overlayOpacity(), overlayControls.overlayLevelsText()));
-        overlayControls.setOnOpacityChanged(opacity -> publishSnapshot(false, false, false, false, currentMapIdValue(), currentMapName(),
-                false, currentViewModeKey(), false, currentTool(), 0, true,
-                overlayControls.overlayModeKey(), overlayControls.overlayRange(),
-                overlayControls.overlayOpacity(), overlayControls.overlayLevelsText()));
-        overlayControls.setOnSelectedLevelsChanged(() -> publishSnapshot(false, false, false, false, currentMapIdValue(), currentMapName(),
-                false, currentViewModeKey(), false, currentTool(), 0, true,
-                overlayControls.overlayModeKey(), overlayControls.overlayRange(),
-                overlayControls.overlayOpacity(), overlayControls.overlayLevelsText()));
+        overlayControls.setOnModeChanged(mode -> publishOverlayInput());
+        overlayControls.setOnRangeChanged(levelRange -> publishOverlayInput());
+        overlayControls.setOnOpacityChanged(opacity -> publishOverlayInput());
+        overlayControls.setOnSelectedLevelsChanged(this::publishOverlayInput);
     }
 
     private void configureToolPopup() {
@@ -370,6 +344,11 @@ public final class DungeonEditorControlsView extends DungeonControlPanelView {
         panel.setPadding(new Insets(10));
         panel.getStyleClass().addAll("dropdown-window", "dropdown-form");
         toolPopup.setContent(panel);
+        toolPopup.addOnHidden(event -> {
+            if (!syncingToolPopupVisibility) {
+                publishToolDismissed();
+            }
+        });
     }
 
     private HBox dungeonRow() {
@@ -407,230 +386,161 @@ public final class DungeonEditorControlsView extends DungeonControlPanelView {
         return segment;
     }
 
-    private void showCreatePopup(Node anchor) {
-        createMode = true;
-        deleteMode = false;
-        editingMapIdValue = 0L;
-        mapEditorTitle.setText("Neuen Dungeon anlegen");
-        mapNameField.setVisible(true);
-        mapNameField.setManaged(true);
-        mapNameField.setDisable(false);
-        mapNameField.setText("Dungeon");
-        mapEditorActionRow.setVisible(true);
-        mapEditorActionRow.setManaged(true);
-        saveMapButton.setVisible(true);
-        saveMapButton.setManaged(true);
-        saveMapButton.setText("Erstellen");
-        showDeleteConfirmation(false);
-        showMapEditor(anchor);
-    }
-
-    private void showEditPopup(Node anchor) {
-        MapItem selected = mapSelector.getSelectionModel().getSelectedItem();
-        if (selected == null) {
+    private void showMapEditor(DungeonEditorContributionModel.MapEditorUiState mapEditorUiState) {
+        DungeonEditorContributionModel.MapEditorUiState resolvedState = mapEditorUiState == null
+                ? DungeonEditorContributionModel.MapEditorUiState.hidden()
+                : mapEditorUiState;
+        boolean popupWasShowing = mapEditorPopup.isShowing();
+        mapEditorTitle.setText(resolvedState.title());
+        syncingMapEditorDraft = true;
+        mapNameField.setText(resolvedState.draftName());
+        syncingMapEditorDraft = false;
+        mapNameField.setVisible(resolvedState.draftFieldVisible());
+        mapNameField.setManaged(resolvedState.draftFieldVisible());
+        mapEditorActionRow.setVisible(resolvedState.actionRowVisible());
+        mapEditorActionRow.setManaged(resolvedState.actionRowVisible());
+        saveMapButton.setVisible(resolvedState.submitVisible());
+        saveMapButton.setManaged(resolvedState.submitVisible());
+        saveMapButton.setText(resolvedState.submitLabel());
+        mapEditorError.setText(resolvedState.errorText());
+        mapEditorError.setVisible(!resolvedState.errorText().isBlank());
+        mapEditorError.setManaged(!resolvedState.errorText().isBlank());
+        deleteConfirmRow.setVisible(resolvedState.deleteConfirmationVisible());
+        deleteConfirmRow.setManaged(resolvedState.deleteConfirmationVisible());
+        if (resolvedState.visible()) {
+            if (!popupWasShowing) {
+                mapEditorPopup.showBelow(mapActionButton);
+                if (resolvedState.draftFieldVisible()) {
+                    mapEditorPopup.focusAfterShown(mapNameField);
+                    mapNameField.selectAll();
+                }
+            } else if (resolvedState.draftFieldVisible()) {
+                mapEditorPopup.focusAfterShown(mapNameField);
+            }
             return;
         }
-        createMode = false;
-        deleteMode = false;
-        editingMapIdValue = selected.mapId();
-        mapEditorTitle.setText("Dungeon bearbeiten");
-        mapNameField.setVisible(true);
-        mapNameField.setManaged(true);
-        mapNameField.setDisable(false);
-        mapNameField.setText(selected.mapName());
-        mapEditorActionRow.setVisible(true);
-        mapEditorActionRow.setManaged(true);
-        saveMapButton.setVisible(true);
-        saveMapButton.setManaged(true);
-        saveMapButton.setText("Speichern");
-        showDeleteConfirmation(false);
-        showMapEditor(anchor);
+        if (mapEditorPopup.isShowing()) {
+            syncingMapEditorVisibility = true;
+            mapEditorPopup.hide();
+            syncingMapEditorVisibility = false;
+        }
     }
 
-    private void showDeletePopup(Node anchor) {
-        MapItem selected = mapSelector.getSelectionModel().getSelectedItem();
-        if (selected == null) {
+    private void showToolPalette(DungeonEditorContributionModel.ToolPaletteUiState toolPaletteUiState) {
+        DungeonEditorContributionModel.ToolPaletteUiState resolvedState = toolPaletteUiState == null
+                ? DungeonEditorContributionModel.ToolPaletteUiState.closed()
+                : toolPaletteUiState;
+        primaryToolOption.setText(resolvedState.primaryToolLabel());
+        secondaryToolOption.setText(resolvedState.secondaryToolLabel());
+        primaryToolOption.setOnAction(event -> publishToolSelection(resolvedState.primaryToolLabel()));
+        secondaryToolOption.setOnAction(event -> publishToolSelection(resolvedState.secondaryToolLabel()));
+        if (resolvedState.visible()) {
+            Button anchor = anchorFor(resolvedState.family());
+            if (anchor != null) {
+                if (toolPopup.isShowing()) {
+                    syncingToolPopupVisibility = true;
+                    toolPopup.hide();
+                    syncingToolPopupVisibility = false;
+                }
+                toolPopup.showBelow(anchor);
+                toolPopup.focusAfterShown(primaryToolOption);
+            }
             return;
         }
-        createMode = false;
-        deleteMode = true;
-        editingMapIdValue = selected.mapId();
-        mapEditorTitle.setText("Dungeon löschen: " + selected.mapName());
-        mapNameField.setVisible(false);
-        mapNameField.setManaged(false);
-        mapEditorActionRow.setVisible(false);
-        mapEditorActionRow.setManaged(false);
-        saveMapButton.setVisible(false);
-        saveMapButton.setManaged(false);
-        showDeleteConfirmation(true);
-        showMapEditor(anchor);
-    }
-
-    private void showMapEditor(Node anchor) {
-        mapEditorError.setText("");
-        mapEditorError.setVisible(false);
-        mapEditorError.setManaged(false);
-        mapEditorPopup.showBelow(anchor);
-        if (mapNameField.isVisible()) {
-            mapEditorPopup.focusAfterShown(mapNameField);
-            mapNameField.selectAll();
-        }
-    }
-
-    private void submitMapEditor() {
-        String mapName = mapNameField.getText() == null ? "" : mapNameField.getText().strip();
-        if (mapName.isBlank()) {
-            mapEditorError.setText("Name fehlt.");
-            mapEditorError.setVisible(true);
-            mapEditorError.setManaged(true);
-            mapNameField.requestFocus();
-            return;
-        }
-        if (createMode) {
-            publishSnapshot(false, true, false, false, 0L, mapName,
-                    false, currentViewModeKey(), false, currentTool(), 0, false,
-                    overlayControls.overlayModeKey(), overlayControls.overlayRange(),
-                    overlayControls.overlayOpacity(), overlayControls.overlayLevelsText());
-        } else {
-            publishSnapshot(false, false, true, false, editingMapIdValue, mapName,
-                    false, currentViewModeKey(), false, currentTool(), 0, false,
-                    overlayControls.overlayModeKey(), overlayControls.overlayRange(),
-                    overlayControls.overlayOpacity(), overlayControls.overlayLevelsText());
-        }
-        mapEditorPopup.hide();
-    }
-
-    private void showDeleteConfirmation(boolean visible) {
-        deleteConfirmRow.setVisible(visible);
-        deleteConfirmRow.setManaged(visible);
-    }
-
-    private void activateToolFamily(Button anchor, String primaryTool, String secondaryTool) {
-        selectTool(primaryTool);
-        primaryToolOption.setText(primaryTool);
-        secondaryToolOption.setText(secondaryTool);
-        primaryToolOption.setOnAction(event -> {
-            anchor.setUserData(primaryTool);
-            selectTool(primaryTool);
+        if (toolPopup.isShowing()) {
+            syncingToolPopupVisibility = true;
             toolPopup.hide();
-        });
-        secondaryToolOption.setOnAction(event -> {
-            anchor.setUserData(secondaryTool);
-            selectTool(secondaryTool);
-            toolPopup.hide();
-        });
-        toolPopup.showBelow(anchor);
-        toolPopup.focusAfterShown(primaryToolOption);
+            syncingToolPopupVisibility = false;
+        }
     }
 
-    private void selectTool(String tool) {
-        String selectedTool = normalizeTool(tool);
-        showTool(selectedTool);
-        publishSnapshot(
-                false,
-                false,
-                false,
-                false,
-                currentMapIdValue(),
-                currentMapName(),
-                false,
-                currentViewModeKey(),
-                true,
-                selectedTool,
+    private void publishMapEditorInput(
+            boolean openCreateRequested,
+            boolean openRenameRequested,
+            boolean openDeleteRequested,
+            boolean dismissRequested,
+            boolean submitRequested,
+            boolean confirmDeleteRequested
+    ) {
+        publish(new DungeonEditorControlsViewInputEvent(
+                null,
+                new DungeonEditorControlsViewInputEvent.MapEditorInput(
+                        openCreateRequested,
+                        openRenameRequested,
+                        openDeleteRequested,
+                        dismissRequested,
+                        submitRequested,
+                        confirmDeleteRequested,
+                        currentDraftText()),
+                null,
+                null,
                 0,
-                false,
-                overlayControls.overlayModeKey(),
-                overlayControls.overlayRange(),
-                overlayControls.overlayOpacity(),
-                overlayControls.overlayLevelsText());
+                null));
+    }
+
+    private void publishToolFamilySelection(
+            DungeonEditorControlsViewInputEvent.ToolFamily family,
+            String primaryToolLabel
+    ) {
+        publish(new DungeonEditorControlsViewInputEvent(
+                null,
+                null,
+                null,
+                new DungeonEditorControlsViewInputEvent.ToolInput(family, primaryToolLabel, false),
+                0,
+                null));
+    }
+
+    private void publishToolSelection(String selectedToolLabel) {
+        publish(new DungeonEditorControlsViewInputEvent(
+                null,
+                null,
+                null,
+                new DungeonEditorControlsViewInputEvent.ToolInput(null, selectedToolLabel, false),
+                0,
+                null));
+    }
+
+    private void publishToolDismissed() {
+        publish(new DungeonEditorControlsViewInputEvent(
+                null,
+                null,
+                null,
+                new DungeonEditorControlsViewInputEvent.ToolInput(null, null, true),
+                0,
+                null));
+    }
+
+    private void publishProjectionShift(int projectionLevelShift) {
+        publish(new DungeonEditorControlsViewInputEvent(
+                null,
+                null,
+                null,
+                null,
+                projectionLevelShift,
+                null));
+    }
+
+    private void publishOverlayInput() {
+        publish(new DungeonEditorControlsViewInputEvent(
+                null,
+                null,
+                null,
+                null,
+                0,
+                new DungeonEditorControlsViewInputEvent.OverlayInput(
+                        overlayControls.overlayModeKey(),
+                        overlayControls.overlayRange(),
+                        overlayControls.overlayOpacity(),
+                        overlayControls.overlayLevelsText())));
     }
 
     private void publish(DungeonEditorControlsViewInputEvent event) {
         viewInputEventHandler.accept(event);
     }
 
-    private void publishSnapshot(
-            boolean mapSelectionChanged,
-            boolean createMapRequested,
-            boolean renameMapRequested,
-            boolean deleteMapRequested,
-            long mapIdValue,
-            String mapName,
-            boolean viewModeChanged,
-            String viewModeKey,
-            boolean toolChanged,
-            String tool,
-            int projectionLevelShift,
-            boolean overlayChanged,
-            String overlayModeKey,
-            int overlayRange,
-            double overlayOpacity,
-            String overlayLevelsText
-    ) {
-        publish(new DungeonEditorControlsViewInputEvent(
-                mapSelectionChanged,
-                createMapRequested,
-                renameMapRequested,
-                deleteMapRequested,
-                mapIdValue,
-                mapName,
-                viewModeChanged,
-                toViewMode(viewModeKey),
-                toolChanged,
-                toTool(tool),
-                projectionLevelShift,
-                overlayChanged,
-                overlayModeKey,
-                overlayRange,
-                overlayOpacity,
-                overlayLevelsText));
-    }
-
-    private long currentMapIdValue() {
-        MapItem selected = mapSelector.getSelectionModel().getSelectedItem();
-        return selected == null ? 0L : selected.mapId();
-    }
-
-    private String currentMapName() {
-        if (mapNameField.isVisible()) {
-            return mapNameField.getText() == null ? "" : mapNameField.getText().strip();
-        }
-        MapItem selected = mapSelector.getSelectionModel().getSelectedItem();
-        return selected == null ? "" : selected.mapName();
-    }
-
-    private String currentViewModeKey() {
-        return graphButton.isSelected() ? VIEW_GRAPH : VIEW_GRID;
-    }
-
-    private String currentTool() {
-        if (selectButton.isSelected()) {
-            return SELECT_TOOL;
-        }
-        if (roomButton.getStyleClass().contains(STYLE_SELECTED)) {
-            return currentButtonTool(roomButton, ROOM_PAINT_TOOL);
-        }
-        if (wallButton.getStyleClass().contains(STYLE_SELECTED)) {
-            return currentButtonTool(wallButton, WALL_CREATE_TOOL);
-        }
-        if (doorButton.getStyleClass().contains(STYLE_SELECTED)) {
-            return currentButtonTool(doorButton, DOOR_CREATE_TOOL);
-        }
-        if (corridorButton.getStyleClass().contains(STYLE_SELECTED)) {
-            return currentButtonTool(corridorButton, CORRIDOR_CREATE_TOOL);
-        }
-        if (stairButton.getStyleClass().contains(STYLE_SELECTED)) {
-            return currentButtonTool(stairButton, STAIR_CREATE_TOOL);
-        }
-        if (transitionButton.getStyleClass().contains(STYLE_SELECTED)) {
-            return currentButtonTool(transitionButton, TRANSITION_CREATE_TOOL);
-        }
-        return SELECT_TOOL;
-    }
-
-    private static String currentButtonTool(Button button, String fallbackTool) {
-        Object userData = button.getUserData();
-        return userData instanceof String tool ? normalizeTool(tool) : fallbackTool;
+    private String currentDraftText() {
+        return mapNameField.getText() == null ? "" : mapNameField.getText().strip();
     }
 
     private static ToggleButton toolToggle(String text) {
@@ -644,37 +554,12 @@ public final class DungeonEditorControlsView extends DungeonControlPanelView {
         Button button = new Button(text);
         button.getStyleClass().add("tool-btn");
         button.setMinWidth(Region.USE_PREF_SIZE);
-        button.setUserData(text);
         return button;
     }
 
     private static String normalizeTool(String tool) {
         String selectedTool = tool == null || tool.isBlank() ? SELECT_TOOL : tool;
         return isKnownTool(selectedTool) ? selectedTool : SELECT_TOOL;
-    }
-
-    private static DungeonEditorControlsViewInputEvent.ViewMode toViewMode(String viewModeKey) {
-        return VIEW_GRAPH.equalsIgnoreCase(viewModeKey)
-                ? DungeonEditorControlsViewInputEvent.ViewMode.GRAPH
-                : DungeonEditorControlsViewInputEvent.ViewMode.GRID;
-    }
-
-    private static DungeonEditorControlsViewInputEvent.Tool toTool(String tool) {
-        return switch (normalizeTool(tool)) {
-            case ROOM_PAINT_TOOL -> DungeonEditorControlsViewInputEvent.Tool.ROOM_PAINT;
-            case ROOM_DELETE_TOOL -> DungeonEditorControlsViewInputEvent.Tool.ROOM_DELETE;
-            case WALL_CREATE_TOOL -> DungeonEditorControlsViewInputEvent.Tool.WALL_CREATE;
-            case WALL_DELETE_TOOL -> DungeonEditorControlsViewInputEvent.Tool.WALL_DELETE;
-            case DOOR_CREATE_TOOL -> DungeonEditorControlsViewInputEvent.Tool.DOOR_CREATE;
-            case DOOR_DELETE_TOOL -> DungeonEditorControlsViewInputEvent.Tool.DOOR_DELETE;
-            case CORRIDOR_CREATE_TOOL -> DungeonEditorControlsViewInputEvent.Tool.CORRIDOR_CREATE;
-            case CORRIDOR_DELETE_TOOL -> DungeonEditorControlsViewInputEvent.Tool.CORRIDOR_DELETE;
-            case STAIR_CREATE_TOOL -> DungeonEditorControlsViewInputEvent.Tool.STAIR_CREATE;
-            case STAIR_DELETE_TOOL -> DungeonEditorControlsViewInputEvent.Tool.STAIR_DELETE;
-            case TRANSITION_CREATE_TOOL -> DungeonEditorControlsViewInputEvent.Tool.TRANSITION_CREATE;
-            case TRANSITION_DELETE_TOOL -> DungeonEditorControlsViewInputEvent.Tool.TRANSITION_DELETE;
-            default -> DungeonEditorControlsViewInputEvent.Tool.SELECT;
-        };
     }
 
     private void refreshProjection(DungeonEditorContributionModel contributionModel) {
@@ -722,6 +607,21 @@ public final class DungeonEditorControlsView extends DungeonControlPanelView {
             return OverlayControlsPanel.Mode.SELECTED;
         }
         return OverlayControlsPanel.Mode.OFF;
+    }
+
+    private @Nullable Button anchorFor(DungeonEditorContributionModel.ToolFamily family) {
+        if (family == null) {
+            return null;
+        }
+        return switch (family) {
+            case ROOM -> roomButton;
+            case WALL -> wallButton;
+            case DOOR -> doorButton;
+            case CORRIDOR -> corridorButton;
+            case STAIR -> stairButton;
+            case TRANSITION -> transitionButton;
+            case NONE -> null;
+        };
     }
 
     private static boolean isKnownTool(String tool) {
@@ -784,13 +684,6 @@ public final class DungeonEditorControlsView extends DungeonControlPanelView {
             key = key == null ? "" : key;
             mapName = mapName == null || mapName.isBlank() ? "Dungeon Map" : mapName;
             revision = Math.max(0L, revision);
-        }
-    }
-
-    public record MapNameRequest(String key, String mapName) {
-        public MapNameRequest {
-            key = key == null ? "" : key;
-            mapName = mapName == null ? "" : mapName.strip();
         }
     }
 }
