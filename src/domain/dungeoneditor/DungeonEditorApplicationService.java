@@ -39,7 +39,9 @@ import src.domain.dungeoneditor.published.DungeonEditorTool;
 import src.domain.dungeoneditor.published.DungeonEditorTopologyElementRef;
 import src.domain.dungeoneditor.published.DungeonEditorViewMode;
 import src.domain.dungeoneditor.published.LoadDungeonEditorQuery;
-import src.domain.dungeoneditor.session.entity.DungeonEditorSession;
+import src.domain.dungeoneditor.session.value.DungeonEditorSessionCommand;
+import src.domain.dungeoneditor.session.value.DungeonEditorSessionSnapshot;
+import src.domain.dungeoneditor.session.value.DungeonEditorSessionValues;
 
 public final class DungeonEditorApplicationService {
 
@@ -99,7 +101,7 @@ public final class DungeonEditorApplicationService {
             return effectiveQuery.mapId();
         }
 
-        private static ApplyDungeonEditorSessionUseCase.Command toInternalCommand(
+        private static DungeonEditorSessionCommand toInternalCommand(
                 @Nullable ApplyDungeonEditorSessionCommand command
         ) {
             ApplyDungeonEditorSessionCommand effective = command == null
@@ -114,8 +116,8 @@ public final class DungeonEditorApplicationService {
                     ApplyDungeonEditorSessionCommand.MainViewInput.empty(),
                     ApplyDungeonEditorSessionCommand.RoomNarrationInput.empty())
                     : command;
-            return new ApplyDungeonEditorSessionUseCase.Command(
-                    ApplyDungeonEditorSessionUseCase.Action.valueOf(effective.action().name()),
+            return new DungeonEditorSessionCommand(
+                    DungeonEditorSessionCommand.Action.fromName(effective.action().name()),
                     toDomainMapId(effective.mapId()),
                     effective.mapName(),
                     toSessionViewMode(effective.viewMode()),
@@ -130,27 +132,27 @@ public final class DungeonEditorApplicationService {
             return mapId == null ? null : new DungeonMapId(mapId.value());
         }
 
-        private static ApplyDungeonEditorSessionUseCase.OverlayData toInternalOverlay(
+        private static DungeonEditorSessionValues.OverlaySettings toInternalOverlay(
                 @Nullable DungeonEditorOverlaySettings overlaySettings
         ) {
             DungeonEditorOverlaySettings safeOverlay = overlaySettings == null
                     ? DungeonEditorOverlaySettings.defaults()
                     : overlaySettings;
-            return new ApplyDungeonEditorSessionUseCase.OverlayData(
+            return new DungeonEditorSessionValues.OverlaySettings(
                     safeOverlay.modeKey(),
                     safeOverlay.levelRange(),
                     safeOverlay.opacity(),
                     safeOverlay.selectedLevels());
         }
 
-        private static ApplyDungeonEditorSessionUseCase.MainViewInput toInternalMainViewInput(
+        private static DungeonEditorSessionCommand.MainViewInput toInternalMainViewInput(
                 ApplyDungeonEditorSessionCommand.@Nullable MainViewInput mainViewInput
         ) {
             ApplyDungeonEditorSessionCommand.MainViewInput safeInput = mainViewInput == null
                     ? ApplyDungeonEditorSessionCommand.MainViewInput.empty()
                     : mainViewInput;
-            return new ApplyDungeonEditorSessionUseCase.MainViewInput(
-                    ApplyDungeonEditorSessionUseCase.MainViewInputSource.valueOf(safeInput.source().name()),
+            return new DungeonEditorSessionCommand.MainViewInput(
+                    DungeonEditorSessionCommand.MainViewInputSource.fromName(safeInput.source().name()),
                     safeInput.canvasX(),
                     safeInput.canvasY(),
                     safeInput.primaryButtonDown(),
@@ -159,26 +161,26 @@ public final class DungeonEditorApplicationService {
                     safeInput.levelDelta());
         }
 
-        private static ApplyDungeonEditorSessionUseCase.RoomNarrationInput toInternalRoomNarration(
+        private static DungeonEditorSessionCommand.RoomNarrationInput toInternalRoomNarration(
                 ApplyDungeonEditorSessionCommand.@Nullable RoomNarrationInput roomNarration
         ) {
             ApplyDungeonEditorSessionCommand.RoomNarrationInput safeNarration = roomNarration == null
                     ? ApplyDungeonEditorSessionCommand.RoomNarrationInput.empty()
                     : roomNarration;
-            return new ApplyDungeonEditorSessionUseCase.RoomNarrationInput(
+            return new DungeonEditorSessionCommand.RoomNarrationInput(
                     safeNarration.roomId(),
                     safeNarration.visualDescription(),
                     safeNarration.exits().stream().map(CommandTranslation::toDomainRoomExit).toList());
         }
 
-        private static DungeonEditorSession.ViewMode toSessionViewMode(@Nullable DungeonEditorViewMode viewMode) {
+        private static DungeonEditorSessionValues.ViewMode toSessionViewMode(@Nullable DungeonEditorViewMode viewMode) {
             return viewMode == DungeonEditorViewMode.GRAPH
-                    ? DungeonEditorSession.ViewMode.GRAPH
-                    : DungeonEditorSession.ViewMode.GRID;
+                    ? DungeonEditorSessionValues.ViewMode.GRAPH
+                    : DungeonEditorSessionValues.ViewMode.GRID;
         }
 
-        private static DungeonEditorSession.Tool toSessionTool(@Nullable DungeonEditorTool tool) {
-            return tool == null ? DungeonEditorSession.Tool.SELECT : DungeonEditorSession.Tool.valueOf(tool.name());
+        private static DungeonEditorSessionValues.Tool toSessionTool(@Nullable DungeonEditorTool tool) {
+            return tool == null ? DungeonEditorSessionValues.Tool.SELECT : DungeonEditorSessionValues.Tool.fromName(tool.name());
         }
 
         private static DungeonInspectorSnapshot.RoomExitNarration toDomainRoomExit(
@@ -201,10 +203,10 @@ public final class DungeonEditorApplicationService {
         }
 
         private static DungeonEditorSnapshot toPublishedSnapshot(
-                ApplyDungeonEditorSessionUseCase.@Nullable SnapshotData snapshot
+                DungeonEditorSessionSnapshot.@Nullable SnapshotData snapshot
         ) {
-            ApplyDungeonEditorSessionUseCase.SnapshotData safeSnapshot = snapshot == null
-                    ? ApplyDungeonEditorSessionUseCase.SnapshotData.empty("")
+            DungeonEditorSessionSnapshot.SnapshotData safeSnapshot = snapshot == null
+                    ? DungeonEditorSessionSnapshot.SnapshotData.empty("")
                     : snapshot;
             return new DungeonEditorSnapshot(
                     safeSnapshot.maps().stream().map(SnapshotTranslation::toPublishedMapSummary).toList(),
@@ -224,10 +226,10 @@ public final class DungeonEditorApplicationService {
         }
 
         private static DungeonEditorOverlaySettings toPublishedOverlay(
-                ApplyDungeonEditorSessionUseCase.@Nullable OverlayData overlay
+                DungeonEditorSessionValues.@Nullable OverlaySettings overlay
         ) {
-            ApplyDungeonEditorSessionUseCase.OverlayData safeOverlay = overlay == null
-                    ? ApplyDungeonEditorSessionUseCase.OverlayData.defaults()
+            DungeonEditorSessionValues.OverlaySettings safeOverlay = overlay == null
+                    ? DungeonEditorSessionValues.OverlaySettings.defaults()
                     : overlay;
             return new DungeonEditorOverlaySettings(
                     safeOverlay.modeKey(),
@@ -237,10 +239,10 @@ public final class DungeonEditorApplicationService {
         }
 
         private static DungeonEditorSnapshot.Selection toPublishedSelection(
-                ApplyDungeonEditorSessionUseCase.@Nullable SelectionData selection
+                DungeonEditorSessionValues.@Nullable Selection selection
         ) {
-            ApplyDungeonEditorSessionUseCase.SelectionData safeSelection = selection == null
-                    ? ApplyDungeonEditorSessionUseCase.SelectionData.empty()
+            DungeonEditorSessionValues.Selection safeSelection = selection == null
+                    ? DungeonEditorSessionValues.Selection.empty()
                     : selection;
             return new DungeonEditorSnapshot.Selection(
                     toPublishedTopologyRef(safeSelection.topologyRef()),
@@ -250,49 +252,49 @@ public final class DungeonEditorApplicationService {
         }
 
         private static DungeonEditorPreview toPublishedPreview(
-                ApplyDungeonEditorSessionUseCase.@Nullable PreviewData preview
+                DungeonEditorSessionValues.@Nullable Preview preview
         ) {
-            if (preview == null || preview instanceof ApplyDungeonEditorSessionUseCase.NonePreviewData) {
+            if (preview == null || preview == DungeonEditorSessionValues.Preview.none()) {
                 return DungeonEditorPreview.none();
             }
             return switch (preview) {
-                case ApplyDungeonEditorSessionUseCase.RoomRectanglePreviewData room ->
+                case DungeonEditorSessionValues.RoomRectanglePreview room ->
                         new DungeonEditorPreview.RoomRectanglePreview(
                                 toPublishedCell(room.start()),
                                 toPublishedCell(room.end()),
                                 room.deleteMode());
-                case ApplyDungeonEditorSessionUseCase.ClusterBoundariesPreviewData boundaries ->
+                case DungeonEditorSessionValues.ClusterBoundariesPreview boundaries ->
                         new DungeonEditorPreview.ClusterBoundariesPreview(
                                 boundaries.clusterId(),
                                 boundaries.edges().stream().map(SnapshotTranslation::toPublishedEdge).toList(),
                                 boundaries.boundaryKind().name(),
                                 boundaries.deleteMode());
-                case ApplyDungeonEditorSessionUseCase.MoveHandlePreviewData moveHandle ->
+                case DungeonEditorSessionValues.MoveHandlePreview moveHandle ->
                         new DungeonEditorPreview.MoveHandlePreview(
                                 toPublishedHandleRefOrEmpty(moveHandle.handleRef()),
                                 moveHandle.deltaQ(),
                                 moveHandle.deltaR(),
                                 moveHandle.deltaLevel());
-                case ApplyDungeonEditorSessionUseCase.MoveBoundaryStretchPreviewData stretch ->
+                case DungeonEditorSessionValues.MoveBoundaryStretchPreview stretch ->
                         new DungeonEditorPreview.MoveBoundaryStretchPreview(
                                 stretch.clusterId(),
                                 stretch.sourceEdges().stream().map(SnapshotTranslation::toPublishedEdge).toList(),
                                 stretch.deltaQ(),
                                 stretch.deltaR(),
                                 stretch.deltaLevel());
-                case ApplyDungeonEditorSessionUseCase.CorridorCreatePreviewData ignored -> DungeonEditorPreview.none();
-                case ApplyDungeonEditorSessionUseCase.CorridorDeletePreviewData ignored -> DungeonEditorPreview.none();
-                case ApplyDungeonEditorSessionUseCase.NonePreviewData ignored -> DungeonEditorPreview.none();
+                case DungeonEditorSessionValues.CorridorCreatePreview ignored -> DungeonEditorPreview.none();
+                case DungeonEditorSessionValues.CorridorDeletePreview ignored -> DungeonEditorPreview.none();
+                case DungeonEditorSessionValues.NoPreview ignored -> DungeonEditorPreview.none();
             };
         }
 
-        private static DungeonEditorViewMode toPublishedViewMode(DungeonEditorSession.@Nullable ViewMode viewMode) {
-            return viewMode == DungeonEditorSession.ViewMode.GRAPH
+        private static DungeonEditorViewMode toPublishedViewMode(DungeonEditorSessionValues.@Nullable ViewMode viewMode) {
+            return viewMode == DungeonEditorSessionValues.ViewMode.GRAPH
                     ? DungeonEditorViewMode.GRAPH
                     : DungeonEditorViewMode.GRID;
         }
 
-        private static DungeonEditorTool toPublishedTool(DungeonEditorSession.@Nullable Tool tool) {
+        private static DungeonEditorTool toPublishedTool(DungeonEditorSessionValues.@Nullable Tool tool) {
             return tool == null ? DungeonEditorTool.SELECT : DungeonEditorTool.valueOf(tool.name());
         }
 
@@ -311,7 +313,7 @@ public final class DungeonEditorApplicationService {
         }
 
         private static @Nullable DungeonEditorSurface toPublishedSurface(
-                ApplyDungeonEditorSessionUseCase.@Nullable SurfaceData surface
+                DungeonEditorSessionSnapshot.@Nullable SurfaceData surface
         ) {
             if (surface == null) {
                 return null;
@@ -479,18 +481,18 @@ public final class DungeonEditorApplicationService {
         }
 
         private static @Nullable DungeonEditorMapProjectionSnapshot projection(
-                ApplyDungeonEditorSessionUseCase.@Nullable SurfaceData surface,
-                ApplyDungeonEditorSessionUseCase.@Nullable SelectionData selection,
-                ApplyDungeonEditorSessionUseCase.@Nullable PreviewData preview
+                DungeonEditorSessionSnapshot.@Nullable SurfaceData surface,
+                DungeonEditorSessionValues.@Nullable Selection selection,
+                DungeonEditorSessionValues.@Nullable Preview preview
         ) {
             if (surface == null) {
                 return null;
             }
-            ApplyDungeonEditorSessionUseCase.SelectionData safeSelection = selection == null
-                    ? ApplyDungeonEditorSessionUseCase.SelectionData.empty()
+            DungeonEditorSessionValues.Selection safeSelection = selection == null
+                    ? DungeonEditorSessionValues.Selection.empty()
                     : selection;
-            ApplyDungeonEditorSessionUseCase.PreviewData safePreview = preview == null
-                    ? ApplyDungeonEditorSessionUseCase.PreviewData.none()
+            DungeonEditorSessionValues.Preview safePreview = preview == null
+                    ? DungeonEditorSessionValues.Preview.none()
                     : preview;
             ProjectionAccumulator projection = ProjectionAssembler.assemble(surface, safeSelection, safePreview);
             DungeonMapSnapshot map = surface.map();
@@ -515,9 +517,9 @@ public final class DungeonEditorApplicationService {
         }
 
         private static ProjectionAccumulator assemble(
-                ApplyDungeonEditorSessionUseCase.SurfaceData surface,
-                ApplyDungeonEditorSessionUseCase.SelectionData selection,
-                ApplyDungeonEditorSessionUseCase.PreviewData preview
+                DungeonEditorSessionSnapshot.SurfaceData surface,
+                DungeonEditorSessionValues.Selection selection,
+                DungeonEditorSessionValues.Preview preview
         ) {
             ProjectionAccumulator projection = new ProjectionAccumulator(
                     new ArrayList<>(),
@@ -539,7 +541,7 @@ public final class DungeonEditorApplicationService {
 
         private static void renderAreas(
                 DungeonMapSnapshot map,
-                ApplyDungeonEditorSessionUseCase.SelectionData selection,
+                DungeonEditorSessionValues.Selection selection,
                 ProjectionAccumulator projection
         ) {
             for (DungeonAreaSnapshot area : map.areas()) {
@@ -564,7 +566,7 @@ public final class DungeonEditorApplicationService {
 
         private static void renderClusterLabels(
                 DungeonMapSnapshot map,
-                ApplyDungeonEditorSessionUseCase.SelectionData selection,
+                DungeonEditorSessionValues.Selection selection,
                 List<DungeonEditorMapProjectionSnapshot.LabelProjection> labels
         ) {
             List<Long> renderedClusterIds = new ArrayList<>();
@@ -589,8 +591,8 @@ public final class DungeonEditorApplicationService {
 
         private static void addPreviewAndBoundaries(
                 DungeonMapSnapshot map,
-                ApplyDungeonEditorSessionUseCase.SelectionData selection,
-                ApplyDungeonEditorSessionUseCase.PreviewData preview,
+                DungeonEditorSessionValues.Selection selection,
+                DungeonEditorSessionValues.Preview preview,
                 @Nullable DungeonMapSnapshot previewMap,
                 ProjectionAccumulator projection
         ) {
@@ -620,12 +622,12 @@ public final class DungeonEditorApplicationService {
 
         private static void addPreviewMapDiff(
                 DungeonMapSnapshot map,
-                ApplyDungeonEditorSessionUseCase.SelectionData selection,
-                ApplyDungeonEditorSessionUseCase.PreviewData preview,
+                DungeonEditorSessionValues.Selection selection,
+                DungeonEditorSessionValues.Preview preview,
                 @Nullable DungeonMapSnapshot previewMap,
                 ProjectionAccumulator projection
         ) {
-            if (!(preview instanceof ApplyDungeonEditorSessionUseCase.NonePreviewData) || previewMap == null) {
+            if (preview != DungeonEditorSessionValues.Preview.none() || previewMap == null) {
                 return;
             }
             ProjectionPreviewAssembler.addPreviewAreaDiff(
@@ -648,7 +650,7 @@ public final class DungeonEditorApplicationService {
 
         private static void renderFeatures(
                 DungeonMapSnapshot map,
-                ApplyDungeonEditorSessionUseCase.SelectionData selection,
+                DungeonEditorSessionValues.Selection selection,
                 ProjectionAccumulator projection
         ) {
             for (DungeonFeatureSnapshot feature : map.features()) {
@@ -681,8 +683,8 @@ public final class DungeonEditorApplicationService {
 
         private static void renderHandles(
                 DungeonMapSnapshot map,
-                ApplyDungeonEditorSessionUseCase.SelectionData selection,
-                ApplyDungeonEditorSessionUseCase.PreviewData preview,
+                DungeonEditorSessionValues.Selection selection,
+                DungeonEditorSessionValues.Preview preview,
                 List<DungeonEditorMapProjectionSnapshot.MarkerProjection> markers
         ) {
             for (DungeonEditorHandleSnapshot handle : map.editorHandles()) {
@@ -722,17 +724,17 @@ public final class DungeonEditorApplicationService {
                 List<DungeonAreaSnapshot> areas,
                 List<DungeonBoundarySnapshot> boundaries,
                 List<DungeonEditorHandleSnapshot> handles,
-                ApplyDungeonEditorSessionUseCase.SelectionData selection,
-                ApplyDungeonEditorSessionUseCase.PreviewData preview,
+                DungeonEditorSessionValues.Selection selection,
+                DungeonEditorSessionValues.Preview preview,
                 @Nullable DungeonMapSnapshot previewMap
         ) {
-            if (preview instanceof ApplyDungeonEditorSessionUseCase.MoveHandlePreviewData movePreview) {
+            if (preview instanceof DungeonEditorSessionValues.MoveHandlePreview movePreview) {
                 addClusterMovePreview(cells, edges, labels, areas, boundaries, handles, selection, movePreview);
-            } else if (preview instanceof ApplyDungeonEditorSessionUseCase.RoomRectanglePreviewData roomRectangle) {
+            } else if (preview instanceof DungeonEditorSessionValues.RoomRectanglePreview roomRectangle) {
                 addRoomRectanglePreview(cells, roomRectangle);
-            } else if (preview instanceof ApplyDungeonEditorSessionUseCase.ClusterBoundariesPreviewData boundaryEdges) {
+            } else if (preview instanceof DungeonEditorSessionValues.ClusterBoundariesPreview boundaryEdges) {
                 addBoundaryEdgesPreview(edges, boundaryEdges);
-            } else if (preview instanceof ApplyDungeonEditorSessionUseCase.MoveBoundaryStretchPreviewData boundaryStretchMove) {
+            } else if (preview instanceof DungeonEditorSessionValues.MoveBoundaryStretchPreview boundaryStretchMove) {
                 addBoundaryStretchPreview(cells, edges, labels, selection, previewMap, boundaryStretchMove);
             }
         }
@@ -741,9 +743,9 @@ public final class DungeonEditorApplicationService {
                 List<DungeonEditorMapProjectionSnapshot.CellProjection> cells,
                 List<DungeonEditorMapProjectionSnapshot.EdgeProjection> edges,
                 List<DungeonEditorMapProjectionSnapshot.LabelProjection> labels,
-                ApplyDungeonEditorSessionUseCase.SelectionData selection,
+                DungeonEditorSessionValues.Selection selection,
                 @Nullable DungeonMapSnapshot previewMap,
-                ApplyDungeonEditorSessionUseCase.MoveBoundaryStretchPreviewData movePreview
+                DungeonEditorSessionValues.MoveBoundaryStretchPreview movePreview
         ) {
             if (previewMap == null) {
                 return;
@@ -791,7 +793,7 @@ public final class DungeonEditorApplicationService {
                 List<DungeonEditorMapProjectionSnapshot.LabelProjection> labels,
                 List<DungeonAreaSnapshot> committedAreas,
                 List<DungeonAreaSnapshot> previewAreas,
-                ApplyDungeonEditorSessionUseCase.SelectionData selection
+                DungeonEditorSessionValues.Selection selection
         ) {
             Map<String, DungeonAreaSnapshot> committedByTopology = ProjectionSupport.indexAreas(committedAreas);
             for (DungeonAreaSnapshot previewArea : previewAreas) {
@@ -811,7 +813,7 @@ public final class DungeonEditorApplicationService {
                 List<DungeonEditorMapProjectionSnapshot.CellProjection> cells,
                 List<DungeonEditorMapProjectionSnapshot.LabelProjection> labels,
                 DungeonAreaSnapshot area,
-                ApplyDungeonEditorSessionUseCase.SelectionData selection,
+                DungeonEditorSessionValues.Selection selection,
                 boolean destructive
         ) {
             boolean selected = ProjectionSupport.selectedArea(area, selection);
@@ -853,7 +855,7 @@ public final class DungeonEditorApplicationService {
                 List<DungeonEditorMapProjectionSnapshot.EdgeProjection> edges,
                 List<DungeonBoundarySnapshot> committedBoundaries,
                 List<DungeonBoundarySnapshot> previewBoundaries,
-                ApplyDungeonEditorSessionUseCase.SelectionData selection
+                DungeonEditorSessionValues.Selection selection
         ) {
             Map<String, DungeonBoundarySnapshot> committedByTopology = ProjectionSupport.indexBoundaries(committedBoundaries);
             for (DungeonBoundarySnapshot previewBoundary : previewBoundaries) {
@@ -885,7 +887,7 @@ public final class DungeonEditorApplicationService {
                 List<DungeonEditorMapProjectionSnapshot.MarkerProjection> markers,
                 List<DungeonEditorHandleSnapshot> committedHandles,
                 List<DungeonEditorHandleSnapshot> previewHandles,
-                ApplyDungeonEditorSessionUseCase.SelectionData selection
+                DungeonEditorSessionValues.Selection selection
         ) {
             Map<String, DungeonEditorHandleSnapshot> committedByHandle = ProjectionSupport.indexHandles(committedHandles);
             for (DungeonEditorHandleSnapshot previewHandle : previewHandles) {
@@ -909,7 +911,7 @@ public final class DungeonEditorApplicationService {
 
         private static void addRoomRectanglePreview(
                 List<DungeonEditorMapProjectionSnapshot.CellProjection> cells,
-                ApplyDungeonEditorSessionUseCase.RoomRectanglePreviewData roomRectangle
+                DungeonEditorSessionValues.RoomRectanglePreview roomRectangle
         ) {
             int minQ = Math.min(roomRectangle.start().q(), roomRectangle.end().q());
             int maxQ = Math.max(roomRectangle.start().q(), roomRectangle.end().q());
@@ -941,8 +943,8 @@ public final class DungeonEditorApplicationService {
                 List<DungeonAreaSnapshot> areas,
                 List<DungeonBoundarySnapshot> boundaries,
                 List<DungeonEditorHandleSnapshot> handles,
-                ApplyDungeonEditorSessionUseCase.SelectionData selection,
-                ApplyDungeonEditorSessionUseCase.MoveHandlePreviewData movePreview
+                DungeonEditorSessionValues.Selection selection,
+                DungeonEditorSessionValues.MoveHandlePreview movePreview
         ) {
             if (movePreview.handleRef().kind() != DungeonEditorHandleKind.CLUSTER_LABEL) {
                 return;
@@ -983,7 +985,7 @@ public final class DungeonEditorApplicationService {
                 List<DungeonEditorMapProjectionSnapshot.EdgeProjection> edges,
                 List<DungeonBoundarySnapshot> boundaries,
                 List<DungeonCellRef> draggedCells,
-                ApplyDungeonEditorSessionUseCase.MoveHandlePreviewData movePreview
+                DungeonEditorSessionValues.MoveHandlePreview movePreview
         ) {
             if (draggedCells.isEmpty()) {
                 return;
@@ -1007,9 +1009,9 @@ public final class DungeonEditorApplicationService {
 
         private static void addHandleMovePreview(
                 List<DungeonEditorMapProjectionSnapshot.MarkerProjection> markers,
-                ApplyDungeonEditorSessionUseCase.PreviewData preview
+                DungeonEditorSessionValues.Preview preview
         ) {
-            if (!(preview instanceof ApplyDungeonEditorSessionUseCase.MoveHandlePreviewData movePreview)
+            if (!(preview instanceof DungeonEditorSessionValues.MoveHandlePreview movePreview)
                     || movePreview.handleRef().kind() == DungeonEditorHandleKind.CLUSTER_LABEL) {
                 return;
             }
@@ -1042,7 +1044,7 @@ public final class DungeonEditorApplicationService {
 
         private static void addBoundaryEdgesPreview(
                 List<DungeonEditorMapProjectionSnapshot.EdgeProjection> edges,
-                ApplyDungeonEditorSessionUseCase.ClusterBoundariesPreviewData boundaryEdges
+                DungeonEditorSessionValues.ClusterBoundariesPreview boundaryEdges
         ) {
             DungeonEditorMapProjectionSnapshot.EdgeKind kind = boundaryEdges.boundaryKind() == DungeonBoundaryKind.DOOR
                     ? DungeonEditorMapProjectionSnapshot.EdgeKind.DOOR
@@ -1171,7 +1173,7 @@ public final class DungeonEditorApplicationService {
 
         private static DungeonEditorMapProjectionSnapshot.MarkerProjection handleMarker(
                 DungeonEditorHandleSnapshot handle,
-                ApplyDungeonEditorSessionUseCase.SelectionData selection,
+                DungeonEditorSessionValues.Selection selection,
                 boolean preview
         ) {
             src.domain.dungeon.published.DungeonEditorHandleRef ref = handle.ref();
@@ -1229,7 +1231,7 @@ public final class DungeonEditorApplicationService {
 
         private static boolean selectedArea(
                 @Nullable DungeonAreaSnapshot area,
-                ApplyDungeonEditorSessionUseCase.@Nullable SelectionData selection
+                DungeonEditorSessionValues.@Nullable Selection selection
         ) {
             if (area == null || selection == null) {
                 return false;
@@ -1243,7 +1245,7 @@ public final class DungeonEditorApplicationService {
 
         private static boolean selectedFeature(
                 @Nullable DungeonFeatureSnapshot feature,
-                ApplyDungeonEditorSessionUseCase.@Nullable SelectionData selection
+                DungeonEditorSessionValues.@Nullable Selection selection
         ) {
             return feature != null
                     && selection != null
@@ -1252,7 +1254,7 @@ public final class DungeonEditorApplicationService {
 
         private static boolean selectedBoundary(
                 @Nullable DungeonBoundarySnapshot boundary,
-                ApplyDungeonEditorSessionUseCase.@Nullable SelectionData selection
+                DungeonEditorSessionValues.@Nullable Selection selection
         ) {
             return boundary != null
                     && selection != null
@@ -1261,7 +1263,7 @@ public final class DungeonEditorApplicationService {
 
         private static boolean selectedHandle(
                 src.domain.dungeon.published.@Nullable DungeonEditorHandleRef ref,
-                ApplyDungeonEditorSessionUseCase.@Nullable SelectionData selection
+                DungeonEditorSessionValues.@Nullable Selection selection
         ) {
             if (ref == null || selection == null || selection.handleRef() == null) {
                 return false;
@@ -1278,7 +1280,7 @@ public final class DungeonEditorApplicationService {
 
         private static boolean selectedClusterLabel(
                 @Nullable DungeonEditorHandleSnapshot handle,
-                ApplyDungeonEditorSessionUseCase.@Nullable SelectionData selection
+                DungeonEditorSessionValues.@Nullable Selection selection
         ) {
             if (handle == null || selection == null) {
                 return false;
@@ -1291,8 +1293,8 @@ public final class DungeonEditorApplicationService {
 
         private static boolean draggedClusterArea(
                 @Nullable DungeonAreaSnapshot area,
-                ApplyDungeonEditorSessionUseCase.@Nullable SelectionData selection,
-                ApplyDungeonEditorSessionUseCase.MoveHandlePreviewData movePreview
+                DungeonEditorSessionValues.@Nullable Selection selection,
+                DungeonEditorSessionValues.MoveHandlePreview movePreview
         ) {
             if (area == null || movePreview.handleRef().kind() != DungeonEditorHandleKind.CLUSTER_LABEL) {
                 return false;

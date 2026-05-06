@@ -38,7 +38,11 @@ public final class DomainApplicationServiceEnforcementCoverageRules implements A
                     "Enforced",
                     List.of("domain-application-service bundle Error Prone", "DomainApplicationServiceApiShape"),
                     List.of("./gradlew compileJava", "./gradlew checkDomainApplicationServiceEnforcement")),
-            row("domain-applicationservice-public-return-carriers",
+            row("domain-applicationservice-query-returns-read-model-handle",
+                    "Enforced",
+                    List.of("domain-application-service bundle Error Prone", "DomainApplicationServiceApiShape"),
+                    List.of("./gradlew compileJava", "./gradlew checkDomainApplicationServiceEnforcement")),
+            row("domain-applicationservice-command-no-direct-return",
                     "Enforced",
                     List.of("domain-application-service bundle Error Prone", "DomainApplicationServiceApiShape"),
                     List.of("./gradlew compileJava", "./gradlew checkDomainApplicationServiceEnforcement")),
@@ -58,7 +62,14 @@ public final class DomainApplicationServiceEnforcementCoverageRules implements A
                     "Enforced",
                     List.of("domain-application-service bundle Error Prone", "DomainPublicBoundarySignaturePurity"),
                     List.of("./gradlew compileJava", "./gradlew checkDomainApplicationServiceEnforcement")),
-            row("domain-applicationservice-public-carrier-translation-boundary", "Review-Owned"),
+            row("domain-applicationservice-public-carrier-translation-boundary",
+                    "Enforced Elsewhere",
+                    List.of(
+                            "domain-usecase bundle Error Prone",
+                            "DomainApplicationNoSameContextPublishedDependency",
+                            "domain-layer bundle Error Prone",
+                            "DomainModuleNoPublishedCarrierDependency"),
+                    List.of("./gradlew compileJava", "./gradlew checkDomainUseCaseEnforcement", "./gradlew checkDomainLayerEnforcement")),
             row("domain-applicationservice-no-runtime-composition-ownership", "Review-Owned"),
             row("domain-applicationservice-no-business-policy-ownership", "Review-Owned"));
 

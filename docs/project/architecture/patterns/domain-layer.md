@@ -64,7 +64,8 @@ inside a domain module. `repository`, `query`, `gateway`, `mapper`, `model`,
   expose observable current state without leaking private model internals;
   such boundary handles may appear as same-context `published/*Model` types
   that outer layers observe only through read-side methods like `current()`
-  and `subscribe(...)`
+  and `subscribe(...)`; these read-side `*Model` handles own outward
+  publication of observable domain state, including mutation feedback
 - `application/` contains direct `*UseCase.java` files plus direct internal
   `*BoundaryTranslator.java`, `*Projector.java`, `*RuntimeAccess.java`, and
   `*RuntimeAdapter.java` helper files
@@ -74,9 +75,10 @@ inside a domain module. `repository`, `query`, `gateway`, `mapper`, `model`,
   SQL rows, source-local records, JavaFX, shell APIs, filesystem paths,
   network clients, transaction objects, or adapter lifecycle
 - named domain modules must not depend on any `src.domain.*.published.*`
-  carrier, same-context or foreign. Published language is translated at the
-  root/application boundary before control enters the model. Narrow
-  translation or projection helpers may live directly in `application/`
+  carrier, same-context or foreign. Same-context published command/query
+  language stops at the root boundary, and same-context published feedback
+  leaves only through read-side `published/*Model` owners rather than
+  top-level internal application files or named domain modules
 - domain code may call outward only through domain-owned outbound ports or
   allowed foreign root application services from application orchestration
 - domain code must not depend on `bootstrap`, `shell.*`, `src.view.*`,
@@ -93,10 +95,13 @@ one domain context.
 - it is a public final top-level class named
   `<PascalContext>ApplicationService`
 - it accepts same-context `published/` command or query carriers
-- it returns same-context `published/` carriers
-- it translates public carriers before control enters application use cases or
-  named domain modules, directly or through internal application-boundary
-  helpers in `application/`
+- command methods return `void`
+- query methods return same-context read-side `published/*Model` handles only
+- it translates public command/query carriers into internal types before
+  control enters top-level application workflows or named domain modules
+- it does not directly publish same-context mutation feedback, snapshots, or
+  result carriers; outward feedback stays on read-side `published/*Model`
+  handles
 - it does not own shell registration, runtime service lookup, data adapter
   construction, or business policy
 
@@ -107,10 +112,14 @@ one domain context.
 - allowed: commands, queries, results, snapshots, ids, statuses, enums,
   sealed carrier abstractions, simple public boundary records, and read-only
   same-context `*Model` handles for observable current domain state
+- same-context `*Model` handles expose outward readback through `current()`
+  and `subscribe(...)` only and may carry the status/error/success payloads
+  consumers need for feedback
 - forbidden: callable services, facades, repositories, ports, gateways,
   factories, locators, policy helpers, or invariant-owning objects
-- public carriers describe domain facts, not render layers, widget state,
-  canvas cells, or storage DTOs
+- public non-`*Model` carriers remain passive domain facts rather than
+  alternate publication owners, render layers, widget state, canvas cells, or
+  storage DTOs
 
 ### `port/`
 

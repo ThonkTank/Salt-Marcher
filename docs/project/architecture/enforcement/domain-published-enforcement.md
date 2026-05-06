@@ -48,12 +48,14 @@ Unified focused bundle entrypoint:
 | `domain-published-direct-file-placement` | Enforced | every Java type under `src/domain/<context>/published/` | domain-published bundle build-harness `DomainPublishedTopologyRules` | `./gradlew checkArchitecture` and `./gradlew checkDomainPublishedEnforcement` | Published boundary carriers are direct files under `published/` rather than nested helper packages. |
 | `domain-published-top-level-public-surface` | Enforced | every top-level type under `src/domain/<context>/published/` | domain-published bundle Error Prone `DomainPublishedCarrierShape` | `./gradlew compileJava` and `./gradlew checkDomainPublishedEnforcement` | Top-level published carriers are explicitly `public` so `published/**` remains an exported boundary surface rather than a package-private helper bucket. |
 | `domain-published-carrier-shape` | Enforced | every public type under `src/domain/<context>/published/` | domain-published bundle Error Prone `DomainPublishedCarrierShape` | `./gradlew compileJava` and `./gradlew checkDomainPublishedEnforcement` | Public published carriers are records, enums, or sealed abstractions rather than mutable helper-shaped containers. |
+| `domain-published-read-model-handle-shape` | Enforced | every public `src/domain/<context>/published/*Model` type | domain-published bundle Error Prone `DomainPublishedReadModelShape` | `./gradlew compileJava` and `./gradlew checkDomainPublishedEnforcement` | Read-side `published/*Model` handles are public records that expose readback only through `current()` and `subscribe(...)`. |
 
 ### Must Not Contain
 
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
 | `domain-published-no-callable-contracts` | Enforced | every Java type under `src/domain/<context>/published/` | domain-published bundle build-harness `DomainPublishedTopologyRules` | `./gradlew checkArchitecture` and `./gradlew checkDomainPublishedEnforcement` | `published/` does not contain callable services, facades, repositories, ports, gateways, factories, locators, or policy contracts. |
+| `domain-published-nonmodel-passive-only` | Enforced | every public `published/**` type whose simple name does not end with `Model` | domain-published bundle Error Prone `DomainPublishedReadModelShape` | `./gradlew compileJava` and `./gradlew checkDomainPublishedEnforcement` | Non-`*Model` published carriers stay passive and do not expose `current()/subscribe()` read-side handle semantics. |
 | `domain-published-domain-facts-only` | Review-Owned | every `published/**` carrier family | none | none | Published carriers describe domain facts and boundary language only. They do not encode render-layer terms, widget state, canvas cells, storage DTOs, or other outer-format convenience shapes. |
 | `domain-published-passive-boundary-language` | Review-Owned | every `published/**` carrier family | none | none | Published carriers remain passive boundary language rather than invariant-owning objects hidden behind otherwise legal record, enum, or sealed shapes. |
 
@@ -62,6 +64,7 @@ Unified focused bundle entrypoint:
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
 | `domain-published-public-boundary-signature-purity` | Enforced | every public or protected published boundary signature | domain-published bundle Error Prone `DomainPublishedBoundarySignaturePurity` | `./gradlew compileJava` and `./gradlew checkDomainPublishedEnforcement` | Published carriers do not communicate outer-layer, private same-context domain, infrastructure, or foreign `published/**` types through public boundary signatures. |
+| `domain-published-read-model-feedback-ownership` | Enforced Elsewhere | every same-context outward feedback path from domain work into external consumers | `domain-applicationservice-query-returns-read-model-handle`; `domain-applicationservice-command-no-direct-return`; `domain-usecase-no-same-context-published-dependencies`; `view-layer-no-direct-applicationservice-result-to-viewstate-readback` | `./gradlew compileJava`, `./gradlew checkDomainApplicationServiceEnforcement`, `./gradlew checkDomainUseCaseEnforcement`, and `./gradlew checkViewBinderEnforcement` | Same-context mutation feedback reaches outer consumers only through read-side `published/*Model` handles instead of direct command returns or top-level internal workflow publication. |
 
 ## Review-Owned
 

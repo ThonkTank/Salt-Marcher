@@ -7,7 +7,8 @@ It keeps the `published/**` proof route owner-pure and bundle-local:
 
 - `errorprone/`
   `DomainPublishedCarrierShape`,
-  `DomainPublishedBoundarySignaturePurity`
+  `DomainPublishedBoundarySignaturePurity`,
+  `DomainPublishedReadModelShape`
 - `build-harness/`
   `DomainPublishedTopologyRules`,
   `DomainPublishedTopologyCheckMain`,

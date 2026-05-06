@@ -10,7 +10,7 @@ import java.util.regex.Pattern;
 
 @BugPattern(
         name = "DomainApplicationNoSameContextPublishedDependency",
-        summary = "Domain application use cases must not depend on their own published boundary carriers.",
+        summary = "Top-level domain application workflow types must not depend on their own published boundary carriers.",
         severity = BugPattern.SeverityLevel.ERROR)
 public final class DomainApplicationPublishedBoundaryChecker extends BugChecker
         implements BugChecker.CompilationUnitTreeMatcher {
@@ -23,9 +23,6 @@ public final class DomainApplicationPublishedBoundaryChecker extends BugChecker
         String packageName = DataArchitectureSupport.packageName(tree);
         var matcher = DOMAIN_APPLICATION_PACKAGE.matcher(packageName);
         if (!matcher.matches()) {
-            return Description.NO_MATCH;
-        }
-        if (!tree.getSourceFile().getName().endsWith("UseCase.java")) {
             return Description.NO_MATCH;
         }
 
@@ -44,7 +41,7 @@ public final class DomainApplicationPublishedBoundaryChecker extends BugChecker
                 .setMessage("Domain application package '" + packageName
                         + "' depends on same-context published carrier type(s): "
                         + String.join(", ", forbiddenReferences)
-                        + ". Translate published input/output in the root ApplicationService before delegating to application use cases.")
+                        + ". Top-level internal application files must stay on internal types; same-context published carriers belong only on the root inbound boundary and read-side published/*Model ownership.")
                 .build();
     }
 }

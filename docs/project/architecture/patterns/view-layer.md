@@ -217,7 +217,7 @@ Additional rules:
 - a Binder must not treat direct `ApplicationService` return values such as
   `*Result`, `*Snapshot`, `*Payload`, `*CalculationResult`, `*SearchResult`,
   `*Preview`, or similar one-shot carriers as authoritative view-state input
-  for rendering or projection-model updates
+  or as a feedback protocol for rendering or projection-model updates
 - if a view root needs domain-backed observable state, the Binder loads only
   a same-context read-side `published/*Model` handle from the root
   `*ApplicationService` boundary and then reads it only through
@@ -283,7 +283,7 @@ Domain read-side contract:
 4. the Binder must not treat direct one-shot `ApplicationService` return
    carriers such as `*Result`, `*Snapshot`, `*Payload`, `*CalculationResult`,
    `*SearchResult`, `*Preview`, or similar request-response types as the
-   source of view-layer truth
+   source of view-layer truth or mutation feedback
 5. if a root cannot provide its domain-backed observable state through a
    read-side `published/*Model`, the architecture is incomplete and must not
    be disguised by direct Binder-side result-to-view-state copying

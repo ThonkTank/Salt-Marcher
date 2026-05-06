@@ -34,12 +34,13 @@ Published travel carriers must not own:
 coordinates runtime dungeon-travel session state through foreign root
 application services from `party` and `dungeon`.
 
-The root boundary owns all same-context and foreign published-carrier
-translation. Runtime session orchestration lives below that boundary in
-`travel/application/*UseCase` code and does not consume `travel.published/**`,
-`party.published/**`, or `dungeon.published/**` carriers directly. Raw authored
-dungeon travel families stay dungeon-owned; `travel` publishes only its own
-workflow and readback language.
+The root boundary owns inbound command/query intake and foreign
+published-carrier translation into internal workflow types. Runtime session
+orchestration lives below that boundary in `travel/application/*UseCase` code
+and does not consume `travel.published/**`, `party.published/**`, or
+`dungeon.published/**` carriers directly. Raw authored dungeon travel
+families stay dungeon-owned; `travel` publishes only its own read-side model
+handles and the passive payloads hanging from them.
 
 ## Commands And Invariants
 

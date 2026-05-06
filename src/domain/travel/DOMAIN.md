@@ -35,10 +35,12 @@ coordinates runtime dungeon-travel session state through foreign root
 application services from `party` and `dungeon`. Binder and view code consume
 the runtime session through this boundary only; they do not own the session.
 
-The root boundary owns all same-context and foreign published-carrier
-translation. Runtime session orchestration lives below that boundary in
-`travel/application/*UseCase` code and does not consume `travel.published/**`,
-`party.published/**`, or `dungeon.published/**` carriers directly.
+The root boundary owns only inbound command/query intake and foreign
+published-carrier translation into internal workflow types. Runtime session
+orchestration lives below that boundary in `travel/application/*UseCase` code
+and does not consume `travel.published/**`, `party.published/**`, or
+`dungeon.published/**` carriers directly. Same-context outward state and
+feedback return only through read-side `travel.published/*Model` handles.
 
 ## Commands And Invariants
 

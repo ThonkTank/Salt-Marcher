@@ -26,7 +26,13 @@ import src.domain.dungeon.published.DungeonInspectorSnapshot;
 import src.domain.dungeon.published.DungeonSnapshot;
 import src.domain.dungeon.published.DungeonTopologyElementKind;
 import src.domain.dungeon.published.DungeonTopologyElementRef;
-import src.domain.dungeoneditor.session.entity.DungeonEditorSession;
+import src.domain.dungeoneditor.interaction.value.DungeonEditorInteractionValues.CellKey;
+import src.domain.dungeoneditor.interaction.value.DungeonEditorInteractionValues.CellTarget;
+import src.domain.dungeoneditor.interaction.value.DungeonEditorInteractionValues.TravelHeading;
+import src.domain.dungeoneditor.interaction.value.DungeonEditorInteractionValues.VertexKey;
+import src.domain.dungeoneditor.interaction.value.DungeonEditorInteractionValues.VertexTarget;
+import src.domain.dungeoneditor.session.value.DungeonEditorSessionCommand;
+import src.domain.dungeoneditor.session.value.DungeonEditorSessionValues;
 
 final class InterpretDungeonEditorMainViewInputUseCase {
     private static final int MINIMUM_HIT_REF_PARTS = 2;
@@ -42,20 +48,20 @@ final class InterpretDungeonEditorMainViewInputUseCase {
     private BoundaryStretchSession boundaryStretchSession = BoundaryStretchSession.none();
 
     Effect consume(
-            ApplyDungeonEditorSessionUseCase.MainViewInput input,
+            DungeonEditorSessionCommand.MainViewInput input,
             @Nullable DungeonSnapshot snapshot,
-            ApplyDungeonEditorSessionUseCase.SelectionData selection,
-            DungeonEditorSession.Tool selectedTool,
-            DungeonEditorSession.ViewMode viewMode,
+            DungeonEditorSessionValues.Selection selection,
+            DungeonEditorSessionValues.Tool selectedTool,
+            DungeonEditorSessionValues.ViewMode viewMode,
             int projectionLevel
     ) {
-        ApplyDungeonEditorSessionUseCase.MainViewInput safeInput = input == null
-                ? ApplyDungeonEditorSessionUseCase.MainViewInput.empty()
+        DungeonEditorSessionCommand.MainViewInput safeInput = input == null
+                ? DungeonEditorSessionCommand.MainViewInput.empty()
                 : input;
-        if (safeInput.source() == ApplyDungeonEditorSessionUseCase.MainViewInputSource.LEVEL_SCROLLED) {
+        if (safeInput.source() == DungeonEditorSessionCommand.MainViewInputSource.LEVEL_SCROLLED) {
             return levelScrolled(safeInput.levelDelta(), selectedTool, projectionLevel, snapshot);
         }
-        if (viewMode != DungeonEditorSession.ViewMode.GRID || snapshot == null) {
+        if (viewMode != DungeonEditorSessionValues.ViewMode.GRID || snapshot == null) {
             return Effect.none();
         }
         PointerState pointer = resolvePointerState(
@@ -65,13 +71,19 @@ final class InterpretDungeonEditorMainViewInputUseCase {
                 safeInput.primaryButtonDown(),
                 safeInput.secondaryButtonDown(),
                 safeInput.hitRef());
-        return switch (safeInput.source()) {
-            case POINTER_PRESSED -> primaryPressed(pointer, snapshot, selection, selectedTool);
-            case POINTER_DRAGGED -> primaryDragged(pointer, snapshot, selectedTool);
-            case POINTER_RELEASED -> primaryReleased(pointer, selectedTool);
-            case POINTER_MOVED -> pointerMoved(pointer, snapshot, selectedTool);
-            case LEVEL_SCROLLED -> Effect.none();
-        };
+        if (safeInput.source() == DungeonEditorSessionCommand.MainViewInputSource.POINTER_PRESSED) {
+            return primaryPressed(pointer, snapshot, selection, selectedTool);
+        }
+        if (safeInput.source() == DungeonEditorSessionCommand.MainViewInputSource.POINTER_DRAGGED) {
+            return primaryDragged(pointer, snapshot, selectedTool);
+        }
+        if (safeInput.source() == DungeonEditorSessionCommand.MainViewInputSource.POINTER_RELEASED) {
+            return primaryReleased(pointer, selectedTool);
+        }
+        if (safeInput.source() == DungeonEditorSessionCommand.MainViewInputSource.POINTER_MOVED) {
+            return pointerMoved(pointer, snapshot, selectedTool);
+        }
+        return Effect.none();
     }
 
     void clear() {
@@ -88,8 +100,8 @@ final class InterpretDungeonEditorMainViewInputUseCase {
     private Effect primaryPressed(
             PointerState input,
             DungeonSnapshot snapshot,
-            ApplyDungeonEditorSessionUseCase.SelectionData currentSelection,
-            DungeonEditorSession.Tool selectedTool
+            DungeonEditorSessionValues.Selection currentSelection,
+            DungeonEditorSessionValues.Tool selectedTool
     ) {
         if (input == null) {
             return Effect.none();
@@ -134,7 +146,7 @@ final class InterpretDungeonEditorMainViewInputUseCase {
         HitTarget hit = input.hitTarget();
         if (selectableHit(hit)) {
             DungeonEditorHandleRef handleRef = dragHandleRef(hit);
-            ApplyDungeonEditorSessionUseCase.SelectionData nextSelection = new ApplyDungeonEditorSessionUseCase.SelectionData(
+            DungeonEditorSessionValues.Selection nextSelection = new DungeonEditorSessionValues.Selection(
                     new DungeonTopologyElementRef(
                             toPublishedTopologyKind(hit.topologyRefKind()),
                             hit.topologyRefId()),
@@ -151,7 +163,7 @@ final class InterpretDungeonEditorMainViewInputUseCase {
         return Effect.clearedSelection();
     }
 
-    private Effect primaryDragged(PointerState input, DungeonSnapshot snapshot, DungeonEditorSession.Tool selectedTool) {
+    private Effect primaryDragged(PointerState input, DungeonSnapshot snapshot, DungeonEditorSessionValues.Tool selectedTool) {
         if (input == null || !input.primaryButtonDown()) {
             return Effect.none();
         }
@@ -175,7 +187,7 @@ final class InterpretDungeonEditorMainViewInputUseCase {
                 : Effect.clearPreviewIfNeeded(true);
     }
 
-    private Effect primaryReleased(PointerState input, DungeonEditorSession.Tool selectedTool) {
+    private Effect primaryReleased(PointerState input, DungeonEditorSessionValues.Tool selectedTool) {
         PaintSession currentPaint = paintSession;
         if (currentPaint.present() && roomPaintToolSelected(selectedTool)) {
             paintSession = PaintSession.none();
@@ -217,7 +229,7 @@ final class InterpretDungeonEditorMainViewInputUseCase {
         return Effect.apply(moveHandleOperation(releasedSession));
     }
 
-    private Effect pointerMoved(PointerState input, DungeonSnapshot snapshot, DungeonEditorSession.Tool selectedTool) {
+    private Effect pointerMoved(PointerState input, DungeonSnapshot snapshot, DungeonEditorSessionValues.Tool selectedTool) {
         if (input == null) {
             return Effect.clearPreviewIfNeeded(boundaryDraft.present() || corridorDraft.present());
         }
@@ -232,7 +244,7 @@ final class InterpretDungeonEditorMainViewInputUseCase {
 
     private Effect levelScrolled(
             int delta,
-            DungeonEditorSession.Tool selectedTool,
+            DungeonEditorSessionValues.Tool selectedTool,
             int projectionLevel,
             @Nullable DungeonSnapshot snapshot
     ) {
@@ -255,7 +267,7 @@ final class InterpretDungeonEditorMainViewInputUseCase {
         if (!paintSession.present()) {
             return Effect.clearPreviewIfNeeded(true);
         }
-        return Effect.preview(new ApplyDungeonEditorSessionUseCase.RoomRectanglePreviewData(
+        return Effect.preview(new DungeonEditorSessionValues.RoomRectanglePreview(
                 new DungeonCellRef(paintSession.startQ(), paintSession.startR(), paintSession.level()),
                 new DungeonCellRef(paintSession.endQ(), paintSession.endR(), paintSession.level()),
                 paintSession.deleteMode()));
@@ -265,7 +277,7 @@ final class InterpretDungeonEditorMainViewInputUseCase {
         if (stretchSession == null || !stretchSession.present() || !stretchSession.moved()) {
             return Effect.clearPreviewIfNeeded(true);
         }
-        return Effect.preview(new ApplyDungeonEditorSessionUseCase.MoveBoundaryStretchPreviewData(
+        return Effect.preview(new DungeonEditorSessionValues.MoveBoundaryStretchPreview(
                 stretchSession.clusterId(),
                 stretchSession.sourceEdges(),
                 stretchSession.deltaQ(),
@@ -279,7 +291,7 @@ final class InterpretDungeonEditorMainViewInputUseCase {
     private Effect previewFromBoundary(
             PointerState input,
             DungeonSnapshot snapshot,
-            DungeonEditorSession.Tool selectedTool
+            DungeonEditorSessionValues.Tool selectedTool
     ) {
         if (selectedTool.isDoorTool()) {
             BoundaryTarget boundary = input.boundaryTarget();
@@ -287,7 +299,7 @@ final class InterpretDungeonEditorMainViewInputUseCase {
             if (!editableDoorBoundary(snapshot, boundary, deleteMode)) {
                 return Effect.clearPreviewIfNeeded(true);
             }
-            return Effect.preview(new ApplyDungeonEditorSessionUseCase.ClusterBoundariesPreviewData(
+            return Effect.preview(new DungeonEditorSessionValues.ClusterBoundariesPreview(
                     resolveBoundaryClusterId(snapshot, boundary),
                     List.of(new DungeonEdgeRef(boundary.start().toDungeonCellRef(), boundary.end().toDungeonCellRef())),
                     DungeonBoundaryKind.DOOR,
@@ -302,7 +314,7 @@ final class InterpretDungeonEditorMainViewInputUseCase {
         if (previewEdges.isEmpty()) {
             return Effect.clearPreviewIfNeeded(true);
         }
-        return Effect.preview(new ApplyDungeonEditorSessionUseCase.ClusterBoundariesPreviewData(
+        return Effect.preview(new DungeonEditorSessionValues.ClusterBoundariesPreview(
                 boundaryDraft.clusterId(),
                 previewEdges.stream().map(EdgeKey::toEdgeRef).toList(),
                 DungeonBoundaryKind.WALL,
@@ -312,8 +324,8 @@ final class InterpretDungeonEditorMainViewInputUseCase {
     private Effect boundaryPressed(
             PointerState input,
             DungeonSnapshot snapshot,
-            ApplyDungeonEditorSessionUseCase.SelectionData currentSelection,
-            DungeonEditorSession.Tool selectedTool
+            DungeonEditorSessionValues.Selection currentSelection,
+            DungeonEditorSessionValues.Tool selectedTool
     ) {
         if (selectedTool.isDoorTool()) {
             return applyDoorBoundaryPress(input, snapshot, selectedTool);
@@ -323,7 +335,7 @@ final class InterpretDungeonEditorMainViewInputUseCase {
             clearBoundaryDraftIfIdle();
             return Effect.none();
         }
-        boolean deleteMode = selectedTool == DungeonEditorSession.Tool.WALL_DELETE;
+        boolean deleteMode = selectedTool == DungeonEditorSessionValues.Tool.WALL_DELETE;
         long clusterId = resolveClusterId(input, vertex, deleteMode, snapshot, currentSelection);
         if (clusterId <= 0L) {
             clearBoundaryDraftIfIdle();
@@ -342,7 +354,7 @@ final class InterpretDungeonEditorMainViewInputUseCase {
     private Effect applyDoorBoundaryPress(
             PointerState input,
             DungeonSnapshot snapshot,
-            DungeonEditorSession.Tool selectedTool
+            DungeonEditorSessionValues.Tool selectedTool
     ) {
         if (!input.primaryButtonDown()) {
             return Effect.none();
@@ -382,7 +394,7 @@ final class InterpretDungeonEditorMainViewInputUseCase {
     private Effect advanceBoundaryDraft(
             PointerState input,
             DungeonSnapshot snapshot,
-            DungeonEditorSession.Tool selectedTool,
+            DungeonEditorSessionValues.Tool selectedTool,
             long clusterId,
             boolean deleteMode,
             VertexKey nextVertex
@@ -406,7 +418,7 @@ final class InterpretDungeonEditorMainViewInputUseCase {
     private Effect applyBoundaryDraftOrPreview(
             PointerState input,
             DungeonSnapshot snapshot,
-            DungeonEditorSession.Tool selectedTool,
+            DungeonEditorSessionValues.Tool selectedTool,
             long clusterId,
             boolean deleteMode,
             VertexKey nextVertex
@@ -431,12 +443,12 @@ final class InterpretDungeonEditorMainViewInputUseCase {
     private Effect corridorPressed(
             PointerState input,
             DungeonSnapshot snapshot,
-            DungeonEditorSession.Tool selectedTool
+            DungeonEditorSessionValues.Tool selectedTool
     ) {
         if (input == null || !input.primaryButtonDown()) {
             return Effect.none();
         }
-        if (selectedTool == DungeonEditorSession.Tool.CORRIDOR_DELETE) {
+        if (selectedTool == DungeonEditorSessionValues.Tool.CORRIDOR_DELETE) {
             PendingCorridorTarget target = resolveCorridorDeleteTarget(input);
             corridorDraft = CorridorDraft.none();
             long corridorId = target == null ? 0L : target.deleteCorridorId();
@@ -465,14 +477,14 @@ final class InterpretDungeonEditorMainViewInputUseCase {
     private Effect previewFromCorridor(
             PointerState input,
             DungeonSnapshot snapshot,
-            DungeonEditorSession.Tool selectedTool
+            DungeonEditorSessionValues.Tool selectedTool
     ) {
-        if (selectedTool == DungeonEditorSession.Tool.CORRIDOR_DELETE) {
+        if (selectedTool == DungeonEditorSessionValues.Tool.CORRIDOR_DELETE) {
             PendingCorridorTarget target = resolveCorridorDeleteTarget(input);
             if (target == null || target.deleteCorridorId() <= 0L) {
                 return Effect.clearPreviewIfNeeded(true);
             }
-            return Effect.preview(new ApplyDungeonEditorSessionUseCase.CorridorDeletePreviewData(target.deleteCorridorId()));
+            return Effect.preview(new DungeonEditorSessionValues.CorridorDeletePreview(target.deleteCorridorId()));
         }
         if (!corridorDraft.present()) {
             return Effect.clearPreviewIfNeeded(true);
@@ -482,16 +494,14 @@ final class InterpretDungeonEditorMainViewInputUseCase {
         if (target == null || start.targetKey().equals(target.targetKey()) || start.endpoint() == null || target.endpoint() == null) {
             return Effect.clearPreviewIfNeeded(true);
         }
-        return Effect.preview(new ApplyDungeonEditorSessionUseCase.CorridorCreatePreviewData(
+        return Effect.preview(new DungeonEditorSessionValues.CorridorCreatePreview(
                 start.endpoint(),
                 target.endpoint()));
     }
 
     private static Effect applyCorridorDraft(PendingCorridorTarget start, PendingCorridorTarget target) {
         if (start.endpoint() != null && target.endpoint() != null) {
-            DungeonEditorOperation operation = DungeonEditorSessionBridge.toDungeonOperation(
-                    new ApplyDungeonEditorSessionUseCase.CorridorCreatePreviewData(start.endpoint(), target.endpoint()));
-            return operation == null ? Effect.none() : Effect.apply(operation);
+            return Effect.apply(new DungeonEditorOperation.CreateCorridor(start.endpoint(), target.endpoint()));
         }
         return Effect.none();
     }
@@ -546,13 +556,13 @@ final class InterpretDungeonEditorMainViewInputUseCase {
         return new PendingCorridorTarget.EndpointTarget(
                 ROOM_PREFIX + hit.handleRef().roomId() + ":door:" + hit.topologyRefId(),
                 "Tür " + hit.topologyRefId(),
-                new ApplyDungeonEditorSessionUseCase.SelectionData(
+                new DungeonEditorSessionValues.Selection(
                         new DungeonTopologyElementRef(DungeonTopologyElementKind.DOOR, hit.topologyRefId()),
                         hit.handleRef().clusterId(),
                         false,
                         handleRef),
                 0L,
-                new ApplyDungeonEditorSessionUseCase.CorridorDoorEndpointData(
+                new DungeonEditorOperation.CorridorDoorEndpoint(
                         hit.handleRef().roomId(),
                         hit.handleRef().clusterId(),
                         hit.handleRef().anchor().toDungeonCellRef(),
@@ -575,7 +585,7 @@ final class InterpretDungeonEditorMainViewInputUseCase {
                 "Tür " + boundary.topologyRefId(),
                 selectionForBoundary(boundary, roomTouch.room().clusterId()),
                 0L,
-                new ApplyDungeonEditorSessionUseCase.CorridorDoorEndpointData(
+                new DungeonEditorOperation.CorridorDoorEndpoint(
                         roomTouch.room().id(),
                         roomTouch.room().clusterId(),
                         roomTouch.roomCell(),
@@ -601,7 +611,7 @@ final class InterpretDungeonEditorMainViewInputUseCase {
                 roomTouch.room().label().isBlank() ? "Raum " + roomTouch.room().id() : roomTouch.room().label(),
                 selectionForBoundary(boundary, roomTouch.room().clusterId()),
                 0L,
-                new ApplyDungeonEditorSessionUseCase.CorridorDoorEndpointData(
+                new DungeonEditorOperation.CorridorDoorEndpoint(
                         roomTouch.room().id(),
                         roomTouch.room().clusterId(),
                         roomTouch.roomCell(),
@@ -620,13 +630,13 @@ final class InterpretDungeonEditorMainViewInputUseCase {
         return new PendingCorridorTarget.EndpointTarget(
                 "anchor:" + hit.topologyRefId(),
                 "Anker " + hit.topologyRefId(),
-                new ApplyDungeonEditorSessionUseCase.SelectionData(
+                new DungeonEditorSessionValues.Selection(
                         new DungeonTopologyElementRef(DungeonTopologyElementKind.CORRIDOR, hostCorridorId),
                         0L,
                         false,
                         null),
                 hostCorridorId,
-                new ApplyDungeonEditorSessionUseCase.CorridorAnchorEndpointData(
+                new DungeonEditorOperation.CorridorAnchorEndpoint(
                         hostCorridorId,
                         hit.handleRef().anchor().toDungeonCellRef(),
                         new DungeonTopologyElementRef(DungeonTopologyElementKind.CORRIDOR_ANCHOR, hit.topologyRefId())));
@@ -646,13 +656,13 @@ final class InterpretDungeonEditorMainViewInputUseCase {
         return new PendingCorridorTarget.EndpointTarget(
                 "corridor:" + corridorId + ":" + input.q() + ":" + input.r() + ":" + input.level(),
                 "Korridor " + corridorId,
-                new ApplyDungeonEditorSessionUseCase.SelectionData(
+                new DungeonEditorSessionValues.Selection(
                         new DungeonTopologyElementRef(DungeonTopologyElementKind.CORRIDOR, corridorId),
                         0L,
                         false,
                         null),
                 corridorId,
-                new ApplyDungeonEditorSessionUseCase.CorridorAnchorEndpointData(
+                new DungeonEditorOperation.CorridorAnchorEndpoint(
                         corridorId,
                         new DungeonCellRef(input.q(), input.r(), input.level()),
                         DungeonTopologyElementRef.empty()));
@@ -671,9 +681,9 @@ final class InterpretDungeonEditorMainViewInputUseCase {
         return new PendingCorridorTarget.EndpointTarget(
                 ROOM_PREFIX + room.id(),
                 room.label().isBlank() ? "Raum " + room.id() : room.label(),
-                new ApplyDungeonEditorSessionUseCase.SelectionData(room.topologyRef(), room.clusterId(), false, null),
+                new DungeonEditorSessionValues.Selection(room.topologyRef(), room.clusterId(), false, null),
                 room.clusterId(),
-                new ApplyDungeonEditorSessionUseCase.CorridorDoorEndpointData(
+                new DungeonEditorOperation.CorridorDoorEndpoint(
                         room.id(),
                         room.clusterId(),
                         roomCell,
@@ -684,7 +694,7 @@ final class InterpretDungeonEditorMainViewInputUseCase {
     private @Nullable BoundaryStretchSession boundaryStretchSession(
             PointerState input,
             DungeonSnapshot snapshot,
-            ApplyDungeonEditorSessionUseCase.SelectionData currentSelection
+            DungeonEditorSessionValues.Selection currentSelection
     ) {
         BoundaryTarget boundaryTarget = input == null ? null : input.boundaryTarget();
         if (input == null || !input.primaryButtonDown() || boundaryTarget == null || !boundaryTarget.present()) {
@@ -702,7 +712,7 @@ final class InterpretDungeonEditorMainViewInputUseCase {
         if (sourceEdges.isEmpty()) {
             return null;
         }
-        ApplyDungeonEditorSessionUseCase.SelectionData nextSelection =
+        DungeonEditorSessionValues.Selection nextSelection =
                 selectionForBoundaryStretch(snapshot, currentSelection, clusterId, boundaryTarget);
         return new BoundaryStretchSession(
                 nextSelection,
@@ -717,9 +727,9 @@ final class InterpretDungeonEditorMainViewInputUseCase {
                 true);
     }
 
-    private static ApplyDungeonEditorSessionUseCase.SelectionData selectionForBoundaryStretch(
+    private static DungeonEditorSessionValues.Selection selectionForBoundaryStretch(
             DungeonSnapshot snapshot,
-            ApplyDungeonEditorSessionUseCase.SelectionData currentSelection,
+            DungeonEditorSessionValues.Selection currentSelection,
             long clusterId,
             BoundaryTarget boundaryTarget
     ) {
@@ -728,9 +738,9 @@ final class InterpretDungeonEditorMainViewInputUseCase {
         }
         DungeonAreaSnapshot clusterArea = firstClusterArea(snapshot, clusterId);
         if (clusterArea != null) {
-            return new ApplyDungeonEditorSessionUseCase.SelectionData(clusterArea.topologyRef(), clusterArea.clusterId(), true, null);
+            return new DungeonEditorSessionValues.Selection(clusterArea.topologyRef(), clusterArea.clusterId(), true, null);
         }
-        return new ApplyDungeonEditorSessionUseCase.SelectionData(
+        return new DungeonEditorSessionValues.Selection(
                 new DungeonTopologyElementRef(toPublishedTopologyKind(boundaryTarget.topologyRefKind()), boundaryTarget.topologyRefId()),
                 clusterId,
                 true,
@@ -986,7 +996,7 @@ final class InterpretDungeonEditorMainViewInputUseCase {
             VertexTarget vertex,
             boolean deleteMode,
             DungeonSnapshot snapshot,
-            ApplyDungeonEditorSessionUseCase.SelectionData selection
+            DungeonEditorSessionValues.Selection selection
     ) {
         if (selection != null
                 && selection.clusterId() > 0L
@@ -1087,7 +1097,7 @@ final class InterpretDungeonEditorMainViewInputUseCase {
             if (current.equals(goal)) {
                 break;
             }
-            for (VertexKey neighbor : adjacency.getOrDefault(current, Set.of()).stream().sorted(VertexKey.ORDER).toList()) {
+            for (VertexKey neighbor : adjacency.getOrDefault(current, Set.of()).stream().sorted(VertexKey.order()).toList()) {
                 if (previous.containsKey(neighbor)) {
                     continue;
                 }
@@ -1125,7 +1135,7 @@ final class InterpretDungeonEditorMainViewInputUseCase {
         Set<CellKey> cells = clusterCellsByCluster(snapshot, level).getOrDefault(clusterId, Set.of());
         Set<EdgeKey> result = new LinkedHashSet<>();
         for (CellKey cell : cells) {
-            for (Direction direction : Direction.values()) {
+            for (TravelHeading direction : TravelHeading.values()) {
                 CellKey neighbor = cell.neighbor(direction);
                 if (cells.contains(neighbor)) {
                     result.add(EdgeKey.sideOf(cell, direction));
@@ -1173,7 +1183,7 @@ final class InterpretDungeonEditorMainViewInputUseCase {
         Set<CellKey> cells = clusterCellsByCluster(snapshot, level).getOrDefault(clusterId, Set.of());
         Set<EdgeKey> result = new LinkedHashSet<>();
         for (CellKey cell : cells) {
-            for (Direction direction : Direction.values()) {
+            for (TravelHeading direction : TravelHeading.values()) {
                 if (!cells.contains(cell.neighbor(direction))) {
                     result.add(EdgeKey.sideOf(cell, direction));
                 }
@@ -1259,7 +1269,7 @@ final class InterpretDungeonEditorMainViewInputUseCase {
                 .map(cell -> new CellKey(cell.q(), cell.r(), cell.level()))
                 .collect(Collectors.toCollection(LinkedHashSet::new));
         CellKey key = new CellKey(roomCell.q(), roomCell.r(), roomCell.level());
-        for (Direction direction : Direction.values()) {
+        for (TravelHeading direction : TravelHeading.values()) {
             if (!roomCells.contains(key.neighbor(direction))) {
                 return direction.name();
             }
@@ -1309,7 +1319,7 @@ final class InterpretDungeonEditorMainViewInputUseCase {
         }
         EdgeKey boundaryKey = EdgeKey.from(new DungeonEdgeRef(boundary.start().toDungeonCellRef(), boundary.end().toDungeonCellRef()));
         CellKey cellKey = new CellKey(roomCell.q(), roomCell.r(), roomCell.level());
-        for (Direction direction : Direction.values()) {
+        for (TravelHeading direction : TravelHeading.values()) {
             if (EdgeKey.sideOf(cellKey, direction).equals(boundaryKey)) {
                 return direction.name();
             }
@@ -1317,8 +1327,8 @@ final class InterpretDungeonEditorMainViewInputUseCase {
         return "";
     }
 
-    private static ApplyDungeonEditorSessionUseCase.SelectionData selectionForBoundary(BoundaryTarget boundary, long clusterId) {
-        return new ApplyDungeonEditorSessionUseCase.SelectionData(
+    private static DungeonEditorSessionValues.Selection selectionForBoundary(BoundaryTarget boundary, long clusterId) {
+        return new DungeonEditorSessionValues.Selection(
                 new DungeonTopologyElementRef(toPublishedTopologyKind(boundary.topologyRefKind()), boundary.topologyRefId()),
                 clusterId,
                 false,
@@ -1492,19 +1502,19 @@ final class InterpretDungeonEditorMainViewInputUseCase {
                 hit.clusterId()).toDungeonHandleRef();
     }
 
-    private static boolean selectionToolSelected(DungeonEditorSession.Tool selectedTool) {
+    private static boolean selectionToolSelected(DungeonEditorSessionValues.Tool selectedTool) {
         return selectedTool != null && selectedTool.isSelectionTool();
     }
 
-    private static boolean boundaryToolSelected(DungeonEditorSession.Tool selectedTool) {
+    private static boolean boundaryToolSelected(DungeonEditorSessionValues.Tool selectedTool) {
         return selectedTool != null && selectedTool.isBoundaryTool();
     }
 
-    private static boolean corridorToolSelected(DungeonEditorSession.Tool selectedTool) {
+    private static boolean corridorToolSelected(DungeonEditorSessionValues.Tool selectedTool) {
         return selectedTool != null && selectedTool.isCorridorTool();
     }
 
-    private static boolean roomPaintToolSelected(DungeonEditorSession.Tool selectedTool) {
+    private static boolean roomPaintToolSelected(DungeonEditorSessionValues.Tool selectedTool) {
         return selectedTool != null && selectedTool.isRoomPaintTool();
     }
 
@@ -1552,22 +1562,22 @@ final class InterpretDungeonEditorMainViewInputUseCase {
     }
 
     record Effect(
-            ApplyDungeonEditorSessionUseCase.@Nullable SelectionData selection,
+            DungeonEditorSessionValues.@Nullable Selection selection,
             boolean clearSelection,
-            ApplyDungeonEditorSessionUseCase.@Nullable PreviewData preview,
+            DungeonEditorSessionValues.@Nullable Preview preview,
             boolean clearPreview,
             @Nullable DungeonEditorOperation applyOperation,
             int projectionLevelDelta,
             @Nullable String statusText
     ) {
         static Effect none() { return new Effect(null, false, null, false, null, 0, null); }
-        static Effect preview(ApplyDungeonEditorSessionUseCase.PreviewData preview) {
+        static Effect preview(DungeonEditorSessionValues.Preview preview) {
             return new Effect(null, false, preview, false, null, 0, null);
         }
         static Effect apply(DungeonEditorOperation operation) { return new Effect(null, false, null, true, operation, 0, null); }
         static Effect applyWithStatus(DungeonEditorOperation operation, String statusText) { return new Effect(null, false, null, true, operation, 0, statusText); }
-        static Effect select(ApplyDungeonEditorSessionUseCase.SelectionData selection) { return new Effect(selection, false, null, true, null, 0, null); }
-        static Effect select(ApplyDungeonEditorSessionUseCase.SelectionData selection, String statusText) { return new Effect(selection, false, null, true, null, 0, statusText); }
+        static Effect select(DungeonEditorSessionValues.Selection selection) { return new Effect(selection, false, null, true, null, 0, null); }
+        static Effect select(DungeonEditorSessionValues.Selection selection, String statusText) { return new Effect(selection, false, null, true, null, 0, statusText); }
         static Effect clearedSelection() { return new Effect(null, true, null, true, null, 0, null); }
         static Effect projectionLevel(int delta) { return new Effect(null, false, null, false, null, delta, null); }
         static Effect clearPreviewIfNeeded(boolean clearPreview) { return new Effect(null, false, null, clearPreview, null, 0, null); }
@@ -1578,11 +1588,6 @@ final class InterpretDungeonEditorMainViewInputUseCase {
     }
 
     enum HitKind { EMPTY, HANDLE, LABEL, BOUNDARY, ROOM, CORRIDOR, STAIR, TRANSITION }
-
-    record CellTarget(int q, int r, int level) {
-        static CellTarget empty() { return new CellTarget(0, 0, 0); }
-        DungeonCellRef toDungeonCellRef() { return new DungeonCellRef(q, r, level); }
-    }
 
     record HandleTarget(
             String kind,
@@ -1689,10 +1694,6 @@ final class InterpretDungeonEditorMainViewInputUseCase {
         }
     }
 
-    record VertexTarget(boolean present, int q, int r, int level) {
-        static VertexTarget empty() { return new VertexTarget(false, 0, 0, 0); }
-    }
-
     private record PaintSession(
             int startQ,
             int startR,
@@ -1709,7 +1710,7 @@ final class InterpretDungeonEditorMainViewInputUseCase {
     }
 
     private record DragSession(
-            ApplyDungeonEditorSessionUseCase.SelectionData selection,
+            DungeonEditorSessionValues.Selection selection,
             int pressQ,
             int pressR,
             int currentQ,
@@ -1718,11 +1719,11 @@ final class InterpretDungeonEditorMainViewInputUseCase {
             int currentLevel,
             boolean present
     ) {
-        static DragSession start(ApplyDungeonEditorSessionUseCase.SelectionData selection, int pressQ, int pressR, int pressLevel) {
+        static DragSession start(DungeonEditorSessionValues.Selection selection, int pressQ, int pressR, int pressLevel) {
             return new DragSession(selection, pressQ, pressR, pressQ, pressR, pressLevel, pressLevel, true);
         }
         static DragSession none() {
-            return new DragSession(ApplyDungeonEditorSessionUseCase.SelectionData.empty(), 0, 0, 0, 0, 0, 0, false);
+            return new DragSession(DungeonEditorSessionValues.Selection.empty(), 0, 0, 0, 0, 0, 0, false);
         }
         int deltaQ() { return currentQ - pressQ; }
         int deltaR() { return currentR - pressR; }
@@ -1770,7 +1771,7 @@ final class InterpretDungeonEditorMainViewInputUseCase {
     }
 
     private record BoundaryStretchSession(
-            ApplyDungeonEditorSessionUseCase.SelectionData selection,
+            DungeonEditorSessionValues.Selection selection,
             long clusterId,
             List<DungeonEdgeRef> sourceEdges,
             BoundaryStretchOrientation orientation,
@@ -1787,7 +1788,7 @@ final class InterpretDungeonEditorMainViewInputUseCase {
         }
         static BoundaryStretchSession none() {
             return new BoundaryStretchSession(
-                    ApplyDungeonEditorSessionUseCase.SelectionData.empty(),
+                    DungeonEditorSessionValues.Selection.empty(),
                     0L,
                     List.of(),
                     BoundaryStretchOrientation.VERTICAL,
@@ -1825,12 +1826,12 @@ final class InterpretDungeonEditorMainViewInputUseCase {
                     new PendingCorridorTarget.EndpointTarget(
                             "",
                             "",
-                            ApplyDungeonEditorSessionUseCase.SelectionData.empty(),
+                    DungeonEditorSessionValues.Selection.empty(),
+                    0L,
+                    new DungeonEditorOperation.CorridorAnchorEndpoint(
                             0L,
-                            new ApplyDungeonEditorSessionUseCase.CorridorAnchorEndpointData(
-                                    0L,
-                                    new DungeonCellRef(0, 0, 0),
-                                    DungeonTopologyElementRef.empty())),
+                            new DungeonCellRef(0, 0, 0),
+                            DungeonTopologyElementRef.empty())),
                     false);
         }
         static CorridorDraft start(PendingCorridorTarget target) { return new CorridorDraft(target, true); }
@@ -1839,16 +1840,16 @@ final class InterpretDungeonEditorMainViewInputUseCase {
     private sealed interface PendingCorridorTarget permits PendingCorridorTarget.EndpointTarget {
         String targetKey();
         String displayLabel();
-        ApplyDungeonEditorSessionUseCase.SelectionData selection();
+        DungeonEditorSessionValues.Selection selection();
         long deleteCorridorId();
-        ApplyDungeonEditorSessionUseCase.CorridorEndpointData endpoint();
+        DungeonEditorOperation.CorridorEndpoint endpoint();
 
         record EndpointTarget(
                 String targetKey,
                 String displayLabel,
-                ApplyDungeonEditorSessionUseCase.SelectionData selection,
+                DungeonEditorSessionValues.Selection selection,
                 long deleteCorridorId,
-                ApplyDungeonEditorSessionUseCase.CorridorEndpointData endpoint
+                DungeonEditorOperation.CorridorEndpoint endpoint
         ) implements PendingCorridorTarget { }
     }
 
@@ -1863,32 +1864,25 @@ final class InterpretDungeonEditorMainViewInputUseCase {
         boolean hasRoute() { return !routeEdges.isEmpty(); }
     }
 
-    private record CellKey(int q, int r, int level) {
-        CellKey neighbor(Direction direction) { return new CellKey(q + direction.deltaQ(), r + direction.deltaR(), level); }
-    }
-
-    private record VertexKey(int q, int r, int level) {
-        private static final Comparator<VertexKey> ORDER = Comparator
-                .comparingInt(VertexKey::level)
-                .thenComparingInt(VertexKey::r)
-                .thenComparingInt(VertexKey::q);
-    }
-
     private record EdgeKey(VertexKey start, VertexKey end) {
         static EdgeKey from(DungeonEdgeRef edge) {
             return between(new VertexKey(edge.from().q(), edge.from().r(), edge.from().level()),
                     new VertexKey(edge.to().q(), edge.to().r(), edge.to().level()));
         }
         static EdgeKey between(VertexKey first, VertexKey second) {
-            return VertexKey.ORDER.compare(first, second) <= 0 ? new EdgeKey(first, second) : new EdgeKey(second, first);
+            return VertexKey.order().compare(first, second) <= 0 ? new EdgeKey(first, second) : new EdgeKey(second, first);
         }
-        static EdgeKey sideOf(CellKey cell, Direction direction) {
-            return switch (direction) {
-                case NORTH -> between(new VertexKey(cell.q(), cell.r(), cell.level()), new VertexKey(cell.q() + 1, cell.r(), cell.level()));
-                case EAST -> between(new VertexKey(cell.q() + 1, cell.r(), cell.level()), new VertexKey(cell.q() + 1, cell.r() + 1, cell.level()));
-                case SOUTH -> between(new VertexKey(cell.q(), cell.r() + 1, cell.level()), new VertexKey(cell.q() + 1, cell.r() + 1, cell.level()));
-                case WEST -> between(new VertexKey(cell.q(), cell.r(), cell.level()), new VertexKey(cell.q(), cell.r() + 1, cell.level()));
-            };
+        static EdgeKey sideOf(CellKey cell, TravelHeading direction) {
+            if (direction == TravelHeading.NORTH) {
+                return between(new VertexKey(cell.q(), cell.r(), cell.level()), new VertexKey(cell.q() + 1, cell.r(), cell.level()));
+            }
+            if (direction == TravelHeading.EAST) {
+                return between(new VertexKey(cell.q() + 1, cell.r(), cell.level()), new VertexKey(cell.q() + 1, cell.r() + 1, cell.level()));
+            }
+            if (direction == TravelHeading.SOUTH) {
+                return between(new VertexKey(cell.q(), cell.r() + 1, cell.level()), new VertexKey(cell.q() + 1, cell.r() + 1, cell.level()));
+            }
+            return between(new VertexKey(cell.q(), cell.r(), cell.level()), new VertexKey(cell.q(), cell.r() + 1, cell.level()));
         }
         boolean touches(VertexKey vertex) { return start.equals(vertex) || end.equals(vertex); }
         DungeonEdgeRef toEdgeRef() {
@@ -1896,15 +1890,6 @@ final class InterpretDungeonEditorMainViewInputUseCase {
                     new DungeonCellRef(start.q(), start.r(), start.level()),
                     new DungeonCellRef(end.q(), end.r(), end.level()));
         }
-    }
-
-    private enum Direction {
-        NORTH(0, -1), EAST(1, 0), SOUTH(0, 1), WEST(-1, 0);
-        private final int deltaQ;
-        private final int deltaR;
-        Direction(int deltaQ, int deltaR) { this.deltaQ = deltaQ; this.deltaR = deltaR; }
-        int deltaQ() { return deltaQ; }
-        int deltaR() { return deltaR; }
     }
 
     private static VertexKey vertexKey(VertexTarget vertex) { return new VertexKey(vertex.q(), vertex.r(), vertex.level()); }
@@ -1925,7 +1910,7 @@ final class InterpretDungeonEditorMainViewInputUseCase {
         return new DungeonEditorOperation.MoveEditorHandle(handleRef, session.deltaQ(), session.deltaR(), session.deltaLevel());
     }
 
-    private static ApplyDungeonEditorSessionUseCase.MoveHandlePreviewData moveHandlePreview(DragSession session) {
+    private static DungeonEditorSessionValues.MoveHandlePreview moveHandlePreview(DragSession session) {
         DungeonEditorHandleRef handleRef = session.selection().handleRef() == null
                 ? new DungeonEditorHandleRef(
                 DungeonEditorHandleKind.CLUSTER_LABEL,
@@ -1938,7 +1923,7 @@ final class InterpretDungeonEditorMainViewInputUseCase {
                 new DungeonCellRef(0, 0, 0),
                 "")
                 : session.selection().handleRef();
-        return new ApplyDungeonEditorSessionUseCase.MoveHandlePreviewData(
+        return new DungeonEditorSessionValues.MoveHandlePreview(
                 handleRef,
                 session.deltaQ(),
                 session.deltaR(),

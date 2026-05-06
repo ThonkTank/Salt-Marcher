@@ -36,7 +36,7 @@ public final class DomainUseCaseEnforcementCoverageRules implements Architecture
             row("domain-usecase-no-same-context-published-dependencies",
                     "Enforced",
                     List.of("domain-usecase bundle Error Prone", "DomainApplicationNoSameContextPublishedDependency"),
-                    List.of("./gradlew checkDomainUseCaseEnforcement")),
+                    List.of("./gradlew compileJava", "./gradlew checkDomainUseCaseEnforcement")),
             row("domain-usecase-no-policy-helper-prefix-source-pattern",
                     "Source-Pattern Enforced",
                     List.of("domain-usecase bundle PMD", "DomainUseCasePolicyRule"),

@@ -20,7 +20,7 @@ import javax.lang.model.type.TypeMirror;
 
 @BugPattern(
         name = "DomainApplicationServiceApiShape",
-        summary = "Root domain ApplicationService APIs must use same-context published command/query/result carriers.",
+        summary = "Root domain ApplicationService APIs must use same-context published command/query carriers with inbound-only command returns.",
         severity = BugPattern.SeverityLevel.ERROR)
 public final class DomainApplicationServiceApiShapeChecker extends BugChecker
         implements BugChecker.MethodTreeMatcher, BugChecker.ClassTreeMatcher {
@@ -111,19 +111,26 @@ public final class DomainApplicationServiceApiShapeChecker extends BugChecker
             return violation(tree, methodSymbol, feature,
                     "accept one same-feature published command/query parameter");
         }
-        if (!hasSimpleNameEnding(parameter.asType(), "Command", "Query")) {
+        if (hasSimpleNameEnding(parameter.asType(), "Command")) {
+            if (methodSymbol.getReturnType().getKind() == TypeKind.VOID) {
+                return Description.NO_MATCH;
+            }
             return violation(tree, methodSymbol, feature,
-                    "accept one same-feature published carrier whose simple name ends with Command or Query");
+                    "return void for same-feature published command carriers so command feedback stays on read-side published/*Model handles");
         }
-        if (methodSymbol.getReturnType().getKind() == TypeKind.VOID) {
-            return violation(tree, methodSymbol, feature,
-                    "return a same-feature published result/value carrier instead of void");
+        if (hasSimpleNameEnding(parameter.asType(), "Query")) {
+            if (!isSameFeaturePublishedType(methodSymbol.getReturnType(), feature)) {
+                return violation(tree, methodSymbol, feature,
+                        "return one same-feature published read-model handle for query carriers");
+            }
+            if (!hasSimpleNameEnding(methodSymbol.getReturnType(), "Model")) {
+                return violation(tree, methodSymbol, feature,
+                        "return one same-feature published carrier whose simple name ends with Model for query carriers");
+            }
+            return Description.NO_MATCH;
         }
-        if (!isSameFeaturePublishedType(methodSymbol.getReturnType(), feature)) {
-            return violation(tree, methodSymbol, feature,
-                    "return a same-feature published result/value carrier directly");
-        }
-        return Description.NO_MATCH;
+        return violation(tree, methodSymbol, feature,
+                "accept one same-feature published carrier whose simple name ends with Command or Query");
     }
 
     private Description violation(MethodTree tree, Symbol.MethodSymbol methodSymbol, String feature, String requirement) {
@@ -156,5 +163,13 @@ public final class DomainApplicationServiceApiShapeChecker extends BugChecker
         }
         String simpleName = typeElement.getSimpleName().toString();
         return simpleName.endsWith(firstSuffix) || simpleName.endsWith(secondSuffix);
+    }
+
+    private static boolean hasSimpleNameEnding(TypeMirror typeMirror, String suffix) {
+        if (!(typeMirror instanceof DeclaredType declaredType)
+                || !(declaredType.asElement() instanceof TypeElement typeElement)) {
+            return false;
+        }
+        return typeElement.getSimpleName().toString().endsWith(suffix);
     }
 }
