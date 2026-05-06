@@ -2,7 +2,6 @@ package src.view.leftbartabs.catalog;
 
 import java.util.Objects;
 import java.util.function.Consumer;
-import javafx.collections.ListChangeListener;
 import javafx.geometry.Insets;
 import javafx.scene.Node;
 import javafx.scene.control.Label;
@@ -50,56 +49,30 @@ public final class CatalogControlsView extends VBox {
     }
 
     private void bindModel() {
-        runWithSuppressedInput(() -> {
-            applyFilterProjection();
-            applyEncounterControlsProjection();
-            chipsView.setChips(presentationModel.chipsProperty());
-        });
-
-        presentationModel.filterOptionsProperty().addListener((obs, oldValue, newValue) ->
-                runWithSuppressedInput(this::applyFilterProjection));
-        presentationModel.creatureFiltersProperty().addListener((obs, oldValue, newValue) ->
-                runWithSuppressedInput(this::applyFilterProjection));
-        presentationModel.sizeDropdownStateProperty().addListener((obs, oldValue, newValue) ->
-                runWithSuppressedInput(this::applyFilterProjection));
-        presentationModel.typeDropdownStateProperty().addListener((obs, oldValue, newValue) ->
-                runWithSuppressedInput(this::applyFilterProjection));
-        presentationModel.subtypeDropdownStateProperty().addListener((obs, oldValue, newValue) ->
-                runWithSuppressedInput(this::applyFilterProjection));
-        presentationModel.biomeDropdownStateProperty().addListener((obs, oldValue, newValue) ->
-                runWithSuppressedInput(this::applyFilterProjection));
-        presentationModel.alignmentDropdownStateProperty().addListener((obs, oldValue, newValue) ->
-                runWithSuppressedInput(this::applyFilterProjection));
-        presentationModel.controlsStateProperty().addListener((obs, oldValue, newValue) ->
-                runWithSuppressedInput(this::applyEncounterControlsProjection));
-        presentationModel.encounterTableDropdownStateProperty().addListener((obs, oldValue, newValue) ->
-                runWithSuppressedInput(this::applyEncounterControlsProjection));
-        presentationModel.encounterTableOptionsProperty().addListener(
-                (ListChangeListener<CatalogContributionModel.EncounterTableOption>) change ->
-                        runWithSuppressedInput(this::applyEncounterControlsProjection));
-        presentationModel.chipsProperty().addListener(
-                (ListChangeListener<CatalogContributionModel.FilterChip>) change ->
-                        runWithSuppressedInput(() -> chipsView.setChips(presentationModel.chipsProperty())));
+        runWithSuppressedInput(() -> applyProjection(presentationModel.controlsProjectionProperty().get()));
+        presentationModel.controlsProjectionProperty().addListener((obs, oldValue, newValue) ->
+                runWithSuppressedInput(() -> applyProjection(newValue)));
     }
 
-    private void applyFilterProjection() {
+    private void applyProjection(CatalogContributionModel.ControlsProjection projection) {
+        CatalogContributionModel.ControlsProjection safeProjection = projection == null
+                ? CatalogContributionModel.ControlsProjection.initial()
+                : projection;
         filterStrip.applyProjection(new CatalogFilterStripView.Projection(
-                presentationModel.filterOptionsProperty().get(),
-                presentationModel.creatureFiltersProperty().get(),
-                presentationModel.sizeDropdownStateProperty().get(),
-                presentationModel.typeDropdownStateProperty().get(),
-                presentationModel.subtypeDropdownStateProperty().get(),
-                presentationModel.biomeDropdownStateProperty().get(),
-                presentationModel.alignmentDropdownStateProperty().get()));
-    }
-
-    private void applyEncounterControlsProjection() {
-        CatalogContributionModel.ControlsState controlsState = presentationModel.controlsStateProperty().get();
+                safeProjection.filterOptions(),
+                safeProjection.creatureFilters(),
+                safeProjection.sizeDropdownState(),
+                safeProjection.typeDropdownState(),
+                safeProjection.subtypeDropdownState(),
+                safeProjection.biomeDropdownState(),
+                safeProjection.alignmentDropdownState()));
+        CatalogContributionModel.ControlsState controlsState = safeProjection.controlsState();
         encounterTablePicker.applyProjection(new CatalogEncounterTablePickerView.Projection(
-                presentationModel.encounterTableOptionsProperty(),
-                controlsState == null ? null : controlsState.encounterTableIds(),
-                presentationModel.encounterTableDropdownStateProperty().get().open()));
+                safeProjection.encounterTableOptions(),
+                controlsState.encounterTableIds(),
+                safeProjection.encounterTableDropdownState().open()));
         tuningView.applyProjection(controlsState);
+        chipsView.setChips(safeProjection.chips());
     }
 
     private void clearChip(String key) {

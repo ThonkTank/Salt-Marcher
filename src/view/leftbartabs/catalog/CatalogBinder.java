@@ -116,21 +116,20 @@ final class CatalogBinder {
             CreaturesApplicationService creatures,
             CatalogContributionModel presentationModel
     ) {
-        CatalogContributionModel.CreatureFilters filters = presentationModel.currentFilters();
-        CatalogContributionModel.SortOption sortOption = presentationModel.currentSortOption();
+        CatalogContributionModel.SearchRequest request = presentationModel.currentSearchRequest();
         creatures.searchCatalog(new CreatureCatalogQuery(
-                filters.nameQuery(),
-                filters.challengeRatingMin(),
-                filters.challengeRatingMax(),
-                filters.sizes(),
-                filters.types(),
-                filters.subtypes(),
-                filters.biomes(),
-                filters.alignments(),
-                sortOption.field(),
-                sortOption.direction(),
-                presentationModel.currentPageSize(),
-                presentationModel.currentPageOffset()));
+                request.nameQuery(),
+                request.challengeRatingMin(),
+                request.challengeRatingMax(),
+                request.sizes(),
+                request.types(),
+                request.subtypes(),
+                request.biomes(),
+                request.alignments(),
+                request.sortField(),
+                request.sortDirection(),
+                request.pageSize(),
+                request.pageOffset()));
     }
 
     private static void updateBuilderInputs(

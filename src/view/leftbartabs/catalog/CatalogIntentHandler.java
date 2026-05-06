@@ -37,19 +37,19 @@ final class CatalogIntentHandler {
                         event.subtypes(),
                         event.biomes(),
                         event.encounterTableIds(),
-                        CatalogContributionModel.draftDifficulty(
+                        CatalogContributionModel.SliderProjection.draftDifficulty(
                                 event.difficultyAuto(),
                                 event.difficultyValue(),
                                 previousDraftControls.difficulty()),
-                        CatalogContributionModel.draftBalance(
+                        CatalogContributionModel.SliderProjection.draftBalance(
                                 event.balanceAuto(),
                                 event.balanceValue(),
                                 previousDraftControls.balance()),
-                        CatalogContributionModel.draftAmount(
+                        CatalogContributionModel.SliderProjection.draftAmount(
                                 event.amountAuto(),
                                 event.amountValue(),
                                 previousDraftControls.amount()),
-                        CatalogContributionModel.draftDiversity(
+                        CatalogContributionModel.SliderProjection.draftDiversity(
                                 event.diversityAuto(),
                                 event.diversityValue(),
                                 previousDraftControls.diversity())),

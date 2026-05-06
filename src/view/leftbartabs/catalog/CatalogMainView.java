@@ -6,7 +6,8 @@ import java.util.Objects;
 import java.util.function.Consumer;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.SimpleStringProperty;
-import javafx.collections.ListChangeListener;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
@@ -41,6 +42,8 @@ public final class CatalogMainView extends BorderPane {
     private static final String COLUMN_KEY_SIZE = "size";
     private static final String COLUMN_KEY_XP = "xp";
 
+    private final ObservableList<CatalogContributionModel.CatalogRow> rowItems = FXCollections.observableArrayList();
+    private final ObservableList<CatalogContributionModel.KeyLabel> sortItems = FXCollections.observableArrayList();
     private final TableView<CatalogContributionModel.CatalogRow> table = new TableView<>();
     private final Label placeholder = new Label("Lade Monster...");
     private final Label countLabel = new Label("0 Monster gefunden");
@@ -58,6 +61,8 @@ public final class CatalogMainView extends BorderPane {
     public CatalogMainView() {
         getStyleClass().add("surface-root");
         setPadding(new Insets(8));
+        table.setItems(rowItems);
+        sortCombo.setItems(sortItems);
 
         HBox topBar = new HBox(8);
         topBar.setAlignment(Pos.CENTER_LEFT);
@@ -119,23 +124,27 @@ public final class CatalogMainView extends BorderPane {
         if (contributionModel == null) {
             return;
         }
-        countLabel.textProperty().bind(contributionModel.countLabelProperty());
-        pageLabel.textProperty().bind(contributionModel.pageLabelProperty());
-        placeholder.textProperty().bind(contributionModel.placeholderTextProperty());
-        previousButton.disableProperty().bind(contributionModel.previousPageAvailableProperty().not());
-        nextButton.disableProperty().bind(contributionModel.nextPageAvailableProperty().not());
-        sortCombo.setItems(contributionModel.sortOptionsProperty());
-        table.setItems(contributionModel.rowsProperty());
-        contributionModel.columnsProperty().addListener(
-                (ListChangeListener<CatalogContributionModel.KeyLabel>) change ->
-                        refreshColumns(contributionModel.columnsProperty()));
-        contributionModel.selectedSortKeyProperty().addListener((obs, before, after) -> selectSortKey(after));
-        refreshColumns(contributionModel.columnsProperty());
-        selectSortKey(contributionModel.selectedSortKeyProperty().get());
+        applyProjection(contributionModel.mainProjectionProperty().get());
+        contributionModel.mainProjectionProperty().addListener((obs, before, after) -> applyProjection(after));
     }
 
     public void onViewInputEvent(Consumer<CatalogMainViewInputEvent> handler) {
         viewInputEventHandler = handler == null ? ignored -> { } : handler;
+    }
+
+    private void applyProjection(CatalogContributionModel.MainProjection projection) {
+        CatalogContributionModel.MainProjection safeProjection = projection == null
+                ? CatalogContributionModel.MainProjection.initial()
+                : projection;
+        countLabel.setText(safeProjection.countLabel());
+        pageLabel.setText(safeProjection.pageLabel());
+        placeholder.setText(safeProjection.placeholderText());
+        previousButton.setDisable(!safeProjection.previousPageAvailable());
+        nextButton.setDisable(!safeProjection.nextPageAvailable());
+        sortItems.setAll(safeProjection.sortOptions());
+        rowItems.setAll(safeProjection.rows());
+        refreshColumns(safeProjection.columns());
+        selectSortKey(safeProjection.selectedSortKey());
     }
 
     private void refreshColumns(List<CatalogContributionModel.KeyLabel> columns) {

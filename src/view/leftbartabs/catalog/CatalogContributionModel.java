@@ -3,17 +3,10 @@ package src.view.leftbartabs.catalog;
 import java.text.NumberFormat;
 import java.util.List;
 import java.util.Locale;
-import javafx.beans.property.ReadOnlyBooleanProperty;
-import javafx.beans.property.ReadOnlyBooleanWrapper;
-import javafx.beans.property.ReadOnlyListProperty;
-import javafx.beans.property.ReadOnlyListWrapper;
 import javafx.beans.property.ReadOnlyLongProperty;
 import javafx.beans.property.ReadOnlyLongWrapper;
 import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.ReadOnlyObjectWrapper;
-import javafx.beans.property.ReadOnlyStringProperty;
-import javafx.beans.property.ReadOnlyStringWrapper;
-import javafx.collections.FXCollections;
 import org.jspecify.annotations.Nullable;
 import src.domain.creatures.published.CreatureCatalogPage;
 import src.domain.creatures.published.CreatureCatalogPageResult;
@@ -32,73 +25,7 @@ import src.domain.encountertable.published.EncounterTableSummary;
 
 public final class CatalogContributionModel {
 
-    public enum ContentKind {
-        CREATURES("creatures", "Creatures", true),
-        ITEMS("items", "Items", false),
-        SPELLS("spells", "Spells", false);
-
-        private final String key;
-        private final String label;
-        private final boolean enabled;
-
-        ContentKind(String key, String label, boolean enabled) {
-            this.key = key;
-            this.label = label;
-            this.enabled = enabled;
-        }
-
-        public String key() {
-            return key;
-        }
-
-        public String label() {
-            return label;
-        }
-
-        public boolean enabled() {
-            return enabled;
-        }
-    }
-
-    public enum SortOption {
-        NAME_ASC("name-asc", "Name (A-Z)", CreatureCatalogSortField.NAME, CreatureSortDirection.ASCENDING),
-        NAME_DESC("name-desc", "Name (Z-A)", CreatureCatalogSortField.NAME, CreatureSortDirection.DESCENDING),
-        CR_ASC("cr-asc", "CR (aufst.)", CreatureCatalogSortField.CHALLENGE_RATING, CreatureSortDirection.ASCENDING),
-        CR_DESC("cr-desc", "CR (abst.)", CreatureCatalogSortField.CHALLENGE_RATING, CreatureSortDirection.DESCENDING),
-        XP_ASC("xp-asc", "XP (aufst.)", CreatureCatalogSortField.XP, CreatureSortDirection.ASCENDING),
-        XP_DESC("xp-desc", "XP (abst.)", CreatureCatalogSortField.XP, CreatureSortDirection.DESCENDING);
-
-        private final String key;
-        private final String label;
-        private final CreatureCatalogSortField field;
-        private final CreatureSortDirection direction;
-
-        SortOption(String key, String label, CreatureCatalogSortField field, CreatureSortDirection direction) {
-            this.key = key;
-            this.label = label;
-            this.field = field;
-            this.direction = direction;
-        }
-
-        public String key() {
-            return key;
-        }
-
-        public String label() {
-            return label;
-        }
-
-        public CreatureCatalogSortField field() {
-            return field;
-        }
-
-        public CreatureSortDirection direction() {
-            return direction;
-        }
-    }
-
     private static final int PAGE_SIZE = 50;
-    private static final NumberFormat INTEGER_FORMAT = NumberFormat.getIntegerInstance(Locale.US);
     private static final double DEFAULT_DIFFICULTY_VALUE = 2.0;
     private static final double DEFAULT_BALANCE_VALUE = 3.0;
     private static final double DEFAULT_AMOUNT_VALUE = 3.0;
@@ -120,6 +47,13 @@ public final class CatalogContributionModel {
             new KeyLabel("type", "Typ"),
             new KeyLabel("size", "Größe"),
             new KeyLabel("xp", "XP"));
+    private static final List<KeyLabel> SORT_OPTIONS = List.of(
+            SortOption.NAME_ASC.asKeyLabel(),
+            SortOption.NAME_DESC.asKeyLabel(),
+            SortOption.CR_ASC.asKeyLabel(),
+            SortOption.CR_DESC.asKeyLabel(),
+            SortOption.XP_ASC.asKeyLabel(),
+            SortOption.XP_DESC.asKeyLabel());
     private static final List<PreviewLabel> DEFAULT_DIFFICULTY_LABELS = List.of(
             new PreviewLabel(1.0, "25-49 XP"),
             new PreviewLabel(2.0, "50-74 XP"),
@@ -143,178 +77,49 @@ public final class CatalogContributionModel {
             new PreviewLabel(3.0, "3 Typen"),
             new PreviewLabel(4.0, "4 Typen"));
 
-    private final ReadOnlyListWrapper<CatalogContent> contents =
-            new ReadOnlyListWrapper<>(FXCollections.observableArrayList());
-    private final ReadOnlyListWrapper<KeyLabel> sortOptions =
-            new ReadOnlyListWrapper<>(FXCollections.observableArrayList());
-    private final ReadOnlyListWrapper<KeyLabel> columns =
-            new ReadOnlyListWrapper<>(FXCollections.observableArrayList());
-    private final ReadOnlyListWrapper<CatalogRow> rows =
-            new ReadOnlyListWrapper<>(FXCollections.observableArrayList());
-    private final ReadOnlyListWrapper<FilterChip> chips =
-            new ReadOnlyListWrapper<>(FXCollections.observableArrayList());
-    private final ReadOnlyListWrapper<EncounterTableOption> encounterTableOptions =
-            new ReadOnlyListWrapper<>(FXCollections.observableArrayList());
-    private final ReadOnlyObjectWrapper<ContentKind> selectedContent = new ReadOnlyObjectWrapper<>(ContentKind.CREATURES);
-    private final ReadOnlyObjectWrapper<LocalFilterState> localFilters =
-            new ReadOnlyObjectWrapper<>(LocalFilterState.empty());
-    private final ReadOnlyObjectWrapper<CreatureFilters> creatureFilters =
-            new ReadOnlyObjectWrapper<>(CreatureFilters.empty());
-    private final ReadOnlyObjectWrapper<FilterOptionsProjection> filterOptions =
-            new ReadOnlyObjectWrapper<>(FilterOptionsProjection.empty());
-    private final ReadOnlyObjectWrapper<ControlsState> authoritativeControls =
-            new ReadOnlyObjectWrapper<>(ControlsState.empty());
-    private final ReadOnlyObjectWrapper<ControlsState> controlsState =
-            new ReadOnlyObjectWrapper<>(ControlsState.empty());
-    private final ReadOnlyObjectWrapper<FilterDropdownState> sizeDropdownState =
-            new ReadOnlyObjectWrapper<>(FilterDropdownState.closed());
-    private final ReadOnlyObjectWrapper<FilterDropdownState> typeDropdownState =
-            new ReadOnlyObjectWrapper<>(FilterDropdownState.closed());
-    private final ReadOnlyObjectWrapper<FilterDropdownState> subtypeDropdownState =
-            new ReadOnlyObjectWrapper<>(FilterDropdownState.closed());
-    private final ReadOnlyObjectWrapper<FilterDropdownState> biomeDropdownState =
-            new ReadOnlyObjectWrapper<>(FilterDropdownState.closed());
-    private final ReadOnlyObjectWrapper<FilterDropdownState> alignmentDropdownState =
-            new ReadOnlyObjectWrapper<>(FilterDropdownState.closed());
-    private final ReadOnlyObjectWrapper<FilterDropdownState> encounterTableDropdownState =
-            new ReadOnlyObjectWrapper<>(FilterDropdownState.closed());
-    private final ReadOnlyStringWrapper selectedSortKey = new ReadOnlyStringWrapper(SortOption.NAME_ASC.key());
-    private final ReadOnlyStringWrapper countLabel = new ReadOnlyStringWrapper("0 Monster gefunden");
-    private final ReadOnlyStringWrapper pageLabel = new ReadOnlyStringWrapper("Seite 1 / 1");
-    private final ReadOnlyStringWrapper placeholderText = new ReadOnlyStringWrapper("Lade Monster...");
-    private final ReadOnlyStringWrapper statusText = new ReadOnlyStringWrapper("");
-    private final ReadOnlyBooleanWrapper previousPageAvailable = new ReadOnlyBooleanWrapper(false);
-    private final ReadOnlyBooleanWrapper nextPageAvailable = new ReadOnlyBooleanWrapper(false);
-    private final ReadOnlyBooleanWrapper loading = new ReadOnlyBooleanWrapper(false);
+    private final ReadOnlyObjectWrapper<MainProjection> mainProjection =
+            new ReadOnlyObjectWrapper<>(MainProjection.initial());
+    private final ReadOnlyObjectWrapper<ControlsProjection> controlsProjection =
+            new ReadOnlyObjectWrapper<>(ControlsProjection.initial());
     private final ReadOnlyLongWrapper searchCycle = new ReadOnlyLongWrapper(0L);
     private final ReadOnlyLongWrapper creatureDetailSelection = new ReadOnlyLongWrapper(0L);
+
+    private LocalFilterState localFilters = LocalFilterState.empty();
+    private ControlsState authoritativeControls = ControlsState.empty();
+    private ControlsState controlsState = ControlsState.empty();
+    private FilterOptionsProjection filterOptions = FilterOptionsProjection.empty();
+    private FilterDropdownState sizeDropdownState = FilterDropdownState.closed();
+    private FilterDropdownState typeDropdownState = FilterDropdownState.closed();
+    private FilterDropdownState subtypeDropdownState = FilterDropdownState.closed();
+    private FilterDropdownState biomeDropdownState = FilterDropdownState.closed();
+    private FilterDropdownState alignmentDropdownState = FilterDropdownState.closed();
+    private FilterDropdownState encounterTableDropdownState = FilterDropdownState.closed();
+    private List<EncounterTableOption> encounterTableOptions = List.of();
+    private List<CatalogRow> rows = List.of();
     private SortOption selectedSort = SortOption.NAME_ASC;
+    private String placeholderText = "Lade Monster...";
     private int pageOffset;
     private int totalCount;
 
     public CatalogContributionModel() {
-        for (ContentKind kind : ContentKind.values()) {
-            contents.add(new CatalogContent(kind.key(), kind.label(), kind.enabled()));
-        }
-        for (SortOption option : SortOption.values()) {
-            sortOptions.add(new KeyLabel(option.key(), option.label()));
-        }
-        columns.setAll(CREATURE_COLUMNS);
-        refreshViewFilters();
-        rebuildChips();
+        refreshControlsProjection();
+        refreshMainProjection();
     }
 
-    public ReadOnlyListProperty<CatalogContent> contentsProperty() {
-        return contents.getReadOnlyProperty();
+    ReadOnlyObjectProperty<MainProjection> mainProjectionProperty() {
+        return mainProjection.getReadOnlyProperty();
     }
 
-    public ReadOnlyListProperty<KeyLabel> sortOptionsProperty() {
-        return sortOptions.getReadOnlyProperty();
+    ReadOnlyObjectProperty<ControlsProjection> controlsProjectionProperty() {
+        return controlsProjection.getReadOnlyProperty();
     }
 
-    public ReadOnlyListProperty<KeyLabel> columnsProperty() {
-        return columns.getReadOnlyProperty();
-    }
-
-    public ReadOnlyListProperty<CatalogRow> rowsProperty() {
-        return rows.getReadOnlyProperty();
-    }
-
-    public ReadOnlyListProperty<FilterChip> chipsProperty() {
-        return chips.getReadOnlyProperty();
-    }
-
-    public ReadOnlyListProperty<EncounterTableOption> encounterTableOptionsProperty() {
-        return encounterTableOptions.getReadOnlyProperty();
-    }
-
-    public ReadOnlyObjectProperty<ContentKind> selectedContentProperty() {
-        return selectedContent.getReadOnlyProperty();
-    }
-
-    public ReadOnlyObjectProperty<CreatureFilters> creatureFiltersProperty() {
-        return creatureFilters.getReadOnlyProperty();
-    }
-
-    public ReadOnlyObjectProperty<FilterOptionsProjection> filterOptionsProperty() {
-        return filterOptions.getReadOnlyProperty();
-    }
-
-    public ReadOnlyObjectProperty<ControlsState> controlsStateProperty() {
-        return controlsState.getReadOnlyProperty();
-    }
-
-    public ReadOnlyObjectProperty<FilterDropdownState> sizeDropdownStateProperty() {
-        return sizeDropdownState.getReadOnlyProperty();
-    }
-
-    public ReadOnlyObjectProperty<FilterDropdownState> typeDropdownStateProperty() {
-        return typeDropdownState.getReadOnlyProperty();
-    }
-
-    public ReadOnlyObjectProperty<FilterDropdownState> subtypeDropdownStateProperty() {
-        return subtypeDropdownState.getReadOnlyProperty();
-    }
-
-    public ReadOnlyObjectProperty<FilterDropdownState> biomeDropdownStateProperty() {
-        return biomeDropdownState.getReadOnlyProperty();
-    }
-
-    public ReadOnlyObjectProperty<FilterDropdownState> alignmentDropdownStateProperty() {
-        return alignmentDropdownState.getReadOnlyProperty();
-    }
-
-    public ReadOnlyObjectProperty<FilterDropdownState> encounterTableDropdownStateProperty() {
-        return encounterTableDropdownState.getReadOnlyProperty();
-    }
-
-    public ReadOnlyStringProperty selectedSortKeyProperty() {
-        return selectedSortKey.getReadOnlyProperty();
-    }
-
-    public ReadOnlyStringProperty countLabelProperty() {
-        return countLabel.getReadOnlyProperty();
-    }
-
-    public ReadOnlyStringProperty pageLabelProperty() {
-        return pageLabel.getReadOnlyProperty();
-    }
-
-    public ReadOnlyStringProperty placeholderTextProperty() {
-        return placeholderText.getReadOnlyProperty();
-    }
-
-    public ReadOnlyStringProperty statusTextProperty() {
-        return statusText.getReadOnlyProperty();
-    }
-
-    public ReadOnlyBooleanProperty previousPageAvailableProperty() {
-        return previousPageAvailable.getReadOnlyProperty();
-    }
-
-    public ReadOnlyBooleanProperty nextPageAvailableProperty() {
-        return nextPageAvailable.getReadOnlyProperty();
-    }
-
-    public ReadOnlyBooleanProperty loadingProperty() {
-        return loading.getReadOnlyProperty();
-    }
-
-    public ReadOnlyLongProperty searchCycleProperty() {
+    ReadOnlyLongProperty searchCycleProperty() {
         return searchCycle.getReadOnlyProperty();
     }
 
-    public ReadOnlyLongProperty creatureDetailSelectionProperty() {
+    ReadOnlyLongProperty creatureDetailSelectionProperty() {
         return creatureDetailSelection.getReadOnlyProperty();
-    }
-
-    public void selectContent(String key) {
-        ContentKind requested = contentKind(key);
-        if (!requested.enabled()) {
-            statusText.set(requested.label() + " catalog is not migrated yet.");
-            return;
-        }
-        selectedContent.set(requested);
     }
 
     void applyControlsDraft(
@@ -327,94 +132,100 @@ public final class CatalogContributionModel {
             FilterDropdownState nextAlignmentDropdownState,
             FilterDropdownState nextEncounterTableDropdownState
     ) {
-        localFilters.set(nextLocalFilters == null ? LocalFilterState.empty() : nextLocalFilters);
-        controlsState.set(nextControlsState == null ? ControlsState.empty() : nextControlsState);
-        sizeDropdownState.set(nextSizeDropdownState == null ? FilterDropdownState.closed() : nextSizeDropdownState);
-        typeDropdownState.set(nextTypeDropdownState == null ? FilterDropdownState.closed() : nextTypeDropdownState);
-        subtypeDropdownState.set(nextSubtypeDropdownState == null ? FilterDropdownState.closed() : nextSubtypeDropdownState);
-        biomeDropdownState.set(nextBiomeDropdownState == null ? FilterDropdownState.closed() : nextBiomeDropdownState);
-        alignmentDropdownState.set(nextAlignmentDropdownState == null ? FilterDropdownState.closed() : nextAlignmentDropdownState);
-        encounterTableDropdownState.set(nextEncounterTableDropdownState == null
+        localFilters = nextLocalFilters == null ? LocalFilterState.empty() : nextLocalFilters;
+        controlsState = nextControlsState == null ? ControlsState.empty() : nextControlsState;
+        sizeDropdownState = nextSizeDropdownState == null ? FilterDropdownState.closed() : nextSizeDropdownState;
+        typeDropdownState = nextTypeDropdownState == null ? FilterDropdownState.closed() : nextTypeDropdownState;
+        subtypeDropdownState = nextSubtypeDropdownState == null ? FilterDropdownState.closed() : nextSubtypeDropdownState;
+        biomeDropdownState = nextBiomeDropdownState == null ? FilterDropdownState.closed() : nextBiomeDropdownState;
+        alignmentDropdownState = nextAlignmentDropdownState == null ? FilterDropdownState.closed() : nextAlignmentDropdownState;
+        encounterTableDropdownState = nextEncounterTableDropdownState == null
                 ? FilterDropdownState.closed()
-                : nextEncounterTableDropdownState);
-        refreshViewFilters();
-        rebuildChips();
+                : nextEncounterTableDropdownState;
+        refreshControlsProjection();
     }
 
-    public void applyCreatureFilterOptions(CreatureFilterOptionsResult result) {
+    void applyCreatureFilterOptions(CreatureFilterOptionsResult result) {
         CreatureFilterOptions options = result == null || result.options() == null
                 ? CreatureFilterOptions.empty()
                 : result.options();
-        filterOptions.set(new FilterOptionsProjection(
+        filterOptions = new FilterOptionsProjection(
                 options.sizes(),
                 options.types(),
                 options.subtypes(),
                 options.biomes(),
                 options.alignments(),
-                options.challengeRatings()));
+                options.challengeRatings());
         pruneInvalidLocalSelections();
-        if (result != null && result.status() != CreatureReadStatus.SUCCESS) {
-            statusText.set("Filteroptionen konnten nicht vollständig geladen werden.");
-        }
     }
 
-    public boolean applyEncounterBuilderInputs(EncounterBuilderInputs builderInputs) {
-        ControlsState previousAuthoritative = authoritativeControls.get();
-        ControlsState next = toControlsState(builderInputs, previousAuthoritative);
-        authoritativeControls.set(next);
-        controlsState.set(next);
-        refreshViewFilters();
-        rebuildChips();
-        return searchControlsChanged(previousAuthoritative, next);
+    boolean applyEncounterBuilderInputs(EncounterBuilderInputs builderInputs) {
+        ControlsState previousAuthoritative = authoritativeControls;
+        ControlsState next = ControlsState.fromBuilderInputs(builderInputs, previousAuthoritative);
+        authoritativeControls = next;
+        controlsState = next;
+        refreshControlsProjection();
+        return ControlsState.searchControlsChanged(previousAuthoritative, next);
     }
 
-    public void applyEncounterTables(EncounterTableCatalogResult result) {
+    void applyEncounterTables(EncounterTableCatalogResult result) {
         if (result == null || result.status() != EncounterTableReadStatus.SUCCESS) {
-            encounterTableOptions.setAll(List.of());
-            rebuildChips();
+            encounterTableOptions = List.of();
+            refreshControlsProjection();
             return;
         }
-        encounterTableOptions.setAll(result.tables().stream()
-                .map(CatalogContributionModel::toEncounterTableOption)
-                .toList());
-        rebuildChips();
+        encounterTableOptions = result.tables().stream()
+                .map(EncounterTableOption::fromSummary)
+                .toList();
+        refreshControlsProjection();
     }
 
-    public void applyEncounterTuningPreview(EncounterTuningPreviewLabels labels) {
-        ControlsState nextAuthoritative = withPreviewLabels(authoritativeControls.get(), labels);
-        ControlsState nextDraft = withPreviewLabels(controlsState.get(), labels);
-        authoritativeControls.set(nextAuthoritative);
-        controlsState.set(nextDraft);
+    void applyEncounterTuningPreview(EncounterTuningPreviewLabels labels) {
+        authoritativeControls = authoritativeControls.withPreviewLabels(labels);
+        controlsState = controlsState.withPreviewLabels(labels);
+        refreshControlsProjection();
     }
 
-    public void selectSort(String sortKey) {
-        selectedSort = sortOption(sortKey);
-        selectedSortKey.set(selectedSort.key());
+    void selectSort(String sortKey) {
+        selectedSort = SortOption.fromKey(sortKey);
         pageOffset = 0;
+        refreshMainProjection();
     }
 
-    public void previousPage() {
+    void previousPage() {
         if (pageOffset <= 0) {
             return;
         }
         pageOffset = Math.max(0, pageOffset - PAGE_SIZE);
+        refreshMainProjection();
     }
 
-    public void nextPage() {
+    void nextPage() {
         if (pageOffset + PAGE_SIZE >= totalCount) {
             return;
         }
         pageOffset += PAGE_SIZE;
+        refreshMainProjection();
     }
 
-    public void applySearchResult(CreatureCatalogPageResult result) {
-        loading.set(false);
-        applySearchResultInternal(result);
+    void applySearchResult(CreatureCatalogPageResult result) {
+        CreatureCatalogPage page = result == null ? CreatureCatalogPage.empty(PAGE_SIZE, pageOffset) : result.page();
+        if (page == null) {
+            page = CreatureCatalogPage.empty(PAGE_SIZE, pageOffset);
+        }
+        totalCount = Math.max(0, page.totalCount());
+        rows = page.rows().stream().map(CatalogRow::fromCreature).toList();
+        placeholderText = switch (result == null ? CreatureQueryStatus.STORAGE_ERROR : result.status()) {
+            case SUCCESS -> "Keine Monster gefunden";
+            case INVALID_QUERY -> "Filter sind ungültig";
+            default -> "Fehler beim Laden";
+        };
+        refreshMainProjection();
     }
 
     void beginSearch() {
-        loading.set(true);
-        placeholderText.set("Lade Monster...");
+        placeholderText = "Lade Monster...";
+        refreshMainProjection();
     }
 
     void advanceSearchCycle() {
@@ -430,273 +241,42 @@ public final class CatalogContributionModel {
     }
 
     LocalFilterState currentLocalFilters() {
-        return localFilters.get();
+        return localFilters;
     }
 
     ControlsState currentControlsState() {
-        return controlsState.get();
+        return controlsState;
     }
 
     ControlsState currentDomainControls() {
-        return authoritativeControls.get();
+        return authoritativeControls;
     }
 
-    CreatureFilters currentFilters() {
-        return mergedFilters(localFilters.get(), authoritativeControls.get());
-    }
-
-    SortOption currentSortOption() {
-        return selectedSort;
-    }
-
-    int currentPageSize() {
-        return PAGE_SIZE;
-    }
-
-    int currentPageOffset() {
-        return pageOffset;
+    SearchRequest currentSearchRequest() {
+        return SearchRequest.from(mergedFilters(localFilters, authoritativeControls), selectedSort, pageOffset);
     }
 
     private void pruneInvalidLocalSelections() {
-        FilterOptionsProjection options = filterOptions.get();
-        LocalFilterState currentLocal = localFilters.get();
-        localFilters.set(new LocalFilterState(
-                currentLocal.nameQuery(),
-                currentLocal.challengeRatingMin(),
-                currentLocal.challengeRatingMax(),
-                retainAvailable(currentLocal.sizes(), options.sizes()),
-                retainAvailable(currentLocal.alignments(), options.alignments())));
-        refreshViewFilters();
-        rebuildChips();
+        localFilters = localFilters.retainAvailable(filterOptions);
+        refreshControlsProjection();
     }
 
-    private void applySearchResultInternal(CreatureCatalogPageResult result) {
-        CreatureCatalogPage page = result == null ? CreatureCatalogPage.empty(PAGE_SIZE, pageOffset) : result.page();
-        if (page == null) {
-            page = CreatureCatalogPage.empty(PAGE_SIZE, pageOffset);
-        }
-        totalCount = Math.max(0, page.totalCount());
-        rows.setAll(page.rows().stream().map(CatalogContributionModel::toCatalogRow).toList());
-        updatePagingLabels();
-        CreatureQueryStatus status = result == null ? CreatureQueryStatus.STORAGE_ERROR : result.status();
-        if (status == CreatureQueryStatus.SUCCESS) {
-            placeholderText.set("Keine Monster gefunden");
-            statusText.set("");
-        } else if (status == CreatureQueryStatus.INVALID_QUERY) {
-            placeholderText.set("Filter sind ungültig");
-            statusText.set("Filter sind ungültig.");
-        } else {
-            placeholderText.set("Fehler beim Laden");
-            statusText.set("Creature catalog could not be loaded.");
-        }
+    private void refreshControlsProjection() {
+        controlsProjection.set(ControlsProjection.from(
+                filterOptions,
+                mergedFilters(localFilters, controlsState),
+                sizeDropdownState,
+                typeDropdownState,
+                subtypeDropdownState,
+                biomeDropdownState,
+                alignmentDropdownState,
+                encounterTableDropdownState,
+                encounterTableOptions,
+                controlsState));
     }
 
-    private void updatePagingLabels() {
-        int currentPage = totalCount == 0 ? 1 : (pageOffset / PAGE_SIZE) + 1;
-        int totalPages = totalCount == 0 ? 1 : (int) Math.ceil((double) totalCount / PAGE_SIZE);
-        countLabel.set(totalCount + " Monster gefunden");
-        pageLabel.set("Seite " + currentPage + " / " + totalPages);
-        previousPageAvailable.set(pageOffset > 0);
-        nextPageAvailable.set(pageOffset + PAGE_SIZE < totalCount);
-    }
-
-    private void refreshViewFilters() {
-        creatureFilters.set(mergedFilters(localFilters.get(), controlsState.get()));
-    }
-
-    private void rebuildChips() {
-        chips.clear();
-        CreatureFilters filters = creatureFilters.get();
-        if (!filters.nameQuery().isBlank()) {
-            chips.add(new FilterChip(SEARCH_CHIP_KEY, "Suche: " + filters.nameQuery(), "chip-type"));
-        }
-        if (!filters.challengeRatingMin().isBlank() || !filters.challengeRatingMax().isBlank()) {
-            chips.add(new FilterChip(
-                    CHALLENGE_RATING_CHIP_KEY,
-                    "CR: " + defaultCrMinimum(filters.challengeRatingMin()) + "-" + defaultCrMaximum(filters.challengeRatingMax()),
-                    "chip-cr"));
-        }
-        addChips("size", filters.sizes(), "chip-size");
-        addChips("type", filters.types(), "chip-type");
-        addChips("subtype", filters.subtypes(), "chip-subtype");
-        addChips("biome", filters.biomes(), "chip-biome");
-        addChips("alignment", filters.alignments(), "chip-align");
-        addEncounterTableChips(controlsState.get().encounterTableIds());
-    }
-
-    private void addChips(String prefix, List<String> values, String styleClass) {
-        for (String value : values) {
-            chips.add(new FilterChip(prefix + ":" + value, value, styleClass));
-        }
-    }
-
-    private void addEncounterTableChips(List<Long> encounterTableIds) {
-        for (Long tableId : encounterTableIds) {
-            if (tableId == null) {
-                continue;
-            }
-            EncounterTableOption option = encounterTableOption(tableId);
-            chips.add(new FilterChip(
-                    ENCOUNTER_TABLE_CHIP_PREFIX + tableId,
-                    option == null ? "Tabelle " + tableId : option.name(),
-                    "chip-table"));
-        }
-    }
-
-    private @Nullable EncounterTableOption encounterTableOption(Long tableId) {
-        if (tableId == null) {
-            return null;
-        }
-        for (EncounterTableOption option : encounterTableOptions) {
-            if (option.tableId() == tableId.longValue()) {
-                return option;
-            }
-        }
-        return null;
-    }
-
-    private static CatalogRow toCatalogRow(CreatureCatalogRow creature) {
-        return new CatalogRow(
-                creature.id(),
-                List.of(
-                        safe(creature.name()),
-                        safe(creature.challengeRating()),
-                        safe(creature.creatureType()),
-                        safe(creature.size()),
-                        INTEGER_FORMAT.format(creature.xp())));
-    }
-
-    private static EncounterTableOption toEncounterTableOption(EncounterTableSummary summary) {
-        return new EncounterTableOption(summary.tableId(), summary.name(), summary.linkedLootTableId());
-    }
-
-    private static ControlsState toControlsState(
-            EncounterBuilderInputs builderInputs,
-            ControlsState source
-    ) {
-        EncounterBuilderInputs safeInputs = builderInputs == null
-                ? EncounterBuilderInputs.empty()
-                : builderInputs;
-        ControlsState safeSource = source == null ? ControlsState.empty() : source;
-        return new ControlsState(
-                safeInputs.creatureTypes(),
-                safeInputs.creatureSubtypes(),
-                safeInputs.biomes(),
-                safeInputs.encounterTableIds(),
-                difficultyProjection(safeInputs.autoDifficulty(), safeInputs.difficultyLevel(), safeSource.difficulty().labels()),
-                sliderProjection(
-                        safeInputs.autoBalance(),
-                        safeInputs.autoBalance() ? DEFAULT_BALANCE_VALUE : safeInputs.balanceLevel(),
-                        safeSource.balance().labels(),
-                        DEFAULT_BALANCE_VALUE),
-                sliderProjection(
-                        safeInputs.autoAmount(),
-                        safeInputs.autoAmount() ? DEFAULT_AMOUNT_VALUE : safeInputs.amountValue(),
-                        safeSource.amount().labels(),
-                        DEFAULT_AMOUNT_VALUE),
-                sliderProjection(
-                        safeInputs.autoDiversity(),
-                        safeInputs.autoDiversity() ? DEFAULT_DIVERSITY_VALUE : safeInputs.diversityLevel(),
-                        safeSource.diversity().labels(),
-                        DEFAULT_DIVERSITY_VALUE));
-    }
-
-    private static ControlsState withPreviewLabels(ControlsState state, @Nullable EncounterTuningPreviewLabels labels) {
-        ControlsState safeState = state == null ? ControlsState.empty() : state;
-        EncounterTuningPreviewLabels safeLabels = labels == null
-                ? new EncounterTuningPreviewLabels(List.of(), List.of(), List.of(), List.of())
-                : labels;
-        return new ControlsState(
-                safeState.creatureTypes(),
-                safeState.creatureSubtypes(),
-                safeState.biomes(),
-                safeState.encounterTableIds(),
-                sliderProjection(safeState.difficulty().auto(), safeState.difficulty().value(),
-                        toPreviewLabels(safeLabels.difficultyLabels(), DEFAULT_DIFFICULTY_LABELS), DEFAULT_DIFFICULTY_VALUE),
-                sliderProjection(safeState.balance().auto(), safeState.balance().value(),
-                        toPreviewLabels(safeLabels.balanceLabels(), DEFAULT_BALANCE_LABELS), DEFAULT_BALANCE_VALUE),
-                sliderProjection(safeState.amount().auto(), safeState.amount().value(),
-                        toPreviewLabels(safeLabels.amountLabels(), DEFAULT_AMOUNT_LABELS), DEFAULT_AMOUNT_VALUE),
-                sliderProjection(safeState.diversity().auto(), safeState.diversity().value(),
-                        toPreviewLabels(safeLabels.diversityLabels(), DEFAULT_DIVERSITY_LABELS), DEFAULT_DIVERSITY_VALUE));
-    }
-
-    static SliderProjection draftDifficulty(boolean auto, double value, SliderProjection current) {
-        return sliderProjection(
-                auto,
-                clamp(value, MIN_DIFFICULTY_VALUE, MAX_DIFFICULTY_VALUE, DEFAULT_DIFFICULTY_VALUE),
-                current == null ? DEFAULT_DIFFICULTY_LABELS : current.labels(),
-                DEFAULT_DIFFICULTY_VALUE);
-    }
-
-    static SliderProjection draftBalance(boolean auto, double value, SliderProjection current) {
-        return sliderProjection(
-                auto,
-                clamp(value, MIN_BALANCE_VALUE, MAX_BALANCE_VALUE, DEFAULT_BALANCE_VALUE),
-                current == null ? DEFAULT_BALANCE_LABELS : current.labels(),
-                DEFAULT_BALANCE_VALUE);
-    }
-
-    static SliderProjection draftAmount(boolean auto, double value, SliderProjection current) {
-        return sliderProjection(
-                auto,
-                clamp(value, MIN_AMOUNT_VALUE, MAX_AMOUNT_VALUE, DEFAULT_AMOUNT_VALUE),
-                current == null ? DEFAULT_AMOUNT_LABELS : current.labels(),
-                DEFAULT_AMOUNT_VALUE);
-    }
-
-    static SliderProjection draftDiversity(boolean auto, double value, SliderProjection current) {
-        return sliderProjection(
-                auto,
-                clamp(value, MIN_DIVERSITY_VALUE, MAX_DIVERSITY_VALUE, DEFAULT_DIVERSITY_VALUE),
-                current == null ? DEFAULT_DIVERSITY_LABELS : current.labels(),
-                DEFAULT_DIVERSITY_VALUE);
-    }
-
-    private static SliderProjection difficultyProjection(boolean auto, int difficultyLevel, List<PreviewLabel> labels) {
-        double value = switch (difficultyLevel) {
-            case 1 -> 1.0;
-            case 3 -> 3.0;
-            case 4 -> 4.0;
-            default -> DEFAULT_DIFFICULTY_VALUE;
-        };
-        return sliderProjection(auto, value, labels, DEFAULT_DIFFICULTY_VALUE);
-    }
-
-    private static SliderProjection sliderProjection(
-            boolean auto,
-            double value,
-            List<PreviewLabel> labels,
-            double defaultValue
-    ) {
-        double safeValue = Double.isFinite(value) ? value : defaultValue;
-        return new SliderProjection(auto, auto ? defaultValue : safeValue, defaultPreviewLabels(labels, defaultValue));
-    }
-
-    private static List<PreviewLabel> defaultPreviewLabels(List<PreviewLabel> labels, double defaultValue) {
-        if (labels != null && !labels.isEmpty()) {
-            return List.copyOf(labels);
-        }
-        if (defaultValue == DEFAULT_DIFFICULTY_VALUE) {
-            return DEFAULT_DIFFICULTY_LABELS;
-        }
-        if (defaultValue == DEFAULT_BALANCE_VALUE) {
-            return DEFAULT_BALANCE_LABELS;
-        }
-        if (defaultValue == DEFAULT_AMOUNT_VALUE) {
-            return DEFAULT_AMOUNT_LABELS;
-        }
-        return DEFAULT_DIVERSITY_LABELS;
-    }
-
-    private static List<PreviewLabel> toPreviewLabels(
-            List<EncounterTuningPreviewLabels.PreviewLabel> labels,
-            List<PreviewLabel> fallback
-    ) {
-        if (labels == null || labels.isEmpty()) {
-            return fallback;
-        }
-        return labels.stream().map(label -> new PreviewLabel(label.value(), label.label())).toList();
+    private void refreshMainProjection() {
+        mainProjection.set(MainProjection.from(rows, selectedSort, pageOffset, totalCount, placeholderText));
     }
 
     private static CreatureFilters mergedFilters(LocalFilterState local, ControlsState controls) {
@@ -713,21 +293,6 @@ public final class CatalogContributionModel {
                 safeLocal.alignments());
     }
 
-    private static boolean searchControlsChanged(ControlsState previous, ControlsState next) {
-        ControlsState safePrevious = previous == null ? ControlsState.empty() : previous;
-        ControlsState safeNext = next == null ? ControlsState.empty() : next;
-        return !safePrevious.creatureTypes().equals(safeNext.creatureTypes())
-                || !safePrevious.creatureSubtypes().equals(safeNext.creatureSubtypes())
-                || !safePrevious.biomes().equals(safeNext.biomes());
-    }
-
-    private static double clamp(double value, double min, double max, double fallback) {
-        if (!Double.isFinite(value)) {
-            return fallback;
-        }
-        return Math.max(min, Math.min(max, value));
-    }
-
     private static String defaultCrMinimum(String value) {
         return value == null || value.isBlank() ? "0" : value;
     }
@@ -738,6 +303,14 @@ public final class CatalogContributionModel {
 
     private static String safe(String value) {
         return value == null ? "" : value;
+    }
+
+    private static String formatInteger(long value) {
+        return NumberFormat.getIntegerInstance(Locale.US).format(value);
+    }
+
+    private static <T> List<T> copiedList(List<T> values) {
+        return values == null ? List.of() : List.copyOf(values);
     }
 
     private static <T> List<T> retainAvailable(List<T> selectedValues, List<T> availableValues) {
@@ -751,82 +324,343 @@ public final class CatalogContributionModel {
                 .toList();
     }
 
-    private static List<String> copiedFilterValues(List<String> values) {
-        return values == null ? List.of() : List.copyOf(values);
-    }
+    enum SortOption {
+        NAME_ASC("name-asc", "Name (A-Z)", CreatureCatalogSortField.NAME, CreatureSortDirection.ASCENDING),
+        NAME_DESC("name-desc", "Name (Z-A)", CreatureCatalogSortField.NAME, CreatureSortDirection.DESCENDING),
+        CR_ASC("cr-asc", "CR (aufst.)", CreatureCatalogSortField.CHALLENGE_RATING, CreatureSortDirection.ASCENDING),
+        CR_DESC("cr-desc", "CR (abst.)", CreatureCatalogSortField.CHALLENGE_RATING, CreatureSortDirection.DESCENDING),
+        XP_ASC("xp-asc", "XP (aufst.)", CreatureCatalogSortField.XP, CreatureSortDirection.ASCENDING),
+        XP_DESC("xp-desc", "XP (abst.)", CreatureCatalogSortField.XP, CreatureSortDirection.DESCENDING);
 
-    private static ContentKind contentKind(String key) {
-        for (ContentKind kind : ContentKind.values()) {
-            if (kind.key().equals(key)) {
-                return kind;
-            }
+        private final String key;
+        private final String label;
+        private final CreatureCatalogSortField field;
+        private final CreatureSortDirection direction;
+
+        SortOption(String key, String label, CreatureCatalogSortField field, CreatureSortDirection direction) {
+            this.key = key;
+            this.label = label;
+            this.field = field;
+            this.direction = direction;
         }
-        return ContentKind.CREATURES;
-    }
 
-    private static SortOption sortOption(String key) {
-        for (SortOption option : SortOption.values()) {
-            if (option.key().equals(key)) {
-                return option;
-            }
+        String key() {
+            return key;
         }
-        return SortOption.NAME_ASC;
+
+        CreatureCatalogSortField field() {
+            return field;
+        }
+
+        CreatureSortDirection direction() {
+            return direction;
+        }
+
+        KeyLabel asKeyLabel() {
+            return new KeyLabel(key, label);
+        }
+
+        static SortOption fromKey(String key) {
+            for (SortOption option : values()) {
+                if (option.key.equals(key)) {
+                    return option;
+                }
+            }
+            return NAME_ASC;
+        }
     }
 
-    public record CatalogContent(String key, String label, boolean enabled) {
+    record MainProjection(
+            List<KeyLabel> sortOptions,
+            List<KeyLabel> columns,
+            List<CatalogRow> rows,
+            String selectedSortKey,
+            String countLabel,
+            String pageLabel,
+            String placeholderText,
+            boolean previousPageAvailable,
+            boolean nextPageAvailable
+    ) {
+        MainProjection {
+            sortOptions = copiedList(sortOptions);
+            columns = copiedList(columns);
+            rows = copiedList(rows);
+            selectedSortKey = safe(selectedSortKey);
+            countLabel = safe(countLabel);
+            pageLabel = safe(pageLabel);
+            placeholderText = safe(placeholderText);
+        }
+
+        static MainProjection initial() {
+            return from(List.of(), SortOption.NAME_ASC, 0, 0, "Lade Monster...");
+        }
+
+        static MainProjection from(
+                List<CatalogRow> rows,
+                SortOption selectedSort,
+                int pageOffset,
+                int totalCount,
+                String placeholderText
+        ) {
+            int currentPage = totalCount == 0 ? 1 : (pageOffset / PAGE_SIZE) + 1;
+            int totalPages = totalCount == 0 ? 1 : (int) Math.ceil((double) totalCount / PAGE_SIZE);
+            return new MainProjection(
+                    SORT_OPTIONS,
+                    CREATURE_COLUMNS,
+                    rows,
+                    selectedSort == null ? SortOption.NAME_ASC.key() : selectedSort.key(),
+                    Math.max(0, totalCount) + " Monster gefunden",
+                    "Seite " + currentPage + " / " + totalPages,
+                    placeholderText,
+                    pageOffset > 0,
+                    pageOffset + PAGE_SIZE < totalCount);
+        }
     }
 
-    public record KeyLabel(String key, String label) {
+    record ControlsProjection(
+            FilterOptionsProjection filterOptions,
+            CreatureFilters creatureFilters,
+            FilterDropdownState sizeDropdownState,
+            FilterDropdownState typeDropdownState,
+            FilterDropdownState subtypeDropdownState,
+            FilterDropdownState biomeDropdownState,
+            FilterDropdownState alignmentDropdownState,
+            FilterDropdownState encounterTableDropdownState,
+            List<EncounterTableOption> encounterTableOptions,
+            List<FilterChip> chips,
+            ControlsState controlsState
+    ) {
+        ControlsProjection {
+            filterOptions = filterOptions == null ? FilterOptionsProjection.empty() : filterOptions;
+            creatureFilters = creatureFilters == null ? CreatureFilters.empty() : creatureFilters;
+            sizeDropdownState = sizeDropdownState == null ? FilterDropdownState.closed() : sizeDropdownState;
+            typeDropdownState = typeDropdownState == null ? FilterDropdownState.closed() : typeDropdownState;
+            subtypeDropdownState = subtypeDropdownState == null ? FilterDropdownState.closed() : subtypeDropdownState;
+            biomeDropdownState = biomeDropdownState == null ? FilterDropdownState.closed() : biomeDropdownState;
+            alignmentDropdownState = alignmentDropdownState == null ? FilterDropdownState.closed() : alignmentDropdownState;
+            encounterTableDropdownState = encounterTableDropdownState == null
+                    ? FilterDropdownState.closed()
+                    : encounterTableDropdownState;
+            encounterTableOptions = copiedList(encounterTableOptions);
+            chips = copiedList(chips);
+            controlsState = controlsState == null ? ControlsState.empty() : controlsState;
+        }
+
+        static ControlsProjection initial() {
+            return from(
+                    FilterOptionsProjection.empty(),
+                    CreatureFilters.empty(),
+                    FilterDropdownState.closed(),
+                    FilterDropdownState.closed(),
+                    FilterDropdownState.closed(),
+                    FilterDropdownState.closed(),
+                    FilterDropdownState.closed(),
+                    FilterDropdownState.closed(),
+                    List.of(),
+                    ControlsState.empty());
+        }
+
+        static ControlsProjection from(
+                FilterOptionsProjection filterOptions,
+                CreatureFilters creatureFilters,
+                FilterDropdownState sizeDropdownState,
+                FilterDropdownState typeDropdownState,
+                FilterDropdownState subtypeDropdownState,
+                FilterDropdownState biomeDropdownState,
+                FilterDropdownState alignmentDropdownState,
+                FilterDropdownState encounterTableDropdownState,
+                List<EncounterTableOption> encounterTableOptions,
+                ControlsState controlsState
+        ) {
+            return new ControlsProjection(
+                    filterOptions,
+                    creatureFilters,
+                    sizeDropdownState,
+                    typeDropdownState,
+                    subtypeDropdownState,
+                    biomeDropdownState,
+                    alignmentDropdownState,
+                    encounterTableDropdownState,
+                    encounterTableOptions,
+                    FilterChip.from(creatureFilters, encounterTableOptions, controlsState),
+                    controlsState);
+        }
+    }
+
+    record SearchRequest(
+            String nameQuery,
+            String challengeRatingMin,
+            String challengeRatingMax,
+            List<String> sizes,
+            List<String> types,
+            List<String> subtypes,
+            List<String> biomes,
+            List<String> alignments,
+            CreatureCatalogSortField sortField,
+            CreatureSortDirection sortDirection,
+            int pageSize,
+            int pageOffset
+    ) {
+        SearchRequest {
+            nameQuery = safe(nameQuery);
+            challengeRatingMin = safe(challengeRatingMin);
+            challengeRatingMax = safe(challengeRatingMax);
+            sizes = copiedList(sizes);
+            types = copiedList(types);
+            subtypes = copiedList(subtypes);
+            biomes = copiedList(biomes);
+            alignments = copiedList(alignments);
+            sortField = sortField == null ? CreatureCatalogSortField.NAME : sortField;
+            sortDirection = sortDirection == null ? CreatureSortDirection.ASCENDING : sortDirection;
+            pageSize = Math.max(1, pageSize);
+            pageOffset = Math.max(0, pageOffset);
+        }
+
+        static SearchRequest from(CreatureFilters filters, SortOption sort, int pageOffset) {
+            CreatureFilters safeFilters = filters == null ? CreatureFilters.empty() : filters;
+            SortOption safeSort = sort == null ? SortOption.NAME_ASC : sort;
+            return new SearchRequest(
+                    safeFilters.nameQuery(),
+                    safeFilters.challengeRatingMin(),
+                    safeFilters.challengeRatingMax(),
+                    safeFilters.sizes(),
+                    safeFilters.types(),
+                    safeFilters.subtypes(),
+                    safeFilters.biomes(),
+                    safeFilters.alignments(),
+                    safeSort.field(),
+                    safeSort.direction(),
+                    PAGE_SIZE,
+                    pageOffset);
+        }
+    }
+
+    record KeyLabel(String key, String label) {
+        KeyLabel {
+            key = safe(key);
+            label = safe(label);
+        }
+
         @Override
         public String toString() {
             return label;
         }
     }
 
-    public record CatalogRow(long id, List<String> cells) {
-        public CatalogRow {
-            cells = cells == null ? List.of() : List.copyOf(cells);
+    record CatalogRow(long id, List<String> cells) {
+        CatalogRow {
+            cells = copiedList(cells);
         }
 
         String cell(int index) {
             return index >= 0 && index < cells.size() ? cells.get(index) : "";
         }
+
+        static CatalogRow fromCreature(CreatureCatalogRow creature) {
+            return new CatalogRow(
+                    creature.id(),
+                    List.of(
+                            safe(creature.name()),
+                            safe(creature.challengeRating()),
+                            safe(creature.creatureType()),
+                            safe(creature.size()),
+                            formatInteger(creature.xp())));
+        }
     }
 
-    public record FilterChip(String key, String label, String styleClass) {
+    record FilterChip(String key, String label, String styleClass) {
+        FilterChip {
+            key = safe(key);
+            label = safe(label);
+            styleClass = safe(styleClass);
+        }
+
+        static List<FilterChip> from(
+                CreatureFilters creatureFilters,
+                List<EncounterTableOption> encounterTableOptions,
+                ControlsState controlsState
+        ) {
+            CreatureFilters safeFilters = creatureFilters == null ? CreatureFilters.empty() : creatureFilters;
+            List<FilterChip> chips = new java.util.ArrayList<>();
+            if (!safeFilters.nameQuery().isBlank()) {
+                chips.add(new FilterChip(SEARCH_CHIP_KEY, "Suche: " + safeFilters.nameQuery(), "chip-type"));
+            }
+            if (!safeFilters.challengeRatingMin().isBlank() || !safeFilters.challengeRatingMax().isBlank()) {
+                chips.add(new FilterChip(
+                        CHALLENGE_RATING_CHIP_KEY,
+                        "CR: " + defaultCrMinimum(safeFilters.challengeRatingMin())
+                                + "-"
+                                + defaultCrMaximum(safeFilters.challengeRatingMax()),
+                        "chip-cr"));
+            }
+            add(chips, "size", safeFilters.sizes(), "chip-size");
+            add(chips, "type", safeFilters.types(), "chip-type");
+            add(chips, "subtype", safeFilters.subtypes(), "chip-subtype");
+            add(chips, "biome", safeFilters.biomes(), "chip-biome");
+            add(chips, "alignment", safeFilters.alignments(), "chip-align");
+            for (Long tableId : controlsState == null ? List.<Long>of() : controlsState.encounterTableIds()) {
+                if (tableId == null) {
+                    continue;
+                }
+                EncounterTableOption option = encounterTableOption(encounterTableOptions, tableId);
+                chips.add(new FilterChip(
+                        ENCOUNTER_TABLE_CHIP_PREFIX + tableId,
+                        option == null ? "Tabelle " + tableId : option.name(),
+                        "chip-table"));
+            }
+            return List.copyOf(chips);
+        }
+
+        private static void add(List<FilterChip> chips, String prefix, List<String> values, String styleClass) {
+            for (String value : copiedList(values)) {
+                chips.add(new FilterChip(prefix + ":" + value, value, styleClass));
+            }
+        }
+
+        private static @Nullable EncounterTableOption encounterTableOption(List<EncounterTableOption> options, Long tableId) {
+            if (tableId == null) {
+                return null;
+            }
+            for (EncounterTableOption option : copiedList(options)) {
+                if (option.tableId() == tableId.longValue()) {
+                    return option;
+                }
+            }
+            return null;
+        }
     }
 
-    public record LocalFilterState(
+    record LocalFilterState(
             String nameQuery,
             String challengeRatingMin,
             String challengeRatingMax,
             List<String> sizes,
             List<String> alignments
     ) {
-        public LocalFilterState {
-            nameQuery = nameQuery == null ? "" : nameQuery;
-            challengeRatingMin = challengeRatingMin == null ? "" : challengeRatingMin;
-            challengeRatingMax = challengeRatingMax == null ? "" : challengeRatingMax;
-            sizes = copiedFilterValues(sizes);
-            alignments = copiedFilterValues(alignments);
-        }
-
-        @Override
-        public List<String> sizes() {
-            return copiedFilterValues(sizes);
-        }
-
-        @Override
-        public List<String> alignments() {
-            return copiedFilterValues(alignments);
+        LocalFilterState {
+            nameQuery = safe(nameQuery);
+            challengeRatingMin = safe(challengeRatingMin);
+            challengeRatingMax = safe(challengeRatingMax);
+            sizes = copiedList(sizes);
+            alignments = copiedList(alignments);
         }
 
         static LocalFilterState empty() {
             return new LocalFilterState("", "", "", List.of(), List.of());
         }
+
+        LocalFilterState retainAvailable(FilterOptionsProjection options) {
+            FilterOptionsProjection safeOptions = options == null ? FilterOptionsProjection.empty() : options;
+            return new LocalFilterState(
+                    nameQuery,
+                    challengeRatingMin,
+                    challengeRatingMax,
+                    retainAvailable(sizes, safeOptions.sizes()),
+                    retainAvailable(alignments, safeOptions.alignments()));
+        }
     }
 
-    public record CreatureFilters(
+    record CreatureFilters(
             String nameQuery,
             String challengeRatingMin,
             String challengeRatingMax,
@@ -836,48 +670,23 @@ public final class CatalogContributionModel {
             List<String> biomes,
             List<String> alignments
     ) {
-        public CreatureFilters {
-            nameQuery = nameQuery == null ? "" : nameQuery;
-            challengeRatingMin = challengeRatingMin == null ? "" : challengeRatingMin;
-            challengeRatingMax = challengeRatingMax == null ? "" : challengeRatingMax;
-            sizes = copiedFilterValues(sizes);
-            types = copiedFilterValues(types);
-            subtypes = copiedFilterValues(subtypes);
-            biomes = copiedFilterValues(biomes);
-            alignments = copiedFilterValues(alignments);
+        CreatureFilters {
+            nameQuery = safe(nameQuery);
+            challengeRatingMin = safe(challengeRatingMin);
+            challengeRatingMax = safe(challengeRatingMax);
+            sizes = copiedList(sizes);
+            types = copiedList(types);
+            subtypes = copiedList(subtypes);
+            biomes = copiedList(biomes);
+            alignments = copiedList(alignments);
         }
 
-        @Override
-        public List<String> sizes() {
-            return copiedFilterValues(sizes);
-        }
-
-        @Override
-        public List<String> types() {
-            return copiedFilterValues(types);
-        }
-
-        @Override
-        public List<String> subtypes() {
-            return copiedFilterValues(subtypes);
-        }
-
-        @Override
-        public List<String> biomes() {
-            return copiedFilterValues(biomes);
-        }
-
-        @Override
-        public List<String> alignments() {
-            return copiedFilterValues(alignments);
-        }
-
-        public static CreatureFilters empty() {
+        static CreatureFilters empty() {
             return new CreatureFilters("", "", "", List.of(), List.of(), List.of(), List.of(), List.of());
         }
     }
 
-    public record FilterOptionsProjection(
+    record FilterOptionsProjection(
             List<String> sizes,
             List<String> types,
             List<String> subtypes,
@@ -885,43 +694,13 @@ public final class CatalogContributionModel {
             List<String> alignments,
             List<String> challengeRatings
     ) {
-        public FilterOptionsProjection {
-            sizes = copiedFilterValues(sizes);
-            types = copiedFilterValues(types);
-            subtypes = copiedFilterValues(subtypes);
-            biomes = copiedFilterValues(biomes);
-            alignments = copiedFilterValues(alignments);
-            challengeRatings = copiedFilterValues(challengeRatings);
-        }
-
-        @Override
-        public List<String> sizes() {
-            return copiedFilterValues(sizes);
-        }
-
-        @Override
-        public List<String> types() {
-            return copiedFilterValues(types);
-        }
-
-        @Override
-        public List<String> subtypes() {
-            return copiedFilterValues(subtypes);
-        }
-
-        @Override
-        public List<String> biomes() {
-            return copiedFilterValues(biomes);
-        }
-
-        @Override
-        public List<String> alignments() {
-            return copiedFilterValues(alignments);
-        }
-
-        @Override
-        public List<String> challengeRatings() {
-            return copiedFilterValues(challengeRatings);
+        FilterOptionsProjection {
+            sizes = copiedList(sizes);
+            types = copiedList(types);
+            subtypes = copiedList(subtypes);
+            biomes = copiedList(biomes);
+            alignments = copiedList(alignments);
+            challengeRatings = copiedList(challengeRatings);
         }
 
         static FilterOptionsProjection empty() {
@@ -929,19 +708,106 @@ public final class CatalogContributionModel {
         }
     }
 
-    public record SliderProjection(boolean auto, double value, List<PreviewLabel> labels) {
-        public SliderProjection {
+    record SliderProjection(boolean auto, double value, List<PreviewLabel> labels) {
+        SliderProjection {
             value = Double.isFinite(value) ? value : 0.0;
-            labels = labels == null ? List.of() : List.copyOf(labels);
+            labels = copiedList(labels);
         }
 
-        @Override
-        public List<PreviewLabel> labels() {
-            return labels == null ? List.of() : List.copyOf(labels);
+        static SliderProjection defaultDifficulty() {
+            return new SliderProjection(true, DEFAULT_DIFFICULTY_VALUE, DEFAULT_DIFFICULTY_LABELS);
+        }
+
+        static SliderProjection defaultBalance() {
+            return new SliderProjection(true, DEFAULT_BALANCE_VALUE, DEFAULT_BALANCE_LABELS);
+        }
+
+        static SliderProjection defaultAmount() {
+            return new SliderProjection(true, DEFAULT_AMOUNT_VALUE, DEFAULT_AMOUNT_LABELS);
+        }
+
+        static SliderProjection defaultDiversity() {
+            return new SliderProjection(true, DEFAULT_DIVERSITY_VALUE, DEFAULT_DIVERSITY_LABELS);
+        }
+
+        static SliderProjection draftDifficulty(boolean auto, double value, SliderProjection current) {
+            return create(
+                    auto,
+                    clamp(value, MIN_DIFFICULTY_VALUE, MAX_DIFFICULTY_VALUE, DEFAULT_DIFFICULTY_VALUE),
+                    current == null ? DEFAULT_DIFFICULTY_LABELS : current.labels(),
+                    DEFAULT_DIFFICULTY_VALUE,
+                    DEFAULT_DIFFICULTY_LABELS);
+        }
+
+        static SliderProjection draftBalance(boolean auto, double value, SliderProjection current) {
+            return create(
+                    auto,
+                    clamp(value, MIN_BALANCE_VALUE, MAX_BALANCE_VALUE, DEFAULT_BALANCE_VALUE),
+                    current == null ? DEFAULT_BALANCE_LABELS : current.labels(),
+                    DEFAULT_BALANCE_VALUE,
+                    DEFAULT_BALANCE_LABELS);
+        }
+
+        static SliderProjection draftAmount(boolean auto, double value, SliderProjection current) {
+            return create(
+                    auto,
+                    clamp(value, MIN_AMOUNT_VALUE, MAX_AMOUNT_VALUE, DEFAULT_AMOUNT_VALUE),
+                    current == null ? DEFAULT_AMOUNT_LABELS : current.labels(),
+                    DEFAULT_AMOUNT_VALUE,
+                    DEFAULT_AMOUNT_LABELS);
+        }
+
+        static SliderProjection draftDiversity(boolean auto, double value, SliderProjection current) {
+            return create(
+                    auto,
+                    clamp(value, MIN_DIVERSITY_VALUE, MAX_DIVERSITY_VALUE, DEFAULT_DIVERSITY_VALUE),
+                    current == null ? DEFAULT_DIVERSITY_LABELS : current.labels(),
+                    DEFAULT_DIVERSITY_VALUE,
+                    DEFAULT_DIVERSITY_LABELS);
+        }
+
+        static SliderProjection difficulty(boolean auto, int difficultyLevel, List<PreviewLabel> labels) {
+            double value = switch (difficultyLevel) {
+                case 1 -> 1.0;
+                case 3 -> 3.0;
+                case 4 -> 4.0;
+                default -> DEFAULT_DIFFICULTY_VALUE;
+            };
+            return create(auto, value, labels, DEFAULT_DIFFICULTY_VALUE, DEFAULT_DIFFICULTY_LABELS);
+        }
+
+        SliderProjection withPreviewLabels(
+                List<EncounterTuningPreviewLabels.PreviewLabel> previewLabels,
+                List<PreviewLabel> fallback,
+                double defaultValue
+        ) {
+            List<PreviewLabel> labels = previewLabels == null || previewLabels.isEmpty()
+                    ? fallback
+                    : previewLabels.stream().map(label -> new PreviewLabel(label.value(), label.label())).toList();
+            return create(auto, value, labels, defaultValue, fallback);
+        }
+
+        private static SliderProjection create(
+                boolean auto,
+                double value,
+                List<PreviewLabel> labels,
+                double defaultValue,
+                List<PreviewLabel> fallback
+        ) {
+            double safeValue = Double.isFinite(value) ? value : defaultValue;
+            List<PreviewLabel> safeLabels = labels == null || labels.isEmpty() ? fallback : List.copyOf(labels);
+            return new SliderProjection(auto, auto ? defaultValue : safeValue, safeLabels);
+        }
+
+        private static double clamp(double value, double min, double max, double fallback) {
+            if (!Double.isFinite(value)) {
+                return fallback;
+            }
+            return Math.max(min, Math.min(max, value));
         }
     }
 
-    public record ControlsState(
+    record ControlsState(
             List<String> creatureTypes,
             List<String> creatureSubtypes,
             List<String> biomes,
@@ -951,43 +817,15 @@ public final class CatalogContributionModel {
             SliderProjection amount,
             SliderProjection diversity
     ) {
-        public ControlsState {
-            creatureTypes = copiedFilterValues(creatureTypes);
-            creatureSubtypes = copiedFilterValues(creatureSubtypes);
-            biomes = copiedFilterValues(biomes);
-            encounterTableIds = encounterTableIds == null ? List.of() : List.copyOf(encounterTableIds);
-            difficulty = difficulty == null
-                    ? new SliderProjection(true, DEFAULT_DIFFICULTY_VALUE, DEFAULT_DIFFICULTY_LABELS)
-                    : difficulty;
-            balance = balance == null
-                    ? new SliderProjection(true, DEFAULT_BALANCE_VALUE, DEFAULT_BALANCE_LABELS)
-                    : balance;
-            amount = amount == null
-                    ? new SliderProjection(true, DEFAULT_AMOUNT_VALUE, DEFAULT_AMOUNT_LABELS)
-                    : amount;
-            diversity = diversity == null
-                    ? new SliderProjection(true, DEFAULT_DIVERSITY_VALUE, DEFAULT_DIVERSITY_LABELS)
-                    : diversity;
-        }
-
-        @Override
-        public List<String> creatureTypes() {
-            return copiedFilterValues(creatureTypes);
-        }
-
-        @Override
-        public List<String> creatureSubtypes() {
-            return copiedFilterValues(creatureSubtypes);
-        }
-
-        @Override
-        public List<String> biomes() {
-            return copiedFilterValues(biomes);
-        }
-
-        @Override
-        public List<Long> encounterTableIds() {
-            return encounterTableIds == null ? List.of() : List.copyOf(encounterTableIds);
+        ControlsState {
+            creatureTypes = copiedList(creatureTypes);
+            creatureSubtypes = copiedList(creatureSubtypes);
+            biomes = copiedList(biomes);
+            encounterTableIds = copiedList(encounterTableIds);
+            difficulty = difficulty == null ? SliderProjection.defaultDifficulty() : difficulty;
+            balance = balance == null ? SliderProjection.defaultBalance() : balance;
+            amount = amount == null ? SliderProjection.defaultAmount() : amount;
+            diversity = diversity == null ? SliderProjection.defaultDiversity() : diversity;
         }
 
         static ControlsState empty() {
@@ -996,28 +834,101 @@ public final class CatalogContributionModel {
                     List.of(),
                     List.of(),
                     List.of(),
-                    new SliderProjection(true, DEFAULT_DIFFICULTY_VALUE, DEFAULT_DIFFICULTY_LABELS),
-                    new SliderProjection(true, DEFAULT_BALANCE_VALUE, DEFAULT_BALANCE_LABELS),
-                    new SliderProjection(true, DEFAULT_AMOUNT_VALUE, DEFAULT_AMOUNT_LABELS),
-                    new SliderProjection(true, DEFAULT_DIVERSITY_VALUE, DEFAULT_DIVERSITY_LABELS));
+                    SliderProjection.defaultDifficulty(),
+                    SliderProjection.defaultBalance(),
+                    SliderProjection.defaultAmount(),
+                    SliderProjection.defaultDiversity());
+        }
+
+        static ControlsState fromBuilderInputs(EncounterBuilderInputs builderInputs, ControlsState source) {
+            EncounterBuilderInputs safeInputs = builderInputs == null
+                    ? EncounterBuilderInputs.empty()
+                    : builderInputs;
+            ControlsState safeSource = source == null ? empty() : source;
+            return new ControlsState(
+                    safeInputs.creatureTypes(),
+                    safeInputs.creatureSubtypes(),
+                    safeInputs.biomes(),
+                    safeInputs.encounterTableIds(),
+                    SliderProjection.difficulty(
+                            safeInputs.autoDifficulty(),
+                            safeInputs.difficultyLevel(),
+                            safeSource.difficulty().labels()),
+                    SliderProjection.create(
+                            safeInputs.autoBalance(),
+                            safeInputs.autoBalance() ? DEFAULT_BALANCE_VALUE : safeInputs.balanceLevel(),
+                            safeSource.balance().labels(),
+                            DEFAULT_BALANCE_VALUE,
+                            DEFAULT_BALANCE_LABELS),
+                    SliderProjection.create(
+                            safeInputs.autoAmount(),
+                            safeInputs.autoAmount() ? DEFAULT_AMOUNT_VALUE : safeInputs.amountValue(),
+                            safeSource.amount().labels(),
+                            DEFAULT_AMOUNT_VALUE,
+                            DEFAULT_AMOUNT_LABELS),
+                    SliderProjection.create(
+                            safeInputs.autoDiversity(),
+                            safeInputs.autoDiversity() ? DEFAULT_DIVERSITY_VALUE : safeInputs.diversityLevel(),
+                            safeSource.diversity().labels(),
+                            DEFAULT_DIVERSITY_VALUE,
+                            DEFAULT_DIVERSITY_LABELS));
+        }
+
+        ControlsState withPreviewLabels(EncounterTuningPreviewLabels labels) {
+            EncounterTuningPreviewLabels safeLabels = labels == null
+                    ? new EncounterTuningPreviewLabels(List.of(), List.of(), List.of(), List.of())
+                    : labels;
+            return new ControlsState(
+                    creatureTypes,
+                    creatureSubtypes,
+                    biomes,
+                    encounterTableIds,
+                    difficulty.withPreviewLabels(
+                            safeLabels.difficultyLabels(),
+                            DEFAULT_DIFFICULTY_LABELS,
+                            DEFAULT_DIFFICULTY_VALUE),
+                    balance.withPreviewLabels(
+                            safeLabels.balanceLabels(),
+                            DEFAULT_BALANCE_LABELS,
+                            DEFAULT_BALANCE_VALUE),
+                    amount.withPreviewLabels(
+                            safeLabels.amountLabels(),
+                            DEFAULT_AMOUNT_LABELS,
+                            DEFAULT_AMOUNT_VALUE),
+                    diversity.withPreviewLabels(
+                            safeLabels.diversityLabels(),
+                            DEFAULT_DIVERSITY_LABELS,
+                            DEFAULT_DIVERSITY_VALUE));
+        }
+
+        static boolean searchControlsChanged(ControlsState previous, ControlsState next) {
+            ControlsState safePrevious = previous == null ? empty() : previous;
+            ControlsState safeNext = next == null ? empty() : next;
+            return !safePrevious.creatureTypes().equals(safeNext.creatureTypes())
+                    || !safePrevious.creatureSubtypes().equals(safeNext.creatureSubtypes())
+                    || !safePrevious.biomes().equals(safeNext.biomes());
         }
     }
 
-    public record EncounterTableOption(long tableId, String name, @Nullable Long linkedLootTableId) {
-        public EncounterTableOption {
+    record EncounterTableOption(long tableId, String name, @Nullable Long linkedLootTableId) {
+        EncounterTableOption {
             name = name == null || name.isBlank() ? "Tabelle " + tableId : name;
         }
-    }
 
-    public record PreviewLabel(double value, String label) {
-        public PreviewLabel {
-            label = label == null ? "" : label;
+        static EncounterTableOption fromSummary(EncounterTableSummary summary) {
+            return new EncounterTableOption(summary.tableId(), summary.name(), summary.linkedLootTableId());
         }
     }
 
-    public record FilterDropdownState(boolean open, String searchQuery) {
-        public FilterDropdownState {
-            searchQuery = searchQuery == null ? "" : searchQuery;
+    record PreviewLabel(double value, String label) {
+        PreviewLabel {
+            label = safe(label);
+        }
+    }
+
+    record FilterDropdownState(boolean open, String searchQuery) {
+        FilterDropdownState {
+            searchQuery = safe(searchQuery);
         }
 
         static FilterDropdownState closed() {
