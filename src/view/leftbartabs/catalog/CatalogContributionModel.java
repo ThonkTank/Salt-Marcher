@@ -655,8 +655,8 @@ public final class CatalogContributionModel {
                     nameQuery,
                     challengeRatingMin,
                     challengeRatingMax,
-                    retainAvailable(sizes, safeOptions.sizes()),
-                    retainAvailable(alignments, safeOptions.alignments()));
+                    CatalogContributionModel.retainAvailable(sizes, safeOptions.sizes()),
+                    CatalogContributionModel.retainAvailable(alignments, safeOptions.alignments()));
         }
     }
 
