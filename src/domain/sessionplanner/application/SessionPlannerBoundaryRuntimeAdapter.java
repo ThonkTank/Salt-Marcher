@@ -23,7 +23,7 @@ public final class SessionPlannerBoundaryRuntimeAdapter
     private final CurrentSessionPlanRuntimeAccess runtime;
     private final SessionPlannerSnapshotProjector projector = new SessionPlannerSnapshotProjector();
     private final List<Consumer<SessionPlannerSnapshot>> sessionListeners = new ArrayList<>();
-    private final SessionPlannerModel sessionModel = new SessionPlannerModel(
+    public final SessionPlannerModel sessionModel = new SessionPlannerModel(
             this::currentSnapshot,
             this::subscribeSessionListener);
     private @Nullable SessionPlannerSnapshot currentSnapshot;
@@ -37,10 +37,6 @@ public final class SessionPlannerBoundaryRuntimeAdapter
         this.partyFacts = Objects.requireNonNull(partyFacts, "partyFacts");
         this.encounterFacts = Objects.requireNonNull(encounterFacts, "encounterFacts");
         this.runtime = new CurrentSessionPlanRuntimeAccess(this, this, this);
-    }
-
-    public SessionPlannerModel sessionModel() {
-        return sessionModel;
     }
 
     @Override

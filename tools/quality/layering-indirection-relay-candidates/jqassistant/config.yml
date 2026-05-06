@@ -26,4 +26,4 @@ jqassistant:
         junit.report.failureSeverity: BLOCKER
         junit.report.errorSeverity: BLOCKER
     groups:
-      - saltmarcher:layering-indirection-enforcement
+      - saltmarcher:layering-indirection-candidates

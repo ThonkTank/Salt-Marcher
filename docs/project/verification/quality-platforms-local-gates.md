@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-05-04
+Last Reviewed: 2026-05-06
 Source of Truth: Detailed local gate inventory, aggregate entrypoints, and
 concurrent local invocation policy for SaltMarcher quality platforms.
 
@@ -391,7 +391,8 @@ Focused investigation entrypoints are `compileJava`, `pmdMain`,
 `checkViewInspectorEntryEnforcement`, `checkViewLayerEnforcement`,
 `checkViewInputEventEnforcement`, `checkViewPublishedEventEnforcement`,
 `checkViewIntentHandlerEnforcement`, `checkLayeringArchitectureEnforcement`,
-`checkLayeringIndirectionEnforcement`, `checkLayeringIndirectionCandidates`,
+`checkLayeringIndirectionEnforcement`,
+`checkLayeringIndirectionRelayCandidates`, `checkLayeringIndirectionCandidates`,
 `checkDocumentationEnforcement`, and `jqassistantEffectiveRules`, each run
 through
 `./gradlew <task> --console=plain`.
@@ -421,6 +422,7 @@ Architecture-focused entrypoints:
   `checkShellLayerEnforcement`,
   `checkDomainUseCaseEnforcement`,
   `checkLayeringArchitectureEnforcement`,
+  `checkLayeringIndirectionEnforcement`,
   `checkViewContributionEnforcement`,
   `checkViewBinderEnforcement`,
   `checkViewContributionModelEnforcement`,
@@ -513,9 +515,14 @@ Architecture-focused entrypoints:
 - `./gradlew checkLayeringIndirectionEnforcement --console=plain`
   Aggregates the dedicated `Layering Indirection` bundle through the focused
   `jqassistantAnalyzeLayeringIndirectionEnforcement` path. It blocks on the
-  compiled relay-only substantive-role constraint and reports warning-only thin
-  relay-stack candidates without attaching that direct entrypoint to
-  `checkArchitecture`, `check`, or `build`.
+  compiled relay-only substantive-role constraint and is attached to
+  `checkArchitecture`, `check`, `build`, and staged `production-handoff`
+  through the architecture aggregate.
+- `./gradlew checkLayeringIndirectionRelayCandidates --console=plain`
+  Runs the dedicated report-only `Layering Indirection Relay Candidates`
+  bundle through `jqassistantAnalyzeLayeringIndirectionRelayCandidates`
+  without attaching that diagnostic surface to `checkArchitecture`, `check`,
+  `build`, or staged `production-handoff`.
 - `./gradlew checkLayeringIndirectionCandidates --console=plain`
   Runs the descriptor-owned report-only thin-role candidate PMD scan through
   the dedicated `Layering Architecture` bundle without attaching that

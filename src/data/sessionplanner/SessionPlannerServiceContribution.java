@@ -22,40 +22,41 @@ public final class SessionPlannerServiceContribution implements ServiceContribut
 
     @Override
     public void register(ServiceRegistry.Builder builder) {
-        PlannerRuntimeHolder runtimeHolder = new PlannerRuntimeHolder();
+        SessionPlannerApplicationService[] applicationServiceRef = new SessionPlannerApplicationService[1];
+        SessionPlannerModel[] sessionModelRef = new SessionPlannerModel[1];
         builder.registerFactory(
                 SessionPlannerApplicationService.class,
-                services -> runtimeHolder.resolve(services).applicationService());
+                services -> {
+                    if (applicationServiceRef[0] == null) {
+                        SessionPlanRepository repository = new SqliteSessionPlanRepository();
+                        ApplicationSessionPlannerFactsQueryAdapter facts = new ApplicationSessionPlannerFactsQueryAdapter(
+                                services.require(PartyApplicationService.class),
+                                services.require(ActivePartyModel.class),
+                                services.require(AdventuringDayCalculationModel.class),
+                                services.require(EncounterApplicationService.class));
+                        SessionPlannerBoundaryRuntimeAdapter runtime =
+                                new SessionPlannerBoundaryRuntimeAdapter(repository, facts, facts);
+                        applicationServiceRef[0] = new SessionPlannerApplicationService(runtime, runtime, runtime, runtime);
+                        sessionModelRef[0] = runtime.sessionModel;
+                    }
+                    return applicationServiceRef[0];
+                });
         builder.registerFactory(
                 SessionPlannerModel.class,
-                services -> runtimeHolder.resolve(services).sessionModel());
-    }
-
-    private static final class PlannerRuntimeHolder {
-
-        private PlannerRuntimeServices runtimeServices;
-
-        private PlannerRuntimeServices resolve(ServiceRegistry services) {
-            if (runtimeServices == null) {
-                SessionPlanRepository repository = new SqliteSessionPlanRepository();
-                ApplicationSessionPlannerFactsQueryAdapter facts = new ApplicationSessionPlannerFactsQueryAdapter(
-                        services.require(PartyApplicationService.class),
-                        services.require(ActivePartyModel.class),
-                        services.require(AdventuringDayCalculationModel.class),
-                        services.require(EncounterApplicationService.class));
-                SessionPlannerBoundaryRuntimeAdapter runtime =
-                        new SessionPlannerBoundaryRuntimeAdapter(repository, facts, facts);
-                runtimeServices = new PlannerRuntimeServices(
-                        new SessionPlannerApplicationService(runtime, runtime, runtime, runtime),
-                        runtime.sessionModel());
-            }
-            return runtimeServices;
-        }
-    }
-
-    private record PlannerRuntimeServices(
-            SessionPlannerApplicationService applicationService,
-            SessionPlannerModel sessionModel
-    ) {
+                services -> {
+                    if (sessionModelRef[0] == null) {
+                        SessionPlanRepository repository = new SqliteSessionPlanRepository();
+                        ApplicationSessionPlannerFactsQueryAdapter facts = new ApplicationSessionPlannerFactsQueryAdapter(
+                                services.require(PartyApplicationService.class),
+                                services.require(ActivePartyModel.class),
+                                services.require(AdventuringDayCalculationModel.class),
+                                services.require(EncounterApplicationService.class));
+                        SessionPlannerBoundaryRuntimeAdapter runtime =
+                                new SessionPlannerBoundaryRuntimeAdapter(repository, facts, facts);
+                        applicationServiceRef[0] = new SessionPlannerApplicationService(runtime, runtime, runtime, runtime);
+                        sessionModelRef[0] = runtime.sessionModel;
+                    }
+                    return sessionModelRef[0];
+                });
     }
 }

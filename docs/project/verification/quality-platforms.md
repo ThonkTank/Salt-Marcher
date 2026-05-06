@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-05-04
+Last Reviewed: 2026-05-06
 Source of Truth: Quality-platform operating model, status vocabulary,
 verification policy, and architecture-harness relationship for SaltMarcher
 quality gates.
@@ -316,9 +316,13 @@ Operationally, architecture checks enter local quality through:
   included-build taxonomy
 - `checkLayeringIndirectionEnforcement`
   runs the focused `Layering Indirection` enforcement bundle through the
-  dedicated jQAssistant relay-only blocker and warning-only thin relay-stack
-  diagnostics, and stays intentionally outside `checkArchitecture`, `check`,
-  and `build`
+  dedicated jQAssistant relay-only blocker for substantive tactical roles and
+  now enters `checkArchitecture`, `check`, `build`, and staged
+  `production-handoff` transitively
+- `checkLayeringIndirectionRelayCandidates`
+  runs the focused report-only `Layering Indirection Relay Candidates` bundle
+  through the dedicated jQAssistant thin relay-stack diagnostics and stays
+  intentionally outside `checkArchitecture`, `check`, and `build`
 - `checkArchitecture`
   aggregates the focused Domain Layer, Domain ApplicationService,
   Data ServiceContribution,
@@ -349,6 +353,7 @@ Operationally, architecture checks enter local quality through:
   `checkBootstrapAppBootstrapEnforcement`,
   `checkShellLayerEnforcement`,
   `checkLayeringArchitectureEnforcement`,
+  `checkLayeringIndirectionEnforcement`,
   `checkDomainUseCaseEnforcement`,
   `checkViewEnforcement`, `checkViewContributionEnforcement`,
   `checkViewBinderEnforcement`,

@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-05-05
+Last Reviewed: 2026-05-06
 Source of Truth: Complete architecture-enforcement catalog for repository-wide
 layer topology, intentional cross-layer public boundaries, and the allowed
 inter-layer communication contract.
@@ -30,10 +30,14 @@ Focused bundle entrypoint:
   include the same proof surface transitively, and the neighboring `Enforced
   Elsewhere` rows below stay in their owner-specific bundles.
 - `./gradlew checkLayeringIndirectionEnforcement --console=plain` runs the
-  focused jQAssistant relay-only blocker and thin relay-stack diagnostics for
-  indirection shapes that the older single-class PMD source-pattern checks can
-  miss when the relay is spread across owner-local helper methods. This direct
-  entrypoint stays outside `checkArchitecture`, `check`, and `build`.
+  focused jQAssistant blocker for substantive relay-only tactical roles whose
+  indirection shape the older single-class PMD source-pattern checks can miss
+  when the relay is spread across owner-local helper methods. `checkArchitecture`,
+  `check`, `build`, and staged `production-handoff` now consume this blocker
+  transitively.
+- `./gradlew checkLayeringIndirectionRelayCandidates --console=plain` runs the
+  report-only jQAssistant thin relay-stack diagnostic for review of deeper
+  thin-orchestration relay chains.
 - `./gradlew checkLayeringIndirectionCandidates --console=plain` runs the
   report-only diagnostic PMD surface for thin adapter and orchestration roles
   that are allowed to stay narrow but may still be worth reviewing.
@@ -82,10 +86,11 @@ Focused bundle entrypoint:
 | `layering-thin-role-relay-stack-diagnostic` | Candidate | every root `*ApplicationService`, `application/*UseCase`, `*Binder`, `*IntentHandler`, and `*ServiceContribution` surface that relays through at least one deeper relay-only owner | none | none | Thin adapter and orchestration roles that currently form a multi-hop relay stack are reported for review without turning intentional thinness itself into a blocker. |
 | `layering-thin-role-indirection-candidate-scan` | Candidate | every root `*ApplicationService`, `application/*UseCase`, `*Binder`, `*IntentHandler`, and `*ServiceContribution` surface | layering-architecture bundle descriptor-owned report-only PMD `CeremonialIndirectionRule` configured for the thin-role candidate surface | `./gradlew checkLayeringIndirectionCandidates` | Thin adapter and orchestration roles that currently look like pure relay or wrapper ceremony are reported for review without turning that heuristic into a blocker. |
 
-`./gradlew checkLayeringIndirectionEnforcement --console=plain` also runs the
-warning-only jQAssistant diagnostic `saltmarcher:ThinRelayStackCandidate` so
-reviewers can inspect thin multi-hop relay stacks without promoting that
-surface to a blocker.
+`./gradlew checkLayeringIndirectionRelayCandidates --console=plain` runs the
+report-only jQAssistant diagnostic `saltmarcher:ThinRelayStackCandidate`,
+while `./gradlew checkLayeringIndirectionCandidates --console=plain` keeps the
+shallower source-pattern PMD candidate scan available as a separate review
+surface.
 
 ## References
 
