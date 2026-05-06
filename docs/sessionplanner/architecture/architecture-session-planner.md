@@ -45,8 +45,11 @@ creature-detail truth, or loot truth.
 
 Current state:
 
-- the current implementation still keeps planner state as transient runtime
-  orchestration inside `SessionPlannerApplicationService`
+- the current implementation now uses `SessionPlan` plus
+  `src/domain/sessionplanner/application/*UseCase.java`
+  under one current-session runtime holder inside the domain layer
+- `SessionPlannerApplicationService` now exposes focused planner workflows
+  instead of one generic apply-command bag
 - `src/data/encounter/EncounterServiceContribution.java` still hosts planner
   service registration in the current code
 
@@ -93,6 +96,8 @@ Target state:
 - the view layer observes planner state through one read-only snapshot model
 - mutations enter through explicit planner workflows, not through mutable view
   state or direct foreign application-service calls from the view layer
+- until step 3, the planner still keeps exactly one current runtime session
+  rather than a persisted session list
 
 ## Verification Notes
 

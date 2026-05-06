@@ -6,7 +6,8 @@ public record SessionPlannerPublishedEvent(
         Kind kind,
         long planId,
         long encounterToken,
-        int gapIndex,
+        long leftEncounterId,
+        long rightEncounterId,
         RestSelection restSelection,
         long lootToken
 ) {
@@ -15,41 +16,60 @@ public record SessionPlannerPublishedEvent(
         Objects.requireNonNull(kind, "kind");
         planId = Math.max(0L, planId);
         encounterToken = Math.max(0L, encounterToken);
-        gapIndex = Math.max(-1, gapIndex);
+        leftEncounterId = Math.max(0L, leftEncounterId);
+        rightEncounterId = Math.max(0L, rightEncounterId);
         restSelection = restSelection == null ? RestSelection.NONE : restSelection;
         lootToken = Math.max(0L, lootToken);
     }
 
     static SessionPlannerPublishedEvent importPlan(long planId) {
-        return new SessionPlannerPublishedEvent(Kind.IMPORT_PLAN, planId, 0L, -1, RestSelection.NONE, 0L);
+        return new SessionPlannerPublishedEvent(Kind.IMPORT_PLAN, planId, 0L, 0L, 0L, RestSelection.NONE, 0L);
     }
 
     static SessionPlannerPublishedEvent removeEncounter(long encounterToken) {
-        return new SessionPlannerPublishedEvent(Kind.REMOVE_ENCOUNTER, 0L, encounterToken, -1, RestSelection.NONE, 0L);
+        return new SessionPlannerPublishedEvent(Kind.REMOVE_ENCOUNTER, 0L, encounterToken, 0L, 0L, RestSelection.NONE, 0L);
     }
 
     static SessionPlannerPublishedEvent moveEncounterUp(long encounterToken) {
-        return new SessionPlannerPublishedEvent(Kind.MOVE_ENCOUNTER_UP, 0L, encounterToken, -1, RestSelection.NONE, 0L);
+        return new SessionPlannerPublishedEvent(Kind.MOVE_ENCOUNTER_UP, 0L, encounterToken, 0L, 0L, RestSelection.NONE, 0L);
     }
 
     static SessionPlannerPublishedEvent moveEncounterDown(long encounterToken) {
-        return new SessionPlannerPublishedEvent(Kind.MOVE_ENCOUNTER_DOWN, 0L, encounterToken, -1, RestSelection.NONE, 0L);
+        return new SessionPlannerPublishedEvent(Kind.MOVE_ENCOUNTER_DOWN, 0L, encounterToken, 0L, 0L, RestSelection.NONE, 0L);
     }
 
-    static SessionPlannerPublishedEvent setRestGap(int gapIndex, RestSelection restSelection) {
-        return new SessionPlannerPublishedEvent(Kind.SET_REST_GAP, 0L, 0L, gapIndex, restSelection, 0L);
+    static SessionPlannerPublishedEvent setRestGap(
+            long leftEncounterId,
+            long rightEncounterId,
+            RestSelection restSelection
+    ) {
+        return new SessionPlannerPublishedEvent(
+                Kind.SET_REST_GAP,
+                0L,
+                0L,
+                leftEncounterId,
+                rightEncounterId,
+                restSelection,
+                0L);
     }
 
-    static SessionPlannerPublishedEvent clearRestGap(int gapIndex) {
-        return new SessionPlannerPublishedEvent(Kind.CLEAR_REST_GAP, 0L, 0L, gapIndex, RestSelection.NONE, 0L);
+    static SessionPlannerPublishedEvent clearRestGap(long leftEncounterId, long rightEncounterId) {
+        return new SessionPlannerPublishedEvent(
+                Kind.CLEAR_REST_GAP,
+                0L,
+                0L,
+                leftEncounterId,
+                rightEncounterId,
+                RestSelection.NONE,
+                0L);
     }
 
     static SessionPlannerPublishedEvent addLootPlaceholder() {
-        return new SessionPlannerPublishedEvent(Kind.ADD_LOOT_PLACEHOLDER, 0L, 0L, -1, RestSelection.NONE, 0L);
+        return new SessionPlannerPublishedEvent(Kind.ADD_LOOT_PLACEHOLDER, 0L, 0L, 0L, 0L, RestSelection.NONE, 0L);
     }
 
     static SessionPlannerPublishedEvent removeLootPlaceholder(long lootToken) {
-        return new SessionPlannerPublishedEvent(Kind.REMOVE_LOOT_PLACEHOLDER, 0L, 0L, -1, RestSelection.NONE, lootToken);
+        return new SessionPlannerPublishedEvent(Kind.REMOVE_LOOT_PLACEHOLDER, 0L, 0L, 0L, 0L, RestSelection.NONE, lootToken);
     }
 
     enum Kind {

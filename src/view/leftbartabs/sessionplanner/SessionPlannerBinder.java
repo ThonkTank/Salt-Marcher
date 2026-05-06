@@ -40,7 +40,7 @@ final class SessionPlannerBinder {
         SessionPlannerLootMainView lootView = new SessionPlannerLootMainView();
         SessionPlannerMainView mainView = new SessionPlannerMainView(timelineView, lootView);
 
-        bindRequests(planner, contributionModel, intentHandler);
+        bindRequests(planner, intentHandler);
         bindControls(contributionModel, intentHandler, controlsView);
         bindMain(contributionModel, intentHandler, timelineView, lootView);
 
@@ -51,10 +51,9 @@ final class SessionPlannerBinder {
 
     private static void bindRequests(
             SessionPlannerApplicationService planner,
-            SessionPlannerContributionModel contributionModel,
             SessionPlannerIntentHandler intentHandler
     ) {
-        intentHandler.onPublishedEventRequested(event -> applyPublishedEvent(planner, contributionModel, event));
+        intentHandler.onPublishedEventRequested(event -> applyPublishedEvent(planner, event));
     }
 
     private static void bindControls(
@@ -63,6 +62,7 @@ final class SessionPlannerBinder {
             SessionPlannerControlsView controlsView
     ) {
         controlsView.onViewInputEvent(intentHandler::consume);
+        intentHandler.onRestGapResolutionRequested(gapIndex -> resolveGap(contributionModel, gapIndex));
         controlsView.showParty(contributionModel.partyProperty().get());
         controlsView.showBudget(contributionModel.budgetProperty().get());
         controlsView.showRestAdvice(contributionModel.restAdviceProperty().get());
@@ -107,7 +107,6 @@ final class SessionPlannerBinder {
 
     private static void applyPublishedEvent(
             SessionPlannerApplicationService planner,
-            SessionPlannerContributionModel contributionModel,
             SessionPlannerPublishedEvent event
     ) {
         if (event == null) {
@@ -119,23 +118,13 @@ final class SessionPlannerBinder {
             case REMOVE_ENCOUNTER -> planner.removeEncounter(new RemoveSessionEncounterCommand(event.encounterToken()));
             case MOVE_ENCOUNTER_UP -> planner.moveEncounterUp(new MoveSessionEncounterUpCommand(event.encounterToken()));
             case MOVE_ENCOUNTER_DOWN -> planner.moveEncounterDown(new MoveSessionEncounterDownCommand(event.encounterToken()));
-            case SET_REST_GAP -> {
-                SessionPlannerContributionModel.RestGapModel gap = resolveGap(contributionModel, event.gapIndex());
-                if (gap != null) {
-                    planner.setRestGap(new SetSessionRestGapCommand(
-                            gap.leftEncounterId(),
-                            gap.rightEncounterId(),
-                            toRestKind(event.restSelection())));
-                }
-            }
-            case CLEAR_REST_GAP -> {
-                SessionPlannerContributionModel.RestGapModel gap = resolveGap(contributionModel, event.gapIndex());
-                if (gap != null) {
-                    planner.clearRestGap(new ClearSessionRestGapCommand(
-                            gap.leftEncounterId(),
-                            gap.rightEncounterId()));
-                }
-            }
+            case SET_REST_GAP -> planner.setRestGap(new SetSessionRestGapCommand(
+                    event.leftEncounterId(),
+                    event.rightEncounterId(),
+                    toRestKind(event.restSelection())));
+            case CLEAR_REST_GAP -> planner.clearRestGap(new ClearSessionRestGapCommand(
+                    event.leftEncounterId(),
+                    event.rightEncounterId()));
             case ADD_LOOT_PLACEHOLDER -> planner.addLootPlaceholder(new AddSessionLootPlaceholderCommand());
             case REMOVE_LOOT_PLACEHOLDER ->
                     planner.removeLootPlaceholder(new RemoveSessionLootPlaceholderCommand(event.lootToken()));
@@ -155,7 +144,7 @@ final class SessionPlannerBinder {
             int gapIndex
     ) {
         if (gapIndex < 0 || gapIndex >= contributionModel.restGapsProperty().size()) {
-            return null;
+            return new SessionPlannerContributionModel.RestGapModel(-1, 0L, 0L, "", false);
         }
         return contributionModel.restGapsProperty().get(gapIndex);
     }

@@ -9,6 +9,6 @@ public final class RemoveSessionLootPlaceholderUseCase {
     }
 
     public void execute(long lootId) {
-        runtime.loadOrCreateCurrent().removeLootPlaceholder(lootId);
+        runtime.replaceCurrent(runtime.loadOrCreateCurrent().removeLootPlaceholder(lootId));
     }
 }

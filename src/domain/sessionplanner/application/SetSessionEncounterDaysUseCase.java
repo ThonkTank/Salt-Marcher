@@ -12,6 +12,6 @@ public final class SetSessionEncounterDaysUseCase {
     }
 
     public void execute(BigDecimal encounterDays) {
-        runtime.loadOrCreateCurrent().setEncounterDays(new EncounterDays(encounterDays));
+        runtime.replaceCurrent(runtime.loadOrCreateCurrent().setEncounterDays(new EncounterDays(encounterDays)));
     }
 }

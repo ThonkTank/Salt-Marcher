@@ -1,13 +1,19 @@
 package src.view.leftbartabs.sessionplanner;
 
 import java.util.function.Consumer;
+import java.util.function.IntFunction;
 
 final class SessionPlannerIntentHandler {
 
     private Consumer<SessionPlannerPublishedEvent> publishedEventListener = ignored -> { };
+    private IntFunction<SessionPlannerContributionModel.RestGapModel> restGapResolver = ignored -> unresolvedGap();
 
     void onPublishedEventRequested(Consumer<SessionPlannerPublishedEvent> listener) {
         publishedEventListener = listener == null ? ignored -> { } : listener;
+    }
+
+    void onRestGapResolutionRequested(IntFunction<SessionPlannerContributionModel.RestGapModel> resolver) {
+        restGapResolver = resolver == null ? ignored -> unresolvedGap() : resolver;
     }
 
     void consume(SessionPlannerControlsViewInputEvent event) {
@@ -36,21 +42,21 @@ final class SessionPlannerIntentHandler {
             return;
         }
         if (event.shortRestRequested()) {
-            publishedEventListener.accept(
-                    SessionPlannerPublishedEvent.setRestGap(
-                            event.gapIndex(),
-                            SessionPlannerPublishedEvent.RestSelection.SHORT_REST));
+            publishRestGap(event.gapIndex(), SessionPlannerPublishedEvent.RestSelection.SHORT_REST);
             return;
         }
         if (event.longRestRequested()) {
-            publishedEventListener.accept(
-                    SessionPlannerPublishedEvent.setRestGap(
-                            event.gapIndex(),
-                            SessionPlannerPublishedEvent.RestSelection.LONG_REST));
+            publishRestGap(event.gapIndex(), SessionPlannerPublishedEvent.RestSelection.LONG_REST);
             return;
         }
         if (event.clearRestRequested()) {
-            publishedEventListener.accept(SessionPlannerPublishedEvent.clearRestGap(event.gapIndex()));
+            SessionPlannerContributionModel.RestGapModel gap = restGapResolver.apply(event.gapIndex());
+            if (isResolvedGap(gap)) {
+                publishedEventListener.accept(
+                        SessionPlannerPublishedEvent.clearRestGap(
+                                gap.leftEncounterId(),
+                                gap.rightEncounterId()));
+            }
         }
     }
 
@@ -65,5 +71,25 @@ final class SessionPlannerIntentHandler {
         }
         publishedEventListener.accept(
                 SessionPlannerPublishedEvent.addLootPlaceholder());
+    }
+
+    private void publishRestGap(int gapIndex, SessionPlannerPublishedEvent.RestSelection selection) {
+        SessionPlannerContributionModel.RestGapModel gap = restGapResolver.apply(gapIndex);
+        if (!isResolvedGap(gap)) {
+            return;
+        }
+        publishedEventListener.accept(
+                SessionPlannerPublishedEvent.setRestGap(
+                        gap.leftEncounterId(),
+                        gap.rightEncounterId(),
+                        selection));
+    }
+
+    private static boolean isResolvedGap(SessionPlannerContributionModel.RestGapModel gap) {
+        return gap.leftEncounterId() > 0L && gap.rightEncounterId() > 0L;
+    }
+
+    private static SessionPlannerContributionModel.RestGapModel unresolvedGap() {
+        return new SessionPlannerContributionModel.RestGapModel(-1, 0L, 0L, "", false);
     }
 }

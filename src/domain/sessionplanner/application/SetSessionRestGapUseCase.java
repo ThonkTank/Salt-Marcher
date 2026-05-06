@@ -11,6 +11,6 @@ public final class SetSessionRestGapUseCase {
     }
 
     public void execute(long leftEncounterId, long rightEncounterId, SessionRestKind restKind) {
-        runtime.loadOrCreateCurrent().setRestPlacement(leftEncounterId, rightEncounterId, restKind);
+        runtime.replaceCurrent(runtime.loadOrCreateCurrent().setRestPlacement(leftEncounterId, rightEncounterId, restKind));
     }
 }

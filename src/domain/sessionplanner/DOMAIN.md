@@ -26,8 +26,8 @@ session snapshots, and the read-only planner session observation model.
 
 Current state:
 
-- the current published API still exposes a coarse transient-session command
-  bag
+- the current published API already exposes focused planner workflow commands
+  plus one read-only `SessionPlannerModel`
 
 Target state:
 
@@ -43,7 +43,10 @@ session-local mutations and readback.
 
 Current state:
 
-- the current code still behaves as transient runtime orchestration
+- the current code already delegates planner mutations to dedicated
+  `application/*UseCase` owners over `SessionPlan`
+- it still keeps exactly one current runtime session until step 3 introduces
+  repository-backed persistence
 
 Target state:
 
@@ -85,6 +88,7 @@ Core invariants:
 
 - planner XP math is based on public party and encounter reads only
 - session participant count equals the number of session participant references
+- the current runtime holds exactly one current session record
 - attached encounters keep the session-local order chosen by the planner
 - rests can exist only between adjacent encounters
 - each attached encounter refers to exactly one encounter-owned saved plan
@@ -96,8 +100,11 @@ Core invariants:
 
 Current state:
 
-- the current implementation still rebuilds planner state as transient runtime
-  data
+- the current implementation now keeps one current runtime session through a
+  planner-owned runtime access seam
+- reopening the planner in the same runtime preserves participant refs,
+  encounter order, allocations, selection, rests, and placeholders for that
+  current session only
 
 Target state:
 

@@ -9,6 +9,6 @@ public final class RemoveSessionEncounterUseCase {
     }
 
     public void execute(long encounterId) {
-        runtime.loadOrCreateCurrent().removeEncounter(encounterId);
+        runtime.replaceCurrent(runtime.loadOrCreateCurrent().removeEncounter(encounterId));
     }
 }

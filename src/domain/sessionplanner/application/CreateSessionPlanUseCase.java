@@ -9,6 +9,6 @@ public final class CreateSessionPlanUseCase {
     }
 
     public void execute() {
-        runtime.createNewSession();
+        runtime.replaceCurrent(runtime.createNewSession());
     }
 }

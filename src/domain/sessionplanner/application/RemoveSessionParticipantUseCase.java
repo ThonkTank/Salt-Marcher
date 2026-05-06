@@ -9,6 +9,6 @@ public final class RemoveSessionParticipantUseCase {
     }
 
     public void execute(long characterId) {
-        runtime.loadOrCreateCurrent().removeParticipant(characterId);
+        runtime.replaceCurrent(runtime.loadOrCreateCurrent().removeParticipant(characterId));
     }
 }

@@ -9,6 +9,6 @@ public final class ClearSessionRestGapUseCase {
     }
 
     public void execute(long leftEncounterId, long rightEncounterId) {
-        runtime.loadOrCreateCurrent().clearRestPlacement(leftEncounterId, rightEncounterId);
+        runtime.replaceCurrent(runtime.loadOrCreateCurrent().clearRestPlacement(leftEncounterId, rightEncounterId));
     }
 }

@@ -9,6 +9,6 @@ public final class AddSessionParticipantUseCase {
     }
 
     public void execute(long characterId) {
-        runtime.loadOrCreateCurrent().addParticipant(characterId);
+        runtime.replaceCurrent(runtime.loadOrCreateCurrent().addParticipant(characterId));
     }
 }

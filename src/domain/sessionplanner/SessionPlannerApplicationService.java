@@ -127,7 +127,7 @@ public final class SessionPlannerApplicationService {
 
     public SessionPlannerSnapshot setEncounterDays(SetSessionEncounterDaysCommand command) {
         SetSessionEncounterDaysCommand effective = command == null
-                ? new SetSessionEncounterDaysCommand(null)
+                ? new SetSessionEncounterDaysCommand(java.math.BigDecimal.ONE)
                 : command;
         setEncounterDaysUseCase.execute(effective.encounterDays());
         return publishCurrentSnapshot();
@@ -167,7 +167,7 @@ public final class SessionPlannerApplicationService {
 
     public SessionPlannerSnapshot setEncounterAllocation(SetSessionEncounterAllocationCommand command) {
         SetSessionEncounterAllocationCommand effective = command == null
-                ? new SetSessionEncounterAllocationCommand(0L, null)
+                ? new SetSessionEncounterAllocationCommand(0L, java.math.BigDecimal.ZERO)
                 : command;
         setEncounterAllocationUseCase.execute(effective.encounterId(), effective.budgetPercentage());
         return publishCurrentSnapshot();
@@ -183,7 +183,7 @@ public final class SessionPlannerApplicationService {
 
     public SessionPlannerSnapshot setRestGap(SetSessionRestGapCommand command) {
         SetSessionRestGapCommand effective = command == null
-                ? new SetSessionRestGapCommand(0L, 0L, null)
+                ? new SetSessionRestGapCommand(0L, 0L, src.domain.sessionplanner.published.SessionPlannerRestKind.NONE)
                 : command;
         setRestGapUseCase.execute(
                 effective.leftEncounterId(),
@@ -220,7 +220,7 @@ public final class SessionPlannerApplicationService {
     }
 
     private SessionPlannerSnapshot currentSessionSnapshot() {
-        return assembleSnapshotUseCase.execute();
+        return toPublishedSnapshot(assembleSnapshotUseCase.execute());
     }
 
     private Runnable subscribeSessionListener(Consumer<SessionPlannerSnapshot> listener) {
@@ -241,6 +241,114 @@ public final class SessionPlannerApplicationService {
             case NONE -> SessionRestKind.NONE;
             case SHORT_REST -> SessionRestKind.SHORT_REST;
             case LONG_REST -> SessionRestKind.LONG_REST;
+        };
+    }
+
+    private static SessionPlannerSnapshot toPublishedSnapshot(AssembleSessionPlannerSnapshotUseCase.ReadData readData) {
+        AssembleSessionPlannerSnapshotUseCase.ReadData safe = readData == null
+                ? new AssembleSessionPlannerSnapshotUseCase.ReadData(
+                AssembleSessionPlannerSnapshotUseCase.ReadData.PartyData.empty(),
+                AssembleSessionPlannerSnapshotUseCase.ReadData.SessionStateData.empty(),
+                AssembleSessionPlannerSnapshotUseCase.ReadData.XpBudgetData.empty(),
+                AssembleSessionPlannerSnapshotUseCase.ReadData.RestAdviceData.empty(),
+                AssembleSessionPlannerSnapshotUseCase.ReadData.GoldBudgetData.placeholder(0),
+                List.of(),
+                List.of(),
+                List.of(),
+                List.of(),
+                List.of(),
+                "")
+                : readData;
+        return new SessionPlannerSnapshot(
+                new SessionPlannerSnapshot.PartyState(
+                        safe.party().resolvedLevels(),
+                        safe.party().participantCount(),
+                        safe.party().averageLevel(),
+                        safe.party().ready(),
+                        safe.party().headline(),
+                        safe.party().detail()),
+                new SessionPlannerSnapshot.SessionState(
+                        safe.session().sessionId(),
+                        safe.session().encounterDays(),
+                        safe.session().encounterDaysText(),
+                        safe.session().selectedEncounterId(),
+                        safe.session().hasSelectedEncounter()),
+                new SessionPlannerSnapshot.XpBudgetState(
+                        safe.xpBudget().available(),
+                        safe.xpBudget().totalBudgetXp(),
+                        safe.xpBudget().plannedEncounterXp(),
+                        safe.xpBudget().remainingXp(),
+                        safe.xpBudget().overBudgetXp(),
+                        safe.xpBudget().firstShortRestXp(),
+                        safe.xpBudget().secondShortRestXp(),
+                        safe.xpBudget().progressFraction(),
+                        safe.xpBudget().overBudget(),
+                        safe.xpBudget().summary()),
+                new SessionPlannerSnapshot.RestAdviceState(
+                        safe.restAdvice().available(),
+                        safe.restAdvice().recommendedShortRests(),
+                        safe.restAdvice().recommendedLongRests(),
+                        safe.restAdvice().placedShortRests(),
+                        safe.restAdvice().placedLongRests(),
+                        safe.restAdvice().summary()),
+                new SessionPlannerSnapshot.GoldBudgetState(
+                        safe.goldBudget().available(),
+                        safe.goldBudget().headline(),
+                        safe.goldBudget().detail()),
+                safe.availableEncounterPlans().stream()
+                        .map(plan -> new SessionPlannerSnapshot.AvailableEncounterPlan(
+                                plan.planId(),
+                                plan.name(),
+                                plan.generatedLabel(),
+                                plan.creatureCount(),
+                                plan.adjustedXp(),
+                                plan.difficultyLabel(),
+                                plan.statusText(),
+                                plan.importEnabled()))
+                        .toList(),
+                safe.participants().stream()
+                        .map(participant -> new SessionPlannerSnapshot.SessionParticipant(
+                                participant.characterId(),
+                                participant.name(),
+                                participant.level(),
+                                participant.available(),
+                                participant.statusText()))
+                        .toList(),
+                safe.plannedEncounters().stream()
+                        .map(encounter -> new SessionPlannerSnapshot.PlannedEncounter(
+                                encounter.encounterId(),
+                                encounter.encounterPlanId(),
+                                encounter.name(),
+                                encounter.generatedLabel(),
+                                encounter.creatureCount(),
+                                encounter.totalBaseXp(),
+                                encounter.adjustedXp(),
+                                encounter.xpMultiplier(),
+                                encounter.difficultyLabel(),
+                                encounter.budgetPercentage(),
+                                encounter.targetXp(),
+                                encounter.selected()))
+                        .toList(),
+                safe.restGaps().stream()
+                        .map(gap -> new SessionPlannerSnapshot.RestGap(
+                                gap.gapIndex(),
+                                gap.leftEncounterId(),
+                                gap.rightEncounterId(),
+                                toPublishedRestKind(gap.restKind())))
+                        .toList(),
+                safe.lootPlaceholders().stream()
+                        .map(loot -> new SessionPlannerSnapshot.LootPlaceholder(
+                                loot.token(),
+                                loot.label()))
+                        .toList(),
+                safe.status());
+    }
+
+    private static src.domain.sessionplanner.published.SessionPlannerRestKind toPublishedRestKind(SessionRestKind restKind) {
+        return switch (restKind == null ? SessionRestKind.NONE : restKind) {
+            case NONE -> src.domain.sessionplanner.published.SessionPlannerRestKind.NONE;
+            case SHORT_REST -> src.domain.sessionplanner.published.SessionPlannerRestKind.SHORT_REST;
+            case LONG_REST -> src.domain.sessionplanner.published.SessionPlannerRestKind.LONG_REST;
         };
     }
 }

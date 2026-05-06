@@ -9,6 +9,6 @@ public final class AddSessionLootPlaceholderUseCase {
     }
 
     public void execute() {
-        runtime.loadOrCreateCurrent().addLootPlaceholder();
+        runtime.replaceCurrent(runtime.loadOrCreateCurrent().addLootPlaceholder());
     }
 }

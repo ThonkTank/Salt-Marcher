@@ -9,6 +9,6 @@ public final class SelectSessionEncounterUseCase {
     }
 
     public void execute(long encounterId) {
-        runtime.loadOrCreateCurrent().selectEncounter(encounterId);
+        runtime.replaceCurrent(runtime.loadOrCreateCurrent().selectEncounter(encounterId));
     }
 }

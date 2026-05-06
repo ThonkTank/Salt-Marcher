@@ -11,6 +11,6 @@ public final class SetSessionEncounterAllocationUseCase {
     }
 
     public void execute(long encounterId, BigDecimal budgetPercentage) {
-        runtime.loadOrCreateCurrent().setEncounterAllocation(encounterId, budgetPercentage);
+        runtime.replaceCurrent(runtime.loadOrCreateCurrent().setEncounterAllocation(encounterId, budgetPercentage));
     }
 }

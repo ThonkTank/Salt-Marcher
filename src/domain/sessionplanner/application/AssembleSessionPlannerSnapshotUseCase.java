@@ -24,32 +24,32 @@ public final class AssembleSessionPlannerSnapshotUseCase {
         this.runtime = runtime;
     }
 
-    public SessionPlannerReadData execute() {
+    public ReadData execute() {
         SessionPlan session = runtime.loadOrCreateCurrent();
         SessionPartyFactsLookup.ActivePartyMembersFact partyMembersFact = runtime.partyFacts().loadActivePartyMembers();
         Map<Long, SessionPartyFactsLookup.PartyMemberFact> activeMembers = indexMembers(partyMembersFact.members());
-        List<SessionPlannerReadData.ParticipantData> participants = buildParticipants(session, activeMembers);
+        List<ReadData.ParticipantData> participants = buildParticipants(session, activeMembers);
         List<Integer> resolvedLevels = participants.stream()
-                .filter(SessionPlannerReadData.ParticipantData::available)
-                .map(SessionPlannerReadData.ParticipantData::level)
+                .filter(ReadData.ParticipantData::available)
+                .map(ReadData.ParticipantData::level)
                 .toList();
-        boolean sessionReady = !participants.isEmpty() && participants.stream().allMatch(SessionPlannerReadData.ParticipantData::available);
+        boolean sessionReady = !participants.isEmpty() && participants.stream().allMatch(ReadData.ParticipantData::available);
         Map<Long, SessionEncounterFactsLookup.EncounterPlanFact> loadedEncounters = loadSessionEncounterFacts(session);
         SessionPartyFactsLookup.AdventuringDayFact budgetFact = sessionReady
                 ? runtime.partyFacts().calculateAdventuringDay(resolvedLevels, plannedEncounterXp(session, loadedEncounters))
                 : SessionPartyFactsLookup.AdventuringDayFact.unavailable();
         int scaledBudgetXp = budgetFact.available() ? session.encounterDays().scaleBudget(budgetFact.totalBudgetXp()) : 0;
         SessionEncounterFactsLookup.EncounterPlanListFact encounterPlansFact = runtime.encounterFacts().listEncounterPlans();
-        List<SessionPlannerReadData.AvailableEncounterPlanData> availablePlans =
+        List<ReadData.AvailableEncounterPlanData> availablePlans =
                 buildAvailablePlans(encounterPlansFact, loadedEncounters);
-        List<SessionPlannerReadData.PlannedEncounterData> plannedEncounters =
+        List<ReadData.PlannedEncounterData> plannedEncounters =
                 buildPlannedEncounters(session, scaledBudgetXp, loadedEncounters);
-        List<SessionPlannerReadData.RestGapData> restGaps = buildRestGaps(session);
+        List<ReadData.RestGapData> restGaps = buildRestGaps(session);
         int placedShortRests = countRests(session.restPlacements(), SessionRestKind.SHORT_REST);
         int placedLongRests = countRests(session.restPlacements(), SessionRestKind.LONG_REST);
-        return new SessionPlannerReadData(
+        return new ReadData(
                 buildPartyState(session, resolvedLevels, participants, partyMembersFact),
-                new SessionPlannerReadData.SessionStateData(
+                new ReadData.SessionStateData(
                         session.sessionId(),
                         session.encounterDays().value(),
                         session.encounterDays().displayText(),
@@ -57,21 +57,21 @@ public final class AssembleSessionPlannerSnapshotUseCase {
                         session.selectedEncounterId() > 0L),
                 buildXpBudgetState(session, budgetFact, scaledBudgetXp, loadedEncounters),
                 buildRestAdviceState(budgetFact, placedShortRests, placedLongRests),
-                SessionPlannerReadData.GoldBudgetData.placeholder(session.lootPlaceholders().size()),
+                ReadData.GoldBudgetData.placeholder(session.lootPlaceholders().size()),
                 availablePlans,
                 participants,
                 plannedEncounters,
                 restGaps,
                 session.lootPlaceholders().stream()
-                        .map(loot -> new SessionPlannerReadData.LootPlaceholderData(loot.lootId(), loot.label()))
+                        .map(loot -> new ReadData.LootPlaceholderData(loot.lootId(), loot.label()))
                         .toList(),
                 resolveStatus(session, participants, partyMembersFact, encounterPlansFact));
     }
 
-    private static SessionPlannerReadData.PartyData buildPartyState(
+    private static ReadData.PartyData buildPartyState(
             SessionPlan session,
             List<Integer> resolvedLevels,
-            List<SessionPlannerReadData.ParticipantData> participants,
+            List<ReadData.ParticipantData> participants,
             SessionPartyFactsLookup.ActivePartyMembersFact partyMembersFact
     ) {
         int sessionSize = session.participantRefs().size();
@@ -96,29 +96,29 @@ public final class AssembleSessionPlannerSnapshotUseCase {
                 detail = "Durchschnittsstufe " + averageLevel + " · Level " + joinLevels(resolvedLevels);
             }
         }
-        return new SessionPlannerReadData.PartyData(
+        return new ReadData.PartyData(
                 resolvedLevels,
                 sessionSize,
                 averageLevel,
-                sessionSize > 0 && participants.stream().allMatch(SessionPlannerReadData.ParticipantData::available),
+                sessionSize > 0 && participants.stream().allMatch(ReadData.ParticipantData::available),
                 headline,
                 detail);
     }
 
-    private static SessionPlannerReadData.XpBudgetData buildXpBudgetState(
+    private static ReadData.XpBudgetData buildXpBudgetState(
             SessionPlan session,
             SessionPartyFactsLookup.AdventuringDayFact budgetFact,
             int scaledBudgetXp,
             Map<Long, SessionEncounterFactsLookup.EncounterPlanFact> loadedEncounters
     ) {
         if (!budgetFact.available()) {
-            return SessionPlannerReadData.XpBudgetData.empty();
+            return ReadData.XpBudgetData.empty();
         }
         int plannedXp = plannedEncounterXp(session, loadedEncounters);
         int remainingXp = Math.max(0, scaledBudgetXp - plannedXp);
         int overBudgetXp = Math.max(0, plannedXp - scaledBudgetXp);
         boolean overBudget = overBudgetXp > 0;
-        return new SessionPlannerReadData.XpBudgetData(
+        return new ReadData.XpBudgetData(
                 true,
                 scaledBudgetXp,
                 plannedXp,
@@ -131,15 +131,15 @@ public final class AssembleSessionPlannerSnapshotUseCase {
                 overBudget ? overBudgetXp + " XP ueber Budget" : remainingXp + " XP verbleibend");
     }
 
-    private static SessionPlannerReadData.RestAdviceData buildRestAdviceState(
+    private static ReadData.RestAdviceData buildRestAdviceState(
             SessionPartyFactsLookup.AdventuringDayFact budgetFact,
             int placedShortRests,
             int placedLongRests
     ) {
         if (!budgetFact.available()) {
-            return SessionPlannerReadData.RestAdviceData.empty();
+            return ReadData.RestAdviceData.empty();
         }
-        return new SessionPlannerReadData.RestAdviceData(
+        return new ReadData.RestAdviceData(
                 true,
                 budgetFact.recommendedShortRests(),
                 budgetFact.recommendedLongRests(),
@@ -149,18 +149,18 @@ public final class AssembleSessionPlannerSnapshotUseCase {
                         + " LR · platziert " + placedShortRests + " SR / " + placedLongRests + " LR");
     }
 
-    private List<SessionPlannerReadData.AvailableEncounterPlanData> buildAvailablePlans(
+    private List<ReadData.AvailableEncounterPlanData> buildAvailablePlans(
             SessionEncounterFactsLookup.EncounterPlanListFact encounterPlansFact,
             Map<Long, SessionEncounterFactsLookup.EncounterPlanFact> loadedEncounters
     ) {
         if (!encounterPlansFact.available()) {
             return List.of();
         }
-        List<SessionPlannerReadData.AvailableEncounterPlanData> availablePlans = new ArrayList<>();
+        List<ReadData.AvailableEncounterPlanData> availablePlans = new ArrayList<>();
         for (SessionEncounterFactsLookup.SavedEncounterPlanFact plan : encounterPlansFact.plans()) {
             SessionEncounterFactsLookup.EncounterPlanFact detail = runtime.encounterFacts().loadEncounterPlan(plan.planId());
             loadedEncounters.put(plan.planId(), detail);
-            availablePlans.add(new SessionPlannerReadData.AvailableEncounterPlanData(
+            availablePlans.add(new ReadData.AvailableEncounterPlanData(
                     plan.planId(),
                     detail.name().isBlank() ? plan.name() : detail.name(),
                     detail.generatedLabel().isBlank() ? plan.generatedLabel() : detail.generatedLabel(),
@@ -181,22 +181,22 @@ public final class AssembleSessionPlannerSnapshotUseCase {
         return loadedEncounters;
     }
 
-    private List<SessionPlannerReadData.ParticipantData> buildParticipants(
+    private List<ReadData.ParticipantData> buildParticipants(
             SessionPlan session,
             Map<Long, SessionPartyFactsLookup.PartyMemberFact> activeMembers
     ) {
-        List<SessionPlannerReadData.ParticipantData> participants = new ArrayList<>();
+        List<ReadData.ParticipantData> participants = new ArrayList<>();
         for (SessionParticipantRef participantRef : session.participantRefs()) {
             SessionPartyFactsLookup.PartyMemberFact member = activeMembers.get(participantRef.characterId());
             if (member == null) {
-                participants.add(new SessionPlannerReadData.ParticipantData(
+                participants.add(new ReadData.ParticipantData(
                         participantRef.characterId(),
                         "Charakter #" + participantRef.characterId(),
                         0,
                         false,
                         "Nicht mehr in der aktiven Party verfuegbar."));
             } else {
-                participants.add(new SessionPlannerReadData.ParticipantData(
+                participants.add(new ReadData.ParticipantData(
                         member.characterId(),
                         member.name(),
                         member.level(),
@@ -207,12 +207,12 @@ public final class AssembleSessionPlannerSnapshotUseCase {
         return List.copyOf(participants);
     }
 
-    private List<SessionPlannerReadData.PlannedEncounterData> buildPlannedEncounters(
+    private List<ReadData.PlannedEncounterData> buildPlannedEncounters(
             SessionPlan session,
             int scaledBudgetXp,
             Map<Long, SessionEncounterFactsLookup.EncounterPlanFact> loadedEncounters
     ) {
-        List<SessionPlannerReadData.PlannedEncounterData> plannedEncounters = new ArrayList<>();
+        List<ReadData.PlannedEncounterData> plannedEncounters = new ArrayList<>();
         for (SessionEncounter encounter : session.encounters()) {
             SessionEncounterFactsLookup.EncounterPlanFact detail = loadedEncounters.computeIfAbsent(
                     encounter.encounterPlanId(),
@@ -221,7 +221,7 @@ public final class AssembleSessionPlannerSnapshotUseCase {
                     .multiply(BigDecimal.valueOf(scaledBudgetXp))
                     .divide(HUNDRED, 0, RoundingMode.HALF_UP)
                     .intValue();
-            plannedEncounters.add(new SessionPlannerReadData.PlannedEncounterData(
+            plannedEncounters.add(new ReadData.PlannedEncounterData(
                     encounter.encounterId().value(),
                     encounter.encounterPlanId(),
                     detail.name(),
@@ -238,8 +238,8 @@ public final class AssembleSessionPlannerSnapshotUseCase {
         return List.copyOf(plannedEncounters);
     }
 
-    private static List<SessionPlannerReadData.RestGapData> buildRestGaps(SessionPlan session) {
-        List<SessionPlannerReadData.RestGapData> gaps = new ArrayList<>();
+    private static List<ReadData.RestGapData> buildRestGaps(SessionPlan session) {
+        List<ReadData.RestGapData> gaps = new ArrayList<>();
         List<SessionEncounter> encounters = session.encounters();
         for (int index = 0; index < encounters.size() - 1; index++) {
             SessionEncounter left = encounters.get(index);
@@ -252,7 +252,7 @@ public final class AssembleSessionPlannerSnapshotUseCase {
                     break;
                 }
             }
-            gaps.add(new SessionPlannerReadData.RestGapData(
+            gaps.add(new ReadData.RestGapData(
                     index,
                     left.encounterId().value(),
                     right.encounterId().value(),
@@ -263,7 +263,7 @@ public final class AssembleSessionPlannerSnapshotUseCase {
 
     private static String resolveStatus(
             SessionPlan session,
-            List<SessionPlannerReadData.ParticipantData> participants,
+            List<ReadData.ParticipantData> participants,
             SessionPartyFactsLookup.ActivePartyMembersFact partyMembersFact,
             SessionEncounterFactsLookup.EncounterPlanListFact encounterPlansFact
     ) {
@@ -327,5 +327,203 @@ public final class AssembleSessionPlannerSnapshotUseCase {
                 .map(String::valueOf)
                 .reduce((left, right) -> left + ", " + right)
                 .orElse("-");
+    }
+
+    public record ReadData(
+            PartyData party,
+            SessionStateData session,
+            XpBudgetData xpBudget,
+            RestAdviceData restAdvice,
+            GoldBudgetData goldBudget,
+            List<AvailableEncounterPlanData> availableEncounterPlans,
+            List<ParticipantData> participants,
+            List<PlannedEncounterData> plannedEncounters,
+            List<RestGapData> restGaps,
+            List<LootPlaceholderData> lootPlaceholders,
+            String status
+    ) {
+
+        public ReadData {
+            party = party == null ? PartyData.empty() : party;
+            session = session == null ? SessionStateData.empty() : session;
+            xpBudget = xpBudget == null ? XpBudgetData.empty() : xpBudget;
+            restAdvice = restAdvice == null ? RestAdviceData.empty() : restAdvice;
+            goldBudget = goldBudget == null ? GoldBudgetData.placeholder(0) : goldBudget;
+            availableEncounterPlans = copy(availableEncounterPlans);
+            participants = copy(participants);
+            plannedEncounters = copy(plannedEncounters);
+            restGaps = copy(restGaps);
+            lootPlaceholders = copy(lootPlaceholders);
+            status = status == null ? "" : status;
+        }
+
+        public record PartyData(
+                List<Integer> resolvedLevels,
+                int participantCount,
+                int averageLevel,
+                boolean ready,
+                String headline,
+                String detail
+        ) {
+
+            public PartyData {
+                resolvedLevels = copy(resolvedLevels);
+                participantCount = Math.max(0, participantCount);
+                averageLevel = Math.max(0, averageLevel);
+                headline = headline == null ? "" : headline;
+                detail = detail == null ? "" : detail;
+            }
+
+            public static PartyData empty() {
+                return new PartyData(List.of(), 0, 0, false, "Keine Session-Teilnehmer", "Session hat noch keine Teilnehmer.");
+            }
+        }
+
+        public record SessionStateData(
+                long sessionId,
+                BigDecimal encounterDays,
+                String encounterDaysText,
+                long selectedEncounterId,
+                boolean hasSelectedEncounter
+        ) {
+
+            public SessionStateData {
+                sessionId = Math.max(0L, sessionId);
+                encounterDays = encounterDays == null ? BigDecimal.ONE : encounterDays;
+                encounterDaysText = encounterDaysText == null ? encounterDays.stripTrailingZeros().toPlainString() : encounterDaysText;
+                selectedEncounterId = Math.max(0L, selectedEncounterId);
+            }
+
+            public static SessionStateData empty() {
+                return new SessionStateData(0L, BigDecimal.ONE, "1", 0L, false);
+            }
+        }
+
+        public record XpBudgetData(
+                boolean available,
+                int totalBudgetXp,
+                int plannedEncounterXp,
+                int remainingXp,
+                int overBudgetXp,
+                int firstShortRestXp,
+                int secondShortRestXp,
+                double progressFraction,
+                boolean overBudget,
+                String summary
+        ) {
+
+            public XpBudgetData {
+                totalBudgetXp = Math.max(0, totalBudgetXp);
+                plannedEncounterXp = Math.max(0, plannedEncounterXp);
+                remainingXp = Math.max(0, remainingXp);
+                overBudgetXp = Math.max(0, overBudgetXp);
+                firstShortRestXp = Math.max(0, firstShortRestXp);
+                secondShortRestXp = Math.max(0, secondShortRestXp);
+                progressFraction = Math.max(0.0, progressFraction);
+                summary = summary == null ? "" : summary;
+            }
+
+            public static XpBudgetData empty() {
+                return new XpBudgetData(false, 0, 0, 0, 0, 0, 0, 0.0, false, "Kein XP-Budget verfuegbar.");
+            }
+        }
+
+        public record RestAdviceData(
+                boolean available,
+                int recommendedShortRests,
+                int recommendedLongRests,
+                int placedShortRests,
+                int placedLongRests,
+                String summary
+        ) {
+
+            public RestAdviceData {
+                recommendedShortRests = Math.max(0, recommendedShortRests);
+                recommendedLongRests = Math.max(0, recommendedLongRests);
+                placedShortRests = Math.max(0, placedShortRests);
+                placedLongRests = Math.max(0, placedLongRests);
+                summary = summary == null ? "" : summary;
+            }
+
+            public static RestAdviceData empty() {
+                return new RestAdviceData(false, 0, 0, 0, 0, "Keine Rastempfehlung verfuegbar.");
+            }
+        }
+
+        public record GoldBudgetData(
+                boolean available,
+                String headline,
+                String detail
+        ) {
+
+            public GoldBudgetData {
+                headline = headline == null ? "" : headline;
+                detail = detail == null ? "" : detail;
+            }
+
+            public static GoldBudgetData placeholder(int lootPlaceholderCount) {
+                return new GoldBudgetData(
+                        false,
+                        "Goldbudget offen",
+                        lootPlaceholderCount <= 0
+                                ? "Loot-Platzhalter sind vorbereitet, aber Gold wird noch nicht berechnet."
+                                : lootPlaceholderCount + " Loot-Platzhalter sichtbar, Goldbudget weiterhin offen.");
+            }
+        }
+
+        public record AvailableEncounterPlanData(
+                long planId,
+                String name,
+                String generatedLabel,
+                int creatureCount,
+                int adjustedXp,
+                String difficultyLabel,
+                String statusText,
+                boolean importEnabled
+        ) {
+        }
+
+        public record ParticipantData(
+                long characterId,
+                String name,
+                int level,
+                boolean available,
+                String statusText
+        ) {
+        }
+
+        public record PlannedEncounterData(
+                long encounterId,
+                long encounterPlanId,
+                String name,
+                String generatedLabel,
+                int creatureCount,
+                int totalBaseXp,
+                int adjustedXp,
+                double xpMultiplier,
+                String difficultyLabel,
+                BigDecimal budgetPercentage,
+                int targetXp,
+                boolean selected
+        ) {
+        }
+
+        public record RestGapData(
+                int gapIndex,
+                long leftEncounterId,
+                long rightEncounterId,
+                SessionRestKind restKind
+        ) {
+        }
+
+        public record LootPlaceholderData(
+                long token,
+                String label
+        ) {
+        }
+
+        private static <T> List<T> copy(List<T> values) {
+            return values == null ? List.of() : List.copyOf(values);
+        }
     }
 }

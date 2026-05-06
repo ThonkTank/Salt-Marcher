@@ -9,6 +9,6 @@ public final class MoveSessionEncounterUpUseCase {
     }
 
     public void execute(long encounterId) {
-        runtime.loadOrCreateCurrent().moveEncounterUp(encounterId);
+        runtime.replaceCurrent(runtime.loadOrCreateCurrent().moveEncounterUp(encounterId));
     }
 }

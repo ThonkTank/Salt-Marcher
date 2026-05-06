@@ -9,6 +9,6 @@ public final class AttachSessionEncounterUseCase {
     }
 
     public void execute(long encounterPlanId) {
-        runtime.loadOrCreateCurrent().attachEncounter(encounterPlanId);
+        runtime.replaceCurrent(runtime.loadOrCreateCurrent().attachEncounter(encounterPlanId));
     }
 }
