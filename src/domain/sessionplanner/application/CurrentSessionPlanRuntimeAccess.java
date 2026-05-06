@@ -5,7 +5,6 @@ import java.util.List;
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 import src.domain.sessionplanner.session.aggregate.SessionPlan;
-import src.domain.sessionplanner.session.port.SessionEncounterFactsLookup;
 import src.domain.sessionplanner.session.port.SessionPartyFactsLookup;
 import src.domain.sessionplanner.session.port.SessionPlanRepository;
 import src.domain.sessionplanner.session.value.EncounterDays;
@@ -19,25 +18,14 @@ public final class CurrentSessionPlanRuntimeAccess {
 
     private final SessionPlanRepository repository;
     private final SessionPartyFactsLookup partyFacts;
-    private final SessionEncounterFactsLookup encounterFacts;
     private @Nullable SessionPlan currentSession;
 
     public CurrentSessionPlanRuntimeAccess(
             SessionPlanRepository repository,
-            SessionPartyFactsLookup partyFacts,
-            SessionEncounterFactsLookup encounterFacts
+            SessionPartyFactsLookup partyFacts
     ) {
         this.repository = Objects.requireNonNull(repository, "repository");
         this.partyFacts = Objects.requireNonNull(partyFacts, "partyFacts");
-        this.encounterFacts = Objects.requireNonNull(encounterFacts, "encounterFacts");
-    }
-
-    public SessionPartyFactsLookup partyFacts() {
-        return partyFacts;
-    }
-
-    public SessionEncounterFactsLookup encounterFacts() {
-        return encounterFacts;
     }
 
     public SessionPlan loadOrCreateCurrent() {

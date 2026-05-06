@@ -515,9 +515,9 @@ Architecture-focused entrypoints:
 - `./gradlew checkLayeringIndirectionEnforcement --console=plain`
   Aggregates the dedicated `Layering Indirection` bundle through the focused
   `jqassistantAnalyzeLayeringIndirectionEnforcement` path. It blocks on the
-  compiled relay-only substantive-role constraint and is attached to
-  `checkArchitecture`, `check`, `build`, and staged `production-handoff`
-  through the architecture aggregate.
+  compiled substantive relay-wrapper and relay-chain constraints and is
+  attached to `checkArchitecture`, `check`, `build`, and staged
+  `production-handoff` through the architecture aggregate.
 - `./gradlew checkLayeringIndirectionRelayCandidates --console=plain`
   Runs the report-only thin relay-stack diagnostic surface of the dedicated
   `Layering Indirection` bundle through

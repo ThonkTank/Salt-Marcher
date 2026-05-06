@@ -3,7 +3,7 @@ package src.data.sessionplanner;
 import shell.api.ServiceContribution;
 import shell.api.ServiceRegistry;
 import src.data.sessionplanner.query.ApplicationSessionPlannerFactsQueryAdapter;
-import src.data.sessionplanner.repository.SessionPlannerBoundaryRuntimeAdapter;
+import src.data.sessionplanner.repository.SessionPlannerPublishedStateRepositoryAdapter;
 import src.data.sessionplanner.repository.SqliteSessionPlanRepository;
 import src.domain.encounter.EncounterApplicationService;
 import src.domain.party.PartyApplicationService;
@@ -26,7 +26,7 @@ public final class SessionPlannerServiceContribution implements ServiceContribut
     @Override
     public void register(ServiceRegistry.Builder builder) {
         builder.registerFactory(
-                SessionPlannerBoundaryRuntimeAdapter.class,
+                SessionPlannerPublishedStateRepositoryAdapter.class,
                 services -> {
                     SessionPlanRepository repository = new SqliteSessionPlanRepository();
                     ApplicationSessionPlannerFactsQueryAdapter facts = new ApplicationSessionPlannerFactsQueryAdapter(
@@ -34,23 +34,34 @@ public final class SessionPlannerServiceContribution implements ServiceContribut
                             services.require(ActivePartyModel.class),
                             services.require(AdventuringDayCalculationModel.class),
                             services.require(EncounterApplicationService.class));
-                    return new SessionPlannerBoundaryRuntimeAdapter(repository, facts, facts);
+                    return new SessionPlannerPublishedStateRepositoryAdapter(repository, facts, facts);
                 });
         builder.registerFactory(
                 SessionPlannerApplicationService.class,
-                services -> new SessionPlannerApplicationService(
-                        services.require(SessionPlannerBoundaryRuntimeAdapter.class)));
+                services -> {
+                    SessionPlanRepository repository = new SqliteSessionPlanRepository();
+                    ApplicationSessionPlannerFactsQueryAdapter facts = new ApplicationSessionPlannerFactsQueryAdapter(
+                            services.require(PartyApplicationService.class),
+                            services.require(ActivePartyModel.class),
+                            services.require(AdventuringDayCalculationModel.class),
+                            services.require(EncounterApplicationService.class));
+                    return new SessionPlannerApplicationService(
+                            repository,
+                            facts,
+                            facts,
+                            services.require(SessionPlannerPublishedStateRepositoryAdapter.class));
+                });
         builder.registerFactory(
                 SessionPlannerCurrentSessionModel.class,
-                services -> services.require(SessionPlannerBoundaryRuntimeAdapter.class).currentSessionModel);
+                services -> services.require(SessionPlannerPublishedStateRepositoryAdapter.class).currentSessionModel());
         builder.registerFactory(
                 SessionPlannerParticipantsModel.class,
-                services -> services.require(SessionPlannerBoundaryRuntimeAdapter.class).participantsModel);
+                services -> services.require(SessionPlannerPublishedStateRepositoryAdapter.class).participantsModel());
         builder.registerFactory(
                 SessionPlannerEncountersModel.class,
-                services -> services.require(SessionPlannerBoundaryRuntimeAdapter.class).encountersModel);
+                services -> services.require(SessionPlannerPublishedStateRepositoryAdapter.class).encountersModel());
         builder.registerFactory(
                 SessionPlannerStatePanelModel.class,
-                services -> services.require(SessionPlannerBoundaryRuntimeAdapter.class).statePanelModel);
+                services -> services.require(SessionPlannerPublishedStateRepositoryAdapter.class).statePanelModel());
     }
 }

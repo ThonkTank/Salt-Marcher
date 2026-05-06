@@ -7,8 +7,6 @@ import java.util.Optional;
 import java.util.function.Consumer;
 import org.jspecify.annotations.Nullable;
 import src.data.sessionplanner.mapper.SessionPlannerPublishedStateProjector;
-import src.data.sessionplanner.model.SessionPlannerPublishedState;
-import src.domain.sessionplanner.application.CurrentSessionPlanRuntimeAccess;
 import src.domain.sessionplanner.published.SessionPlannerCurrentSessionModel;
 import src.domain.sessionplanner.published.SessionPlannerEncountersModel;
 import src.domain.sessionplanner.published.SessionPlannerEncountersProjection;
@@ -21,34 +19,36 @@ import src.domain.sessionplanner.session.aggregate.SessionPlan;
 import src.domain.sessionplanner.session.port.SessionEncounterFactsLookup;
 import src.domain.sessionplanner.session.port.SessionPartyFactsLookup;
 import src.domain.sessionplanner.session.port.SessionPlanRepository;
-import src.domain.sessionplanner.session.port.SessionPlannerRuntimeRepository;
+import src.domain.sessionplanner.session.port.SessionPlannerPublishedStateRepository;
 
-public final class SessionPlannerBoundaryRuntimeAdapter implements SessionPlannerRuntimeRepository {
+public final class SessionPlannerPublishedStateRepositoryAdapter implements SessionPlannerPublishedStateRepository {
 
     private final SessionPlanRepository repository;
     private final SessionPartyFactsLookup partyFacts;
     private final SessionEncounterFactsLookup encounterFacts;
-    private final CurrentSessionPlanRuntimeAccess runtime;
     private final SessionPlannerPublishedStateProjector projector = new SessionPlannerPublishedStateProjector();
     private final List<Consumer<SessionPlannerSessionSnapshot>> sessionListeners = new ArrayList<>();
     private final List<Consumer<SessionPlannerParticipantsProjection>> participantsListeners = new ArrayList<>();
     private final List<Consumer<SessionPlannerEncountersProjection>> encountersListeners = new ArrayList<>();
     private final List<Consumer<SessionPlannerStatePanelProjection>> statePanelListeners = new ArrayList<>();
-    public final SessionPlannerCurrentSessionModel currentSessionModel = new SessionPlannerCurrentSessionModel(
+    private final SessionPlannerCurrentSessionModel currentSessionModel = new SessionPlannerCurrentSessionModel(
             this::currentSessionSnapshot,
             this::subscribeSessionListener);
-    public final SessionPlannerParticipantsModel participantsModel = new SessionPlannerParticipantsModel(
+    private final SessionPlannerParticipantsModel participantsModel = new SessionPlannerParticipantsModel(
             this::currentParticipantsProjection,
             this::subscribeParticipantsListener);
-    public final SessionPlannerEncountersModel encountersModel = new SessionPlannerEncountersModel(
+    private final SessionPlannerEncountersModel encountersModel = new SessionPlannerEncountersModel(
             this::currentEncountersProjection,
             this::subscribeEncountersListener);
-    public final SessionPlannerStatePanelModel statePanelModel = new SessionPlannerStatePanelModel(
+    private final SessionPlannerStatePanelModel statePanelModel = new SessionPlannerStatePanelModel(
             this::currentStatePanelProjection,
             this::subscribeStatePanelListener);
-    private @Nullable SessionPlannerPublishedState currentPublishedState;
+    private @Nullable SessionPlannerSessionSnapshot currentSessionSnapshot;
+    private @Nullable SessionPlannerParticipantsProjection currentParticipantsProjection;
+    private @Nullable SessionPlannerEncountersProjection currentEncountersProjection;
+    private @Nullable SessionPlannerStatePanelProjection currentStatePanelProjection;
 
-    public SessionPlannerBoundaryRuntimeAdapter(
+    public SessionPlannerPublishedStateRepositoryAdapter(
             SessionPlanRepository repository,
             SessionPartyFactsLookup partyFacts,
             SessionEncounterFactsLookup encounterFacts
@@ -56,79 +56,73 @@ public final class SessionPlannerBoundaryRuntimeAdapter implements SessionPlanne
         this.repository = Objects.requireNonNull(repository, "repository");
         this.partyFacts = Objects.requireNonNull(partyFacts, "partyFacts");
         this.encounterFacts = Objects.requireNonNull(encounterFacts, "encounterFacts");
-        this.runtime = new CurrentSessionPlanRuntimeAccess(this, this, this);
-    }
-
-    @Override
-    public Optional<SessionPlan> loadCurrent() {
-        return repository.loadCurrent();
-    }
-
-    @Override
-    public SessionPlan save(SessionPlan sessionPlan) {
-        return repository.save(sessionPlan);
-    }
-
-    @Override
-    public long nextSessionId() {
-        return repository.nextSessionId();
-    }
-
-    @Override
-    public void setCurrentSessionId(long sessionId) {
-        repository.setCurrentSessionId(sessionId);
-    }
-
-    @Override
-    public ActivePartyMembersFact loadActivePartyMembers() {
-        return partyFacts.loadActivePartyMembers();
-    }
-
-    @Override
-    public AdventuringDayFact calculateAdventuringDay(List<Integer> levels, int plannedEncounterXp) {
-        return partyFacts.calculateAdventuringDay(levels, plannedEncounterXp);
-    }
-
-    @Override
-    public EncounterPlanListFact listEncounterPlans() {
-        return encounterFacts.listEncounterPlans();
-    }
-
-    @Override
-    public EncounterPlanFact loadEncounterPlan(long encounterPlanId) {
-        return encounterFacts.loadEncounterPlan(encounterPlanId);
     }
 
     @Override
     public void publishCurrentSession(SessionPlan sessionPlan) {
-        currentPublishedState = projector.project(Objects.requireNonNull(sessionPlan, "sessionPlan"), this, this);
-        notifySessionListeners(currentPublishedState.session());
-        notifyParticipantsListeners(currentPublishedState.participants());
-        notifyEncountersListeners(currentPublishedState.encounters());
-        notifyStatePanelListeners(currentPublishedState.statePanel());
+        SessionPlan safeSession = Objects.requireNonNull(sessionPlan, "sessionPlan");
+        currentSessionSnapshot = projector.projectSession(safeSession, partyFacts, encounterFacts);
+        currentParticipantsProjection = projector.projectParticipants(safeSession, partyFacts);
+        currentEncountersProjection = projector.projectEncounters(safeSession, partyFacts, encounterFacts);
+        currentStatePanelProjection = projector.projectStatePanel(safeSession, partyFacts, encounterFacts);
+        notifySessionListeners(currentSessionSnapshot);
+        notifyParticipantsListeners(currentParticipantsProjection);
+        notifyEncountersListeners(currentEncountersProjection);
+        notifyStatePanelListeners(currentStatePanelProjection);
+    }
+
+    public SessionPlannerCurrentSessionModel currentSessionModel() {
+        return currentSessionModel;
+    }
+
+    public SessionPlannerParticipantsModel participantsModel() {
+        return participantsModel;
+    }
+
+    public SessionPlannerEncountersModel encountersModel() {
+        return encountersModel;
+    }
+
+    public SessionPlannerStatePanelModel statePanelModel() {
+        return statePanelModel;
     }
 
     private SessionPlannerSessionSnapshot currentSessionSnapshot() {
-        return requirePublishedState().session();
+        loadPublishedState();
+        return Objects.requireNonNull(currentSessionSnapshot, "currentSessionSnapshot");
     }
 
     private SessionPlannerParticipantsProjection currentParticipantsProjection() {
-        return requirePublishedState().participants();
+        loadPublishedState();
+        return Objects.requireNonNull(currentParticipantsProjection, "currentParticipantsProjection");
     }
 
     private SessionPlannerEncountersProjection currentEncountersProjection() {
-        return requirePublishedState().encounters();
+        loadPublishedState();
+        return Objects.requireNonNull(currentEncountersProjection, "currentEncountersProjection");
     }
 
     private SessionPlannerStatePanelProjection currentStatePanelProjection() {
-        return requirePublishedState().statePanel();
+        loadPublishedState();
+        return Objects.requireNonNull(currentStatePanelProjection, "currentStatePanelProjection");
     }
 
-    private SessionPlannerPublishedState requirePublishedState() {
-        if (currentPublishedState == null) {
-            publishCurrentSession(runtime.loadOrCreateCurrent());
+    private void loadPublishedState() {
+        if (currentSessionSnapshot != null
+                && currentParticipantsProjection != null
+                && currentEncountersProjection != null
+                && currentStatePanelProjection != null) {
+            return;
         }
-        return Objects.requireNonNull(currentPublishedState, "currentPublishedState");
+        Optional<SessionPlan> currentSession = repository.loadCurrent();
+        if (currentSession.isEmpty()) {
+            currentSessionSnapshot = SessionPlannerSessionSnapshot.empty("Session ist noch nicht geladen.");
+            currentParticipantsProjection = SessionPlannerParticipantsProjection.empty();
+            currentEncountersProjection = SessionPlannerEncountersProjection.empty();
+            currentStatePanelProjection = SessionPlannerStatePanelProjection.empty();
+            return;
+        }
+        publishCurrentSession(currentSession.get());
     }
 
     private Runnable subscribeSessionListener(Consumer<SessionPlannerSessionSnapshot> listener) {
@@ -156,29 +150,25 @@ public final class SessionPlannerBoundaryRuntimeAdapter implements SessionPlanne
     }
 
     private void notifySessionListeners(SessionPlannerSessionSnapshot snapshot) {
-        List<Consumer<SessionPlannerSessionSnapshot>> listeners = List.copyOf(sessionListeners);
-        for (Consumer<SessionPlannerSessionSnapshot> listener : listeners) {
+        for (Consumer<SessionPlannerSessionSnapshot> listener : List.copyOf(sessionListeners)) {
             listener.accept(snapshot);
         }
     }
 
     private void notifyParticipantsListeners(SessionPlannerParticipantsProjection projection) {
-        List<Consumer<SessionPlannerParticipantsProjection>> listeners = List.copyOf(participantsListeners);
-        for (Consumer<SessionPlannerParticipantsProjection> listener : listeners) {
+        for (Consumer<SessionPlannerParticipantsProjection> listener : List.copyOf(participantsListeners)) {
             listener.accept(projection);
         }
     }
 
     private void notifyEncountersListeners(SessionPlannerEncountersProjection projection) {
-        List<Consumer<SessionPlannerEncountersProjection>> listeners = List.copyOf(encountersListeners);
-        for (Consumer<SessionPlannerEncountersProjection> listener : listeners) {
+        for (Consumer<SessionPlannerEncountersProjection> listener : List.copyOf(encountersListeners)) {
             listener.accept(projection);
         }
     }
 
     private void notifyStatePanelListeners(SessionPlannerStatePanelProjection projection) {
-        List<Consumer<SessionPlannerStatePanelProjection>> listeners = List.copyOf(statePanelListeners);
-        for (Consumer<SessionPlannerStatePanelProjection> listener : listeners) {
+        for (Consumer<SessionPlannerStatePanelProjection> listener : List.copyOf(statePanelListeners)) {
             listener.accept(projection);
         }
     }

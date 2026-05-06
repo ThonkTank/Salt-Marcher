@@ -34,13 +34,16 @@ import src.domain.sessionplanner.published.SessionPlannerRestKind;
 import src.domain.sessionplanner.published.SetSessionEncounterAllocationCommand;
 import src.domain.sessionplanner.published.SetSessionEncounterDaysCommand;
 import src.domain.sessionplanner.published.SetSessionRestGapCommand;
-import src.domain.sessionplanner.session.port.SessionPlannerRuntimeRepository;
+import src.domain.sessionplanner.session.port.SessionEncounterFactsLookup;
+import src.domain.sessionplanner.session.port.SessionPartyFactsLookup;
+import src.domain.sessionplanner.session.port.SessionPlanRepository;
+import src.domain.sessionplanner.session.port.SessionPlannerPublishedStateRepository;
 import src.domain.sessionplanner.session.value.SessionRestPlacement;
 
 public final class SessionPlannerApplicationService {
 
     private final CurrentSessionPlanRuntimeAccess runtime;
-    private final SessionPlannerRuntimeRepository runtimeRepository;
+    private final SessionPlannerPublishedStateRepository publishedStateRepository;
     private final CreateSessionPlanUseCase createSessionUseCase;
     private final RefreshSessionPlanUseCase refreshSessionUseCase;
     private final AddSessionParticipantUseCase addParticipantUseCase;
@@ -57,9 +60,17 @@ public final class SessionPlannerApplicationService {
     private final AddSessionLootPlaceholderUseCase addLootPlaceholderUseCase;
     private final RemoveSessionLootPlaceholderUseCase removeLootPlaceholderUseCase;
 
-    public SessionPlannerApplicationService(SessionPlannerRuntimeRepository runtimeRepository) {
-        this.runtimeRepository = Objects.requireNonNull(runtimeRepository, "runtimeRepository");
-        this.runtime = new CurrentSessionPlanRuntimeAccess(runtimeRepository, runtimeRepository, runtimeRepository);
+    public SessionPlannerApplicationService(
+            SessionPlanRepository repository,
+            SessionPartyFactsLookup partyFacts,
+            SessionEncounterFactsLookup encounterFacts,
+            SessionPlannerPublishedStateRepository publishedStateRepository
+    ) {
+        Objects.requireNonNull(repository, "repository");
+        Objects.requireNonNull(partyFacts, "partyFacts");
+        Objects.requireNonNull(encounterFacts, "encounterFacts");
+        this.publishedStateRepository = Objects.requireNonNull(publishedStateRepository, "publishedStateRepository");
+        this.runtime = new CurrentSessionPlanRuntimeAccess(repository, partyFacts);
         this.createSessionUseCase = new CreateSessionPlanUseCase(runtime);
         this.refreshSessionUseCase = new RefreshSessionPlanUseCase(runtime);
         this.addParticipantUseCase = new AddSessionParticipantUseCase(runtime);
@@ -78,91 +89,73 @@ public final class SessionPlannerApplicationService {
     }
 
     public void createSession(CreateSessionPlanCommand command) {
+        Objects.requireNonNull(command, "command");
         createSessionUseCase.execute();
         publishCurrentState();
     }
 
     public void refreshSession(RefreshSessionPlannerCommand command) {
+        Objects.requireNonNull(command, "command");
         refreshSessionUseCase.execute();
         publishCurrentState();
     }
 
     public void addParticipant(AddSessionParticipantCommand command) {
-        AddSessionParticipantCommand effective = command == null
-                ? new AddSessionParticipantCommand(0L)
-                : command;
+        AddSessionParticipantCommand effective = Objects.requireNonNull(command, "command");
         addParticipantUseCase.execute(effective.characterId());
         publishCurrentState();
     }
 
     public void removeParticipant(RemoveSessionParticipantCommand command) {
-        RemoveSessionParticipantCommand effective = command == null
-                ? new RemoveSessionParticipantCommand(0L)
-                : command;
+        RemoveSessionParticipantCommand effective = Objects.requireNonNull(command, "command");
         removeParticipantUseCase.execute(effective.characterId());
         publishCurrentState();
     }
 
     public void setEncounterDays(SetSessionEncounterDaysCommand command) {
-        SetSessionEncounterDaysCommand effective = command == null
-                ? new SetSessionEncounterDaysCommand(BigDecimal.ONE)
-                : command;
+        SetSessionEncounterDaysCommand effective = Objects.requireNonNull(command, "command");
         setEncounterDaysUseCase.execute(effective.encounterDays());
         publishCurrentState();
     }
 
     public void attachEncounter(AttachSessionEncounterCommand command) {
-        AttachSessionEncounterCommand effective = command == null
-                ? new AttachSessionEncounterCommand(0L)
-                : command;
+        AttachSessionEncounterCommand effective = Objects.requireNonNull(command, "command");
         attachEncounterUseCase.execute(effective.encounterPlanId());
         publishCurrentState();
     }
 
     public void removeEncounter(RemoveSessionEncounterCommand command) {
-        RemoveSessionEncounterCommand effective = command == null
-                ? new RemoveSessionEncounterCommand(0L)
-                : command;
+        RemoveSessionEncounterCommand effective = Objects.requireNonNull(command, "command");
         removeEncounterUseCase.execute(effective.encounterId());
         publishCurrentState();
     }
 
     public void moveEncounterUp(MoveSessionEncounterUpCommand command) {
-        MoveSessionEncounterUpCommand effective = command == null
-                ? new MoveSessionEncounterUpCommand(0L)
-                : command;
+        MoveSessionEncounterUpCommand effective = Objects.requireNonNull(command, "command");
         moveEncounterUpUseCase.execute(effective.encounterId());
         publishCurrentState();
     }
 
     public void moveEncounterDown(MoveSessionEncounterDownCommand command) {
-        MoveSessionEncounterDownCommand effective = command == null
-                ? new MoveSessionEncounterDownCommand(0L)
-                : command;
+        MoveSessionEncounterDownCommand effective = Objects.requireNonNull(command, "command");
         moveEncounterDownUseCase.execute(effective.encounterId());
         publishCurrentState();
     }
 
     public void setEncounterAllocation(SetSessionEncounterAllocationCommand command) {
-        SetSessionEncounterAllocationCommand effective = command == null
-                ? new SetSessionEncounterAllocationCommand(0L, BigDecimal.ZERO)
-                : command;
+        SetSessionEncounterAllocationCommand effective = Objects.requireNonNull(command, "command");
         setEncounterAllocationUseCase.execute(effective.encounterId(), effective.budgetPercentage());
         publishCurrentState();
     }
 
     public void selectEncounter(SelectSessionEncounterCommand command) {
-        SelectSessionEncounterCommand effective = command == null
-                ? new SelectSessionEncounterCommand(0L)
-                : command;
+        SelectSessionEncounterCommand effective = Objects.requireNonNull(command, "command");
         selectEncounterUseCase.execute(effective.encounterId());
         publishCurrentState();
     }
 
     public void setRestGap(SetSessionRestGapCommand command) {
-        SetSessionRestGapCommand effective = command == null
-                ? new SetSessionRestGapCommand(0L, 0L, SessionPlannerRestKind.NONE)
-                : command;
+        SetSessionRestGapCommand effective = Objects.requireNonNull(command, "command");
         if (effective.restKind() == SessionPlannerRestKind.NONE) {
             clearRestGapUseCase.execute(effective.leftEncounterId(), effective.rightEncounterId());
         } else {
@@ -172,35 +165,32 @@ public final class SessionPlannerApplicationService {
     }
 
     public void clearRestGap(ClearSessionRestGapCommand command) {
-        ClearSessionRestGapCommand effective = command == null
-                ? new ClearSessionRestGapCommand(0L, 0L)
-                : command;
+        ClearSessionRestGapCommand effective = Objects.requireNonNull(command, "command");
         clearRestGapUseCase.execute(effective.leftEncounterId(), effective.rightEncounterId());
         publishCurrentState();
     }
 
     public void addLootPlaceholder(AddSessionLootPlaceholderCommand command) {
+        Objects.requireNonNull(command, "command");
         addLootPlaceholderUseCase.execute();
         publishCurrentState();
     }
 
     public void removeLootPlaceholder(RemoveSessionLootPlaceholderCommand command) {
-        RemoveSessionLootPlaceholderCommand effective = command == null
-                ? new RemoveSessionLootPlaceholderCommand(0L)
-                : command;
+        RemoveSessionLootPlaceholderCommand effective = Objects.requireNonNull(command, "command");
         removeLootPlaceholderUseCase.execute(effective.lootId());
         publishCurrentState();
     }
 
     private void publishCurrentState() {
-        runtimeRepository.publishCurrentSession(runtime.loadOrCreateCurrent());
+        publishedStateRepository.publishCurrentSession(runtime.loadOrCreateCurrent());
     }
 
     private static SessionRestPlacement toRestPlacement(SetSessionRestGapCommand command) {
         return switch (command.restKind()) {
             case SHORT_REST -> SessionRestPlacement.shortRestBetween(command.leftEncounterId(), command.rightEncounterId());
             case LONG_REST -> SessionRestPlacement.longRestBetween(command.leftEncounterId(), command.rightEncounterId());
-            case NONE -> SessionRestPlacement.shortRestBetween(command.leftEncounterId(), command.rightEncounterId());
+            case NONE -> throw new IllegalArgumentException("NONE rest kind has no placement.");
         };
     }
 }

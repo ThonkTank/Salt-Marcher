@@ -4,6 +4,7 @@
 
     <group id="saltmarcher:layering-indirection-enforcement" severity="blocker">
         <includeConstraint refId="saltmarcher:NonThinRelayOnlyRole"/>
+        <includeConstraint refId="saltmarcher:NonThinRelayChainDepth"/>
     </group>
 
     <group id="saltmarcher:layering-indirection-candidates" severity="minor">
@@ -176,6 +177,50 @@
             ORDER BY Source, RelayTarget
         ]]></cypher>
         <report primaryColumn="Source" keyColumns="Source, RelayTarget"/>
+    </constraint>
+
+    <constraint id="saltmarcher:NonThinRelayChainDepth">
+        <requiresConcept refId="saltmarcher:RelayOnlyRoleDependency"/>
+        <description>Substantive non-thin role families must not form deeper same-scope relay-only chains, even when each hop stays inside named tactical roles.</description>
+        <cypher><![CDATA[
+            MATCH path = (source:Java:Type:SaltMarcher:RelayOnlyRoleType)-[:RELAYS_TO*2..5]->(terminal:Java:Type:SaltMarcher:IndirectionProductionType)
+            WHERE
+              coalesce(source.thinRole, false) = false
+              AND all(intermediate IN nodes(path)[1..size(nodes(path)) - 2] WHERE
+                intermediate:SaltMarcher:RelayOnlyRoleType
+                AND coalesce(intermediate.thinRole, false) = false
+                AND coalesce(intermediate.roleScope, '') = coalesce(source.roleScope, '')
+              )
+            WITH
+              source,
+              terminal,
+              [node IN nodes(path) | coalesce(node.relativePath, node.fqn)] AS chainPath,
+              length(path) AS relayDepth
+            ORDER BY source.relativePath, relayDepth, terminal.fqn
+            WITH
+              source,
+              collect({
+                relayDepth: relayDepth,
+                terminalTarget: coalesce(terminal.relativePath, terminal.fqn),
+                chainPath: chainPath
+              })[0] AS firstHit
+            RETURN
+              source.relativePath AS Source,
+              source.roleKind AS Role,
+              firstHit.relayDepth AS RelayDepth,
+              firstHit.terminalTarget AS TerminalTarget,
+              reduce(pathText = '', step IN firstHit.chainPath |
+                CASE
+                  WHEN pathText = '' THEN step
+                  ELSE pathText + ' -> ' + step
+                END
+              ) AS ChainPath,
+              'substantive tactical roles must not survive as same-scope relay-only chains across multiple tactical owners' AS ExpectedOwnership,
+              source.fqn + ' starts a relay-only chain with depth ' + toString(firstHit.relayDepth) AS ActualOwnership,
+              'Collapse the chain, merge intermediate wrappers, or add real owned policy/construction behavior that breaks the relay-only path.' AS Details
+            ORDER BY Source
+        ]]></cypher>
+        <report primaryColumn="Source" keyColumns="Source, RelayDepth, TerminalTarget"/>
     </constraint>
 
     <constraint id="saltmarcher:ThinRelayStackCandidate">

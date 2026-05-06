@@ -316,7 +316,7 @@ Operationally, architecture checks enter local quality through:
   included-build taxonomy
 - `checkLayeringIndirectionEnforcement`
   runs the focused `Layering Indirection` enforcement bundle through the
-  dedicated jQAssistant relay-only blocker for substantive tactical roles and
+  dedicated jQAssistant substantive relay-wrapper and relay-chain blockers and
   now enters `checkArchitecture`, `check`, `build`, and staged
   `production-handoff` transitively
 - `checkLayeringIndirectionRelayCandidates`
