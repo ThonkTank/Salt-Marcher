@@ -67,7 +67,7 @@ final class DungeonEditorSessionCatalogWorkflow {
         if (command.action().isSetToolAction()) {
             return clearTransientState(session.withSelectedTool(command.selectedTool()), "");
         }
-        if (command.action() == DungeonEditorSessionCommand.Action.SHIFT_PROJECTION_LEVEL) {
+        if (command.action().isShiftProjectionLevelAction()) {
             return session.shiftProjectionLevel(command.projectionLevelDelta()).withStatusText("");
         }
         return session.withOverlaySettings(command.overlaySettings()).withStatusText("");

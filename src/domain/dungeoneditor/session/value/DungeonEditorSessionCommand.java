@@ -29,16 +29,16 @@ public record DungeonEditorSessionCommand(
     }
 
     public enum Action {
-        SELECT_MAP(true, false, false, false, false, true, false, false, false, false, false),
-        CREATE_MAP(true, false, false, true, false, false, false, true, false, false, false),
-        RENAME_MAP(true, false, false, true, false, false, false, false, true, false, false),
-        DELETE_MAP(true, false, false, true, false, false, true, false, false, false, false),
-        SET_VIEW_MODE(true, false, false, false, true, false, false, false, false, true, false),
-        SET_TOOL(true, false, false, false, true, false, false, false, false, false, true),
-        SHIFT_PROJECTION_LEVEL(true, false, false, false, true, false, false, false, false, false, false),
-        SET_OVERLAY(true, false, false, false, true, false, false, false, false, false, false),
-        INTERPRET_MAIN_VIEW(false, true, false, false, false, false, false, false, false, false, false),
-        SAVE_ROOM_NARRATION(false, false, true, false, false, false, false, false, false, false, false);
+        SELECT_MAP(true, false, false, false, false, true, false, false, false, false, false, false),
+        CREATE_MAP(true, false, false, true, false, false, false, true, false, false, false, false),
+        RENAME_MAP(true, false, false, true, false, false, false, false, true, false, false, false),
+        DELETE_MAP(true, false, false, true, false, false, true, false, false, false, false, false),
+        SET_VIEW_MODE(true, false, false, false, true, false, false, false, false, true, false, false),
+        SET_TOOL(true, false, false, false, true, false, false, false, false, false, true, false),
+        SHIFT_PROJECTION_LEVEL(true, false, false, false, true, false, false, false, false, false, false, true),
+        SET_OVERLAY(true, false, false, false, true, false, false, false, false, false, false, false),
+        INTERPRET_MAIN_VIEW(false, true, false, false, false, false, false, false, false, false, false, false),
+        SAVE_ROOM_NARRATION(false, false, true, false, false, false, false, false, false, false, false, false);
 
         private final boolean catalogAction;
         private final boolean mainViewInputAction;
@@ -51,6 +51,7 @@ public record DungeonEditorSessionCommand(
         private final boolean renameMapAction;
         private final boolean setViewModeAction;
         private final boolean setToolAction;
+        private final boolean shiftProjectionLevelAction;
 
         Action(
                 boolean catalogAction,
@@ -63,7 +64,8 @@ public record DungeonEditorSessionCommand(
                 boolean createMapAction,
                 boolean renameMapAction,
                 boolean setViewModeAction,
-                boolean setToolAction
+                boolean setToolAction,
+                boolean shiftProjectionLevelAction
         ) {
             this.catalogAction = catalogAction;
             this.mainViewInputAction = mainViewInputAction;
@@ -76,6 +78,7 @@ public record DungeonEditorSessionCommand(
             this.renameMapAction = renameMapAction;
             this.setViewModeAction = setViewModeAction;
             this.setToolAction = setToolAction;
+            this.shiftProjectionLevelAction = shiftProjectionLevelAction;
         }
 
         public static Action fromName(@Nullable String name) {
@@ -128,6 +131,10 @@ public record DungeonEditorSessionCommand(
 
         public boolean isSetToolAction() {
             return setToolAction;
+        }
+
+        public boolean isShiftProjectionLevelAction() {
+            return shiftProjectionLevelAction;
         }
     }
 
