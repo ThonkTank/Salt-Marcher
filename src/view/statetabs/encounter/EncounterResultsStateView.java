@@ -22,12 +22,12 @@ public final class EncounterResultsStateView extends VBox {
 
     private static final String STYLE_TEXT_SECONDARY = "text-secondary";
 
-    private final StyledLabel resultSubtitleLabel = new StyledLabel("", STYLE_TEXT_SECONDARY);
-    private final StyledLabel resultXpLabel = new StyledLabel("", "encounter-result-xp");
-    private final StyledLabel resultPartyLabel = new StyledLabel("", STYLE_TEXT_SECONDARY);
-    private final StyledLabel resultGoldLabel = new StyledLabel("", "encounter-result-gold");
-    private final StyledLabel resultLootLabel = new StyledLabel("", STYLE_TEXT_SECONDARY);
-    private final StyledLabel resultAwardStatusLabel = new StyledLabel("", STYLE_TEXT_SECONDARY);
+    private final StyledLabel resultSubtitleLabel = styledLabel("", STYLE_TEXT_SECONDARY);
+    private final StyledLabel resultXpLabel = styledLabel("", "encounter-result-xp");
+    private final StyledLabel resultPartyLabel = styledLabel("", STYLE_TEXT_SECONDARY);
+    private final StyledLabel resultGoldLabel = styledLabel("", "encounter-result-gold");
+    private final StyledLabel resultLootLabel = styledLabel("", STYLE_TEXT_SECONDARY);
+    private final StyledLabel resultAwardStatusLabel = styledLabel("", STYLE_TEXT_SECONDARY);
     private final Slider resultThresholdSlider = percentSlider();
     private final Slider resultFractionSlider = percentSlider();
     private final Label resultThresholdValueLabel = new Label();
@@ -60,7 +60,7 @@ public final class EncounterResultsStateView extends VBox {
 
     private DialogSurfaceView buildPane() {
         DialogSurfaceView nextDialog = new DialogSurfaceView();
-        Label title = new StyledLabel("Kampfergebnis", "title");
+        Label title = styledLabel("Kampfergebnis", "title");
         resultLootLabel.setWrapText(true);
 
         VBox summary = new VBox(2, resultXpLabel, resultPartyLabel, resultGoldLabel, resultLootLabel);
@@ -117,7 +117,7 @@ public final class EncounterResultsStateView extends VBox {
     }
 
     private HBox sliderRow(String title, Slider slider, Label valueLabel) {
-        Label label = new StyledLabel(title, STYLE_TEXT_SECONDARY);
+        Label label = styledLabel(title, STYLE_TEXT_SECONDARY);
         valueLabel.setMinWidth(40);
         valueLabel.setAlignment(Pos.CENTER_RIGHT);
         HBox.setHgrow(slider, Priority.ALWAYS);
@@ -148,6 +148,12 @@ public final class EncounterResultsStateView extends VBox {
 
     private Separator separator() {
         return new Separator();
+    }
+
+    private static StyledLabel styledLabel(String text, String... styleClasses) {
+        StyledLabel label = new StyledLabel(text);
+        label.addStyles(styleClasses);
+        return label;
     }
 
     private void publish(EncounterResultsStateViewInputEvent.Interaction interaction) {
@@ -184,9 +190,8 @@ public final class EncounterResultsStateView extends VBox {
                 EncounterStateContributionModel.ResultEnemyView enemy,
                 Runnable onSelectionChanged
         ) {
-            StyledCheckBox toggle = new StyledCheckBox(
-                    enemy.name() + " (" + enemy.status() + ") - " + enemy.loot(),
-                    STYLE_TEXT_SECONDARY);
+            StyledCheckBox toggle = new StyledCheckBox(enemy.name() + " (" + enemy.status() + ") - " + enemy.loot());
+            toggle.addStyles(STYLE_TEXT_SECONDARY);
             toggle.setSelected(enemy.defeatedByDefault());
             toggle.selectedProperty().addListener((obs, oldValue, newValue) -> onSelectionChanged.run());
             return toggle;
@@ -195,9 +200,8 @@ public final class EncounterResultsStateView extends VBox {
 
     private static final class StyledLabel extends Label {
 
-        private StyledLabel(String text, String... styleClasses) {
+        private StyledLabel(String text) {
             super(text);
-            addStyles(styleClasses);
         }
 
         private void addStyles(String... styleClasses) {
@@ -207,8 +211,11 @@ public final class EncounterResultsStateView extends VBox {
 
     private static final class StyledCheckBox extends CheckBox {
 
-        private StyledCheckBox(String text, String... styleClasses) {
+        private StyledCheckBox(String text) {
             super(text);
+        }
+
+        private void addStyles(String... styleClasses) {
             getStyleClass().addAll(styleClasses);
         }
     }
