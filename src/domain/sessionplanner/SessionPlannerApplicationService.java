@@ -1,6 +1,5 @@
 package src.domain.sessionplanner;
 
-import java.math.BigDecimal;
 import java.util.Objects;
 import src.domain.sessionplanner.application.AddSessionLootPlaceholderUseCase;
 import src.domain.sessionplanner.application.AddSessionParticipantUseCase;
@@ -37,13 +36,13 @@ import src.domain.sessionplanner.published.SetSessionRestGapCommand;
 import src.domain.sessionplanner.session.port.SessionEncounterFactsLookup;
 import src.domain.sessionplanner.session.port.SessionPartyFactsLookup;
 import src.domain.sessionplanner.session.port.SessionPlanRepository;
-import src.domain.sessionplanner.session.port.SessionPlannerPublishedStateSink;
+import src.domain.sessionplanner.session.port.SessionPlannerPublishedStateRepository;
 import src.domain.sessionplanner.session.value.SessionRestPlacement;
 
 public final class SessionPlannerApplicationService {
 
     private final CurrentSessionPlanRuntimeAccess runtime;
-    private final SessionPlannerPublishedStateSink publishedStateSink;
+    private final SessionPlannerPublishedStateRepository publishedStateRepository;
     private final CreateSessionPlanUseCase createSessionUseCase;
     private final RefreshSessionPlanUseCase refreshSessionUseCase;
     private final AddSessionParticipantUseCase addParticipantUseCase;
@@ -64,12 +63,12 @@ public final class SessionPlannerApplicationService {
             SessionPlanRepository repository,
             SessionPartyFactsLookup partyFacts,
             SessionEncounterFactsLookup encounterFacts,
-            SessionPlannerPublishedStateSink publishedStateSink
+            SessionPlannerPublishedStateRepository publishedStateRepository
     ) {
         Objects.requireNonNull(repository, "repository");
         Objects.requireNonNull(partyFacts, "partyFacts");
         Objects.requireNonNull(encounterFacts, "encounterFacts");
-        this.publishedStateSink = Objects.requireNonNull(publishedStateSink, "publishedStateSink");
+        this.publishedStateRepository = Objects.requireNonNull(publishedStateRepository, "publishedStateRepository");
         this.runtime = new CurrentSessionPlanRuntimeAccess(repository, partyFacts);
         this.createSessionUseCase = new CreateSessionPlanUseCase(runtime);
         this.refreshSessionUseCase = new RefreshSessionPlanUseCase(runtime);
@@ -183,7 +182,7 @@ public final class SessionPlannerApplicationService {
     }
 
     private void publishCurrentState() {
-        publishedStateSink.publishCurrentSession(runtime.loadOrCreateCurrent());
+        publishedStateRepository.publishCurrentSession(runtime.loadOrCreateCurrent());
     }
 
     private static SessionRestPlacement toRestPlacement(SetSessionRestGapCommand command) {

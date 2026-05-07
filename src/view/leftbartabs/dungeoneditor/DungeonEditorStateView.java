@@ -52,9 +52,9 @@ public final class DungeonEditorStateView extends VBox {
         }
     }
 
-    private void showProjection(DungeonEditorStateProjection projection) {
-        DungeonEditorStateProjection resolvedProjection = projection == null
-                ? DungeonEditorStateProjection.initial()
+    private void showProjection(DungeonEditorContributionModel.StateProjection projection) {
+        DungeonEditorContributionModel.StateProjection resolvedProjection = projection == null
+                ? DungeonEditorContributionModel.StateProjection.initial()
                 : projection;
         stateTextProperty().set(resolvedProjection.stateText());
         showNarrationCards(
@@ -63,7 +63,7 @@ public final class DungeonEditorStateView extends VBox {
                 resolvedProjection.statusText());
     }
 
-    private static RoomNarrationCard toCard(DungeonEditorRoomNarrationCardProjection card) {
+    private static RoomNarrationCard toCard(DungeonEditorContributionModel.RoomNarrationCardProjection card) {
         return new RoomNarrationCard(
                 card.roomId(),
                 card.roomName(),
@@ -71,7 +71,7 @@ public final class DungeonEditorStateView extends VBox {
                 card.exits().stream().map(DungeonEditorStateView::toExit).toList());
     }
 
-    private static RoomExitNarration toExit(DungeonEditorRoomExitNarrationProjection exit) {
+    private static RoomExitNarration toExit(DungeonEditorContributionModel.RoomExitNarrationProjection exit) {
         return new RoomExitNarration(
                 exit.label(),
                 exit.q(),

@@ -66,8 +66,12 @@ internal open class VerificationHarnessExtension(
             description = taskDescription
             options.sourcepath = sourceJavaRoots
             destinationDirectory.set(project.layout.buildDirectory.dir("classes/java/verification/$bundleId"))
-            apply(configureCommonErrorProneOptions)
-            checkerNames.forEach(options.errorprone::error)
+            if (checkerNames.isEmpty()) {
+                options.errorprone.enabled.set(false)
+            } else {
+                apply(configureCommonErrorProneOptions)
+                checkerNames.forEach(options.errorprone::error)
+            }
         }
     }
 

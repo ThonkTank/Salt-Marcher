@@ -39,13 +39,29 @@ data class StandaloneBundleDescriptor(
     val errorProneServiceFile: String?
 )
 
-fun resolveStandaloneDescriptorPath(descriptorFile: File, rawPath: String): String {
-    val file = File(rawPath)
-    return if (file.isAbsolute) {
-        file.absolutePath
-    } else {
-        File(descriptorFile.parentFile, rawPath).canonicalFile.absolutePath
+fun resolveStandaloneDescriptorPath(repoRootDir: File, descriptorFile: File, rawPath: String): String {
+    val trimmedPath = rawPath.trim()
+    if (trimmedPath.isEmpty()) {
+        error("Encountered an empty descriptor path in ${descriptorFile.path}.")
     }
+    val rawFile = File(trimmedPath)
+    val strippedLegacyPrefix = trimmedPath.removePrefix("../../")
+    val candidatePaths = buildList {
+        if (rawFile.isAbsolute) {
+            add(rawFile)
+        }
+        add(repoRootDir.resolve(trimmedPath))
+        add(descriptorFile.parentFile.resolve(trimmedPath))
+        if (trimmedPath.startsWith("../../")) {
+            add(repoRootDir.resolve("tools/$strippedLegacyPrefix"))
+            add(repoRootDir.resolve("tools/quality/$strippedLegacyPrefix"))
+        }
+    }.distinctBy { file -> file.path }
+    return candidatePaths.firstOrNull(File::exists)?.canonicalPath
+        ?: error(
+            "Could not resolve descriptor path '$trimmedPath' from ${descriptorFile.path}. " +
+                "Tried: ${candidatePaths.joinToString { it.path }}"
+        )
 }
 
 fun loadStandaloneBundleDescriptors(): List<StandaloneBundleDescriptor> {
@@ -68,11 +84,11 @@ fun loadStandaloneBundleDescriptors(): List<StandaloneBundleDescriptor> {
                     errorProneSourceDir = properties.getProperty("errorProneSourceDir")
                         ?.trim()
                         ?.takeIf(String::isNotEmpty)
-                        ?.let { rawPath -> resolveStandaloneDescriptorPath(descriptorFile, rawPath) },
+                        ?.let { rawPath -> resolveStandaloneDescriptorPath(repoRootDir, descriptorFile, rawPath) },
                     errorProneServiceFile = properties.getProperty("errorProneServiceFile")
                         ?.trim()
                         ?.takeIf(String::isNotEmpty)
-                        ?.let { rawPath -> resolveStandaloneDescriptorPath(descriptorFile, rawPath) }
+                        ?.let { rawPath -> resolveStandaloneDescriptorPath(repoRootDir, descriptorFile, rawPath) }
                 )
             }
         }

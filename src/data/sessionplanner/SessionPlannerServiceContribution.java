@@ -3,7 +3,7 @@ package src.data.sessionplanner;
 import shell.api.ServiceContribution;
 import shell.api.ServiceRegistry;
 import src.data.sessionplanner.query.ApplicationSessionPlannerFactsQueryAdapter;
-import src.data.sessionplanner.query.SessionPlannerPublishedStateRuntime;
+import src.data.sessionplanner.repository.SessionPlannerPublishedStateRepositoryAdapter;
 import src.data.sessionplanner.repository.SqliteSessionPlanRepository;
 import src.domain.encounter.EncounterApplicationService;
 import src.domain.encounter.published.EncounterPlanBudgetModel;
@@ -33,16 +33,16 @@ public final class SessionPlannerServiceContribution implements ServiceContribut
                 services -> sharedRuntime.resolve(services).applicationService());
         builder.registerFactory(
                 SessionPlannerCurrentSessionModel.class,
-                services -> sharedRuntime.resolve(services).publishedStateRuntime().currentSessionModel());
+                services -> sharedRuntime.resolve(services).publishedStateRepository().currentSessionModel());
         builder.registerFactory(
                 SessionPlannerParticipantsModel.class,
-                services -> sharedRuntime.resolve(services).publishedStateRuntime().participantsModel());
+                services -> sharedRuntime.resolve(services).publishedStateRepository().participantsModel());
         builder.registerFactory(
                 SessionPlannerEncountersModel.class,
-                services -> sharedRuntime.resolve(services).publishedStateRuntime().encountersModel());
+                services -> sharedRuntime.resolve(services).publishedStateRepository().encountersModel());
         builder.registerFactory(
                 SessionPlannerStatePanelModel.class,
-                services -> sharedRuntime.resolve(services).publishedStateRuntime().statePanelModel());
+                services -> sharedRuntime.resolve(services).publishedStateRepository().statePanelModel());
     }
 
     private static final class SharedRuntime {
@@ -59,11 +59,11 @@ public final class SessionPlannerServiceContribution implements ServiceContribut
                         serviceRegistry.require(EncounterApplicationService.class),
                         serviceRegistry.require(SavedEncounterPlanListModel.class),
                         serviceRegistry.require(EncounterPlanBudgetModel.class));
-                SessionPlannerPublishedStateRuntime publishedStateRuntime =
-                        new SessionPlannerPublishedStateRuntime(repository, facts, facts);
+                SessionPlannerPublishedStateRepositoryAdapter publishedStateRepository =
+                        new SessionPlannerPublishedStateRepositoryAdapter(repository, facts, facts);
                 services = new RuntimeServices(
-                        new SessionPlannerApplicationService(repository, facts, facts, publishedStateRuntime),
-                        publishedStateRuntime);
+                        new SessionPlannerApplicationService(repository, facts, facts, publishedStateRepository),
+                        publishedStateRepository);
             }
             return services;
         }
@@ -71,7 +71,7 @@ public final class SessionPlannerServiceContribution implements ServiceContribut
 
     private record RuntimeServices(
             SessionPlannerApplicationService applicationService,
-            SessionPlannerPublishedStateRuntime publishedStateRuntime
+            SessionPlannerPublishedStateRepositoryAdapter publishedStateRepository
     ) {
     }
 }

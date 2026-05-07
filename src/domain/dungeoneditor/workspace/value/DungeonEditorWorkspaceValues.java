@@ -33,6 +33,10 @@ public final class DungeonEditorWorkspaceValues {
         public static TopologyKind fromName(@Nullable String name) {
             return "HEX".equals(name) ? HEX : SQUARE;
         }
+
+        public boolean isHex() {
+            return this == HEX;
+        }
     }
 
     public enum AreaKind {
@@ -41,6 +45,14 @@ public final class DungeonEditorWorkspaceValues {
 
         public static AreaKind fromName(@Nullable String name) {
             return "CORRIDOR".equals(name) ? CORRIDOR : ROOM;
+        }
+
+        public boolean isRoom() {
+            return this == ROOM;
+        }
+
+        public boolean isCorridor() {
+            return this == CORRIDOR;
         }
     }
 
@@ -61,6 +73,10 @@ public final class DungeonEditorWorkspaceValues {
         public String externalKind() {
             return externalKind;
         }
+
+        public boolean isDoor() {
+            return this == DOOR;
+        }
     }
 
     public enum FeatureKind {
@@ -69,6 +85,10 @@ public final class DungeonEditorWorkspaceValues {
 
         public static FeatureKind fromName(@Nullable String name) {
             return "TRANSITION".equals(name) ? TRANSITION : STAIR;
+        }
+
+        public boolean isTransition() {
+            return this == TRANSITION;
         }
     }
 
@@ -104,6 +124,10 @@ public final class DungeonEditorWorkspaceValues {
             } catch (IllegalArgumentException ignored) {
                 return CLUSTER_LABEL;
             }
+        }
+
+        public boolean isClusterLabel() {
+            return this == CLUSTER_LABEL;
         }
     }
 
@@ -208,7 +232,7 @@ public final class DungeonEditorWorkspaceValues {
         }
 
         private static TopologyElementRef defaultTopologyRef(AreaKind kind, long id) {
-            return new TopologyElementRef(kind == AreaKind.CORRIDOR ? TopologyElementKind.CORRIDOR : TopologyElementKind.ROOM, id);
+            return new TopologyElementRef(kind.isCorridor() ? TopologyElementKind.CORRIDOR : TopologyElementKind.ROOM, id);
         }
     }
 
@@ -228,7 +252,7 @@ public final class DungeonEditorWorkspaceValues {
         }
 
         private static TopologyElementRef defaultTopologyRef(BoundaryKind kind, long id) {
-            return new TopologyElementRef(kind == BoundaryKind.DOOR ? TopologyElementKind.DOOR : TopologyElementKind.WALL, id);
+            return new TopologyElementRef(kind.isDoor() ? TopologyElementKind.DOOR : TopologyElementKind.WALL, id);
         }
     }
 
@@ -253,7 +277,7 @@ public final class DungeonEditorWorkspaceValues {
 
         private static TopologyElementRef defaultTopologyRef(FeatureKind kind, long id) {
             return new TopologyElementRef(
-                    kind == FeatureKind.TRANSITION ? TopologyElementKind.TRANSITION : TopologyElementKind.STAIR,
+                    kind.isTransition() ? TopologyElementKind.TRANSITION : TopologyElementKind.STAIR,
                     id);
         }
     }

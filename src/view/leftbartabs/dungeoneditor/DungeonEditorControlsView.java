@@ -77,9 +77,9 @@ public final class DungeonEditorControlsView extends DungeonControlPanelView {
         viewInputEventHandler.accept(event);
     }
 
-    private void showProjection(DungeonEditorControlsProjection projection) {
-        DungeonEditorControlsProjection resolvedProjection = projection == null
-                ? DungeonEditorControlsProjection.initial()
+    private void showProjection(DungeonEditorContributionModel.ControlsProjection projection) {
+        DungeonEditorContributionModel.ControlsProjection resolvedProjection = projection == null
+                ? DungeonEditorContributionModel.ControlsProjection.initial()
                 : projection;
         boolean hasMap = !resolvedProjection.selectedMapKey().isBlank();
         boolean busy = resolvedProjection.busy();
@@ -123,7 +123,7 @@ public final class DungeonEditorControlsView extends DungeonControlPanelView {
         return sectionLabel(text);
     }
 
-    private static MapItem toMapItem(DungeonEditorMapListEntry selection) {
+    private static MapItem toMapItem(DungeonEditorContributionModel.MapListEntry selection) {
         return new MapItem(
                 selection.key(),
                 selection.mapIdValue(),
@@ -438,7 +438,7 @@ final class DungeonEditorMapControls {
         statusLabel.setManaged(!resolvedStatus.isBlank());
     }
 
-    void showMapEditor(DungeonEditorMapEditorUiState mapEditorUiState) {
+    void showMapEditor(DungeonEditorContributionModel.MapEditorUiState mapEditorUiState) {
         mapEditorPopup.show(mapEditorUiState);
     }
 
@@ -537,9 +537,9 @@ final class DungeonEditorMapEditorPopup {
                 currentDraftText());
     }
 
-    void show(DungeonEditorMapEditorUiState mapEditorUiState) {
-        DungeonEditorMapEditorUiState resolvedState = mapEditorUiState == null
-                ? DungeonEditorMapEditorUiState.hidden()
+    void show(DungeonEditorContributionModel.MapEditorUiState mapEditorUiState) {
+        DungeonEditorContributionModel.MapEditorUiState resolvedState = mapEditorUiState == null
+                ? DungeonEditorContributionModel.MapEditorUiState.hidden()
                 : mapEditorUiState;
         boolean popupWasShowing = popup.isShowing();
         titleLabel.setText(resolvedState.title());
@@ -637,7 +637,7 @@ final class DungeonEditorProjectionControls {
         DungeonEditorControlsFxAccess.addStyle(row, "dungeon-control-projection-row");
     }
 
-    static OverlayControlsPanel.Settings toSettings(DungeonEditorOverlayProjection settings) {
+    static OverlayControlsPanel.Settings toSettings(DungeonEditorContributionModel.OverlayProjection settings) {
         return new OverlayControlsPanel.Settings(
                 OverlayModeKey.fromModelKey(settings.modeKey()).overlayMode(),
                 settings.levelRange(),
@@ -788,11 +788,11 @@ final class DungeonEditorToolControls {
         markSelected(transitionButton, matchesTool(selectedTool, DungeonEditorControlsView.TRANSITION_CREATE_TOOL, DungeonEditorControlsView.TRANSITION_DELETE_TOOL));
     }
 
-    void showToolPalette(DungeonEditorToolPaletteUiState toolPaletteUiState) {
+    void showToolPalette(DungeonEditorContributionModel.ToolPaletteUiState toolPaletteUiState) {
         toolPalettePopup.show(toolPaletteUiState);
     }
 
-    @Nullable Button anchorFor(DungeonEditorToolFamily family) {
+    @Nullable Button anchorFor(DungeonEditorContributionModel.ToolFamily family) {
         if (family == null) {
             return null;
         }
@@ -876,9 +876,9 @@ final class DungeonEditorToolPalettePopup {
         popup.addOnHidden(event -> handleHidden());
     }
 
-    void show(DungeonEditorToolPaletteUiState toolPaletteUiState) {
-        DungeonEditorToolPaletteUiState resolvedState = toolPaletteUiState == null
-                ? DungeonEditorToolPaletteUiState.closed()
+    void show(DungeonEditorContributionModel.ToolPaletteUiState toolPaletteUiState) {
+        DungeonEditorContributionModel.ToolPaletteUiState resolvedState = toolPaletteUiState == null
+                ? DungeonEditorContributionModel.ToolPaletteUiState.closed()
                 : toolPaletteUiState;
         primaryToolOption.setText(resolvedState.primaryToolLabel());
         secondaryToolOption.setText(resolvedState.secondaryToolLabel());
