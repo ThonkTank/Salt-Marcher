@@ -44,7 +44,7 @@ public final class CombatTurnService {
         }
         int next = currentTurnIndex;
         int nextRound = round;
-        for (int attempts = 0; attempts < entries.size(); attempts++) {
+        for (CombatTurnEntry ignored : entries) {
             next = (next + 1) % entries.size();
             if (next == FIRST_TURN_INDEX) {
                 nextRound++;

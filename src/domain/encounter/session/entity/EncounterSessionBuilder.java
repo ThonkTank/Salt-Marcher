@@ -100,7 +100,7 @@ final class EncounterSessionBuilder {
             EncounterSession.RuntimeAccess access,
             long planId,
             EncounterSessionContext context,
-            EncounterSessionCombat combat
+            Runnable resetCombatState
     ) {
         PlanOutcome result = access.loadPlan(planId);
         if (!result.success()) {
@@ -123,7 +123,7 @@ final class EncounterSessionBuilder {
         pendingUndo = Optional.empty();
         activeSavedPlanId = OptionalLong.of(plan.id());
         selectedAlternativeIndex = 0;
-        combat.resetForLoadedPlan();
+        resetCombatState.run();
         context.enterBuilder(plan.name() + " geoeffnet.");
         context.refreshSavedPlans(access);
     }

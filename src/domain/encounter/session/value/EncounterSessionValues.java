@@ -39,6 +39,14 @@ public final class EncounterSessionValues {
         public String label() {
             return label;
         }
+
+        public boolean playerCharacter() {
+            return this == PLAYER_CHARACTER;
+        }
+
+        public static CombatantKind playerCharacterKind() {
+            return PLAYER_CHARACTER;
+        }
     }
 
     public record PartyMemberData(String id, long numericId, String name, int level) {

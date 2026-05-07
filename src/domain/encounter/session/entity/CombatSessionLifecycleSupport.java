@@ -1,0 +1,67 @@
+package src.domain.encounter.session.entity;
+
+import src.domain.encounter.session.service.CombatRosterMutationService;
+import src.domain.encounter.session.service.CombatTurnService;
+
+final class CombatSessionLifecycleSupport {
+
+    static final String RESULTS_READY_STATUS = "Kampfergebnis bereit.";
+    static final String RETURNED_TO_BUILDER_STATUS = "Kampfergebnis geschlossen. Combat Planner bereit.";
+
+    private CombatSessionLifecycleSupport() {
+    }
+
+    static void reset(
+            CombatRoster combatRoster,
+            CombatInitiativeTracker combatInitiative,
+            CombatTurnTracker combatTurnTracker,
+            CombatResolutionTracker combatResolution
+    ) {
+        combatRoster.clear();
+        combatInitiative.reset();
+        combatTurnTracker.reset();
+        combatResolution.reset();
+    }
+
+    static void endCombat(
+            CombatRosterMutationService combatRosterMutations,
+            CombatRoster combatRoster,
+            CombatResolutionTracker combatResolution,
+            int activePartySize,
+            boolean hasActiveParty,
+            EncounterSessionContext context
+    ) {
+        combatResolution.endCombat(combatRosterMutations, combatRoster, activePartySize, hasActiveParty);
+        context.enterResults(RESULTS_READY_STATUS);
+    }
+
+    static void returnToBuilder(
+            CombatRoster combatRoster,
+            CombatInitiativeTracker combatInitiative,
+            CombatTurnTracker combatTurnTracker,
+            CombatResolutionTracker combatResolution,
+            EncounterSessionContext context
+    ) {
+        reset(combatRoster, combatInitiative, combatTurnTracker, combatResolution);
+        context.enterBuilder(RETURNED_TO_BUILDER_STATUS);
+    }
+
+    static void mutateHp(
+            String combatantId,
+            int amount,
+            boolean healing,
+            CombatRosterMutationService combatRosterMutations,
+            CombatRoster combatRoster,
+            CombatTurnService combatTurns,
+            CombatTurnTracker combatTurnTracker
+    ) {
+        if (!combatRosterMutations.mutateHp(
+                combatRoster,
+                combatTurns.turnEntry(combatRoster.combatants(), combatantId),
+                Math.max(0, amount),
+                healing)) {
+            return;
+        }
+        combatTurnTracker.restore(combatTurns, combatRoster, combatTurnTracker.activeTurnId(combatTurns, combatRoster));
+    }
+}

@@ -25,7 +25,7 @@ public record Combatant(
         return new Combatant(
                 id,
                 name,
-                CombatantKind.PLAYER_CHARACTER,
+                CombatantKind.playerCharacterKind(),
                 0,
                 0,
                 0,
@@ -63,7 +63,7 @@ public record Combatant(
     }
 
     public boolean isPlayerCharacter() {
-        return kind == CombatantKind.PLAYER_CHARACTER;
+        return kind.playerCharacter();
     }
 
     public boolean isAlive() {
