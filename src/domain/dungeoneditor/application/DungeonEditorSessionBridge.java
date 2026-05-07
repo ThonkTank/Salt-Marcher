@@ -1,0 +1,117 @@
+package src.domain.dungeoneditor.application;
+
+import org.jspecify.annotations.Nullable;
+import src.domain.dungeon.published.DungeonEditorOperation;
+import src.domain.dungeoneditor.session.value.DungeonEditorSessionValues;
+
+final class DungeonEditorSessionBridge {
+
+    private DungeonEditorSessionBridge() {
+    }
+
+    static @Nullable DungeonEditorOperation toDungeonOperation(DungeonEditorSessionValues.Preview preview) {
+        if (preview == null || preview == DungeonEditorSessionValues.Preview.none()) {
+            return null;
+        }
+        DungeonEditorOperation operation = roomRectangleOperation(preview);
+        if (operation != null) {
+            return operation;
+        }
+        operation = boundaryOperation(preview);
+        if (operation != null) {
+            return operation;
+        }
+        operation = corridorCreateOperation(preview);
+        if (operation != null) {
+            return operation;
+        }
+        operation = corridorDeleteOperation(preview);
+        if (operation != null) {
+            return operation;
+        }
+        operation = moveHandleOperation(preview);
+        if (operation != null) {
+            return operation;
+        }
+        return moveBoundaryStretchOperation(preview);
+    }
+
+    private static @Nullable DungeonEditorOperation roomRectangleOperation(
+            DungeonEditorSessionValues.Preview preview
+    ) {
+        if (!(preview instanceof DungeonEditorSessionValues.RoomRectanglePreview room)) {
+            return null;
+        }
+        return room.deleteMode()
+                ? new DungeonEditorOperation.DeleteRoomRectangle(
+                        DungeonEditorWorkspaceCellBoundaryTranslator.toDomainCell(room.start()),
+                        DungeonEditorWorkspaceCellBoundaryTranslator.toDomainCell(room.end()))
+                : new DungeonEditorOperation.PaintRoomRectangle(
+                        DungeonEditorWorkspaceCellBoundaryTranslator.toDomainCell(room.start()),
+                        DungeonEditorWorkspaceCellBoundaryTranslator.toDomainCell(room.end()));
+    }
+
+    private static @Nullable DungeonEditorOperation boundaryOperation(
+            DungeonEditorSessionValues.Preview preview
+    ) {
+        if (!(preview instanceof DungeonEditorSessionValues.ClusterBoundariesPreview boundaries)) {
+            return null;
+        }
+        return new DungeonEditorOperation.EditClusterBoundaries(
+                boundaries.clusterId(),
+                boundaries.edges().stream()
+                        .map(DungeonEditorWorkspaceCellBoundaryTranslator::toDomainEdge)
+                        .toList(),
+                DungeonEditorWorkspaceTopologyBoundaryTranslator.toDomainBoundaryKind(boundaries.boundaryKind()),
+                boundaries.deleteMode());
+    }
+
+    private static @Nullable DungeonEditorOperation corridorCreateOperation(
+            DungeonEditorSessionValues.Preview preview
+    ) {
+        if (!(preview instanceof DungeonEditorSessionValues.CorridorCreatePreview corridor)) {
+            return null;
+        }
+        return new DungeonEditorOperation.CreateCorridor(
+                DungeonEditorWorkspaceOperationBoundaryTranslator.toDomainCorridorEndpoint(corridor.start()),
+                DungeonEditorWorkspaceOperationBoundaryTranslator.toDomainCorridorEndpoint(corridor.end()));
+    }
+
+    private static @Nullable DungeonEditorOperation corridorDeleteOperation(
+            DungeonEditorSessionValues.Preview preview
+    ) {
+        if (!(preview instanceof DungeonEditorSessionValues.CorridorDeletePreview corridor)) {
+            return null;
+        }
+        return new DungeonEditorOperation.DeleteCorridor(corridor.corridorId());
+    }
+
+    private static @Nullable DungeonEditorOperation moveHandleOperation(
+            DungeonEditorSessionValues.Preview preview
+    ) {
+        if (!(preview instanceof DungeonEditorSessionValues.MoveHandlePreview moveHandle)) {
+            return null;
+        }
+        return new DungeonEditorOperation.MoveEditorHandle(
+                DungeonEditorWorkspaceHandleBoundaryTranslator.toDomainHandleRef(moveHandle.handleRef()),
+                moveHandle.deltaQ(),
+                moveHandle.deltaR(),
+                moveHandle.deltaLevel());
+    }
+
+    private static @Nullable DungeonEditorOperation moveBoundaryStretchOperation(
+            DungeonEditorSessionValues.Preview preview
+    ) {
+        if (!(preview instanceof DungeonEditorSessionValues.MoveBoundaryStretchPreview stretch)) {
+            return null;
+        }
+        return new DungeonEditorOperation.MoveBoundaryStretch(
+                stretch.clusterId(),
+                stretch.sourceEdges().stream()
+                        .map(DungeonEditorWorkspaceCellBoundaryTranslator::toDomainEdge)
+                        .toList(),
+                stretch.deltaQ(),
+                stretch.deltaR(),
+                stretch.deltaLevel());
+    }
+}
