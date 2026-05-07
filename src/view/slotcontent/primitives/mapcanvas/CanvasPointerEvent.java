@@ -6,7 +6,7 @@ public record CanvasPointerEvent(
         PointerPhase phase,
         CanvasButtons buttons,
         CanvasModifiers modifiers,
-        CanvasPoint canvasPoint,
+        MapCanvasPoint canvasPoint,
         @Nullable CanvasHit hit
 ) {
 
@@ -14,10 +14,7 @@ public record CanvasPointerEvent(
         phase = phase == null ? PointerPhase.MOVE : phase;
         buttons = buttons == null ? new CanvasButtons(false, false) : buttons;
         modifiers = modifiers == null ? new CanvasModifiers(false, false, false) : modifiers;
-        canvasPoint = canvasPoint == null ? new CanvasPoint(0.0, 0.0) : canvasPoint;
-    }
-
-    public record CanvasPoint(double x, double y) {
+        canvasPoint = canvasPoint == null ? new MapCanvasPoint(0.0, 0.0) : canvasPoint;
     }
 
     public record CanvasButtons(boolean primaryButtonDown, boolean secondaryButtonDown) {

@@ -9,7 +9,11 @@ import shell.api.ShellBinding;
 import shell.api.ShellRuntimeContext;
 import shell.api.ShellSlot;
 import src.domain.creatures.CreaturesApplicationService;
+import src.domain.creatures.published.CreatureCatalogModel;
 import src.domain.creatures.published.CreatureCatalogQuery;
+import src.domain.creatures.published.CreatureCatalogSortField;
+import src.domain.creatures.published.CreatureFilterOptionsModel;
+import src.domain.creatures.published.CreatureSortDirection;
 import src.domain.creatures.published.LoadCreatureDetailQuery;
 import src.domain.creatures.published.LoadCreatureFilterOptionsQuery;
 import src.domain.encounter.EncounterApplicationService;
@@ -19,6 +23,7 @@ import src.domain.encounter.published.EncounterBuilderInputsModel;
 import src.domain.encounter.published.EncounterTuningPreviewModel;
 import src.domain.encounter.published.UpdateEncounterBuilderInputsCommand;
 import src.domain.encountertable.EncounterTableApplicationService;
+import src.domain.encountertable.published.EncounterTableCatalogModel;
 import src.domain.encountertable.published.LoadEncounterTableSummariesQuery;
 import src.view.slotcontent.details.creature.CreatureDetailsInspectorEntry;
 
@@ -37,9 +42,11 @@ final class CatalogBinder {
         EncounterApplicationService encounters = runtimeContext.services().require(EncounterApplicationService.class);
         EncounterBuilderInputsModel builderInputsModel =
                 runtimeContext.services().require(EncounterBuilderInputsModel.class);
-        var filterOptionsModel = creatures.loadFilterOptionsModel(new LoadCreatureFilterOptionsQuery());
-        var catalogModel = creatures.loadCatalogModel(CreatureCatalogQuery.defaults());
-        var encounterTableModel = encounterTables.loadCatalogModel(new LoadEncounterTableSummariesQuery());
+        CreatureFilterOptionsModel filterOptionsModel =
+                runtimeContext.services().require(CreatureFilterOptionsModel.class);
+        CreatureCatalogModel catalogModel = runtimeContext.services().require(CreatureCatalogModel.class);
+        EncounterTableCatalogModel encounterTableModel =
+                runtimeContext.services().require(EncounterTableCatalogModel.class);
         EncounterTuningPreviewModel tuningPreviewModel =
                 runtimeContext.services().require(EncounterTuningPreviewModel.class);
 
@@ -48,10 +55,8 @@ final class CatalogBinder {
         CatalogControlsView controls = new CatalogControlsView(presentationModel);
         CatalogMainView main = new CatalogMainView();
 
-        bindControls(intentHandler, controls, encounters);
+        bindControls(intentHandler, controls, encounters, creatures);
         bindMain(main, presentationModel, intentHandler);
-
-        presentationModel.searchCycleProperty().addListener((obs, before, after) -> runSearch(creatures, presentationModel));
         presentationModel.creatureDetailSelectionProperty().addListener((obs, before, after) -> {
             if (after == null || after.longValue() <= 0L) {
                 return;
@@ -66,7 +71,7 @@ final class CatalogBinder {
         tuningPreviewModel.subscribe(result -> presentationModel.applyEncounterTuningPreview(result.labels()));
         builderInputsModel.subscribe(builderInputs -> {
             if (presentationModel.applyEncounterBuilderInputs(builderInputs)) {
-                presentationModel.requestSearch();
+                runSearch(creatures, presentationModel.searchEvent());
             }
         });
 
@@ -77,17 +82,18 @@ final class CatalogBinder {
 
         creatures.loadFilterOptions(new LoadCreatureFilterOptionsQuery());
         encounterTables.loadSummaries(new LoadEncounterTableSummariesQuery());
-        presentationModel.requestSearch();
+        runSearch(creatures, presentationModel.searchEvent());
         return new Binding(controls, main);
     }
 
     private static void bindControls(
             CatalogIntentHandler intentHandler,
             CatalogControlsView controls,
-            EncounterApplicationService encounters
+            EncounterApplicationService encounters,
+            CreaturesApplicationService creatures
     ) {
         controls.onViewInputEvent(intentHandler::consume);
-        intentHandler.onPublishedEventRequested(event -> applyPublishedEvent(encounters, event));
+        intentHandler.onPublishedEventRequested(event -> applyPublishedEvent(encounters, creatures, event));
     }
 
     private static void bindMain(
@@ -111,22 +117,21 @@ final class CatalogBinder {
 
     private static void runSearch(
             CreaturesApplicationService creatures,
-            CatalogContributionModel presentationModel
+            CatalogPublishedEvent event
     ) {
-        CatalogContributionModel.SearchRequest request = presentationModel.currentSearchRequest();
         creatures.searchCatalog(new CreatureCatalogQuery(
-                request.nameQuery(),
-                request.challengeRatingMin(),
-                request.challengeRatingMax(),
-                request.sizes(),
-                request.types(),
-                request.subtypes(),
-                request.biomes(),
-                request.alignments(),
-                request.sortField(),
-                request.sortDirection(),
-                request.pageSize(),
-                request.pageOffset()));
+                event.nameQuery(),
+                event.challengeRatingMin(),
+                event.challengeRatingMax(),
+                event.sizes(),
+                event.creatureTypes(),
+                event.creatureSubtypes(),
+                event.biomes(),
+                event.alignments(),
+                sortField(event.sortKey()),
+                sortDirection(event.sortKey()),
+                50,
+                event.pageOffset()));
     }
 
     private static void updateBuilderInputs(
@@ -151,12 +156,14 @@ final class CatalogBinder {
 
     private static void applyPublishedEvent(
             EncounterApplicationService encounters,
+            CreaturesApplicationService creatures,
             CatalogPublishedEvent event
     ) {
         if (event == null) {
             return;
         }
         switch (event.kind()) {
+            case SEARCH -> runSearch(creatures, event);
             case UPDATE_BUILDER_INPUTS -> updateBuilderInputs(encounters, event);
             case ADD_CREATURE -> encounters.applyState(new ApplyEncounterStateCommand(
                     ApplyEncounterStateCommand.Action.ADD_CREATURE,
@@ -171,6 +178,21 @@ final class CatalogBinder {
                     0,
                     false));
         }
+    }
+
+    private static CreatureCatalogSortField sortField(String sortKey) {
+        return switch (sortKey == null ? "" : sortKey) {
+            case "cr-asc", "cr-desc" -> CreatureCatalogSortField.CHALLENGE_RATING;
+            case "xp-asc", "xp-desc" -> CreatureCatalogSortField.XP;
+            default -> CreatureCatalogSortField.NAME;
+        };
+    }
+
+    private static CreatureSortDirection sortDirection(String sortKey) {
+        return switch (sortKey == null ? "" : sortKey) {
+            case "name-desc", "cr-desc", "xp-desc" -> CreatureSortDirection.DESCENDING;
+            default -> CreatureSortDirection.ASCENDING;
+        };
     }
 
     private static int toDifficultyLevel(double value) {

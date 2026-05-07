@@ -36,14 +36,14 @@ public final class EncounterResultsStateView extends VBox {
     private final Button resultAwardButton = new Button("XP verteilen");
     private final DialogSurfaceView dialog = buildPane();
     private EncounterStateContributionModel.ResultStateView lastState = EncounterStateContributionModel.ResultStateView.empty();
-    private Consumer<EncounterResultsStateViewInputEvent> viewInputEventHandler = ignored -> { };
+    private Consumer<EncounterStateViewInputEvent> viewInputEventHandler = ignored -> { };
 
     public EncounterResultsStateView() {
         getChildren().add(dialog);
         setVgrow(dialog, Priority.ALWAYS);
     }
 
-    public void onViewInputEvent(Consumer<EncounterResultsStateViewInputEvent> handler) {
+    public void onViewInputEvent(Consumer<EncounterStateViewInputEvent> handler) {
         viewInputEventHandler = handler == null ? ignored -> { } : handler;
     }
 
@@ -73,12 +73,12 @@ public final class EncounterResultsStateView extends VBox {
 
         resultAwardStatusLabel.setWrapText(true);
         resultAwardButton.setMaxWidth(Double.MAX_VALUE);
-        resultAwardButton.setOnAction(event -> publish(new EncounterResultsStateViewInputEvent.AwardInteraction()));
+        resultAwardButton.setOnAction(event -> publish(EncounterStateResultAction.AWARD_XP));
         Button doneButton = new Button("Zum Planer");
         doneButton.setTooltip(new Tooltip("Zur Encounter-Planung zurückkehren"));
         doneButton.setAccessibleText("Zur Encounter-Planung zurückkehren");
         doneButton.setMaxWidth(Double.MAX_VALUE);
-        doneButton.setOnAction(event -> publish(new EncounterResultsStateViewInputEvent.ReturnInteraction()));
+        doneButton.setOnAction(event -> publish(EncounterStateResultAction.RETURN_TO_BUILDER));
         DialogSurfaceView.grow(resultAwardButton);
         DialogSurfaceView.grow(doneButton);
 
@@ -156,8 +156,9 @@ public final class EncounterResultsStateView extends VBox {
         return label;
     }
 
-    private void publish(EncounterResultsStateViewInputEvent.Interaction interaction) {
-        viewInputEventHandler.accept(new EncounterResultsStateViewInputEvent(interaction));
+    private void publish(EncounterStateResultAction action) {
+        viewInputEventHandler.accept(new EncounterStateViewInputEvent(
+                new EncounterStateViewInputEvent.ResultInput(action)));
     }
 
     private static final class EnemySelectionList extends VBox {

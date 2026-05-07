@@ -1,11 +1,11 @@
 package src.domain.sessionplanner.published;
 
-public record ClearSessionRestGapCommand(
+public record SessionPlannerRestGapRef(
         long leftEncounterId,
         long rightEncounterId
 ) {
 
-    public ClearSessionRestGapCommand {
+    public SessionPlannerRestGapRef {
         leftEncounterId = Math.max(0L, leftEncounterId);
         rightEncounterId = Math.max(0L, rightEncounterId);
     }

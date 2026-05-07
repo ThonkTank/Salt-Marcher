@@ -1,7 +1,6 @@
 package src.domain.encounter.generation.policy;
 
-import src.domain.encounter.generation.value.*;
-
+import src.domain.encounter.generation.value.EncounterDifficultyIntent;
 
 public final class EncounterDifficultyTargets {
 

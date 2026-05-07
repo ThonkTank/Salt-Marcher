@@ -55,7 +55,7 @@ public final class EncounterBuilderStateView extends VBox {
     private final BuilderBody body;
     private final DialogSurfaceView dialog;
 
-    private Consumer<EncounterBuilderStateViewInputEvent> viewInputEventHandler = ignored -> { };
+    private Consumer<EncounterStateViewInputEvent> viewInputEventHandler = ignored -> { };
     private List<EncounterStateContributionModel.SavedEncounterPlanView> savedPlans = List.of();
 
     public EncounterBuilderStateView() {
@@ -65,7 +65,7 @@ public final class EncounterBuilderStateView extends VBox {
         setVgrow(dialog, Priority.ALWAYS);
     }
 
-    public void onViewInputEvent(Consumer<EncounterBuilderStateViewInputEvent> handler) {
+    public void onViewInputEvent(Consumer<EncounterStateViewInputEvent> handler) {
         viewInputEventHandler = handler == null ? ignored -> { } : handler;
     }
 
@@ -89,12 +89,14 @@ public final class EncounterBuilderStateView extends VBox {
     private Node buildTitleRow() {
         saveEncounterButton.setTooltip(new Tooltip("Aktuelles Encounter-Roster speichern"));
         saveEncounterButton.setOnAction(event ->
-                publish(new EncounterBuilderStateViewInputEvent.PlanInteraction(true, 0L)));
+                publish(new EncounterStateViewInputEvent.BuilderInput(
+                        new EncounterStateViewInputEvent.PlanAction(true, 0L))));
         openEncounterButton.setTooltip(new Tooltip("Gespeichertes Encounter oeffnen"));
         openEncounterButton.setOnAction(event -> showSavedPlansPopup(openEncounterButton));
         clearHistoryButton.setTooltip(new Tooltip("Generator-Historie leeren"));
         clearHistoryButton.setOnAction(event ->
-                publish(new EncounterBuilderStateViewInputEvent.BuilderActionInteraction(true, false)));
+                publish(new EncounterStateViewInputEvent.BuilderInput(
+                        new EncounterStateViewInputEvent.BuilderModeAction(true, false))));
 
         Region titleSpacer = new Region();
         HBox.setHgrow(titleSpacer, Priority.ALWAYS);
@@ -114,18 +116,22 @@ public final class EncounterBuilderStateView extends VBox {
         generateButton.setMaxWidth(Double.MAX_VALUE);
         generateButton.setTooltip(new Tooltip("Encounter aus Catalog-Filtern generieren (Alt+G)"));
         generateButton.setOnAction(event ->
-                publish(new EncounterBuilderStateViewInputEvent.GeneratorInteraction(true, 0)));
+                publish(new EncounterStateViewInputEvent.BuilderInput(
+                        new EncounterStateViewInputEvent.GeneratorAction(true, 0))));
 
         previousAlternativeButton.setTooltip(new Tooltip("Vorherige Generator-Alternative"));
         previousAlternativeButton.setOnAction(event ->
-                publish(new EncounterBuilderStateViewInputEvent.GeneratorInteraction(false, -1)));
+                publish(new EncounterStateViewInputEvent.BuilderInput(
+                        new EncounterStateViewInputEvent.GeneratorAction(false, -1))));
         nextAlternativeButton.setTooltip(new Tooltip("Naechste Generator-Alternative"));
         nextAlternativeButton.setOnAction(event ->
-                publish(new EncounterBuilderStateViewInputEvent.GeneratorInteraction(false, 1)));
+                publish(new EncounterStateViewInputEvent.BuilderInput(
+                        new EncounterStateViewInputEvent.GeneratorAction(false, 1))));
         startCombatButton.setMaxWidth(Double.MAX_VALUE);
         startCombatButton.setDisable(true);
         startCombatButton.setOnAction(event ->
-                publish(new EncounterBuilderStateViewInputEvent.BuilderActionInteraction(false, true)));
+                publish(new EncounterStateViewInputEvent.BuilderInput(
+                        new EncounterStateViewInputEvent.BuilderModeAction(false, true))));
 
         DialogSurfaceView.grow(generateButton);
         DialogSurfaceView.grow(startCombatButton);
@@ -150,7 +156,8 @@ public final class EncounterBuilderStateView extends VBox {
             for (EncounterStateContributionModel.SavedEncounterPlanView plan : savedPlans) {
                 content.addOption(new SavedPlanOptionButton(plan, () -> {
                     popup.hide();
-                    publish(new EncounterBuilderStateViewInputEvent.PlanInteraction(false, plan.id()));
+                    publish(new EncounterStateViewInputEvent.BuilderInput(
+                            new EncounterStateViewInputEvent.PlanAction(false, plan.id())));
                 }));
             }
         }
@@ -158,8 +165,8 @@ public final class EncounterBuilderStateView extends VBox {
         popup.showBelow(anchor, 8);
     }
 
-    private void publish(EncounterBuilderStateViewInputEvent.Interaction interaction) {
-        viewInputEventHandler.accept(new EncounterBuilderStateViewInputEvent(interaction));
+    private void publish(EncounterStateViewInputEvent.Input input) {
+        viewInputEventHandler.accept(new EncounterStateViewInputEvent(input));
     }
 
     private static final class BuilderBody extends VBox {
@@ -179,7 +186,7 @@ public final class EncounterBuilderStateView extends VBox {
         private final ScrollPane rosterScroll;
         private final AdvisoryRegionView advisoryRegion;
 
-        private BuilderBody(Consumer<EncounterBuilderStateViewInputEvent.Interaction> publish) {
+        private BuilderBody(Consumer<EncounterStateViewInputEvent.Input> publish) {
             rosterList = new RosterListView(publish);
             advisoryRegion = new AdvisoryRegionView(publish);
             rosterScroll = new ScrollPane(rosterList);
@@ -242,9 +249,9 @@ public final class EncounterBuilderStateView extends VBox {
 
     private static final class RosterListView extends VBox {
 
-        private final Consumer<EncounterBuilderStateViewInputEvent.Interaction> publish;
+        private final Consumer<EncounterStateViewInputEvent.Input> publish;
 
-        private RosterListView(Consumer<EncounterBuilderStateViewInputEvent.Interaction> publish) {
+        private RosterListView(Consumer<EncounterStateViewInputEvent.Input> publish) {
             super(6);
             this.publish = publish;
         }
@@ -259,7 +266,8 @@ public final class EncounterBuilderStateView extends VBox {
             Button minus = new StyledButton("-", STYLE_COMPACT);
             minus.setDisable(card.count() <= 1);
             minus.setOnAction(event ->
-                    publish.accept(new EncounterBuilderStateViewInputEvent.RosterInteraction(card.creatureId(), -1, false)));
+                    publish.accept(new EncounterStateViewInputEvent.BuilderInput(
+                            new EncounterStateViewInputEvent.RosterAction(card.creatureId(), -1, false))));
 
             StyledLabel count = new StyledLabel(String.valueOf(card.count()), "bold");
             count.setMinWidth(24);
@@ -267,7 +275,8 @@ public final class EncounterBuilderStateView extends VBox {
 
             Button plus = new StyledButton("+", STYLE_COMPACT);
             plus.setOnAction(event ->
-                    publish.accept(new EncounterBuilderStateViewInputEvent.RosterInteraction(card.creatureId(), 1, false)));
+                    publish.accept(new EncounterStateViewInputEvent.BuilderInput(
+                            new EncounterStateViewInputEvent.RosterAction(card.creatureId(), 1, false))));
 
             HBox quantity = new HBox(2, minus, count, plus);
             quantity.setAlignment(Pos.CENTER);
@@ -275,7 +284,7 @@ public final class EncounterBuilderStateView extends VBox {
             Button name = new StyledButton(card.name(), "creature-link");
             name.setTooltip(new Tooltip("Creature details oeffnen"));
             name.setOnAction(event ->
-                    publish.accept(new EncounterBuilderStateViewInputEvent.DetailInteraction(card.creatureId())));
+                    publish.accept(new EncounterStateViewInputEvent.DetailSelectionInput(card.creatureId())));
 
             HBox detail = new HBox(
                     4,
@@ -290,7 +299,8 @@ public final class EncounterBuilderStateView extends VBox {
 
             Button remove = new StyledButton("\u00d7", STYLE_COMPACT, "remove-btn");
             remove.setOnAction(event ->
-                    publish.accept(new EncounterBuilderStateViewInputEvent.RosterInteraction(card.creatureId(), 0, true)));
+                    publish.accept(new EncounterStateViewInputEvent.BuilderInput(
+                            new EncounterStateViewInputEvent.RosterAction(card.creatureId(), 0, true))));
 
             VBox right = new VBox(4, new StyledLabel("\u25BC", STYLE_TEXT_MUTED, "clickable"), remove);
             right.setAlignment(Pos.CENTER_RIGHT);
@@ -303,9 +313,9 @@ public final class EncounterBuilderStateView extends VBox {
 
     private static final class AdvisoryRegionView extends VBox {
 
-        private final Consumer<EncounterBuilderStateViewInputEvent.Interaction> publish;
+        private final Consumer<EncounterStateViewInputEvent.Input> publish;
 
-        private AdvisoryRegionView(Consumer<EncounterBuilderStateViewInputEvent.Interaction> publish) {
+        private AdvisoryRegionView(Consumer<EncounterStateViewInputEvent.Input> publish) {
             super(4);
             this.publish = publish;
         }
@@ -316,7 +326,8 @@ public final class EncounterBuilderStateView extends VBox {
                 EncounterStateContributionModel.UndoRemoveView undo = state.pendingUndo();
                 Button undoButton = new StyledButton("Rueckgaengig", STYLE_COMPACT, STYLE_NEUTRAL_ACTION);
                 undoButton.setOnAction(event ->
-                        publish.accept(new EncounterBuilderStateViewInputEvent.UndoInteraction(undo.token())));
+                        publish.accept(new EncounterStateViewInputEvent.BuilderInput(
+                                new EncounterStateViewInputEvent.UndoAction(new EncounterStateUndoRef(undo.token())))));
 
                 HBox row = new HBox(
                         8,

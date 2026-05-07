@@ -69,7 +69,8 @@ final class DungeonEditorIntentHandler {
         if (event == null) {
             return;
         }
-        DungeonEditorContributionModel.RoomNarrationCardProjection card = currentNarrationCard(event.roomId());
+        DungeonEditorContributionModel.RoomNarrationCardProjection card =
+                currentNarrationCard(presentationModel, event.roomId());
         if (card == null) {
             return;
         }
@@ -239,7 +240,10 @@ final class DungeonEditorIntentHandler {
         publishedEventListener.accept(event);
     }
 
-    private DungeonEditorContributionModel.RoomNarrationCardProjection currentNarrationCard(long roomId) {
+    private static DungeonEditorContributionModel.@Nullable RoomNarrationCardProjection currentNarrationCard(
+            DungeonEditorContributionModel presentationModel,
+            long roomId
+    ) {
         DungeonEditorContributionModel.StateProjection currentProjection = presentationModel.stateProjectionProperty().get();
         DungeonEditorContributionModel.StateProjection safeProjection = currentProjection == null
                 ? DungeonEditorContributionModel.StateProjection.initial()

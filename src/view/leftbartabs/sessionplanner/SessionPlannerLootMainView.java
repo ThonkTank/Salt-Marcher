@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.function.Consumer;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.layout.HBox;
@@ -13,29 +14,24 @@ import javafx.scene.layout.VBox;
 
 public final class SessionPlannerLootMainView extends VBox {
 
-    private final VBox lootBox = new VBox(6);
-    private Consumer<SessionPlannerLootMainViewInputEvent> viewInputEventHandler = ignored -> { };
+    private final LootBox lootBox = new LootBox();
+    private Consumer<SessionPlannerViewInputEvent> viewInputEventHandler = ignored -> { };
 
     public SessionPlannerLootMainView() {
         getChildren().add(lootSection());
     }
 
     public void show(MainProjection projection) {
-        lootBox.getChildren().clear();
         MainProjection safeProjection = projection == null ? MainProjection.empty() : projection;
         List<MainProjection.LootModel> safe = safeProjection.lootPlaceholders();
         if (safe.isEmpty()) {
-            Label empty = new Label("Keine Loot-Platzhalter angelegt.");
-            empty.getStyleClass().addAll("text-secondary", "session-planner-empty");
-            lootBox.getChildren().add(empty);
+            lootBox.showEmpty(new StyledLabel("Keine Loot-Platzhalter angelegt.", "text-secondary", "session-planner-empty"));
             return;
         }
-        for (MainProjection.LootModel loot : safe) {
-            lootBox.getChildren().add(lootCard(loot));
-        }
+        lootBox.showCards(safe.stream().map(this::lootCard).toList());
     }
 
-    public void onViewInputEvent(Consumer<SessionPlannerLootMainViewInputEvent> handler) {
+    public void onViewInputEvent(Consumer<SessionPlannerViewInputEvent> handler) {
         viewInputEventHandler = handler == null ? ignored -> { } : handler;
     }
 
@@ -48,13 +44,11 @@ public final class SessionPlannerLootMainView extends VBox {
     }
 
     private VBox lootSection() {
-        Label header = new Label("Loot-Platzhalter");
-        header.getStyleClass().addAll("section-header", "text-muted");
-        Button addButton = new Button("Loot-Platzhalter");
-        addButton.getStyleClass().addAll("compact", "accent");
+        Label header = new StyledLabel("Loot-Platzhalter", "section-header", "text-muted");
+        Button addButton = new StyledButton("Loot-Platzhalter", "compact", "accent");
         addButton.setOnAction(event -> viewInputEventHandler.accept(
-                new SessionPlannerLootMainViewInputEvent(
-                        new SessionPlannerLootMainViewInputEvent.AddLootPlaceholderInput())));
+                new SessionPlannerViewInputEvent(
+                        new SessionPlannerViewInputEvent.SimpleActionInput(SessionPlannerSimpleAction.ADD_LOOT_PLACEHOLDER))));
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
         HBox row = new HBox(8, header, spacer, addButton);
@@ -66,15 +60,51 @@ public final class SessionPlannerLootMainView extends VBox {
         Label label = new Label(loot.label());
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
-        Button remove = new Button("Entfernen");
-        remove.getStyleClass().addAll("compact", "flat");
+        Button remove = new StyledButton("Entfernen", "compact", "flat");
         remove.setOnAction(event -> viewInputEventHandler.accept(
-                new SessionPlannerLootMainViewInputEvent(
-                        new SessionPlannerLootMainViewInputEvent.RemoveLootPlaceholderInput(loot.token()))));
-        HBox row = new HBox(8, label, spacer, remove);
-        row.setAlignment(Pos.CENTER_LEFT);
-        row.getStyleClass().add("session-planner-loot-card");
-        row.setPadding(new Insets(8, 10, 8, 10));
-        return row;
+                new SessionPlannerViewInputEvent(
+                        new SessionPlannerViewInputEvent.LootRemovalInput(new SessionPlannerLootRef(loot.token())))));
+        return new LootCardRow(label, spacer, remove);
+    }
+
+    private static final class LootBox extends VBox {
+
+        private LootBox() {
+            super(6);
+        }
+
+        private void showEmpty(Node node) {
+            getChildren().setAll(node);
+        }
+
+        private void showCards(List<? extends Node> cards) {
+            getChildren().setAll(cards);
+        }
+    }
+
+    private static final class StyledLabel extends Label {
+
+        private StyledLabel(String text, String... styleClasses) {
+            super(text);
+            getStyleClass().addAll(styleClasses);
+        }
+    }
+
+    private static final class StyledButton extends Button {
+
+        private StyledButton(String text, String... styleClasses) {
+            super(text);
+            getStyleClass().addAll(styleClasses);
+        }
+    }
+
+    private static final class LootCardRow extends HBox {
+
+        private LootCardRow(Node... nodes) {
+            super(8, nodes);
+            setAlignment(Pos.CENTER_LEFT);
+            setPadding(new Insets(8, 10, 8, 10));
+            getStyleClass().add("session-planner-loot-card");
+        }
     }
 }

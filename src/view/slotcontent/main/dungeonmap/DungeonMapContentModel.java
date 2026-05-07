@@ -10,6 +10,8 @@ import javafx.scene.paint.Color;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeoneditor.published.DungeonEditorSnapshot;
 import src.domain.travel.published.TravelDungeonSnapshot;
+import src.view.slotcontent.primitives.mapcanvas.MapCanvasPoint;
+import src.view.slotcontent.primitives.mapcanvas.MapCanvasPolygonPrimitive;
 import src.view.slotcontent.primitives.mapcanvas.MapRenderScene;
 
 public final class DungeonMapContentModel {
@@ -75,12 +77,12 @@ public final class DungeonMapContentModel {
     }
 
     private record SceneBuckets(
-            List<MapRenderScene.SurfacePrimitive> surfaces,
+            List<MapCanvasPolygonPrimitive> surfaces,
             List<MapRenderScene.BoundaryPrimitive> boundaries,
             List<MapRenderScene.GlyphPrimitive> glyphs,
             List<MapRenderScene.TextPrimitive> texts,
             List<MapRenderScene.RelationPrimitive> relations,
-            List<MapRenderScene.ActorPrimitive> actors
+            List<MapCanvasPolygonPrimitive> actors
     ) {
     }
 
@@ -118,11 +120,11 @@ public final class DungeonMapContentModel {
     private static final class GridSceneAssembler {
 
         private SceneBuckets assemble(DungeonMapRenderState displayModel) {
-            List<MapRenderScene.SurfacePrimitive> surfaces = new ArrayList<>();
+            List<MapCanvasPolygonPrimitive> surfaces = new ArrayList<>();
             List<MapRenderScene.BoundaryPrimitive> boundaries = new ArrayList<>();
             List<MapRenderScene.GlyphPrimitive> glyphs = new ArrayList<>();
             List<MapRenderScene.TextPrimitive> texts = new ArrayList<>();
-            List<MapRenderScene.ActorPrimitive> actors = new ArrayList<>();
+            List<MapCanvasPolygonPrimitive> actors = new ArrayList<>();
             addCells(displayModel, surfaces);
             addEdges(displayModel, boundaries);
             addMarkers(displayModel, glyphs);
@@ -133,13 +135,13 @@ public final class DungeonMapContentModel {
 
         private void addCells(
                 DungeonMapRenderState displayModel,
-                List<MapRenderScene.SurfacePrimitive> surfaces
+                List<MapCanvasPolygonPrimitive> surfaces
         ) {
             for (DungeonMapRenderState.Cell cell : displayModel.cells()) {
                 if (!LevelFilter.includeLevel(displayModel, cell.z())) {
                     continue;
                 }
-                surfaces.add(new MapRenderScene.SurfacePrimitive(
+                surfaces.add(new MapCanvasPolygonPrimitive(
                         SceneIdentity.cellHitRef(cell),
                         SceneIdentity.selectionRef(cell.topologyRef()),
                         cell.z(),
@@ -161,8 +163,8 @@ public final class DungeonMapContentModel {
                         SceneIdentity.selectionRef(edge.topologyRef()),
                         edge.z(),
                         List.of(
-                                new MapRenderScene.ScenePoint(edge.startQ(), edge.startR()),
-                                new MapRenderScene.ScenePoint(edge.endQ(), edge.endR())),
+                                new MapCanvasPoint(edge.startQ(), edge.startR()),
+                                new MapCanvasPoint(edge.endQ(), edge.endR())),
                         EdgeStyler.style(edge, displayModel)));
             }
         }
@@ -210,13 +212,13 @@ public final class DungeonMapContentModel {
 
         private void addPartyToken(
                 DungeonMapRenderState displayModel,
-                List<MapRenderScene.ActorPrimitive> actors
+                List<MapCanvasPolygonPrimitive> actors
         ) {
             DungeonMapRenderState.PartyToken token = displayModel.partyToken();
             if (token == null || !token.visible() || !LevelFilter.includeLevel(displayModel, token.z())) {
                 return;
             }
-            actors.add(new MapRenderScene.ActorPrimitive(
+            actors.add(new MapCanvasPolygonPrimitive(
                     "",
                     null,
                     token.z(),
@@ -233,7 +235,7 @@ public final class DungeonMapContentModel {
     private static final class GraphSceneAssembler {
 
         private SceneBuckets assemble(DungeonMapRenderState displayModel) {
-            List<MapRenderScene.SurfacePrimitive> surfaces = new ArrayList<>();
+            List<MapCanvasPolygonPrimitive> surfaces = new ArrayList<>();
             List<MapRenderScene.TextPrimitive> texts = new ArrayList<>();
             List<MapRenderScene.RelationPrimitive> relations = new ArrayList<>();
             Map<Long, DungeonMapRenderState.GraphNode> nodesById = indexNodes(displayModel.graphNodes());
@@ -265,8 +267,8 @@ public final class DungeonMapContentModel {
                         "",
                         displayModel.projectionLevel(),
                         List.of(
-                                new MapRenderScene.ScenePoint(from.q(), from.r()),
-                                new MapRenderScene.ScenePoint(to.q(), to.r())),
+                                new MapCanvasPoint(from.q(), from.r()),
+                                new MapCanvasPoint(to.q(), to.r())),
                         new MapRenderScene.PaintStyle(
                                 null,
                                 link.selected() ? ScenePalette.HIGHLIGHT_STROKE : ScenePalette.GRAPH_LINK,
@@ -278,11 +280,11 @@ public final class DungeonMapContentModel {
 
         private void addNodes(
                 DungeonMapRenderState displayModel,
-                List<MapRenderScene.SurfacePrimitive> surfaces,
+                List<MapCanvasPolygonPrimitive> surfaces,
                 List<MapRenderScene.TextPrimitive> texts
         ) {
             for (DungeonMapRenderState.GraphNode node : displayModel.graphNodes()) {
-                surfaces.add(new MapRenderScene.SurfacePrimitive(
+                surfaces.add(new MapCanvasPolygonPrimitive(
                         SceneIdentity.graphNodeHitRef(node),
                         "ROOM:" + node.id(),
                         displayModel.projectionLevel(),
@@ -392,15 +394,15 @@ public final class DungeonMapContentModel {
         private static final double MARKER_HALF_SIZE_SCENE = 0.34;
         private static final double PARTY_OUTER_RADIUS_SCENE = 0.26;
 
-        private static List<MapRenderScene.ScenePoint> square(double q, double r, double size) {
+        private static List<MapCanvasPoint> square(double q, double r, double size) {
             return List.of(
-                    new MapRenderScene.ScenePoint(q, r),
-                    new MapRenderScene.ScenePoint(q + size, r),
-                    new MapRenderScene.ScenePoint(q + size, r + size),
-                    new MapRenderScene.ScenePoint(q, r + size));
+                    new MapCanvasPoint(q, r),
+                    new MapCanvasPoint(q + size, r),
+                    new MapCanvasPoint(q + size, r + size),
+                    new MapCanvasPoint(q, r + size));
         }
 
-        private static List<MapRenderScene.ScenePoint> roundedRect(
+        private static List<MapCanvasPoint> roundedRect(
                 double centerQ,
                 double centerR,
                 double width,
@@ -409,45 +411,45 @@ public final class DungeonMapContentModel {
             double halfWidth = width / 2.0;
             double halfHeight = height / 2.0;
             return List.of(
-                    new MapRenderScene.ScenePoint(centerQ - halfWidth, centerR - halfHeight),
-                    new MapRenderScene.ScenePoint(centerQ + halfWidth, centerR - halfHeight),
-                    new MapRenderScene.ScenePoint(centerQ + halfWidth, centerR + halfHeight),
-                    new MapRenderScene.ScenePoint(centerQ - halfWidth, centerR + halfHeight));
+                    new MapCanvasPoint(centerQ - halfWidth, centerR - halfHeight),
+                    new MapCanvasPoint(centerQ + halfWidth, centerR - halfHeight),
+                    new MapCanvasPoint(centerQ + halfWidth, centerR + halfHeight),
+                    new MapCanvasPoint(centerQ - halfWidth, centerR + halfHeight));
         }
 
-        private static List<MapRenderScene.ScenePoint> markerShape(DungeonMapRenderState.Marker marker) {
+        private static List<MapCanvasPoint> markerShape(DungeonMapRenderState.Marker marker) {
             double half = marker.isDoorMarker() ? 0.28 : MARKER_HALF_SIZE_SCENE;
             return square(marker.q() - half, marker.r() - half, half * 2.0);
         }
 
-        private static List<MapRenderScene.ScenePoint> partyTokenShape(DungeonMapRenderState.PartyToken token) {
+        private static List<MapCanvasPoint> partyTokenShape(DungeonMapRenderState.PartyToken token) {
             double forwardX = token.heading().dx();
             double forwardY = token.heading().dy();
             double sideX = -forwardY;
             double sideY = forwardX;
             return List.of(
-                    new MapRenderScene.ScenePoint(
+                    new MapCanvasPoint(
                             token.q() + forwardX * PARTY_OUTER_RADIUS_SCENE * 1.18,
                             token.r() + forwardY * PARTY_OUTER_RADIUS_SCENE * 1.18),
-                    new MapRenderScene.ScenePoint(
+                    new MapCanvasPoint(
                             token.q() + forwardX * PARTY_OUTER_RADIUS_SCENE * 0.54
                                     + sideX * PARTY_OUTER_RADIUS_SCENE * 0.76,
                             token.r() + forwardY * PARTY_OUTER_RADIUS_SCENE * 0.54
                                     + sideY * PARTY_OUTER_RADIUS_SCENE * 0.76),
-                    new MapRenderScene.ScenePoint(
+                    new MapCanvasPoint(
                             token.q() - forwardX * PARTY_OUTER_RADIUS_SCENE * 0.92
                                     + sideX * PARTY_OUTER_RADIUS_SCENE * 0.92,
                             token.r() - forwardY * PARTY_OUTER_RADIUS_SCENE * 0.92
                                     + sideY * PARTY_OUTER_RADIUS_SCENE * 0.92),
-                    new MapRenderScene.ScenePoint(
+                    new MapCanvasPoint(
                             token.q() - forwardX * PARTY_OUTER_RADIUS_SCENE * 1.02,
                             token.r() - forwardY * PARTY_OUTER_RADIUS_SCENE * 1.02),
-                    new MapRenderScene.ScenePoint(
+                    new MapCanvasPoint(
                             token.q() - forwardX * PARTY_OUTER_RADIUS_SCENE * 0.92
                                     - sideX * PARTY_OUTER_RADIUS_SCENE * 0.92,
                             token.r() - forwardY * PARTY_OUTER_RADIUS_SCENE * 0.92
                                     - sideY * PARTY_OUTER_RADIUS_SCENE * 0.92),
-                    new MapRenderScene.ScenePoint(
+                    new MapCanvasPoint(
                             token.q() + forwardX * PARTY_OUTER_RADIUS_SCENE * 0.54
                                     - sideX * PARTY_OUTER_RADIUS_SCENE * 0.76,
                             token.r() + forwardY * PARTY_OUTER_RADIUS_SCENE * 0.54

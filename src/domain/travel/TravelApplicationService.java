@@ -6,6 +6,8 @@ import java.util.Objects;
 import java.util.function.Consumer;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.DungeonApplicationService;
+import src.domain.dungeon.published.DungeonMapProjectionContent;
+import src.domain.dungeon.published.DungeonTopologyKind;
 import src.domain.dungeon.published.DungeonAreaSnapshot;
 import src.domain.dungeon.published.DungeonBoundarySnapshot;
 import src.domain.dungeon.published.DungeonCellRef;
@@ -217,12 +219,13 @@ public final class TravelApplicationService {
                     ProjectionSupport.topology(map.topology()),
                     map.width(),
                     map.height(),
-                    projection.cells(),
-                    projection.edges(),
-                    projection.labels(),
-                    projection.markers(),
-                    projection.graphNodes(),
-                    projection.graphLinks(),
+                    new DungeonMapProjectionContent<>(
+                            projection.cells(),
+                            projection.edges(),
+                            projection.labels(),
+                            projection.markers(),
+                            projection.graphNodes(),
+                            projection.graphLinks()),
                     ProjectionSupport.partyToken(surface.position()));
         }
     }
@@ -438,12 +441,12 @@ public final class TravelApplicationService {
                     false);
         }
 
-        private static TravelDungeonMapProjectionSnapshot.TopologyKind topology(
+        private static DungeonTopologyKind topology(
                 ApplyTravelDungeonSessionUseCase.GridTopology topology
         ) {
             return ApplyTravelDungeonSessionUseCase.GridTopology.HEX.equals(topology)
-                    ? TravelDungeonMapProjectionSnapshot.TopologyKind.HEX
-                    : TravelDungeonMapProjectionSnapshot.TopologyKind.SQUARE;
+                    ? DungeonTopologyKind.HEX
+                    : DungeonTopologyKind.SQUARE;
         }
 
         private static TravelDungeonMapProjectionSnapshot.EdgeKind edgeKind(

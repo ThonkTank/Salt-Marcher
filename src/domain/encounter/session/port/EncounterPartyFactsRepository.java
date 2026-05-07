@@ -49,6 +49,14 @@ public interface EncounterPartyFactsRepository {
     enum Status {
         SUCCESS,
         NO_ACTIVE_PARTY,
-        STORAGE_ERROR
+        STORAGE_ERROR;
+
+        public boolean isNoActiveParty() {
+            return this == NO_ACTIVE_PARTY;
+        }
+
+        public boolean isStorageError() {
+            return this == STORAGE_ERROR;
+        }
     }
 }

@@ -22,7 +22,7 @@ public final class LoadSavedEncounterPlanUseCase {
             Optional<EncounterPlan> loaded = repository.load(planId);
             return loaded.map(Result::success)
                     .orElseGet(() -> Result.notFound("Encounter plan not found."));
-        } catch (RuntimeException exception) {
+        } catch (IllegalStateException exception) {
             return Result.storageError("Encounter plan could not be loaded.");
         }
     }

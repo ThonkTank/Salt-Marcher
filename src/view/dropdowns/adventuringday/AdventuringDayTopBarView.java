@@ -38,6 +38,9 @@ public final class AdventuringDayTopBarView extends HBox {
 
     private static final String PMD_LOD = "PMD.LawOfDemeter";
     private static final double POPUP_WIDTH = 420.0;
+    private static final String CLEAR_LABEL = "Lee\u0072en";
+    private static final String TOTAL_GROUP_XP_LABEL = "Gesamt-\u0058\u0050";
+    private static final String TOTAL_GROUP_XP_HINT = TOTAL_GROUP_XP_LABEL + " für die Gruppe";
     private static final String STYLE_COMPACT = "compact";
     private static final String STYLE_TEXT_MUTED = "text-muted";
     private static final String STYLE_TEXT_SECONDARY = "text-secondary";
@@ -239,7 +242,7 @@ public final class AdventuringDayTopBarView extends HBox {
                             "Short Rest 2: 0 XP",
                             "Long Rest: 0 XP"),
                     List.of(
-                            "Gesamt-XP: " + formatInt(totalGroupXp) + " XP",
+                            TOTAL_GROUP_XP_LABEL + ": " + formatInt(totalGroupXp) + " XP",
                             "XP pro Charakter: 0",
                             "Adventuring Days: 0 (0 voll)",
                             "Short Rests: 0",
@@ -263,7 +266,7 @@ public final class AdventuringDayTopBarView extends HBox {
         private final Label partySummaryLabel = new Label();
         private final Button useActivePartyButton = new Button("Aktive Party");
         private final Button addRowButton = new Button("Zeile");
-        private final Button clearButton = new Button("Leeren");
+        private final Button clearButton = new Button(CLEAR_LABEL);
         private final ToggleButton budgetModeButton = new ToggleButton("Budget");
         private final ToggleButton progressModeButton = new ToggleButton("XP -> Tage");
         private final TextField totalGroupXpField = createIntegerField();
@@ -303,10 +306,10 @@ public final class AdventuringDayTopBarView extends HBox {
             addStyleClass(addRowButton, STYLE_COMPACT);
             addStyleClass(clearButton, STYLE_COMPACT);
 
-            totalGroupXpField.setPromptText("Gesamt-XP");
+            totalGroupXpField.setPromptText(TOTAL_GROUP_XP_LABEL);
             totalGroupXpField.setPrefColumnCount(10);
             totalGroupXpField.textProperty().addListener((ignored, before, after) -> refreshSummary());
-            Label totalGroupXpHint = new Label("Gesamt-XP für die Gruppe");
+            Label totalGroupXpHint = new Label(TOTAL_GROUP_XP_HINT);
             addStyleClass(totalGroupXpHint, STYLE_TEXT_MUTED);
             progressInputRow = new HBox(8, totalGroupXpHint, totalGroupXpField);
             progressInputRow.setAlignment(Pos.CENTER_LEFT);
@@ -449,7 +452,7 @@ public final class AdventuringDayTopBarView extends HBox {
         }
 
         private void showEmptyState(boolean progressMode) {
-            render(List.of(progressMode ? "Gesamt-XP: 0 XP" : "Tag gesamt: 0 XP"), List.of());
+            render(List.of(progressMode ? TOTAL_GROUP_XP_LABEL + ": 0 XP" : "Tag gesamt: 0 XP"), List.of());
         }
 
         private void showBudget(CalculationContent content) {

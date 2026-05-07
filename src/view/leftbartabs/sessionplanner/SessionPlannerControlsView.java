@@ -24,6 +24,7 @@ import javafx.scene.layout.VBox;
 public final class SessionPlannerControlsView extends ScrollPane {
 
     private static final String PMD_LAW_OF_DEMETER = "PMD.LawOfDemeter";
+    private static final String STYLE_COMPACT = "compact";
     private static final String STYLE_TEXT_SECONDARY = "text-secondary";
     private static final String XP_SUFFIX = " XP";
     private static final String STYLE_BUDGET_OK = "session-planner-budget-ok";
@@ -40,25 +41,27 @@ public final class SessionPlannerControlsView extends ScrollPane {
     private final Label goldHeadlineLabel = Factory.createLabel("", true);
     private final Label goldDetailLabel = Factory.createLabel("", true, STYLE_TEXT_SECONDARY);
     private final PlansSection plansSection = new PlansSection();
-    private Consumer<SessionPlannerControlsViewInputEvent> viewInputEventHandler = ignored -> { };
+    private Consumer<SessionPlannerViewInputEvent> viewInputEventHandler = ignored -> { };
 
     @SuppressWarnings(PMD_LAW_OF_DEMETER)
     public SessionPlannerControlsView() {
         sessionSection.onCreateRequested(() -> viewInputEventHandler.accept(
-                new SessionPlannerControlsViewInputEvent(
-                        new SessionPlannerControlsViewInputEvent.CreateSessionInput())));
+                new SessionPlannerViewInputEvent(
+                        new SessionPlannerViewInputEvent.SimpleActionInput(SessionPlannerSimpleAction.CREATE_SESSION))));
         sessionSection.onEncounterDaysRequested(encounterDaysText -> viewInputEventHandler.accept(
-                new SessionPlannerControlsViewInputEvent(
-                        new SessionPlannerControlsViewInputEvent.SetEncounterDaysInput(encounterDaysText))));
+                new SessionPlannerViewInputEvent(
+                        new SessionPlannerViewInputEvent.EncounterDaysInput(encounterDaysText))));
         activePartySection.onActionRequested(characterId -> viewInputEventHandler.accept(
-                new SessionPlannerControlsViewInputEvent(
-                        new SessionPlannerControlsViewInputEvent.AddParticipantInput(characterId))));
+                new SessionPlannerViewInputEvent(
+                        new SessionPlannerViewInputEvent.ParticipantInput(
+                                new SessionPlannerParticipantChange(SessionPlannerParticipantAction.ADD, characterId)))));
         sessionParticipantSection.onRemoveRequested(characterId -> viewInputEventHandler.accept(
-                new SessionPlannerControlsViewInputEvent(
-                        new SessionPlannerControlsViewInputEvent.RemoveParticipantInput(characterId))));
+                new SessionPlannerViewInputEvent(
+                        new SessionPlannerViewInputEvent.ParticipantInput(
+                                new SessionPlannerParticipantChange(SessionPlannerParticipantAction.REMOVE, characterId)))));
         plansSection.onImportRequested(planId -> viewInputEventHandler.accept(
-                new SessionPlannerControlsViewInputEvent(
-                        new SessionPlannerControlsViewInputEvent.AttachPlanInput(planId))));
+                new SessionPlannerViewInputEvent(
+                        new SessionPlannerViewInputEvent.AttachPlanInput(new SessionPlannerPlanRef(planId)))));
 
         VBox content = new VBox(12);
         ObservableList<Node> contentChildren = content.getChildren();
@@ -95,7 +98,7 @@ public final class SessionPlannerControlsView extends ScrollPane {
         plansSection.showPlans(safe.availablePlans());
     }
 
-    public void onViewInputEvent(Consumer<SessionPlannerControlsViewInputEvent> handler) {
+    public void onViewInputEvent(Consumer<SessionPlannerViewInputEvent> handler) {
         viewInputEventHandler = handler == null ? ignored -> { } : handler;
     }
 
@@ -118,8 +121,8 @@ public final class SessionPlannerControlsView extends ScrollPane {
 
         private SessionSection() {
             Label headerLabel = Factory.createLabel("SESSION PLANNER", false, "section-header", "text-muted");
-            Button createButton = Factory.createButton("Neue Session", event -> createRequested.run(), "compact", "accent");
-            Button applyDaysButton = Factory.createButton("Tage setzen", event -> encounterDaysRequested.accept(encounterDaysField.getText()), "compact", "flat");
+            Button createButton = Factory.createButton("Neue Session", event -> createRequested.run(), STYLE_COMPACT, "accent");
+            Button applyDaysButton = Factory.createButton("Tage setzen", event -> encounterDaysRequested.accept(encounterDaysField.getText()), STYLE_COMPACT, "flat");
             encounterDaysField.setPromptText("1.0");
             HBox daysRow = new HBox(6,
                     Factory.createLabel("Encounter Days", false, "session-planner-card-title"),
@@ -155,7 +158,7 @@ public final class SessionPlannerControlsView extends ScrollPane {
 
     private static final class ParticipantSection {
 
-        private final VBox rows = new VBox(6);
+        private final RowsBox rows = new RowsBox();
         private final VBox root;
         private Consumer<Long> actionRequested = ignored -> { };
 
@@ -173,26 +176,24 @@ public final class SessionPlannerControlsView extends ScrollPane {
         }
 
         private void showMembers(List<ControlsProjection.PartyMemberModel> members) {
-            ObservableList<Node> children = rows.getChildren();
             if (members.isEmpty()) {
-                children.setAll(Factory.createLabel(
+                rows.showSingle(Factory.createLabel(
                         "Keine aktiven Party-Mitglieder verfuegbar.",
                         true,
                         STYLE_TEXT_SECONDARY,
                         "session-planner-empty"));
                 return;
             }
-            children.setAll(members.stream()
+            rows.showNodes(members.stream()
                     .map(this::memberRow)
                     .toList());
         }
 
-        @SuppressWarnings(PMD_LAW_OF_DEMETER)
         private Node memberRow(ControlsProjection.PartyMemberModel member) {
             Button addButton = Factory.createButton(
                     member.alreadyInSession() ? "Schon in Session" : "Hinzufuegen",
                     event -> actionRequested.accept(member.characterId()),
-                    "compact",
+                    STYLE_COMPACT,
                     member.alreadyInSession() ? "flat" : "accent");
             addButton.setDisable(member.alreadyInSession());
             VBox labels = new VBox(
@@ -207,7 +208,7 @@ public final class SessionPlannerControlsView extends ScrollPane {
 
     private static final class SessionParticipantSection {
 
-        private final VBox rows = new VBox(6);
+        private final RowsBox rows = new RowsBox();
         private final VBox root = Factory.createSectionCard("Session-Teilnehmer", rows);
         private Consumer<Long> removeRequested = ignored -> { };
 
@@ -224,26 +225,24 @@ public final class SessionPlannerControlsView extends ScrollPane {
         }
 
         private void showParticipants(List<ControlsProjection.SessionParticipantModel> participants) {
-            ObservableList<Node> children = rows.getChildren();
             if (participants.isEmpty()) {
-                children.setAll(Factory.createLabel(
+                rows.showSingle(Factory.createLabel(
                         "Noch keine Teilnehmer in dieser Session.",
                         true,
                         STYLE_TEXT_SECONDARY,
                         "session-planner-empty"));
                 return;
             }
-            children.setAll(participants.stream()
+            rows.showNodes(participants.stream()
                     .map(this::participantRow)
                     .toList());
         }
 
-        @SuppressWarnings(PMD_LAW_OF_DEMETER)
         private Node participantRow(ControlsProjection.SessionParticipantModel participant) {
             Button removeButton = Factory.createButton(
                     "Entfernen",
                     event -> removeRequested.accept(participant.characterId()),
-                    "compact",
+                    STYLE_COMPACT,
                     "flat");
             removeButton.setDisable(!participant.removable());
             VBox labels = new VBox(
@@ -353,6 +352,21 @@ public final class SessionPlannerControlsView extends ScrollPane {
                     Factory.createLabel(plan.statusText(), true, STYLE_TEXT_SECONDARY),
                     importButton);
             return card;
+        }
+    }
+
+    private static final class RowsBox extends VBox {
+
+        private RowsBox() {
+            super(6);
+        }
+
+        private void showSingle(Node node) {
+            getChildren().setAll(node);
+        }
+
+        private void showNodes(List<? extends Node> nodes) {
+            getChildren().setAll(nodes);
         }
     }
 

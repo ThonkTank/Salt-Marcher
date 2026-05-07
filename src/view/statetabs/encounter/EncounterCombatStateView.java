@@ -34,14 +34,14 @@ public final class EncounterCombatStateView extends VBox {
     private final EndCombatActions endCombatActions = new EndCombatActions(this::publish);
     private final PartyMemberButton addPartyButton = new PartyMemberButton();
     private final DialogSurfaceView dialog = buildPane();
-    private Consumer<EncounterCombatStateViewInputEvent> viewInputEventHandler = ignored -> { };
+    private Consumer<EncounterStateViewInputEvent> viewInputEventHandler = ignored -> { };
 
     public EncounterCombatStateView() {
         getChildren().add(dialog);
         setVgrow(dialog, Priority.ALWAYS);
     }
 
-    public void onViewInputEvent(Consumer<EncounterCombatStateViewInputEvent> handler) {
+    public void onViewInputEvent(Consumer<EncounterStateViewInputEvent> handler) {
         viewInputEventHandler = handler == null ? ignored -> { } : handler;
     }
 
@@ -68,7 +68,8 @@ public final class EncounterCombatStateView extends VBox {
         StyledButton nextTurnButton = new StyledButton("\u25B6 _Weiter", STYLE_ACCENT);
         nextTurnButton.setMaxWidth(Double.MAX_VALUE);
         nextTurnButton.setOnAction(event ->
-                publish(new EncounterCombatStateViewInputEvent.AdvanceTurnInteraction()));
+                publish(new EncounterStateViewInputEvent.CombatInput(
+                        new EncounterStateViewInputEvent.SimpleCombatAction(EncounterStateCombatSimpleAction.ADVANCE_TURN))));
         endCombatActions.setAlignment(Pos.CENTER);
         DialogSurfaceView.grow(nextTurnButton);
         DialogSurfaceView.grow(endCombatActions);
@@ -78,14 +79,14 @@ public final class EncounterCombatStateView extends VBox {
         return nextDialog;
     }
 
-    private void publish(EncounterCombatStateViewInputEvent.Interaction interaction) {
-        viewInputEventHandler.accept(new EncounterCombatStateViewInputEvent(interaction));
+    private void publish(EncounterStateViewInputEvent.Input input) {
+        viewInputEventHandler.accept(new EncounterStateViewInputEvent(input));
     }
 
     private void publishPartyMemberJoin(long partyMemberId, int initiativeValue) {
-        publish(new EncounterCombatStateViewInputEvent.PartyMemberJoinInteraction(
-                partyMemberId,
-                initiativeValue));
+        publish(new EncounterStateViewInputEvent.CombatInput(
+                new EncounterStateViewInputEvent.PartyMemberJoinAction(
+                        new EncounterStatePartyMemberJoin(partyMemberId, initiativeValue))));
     }
 
     private static final class CombatCardList extends VBox {
@@ -96,7 +97,7 @@ public final class EncounterCombatStateView extends VBox {
 
         private void showCards(
                 List<EncounterStateContributionModel.CombatCardView> cards,
-                Consumer<EncounterCombatStateViewInputEvent.Interaction> publish
+                Consumer<EncounterStateViewInputEvent.Input> publish
         ) {
             List<EncounterStateContributionModel.CombatCardView> safeCards = cards == null ? List.of() : cards;
             getChildren().setAll(safeCards.stream()
@@ -114,7 +115,7 @@ public final class EncounterCombatStateView extends VBox {
 
         private CombatCardPane(
                 EncounterStateContributionModel.CombatCardView card,
-                Consumer<EncounterCombatStateViewInputEvent.Interaction> publish
+                Consumer<EncounterStateViewInputEvent.Input> publish
         ) {
             super(4, buildHeader(card, publish), buildDetail(card.detail()));
             getStyleClass().add("combat-card");
@@ -137,7 +138,7 @@ public final class EncounterCombatStateView extends VBox {
 
         private static Node buildHeader(
                 EncounterStateContributionModel.CombatCardView card,
-                Consumer<EncounterCombatStateViewInputEvent.Interaction> publish
+                Consumer<EncounterStateViewInputEvent.Input> publish
         ) {
             List<Node> nodes = new ArrayList<>();
             nodes.add(new StyledLabel(
@@ -174,7 +175,7 @@ public final class EncounterCombatStateView extends VBox {
 
         private static Node buildHpMeter(
                 EncounterStateContributionModel.CombatCardView card,
-                Consumer<EncounterCombatStateViewInputEvent.Interaction> publish
+                Consumer<EncounterStateViewInputEvent.Input> publish
         ) {
             double fraction = card.maxHp() > 0
                     ? Math.max(0.0, Math.min(1.0, (double) card.currentHp() / card.maxHp()))
@@ -193,18 +194,16 @@ public final class EncounterCombatStateView extends VBox {
                                             "-",
                                             "",
                                             true,
-                                            amount -> publish.accept(new EncounterCombatStateViewInputEvent.HpChangeInteraction(
-                                                    card.id(),
-                                                    amount,
-                                                    false))),
+                                            amount -> publish.accept(new EncounterStateViewInputEvent.CombatInput(
+                                                    new EncounterStateViewInputEvent.HpChangeAction(
+                                                            new EncounterStateHpChange(card.id(), amount, false))))),
                                     new PopupAction(
                                             "+",
                                             "",
                                             false,
-                                            amount -> publish.accept(new EncounterCombatStateViewInputEvent.HpChangeInteraction(
-                                                    card.id(),
-                                                    amount,
-                                                    true))))));
+                                            amount -> publish.accept(new EncounterStateViewInputEvent.CombatInput(
+                                                    new EncounterStateViewInputEvent.HpChangeAction(
+                                                            new EncounterStateHpChange(card.id(), amount, true))))))));
         }
 
         private static String hpFillStyle(double fraction) {
@@ -219,16 +218,16 @@ public final class EncounterCombatStateView extends VBox {
 
         private static Button buildInitiativeButton(
                 EncounterStateContributionModel.CombatCardView card,
-                Consumer<EncounterCombatStateViewInputEvent.Interaction> publish
+                Consumer<EncounterStateViewInputEvent.Input> publish
         ) {
             InitiativeEditorPopup popup = new InitiativeEditorPopup();
             StyledButton button = new StyledButton("Init " + card.initiative(), "compact", "init-badge");
             button.setOnAction(event -> popup.show(
                     button,
                     card.initiative(),
-                    value -> publish.accept(new EncounterCombatStateViewInputEvent.InitiativeEditInteraction(
-                            card.id(),
-                            value))));
+                    value -> publish.accept(new EncounterStateViewInputEvent.CombatInput(
+                            new EncounterStateViewInputEvent.InitiativeEditAction(
+                                    new EncounterStateInitiativeAdjustment(card.id(), value))))));
             return button;
         }
 
@@ -295,9 +294,9 @@ public final class EncounterCombatStateView extends VBox {
 
     private static final class EndCombatActions extends HBox {
 
-        private final Consumer<EncounterCombatStateViewInputEvent.Interaction> publish;
+        private final Consumer<EncounterStateViewInputEvent.Input> publish;
 
-        private EndCombatActions(Consumer<EncounterCombatStateViewInputEvent.Interaction> publish) {
+        private EndCombatActions(Consumer<EncounterStateViewInputEvent.Input> publish) {
             super(6);
             this.publish = publish;
         }
@@ -323,7 +322,8 @@ public final class EncounterCombatStateView extends VBox {
             setHgrow(confirm, Priority.ALWAYS);
             cancel.setOnAction(event -> showState(allEnemiesDefeated));
             confirm.setOnAction(event ->
-                    publish.accept(new EncounterCombatStateViewInputEvent.EndCombatInteraction()));
+                    publish.accept(new EncounterStateViewInputEvent.CombatInput(
+                            new EncounterStateViewInputEvent.SimpleCombatAction(EncounterStateCombatSimpleAction.END_COMBAT))));
             getChildren().setAll(cancel, confirm);
         }
     }
@@ -424,14 +424,14 @@ public final class EncounterCombatStateView extends VBox {
         }
     }
 
-    private static class StyledLabel extends Label {
+    private static final class StyledLabel extends Label {
 
         private StyledLabel(String text, String... styleClasses) {
             super(text);
             addStyles(styleClasses);
         }
 
-        final void addStyles(String... styleClasses) {
+        void addStyles(String... styleClasses) {
             for (String styleClass : styleClasses) {
                 if (styleClass != null && !styleClass.isBlank()) {
                     getStyleClass().add(styleClass);
@@ -440,14 +440,14 @@ public final class EncounterCombatStateView extends VBox {
         }
     }
 
-    private static class StyledButton extends Button {
+    private static final class StyledButton extends Button {
 
         private StyledButton(String text, String... styleClasses) {
             super(text);
             addStyles(styleClasses);
         }
 
-        final void addStyles(String... styleClasses) {
+        void addStyles(String... styleClasses) {
             for (String styleClass : styleClasses) {
                 if (styleClass != null && !styleClass.isBlank()) {
                     getStyleClass().add(styleClass);

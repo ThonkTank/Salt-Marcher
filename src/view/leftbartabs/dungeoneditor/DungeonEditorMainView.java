@@ -3,6 +3,7 @@ package src.view.leftbartabs.dungeoneditor;
 import java.util.function.Consumer;
 import src.view.slotcontent.main.dungeonmap.DungeonMapView;
 import src.view.slotcontent.primitives.mapcanvas.CanvasPointerEvent;
+import src.view.slotcontent.primitives.mapcanvas.MapCanvasPoint;
 
 final class DungeonEditorMainView extends DungeonMapView {
 
@@ -56,7 +57,7 @@ final class DungeonEditorMainView extends DungeonMapView {
                 CanvasPointerEvent.PointerPhase.MOVE,
                 new CanvasPointerEvent.CanvasButtons(false, false),
                 new CanvasPointerEvent.CanvasModifiers(false, false, false),
-                new CanvasPointerEvent.CanvasPoint(0.0, 0.0),
+                new MapCanvasPoint(0.0, 0.0),
                 null)
                 : event;
         CanvasPointerEvent.CanvasHit hit = safeEvent.hit();

@@ -1,9 +1,11 @@
 package src.domain.encounter.generation.factory;
 
-import src.domain.encounter.generation.policy.*;
-import src.domain.encounter.generation.value.*;
-
 import java.util.Map;
+import src.domain.encounter.generation.value.EncounterCandidateProfile;
+import src.domain.encounter.generation.value.EncounterDraft;
+import src.domain.encounter.generation.value.EncounterDraftBuildRequest;
+import src.domain.encounter.generation.value.EncounterDraftComposition;
+import src.domain.encounter.generation.value.EncounterDraftKey;
 
 final class EncounterDraftCollector {
 

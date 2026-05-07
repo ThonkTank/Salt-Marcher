@@ -1,12 +1,12 @@
 package src.domain.sessionplanner.published;
 
-public record SetSessionRestGapCommand(
+public record SessionPlannerRestGapChange(
         long leftEncounterId,
         long rightEncounterId,
         SessionPlannerRestKind restKind
 ) {
 
-    public SetSessionRestGapCommand {
+    public SessionPlannerRestGapChange {
         leftEncounterId = Math.max(0L, leftEncounterId);
         rightEncounterId = Math.max(0L, rightEncounterId);
         restKind = restKind == null ? SessionPlannerRestKind.NONE : restKind;

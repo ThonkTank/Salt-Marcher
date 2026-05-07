@@ -24,7 +24,7 @@ public final class SaveEncounterPlanUseCase {
             return Result.success(repository.save(new EncounterPlan(planId, name, generatedLabel, safeCreatures)));
         } catch (IllegalArgumentException exception) {
             return Result.invalidRequest("Encounter plan is invalid.");
-        } catch (RuntimeException exception) {
+        } catch (IllegalStateException exception) {
             return Result.storageError("Encounter plan could not be saved.");
         }
     }

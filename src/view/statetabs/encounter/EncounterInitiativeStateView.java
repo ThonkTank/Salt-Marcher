@@ -20,16 +20,16 @@ import src.view.slotcontent.primitives.dialog.DialogSurfaceView.BodyPolicy;
 public final class EncounterInitiativeStateView extends VBox {
 
     private final Map<String, Spinner<Integer>> initiativeSpinnerById = new LinkedHashMap<>();
-    private final VBox initiativeList = new VBox(6);
+    private final InitiativeList initiativeList = new InitiativeList();
     private final DialogSurfaceView dialog = buildPane();
-    private Consumer<EncounterInitiativeStateViewInputEvent> viewInputEventHandler = ignored -> { };
+    private Consumer<EncounterStateViewInputEvent> viewInputEventHandler = ignored -> { };
 
     public EncounterInitiativeStateView() {
         getChildren().add(dialog);
-        VBox.setVgrow(dialog, Priority.ALWAYS);
+        setVgrow(dialog, Priority.ALWAYS);
     }
 
-    public void onViewInputEvent(Consumer<EncounterInitiativeStateViewInputEvent> handler) {
+    public void onViewInputEvent(Consumer<EncounterStateViewInputEvent> handler) {
         viewInputEventHandler = handler == null ? ignored -> { } : handler;
     }
 
@@ -38,33 +38,32 @@ public final class EncounterInitiativeStateView extends VBox {
                 ? EncounterStateContributionModel.InitiativeStateView.empty()
                 : state;
         initiativeSpinnerById.clear();
-        initiativeList.getChildren().clear();
+        initiativeList.clearEntries();
         String currentKind = "";
         for (EncounterStateContributionModel.InitiativeEntryView entry : safeState.entries()) {
             if (!entry.kind().equals(currentKind)) {
                 currentKind = entry.kind();
                 Label header = sectionHeader("SC".equals(currentKind) ? "Spieler" : currentKind);
                 header.setPadding(new Insets(8, 0, 0, 0));
-                initiativeList.getChildren().add(header);
+                initiativeList.addEntry(header);
             }
-            initiativeList.getChildren().add(buildInitiativeRow(entry));
+            initiativeList.addEntry(buildInitiativeRow(entry));
         }
     }
 
     private DialogSurfaceView buildPane() {
         DialogSurfaceView nextDialog = new DialogSurfaceView();
-        Label title = new Label("Initiative");
-        title.getStyleClass().add("title");
+        Label title = new StyledLabel("Initiative", "title");
         initiativeList.setPadding(DialogSurfaceView.contentInsets());
 
         Button backButton = new Button("\u2190 Zurueck");
-        backButton.setOnAction(event -> publish(new EncounterInitiativeStateViewInputEvent.BackNavigationInteraction()));
-        Button rollAllButton = new Button("Alle wuerfeln");
-        rollAllButton.getStyleClass().add("neutral-action");
+        backButton.setOnAction(event -> publish(
+                new EncounterStateViewInputEvent(new EncounterStateViewInputEvent.InitiativeInput(true, List.of()))));
+        Button rollAllButton = new StyledButton("Alle wuerfeln", "neutral-action");
         rollAllButton.setOnAction(event -> rollAllInitiatives());
-        Button startButton = new Button("Kampf starten");
-        startButton.getStyleClass().add("accent");
-        startButton.setOnAction(event -> publish(new EncounterInitiativeStateViewInputEvent.SubmissionInteraction(readInitiatives())));
+        Button startButton = new StyledButton("Kampf starten", "accent");
+        startButton.setOnAction(event -> publish(new EncounterStateViewInputEvent(
+                new EncounterStateViewInputEvent.InitiativeInput(false, readInitiatives()))));
         nextDialog.setHeader(title);
         nextDialog.setBody(initiativeList, BodyPolicy.SCROLL);
         nextDialog.setFooter(backButton, rollAllButton, DialogSurfaceView.spacer(), startButton);
@@ -72,48 +71,98 @@ public final class EncounterInitiativeStateView extends VBox {
     }
 
     private Node buildInitiativeRow(EncounterStateContributionModel.InitiativeEntryView entry) {
-        HBox row = new HBox(8);
-        row.setAlignment(Pos.CENTER_LEFT);
-        row.setPadding(new Insets(0, 0, 0, 12));
+        InitiativeRow row = new InitiativeRow();
         Label name = new Label(entry.label());
         name.setWrapText(true);
         HBox.setHgrow(name, Priority.ALWAYS);
-        Spinner<Integer> spinner = new Spinner<>(-10, 40, entry.initiative());
+        ValueSpinner spinner = new ValueSpinner(entry.initiative());
         spinner.setEditable(true);
         spinner.setPrefWidth(84);
         initiativeSpinnerById.put(entry.id(), spinner);
-        Button reroll = new Button("\u2684");
-        reroll.getStyleClass().add("spinner-btn");
-        reroll.setOnAction(event -> spinner.getValueFactory().setValue(entry.initiative() + 2));
-        row.getChildren().addAll(name, spinner, reroll);
+        Button reroll = new StyledButton("\u2684", "spinner-btn");
+        reroll.setOnAction(event -> spinner.setNumericValue(entry.initiative() + 2));
+        row.addContent(name, spinner, reroll);
         return row;
     }
 
     private void rollAllInitiatives() {
         int seed = 13;
         for (Spinner<Integer> spinner : initiativeSpinnerById.values()) {
-            spinner.getValueFactory().setValue(seed);
+            ((ValueSpinner) spinner).setNumericValue(seed);
             seed = seed == 19 ? 11 : seed + 2;
         }
     }
 
-    private List<EncounterInitiativeStateViewInputEvent.InitiativeEntry> readInitiatives() {
-        List<EncounterInitiativeStateViewInputEvent.InitiativeEntry> inputs = new ArrayList<>();
+    private List<EncounterStateInitiativeEntry> readInitiatives() {
+        List<EncounterStateInitiativeEntry> inputs = new ArrayList<>();
         for (Map.Entry<String, Spinner<Integer>> entry : initiativeSpinnerById.entrySet()) {
             Spinner<Integer> spinner = entry.getValue();
             spinner.commitValue();
-            inputs.add(new EncounterInitiativeStateViewInputEvent.InitiativeEntry(entry.getKey(), spinner.getValue()));
+            inputs.add(new EncounterStateInitiativeEntry(entry.getKey(), spinner.getValue()));
         }
         return inputs;
     }
 
-    private void publish(EncounterInitiativeStateViewInputEvent.Interaction interaction) {
-        viewInputEventHandler.accept(new EncounterInitiativeStateViewInputEvent(interaction));
+    private void publish(EncounterStateViewInputEvent input) {
+        viewInputEventHandler.accept(input);
     }
 
     private Label sectionHeader(String text) {
-        Label label = new Label(text);
-        label.getStyleClass().addAll("section-header", "text-muted");
-        return label;
+        return new StyledLabel(text, "section-header", "text-muted");
+    }
+
+    private static final class InitiativeList extends VBox {
+
+        private InitiativeList() {
+            super(6);
+        }
+
+        private void clearEntries() {
+            getChildren().clear();
+        }
+
+        private void addEntry(Node node) {
+            getChildren().add(node);
+        }
+    }
+
+    private static final class StyledLabel extends Label {
+
+        private StyledLabel(String text, String... styleClasses) {
+            super(text);
+            getStyleClass().addAll(styleClasses);
+        }
+    }
+
+    private static final class StyledButton extends Button {
+
+        private StyledButton(String text, String... styleClasses) {
+            super(text);
+            getStyleClass().addAll(styleClasses);
+        }
+    }
+
+    private static final class ValueSpinner extends Spinner<Integer> {
+
+        private ValueSpinner(int initiative) {
+            super(-10, 40, initiative);
+        }
+
+        private void setNumericValue(int initiative) {
+            getValueFactory().setValue(initiative);
+        }
+    }
+
+    private static final class InitiativeRow extends HBox {
+
+        private InitiativeRow() {
+            super(8);
+            setAlignment(Pos.CENTER_LEFT);
+            setPadding(new Insets(0, 0, 0, 12));
+        }
+
+        private void addContent(Node... nodes) {
+            getChildren().addAll(nodes);
+        }
     }
 }

@@ -1,12 +1,11 @@
 package src.domain.encounter.generation.policy;
 
-import src.domain.encounter.generation.value.*;
-
-
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import src.domain.encounter.generation.value.EncounterCandidateProfile;
+import src.domain.encounter.generation.value.EncounterDifficultyIntent;
 
 public final class EncounterSearchPool {
 

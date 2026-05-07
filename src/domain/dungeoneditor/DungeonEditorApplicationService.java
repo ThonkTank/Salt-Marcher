@@ -7,10 +7,12 @@ import java.util.function.Consumer;
 import src.domain.dungeon.DungeonApplicationService;
 import src.domain.dungeon.published.DungeonMapId;
 import src.domain.dungeoneditor.application.ApplyDungeonEditorSessionUseCase;
-import src.domain.dungeoneditor.published.ApplyDungeonEditorSessionCommand;
+import src.domain.dungeoneditor.application.DungeonEditorCommandBoundaryTranslator;
+import src.domain.dungeoneditor.application.DungeonEditorSnapshotProjector;
 import src.domain.dungeoneditor.published.DungeonEditorModel;
 import src.domain.dungeoneditor.published.DungeonEditorSnapshot;
 import src.domain.dungeoneditor.published.LoadDungeonEditorQuery;
+import src.domain.dungeoneditor.session.value.DungeonEditorSessionCommand;
 
 public final class DungeonEditorApplicationService {
 
@@ -36,8 +38,17 @@ public final class DungeonEditorApplicationService {
         return editorModel;
     }
 
-    public DungeonEditorSnapshot applyEditorSession(ApplyDungeonEditorSessionCommand command) {
-        applyDungeonEditorSessionUseCase.apply(DungeonEditorCommandBoundaryTranslator.toInternalCommand(command));
+    public DungeonEditorSnapshot applyEditorSession(DungeonEditorSessionCommand command) {
+        applyDungeonEditorSessionUseCase.apply(command == null ? new DungeonEditorSessionCommand(
+                DungeonEditorSessionCommand.Action.INTERPRET_MAIN_VIEW,
+                null,
+                "",
+                null,
+                null,
+                0,
+                null,
+                null,
+                null) : command);
         DungeonEditorSnapshot snapshot = currentEditorSnapshot();
         notifyEditorListeners(snapshot);
         return snapshot;

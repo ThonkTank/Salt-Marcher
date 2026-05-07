@@ -13,12 +13,12 @@ public record MapRenderScene(
         boolean sceneLoaded,
         String overlayMessage,
         ViewMode viewMode,
-        List<SurfacePrimitive> surfaces,
+        List<MapCanvasPolygonPrimitive> surfaces,
         List<BoundaryPrimitive> boundaries,
         List<GlyphPrimitive> glyphs,
         List<TextPrimitive> texts,
         List<RelationPrimitive> relations,
-        List<ActorPrimitive> actors,
+        List<MapCanvasPolygonPrimitive> actors,
         List<OverlayPrimitive> overlays
 ) {
 
@@ -63,9 +63,6 @@ public record MapRenderScene(
         GRAPH
     }
 
-    public record ScenePoint(double x, double y) {
-    }
-
     public record PaintStyle(
             @Nullable Color fill,
             @Nullable Color stroke,
@@ -84,27 +81,11 @@ public record MapRenderScene(
         }
     }
 
-    public record SurfacePrimitive(
-            String hitRef,
-            @Nullable String selectionRef,
-            int z,
-            List<ScenePoint> polygon,
-            PaintStyle style
-    ) {
-
-        public SurfacePrimitive {
-            hitRef = hitRef == null ? "" : hitRef;
-            selectionRef = selectionRef == null ? null : selectionRef;
-            polygon = polygon == null ? List.of() : List.copyOf(polygon);
-            style = style == null ? new PaintStyle(null, null, 0.0, 1.0, false) : style;
-        }
-    }
-
     public record BoundaryPrimitive(
             String hitRef,
             @Nullable String selectionRef,
             int z,
-            List<ScenePoint> polyline,
+            List<MapCanvasPoint> polyline,
             PaintStyle style
     ) {
 
@@ -120,7 +101,7 @@ public record MapRenderScene(
             String hitRef,
             @Nullable String selectionRef,
             int z,
-            List<ScenePoint> polygon,
+            List<MapCanvasPoint> polygon,
             PaintStyle style,
             String label,
             @Nullable Color labelColor
@@ -163,29 +144,13 @@ public record MapRenderScene(
     public record RelationPrimitive(
             String hitRef,
             int z,
-            List<ScenePoint> polyline,
+            List<MapCanvasPoint> polyline,
             PaintStyle style
     ) {
 
         public RelationPrimitive {
             hitRef = hitRef == null ? "" : hitRef;
             polyline = polyline == null ? List.of() : List.copyOf(polyline);
-            style = style == null ? new PaintStyle(null, null, 0.0, 1.0, false) : style;
-        }
-    }
-
-    public record ActorPrimitive(
-            String hitRef,
-            @Nullable String selectionRef,
-            int z,
-            List<ScenePoint> polygon,
-            PaintStyle style
-    ) {
-
-        public ActorPrimitive {
-            hitRef = hitRef == null ? "" : hitRef;
-            selectionRef = selectionRef == null ? null : selectionRef;
-            polygon = polygon == null ? List.of() : List.copyOf(polygon);
             style = style == null ? new PaintStyle(null, null, 0.0, 1.0, false) : style;
         }
     }

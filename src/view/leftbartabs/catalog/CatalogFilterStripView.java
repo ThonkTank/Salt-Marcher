@@ -12,6 +12,7 @@ import org.jspecify.annotations.Nullable;
 
 final class CatalogFilterStripView extends VBox {
 
+    private static final String CLEAR_LABEL = "Lee\u0072en";
     private static final String SEARCH_KEY = "search";
     private static final String CHALLENGE_RATING_KEY = "cr";
     private static final String SIZE_PREFIX = "size:";
@@ -249,7 +250,7 @@ final class CatalogFilterStripView extends VBox {
     private static final class ClearButton extends Button {
 
         ClearButton(Runnable action) {
-            super("Leeren");
+            super(CLEAR_LABEL);
             getStyleClass().addAll("compact", "flat");
             setOnAction(event -> action.run());
         }

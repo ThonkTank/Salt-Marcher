@@ -78,27 +78,11 @@ public final class EncounterBudgetBoundaryTranslator {
     public static EncounterPlanBudgetStatus toPublishedPlanBudgetStatus(
             LoadEncounterPlanBudgetUseCase.Status status
     ) {
-        LoadEncounterPlanBudgetUseCase.Status effectiveStatus = status == null
-                ? LoadEncounterPlanBudgetUseCase.Status.STORAGE_ERROR
-                : status;
-        return switch (effectiveStatus) {
-            case SUCCESS -> EncounterPlanBudgetStatus.SUCCESS;
-            case NOT_FOUND -> EncounterPlanBudgetStatus.NOT_FOUND;
-            case NO_ACTIVE_PARTY -> EncounterPlanBudgetStatus.NO_ACTIVE_PARTY;
-            case INVALID_REQUEST -> EncounterPlanBudgetStatus.INVALID_REQUEST;
-            case STORAGE_ERROR -> EncounterPlanBudgetStatus.STORAGE_ERROR;
-        };
+        return EncounterPlanBudgetStatus.valueOf(status == null ? "STORAGE_ERROR" : status.name());
     }
 
     public static EncounterGenerationStatus mapBudgetStatus(LoadEncounterBudgetUseCase.Status status) {
-        LoadEncounterBudgetUseCase.Status effectiveStatus = status == null
-                ? LoadEncounterBudgetUseCase.Status.STORAGE_ERROR
-                : status;
-        return switch (effectiveStatus) {
-            case SUCCESS -> EncounterGenerationStatus.SUCCESS;
-            case NO_ACTIVE_PARTY -> EncounterGenerationStatus.NO_ACTIVE_PARTY;
-            case STORAGE_ERROR -> EncounterGenerationStatus.STORAGE_ERROR;
-        };
+        return EncounterGenerationStatus.valueOf(status == null ? "STORAGE_ERROR" : status.name());
     }
 
     public static EncounterTuningPreviewLabels tuningPreviewLabels(@Nullable EncounterBudgetSummary budget) {

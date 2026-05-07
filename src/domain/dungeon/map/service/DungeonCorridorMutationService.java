@@ -29,6 +29,7 @@ public final class DungeonCorridorMutationService {
             new DungeonCorridorConnectionNormalizationService();
     private static final DungeonCorridorEndpointResolutionService ENDPOINT_RESOLUTION_SERVICE =
             new DungeonCorridorEndpointResolutionService();
+    private static final DungeonMapLookupService LOOKUP_SERVICE = new DungeonMapLookupService();
     private static final DungeonCorridorAnchorPruningPolicy ANCHOR_PRUNING_POLICY =
             new DungeonCorridorAnchorPruningPolicy();
     private static final DungeonCorridorSemanticsPolicy CORRIDOR_SEMANTICS_POLICY =
@@ -131,8 +132,8 @@ public final class DungeonCorridorMutationService {
                 || corridorId == mergedCorridorId) {
             return dungeonMap;
         }
-        DungeonCorridor kept = corridor(dungeonMap, corridorId);
-        DungeonCorridor merged = corridor(dungeonMap, mergedCorridorId);
+        DungeonCorridor kept = LOOKUP_SERVICE.corridor(dungeonMap, corridorId);
+        DungeonCorridor merged = LOOKUP_SERVICE.corridor(dungeonMap, mergedCorridorId);
         if (kept == null || merged == null) {
             return dungeonMap;
         }
@@ -162,7 +163,7 @@ public final class DungeonCorridorMutationService {
         if (invalidCorridorId(corridorId)) {
             return dungeonMap;
         }
-        DungeonCorridor existing = corridor(dungeonMap, corridorId);
+        DungeonCorridor existing = LOOKUP_SERVICE.corridor(dungeonMap, corridorId);
         if (existing == null || ANCHOR_PRUNING_POLICY.ownedAnchorStillReferenced(dungeonMap.connections().corridors(), existing)) {
             return dungeonMap;
         }
@@ -198,7 +199,7 @@ public final class DungeonCorridorMutationService {
         if (!endpoint.fixedDoor()) {
             return updated;
         }
-        DungeonRoomCluster cluster = cluster(dungeonMap, endpoint.clusterId());
+        DungeonRoomCluster cluster = LOOKUP_SERVICE.cluster(dungeonMap, endpoint.clusterId());
         return cluster == null ? updated : updated.withDoorBinding(endpoint.toDoorBinding(cluster.center()));
     }
 
@@ -207,15 +208,15 @@ public final class DungeonCorridorMutationService {
                 || !(end instanceof DungeonCorridorDoorEndpoint endDoor)) {
             return false;
         }
-        DungeonRoom left = room(dungeonMap, startDoor.roomId());
-        DungeonRoom right = room(dungeonMap, endDoor.roomId());
+        DungeonRoom left = LOOKUP_SERVICE.room(dungeonMap, startDoor.roomId());
+        DungeonRoom right = LOOKUP_SERVICE.room(dungeonMap, endDoor.roomId());
         return left != null && right != null && left.clusterId() == right.clusterId();
     }
 
     private static boolean sameClusterOnly(DungeonMap dungeonMap, List<Long> roomIds) {
         Set<Long> clusterIds = new LinkedHashSet<>();
         for (Long roomId : roomIds == null ? List.<Long>of() : roomIds) {
-            DungeonRoom room = roomId == null ? null : room(dungeonMap, roomId);
+            DungeonRoom room = roomId == null ? null : LOOKUP_SERVICE.room(dungeonMap, roomId);
             if (room != null) {
                 clusterIds.add(room.clusterId());
                 if (spansMultipleClusters(clusterIds)) {
@@ -245,27 +246,4 @@ public final class DungeonCorridorMutationService {
                 .orElse(0L) + 1L;
     }
 
-    @Nullable
-    private static DungeonRoom room(DungeonMap dungeonMap, long roomId) {
-        return dungeonMap.rooms().rooms().stream()
-                .filter(room -> room.roomId() == roomId)
-                .findFirst()
-                .orElse(null);
-    }
-
-    @Nullable
-    private static DungeonRoomCluster cluster(DungeonMap dungeonMap, long clusterId) {
-        return dungeonMap.topology().roomClusters().stream()
-                .filter(cluster -> cluster.clusterId() == clusterId)
-                .findFirst()
-                .orElse(null);
-    }
-
-    @Nullable
-    private static DungeonCorridor corridor(DungeonMap dungeonMap, long corridorId) {
-        return dungeonMap.connections().corridors().stream()
-                .filter(candidate -> candidate.corridorId() == corridorId)
-                .findFirst()
-                .orElse(null);
-    }
 }

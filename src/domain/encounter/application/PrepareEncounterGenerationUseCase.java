@@ -155,10 +155,10 @@ final class PrepareEncounterGenerationUseCase {
 
     private static PartyLoadResult loadPartyState(EncounterPartyFactsRepository party) {
         EncounterPartyFactsRepository.PartyBudgetFacts facts = party.loadPartyBudgetFacts();
-        if (facts.status() == EncounterPartyFactsRepository.Status.STORAGE_ERROR) {
+        if (facts.status().isStorageError()) {
             return PartyLoadResult.failure(EncounterGenerationUseCase.GenerateStatus.STORAGE_ERROR, "Party data could not be loaded.");
         }
-        if (facts.status() == EncounterPartyFactsRepository.Status.NO_ACTIVE_PARTY) {
+        if (facts.status().isNoActiveParty()) {
             return PartyLoadResult.failure(EncounterGenerationUseCase.GenerateStatus.NO_ACTIVE_PARTY, "No active party is available.");
         }
         List<Integer> partyLevels = facts.activePartyLevels();

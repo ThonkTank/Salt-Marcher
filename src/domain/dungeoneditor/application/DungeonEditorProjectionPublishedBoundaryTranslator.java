@@ -1,8 +1,8 @@
-package src.domain.dungeoneditor;
+package src.domain.dungeoneditor.application;
 
 import org.jspecify.annotations.Nullable;
+import src.domain.dungeon.published.DungeonTopologyKind;
 import src.domain.dungeoneditor.published.DungeonEditorHandleRef;
-import src.domain.dungeoneditor.published.DungeonEditorMapProjectionSnapshot;
 import src.domain.dungeoneditor.published.DungeonEditorTopologyElementRef;
 import src.domain.dungeoneditor.workspace.value.DungeonEditorWorkspaceValues;
 
@@ -11,10 +11,10 @@ public final class DungeonEditorProjectionPublishedBoundaryTranslator {
     private DungeonEditorProjectionPublishedBoundaryTranslator() {
     }
 
-    public static DungeonEditorMapProjectionSnapshot.TopologyKind topology(DungeonEditorWorkspaceValues.TopologyKind topology) {
+    public static DungeonTopologyKind topology(DungeonEditorWorkspaceValues.TopologyKind topology) {
         return topology != null && topology.isHex()
-                ? DungeonEditorMapProjectionSnapshot.TopologyKind.HEX
-                : DungeonEditorMapProjectionSnapshot.TopologyKind.SQUARE;
+                ? DungeonTopologyKind.HEX
+                : DungeonTopologyKind.SQUARE;
     }
 
     public static DungeonEditorTopologyElementRef safeTopologyRef(

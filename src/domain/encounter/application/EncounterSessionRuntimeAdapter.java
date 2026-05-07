@@ -11,7 +11,6 @@ import src.domain.creatures.published.CreatureLookupStatus;
 import src.domain.creatures.published.LoadCreatureDetailQuery;
 import src.domain.encounter.generation.value.EncounterGenerationRequest;
 import src.domain.encounter.plan.aggregate.EncounterPlan;
-import src.domain.encounter.plan.value.EncounterPlanCreature;
 import src.domain.encounter.session.entity.EncounterSession;
 import src.domain.encounter.session.port.EncounterPartyFactsRepository;
 
@@ -58,10 +57,10 @@ public final class EncounterSessionRuntimeAdapter implements EncounterSession.Ru
         }
         try {
             LoadEncounterBudgetUseCase.Result result = useCase.execute();
-            return result.status() == LoadEncounterBudgetUseCase.Status.SUCCESS && result.budget() != null
+            return "SUCCESS".equals(result.status().name()) && result.budget() != null
                     ? Optional.of(EncounterSessionRuntimeProjector.toSessionBudget(result.budget()))
                     : Optional.empty();
-        } catch (RuntimeException exception) {
+        } catch (IllegalStateException exception) {
             return Optional.empty();
         }
     }
@@ -75,14 +74,14 @@ public final class EncounterSessionRuntimeAdapter implements EncounterSession.Ru
         try {
             EncounterGenerationUseCase.GenerateResult result = useCase.execute(request);
             return new GenerationResultData(
-                    result.status() == EncounterGenerationUseCase.GenerateStatus.SUCCESS,
+                    "SUCCESS".equals(result.status().name()),
                     result.encounters().stream()
                             .map(encounter -> toSessionGeneratedEncounter(encounter, advisoryMessages(result.advisories())))
                             .toList(),
                     result.message(),
                     toSessionDiagnostics(result.diagnostics()),
-                    result.advisories().contains(EncounterGenerationUseCase.GenerationAdvisory.FALLBACK_USED));
-        } catch (RuntimeException exception) {
+                    result.advisories().stream().anyMatch(advisory -> "FALLBACK_USED".equals(advisory.name())));
+        } catch (IllegalStateException exception) {
             return new GenerationResultData(false, List.of(), "Encounter generation failed.", Optional.empty(), false);
         }
     }
@@ -119,7 +118,7 @@ public final class EncounterSessionRuntimeAdapter implements EncounterSession.Ru
         }
         ListSavedEncounterPlansUseCase.Result result = useCase.execute();
         return new ListPlansOutcome(
-                result.status() == ListSavedEncounterPlansUseCase.Status.SUCCESS,
+                result.status().loadedSuccessfully(),
                 result.plans(),
                 result.message());
     }
@@ -202,7 +201,7 @@ public final class EncounterSessionRuntimeAdapter implements EncounterSession.Ru
     }
 
     private static String advisoryMessage(EncounterGenerationUseCase.GenerationAdvisory advisory) {
-        if (advisory == EncounterGenerationUseCase.GenerationAdvisory.AUTO_RESOLVED) {
+        if ("AUTO_RESOLVED".equals(advisory.name())) {
             return "Auto-Einstellungen wurden fuer diese Generierung auf konkrete Zielwerte aufgeloest.";
         }
         return "Kein exakter Treffer war verfuegbar. Die beste gefundene Alternative wurde uebernommen.";

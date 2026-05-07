@@ -4,9 +4,16 @@ import java.util.List;
 
 public record CatalogPublishedEvent(
         Kind kind,
+        String nameQuery,
+        String challengeRatingMin,
+        String challengeRatingMax,
+        List<String> sizes,
         List<String> creatureTypes,
         List<String> creatureSubtypes,
         List<String> biomes,
+        List<String> alignments,
+        String sortKey,
+        int pageOffset,
         boolean difficultyAuto,
         double difficultyValue,
         boolean balanceAuto,
@@ -21,11 +28,54 @@ public record CatalogPublishedEvent(
 
     public CatalogPublishedEvent {
         kind = kind == null ? Kind.UPDATE_BUILDER_INPUTS : kind;
+        nameQuery = nameQuery == null ? "" : nameQuery;
+        challengeRatingMin = challengeRatingMin == null ? "" : challengeRatingMin;
+        challengeRatingMax = challengeRatingMax == null ? "" : challengeRatingMax;
+        sizes = copyStrings(sizes);
         creatureTypes = copyStrings(creatureTypes);
         creatureSubtypes = copyStrings(creatureSubtypes);
         biomes = copyStrings(biomes);
+        alignments = copyStrings(alignments);
+        sortKey = sortKey == null ? "" : sortKey;
+        pageOffset = Math.max(0, pageOffset);
         encounterTableIds = copyLongs(encounterTableIds);
         creatureId = Math.max(0L, creatureId);
+    }
+
+    static CatalogPublishedEvent search(
+            String nameQuery,
+            String challengeRatingMin,
+            String challengeRatingMax,
+            List<String> sizes,
+            List<String> creatureTypes,
+            List<String> creatureSubtypes,
+            List<String> biomes,
+            List<String> alignments,
+            String sortKey,
+            int pageOffset
+    ) {
+        return new CatalogPublishedEvent(
+                Kind.SEARCH,
+                nameQuery,
+                challengeRatingMin,
+                challengeRatingMax,
+                sizes,
+                creatureTypes,
+                creatureSubtypes,
+                biomes,
+                alignments,
+                sortKey,
+                pageOffset,
+                true,
+                0.0,
+                true,
+                0.0,
+                true,
+                0.0,
+                true,
+                0.0,
+                List.of(),
+                0L);
     }
 
     static CatalogPublishedEvent updateBuilderInputs(
@@ -44,9 +94,16 @@ public record CatalogPublishedEvent(
     ) {
         return new CatalogPublishedEvent(
                 Kind.UPDATE_BUILDER_INPUTS,
+                "",
+                "",
+                "",
+                List.of(),
                 creatureTypes,
                 creatureSubtypes,
                 biomes,
+                List.of(),
+                "",
+                0,
                 difficultyAuto,
                 difficultyValue,
                 balanceAuto,
@@ -62,9 +119,16 @@ public record CatalogPublishedEvent(
     static CatalogPublishedEvent addCreature(long creatureId) {
         return new CatalogPublishedEvent(
                 Kind.ADD_CREATURE,
+                "",
+                "",
+                "",
                 List.of(),
                 List.of(),
                 List.of(),
+                List.of(),
+                List.of(),
+                "",
+                0,
                 true,
                 0.0,
                 true,
@@ -78,6 +142,7 @@ public record CatalogPublishedEvent(
     }
 
     enum Kind {
+        SEARCH,
         UPDATE_BUILDER_INPUTS,
         ADD_CREATURE
     }

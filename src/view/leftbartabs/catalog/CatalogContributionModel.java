@@ -80,7 +80,6 @@ public final class CatalogContributionModel {
             new ReadOnlyObjectWrapper<>(MainProjection.initial());
     private final ReadOnlyObjectWrapper<ControlsProjection> controlsProjection =
             new ReadOnlyObjectWrapper<>(ControlsProjection.initial());
-    private final ReadOnlyLongWrapper searchCycle = new ReadOnlyLongWrapper(0L);
     private final ReadOnlyLongWrapper creatureDetailSelection = new ReadOnlyLongWrapper(0L);
     private final ProjectionState state = new ProjectionState();
 
@@ -95,10 +94,6 @@ public final class CatalogContributionModel {
 
     ReadOnlyObjectProperty<ControlsProjection> controlsProjectionProperty() {
         return controlsProjection.getReadOnlyProperty();
-    }
-
-    ReadOnlyLongProperty searchCycleProperty() {
-        return searchCycle.getReadOnlyProperty();
     }
 
     ReadOnlyLongProperty creatureDetailSelectionProperty() {
@@ -146,10 +141,9 @@ public final class CatalogContributionModel {
         refreshMainProjection();
     }
 
-    void requestSearch() {
+    void beginSearch() {
         state.beginSearch();
         refreshMainProjection();
-        searchCycle.set(searchCycle.get() + 1L);
     }
 
     void setCreatureDetailSelection(long creatureId) {
@@ -160,8 +154,8 @@ public final class CatalogContributionModel {
         return state.interactionState();
     }
 
-    SearchRequest currentSearchRequest() {
-        return state.searchRequest();
+    CatalogPublishedEvent searchEvent() {
+        return state.searchEvent();
     }
 
     private void refreshControlsProjection() {
@@ -388,54 +382,6 @@ public final class CatalogContributionModel {
             encounterTableDropdownState = encounterTableDropdownState == null
                     ? FilterDropdownState.closed()
                     : encounterTableDropdownState;
-        }
-    }
-
-    record SearchRequest(
-            String nameQuery,
-            String challengeRatingMin,
-            String challengeRatingMax,
-            List<String> sizes,
-            List<String> types,
-            List<String> subtypes,
-            List<String> biomes,
-            List<String> alignments,
-            CreatureCatalogSortField sortField,
-            CreatureSortDirection sortDirection,
-            int pageSize,
-            int pageOffset
-    ) {
-        SearchRequest {
-            nameQuery = safe(nameQuery);
-            challengeRatingMin = safe(challengeRatingMin);
-            challengeRatingMax = safe(challengeRatingMax);
-            sizes = copiedList(sizes);
-            types = copiedList(types);
-            subtypes = copiedList(subtypes);
-            biomes = copiedList(biomes);
-            alignments = copiedList(alignments);
-            sortField = sortField == null ? CreatureCatalogSortField.NAME : sortField;
-            sortDirection = sortDirection == null ? CreatureSortDirection.ASCENDING : sortDirection;
-            pageSize = Math.max(1, pageSize);
-            pageOffset = Math.max(0, pageOffset);
-        }
-
-        static SearchRequest from(CreatureFilters filters, SortOption sort, int pageOffset) {
-            CreatureFilters safeFilters = filters == null ? CreatureFilters.empty() : filters;
-            SortOption safeSort = sort == null ? SortOption.NAME_ASC : sort;
-            return new SearchRequest(
-                    safeFilters.nameQuery(),
-                    safeFilters.challengeRatingMin(),
-                    safeFilters.challengeRatingMax(),
-                    safeFilters.sizes(),
-                    safeFilters.types(),
-                    safeFilters.subtypes(),
-                    safeFilters.biomes(),
-                    safeFilters.alignments(),
-                    safeSort.field(),
-                    safeSort.direction(),
-                    PAGE_SIZE,
-                    pageOffset);
         }
     }
 
@@ -953,10 +899,18 @@ public final class CatalogContributionModel {
             return new InteractionState(localFilters, controlsState, authoritativeControls);
         }
 
-        SearchRequest searchRequest() {
-            return SearchRequest.from(
-                    mergedFilters(localFilters, authoritativeControls),
-                    selectedSort,
+        CatalogPublishedEvent searchEvent() {
+            CreatureFilters filters = mergedFilters(localFilters, authoritativeControls);
+            return CatalogPublishedEvent.search(
+                    filters.nameQuery(),
+                    filters.challengeRatingMin(),
+                    filters.challengeRatingMax(),
+                    filters.sizes(),
+                    filters.types(),
+                    filters.subtypes(),
+                    filters.biomes(),
+                    filters.alignments(),
+                    selectedSort.key(),
                     pageOffset);
         }
 

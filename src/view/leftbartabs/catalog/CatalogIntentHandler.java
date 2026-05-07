@@ -63,7 +63,7 @@ final class CatalogIntentHandler {
 
         CatalogContributionModel.InteractionState currentState = presentationModel.currentInteractionState();
         if (!previousLocalFilters.equals(currentState.localFilters())) {
-            presentationModel.requestSearch();
+            publishSearch();
         }
 
         CatalogContributionModel.ControlsState currentDraftControls = currentState.draftControls();
@@ -90,12 +90,12 @@ final class CatalogIntentHandler {
         }
         if (!event.sortKey().isBlank()) {
             presentationModel.selectSort(event.sortKey());
-            presentationModel.requestSearch();
+            publishSearch();
             return;
         }
         if (event.pageShift() != 0) {
             presentationModel.shiftPage(event.pageShift());
-            presentationModel.requestSearch();
+            publishSearch();
             return;
         }
         if (event.openedCreatureId() > 0L) {
@@ -105,5 +105,10 @@ final class CatalogIntentHandler {
         if (event.actionCreatureId() > 0L) {
             publishedEventListener.accept(CatalogPublishedEvent.addCreature(event.actionCreatureId()));
         }
+    }
+
+    private void publishSearch() {
+        presentationModel.beginSearch();
+        publishedEventListener.accept(presentationModel.searchEvent());
     }
 }

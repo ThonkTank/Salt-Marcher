@@ -1,7 +1,5 @@
 package src.domain.encounter.generation.policy;
 
-import src.domain.encounter.generation.value.*;
-
 import java.util.List;
 
 public final class EncounterDifficultyMath {

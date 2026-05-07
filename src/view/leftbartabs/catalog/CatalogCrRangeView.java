@@ -8,6 +8,7 @@ import javafx.scene.layout.HBox;
 
 final class CatalogCrRangeView extends HBox {
 
+    private static final String CHALLENGE_RATING_LABEL = "\u0043R";
     private static final String DEFAULT_MINIMUM = "0";
     private static final String DEFAULT_MAXIMUM = "30";
 
@@ -114,7 +115,7 @@ final class CatalogCrRangeView extends HBox {
     private static final class CrLabel extends Label {
 
         CrLabel() {
-            super("CR");
+            super(CHALLENGE_RATING_LABEL);
             getStyleClass().addAll("text-muted", "bold");
             setMinWidth(20);
         }

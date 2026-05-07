@@ -15,11 +15,9 @@ public final class SessionPlannerStateView extends ScrollPane {
     private final Label placeholderDetailLabel = label("");
 
     public SessionPlannerStateView() {
-        VBox content = new VBox(12,
+        VBox content = new StateContent(
                 section("Ausgewaehlter Session-Encounter", encounterTitleLabel, encounterDetailLabel, encounterXpLabel, contextLabel),
                 section("Read-only Vorbereitung", placeholderTitleLabel, placeholderDetailLabel));
-        content.getStyleClass().add("session-planner-main");
-        content.setPadding(new Insets(10));
         getStyleClass().add("session-planner-main-scroll");
         setFitToWidth(true);
         setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
@@ -45,18 +43,39 @@ public final class SessionPlannerStateView extends ScrollPane {
     }
 
     private static VBox section(String title, Label... labels) {
-        VBox section = new VBox(6);
-        section.getStyleClass().add("session-planner-card");
-        section.setPadding(new Insets(10));
-        section.getChildren().add(label(title, "session-planner-card-title"));
-        section.getChildren().addAll(labels);
-        return section;
+        return new SectionBox(title, labels);
     }
 
     private static Label label(String text, String... styleClasses) {
-        Label label = new Label(text);
-        label.setWrapText(true);
-        label.getStyleClass().addAll(styleClasses);
-        return label;
+        return new StyledLabel(text, styleClasses);
+    }
+
+    private static final class StateContent extends VBox {
+
+        private StateContent(VBox... sections) {
+            super(12, sections);
+            getStyleClass().add("session-planner-main");
+            setPadding(new Insets(10));
+        }
+    }
+
+    private static final class SectionBox extends VBox {
+
+        private SectionBox(String title, Label... labels) {
+            super(6);
+            getStyleClass().add("session-planner-card");
+            setPadding(new Insets(10));
+            getChildren().add(label(title, "session-planner-card-title"));
+            getChildren().addAll(labels);
+        }
+    }
+
+    private static final class StyledLabel extends Label {
+
+        private StyledLabel(String text, String... styleClasses) {
+            super(text);
+            setWrapText(true);
+            getStyleClass().addAll(styleClasses);
+        }
     }
 }

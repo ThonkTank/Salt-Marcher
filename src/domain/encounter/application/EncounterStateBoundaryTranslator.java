@@ -33,30 +33,10 @@ public final class EncounterStateBoundaryTranslator {
     }
 
     private static EncounterSessionCommand.Action toInternalAction(ApplyEncounterStateCommand.Action action) {
-        ApplyEncounterStateCommand.Action effective = action == null ? ApplyEncounterStateCommand.Action.REFRESH : action;
-        return switch (effective) {
-            case REFRESH -> EncounterSessionCommand.Action.REFRESH;
-            case GENERATE -> EncounterSessionCommand.Action.GENERATE;
-            case SAVE_CURRENT_PLAN -> EncounterSessionCommand.Action.SAVE_CURRENT_PLAN;
-            case OPEN_SAVED_PLAN -> EncounterSessionCommand.Action.OPEN_SAVED_PLAN;
-            case CLEAR_GENERATION_HISTORY -> EncounterSessionCommand.Action.CLEAR_GENERATION_HISTORY;
-            case SHIFT_ALTERNATIVE -> EncounterSessionCommand.Action.SHIFT_ALTERNATIVE;
-            case ADD_CREATURE -> EncounterSessionCommand.Action.ADD_CREATURE;
-            case INCREMENT_CREATURE -> EncounterSessionCommand.Action.INCREMENT_CREATURE;
-            case DECREMENT_CREATURE -> EncounterSessionCommand.Action.DECREMENT_CREATURE;
-            case REMOVE_CREATURE -> EncounterSessionCommand.Action.REMOVE_CREATURE;
-            case UNDO_REMOVE -> EncounterSessionCommand.Action.UNDO_REMOVE;
-            case OPEN_INITIATIVE -> EncounterSessionCommand.Action.OPEN_INITIATIVE;
-            case BACK_TO_BUILDER -> EncounterSessionCommand.Action.BACK_TO_BUILDER;
-            case CONFIRM_INITIATIVE -> EncounterSessionCommand.Action.CONFIRM_INITIATIVE;
-            case ADVANCE_TURN -> EncounterSessionCommand.Action.ADVANCE_TURN;
-            case ADJUST_INITIATIVE -> EncounterSessionCommand.Action.ADJUST_INITIATIVE;
-            case ADD_PARTY_MEMBER_TO_COMBAT -> EncounterSessionCommand.Action.ADD_PARTY_MEMBER_TO_COMBAT;
-            case END_COMBAT -> EncounterSessionCommand.Action.END_COMBAT;
-            case AWARD_XP -> EncounterSessionCommand.Action.AWARD_XP;
-            case RETURN_TO_BUILDER_AFTER_RESULTS -> EncounterSessionCommand.Action.RETURN_TO_BUILDER_AFTER_RESULTS;
-            case MUTATE_HP -> EncounterSessionCommand.Action.MUTATE_HP;
-        };
+        ApplyEncounterStateCommand.Action effective = action == null
+                ? ApplyEncounterStateCommand.Action.REFRESH
+                : action;
+        return EncounterSessionCommand.Action.valueOf(effective.name());
     }
 
     private static List<InitiativeInput> toInternalInitiatives(List<ApplyEncounterStateCommand.InitiativeValue> values) {

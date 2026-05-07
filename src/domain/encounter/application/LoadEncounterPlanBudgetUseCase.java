@@ -17,6 +17,8 @@ import src.domain.encounter.session.port.EncounterPartyFactsRepository;
 
 public final class LoadEncounterPlanBudgetUseCase {
 
+    private static final long MIN_PLAN_ID = 1L;
+
     private final EncounterPlanRepository plans;
     private final EncounterPartyFactsRepository party;
     private final CreaturesApplicationService creatures;
@@ -32,7 +34,7 @@ public final class LoadEncounterPlanBudgetUseCase {
     }
 
     public Result execute(long planId) {
-        if (planId <= 0L) {
+        if (planId < MIN_PLAN_ID) {
             return Result.invalidRequest("Encounter plan id must be positive.");
         }
         Optional<EncounterPlan> maybePlan = plans.load(planId);
@@ -40,10 +42,10 @@ public final class LoadEncounterPlanBudgetUseCase {
             return Result.notFound("Encounter plan was not found.");
         }
         EncounterPartyFactsRepository.PartyBudgetFacts facts = party.loadPartyBudgetFacts();
-        if (facts.status() == EncounterPartyFactsRepository.Status.STORAGE_ERROR) {
+        if (facts.status().isStorageError()) {
             return Result.storageError("Party data could not be loaded.");
         }
-        if (facts.status() == EncounterPartyFactsRepository.Status.NO_ACTIVE_PARTY) {
+        if (facts.status().isNoActiveParty()) {
             return Result.noActiveParty("No active party is available.");
         }
         List<Integer> activeLevels = facts.activePartyLevels();

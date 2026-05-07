@@ -2,83 +2,42 @@ package src.domain.dungeoneditor.published;
 
 import java.util.List;
 import org.jspecify.annotations.Nullable;
+import src.domain.dungeon.published.DungeonMapProjectionContent;
+import src.domain.dungeon.published.DungeonTopologyKind;
 
 public record DungeonEditorMapProjectionSnapshot(
         String mapName,
-        TopologyKind topology,
+        DungeonTopologyKind topology,
         int width,
         int height,
-        List<CellProjection> cells,
-        List<EdgeProjection> edges,
-        List<LabelProjection> labels,
-        List<MarkerProjection> markers,
-        List<GraphNodeProjection> graphNodes,
-        List<GraphLinkProjection> graphLinks,
+        DungeonMapProjectionContent<
+                CellProjection,
+                EdgeProjection,
+                LabelProjection,
+                MarkerProjection,
+                GraphNodeProjection,
+                GraphLinkProjection> content,
         @Nullable PartyTokenProjection partyToken
 ) {
 
     public DungeonEditorMapProjectionSnapshot {
         mapName = normalizeMapName(mapName);
-        topology = topology == null ? TopologyKind.SQUARE : topology;
+        topology = topology == null ? DungeonTopologyKind.SQUARE : topology;
         width = normalizeDimension(width);
         height = normalizeDimension(height);
-        cells = immutableElements(cells);
-        edges = immutableElements(edges);
-        labels = immutableElements(labels);
-        markers = immutableElements(markers);
-        graphNodes = immutableElements(graphNodes);
-        graphLinks = immutableElements(graphLinks);
+        content = content == null ? DungeonMapProjectionContent.empty() : content;
     }
 
     public static DungeonEditorMapProjectionSnapshot empty(String mapName) {
-        return new DungeonEditorMapProjectionSnapshot(
-                mapName,
-                TopologyKind.SQUARE,
-                1,
-                1,
-                List.of(),
-                List.of(),
-                List.of(),
-                List.of(),
-                List.of(),
-                List.of(),
-                null);
+        return new DungeonEditorMapProjectionSnapshot(mapName, DungeonTopologyKind.SQUARE, 1, 1, DungeonMapProjectionContent.empty(), null);
     }
 
-    @Override
-    public List<CellProjection> cells() {
-        return List.copyOf(cells);
-    }
-
-    @Override
-    public List<EdgeProjection> edges() {
-        return List.copyOf(edges);
-    }
-
-    @Override
-    public List<LabelProjection> labels() {
-        return List.copyOf(labels);
-    }
-
-    @Override
-    public List<MarkerProjection> markers() {
-        return List.copyOf(markers);
-    }
-
-    @Override
-    public List<GraphNodeProjection> graphNodes() {
-        return List.copyOf(graphNodes);
-    }
-
-    @Override
-    public List<GraphLinkProjection> graphLinks() {
-        return List.copyOf(graphLinks);
-    }
-
-    public enum TopologyKind {
-        SQUARE,
-        HEX
-    }
+    public List<CellProjection> cells() { return content.cells(); }
+    public List<EdgeProjection> edges() { return content.edges(); }
+    public List<LabelProjection> labels() { return content.labels(); }
+    public List<MarkerProjection> markers() { return content.markers(); }
+    public List<GraphNodeProjection> graphNodes() { return content.graphNodes(); }
+    public List<GraphLinkProjection> graphLinks() { return content.graphLinks(); }
 
     public record CellProjection(
             int q,
@@ -246,7 +205,4 @@ public record DungeonEditorMapProjectionSnapshot(
         return heading == null ? Heading.SOUTH : heading;
     }
 
-    private static <T> List<T> immutableElements(@Nullable List<T> elements) {
-        return elements == null ? List.of() : List.copyOf(elements);
-    }
 }

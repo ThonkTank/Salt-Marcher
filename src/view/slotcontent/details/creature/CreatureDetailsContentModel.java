@@ -91,7 +91,7 @@ public final class CreatureDetailsContentModel {
         return lines;
     }
 
-    private static List<AbilityScore> abilities(CreatureDetail creature) {
+    private static List<PropertyLine> abilities(CreatureDetail creature) {
         return List.of(
                 ability("STR", creature.strength()),
                 ability("DEX", creature.dexterity()),
@@ -101,10 +101,10 @@ public final class CreatureDetailsContentModel {
                 ability("CHA", creature.charisma()));
     }
 
-    private static AbilityScore ability(String label, int value) {
+    private static PropertyLine ability(String label, int value) {
         int modifier = Math.floorDiv(value - 10, 2);
         String modifierText = modifier >= 0 ? "+" + modifier : String.valueOf(modifier);
-        return new AbilityScore(label, value + " (" + modifierText + ")");
+        return new PropertyLine(label, value + " (" + modifierText + ")");
     }
 
     private static List<PropertyLine> properties(CreatureDetail creature) {
@@ -247,7 +247,7 @@ public final class CreatureDetailsContentModel {
             String name,
             String meta,
             List<PropertyLine> coreProperties,
-            List<AbilityScore> abilities,
+            List<PropertyLine> abilities,
             List<PropertyLine> properties,
             List<ActionGroup> sections
     ) {
@@ -260,9 +260,6 @@ public final class CreatureDetailsContentModel {
     }
 
     public record PropertyLine(String label, String value) {
-    }
-
-    public record AbilityScore(String label, String value) {
     }
 
     public record ActionGroup(String title, String description, List<ActionLine> actions) {

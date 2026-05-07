@@ -290,7 +290,7 @@ public class MapCanvasView extends BorderPane {
                             event.isControlDown(),
                             event.isShiftDown(),
                             event.isAltDown()),
-                    new CanvasPointerEvent.CanvasPoint(sceneX, sceneY),
+                    new MapCanvasPoint(sceneX, sceneY),
                     hitTester.hit(renderScene, sceneX, sceneY, viewport.gridSize()));
         }
     }
@@ -438,10 +438,10 @@ public class MapCanvasView extends BorderPane {
 
         private void drawSurfaces(
                 GraphicsContext gc,
-                List<MapRenderScene.SurfacePrimitive> surfaces,
+                List<MapCanvasPolygonPrimitive> surfaces,
                 Viewport viewport
         ) {
-            for (MapRenderScene.SurfacePrimitive surface : surfaces) {
+            for (MapCanvasPolygonPrimitive surface : surfaces) {
                 drawPolygon(gc, surface.polygon(), surface.style(), viewport);
             }
         }
@@ -456,8 +456,8 @@ public class MapCanvasView extends BorderPane {
             }
         }
 
-        private void drawActors(GraphicsContext gc, List<MapRenderScene.ActorPrimitive> actors, Viewport viewport) {
-            for (MapRenderScene.ActorPrimitive actor : actors) {
+        private void drawActors(GraphicsContext gc, List<MapCanvasPolygonPrimitive> actors, Viewport viewport) {
+            for (MapCanvasPolygonPrimitive actor : actors) {
                 drawPolygon(gc, actor.polygon(), actor.style(), viewport);
             }
         }
@@ -474,7 +474,7 @@ public class MapCanvasView extends BorderPane {
 
         private void drawPolygon(
                 GraphicsContext gc,
-                List<MapRenderScene.ScenePoint> points,
+                List<MapCanvasPoint> points,
                 MapRenderScene.PaintStyle style,
                 Viewport viewport
         ) {
@@ -484,7 +484,7 @@ public class MapCanvasView extends BorderPane {
             double[] xPoints = new double[points.size()];
             double[] yPoints = new double[points.size()];
             for (int index = 0; index < points.size(); index++) {
-                MapRenderScene.ScenePoint point = points.get(index);
+                MapCanvasPoint point = points.get(index);
                 xPoints[index] = viewport.sceneToScreenX(point.x());
                 yPoints[index] = viewport.sceneToScreenY(point.y());
             }
@@ -502,7 +502,7 @@ public class MapCanvasView extends BorderPane {
 
         private void drawPolyline(
                 GraphicsContext gc,
-                List<MapRenderScene.ScenePoint> points,
+                List<MapCanvasPoint> points,
                 MapRenderScene.PaintStyle style,
                 Viewport viewport
         ) {
@@ -510,11 +510,11 @@ public class MapCanvasView extends BorderPane {
                 return;
             }
             applyStyle(gc, style, viewport);
-            MapRenderScene.ScenePoint first = points.get(0);
+            MapCanvasPoint first = points.get(0);
             gc.beginPath();
             gc.moveTo(viewport.sceneToScreenX(first.x()), viewport.sceneToScreenY(first.y()));
             for (int index = 1; index < points.size(); index++) {
-                MapRenderScene.ScenePoint point = points.get(index);
+                MapCanvasPoint point = points.get(index);
                 gc.lineTo(viewport.sceneToScreenX(point.x()), viewport.sceneToScreenY(point.y()));
             }
             gc.stroke();
@@ -559,7 +559,7 @@ public class MapCanvasView extends BorderPane {
                 shapePainter.drawPolygon(gc, glyph.polygon(), glyph.style(), viewport);
                 String label = glyph.label();
                 if (!label.isBlank()) {
-                    MapRenderScene.ScenePoint center = Geometry.polygonCenter(glyph.polygon());
+                    MapCanvasPoint center = Geometry.polygonCenter(glyph.polygon());
                     gc.setFill(glyph.labelColor());
                     gc.fillText(
                             label,
@@ -675,25 +675,18 @@ public class MapCanvasView extends BorderPane {
         }
 
         private CanvasPointerEvent.@Nullable CanvasHit actorHit(
-                List<MapRenderScene.ActorPrimitive> polygons,
+                List<MapCanvasPolygonPrimitive> polygons,
                 double sceneX,
                 double sceneY
         ) {
-            for (int index = polygons.size() - 1; index >= 0; index--) {
-                MapRenderScene.ActorPrimitive polygon = polygons.get(index);
-                String hitRef = polygon.hitRef();
-                List<MapRenderScene.ScenePoint> points = polygon.polygon();
-                if (hitRef.isBlank() || points.isEmpty()) {
-                    continue;
-                }
-                if (Geometry.pointInPolygon(sceneX, sceneY, points)) {
-                    return new CanvasPointerEvent.CanvasHit(
-                            hitRef,
-                            CanvasPointerEvent.CanvasPrimitive.ACTOR,
-                            polygon.selectionRef());
-                }
-            }
-            return null;
+            return polygonHit(
+                    polygons,
+                    sceneX,
+                    sceneY,
+                    MapCanvasPolygonPrimitive::hitRef,
+                    MapCanvasPolygonPrimitive::polygon,
+                    MapCanvasPolygonPrimitive::selectionRef,
+                    CanvasPointerEvent.CanvasPrimitive.ACTOR);
         }
 
         private CanvasPointerEvent.@Nullable CanvasHit glyphHit(
@@ -701,40 +694,52 @@ public class MapCanvasView extends BorderPane {
                 double sceneX,
                 double sceneY
         ) {
-            for (int index = polygons.size() - 1; index >= 0; index--) {
-                MapRenderScene.GlyphPrimitive polygon = polygons.get(index);
-                String hitRef = polygon.hitRef();
-                List<MapRenderScene.ScenePoint> points = polygon.polygon();
-                if (hitRef.isBlank() || points.isEmpty()) {
-                    continue;
-                }
-                if (Geometry.pointInPolygon(sceneX, sceneY, points)) {
-                    return new CanvasPointerEvent.CanvasHit(
-                            hitRef,
-                            CanvasPointerEvent.CanvasPrimitive.GLYPH,
-                            polygon.selectionRef());
-                }
-            }
-            return null;
+            return polygonHit(
+                    polygons,
+                    sceneX,
+                    sceneY,
+                    MapRenderScene.GlyphPrimitive::hitRef,
+                    MapRenderScene.GlyphPrimitive::polygon,
+                    MapRenderScene.GlyphPrimitive::selectionRef,
+                    CanvasPointerEvent.CanvasPrimitive.GLYPH);
         }
 
         private CanvasPointerEvent.@Nullable CanvasHit surfaceHit(
-                List<MapRenderScene.SurfacePrimitive> polygons,
+                List<MapCanvasPolygonPrimitive> polygons,
                 double sceneX,
                 double sceneY
         ) {
+            return polygonHit(
+                    polygons,
+                    sceneX,
+                    sceneY,
+                    MapCanvasPolygonPrimitive::hitRef,
+                    MapCanvasPolygonPrimitive::polygon,
+                    MapCanvasPolygonPrimitive::selectionRef,
+                    CanvasPointerEvent.CanvasPrimitive.SURFACE);
+        }
+
+        private <T> CanvasPointerEvent.@Nullable CanvasHit polygonHit(
+                List<T> polygons,
+                double sceneX,
+                double sceneY,
+                Function<T, String> hitRefReader,
+                Function<T, List<MapCanvasPoint>> polygonReader,
+                Function<T, String> selectionRefReader,
+                CanvasPointerEvent.CanvasPrimitive primitive
+        ) {
             for (int index = polygons.size() - 1; index >= 0; index--) {
-                MapRenderScene.SurfacePrimitive polygon = polygons.get(index);
-                String hitRef = polygon.hitRef();
-                List<MapRenderScene.ScenePoint> points = polygon.polygon();
+                T polygon = polygons.get(index);
+                String hitRef = hitRefReader.apply(polygon);
+                List<MapCanvasPoint> points = polygonReader.apply(polygon);
                 if (hitRef.isBlank() || points.isEmpty()) {
                     continue;
                 }
                 if (Geometry.pointInPolygon(sceneX, sceneY, points)) {
                     return new CanvasPointerEvent.CanvasHit(
                             hitRef,
-                            CanvasPointerEvent.CanvasPrimitive.SURFACE,
-                            polygon.selectionRef());
+                            primitive,
+                            selectionRefReader.apply(polygon));
                 }
             }
             return null;
@@ -749,7 +754,7 @@ public class MapCanvasView extends BorderPane {
             for (int index = lines.size() - 1; index >= 0; index--) {
                 MapRenderScene.BoundaryPrimitive line = lines.get(index);
                 String hitRef = line.hitRef();
-                List<MapRenderScene.ScenePoint> polyline = line.polyline();
+                List<MapCanvasPoint> polyline = line.polyline();
                 if (hitRef.isBlank() || polyline.size() < MIN_POLYLINE_POINTS) {
                     continue;
                 }
@@ -772,7 +777,7 @@ public class MapCanvasView extends BorderPane {
             for (int index = lines.size() - 1; index >= 0; index--) {
                 MapRenderScene.RelationPrimitive line = lines.get(index);
                 String hitRef = line.hitRef();
-                List<MapRenderScene.ScenePoint> polyline = line.polyline();
+                List<MapCanvasPoint> polyline = line.polyline();
                 if (hitRef.isBlank() || polyline.size() < MIN_POLYLINE_POINTS) {
                     continue;
                 }
@@ -817,29 +822,29 @@ public class MapCanvasView extends BorderPane {
 
     private static final class Geometry {
 
-        private static MapRenderScene.ScenePoint polygonCenter(List<MapRenderScene.ScenePoint> polygon) {
+        private static MapCanvasPoint polygonCenter(List<MapCanvasPoint> polygon) {
             if (polygon.isEmpty()) {
-                return new MapRenderScene.ScenePoint(0.0, 0.0);
+                return new MapCanvasPoint(0.0, 0.0);
             }
             double minX = Double.POSITIVE_INFINITY;
             double minY = Double.POSITIVE_INFINITY;
             double maxX = Double.NEGATIVE_INFINITY;
             double maxY = Double.NEGATIVE_INFINITY;
-            for (MapRenderScene.ScenePoint point : polygon) {
+            for (MapCanvasPoint point : polygon) {
                 minX = Math.min(minX, point.x());
                 minY = Math.min(minY, point.y());
                 maxX = Math.max(maxX, point.x());
                 maxY = Math.max(maxY, point.y());
             }
-            return new MapRenderScene.ScenePoint((minX + maxX) / 2.0, (minY + maxY) / 2.0);
+            return new MapCanvasPoint((minX + maxX) / 2.0, (minY + maxY) / 2.0);
         }
 
-        private static boolean pointInPolygon(double x, double y, List<MapRenderScene.ScenePoint> polygon) {
+        private static boolean pointInPolygon(double x, double y, List<MapCanvasPoint> polygon) {
             boolean inside = false;
             int previous = polygon.size() - 1;
             for (int index = 0; index < polygon.size(); index++) {
-                MapRenderScene.ScenePoint current = polygon.get(index);
-                MapRenderScene.ScenePoint before = polygon.get(previous);
+                MapCanvasPoint current = polygon.get(index);
+                MapCanvasPoint before = polygon.get(previous);
                 boolean intersects = (current.y() > y) != (before.y() > y)
                         && x < (before.x() - current.x()) * (y - current.y()) / (before.y() - current.y())
                         + current.x();
@@ -854,12 +859,12 @@ public class MapCanvasView extends BorderPane {
         private static double distanceToPolyline(
                 double x,
                 double y,
-                List<MapRenderScene.ScenePoint> polyline
+                List<MapCanvasPoint> polyline
         ) {
             double best = Double.MAX_VALUE;
             for (int index = 1; index < polyline.size(); index++) {
-                MapRenderScene.ScenePoint start = polyline.get(index - 1);
-                MapRenderScene.ScenePoint end = polyline.get(index);
+                MapCanvasPoint start = polyline.get(index - 1);
+                MapCanvasPoint end = polyline.get(index);
                 best = Math.min(best, distanceToSegment(x, y, start.x(), start.y(), end.x(), end.y()));
             }
             return best;

@@ -1,6 +1,7 @@
-package src.domain.dungeoneditor;
+package src.domain.dungeoneditor.application;
 
 import org.jspecify.annotations.Nullable;
+import src.domain.dungeon.published.DungeonMapProjectionContent;
 import src.domain.dungeoneditor.published.DungeonEditorMapProjectionSnapshot;
 import src.domain.dungeoneditor.session.value.DungeonEditorSessionSnapshot;
 import src.domain.dungeoneditor.session.value.DungeonEditorSessionValues;
@@ -33,12 +34,13 @@ public final class DungeonEditorMapProjectionProjector {
                 DungeonEditorProjectionPublishedBoundaryTranslator.topology(map.topology()),
                 map.width(),
                 map.height(),
-                projection.cells(),
-                projection.edges(),
-                projection.labels(),
-                projection.markers(),
-                projection.graphNodes(),
-                projection.graphLinks(),
+                new DungeonMapProjectionContent<>(
+                        projection.cells(),
+                        projection.edges(),
+                        projection.labels(),
+                        projection.markers(),
+                        projection.graphNodes(),
+                        projection.graphLinks()),
                 null);
     }
 }

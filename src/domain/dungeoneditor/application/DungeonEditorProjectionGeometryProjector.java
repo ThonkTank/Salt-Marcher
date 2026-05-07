@@ -1,4 +1,4 @@
-package src.domain.dungeoneditor;
+package src.domain.dungeoneditor.application;
 
 import java.util.ArrayList;
 import java.util.List;

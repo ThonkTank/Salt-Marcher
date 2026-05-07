@@ -27,6 +27,8 @@ public record SessionPlan(
 
     private static final BigDecimal HUNDRED = new BigDecimal("100");
     private static final int SCALE = 4;
+    private static final long UNRESOLVED_ID = 0L;
+    private static final int SINGLE_ENCOUNTER_COUNT = 1;
 
     public SessionPlan {
         sessionId = Math.max(1L, sessionId);
@@ -68,7 +70,7 @@ public record SessionPlan(
     }
 
     public SessionPlan addParticipant(long characterId) {
-        if (characterId <= 0L) {
+        if (characterId <= UNRESOLVED_ID) {
             return this;
         }
         if (participantRefs.contains(characterId)) {
@@ -81,7 +83,7 @@ public record SessionPlan(
     }
 
     public SessionPlan removeParticipant(long characterId) {
-        if (characterId <= 0L) {
+        if (characterId <= UNRESOLVED_ID) {
             return this;
         }
         List<Long> nextParticipants = new ArrayList<>(participantRefs);
@@ -99,14 +101,14 @@ public record SessionPlan(
     }
 
     public SessionPlan attachEncounter(long encounterPlanId) {
-        if (encounterPlanId <= 0L) {
+        if (encounterPlanId <= UNRESOLVED_ID) {
             return this;
         }
         long encounterId = nextEncounterId;
         List<SessionEncounter> nextEncounters = new ArrayList<>(encounters);
         nextEncounters.add(new SessionEncounter(encounterId, encounterPlanId, SessionEncounterAllocation.zero()));
         List<SessionEncounter> rebalanced = rebalanceAllocationsEvenly(nextEncounters);
-        long nextSelected = selectedEncounterId <= 0L ? encounterId : selectedEncounterId;
+        long nextSelected = selectedEncounterId <= UNRESOLVED_ID ? encounterId : selectedEncounterId;
         return copy(participantRefs, encounterDays, rebalanced, restPlacements, lootPlaceholders, nextSelected,
                 "Encounter an Session angehaengt.", nextEncounterId + 1, nextLootId);
     }
@@ -143,7 +145,7 @@ public record SessionPlan(
         if (targetIndex < 0) {
             return this;
         }
-        if (encounters.size() == 1) {
+        if (encounters.size() == SINGLE_ENCOUNTER_COUNT) {
             return copy(participantRefs, encounterDays,
                     List.of(encounters.get(0).withAllocation(SessionEncounterAllocation.hundred())),
                     restPlacements,

@@ -1,4 +1,4 @@
-package src.domain.dungeoneditor;
+package src.domain.dungeoneditor.application;
 
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeoneditor.published.DungeonEditorPreview;

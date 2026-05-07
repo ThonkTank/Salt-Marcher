@@ -1,10 +1,10 @@
 package src.domain.encounter.generation.policy;
 
-import src.domain.encounter.generation.value.*;
-
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
+import src.domain.encounter.generation.value.EncounterDraft;
+import src.domain.encounter.generation.value.EncounterDraftMetrics;
 
 public final class EncounterDraftOrdering {
 

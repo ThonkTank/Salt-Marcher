@@ -32,15 +32,43 @@ public final class EncounterBuilderInputsBoundaryTranslator {
                 safeInputs.creatureTypes(),
                 safeInputs.creatureSubtypes(),
                 safeInputs.biomes(),
-                difficulty == null || difficulty.isAuto(),
+                isAutoDifficulty(difficulty),
                 difficultyLevel(difficulty),
-                tuning == null || tuning.isBalanceAuto(),
-                tuning == null ? EncounterBuilderInputs.empty().balanceLevel() : tuning.balanceLevel(),
-                tuning == null || tuning.isAmountAuto(),
-                tuning == null ? EncounterBuilderInputs.empty().amountValue() : tuning.amountValue(),
-                tuning == null || tuning.isDiversityAuto(),
-                tuning == null ? EncounterBuilderInputs.empty().diversityLevel() : tuning.diversityLevel(),
+                isAutoBalance(tuning),
+                balanceLevel(tuning),
+                isAutoAmount(tuning),
+                amountValue(tuning),
+                isAutoDiversity(tuning),
+                diversityLevel(tuning),
                 safeInputs.encounterTableIds());
+    }
+
+    private static boolean isAutoDifficulty(EncounterRequestedDifficulty difficulty) {
+        return difficulty == null || difficulty.isAuto();
+    }
+
+    private static boolean isAutoBalance(EncounterTuningIntent tuning) {
+        return tuning == null || tuning.isBalanceAuto();
+    }
+
+    private static int balanceLevel(EncounterTuningIntent tuning) {
+        return tuning == null ? EncounterBuilderInputs.empty().balanceLevel() : tuning.balanceLevel();
+    }
+
+    private static boolean isAutoAmount(EncounterTuningIntent tuning) {
+        return tuning == null || tuning.isAmountAuto();
+    }
+
+    private static double amountValue(EncounterTuningIntent tuning) {
+        return tuning == null ? EncounterBuilderInputs.empty().amountValue() : tuning.amountValue();
+    }
+
+    private static boolean isAutoDiversity(EncounterTuningIntent tuning) {
+        return tuning == null || tuning.isDiversityAuto();
+    }
+
+    private static int diversityLevel(EncounterTuningIntent tuning) {
+        return tuning == null ? EncounterBuilderInputs.empty().diversityLevel() : tuning.diversityLevel();
     }
 
     private static EncounterRequestedDifficulty toInternalDifficulty(boolean auto, int difficultyLevel) {

@@ -15,10 +15,10 @@ public final class LoadEncounterBudgetUseCase {
 
     public Result execute() {
         EncounterPartyFactsRepository.PartyBudgetFacts facts = party.loadPartyBudgetFacts();
-        if (facts.status() == EncounterPartyFactsRepository.Status.STORAGE_ERROR) {
+        if (facts.status().isStorageError()) {
             return Result.storageError();
         }
-        if (facts.status() == EncounterPartyFactsRepository.Status.NO_ACTIVE_PARTY) {
+        if (facts.status().isNoActiveParty()) {
             return Result.noActiveParty();
         }
         EncounterDifficultyMath.BudgetSummary summary = EncounterDifficultyMath.summarizeBudget(

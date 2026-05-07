@@ -3,7 +3,7 @@ package src.data.party;
 import shell.api.ServiceContribution;
 import shell.api.ServiceRegistry;
 import src.data.party.repository.SqlitePartyRosterRepository;
-import src.data.party.runtime.PartyBoundaryRuntimeAdapter;
+import src.data.party.repository.PartyBoundaryRuntimeAdapter;
 import src.domain.party.PartyApplicationService;
 import src.domain.party.published.ActivePartyCompositionModel;
 import src.domain.party.published.ActivePartyModel;

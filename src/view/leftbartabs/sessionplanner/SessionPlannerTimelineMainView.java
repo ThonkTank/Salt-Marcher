@@ -18,14 +18,14 @@ public final class SessionPlannerTimelineMainView extends VBox {
     private static final String STYLE_FLAT = "flat";
 
     private final TimelineSection timelineSection = new TimelineSection();
-    private Consumer<SessionPlannerTimelineMainViewInputEvent> viewInputEventHandler = ignored -> { };
+    private Consumer<SessionPlannerViewInputEvent> viewInputEventHandler = ignored -> { };
 
     public SessionPlannerTimelineMainView() {
         getStyleClass().add("session-planner-main");
         getChildren().add(timelineSection);
     }
 
-    public void onViewInputEvent(Consumer<SessionPlannerTimelineMainViewInputEvent> handler) {
+    public void onViewInputEvent(Consumer<SessionPlannerViewInputEvent> handler) {
         viewInputEventHandler = handler == null ? ignored -> { } : handler;
     }
 
@@ -42,7 +42,7 @@ public final class SessionPlannerTimelineMainView extends VBox {
         timelineSection.show(safe.encounters(), safe.restGaps(), this::publish);
     }
 
-    private void publish(SessionPlannerTimelineMainViewInputEvent event) {
+    private void publish(SessionPlannerViewInputEvent event) {
         viewInputEventHandler.accept(event);
     }
 
@@ -58,7 +58,7 @@ public final class SessionPlannerTimelineMainView extends VBox {
         private void show(
                 List<MainProjection.EncounterModel> encounters,
                 List<MainProjection.RestGapModel> gaps,
-                Consumer<SessionPlannerTimelineMainViewInputEvent> publisher
+                Consumer<SessionPlannerViewInputEvent> publisher
         ) {
             rows.show(encounters, gaps, publisher);
         }
@@ -75,7 +75,7 @@ public final class SessionPlannerTimelineMainView extends VBox {
         private void show(
                 List<MainProjection.EncounterModel> encounters,
                 List<MainProjection.RestGapModel> gaps,
-                Consumer<SessionPlannerTimelineMainViewInputEvent> publisher
+                Consumer<SessionPlannerViewInputEvent> publisher
         ) {
             getChildren().clear();
             if (encounters.isEmpty()) {
@@ -97,7 +97,7 @@ public final class SessionPlannerTimelineMainView extends VBox {
         private EncounterCard(
                 MainProjection.EncounterModel encounter,
                 int position,
-                Consumer<SessionPlannerTimelineMainViewInputEvent> publisher
+                Consumer<SessionPlannerViewInputEvent> publisher
         ) {
             super(6);
             Label title = new StyledLabel(position + ". " + encounter.name(), "session-planner-encounter-title");
@@ -136,13 +136,13 @@ public final class SessionPlannerTimelineMainView extends VBox {
 
             ActionButton up = new ActionButton(
                     "Hoch",
-                    () -> moveEvent(encounter.token(), SessionPlannerTimelineMainViewInputEvent.Direction.UP),
+                    () -> moveEvent(encounter.token(), SessionPlannerDirection.UP),
                     STYLE_FLAT);
             up.setDisable(!encounter.canMoveUp());
 
             ActionButton down = new ActionButton(
                     "Runter",
-                    () -> moveEvent(encounter.token(), SessionPlannerTimelineMainViewInputEvent.Direction.DOWN),
+                    () -> moveEvent(encounter.token(), SessionPlannerDirection.DOWN),
                     STYLE_FLAT);
             down.setDisable(!encounter.canMoveDown());
 
@@ -182,7 +182,7 @@ public final class SessionPlannerTimelineMainView extends VBox {
                 MainProjection.RestGapModel gap,
                 int leftEncounter,
                 int rightEncounter,
-                Consumer<SessionPlannerTimelineMainViewInputEvent> publisher
+                Consumer<SessionPlannerViewInputEvent> publisher
         ) {
             super(6);
             Label title = new StyledLabel(
@@ -197,21 +197,21 @@ public final class SessionPlannerTimelineMainView extends VBox {
                     () -> restEvent(
                             gap.leftEncounterId(),
                             gap.rightEncounterId(),
-                            SessionPlannerTimelineMainViewInputEvent.RestSelection.SHORT_REST),
+                            SessionPlannerRestSelection.SHORT_REST),
                     STYLE_FLAT);
             ActionButton longRest = new ActionButton(
                     "Lange Rast",
                     () -> restEvent(
                             gap.leftEncounterId(),
                             gap.rightEncounterId(),
-                            SessionPlannerTimelineMainViewInputEvent.RestSelection.LONG_REST),
+                            SessionPlannerRestSelection.LONG_REST),
                     STYLE_FLAT);
             ActionButton clear = new ActionButton(
                     "Leeren",
                     () -> restEvent(
                             gap.leftEncounterId(),
                             gap.rightEncounterId(),
-                            SessionPlannerTimelineMainViewInputEvent.RestSelection.NONE),
+                            SessionPlannerRestSelection.NONE),
                     STYLE_FLAT);
             clear.setDisable(!gap.hasAssignedRest());
 
@@ -249,16 +249,20 @@ public final class SessionPlannerTimelineMainView extends VBox {
 
     private static final class ActionButton extends Button {
 
-        private final Supplier<SessionPlannerTimelineMainViewInputEvent> eventSupplier;
+        private final Supplier<SessionPlannerViewInputEvent> eventSupplier;
 
         private ActionButton(
                 String text,
-                Supplier<SessionPlannerTimelineMainViewInputEvent> eventSupplier,
+                Supplier<SessionPlannerViewInputEvent> eventSupplier,
                 String emphasisStyle
         ) {
             super(text);
             this.eventSupplier = eventSupplier;
             getStyleClass().addAll(STYLE_COMPACT, emphasisStyle);
+        }
+
+        private void bindTo(Consumer<SessionPlannerViewInputEvent> publisher) {
+            setOnAction(ignored -> publisher.accept(eventSupplier.get()));
         }
     }
 
@@ -272,48 +276,54 @@ public final class SessionPlannerTimelineMainView extends VBox {
 
     private static void bind(
             ActionButton button,
-            Consumer<SessionPlannerTimelineMainViewInputEvent> publisher
+            Consumer<SessionPlannerViewInputEvent> publisher
     ) {
-        button.setOnAction(ignored -> publisher.accept(button.eventSupplier.get()));
+        button.bindTo(publisher);
     }
 
-    private static SessionPlannerTimelineMainViewInputEvent selectEncounterEvent(long encounterToken) {
-        return new SessionPlannerTimelineMainViewInputEvent(
-                new SessionPlannerTimelineMainViewInputEvent.SelectEncounterInput(encounterToken));
+    private static SessionPlannerViewInputEvent selectEncounterEvent(long encounterToken) {
+        return new SessionPlannerViewInputEvent(
+                new SessionPlannerViewInputEvent.EncounterActionInput(
+                        SessionPlannerEncounterAction.SELECT,
+                        new SessionPlannerEncounterRef(encounterToken)));
     }
 
-    private static SessionPlannerTimelineMainViewInputEvent moveEvent(
+    private static SessionPlannerViewInputEvent moveEvent(
             long encounterToken,
-            SessionPlannerTimelineMainViewInputEvent.Direction direction
+            SessionPlannerDirection direction
     ) {
-        return new SessionPlannerTimelineMainViewInputEvent(
-                new SessionPlannerTimelineMainViewInputEvent.MoveEncounterInput(encounterToken, direction));
+        return new SessionPlannerViewInputEvent(
+                new SessionPlannerViewInputEvent.MoveEncounterInput(
+                        new SessionPlannerMoveChange(new SessionPlannerEncounterRef(encounterToken), direction)));
     }
 
-    private static SessionPlannerTimelineMainViewInputEvent removeEncounterEvent(long encounterToken) {
-        return new SessionPlannerTimelineMainViewInputEvent(
-                new SessionPlannerTimelineMainViewInputEvent.RemoveEncounterInput(encounterToken));
+    private static SessionPlannerViewInputEvent removeEncounterEvent(long encounterToken) {
+        return new SessionPlannerViewInputEvent(
+                new SessionPlannerViewInputEvent.EncounterActionInput(
+                        SessionPlannerEncounterAction.REMOVE,
+                        new SessionPlannerEncounterRef(encounterToken)));
     }
 
-    private static SessionPlannerTimelineMainViewInputEvent allocationEvent(
+    private static SessionPlannerViewInputEvent allocationEvent(
             MainProjection.EncounterModel encounter,
             BigDecimal allocationDelta
     ) {
-        return new SessionPlannerTimelineMainViewInputEvent(
-                new SessionPlannerTimelineMainViewInputEvent.SetEncounterAllocationInput(
-                        encounter.token(),
-                        encounter.budgetPercentage().add(allocationDelta)));
+        return new SessionPlannerViewInputEvent(
+                new SessionPlannerViewInputEvent.EncounterAllocationInput(
+                        new SessionPlannerEncounterAllocationChange(
+                                new SessionPlannerEncounterRef(encounter.token()),
+                                encounter.budgetPercentage().add(allocationDelta))));
     }
 
-    private static SessionPlannerTimelineMainViewInputEvent restEvent(
+    private static SessionPlannerViewInputEvent restEvent(
             long leftEncounterId,
             long rightEncounterId,
-            SessionPlannerTimelineMainViewInputEvent.RestSelection restSelection
+            SessionPlannerRestSelection restSelection
     ) {
-        return new SessionPlannerTimelineMainViewInputEvent(
-                new SessionPlannerTimelineMainViewInputEvent.RestGapInput(
-                        leftEncounterId,
-                        rightEncounterId,
-                        restSelection));
+        return new SessionPlannerViewInputEvent(
+                new SessionPlannerViewInputEvent.RestGapInput(
+                        new SessionPlannerRestGapChange(
+                                new SessionPlannerRestGapRef(leftEncounterId, rightEncounterId),
+                                restSelection)));
     }
 }

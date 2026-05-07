@@ -8,15 +8,11 @@ import shell.api.ShellBinding;
 import shell.api.ShellRuntimeContext;
 import shell.api.ShellSlot;
 import src.domain.dungeoneditor.DungeonEditorApplicationService;
-import src.domain.dungeoneditor.published.ApplyDungeonEditorSessionCommand;
-import src.domain.dungeoneditor.published.DungeonEditorCell;
-import src.domain.dungeoneditor.published.DungeonEditorInspectorSnapshot;
-import src.domain.dungeoneditor.published.DungeonEditorMapId;
 import src.domain.dungeoneditor.published.DungeonEditorModel;
-import src.domain.dungeoneditor.published.DungeonEditorOverlaySettings;
-import src.domain.dungeoneditor.published.DungeonEditorTool;
-import src.domain.dungeoneditor.published.DungeonEditorViewMode;
 import src.domain.dungeoneditor.published.LoadDungeonEditorQuery;
+import src.domain.dungeoneditor.session.value.DungeonEditorSessionCommand;
+import src.domain.dungeoneditor.session.value.DungeonEditorSessionValues;
+import src.domain.dungeoneditor.workspace.value.DungeonEditorWorkspaceValues;
 import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel;
 
 final class DungeonEditorBinder {
@@ -58,63 +54,63 @@ final class DungeonEditorBinder {
         mapContentModel.applyEditorSnapshot(snapshot);
     }
 
-    private static ApplyDungeonEditorSessionCommand toCommand(DungeonEditorPublishedEvent event) {
+    private static DungeonEditorSessionCommand toCommand(DungeonEditorPublishedEvent event) {
         if (event == null) {
-            return new ApplyDungeonEditorSessionCommand(
-                    ApplyDungeonEditorSessionCommand.Action.INTERPRET_MAIN_VIEW,
+            return new DungeonEditorSessionCommand(
+                    DungeonEditorSessionCommand.Action.INTERPRET_MAIN_VIEW,
                     null,
                     "",
-                    DungeonEditorViewMode.GRID,
-                    DungeonEditorTool.SELECT,
+                    DungeonEditorSessionValues.ViewMode.GRID,
+                    DungeonEditorSessionValues.Tool.SELECT,
                     0,
-                    DungeonEditorOverlaySettings.defaults(),
-                    ApplyDungeonEditorSessionCommand.MainViewInput.empty(),
-                    ApplyDungeonEditorSessionCommand.RoomNarrationInput.empty());
+                    DungeonEditorSessionValues.OverlaySettings.defaults(),
+                    DungeonEditorSessionCommand.MainViewInput.empty(),
+                    DungeonEditorSessionCommand.RoomNarrationInput.empty());
         }
         DungeonEditorPublishedEvent safeEvent = event;
-        return new ApplyDungeonEditorSessionCommand(
-                ApplyDungeonEditorSessionCommand.Action.valueOf(safeEvent.kind().name()),
+        return new DungeonEditorSessionCommand(
+                DungeonEditorSessionCommand.Action.valueOf(safeEvent.kind().name()),
                 toMapId(safeEvent.mapId()),
                 safeEvent.mapName(),
-                toPublishedViewMode(safeEvent.viewMode()),
-                toPublishedTool(safeEvent.selectedTool()),
+                toViewMode(safeEvent.viewMode()),
+                toTool(safeEvent.selectedTool()),
                 safeEvent.projectionLevelDelta(),
                 toOverlaySettings(safeEvent.overlaySettings()),
                 toMainViewInput(safeEvent.mainViewInput()),
                 toRoomNarrationInput(safeEvent.roomNarration()));
     }
 
-    private static DungeonEditorViewMode toPublishedViewMode(DungeonEditorPublishedEvent.ViewMode viewMode) {
+    private static DungeonEditorSessionValues.ViewMode toViewMode(DungeonEditorPublishedEvent.ViewMode viewMode) {
         return viewMode == DungeonEditorPublishedEvent.ViewMode.GRAPH
-                ? DungeonEditorViewMode.GRAPH
-                : DungeonEditorViewMode.GRID;
+                ? DungeonEditorSessionValues.ViewMode.GRAPH
+                : DungeonEditorSessionValues.ViewMode.GRID;
     }
 
-    private static DungeonEditorTool toPublishedTool(DungeonEditorPublishedEvent.Tool tool) {
-        return tool == null ? DungeonEditorTool.SELECT : DungeonEditorTool.valueOf(tool.name());
+    private static DungeonEditorSessionValues.Tool toTool(DungeonEditorPublishedEvent.Tool tool) {
+        return tool == null ? DungeonEditorSessionValues.Tool.SELECT : DungeonEditorSessionValues.Tool.valueOf(tool.name());
     }
 
-    private static DungeonEditorOverlaySettings toOverlaySettings(
+    private static DungeonEditorSessionValues.OverlaySettings toOverlaySettings(
             DungeonEditorPublishedEvent.OverlaySettings overlaySettings
     ) {
         DungeonEditorPublishedEvent.OverlaySettings safeOverlay = overlaySettings == null
                 ? DungeonEditorPublishedEvent.OverlaySettings.defaults()
                 : overlaySettings;
-        return new DungeonEditorOverlaySettings(
+        return new DungeonEditorSessionValues.OverlaySettings(
                 safeOverlay.modeKey(),
                 safeOverlay.levelRange(),
                 safeOverlay.opacity(),
                 safeOverlay.selectedLevels());
     }
 
-    private static ApplyDungeonEditorSessionCommand.MainViewInput toMainViewInput(
+    private static DungeonEditorSessionCommand.MainViewInput toMainViewInput(
             DungeonEditorPublishedEvent.MainViewInput mainViewInput
     ) {
         DungeonEditorPublishedEvent.MainViewInput safeInput = mainViewInput == null
                 ? DungeonEditorPublishedEvent.MainViewInput.empty()
                 : mainViewInput;
-        return new ApplyDungeonEditorSessionCommand.MainViewInput(
-                ApplyDungeonEditorSessionCommand.MainViewInput.Source.valueOf(safeInput.source().name()),
+        return new DungeonEditorSessionCommand.MainViewInput(
+                DungeonEditorSessionCommand.MainViewInputSource.valueOf(safeInput.source().name()),
                 safeInput.canvasX(),
                 safeInput.canvasY(),
                 safeInput.primaryButtonDown(),
@@ -123,27 +119,27 @@ final class DungeonEditorBinder {
                 safeInput.levelDelta());
     }
 
-    private static ApplyDungeonEditorSessionCommand.RoomNarrationInput toRoomNarrationInput(
+    private static DungeonEditorSessionCommand.RoomNarrationInput toRoomNarrationInput(
             DungeonEditorPublishedEvent.RoomNarrationInput roomNarration
     ) {
         DungeonEditorPublishedEvent.RoomNarrationInput safeNarration = roomNarration == null
                 ? DungeonEditorPublishedEvent.RoomNarrationInput.empty()
                 : roomNarration;
-        return new ApplyDungeonEditorSessionCommand.RoomNarrationInput(
+        return new DungeonEditorSessionCommand.RoomNarrationInput(
                 safeNarration.roomId(),
                 safeNarration.visualDescription(),
-                safeNarration.exits().stream().map(DungeonEditorBinder::toPublishedExit).toList());
+                safeNarration.exits().stream().map(DungeonEditorBinder::toRoomExit).toList());
     }
 
-    private static DungeonEditorInspectorSnapshot.RoomExitNarration toPublishedExit(
+    private static DungeonEditorWorkspaceValues.RoomExitNarration toRoomExit(
             DungeonEditorPublishedEvent.RoomExitNarration exit
     ) {
         DungeonEditorPublishedEvent.RoomExitNarration safeExit = exit == null
                 ? new DungeonEditorPublishedEvent.RoomExitNarration("", DungeonEditorPublishedEvent.CellRef.empty(), "", "")
                 : exit;
-        return new DungeonEditorInspectorSnapshot.RoomExitNarration(
+        return new DungeonEditorWorkspaceValues.RoomExitNarration(
                 safeExit.label(),
-                new DungeonEditorCell(
+                new DungeonEditorWorkspaceValues.Cell(
                         safeExit.cell().q(),
                         safeExit.cell().r(),
                         safeExit.cell().level()),
@@ -151,8 +147,8 @@ final class DungeonEditorBinder {
                 safeExit.description());
     }
 
-    private static @Nullable DungeonEditorMapId toMapId(long mapId) {
-        return mapId <= 0L ? null : new DungeonEditorMapId(mapId);
+    private static DungeonEditorWorkspaceValues.MapId toMapId(long mapId) {
+        return mapId <= 0L ? null : new DungeonEditorWorkspaceValues.MapId(mapId);
     }
 
     private record Binding(

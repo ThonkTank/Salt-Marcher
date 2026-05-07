@@ -1,6 +1,8 @@
 package src.domain.encounter.generation.policy;
 
-import src.domain.encounter.generation.value.*;
+import src.domain.encounter.generation.value.EncounterCandidateCombatStats;
+import src.domain.encounter.generation.value.EncounterCandidateProfile;
+import src.domain.encounter.generation.value.EncounterCreatureFacts;
 
 public final class EncounterCandidateProfiles {
 

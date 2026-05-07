@@ -16,7 +16,7 @@ public final class ListSavedEncounterPlansUseCase {
     public Result execute() {
         try {
             return Result.success(repository.list());
-        } catch (RuntimeException exception) {
+        } catch (IllegalStateException exception) {
             return Result.storageError("Encounter plans could not be loaded.");
         }
     }
@@ -43,6 +43,10 @@ public final class ListSavedEncounterPlansUseCase {
 
     public enum Status {
         SUCCESS,
-        STORAGE_ERROR
+        STORAGE_ERROR;
+
+        boolean loadedSuccessfully() {
+            return this == SUCCESS;
+        }
     }
 }

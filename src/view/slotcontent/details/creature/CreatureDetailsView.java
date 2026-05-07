@@ -182,8 +182,8 @@ public final class CreatureDetailsView extends VBox {
 
     private static final class AbilityGrid extends GridPane {
 
-        AbilityGrid(@Nullable List<CreatureDetailsContentModel.AbilityScore> scores) {
-            List<CreatureDetailsContentModel.AbilityScore> safeScores = NodeSupport.safeList(scores);
+        AbilityGrid(@Nullable List<CreatureDetailsContentModel.PropertyLine> scores) {
+            List<CreatureDetailsContentModel.PropertyLine> safeScores = NodeSupport.safeList(scores);
             getStyleClass().add("stat-block-abilities");
             setAlignment(Pos.CENTER);
             setHgap(0);
@@ -195,7 +195,7 @@ public final class CreatureDetailsView extends VBox {
 
         private void addAbility(
                 int index,
-                CreatureDetailsContentModel.AbilityScore score,
+                CreatureDetailsContentModel.PropertyLine score,
                 int scoreCount
         ) {
             ColumnConstraints constraints = new ColumnConstraints();

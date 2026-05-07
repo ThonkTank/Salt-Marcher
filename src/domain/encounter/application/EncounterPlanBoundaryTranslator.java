@@ -12,13 +12,8 @@ public final class EncounterPlanBoundaryTranslator {
     public static SavedEncounterPlanStatus toPublishedListPlansStatus(
             ListSavedEncounterPlansUseCase.Status status
     ) {
-        ListSavedEncounterPlansUseCase.Status effectiveStatus = status == null
-                ? ListSavedEncounterPlansUseCase.Status.STORAGE_ERROR
-                : status;
-        if (effectiveStatus == ListSavedEncounterPlansUseCase.Status.SUCCESS) {
-            return SavedEncounterPlanStatus.SUCCESS;
-        }
-        return SavedEncounterPlanStatus.STORAGE_ERROR;
+        return SavedEncounterPlanStatus.valueOf(
+                status != null && status.loadedSuccessfully() ? "SUCCESS" : "STORAGE_ERROR");
     }
 
     public static SavedEncounterPlanSummary toPublishedSummary(EncounterPlanSummary summary) {

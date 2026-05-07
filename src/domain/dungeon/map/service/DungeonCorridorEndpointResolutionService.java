@@ -28,6 +28,7 @@ public final class DungeonCorridorEndpointResolutionService {
 
     private static final DungeonCorridorConnectionNormalizationService CONNECTION_NORMALIZATION_SERVICE =
             new DungeonCorridorConnectionNormalizationService();
+    private static final DungeonMapLookupService LOOKUP_SERVICE = new DungeonMapLookupService();
 
     public @Nullable ResolvedEndpointResult resolve(DungeonMap dungeonMap, DungeonCorridorEndpoint endpoint) {
         Objects.requireNonNull(dungeonMap, "dungeonMap");
@@ -47,13 +48,13 @@ public final class DungeonCorridorEndpointResolutionService {
             DungeonMap dungeonMap,
             DungeonCorridorDoorEndpoint endpoint
     ) {
-        DungeonRoomCluster cluster = cluster(dungeonMap, endpoint.clusterId());
+        DungeonRoomCluster cluster = LOOKUP_SERVICE.cluster(dungeonMap, endpoint.clusterId());
         if (cluster == null) {
             return null;
         }
         DungeonEdge edge = DungeonEdge.sideOf(endpoint.roomCell(), endpoint.direction());
         DungeonMap mapped = ensureDoorBoundary(dungeonMap, endpoint.clusterId(), edge);
-        DungeonRoomCluster mappedCluster = cluster(mapped, endpoint.clusterId());
+        DungeonRoomCluster mappedCluster = LOOKUP_SERVICE.cluster(mapped, endpoint.clusterId());
         DungeonClusterBoundary boundary = boundaryAt(mapped, endpoint.clusterId(), edge);
         if (mappedCluster == null || boundary == null || !boundary.isDoor()) {
             return null;
@@ -74,7 +75,7 @@ public final class DungeonCorridorEndpointResolutionService {
             DungeonMap dungeonMap,
             DungeonCorridorAnchorEndpoint endpoint
     ) {
-        DungeonCorridor host = corridor(dungeonMap, endpoint.hostCorridorId());
+        DungeonCorridor host = LOOKUP_SERVICE.corridor(dungeonMap, endpoint.hostCorridorId());
         if (host == null) {
             return null;
         }
@@ -106,7 +107,7 @@ public final class DungeonCorridorEndpointResolutionService {
                         dungeonMap.connections().stairs(),
                         dungeonMap.connections().transitions()));
         DungeonCorridorAnchorBinding resolved = findAnchorBinding(
-                corridor(mapped, host.corridorId()),
+                LOOKUP_SERVICE.corridor(mapped, host.corridorId()),
                 created.topologyRef(),
                 created.absoluteCell());
         return resolved == null ? null : new ResolvedEndpointResult(mapped, ResolvedCorridorEndpoint.forAnchor(resolved));
@@ -127,7 +128,7 @@ public final class DungeonCorridorEndpointResolutionService {
 
     @Nullable
     private static DungeonClusterBoundary boundaryAt(DungeonMap dungeonMap, long clusterId, DungeonEdge edge) {
-        DungeonRoomCluster cluster = cluster(dungeonMap, clusterId);
+        DungeonRoomCluster cluster = LOOKUP_SERVICE.cluster(dungeonMap, clusterId);
         if (cluster == null || edge == null) {
             return null;
         }
@@ -165,22 +166,6 @@ public final class DungeonCorridorEndpointResolutionService {
                 .mapToLong(DungeonCorridorAnchorBinding::anchorId)
                 .max()
                 .orElse(0L) + 1L;
-    }
-
-    @Nullable
-    private static DungeonRoomCluster cluster(DungeonMap dungeonMap, long clusterId) {
-        return dungeonMap.topology().roomClusters().stream()
-                .filter(cluster -> cluster.clusterId() == clusterId)
-                .findFirst()
-                .orElse(null);
-    }
-
-    @Nullable
-    private static DungeonCorridor corridor(DungeonMap dungeonMap, long corridorId) {
-        return dungeonMap.connections().corridors().stream()
-                .filter(candidate -> candidate.corridorId() == corridorId)
-                .findFirst()
-                .orElse(null);
     }
 
     public record ResolvedEndpointResult(DungeonMap map, ResolvedCorridorEndpoint endpoint) {

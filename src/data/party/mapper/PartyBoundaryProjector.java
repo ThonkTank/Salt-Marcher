@@ -1,4 +1,4 @@
-package src.data.party.runtime;
+package src.data.party.mapper;
 
 import java.util.List;
 import org.jspecify.annotations.Nullable;

@@ -2,12 +2,12 @@ package src.domain.sessionplanner.published;
 
 import java.math.BigDecimal;
 
-public record SetSessionEncounterAllocationCommand(
+public record SessionPlannerEncounterAllocationCommand(
         long encounterId,
         BigDecimal budgetPercentage
 ) {
 
-    public SetSessionEncounterAllocationCommand {
+    public SessionPlannerEncounterAllocationCommand {
         encounterId = Math.max(0L, encounterId);
         budgetPercentage = budgetPercentage == null ? BigDecimal.ZERO : budgetPercentage;
     }

@@ -1,9 +1,10 @@
-package src.data.party.runtime;
+package src.data.party.repository;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
+import src.data.party.mapper.PartyBoundaryProjector;
 import src.domain.party.application.CalculateAdventuringDayUseCase;
 import src.domain.party.application.LoadActivePartyCompositionUseCase;
 import src.domain.party.application.LoadActivePartyUseCase;
@@ -98,34 +99,6 @@ public final class PartyBoundaryRuntimeAdapter implements PartyRosterRepository,
     public void save(PartyRoster roster) {
         delegate.save(roster);
         refreshRepositoryBackedState(true);
-    }
-
-    public PartySnapshotModel partySnapshotModel() {
-        return partySnapshotModel;
-    }
-
-    public ActivePartyModel activePartyModel() {
-        return activePartyModel;
-    }
-
-    public ActivePartyCompositionModel activePartyCompositionModel() {
-        return activePartyCompositionModel;
-    }
-
-    public AdventuringDaySummaryModel adventuringDaySummaryModel() {
-        return adventuringDaySummaryModel;
-    }
-
-    public PartyTravelPositionsModel partyTravelPositionsModel() {
-        return partyTravelPositionsModel;
-    }
-
-    public PartyMutationModel partyMutationModel() {
-        return partyMutationModel;
-    }
-
-    public AdventuringDayCalculationModel adventuringDayCalculationModel() {
-        return adventuringDayCalculationModel;
     }
 
     @Override

@@ -47,6 +47,7 @@ final class InterpretDungeonEditorMainViewInputUseCase {
         if (!pointerInteractionEnabled(viewMode, snapshot)) {
             return DungeonEditorMainViewEffect.none();
         }
+        MapSnapshot activeSnapshot = snapshot;
         PointerState pointer = inputTranslator.resolvePointerState(
                 safeInput.canvasX(),
                 safeInput.canvasY(),
@@ -54,7 +55,7 @@ final class InterpretDungeonEditorMainViewInputUseCase {
                 safeInput.primaryButtonDown(),
                 safeInput.secondaryButtonDown(),
                 safeInput.hitRef());
-        return pointerEffect(safeInput, pointer, snapshot, selection, selectedTool);
+        return pointerEffect(safeInput, pointer, activeSnapshot, selection, selectedTool);
     }
 
     void clear() {

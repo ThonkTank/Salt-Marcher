@@ -12,6 +12,7 @@ import java.util.function.ToDoubleFunction;
 import java.util.function.ToIntFunction;
 import java.util.function.ToLongFunction;
 import org.jspecify.annotations.Nullable;
+import src.domain.dungeon.published.DungeonTopologyKind;
 import src.domain.dungeoneditor.published.DungeonEditorHandleRef;
 import src.domain.dungeoneditor.published.DungeonEditorMapProjectionSnapshot;
 import src.domain.dungeoneditor.published.DungeonEditorOverlaySettings;
@@ -232,12 +233,8 @@ record DungeonMapRenderState(
         SQUARE,
         HEX;
 
-        static Topology fromEditor(DungeonEditorMapProjectionSnapshot.TopologyKind topologyKind) {
-            return topologyKind == DungeonEditorMapProjectionSnapshot.TopologyKind.HEX ? HEX : SQUARE;
-        }
-
-        static Topology fromTravel(TravelDungeonMapProjectionSnapshot.TopologyKind topologyKind) {
-            return topologyKind == TravelDungeonMapProjectionSnapshot.TopologyKind.HEX ? HEX : SQUARE;
+        static Topology fromPublished(DungeonTopologyKind topologyKind) {
+            return topologyKind == DungeonTopologyKind.HEX ? HEX : SQUARE;
         }
     }
 
@@ -989,7 +986,7 @@ final class DungeonMapEditorProjectionAccess {
                     DungeonEditorMapProjectionSnapshot::mapName,
                     DungeonEditorMapProjectionSnapshot::width,
                     DungeonEditorMapProjectionSnapshot::height,
-                    projection -> DungeonMapRenderState.Topology.fromEditor(projection.topology()),
+                    projection -> DungeonMapRenderState.Topology.fromPublished(projection.topology()),
                     DungeonEditorMapProjectionSnapshot::cells,
                     new DungeonMapProjectionElements.CellReader<>(
                             DungeonEditorMapProjectionSnapshot.CellProjection::q,
@@ -1089,8 +1086,8 @@ final class DungeonMapTravelProjectionAccess {
                     TravelDungeonMapProjectionSnapshot::mapName,
                     TravelDungeonMapProjectionSnapshot::width,
                     TravelDungeonMapProjectionSnapshot::height,
-                    projection -> DungeonMapRenderState.Topology.fromTravel(projection.topology()),
-                    TravelDungeonMapProjectionSnapshot::cells,
+                    projection -> DungeonMapRenderState.Topology.fromPublished(projection.topology()),
+                    projection -> projection.content().cells(),
                     new DungeonMapProjectionElements.CellReader<>(
                             TravelDungeonMapProjectionSnapshot.CellProjection::q,
                             TravelDungeonMapProjectionSnapshot.CellProjection::r,
@@ -1105,7 +1102,7 @@ final class DungeonMapTravelProjectionAccess {
                             TravelDungeonMapProjectionSnapshot.CellProjection::overlay,
                             TravelDungeonMapProjectionSnapshot.CellProjection::preview,
                             TravelDungeonMapProjectionSnapshot.CellProjection::destructivePreview),
-                    TravelDungeonMapProjectionSnapshot::edges,
+                    projection -> projection.content().edges(),
                     new DungeonMapProjectionElements.EdgeReader<>(
                             TravelDungeonMapProjectionSnapshot.EdgeProjection::startQ,
                             TravelDungeonMapProjectionSnapshot.EdgeProjection::startR,
@@ -1119,7 +1116,7 @@ final class DungeonMapTravelProjectionAccess {
                             edge -> edge.topologyRef().id(),
                             TravelDungeonMapProjectionSnapshot.EdgeProjection::selected,
                             TravelDungeonMapProjectionSnapshot.EdgeProjection::preview),
-                    TravelDungeonMapProjectionSnapshot::labels,
+                    projection -> projection.content().labels(),
                     new DungeonMapProjectionElements.LabelReader<>(
                             TravelDungeonMapProjectionSnapshot.LabelProjection::label,
                             TravelDungeonMapProjectionSnapshot.LabelProjection::q,
@@ -1131,7 +1128,7 @@ final class DungeonMapTravelProjectionAccess {
                             label -> label.topologyRef().id(),
                             TravelDungeonMapProjectionSnapshot.LabelProjection::selected,
                             TravelDungeonMapProjectionSnapshot.LabelProjection::preview),
-                    TravelDungeonMapProjectionSnapshot::markers,
+                    projection -> projection.content().markers(),
                     new DungeonMapProjectionElements.MarkerReader<>(
                             TravelDungeonMapProjectionSnapshot.MarkerProjection::label,
                             TravelDungeonMapProjectionSnapshot.MarkerProjection::q,
@@ -1154,7 +1151,7 @@ final class DungeonMapTravelProjectionAccess {
                                     TravelDungeonMapProjectionSnapshot.MarkerHandle::level,
                                     TravelDungeonMapProjectionSnapshot.MarkerHandle::direction),
                             TravelDungeonMapProjectionSnapshot.MarkerProjection::preview),
-                    TravelDungeonMapProjectionSnapshot::graphNodes,
+                    projection -> projection.content().graphNodes(),
                     new DungeonMapProjectionElements.GraphNodeReader<>(
                             TravelDungeonMapProjectionSnapshot.GraphNodeProjection::id,
                             TravelDungeonMapProjectionSnapshot.GraphNodeProjection::clusterId,
@@ -1162,7 +1159,7 @@ final class DungeonMapTravelProjectionAccess {
                             TravelDungeonMapProjectionSnapshot.GraphNodeProjection::q,
                             TravelDungeonMapProjectionSnapshot.GraphNodeProjection::r,
                             TravelDungeonMapProjectionSnapshot.GraphNodeProjection::selected),
-                    TravelDungeonMapProjectionSnapshot::graphLinks,
+                    projection -> projection.content().graphLinks(),
                     new DungeonMapProjectionElements.GraphLinkReader<>(
                             TravelDungeonMapProjectionSnapshot.GraphLinkProjection::fromId,
                             TravelDungeonMapProjectionSnapshot.GraphLinkProjection::toId,

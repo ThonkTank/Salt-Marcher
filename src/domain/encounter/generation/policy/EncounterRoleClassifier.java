@@ -1,10 +1,7 @@
 package src.domain.encounter.generation.policy;
 
-import src.domain.encounter.generation.value.*;
-
-import org.jspecify.annotations.Nullable;
-
 import java.util.List;
+import src.domain.encounter.generation.value.EncounterCreatureFacts;
 
 public final class EncounterRoleClassifier {
 
