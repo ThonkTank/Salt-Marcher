@@ -8,6 +8,7 @@ import org.jspecify.annotations.Nullable;
 final class DungeonEditorIntentHandler {
 
     private static final String NAME_MISSING_ERROR = "Name fehlt.";
+    private static final long NO_MAP_ID = 0L;
 
     private final DungeonEditorContributionModel presentationModel;
     private Consumer<DungeonEditorPublishedEvent> publishedEventListener = ignored -> {};
@@ -79,7 +80,7 @@ final class DungeonEditorIntentHandler {
         }
         long selectedMapIdValue = mapSelection.selectedMapIdValue();
         DungeonEditorInteractionState interactionState = presentationModel.currentInteractionState();
-        if (selectedMapIdValue > DungeonEditorInteractionState.NO_MAP_ID
+        if (selectedMapIdValue > NO_MAP_ID
                 && selectedMapIdValue != interactionState.currentSelectedMapIdValue()) {
             publish(DungeonEditorPublishedEvent.selectMap(selectedMapIdValue));
         }
@@ -134,7 +135,7 @@ final class DungeonEditorIntentHandler {
         }
         if (mapEditorUiState.isRenameMode()) {
             long mapIdValue = mapEditorUiState.mapIdValue();
-            if (mapIdValue > DungeonEditorInteractionState.NO_MAP_ID) {
+            if (mapIdValue > NO_MAP_ID) {
                 presentationModel.applyLocalMutation(new CloseMapEditorMutation());
                 publish(DungeonEditorPublishedEvent.renameMap(mapIdValue, draftName));
             }
@@ -147,7 +148,7 @@ final class DungeonEditorIntentHandler {
             return;
         }
         long mapIdValue = mapEditorUiState.mapIdValue();
-        if (mapIdValue > DungeonEditorInteractionState.NO_MAP_ID) {
+        if (mapIdValue > NO_MAP_ID) {
             presentationModel.applyLocalMutation(new CloseMapEditorMutation());
             publish(DungeonEditorPublishedEvent.deleteMap(mapIdValue));
         }

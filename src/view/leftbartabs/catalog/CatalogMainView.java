@@ -1,12 +1,9 @@
 package src.view.leftbartabs.catalog;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.function.Consumer;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.SimpleStringProperty;
-import javafx.beans.value.ChangeListener;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
@@ -14,7 +11,6 @@ import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
-import javafx.scene.control.SelectionMode;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
@@ -49,6 +45,7 @@ public final class CatalogMainView extends BorderPane {
     private static final String SORT_LABEL_CR_DESC = "CR (abst.)";
     private static final String SORT_LABEL_XP_ASC = "XP (aufst.)";
     private static final String SORT_LABEL_XP_DESC = "XP (abst.)";
+    private static final String NO_SORT_LABEL = "";
     private static final String COLUMN_KEY_CHALLENGE_RATING = "cr";
     private static final String COLUMN_KEY_TYPE = "type";
     private static final String COLUMN_KEY_SIZE = "size";
@@ -171,17 +168,12 @@ public final class CatalogMainView extends BorderPane {
     private static final class SortSelector extends ComboBox<CatalogContributionModel.KeyLabel> {
 
         private final ObservableList<CatalogContributionModel.KeyLabel> sortItems = FXCollections.observableArrayList();
-        private final ChangeListener<CatalogContributionModel.KeyLabel> selectionListener;
+        private final Consumer<String> selectionConsumer;
 
         SortSelector(Consumer<String> selectionConsumer) {
+            this.selectionConsumer = selectionConsumer;
             setItems(sortItems);
-            selectionListener = (obs, before, after) -> {
-                String selectedKey = keyForLabel(after == null ? "" : after.toString());
-                if (!selectedKey.isBlank()) {
-                    selectionConsumer.accept(selectedKey);
-                }
-            };
-            valueProperty().addListener(selectionListener);
+            installSelectionPublisher();
         }
 
         void applyOptions(List<CatalogContributionModel.KeyLabel> options) {
@@ -193,14 +185,17 @@ public final class CatalogMainView extends BorderPane {
             if (label.isBlank()) {
                 return;
             }
-            withDetachedSelectionListener(() -> {
+            suspendSelectionPublisher();
+            try {
                 for (CatalogContributionModel.KeyLabel selection : sortItems) {
-                    if (Objects.equals(selection.toString(), label)) {
+                    if (label.equals(selection.toString())) {
                         getSelectionModel().select(selection);
                         return;
                     }
                 }
-            });
+            } finally {
+                installSelectionPublisher();
+            }
         }
 
         private static String keyForLabel(String label) {
@@ -223,17 +218,22 @@ public final class CatalogMainView extends BorderPane {
                 case SORT_KEY_CR_DESC -> SORT_LABEL_CR_DESC;
                 case SORT_KEY_XP_ASC -> SORT_LABEL_XP_ASC;
                 case SORT_KEY_XP_DESC -> SORT_LABEL_XP_DESC;
-                default -> "";
+                default -> NO_SORT_LABEL;
             };
         }
 
-        private void withDetachedSelectionListener(Runnable action) {
-            valueProperty().removeListener(selectionListener);
-            try {
-                action.run();
-            } finally {
-                valueProperty().addListener(selectionListener);
-            }
+        private void installSelectionPublisher() {
+            setOnAction(event -> {
+                String selectedKey = keyForLabel(getValue() == null ? NO_SORT_LABEL : getValue().toString());
+                if (!selectedKey.isBlank()) {
+                    selectionConsumer.accept(selectedKey);
+                }
+            });
+        }
+
+        private void suspendSelectionPublisher() {
+            setOnAction(event -> {
+            });
         }
     }
 
@@ -252,7 +252,6 @@ public final class CatalogMainView extends BorderPane {
             this.addCreatureAction = addCreatureAction;
             setItems(rowItems);
             setColumnResizePolicy(CONSTRAINED_RESIZE_POLICY);
-            getSelectionModel().setSelectionMode(SelectionMode.SINGLE);
             setPlaceholder(placeholder);
             setOnKeyPressed(event -> {
                 if (event.getCode() != KeyCode.ENTER) {
@@ -285,15 +284,15 @@ public final class CatalogMainView extends BorderPane {
                 List<CatalogContributionModel.KeyLabel> columns
         ) {
             List<CatalogContributionModel.KeyLabel> safeColumns = columns == null ? List.of() : List.copyOf(columns);
-            List<TableColumn<CatalogContributionModel.CatalogRow, ?>> configuredColumns =
-                    new ArrayList<>(safeColumns.size() + 1);
+            TableColumn<CatalogContributionModel.CatalogRow, ?>[] configuredColumns =
+                    new TableColumn[safeColumns.size() + 1];
             for (int index = 0; index < safeColumns.size(); index++) {
-                configuredColumns.add(index == FIRST_COLUMN_INDEX
+                configuredColumns[index] = index == FIRST_COLUMN_INDEX
                         ? createLinkColumn(safeColumns.get(index))
-                        : createTextColumn(safeColumns.get(index), index));
+                        : createTextColumn(safeColumns.get(index), index);
             }
-            configuredColumns.add(createActionColumn());
-            return configuredColumns;
+            configuredColumns[safeColumns.size()] = createActionColumn();
+            return List.of(configuredColumns);
         }
 
         private TableColumn<CatalogContributionModel.CatalogRow, String> createTextColumn(

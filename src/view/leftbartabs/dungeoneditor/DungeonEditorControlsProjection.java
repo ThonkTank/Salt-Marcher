@@ -137,7 +137,19 @@ enum DungeonEditorMapEditorMode {
     HIDDEN,
     CREATE,
     RENAME,
-    DELETE
+    DELETE;
+
+    static DungeonEditorMapEditorMode hiddenMode() {
+        return HIDDEN;
+    }
+
+    boolean isRenameMode() {
+        return this == RENAME;
+    }
+
+    boolean isDeleteMode() {
+        return this == DELETE;
+    }
 }
 
 record DungeonEditorMapEditorUiState(
@@ -154,7 +166,7 @@ record DungeonEditorMapEditorUiState(
         boolean deleteConfirmationVisible
 ) {
     DungeonEditorMapEditorUiState {
-        mode = mode == null ? DungeonEditorMapEditorMode.HIDDEN : mode;
+        mode = mode == null ? DungeonEditorMapEditorMode.hiddenMode() : mode;
         mapIdValue = Math.max(0L, mapIdValue);
         title = title == null ? "" : title;
         draftName = draftName == null ? "" : draftName.strip();

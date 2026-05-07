@@ -85,5 +85,9 @@ record DungeonEditorProjectionSource(
                     : selection;
             return new SelectionData(safeSelection.topologyRef().kind(), safeSelection.topologyRef().id());
         }
+
+        boolean isEmpty() {
+            return "EMPTY".equals(kind);
+        }
     }
 }

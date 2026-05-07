@@ -2,6 +2,13 @@ package src.view.leftbartabs.dungeoneditor;
 
 import org.jspecify.annotations.Nullable;
 
+final class DungeonEditorLocalIds {
+    static final long NO_MAP_ID = 0L;
+
+    private DungeonEditorLocalIds() {
+    }
+}
+
 record DungeonEditorLocalState(
         DungeonEditorMapEditorUiState mapEditorUiState,
         DungeonEditorToolPaletteUiState toolPaletteUiState
@@ -40,8 +47,8 @@ record OpenSelectedMapEditorMutation(
         long mapIdValue
 ) implements DungeonEditorLocalMutation {
     OpenSelectedMapEditorMutation {
-        mode = mode == null ? DungeonEditorMapEditorMode.HIDDEN : mode;
-        mapIdValue = Math.max(DungeonEditorInteractionState.NO_MAP_ID, mapIdValue);
+        mode = mode == null ? DungeonEditorMapEditorMode.hiddenMode() : mode;
+        mapIdValue = Math.max(DungeonEditorLocalIds.NO_MAP_ID, mapIdValue);
     }
 }
 
@@ -101,11 +108,11 @@ final class DungeonEditorLocalStateReducer {
         if (mapEntry == null) {
             return localState.withMapEditorUiState(DungeonEditorMapEditorUiState.hidden());
         }
-        if (mutation.mode() == DungeonEditorMapEditorMode.RENAME) {
+        if (mutation.mode().isRenameMode()) {
             return localState.withMapEditorUiState(
                     DungeonEditorMapEditorUiState.rename(mapEntry.mapIdValue(), mapEntry.mapName()));
         }
-        if (mutation.mode() == DungeonEditorMapEditorMode.DELETE) {
+        if (mutation.mode().isDeleteMode()) {
             return localState.withMapEditorUiState(
                     DungeonEditorMapEditorUiState.delete(mapEntry.mapIdValue(), mapEntry.mapName()));
         }

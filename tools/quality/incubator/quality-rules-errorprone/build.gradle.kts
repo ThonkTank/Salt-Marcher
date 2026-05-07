@@ -83,7 +83,7 @@ val standaloneBundleDescriptors = loadStandaloneBundleDescriptors()
 val effectiveBundleDescriptors = if (activeEnforcementBundleIds.isEmpty()) {
     standaloneBundleDescriptors
 } else {
-    activeEnforcementBundleIds.mapNotNull { bundleId ->
+    val focusedDescriptors = activeEnforcementBundleIds.map { bundleId ->
         enforcementBundles.descriptor(bundleId).let { descriptor ->
             StandaloneBundleDescriptor(
                 bundleId = descriptor.bundleId,
@@ -92,6 +92,16 @@ val effectiveBundleDescriptors = if (activeEnforcementBundleIds.isEmpty()) {
             )
         }
     }
+    focusedDescriptors
+        .filter { descriptor ->
+            descriptor.errorProneSourceDir != null && descriptor.errorProneServiceFile != null
+        }
+        .ifEmpty {
+            // Focused bundles such as jQAssistant-only layering checks still compile with the shared
+            // Error Prone plugin on the classpath, so fall back to the full checker registry instead of
+            // producing a focus-sensitive partial plugin jar with stale or missing service entries.
+            standaloneBundleDescriptors
+        }
 }
 val effectiveErrorProneSourceDirs = effectiveBundleDescriptors.mapNotNull(StandaloneBundleDescriptor::errorProneSourceDir)
 val effectiveBugCheckerServices = effectiveBundleDescriptors.mapNotNull(StandaloneBundleDescriptor::errorProneServiceFile).map(::File)
