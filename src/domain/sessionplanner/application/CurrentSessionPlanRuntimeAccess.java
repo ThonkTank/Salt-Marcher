@@ -35,7 +35,7 @@ public final class CurrentSessionPlanRuntimeAccess {
     }
 
     public SessionPlan createNewSession() {
-        currentSession = persist(seedFactory.createSeeded(nextSessionId()).withStatus("Neue Session erstellt."), true);
+        currentSession = persist(createSeeded(nextSessionId()).withStatus("Neue Session erstellt."), true);
         return currentSession;
     }
 

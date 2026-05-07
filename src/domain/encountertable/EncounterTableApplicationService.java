@@ -87,23 +87,10 @@ public final class EncounterTableApplicationService {
     }
 
     private static EncounterTableSummary toPublishedSummary(EncounterTableSummaryData summary) {
-        return new EncounterTableSummary(summary.tableId(), summary.name(), summary.linkedLootTableId());
+        return EncounterTableSummary.fromData(summary);
     }
 
     private static EncounterTableCandidate toPublishedCandidate(EncounterTableCandidateData candidate) {
-        return new EncounterTableCandidate(
-                candidate.creatureId(),
-                candidate.name(),
-                candidate.creatureType(),
-                candidate.challengeRating(),
-                candidate.xp(),
-                candidate.hitPoints(),
-                candidate.hitDiceCount(),
-                candidate.hitDiceSides(),
-                candidate.hitDiceModifier(),
-                candidate.armorClass(),
-                candidate.initiativeBonus(),
-                candidate.legendaryActionCount(),
-                candidate.weight());
+        return EncounterTableCandidate.fromData(candidate);
     }
 }
