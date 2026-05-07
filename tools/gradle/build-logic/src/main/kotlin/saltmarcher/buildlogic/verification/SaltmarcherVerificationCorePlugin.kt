@@ -96,7 +96,7 @@ internal fun Project.configureVerificationCore() {
                         jqassistant.scanDescription,
                         jqassistant.analyzeDescription,
                         jqassistant.ruleGroups,
-                        jqassistant.rulesDirPath,
+                        jqassistant.rulesDirPaths,
                         jqassistant.reportsDirPath,
                         compileTask
                     )

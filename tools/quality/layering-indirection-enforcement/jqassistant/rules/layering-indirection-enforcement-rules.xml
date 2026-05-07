@@ -11,102 +11,22 @@
         <includeConstraint refId="saltmarcher:ThinRelayStackCandidate"/>
     </group>
 
-    <concept id="saltmarcher:IndirectionProductionTypeMetadata">
-        <description>Annotates SaltMarcher production types with stable report metadata for relay-only role analysis.</description>
-        <cypher><![CDATA[
-            MATCH (type:Java:Type)
-            WHERE
-              type.fqn =~ 'shell\\..*'
-              OR type.fqn =~ 'src\\..*'
-            WITH
-              type,
-              coalesce(type.sourceFileName, '') AS sourceFileName
-            SET
-              type:SaltMarcher:IndirectionProductionType,
-              type.relativePath = CASE
-                WHEN sourceFileName = ''
-                  OR type.name IS NULL
-                  OR type.name = ''
-                  OR NOT type.fqn ENDS WITH '.' + type.name
-                  THEN replace(type.fqn, '.', '/') + '.java'
-                ELSE replace(substring(type.fqn, 0, size(type.fqn) - size(type.name) - 1), '.', '/') + '/' + sourceFileName
-              END
-            RETURN type AS IndirectionProductionType
-        ]]></cypher>
-    </concept>
-
-    <concept id="saltmarcher:LayeringIndirectionRoleType">
-        <requiresConcept refId="saltmarcher:IndirectionProductionTypeMetadata"/>
-        <description>Labels the focused SaltMarcher relay-sensitive role families and records whether each role is intentionally thin.</description>
-        <cypher><![CDATA[
-            MATCH (type:Java:Type:SaltMarcher:IndirectionProductionType)
-            WITH
-              type,
-              split(type.fqn, '.') AS segments,
-              CASE
-                WHEN type.fqn =~ 'src\\.domain\\.[^.]+\\.[^.]+ApplicationService(\\$.*)?' THEN 'DOMAIN_APPLICATION_SERVICE'
-                WHEN type.fqn =~ 'src\\.domain\\.[^.]+\\.application\\..*UseCase(\\$.*)?' THEN 'DOMAIN_USE_CASE'
-                WHEN type.fqn =~ 'src\\.domain\\.[^.]+\\.[^.]+\\.service\\..*' THEN 'DOMAIN_SERVICE'
-                WHEN type.fqn =~ 'src\\.domain\\.[^.]+\\.[^.]+\\.policy\\..*' THEN 'DOMAIN_POLICY'
-                WHEN type.fqn =~ 'src\\.domain\\.[^.]+\\.[^.]+\\.factory\\..*' THEN 'DOMAIN_FACTORY'
-                WHEN type.fqn =~ 'src\\.view\\.(leftbartabs|statetabs|dropdowns)\\.[^.]+\\.[^.]+Binder(\\$.*)?' THEN 'VIEW_BINDER'
-                WHEN type.fqn =~ 'src\\.view\\.(leftbartabs|statetabs|dropdowns)\\.[^.]+\\.[^.]+IntentHandler(\\$.*)?' THEN 'VIEW_INTENT_HANDLER'
-                WHEN type.fqn =~ 'src\\.data\\.[^.]+\\.[^.]+ServiceContribution(\\$.*)?' THEN 'DATA_SERVICE_CONTRIBUTION'
-                ELSE null
-              END AS roleKind
-            WHERE roleKind IS NOT NULL
-            SET
-              type:SaltMarcher:LayeringIndirectionRoleType,
-              type.roleKind = roleKind,
-              type.thinRole = roleKind IN [
-                'DOMAIN_APPLICATION_SERVICE',
-                'DOMAIN_USE_CASE',
-                'VIEW_BINDER',
-                'VIEW_INTENT_HANDLER',
-                'DATA_SERVICE_CONTRIBUTION'
-              ],
-              type.roleScope = CASE
-                WHEN roleKind IN ['DOMAIN_APPLICATION_SERVICE', 'DOMAIN_USE_CASE'] THEN 'domain:' + segments[2]
-                WHEN roleKind IN ['DOMAIN_SERVICE', 'DOMAIN_POLICY', 'DOMAIN_FACTORY'] THEN 'domain:' + segments[2] + ':' + segments[3]
-                WHEN roleKind IN ['VIEW_BINDER', 'VIEW_INTENT_HANDLER'] THEN 'view:' + segments[2] + ':' + segments[3]
-                ELSE 'data:' + segments[2]
-              END
-            RETURN type AS LayeringIndirectionRoleType
-        ]]></cypher>
-    </concept>
-
-    <concept id="saltmarcher:LayeringIndirectionRoleMethod">
-        <requiresConcept refId="saltmarcher:LayeringIndirectionRoleType"/>
-        <description>Labels concrete methods declared by the relay-sensitive role families.</description>
-        <cypher><![CDATA[
-            MATCH (owner:Java:Type:SaltMarcher:LayeringIndirectionRoleType)-[:DECLARES]->(method:Java:Method)
-            WHERE
-              NOT method:Java:Method:Constructor
-              AND method.synthetic IS NULL
-              AND method.abstract IS NULL
-            SET
-              method:SaltMarcher:LayeringIndirectionRoleMethod,
-              method.ownerRelativePath = owner.relativePath
-            RETURN method AS LayeringIndirectionRoleMethod
-        ]]></cypher>
-    </concept>
-
     <concept id="saltmarcher:RelayOnlyRoleType">
         <requiresConcept refId="java-classpath:Resolve"/>
         <requiresConcept refId="java:VirtualInvokes"/>
-        <requiresConcept refId="saltmarcher:IndirectionProductionTypeMetadata"/>
-        <requiresConcept refId="saltmarcher:LayeringIndirectionRoleMethod"/>
+        <requiresConcept refId="saltmarcher:LayeringProductionTypeMetadata"/>
+        <requiresConcept refId="saltmarcher:LayeringRoleMethod"/>
         <description>Labels relay-only role types whose concrete methods all funnel through owner-local helper chains into exactly one foreign production owner without reading or writing owner fields.</description>
         <cypher><![CDATA[
-            MATCH (owner:Java:Type:SaltMarcher:LayeringIndirectionRoleType)
+            MATCH (owner:Java:Type:SaltMarcher:LayeringRoleType)
             CALL {
               WITH owner
-              MATCH (owner)-[:DECLARES]->(method:Java:Method:SaltMarcher:LayeringIndirectionRoleMethod)
+              MATCH (owner)-[:DECLARES]->(method:Java:Method:SaltMarcher:LayeringRoleMethod)
               CALL {
                 WITH owner, method
                 OPTIONAL MATCH (method)-[:READS|WRITES]->(field:Java:Field)<-[:DECLARES]-(owner)
                 WITH owner, method, count(DISTINCT field) AS ownedFieldAccessCount
-                OPTIONAL MATCH path = (method)-[:INVOKES|VIRTUAL_INVOKES*1..5]->(targetMethod:Java:Method)<-[:DECLARES]-(targetOwner:Java:Type:SaltMarcher:IndirectionProductionType)
+                OPTIONAL MATCH path = (method)-[:INVOKES|VIRTUAL_INVOKES*1..5]->(targetMethod:Java:Method)<-[:DECLARES]-(targetOwner:Java:Type:SaltMarcher:LayeringProductionType)
                 WHERE
                   targetOwner <> owner
                   AND all(intermediateMethod IN nodes(path)[0..size(nodes(path)) - 2] WHERE EXISTS {
@@ -147,12 +67,12 @@
     </concept>
 
     <concept id="saltmarcher:RelayOnlyRoleDependency">
-        <requiresConcept refId="saltmarcher:IndirectionProductionTypeMetadata"/>
+        <requiresConcept refId="saltmarcher:LayeringProductionTypeMetadata"/>
         <requiresConcept refId="saltmarcher:RelayOnlyRoleType"/>
         <description>Creates a stable relay edge from a relay-only role to its unique foreign production owner.</description>
         <cypher><![CDATA[
             MATCH (source:Java:Type:SaltMarcher:RelayOnlyRoleType)
-            MATCH (target:Java:Type:SaltMarcher:IndirectionProductionType)
+            MATCH (target:Java:Type:SaltMarcher:LayeringProductionType)
             WHERE target.fqn = source.relayTargetFqn
             MERGE (source)-[:RELAYS_TO]->(target)
             RETURN source AS RelayOnlyRoleDependencySource, target AS RelayOnlyRoleDependencyTarget
@@ -163,9 +83,9 @@
         <requiresConcept refId="saltmarcher:RelayOnlyRoleDependency"/>
         <description>Substantive non-thin role families must not collapse into relay-only wrappers, even when the relay is spread across owner-local helper methods.</description>
         <cypher><![CDATA[
-            MATCH (source:Java:Type:SaltMarcher:RelayOnlyRoleType)-[:RELAYS_TO]->(target:Java:Type:SaltMarcher:IndirectionProductionType)
+            MATCH (source:Java:Type:SaltMarcher:RelayOnlyRoleType)-[:RELAYS_TO]->(target:Java:Type:SaltMarcher:LayeringProductionType)
             WHERE coalesce(source.thinRole, false) = false
-            MATCH (source)-[:DECLARES]->(method:Java:Method:SaltMarcher:LayeringIndirectionRoleMethod)
+            MATCH (source)-[:DECLARES]->(method:Java:Method:SaltMarcher:LayeringRoleMethod)
             RETURN
               source.relativePath AS Source,
               source.roleKind AS Role,
@@ -173,7 +93,7 @@
               count(DISTINCT method) AS RelayMethodCount,
               'substantive tactical roles must own real domain behavior instead of owner-local helper chains that still collapse into one foreign owner' AS ExpectedOwnership,
               source.fqn + ' funnels all concrete methods into ' + target.fqn AS ActualOwnership,
-              'Delete the wrapper, merge the role into the target owner, or add real policy/construction behavior that breaks the single-target relay shape.' AS Details
+              'Delete the wrapper, merge the role into the target owner, or add real policy or construction behavior that breaks the single-target relay shape.' AS Details
             ORDER BY Source, RelayTarget
         ]]></cypher>
         <report primaryColumn="Source" keyColumns="Source, RelayTarget"/>
@@ -183,7 +103,7 @@
         <requiresConcept refId="saltmarcher:RelayOnlyRoleDependency"/>
         <description>Substantive non-thin role families must not form deeper same-scope relay-only chains, even when each hop stays inside named tactical roles.</description>
         <cypher><![CDATA[
-            MATCH path = (source:Java:Type:SaltMarcher:RelayOnlyRoleType)-[:RELAYS_TO*2..5]->(terminal:Java:Type:SaltMarcher:IndirectionProductionType)
+            MATCH path = (source:Java:Type:SaltMarcher:RelayOnlyRoleType)-[:RELAYS_TO*2..5]->(terminal:Java:Type:SaltMarcher:LayeringProductionType)
             WHERE
               coalesce(source.thinRole, false) = false
               AND all(intermediate IN nodes(path)[1..size(nodes(path)) - 2] WHERE
@@ -217,7 +137,7 @@
               ) AS ChainPath,
               'substantive tactical roles must not survive as same-scope relay-only chains across multiple tactical owners' AS ExpectedOwnership,
               source.fqn + ' starts a relay-only chain with depth ' + toString(firstHit.relayDepth) AS ActualOwnership,
-              'Collapse the chain, merge intermediate wrappers, or add real owned policy/construction behavior that breaks the relay-only path.' AS Details
+              'Collapse the chain, merge intermediate wrappers, or add real owned policy or construction behavior that breaks the relay-only path.' AS Details
             ORDER BY Source
         ]]></cypher>
         <report primaryColumn="Source" keyColumns="Source, RelayDepth, TerminalTarget"/>
@@ -227,7 +147,7 @@
         <requiresConcept refId="saltmarcher:RelayOnlyRoleDependency"/>
         <description>Thin roles that relay into a deeper relay chain are reported for review without becoming a blocker.</description>
         <cypher><![CDATA[
-            MATCH path = (source:Java:Type:SaltMarcher:RelayOnlyRoleType)-[:RELAYS_TO*2..5]->(terminal:Java:Type:SaltMarcher:IndirectionProductionType)
+            MATCH path = (source:Java:Type:SaltMarcher:RelayOnlyRoleType)-[:RELAYS_TO*2..5]->(terminal:Java:Type:SaltMarcher:LayeringProductionType)
             WHERE coalesce(source.thinRole, false) = true
             WITH
               source,

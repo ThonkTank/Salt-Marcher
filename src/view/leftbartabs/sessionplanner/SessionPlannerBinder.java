@@ -27,7 +27,6 @@ import src.domain.sessionplanner.published.SessionPlannerStatePanelModel;
 import src.domain.sessionplanner.published.SetSessionEncounterAllocationCommand;
 import src.domain.sessionplanner.published.SetSessionEncounterDaysCommand;
 import src.domain.sessionplanner.published.SetSessionRestGapCommand;
-import src.view.leftbartabs.sessionplanner.SessionPlannerContributionModel.MainProjection;
 
 final class SessionPlannerBinder {
 

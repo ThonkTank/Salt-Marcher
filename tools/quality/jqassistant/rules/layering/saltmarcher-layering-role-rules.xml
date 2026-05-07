@@ -1,0 +1,124 @@
+<jqassistant-rules xmlns="http://schema.jqassistant.org/rule/v2.9"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://schema.jqassistant.org/rule/v2.9 https://jqassistant.github.io/jqassistant/current/schema/jqassistant-rule-v2.9.xsd">
+
+    <concept id="saltmarcher:LayeringProductionTypeMetadata">
+        <description>Annotates compiled SaltMarcher shell and src production types with stable report metadata for layering-focused graph analysis.</description>
+        <cypher><![CDATA[
+            MATCH (type:Java:Type)
+            WHERE
+              type.fqn =~ 'shell\\..*'
+              OR type.fqn =~ 'src\\..*'
+            WITH
+              type,
+              coalesce(type.sourceFileName, '') AS sourceFileName
+            SET
+              type:SaltMarcher:LayeringProductionType,
+              type.relativePath = CASE
+                WHEN sourceFileName = ''
+                  OR type.name IS NULL
+                  OR type.name = ''
+                  OR NOT type.fqn ENDS WITH '.' + type.name
+                  THEN replace(type.fqn, '.', '/') + '.java'
+                ELSE replace(substring(type.fqn, 0, size(type.fqn) - size(type.name) - 1), '.', '/') + '/' + sourceFileName
+              END,
+              type.layerRootKind = CASE
+                WHEN type.fqn =~ 'shell\\..*' THEN 'shell'
+                WHEN type.fqn =~ 'src\\.view\\..*' THEN 'view'
+                WHEN type.fqn =~ 'src\\.domain\\..*' THEN 'domain'
+                WHEN type.fqn =~ 'src\\.data\\..*' THEN 'data'
+                ELSE 'other'
+              END
+            RETURN type AS LayeringProductionType
+        ]]></cypher>
+    </concept>
+
+    <concept id="saltmarcher:LayeringRoleType">
+        <requiresConcept refId="saltmarcher:LayeringProductionTypeMetadata"/>
+        <description>Labels the focused SaltMarcher role families that participate in indirection and broader architecture-sprawl analysis.</description>
+        <cypher><![CDATA[
+            MATCH (type:Java:Type:SaltMarcher:LayeringProductionType)
+            WITH
+              type,
+              split(type.fqn, '.') AS segments,
+              CASE
+                WHEN type.fqn =~ 'src\\.domain\\.[^.]+\\.[^.]+ApplicationService(\\$.*)?' THEN 'DOMAIN_APPLICATION_SERVICE'
+                WHEN type.fqn =~ 'src\\.domain\\.[^.]+\\.application\\..*UseCase(\\$.*)?' THEN 'DOMAIN_USE_CASE'
+                WHEN type.fqn =~ 'src\\.domain\\.[^.]+\\.[^.]+\\.service\\..*' THEN 'DOMAIN_SERVICE'
+                WHEN type.fqn =~ 'src\\.domain\\.[^.]+\\.[^.]+\\.policy\\..*' THEN 'DOMAIN_POLICY'
+                WHEN type.fqn =~ 'src\\.domain\\.[^.]+\\.[^.]+\\.factory\\..*' THEN 'DOMAIN_FACTORY'
+                WHEN type.fqn =~ 'src\\.view\\.(leftbartabs|statetabs|dropdowns)\\.[^.]+\\.[^.]+Binder(\\$.*)?' THEN 'VIEW_BINDER'
+                WHEN type.fqn =~ 'src\\.view\\.(leftbartabs|statetabs|dropdowns)\\.[^.]+\\.[^.]+IntentHandler(\\$.*)?' THEN 'VIEW_INTENT_HANDLER'
+                WHEN type.fqn =~ 'src\\.data\\.[^.]+\\.[^.]+ServiceContribution(\\$.*)?' THEN 'DATA_SERVICE_CONTRIBUTION'
+                ELSE null
+              END AS roleKind
+            WHERE roleKind IS NOT NULL
+            SET
+              type:SaltMarcher:LayeringRoleType,
+              type.roleKind = roleKind,
+              type.thinRole = roleKind IN [
+                'DOMAIN_APPLICATION_SERVICE',
+                'DOMAIN_USE_CASE',
+                'VIEW_BINDER',
+                'VIEW_INTENT_HANDLER',
+                'DATA_SERVICE_CONTRIBUTION'
+              ],
+              type.roleScope = CASE
+                WHEN roleKind IN ['DOMAIN_APPLICATION_SERVICE', 'DOMAIN_USE_CASE'] THEN 'domain:' + segments[2]
+                WHEN roleKind IN ['DOMAIN_SERVICE', 'DOMAIN_POLICY', 'DOMAIN_FACTORY'] THEN 'domain:' + segments[2] + ':' + segments[3]
+                WHEN roleKind IN ['VIEW_BINDER', 'VIEW_INTENT_HANDLER'] THEN 'view:' + segments[2] + ':' + segments[3]
+                ELSE 'data:' + segments[2]
+              END
+            RETURN type AS LayeringRoleType
+        ]]></cypher>
+    </concept>
+
+    <concept id="saltmarcher:LayeringRoleMethod">
+        <requiresConcept refId="saltmarcher:LayeringRoleType"/>
+        <description>Labels concrete methods declared by the relay-sensitive and sprawl-sensitive role families.</description>
+        <cypher><![CDATA[
+            MATCH (owner:Java:Type:SaltMarcher:LayeringRoleType)-[:DECLARES]->(method:Java:Method)
+            WHERE
+              NOT method:Java:Method:Constructor
+              AND method.synthetic IS NULL
+              AND method.abstract IS NULL
+            SET
+              method:SaltMarcher:LayeringRoleMethod,
+              method.ownerRelativePath = owner.relativePath
+            RETURN method AS LayeringRoleMethod
+        ]]></cypher>
+    </concept>
+
+    <concept id="saltmarcher:LayeringFeatureScope">
+        <requiresConcept refId="saltmarcher:LayeringProductionTypeMetadata"/>
+        <description>Annotates compiled production types with stable feature-scope metadata for hub and cross-feature sprawl diagnostics.</description>
+        <cypher><![CDATA[
+            MATCH (type:Java:Type:SaltMarcher:LayeringProductionType)
+            WITH
+              type,
+              split(type.fqn, '.') AS segments
+            SET
+              type.featureScope = CASE
+                WHEN type.layerRootKind = 'shell' THEN 'shell'
+                WHEN type.layerRootKind IN ['domain', 'data'] AND size(segments) >= 3 THEN 'feature:' + segments[2]
+                WHEN type.layerRootKind = 'view' AND size(segments) >= 4 AND segments[2] IN ['leftbartabs', 'statetabs', 'dropdowns'] THEN 'feature:view:' + segments[2] + ':' + segments[3]
+                WHEN type.layerRootKind = 'view' AND size(segments) >= 4 AND segments[2] = 'slotcontent' THEN 'feature:slotcontent:' + segments[3]
+                WHEN type.layerRootKind = 'view' AND size(segments) >= 3 THEN 'feature:view:' + segments[2]
+                ELSE type.layerRootKind
+              END
+            RETURN type AS LayeringFeatureScope
+        ]]></cypher>
+    </concept>
+
+    <concept id="saltmarcher:LayeringProductionDependency">
+        <requiresConcept refId="saltmarcher:LayeringFeatureScope"/>
+        <description>Creates stable type-to-type production dependency edges for focused layering diagnostics.</description>
+        <cypher><![CDATA[
+            MATCH (source:Java:Type:SaltMarcher:LayeringProductionType)-[:DEPENDS_ON]->(target:Java:Type:SaltMarcher:LayeringProductionType)
+            WHERE source <> target
+            MERGE (source)-[:DEPENDS_ON_PRODUCTION]->(target)
+            RETURN source AS LayeringProductionDependencySource, target AS LayeringProductionDependencyTarget
+        ]]></cypher>
+    </concept>
+
+</jqassistant-rules>

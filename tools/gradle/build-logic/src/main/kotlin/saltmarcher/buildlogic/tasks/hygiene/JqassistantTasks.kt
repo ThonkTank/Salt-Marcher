@@ -31,9 +31,9 @@ abstract class AbstractJqassistantTask : DefaultTask() {
     @get:PathSensitive(PathSensitivity.NONE)
     abstract val cliFile: RegularFileProperty
 
-    @get:InputDirectory
+    @get:InputFiles
     @get:PathSensitive(PathSensitivity.RELATIVE)
-    abstract val rulesDirectory: DirectoryProperty
+    abstract val rulesDirectories: ConfigurableFileCollection
 
     @get:InputDirectory
     @get:PathSensitive(PathSensitivity.RELATIVE)
@@ -65,7 +65,7 @@ abstract class AbstractJqassistantTask : DefaultTask() {
         }
         val storeUri = "file:${storeRootOverride.absoluteInvariantPath()}"
         val tempReportRoot = reportRootOverride?.toPath() ?: temporaryDir.toPath().resolve("reports")
-        val rulesDirectoryPath = rulesDirectory.get().asFile.absoluteInvariantPath()
+        val rulesDirectoryPath = materializeRulesDirectory().absoluteInvariantPath()
         val configText = buildString {
             appendLine("\$schema: \"https://jqassistant.github.io/jqassistant/current/schema/jqassistant-configuration-cli-v2.6.schema.json\"")
             appendLine()
@@ -99,6 +99,24 @@ abstract class AbstractJqassistantTask : DefaultTask() {
         Files.createDirectories(generatedConfig.parent)
         Files.writeString(generatedConfig, configText)
         return generatedConfig.toFile()
+    }
+
+    private fun materializeRulesDirectory(): File {
+        val materializedRulesRoot = temporaryDir.toPath().resolve("jqassistant-rules").toFile()
+        if (materializedRulesRoot.exists()) {
+            materializedRulesRoot.deleteRecursively()
+        }
+        Files.createDirectories(materializedRulesRoot.toPath())
+        rulesDirectories.files
+            .sortedBy { file -> file.absolutePath }
+            .forEachIndexed { index, rulesDirectory ->
+                require(rulesDirectory.isDirectory) {
+                    "jQAssistant rules input '${rulesDirectory.path}' is not a directory."
+                }
+                val copiedRulesRoot = materializedRulesRoot.resolve("${index.toString().padStart(2, '0')}-${rulesDirectory.name}")
+                rulesDirectory.copyRecursively(copiedRulesRoot, overwrite = true)
+            }
+        return materializedRulesRoot
     }
 
     protected fun runJqassistant(generatedConfigFile: java.io.File, vararg arguments: String) {

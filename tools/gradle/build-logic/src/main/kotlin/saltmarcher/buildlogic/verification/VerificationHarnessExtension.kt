@@ -163,7 +163,7 @@ internal open class VerificationHarnessExtension(
         scanDescription: String,
         analyzeDescription: String,
         ruleGroups: List<String>,
-        rulesDirPath: String,
+        rulesDirPaths: List<String>,
         reportsDirectoryPath: String,
         selectedCompileJava: TaskProvider<JavaCompile>
     ): JqassistantTaskPair {
@@ -176,7 +176,7 @@ internal open class VerificationHarnessExtension(
             scanDescription = scanDescription,
             analyzeDescription = analyzeDescription,
             ruleGroups = ruleGroups,
-            rulesDirPath = rulesDirPath,
+            rulesDirPaths = rulesDirPaths,
             mainClassesDirectory = selectedMainClassesDirectory,
             sourceRoots = sourceRoots,
             storeDirectory = jqassistantStoreDirectory,
@@ -192,7 +192,7 @@ internal open class VerificationHarnessExtension(
         scanDescription: String,
         analyzeDescription: String,
         sourceConfigPath: String,
-        rulesDirPath: String,
+        rulesDirPaths: List<String>,
         reportsDirectoryPath: String,
         selectedCompileJava: TaskProvider<JavaCompile>
     ): JqassistantTaskPair = registerFocusedJqassistantTaskPair(
@@ -202,7 +202,7 @@ internal open class VerificationHarnessExtension(
         scanDescription = scanDescription,
         analyzeDescription = analyzeDescription,
         ruleGroups = loadJqassistantRuleGroups(project.file(sourceConfigPath)),
-        rulesDirPath = rulesDirPath,
+        rulesDirPaths = rulesDirPaths,
         reportsDirectoryPath = reportsDirectoryPath,
         selectedCompileJava = selectedCompileJava
     )

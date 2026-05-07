@@ -81,7 +81,10 @@ public final class LayeringArchitectureEnforcementCoverageRules implements Archi
                     List.of("./gradlew compileJava", "./gradlew checkDomainApplicationServiceEnforcement")),
             row("layering-explicit-cross-layer-public-boundary-diagnostic", "Candidate"),
             row("layering-thin-role-relay-stack-diagnostic", "Candidate"),
-            row("layering-thin-role-indirection-candidate-scan", "Candidate"));
+            row("layering-thin-role-indirection-candidate-scan", "Candidate"),
+            row("layering-role-hub-sprawl-candidate", "Candidate"),
+            row("layering-cross-feature-sprawl-candidate", "Candidate"),
+            row("layering-public-boundary-breadth-candidate", "Candidate"));
 
     @Override
     public void check(ArchitectureContext context, ViolationSink violations) {

@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-05-06
+Last Reviewed: 2026-05-07
 Source of Truth: Complete architecture-enforcement catalog for repository-wide
 layer topology, intentional cross-layer public boundaries, and the allowed
 inter-layer communication contract.
@@ -39,6 +39,10 @@ Focused bundle entrypoint:
   report-only jQAssistant thin relay-stack diagnostic from the same focused
   Layering Indirection owner for review of deeper thin-orchestration relay
   chains.
+- `./gradlew checkLayeringSprawlCandidates --console=plain` runs the
+  report-only jQAssistant role-hub, cross-feature, and public-boundary
+  breadth diagnostics for broader architecture sprawl that sits beyond the
+  sharper relay-only blocker surface.
 - `./gradlew checkLayeringIndirectionCandidates --console=plain` runs the
   report-only diagnostic PMD surface for thin adapter and orchestration roles
   that are allowed to stay narrow but may still be worth reviewing.
@@ -85,13 +89,20 @@ Focused bundle entrypoint:
 | --- | --- | --- | --- | --- | --- |
 | `layering-explicit-cross-layer-public-boundary-diagnostic` | Candidate | every future change that adds or removes one documented cross-layer boundary family | none | none | The architecture stack could emit a dedicated blocker when a boundary family disappears or a new one appears, instead of inferring that drift from several neighboring owner docs. |
 | `layering-thin-role-relay-stack-diagnostic` | Candidate | every root `*ApplicationService`, `application/*UseCase`, `*Binder`, `*IntentHandler`, and `*ServiceContribution` surface that relays through at least one deeper relay-only owner | none | none | Thin adapter and orchestration roles that currently form a multi-hop relay stack are reported for review without turning intentional thinness itself into a blocker. |
-| `layering-thin-role-indirection-candidate-scan` | Candidate | every root `*ApplicationService`, `application/*UseCase`, `*Binder`, `*IntentHandler`, and `*ServiceContribution` surface | layering-architecture bundle descriptor-owned report-only PMD `CeremonialIndirectionRule` configured for the thin-role candidate surface | `./gradlew checkLayeringIndirectionCandidates` | Thin adapter and orchestration roles that currently look like pure relay or wrapper ceremony are reported for review without turning that heuristic into a blocker. |
+| `layering-thin-role-indirection-candidate-scan` | Candidate | every root `*ApplicationService`, `application/*UseCase`, `*Binder`, `*IntentHandler`, and `*ServiceContribution` surface | none | none | Thin adapter and orchestration roles that currently look like pure relay or wrapper ceremony are reported for review without turning that heuristic into a blocker. |
+| `layering-role-hub-sprawl-candidate` | Candidate | every root `*ApplicationService`, `application/*UseCase`, domain `service/`, domain `policy/`, domain `factory/`, `*Binder`, `*IntentHandler`, and `*ServiceContribution` role | none | none | Role-bearing tactical owners that fan out into too many foreign production owners or foreign feature scopes are reported for review before they harden into coordination hubs. |
+| `layering-cross-feature-sprawl-candidate` | Candidate | every compiled `src/domain/<context>/**` or `src/data/<feature>/**` production type that contributes to broad acyclic foreign-feature coupling | none | none | Domain and data feature scopes that couple too broadly across foreign feature scopes are reported even when the graph has not yet become cyclic. |
+| `layering-public-boundary-breadth-candidate` | Candidate | every public root `*ApplicationService` and public data `*ServiceContribution` type | none | none | Broad public backend or runtime registration roots with too many collaborators or too wide a callable surface are reported for review before they become hard-to-split coordination shells. |
 
 `./gradlew checkLayeringIndirectionRelayCandidates --console=plain` runs the
 report-only jQAssistant diagnostic `saltmarcher:ThinRelayStackCandidate`,
 while `./gradlew checkLayeringIndirectionCandidates --console=plain` keeps the
 shallower source-pattern PMD candidate scan available as a separate review
-surface.
+surface. `./gradlew checkLayeringSprawlCandidates --console=plain` complements
+those relay-focused diagnostics with broader role-aware graph candidates; it
+does not replace existing cycle blockers, PMD smell rules such as
+`LawOfDemeter`, `GodClass`, and `CouplingBetweenObjects`, or CKJM hotspot
+reporting.
 
 ## References
 

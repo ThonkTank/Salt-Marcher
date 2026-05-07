@@ -6,6 +6,9 @@ and relay-wrapper proof routes referenced by
 
 It keeps the proof surface owner-pure:
 
+- `tools/quality/jqassistant/rules/layering/`
+  the shared role and production-dependency taxonomy consumed by this bundle
+  and the neighboring layering-sprawl diagnostics
 - `jqassistant/`
   a blocker-grade substantive relay-wrapper and relay-chain analysis plus the
   report-only thin relay-stack diagnostic

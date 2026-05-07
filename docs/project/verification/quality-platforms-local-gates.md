@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-05-06
+Last Reviewed: 2026-05-07
 Source of Truth: Detailed local gate inventory, aggregate entrypoints, and
 concurrent local invocation policy for SaltMarcher quality platforms.
 
@@ -129,7 +129,7 @@ architecture harness through `check`.
 
 | Platform | Status | Entrypoint | Current policy |
 | --- | --- | --- | --- |
-| PMD non-architecture smells | `Blocking Local Gate` | `./gradlew pmdMain`, `./gradlew pmdStrictMain` | Runs `tools/quality/config/pmd/complexity-ruleset.xml` on production Java sources. `pmdMain` is the central blocking gate; `pmdStrictMain` is the text-first direct entrypoint for the same ruleset. PMD owns non-architecture smell policy plus `UnusedAssignment`; `compileJava` owns `UnusedLabel`, `UnusedMethod`, `UnusedNestedClass`, and `UnusedVariable`. |
+| PMD non-architecture smells | `Blocking Local Gate` | `./gradlew pmdMain`, `./gradlew pmdStrictMain` | Runs `tools/quality/config/pmd/complexity-ruleset.xml` on production Java sources. `pmdMain` is the central blocking gate; `pmdStrictMain` is the text-first direct entrypoint for the same ruleset. PMD owns non-architecture smell policy plus `UnusedAssignment`, including generic source-smell families such as `LawOfDemeter`, `GodClass`, `CouplingBetweenObjects`, `TooManyMethods`, `TooManyFields`, and `UselessOverridingMethod`; `compileJava` owns `UnusedLabel`, `UnusedMethod`, `UnusedNestedClass`, and `UnusedVariable`. |
 | Public dead code | `Blocking Local Gate` | `./gradlew checkNoPublicDeadCode` | Runs jQAssistant whole-program reachability analysis for public top-level concrete production types and declared public methods. Structural roots currently include JavaFX entry classes plus reflectively discovered `ShellContribution` and `ServiceContribution` implementations. |
 | SpotBugs plus FindSecBugs | `Blocking Local Gate` | `./gradlew spotbugsMain` | Runs bytecode bug and security-smell analysis with SpotBugs effort `MAX` and confidence `MEDIUM`. |
 | CPD | `Blocking Local Gate` | `./gradlew cpdMain` | Runs PMD CPD for Java with `minimumTokens = 100`, matching PMD's documented Java example value, and writes its report under the active worktree's normal `build/reports/cpd/` surface. |
@@ -213,6 +213,14 @@ worsens beyond the allowed deltas:
 The CKJM summary must still list current hotspots and LCOM-only outliers so
 wide data carriers and real multi-metric hotspots stay visible even when the
 report does not block the build.
+
+Broader architecture-sprawl signals are therefore intentionally split. Generic
+source smells stay with PMD, cycle blockers stay with the generic and focused
+ArchUnit suites, public reachability stays with `checkNoPublicDeadCode`,
+hotspot regression stays with CKJM and CodeScene, relay-only tactical wrappers
+stay with the focused layering-indirection bundle, and the new broader
+role-aware hub or sprawl diagnostics stay with
+`checkLayeringSprawlCandidates`.
 
 Focused PMD, SpotBugs, CPD, Lizard, and CKJM entrypoints must stay independent
 of the jQAssistant view-topology blocker; they may be run together for quality
@@ -522,6 +530,12 @@ Architecture-focused entrypoints:
   Runs the report-only thin relay-stack diagnostic surface of the dedicated
   `Layering Indirection` bundle through
   `jqassistantAnalyzeLayeringIndirectionRelayCandidates` without attaching
+  that diagnostic surface to `checkArchitecture`, `check`, `build`, or staged
+  `production-handoff`.
+- `./gradlew checkLayeringSprawlCandidates --console=plain`
+  Runs the report-only `Layering Sprawl` bundle through
+  `jqassistantAnalyzeLayeringSprawlCandidates` and reports role-hub,
+  cross-feature, and public-boundary breadth candidates without attaching
   that diagnostic surface to `checkArchitecture`, `check`, `build`, or staged
   `production-handoff`.
 - `./gradlew checkLayeringIndirectionCandidates --console=plain`

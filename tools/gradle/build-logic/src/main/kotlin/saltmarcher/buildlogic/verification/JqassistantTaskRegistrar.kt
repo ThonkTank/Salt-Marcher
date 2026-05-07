@@ -31,21 +31,21 @@ internal class JqassistantTaskRegistrar(
         scanDescription: String,
         analyzeDescription: String,
         ruleGroups: List<String>,
-        rulesDirPath: String,
+        rulesDirPaths: List<String>,
         mainClassesDirectory: Provider<Directory>,
         sourceRoots: FileCollection,
         storeDirectory: Provider<Directory>,
         reportsDirectory: Provider<Directory>,
         dependsOnTasks: List<Any>
     ): JqassistantTaskPair {
-        val jqassistantRulesDirectory = project.file(rulesDirPath)
+        val jqassistantRulesDirectories = rulesDirPaths.map(project::file)
         val scanTask = project.tasks.register<JqassistantScanTask>(scanTaskName) {
             group = LifecycleBasePlugin.VERIFICATION_GROUP
             description = scanDescription
             dependsOn(installJqassistant)
             dependsOn(dependsOnTasks)
             cliFile.set(this@JqassistantTaskRegistrar.cliFile)
-            rulesDirectory.set(jqassistantRulesDirectory)
+            rulesDirectories.from(jqassistantRulesDirectories)
             this.mainClassesDirectory.set(mainClassesDirectory)
             this.sourceRoots.from(sourceRoots)
             this.jvmOpens.set(this@JqassistantTaskRegistrar.jvmOpens)
@@ -58,7 +58,7 @@ internal class JqassistantTaskRegistrar(
             description = analyzeDescription
             dependsOn(scanTask)
             cliFile.set(this@JqassistantTaskRegistrar.cliFile)
-            rulesDirectory.set(jqassistantRulesDirectory)
+            rulesDirectories.from(jqassistantRulesDirectories)
             this.mainClassesDirectory.set(mainClassesDirectory)
             this.sourceRoots.from(sourceRoots)
             this.jvmOpens.set(this@JqassistantTaskRegistrar.jvmOpens)
@@ -75,12 +75,12 @@ internal class JqassistantTaskRegistrar(
         description: String,
         commandName: String,
         sourceConfigPath: String,
-        rulesDirPath: String,
+        rulesDirPaths: List<String>,
         mainClassesDirectory: Provider<Directory>,
         sourceRoots: FileCollection,
         dependsOnTasks: List<Any>
     ): TaskProvider<JqassistantCommandTask> {
-        val jqassistantRulesDirectory = project.file(rulesDirPath)
+        val jqassistantRulesDirectories = rulesDirPaths.map(project::file)
         val jqassistantRuleGroups = loadJqassistantRuleGroups(project.file(sourceConfigPath))
         return project.tasks.register<JqassistantCommandTask>(taskName) {
             group = LifecycleBasePlugin.VERIFICATION_GROUP
@@ -88,7 +88,7 @@ internal class JqassistantTaskRegistrar(
             dependsOn(installJqassistant)
             dependsOn(dependsOnTasks)
             cliFile.set(this@JqassistantTaskRegistrar.cliFile)
-            rulesDirectory.set(jqassistantRulesDirectory)
+            rulesDirectories.from(jqassistantRulesDirectories)
             this.mainClassesDirectory.set(mainClassesDirectory)
             this.sourceRoots.from(sourceRoots)
             this.jvmOpens.set(this@JqassistantTaskRegistrar.jvmOpens)

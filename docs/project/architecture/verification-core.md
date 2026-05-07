@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-05-03
+Last Reviewed: 2026-05-07
 Source of Truth: Verification-surface ownership, layer boundaries, and public
 verification-entry architecture for SaltMarcher build logic.
 
@@ -153,7 +153,10 @@ as source directories, generated service files, PMD support sources, and
 build-harness task main classes. The root build likewise owns standard
 `check*Enforcement` task registration from descriptor metadata such as
 Error Prone checker lists, ArchUnit task shapes, PMD task shapes, and
-jQAssistant task shapes. Harness wiring MUST NOT rely on parallel families of
+jQAssistant task shapes. A jQAssistant task shape may declare one local rule
+directory or multiple rule directories; the verification core materializes one
+effective rules root from that descriptor metadata instead of forcing bundles
+to duplicate shared taxonomy files. Harness wiring MUST NOT rely on parallel families of
 tiny `*-host.gradle.kts` scripts as a second source of truth for the same
 metadata, and it MUST NOT regenerate a second snapshot copy of the same
 descriptor metadata just to make same-worktree parallelism safe.

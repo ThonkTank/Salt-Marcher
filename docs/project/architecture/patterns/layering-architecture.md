@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-05-05
+Last Reviewed: 2026-05-07
 Source of Truth: Cross-layer responsibility matrix, dependency direction,
 boundary crossings, and the only allowed inter-layer seams for active
 SaltMarcher code.
@@ -161,6 +161,23 @@ Forbidden shortcuts:
 - `src/domain/**` depending on `bootstrap`, `shell`, `src/view`, or `src/data`
 - `shell/**` owning feature logic
 - `bootstrap/**` owning feature-specific business or presentation logic
+
+## Review Signals
+
+The layering model also treats several broader architecture-debt shapes as
+review signals even when they are not yet hard blockers:
+
+- hub-like tactical roles that fan out into many foreign owners or foreign
+  feature scopes
+- dense but still acyclic cross-feature coupling between domain and data
+  feature scopes
+- over-wide public boundary roots such as `*ApplicationService` or
+  `*ServiceContribution` owners that accumulate too many collaborators or too
+  broad a callable surface
+
+These review signals complement, not replace, the sharper cycle, dependency,
+and relay-wrapper blockers. They are intended to surface architecture sprawl
+before it turns into hard structural failure.
 
 ## References
 

@@ -25,7 +25,7 @@ data class EnforcementJqassistantTask(
     val scanDescription: String,
     val analyzeDescription: String,
     val ruleGroups: List<String>,
-    val rulesDirPath: String,
+    val rulesDirPaths: List<String>,
     val reportsDirPath: String
 )
 
@@ -372,7 +372,7 @@ private fun Properties.readLegacyJqassistantTask(
         scanDescription = scanDescription,
         analyzeDescription = analyzeDescription,
         ruleGroups = loadJqassistantRuleGroups(resolveDescriptorPath(repoRootDir, descriptorFile, configPath)),
-        rulesDirPath = resolveDescriptorPath(repoRootDir, descriptorFile, rulesDirPath),
+        rulesDirPaths = listOf(resolveDescriptorPath(repoRootDir, descriptorFile, rulesDirPath)),
         reportsDirPath = reportsDirPath
     )
 }
@@ -388,7 +388,7 @@ private fun Properties.readNamedJqassistantTask(
     val analyzeTaskName = optionalTrimmed("$propertyBase.analyzeTaskName")
     val scanDescription = optionalTrimmed("$propertyBase.scanDescription")
     val analyzeDescription = optionalTrimmed("$propertyBase.analyzeDescription")
-    val rulesDirPath = optionalTrimmed("$propertyBase.rulesDir")
+    val rulesDirPaths = readJqassistantRulesDirPaths(propertyBase, repoRootDir, descriptorFile)
     val reportsDirPath = optionalTrimmed("$propertyBase.reportsDir")
     val ruleGroups = list("$propertyBase.groups")
     require(
@@ -396,7 +396,7 @@ private fun Properties.readNamedJqassistantTask(
             analyzeTaskName != null &&
             scanDescription != null &&
             analyzeDescription != null &&
-            rulesDirPath != null &&
+            rulesDirPaths.isNotEmpty() &&
             reportsDirPath != null &&
             ruleGroups.isNotEmpty()
     ) {
@@ -409,9 +409,28 @@ private fun Properties.readNamedJqassistantTask(
         scanDescription = scanDescription,
         analyzeDescription = analyzeDescription,
         ruleGroups = ruleGroups,
-        rulesDirPath = resolveDescriptorPath(repoRootDir, descriptorFile, rulesDirPath),
+        rulesDirPaths = rulesDirPaths,
         reportsDirPath = reportsDirPath
     )
+}
+
+private fun Properties.readJqassistantRulesDirPaths(
+    propertyBase: String,
+    repoRootDir: File,
+    descriptorFile: File
+): List<String> {
+    val singularRulesDirPath = optionalTrimmed("$propertyBase.rulesDir")
+    val pluralRulesDirPaths = list("$propertyBase.rulesDirs")
+    require(singularRulesDirPath == null || pluralRulesDirPaths.isEmpty()) {
+        "Enforcement bundle descriptor '$descriptorFile' must not declare both $propertyBase.rulesDir and $propertyBase.rulesDirs."
+    }
+    return when {
+        pluralRulesDirPaths.isNotEmpty() -> pluralRulesDirPaths.map { rawPath ->
+            resolveDescriptorPath(repoRootDir, descriptorFile, rawPath)
+        }
+        singularRulesDirPath != null -> listOf(resolveDescriptorPath(repoRootDir, descriptorFile, singularRulesDirPath))
+        else -> emptyList()
+    }
 }
 
 private fun Properties.jqassistantTaskNames(propertyPrefix: String): Set<String> {

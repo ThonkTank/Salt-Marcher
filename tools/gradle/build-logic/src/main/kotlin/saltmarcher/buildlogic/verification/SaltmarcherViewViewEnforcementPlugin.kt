@@ -115,7 +115,7 @@ internal fun Project.configureViewViewEnforcement() {
         "Scan SaltMarcher passive View topology for the dedicated passive View enforcement bundle.",
         "Analyze SaltMarcher passive View topology constraints through the dedicated passive View bundle.",
         project.file("tools/quality/view-view-enforcement/jqassistant/config.yml").absolutePath,
-        project.file("tools/quality/view-view-enforcement/jqassistant/rules").absolutePath,
+        listOf(project.file("tools/quality/view-view-enforcement/jqassistant/rules").absolutePath),
         "reports/jqassistant-view-view-enforcement",
         selectedViewCompileJava
     )

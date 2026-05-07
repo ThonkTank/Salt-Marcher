@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-05-06
+Last Reviewed: 2026-05-07
 Source of Truth: Quality-platform operating model, status vocabulary,
 verification policy, and architecture-harness relationship for SaltMarcher
 quality gates.
@@ -28,6 +28,16 @@ build-owned repository surfaces: compiler hygiene, PMD non-architecture smells,
 duplicate-code detection, cyclomatic-complexity analysis, OO metrics,
 repository-wide resource/artifact/packaging validation, GitHub Actions,
 branch-protection expectations, SonarCloud, and CodeScene.
+
+Broader architecture debt is intentionally split across several owners rather
+than one smell scoreboard. PMD retains generic source-smell families such as
+`LawOfDemeter`, `GodClass`, `CouplingBetweenObjects`, `TooManyMethods`,
+`TooManyFields`, and `UselessOverridingMethod`; generic ArchUnit suites retain
+cycle and broad dependency-direction blockers; `checkNoPublicDeadCode` retains
+whole-program public reachability; CKJM retains hotspot and regression
+reporting; and the focused layering bundles retain role-aware relay and sprawl
+graph diagnostics that generic smell tools cannot classify by SaltMarcher role
+semantics.
 
 For unused-code hygiene, the active mechanical scope is split by proof route:
 `compileJava` owns `UnusedLabel`, `UnusedMethod`, `UnusedNestedClass`, and
@@ -323,6 +333,11 @@ Operationally, architecture checks enter local quality through:
   runs the report-only thin relay-stack diagnostic surface of the focused
   `Layering Indirection` bundle and stays intentionally outside
   `checkArchitecture`, `check`, and `build`
+- `checkLayeringSprawlCandidates`
+  runs the report-only `Layering Sprawl` bundle through the dedicated
+  jQAssistant role-hub, cross-feature, and public-boundary breadth
+  diagnostics and stays intentionally outside `checkArchitecture`, `check`,
+  and `build`
 - `checkArchitecture`
   aggregates the focused Domain Layer, Domain ApplicationService,
   Data ServiceContribution,
