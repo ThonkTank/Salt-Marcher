@@ -7,10 +7,20 @@ import shell.api.ShellBinding;
 import shell.api.ShellRuntimeContext;
 import shell.api.ShellSlot;
 import src.domain.sessionplanner.SessionPlannerApplicationService;
+import src.domain.sessionplanner.published.ApplySessionPlannerCommand;
+import src.domain.sessionplanner.published.SessionPlannerEncounterAllocationCommand;
+import src.domain.sessionplanner.published.SessionPlannerEncounterPlanRef;
+import src.domain.sessionplanner.published.SessionPlannerEncounterRef;
 import src.domain.sessionplanner.published.SessionPlannerCurrentSessionModel;
 import src.domain.sessionplanner.published.SessionPlannerEncountersModel;
+import src.domain.sessionplanner.published.SessionPlannerLootRef;
+import src.domain.sessionplanner.published.SessionPlannerParticipantRef;
 import src.domain.sessionplanner.published.SessionPlannerParticipantsModel;
+import src.domain.sessionplanner.published.SessionPlannerRestGapChange;
+import src.domain.sessionplanner.published.SessionPlannerRestGapRef;
+import src.domain.sessionplanner.published.SessionPlannerRestKind;
 import src.domain.sessionplanner.published.SessionPlannerStatePanelModel;
+import src.domain.sessionplanner.published.SetSessionEncounterDaysCommand;
 
 final class SessionPlannerBinder {
 
@@ -63,7 +73,63 @@ final class SessionPlannerBinder {
             SessionPlannerApplicationService planner,
             SessionPlannerIntentHandler intentHandler
     ) {
-        intentHandler.onPublishedEventRequested(event -> SessionPlannerPublishedEventApplier.apply(planner, event));
+        intentHandler.onPublishedEventRequested(event -> applyPublishedEvent(planner, event));
+    }
+
+    private static void applyPublishedEvent(
+            SessionPlannerApplicationService planner,
+            SessionPlannerPublishedEvent event
+    ) {
+        if (planner != null && event != null) {
+            planner.apply(toCommand(event.mutation()));
+        }
+    }
+
+    private static ApplySessionPlannerCommand toCommand(SessionPlannerPublishedEvent.Mutation mutation) {
+        return switch (mutation) {
+            case SessionPlannerPublishedEvent.CreateSessionMutation ignored -> ApplySessionPlannerCommand.createSession();
+            case SessionPlannerPublishedEvent.AddParticipantMutation addParticipant ->
+                    ApplySessionPlannerCommand.addParticipant(new SessionPlannerParticipantRef(addParticipant.characterId()));
+            case SessionPlannerPublishedEvent.RemoveParticipantMutation removeParticipant ->
+                    ApplySessionPlannerCommand.removeParticipant(new SessionPlannerParticipantRef(removeParticipant.characterId()));
+            case SessionPlannerPublishedEvent.SetEncounterDaysMutation encounterDays ->
+                    ApplySessionPlannerCommand.encounterDays(new SetSessionEncounterDaysCommand(encounterDays.encounterDays()));
+            case SessionPlannerPublishedEvent.AttachPlanMutation attachPlan ->
+                    ApplySessionPlannerCommand.attachEncounter(new SessionPlannerEncounterPlanRef(attachPlan.planId()));
+            case SessionPlannerPublishedEvent.RemoveEncounterMutation removeEncounter ->
+                    ApplySessionPlannerCommand.removeEncounter(new SessionPlannerEncounterRef(removeEncounter.encounterToken()));
+            case SessionPlannerPublishedEvent.MoveEncounterMutation moveEncounter ->
+                    moveEncounter.direction() == SessionPlannerPublishedEvent.Direction.DOWN
+                            ? ApplySessionPlannerCommand.moveEncounterDown(new SessionPlannerEncounterRef(moveEncounter.encounterToken()))
+                            : ApplySessionPlannerCommand.moveEncounterUp(new SessionPlannerEncounterRef(moveEncounter.encounterToken()));
+            case SessionPlannerPublishedEvent.SelectEncounterMutation selectEncounter ->
+                    ApplySessionPlannerCommand.selectEncounter(new SessionPlannerEncounterRef(selectEncounter.encounterToken()));
+            case SessionPlannerPublishedEvent.SetEncounterAllocationMutation allocation ->
+                    ApplySessionPlannerCommand.allocation(new SessionPlannerEncounterAllocationCommand(
+                            allocation.encounterToken(),
+                            allocation.budgetPercentage()));
+            case SessionPlannerPublishedEvent.SetRestGapMutation setRestGap ->
+                    ApplySessionPlannerCommand.restGap(new SessionPlannerRestGapChange(
+                            setRestGap.leftEncounterId(),
+                            setRestGap.rightEncounterId(),
+                            toRestKind(setRestGap.restSelection())));
+            case SessionPlannerPublishedEvent.ClearRestGapMutation clearRestGap ->
+                    ApplySessionPlannerCommand.clearRestGap(new SessionPlannerRestGapRef(
+                            clearRestGap.leftEncounterId(),
+                            clearRestGap.rightEncounterId()));
+            case SessionPlannerPublishedEvent.AddLootPlaceholderMutation ignored ->
+                    ApplySessionPlannerCommand.addLootPlaceholder();
+            case SessionPlannerPublishedEvent.RemoveLootPlaceholderMutation removeLoot ->
+                    ApplySessionPlannerCommand.removeLoot(new SessionPlannerLootRef(removeLoot.lootToken()));
+        };
+    }
+
+    private static SessionPlannerRestKind toRestKind(SessionPlannerPublishedEvent.RestSelection selection) {
+        return switch (selection == null ? SessionPlannerPublishedEvent.RestSelection.NONE : selection) {
+            case NONE -> SessionPlannerRestKind.NONE;
+            case SHORT_REST -> SessionPlannerRestKind.SHORT_REST;
+            case LONG_REST -> SessionPlannerRestKind.LONG_REST;
+        };
     }
 
     private record Binding(

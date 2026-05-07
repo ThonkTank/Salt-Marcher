@@ -21,6 +21,8 @@ import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
 import javafx.scene.text.TextAlignment;
 import org.jspecify.annotations.Nullable;
+import src.view.slotcontent.primitives.mapcanvas.CanvasPointerEvent.MapCanvasPoint;
+import src.view.slotcontent.primitives.mapcanvas.MapRenderScene.MapCanvasPolygonPrimitive;
 
 public class MapCanvasView extends BorderPane {
 

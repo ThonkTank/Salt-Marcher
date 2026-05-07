@@ -41,27 +41,25 @@ public final class SessionPlannerControlsView extends ScrollPane {
     private final Label goldHeadlineLabel = Factory.createLabel("", true);
     private final Label goldDetailLabel = Factory.createLabel("", true, STYLE_TEXT_SECONDARY);
     private final PlansSection plansSection = new PlansSection();
-    private Consumer<SessionPlannerViewInputEvent> viewInputEventHandler = ignored -> { };
+    private Consumer<SessionPlannerControlsViewInputEvent> viewInputEventHandler = ignored -> { };
 
     @SuppressWarnings(PMD_LAW_OF_DEMETER)
     public SessionPlannerControlsView() {
         sessionSection.onCreateRequested(() -> viewInputEventHandler.accept(
-                new SessionPlannerViewInputEvent(
-                        new SessionPlannerViewInputEvent.SimpleActionInput(SessionPlannerSimpleAction.CREATE_SESSION))));
+                new SessionPlannerControlsViewInputEvent(
+                        new SessionPlannerControlsViewInputEvent.CreateSessionInput())));
         sessionSection.onEncounterDaysRequested(encounterDaysText -> viewInputEventHandler.accept(
-                new SessionPlannerViewInputEvent(
-                        new SessionPlannerViewInputEvent.EncounterDaysInput(encounterDaysText))));
+                new SessionPlannerControlsViewInputEvent(
+                        new SessionPlannerControlsViewInputEvent.SetEncounterDaysInput(encounterDaysText))));
         activePartySection.onActionRequested(characterId -> viewInputEventHandler.accept(
-                new SessionPlannerViewInputEvent(
-                        new SessionPlannerViewInputEvent.ParticipantInput(
-                                new SessionPlannerParticipantChange(SessionPlannerParticipantAction.ADD, characterId)))));
+                new SessionPlannerControlsViewInputEvent(
+                        new SessionPlannerControlsViewInputEvent.AddParticipantInput(characterId))));
         sessionParticipantSection.onRemoveRequested(characterId -> viewInputEventHandler.accept(
-                new SessionPlannerViewInputEvent(
-                        new SessionPlannerViewInputEvent.ParticipantInput(
-                                new SessionPlannerParticipantChange(SessionPlannerParticipantAction.REMOVE, characterId)))));
+                new SessionPlannerControlsViewInputEvent(
+                        new SessionPlannerControlsViewInputEvent.RemoveParticipantInput(characterId))));
         plansSection.onImportRequested(planId -> viewInputEventHandler.accept(
-                new SessionPlannerViewInputEvent(
-                        new SessionPlannerViewInputEvent.AttachPlanInput(new SessionPlannerPlanRef(planId)))));
+                new SessionPlannerControlsViewInputEvent(
+                        new SessionPlannerControlsViewInputEvent.AttachPlanInput(planId))));
 
         VBox content = new VBox(12);
         ObservableList<Node> contentChildren = content.getChildren();
@@ -98,7 +96,7 @@ public final class SessionPlannerControlsView extends ScrollPane {
         plansSection.showPlans(safe.availablePlans());
     }
 
-    public void onViewInputEvent(Consumer<SessionPlannerViewInputEvent> handler) {
+    public void onViewInputEvent(Consumer<SessionPlannerControlsViewInputEvent> handler) {
         viewInputEventHandler = handler == null ? ignored -> { } : handler;
     }
 

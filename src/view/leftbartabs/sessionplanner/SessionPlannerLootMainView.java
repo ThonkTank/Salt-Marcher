@@ -15,7 +15,7 @@ import javafx.scene.layout.VBox;
 public final class SessionPlannerLootMainView extends VBox {
 
     private final LootBox lootBox = new LootBox();
-    private Consumer<SessionPlannerViewInputEvent> viewInputEventHandler = ignored -> { };
+    private Consumer<SessionPlannerLootMainViewInputEvent> viewInputEventHandler = ignored -> { };
 
     public SessionPlannerLootMainView() {
         getChildren().add(lootSection());
@@ -31,7 +31,7 @@ public final class SessionPlannerLootMainView extends VBox {
         lootBox.showCards(safe.stream().map(this::lootCard).toList());
     }
 
-    public void onViewInputEvent(Consumer<SessionPlannerViewInputEvent> handler) {
+    public void onViewInputEvent(Consumer<SessionPlannerLootMainViewInputEvent> handler) {
         viewInputEventHandler = handler == null ? ignored -> { } : handler;
     }
 
@@ -47,8 +47,8 @@ public final class SessionPlannerLootMainView extends VBox {
         Label header = new StyledLabel("Loot-Platzhalter", "section-header", "text-muted");
         Button addButton = new StyledButton("Loot-Platzhalter", "compact", "accent");
         addButton.setOnAction(event -> viewInputEventHandler.accept(
-                new SessionPlannerViewInputEvent(
-                        new SessionPlannerViewInputEvent.SimpleActionInput(SessionPlannerSimpleAction.ADD_LOOT_PLACEHOLDER))));
+                new SessionPlannerLootMainViewInputEvent(
+                        new SessionPlannerLootMainViewInputEvent.AddLootPlaceholderInput())));
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
         HBox row = new HBox(8, header, spacer, addButton);
@@ -62,8 +62,8 @@ public final class SessionPlannerLootMainView extends VBox {
         HBox.setHgrow(spacer, Priority.ALWAYS);
         Button remove = new StyledButton("Entfernen", "compact", "flat");
         remove.setOnAction(event -> viewInputEventHandler.accept(
-                new SessionPlannerViewInputEvent(
-                        new SessionPlannerViewInputEvent.LootRemovalInput(new SessionPlannerLootRef(loot.token())))));
+                new SessionPlannerLootMainViewInputEvent(
+                        new SessionPlannerLootMainViewInputEvent.RemoveLootPlaceholderInput(loot.token()))));
         return new LootCardRow(label, spacer, remove);
     }
 

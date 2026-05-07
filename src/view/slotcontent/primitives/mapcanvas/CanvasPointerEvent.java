@@ -17,6 +17,9 @@ public record CanvasPointerEvent(
         canvasPoint = canvasPoint == null ? new MapCanvasPoint(0.0, 0.0) : canvasPoint;
     }
 
+    public record MapCanvasPoint(double x, double y) {
+    }
+
     public record CanvasButtons(boolean primaryButtonDown, boolean secondaryButtonDown) {
     }
 

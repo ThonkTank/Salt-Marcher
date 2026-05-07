@@ -3,7 +3,7 @@ package src.view.leftbartabs.dungeoneditor;
 import java.util.function.Consumer;
 import src.view.slotcontent.main.dungeonmap.DungeonMapView;
 import src.view.slotcontent.primitives.mapcanvas.CanvasPointerEvent;
-import src.view.slotcontent.primitives.mapcanvas.MapCanvasPoint;
+import src.view.slotcontent.primitives.mapcanvas.CanvasPointerEvent.MapCanvasPoint;
 
 final class DungeonEditorMainView extends DungeonMapView {
 
