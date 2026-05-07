@@ -6,6 +6,7 @@ import javafx.geometry.Insets;
 import javafx.scene.Node;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Pane;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
@@ -26,45 +27,45 @@ public final class DialogSurfaceView extends VBox {
     public DialogSurfaceView() {
         getStyleClass().add("dialog-surface");
         setFillWidth(true);
-        header.getStyleClass().add("dialog-header");
-        bodyHost.getStyleClass().add("dialog-body");
-        footerHost.getStyleClass().add("dialog-footer");
-        bodyScroll.getStyleClass().add("dialog-body-scroll");
+        FxAccess.addStyle(header, "dialog-header");
+        FxAccess.addStyle(bodyHost, "dialog-body");
+        FxAccess.addStyle(footerHost, "dialog-footer");
+        FxAccess.addStyle(bodyScroll, "dialog-body-scroll");
         bodyScroll.setFitToWidth(true);
         bodyScroll.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
         bodyScroll.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
-        VBox.setVgrow(bodyHost, Priority.ALWAYS);
-        getChildren().addAll(header, bodyHost, footerHost);
+        setVgrow(bodyHost, Priority.ALWAYS);
+        FxAccess.addChildren(this, header, bodyHost, footerHost);
     }
 
     public void setHeader(Node... nodes) {
         replace(header, nodes);
-        setVisibleAndManaged(header, !header.getChildren().isEmpty());
+        setVisibleAndManaged(header, FxAccess.hasChildren(header));
     }
 
     public void setBody(Node node, BodyPolicy policy) {
-        bodyHost.getChildren().clear();
+        FxAccess.clearChildren(bodyHost);
         if (node == null) {
             return;
         }
         if (policy == BodyPolicy.SCROLL) {
             bodyScroll.setContent(node);
-            bodyHost.getChildren().setAll(bodyScroll);
+            FxAccess.setChildren(bodyHost, bodyScroll);
         } else {
             bodyScroll.setContent(null);
-            bodyHost.getChildren().setAll(node);
+            FxAccess.setChildren(bodyHost, node);
         }
     }
 
     public void setFooter(Node... nodes) {
         if (nodes == null || nodes.length == 0) {
-            footerHost.getChildren().clear();
+            FxAccess.clearChildren(footerHost);
             setVisibleAndManaged(footerHost, false);
             return;
         }
         HBox footer = new HBox(8, nodes);
-        footer.getStyleClass().add("dialog-action-row");
-        footerHost.getChildren().setAll(footer);
+        FxAccess.addStyle(footer, "dialog-action-row");
+        FxAccess.setChildren(footerHost, footer);
         setVisibleAndManaged(footerHost, true);
     }
 
@@ -86,11 +87,39 @@ public final class DialogSurfaceView extends VBox {
         List<Node> safeNodes = nodes == null ? List.of() : Arrays.stream(nodes)
                 .filter(node -> node != null)
                 .toList();
-        container.getChildren().setAll(safeNodes);
+        FxAccess.setChildren(container, safeNodes);
     }
 
     private static void setVisibleAndManaged(Node node, boolean visible) {
         node.setVisible(visible);
         node.setManaged(visible);
+    }
+
+    @SuppressWarnings("PMD.LawOfDemeter")
+    private static final class FxAccess {
+
+        private static void addStyle(Node node, String styleClass) {
+            node.getStyleClass().add(styleClass);
+        }
+
+        private static void addChildren(Pane parent, Node... children) {
+            parent.getChildren().addAll(children);
+        }
+
+        private static void clearChildren(Pane parent) {
+            parent.getChildren().clear();
+        }
+
+        private static boolean hasChildren(Pane parent) {
+            return !parent.getChildren().isEmpty();
+        }
+
+        private static void setChildren(Pane parent, Node... children) {
+            parent.getChildren().setAll(children);
+        }
+
+        private static void setChildren(Pane parent, List<Node> children) {
+            parent.getChildren().setAll(children);
+        }
     }
 }
