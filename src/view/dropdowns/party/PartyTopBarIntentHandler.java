@@ -44,7 +44,16 @@ final class PartyTopBarIntentHandler {
             return;
         }
         if (event.editEditorRequested()) {
-            presentationModel.openEditEditor(toEditorSeedModel(event.editorSeed()));
+            PartyRosterTopBarViewInputEvent.EditorSeed seed = event.editorSeed() == null
+                    ? PartyRosterTopBarViewInputEvent.EditorSeed.empty()
+                    : event.editorSeed();
+            presentationModel.openEditEditor(
+                    seed.memberId(),
+                    seed.memberName(),
+                    seed.playerName(),
+                    seed.rawLevel(),
+                    seed.rawPassivePerception(),
+                    seed.rawArmorClass());
             return;
         }
         if (event.addExistingRequested()) {
@@ -298,21 +307,6 @@ final class PartyTopBarIntentHandler {
                 level.value(),
                 passivePerception.value(),
                 armorClass.value());
-    }
-
-    private static PartyTopBarContributionModel.EditorSeedModel toEditorSeedModel(
-            PartyRosterTopBarViewInputEvent.EditorSeed seed
-    ) {
-        PartyRosterTopBarViewInputEvent.EditorSeed safeSeed = seed == null
-                ? PartyRosterTopBarViewInputEvent.EditorSeed.empty()
-                : seed;
-        return new PartyTopBarContributionModel.EditorSeedModel(
-                safeSeed.memberId(),
-                safeSeed.memberName(),
-                safeSeed.playerName(),
-                safeSeed.rawLevel(),
-                safeSeed.rawPassivePerception(),
-                safeSeed.rawArmorClass());
     }
 
     private static ParsedInteger parseInteger(String rawValue, String label, int min, int max) {

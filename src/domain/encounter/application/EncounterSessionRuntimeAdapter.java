@@ -88,27 +88,27 @@ public final class EncounterSessionRuntimeAdapter implements EncounterSession.Ru
     }
 
     @Override
-    public SavePlanOutcome savePlan(EncounterPlan plan) {
+    public PlanOutcome savePlan(EncounterPlan plan) {
         SaveEncounterPlanUseCase useCase = savePlanUseCase;
         if (useCase == null) {
-            return new SavePlanOutcome(Optional.empty(), "Encounter plan storage is not registered.");
+            return new PlanOutcome(Optional.empty(), "Encounter plan storage is not registered.");
         }
         SaveEncounterPlanUseCase.Result result = useCase.execute(
                 Math.max(0L, plan.id()),
                 plan.name(),
                 plan.generatedLabel(),
                 plan.creatures());
-        return new SavePlanOutcome(result.plan() == null ? Optional.empty() : Optional.of(result.plan()), result.message());
+        return new PlanOutcome(result.plan() == null ? Optional.empty() : Optional.of(result.plan()), result.message());
     }
 
     @Override
-    public LoadPlanOutcome loadPlan(long planId) {
+    public PlanOutcome loadPlan(long planId) {
         LoadSavedEncounterPlanUseCase useCase = loadSavedPlanUseCase;
         if (useCase == null) {
-            return new LoadPlanOutcome(Optional.empty(), "Encounter plan storage is not registered.");
+            return new PlanOutcome(Optional.empty(), "Encounter plan storage is not registered.");
         }
         LoadSavedEncounterPlanUseCase.Result result = useCase.execute(planId);
-        return new LoadPlanOutcome(result.plan() == null ? Optional.empty() : Optional.of(result.plan()), result.message());
+        return new PlanOutcome(result.plan() == null ? Optional.empty() : Optional.of(result.plan()), result.message());
     }
 
     @Override

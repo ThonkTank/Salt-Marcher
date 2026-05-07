@@ -67,17 +67,21 @@ public final class PartyTopBarContributionModel {
         panel.set(safePanel().withEditor(EditorPanelModel.createDraft()));
     }
 
-    public void openEditEditor(EditorSeedModel seed) {
-        EditorSeedModel safeSeed = seed == null
-                ? EditorSeedModel.empty()
-                : seed;
+    public void openEditEditor(
+            long memberId,
+            String memberName,
+            String playerName,
+            String rawLevel,
+            String rawPassivePerception,
+            String rawArmorClass
+    ) {
         panel.set(safePanel().withEditor(EditorPanelModel.editDraft(
-                safeSeed.memberId(),
-                safeSeed.memberName(),
-                safeSeed.playerName(),
-                safeSeed.rawLevel(),
-                safeSeed.rawPassivePerception(),
-                safeSeed.rawArmorClass())));
+                memberId,
+                memberName,
+                playerName,
+                rawLevel,
+                rawPassivePerception,
+                rawArmorClass)));
     }
 
     public void cancelEditor() {
@@ -508,29 +512,6 @@ public final class PartyTopBarContributionModel {
                     this.rawPassivePerception,
                     this.rawArmorClass,
                     visible);
-        }
-    }
-
-    public record EditorSeedModel(
-            long memberId,
-            String memberName,
-            String playerName,
-            String rawLevel,
-            String rawPassivePerception,
-            String rawArmorClass
-    ) {
-
-        public EditorSeedModel {
-            memberId = Math.max(0L, memberId);
-            memberName = safe(memberName);
-            playerName = safe(playerName);
-            rawLevel = safe(rawLevel);
-            rawPassivePerception = safe(rawPassivePerception);
-            rawArmorClass = safe(rawArmorClass);
-        }
-
-        static EditorSeedModel empty() {
-            return new EditorSeedModel(0L, "", "", "", "", "");
         }
     }
 

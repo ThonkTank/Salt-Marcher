@@ -12,6 +12,8 @@ import javafx.scene.layout.VBox;
 
 public final class DungeonEditorStateView extends VBox {
 
+    private static final String PMD_LAW_OF_DEMETER = "PMD.LawOfDemeter";
+
     private final Label body = new Label();
     private final VBox narrationCards = new VBox(8);
     private Consumer<DungeonEditorStateViewInputEvent> viewInputEventHandler = ignored -> {};
@@ -20,13 +22,7 @@ public final class DungeonEditorStateView extends VBox {
         setSpacing(12);
         setPadding(new Insets(12));
         getStyleClass().addAll("surface-root", "control-stack");
-
-        Label title = new Label("Editor state");
-        title.getStyleClass().add("panel-title");
-        body.setWrapText(true);
-        VBox card = new VBox(6, title, body);
-        card.getStyleClass().addAll("card-surface", "content-card");
-        getChildren().addAll(card, narrationCards);
+        getChildren().addAll(createStateCard(), narrationCards);
     }
 
     public StringProperty stateTextProperty() {
@@ -45,9 +41,15 @@ public final class DungeonEditorStateView extends VBox {
         showProjection(contributionModel.stateProjectionProperty().get());
     }
 
-    public void showNarrationCards(List<RoomNarrationCard> cards, boolean busy, String statusText) {
+    @SuppressWarnings(PMD_LAW_OF_DEMETER)
+    public void showNarrationCards(
+            List<DungeonEditorContributionModel.RoomNarrationCardProjection> cards,
+            boolean busy,
+            String statusText
+    ) {
         narrationCards.getChildren().clear();
-        for (RoomNarrationCard card : cards == null ? List.<RoomNarrationCard>of() : cards) {
+        for (DungeonEditorContributionModel.RoomNarrationCardProjection card
+                : cards == null ? List.<DungeonEditorContributionModel.RoomNarrationCardProjection>of() : cards) {
             narrationCards.getChildren().add(narrationCard(card, busy, statusText));
         }
     }
@@ -57,41 +59,25 @@ public final class DungeonEditorStateView extends VBox {
                 ? DungeonEditorContributionModel.StateProjection.initial()
                 : projection;
         stateTextProperty().set(resolvedProjection.stateText());
-        showNarrationCards(
-                resolvedProjection.narrationCards().stream().map(DungeonEditorStateView::toCard).toList(),
-                resolvedProjection.busy(),
-                resolvedProjection.statusText());
+        showNarrationCards(resolvedProjection.narrationCards(), resolvedProjection.busy(), resolvedProjection.statusText());
     }
 
-    private static RoomNarrationCard toCard(DungeonEditorContributionModel.RoomNarrationCardProjection card) {
-        return new RoomNarrationCard(
-                card.roomId(),
-                card.roomName(),
-                card.visualDescription(),
-                card.exits().stream().map(DungeonEditorStateView::toExit).toList());
-    }
-
-    private static RoomExitNarration toExit(DungeonEditorContributionModel.RoomExitNarrationProjection exit) {
-        return new RoomExitNarration(
-                exit.label(),
-                exit.q(),
-                exit.r(),
-                exit.level(),
-                exit.direction(),
-                exit.description());
-    }
-
-    private VBox narrationCard(RoomNarrationCard card, boolean busy, String statusText) {
+    @SuppressWarnings(PMD_LAW_OF_DEMETER)
+    private VBox narrationCard(
+            DungeonEditorContributionModel.RoomNarrationCardProjection card,
+            boolean busy,
+            String statusText
+    ) {
         Label title = new Label(card.roomName());
         title.getStyleClass().add("panel-title");
         Label visualTitle = muted("Visueller Eindruck");
         TextArea visualArea = textArea(card.visualDescription());
         VBox content = new VBox(6, title, visualTitle, visualArea);
-        List<ExitTextArea> exitAreas = new ArrayList<>();
-        for (RoomExitNarration exit : card.exits()) {
+        List<ExitEditor> exitAreas = new ArrayList<>();
+        for (DungeonEditorContributionModel.RoomExitNarrationProjection exit : card.exits()) {
             Label exitTitle = muted(exit.label());
             TextArea exitArea = textArea(exit.description());
-            exitAreas.add(new ExitTextArea(exit, exitArea));
+            exitAreas.add(new ExitEditor(exit, exitArea));
             content.getChildren().addAll(exitTitle, exitArea);
         }
         Label status = muted(statusText);
@@ -104,19 +90,24 @@ public final class DungeonEditorStateView extends VBox {
                 card.roomId(),
                 visualArea.getText(),
                 exitAreas.stream()
-                        .map(exit -> new DungeonEditorStateViewInputEvent.RoomExitNarrationSnapshot(
-                                exit.exit().label(),
-                                exit.exit().q(),
-                                exit.exit().r(),
-                                exit.exit().level(),
-                                exit.exit().direction(),
-                                exit.area().getText()))
+                        .map(exit -> exit.area().getText())
                         .toList())));
         content.getChildren().addAll(status, save);
         content.getStyleClass().addAll("card-surface", "content-card");
         return content;
     }
 
+    @SuppressWarnings(PMD_LAW_OF_DEMETER)
+    private VBox createStateCard() {
+        Label title = new Label("Editor state");
+        title.getStyleClass().add("panel-title");
+        body.setWrapText(true);
+        VBox card = new VBox(6, title, body);
+        card.getStyleClass().addAll("card-surface", "content-card");
+        return card;
+    }
+
+    @SuppressWarnings(PMD_LAW_OF_DEMETER)
     private static Label muted(String text) {
         Label label = new Label(text == null ? "" : text);
         label.getStyleClass().add("text-muted");
@@ -131,34 +122,9 @@ public final class DungeonEditorStateView extends VBox {
         return area;
     }
 
-    public record RoomNarrationCard(
-            long roomId,
-            String roomName,
-            String visualDescription,
-            List<RoomExitNarration> exits
+    private record ExitEditor(
+            DungeonEditorContributionModel.RoomExitNarrationProjection exit,
+            TextArea area
     ) {
-        public RoomNarrationCard {
-            roomName = roomName == null || roomName.isBlank() ? "Raum" : roomName.trim();
-            visualDescription = visualDescription == null ? "" : visualDescription;
-            exits = exits == null ? List.of() : List.copyOf(exits);
-        }
-    }
-
-    public record RoomExitNarration(
-            String label,
-            int q,
-            int r,
-            int level,
-            String direction,
-            String description
-    ) {
-        public RoomExitNarration {
-            label = label == null || label.isBlank() ? "Ausgang" : label.trim();
-            direction = direction == null || direction.isBlank() ? "NORTH" : direction.trim();
-            description = description == null ? "" : description;
-        }
-    }
-
-    private record ExitTextArea(RoomExitNarration exit, TextArea area) {
     }
 }

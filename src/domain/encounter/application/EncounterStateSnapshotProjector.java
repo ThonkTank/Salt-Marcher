@@ -4,6 +4,7 @@ import src.domain.encounter.published.EncounterBuilderInputs;
 import src.domain.encounter.published.EncounterStateSnapshot;
 import src.domain.encounter.session.entity.EncounterSession;
 import src.domain.encounter.session.value.EncounterSessionSnapshotData;
+import src.domain.encounter.session.value.EncounterSessionValues;
 import src.domain.encounter.session.value.EncounterSessionValues.BuilderStateData;
 import src.domain.encounter.session.value.EncounterSessionValues.CombatProjectionData;
 import src.domain.encounter.session.value.EncounterSessionValues.Mode;
@@ -55,22 +56,7 @@ public final class EncounterStateSnapshotProjector {
     }
 
     private static EncounterStateSnapshot.BuilderPane toPublishedBuilderPane(BuilderStateData builderState) {
-        BuilderStateData safeState = builderState == null
-                ? new BuilderStateData(
-                        java.util.List.of(),
-                        java.util.List.of(),
-                        "",
-                        null,
-                        null,
-                        java.util.List.of(),
-                        java.util.List.of(),
-                        false,
-                        false,
-                        false,
-                        false,
-                        false,
-                        java.util.Optional.empty())
-                : builderState;
+        BuilderStateData safeState = builderState == null ? EncounterSessionValues.emptyBuilderState() : builderState;
         return new EncounterStateSnapshot.BuilderPane(
                 partySummary(safeState),
                 safeState.templateLabel(),

@@ -78,7 +78,7 @@ final class EncounterSessionBuilder {
             context.setStatus(SAVE_NEEDS_CREATURE_STATUS);
             return;
         }
-        SavePlanOutcome result = access.savePlan(new EncounterPlan(
+        PlanOutcome result = access.savePlan(new EncounterPlan(
                 activeSavedPlanId.orElse(0L),
                 saveName(),
                 generatedTitle,
@@ -102,7 +102,7 @@ final class EncounterSessionBuilder {
             EncounterSessionContext context,
             EncounterSessionCombat combat
     ) {
-        LoadPlanOutcome result = access.loadPlan(planId);
+        PlanOutcome result = access.loadPlan(planId);
         if (!result.success()) {
             context.setStatus(result.message().isBlank() ? OPEN_FAILURE_STATUS : result.message());
             context.refreshSavedPlans(access);

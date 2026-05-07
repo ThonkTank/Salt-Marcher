@@ -48,14 +48,14 @@ final class PartyTopBarBinder {
                 ? PartyTopBarContributionModel.EditorPanelModel.hidden()
                 : initialModel.editorPanel();
         rosterView.showPanel(toRosterContent(initialModel));
-        editorView.showEditor(toEditorContent(initialEditorModel));
+        editorView.showEditor(initialEditorModel);
         presentationModel.triggerTextProperty().addListener((ignored, before, after) -> topBarView.setTriggerText(after));
         presentationModel.panelProperty().addListener((ignored, before, after) -> {
             PartyTopBarContributionModel.EditorPanelModel editorModel = after == null
                     ? PartyTopBarContributionModel.EditorPanelModel.hidden()
                     : after.editorPanel();
             rosterView.showPanel(toRosterContent(after));
-            editorView.showEditor(toEditorContent(editorModel));
+            editorView.showEditor(editorModel);
         });
         topBarView.onViewInputEvent(intentHandler::consume);
         rosterView.onViewInputEvent(intentHandler::consume);
@@ -103,7 +103,7 @@ final class PartyTopBarBinder {
                 0L,
                 0,
                 0L,
-                java.util.List.of(),
+                List.of(),
                 "",
                 0,
                 0L,
@@ -169,57 +169,14 @@ final class PartyTopBarBinder {
                 safeModel.loading(),
                 safeModel.storageError(),
                 safeModel.storageMessage(),
-                safeModel.activeMembers().stream().map(PartyTopBarBinder::toMemberView).toList(),
-                safeModel.reserveMembers().stream().map(PartyTopBarBinder::toMemberView).toList(),
+                safeModel.activeMembers(),
+                safeModel.reserveMembers(),
                 safeModel.summaryText(),
                 safeModel.restSummaryText(),
                 safeModel.actionStatus(),
                 safeModel.actionStatusError(),
                 safeModel.restActionsDisabled(),
                 safeModel.actionsDisabled());
-    }
-
-    private static PartyEditorTopBarView.EditorContent toEditorContent(
-            PartyTopBarContributionModel.EditorPanelModel model
-    ) {
-        PartyTopBarContributionModel.EditorPanelModel safeModel = model == null
-                ? PartyTopBarContributionModel.EditorPanelModel.hidden()
-                : model;
-        return new PartyEditorTopBarView.EditorContent(
-                safeModel.visible(),
-                safeModel.editingExisting(),
-                safeModel.memberId(),
-                safeModel.memberName(),
-                safeModel.playerName(),
-                safeModel.rawLevel(),
-                safeModel.rawPassivePerception(),
-                safeModel.rawArmorClass(),
-                safeModel.deleteConfirmationVisible());
-    }
-
-    private static PartyRosterTopBarView.MemberView toMemberView(PartyTopBarContributionModel.MemberModel member) {
-        PartyTopBarContributionModel.MemberModel safeMember = member == null
-                ? new PartyTopBarContributionModel.MemberModel(
-                0L, "", "", 1, 0, 0, 300, 10, 10, "Lv 1", "Lv 2", "", "", "0/300 XP (0%)", 0.0, "", "")
-                : member;
-        return new PartyRosterTopBarView.MemberView(
-                safeMember.id() == null ? 0L : safeMember.id(),
-                safeMember.name(),
-                safeMember.playerName(),
-                safeMember.level(),
-                safeMember.currentXp(),
-                safeMember.currentLevelXp(),
-                safeMember.nextLevelXp(),
-                safeMember.passivePerception(),
-                safeMember.armorClass(),
-                safeMember.levelLabel(),
-                safeMember.nextLevelLabel(),
-                safeMember.detailsText(),
-                safeMember.progressionText(),
-                safeMember.levelProgressText(),
-                safeMember.levelProgressFraction(),
-                safeMember.restText(),
-                safeMember.restStyleClass());
     }
 
     private record Binding(Node topBar) implements ShellBinding {

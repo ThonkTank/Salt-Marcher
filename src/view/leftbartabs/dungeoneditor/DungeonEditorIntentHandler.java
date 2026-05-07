@@ -1,5 +1,6 @@
 package src.view.leftbartabs.dungeoneditor;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
@@ -68,10 +69,14 @@ final class DungeonEditorIntentHandler {
         if (event == null) {
             return;
         }
+        DungeonEditorContributionModel.RoomNarrationCardProjection card = currentNarrationCard(event.roomId());
+        if (card == null) {
+            return;
+        }
         publish(DungeonEditorPublishedEvent.saveRoomNarration(new DungeonEditorPublishedEvent.RoomNarrationInput(
-                event.roomId(),
+                card.roomId(),
                 event.visualDescription(),
-                event.exits().stream().map(DungeonEditorIntentHandler::toPublishedExit).toList())));
+                mergeExitNarrations(card.exits(), event.exitDescriptions()))));
     }
 
     private void handleMapSelection(DungeonEditorControlsViewInputEvent.MapSelectionInput mapSelection) {
@@ -234,17 +239,46 @@ final class DungeonEditorIntentHandler {
         publishedEventListener.accept(event);
     }
 
-    private static DungeonEditorPublishedEvent.RoomExitNarration toPublishedExit(
-            DungeonEditorStateViewInputEvent.RoomExitNarrationSnapshot exit
+    private DungeonEditorContributionModel.RoomNarrationCardProjection currentNarrationCard(long roomId) {
+        DungeonEditorContributionModel.StateProjection currentProjection = presentationModel.stateProjectionProperty().get();
+        DungeonEditorContributionModel.StateProjection safeProjection = currentProjection == null
+                ? DungeonEditorContributionModel.StateProjection.initial()
+                : currentProjection;
+        for (DungeonEditorContributionModel.RoomNarrationCardProjection card : safeProjection.narrationCards()) {
+            if (card.roomId() == roomId) {
+                return card;
+            }
+        }
+        return null;
+    }
+
+    private static List<DungeonEditorPublishedEvent.RoomExitNarration> mergeExitNarrations(
+            List<DungeonEditorContributionModel.RoomExitNarrationProjection> exits,
+            List<String> exitDescriptions
     ) {
-        DungeonEditorStateViewInputEvent.RoomExitNarrationSnapshot safeExit = exit == null
-                ? new DungeonEditorStateViewInputEvent.RoomExitNarrationSnapshot("", 0, 0, 0, "", "")
+        List<DungeonEditorPublishedEvent.RoomExitNarration> merged = new ArrayList<>();
+        List<DungeonEditorContributionModel.RoomExitNarrationProjection> safeExits = exits == null ? List.of() : exits;
+        List<String> safeDescriptions = exitDescriptions == null ? List.of() : exitDescriptions;
+        for (int index = 0; index < safeExits.size(); index++) {
+            DungeonEditorContributionModel.RoomExitNarrationProjection exit = safeExits.get(index);
+            String description = index < safeDescriptions.size() ? safeDescriptions.get(index) : exit.description();
+            merged.add(toPublishedExit(exit, description));
+        }
+        return List.copyOf(merged);
+    }
+
+    private static DungeonEditorPublishedEvent.RoomExitNarration toPublishedExit(
+            DungeonEditorContributionModel.RoomExitNarrationProjection exit,
+            @Nullable String description
+    ) {
+        DungeonEditorContributionModel.RoomExitNarrationProjection safeExit = exit == null
+                ? new DungeonEditorContributionModel.RoomExitNarrationProjection("", 0, 0, 0, "", "")
                 : exit;
         return new DungeonEditorPublishedEvent.RoomExitNarration(
                 safeExit.label(),
                 new DungeonEditorPublishedEvent.CellRef(safeExit.q(), safeExit.r(), safeExit.level()),
                 safeExit.direction(),
-                safeExit.description());
+                description == null ? safeExit.description() : description);
     }
 
     private static DungeonEditorPublishedEvent.MainViewInput.Source toMainViewSource(

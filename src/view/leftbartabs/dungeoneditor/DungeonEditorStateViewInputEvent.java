@@ -5,26 +5,13 @@ import java.util.List;
 public record DungeonEditorStateViewInputEvent(
         long roomId,
         String visualDescription,
-        List<RoomExitNarrationSnapshot> exits
+        List<String> exitDescriptions
 ) {
 
     public DungeonEditorStateViewInputEvent {
         visualDescription = visualDescription == null ? "" : visualDescription;
-        exits = exits == null ? List.of() : List.copyOf(exits);
-    }
-
-    public record RoomExitNarrationSnapshot(
-            String label,
-            int q,
-            int r,
-            int level,
-            String direction,
-            String description
-    ) {
-        public RoomExitNarrationSnapshot {
-            label = label == null ? "" : label;
-            direction = direction == null ? "" : direction;
-            description = description == null ? "" : description;
-        }
+        exitDescriptions = exitDescriptions == null
+                ? List.of()
+                : exitDescriptions.stream().map(description -> description == null ? "" : description).toList();
     }
 }

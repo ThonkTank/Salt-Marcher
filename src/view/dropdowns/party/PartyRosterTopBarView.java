@@ -8,7 +8,6 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
-import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
@@ -89,8 +88,8 @@ public final class PartyRosterTopBarView extends VBox {
             boolean loading,
             boolean storageError,
             String storageMessage,
-            List<MemberView> activeMembers,
-            List<MemberView> reserveMembers,
+            List<PartyTopBarContributionModel.MemberModel> activeMembers,
+            List<PartyTopBarContributionModel.MemberModel> reserveMembers,
             String summaryText,
             String restSummaryText,
             String actionStatus,
@@ -113,40 +112,6 @@ public final class PartyRosterTopBarView extends VBox {
         }
     }
 
-    public record MemberView(
-            Long id,
-            String name,
-            String playerName,
-            int level,
-            int currentXp,
-            int currentLevelXp,
-            int nextLevelXp,
-            int passivePerception,
-            int armorClass,
-            String levelLabel,
-            String nextLevelLabel,
-            String detailsText,
-            String progressionText,
-            String levelProgressText,
-            double levelProgressFraction,
-            String restText,
-            String restStyleClass
-    ) {
-
-        public MemberView {
-            name = safe(name);
-            playerName = safe(playerName);
-            levelLabel = safe(levelLabel);
-            nextLevelLabel = safe(nextLevelLabel);
-            detailsText = safe(detailsText);
-            progressionText = safe(progressionText);
-            levelProgressText = safe(levelProgressText);
-            levelProgressFraction = Math.max(0.0, Math.min(1.0, levelProgressFraction));
-            restText = safe(restText);
-            restStyleClass = safe(restStyleClass);
-        }
-    }
-
     private final class EventPublisher {
 
         private void createEditorRequested() {
@@ -163,7 +128,7 @@ public final class PartyRosterTopBarView extends VBox {
                     PartyRosterTopBarViewInputEvent.EditorSeed.empty()));
         }
 
-        private void editRequested(MemberView member) {
+        private void editRequested(PartyTopBarContributionModel.MemberModel member) {
             publish(new PartyRosterTopBarViewInputEvent(
                     false,
                     true,
@@ -183,7 +148,7 @@ public final class PartyRosterTopBarView extends VBox {
                             Integer.toString(member.armorClass()))));
         }
 
-        private void addRequested(MemberView member) {
+        private void addRequested(PartyTopBarContributionModel.MemberModel member) {
             publish(new PartyRosterTopBarViewInputEvent(
                     false,
                     false,
@@ -197,7 +162,7 @@ public final class PartyRosterTopBarView extends VBox {
                     PartyRosterTopBarViewInputEvent.EditorSeed.empty()));
         }
 
-        private void removeRequested(MemberView member) {
+        private void removeRequested(PartyTopBarContributionModel.MemberModel member) {
             publish(new PartyRosterTopBarViewInputEvent(
                     false,
                     false,
@@ -211,7 +176,7 @@ public final class PartyRosterTopBarView extends VBox {
                     PartyRosterTopBarViewInputEvent.EditorSeed.empty()));
         }
 
-        private void xpAdjustmentRequested(MemberView member, int xpDelta) {
+        private void xpAdjustmentRequested(PartyTopBarContributionModel.MemberModel member, int xpDelta) {
             publish(new PartyRosterTopBarViewInputEvent(
                     false,
                     false,
@@ -260,14 +225,14 @@ public final class PartyRosterTopBarView extends VBox {
 
     private static final class MemberListPane extends VBox {
 
-        private final Consumer<MemberView> onEditRequested;
-        private final Consumer<MemberView> onRemoveRequested;
-        private final BiConsumer<MemberView, Integer> onXpAdjustmentRequested;
+        private final Consumer<PartyTopBarContributionModel.MemberModel> onEditRequested;
+        private final Consumer<PartyTopBarContributionModel.MemberModel> onRemoveRequested;
+        private final BiConsumer<PartyTopBarContributionModel.MemberModel, Integer> onXpAdjustmentRequested;
 
         private MemberListPane(
-                Consumer<MemberView> onEditRequested,
-                Consumer<MemberView> onRemoveRequested,
-                BiConsumer<MemberView, Integer> onXpAdjustmentRequested
+                Consumer<PartyTopBarContributionModel.MemberModel> onEditRequested,
+                Consumer<PartyTopBarContributionModel.MemberModel> onRemoveRequested,
+                BiConsumer<PartyTopBarContributionModel.MemberModel, Integer> onXpAdjustmentRequested
         ) {
             this.onEditRequested = onEditRequested;
             this.onRemoveRequested = onRemoveRequested;
@@ -290,7 +255,7 @@ public final class PartyRosterTopBarView extends VBox {
                 getChildren().add(new MessageLabel("Keine aktiven Party-Mitglieder"));
                 return;
             }
-            for (MemberView member : content.activeMembers()) {
+            for (PartyTopBarContributionModel.MemberModel member : content.activeMembers()) {
                 getChildren().add(new MemberRow(
                         member,
                         actionsDisabled,
@@ -304,11 +269,11 @@ public final class PartyRosterTopBarView extends VBox {
     private static final class MemberRow extends VBox {
 
         private MemberRow(
-                MemberView member,
+                PartyTopBarContributionModel.MemberModel member,
                 boolean actionsDisabled,
-                Consumer<MemberView> onEditRequested,
-                Consumer<MemberView> onRemoveRequested,
-                BiConsumer<MemberView, Integer> onXpAdjustmentRequested
+                Consumer<PartyTopBarContributionModel.MemberModel> onEditRequested,
+                Consumer<PartyTopBarContributionModel.MemberModel> onRemoveRequested,
+                BiConsumer<PartyTopBarContributionModel.MemberModel, Integer> onXpAdjustmentRequested
         ) {
             Label identityLabel = new ClippedLabel(identityText(member), "bold");
             HBox.setHgrow(identityLabel, Priority.ALWAYS);
@@ -354,7 +319,7 @@ public final class PartyRosterTopBarView extends VBox {
             setMaxWidth(Double.MAX_VALUE);
         }
 
-        private static String identityText(MemberView member) {
+        private static String identityText(PartyTopBarContributionModel.MemberModel member) {
             String name = safe(member.name()).trim();
             String player = safe(member.playerName()).trim();
             if (player.isBlank()) {
@@ -366,7 +331,7 @@ public final class PartyRosterTopBarView extends VBox {
             return name + " - " + player;
         }
 
-        private static String combatText(MemberView member) {
+        private static String combatText(PartyTopBarContributionModel.MemberModel member) {
             return "AC " + member.armorClass() + " | PP " + member.passivePerception();
         }
     }
@@ -374,9 +339,9 @@ public final class PartyRosterTopBarView extends VBox {
     private static final class LevelProgressRow extends HBox {
 
         private LevelProgressRow(
-                MemberView member,
+                PartyTopBarContributionModel.MemberModel member,
                 boolean actionsDisabled,
-                BiConsumer<MemberView, Integer> onXpAdjustmentRequested
+                BiConsumer<PartyTopBarContributionModel.MemberModel, Integer> onXpAdjustmentRequested
         ) {
             PopupSpec popupSpec = actionsDisabled ? null : new PopupSpec(
                     "XP korrigieren",
@@ -404,12 +369,14 @@ public final class PartyRosterTopBarView extends VBox {
 
         private final TextField searchField = new TextField();
         private final SuggestionList suggestionList = new SuggestionList();
-        private final ObservableList<MemberView> availableMembers = FXCollections.observableArrayList();
-        private final ObservableList<MemberView> matchingMembers = FXCollections.observableArrayList();
-        private final Consumer<MemberView> onAddRequested;
+        private final ObservableList<PartyTopBarContributionModel.MemberModel> availableMembers =
+                FXCollections.observableArrayList();
+        private final ObservableList<PartyTopBarContributionModel.MemberModel> matchingMembers =
+                FXCollections.observableArrayList();
+        private final Consumer<PartyTopBarContributionModel.MemberModel> onAddRequested;
         private boolean actionsDisabled;
 
-        private SearchSection(Consumer<MemberView> onAddRequested) {
+        private SearchSection(Consumer<PartyTopBarContributionModel.MemberModel> onAddRequested) {
             this.onAddRequested = onAddRequested;
             suggestionList.setItems(matchingMembers);
             searchField.setPromptText("Suche...");
@@ -432,7 +399,7 @@ public final class PartyRosterTopBarView extends VBox {
             setSpacing(4);
         }
 
-        private void showMembers(List<MemberView> members, boolean actionsDisabled) {
+        private void showMembers(List<PartyTopBarContributionModel.MemberModel> members, boolean actionsDisabled) {
             availableMembers.setAll(members == null ? List.of() : members);
             this.actionsDisabled = actionsDisabled;
             searchField.clear();
@@ -461,7 +428,7 @@ public final class PartyRosterTopBarView extends VBox {
             if (actionsDisabled) {
                 return;
             }
-            MemberView selected = suggestionList.selectedMember();
+            PartyTopBarContributionModel.MemberModel selected = suggestionList.selectedMember();
             if (selected != null) {
                 onAddRequested.accept(selected);
                 hideSuggestions();
@@ -482,7 +449,7 @@ public final class PartyRosterTopBarView extends VBox {
         }
     }
 
-    private static final class SuggestionList extends ListView<MemberView> {
+    private static final class SuggestionList extends ListView<PartyTopBarContributionModel.MemberModel> {
 
         private SuggestionList() {
             setPrefHeight(USE_COMPUTED_SIZE);
@@ -492,14 +459,14 @@ public final class PartyRosterTopBarView extends VBox {
             getStyleClass().add("party-suggestions");
             setCellFactory(listView -> new ListCell<>() {
                 @Override
-                protected void updateItem(MemberView member, boolean empty) {
+                protected void updateItem(PartyTopBarContributionModel.MemberModel member, boolean empty) {
                     super.updateItem(member, empty);
                     setText(empty || member == null ? null : member.name() + "  (" + member.levelLabel() + ")");
                 }
             });
         }
 
-        private MemberView selectedMember() {
+        private PartyTopBarContributionModel.MemberModel selectedMember() {
             return getSelectionModel().getSelectedItem();
         }
 
@@ -611,7 +578,7 @@ public final class PartyRosterTopBarView extends VBox {
 
     private static final class RestChipLabel extends Label {
 
-        private RestChipLabel(MemberView member) {
+        private RestChipLabel(PartyTopBarContributionModel.MemberModel member) {
             setText(member.restText());
             getStyleClass().add("party-rest-chip");
             if (!member.restStyleClass().isBlank()) {

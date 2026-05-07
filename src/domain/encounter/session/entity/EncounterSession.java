@@ -24,9 +24,9 @@ public final class EncounterSession {
 
         GenerationResultData generate(EncounterGenerationRequest request);
 
-        SavePlanOutcome savePlan(EncounterPlan plan);
+        PlanOutcome savePlan(EncounterPlan plan);
 
-        LoadPlanOutcome loadPlan(long planId);
+        PlanOutcome loadPlan(long planId);
 
         ListPlansOutcome listPlans();
 

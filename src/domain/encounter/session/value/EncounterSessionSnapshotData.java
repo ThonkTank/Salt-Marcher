@@ -15,9 +15,7 @@ public record EncounterSessionSnapshotData(
 ) {
     public EncounterSessionSnapshotData {
         status = status == null ? "" : status;
-        builderState = builderState == null
-                ? new BuilderStateData(List.of(), List.of(), "", null, null, List.of(), List.of(), false, false, false, false, false, null)
-                : builderState;
+        builderState = builderState == null ? emptyBuilderState() : builderState;
         initiativeEntries = initiativeEntries == null ? List.of() : List.copyOf(initiativeEntries);
         combatProjection = combatProjection == null ? CombatProjectionData.empty() : combatProjection;
         missingCombatPartyMembers = missingCombatPartyMembers == null ? List.of() : List.copyOf(missingCombatPartyMembers);
