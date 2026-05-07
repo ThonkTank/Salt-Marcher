@@ -8,69 +8,106 @@ import java.util.Objects;
 
 public final class SearchCreatureCatalogUseCase {
 
-    public enum SearchStatus {
-        SUCCESS,
-        INVALID_QUERY
-    }
-
     public record SearchResult(
-            SearchStatus status,
+            ValidationStatus status,
             CreatureCatalogLookup.CatalogPage page,
             int pageSize,
             int pageOffset
     ) {
         public boolean invalidQuery() {
-            return status == SearchStatus.INVALID_QUERY;
+            return status == ValidationStatus.INVALID_QUERY;
         }
     }
 
-    public record CatalogQueryInput(
-            @Nullable String nameQuery,
-            @Nullable String challengeRatingMin,
-            @Nullable String challengeRatingMax,
-            @Nullable List<String> sizes,
-            @Nullable List<String> types,
-            @Nullable List<String> subtypes,
-            @Nullable List<String> biomes,
-            @Nullable List<String> alignments,
-            CreatureCatalogLookup.SortField sortField,
-            CreatureCatalogLookup.SortDirection sortDirection,
-            int pageSize,
-            int pageOffset
-    ) {
-        public CatalogQueryInput {
-            sizes = immutableValues(sizes);
-            types = immutableValues(types);
-            subtypes = immutableValues(subtypes);
-            biomes = immutableValues(biomes);
-            alignments = immutableValues(alignments);
-            sortField = sortField == null ? CreatureCatalogLookup.SortField.NAME : sortField;
-            sortDirection = sortDirection == null ? CreatureCatalogLookup.SortDirection.ASCENDING : sortDirection;
+    public static final class CatalogQueryInput {
+
+        private final @Nullable String nameQuery;
+        private final @Nullable String challengeRatingMin;
+        private final @Nullable String challengeRatingMax;
+        private final List<String> sizes;
+        private final List<String> types;
+        private final List<String> subtypes;
+        private final List<String> biomes;
+        private final List<String> alignments;
+        private final CreatureCatalogLookup.SortField sortField;
+        private final CreatureCatalogLookup.SortDirection sortDirection;
+        private final int pageSize;
+        private final int pageOffset;
+
+        public CatalogQueryInput(
+                @Nullable String nameQuery,
+                @Nullable String challengeRatingMin,
+                @Nullable String challengeRatingMax,
+                @Nullable List<String> sizes,
+                @Nullable List<String> types,
+                @Nullable List<String> subtypes,
+                @Nullable List<String> biomes,
+                @Nullable List<String> alignments,
+                CreatureCatalogLookup.SortField sortField,
+                CreatureCatalogLookup.SortDirection sortDirection,
+                int pageSize,
+                int pageOffset
+        ) {
+            this.nameQuery = nameQuery;
+            this.challengeRatingMin = challengeRatingMin;
+            this.challengeRatingMax = challengeRatingMax;
+            this.sizes = immutableValues(sizes);
+            this.types = immutableValues(types);
+            this.subtypes = immutableValues(subtypes);
+            this.biomes = immutableValues(biomes);
+            this.alignments = immutableValues(alignments);
+            this.sortField = sortField == null ? CreatureCatalogLookup.SortField.NAME : sortField;
+            this.sortDirection = sortDirection == null ? CreatureCatalogLookup.SortDirection.ASCENDING : sortDirection;
+            this.pageSize = pageSize;
+            this.pageOffset = pageOffset;
         }
 
-        @Override
+        public @Nullable String nameQuery() {
+            return nameQuery;
+        }
+
+        public @Nullable String challengeRatingMin() {
+            return challengeRatingMin;
+        }
+
+        public @Nullable String challengeRatingMax() {
+            return challengeRatingMax;
+        }
+
         public List<String> sizes() {
             return immutableValues(sizes);
         }
 
-        @Override
         public List<String> types() {
             return immutableValues(types);
         }
 
-        @Override
         public List<String> subtypes() {
             return immutableValues(subtypes);
         }
 
-        @Override
         public List<String> biomes() {
             return immutableValues(biomes);
         }
 
-        @Override
         public List<String> alignments() {
             return immutableValues(alignments);
+        }
+
+        public CreatureCatalogLookup.SortField sortField() {
+            return sortField;
+        }
+
+        public CreatureCatalogLookup.SortDirection sortDirection() {
+            return sortDirection;
+        }
+
+        public int pageSize() {
+            return pageSize;
+        }
+
+        public int pageOffset() {
+            return pageOffset;
         }
     }
 
@@ -87,7 +124,7 @@ public final class SearchCreatureCatalogUseCase {
         NormalizedCatalogQuery normalizedQuery = normalize(query);
         if (!normalizedQuery.valid()) {
             return new SearchResult(
-                    SearchStatus.INVALID_QUERY,
+                    ValidationStatus.INVALID_QUERY,
                     new CreatureCatalogLookup.CatalogPage(
                             List.of(),
                             0,
@@ -98,7 +135,7 @@ public final class SearchCreatureCatalogUseCase {
             );
         }
         return new SearchResult(
-                SearchStatus.SUCCESS,
+                ValidationStatus.SUCCESS,
                 lookup.searchCatalog(normalizedQuery.toSearchSpec()),
                 normalizedQuery.pageSize(),
                 normalizedQuery.pageOffset()

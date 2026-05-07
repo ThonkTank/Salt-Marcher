@@ -178,24 +178,11 @@ public final class CreaturesApplicationService {
     }
 
     private static CreatureCatalogPage toPublishedCatalogPage(CreatureCatalogLookup.CatalogPage page) {
-        return new CreatureCatalogPage(
-                page.rows().stream().map(CreaturesApplicationService::toPublishedCatalogRow).toList(),
-                page.totalCount(),
-                page.pageSize(),
-                page.pageOffset());
+        return CreatureCatalogPage.fromPage(page);
     }
 
     private static CreatureCatalogRow toPublishedCatalogRow(CreatureCatalogLookup.CatalogRow row) {
-        return new CreatureCatalogRow(
-                row.id(),
-                row.name(),
-                row.size(),
-                row.creatureType(),
-                row.alignment(),
-                row.challengeRating(),
-                row.xp(),
-                row.hitPoints(),
-                row.armorClass());
+        return CreatureCatalogRow.fromRow(row);
     }
 
     private static CreatureDetail toPublishedCreatureDetail(CreatureCatalogLookup.CreatureProfile detail) {
@@ -243,27 +230,11 @@ public final class CreaturesApplicationService {
     }
 
     private static CreatureActionDetail toPublishedActionDetail(CreatureCatalogLookup.ActionProfile action) {
-        return new CreatureActionDetail(
-                action.actionType(),
-                action.name(),
-                action.description(),
-                action.toHitBonus());
+        return CreatureActionDetail.fromProfile(action);
     }
 
     private static EncounterCandidate toPublishedEncounterCandidate(CreatureCatalogLookup.EncounterCandidateProfile candidate) {
-        return new EncounterCandidate(
-                candidate.id(),
-                candidate.name(),
-                candidate.creatureType(),
-                candidate.challengeRating(),
-                candidate.xp(),
-                candidate.hitPoints(),
-                candidate.hitDiceCount(),
-                candidate.hitDiceSides(),
-                candidate.hitDiceModifier(),
-                candidate.armorClass(),
-                candidate.initiativeBonus(),
-                candidate.legendaryActionCount());
+        return EncounterCandidate.fromProfile(candidate);
     }
 
     private static SearchCreatureCatalogUseCase.CatalogQueryInput toCatalogQueryInput(CreatureCatalogQuery query) {
@@ -284,13 +255,21 @@ public final class CreaturesApplicationService {
     }
 
     private static CreatureCatalogLookup.SortField toPortSortField(src.domain.creatures.published.CreatureCatalogSortField sortField) {
-        return switch (sortField == null ? src.domain.creatures.published.CreatureCatalogSortField.NAME : sortField) {
-            case CHALLENGE_RATING -> CreatureCatalogLookup.SortField.CHALLENGE_RATING;
-            case XP -> CreatureCatalogLookup.SortField.XP;
-            case TYPE -> CreatureCatalogLookup.SortField.TYPE;
-            case SIZE -> CreatureCatalogLookup.SortField.SIZE;
-            case NAME -> CreatureCatalogLookup.SortField.NAME;
-        };
+        src.domain.creatures.published.CreatureCatalogSortField effectiveSortField =
+                sortField == null ? src.domain.creatures.published.CreatureCatalogSortField.NAME : sortField;
+        if (effectiveSortField == src.domain.creatures.published.CreatureCatalogSortField.CHALLENGE_RATING) {
+            return CreatureCatalogLookup.SortField.CHALLENGE_RATING;
+        }
+        if (effectiveSortField == src.domain.creatures.published.CreatureCatalogSortField.XP) {
+            return CreatureCatalogLookup.SortField.XP;
+        }
+        if (effectiveSortField == src.domain.creatures.published.CreatureCatalogSortField.TYPE) {
+            return CreatureCatalogLookup.SortField.TYPE;
+        }
+        if (effectiveSortField == src.domain.creatures.published.CreatureCatalogSortField.SIZE) {
+            return CreatureCatalogLookup.SortField.SIZE;
+        }
+        return CreatureCatalogLookup.SortField.NAME;
     }
 
     private static CreatureCatalogLookup.SortDirection toPortSortDirection(src.domain.creatures.published.CreatureSortDirection sortDirection) {

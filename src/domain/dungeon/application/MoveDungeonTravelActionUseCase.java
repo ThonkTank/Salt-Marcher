@@ -22,12 +22,24 @@ import src.domain.dungeon.map.value.DungeonTravelSurfaceFacts;
 
 public final class MoveDungeonTravelActionUseCase {
 
-    public record Input(
-            @Nullable DungeonTravelPositionFacts position,
-            String actionId
-    ) {
-        public Input {
-            actionId = actionId == null ? "" : actionId.trim();
+    public static final class Input {
+        private final @Nullable DungeonTravelPositionFacts position;
+        private final String actionId;
+
+        public Input(
+                @Nullable DungeonTravelPositionFacts position,
+                String actionId
+        ) {
+            this.position = position;
+            this.actionId = actionId == null ? "" : actionId.trim();
+        }
+
+        public @Nullable DungeonTravelPositionFacts position() {
+            return position;
+        }
+
+        public String actionId() {
+            return actionId;
         }
     }
 

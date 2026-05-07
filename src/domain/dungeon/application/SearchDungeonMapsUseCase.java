@@ -11,11 +11,32 @@ import java.util.List;
  */
 public final class SearchDungeonMapsUseCase {
 
-    public record MapSummary(
-            DungeonMapIdentity mapId,
-            String mapName,
-            long revision
-    ) {
+    public static final class MapSummary {
+        private final DungeonMapIdentity mapId;
+        private final String mapName;
+        private final long revision;
+
+        public MapSummary(
+                DungeonMapIdentity mapId,
+                String mapName,
+                long revision
+        ) {
+            this.mapId = mapId;
+            this.mapName = mapName;
+            this.revision = revision;
+        }
+
+        public DungeonMapIdentity mapId() {
+            return mapId;
+        }
+
+        public String mapName() {
+            return mapName;
+        }
+
+        public long revision() {
+            return revision;
+        }
     }
 
     private final DungeonMapSearch search;

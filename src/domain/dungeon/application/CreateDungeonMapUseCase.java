@@ -11,7 +11,16 @@ import src.domain.dungeon.map.value.DungeonMapIdentity;
  */
 public final class CreateDungeonMapUseCase {
 
-    public record CreatedMap(DungeonMapIdentity mapId) {
+    public static final class CreatedMap {
+        private final DungeonMapIdentity mapId;
+
+        public CreatedMap(DungeonMapIdentity mapId) {
+            this.mapId = mapId;
+        }
+
+        public DungeonMapIdentity mapId() {
+            return mapId;
+        }
     }
 
     private final Supplier<DungeonMapIdentity> nextMapId;

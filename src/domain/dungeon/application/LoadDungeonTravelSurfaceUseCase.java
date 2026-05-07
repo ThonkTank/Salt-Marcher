@@ -8,7 +8,16 @@ import src.domain.dungeon.map.value.DungeonTravelSurfaceFacts;
 
 public final class LoadDungeonTravelSurfaceUseCase {
 
-    public record Input(@Nullable DungeonTravelPositionFacts position) {
+    public static final class Input {
+        private final @Nullable DungeonTravelPositionFacts position;
+
+        public Input(@Nullable DungeonTravelPositionFacts position) {
+            this.position = position;
+        }
+
+        public @Nullable DungeonTravelPositionFacts position() {
+            return position;
+        }
     }
 
     private final LoadDungeonMapUseCase loadDungeonMap;

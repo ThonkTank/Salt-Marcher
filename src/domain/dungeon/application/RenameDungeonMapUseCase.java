@@ -11,7 +11,16 @@ import src.domain.dungeon.map.value.DungeonMapIdentity;
  */
 public final class RenameDungeonMapUseCase {
 
-    public record RenamedMap(DungeonMapIdentity mapId) {
+    public static final class RenamedMap {
+        private final DungeonMapIdentity mapId;
+
+        public RenamedMap(DungeonMapIdentity mapId) {
+            this.mapId = mapId;
+        }
+
+        public DungeonMapIdentity mapId() {
+            return mapId;
+        }
     }
 
     private final Function<DungeonMapIdentity, Optional<DungeonMap>> findById;

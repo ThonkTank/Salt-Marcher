@@ -3,9 +3,13 @@ package src.domain.dungeon.map.value;
 /**
  * Empty authored space catalog placeholder for the first real map slice.
  */
-public record SpaceCatalog() {
+public final class SpaceCatalog {
+    private static final SpaceCatalog EMPTY = new SpaceCatalog();
+
+    private SpaceCatalog() {
+    }
 
     public static SpaceCatalog empty() {
-        return new SpaceCatalog();
+        return EMPTY;
     }
 }

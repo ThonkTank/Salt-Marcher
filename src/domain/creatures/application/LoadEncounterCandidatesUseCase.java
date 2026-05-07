@@ -7,13 +7,8 @@ import java.util.Objects;
 
 public final class LoadEncounterCandidatesUseCase {
 
-    public enum LoadStatus {
-        SUCCESS,
-        INVALID_QUERY
-    }
-
     public record LoadResult(
-            LoadStatus status,
+            ValidationStatus status,
             List<CreatureCatalogLookup.EncounterCandidateProfile> candidates
     ) {
         public LoadResult {
@@ -21,22 +16,57 @@ public final class LoadEncounterCandidatesUseCase {
         }
 
         public boolean invalidQuery() {
-            return status == LoadStatus.INVALID_QUERY;
+            return status == ValidationStatus.INVALID_QUERY;
         }
     }
 
-    public record CandidateQueryInput(
-            List<String> types,
-            List<String> subtypes,
-            List<String> biomes,
-            int minimumXp,
-            int maximumXp,
-            int limit
-    ) {
-        public CandidateQueryInput {
-            types = types == null ? List.of() : List.copyOf(types);
-            subtypes = subtypes == null ? List.of() : List.copyOf(subtypes);
-            biomes = biomes == null ? List.of() : List.copyOf(biomes);
+    public static final class CandidateQueryInput {
+
+        private final List<String> types;
+        private final List<String> subtypes;
+        private final List<String> biomes;
+        private final int minimumXp;
+        private final int maximumXp;
+        private final int limit;
+
+        public CandidateQueryInput(
+                List<String> types,
+                List<String> subtypes,
+                List<String> biomes,
+                int minimumXp,
+                int maximumXp,
+                int limit
+        ) {
+            this.types = types == null ? List.of() : List.copyOf(types);
+            this.subtypes = subtypes == null ? List.of() : List.copyOf(subtypes);
+            this.biomes = biomes == null ? List.of() : List.copyOf(biomes);
+            this.minimumXp = minimumXp;
+            this.maximumXp = maximumXp;
+            this.limit = limit;
+        }
+
+        public List<String> types() {
+            return types;
+        }
+
+        public List<String> subtypes() {
+            return subtypes;
+        }
+
+        public List<String> biomes() {
+            return biomes;
+        }
+
+        public int minimumXp() {
+            return minimumXp;
+        }
+
+        public int maximumXp() {
+            return maximumXp;
+        }
+
+        public int limit() {
+            return limit;
         }
     }
 
@@ -51,17 +81,17 @@ public final class LoadEncounterCandidatesUseCase {
 
     public LoadResult execute(CandidateQueryInput query) {
         if (query == null) {
-            return new LoadResult(LoadStatus.SUCCESS, lookup.loadEncounterCandidates(
+            return new LoadResult(ValidationStatus.SUCCESS, lookup.loadEncounterCandidates(
                     new CreatureCatalogLookup.EncounterCandidateSpec(List.of(), List.of(), List.of(), 0, Integer.MAX_VALUE, DEFAULT_LIMIT)));
         }
         int limit = normalizeLimit(query.limit());
         int minimumXp = Math.max(0, query.minimumXp());
         int maximumXp = query.maximumXp() <= 0 ? Integer.MAX_VALUE : query.maximumXp();
         if (minimumXp > maximumXp) {
-            return new LoadResult(LoadStatus.INVALID_QUERY, List.of());
+            return new LoadResult(ValidationStatus.INVALID_QUERY, List.of());
         }
         return new LoadResult(
-                LoadStatus.SUCCESS,
+                ValidationStatus.SUCCESS,
                 lookup.loadEncounterCandidates(new CreatureCatalogLookup.EncounterCandidateSpec(
                         query.types(),
                         query.subtypes(),
