@@ -2,10 +2,10 @@ package src.domain.dungeoneditor.session.value;
 
 import java.util.List;
 import org.jspecify.annotations.Nullable;
-import src.domain.dungeon.published.DungeonInspectorSnapshot;
-import src.domain.dungeon.published.DungeonMapId;
-import src.domain.dungeon.published.DungeonMapSnapshot;
-import src.domain.dungeon.published.DungeonMapSummary;
+import src.domain.dungeoneditor.workspace.value.DungeonEditorWorkspaceValues;
+import src.domain.dungeoneditor.workspace.value.DungeonEditorWorkspaceValues.Inspector;
+import src.domain.dungeoneditor.workspace.value.DungeonEditorWorkspaceValues.MapId;
+import src.domain.dungeoneditor.workspace.value.DungeonEditorWorkspaceValues.MapSnapshot;
 
 public final class DungeonEditorSessionSnapshot {
 
@@ -13,8 +13,8 @@ public final class DungeonEditorSessionSnapshot {
     }
 
     public record SnapshotData(
-            List<DungeonMapSummary> maps,
-            @Nullable DungeonMapId selectedMapId,
+            List<DungeonEditorWorkspaceValues.MapSummary> maps,
+            @Nullable MapId selectedMapId,
             DungeonEditorSessionValues.ViewMode viewMode,
             DungeonEditorSessionValues.Tool selectedTool,
             int projectionLevel,
@@ -52,13 +52,13 @@ public final class DungeonEditorSessionSnapshot {
     public record SurfaceData(
             String mapName,
             int revision,
-            DungeonMapSnapshot map,
-            @Nullable DungeonMapSnapshot previewMap,
-            @Nullable DungeonInspectorSnapshot inspector
+            MapSnapshot map,
+            @Nullable MapSnapshot previewMap,
+            @Nullable Inspector inspector
     ) {
         public SurfaceData {
             mapName = mapName == null || mapName.isBlank() ? "Dungeon" : mapName;
-            map = map == null ? DungeonMapSnapshot.empty() : map;
+            map = map == null ? DungeonEditorWorkspaceValues.MapSnapshot.empty() : map;
         }
     }
 }

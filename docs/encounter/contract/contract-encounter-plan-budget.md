@@ -1,22 +1,29 @@
-Status: Draft
+Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-28
-Source of Truth: Public query and result semantics for reading saved
+Last Reviewed: 2026-05-07
+Source of Truth: Public refresh-and-read contract for reading saved
 encounter-plan budget summaries.
 
 # Encounter Plan Budget Contract
 
 ## Purpose
 
-This contract defines the public encounter query used by downstream planning
-surfaces to read one saved encounter plan as a budget summary.
+This contract defines the public encounter budget surface used by downstream
+planning surfaces to read one saved encounter plan as a budget summary.
 
-## Query
+## Read Surface
 
-- `LoadEncounterPlanBudgetQuery`
-  requests one saved encounter plan by plan id
+- `EncounterPlanBudgetModel`
+  exposes `current()` plus passive subscription for the last requested saved
+  encounter-plan budget result
 
-## Result
+## Refresh Surface
+
+- `RefreshEncounterPlanBudgetCommand`
+  requests one saved encounter plan by plan id through the command-only
+  `EncounterApplicationService`
+
+## Payload
 
 - `EncounterPlanBudgetResult`
   returns one status, an optional `EncounterPlanBudgetSummary`, and a message
@@ -40,11 +47,13 @@ surfaces to read one saved encounter plan as a budget summary.
 
 ## Boundary Rules
 
-- the query is read-only
-- the query does not mutate the saved encounter plan
-- the query does not expose encounter persistence rows directly
+- the refresh command does not mutate the saved encounter plan
+- the budget payload is read-only
+- the model does not expose encounter persistence rows directly
 - creature XP stays creature-owned and is reloaded through creature detail
   reads instead of being duplicated into encounter-plan persistence
+- consumers read the refreshed payload through the model handle rather than a
+  direct root return value
 
 ## References
 

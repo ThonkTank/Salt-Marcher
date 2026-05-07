@@ -1,13 +1,14 @@
 package src.domain.dungeoneditor.application;
 
 import org.jspecify.annotations.Nullable;
-import src.domain.dungeon.published.DungeonSnapshot;
 import src.domain.dungeoneditor.interaction.value.DungeonEditorMainViewEffect;
 import src.domain.dungeoneditor.interaction.value.DungeonEditorMainViewInteractionValues.InteractionState;
 import src.domain.dungeoneditor.interaction.value.DungeonEditorMainViewInterpretation;
 import src.domain.dungeoneditor.interaction.value.DungeonEditorMainViewInteractionValues.PointerState;
 import src.domain.dungeoneditor.session.value.DungeonEditorSessionCommand;
 import src.domain.dungeoneditor.session.value.DungeonEditorSessionValues;
+import src.domain.dungeoneditor.workspace.value.DungeonEditorWorkspaceValues;
+import src.domain.dungeoneditor.workspace.value.DungeonEditorWorkspaceValues.MapSnapshot;
 
 final class InterpretDungeonEditorMainViewInputUseCase {
     private final DungeonEditorMainViewInputBoundaryTranslator inputTranslator =
@@ -27,7 +28,7 @@ final class InterpretDungeonEditorMainViewInputUseCase {
 
     DungeonEditorMainViewEffect consume(
             DungeonEditorSessionCommand.MainViewInput input,
-            @Nullable DungeonSnapshot snapshot,
+            @Nullable MapSnapshot snapshot,
             DungeonEditorSessionValues.Selection selection,
             DungeonEditorSessionValues.Tool selectedTool,
             DungeonEditorSessionValues.ViewMode viewMode,

@@ -22,7 +22,7 @@ final class InterpretDungeonEditorMainViewReleaseUseCase {
                     : state.paintSession().withEnd(input.q(), input.r());
             return new DungeonEditorMainViewInterpretation(
                     state.withPaintSession(PaintSession.none()),
-                    DungeonEditorMainViewEffect.apply(released.operation()));
+                    DungeonEditorMainViewEffect.apply(released.preview()));
         }
         if (state.boundaryStretchSession().present()) {
             BoundaryStretchSession releasedSession = input == null
@@ -35,7 +35,7 @@ final class InterpretDungeonEditorMainViewReleaseUseCase {
             if (!releasedSession.moved()) {
                 return new DungeonEditorMainViewInterpretation(nextState, DungeonEditorMainViewEffect.select(releasedSession.selection()));
             }
-            return new DungeonEditorMainViewInterpretation(nextState, DungeonEditorMainViewEffect.apply(releasedSession.operation()));
+            return new DungeonEditorMainViewInterpretation(nextState, DungeonEditorMainViewEffect.apply(releasedSession.preview()));
         }
         if (!state.dragSession().present() || input == null) {
             return new DungeonEditorMainViewInterpretation(state, DungeonEditorMainViewEffect.clearPreviewIfNeeded(false));
@@ -45,7 +45,7 @@ final class InterpretDungeonEditorMainViewReleaseUseCase {
         if (!selectionToolSelected(selectedTool) || !releasedSession.moved()) {
             return new DungeonEditorMainViewInterpretation(nextState, DungeonEditorMainViewEffect.clearPreviewIfNeeded(true));
         }
-        return new DungeonEditorMainViewInterpretation(nextState, DungeonEditorMainViewEffect.apply(releasedSession.moveHandleOperation()));
+        return new DungeonEditorMainViewInterpretation(nextState, DungeonEditorMainViewEffect.apply(releasedSession.moveHandlePreview()));
     }
 
     private static boolean selectionToolSelected(DungeonEditorSessionValues.Tool selectedTool) {

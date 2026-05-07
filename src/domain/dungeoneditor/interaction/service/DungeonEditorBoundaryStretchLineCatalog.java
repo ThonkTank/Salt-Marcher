@@ -4,26 +4,23 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
-import src.domain.dungeon.published.DungeonBoundarySnapshot;
-import src.domain.dungeon.published.DungeonCellRef;
-import src.domain.dungeon.published.DungeonEdgeRef;
-import src.domain.dungeon.published.DungeonSnapshot;
 import src.domain.dungeoneditor.interaction.value.DungeonEditorMainViewInteractionValues.BoundaryStretchOrientation;
+import src.domain.dungeoneditor.workspace.value.DungeonEditorWorkspaceValues;
 
 public final class DungeonEditorBoundaryStretchLineCatalog {
 
-    public Map<Integer, DungeonEdgeRef> edgesOnLine(
-            DungeonSnapshot snapshot,
-            Set<DungeonCellRef> clusterCells,
-            DungeonEdgeRef clickedEdge,
+    public Map<Integer, DungeonEditorWorkspaceValues.Edge> edgesOnLine(
+            DungeonEditorWorkspaceValues.MapSnapshot snapshot,
+            Set<DungeonEditorWorkspaceValues.Cell> clusterCells,
+            DungeonEditorWorkspaceValues.Edge clickedEdge,
             BoundaryStretchOrientation orientation,
             boolean outer
     ) {
-        Map<Integer, DungeonEdgeRef> edgesByVariable = new LinkedHashMap<>();
+        Map<Integer, DungeonEditorWorkspaceValues.Edge> edgesByVariable = new LinkedHashMap<>();
         int level = clickedEdge.from().level();
         int fixedCoordinate = fixedCoordinate(orientation, clickedEdge);
-        for (DungeonBoundarySnapshot boundary : snapshot.map().boundaries()) {
-            DungeonEdgeRef edge = boundary.edge();
+        for (DungeonEditorWorkspaceValues.Boundary boundary : snapshot.boundaries()) {
+            DungeonEditorWorkspaceValues.Edge edge = boundary.edge();
             if (!matchesStretchLine(edge, clusterCells, level, orientation, fixedCoordinate, outer)) {
                 continue;
             }
@@ -32,7 +29,10 @@ public final class DungeonEditorBoundaryStretchLineCatalog {
         return Map.copyOf(edgesByVariable);
     }
 
-    public int touchingClusterCount(DungeonEdgeRef edge, Set<DungeonCellRef> clusterCells) {
+    public int touchingClusterCount(
+            DungeonEditorWorkspaceValues.Edge edge,
+            Set<DungeonEditorWorkspaceValues.Cell> clusterCells
+    ) {
         if (edge == null || edge.from() == null || edge.to() == null || edge.from().level() != edge.to().level()) {
             return 0;
         }
@@ -46,8 +46,8 @@ public final class DungeonEditorBoundaryStretchLineCatalog {
     }
 
     private boolean matchesStretchLine(
-            DungeonEdgeRef edge,
-            Set<DungeonCellRef> clusterCells,
+            DungeonEditorWorkspaceValues.Edge edge,
+            Set<DungeonEditorWorkspaceValues.Cell> clusterCells,
             int level,
             BoundaryStretchOrientation orientation,
             int fixedCoordinate,
@@ -68,16 +68,16 @@ public final class DungeonEditorBoundaryStretchLineCatalog {
     }
 
     private static int horizontalTouchingClusterCount(
-            DungeonCellRef from,
-            DungeonCellRef to,
-            Set<DungeonCellRef> clusterCells
+            DungeonEditorWorkspaceValues.Cell from,
+            DungeonEditorWorkspaceValues.Cell to,
+            Set<DungeonEditorWorkspaceValues.Cell> clusterCells
     ) {
         int count = 0;
         for (int q = Math.min(from.q(), to.q()); q < Math.max(from.q(), to.q()); q++) {
-            if (clusterCells.contains(new DungeonCellRef(q, from.r() - 1, from.level()))) {
+            if (clusterCells.contains(new DungeonEditorWorkspaceValues.Cell(q, from.r() - 1, from.level()))) {
                 count++;
             }
-            if (clusterCells.contains(new DungeonCellRef(q, from.r(), from.level()))) {
+            if (clusterCells.contains(new DungeonEditorWorkspaceValues.Cell(q, from.r(), from.level()))) {
                 count++;
             }
         }
@@ -85,34 +85,43 @@ public final class DungeonEditorBoundaryStretchLineCatalog {
     }
 
     private static int verticalTouchingClusterCount(
-            DungeonCellRef from,
-            DungeonCellRef to,
-            Set<DungeonCellRef> clusterCells
+            DungeonEditorWorkspaceValues.Cell from,
+            DungeonEditorWorkspaceValues.Cell to,
+            Set<DungeonEditorWorkspaceValues.Cell> clusterCells
     ) {
         int count = 0;
         for (int r = Math.min(from.r(), to.r()); r < Math.max(from.r(), to.r()); r++) {
-            if (clusterCells.contains(new DungeonCellRef(from.q() - 1, r, from.level()))) {
+            if (clusterCells.contains(new DungeonEditorWorkspaceValues.Cell(from.q() - 1, r, from.level()))) {
                 count++;
             }
-            if (clusterCells.contains(new DungeonCellRef(from.q(), r, from.level()))) {
+            if (clusterCells.contains(new DungeonEditorWorkspaceValues.Cell(from.q(), r, from.level()))) {
                 count++;
             }
         }
         return count;
     }
 
-    private static boolean sameOrientation(BoundaryStretchOrientation orientation, DungeonEdgeRef edge) {
+    private static boolean sameOrientation(
+            BoundaryStretchOrientation orientation,
+            DungeonEditorWorkspaceValues.Edge edge
+    ) {
         return switch (orientation) {
             case HORIZONTAL -> edge.from().r() == edge.to().r();
             case VERTICAL -> edge.from().q() == edge.to().q();
         };
     }
 
-    private static int fixedCoordinate(BoundaryStretchOrientation orientation, DungeonEdgeRef edge) {
+    private static int fixedCoordinate(
+            BoundaryStretchOrientation orientation,
+            DungeonEditorWorkspaceValues.Edge edge
+    ) {
         return orientation == BoundaryStretchOrientation.VERTICAL ? edge.from().q() : edge.from().r();
     }
 
-    private static int variableCoordinate(BoundaryStretchOrientation orientation, DungeonEdgeRef edge) {
+    private static int variableCoordinate(
+            BoundaryStretchOrientation orientation,
+            DungeonEditorWorkspaceValues.Edge edge
+    ) {
         return orientation == BoundaryStretchOrientation.VERTICAL
                 ? Math.min(edge.from().r(), edge.to().r())
                 : Math.min(edge.from().q(), edge.to().q());

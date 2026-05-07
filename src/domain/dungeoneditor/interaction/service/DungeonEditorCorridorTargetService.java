@@ -1,10 +1,6 @@
 package src.domain.dungeoneditor.interaction.service;
 
 import org.jspecify.annotations.Nullable;
-import src.domain.dungeon.published.DungeonEditorOperation;
-import src.domain.dungeon.published.DungeonSnapshot;
-import src.domain.dungeon.published.DungeonTopologyElementKind;
-import src.domain.dungeon.published.DungeonTopologyElementRef;
 import src.domain.dungeoneditor.interaction.value.DungeonEditorMainViewInteractionValues;
 import src.domain.dungeoneditor.interaction.value.DungeonEditorMainViewInteractionValues.BoundaryRoomTouch;
 import src.domain.dungeoneditor.interaction.value.DungeonEditorMainViewInteractionValues.BoundaryTarget;
@@ -14,21 +10,24 @@ import src.domain.dungeoneditor.interaction.value.DungeonEditorMainViewInteracti
 import src.domain.dungeoneditor.interaction.value.DungeonEditorMainViewInteractionValues.PendingCorridorTarget;
 import src.domain.dungeoneditor.interaction.value.DungeonEditorMainViewInteractionValues.PointerState;
 import src.domain.dungeoneditor.session.value.DungeonEditorSessionValues;
+import src.domain.dungeoneditor.workspace.value.DungeonEditorWorkspaceValues;
 
 public final class DungeonEditorCorridorTargetService {
-    private final DungeonEditorRoomInteractionLookupService roomLookup = new DungeonEditorRoomInteractionLookupService();
-    private final DungeonEditorBoundaryRoomTouchService roomTouchService = new DungeonEditorBoundaryRoomTouchService();
-
-    public @Nullable PendingCorridorTarget resolveCreateTarget(PointerState input, DungeonSnapshot snapshot) {
+    public @Nullable PendingCorridorTarget resolveCreateTarget(
+            PointerState input,
+            DungeonEditorWorkspaceValues.MapSnapshot snapshot
+    ) {
+        DungeonEditorRoomInteractionLookupService roomLookup = new DungeonEditorRoomInteractionLookupService();
+        DungeonEditorBoundaryRoomTouchService roomTouchService = new DungeonEditorBoundaryRoomTouchService();
         PendingCorridorTarget fixedDoorHandleTarget = fixedDoorHandleTarget(input.hitTarget());
         if (fixedDoorHandleTarget != null) {
             return fixedDoorHandleTarget;
         }
-        PendingCorridorTarget fixedDoorTarget = fixedDoorBoundaryTarget(input, snapshot);
+        PendingCorridorTarget fixedDoorTarget = fixedDoorBoundaryTarget(input, snapshot, roomTouchService, roomLookup);
         if (fixedDoorTarget != null) {
             return fixedDoorTarget;
         }
-        PendingCorridorTarget perimeterWallTarget = perimeterWallTarget(input, snapshot);
+        PendingCorridorTarget perimeterWallTarget = perimeterWallTarget(input, snapshot, roomTouchService, roomLookup);
         if (perimeterWallTarget != null) {
             return perimeterWallTarget;
         }
@@ -36,11 +35,11 @@ public final class DungeonEditorCorridorTargetService {
         if (explicitAnchorTarget != null) {
             return explicitAnchorTarget;
         }
-        PendingCorridorTarget roomTarget = roomTarget(input, snapshot, input.hitTarget());
+        PendingCorridorTarget roomTarget = roomTarget(input, snapshot, input.hitTarget(), roomLookup);
         if (roomTarget != null) {
             return roomTarget;
         }
-        return corridorTarget(input);
+            return corridorTarget(input);
     }
 
     public @Nullable PendingCorridorTarget resolveDeleteTarget(PointerState input) {
@@ -63,20 +62,29 @@ public final class DungeonEditorCorridorTargetService {
                 DungeonEditorMainViewInteractionValues.ROOM_PREFIX + handleRef.roomId() + ":door:" + hit.topologyRefId(),
                 "Tür " + hit.topologyRefId(),
                 new DungeonEditorSessionValues.Selection(
-                        new DungeonTopologyElementRef(DungeonTopologyElementKind.DOOR, hit.topologyRefId()),
+                        new DungeonEditorWorkspaceValues.TopologyElementRef(
+                                DungeonEditorWorkspaceValues.TopologyElementKind.DOOR,
+                                hit.topologyRefId()),
                         handleRef.clusterId(),
                         false,
-                        handleRef.toDungeonHandleRef()),
+                        handleRef.toWorkspaceHandleRef()),
                 0L,
-                new DungeonEditorOperation.CorridorDoorEndpoint(
+                new DungeonEditorWorkspaceValues.CorridorDoorEndpoint(
                         handleRef.roomId(),
                         handleRef.clusterId(),
-                        handleRef.anchor().toDungeonCellRef(),
+                        handleRef.anchor().toWorkspaceCell(),
                         handleRef.direction(),
-                        new DungeonTopologyElementRef(DungeonTopologyElementKind.DOOR, hit.topologyRefId())));
+                        new DungeonEditorWorkspaceValues.TopologyElementRef(
+                                DungeonEditorWorkspaceValues.TopologyElementKind.DOOR,
+                                hit.topologyRefId())));
     }
 
-    private @Nullable PendingCorridorTarget fixedDoorBoundaryTarget(PointerState input, DungeonSnapshot snapshot) {
+    private @Nullable PendingCorridorTarget fixedDoorBoundaryTarget(
+            PointerState input,
+            DungeonEditorWorkspaceValues.MapSnapshot snapshot,
+            DungeonEditorBoundaryRoomTouchService roomTouchService,
+            DungeonEditorRoomInteractionLookupService roomLookup
+    ) {
         BoundaryTarget boundary = input == null ? null : input.boundaryTarget();
         BoundaryRoomTouch roomTouch = roomTouchService.singleRoomTouch(snapshot, boundary, true);
         if (roomTouch == null || boundary == null) {
@@ -91,17 +99,22 @@ public final class DungeonEditorCorridorTargetService {
                 "Tür " + boundary.topologyRefId(),
                 roomLookup.selectionForBoundary(boundary, roomTouch.room().clusterId()),
                 0L,
-                new DungeonEditorOperation.CorridorDoorEndpoint(
+                new DungeonEditorWorkspaceValues.CorridorDoorEndpoint(
                         roomTouch.room().id(),
                         roomTouch.room().clusterId(),
                         roomTouch.roomCell(),
                         direction,
-                        new DungeonTopologyElementRef(
-                                DungeonEditorMainViewInteractionValues.toPublishedTopologyKind(boundary.topologyRefKind()),
+                        new DungeonEditorWorkspaceValues.TopologyElementRef(
+                                DungeonEditorMainViewInteractionValues.toTopologyKind(boundary.topologyRefKind()),
                                 boundary.topologyRefId())));
     }
 
-    private @Nullable PendingCorridorTarget perimeterWallTarget(PointerState input, DungeonSnapshot snapshot) {
+    private @Nullable PendingCorridorTarget perimeterWallTarget(
+            PointerState input,
+            DungeonEditorWorkspaceValues.MapSnapshot snapshot,
+            DungeonEditorBoundaryRoomTouchService roomTouchService,
+            DungeonEditorRoomInteractionLookupService roomLookup
+    ) {
         BoundaryTarget boundary = input == null ? null : input.boundaryTarget();
         BoundaryRoomTouch roomTouch = roomTouchService.singleRoomTouch(snapshot, boundary, false);
         if (roomTouch == null || boundary == null) {
@@ -127,12 +140,12 @@ public final class DungeonEditorCorridorTargetService {
                 roomTouch.room().label().isBlank() ? "Raum " + roomTouch.room().id() : roomTouch.room().label(),
                 roomLookup.selectionForBoundary(boundary, roomTouch.room().clusterId()),
                 0L,
-                new DungeonEditorOperation.CorridorDoorEndpoint(
+                new DungeonEditorWorkspaceValues.CorridorDoorEndpoint(
                         roomTouch.room().id(),
                         roomTouch.room().clusterId(),
                         roomTouch.roomCell(),
                         direction,
-                        DungeonTopologyElementRef.empty()));
+                        DungeonEditorWorkspaceValues.TopologyElementRef.empty()));
     }
 
     private static @Nullable PendingCorridorTarget explicitAnchorTarget(@Nullable HitTarget hit) {
@@ -147,23 +160,31 @@ public final class DungeonEditorCorridorTargetService {
                 "anchor:" + hit.topologyRefId(),
                 "Anker " + hit.topologyRefId(),
                 new DungeonEditorSessionValues.Selection(
-                        new DungeonTopologyElementRef(DungeonTopologyElementKind.CORRIDOR, hostCorridorId),
+                        new DungeonEditorWorkspaceValues.TopologyElementRef(
+                                DungeonEditorWorkspaceValues.TopologyElementKind.CORRIDOR,
+                                hostCorridorId),
                         0L,
                         false,
-                        null),
+                        DungeonEditorSessionValues.emptyHandleRef()),
                 hostCorridorId,
-                new DungeonEditorOperation.CorridorAnchorEndpoint(
+                new DungeonEditorWorkspaceValues.CorridorAnchorEndpoint(
                         hostCorridorId,
-                        hit.handleRef().anchor().toDungeonCellRef(),
-                        new DungeonTopologyElementRef(DungeonTopologyElementKind.CORRIDOR_ANCHOR, hit.topologyRefId())));
+                        hit.handleRef().anchor().toWorkspaceCell(),
+                        new DungeonEditorWorkspaceValues.TopologyElementRef(
+                                DungeonEditorWorkspaceValues.TopologyElementKind.CORRIDOR_ANCHOR,
+                                hit.topologyRefId())));
     }
 
     private static @Nullable PendingCorridorTarget corridorTarget(@Nullable PointerState input) {
-        HitTarget hit = input == null ? null : input.hitTarget();
+        if (input == null) {
+            return null;
+        }
+        HitTarget hit = input.hitTarget();
         if (hit == null) {
             return null;
         }
-        long corridorId = hit.topologyRefId() > 0L && DungeonTopologyElementKind.CORRIDOR.name().equals(hit.topologyRefKind())
+        long corridorId = hit.topologyRefId() > 0L
+                && DungeonEditorWorkspaceValues.TopologyElementKind.CORRIDOR.name().equals(hit.topologyRefKind())
                 ? hit.topologyRefId()
                 : hit.kind() == HitKind.CORRIDOR ? hit.ownerId() : 0L;
         if (corridorId <= 0L) {
@@ -173,18 +194,25 @@ public final class DungeonEditorCorridorTargetService {
                 "corridor:" + corridorId + ":" + input.q() + ":" + input.r() + ":" + input.level(),
                 "Korridor " + corridorId,
                 new DungeonEditorSessionValues.Selection(
-                        new DungeonTopologyElementRef(DungeonTopologyElementKind.CORRIDOR, corridorId),
+                        new DungeonEditorWorkspaceValues.TopologyElementRef(
+                                DungeonEditorWorkspaceValues.TopologyElementKind.CORRIDOR,
+                                corridorId),
                         0L,
                         false,
-                        null),
+                        DungeonEditorSessionValues.emptyHandleRef()),
                 corridorId,
-                new DungeonEditorOperation.CorridorAnchorEndpoint(
+                new DungeonEditorWorkspaceValues.CorridorAnchorEndpoint(
                         corridorId,
-                        new src.domain.dungeon.published.DungeonCellRef(input.q(), input.r(), input.level()),
-                        DungeonTopologyElementRef.empty()));
+                        new DungeonEditorWorkspaceValues.Cell(input.q(), input.r(), input.level()),
+                        DungeonEditorWorkspaceValues.TopologyElementRef.empty()));
     }
 
-    private @Nullable PendingCorridorTarget roomTarget(PointerState input, DungeonSnapshot snapshot, HitTarget hit) {
+    private @Nullable PendingCorridorTarget roomTarget(
+            PointerState input,
+            DungeonEditorWorkspaceValues.MapSnapshot snapshot,
+            HitTarget hit,
+            DungeonEditorRoomInteractionLookupService roomLookup
+    ) {
         var room = roomLookup.roomArea(snapshot, hit);
         if (room == null) {
             return null;
@@ -197,13 +225,17 @@ public final class DungeonEditorCorridorTargetService {
         return new PendingCorridorTarget.EndpointTarget(
                 DungeonEditorMainViewInteractionValues.ROOM_PREFIX + room.id(),
                 room.label().isBlank() ? "Raum " + room.id() : room.label(),
-                new DungeonEditorSessionValues.Selection(room.topologyRef(), room.clusterId(), false, null),
+                new DungeonEditorSessionValues.Selection(
+                        room.topologyRef(),
+                        room.clusterId(),
+                        false,
+                        DungeonEditorSessionValues.emptyHandleRef()),
                 room.clusterId(),
-                new DungeonEditorOperation.CorridorDoorEndpoint(
+                new DungeonEditorWorkspaceValues.CorridorDoorEndpoint(
                         room.id(),
                         room.clusterId(),
                         roomCell,
                         direction,
-                        DungeonTopologyElementRef.empty()));
+                        DungeonEditorWorkspaceValues.TopologyElementRef.empty()));
     }
 }

@@ -3,12 +3,12 @@ package src.domain.dungeoneditor.session.value;
 import java.util.List;
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
-import src.domain.dungeon.published.DungeonInspectorSnapshot;
-import src.domain.dungeon.published.DungeonMapId;
+import src.domain.dungeoneditor.workspace.value.DungeonEditorWorkspaceValues;
+import src.domain.dungeoneditor.workspace.value.DungeonEditorWorkspaceValues.MapId;
 
 public record DungeonEditorSessionCommand(
         Action action,
-        @Nullable DungeonMapId mapId,
+        @Nullable MapId mapId,
         String mapName,
         DungeonEditorSessionValues.ViewMode viewMode,
         DungeonEditorSessionValues.Tool selectedTool,
@@ -28,111 +28,40 @@ public record DungeonEditorSessionCommand(
         roomNarration = roomNarration == null ? RoomNarrationInput.empty() : roomNarration;
     }
 
-    public static final class Action {
-        public static final Action SELECT_MAP = new Action("SELECT_MAP");
-        public static final Action CREATE_MAP = new Action("CREATE_MAP");
-        public static final Action RENAME_MAP = new Action("RENAME_MAP");
-        public static final Action DELETE_MAP = new Action("DELETE_MAP");
-        public static final Action SET_VIEW_MODE = new Action("SET_VIEW_MODE");
-        public static final Action SET_TOOL = new Action("SET_TOOL");
-        public static final Action SHIFT_PROJECTION_LEVEL = new Action("SHIFT_PROJECTION_LEVEL");
-        public static final Action SET_OVERLAY = new Action("SET_OVERLAY");
-        public static final Action INTERPRET_MAIN_VIEW = new Action("INTERPRET_MAIN_VIEW");
-        public static final Action SAVE_ROOM_NARRATION = new Action("SAVE_ROOM_NARRATION");
-
-        private final String name;
-
-        private Action(String name) {
-            this.name = name;
-        }
-
-        public String name() {
-            return name;
-        }
+    public enum Action {
+        SELECT_MAP,
+        CREATE_MAP,
+        RENAME_MAP,
+        DELETE_MAP,
+        SET_VIEW_MODE,
+        SET_TOOL,
+        SHIFT_PROJECTION_LEVEL,
+        SET_OVERLAY,
+        INTERPRET_MAIN_VIEW,
+        SAVE_ROOM_NARRATION;
 
         public static Action fromName(@Nullable String name) {
-            return switch (name == null ? "" : name) {
-                case "SELECT_MAP" -> SELECT_MAP;
-                case "CREATE_MAP" -> CREATE_MAP;
-                case "RENAME_MAP" -> RENAME_MAP;
-                case "DELETE_MAP" -> DELETE_MAP;
-                case "SET_VIEW_MODE" -> SET_VIEW_MODE;
-                case "SET_TOOL" -> SET_TOOL;
-                case "SHIFT_PROJECTION_LEVEL" -> SHIFT_PROJECTION_LEVEL;
-                case "SET_OVERLAY" -> SET_OVERLAY;
-                case "SAVE_ROOM_NARRATION" -> SAVE_ROOM_NARRATION;
-                default -> INTERPRET_MAIN_VIEW;
-            };
-        }
-
-        @Override
-        public boolean equals(Object other) {
-            if (this == other) {
-                return true;
+            try {
+                return valueOf(name == null ? INTERPRET_MAIN_VIEW.name() : name);
+            } catch (IllegalArgumentException ignored) {
+                return INTERPRET_MAIN_VIEW;
             }
-            if (!(other instanceof Action that)) {
-                return false;
-            }
-            return name.equals(that.name);
-        }
-
-        @Override
-        public int hashCode() {
-            return name.hashCode();
-        }
-
-        @Override
-        public String toString() {
-            return name;
         }
     }
 
-    public static final class MainViewInputSource {
-        public static final MainViewInputSource POINTER_PRESSED = new MainViewInputSource("POINTER_PRESSED");
-        public static final MainViewInputSource POINTER_DRAGGED = new MainViewInputSource("POINTER_DRAGGED");
-        public static final MainViewInputSource POINTER_RELEASED = new MainViewInputSource("POINTER_RELEASED");
-        public static final MainViewInputSource POINTER_MOVED = new MainViewInputSource("POINTER_MOVED");
-        public static final MainViewInputSource LEVEL_SCROLLED = new MainViewInputSource("LEVEL_SCROLLED");
-
-        private final String name;
-
-        private MainViewInputSource(String name) {
-            this.name = name;
-        }
-
-        public String name() {
-            return name;
-        }
+    public enum MainViewInputSource {
+        POINTER_PRESSED,
+        POINTER_DRAGGED,
+        POINTER_RELEASED,
+        POINTER_MOVED,
+        LEVEL_SCROLLED;
 
         public static MainViewInputSource fromName(@Nullable String name) {
-            return switch (name == null ? "" : name) {
-                case "POINTER_PRESSED" -> POINTER_PRESSED;
-                case "POINTER_DRAGGED" -> POINTER_DRAGGED;
-                case "POINTER_RELEASED" -> POINTER_RELEASED;
-                case "LEVEL_SCROLLED" -> LEVEL_SCROLLED;
-                default -> POINTER_MOVED;
-            };
-        }
-
-        @Override
-        public boolean equals(Object other) {
-            if (this == other) {
-                return true;
+            try {
+                return valueOf(name == null ? POINTER_MOVED.name() : name);
+            } catch (IllegalArgumentException ignored) {
+                return POINTER_MOVED;
             }
-            if (!(other instanceof MainViewInputSource that)) {
-                return false;
-            }
-            return name.equals(that.name);
-        }
-
-        @Override
-        public int hashCode() {
-            return name.hashCode();
-        }
-
-        @Override
-        public String toString() {
-            return name;
         }
     }
 
@@ -196,23 +125,23 @@ public record DungeonEditorSessionCommand(
         }
 
         public boolean isPointerPressed() {
-            return source.equals(MainViewInputSource.POINTER_PRESSED);
+            return source == MainViewInputSource.POINTER_PRESSED;
         }
 
         public boolean isPointerDragged() {
-            return source.equals(MainViewInputSource.POINTER_DRAGGED);
+            return source == MainViewInputSource.POINTER_DRAGGED;
         }
 
         public boolean isPointerReleased() {
-            return source.equals(MainViewInputSource.POINTER_RELEASED);
+            return source == MainViewInputSource.POINTER_RELEASED;
         }
 
         public boolean isPointerMoved() {
-            return source.equals(MainViewInputSource.POINTER_MOVED);
+            return source == MainViewInputSource.POINTER_MOVED;
         }
 
         public boolean isLevelScrolled() {
-            return source.equals(MainViewInputSource.LEVEL_SCROLLED);
+            return source == MainViewInputSource.LEVEL_SCROLLED;
         }
 
         @Override
@@ -241,7 +170,7 @@ public record DungeonEditorSessionCommand(
     public record RoomNarrationInput(
             long roomId,
             String visualDescription,
-            List<DungeonInspectorSnapshot.RoomExitNarration> exits
+            List<DungeonEditorWorkspaceValues.RoomExitNarration> exits
     ) {
         public RoomNarrationInput {
             roomId = Math.max(0L, roomId);

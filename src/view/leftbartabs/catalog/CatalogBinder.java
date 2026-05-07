@@ -16,8 +16,7 @@ import src.domain.encounter.EncounterApplicationService;
 import src.domain.encounter.published.ApplyEncounterStateCommand;
 import src.domain.encounter.published.EncounterBuilderInputs;
 import src.domain.encounter.published.EncounterBuilderInputsModel;
-import src.domain.encounter.published.LoadEncounterBuilderInputsQuery;
-import src.domain.encounter.published.LoadEncounterTuningPreviewQuery;
+import src.domain.encounter.published.EncounterTuningPreviewModel;
 import src.domain.encounter.published.UpdateEncounterBuilderInputsCommand;
 import src.domain.encountertable.EncounterTableApplicationService;
 import src.domain.encountertable.published.LoadEncounterTableSummariesQuery;
@@ -37,11 +36,12 @@ final class CatalogBinder {
                 runtimeContext.services().require(EncounterTableApplicationService.class);
         EncounterApplicationService encounters = runtimeContext.services().require(EncounterApplicationService.class);
         EncounterBuilderInputsModel builderInputsModel =
-                encounters.loadBuilderInputsModel(new LoadEncounterBuilderInputsQuery());
+                runtimeContext.services().require(EncounterBuilderInputsModel.class);
         var filterOptionsModel = creatures.loadFilterOptionsModel(new LoadCreatureFilterOptionsQuery());
         var catalogModel = creatures.loadCatalogModel(CreatureCatalogQuery.defaults());
         var encounterTableModel = encounterTables.loadCatalogModel(new LoadEncounterTableSummariesQuery());
-        var tuningPreviewModel = encounters.loadTuningPreviewModel(new LoadEncounterTuningPreviewQuery());
+        EncounterTuningPreviewModel tuningPreviewModel =
+                runtimeContext.services().require(EncounterTuningPreviewModel.class);
 
         CatalogContributionModel presentationModel = new CatalogContributionModel();
         CatalogIntentHandler intentHandler = new CatalogIntentHandler(presentationModel);
@@ -77,7 +77,6 @@ final class CatalogBinder {
 
         creatures.loadFilterOptions(new LoadCreatureFilterOptionsQuery());
         encounterTables.loadSummaries(new LoadEncounterTableSummariesQuery());
-        encounters.loadTuningPreview(new LoadEncounterTuningPreviewQuery());
         presentationModel.requestSearch();
         return new Binding(controls, main);
     }

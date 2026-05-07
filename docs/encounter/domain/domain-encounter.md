@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-23
+Last Reviewed: 2026-05-07
 Source of Truth: Encounter feature ownership, saved-plan write model, runtime
 generation policy, and domain invariants.
 
@@ -23,12 +23,19 @@ Context Name: Encounter
 ## Published Language
 
 `published/` owns the planner-facing saved-plan list and plan-budget read
-language plus two view-facing flat runtime surfaces:
+language plus three view-facing flat runtime surfaces:
 
-- `EncounterStateModel`, `LoadEncounterStateQuery`,
-  `ApplyEncounterStateCommand`, and `EncounterStateSnapshot`
-- `EncounterBuilderInputsModel`, `LoadEncounterBuilderInputsQuery`,
-  `UpdateEncounterBuilderInputsCommand`, and `EncounterBuilderInputs`
+- `EncounterStateModel`, `ApplyEncounterStateCommand`, and
+  `EncounterStateSnapshot`
+- `EncounterBuilderInputsModel`, `UpdateEncounterBuilderInputsCommand`, and
+  `EncounterBuilderInputs`
+- `EncounterTuningPreviewModel` and `EncounterTuningPreviewResult`
+
+It also owns direct planner-facing readback handles:
+
+- `SavedEncounterPlanListModel` and `SavedEncounterPlanListResult`
+- `EncounterPlanBudgetModel`, `RefreshEncounterPlanBudgetCommand`, and
+  `EncounterPlanBudgetResult`
 
 It also owns shared request/read vocabulary such as difficulty bands, tuning
 preview labels, saved-plan summaries, saved-plan budget summaries, and status
@@ -51,19 +58,20 @@ ports.
 ## Application Boundary
 
 `application/` coordinates foreign party, creature, and encounter-table
-application services, loads public inputs, translates foreign `published/`
-results into encounter application values, and delegates generation or
-saved-plan work. The root application service maps runtime session state into
-the flat state-tab and builder-input publications instead of exporting the
-internal session carrier shape.
+application services, translates foreign `published/` results into encounter
+application values, and delegates generation or saved-plan work. The root
+application service is command-only and refreshes encounter-owned read-side
+`published/*Model` handles through encounter-owned publication ports instead of
+exporting the internal session carrier shape or a same-context root read
+method family.
 
 `EncounterGenerationUseCase` remains orchestration and foreign-service
 coordination only. `LoadEncounterBudgetUseCase` exposes party-derived
 encounter thresholds without constructing a generated encounter.
 `LoadEncounterPlanBudgetUseCase` exposes one saved encounter plan as a
 party-specific budget summary for downstream planning surfaces.
-`LoadEncounterTuningPreviewQuery` exposes read-only slider preview labels for
-the catalog controls.
+The catalog tuning preview remains a read-only published model payload rather
+than a root query result.
 
 Saved-plan use cases own save, list, and load orchestration through the
 `EncounterPlanRepository` outbound port. Data adapters persist plan rows and
@@ -215,5 +223,6 @@ runtime state.
 - [Feature Spec](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/encounter/requirements/requirements-encounter.md:1)
 - [Encounter Persistence](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/encounter/contract/contract-encounter-persistence.md:1)
 - [Encounter Builder Inputs Contract](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/encounter/contract/contract-encounter-builder-inputs.md:1)
+- [Encounter Saved Plans Contract](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/encounter/contract/contract-encounter-saved-plans.md:1)
 - [Encounter State Contract](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/encounter/contract/contract-encounter-state.md:1)
 - [Encounter UI](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/encounter/requirements/requirements-encounter-state-tab.md:1)

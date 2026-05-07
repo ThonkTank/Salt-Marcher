@@ -2,14 +2,17 @@ package src.domain.dungeoneditor.interaction.service;
 
 import java.util.ArrayList;
 import java.util.List;
-import src.domain.dungeon.published.DungeonCellRef;
+import src.domain.dungeoneditor.workspace.value.DungeonEditorWorkspaceValues;
 
 final class DungeonEditorBoundaryRoomTouchSupport {
 
     private DungeonEditorBoundaryRoomTouchSupport() {
     }
 
-    static List<DungeonCellRef> touchingCells(DungeonCellRef start, DungeonCellRef end) {
+    static List<DungeonEditorWorkspaceValues.Cell> touchingCells(
+            DungeonEditorWorkspaceValues.Cell start,
+            DungeonEditorWorkspaceValues.Cell end
+    ) {
         if (start.level() != end.level()) {
             return List.of();
         }
@@ -22,24 +25,30 @@ final class DungeonEditorBoundaryRoomTouchSupport {
         return List.of();
     }
 
-    private static List<DungeonCellRef> horizontalTouchingCells(DungeonCellRef start, DungeonCellRef end) {
+    private static List<DungeonEditorWorkspaceValues.Cell> horizontalTouchingCells(
+            DungeonEditorWorkspaceValues.Cell start,
+            DungeonEditorWorkspaceValues.Cell end
+    ) {
         int minQ = Math.min(start.q(), end.q());
         int maxQ = Math.max(start.q(), end.q());
-        List<DungeonCellRef> result = new ArrayList<>();
+        List<DungeonEditorWorkspaceValues.Cell> result = new ArrayList<>();
         for (int q = minQ; q < maxQ; q++) {
-            result.add(new DungeonCellRef(q, start.r() - 1, start.level()));
-            result.add(new DungeonCellRef(q, start.r(), start.level()));
+            result.add(new DungeonEditorWorkspaceValues.Cell(q, start.r() - 1, start.level()));
+            result.add(new DungeonEditorWorkspaceValues.Cell(q, start.r(), start.level()));
         }
         return List.copyOf(result);
     }
 
-    private static List<DungeonCellRef> verticalTouchingCells(DungeonCellRef start, DungeonCellRef end) {
+    private static List<DungeonEditorWorkspaceValues.Cell> verticalTouchingCells(
+            DungeonEditorWorkspaceValues.Cell start,
+            DungeonEditorWorkspaceValues.Cell end
+    ) {
         int minR = Math.min(start.r(), end.r());
         int maxR = Math.max(start.r(), end.r());
-        List<DungeonCellRef> result = new ArrayList<>();
+        List<DungeonEditorWorkspaceValues.Cell> result = new ArrayList<>();
         for (int r = minR; r < maxR; r++) {
-            result.add(new DungeonCellRef(start.q() - 1, r, start.level()));
-            result.add(new DungeonCellRef(start.q(), r, start.level()));
+            result.add(new DungeonEditorWorkspaceValues.Cell(start.q() - 1, r, start.level()));
+            result.add(new DungeonEditorWorkspaceValues.Cell(start.q(), r, start.level()));
         }
         return List.copyOf(result);
     }

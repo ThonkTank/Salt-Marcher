@@ -7,30 +7,30 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.jspecify.annotations.Nullable;
-import src.domain.dungeon.published.DungeonAreaKind;
-import src.domain.dungeon.published.DungeonAreaSnapshot;
-import src.domain.dungeon.published.DungeonCellRef;
-import src.domain.dungeon.published.DungeonSnapshot;
 import src.domain.dungeoneditor.interaction.value.DungeonEditorInteractionValues.CellKey;
 import src.domain.dungeoneditor.interaction.value.DungeonEditorInteractionValues.VertexKey;
 import src.domain.dungeoneditor.interaction.value.DungeonEditorInteractionValues.VertexTarget;
 import src.domain.dungeoneditor.interaction.value.DungeonEditorMainViewInteractionValues.BoundaryTarget;
 import src.domain.dungeoneditor.interaction.value.DungeonEditorMainViewInteractionValues.PointerState;
 import src.domain.dungeoneditor.session.value.DungeonEditorSessionValues;
+import src.domain.dungeoneditor.workspace.value.DungeonEditorWorkspaceValues;
 
 public final class DungeonEditorBoundaryClusterResolver {
 
-    public long resolveBoundaryClusterId(@Nullable DungeonSnapshot snapshot, @Nullable BoundaryTarget boundaryTarget) {
-        if (snapshot == null || snapshot.map() == null || boundaryTarget == null || !boundaryTarget.present()) {
+    public long resolveBoundaryClusterId(
+            DungeonEditorWorkspaceValues.@Nullable MapSnapshot snapshot,
+            @Nullable BoundaryTarget boundaryTarget
+    ) {
+        if (snapshot == null || boundaryTarget == null || !boundaryTarget.present()) {
             return 0L;
         }
         List<CellKey> touchingCells = touchingCells(boundaryTarget);
-        return snapshot.map().areas().stream()
-                .filter(area -> area.kind() == DungeonAreaKind.ROOM && area.clusterId() > 0L)
+        return snapshot.areas().stream()
+                .filter(area -> area.kind() == DungeonEditorWorkspaceValues.AreaKind.ROOM && area.clusterId() > 0L)
                 .filter(area -> area.cells().stream()
                         .map(cell -> new CellKey(cell.q(), cell.r(), cell.level()))
                         .anyMatch(touchingCells::contains))
-                .map(DungeonAreaSnapshot::clusterId)
+                .map(DungeonEditorWorkspaceValues.Area::clusterId)
                 .findFirst()
                 .orElse(0L);
     }
@@ -39,7 +39,7 @@ public final class DungeonEditorBoundaryClusterResolver {
             PointerState input,
             VertexTarget vertex,
             boolean deleteMode,
-            DungeonSnapshot snapshot,
+            DungeonEditorWorkspaceValues.MapSnapshot snapshot,
             DungeonEditorSessionValues.Selection selection,
             DungeonEditorBoundaryGraphService graphService
     ) {
@@ -55,17 +55,20 @@ public final class DungeonEditorBoundaryClusterResolver {
         return nearestEditableCluster(snapshot, vertex, deleteMode, graphService);
     }
 
-    public Map<Long, Set<CellKey>> clusterCellsByCluster(@Nullable DungeonSnapshot snapshot, int level) {
+    public Map<Long, Set<CellKey>> clusterCellsByCluster(
+            DungeonEditorWorkspaceValues.@Nullable MapSnapshot snapshot,
+            int level
+    ) {
         Map<Long, Set<CellKey>> result = new LinkedHashMap<>();
-        if (snapshot == null || snapshot.map() == null) {
+        if (snapshot == null) {
             return Map.of();
         }
-        for (DungeonAreaSnapshot area : snapshot.map().areas()) {
-            if (area.kind() != DungeonAreaKind.ROOM || area.clusterId() <= 0L) {
+        for (DungeonEditorWorkspaceValues.Area area : snapshot.areas()) {
+            if (area.kind() != DungeonEditorWorkspaceValues.AreaKind.ROOM || area.clusterId() <= 0L) {
                 continue;
             }
             Set<CellKey> cells = result.computeIfAbsent(area.clusterId(), ignored -> new LinkedHashSet<>());
-            for (DungeonCellRef cell : area.cells()) {
+            for (DungeonEditorWorkspaceValues.Cell cell : area.cells()) {
                 if (cell.level() == level) {
                     cells.add(new CellKey(cell.q(), cell.r(), cell.level()));
                 }
@@ -79,7 +82,7 @@ public final class DungeonEditorBoundaryClusterResolver {
     }
 
     private long nearestEditableCluster(
-            DungeonSnapshot snapshot,
+            DungeonEditorWorkspaceValues.MapSnapshot snapshot,
             VertexTarget vertex,
             boolean deleteMode,
             DungeonEditorBoundaryGraphService graphService
@@ -106,8 +109,8 @@ public final class DungeonEditorBoundaryClusterResolver {
 
     private static List<CellKey> touchingCells(BoundaryTarget boundaryTarget) {
         return DungeonEditorBoundaryRoomTouchSupport.touchingCells(
-                boundaryTarget.start().toDungeonCellRef(),
-                boundaryTarget.end().toDungeonCellRef()).stream()
+                boundaryTarget.start().toWorkspaceCell(),
+                boundaryTarget.end().toWorkspaceCell()).stream()
                 .map(cell -> new CellKey(cell.q(), cell.r(), cell.level()))
                 .toList();
     }

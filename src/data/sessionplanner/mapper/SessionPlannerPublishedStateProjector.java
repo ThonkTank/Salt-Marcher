@@ -26,28 +26,10 @@ public final class SessionPlannerPublishedStateProjector {
             SessionPartyFactsLookup partyFacts,
             SessionEncounterFactsLookup encounterFacts
     ) {
-        SessionPartyFactsLookup.ActivePartyMembersFact partyMembersFact = partyFacts.loadActivePartyMembers();
-        List<SessionPlannerParticipantsProjection.SessionParticipant> participants =
-                buildParticipants(session, partyMembersFact);
-        List<Integer> resolvedLevels = participants.stream()
-                .filter(SessionPlannerParticipantsProjection.SessionParticipant::available)
-                .map(SessionPlannerParticipantsProjection.SessionParticipant::level)
-                .toList();
-        boolean sessionReady = !participants.isEmpty()
-                && participants.stream().allMatch(SessionPlannerParticipantsProjection.SessionParticipant::available);
-        Map<Long, SessionEncounterFactsLookup.EncounterPlanFact> loadedEncounters =
-                loadSessionEncounterFacts(session, encounterFacts);
-        SessionPartyFactsLookup.AdventuringDayFact budgetFact = sessionReady
-                ? partyFacts.calculateAdventuringDay(resolvedLevels, plannedEncounterXp(session, loadedEncounters))
-                : SessionPartyFactsLookup.AdventuringDayFact.unavailable();
-        int scaledBudgetXp = budgetFact.available() ? session.encounterDays().scaleBudget(budgetFact.totalBudgetXp()) : 0;
+        ProjectionContext context = buildContext(session, partyFacts, encounterFacts);
         SessionEncounterFactsLookup.EncounterPlanListFact encounterPlansFact = encounterFacts.listEncounterPlans();
         List<SessionPlannerSessionSnapshot.AvailableEncounterPlan> availablePlans =
-                buildAvailablePlans(encounterPlansFact, loadedEncounters, encounterFacts);
-        List<SessionPlannerEncountersProjection.PlannedEncounter> plannedEncounters =
-                buildPlannedEncounters(session, scaledBudgetXp, loadedEncounters, encounterFacts);
-        int placedShortRests = countShortRests(session.restPlacements());
-        int placedLongRests = countLongRests(session.restPlacements());
+                buildAvailablePlans(encounterPlansFact, context.loadedEncounters(), encounterFacts);
         return new SessionPlannerSessionSnapshot(
                 new SessionPlannerSessionSnapshot.SessionState(
                         session.sessionId(),
@@ -55,28 +37,25 @@ public final class SessionPlannerPublishedStateProjector {
                         session.encounterDays().displayText(),
                         session.selectedEncounterId(),
                         session.selectedEncounterId() > 0L),
-                buildXpBudgetState(session, budgetFact, scaledBudgetXp, loadedEncounters),
-                buildRestAdviceState(budgetFact, placedShortRests, placedLongRests),
+                buildXpBudgetState(session, context.budgetFact(), context.scaledBudgetXp(), context.loadedEncounters()),
+                buildRestAdviceState(
+                        context.budgetFact(),
+                        countShortRests(session.restPlacements()),
+                        countLongRests(session.restPlacements())),
                 SessionPlannerSessionSnapshot.GoldBudgetState.placeholder(session.lootPlaceholders().size()),
                 availablePlans,
-                resolveStatus(participants, partyMembersFact, encounterPlansFact, session.statusText()));
+                resolveStatus(context.participants(), context.partyMembersFact(), encounterPlansFact, session.statusText()));
     }
 
     public SessionPlannerParticipantsProjection projectParticipants(
             SessionPlan session,
             SessionPartyFactsLookup partyFacts
     ) {
-        SessionPartyFactsLookup.ActivePartyMembersFact partyMembersFact = partyFacts.loadActivePartyMembers();
-        List<SessionPlannerParticipantsProjection.SessionParticipant> participants =
-                buildParticipants(session, partyMembersFact);
-        List<Integer> resolvedLevels = participants.stream()
-                .filter(SessionPlannerParticipantsProjection.SessionParticipant::available)
-                .map(SessionPlannerParticipantsProjection.SessionParticipant::level)
-                .toList();
+        ProjectionContext context = buildParticipantContext(session, partyFacts);
         return new SessionPlannerParticipantsProjection(
-                buildPartyState(session, resolvedLevels, participants, partyMembersFact),
-                buildActivePartyMembers(partyMembersFact.members()),
-                participants);
+                buildPartyState(session, context.resolvedLevels(), context.participants(), context.partyMembersFact()),
+                buildActivePartyMembers(context.partyMembersFact().members()),
+                context.participants());
     }
 
     public SessionPlannerEncountersProjection projectEncounters(
@@ -84,23 +63,9 @@ public final class SessionPlannerPublishedStateProjector {
             SessionPartyFactsLookup partyFacts,
             SessionEncounterFactsLookup encounterFacts
     ) {
-        SessionPartyFactsLookup.ActivePartyMembersFact partyMembersFact = partyFacts.loadActivePartyMembers();
-        List<SessionPlannerParticipantsProjection.SessionParticipant> participants =
-                buildParticipants(session, partyMembersFact);
-        List<Integer> resolvedLevels = participants.stream()
-                .filter(SessionPlannerParticipantsProjection.SessionParticipant::available)
-                .map(SessionPlannerParticipantsProjection.SessionParticipant::level)
-                .toList();
-        boolean sessionReady = !participants.isEmpty()
-                && participants.stream().allMatch(SessionPlannerParticipantsProjection.SessionParticipant::available);
-        Map<Long, SessionEncounterFactsLookup.EncounterPlanFact> loadedEncounters =
-                loadSessionEncounterFacts(session, encounterFacts);
-        SessionPartyFactsLookup.AdventuringDayFact budgetFact = sessionReady
-                ? partyFacts.calculateAdventuringDay(resolvedLevels, plannedEncounterXp(session, loadedEncounters))
-                : SessionPartyFactsLookup.AdventuringDayFact.unavailable();
-        int scaledBudgetXp = budgetFact.available() ? session.encounterDays().scaleBudget(budgetFact.totalBudgetXp()) : 0;
+        ProjectionContext context = buildContext(session, partyFacts, encounterFacts);
         return new SessionPlannerEncountersProjection(
-                buildPlannedEncounters(session, scaledBudgetXp, loadedEncounters, encounterFacts),
+                buildPlannedEncounters(session, context.scaledBudgetXp(), context.loadedEncounters(), encounterFacts),
                 buildRestGaps(session),
                 session.lootPlaceholders().stream()
                         .map(loot -> new SessionPlannerEncountersProjection.LootPlaceholder(loot.lootId(), loot.label()))
@@ -112,9 +77,57 @@ public final class SessionPlannerPublishedStateProjector {
             SessionPartyFactsLookup partyFacts,
             SessionEncounterFactsLookup encounterFacts
     ) {
+        ProjectionContext context = buildContext(session, partyFacts, encounterFacts);
         SessionPlannerSessionSnapshot sessionSnapshot = projectSession(session, partyFacts, encounterFacts);
-        SessionPlannerEncountersProjection encountersProjection = projectEncounters(session, partyFacts, encounterFacts);
-        return buildStatePanel(sessionSnapshot, encountersProjection.plannedEncounters());
+        return buildStatePanel(
+                sessionSnapshot,
+                buildPlannedEncounters(session, context.scaledBudgetXp(), context.loadedEncounters(), encounterFacts));
+    }
+
+    private static ProjectionContext buildContext(
+            SessionPlan session,
+            SessionPartyFactsLookup partyFacts,
+            SessionEncounterFactsLookup encounterFacts
+    ) {
+        ProjectionContext participantContext = buildParticipantContext(session, partyFacts);
+        boolean sessionReady = !participantContext.participants().isEmpty()
+                && participantContext.participants().stream()
+                .allMatch(SessionPlannerParticipantsProjection.SessionParticipant::available);
+        Map<Long, SessionEncounterFactsLookup.EncounterPlanFact> loadedEncounters =
+                loadSessionEncounterFacts(session, encounterFacts);
+        SessionPartyFactsLookup.AdventuringDayFact budgetFact = sessionReady
+                ? partyFacts.calculateAdventuringDay(
+                        participantContext.resolvedLevels(),
+                        plannedEncounterXp(session, loadedEncounters))
+                : SessionPartyFactsLookup.AdventuringDayFact.unavailable();
+        int scaledBudgetXp = budgetFact.available() ? session.encounterDays().scaleBudget(budgetFact.totalBudgetXp()) : 0;
+        return new ProjectionContext(
+                participantContext.partyMembersFact(),
+                participantContext.participants(),
+                participantContext.resolvedLevels(),
+                loadedEncounters,
+                budgetFact,
+                scaledBudgetXp);
+    }
+
+    private static ProjectionContext buildParticipantContext(
+            SessionPlan session,
+            SessionPartyFactsLookup partyFacts
+    ) {
+        SessionPartyFactsLookup.ActivePartyMembersFact partyMembersFact = partyFacts.loadActivePartyMembers();
+        List<SessionPlannerParticipantsProjection.SessionParticipant> participants =
+                buildParticipants(session, partyMembersFact);
+        List<Integer> resolvedLevels = participants.stream()
+                .filter(SessionPlannerParticipantsProjection.SessionParticipant::available)
+                .map(SessionPlannerParticipantsProjection.SessionParticipant::level)
+                .toList();
+        return new ProjectionContext(
+                partyMembersFact,
+                participants,
+                resolvedLevels,
+                new HashMap<>(),
+                SessionPartyFactsLookup.AdventuringDayFact.unavailable(),
+                0);
     }
 
     private static SessionPlannerParticipantsProjection.PartyState buildPartyState(
@@ -433,5 +446,15 @@ public final class SessionPlannerPublishedStateProjector {
                 .map(String::valueOf)
                 .reduce((left, right) -> left + ", " + right)
                 .orElse("-");
+    }
+
+    private record ProjectionContext(
+            SessionPartyFactsLookup.ActivePartyMembersFact partyMembersFact,
+            List<SessionPlannerParticipantsProjection.SessionParticipant> participants,
+            List<Integer> resolvedLevels,
+            Map<Long, SessionEncounterFactsLookup.EncounterPlanFact> loadedEncounters,
+            SessionPartyFactsLookup.AdventuringDayFact budgetFact,
+            int scaledBudgetXp
+    ) {
     }
 }

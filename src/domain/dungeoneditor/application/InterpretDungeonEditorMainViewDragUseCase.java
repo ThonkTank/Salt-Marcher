@@ -1,6 +1,5 @@
 package src.domain.dungeoneditor.application;
 
-import src.domain.dungeon.published.DungeonSnapshot;
 import src.domain.dungeoneditor.interaction.value.DungeonEditorMainViewEffect;
 import src.domain.dungeoneditor.interaction.value.DungeonEditorMainViewInteractionValues.DragSession;
 import src.domain.dungeoneditor.interaction.value.DungeonEditorMainViewInteractionValues.InteractionState;
@@ -8,13 +7,14 @@ import src.domain.dungeoneditor.interaction.value.DungeonEditorMainViewInteracti
 import src.domain.dungeoneditor.interaction.value.DungeonEditorMainViewInteractionValues.PointerState;
 import src.domain.dungeoneditor.interaction.value.DungeonEditorMainViewInterpretation;
 import src.domain.dungeoneditor.session.value.DungeonEditorSessionValues;
+import src.domain.dungeoneditor.workspace.value.DungeonEditorWorkspaceValues;
 
 final class InterpretDungeonEditorMainViewDragUseCase {
     private final DungeonEditorBoundaryDraftUseCase boundaryDraft = new DungeonEditorBoundaryDraftUseCase();
 
     DungeonEditorMainViewInterpretation interpret(
             PointerState input,
-            DungeonSnapshot snapshot,
+            DungeonEditorWorkspaceValues.MapSnapshot snapshot,
             DungeonEditorSessionValues.Tool selectedTool,
             InteractionState state
     ) {

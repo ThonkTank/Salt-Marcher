@@ -1,11 +1,13 @@
 package src.domain.dungeoneditor.application;
 
-import src.domain.dungeon.published.DungeonSnapshot;
 import src.domain.dungeoneditor.interaction.value.DungeonEditorMainViewEffect;
 import src.domain.dungeoneditor.interaction.value.DungeonEditorMainViewInteractionValues.DragSession;
 import src.domain.dungeoneditor.interaction.value.DungeonEditorMainViewInteractionValues.InteractionState;
 import src.domain.dungeoneditor.interaction.value.DungeonEditorMainViewInterpretation;
+import org.jspecify.annotations.Nullable;
 import src.domain.dungeoneditor.session.value.DungeonEditorSessionValues;
+import src.domain.dungeoneditor.workspace.value.DungeonEditorWorkspaceValues;
+import src.domain.dungeoneditor.workspace.value.DungeonEditorWorkspaceValues.MapSnapshot;
 
 final class InterpretDungeonEditorMainViewScrollUseCase {
 
@@ -13,7 +15,7 @@ final class InterpretDungeonEditorMainViewScrollUseCase {
             int delta,
             DungeonEditorSessionValues.Tool selectedTool,
             int projectionLevel,
-            DungeonSnapshot snapshot,
+            @Nullable MapSnapshot snapshot,
             InteractionState state
     ) {
         if (delta == 0 || state.boundaryStretchSession().present()) {

@@ -3,9 +3,6 @@ package src.domain.dungeoneditor.application;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
-import src.domain.dungeon.published.DungeonBoundaryKind;
-import src.domain.dungeon.published.DungeonEditorOperation;
-import src.domain.dungeon.published.DungeonSnapshot;
 import src.domain.dungeoneditor.interaction.service.DungeonEditorBoundaryClusterResolver;
 import src.domain.dungeoneditor.interaction.service.DungeonEditorBoundaryGraphService;
 import src.domain.dungeoneditor.interaction.service.DungeonEditorBoundaryRoomTouchService;
@@ -19,6 +16,7 @@ import src.domain.dungeoneditor.interaction.value.DungeonEditorMainViewInterpret
 import src.domain.dungeoneditor.interaction.value.DungeonEditorMainViewInteractionValues.PathResult;
 import src.domain.dungeoneditor.interaction.value.DungeonEditorMainViewInteractionValues.PointerState;
 import src.domain.dungeoneditor.session.value.DungeonEditorSessionValues;
+import src.domain.dungeoneditor.workspace.value.DungeonEditorWorkspaceValues;
 
 final class DungeonEditorBoundaryDraftUseCase {
     private final DungeonEditorBoundaryClusterResolver clusterResolver = new DungeonEditorBoundaryClusterResolver();
@@ -27,7 +25,7 @@ final class DungeonEditorBoundaryDraftUseCase {
 
     DungeonEditorMainViewInterpretation press(
             PointerState input,
-            DungeonSnapshot snapshot,
+            DungeonEditorWorkspaceValues.MapSnapshot snapshot,
             DungeonEditorSessionValues.Selection currentSelection,
             DungeonEditorSessionValues.Tool selectedTool,
             InteractionState state
@@ -60,7 +58,7 @@ final class DungeonEditorBoundaryDraftUseCase {
 
     DungeonEditorMainViewEffect preview(
             PointerState input,
-            DungeonSnapshot snapshot,
+            DungeonEditorWorkspaceValues.MapSnapshot snapshot,
             DungeonEditorSessionValues.Tool selectedTool,
             InteractionState state
     ) {
@@ -74,7 +72,7 @@ final class DungeonEditorBoundaryDraftUseCase {
             return DungeonEditorMainViewEffect.preview(new DungeonEditorSessionValues.ClusterBoundariesPreview(
                     clusterId,
                     List.of(boundary.edgeRef()),
-                    DungeonBoundaryKind.DOOR,
+                    DungeonEditorWorkspaceValues.BoundaryKind.DOOR,
                     deleteMode));
         }
         if (!state.boundaryDraft().present()) {
@@ -89,13 +87,13 @@ final class DungeonEditorBoundaryDraftUseCase {
         return DungeonEditorMainViewEffect.preview(new DungeonEditorSessionValues.ClusterBoundariesPreview(
                 state.boundaryDraft().clusterId(),
                 previewEdges.stream().map(EdgeKey::toEdgeRef).toList(),
-                DungeonBoundaryKind.WALL,
+                DungeonEditorWorkspaceValues.BoundaryKind.WALL,
                 state.boundaryDraft().deleteMode()));
     }
 
     private DungeonEditorMainViewEffect applyDoorBoundaryPress(
             PointerState input,
-            DungeonSnapshot snapshot,
+            DungeonEditorWorkspaceValues.MapSnapshot snapshot,
             DungeonEditorSessionValues.Tool selectedTool
     ) {
         if (!input.primaryButtonDown()) {
@@ -106,15 +104,15 @@ final class DungeonEditorBoundaryDraftUseCase {
         if (!roomTouchService.editableDoorBoundary(snapshot, boundary, deleteMode)) {
             return DungeonEditorMainViewEffect.none();
         }
-        return DungeonEditorMainViewEffect.apply(new DungeonEditorOperation.EditClusterBoundaries(
+        return DungeonEditorMainViewEffect.apply(new DungeonEditorSessionValues.ClusterBoundariesPreview(
                 clusterResolver.resolveBoundaryClusterId(snapshot, boundary),
                 List.of(boundary.edgeRef()),
-                DungeonBoundaryKind.DOOR,
+                DungeonEditorWorkspaceValues.BoundaryKind.DOOR,
                 deleteMode));
     }
 
     private DungeonEditorMainViewInterpretation beginBoundaryDraft(
-            DungeonSnapshot snapshot,
+            DungeonEditorWorkspaceValues.MapSnapshot snapshot,
             long clusterId,
             src.domain.dungeoneditor.interaction.value.DungeonEditorInteractionValues.VertexTarget vertex,
             boolean deleteMode,
@@ -131,7 +129,7 @@ final class DungeonEditorBoundaryDraftUseCase {
 
     private DungeonEditorMainViewInterpretation advanceBoundaryDraft(
             PointerState input,
-            DungeonSnapshot snapshot,
+            DungeonEditorWorkspaceValues.MapSnapshot snapshot,
             DungeonEditorSessionValues.Tool selectedTool,
             long clusterId,
             boolean deleteMode,
@@ -158,7 +156,7 @@ final class DungeonEditorBoundaryDraftUseCase {
 
     private DungeonEditorMainViewInterpretation applyBoundaryDraftOrPreview(
             PointerState input,
-            DungeonSnapshot snapshot,
+            DungeonEditorWorkspaceValues.MapSnapshot snapshot,
             DungeonEditorSessionValues.Tool selectedTool,
             VertexKey nextVertex,
             InteractionState state
@@ -172,10 +170,10 @@ final class DungeonEditorBoundaryDraftUseCase {
             }
             return new DungeonEditorMainViewInterpretation(
                     nextState,
-                    DungeonEditorMainViewEffect.apply(new DungeonEditorOperation.EditClusterBoundaries(
+                    DungeonEditorMainViewEffect.apply(new DungeonEditorSessionValues.ClusterBoundariesPreview(
                             current.clusterId(),
                             current.previewEdges().stream().map(EdgeKey::toEdgeRef).toList(),
-                            DungeonBoundaryKind.WALL,
+                            DungeonEditorWorkspaceValues.BoundaryKind.WALL,
                             current.deleteMode())));
         }
         return new DungeonEditorMainViewInterpretation(state, preview(input, snapshot, selectedTool, state));

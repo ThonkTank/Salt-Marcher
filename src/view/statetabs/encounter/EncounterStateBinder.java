@@ -13,7 +13,6 @@ import src.domain.creatures.published.LoadCreatureDetailQuery;
 import src.domain.encounter.EncounterApplicationService;
 import src.domain.encounter.published.ApplyEncounterStateCommand;
 import src.domain.encounter.published.EncounterStateModel;
-import src.domain.encounter.published.LoadEncounterStateQuery;
 import src.view.slotcontent.details.creature.CreatureDetailsInspectorEntry;
 
 final class EncounterStateBinder {
@@ -27,7 +26,7 @@ final class EncounterStateBinder {
     ShellBinding bind() {
         CreaturesApplicationService creatures = runtimeContext.services().require(CreaturesApplicationService.class);
         EncounterApplicationService encounters = runtimeContext.services().require(EncounterApplicationService.class);
-        EncounterStateModel stateModel = encounters.loadStateModel(new LoadEncounterStateQuery());
+        EncounterStateModel stateModel = runtimeContext.services().require(EncounterStateModel.class);
         EncounterStateContributionModel presentationModel = new EncounterStateContributionModel();
         EncounterStateIntentHandler intentHandler = new EncounterStateIntentHandler(presentationModel);
         EncounterBuilderStateView builderView = new EncounterBuilderStateView();

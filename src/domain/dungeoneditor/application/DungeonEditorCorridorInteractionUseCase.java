@@ -1,7 +1,5 @@
 package src.domain.dungeoneditor.application;
 
-import src.domain.dungeon.published.DungeonEditorOperation;
-import src.domain.dungeon.published.DungeonSnapshot;
 import src.domain.dungeoneditor.interaction.service.DungeonEditorCorridorTargetService;
 import src.domain.dungeoneditor.interaction.value.DungeonEditorMainViewEffect;
 import src.domain.dungeoneditor.interaction.value.DungeonEditorMainViewInteractionValues.CorridorDraft;
@@ -10,13 +8,14 @@ import src.domain.dungeoneditor.interaction.value.DungeonEditorMainViewInterpret
 import src.domain.dungeoneditor.interaction.value.DungeonEditorMainViewInteractionValues.PendingCorridorTarget;
 import src.domain.dungeoneditor.interaction.value.DungeonEditorMainViewInteractionValues.PointerState;
 import src.domain.dungeoneditor.session.value.DungeonEditorSessionValues;
+import src.domain.dungeoneditor.workspace.value.DungeonEditorWorkspaceValues;
 
 final class DungeonEditorCorridorInteractionUseCase {
     private final DungeonEditorCorridorTargetService targetService = new DungeonEditorCorridorTargetService();
 
     DungeonEditorMainViewInterpretation press(
             PointerState input,
-            DungeonSnapshot snapshot,
+            DungeonEditorWorkspaceValues.MapSnapshot snapshot,
             DungeonEditorSessionValues.Tool selectedTool,
             InteractionState state
     ) {
@@ -30,7 +29,9 @@ final class DungeonEditorCorridorInteractionUseCase {
             if (corridorId > 0L) {
                 return new DungeonEditorMainViewInterpretation(
                         nextState,
-                        DungeonEditorMainViewEffect.applyWithStatus(new DungeonEditorOperation.DeleteCorridor(corridorId), ""));
+                        DungeonEditorMainViewEffect.applyWithStatus(
+                                new DungeonEditorSessionValues.CorridorDeletePreview(corridorId),
+                                ""));
             }
             return new DungeonEditorMainViewInterpretation(nextState, DungeonEditorMainViewEffect.clearedSelection());
         }
@@ -60,7 +61,7 @@ final class DungeonEditorCorridorInteractionUseCase {
 
     DungeonEditorMainViewEffect preview(
             PointerState input,
-            DungeonSnapshot snapshot,
+            DungeonEditorWorkspaceValues.MapSnapshot snapshot,
             DungeonEditorSessionValues.Tool selectedTool,
             InteractionState state
     ) {
@@ -86,7 +87,8 @@ final class DungeonEditorCorridorInteractionUseCase {
 
     private static DungeonEditorMainViewEffect applyCorridorDraft(PendingCorridorTarget start, PendingCorridorTarget target) {
         if (start.endpoint() != null && target.endpoint() != null) {
-            return DungeonEditorMainViewEffect.apply(new DungeonEditorOperation.CreateCorridor(start.endpoint(), target.endpoint()));
+            return DungeonEditorMainViewEffect.apply(
+                    new DungeonEditorSessionValues.CorridorCreatePreview(start.endpoint(), target.endpoint()));
         }
         return DungeonEditorMainViewEffect.none();
     }

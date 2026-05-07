@@ -84,9 +84,9 @@ Target state:
   boundary
 - the planner must not import creature services, encounter repositories, party
   repositories, or foreign data adapters directly
-- the planner data feature may adapt `PartyApplicationService` and
-  `EncounterApplicationService` only behind planner-owned read-only query
-  ports
+- the planner data feature may adapt `PartyApplicationService`,
+  `EncounterApplicationService`, and encounter-owned `published/*Model`
+  handles only behind planner-owned read-only facts ports
 - the planner may persist only session-owned references, allocations, and
   selection state
 - gold placeholder state must not pretend that a computed gold budget exists

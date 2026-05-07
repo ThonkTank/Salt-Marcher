@@ -11,12 +11,12 @@ import src.domain.dungeon.published.DungeonMapCatalogCommand;
 import src.domain.dungeon.published.DungeonMapCatalogResponse;
 import src.domain.dungeon.published.DungeonMapId;
 import src.domain.dungeon.published.DungeonOperationResult;
-import src.domain.dungeon.published.DungeonSnapshot;
 import src.domain.dungeoneditor.interaction.value.DungeonEditorMainViewEffect;
 import src.domain.dungeoneditor.session.entity.DungeonEditorSession;
 import src.domain.dungeoneditor.session.value.DungeonEditorSessionCommand;
 import src.domain.dungeoneditor.session.value.DungeonEditorSessionSnapshot;
 import src.domain.dungeoneditor.session.value.DungeonEditorSessionValues;
+import src.domain.dungeoneditor.workspace.value.DungeonEditorWorkspaceValues;
 
 public final class ApplyDungeonEditorSessionUseCase {
 
@@ -97,23 +97,23 @@ public final class ApplyDungeonEditorSessionUseCase {
     }
 
     private void createSelectedMap(DungeonEditorSessionCommand command) {
-        session = session.withSelectedMap(requireMutationMapId(
-                catalog.apply(new DungeonMapCatalogCommand.CreateMap(command.mapName()))))
+        session = session.withSelectedMap(DungeonEditorWorkspaceBoundaryTranslator.toWorkspaceMapId(
+                        requireMutationMapId(catalog.apply(new DungeonMapCatalogCommand.CreateMap(command.mapName())))))
                 .clearSelection();
         clearTransientState("Dungeon-Map erstellt.");
     }
 
     private void renameSelectedMap(DungeonEditorSessionCommand command) {
-        session = session.withSelectedMap(requireMutationMapId(catalog.apply(
-                new DungeonMapCatalogCommand.RenameMap(
-                        requireMapId(command.mapId()),
-                        command.mapName()))))
+        session = session.withSelectedMap(DungeonEditorWorkspaceBoundaryTranslator.toWorkspaceMapId(requireMutationMapId(
+                        catalog.apply(new DungeonMapCatalogCommand.RenameMap(
+                                requireMapId(command.mapId()),
+                                command.mapName())))))
                 .withStatusText("Dungeon-Map umbenannt.");
     }
 
     private void deleteSelectedMap(DungeonEditorSessionCommand command) {
-        DungeonMapId deletedMapId = requireMutationMapId(catalog.apply(
-                new DungeonMapCatalogCommand.DeleteMap(requireMapId(command.mapId()))));
+        DungeonEditorWorkspaceValues.MapId deletedMapId = DungeonEditorWorkspaceBoundaryTranslator.toWorkspaceMapId(
+                requireMutationMapId(catalog.apply(new DungeonMapCatalogCommand.DeleteMap(requireMapId(command.mapId())))));
         if (deletedMapId != null && deletedMapId.equals(session.selectedMapId())) {
             session = session.withSelectedMap(null);
         }
@@ -149,7 +149,9 @@ public final class ApplyDungeonEditorSessionUseCase {
                         new DungeonEditorOperation.SaveRoomNarration(
                                 roomNarration.roomId(),
                                 roomNarration.visualDescription(),
-                                roomNarration.exits()))));
+                                roomNarration.exits().stream()
+                                        .map(DungeonEditorWorkspaceBoundaryTranslator::toDomainRoomExit)
+                                        .toList()))));
         session = session.clearPreview().withStatusText(statusFromMessages(result));
     }
 
@@ -157,7 +159,8 @@ public final class ApplyDungeonEditorSessionUseCase {
         DungeonEditorSessionCommand.MainViewInput input = mainViewInput == null
                 ? DungeonEditorSessionCommand.MainViewInput.empty()
                 : mainViewInput;
-        DungeonSnapshot committedSnapshot = snapshotBuilder.loadCommittedSnapshot(session.selectedMapId());
+        DungeonEditorWorkspaceValues.MapSnapshot committedSnapshot =
+                snapshotBuilder.loadCommittedSnapshot(session.selectedMapId());
         if (input.isLevelScrolled()) {
             applyInteractionEffect(mainViewInterpreter.consume(
                     input,
@@ -202,11 +205,11 @@ public final class ApplyDungeonEditorSessionUseCase {
         } else if (effect.preview() != null) {
             session = session.withPreview(effect.preview()).withStatusText("");
         }
-        if (effect.applyOperation() != null) {
+        if (effect.applyPreview() != null) {
             DungeonOperationResult result = requireOperationResult(mutateAuthored.apply(
                     new DungeonAuthoredMutationCommand.ApplyOperation(
                             requireMapId(session.selectedMapId()),
-                            effect.applyOperation())));
+                            DungeonEditorSessionBridge.toDungeonOperation(effect.applyPreview()))));
             session = session.clearPreview().withStatusText(statusFromMessages(result));
         }
     }
@@ -225,11 +228,12 @@ public final class ApplyDungeonEditorSessionUseCase {
         return null;
     }
 
-    private static DungeonMapId requireMapId(@Nullable DungeonMapId mapId) {
-        if (mapId == null) {
+    private static DungeonMapId requireMapId(DungeonEditorWorkspaceValues.@Nullable MapId mapId) {
+        DungeonMapId domainMapId = DungeonEditorWorkspaceBoundaryTranslator.toDomainMapId(mapId);
+        if (domainMapId == null) {
             throw new IllegalArgumentException("Dungeon-Map-ID fehlt.");
         }
-        return mapId;
+        return domainMapId;
     }
 
     static String statusFromMessages(@Nullable DungeonOperationResult result) {
@@ -257,25 +261,33 @@ final class DungeonEditorSessionBridge {
         }
         if (preview instanceof DungeonEditorSessionValues.RoomRectanglePreview room) {
             return room.deleteMode()
-                    ? new DungeonEditorOperation.DeleteRoomRectangle(room.start(), room.end())
-                    : new DungeonEditorOperation.PaintRoomRectangle(room.start(), room.end());
+                    ? new DungeonEditorOperation.DeleteRoomRectangle(
+                            DungeonEditorWorkspaceBoundaryTranslator.toDomainCell(room.start()),
+                            DungeonEditorWorkspaceBoundaryTranslator.toDomainCell(room.end()))
+                    : new DungeonEditorOperation.PaintRoomRectangle(
+                            DungeonEditorWorkspaceBoundaryTranslator.toDomainCell(room.start()),
+                            DungeonEditorWorkspaceBoundaryTranslator.toDomainCell(room.end()));
         }
         if (preview instanceof DungeonEditorSessionValues.ClusterBoundariesPreview boundaries) {
             return new DungeonEditorOperation.EditClusterBoundaries(
                     boundaries.clusterId(),
-                    boundaries.edges(),
-                    boundaries.boundaryKind(),
+                    boundaries.edges().stream()
+                            .map(DungeonEditorWorkspaceBoundaryTranslator::toDomainEdge)
+                            .toList(),
+                    DungeonEditorWorkspaceBoundaryTranslator.toDomainBoundaryKind(boundaries.boundaryKind()),
                     boundaries.deleteMode());
         }
         if (preview instanceof DungeonEditorSessionValues.CorridorCreatePreview corridor) {
-            return new DungeonEditorOperation.CreateCorridor(corridor.start(), corridor.end());
+            return new DungeonEditorOperation.CreateCorridor(
+                    DungeonEditorWorkspaceBoundaryTranslator.toDomainCorridorEndpoint(corridor.start()),
+                    DungeonEditorWorkspaceBoundaryTranslator.toDomainCorridorEndpoint(corridor.end()));
         }
         if (preview instanceof DungeonEditorSessionValues.CorridorDeletePreview corridor) {
             return new DungeonEditorOperation.DeleteCorridor(corridor.corridorId());
         }
         if (preview instanceof DungeonEditorSessionValues.MoveHandlePreview moveHandle) {
             return new DungeonEditorOperation.MoveEditorHandle(
-                    moveHandle.handleRef(),
+                    DungeonEditorWorkspaceBoundaryTranslator.toDomainHandleRef(moveHandle.handleRef()),
                     moveHandle.deltaQ(),
                     moveHandle.deltaR(),
                     moveHandle.deltaLevel());
@@ -283,7 +295,9 @@ final class DungeonEditorSessionBridge {
         if (preview instanceof DungeonEditorSessionValues.MoveBoundaryStretchPreview stretch) {
             return new DungeonEditorOperation.MoveBoundaryStretch(
                     stretch.clusterId(),
-                    stretch.sourceEdges(),
+                    stretch.sourceEdges().stream()
+                            .map(DungeonEditorWorkspaceBoundaryTranslator::toDomainEdge)
+                            .toList(),
                     stretch.deltaQ(),
                     stretch.deltaR(),
                     stretch.deltaLevel());

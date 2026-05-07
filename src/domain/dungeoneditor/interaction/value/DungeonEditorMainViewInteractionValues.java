@@ -4,20 +4,13 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import org.jspecify.annotations.Nullable;
-import src.domain.dungeon.published.DungeonAreaSnapshot;
-import src.domain.dungeon.published.DungeonCellRef;
-import src.domain.dungeon.published.DungeonEdgeRef;
-import src.domain.dungeon.published.DungeonEditorHandleKind;
-import src.domain.dungeon.published.DungeonEditorHandleRef;
-import src.domain.dungeon.published.DungeonEditorOperation;
-import src.domain.dungeon.published.DungeonTopologyElementKind;
-import src.domain.dungeon.published.DungeonTopologyElementRef;
 import src.domain.dungeoneditor.interaction.value.DungeonEditorInteractionValues.CellKey;
 import src.domain.dungeoneditor.interaction.value.DungeonEditorInteractionValues.CellTarget;
 import src.domain.dungeoneditor.interaction.value.DungeonEditorInteractionValues.TravelHeading;
 import src.domain.dungeoneditor.interaction.value.DungeonEditorInteractionValues.VertexKey;
 import src.domain.dungeoneditor.interaction.value.DungeonEditorInteractionValues.VertexTarget;
 import src.domain.dungeoneditor.session.value.DungeonEditorSessionValues;
+import src.domain.dungeoneditor.workspace.value.DungeonEditorWorkspaceValues;
 
 public final class DungeonEditorMainViewInteractionValues {
 
@@ -32,12 +25,8 @@ public final class DungeonEditorMainViewInteractionValues {
     private DungeonEditorMainViewInteractionValues() {
     }
 
-    public static DungeonTopologyElementKind toPublishedTopologyKind(@Nullable String kind) {
-        try {
-            return DungeonTopologyElementKind.valueOf(kind == null ? EMPTY_KIND : kind);
-        } catch (IllegalArgumentException ignored) {
-            return DungeonTopologyElementKind.EMPTY;
-        }
+    public static DungeonEditorWorkspaceValues.TopologyElementKind toTopologyKind(@Nullable String kind) {
+        return DungeonEditorWorkspaceValues.TopologyElementKind.fromName(kind == null ? EMPTY_KIND : kind);
     }
 
     public record InteractionState(
@@ -157,16 +146,16 @@ public final class DungeonEditorMainViewInteractionValues {
             return DOOR_KIND.equals(kind);
         }
 
-        public DungeonEditorHandleRef toDungeonHandleRef() {
-            return new DungeonEditorHandleRef(
-                    DungeonEditorHandleKind.valueOf(kind),
-                    new DungeonTopologyElementRef(toPublishedTopologyKind(topologyRefKind), topologyRefId),
+        public DungeonEditorWorkspaceValues.HandleRef toWorkspaceHandleRef() {
+            return new DungeonEditorWorkspaceValues.HandleRef(
+                    DungeonEditorWorkspaceValues.HandleKind.fromName(kind),
+                    new DungeonEditorWorkspaceValues.TopologyElementRef(toTopologyKind(topologyRefKind), topologyRefId),
                     ownerId,
                     clusterId,
                     corridorId,
                     roomId,
                     orderIndex,
-                    anchor.toDungeonCellRef(),
+                    anchor.toWorkspaceCell(),
                     direction);
         }
     }
@@ -199,8 +188,8 @@ public final class DungeonEditorMainViewInteractionValues {
             return DOOR_KIND.equals(kind);
         }
 
-        public DungeonEdgeRef edgeRef() {
-            return new DungeonEdgeRef(start.toDungeonCellRef(), end.toDungeonCellRef());
+        public DungeonEditorWorkspaceValues.Edge edgeRef() {
+            return new DungeonEditorWorkspaceValues.Edge(start.toWorkspaceCell(), end.toWorkspaceCell());
         }
     }
 
@@ -242,16 +231,16 @@ public final class DungeonEditorMainViewInteractionValues {
             return kind == HitKind.LABEL || handleRef.clusterLabel();
         }
 
-        public DungeonEditorHandleRef dragHandleRef() {
+        public DungeonEditorWorkspaceValues.HandleRef dragHandleRef() {
             if (kind == HitKind.HANDLE) {
-                return handleRef.toDungeonHandleRef();
+                return handleRef.toWorkspaceHandleRef();
             }
-            return HandleTarget.clusterLabel(topologyRefKind, topologyRefId, ownerId, clusterId).toDungeonHandleRef();
+            return HandleTarget.clusterLabel(topologyRefKind, topologyRefId, ownerId, clusterId).toWorkspaceHandleRef();
         }
 
         public DungeonEditorSessionValues.Selection toSelection() {
             return new DungeonEditorSessionValues.Selection(
-                    new DungeonTopologyElementRef(toPublishedTopologyKind(topologyRefKind), topologyRefId),
+                    new DungeonEditorWorkspaceValues.TopologyElementRef(toTopologyKind(topologyRefKind), topologyRefId),
                     clusterId,
                     clusterSelection(),
                     dragHandleRef());
@@ -294,19 +283,9 @@ public final class DungeonEditorMainViewInteractionValues {
 
         public DungeonEditorSessionValues.RoomRectanglePreview preview() {
             return new DungeonEditorSessionValues.RoomRectanglePreview(
-                    new DungeonCellRef(startQ, startR, level),
-                    new DungeonCellRef(endQ, endR, level),
+                    new DungeonEditorWorkspaceValues.Cell(startQ, startR, level),
+                    new DungeonEditorWorkspaceValues.Cell(endQ, endR, level),
                     deleteMode);
-        }
-
-        public DungeonEditorOperation operation() {
-            return deleteMode
-                    ? new DungeonEditorOperation.DeleteRoomRectangle(
-                    new DungeonCellRef(startQ, startR, level),
-                    new DungeonCellRef(endQ, endR, level))
-                    : new DungeonEditorOperation.PaintRoomRectangle(
-                    new DungeonCellRef(startQ, startR, level),
-                    new DungeonCellRef(endQ, endR, level));
         }
     }
 
@@ -356,27 +335,23 @@ public final class DungeonEditorMainViewInteractionValues {
             return new DragSession(selection, pressQ, pressR, currentQ, currentR, pressLevel, nextLevel, true);
         }
 
-        public DungeonEditorOperation moveHandleOperation() {
-            return new DungeonEditorOperation.MoveEditorHandle(handleRef(), deltaQ(), deltaR(), deltaLevel());
-        }
-
         public DungeonEditorSessionValues.MoveHandlePreview moveHandlePreview() {
             return new DungeonEditorSessionValues.MoveHandlePreview(handleRef(), deltaQ(), deltaR(), deltaLevel());
         }
 
-        private DungeonEditorHandleRef handleRef() {
-            if (selection.handleRef() != null) {
+        private DungeonEditorWorkspaceValues.HandleRef handleRef() {
+            if (!selection.handleRef().equals(DungeonEditorSessionValues.emptyHandleRef())) {
                 return selection.handleRef();
             }
-            return new DungeonEditorHandleRef(
-                    DungeonEditorHandleKind.CLUSTER_LABEL,
+            return new DungeonEditorWorkspaceValues.HandleRef(
+                    DungeonEditorWorkspaceValues.HandleKind.CLUSTER_LABEL,
                     selection.topologyRef(),
                     0L,
                     selection.clusterId(),
                     0L,
                     0L,
                     0,
-                    new DungeonCellRef(0, 0, 0),
+                    DungeonEditorWorkspaceValues.Cell.empty(),
                     "");
         }
     }
@@ -418,7 +393,7 @@ public final class DungeonEditorMainViewInteractionValues {
     public record BoundaryStretchSession(
             DungeonEditorSessionValues.Selection selection,
             long clusterId,
-            List<DungeonEdgeRef> sourceEdges,
+            List<DungeonEditorWorkspaceValues.Edge> sourceEdges,
             BoundaryStretchOrientation orientation,
             int pressQ,
             int pressR,
@@ -485,15 +460,6 @@ public final class DungeonEditorMainViewInteractionValues {
                     deltaR(),
                     deltaLevel());
         }
-
-        public DungeonEditorOperation operation() {
-            return new DungeonEditorOperation.MoveBoundaryStretch(
-                    clusterId,
-                    sourceEdges,
-                    deltaQ(),
-                    deltaR(),
-                    deltaLevel());
-        }
     }
 
     public record BoundaryDraft(
@@ -538,7 +504,7 @@ public final class DungeonEditorMainViewInteractionValues {
 
         long deleteCorridorId();
 
-        DungeonEditorOperation.CorridorEndpoint endpoint();
+        DungeonEditorWorkspaceValues.CorridorEndpoint endpoint();
 
         static PendingCorridorTarget empty() {
             return new EndpointTarget(
@@ -546,10 +512,10 @@ public final class DungeonEditorMainViewInteractionValues {
                     "",
                     DungeonEditorSessionValues.Selection.empty(),
                     0L,
-                    new DungeonEditorOperation.CorridorAnchorEndpoint(
+                    new DungeonEditorWorkspaceValues.CorridorAnchorEndpoint(
                             0L,
-                            new DungeonCellRef(0, 0, 0),
-                            DungeonTopologyElementRef.empty()));
+                            DungeonEditorWorkspaceValues.Cell.empty(),
+                            DungeonEditorWorkspaceValues.TopologyElementRef.empty()));
         }
 
         record EndpointTarget(
@@ -557,22 +523,25 @@ public final class DungeonEditorMainViewInteractionValues {
                 String displayLabel,
                 DungeonEditorSessionValues.Selection selection,
                 long deleteCorridorId,
-                DungeonEditorOperation.CorridorEndpoint endpoint
+                DungeonEditorWorkspaceValues.CorridorEndpoint endpoint
         ) implements PendingCorridorTarget {
             public EndpointTarget {
                 targetKey = targetKey == null ? "" : targetKey;
                 displayLabel = displayLabel == null ? "" : displayLabel;
                 selection = selection == null ? DungeonEditorSessionValues.Selection.empty() : selection;
                 deleteCorridorId = Math.max(0L, deleteCorridorId);
-                endpoint = Objects.requireNonNull(endpoint);
+                Objects.requireNonNull(endpoint);
             }
         }
     }
 
-    public record BoundaryRoomTouch(DungeonAreaSnapshot room, DungeonCellRef roomCell) {
+    public record BoundaryRoomTouch(
+            DungeonEditorWorkspaceValues.Area room,
+            DungeonEditorWorkspaceValues.Cell roomCell
+    ) {
         public BoundaryRoomTouch {
-            room = Objects.requireNonNull(room);
-            roomCell = Objects.requireNonNull(roomCell);
+            Objects.requireNonNull(room);
+            Objects.requireNonNull(roomCell);
         }
     }
 
@@ -593,11 +562,11 @@ public final class DungeonEditorMainViewInteractionValues {
 
     public record EdgeKey(VertexKey start, VertexKey end) {
         public EdgeKey {
-            start = Objects.requireNonNull(start);
-            end = Objects.requireNonNull(end);
+            Objects.requireNonNull(start);
+            Objects.requireNonNull(end);
         }
 
-        public static EdgeKey from(DungeonEdgeRef edge) {
+        public static EdgeKey from(DungeonEditorWorkspaceValues.Edge edge) {
             return between(
                     new VertexKey(edge.from().q(), edge.from().r(), edge.from().level()),
                     new VertexKey(edge.to().q(), edge.to().r(), edge.to().level()));
@@ -624,10 +593,10 @@ public final class DungeonEditorMainViewInteractionValues {
             return start.equals(vertex) || end.equals(vertex);
         }
 
-        public DungeonEdgeRef toEdgeRef() {
-            return new DungeonEdgeRef(
-                    new DungeonCellRef(start.q(), start.r(), start.level()),
-                    new DungeonCellRef(end.q(), end.r(), end.level()));
+        public DungeonEditorWorkspaceValues.Edge toEdgeRef() {
+            return new DungeonEditorWorkspaceValues.Edge(
+                    new DungeonEditorWorkspaceValues.Cell(start.q(), start.r(), start.level()),
+                    new DungeonEditorWorkspaceValues.Cell(end.q(), end.r(), end.level()));
         }
     }
 }

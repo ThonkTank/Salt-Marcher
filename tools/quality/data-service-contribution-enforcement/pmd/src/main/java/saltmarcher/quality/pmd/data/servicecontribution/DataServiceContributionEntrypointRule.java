@@ -18,7 +18,8 @@ public final class DataServiceContributionEntrypointRule extends AbstractJavaRul
         for (String registeredType : sourceFacts.registeredServiceTypes()) {
             if (isForbiddenDataRootRegistration(registeredType, sourceFacts.featureName())) {
                 asCtx(data).addViolationWithMessage(node,
-                        "Data ServiceContribution root may register only own-feature root domain ApplicationService types."
+                        "Data ServiceContribution root may register only own-feature root domain ApplicationService"
+                                + " types and own-feature published/*Model readback services."
                                 + " Found registration for '" + registeredType + "'.");
             }
         }
@@ -69,11 +70,25 @@ public final class DataServiceContributionEntrypointRule extends AbstractJavaRul
     }
 
     private static boolean isForbiddenDataRootRegistration(String registeredType, String featureName) {
+        return !isOwnFeatureApplicationService(registeredType, featureName)
+                && !isOwnFeaturePublishedModel(registeredType, featureName);
+    }
+
+    private static boolean isOwnFeatureApplicationService(String registeredType, String featureName) {
         String domainFeaturePrefix = "src.domain." + featureName + ".";
         if (!registeredType.startsWith(domainFeaturePrefix)) {
-            return true;
+            return false;
         }
         String remainder = registeredType.substring(domainFeaturePrefix.length());
-        return remainder.contains(".") || !remainder.endsWith("ApplicationService");
+        return !remainder.contains(".") && remainder.endsWith("ApplicationService");
+    }
+
+    private static boolean isOwnFeaturePublishedModel(String registeredType, String featureName) {
+        String publishedPrefix = "src.domain." + featureName + ".published.";
+        if (!registeredType.startsWith(publishedPrefix)) {
+            return false;
+        }
+        String remainder = registeredType.substring(publishedPrefix.length());
+        return !remainder.contains(".") && remainder.endsWith("Model");
     }
 }

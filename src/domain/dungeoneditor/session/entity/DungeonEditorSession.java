@@ -1,11 +1,12 @@
 package src.domain.dungeoneditor.session.entity;
 
 import org.jspecify.annotations.Nullable;
-import src.domain.dungeon.published.DungeonMapId;
 import src.domain.dungeoneditor.session.value.DungeonEditorSessionValues;
+import src.domain.dungeoneditor.workspace.value.DungeonEditorWorkspaceValues;
+import src.domain.dungeoneditor.workspace.value.DungeonEditorWorkspaceValues.MapId;
 
 public record DungeonEditorSession(
-        @Nullable DungeonMapId selectedMapId,
+        @Nullable MapId selectedMapId,
         DungeonEditorSessionValues.ViewMode viewMode,
         DungeonEditorSessionValues.Tool selectedTool,
         int projectionLevel,
@@ -44,7 +45,7 @@ public record DungeonEditorSession(
         return DungeonEditorSessionValues.hasSelectedMap(selectedMapId);
     }
 
-    public DungeonEditorSession withSelectedMap(@Nullable DungeonMapId nextSelectedMapId) {
+    public DungeonEditorSession withSelectedMap(@Nullable MapId nextSelectedMapId) {
         return new DungeonEditorSession(
                 nextSelectedMapId,
                 viewMode,

@@ -1,7 +1,6 @@
 package src.domain.dungeoneditor.interaction.value;
 
 import org.jspecify.annotations.Nullable;
-import src.domain.dungeon.published.DungeonEditorOperation;
 import src.domain.dungeoneditor.session.value.DungeonEditorSessionValues;
 
 public record DungeonEditorMainViewEffect(
@@ -9,7 +8,7 @@ public record DungeonEditorMainViewEffect(
         boolean clearSelection,
         DungeonEditorSessionValues.@Nullable Preview preview,
         boolean clearPreview,
-        @Nullable DungeonEditorOperation applyOperation,
+        DungeonEditorSessionValues.@Nullable Preview applyPreview,
         int projectionLevelDelta,
         @Nullable String statusText
 ) {
@@ -21,12 +20,15 @@ public record DungeonEditorMainViewEffect(
         return new DungeonEditorMainViewEffect(null, false, preview, false, null, 0, null);
     }
 
-    public static DungeonEditorMainViewEffect apply(DungeonEditorOperation operation) {
-        return new DungeonEditorMainViewEffect(null, false, null, true, operation, 0, null);
+    public static DungeonEditorMainViewEffect apply(DungeonEditorSessionValues.Preview applyPreview) {
+        return new DungeonEditorMainViewEffect(null, false, null, true, applyPreview, 0, null);
     }
 
-    public static DungeonEditorMainViewEffect applyWithStatus(DungeonEditorOperation operation, String statusText) {
-        return new DungeonEditorMainViewEffect(null, false, null, true, operation, 0, statusText);
+    public static DungeonEditorMainViewEffect applyWithStatus(
+            DungeonEditorSessionValues.Preview applyPreview,
+            String statusText
+    ) {
+        return new DungeonEditorMainViewEffect(null, false, null, true, applyPreview, 0, statusText);
     }
 
     public static DungeonEditorMainViewEffect select(DungeonEditorSessionValues.Selection selection) {
@@ -51,6 +53,6 @@ public record DungeonEditorMainViewEffect(
 
     public boolean isNoop() {
         return !clearSelection && selection == null && preview == null && !clearPreview
-                && applyOperation == null && projectionLevelDelta == 0 && statusText == null;
+                && applyPreview == null && projectionLevelDelta == 0 && statusText == null;
     }
 }

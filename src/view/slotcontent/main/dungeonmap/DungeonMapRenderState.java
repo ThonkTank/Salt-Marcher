@@ -3,6 +3,7 @@ package src.view.slotcontent.main.dungeonmap;
 import java.util.List;
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
+import src.view.slotcontent.primitives.mapcanvas.MapRenderScene;
 
 public record DungeonMapRenderState(
         String title,
@@ -54,6 +55,14 @@ public record DungeonMapRenderState(
 
     public String modeLabel() {
         return viewMode.label();
+    }
+
+    public boolean isGraphView() {
+        return viewMode == ViewMode.GRAPH;
+    }
+
+    public MapRenderScene.ViewMode sceneViewMode() {
+        return isGraphView() ? MapRenderScene.ViewMode.GRAPH : MapRenderScene.ViewMode.GRID;
     }
 
     public String statusLabel() {
@@ -433,6 +442,10 @@ public record DungeonMapRenderState(
             label = label == null ? "" : label;
             topologyRef = topologyRef == null ? TopologyRef.empty() : topologyRef;
         }
+
+        public boolean isDoor() {
+            return kind == EdgeKind.DOOR;
+        }
     }
 
     public record Label(
@@ -468,6 +481,10 @@ public record DungeonMapRenderState(
             label = label == null ? "" : label;
             kind = kind == null ? MarkerKind.DOOR : kind;
             handle = handle == null ? new MarkerHandle(EMPTY_KIND, TopologyRef.empty(), 0L, 0L, 0L, 0L, 0, 0, 0, 0, "") : handle;
+        }
+
+        public boolean isDoorMarker() {
+            return kind == MarkerKind.DOOR;
         }
     }
 

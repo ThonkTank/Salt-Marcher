@@ -5,19 +5,20 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import org.jspecify.annotations.Nullable;
-import src.domain.dungeon.published.DungeonAreaKind;
-import src.domain.dungeon.published.DungeonAreaSnapshot;
-import src.domain.dungeon.published.DungeonCellRef;
-import src.domain.dungeon.published.DungeonSnapshot;
 import src.domain.dungeoneditor.interaction.value.DungeonEditorInteractionValues.CellKey;
 import src.domain.dungeoneditor.interaction.value.DungeonEditorInteractionValues.TravelHeading;
 import src.domain.dungeoneditor.interaction.value.DungeonEditorMainViewInteractionValues.BoundaryRoomTouch;
 import src.domain.dungeoneditor.interaction.value.DungeonEditorMainViewInteractionValues.BoundaryTarget;
 import src.domain.dungeoneditor.interaction.value.DungeonEditorMainViewInteractionValues.EdgeKey;
+import src.domain.dungeoneditor.workspace.value.DungeonEditorWorkspaceValues;
 
 public final class DungeonEditorBoundaryRoomTouchService {
 
-    public boolean editableDoorBoundary(@Nullable DungeonSnapshot snapshot, @Nullable BoundaryTarget boundary, boolean deleteMode) {
+    public boolean editableDoorBoundary(
+            DungeonEditorWorkspaceValues.@Nullable MapSnapshot snapshot,
+            @Nullable BoundaryTarget boundary,
+            boolean deleteMode
+    ) {
         if (boundary == null || !boundary.present()) {
             return false;
         }
@@ -28,24 +29,24 @@ public final class DungeonEditorBoundaryRoomTouchService {
     }
 
     public @Nullable BoundaryRoomTouch singleRoomTouch(
-            @Nullable DungeonSnapshot snapshot,
+            DungeonEditorWorkspaceValues.@Nullable MapSnapshot snapshot,
             @Nullable BoundaryTarget boundary,
             boolean requireDoorBoundary
     ) {
-        if (snapshot == null || snapshot.map() == null || boundary == null || !boundary.present()) {
+        if (snapshot == null || boundary == null || !boundary.present()) {
             return null;
         }
         if (requireDoorBoundary != boundary.doorKind()) {
             return null;
         }
-        List<DungeonCellRef> touchingCells = DungeonEditorBoundaryRoomTouchSupport.touchingCells(
-                boundary.start().toDungeonCellRef(),
-                boundary.end().toDungeonCellRef());
-        List<BoundaryRoomTouch> touches = roomTouches(snapshot.map().areas(), touchingCells);
+        List<DungeonEditorWorkspaceValues.Cell> touchingCells = DungeonEditorBoundaryRoomTouchSupport.touchingCells(
+                boundary.start().toWorkspaceCell(),
+                boundary.end().toWorkspaceCell());
+        List<BoundaryRoomTouch> touches = roomTouches(snapshot.areas(), touchingCells);
         return touches.size() == 1 ? touches.getFirst() : null;
     }
 
-    public String boundaryDirectionForRoomCell(BoundaryTarget boundary, DungeonCellRef roomCell) {
+    public String boundaryDirectionForRoomCell(BoundaryTarget boundary, DungeonEditorWorkspaceValues.Cell roomCell) {
         EdgeKey boundaryKey = EdgeKey.from(boundary.edgeRef());
         CellKey cellKey = new CellKey(roomCell.q(), roomCell.r(), roomCell.level());
         for (TravelHeading direction : TravelHeading.values()) {
@@ -56,21 +57,24 @@ public final class DungeonEditorBoundaryRoomTouchService {
         return "";
     }
 
-    private int touchingRoomCount(@Nullable DungeonSnapshot snapshot, BoundaryTarget boundary) {
-        if (snapshot == null || snapshot.map() == null) {
+    private int touchingRoomCount(
+            DungeonEditorWorkspaceValues.@Nullable MapSnapshot snapshot,
+            BoundaryTarget boundary
+    ) {
+        if (snapshot == null) {
             return 0;
         }
         Set<Long> roomIds = new LinkedHashSet<>();
         List<CellKey> touchingCells = DungeonEditorBoundaryRoomTouchSupport.touchingCells(
-                boundary.start().toDungeonCellRef(),
-                boundary.end().toDungeonCellRef()).stream()
+                boundary.start().toWorkspaceCell(),
+                boundary.end().toWorkspaceCell()).stream()
                 .map(cell -> new CellKey(cell.q(), cell.r(), cell.level()))
                 .toList();
-        for (DungeonAreaSnapshot area : snapshot.map().areas()) {
-            if (area.kind() != DungeonAreaKind.ROOM) {
+        for (DungeonEditorWorkspaceValues.Area area : snapshot.areas()) {
+            if (area.kind() != DungeonEditorWorkspaceValues.AreaKind.ROOM) {
                 continue;
             }
-            for (DungeonCellRef cell : area.cells()) {
+            for (DungeonEditorWorkspaceValues.Cell cell : area.cells()) {
                 if (touchingCells.contains(new CellKey(cell.q(), cell.r(), cell.level()))) {
                     roomIds.add(area.id());
                 }
@@ -80,15 +84,15 @@ public final class DungeonEditorBoundaryRoomTouchService {
     }
 
     private static List<BoundaryRoomTouch> roomTouches(
-            List<DungeonAreaSnapshot> areas,
-            List<DungeonCellRef> touchingCells
+            List<DungeonEditorWorkspaceValues.Area> areas,
+            List<DungeonEditorWorkspaceValues.Cell> touchingCells
     ) {
         List<BoundaryRoomTouch> touches = new ArrayList<>();
-        for (DungeonAreaSnapshot area : areas) {
-            if (area.kind() != DungeonAreaKind.ROOM) {
+        for (DungeonEditorWorkspaceValues.Area area : areas) {
+            if (area.kind() != DungeonEditorWorkspaceValues.AreaKind.ROOM) {
                 continue;
             }
-            for (DungeonCellRef cell : area.cells()) {
+            for (DungeonEditorWorkspaceValues.Cell cell : area.cells()) {
                 if (touchingCells.contains(cell)) {
                     touches.add(new BoundaryRoomTouch(area, cell));
                     break;

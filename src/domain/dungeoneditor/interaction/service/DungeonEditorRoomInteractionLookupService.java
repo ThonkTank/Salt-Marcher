@@ -4,11 +4,6 @@ import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import org.jspecify.annotations.Nullable;
-import src.domain.dungeon.published.DungeonAreaKind;
-import src.domain.dungeon.published.DungeonAreaSnapshot;
-import src.domain.dungeon.published.DungeonCellRef;
-import src.domain.dungeon.published.DungeonSnapshot;
-import src.domain.dungeon.published.DungeonTopologyElementRef;
 import src.domain.dungeoneditor.interaction.value.DungeonEditorInteractionValues.CellKey;
 import src.domain.dungeoneditor.interaction.value.DungeonEditorInteractionValues.TravelHeading;
 import src.domain.dungeoneditor.interaction.value.DungeonEditorMainViewInteractionValues;
@@ -16,11 +11,15 @@ import src.domain.dungeoneditor.interaction.value.DungeonEditorMainViewInteracti
 import src.domain.dungeoneditor.interaction.value.DungeonEditorMainViewInteractionValues.HitKind;
 import src.domain.dungeoneditor.interaction.value.DungeonEditorMainViewInteractionValues.HitTarget;
 import src.domain.dungeoneditor.session.value.DungeonEditorSessionValues;
+import src.domain.dungeoneditor.workspace.value.DungeonEditorWorkspaceValues;
 
 public final class DungeonEditorRoomInteractionLookupService {
 
-    public @Nullable DungeonAreaSnapshot roomArea(@Nullable DungeonSnapshot snapshot, @Nullable HitTarget hit) {
-        if (snapshot == null || snapshot.map() == null || hit == null) {
+    public DungeonEditorWorkspaceValues.@Nullable Area roomArea(
+            DungeonEditorWorkspaceValues.@Nullable MapSnapshot snapshot,
+            @Nullable HitTarget hit
+    ) {
+        if (snapshot == null || hit == null) {
             return null;
         }
         if (hit.kind() == HitKind.ROOM && hit.ownerId() > 0L) {
@@ -34,32 +33,39 @@ public final class DungeonEditorRoomInteractionLookupService {
         if (hit.kind() != HitKind.LABEL || hit.clusterId() <= 0L) {
             return null;
         }
-        return snapshot.map().areas().stream()
-                .filter(area -> area.kind() == DungeonAreaKind.ROOM && area.clusterId() == hit.clusterId())
+        return snapshot.areas().stream()
+                .filter(area -> area.kind() == DungeonEditorWorkspaceValues.AreaKind.ROOM && area.clusterId() == hit.clusterId())
                 .findFirst()
                 .orElse(null);
     }
 
-    public @Nullable DungeonAreaSnapshot roomAreaById(@Nullable DungeonSnapshot snapshot, long roomId) {
-        if (snapshot == null || snapshot.map() == null || roomId <= 0L) {
+    public DungeonEditorWorkspaceValues.@Nullable Area roomAreaById(
+            DungeonEditorWorkspaceValues.@Nullable MapSnapshot snapshot,
+            long roomId
+    ) {
+        if (snapshot == null || roomId <= 0L) {
             return null;
         }
-        return snapshot.map().areas().stream()
-                .filter(area -> area.kind() == DungeonAreaKind.ROOM && area.id() == roomId)
+        return snapshot.areas().stream()
+                .filter(area -> area.kind() == DungeonEditorWorkspaceValues.AreaKind.ROOM && area.id() == roomId)
                 .findFirst()
                 .orElse(null);
     }
 
-    public DungeonCellRef corridorRoomCell(DungeonAreaSnapshot room, int pointerQ, int pointerR) {
+    public DungeonEditorWorkspaceValues.Cell corridorRoomCell(
+            DungeonEditorWorkspaceValues.Area room,
+            int pointerQ,
+            int pointerR
+    ) {
         return room.cells().stream()
                 .min(Comparator
-                        .comparingInt((DungeonCellRef cell) -> Math.abs(cell.q() - pointerQ) + Math.abs(cell.r() - pointerR))
-                        .thenComparingInt(DungeonCellRef::r)
-                        .thenComparingInt(DungeonCellRef::q))
-                .orElse(new DungeonCellRef(pointerQ, pointerR, 0));
+                        .comparingInt((DungeonEditorWorkspaceValues.Cell cell) -> Math.abs(cell.q() - pointerQ) + Math.abs(cell.r() - pointerR))
+                        .thenComparingInt(DungeonEditorWorkspaceValues.Cell::r)
+                        .thenComparingInt(DungeonEditorWorkspaceValues.Cell::q))
+                .orElse(new DungeonEditorWorkspaceValues.Cell(pointerQ, pointerR, 0));
     }
 
-    public String corridorDirection(DungeonAreaSnapshot room, DungeonCellRef roomCell) {
+    public String corridorDirection(DungeonEditorWorkspaceValues.Area room, DungeonEditorWorkspaceValues.Cell roomCell) {
         Set<CellKey> roomCells = room.cells().stream()
                 .map(cell -> new CellKey(cell.q(), cell.r(), cell.level()))
                 .collect(LinkedHashSet::new, Set::add, Set::addAll);
@@ -74,11 +80,11 @@ public final class DungeonEditorRoomInteractionLookupService {
 
     public DungeonEditorSessionValues.Selection selectionForBoundary(BoundaryTarget boundary, long clusterId) {
         return new DungeonEditorSessionValues.Selection(
-                new DungeonTopologyElementRef(
-                        DungeonEditorMainViewInteractionValues.toPublishedTopologyKind(boundary.topologyRefKind()),
+                new DungeonEditorWorkspaceValues.TopologyElementRef(
+                        DungeonEditorMainViewInteractionValues.toTopologyKind(boundary.topologyRefKind()),
                         boundary.topologyRefId()),
                 clusterId,
                 false,
-                null);
+                DungeonEditorSessionValues.emptyHandleRef());
     }
 }

@@ -6,6 +6,8 @@ import src.data.sessionplanner.query.ApplicationSessionPlannerFactsQueryAdapter;
 import src.data.sessionplanner.repository.SessionPlannerPublishedStateRepositoryAdapter;
 import src.data.sessionplanner.repository.SqliteSessionPlanRepository;
 import src.domain.encounter.EncounterApplicationService;
+import src.domain.encounter.published.EncounterPlanBudgetModel;
+import src.domain.encounter.published.SavedEncounterPlanListModel;
 import src.domain.party.PartyApplicationService;
 import src.domain.party.published.ActivePartyModel;
 import src.domain.party.published.AdventuringDayCalculationModel;
@@ -33,7 +35,9 @@ public final class SessionPlannerServiceContribution implements ServiceContribut
                             services.require(PartyApplicationService.class),
                             services.require(ActivePartyModel.class),
                             services.require(AdventuringDayCalculationModel.class),
-                            services.require(EncounterApplicationService.class));
+                            services.require(EncounterApplicationService.class),
+                            services.require(SavedEncounterPlanListModel.class),
+                            services.require(EncounterPlanBudgetModel.class));
                     return new SessionPlannerPublishedStateRepositoryAdapter(repository, facts, facts);
                 });
         builder.registerFactory(
@@ -44,7 +48,9 @@ public final class SessionPlannerServiceContribution implements ServiceContribut
                             services.require(PartyApplicationService.class),
                             services.require(ActivePartyModel.class),
                             services.require(AdventuringDayCalculationModel.class),
-                            services.require(EncounterApplicationService.class));
+                            services.require(EncounterApplicationService.class),
+                            services.require(SavedEncounterPlanListModel.class),
+                            services.require(EncounterPlanBudgetModel.class));
                     return new SessionPlannerApplicationService(
                             repository,
                             facts,

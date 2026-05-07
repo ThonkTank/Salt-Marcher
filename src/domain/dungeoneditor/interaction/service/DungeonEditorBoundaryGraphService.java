@@ -8,21 +8,28 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import src.domain.dungeon.published.DungeonBoundaryKind;
-import src.domain.dungeon.published.DungeonSnapshot;
 import src.domain.dungeoneditor.interaction.value.DungeonEditorInteractionValues.VertexKey;
 import src.domain.dungeoneditor.interaction.value.DungeonEditorInteractionValues.VertexTarget;
 import src.domain.dungeoneditor.interaction.value.DungeonEditorMainViewInteractionValues.BoundaryDraft;
 import src.domain.dungeoneditor.interaction.value.DungeonEditorMainViewInteractionValues.EdgeKey;
 import src.domain.dungeoneditor.interaction.value.DungeonEditorMainViewInteractionValues.PathResult;
 import src.domain.dungeoneditor.interaction.value.DungeonEditorMainViewInteractionValues.PointerState;
+import src.domain.dungeoneditor.workspace.value.DungeonEditorWorkspaceValues;
 
 public final class DungeonEditorBoundaryGraphService {
-    private final DungeonEditorBoundaryEdgeCatalog edgeCatalog = new DungeonEditorBoundaryEdgeCatalog();
-
-    public boolean isEditableVertex(DungeonSnapshot snapshot, long clusterId, VertexTarget vertex, boolean deleteMode) {
+    public boolean isEditableVertex(
+            DungeonEditorWorkspaceValues.MapSnapshot snapshot,
+            long clusterId,
+            VertexTarget vertex,
+            boolean deleteMode
+    ) {
+        DungeonEditorBoundaryEdgeCatalog edgeCatalog = new DungeonEditorBoundaryEdgeCatalog();
         Set<EdgeKey> edges = deleteMode
-                ? edgeCatalog.existingInternalBoundaryEdges(snapshot, clusterId, vertex.level(), DungeonBoundaryKind.WALL)
+                ? edgeCatalog.existingInternalBoundaryEdges(
+                        snapshot,
+                        clusterId,
+                        vertex.level(),
+                        DungeonEditorWorkspaceValues.BoundaryKind.WALL)
                 : edgeCatalog.internalClusterEdges(snapshot, clusterId, vertex.level());
         VertexKey key = new VertexKey(vertex.q(), vertex.r(), vertex.level());
         return edges.stream().anyMatch(edge -> edge.touches(key));
@@ -30,7 +37,7 @@ public final class DungeonEditorBoundaryGraphService {
 
     public PathResult previewCandidate(
             PointerState input,
-            DungeonSnapshot snapshot,
+            DungeonEditorWorkspaceValues.MapSnapshot snapshot,
             BoundaryDraft currentDraft,
             boolean deleteMode
     ) {
@@ -50,30 +57,55 @@ public final class DungeonEditorBoundaryGraphService {
                 : findCreatePath(snapshot, currentDraft.clusterId(), currentDraft.currentVertex(), nextVertex);
     }
 
-    public PathResult findCreatePath(DungeonSnapshot snapshot, long clusterId, VertexKey start, VertexKey goal) {
+    public PathResult findCreatePath(
+            DungeonEditorWorkspaceValues.MapSnapshot snapshot,
+            long clusterId,
+            VertexKey start,
+            VertexKey goal
+    ) {
+        DungeonEditorBoundaryEdgeCatalog edgeCatalog = new DungeonEditorBoundaryEdgeCatalog();
         Set<EdgeKey> traversableEdges = edgeCatalog.internalClusterEdges(snapshot, clusterId, start.level());
         List<EdgeKey> route = shortestPath(start, goal, traversableEdges);
         if (route.isEmpty()) {
             return PathResult.empty();
         }
-        Set<EdgeKey> doors = edgeCatalog.existingInternalBoundaryEdges(snapshot, clusterId, start.level(), DungeonBoundaryKind.DOOR);
+        Set<EdgeKey> doors = edgeCatalog.existingInternalBoundaryEdges(
+                snapshot,
+                clusterId,
+                start.level(),
+                DungeonEditorWorkspaceValues.BoundaryKind.DOOR);
         Set<EdgeKey> committed = new LinkedHashSet<>(route);
         committed.removeAll(doors);
         return new PathResult(route, committed);
     }
 
-    public PathResult findDeletePath(DungeonSnapshot snapshot, long clusterId, VertexKey start, VertexKey goal) {
-        Set<EdgeKey> walls = edgeCatalog.existingInternalBoundaryEdges(snapshot, clusterId, start.level(), DungeonBoundaryKind.WALL);
+    public PathResult findDeletePath(
+            DungeonEditorWorkspaceValues.MapSnapshot snapshot,
+            long clusterId,
+            VertexKey start,
+            VertexKey goal
+    ) {
+        DungeonEditorBoundaryEdgeCatalog edgeCatalog = new DungeonEditorBoundaryEdgeCatalog();
+        Set<EdgeKey> walls = edgeCatalog.existingInternalBoundaryEdges(
+                snapshot,
+                clusterId,
+                start.level(),
+                DungeonEditorWorkspaceValues.BoundaryKind.WALL);
         List<EdgeKey> route = shortestPath(start, goal, walls);
         return route.isEmpty() ? PathResult.empty() : new PathResult(route, new LinkedHashSet<>(route));
     }
 
-    public boolean touchesExistingWall(DungeonSnapshot snapshot, long clusterId, VertexKey vertex) {
+    public boolean touchesExistingWall(
+            DungeonEditorWorkspaceValues.MapSnapshot snapshot,
+            long clusterId,
+            VertexKey vertex
+    ) {
+        DungeonEditorBoundaryEdgeCatalog edgeCatalog = new DungeonEditorBoundaryEdgeCatalog();
         Set<EdgeKey> edges = new LinkedHashSet<>(edgeCatalog.existingInternalBoundaryEdges(
                 snapshot,
                 clusterId,
                 vertex.level(),
-                DungeonBoundaryKind.WALL));
+                DungeonEditorWorkspaceValues.BoundaryKind.WALL));
         edges.addAll(edgeCatalog.outerClusterEdges(snapshot, clusterId, vertex.level()));
         return edges.stream().anyMatch(edge -> edge.touches(vertex));
     }

@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-05-06
+Last Reviewed: 2026-05-07
 Source of Truth: Public builder-input read/write contract for encounter-facing
 catalog controls.
 
@@ -13,9 +13,8 @@ controls and the encounter runtime session.
 
 ## Read Surface
 
-- `LoadEncounterBuilderInputsQuery`
-  requests the current encounter builder-input model
 - `EncounterBuilderInputsModel`
+  is the direct same-context read-side runtime service for builder inputs and
   exposes `current()` plus passive subscription
 - `EncounterBuilderInputs`
   carries creature-type, subtype, biome, difficulty, tuning, and
@@ -24,12 +23,15 @@ controls and the encounter runtime session.
 ## Write Surface
 
 - `UpdateEncounterBuilderInputsCommand`
-  submits a complete replacement snapshot of the builder inputs
+  submits a complete replacement snapshot of the builder inputs through the
+  command-only `EncounterApplicationService`
 
 ## Boundary Rules
 
 - the contract is workflow-oriented, not a mirror of the internal encounter
   session carrier
+- readback arrives through the model handle directly; it is not loaded through
+  a root query method
 - it does not expose saved plans, roster cards, initiative rows, combat
   runtime, or result state
 - it does not expose foreign creature, party, or encounter-table internals

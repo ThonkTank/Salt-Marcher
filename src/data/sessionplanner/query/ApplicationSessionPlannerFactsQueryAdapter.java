@@ -3,11 +3,12 @@ package src.data.sessionplanner.query;
 import java.util.List;
 import java.util.Objects;
 import src.domain.encounter.EncounterApplicationService;
+import src.domain.encounter.published.EncounterPlanBudgetModel;
 import src.domain.encounter.published.EncounterPlanBudgetResult;
 import src.domain.encounter.published.EncounterPlanBudgetStatus;
-import src.domain.encounter.published.ListSavedEncounterPlansQuery;
-import src.domain.encounter.published.LoadEncounterPlanBudgetQuery;
+import src.domain.encounter.published.RefreshEncounterPlanBudgetCommand;
 import src.domain.encounter.published.SavedEncounterPlanListResult;
+import src.domain.encounter.published.SavedEncounterPlanListModel;
 import src.domain.encounter.published.SavedEncounterPlanStatus;
 import src.domain.encounter.published.SavedEncounterPlanSummary;
 import src.domain.party.PartyApplicationService;
@@ -28,18 +29,24 @@ public final class ApplicationSessionPlannerFactsQueryAdapter
     private final ActivePartyModel activePartyModel;
     private final AdventuringDayCalculationModel adventuringDayCalculationModel;
     private final EncounterApplicationService encounters;
+    private final SavedEncounterPlanListModel savedPlansModel;
+    private final EncounterPlanBudgetModel planBudgetModel;
 
     public ApplicationSessionPlannerFactsQueryAdapter(
             PartyApplicationService party,
             ActivePartyModel activePartyModel,
             AdventuringDayCalculationModel adventuringDayCalculationModel,
-            EncounterApplicationService encounters
+            EncounterApplicationService encounters,
+            SavedEncounterPlanListModel savedPlansModel,
+            EncounterPlanBudgetModel planBudgetModel
     ) {
         this.party = Objects.requireNonNull(party, "party");
         this.activePartyModel = Objects.requireNonNull(activePartyModel, "activePartyModel");
         this.adventuringDayCalculationModel =
                 Objects.requireNonNull(adventuringDayCalculationModel, "adventuringDayCalculationModel");
         this.encounters = Objects.requireNonNull(encounters, "encounters");
+        this.savedPlansModel = Objects.requireNonNull(savedPlansModel, "savedPlansModel");
+        this.planBudgetModel = Objects.requireNonNull(planBudgetModel, "planBudgetModel");
     }
 
     @Override
@@ -74,7 +81,7 @@ public final class ApplicationSessionPlannerFactsQueryAdapter
 
     @Override
     public EncounterPlanListFact listEncounterPlans() {
-        SavedEncounterPlanListResult result = encounters.listPlans(new ListSavedEncounterPlansQuery());
+        SavedEncounterPlanListResult result = savedPlansModel.current();
         if (result.status() != SavedEncounterPlanStatus.SUCCESS) {
             return new EncounterPlanListFact(false, List.of(), result.message());
         }
@@ -86,7 +93,8 @@ public final class ApplicationSessionPlannerFactsQueryAdapter
 
     @Override
     public EncounterPlanFact loadEncounterPlan(long encounterPlanId) {
-        EncounterPlanBudgetResult result = encounters.loadPlanBudget(new LoadEncounterPlanBudgetQuery(encounterPlanId));
+        encounters.refreshPlanBudget(new RefreshEncounterPlanBudgetCommand(encounterPlanId));
+        EncounterPlanBudgetResult result = planBudgetModel.current();
         if (result.status() != EncounterPlanBudgetStatus.SUCCESS || result.summary() == null) {
             String message = result.message().isBlank()
                     ? "Encounter-Plan konnte nicht geladen werden."

@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-23
+Last Reviewed: 2026-05-07
 Source of Truth: Entry point and document map for the encounter feature.
 
 # Encounter Feature README
@@ -17,6 +17,7 @@ only the user-accepted roster when the user saves a plan.
 - [Feature Spec](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/encounter/requirements/requirements-encounter.md:1)
 - [Domain Model](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/encounter/domain/domain-encounter.md:1)
 - [Persistence](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/encounter/contract/contract-encounter-persistence.md:1)
+- [Saved Plans Contract](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/encounter/contract/contract-encounter-saved-plans.md:1)
 - [Plan Budget Contract](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/encounter/contract/contract-encounter-plan-budget.md:1)
 - [Encounter Table Feature README](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/encountertable/README.md:1)
 - [Encounter UI](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/encounter/requirements/requirements-encounter-state-tab.md:1)
