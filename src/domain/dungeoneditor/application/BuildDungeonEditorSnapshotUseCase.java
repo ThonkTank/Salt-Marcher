@@ -17,6 +17,7 @@ import src.domain.dungeon.published.DungeonMapCatalogCommand;
 import src.domain.dungeon.published.DungeonMapCatalogResponse;
 import src.domain.dungeon.published.DungeonOperationResult;
 import src.domain.dungeon.published.DungeonSnapshot;
+import src.domain.dungeoneditor.session.entity.DungeonEditorSession;
 import src.domain.dungeoneditor.session.value.DungeonEditorSessionSnapshot;
 import src.domain.dungeoneditor.session.value.DungeonEditorSessionValues;
 import src.domain.dungeoneditor.workspace.value.DungeonEditorWorkspaceValues;
@@ -28,29 +29,6 @@ import src.domain.dungeoneditor.workspace.value.DungeonEditorWorkspaceValues.Map
 import src.domain.dungeoneditor.workspace.value.DungeonEditorWorkspaceValues.MapSummary;
 
 final class BuildDungeonEditorSnapshotUseCase {
-
-    record State(
-            @Nullable MapId selectedMapId,
-            DungeonEditorSessionValues.ViewMode viewMode,
-            DungeonEditorSessionValues.Tool selectedTool,
-            int projectionLevel,
-            DungeonEditorSessionValues.OverlaySettings overlaySettings,
-            DungeonEditorSessionValues.Selection selection,
-            DungeonEditorSessionValues.Preview preview,
-            String statusText
-    ) {
-        State {
-            viewMode = viewMode == null ? DungeonEditorSessionValues.ViewMode.defaultMode() : viewMode;
-            selectedTool = selectedTool == null ? DungeonEditorSessionValues.Tool.defaultTool() : selectedTool;
-            overlaySettings = overlaySettings == null
-                    ? DungeonEditorSessionValues.OverlaySettings.defaults()
-                    : overlaySettings;
-            selection = selection == null ? DungeonEditorSessionValues.Selection.empty() : selection;
-            preview = preview == null ? DungeonEditorSessionValues.Preview.none() : preview;
-            statusText = statusText == null ? "" : statusText;
-        }
-    }
-
     private final Function<DungeonMapCatalogCommand, DungeonMapCatalogResponse> catalog;
     private final DungeonEditorSnapshotSurfaceLoader surfaceLoader;
 
@@ -63,8 +41,8 @@ final class BuildDungeonEditorSnapshotUseCase {
         this.surfaceLoader = new DungeonEditorSnapshotSurfaceLoader(mutateAuthored, loadAuthored);
     }
 
-    DungeonEditorSessionSnapshot.SnapshotData execute(State state) {
-        State safeState = DungeonEditorSnapshotStateSupport.safeState(state);
+    DungeonEditorSessionSnapshot.SnapshotData execute(@Nullable DungeonEditorSession state) {
+        DungeonEditorSession safeState = DungeonEditorSnapshotStateSupport.safeState(state);
         List<MapSummary> maps = DungeonEditorSnapshotSelectionSupport.mapSummaries(
                 catalog.apply(new DungeonMapCatalogCommand.Search("")));
         @Nullable MapId resolvedMapId = DungeonEditorSnapshotSelectionSupport.resolveSelectedMapId(
@@ -107,20 +85,8 @@ final class DungeonEditorSnapshotStateSupport {
     private DungeonEditorSnapshotStateSupport() {
     }
 
-    static BuildDungeonEditorSnapshotUseCase.State safeState(
-            BuildDungeonEditorSnapshotUseCase.State state
-    ) {
-        return state == null
-                ? new BuildDungeonEditorSnapshotUseCase.State(
-                        null,
-                        DungeonEditorSessionValues.ViewMode.defaultMode(),
-                        DungeonEditorSessionValues.Tool.defaultTool(),
-                        0,
-                        DungeonEditorSessionValues.OverlaySettings.defaults(),
-                        DungeonEditorSessionValues.Selection.empty(),
-                        DungeonEditorSessionValues.Preview.none(),
-                        "")
-                : state;
+    static DungeonEditorSession safeState(@Nullable DungeonEditorSession state) {
+        return state == null ? DungeonEditorSession.empty() : state;
     }
 }
 

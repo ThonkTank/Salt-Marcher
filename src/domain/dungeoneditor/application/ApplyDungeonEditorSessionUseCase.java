@@ -43,15 +43,7 @@ public final class ApplyDungeonEditorSessionUseCase {
     }
 
     public DungeonEditorSessionSnapshot.SnapshotData snapshot() {
-        DungeonEditorSessionSnapshot.SnapshotData snapshot = snapshotBuilder.execute(new BuildDungeonEditorSnapshotUseCase.State(
-                session.selectedMapId(),
-                session.viewMode(),
-                session.selectedTool(),
-                session.projectionLevel(),
-                session.overlaySettings(),
-                session.selection(),
-                session.preview(),
-                session.statusText()));
+        DungeonEditorSessionSnapshot.SnapshotData snapshot = snapshotBuilder.execute(session);
         session = session.withSelectedMap(snapshot.selectedMapId())
                 .withProjectionLevel(snapshot.projectionLevel());
         return snapshot;

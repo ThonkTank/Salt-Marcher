@@ -29,16 +29,42 @@ public record DungeonEditorSessionCommand(
     }
 
     public enum Action {
-        SELECT_MAP,
-        CREATE_MAP,
-        RENAME_MAP,
-        DELETE_MAP,
-        SET_VIEW_MODE,
-        SET_TOOL,
-        SHIFT_PROJECTION_LEVEL,
-        SET_OVERLAY,
-        INTERPRET_MAIN_VIEW,
-        SAVE_ROOM_NARRATION;
+        SELECT_MAP(true, false, false, false, false, true, false),
+        CREATE_MAP(true, false, false, true, false, false, false),
+        RENAME_MAP(true, false, false, true, false, false, false),
+        DELETE_MAP(true, false, false, true, false, false, false),
+        SET_VIEW_MODE(true, false, false, false, true, false, false),
+        SET_TOOL(true, false, false, false, true, false, false),
+        SHIFT_PROJECTION_LEVEL(true, false, false, false, true, false, false),
+        SET_OVERLAY(true, false, false, false, true, false, false),
+        INTERPRET_MAIN_VIEW(false, true, false, false, false, false, false),
+        SAVE_ROOM_NARRATION(false, false, true, false, false, false, false);
+
+        private final boolean catalogAction;
+        private final boolean mainViewInputAction;
+        private final boolean roomNarrationAction;
+        private final boolean mapMutationAction;
+        private final boolean sessionSettingAction;
+        private final boolean selectMapAction;
+        private final boolean deleteMapAction;
+
+        Action(
+                boolean catalogAction,
+                boolean mainViewInputAction,
+                boolean roomNarrationAction,
+                boolean mapMutationAction,
+                boolean sessionSettingAction,
+                boolean selectMapAction,
+                boolean deleteMapAction
+        ) {
+            this.catalogAction = catalogAction;
+            this.mainViewInputAction = mainViewInputAction;
+            this.roomNarrationAction = roomNarrationAction;
+            this.mapMutationAction = mapMutationAction;
+            this.sessionSettingAction = sessionSettingAction;
+            this.selectMapAction = selectMapAction;
+            this.deleteMapAction = deleteMapAction;
+        }
 
         public static Action fromName(@Nullable String name) {
             try {
@@ -49,17 +75,31 @@ public record DungeonEditorSessionCommand(
         }
 
         public boolean isCatalogAction() {
-            return switch (this) {
-                case SELECT_MAP,
-                        CREATE_MAP,
-                        RENAME_MAP,
-                        DELETE_MAP,
-                        SET_VIEW_MODE,
-                        SET_TOOL,
-                        SHIFT_PROJECTION_LEVEL,
-                        SET_OVERLAY -> true;
-                case INTERPRET_MAIN_VIEW, SAVE_ROOM_NARRATION -> false;
-            };
+            return catalogAction;
+        }
+
+        public boolean isMainViewInputAction() {
+            return mainViewInputAction;
+        }
+
+        public boolean isRoomNarrationAction() {
+            return roomNarrationAction;
+        }
+
+        public boolean isMapMutationAction() {
+            return mapMutationAction;
+        }
+
+        public boolean isSessionSettingAction() {
+            return sessionSettingAction;
+        }
+
+        public boolean isSelectMapAction() {
+            return selectMapAction;
+        }
+
+        public boolean isDeleteMapAction() {
+            return deleteMapAction;
         }
     }
 
