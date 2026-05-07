@@ -167,7 +167,7 @@ public final class PartyEditorTopBarView extends VBox {
         private void addRow(int row, String labelText, TextField field) {
             add(new FormLabel(labelText, field), 0, row);
             add(field, 1, row);
-            GridPane.setHgrow(field, Priority.ALWAYS);
+            setHgrow(field, Priority.ALWAYS);
         }
     }
 
