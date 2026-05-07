@@ -10,6 +10,7 @@ import javafx.scene.control.TextField;
 import javafx.scene.control.TextFormatter;
 import javafx.scene.control.Tooltip;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Pane;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import org.jspecify.annotations.Nullable;
@@ -17,7 +18,6 @@ import src.view.slotcontent.primitives.popup.AnchoredPopupView;
 
 public final class ProgressMeterView extends StackPane {
 
-    @SuppressWarnings("PMD.ConstructorCallsOverridableMethod")
     public ProgressMeterView(
             double fraction,
             String text,
@@ -28,7 +28,6 @@ public final class ProgressMeterView extends StackPane {
         this(fraction, text, accessibleText, fillStyleClass, sizeStyleClass, null);
     }
 
-    @SuppressWarnings("PMD.ConstructorCallsOverridableMethod")
     public ProgressMeterView(
             double fraction,
             String text,
@@ -46,20 +45,20 @@ public final class ProgressMeterView extends StackPane {
         HBox fillHost = new HBox();
         fillHost.setMouseTransparent(true);
         Region fill = new Region();
-        fill.getStyleClass().add("progress-meter-fill");
+        FxAccess.addStyle(fill, "progress-meter-fill");
         if (!safe(fillStyleClass).isBlank()) {
-            fill.getStyleClass().add(fillStyleClass);
+            FxAccess.addStyle(fill, fillStyleClass);
         }
-        fill.prefWidthProperty().bind(widthProperty().multiply(normalizedFraction));
-        fillHost.getChildren().add(fill);
+        FxAccess.bindWidth(fill, this, normalizedFraction);
+        FxAccess.addChildren(fillHost, fill);
 
         Label overlayText = new Label(safe(text));
-        overlayText.getStyleClass().add("progress-meter-text");
+        FxAccess.addStyle(overlayText, "progress-meter-text");
         overlayText.setMouseTransparent(true);
 
         getChildren().addAll(fillHost, overlayText);
-        StackPane.setAlignment(fillHost, Pos.CENTER_LEFT);
-        StackPane.setAlignment(overlayText, Pos.CENTER);
+        setAlignment(fillHost, Pos.CENTER_LEFT);
+        setAlignment(overlayText, Pos.CENTER);
         setAccessibleText(safe(accessibleText).isBlank() ? safe(text) : safe(accessibleText));
         configurePopup(popupSpec);
     }
@@ -87,14 +86,14 @@ public final class ProgressMeterView extends StackPane {
         up.setOnAction(event -> field.setText(String.valueOf(parse(field.getText(), 1) + 1)));
 
         HBox content = new HBox(4);
-        content.getStyleClass().add("anchored-popup");
+        FxAccess.addStyle(content, "anchored-popup");
         content.setAlignment(Pos.CENTER_LEFT);
-        content.getChildren().addAll(field, down, up);
+        FxAccess.addChildren(content, field, down, up);
         Button defaultButton = null;
         for (PopupAction action : popupSpec.actions()) {
             Button button = new Button(action.label());
             if (!safe(action.styleClass()).isBlank()) {
-                button.getStyleClass().add(action.styleClass());
+                FxAccess.addStyle(button, action.styleClass());
             }
             button.setDefaultButton(action.defaultButton());
             if (action.defaultButton()) {
@@ -104,7 +103,7 @@ public final class ProgressMeterView extends StackPane {
                 popup.hide();
                 action.amountHandler().accept(parse(field.getText(), 1));
             });
-            content.getChildren().add(button);
+            FxAccess.addChildren(content, button);
         }
         if (defaultButton != null) {
             Button enterAction = defaultButton;
@@ -118,7 +117,7 @@ public final class ProgressMeterView extends StackPane {
 
     private static TextField amountField(String initial) {
         TextField field = new TextField(initial);
-        field.getStyleClass().add("text-field");
+        FxAccess.addStyle(field, "text-field");
         field.setPrefWidth(56);
         field.setTextFormatter(new TextFormatter<>(change -> change.getText().matches("[0-9]*") ? change : null));
         return field;
@@ -126,7 +125,7 @@ public final class ProgressMeterView extends StackPane {
 
     private static Button spinnerButton(String text) {
         Button button = new Button(text);
-        button.getStyleClass().add("spinner-btn");
+        FxAccess.addStyle(button, "spinner-btn");
         button.setFocusTraversable(false);
         return button;
     }
@@ -141,6 +140,22 @@ public final class ProgressMeterView extends StackPane {
 
     private static String safe(String value) {
         return value == null ? "" : value;
+    }
+
+    @SuppressWarnings("PMD.LawOfDemeter")
+    private static final class FxAccess {
+
+        private static void addStyle(Node node, String styleClass) {
+            node.getStyleClass().add(styleClass);
+        }
+
+        private static void addChildren(Pane parent, Node... children) {
+            parent.getChildren().addAll(children);
+        }
+
+        private static void bindWidth(Region target, Region host, double normalizedFraction) {
+            target.prefWidthProperty().bind(host.widthProperty().multiply(normalizedFraction));
+        }
     }
 
     public record PopupSpec(String tooltipText, int initialAmount, List<PopupAction> actions) {
