@@ -42,17 +42,17 @@ final class DungeonEditorSessionCatalogWorkflow {
                     : session;
             return clearTransientState(nextSession.clearSelection(), "Dungeon-Map gelöscht.");
         }
-        if (command.action() == DungeonEditorSessionCommand.Action.CREATE_MAP) {
+        if (command.action().isCreateMapAction()) {
             return clearTransientState(session.withSelectedMap(nextMapId).clearSelection(), "Dungeon-Map erstellt.");
         }
         return session.withSelectedMap(nextMapId).withStatusText("Dungeon-Map umbenannt.");
     }
 
     private DungeonMapCatalogCommand catalogCommand(DungeonEditorSessionCommand command, String mapName) {
-        if (command.action() == DungeonEditorSessionCommand.Action.CREATE_MAP) {
+        if (command.action().isCreateMapAction()) {
             return new DungeonMapCatalogCommand.CreateMap(mapName);
         }
-        if (command.action() == DungeonEditorSessionCommand.Action.RENAME_MAP) {
+        if (command.action().isRenameMapAction()) {
             return new DungeonMapCatalogCommand.RenameMap(
                     ApplyDungeonEditorSessionUseCase.requireMapId(command.mapId()),
                     mapName);
@@ -61,10 +61,10 @@ final class DungeonEditorSessionCatalogWorkflow {
     }
 
     private DungeonEditorSession applySessionSetting(DungeonEditorSession session, DungeonEditorSessionCommand command) {
-        if (command.action() == DungeonEditorSessionCommand.Action.SET_VIEW_MODE) {
+        if (command.action().isSetViewModeAction()) {
             return clearTransientState(session.withViewMode(command.viewMode()), "");
         }
-        if (command.action() == DungeonEditorSessionCommand.Action.SET_TOOL) {
+        if (command.action().isSetToolAction()) {
             return clearTransientState(session.withSelectedTool(command.selectedTool()), "");
         }
         if (command.action() == DungeonEditorSessionCommand.Action.SHIFT_PROJECTION_LEVEL) {

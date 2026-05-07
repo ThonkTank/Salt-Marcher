@@ -29,16 +29,16 @@ public record DungeonEditorSessionCommand(
     }
 
     public enum Action {
-        SELECT_MAP(true, false, false, false, false, true, false),
-        CREATE_MAP(true, false, false, true, false, false, false),
-        RENAME_MAP(true, false, false, true, false, false, false),
-        DELETE_MAP(true, false, false, true, false, false, false),
-        SET_VIEW_MODE(true, false, false, false, true, false, false),
-        SET_TOOL(true, false, false, false, true, false, false),
-        SHIFT_PROJECTION_LEVEL(true, false, false, false, true, false, false),
-        SET_OVERLAY(true, false, false, false, true, false, false),
-        INTERPRET_MAIN_VIEW(false, true, false, false, false, false, false),
-        SAVE_ROOM_NARRATION(false, false, true, false, false, false, false);
+        SELECT_MAP(true, false, false, false, false, true, false, false, false, false, false),
+        CREATE_MAP(true, false, false, true, false, false, false, true, false, false, false),
+        RENAME_MAP(true, false, false, true, false, false, false, false, true, false, false),
+        DELETE_MAP(true, false, false, true, false, false, true, false, false, false, false),
+        SET_VIEW_MODE(true, false, false, false, true, false, false, false, false, true, false),
+        SET_TOOL(true, false, false, false, true, false, false, false, false, false, true),
+        SHIFT_PROJECTION_LEVEL(true, false, false, false, true, false, false, false, false, false, false),
+        SET_OVERLAY(true, false, false, false, true, false, false, false, false, false, false),
+        INTERPRET_MAIN_VIEW(false, true, false, false, false, false, false, false, false, false, false),
+        SAVE_ROOM_NARRATION(false, false, true, false, false, false, false, false, false, false, false);
 
         private final boolean catalogAction;
         private final boolean mainViewInputAction;
@@ -47,6 +47,10 @@ public record DungeonEditorSessionCommand(
         private final boolean sessionSettingAction;
         private final boolean selectMapAction;
         private final boolean deleteMapAction;
+        private final boolean createMapAction;
+        private final boolean renameMapAction;
+        private final boolean setViewModeAction;
+        private final boolean setToolAction;
 
         Action(
                 boolean catalogAction,
@@ -55,7 +59,11 @@ public record DungeonEditorSessionCommand(
                 boolean mapMutationAction,
                 boolean sessionSettingAction,
                 boolean selectMapAction,
-                boolean deleteMapAction
+                boolean deleteMapAction,
+                boolean createMapAction,
+                boolean renameMapAction,
+                boolean setViewModeAction,
+                boolean setToolAction
         ) {
             this.catalogAction = catalogAction;
             this.mainViewInputAction = mainViewInputAction;
@@ -64,6 +72,10 @@ public record DungeonEditorSessionCommand(
             this.sessionSettingAction = sessionSettingAction;
             this.selectMapAction = selectMapAction;
             this.deleteMapAction = deleteMapAction;
+            this.createMapAction = createMapAction;
+            this.renameMapAction = renameMapAction;
+            this.setViewModeAction = setViewModeAction;
+            this.setToolAction = setToolAction;
         }
 
         public static Action fromName(@Nullable String name) {
@@ -100,6 +112,22 @@ public record DungeonEditorSessionCommand(
 
         public boolean isDeleteMapAction() {
             return deleteMapAction;
+        }
+
+        public boolean isCreateMapAction() {
+            return createMapAction;
+        }
+
+        public boolean isRenameMapAction() {
+            return renameMapAction;
+        }
+
+        public boolean isSetViewModeAction() {
+            return setViewModeAction;
+        }
+
+        public boolean isSetToolAction() {
+            return setToolAction;
         }
     }
 
