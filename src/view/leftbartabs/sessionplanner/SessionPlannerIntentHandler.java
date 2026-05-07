@@ -1,27 +1,14 @@
 package src.view.leftbartabs.sessionplanner;
 
 import java.math.BigDecimal;
-import java.util.List;
 import java.util.function.Consumer;
 
 final class SessionPlannerIntentHandler {
 
-    private static final BigDecimal ALLOCATION_STEP = new BigDecimal("10");
-
     private Consumer<SessionPlannerPublishedEvent> publishedEventListener = ignored -> { };
-    private List<SessionPlannerContributionModel.EncounterModel> encounters = List.of();
-    private List<SessionPlannerContributionModel.RestGapModel> restGaps = List.of();
 
     void onPublishedEventRequested(Consumer<SessionPlannerPublishedEvent> listener) {
         publishedEventListener = listener == null ? ignored -> { } : listener;
-    }
-
-    void replaceEncounters(List<SessionPlannerContributionModel.EncounterModel> encounters) {
-        this.encounters = encounters == null ? List.of() : List.copyOf(encounters);
-    }
-
-    void replaceRestGaps(List<SessionPlannerContributionModel.RestGapModel> restGaps) {
-        this.restGaps = restGaps == null ? List.of() : List.copyOf(restGaps);
     }
 
     void consume(SessionPlannerControlsViewInputEvent event) {
@@ -52,6 +39,8 @@ final class SessionPlannerIntentHandler {
                     publishedEventListener.accept(SessionPlannerPublishedEvent.attachPlan(event.selectedPlanId()));
                 }
             }
+            default -> {
+            }
         }
     }
 
@@ -61,14 +50,23 @@ final class SessionPlannerIntentHandler {
         }
         switch (event.kind()) {
             case SELECT_ENCOUNTER -> publishSelectEncounter(event.encounterToken());
-            case INCREASE_ALLOCATION -> publishAllocationChange(event.encounterToken(), ALLOCATION_STEP);
-            case DECREASE_ALLOCATION -> publishAllocationChange(event.encounterToken(), ALLOCATION_STEP.negate());
+            case SET_ENCOUNTER_ALLOCATION -> publishAllocationChange(
+                    event.encounterToken(),
+                    event.targetAllocationPercentage());
             case MOVE_ENCOUNTER_UP -> publishedEventListener.accept(SessionPlannerPublishedEvent.moveEncounterUp(event.encounterToken()));
             case MOVE_ENCOUNTER_DOWN -> publishedEventListener.accept(SessionPlannerPublishedEvent.moveEncounterDown(event.encounterToken()));
             case REMOVE_ENCOUNTER -> publishedEventListener.accept(SessionPlannerPublishedEvent.removeEncounter(event.encounterToken()));
-            case SET_SHORT_REST -> publishRestGap(event.gapIndex(), SessionPlannerPublishedEvent.RestSelection.SHORT_REST);
-            case SET_LONG_REST -> publishRestGap(event.gapIndex(), SessionPlannerPublishedEvent.RestSelection.LONG_REST);
-            case CLEAR_REST -> publishClearRestGap(event.gapIndex());
+            case SET_SHORT_REST -> publishRestGap(
+                    event.leftEncounterId(),
+                    event.rightEncounterId(),
+                    SessionPlannerPublishedEvent.RestSelection.SHORT_REST);
+            case SET_LONG_REST -> publishRestGap(
+                    event.leftEncounterId(),
+                    event.rightEncounterId(),
+                    SessionPlannerPublishedEvent.RestSelection.LONG_REST);
+            case CLEAR_REST -> publishClearRestGap(event.leftEncounterId(), event.rightEncounterId());
+            default -> {
+            }
         }
     }
 
@@ -92,53 +90,39 @@ final class SessionPlannerIntentHandler {
     }
 
     private void publishAllocationChange(long encounterToken, BigDecimal delta) {
-        SessionPlannerContributionModel.EncounterModel encounter = encounter(encounterToken);
-        if (encounter == null) {
+        if (encounterToken <= 0L || delta == null) {
             return;
         }
-        BigDecimal nextPercentage = encounter.budgetPercentage().add(delta);
-        publishedEventListener.accept(SessionPlannerPublishedEvent.setEncounterAllocation(encounterToken, nextPercentage));
+        publishedEventListener.accept(SessionPlannerPublishedEvent.setEncounterAllocation(encounterToken, delta));
     }
 
-    private void publishRestGap(int gapIndex, SessionPlannerPublishedEvent.RestSelection selection) {
-        SessionPlannerContributionModel.RestGapModel gap = restGap(gapIndex);
-        if (!isResolvedGap(gap)) {
+    private void publishRestGap(
+            long leftEncounterId,
+            long rightEncounterId,
+            SessionPlannerPublishedEvent.RestSelection selection
+    ) {
+        if (!isResolvedGap(leftEncounterId, rightEncounterId)) {
             return;
         }
         publishedEventListener.accept(
                 SessionPlannerPublishedEvent.setRestGap(
-                        gap.leftEncounterId(),
-                        gap.rightEncounterId(),
+                        leftEncounterId,
+                        rightEncounterId,
                         selection));
     }
 
-    private void publishClearRestGap(int gapIndex) {
-        SessionPlannerContributionModel.RestGapModel gap = restGap(gapIndex);
-        if (!isResolvedGap(gap)) {
+    private void publishClearRestGap(long leftEncounterId, long rightEncounterId) {
+        if (!isResolvedGap(leftEncounterId, rightEncounterId)) {
             return;
         }
         publishedEventListener.accept(
                 SessionPlannerPublishedEvent.clearRestGap(
-                        gap.leftEncounterId(),
-                        gap.rightEncounterId()));
+                        leftEncounterId,
+                        rightEncounterId));
     }
 
-    private SessionPlannerContributionModel.EncounterModel encounter(long encounterToken) {
-        return encounters.stream()
-                .filter(candidate -> candidate.token() == encounterToken)
-                .findFirst()
-                .orElse(null);
-    }
-
-    private SessionPlannerContributionModel.RestGapModel restGap(int gapIndex) {
-        if (gapIndex < 0 || gapIndex >= restGaps.size()) {
-            return unresolvedGap();
-        }
-        return restGaps.get(gapIndex);
-    }
-
-    private static boolean isResolvedGap(SessionPlannerContributionModel.RestGapModel gap) {
-        return gap.leftEncounterId() > 0L && gap.rightEncounterId() > 0L;
+    private static boolean isResolvedGap(long leftEncounterId, long rightEncounterId) {
+        return leftEncounterId > 0L && rightEncounterId > 0L;
     }
 
     private static BigDecimal parsePositiveDecimal(String raw) {
@@ -153,7 +137,4 @@ final class SessionPlannerIntentHandler {
         }
     }
 
-    private static SessionPlannerContributionModel.RestGapModel unresolvedGap() {
-        return new SessionPlannerContributionModel.RestGapModel(-1, 0L, 0L, "", false);
-    }
 }

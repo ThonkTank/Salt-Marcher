@@ -2,7 +2,6 @@ package src.view.leftbartabs.sessionplanner;
 
 import java.util.Map;
 import java.util.Objects;
-import javafx.collections.ListChangeListener;
 import javafx.scene.Node;
 import shell.api.ShellBinding;
 import shell.api.ShellRuntimeContext;
@@ -28,6 +27,7 @@ import src.domain.sessionplanner.published.SessionPlannerStatePanelModel;
 import src.domain.sessionplanner.published.SetSessionEncounterAllocationCommand;
 import src.domain.sessionplanner.published.SetSessionEncounterDaysCommand;
 import src.domain.sessionplanner.published.SetSessionRestGapCommand;
+import src.view.leftbartabs.sessionplanner.SessionPlannerContributionModel.MainProjection;
 
 final class SessionPlannerBinder {
 
@@ -85,29 +85,9 @@ final class SessionPlannerBinder {
             SessionPlannerControlsView controlsView
     ) {
         controlsView.onViewInputEvent(intentHandler::consume);
-        controlsView.showSession(contributionModel.sessionProperty().get());
-        controlsView.showParty(contributionModel.partyProperty().get());
-        controlsView.showSessionParticipants(contributionModel.sessionParticipantsProperty().get());
-        controlsView.showActivePartyMembers(contributionModel.activePartyMembersProperty().get());
-        controlsView.showBudget(contributionModel.budgetProperty().get());
-        controlsView.showRestAdvice(contributionModel.restAdviceProperty().get());
-        controlsView.showGoldBudget(contributionModel.goldBudgetProperty().get());
-        controlsView.showAvailablePlans(contributionModel.availablePlansProperty().get());
-        controlsView.statusTextProperty().bind(contributionModel.statusTextProperty());
-        contributionModel.sessionProperty().addListener((ignored, before, after) -> controlsView.showSession(after));
-        contributionModel.partyProperty().addListener((ignored, before, after) -> controlsView.showParty(after));
-        contributionModel.sessionParticipantsProperty().addListener(
-                (ListChangeListener<SessionPlannerContributionModel.SessionParticipantModel>) change ->
-                        controlsView.showSessionParticipants(contributionModel.sessionParticipantsProperty().get()));
-        contributionModel.activePartyMembersProperty().addListener(
-                (ListChangeListener<SessionPlannerContributionModel.PartyMemberModel>) change ->
-                        controlsView.showActivePartyMembers(contributionModel.activePartyMembersProperty().get()));
-        contributionModel.budgetProperty().addListener((ignored, before, after) -> controlsView.showBudget(after));
-        contributionModel.restAdviceProperty().addListener((ignored, before, after) -> controlsView.showRestAdvice(after));
-        contributionModel.goldBudgetProperty().addListener((ignored, before, after) -> controlsView.showGoldBudget(after));
-        contributionModel.availablePlansProperty().addListener(
-                (ListChangeListener<SessionPlannerContributionModel.AvailablePlanModel>) change ->
-                        controlsView.showAvailablePlans(contributionModel.availablePlansProperty().get()));
+        controlsView.show(contributionModel.controlsProjectionProperty().get());
+        contributionModel.controlsProjectionProperty().addListener(
+                (ignored, before, after) -> controlsView.show(after));
     }
 
     private static void bindMain(
@@ -118,39 +98,21 @@ final class SessionPlannerBinder {
     ) {
         timelineView.onViewInputEvent(intentHandler::consume);
         lootView.onViewInputEvent(intentHandler::consume);
-        intentHandler.replaceEncounters(contributionModel.plannedEncountersProperty().get());
-        intentHandler.replaceRestGaps(contributionModel.restGapsProperty().get());
-        timelineView.showTimeline(
-                contributionModel.plannedEncountersProperty().get(),
-                contributionModel.restGapsProperty().get());
-        lootView.showLootPlaceholders(contributionModel.lootPlaceholdersProperty().get());
-        contributionModel.plannedEncountersProperty().addListener(
-                (ListChangeListener<SessionPlannerContributionModel.EncounterModel>) change ->
-                {
-                    intentHandler.replaceEncounters(contributionModel.plannedEncountersProperty().get());
-                    timelineView.showTimeline(
-                            contributionModel.plannedEncountersProperty().get(),
-                            contributionModel.restGapsProperty().get());
-                });
-        contributionModel.restGapsProperty().addListener(
-                (ListChangeListener<SessionPlannerContributionModel.RestGapModel>) change ->
-                {
-                    intentHandler.replaceRestGaps(contributionModel.restGapsProperty().get());
-                    timelineView.showTimeline(
-                            contributionModel.plannedEncountersProperty().get(),
-                            contributionModel.restGapsProperty().get());
-                });
-        contributionModel.lootPlaceholdersProperty().addListener(
-                (ListChangeListener<SessionPlannerContributionModel.LootModel>) change ->
-                        lootView.showLootPlaceholders(contributionModel.lootPlaceholdersProperty().get()));
+        MainProjection initialProjection = contributionModel.mainProjectionProperty().get();
+        timelineView.show(initialProjection);
+        lootView.show(initialProjection);
+        contributionModel.mainProjectionProperty().addListener((ignored, before, after) -> {
+            timelineView.show(after);
+            lootView.show(after);
+        });
     }
 
     private static void bindState(
             SessionPlannerContributionModel contributionModel,
             SessionPlannerStateView stateView
     ) {
-        stateView.showState(contributionModel.stateProperty().get());
-        contributionModel.stateProperty().addListener((ignored, before, after) -> stateView.showState(after));
+        stateView.show(contributionModel.stateProjectionProperty().get());
+        contributionModel.stateProjectionProperty().addListener((ignored, before, after) -> stateView.show(after));
     }
 
     private static void applyPublishedEvent(
@@ -186,6 +148,8 @@ final class SessionPlannerBinder {
             case ADD_LOOT_PLACEHOLDER -> planner.addLootPlaceholder(new AddSessionLootPlaceholderCommand());
             case REMOVE_LOOT_PLACEHOLDER ->
                     planner.removeLootPlaceholder(new RemoveSessionLootPlaceholderCommand(event.lootToken()));
+            default -> {
+            }
         }
     }
 

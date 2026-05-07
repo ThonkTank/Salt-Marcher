@@ -6,167 +6,143 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.stream.Collectors;
-import javafx.beans.property.ReadOnlyListProperty;
-import javafx.beans.property.ReadOnlyListWrapper;
 import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.ReadOnlyObjectWrapper;
-import javafx.beans.property.ReadOnlyStringProperty;
-import javafx.beans.property.ReadOnlyStringWrapper;
-import javafx.collections.FXCollections;
 import src.domain.sessionplanner.published.SessionPlannerEncountersProjection;
 import src.domain.sessionplanner.published.SessionPlannerParticipantsProjection;
 import src.domain.sessionplanner.published.SessionPlannerRestKind;
 import src.domain.sessionplanner.published.SessionPlannerSessionSnapshot;
 import src.domain.sessionplanner.published.SessionPlannerStatePanelProjection;
 
+@SuppressWarnings("PMD.CouplingBetweenObjects")
 public final class SessionPlannerContributionModel {
 
-    private final ReadOnlyObjectWrapper<SessionModel> session =
-            new ReadOnlyObjectWrapper<>(SessionModel.empty());
-    private final ReadOnlyObjectWrapper<PartyModel> party =
-            new ReadOnlyObjectWrapper<>(PartyModel.empty());
-    private final ReadOnlyObjectWrapper<BudgetModel> budget =
-            new ReadOnlyObjectWrapper<>(BudgetModel.empty());
-    private final ReadOnlyObjectWrapper<RestAdviceModel> restAdvice =
-            new ReadOnlyObjectWrapper<>(RestAdviceModel.empty());
-    private final ReadOnlyObjectWrapper<GoldModel> goldBudget =
-            new ReadOnlyObjectWrapper<>(GoldModel.placeholder());
-    private final ReadOnlyObjectWrapper<StateModel> state =
-            new ReadOnlyObjectWrapper<>(StateModel.empty());
-    private final ReadOnlyStringWrapper statusText = new ReadOnlyStringWrapper("");
-    private final ReadOnlyListWrapper<AvailablePlanModel> availablePlans =
-            new ReadOnlyListWrapper<>(FXCollections.observableArrayList());
-    private final ReadOnlyListWrapper<PartyMemberModel> activePartyMembers =
-            new ReadOnlyListWrapper<>(FXCollections.observableArrayList());
-    private final ReadOnlyListWrapper<SessionParticipantModel> sessionParticipants =
-            new ReadOnlyListWrapper<>(FXCollections.observableArrayList());
-    private final ReadOnlyListWrapper<EncounterModel> plannedEncounters =
-            new ReadOnlyListWrapper<>(FXCollections.observableArrayList());
-    private final ReadOnlyListWrapper<RestGapModel> restGaps =
-            new ReadOnlyListWrapper<>(FXCollections.observableArrayList());
-    private final ReadOnlyListWrapper<LootModel> lootPlaceholders =
-            new ReadOnlyListWrapper<>(FXCollections.observableArrayList());
+    private SessionPlannerSessionSnapshot sessionSnapshot = SessionPlannerSessionSnapshot.empty("");
+    private SessionPlannerParticipantsProjection participantsProjection = SessionPlannerParticipantsProjection.empty();
+    private SessionPlannerEncountersProjection encountersProjection = SessionPlannerEncountersProjection.empty();
+    private SessionPlannerStatePanelProjection statePanelProjection = SessionPlannerStatePanelProjection.empty();
 
-    public ReadOnlyObjectProperty<SessionModel> sessionProperty() {
-        return session.getReadOnlyProperty();
+    private final ReadOnlyObjectWrapper<ControlsProjection> controlsProjection =
+            new ReadOnlyObjectWrapper<>(ControlsProjection.empty());
+    private final ReadOnlyObjectWrapper<MainProjection> mainProjection =
+            new ReadOnlyObjectWrapper<>(MainProjection.empty());
+    private final ReadOnlyObjectWrapper<StateProjection> stateProjection =
+            new ReadOnlyObjectWrapper<>(StateProjection.empty());
+
+    public ReadOnlyObjectProperty<ControlsProjection> controlsProjectionProperty() {
+        return controlsProjection.getReadOnlyProperty();
     }
 
-    public ReadOnlyObjectProperty<PartyModel> partyProperty() {
-        return party.getReadOnlyProperty();
+    public ReadOnlyObjectProperty<MainProjection> mainProjectionProperty() {
+        return mainProjection.getReadOnlyProperty();
     }
 
-    public ReadOnlyObjectProperty<BudgetModel> budgetProperty() {
-        return budget.getReadOnlyProperty();
-    }
-
-    public ReadOnlyObjectProperty<RestAdviceModel> restAdviceProperty() {
-        return restAdvice.getReadOnlyProperty();
-    }
-
-    public ReadOnlyObjectProperty<GoldModel> goldBudgetProperty() {
-        return goldBudget.getReadOnlyProperty();
-    }
-
-    public ReadOnlyObjectProperty<StateModel> stateProperty() {
-        return state.getReadOnlyProperty();
-    }
-
-    public ReadOnlyStringProperty statusTextProperty() {
-        return statusText.getReadOnlyProperty();
-    }
-
-    public ReadOnlyListProperty<AvailablePlanModel> availablePlansProperty() {
-        return availablePlans.getReadOnlyProperty();
-    }
-
-    public ReadOnlyListProperty<PartyMemberModel> activePartyMembersProperty() {
-        return activePartyMembers.getReadOnlyProperty();
-    }
-
-    public ReadOnlyListProperty<SessionParticipantModel> sessionParticipantsProperty() {
-        return sessionParticipants.getReadOnlyProperty();
-    }
-
-    public ReadOnlyListProperty<EncounterModel> plannedEncountersProperty() {
-        return plannedEncounters.getReadOnlyProperty();
-    }
-
-    public ReadOnlyListProperty<RestGapModel> restGapsProperty() {
-        return restGaps.getReadOnlyProperty();
-    }
-
-    public ReadOnlyListProperty<LootModel> lootPlaceholdersProperty() {
-        return lootPlaceholders.getReadOnlyProperty();
+    public ReadOnlyObjectProperty<StateProjection> stateProjectionProperty() {
+        return stateProjection.getReadOnlyProperty();
     }
 
     public void applySession(SessionPlannerSessionSnapshot snapshot) {
-        SessionPlannerSessionSnapshot safe = snapshot == null
-                ? SessionPlannerSessionSnapshot.empty("")
-                : snapshot;
-        session.set(mapSession(safe.session()));
-        budget.set(mapBudget(safe.xpBudget()));
-        restAdvice.set(mapRestAdvice(safe.restAdvice()));
-        goldBudget.set(mapGold(safe.goldBudget()));
-        statusText.set(safe.status());
-        availablePlans.setAll(safe.availableEncounterPlans().stream()
-                .map(SessionPlannerContributionModel::mapAvailablePlan)
-                .toList());
+        sessionSnapshot = snapshot == null ? SessionPlannerSessionSnapshot.empty("") : snapshot;
+        refreshControlsProjection();
     }
 
     public void applyParticipants(SessionPlannerParticipantsProjection projection) {
-        SessionPlannerParticipantsProjection safe = projection == null
-                ? SessionPlannerParticipantsProjection.empty()
-                : projection;
-        party.set(mapParty(safe.party()));
-        Set<Long> participantIds = safe.participants().stream()
-                .map(SessionPlannerParticipantsProjection.SessionParticipant::characterId)
-                .collect(Collectors.toSet());
-        activePartyMembers.setAll(safe.activePartyMembers().stream()
-                .map(member -> mapPartyMember(member, participantIds.contains(member.characterId())))
-                .toList());
-        sessionParticipants.setAll(safe.participants().stream()
-                .map(SessionPlannerContributionModel::mapSessionParticipant)
-                .toList());
+        participantsProjection = projection == null ? SessionPlannerParticipantsProjection.empty() : projection;
+        refreshControlsProjection();
     }
 
     public void applyEncounters(SessionPlannerEncountersProjection projection) {
-        SessionPlannerEncountersProjection safe = projection == null
-                ? SessionPlannerEncountersProjection.empty()
-                : projection;
-        List<SessionPlannerEncountersProjection.PlannedEncounter> sourceEncounters = safe.plannedEncounters();
-        List<EncounterModel> mappedEncounters = mapEncounters(sourceEncounters);
-        plannedEncounters.setAll(mappedEncounters);
-        restGaps.setAll(safe.restGaps().stream()
-                .map(gap -> new RestGapModel(
-                        gap.gapIndex(),
-                        gap.leftEncounterId(),
-                        gap.rightEncounterId(),
-                        restLabel(gap.restKind()),
-                        gap.restKind() != null && gap.restKind() != SessionPlannerRestKind.NONE))
-                .toList());
-        lootPlaceholders.setAll(safe.lootPlaceholders().stream()
-                .map(loot -> new LootModel(loot.token(), loot.label()))
-                .toList());
+        encountersProjection = projection == null ? SessionPlannerEncountersProjection.empty() : projection;
+        refreshMainProjection();
     }
 
     public void applyStatePanel(SessionPlannerStatePanelProjection projection) {
-        SessionPlannerStatePanelProjection safe = projection == null
-                ? SessionPlannerStatePanelProjection.empty()
-                : projection;
-        state.set(new StateModel(
-                safe.selectedEncounterAvailable(),
-                safe.selectedEncounterTitle(),
-                safe.selectedEncounterDetail(),
-                safe.selectedEncounterXpSummary(),
-                safe.stateContextLabel(),
-                safe.placeholderTitle(),
-                safe.placeholderDetail()));
+        statePanelProjection = projection == null ? SessionPlannerStatePanelProjection.empty() : projection;
+        refreshStateProjection();
+    }
+
+    private void refreshControlsProjection() {
+        controlsProjection.set(ControlsProjection.from(sessionSnapshot, participantsProjection));
+    }
+
+    private void refreshMainProjection() {
+        mainProjection.set(MainProjection.from(encountersProjection));
+    }
+
+    private void refreshStateProjection() {
+        stateProjection.set(StateProjection.from(statePanelProjection));
+    }
+}
+
+record ControlsProjection(
+        String statusText,
+        ControlsProjection.SessionModel session,
+        ControlsProjection.PartyModel party,
+        ControlsProjection.BudgetModel budget,
+        ControlsProjection.RestAdviceModel restAdvice,
+        ControlsProjection.GoldModel goldBudget,
+        List<ControlsProjection.AvailablePlanModel> availablePlans,
+        List<ControlsProjection.PartyMemberModel> activePartyMembers,
+        List<ControlsProjection.SessionParticipantModel> sessionParticipants
+) {
+
+    ControlsProjection {
+        statusText = statusText == null ? "" : statusText;
+        session = session == null ? SessionModel.empty() : session;
+        party = party == null ? PartyModel.empty() : party;
+        budget = budget == null ? BudgetModel.empty() : budget;
+        restAdvice = restAdvice == null ? RestAdviceModel.empty() : restAdvice;
+        goldBudget = goldBudget == null ? GoldModel.placeholder() : goldBudget;
+        availablePlans = safeCopy(availablePlans);
+        activePartyMembers = safeCopy(activePartyMembers);
+        sessionParticipants = safeCopy(sessionParticipants);
+    }
+
+    static ControlsProjection empty() {
+        return new ControlsProjection(
+                "",
+                SessionModel.empty(),
+                PartyModel.empty(),
+                BudgetModel.empty(),
+                RestAdviceModel.empty(),
+                GoldModel.placeholder(),
+                List.of(),
+                List.of(),
+                List.of());
+    }
+
+    static ControlsProjection from(
+            SessionPlannerSessionSnapshot snapshot,
+            SessionPlannerParticipantsProjection projection
+    ) {
+        SessionPlannerSessionSnapshot safeSnapshot =
+                snapshot == null ? SessionPlannerSessionSnapshot.empty("") : snapshot;
+        SessionPlannerParticipantsProjection safeProjection =
+                projection == null ? SessionPlannerParticipantsProjection.empty() : projection;
+        Set<Long> participantIds = safeProjection.participants().stream()
+                .map(SessionPlannerParticipantsProjection.SessionParticipant::characterId)
+                .collect(Collectors.toSet());
+        return new ControlsProjection(
+                safeSnapshot.status(),
+                mapSession(safeSnapshot.session()),
+                mapParty(safeProjection.party()),
+                mapBudget(safeSnapshot.xpBudget()),
+                mapRestAdvice(safeSnapshot.restAdvice()),
+                mapGold(safeSnapshot.goldBudget()),
+                safeSnapshot.availableEncounterPlans().stream()
+                        .map(ControlsProjection::mapAvailablePlan)
+                        .toList(),
+                safeProjection.activePartyMembers().stream()
+                        .map(member -> mapPartyMember(member, participantIds.contains(member.characterId())))
+                        .toList(),
+                safeProjection.participants().stream()
+                        .map(ControlsProjection::mapSessionParticipant)
+                        .toList());
     }
 
     private static SessionModel mapSession(SessionPlannerSessionSnapshot.SessionState session) {
-        SessionPlannerSessionSnapshot.SessionState safe = session == null
-                ? SessionPlannerSessionSnapshot.SessionState.empty()
-                : session;
+        SessionPlannerSessionSnapshot.SessionState safe =
+                session == null ? SessionPlannerSessionSnapshot.SessionState.empty() : session;
         String selectionText = safe.hasSelectedEncounter()
                 ? "Encounter fuer State-Panel ausgewaehlt"
                 : "Noch kein Encounter fuer State-Panel ausgewaehlt";
@@ -178,25 +154,20 @@ public final class SessionPlannerContributionModel {
     }
 
     private static PartyModel mapParty(SessionPlannerParticipantsProjection.PartyState party) {
-        SessionPlannerParticipantsProjection.PartyState safe = party == null
-                ? SessionPlannerParticipantsProjection.PartyState.empty()
-                : party;
-        return new PartyModel(
-                safe.headline(),
-                safe.detail(),
-                safe.ready());
+        SessionPlannerParticipantsProjection.PartyState safe =
+                party == null ? SessionPlannerParticipantsProjection.PartyState.empty() : party;
+        return new PartyModel(safe.headline(), safe.detail(), safe.ready());
     }
 
     private static BudgetModel mapBudget(SessionPlannerSessionSnapshot.XpBudgetState budget) {
-        SessionPlannerSessionSnapshot.XpBudgetState safe = budget == null
-                ? SessionPlannerSessionSnapshot.XpBudgetState.empty()
-                : budget;
+        SessionPlannerSessionSnapshot.XpBudgetState safe =
+                budget == null ? SessionPlannerSessionSnapshot.XpBudgetState.empty() : budget;
         return new BudgetModel(
                 safe.available(),
-                format(safe.totalBudgetXp()),
-                format(safe.plannedEncounterXp()),
-                format(safe.remainingXp()),
-                format(safe.overBudgetXp()),
+                formatXp(safe.totalBudgetXp()),
+                formatXp(safe.plannedEncounterXp()),
+                formatXp(safe.remainingXp()),
+                formatXp(safe.overBudgetXp()),
                 safe.progressFraction(),
                 safe.overBudget(),
                 milestoneText(safe.firstShortRestXp(), safe.secondShortRestXp()),
@@ -204,9 +175,8 @@ public final class SessionPlannerContributionModel {
     }
 
     private static RestAdviceModel mapRestAdvice(SessionPlannerSessionSnapshot.RestAdviceState restAdvice) {
-        SessionPlannerSessionSnapshot.RestAdviceState safe = restAdvice == null
-                ? SessionPlannerSessionSnapshot.RestAdviceState.empty()
-                : restAdvice;
+        SessionPlannerSessionSnapshot.RestAdviceState safe =
+                restAdvice == null ? SessionPlannerSessionSnapshot.RestAdviceState.empty() : restAdvice;
         return new RestAdviceModel(
                 safe.available(),
                 safe.recommendedShortRests(),
@@ -217,13 +187,14 @@ public final class SessionPlannerContributionModel {
     }
 
     private static GoldModel mapGold(SessionPlannerSessionSnapshot.GoldBudgetState gold) {
-        SessionPlannerSessionSnapshot.GoldBudgetState safe = gold == null
-                ? SessionPlannerSessionSnapshot.GoldBudgetState.placeholder(0)
-                : gold;
+        SessionPlannerSessionSnapshot.GoldBudgetState safe =
+                gold == null ? SessionPlannerSessionSnapshot.GoldBudgetState.placeholder(0) : gold;
         return new GoldModel(safe.headline(), safe.detail(), safe.available());
     }
 
-    private static AvailablePlanModel mapAvailablePlan(SessionPlannerSessionSnapshot.AvailableEncounterPlan plan) {
+    private static AvailablePlanModel mapAvailablePlan(
+            SessionPlannerSessionSnapshot.AvailableEncounterPlan plan
+    ) {
         return new AvailablePlanModel(
                 plan.planId(),
                 plan.name(),
@@ -261,82 +232,56 @@ public final class SessionPlannerContributionModel {
                 true);
     }
 
-    private static List<EncounterModel> mapEncounters(List<SessionPlannerEncountersProjection.PlannedEncounter> encounters) {
-        List<SessionPlannerEncountersProjection.PlannedEncounter> safe = encounters == null ? List.of() : List.copyOf(encounters);
-        return java.util.stream.IntStream.range(0, safe.size())
-                .mapToObj(index -> {
-                    SessionPlannerEncountersProjection.PlannedEncounter encounter = safe.get(index);
-                    String comparison = "Ziel " + format(encounter.targetXp())
-                            + " XP · Ist " + format(encounter.adjustedXp()) + " XP";
-                    return new EncounterModel(
-                            encounter.token(),
-                            encounter.name(),
-                            encounter.generatedLabel(),
-                            encounter.creatureCount(),
-                            encounter.totalBaseXp(),
-                            encounter.adjustedXp(),
-                            encounter.xpMultiplier(),
-                            encounter.difficultyLabel(),
-                            encounter.budgetPercentage(),
-                            formatPercent(encounter.budgetPercentage()),
-                            format(encounter.targetXp()),
-                            comparison,
-                            encounter.selected(),
-                            index > 0,
-                            index < safe.size() - 1);
-                })
-                .toList();
-    }
-
     private static String milestoneText(int firstShortRestXp, int secondShortRestXp) {
         if (firstShortRestXp <= 0 && secondShortRestXp <= 0) {
             return "Keine Rast-Meilensteine";
         }
-        return "SR " + format(firstShortRestXp) + " · SR " + format(secondShortRestXp);
+        return "SR " + formatXp(firstShortRestXp) + " · SR " + formatXp(secondShortRestXp);
     }
 
-    private static String restLabel(SessionPlannerRestKind restKind) {
-        return switch (restKind == null ? SessionPlannerRestKind.NONE : restKind) {
-            case NONE -> "Keine Rast";
-            case SHORT_REST -> "Kurze Rast";
-            case LONG_REST -> "Lange Rast";
-        };
-    }
-
-    private static String format(int value) {
+    private static String formatXp(int value) {
         NumberFormat format = NumberFormat.getIntegerInstance(Locale.GERMANY);
         return format.format(Math.max(0, value));
     }
 
-    private static String formatPercent(BigDecimal percentage) {
-        BigDecimal safe = percentage == null ? BigDecimal.ZERO : percentage.stripTrailingZeros();
-        return safe.toPlainString() + "%";
+    private static <T> List<T> safeCopy(List<T> values) {
+        return values == null ? List.of() : List.copyOf(values);
     }
 
-    public record SessionModel(
+    record SessionModel(
             long sessionId,
             String encounterDaysText,
             boolean hasSelectedEncounter,
             String selectionText
     ) {
 
+        SessionModel {
+            encounterDaysText = encounterDaysText == null ? "1" : encounterDaysText;
+            selectionText = selectionText == null ? "" : selectionText;
+        }
+
         static SessionModel empty() {
             return new SessionModel(0L, "1", false, "Noch kein Encounter fuer State-Panel ausgewaehlt");
         }
     }
 
-    public record PartyModel(
+    record PartyModel(
             String headline,
             String detail,
             boolean ready
     ) {
+
+        PartyModel {
+            headline = headline == null ? "" : headline;
+            detail = detail == null ? "" : detail;
+        }
 
         static PartyModel empty() {
             return new PartyModel("Keine aktive Party", "Session Planner ist deaktiviert.", false);
         }
     }
 
-    public record BudgetModel(
+    record BudgetModel(
             boolean available,
             String totalBudgetText,
             String plannedXpText,
@@ -348,12 +293,21 @@ public final class SessionPlannerContributionModel {
             String summaryText
     ) {
 
+        BudgetModel {
+            totalBudgetText = safeText(totalBudgetText);
+            plannedXpText = safeText(plannedXpText);
+            remainingXpText = safeText(remainingXpText);
+            overBudgetText = safeText(overBudgetText);
+            milestonesText = safeText(milestonesText);
+            summaryText = safeText(summaryText);
+        }
+
         static BudgetModel empty() {
             return new BudgetModel(false, "0", "0", "0", "0", 0.0, false, "Keine Rast-Meilensteine", "Kein XP-Budget verfuegbar.");
         }
     }
 
-    public record RestAdviceModel(
+    record RestAdviceModel(
             boolean available,
             int recommendedShortRests,
             int recommendedLongRests,
@@ -362,45 +316,32 @@ public final class SessionPlannerContributionModel {
             String summaryText
     ) {
 
+        RestAdviceModel {
+            summaryText = safeText(summaryText);
+        }
+
         static RestAdviceModel empty() {
             return new RestAdviceModel(false, 0, 0, 0, 0, "Keine Rastempfehlung verfuegbar.");
         }
     }
 
-    public record GoldModel(
+    record GoldModel(
             String headline,
             String detail,
             boolean available
     ) {
+
+        GoldModel {
+            headline = safeText(headline);
+            detail = safeText(detail);
+        }
 
         static GoldModel placeholder() {
             return new GoldModel("Goldbudget offen", "Loot-Platzhalter werden sichtbar, Gold folgt spaeter.", false);
         }
     }
 
-    public record StateModel(
-            boolean selectedEncounterAvailable,
-            String selectedEncounterTitle,
-            String selectedEncounterDetail,
-            String selectedEncounterXpSummary,
-            String stateContextLabel,
-            String placeholderTitle,
-            String placeholderDetail
-    ) {
-
-        static StateModel empty() {
-            return new StateModel(
-                    false,
-                    "Kein Session-Encounter ausgewaehlt",
-                    "Waehle im Planner einen Encounter aus, um den vorbereitenden State-Kontext zu sehen.",
-                    "",
-                    "",
-                    "Katalog-Vorbereitung",
-                    "Planner-owned read-only Placeholder.");
-        }
-    }
-
-    public record AvailablePlanModel(
+    record AvailablePlanModel(
             long planId,
             String name,
             String generatedLabel,
@@ -410,17 +351,28 @@ public final class SessionPlannerContributionModel {
             String statusText,
             boolean importEnabled
     ) {
+
+        AvailablePlanModel {
+            name = safeText(name);
+            generatedLabel = safeText(generatedLabel);
+            difficultyLabel = safeText(difficultyLabel);
+            statusText = safeText(statusText);
+        }
     }
 
-    public record PartyMemberModel(
+    record PartyMemberModel(
             long characterId,
             String name,
             int level,
             boolean alreadyInSession
     ) {
+
+        PartyMemberModel {
+            name = safeText(name);
+        }
     }
 
-    public record SessionParticipantModel(
+    record SessionParticipantModel(
             long characterId,
             String name,
             int level,
@@ -428,9 +380,107 @@ public final class SessionPlannerContributionModel {
             String detail,
             boolean removable
     ) {
+
+        SessionParticipantModel {
+            name = safeText(name);
+            detail = safeText(detail);
+        }
     }
 
-    public record EncounterModel(
+    private static String safeText(String text) {
+        return text == null ? "" : text;
+    }
+}
+
+record MainProjection(
+        List<MainProjection.EncounterModel> encounters,
+        List<MainProjection.RestGapModel> restGaps,
+        List<MainProjection.LootModel> lootPlaceholders
+) {
+
+    MainProjection {
+        encounters = safeCopy(encounters);
+        restGaps = safeCopy(restGaps);
+        lootPlaceholders = safeCopy(lootPlaceholders);
+    }
+
+    static MainProjection empty() {
+        return new MainProjection(List.of(), List.of(), List.of());
+    }
+
+    static MainProjection from(SessionPlannerEncountersProjection projection) {
+        SessionPlannerEncountersProjection safe =
+                projection == null ? SessionPlannerEncountersProjection.empty() : projection;
+        List<SessionPlannerEncountersProjection.PlannedEncounter> sourceEncounters = safe.plannedEncounters();
+        List<EncounterModel> mappedEncounters = mapEncounters(sourceEncounters);
+        return new MainProjection(
+                mappedEncounters,
+                safe.restGaps().stream()
+                        .map(gap -> new RestGapModel(
+                                gap.gapIndex(),
+                                gap.leftEncounterId(),
+                                gap.rightEncounterId(),
+                                restLabel(gap.restKind()),
+                                gap.restKind() != null && gap.restKind() != SessionPlannerRestKind.NONE))
+                        .toList(),
+                safe.lootPlaceholders().stream()
+                        .map(loot -> new LootModel(loot.token(), loot.label()))
+                        .toList());
+    }
+
+    private static List<EncounterModel> mapEncounters(
+            List<SessionPlannerEncountersProjection.PlannedEncounter> encounters
+    ) {
+        List<SessionPlannerEncountersProjection.PlannedEncounter> safe =
+                encounters == null ? List.of() : List.copyOf(encounters);
+        return java.util.stream.IntStream.range(0, safe.size())
+                .mapToObj(index -> {
+                    SessionPlannerEncountersProjection.PlannedEncounter encounter = safe.get(index);
+                    String comparison = "Ziel " + formatXp(encounter.targetXp())
+                            + " XP · Ist " + formatXp(encounter.adjustedXp()) + " XP";
+                    return new EncounterModel(
+                            encounter.token(),
+                            encounter.name(),
+                            encounter.generatedLabel(),
+                            encounter.creatureCount(),
+                            encounter.totalBaseXp(),
+                            encounter.adjustedXp(),
+                            encounter.xpMultiplier(),
+                            encounter.difficultyLabel(),
+                            encounter.budgetPercentage(),
+                            formatPercent(encounter.budgetPercentage()),
+                            formatXp(encounter.targetXp()),
+                            comparison,
+                            encounter.selected(),
+                            index > 0,
+                            index < safe.size() - 1);
+                })
+                .toList();
+    }
+
+    private static String restLabel(SessionPlannerRestKind restKind) {
+        return switch (restKind == null ? SessionPlannerRestKind.NONE : restKind) {
+            case NONE -> "Keine Rast";
+            case SHORT_REST -> "Kurze Rast";
+            case LONG_REST -> "Lange Rast";
+        };
+    }
+
+    private static String formatXp(int value) {
+        NumberFormat format = NumberFormat.getIntegerInstance(Locale.GERMANY);
+        return format.format(Math.max(0, value));
+    }
+
+    private static String formatPercent(BigDecimal percentage) {
+        BigDecimal safe = percentage == null ? BigDecimal.ZERO : percentage.stripTrailingZeros();
+        return safe.toPlainString() + "%";
+    }
+
+    private static <T> List<T> safeCopy(List<T> values) {
+        return values == null ? List.of() : List.copyOf(values);
+    }
+
+    record EncounterModel(
             long token,
             String name,
             String generatedLabel,
@@ -447,20 +497,90 @@ public final class SessionPlannerContributionModel {
             boolean canMoveUp,
             boolean canMoveDown
     ) {
+
+        EncounterModel {
+            name = safeText(name);
+            generatedLabel = safeText(generatedLabel);
+            difficultyLabel = safeText(difficultyLabel);
+            budgetPercentage = budgetPercentage == null ? BigDecimal.ZERO : budgetPercentage;
+            budgetPercentageText = safeText(budgetPercentageText);
+            targetXpText = safeText(targetXpText);
+            comparisonText = safeText(comparisonText);
+        }
     }
 
-    public record RestGapModel(
+    record RestGapModel(
             int gapIndex,
             long leftEncounterId,
             long rightEncounterId,
             String label,
             boolean hasAssignedRest
     ) {
+
+        RestGapModel {
+            label = safeText(label);
+        }
     }
 
-    public record LootModel(
+    record LootModel(
             long token,
             String label
     ) {
+
+        LootModel {
+            label = safeText(label);
+        }
+    }
+
+    private static String safeText(String text) {
+        return text == null ? "" : text;
+    }
+}
+
+record StateProjection(
+        boolean selectedEncounterAvailable,
+        String selectedEncounterTitle,
+        String selectedEncounterDetail,
+        String selectedEncounterXpSummary,
+        String stateContextLabel,
+        String placeholderTitle,
+        String placeholderDetail
+) {
+
+    StateProjection {
+        selectedEncounterTitle = safeText(selectedEncounterTitle);
+        selectedEncounterDetail = safeText(selectedEncounterDetail);
+        selectedEncounterXpSummary = safeText(selectedEncounterXpSummary);
+        stateContextLabel = safeText(stateContextLabel);
+        placeholderTitle = safeText(placeholderTitle);
+        placeholderDetail = safeText(placeholderDetail);
+    }
+
+    static StateProjection empty() {
+        return new StateProjection(
+                false,
+                "Kein Session-Encounter ausgewaehlt",
+                "Waehle im Planner einen Encounter aus, um den vorbereitenden State-Kontext zu sehen.",
+                "",
+                "",
+                "Katalog-Vorbereitung",
+                "Planner-owned read-only Placeholder.");
+    }
+
+    static StateProjection from(SessionPlannerStatePanelProjection projection) {
+        SessionPlannerStatePanelProjection safe =
+                projection == null ? SessionPlannerStatePanelProjection.empty() : projection;
+        return new StateProjection(
+                safe.selectedEncounterAvailable(),
+                safe.selectedEncounterTitle(),
+                safe.selectedEncounterDetail(),
+                safe.selectedEncounterXpSummary(),
+                safe.stateContextLabel(),
+                safe.placeholderTitle(),
+                safe.placeholderDetail());
+    }
+
+    private static String safeText(String text) {
+        return text == null ? "" : text;
     }
 }

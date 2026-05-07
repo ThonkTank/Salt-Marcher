@@ -20,16 +20,17 @@ public final class SessionPlannerLootMainView extends VBox {
         getChildren().add(lootSection());
     }
 
-    public void showLootPlaceholders(List<SessionPlannerContributionModel.LootModel> lootPlaceholders) {
+    public void show(MainProjection projection) {
         lootBox.getChildren().clear();
-        List<SessionPlannerContributionModel.LootModel> safe = lootPlaceholders == null ? List.of() : List.copyOf(lootPlaceholders);
+        MainProjection safeProjection = projection == null ? MainProjection.empty() : projection;
+        List<MainProjection.LootModel> safe = safeProjection.lootPlaceholders();
         if (safe.isEmpty()) {
             Label empty = new Label("Keine Loot-Platzhalter angelegt.");
             empty.getStyleClass().addAll("text-secondary", "session-planner-empty");
             lootBox.getChildren().add(empty);
             return;
         }
-        for (SessionPlannerContributionModel.LootModel loot : safe) {
+        for (MainProjection.LootModel loot : safe) {
             lootBox.getChildren().add(lootCard(loot));
         }
     }
@@ -52,7 +53,7 @@ public final class SessionPlannerLootMainView extends VBox {
         return new VBox(8, row, lootBox);
     }
 
-    private HBox lootCard(SessionPlannerContributionModel.LootModel loot) {
+    private HBox lootCard(MainProjection.LootModel loot) {
         Label label = new Label(loot.label());
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);

@@ -56,11 +56,11 @@ public final class DungeonMapContentModel {
     }
 
     public void applyEditorSnapshot(DungeonEditorSnapshot editorSnapshot) {
-        showRenderState(DungeonMapEditorRenderStateMapper.map(placeholderTitle, editorSnapshot));
+        showRenderState(DungeonMapSnapshotMapper.mapEditor(placeholderTitle, editorSnapshot));
     }
 
     public void applyTravelSnapshot(TravelDungeonSnapshot travelSnapshot) {
-        showRenderState(DungeonMapTravelRenderStateMapper.map(placeholderTitle, travelSnapshot));
+        showRenderState(DungeonMapSnapshotMapper.mapTravel(placeholderTitle, travelSnapshot));
     }
 
     private void showRenderState(DungeonMapRenderState nextRenderState) {

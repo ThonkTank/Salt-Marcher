@@ -26,10 +26,8 @@ public final class SessionPlannerStateView extends ScrollPane {
         setContent(content);
     }
 
-    public void showState(SessionPlannerContributionModel.StateModel model) {
-        SessionPlannerContributionModel.StateModel safe = model == null
-                ? SessionPlannerContributionModel.StateModel.empty()
-                : model;
+    public void show(StateProjection projection) {
+        StateProjection safe = projection == null ? StateProjection.empty() : projection;
         encounterTitleLabel.setText(safe.selectedEncounterTitle());
         encounterDetailLabel.setText(safe.selectedEncounterDetail());
         encounterXpLabel.setText(safe.selectedEncounterXpSummary());
