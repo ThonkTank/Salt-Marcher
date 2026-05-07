@@ -1,4 +1,4 @@
-package src.data.sessionplanner.repository;
+package src.data.sessionplanner.query;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -19,9 +19,9 @@ import src.domain.sessionplanner.session.aggregate.SessionPlan;
 import src.domain.sessionplanner.session.port.SessionEncounterFactsLookup;
 import src.domain.sessionplanner.session.port.SessionPartyFactsLookup;
 import src.domain.sessionplanner.session.port.SessionPlanRepository;
-import src.domain.sessionplanner.session.port.SessionPlannerPublishedStateRepository;
+import src.domain.sessionplanner.session.port.SessionPlannerPublishedStateSink;
 
-public final class SessionPlannerPublishedStateRepositoryAdapter implements SessionPlannerPublishedStateRepository {
+public final class SessionPlannerPublishedStateRuntime implements SessionPlannerPublishedStateSink {
 
     private final SessionPlanRepository repository;
     private final SessionPartyFactsLookup partyFacts;
@@ -48,7 +48,7 @@ public final class SessionPlannerPublishedStateRepositoryAdapter implements Sess
     private @Nullable SessionPlannerEncountersProjection currentEncountersProjection;
     private @Nullable SessionPlannerStatePanelProjection currentStatePanelProjection;
 
-    public SessionPlannerPublishedStateRepositoryAdapter(
+    public SessionPlannerPublishedStateRuntime(
             SessionPlanRepository repository,
             SessionPartyFactsLookup partyFacts,
             SessionEncounterFactsLookup encounterFacts

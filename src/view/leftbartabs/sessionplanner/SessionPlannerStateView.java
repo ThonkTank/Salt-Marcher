@@ -26,7 +26,15 @@ public final class SessionPlannerStateView extends ScrollPane {
         setContent(content);
     }
 
-    public void show(StateProjection projection) {
+    public void bind(SessionPlannerContributionModel contributionModel) {
+        if (contributionModel == null) {
+            return;
+        }
+        contributionModel.stateProjectionProperty().addListener((ignored, before, after) -> show(after));
+        show(contributionModel.stateProjectionProperty().get());
+    }
+
+    private void show(StateProjection projection) {
         StateProjection safe = projection == null ? StateProjection.empty() : projection;
         encounterTitleLabel.setText(safe.selectedEncounterTitle());
         encounterDetailLabel.setText(safe.selectedEncounterDetail());

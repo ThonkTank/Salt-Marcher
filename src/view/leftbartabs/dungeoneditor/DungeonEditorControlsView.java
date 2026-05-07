@@ -69,47 +69,38 @@ public final class DungeonEditorControlsView extends DungeonControlPanelView {
         if (contributionModel == null) {
             return;
         }
-        contributionModel.mapEntriesProperty().addListener((ignored, before, after) -> refreshProjection(contributionModel));
-        contributionModel.selectedMapKeyProperty().addListener((ignored, before, after) -> refreshProjection(contributionModel));
-        contributionModel.busyProperty().addListener((ignored, before, after) -> refreshProjection(contributionModel));
-        contributionModel.statusProperty().addListener((ignored, before, after) -> refreshProjection(contributionModel));
-        contributionModel.reachableLevelsProperty().addListener((ignored, before, after) -> refreshProjection(contributionModel));
-        contributionModel.projectionLevelProperty().addListener((ignored, before, after) -> refreshProjection(contributionModel));
-        contributionModel.overlayProjectionProperty().addListener((ignored, before, after) ->
-                projectionControls.showOverlaySettings(DungeonEditorProjectionControls.toSettings(after), contributionModel.busyProperty().get()));
-        contributionModel.viewModeLabelProperty().addListener((ignored, before, after) -> projectionControls.showViewMode(after));
-        contributionModel.selectedToolProperty().addListener((ignored, before, after) -> toolControls.showTool(after));
-        contributionModel.mapEditorUiStateProperty().addListener((ignored, before, after) -> mapControls.showMapEditor(after));
-        contributionModel.toolPaletteUiStateProperty().addListener((ignored, before, after) -> toolControls.showToolPalette(after));
-        refreshProjection(contributionModel);
-        projectionControls.showViewMode(contributionModel.viewModeLabelProperty().get());
-        toolControls.showTool(contributionModel.selectedToolProperty().get());
-        mapControls.showMapEditor(contributionModel.mapEditorUiStateProperty().get());
-        toolControls.showToolPalette(contributionModel.toolPaletteUiStateProperty().get());
+        contributionModel.controlsProjectionProperty().addListener((ignored, before, after) -> showProjection(after));
+        showProjection(contributionModel.controlsProjectionProperty().get());
     }
 
     private void publish(DungeonEditorControlsViewInputEvent event) {
         viewInputEventHandler.accept(event);
     }
 
-    private void refreshProjection(DungeonEditorContributionModel contributionModel) {
-        String selectedMapKey = contributionModel.selectedMapKeyProperty().get();
-        boolean hasMap = selectedMapKey != null && !selectedMapKey.isBlank();
-        boolean busy = contributionModel.busyProperty().get();
+    private void showProjection(DungeonEditorControlsProjection projection) {
+        DungeonEditorControlsProjection resolvedProjection = projection == null
+                ? DungeonEditorControlsProjection.initial()
+                : projection;
+        boolean hasMap = !resolvedProjection.selectedMapKey().isBlank();
+        boolean busy = resolvedProjection.busy();
         mapControls.showMaps(
-                contributionModel.mapEntriesProperty().get().stream()
+                resolvedProjection.mapEntries().stream()
                         .map(DungeonEditorControlsView::toMapItem)
                         .toList(),
-                selectedMapKey,
+                resolvedProjection.selectedMapKey(),
                 busy,
-                contributionModel.statusProperty().get());
+                resolvedProjection.statusText());
         projectionControls.showLevels(
-                contributionModel.projectionLevelProperty().get(),
+                resolvedProjection.projectionLevel(),
                 busy,
                 hasMap);
         projectionControls.showOverlaySettings(
-                DungeonEditorProjectionControls.toSettings(contributionModel.overlayProjectionProperty().get()),
+                DungeonEditorProjectionControls.toSettings(resolvedProjection.overlayProjection()),
                 busy);
+        projectionControls.showViewMode(resolvedProjection.viewModeLabel());
+        toolControls.showTool(resolvedProjection.selectedToolLabel());
+        mapControls.showMapEditor(resolvedProjection.mapEditorUiState());
+        toolControls.showToolPalette(resolvedProjection.toolPaletteUiState());
     }
 
     HBox controlsRow(Node... nodes) {
@@ -132,7 +123,7 @@ public final class DungeonEditorControlsView extends DungeonControlPanelView {
         return sectionLabel(text);
     }
 
-    private static MapItem toMapItem(DungeonEditorContributionModel.MapListEntry selection) {
+    private static MapItem toMapItem(DungeonEditorMapListEntry selection) {
         return new MapItem(
                 selection.key(),
                 selection.mapIdValue(),
@@ -447,7 +438,7 @@ final class DungeonEditorMapControls {
         statusLabel.setManaged(!resolvedStatus.isBlank());
     }
 
-    void showMapEditor(DungeonEditorContributionModel.MapEditorUiState mapEditorUiState) {
+    void showMapEditor(DungeonEditorMapEditorUiState mapEditorUiState) {
         mapEditorPopup.show(mapEditorUiState);
     }
 
@@ -546,9 +537,9 @@ final class DungeonEditorMapEditorPopup {
                 currentDraftText());
     }
 
-    void show(DungeonEditorContributionModel.MapEditorUiState mapEditorUiState) {
-        DungeonEditorContributionModel.MapEditorUiState resolvedState = mapEditorUiState == null
-                ? DungeonEditorContributionModel.MapEditorUiState.hidden()
+    void show(DungeonEditorMapEditorUiState mapEditorUiState) {
+        DungeonEditorMapEditorUiState resolvedState = mapEditorUiState == null
+                ? DungeonEditorMapEditorUiState.hidden()
                 : mapEditorUiState;
         boolean popupWasShowing = popup.isShowing();
         titleLabel.setText(resolvedState.title());
@@ -646,7 +637,7 @@ final class DungeonEditorProjectionControls {
         DungeonEditorControlsFxAccess.addStyle(row, "dungeon-control-projection-row");
     }
 
-    static OverlayControlsPanel.Settings toSettings(DungeonEditorContributionModel.OverlayProjection settings) {
+    static OverlayControlsPanel.Settings toSettings(DungeonEditorOverlayProjection settings) {
         return new OverlayControlsPanel.Settings(
                 OverlayModeKey.fromModelKey(settings.modeKey()).overlayMode(),
                 settings.levelRange(),
@@ -797,11 +788,11 @@ final class DungeonEditorToolControls {
         markSelected(transitionButton, matchesTool(selectedTool, DungeonEditorControlsView.TRANSITION_CREATE_TOOL, DungeonEditorControlsView.TRANSITION_DELETE_TOOL));
     }
 
-    void showToolPalette(DungeonEditorContributionModel.ToolPaletteUiState toolPaletteUiState) {
+    void showToolPalette(DungeonEditorToolPaletteUiState toolPaletteUiState) {
         toolPalettePopup.show(toolPaletteUiState);
     }
 
-    @Nullable Button anchorFor(DungeonEditorContributionModel.ToolFamily family) {
+    @Nullable Button anchorFor(DungeonEditorToolFamily family) {
         if (family == null) {
             return null;
         }
@@ -885,9 +876,9 @@ final class DungeonEditorToolPalettePopup {
         popup.addOnHidden(event -> handleHidden());
     }
 
-    void show(DungeonEditorContributionModel.ToolPaletteUiState toolPaletteUiState) {
-        DungeonEditorContributionModel.ToolPaletteUiState resolvedState = toolPaletteUiState == null
-                ? DungeonEditorContributionModel.ToolPaletteUiState.closed()
+    void show(DungeonEditorToolPaletteUiState toolPaletteUiState) {
+        DungeonEditorToolPaletteUiState resolvedState = toolPaletteUiState == null
+                ? DungeonEditorToolPaletteUiState.closed()
                 : toolPaletteUiState;
         primaryToolOption.setText(resolvedState.primaryToolLabel());
         secondaryToolOption.setText(resolvedState.secondaryToolLabel());

@@ -55,10 +55,14 @@ final class SessionPlannerBinder {
         SessionPlannerMainView mainView = new SessionPlannerMainView(timelineView, lootView);
         SessionPlannerStateView stateView = new SessionPlannerStateView();
 
+        controlsView.bind(contributionModel);
+        timelineView.bind(contributionModel);
+        lootView.bind(contributionModel);
+        stateView.bind(contributionModel);
         bindRequests(planner, intentHandler);
-        bindControls(contributionModel, intentHandler, controlsView);
-        bindMain(contributionModel, intentHandler, timelineView, lootView);
-        bindState(contributionModel, stateView);
+        controlsView.onViewInputEvent(intentHandler::consume);
+        timelineView.onViewInputEvent(intentHandler::consume);
+        lootView.onViewInputEvent(intentHandler::consume);
 
         sessionModel.subscribe(contributionModel::applySession);
         participantsModel.subscribe(contributionModel::applyParticipants);
@@ -78,77 +82,75 @@ final class SessionPlannerBinder {
         intentHandler.onPublishedEventRequested(event -> applyPublishedEvent(planner, event));
     }
 
-    private static void bindControls(
-            SessionPlannerContributionModel contributionModel,
-            SessionPlannerIntentHandler intentHandler,
-            SessionPlannerControlsView controlsView
-    ) {
-        controlsView.onViewInputEvent(intentHandler::consume);
-        controlsView.show(contributionModel.controlsProjectionProperty().get());
-        contributionModel.controlsProjectionProperty().addListener(
-                (ignored, before, after) -> controlsView.show(after));
-    }
-
-    private static void bindMain(
-            SessionPlannerContributionModel contributionModel,
-            SessionPlannerIntentHandler intentHandler,
-            SessionPlannerTimelineMainView timelineView,
-            SessionPlannerLootMainView lootView
-    ) {
-        timelineView.onViewInputEvent(intentHandler::consume);
-        lootView.onViewInputEvent(intentHandler::consume);
-        MainProjection initialProjection = contributionModel.mainProjectionProperty().get();
-        timelineView.show(initialProjection);
-        lootView.show(initialProjection);
-        contributionModel.mainProjectionProperty().addListener((ignored, before, after) -> {
-            timelineView.show(after);
-            lootView.show(after);
-        });
-    }
-
-    private static void bindState(
-            SessionPlannerContributionModel contributionModel,
-            SessionPlannerStateView stateView
-    ) {
-        stateView.show(contributionModel.stateProjectionProperty().get());
-        contributionModel.stateProjectionProperty().addListener((ignored, before, after) -> stateView.show(after));
-    }
-
     private static void applyPublishedEvent(
             SessionPlannerApplicationService planner,
             SessionPlannerPublishedEvent event
     ) {
         if (event == null) {
-            planner.refreshSession(new RefreshSessionPlannerCommand());
             return;
         }
-        switch (event.kind()) {
-            case REFRESH_SESSION -> planner.refreshSession(new RefreshSessionPlannerCommand());
-            case CREATE_SESSION -> planner.createSession(new CreateSessionPlanCommand());
-            case ADD_PARTICIPANT -> planner.addParticipant(new AddSessionParticipantCommand(event.characterId()));
-            case REMOVE_PARTICIPANT -> planner.removeParticipant(new RemoveSessionParticipantCommand(event.characterId()));
-            case SET_ENCOUNTER_DAYS -> planner.setEncounterDays(new SetSessionEncounterDaysCommand(event.encounterDays()));
-            case ATTACH_PLAN -> planner.attachEncounter(new AttachSessionEncounterCommand(event.planId()));
-            case REMOVE_ENCOUNTER -> planner.removeEncounter(new RemoveSessionEncounterCommand(event.encounterToken()));
-            case MOVE_ENCOUNTER_UP -> planner.moveEncounterUp(new MoveSessionEncounterUpCommand(event.encounterToken()));
-            case MOVE_ENCOUNTER_DOWN -> planner.moveEncounterDown(new MoveSessionEncounterDownCommand(event.encounterToken()));
-            case SELECT_ENCOUNTER -> planner.selectEncounter(new SelectSessionEncounterCommand(event.encounterToken()));
-            case SET_ENCOUNTER_ALLOCATION ->
-                    planner.setEncounterAllocation(new SetSessionEncounterAllocationCommand(
-                            event.encounterToken(),
-                            event.budgetPercentage()));
-            case SET_REST_GAP -> planner.setRestGap(new SetSessionRestGapCommand(
-                    event.leftEncounterId(),
-                    event.rightEncounterId(),
-                    toRestKind(event.restSelection())));
-            case CLEAR_REST_GAP -> planner.clearRestGap(new ClearSessionRestGapCommand(
-                    event.leftEncounterId(),
-                    event.rightEncounterId()));
-            case ADD_LOOT_PLACEHOLDER -> planner.addLootPlaceholder(new AddSessionLootPlaceholderCommand());
-            case REMOVE_LOOT_PLACEHOLDER ->
-                    planner.removeLootPlaceholder(new RemoveSessionLootPlaceholderCommand(event.lootToken()));
-            default -> {
+        SessionPlannerPublishedEvent.Mutation mutation = event.mutation();
+        if (mutation instanceof SessionPlannerPublishedEvent.CreateSessionMutation) {
+            planner.createSession(new CreateSessionPlanCommand());
+            return;
+        }
+        if (mutation instanceof SessionPlannerPublishedEvent.AddParticipantMutation addParticipant) {
+            planner.addParticipant(new AddSessionParticipantCommand(addParticipant.characterId()));
+            return;
+        }
+        if (mutation instanceof SessionPlannerPublishedEvent.RemoveParticipantMutation removeParticipant) {
+            planner.removeParticipant(new RemoveSessionParticipantCommand(removeParticipant.characterId()));
+            return;
+        }
+        if (mutation instanceof SessionPlannerPublishedEvent.SetEncounterDaysMutation encounterDays) {
+            planner.setEncounterDays(new SetSessionEncounterDaysCommand(encounterDays.encounterDays()));
+            return;
+        }
+        if (mutation instanceof SessionPlannerPublishedEvent.AttachPlanMutation attachPlan) {
+            planner.attachEncounter(new AttachSessionEncounterCommand(attachPlan.planId()));
+            return;
+        }
+        if (mutation instanceof SessionPlannerPublishedEvent.RemoveEncounterMutation removeEncounter) {
+            planner.removeEncounter(new RemoveSessionEncounterCommand(removeEncounter.encounterToken()));
+            return;
+        }
+        if (mutation instanceof SessionPlannerPublishedEvent.MoveEncounterMutation moveEncounter) {
+            if (moveEncounter.direction() == SessionPlannerPublishedEvent.Direction.DOWN) {
+                planner.moveEncounterDown(new MoveSessionEncounterDownCommand(moveEncounter.encounterToken()));
+                return;
             }
+            planner.moveEncounterUp(new MoveSessionEncounterUpCommand(moveEncounter.encounterToken()));
+            return;
+        }
+        if (mutation instanceof SessionPlannerPublishedEvent.SelectEncounterMutation selectEncounter) {
+            planner.selectEncounter(new SelectSessionEncounterCommand(selectEncounter.encounterToken()));
+            return;
+        }
+        if (mutation instanceof SessionPlannerPublishedEvent.SetEncounterAllocationMutation allocation) {
+            planner.setEncounterAllocation(new SetSessionEncounterAllocationCommand(
+                    allocation.encounterToken(),
+                    allocation.budgetPercentage()));
+            return;
+        }
+        if (mutation instanceof SessionPlannerPublishedEvent.SetRestGapMutation setRestGap) {
+            planner.setRestGap(new SetSessionRestGapCommand(
+                    setRestGap.leftEncounterId(),
+                    setRestGap.rightEncounterId(),
+                    toRestKind(setRestGap.restSelection())));
+            return;
+        }
+        if (mutation instanceof SessionPlannerPublishedEvent.ClearRestGapMutation clearRestGap) {
+            planner.clearRestGap(new ClearSessionRestGapCommand(
+                    clearRestGap.leftEncounterId(),
+                    clearRestGap.rightEncounterId()));
+            return;
+        }
+        if (mutation instanceof SessionPlannerPublishedEvent.AddLootPlaceholderMutation) {
+            planner.addLootPlaceholder(new AddSessionLootPlaceholderCommand());
+            return;
+        }
+        if (mutation instanceof SessionPlannerPublishedEvent.RemoveLootPlaceholderMutation removeLootPlaceholder) {
+            planner.removeLootPlaceholder(new RemoveSessionLootPlaceholderCommand(removeLootPlaceholder.lootToken()));
         }
     }
 

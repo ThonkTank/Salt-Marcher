@@ -7,6 +7,8 @@ import org.jspecify.annotations.Nullable;
 
 final class DungeonEditorIntentHandler {
 
+    private static final String NAME_MISSING_ERROR = "Name fehlt.";
+
     private final DungeonEditorContributionModel presentationModel;
     private Consumer<DungeonEditorPublishedEvent> publishedEventListener = ignored -> {};
 
@@ -76,7 +78,9 @@ final class DungeonEditorIntentHandler {
             return;
         }
         long selectedMapIdValue = mapSelection.selectedMapIdValue();
-        if (selectedMapIdValue > 0L && selectedMapIdValue != presentationModel.currentSelectedMapIdValue()) {
+        DungeonEditorInteractionState interactionState = presentationModel.currentInteractionState();
+        if (selectedMapIdValue > DungeonEditorInteractionState.NO_MAP_ID
+                && selectedMapIdValue != interactionState.currentSelectedMapIdValue()) {
             publish(DungeonEditorPublishedEvent.selectMap(selectedMapIdValue));
         }
     }
@@ -85,21 +89,26 @@ final class DungeonEditorIntentHandler {
         if (mapEditor == null) {
             return;
         }
-        presentationModel.updateMapEditorDraft(mapEditor.draftName());
+        presentationModel.applyLocalMutation(new UpdateMapEditorDraftMutation(mapEditor.draftName()));
+        DungeonEditorInteractionState interactionState = presentationModel.currentInteractionState();
         if (mapEditor.dismissRequested()) {
-            presentationModel.closeMapEditor();
+            presentationModel.applyLocalMutation(new CloseMapEditorMutation());
             return;
         }
         if (mapEditor.openCreateRequested()) {
-            presentationModel.openCreateMapEditor();
+            presentationModel.applyLocalMutation(new OpenCreateMapEditorMutation());
             return;
         }
         if (mapEditor.openRenameRequested()) {
-            presentationModel.openRenameMapEditor(presentationModel.currentSelectedMapIdValue());
+            presentationModel.applyLocalMutation(new OpenSelectedMapEditorMutation(
+                    DungeonEditorMapEditorMode.RENAME,
+                    interactionState.currentSelectedMapIdValue()));
             return;
         }
         if (mapEditor.openDeleteRequested()) {
-            presentationModel.openDeleteMapEditor(presentationModel.currentSelectedMapIdValue());
+            presentationModel.applyLocalMutation(new OpenSelectedMapEditorMutation(
+                    DungeonEditorMapEditorMode.DELETE,
+                    interactionState.currentSelectedMapIdValue()));
             return;
         }
         if (mapEditor.confirmDeleteRequested()) {
@@ -112,34 +121,34 @@ final class DungeonEditorIntentHandler {
     }
 
     private void handleMapEditorSubmit() {
-        DungeonEditorContributionModel.MapEditorUiState mapEditorUiState = presentationModel.currentMapEditorUiState();
+        DungeonEditorMapEditorUiState mapEditorUiState = presentationModel.currentInteractionState().currentMapEditorUiState();
         String draftName = mapEditorUiState.draftName();
         if (draftName.isBlank()) {
-            presentationModel.showMapEditorValidationError("Name fehlt.");
+            presentationModel.applyLocalMutation(new ShowMapEditorValidationErrorMutation(NAME_MISSING_ERROR));
             return;
         }
-        if (mapEditorUiState.mode() == DungeonEditorContributionModel.MapEditorMode.CREATE) {
-            presentationModel.closeMapEditor();
+        if (mapEditorUiState.isCreateMode()) {
+            presentationModel.applyLocalMutation(new CloseMapEditorMutation());
             publish(DungeonEditorPublishedEvent.createMap(draftName));
             return;
         }
-        if (mapEditorUiState.mode() == DungeonEditorContributionModel.MapEditorMode.RENAME) {
+        if (mapEditorUiState.isRenameMode()) {
             long mapIdValue = mapEditorUiState.mapIdValue();
-            if (mapIdValue > 0L) {
-                presentationModel.closeMapEditor();
+            if (mapIdValue > DungeonEditorInteractionState.NO_MAP_ID) {
+                presentationModel.applyLocalMutation(new CloseMapEditorMutation());
                 publish(DungeonEditorPublishedEvent.renameMap(mapIdValue, draftName));
             }
         }
     }
 
     private void handleMapDelete() {
-        DungeonEditorContributionModel.MapEditorUiState mapEditorUiState = presentationModel.currentMapEditorUiState();
-        if (mapEditorUiState.mode() != DungeonEditorContributionModel.MapEditorMode.DELETE) {
+        DungeonEditorMapEditorUiState mapEditorUiState = presentationModel.currentInteractionState().currentMapEditorUiState();
+        if (!mapEditorUiState.isDeleteMode()) {
             return;
         }
         long mapIdValue = mapEditorUiState.mapIdValue();
-        if (mapIdValue > 0L) {
-            presentationModel.closeMapEditor();
+        if (mapIdValue > DungeonEditorInteractionState.NO_MAP_ID) {
+            presentationModel.applyLocalMutation(new CloseMapEditorMutation());
             publish(DungeonEditorPublishedEvent.deleteMap(mapIdValue));
         }
     }
@@ -148,14 +157,15 @@ final class DungeonEditorIntentHandler {
         if (viewModeKey == null || viewModeKey.isBlank()) {
             return;
         }
-        String selectedViewMode = presentationModel.currentViewModeKey();
-        if ("Graph".equals(viewModeKey)) {
-            if (!"Graph".equals(selectedViewMode)) {
-                publish(DungeonEditorPublishedEvent.setViewMode(DungeonEditorPublishedEvent.ViewMode.GRAPH));
+        String normalizedViewModeKey = DungeonEditorToolCatalog.normalizeViewModeKey(viewModeKey);
+        String selectedViewMode = presentationModel.currentInteractionState().currentViewModeKey();
+        if (DungeonEditorToolCatalog.GRAPH_VIEW_LABEL.equals(normalizedViewModeKey)) {
+            if (!DungeonEditorToolCatalog.GRAPH_VIEW_LABEL.equals(selectedViewMode)) {
+                publish(DungeonEditorPublishedEvent.setViewMode(DungeonEditorToolCatalog.toPublishedViewMode(normalizedViewModeKey)));
             }
             return;
         }
-        if (!"Grid".equals(selectedViewMode)) {
+        if (!DungeonEditorToolCatalog.GRID_VIEW_LABEL.equals(selectedViewMode)) {
             publish(DungeonEditorPublishedEvent.setViewMode(DungeonEditorPublishedEvent.ViewMode.GRID));
         }
     }
@@ -165,18 +175,19 @@ final class DungeonEditorIntentHandler {
             return;
         }
         if (toolInput.dismissRequested()) {
-            presentationModel.closeToolPalette();
+            presentationModel.applyLocalMutation(new SetToolPaletteMutation(null));
             return;
         }
         if (toolInput.requestedFamily() != null) {
-            presentationModel.openToolPalette(DungeonEditorContributionModel.ToolFamily.valueOf(toolInput.requestedFamily().name()));
+            presentationModel.applyLocalMutation(new SetToolPaletteMutation(DungeonEditorToolFamily.valueOf(toolInput.requestedFamily().name())));
         } else {
-            presentationModel.closeToolPalette();
+            presentationModel.applyLocalMutation(new SetToolPaletteMutation(null));
         }
+        DungeonEditorInteractionState interactionState = presentationModel.currentInteractionState();
         if (toolInput.selectedToolLabel() != null
                 && !toolInput.selectedToolLabel().isBlank()
-                && !presentationModel.currentSelectedToolLabel().equals(toolInput.selectedToolLabel())) {
-            publish(DungeonEditorPublishedEvent.setTool(toPublishedTool(toolInput.selectedToolLabel())));
+                && !interactionState.currentSelectedToolLabel().equals(toolInput.selectedToolLabel())) {
+            publish(DungeonEditorPublishedEvent.setTool(DungeonEditorToolCatalog.toPublishedTool(toolInput.selectedToolLabel())));
         }
     }
 
@@ -184,7 +195,7 @@ final class DungeonEditorIntentHandler {
         if (overlayInput == null) {
             return;
         }
-        DungeonEditorContributionModel.OverlayProjection currentOverlay = presentationModel.currentOverlayProjection();
+        DungeonEditorOverlayProjection currentOverlay = presentationModel.currentInteractionState().currentOverlayProjection();
         List<Integer> selectedLevels = parseLevels(overlayInput.selectedLevelsText());
         if (currentOverlay.modeKey().equals(overlayInput.modeKey())
                 && currentOverlay.levelRange() == overlayInput.levelRange()
@@ -240,24 +251,6 @@ final class DungeonEditorIntentHandler {
             case "DRAG" -> DungeonEditorPublishedEvent.MainViewInput.Source.POINTER_DRAGGED;
             case "RELEASE" -> DungeonEditorPublishedEvent.MainViewInput.Source.POINTER_RELEASED;
             default -> DungeonEditorPublishedEvent.MainViewInput.Source.POINTER_MOVED;
-        };
-    }
-
-    private static DungeonEditorPublishedEvent.Tool toPublishedTool(String selectedToolLabel) {
-        return switch (selectedToolLabel == null ? "Auswahl" : selectedToolLabel) {
-            case "Raum malen" -> DungeonEditorPublishedEvent.Tool.ROOM_PAINT;
-            case "Raum löschen" -> DungeonEditorPublishedEvent.Tool.ROOM_DELETE;
-            case "Wand setzen" -> DungeonEditorPublishedEvent.Tool.WALL_CREATE;
-            case "Wand löschen" -> DungeonEditorPublishedEvent.Tool.WALL_DELETE;
-            case "Tür setzen" -> DungeonEditorPublishedEvent.Tool.DOOR_CREATE;
-            case "Tür löschen" -> DungeonEditorPublishedEvent.Tool.DOOR_DELETE;
-            case "Korridor erstellen" -> DungeonEditorPublishedEvent.Tool.CORRIDOR_CREATE;
-            case "Korridor löschen" -> DungeonEditorPublishedEvent.Tool.CORRIDOR_DELETE;
-            case "Treppe erstellen" -> DungeonEditorPublishedEvent.Tool.STAIR_CREATE;
-            case "Treppe löschen" -> DungeonEditorPublishedEvent.Tool.STAIR_DELETE;
-            case "Übergang erstellen" -> DungeonEditorPublishedEvent.Tool.TRANSITION_CREATE;
-            case "Übergang löschen" -> DungeonEditorPublishedEvent.Tool.TRANSITION_DELETE;
-            default -> DungeonEditorPublishedEvent.Tool.SELECT;
         };
     }
 

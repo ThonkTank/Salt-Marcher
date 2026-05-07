@@ -41,11 +41,8 @@ public final class DungeonEditorStateView extends VBox {
         if (contributionModel == null) {
             return;
         }
-        stateTextProperty().bind(contributionModel.stateProperty());
-        contributionModel.narrationCardsProperty().addListener((ignored, before, after) -> refreshNarrationCards(contributionModel));
-        contributionModel.busyProperty().addListener((ignored, before, after) -> refreshNarrationCards(contributionModel));
-        contributionModel.statusProperty().addListener((ignored, before, after) -> refreshNarrationCards(contributionModel));
-        refreshNarrationCards(contributionModel);
+        contributionModel.stateProjectionProperty().addListener((ignored, before, after) -> showProjection(after));
+        showProjection(contributionModel.stateProjectionProperty().get());
     }
 
     public void showNarrationCards(List<RoomNarrationCard> cards, boolean busy, String statusText) {
@@ -55,14 +52,18 @@ public final class DungeonEditorStateView extends VBox {
         }
     }
 
-    private void refreshNarrationCards(DungeonEditorContributionModel contributionModel) {
+    private void showProjection(DungeonEditorStateProjection projection) {
+        DungeonEditorStateProjection resolvedProjection = projection == null
+                ? DungeonEditorStateProjection.initial()
+                : projection;
+        stateTextProperty().set(resolvedProjection.stateText());
         showNarrationCards(
-                contributionModel.narrationCardsProperty().get().stream().map(DungeonEditorStateView::toCard).toList(),
-                contributionModel.busyProperty().get(),
-                contributionModel.statusProperty().get());
+                resolvedProjection.narrationCards().stream().map(DungeonEditorStateView::toCard).toList(),
+                resolvedProjection.busy(),
+                resolvedProjection.statusText());
     }
 
-    private static RoomNarrationCard toCard(DungeonEditorContributionModel.RoomNarrationCardProjection card) {
+    private static RoomNarrationCard toCard(DungeonEditorRoomNarrationCardProjection card) {
         return new RoomNarrationCard(
                 card.roomId(),
                 card.roomName(),
@@ -70,7 +71,7 @@ public final class DungeonEditorStateView extends VBox {
                 card.exits().stream().map(DungeonEditorStateView::toExit).toList());
     }
 
-    private static RoomExitNarration toExit(DungeonEditorContributionModel.RoomExitNarrationProjection exit) {
+    private static RoomExitNarration toExit(DungeonEditorRoomExitNarrationProjection exit) {
         return new RoomExitNarration(
                 exit.label(),
                 exit.q(),

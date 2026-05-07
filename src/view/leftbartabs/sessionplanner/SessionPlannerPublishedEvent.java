@@ -3,135 +3,114 @@ package src.view.leftbartabs.sessionplanner;
 import java.math.BigDecimal;
 import java.util.Objects;
 
-public record SessionPlannerPublishedEvent(
-        Kind kind,
-        long characterId,
-        long planId,
-        long encounterToken,
-        long leftEncounterId,
-        long rightEncounterId,
-        RestSelection restSelection,
-        BigDecimal encounterDays,
-        BigDecimal budgetPercentage,
-        long lootToken
-) {
+public record SessionPlannerPublishedEvent(Mutation mutation) {
 
     public SessionPlannerPublishedEvent {
-        Objects.requireNonNull(kind, "kind");
-        characterId = Math.max(0L, characterId);
-        planId = Math.max(0L, planId);
-        encounterToken = Math.max(0L, encounterToken);
-        leftEncounterId = Math.max(0L, leftEncounterId);
-        rightEncounterId = Math.max(0L, rightEncounterId);
-        restSelection = restSelection == null ? RestSelection.NONE : restSelection;
-        encounterDays = encounterDays == null ? BigDecimal.ONE : encounterDays;
-        budgetPercentage = budgetPercentage == null ? BigDecimal.ZERO : budgetPercentage;
-        lootToken = Math.max(0L, lootToken);
+        Objects.requireNonNull(mutation, "mutation");
     }
 
-    static SessionPlannerPublishedEvent refresh() {
-        return new SessionPlannerPublishedEvent(Kind.REFRESH_SESSION, 0L, 0L, 0L, 0L, 0L, RestSelection.NONE, BigDecimal.ONE, BigDecimal.ZERO, 0L);
+    public sealed interface Mutation permits CreateSessionMutation, AddParticipantMutation, RemoveParticipantMutation,
+            SetEncounterDaysMutation, AttachPlanMutation, RemoveEncounterMutation, MoveEncounterMutation,
+            SelectEncounterMutation, SetEncounterAllocationMutation, SetRestGapMutation, ClearRestGapMutation,
+            AddLootPlaceholderMutation, RemoveLootPlaceholderMutation {
     }
 
-    static SessionPlannerPublishedEvent createSession() {
-        return new SessionPlannerPublishedEvent(Kind.CREATE_SESSION, 0L, 0L, 0L, 0L, 0L, RestSelection.NONE, BigDecimal.ONE, BigDecimal.ZERO, 0L);
+    public record CreateSessionMutation() implements Mutation {
     }
 
-    static SessionPlannerPublishedEvent addParticipant(long characterId) {
-        return new SessionPlannerPublishedEvent(Kind.ADD_PARTICIPANT, characterId, 0L, 0L, 0L, 0L, RestSelection.NONE, BigDecimal.ONE, BigDecimal.ZERO, 0L);
+    public record AddParticipantMutation(long characterId) implements Mutation {
+        public AddParticipantMutation {
+            characterId = Math.max(0L, characterId);
+        }
     }
 
-    static SessionPlannerPublishedEvent removeParticipant(long characterId) {
-        return new SessionPlannerPublishedEvent(Kind.REMOVE_PARTICIPANT, characterId, 0L, 0L, 0L, 0L, RestSelection.NONE, BigDecimal.ONE, BigDecimal.ZERO, 0L);
+    public record RemoveParticipantMutation(long characterId) implements Mutation {
+        public RemoveParticipantMutation {
+            characterId = Math.max(0L, characterId);
+        }
     }
 
-    static SessionPlannerPublishedEvent setEncounterDays(BigDecimal encounterDays) {
-        return new SessionPlannerPublishedEvent(Kind.SET_ENCOUNTER_DAYS, 0L, 0L, 0L, 0L, 0L, RestSelection.NONE, encounterDays, BigDecimal.ZERO, 0L);
+    public record SetEncounterDaysMutation(BigDecimal encounterDays) implements Mutation {
+        public SetEncounterDaysMutation {
+            encounterDays = encounterDays == null ? BigDecimal.ONE : encounterDays;
+        }
     }
 
-    static SessionPlannerPublishedEvent attachPlan(long planId) {
-        return new SessionPlannerPublishedEvent(Kind.ATTACH_PLAN, 0L, planId, 0L, 0L, 0L, RestSelection.NONE, BigDecimal.ONE, BigDecimal.ZERO, 0L);
+    public record AttachPlanMutation(long planId) implements Mutation {
+        public AttachPlanMutation {
+            planId = Math.max(0L, planId);
+        }
     }
 
-    static SessionPlannerPublishedEvent removeEncounter(long encounterToken) {
-        return new SessionPlannerPublishedEvent(Kind.REMOVE_ENCOUNTER, 0L, 0L, encounterToken, 0L, 0L, RestSelection.NONE, BigDecimal.ONE, BigDecimal.ZERO, 0L);
+    public record RemoveEncounterMutation(long encounterToken) implements Mutation {
+        public RemoveEncounterMutation {
+            encounterToken = Math.max(0L, encounterToken);
+        }
     }
 
-    static SessionPlannerPublishedEvent moveEncounterUp(long encounterToken) {
-        return new SessionPlannerPublishedEvent(Kind.MOVE_ENCOUNTER_UP, 0L, 0L, encounterToken, 0L, 0L, RestSelection.NONE, BigDecimal.ONE, BigDecimal.ZERO, 0L);
+    public record MoveEncounterMutation(
+            long encounterToken,
+            Direction direction
+    ) implements Mutation {
+        public MoveEncounterMutation {
+            encounterToken = Math.max(0L, encounterToken);
+            direction = direction == null ? Direction.UP : direction;
+        }
     }
 
-    static SessionPlannerPublishedEvent moveEncounterDown(long encounterToken) {
-        return new SessionPlannerPublishedEvent(Kind.MOVE_ENCOUNTER_DOWN, 0L, 0L, encounterToken, 0L, 0L, RestSelection.NONE, BigDecimal.ONE, BigDecimal.ZERO, 0L);
+    public record SelectEncounterMutation(long encounterToken) implements Mutation {
+        public SelectEncounterMutation {
+            encounterToken = Math.max(0L, encounterToken);
+        }
     }
 
-    static SessionPlannerPublishedEvent selectEncounter(long encounterToken) {
-        return new SessionPlannerPublishedEvent(Kind.SELECT_ENCOUNTER, 0L, 0L, encounterToken, 0L, 0L, RestSelection.NONE, BigDecimal.ONE, BigDecimal.ZERO, 0L);
+    public record SetEncounterAllocationMutation(
+            long encounterToken,
+            BigDecimal budgetPercentage
+    ) implements Mutation {
+        public SetEncounterAllocationMutation {
+            encounterToken = Math.max(0L, encounterToken);
+            budgetPercentage = budgetPercentage == null ? BigDecimal.ZERO : budgetPercentage;
+        }
     }
 
-    static SessionPlannerPublishedEvent setEncounterAllocation(long encounterToken, BigDecimal budgetPercentage) {
-        return new SessionPlannerPublishedEvent(Kind.SET_ENCOUNTER_ALLOCATION, 0L, 0L, encounterToken, 0L, 0L, RestSelection.NONE, BigDecimal.ONE, budgetPercentage, 0L);
-    }
-
-    static SessionPlannerPublishedEvent setRestGap(
+    public record SetRestGapMutation(
             long leftEncounterId,
             long rightEncounterId,
             RestSelection restSelection
-    ) {
-        return new SessionPlannerPublishedEvent(
-                Kind.SET_REST_GAP,
-                0L,
-                0L,
-                0L,
-                leftEncounterId,
-                rightEncounterId,
-                restSelection,
-                BigDecimal.ONE,
-                BigDecimal.ZERO,
-                0L);
+    ) implements Mutation {
+        public SetRestGapMutation {
+            leftEncounterId = Math.max(0L, leftEncounterId);
+            rightEncounterId = Math.max(0L, rightEncounterId);
+            restSelection = restSelection == null ? RestSelection.NONE : restSelection;
+        }
     }
 
-    static SessionPlannerPublishedEvent clearRestGap(long leftEncounterId, long rightEncounterId) {
-        return new SessionPlannerPublishedEvent(
-                Kind.CLEAR_REST_GAP,
-                0L,
-                0L,
-                0L,
-                leftEncounterId,
-                rightEncounterId,
-                RestSelection.NONE,
-                BigDecimal.ONE,
-                BigDecimal.ZERO,
-                0L);
+    public record ClearRestGapMutation(
+            long leftEncounterId,
+            long rightEncounterId
+    ) implements Mutation {
+        public ClearRestGapMutation {
+            leftEncounterId = Math.max(0L, leftEncounterId);
+            rightEncounterId = Math.max(0L, rightEncounterId);
+        }
     }
 
-    static SessionPlannerPublishedEvent addLootPlaceholder() {
-        return new SessionPlannerPublishedEvent(Kind.ADD_LOOT_PLACEHOLDER, 0L, 0L, 0L, 0L, 0L, RestSelection.NONE, BigDecimal.ONE, BigDecimal.ZERO, 0L);
+    public record AddLootPlaceholderMutation() implements Mutation {
     }
 
-    static SessionPlannerPublishedEvent removeLootPlaceholder(long lootToken) {
-        return new SessionPlannerPublishedEvent(Kind.REMOVE_LOOT_PLACEHOLDER, 0L, 0L, 0L, 0L, 0L, RestSelection.NONE, BigDecimal.ONE, BigDecimal.ZERO, lootToken);
+    public record RemoveLootPlaceholderMutation(long lootToken) implements Mutation {
+        public RemoveLootPlaceholderMutation {
+            lootToken = Math.max(0L, lootToken);
+        }
     }
 
-    enum Kind {
-        REFRESH_SESSION,
-        CREATE_SESSION,
-        ADD_PARTICIPANT,
-        REMOVE_PARTICIPANT,
-        SET_ENCOUNTER_DAYS,
-        ATTACH_PLAN,
-        REMOVE_ENCOUNTER,
-        MOVE_ENCOUNTER_UP,
-        MOVE_ENCOUNTER_DOWN,
-        SELECT_ENCOUNTER,
-        SET_ENCOUNTER_ALLOCATION,
-        SET_REST_GAP,
-        CLEAR_REST_GAP,
-        ADD_LOOT_PLACEHOLDER,
-        REMOVE_LOOT_PLACEHOLDER
+    public enum Direction {
+        UP,
+        DOWN
     }
 
-    enum RestSelection {
+    public enum RestSelection {
         NONE,
         SHORT_REST,
         LONG_REST

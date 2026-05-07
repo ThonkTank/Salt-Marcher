@@ -46,40 +46,19 @@ public final class SessionPlannerControlsView extends ScrollPane {
     public SessionPlannerControlsView() {
         sessionSection.onCreateRequested(() -> viewInputEventHandler.accept(
                 new SessionPlannerControlsViewInputEvent(
-                        SessionPlannerControlsViewInputEvent.Kind.CREATE_SESSION,
-                        0L,
-                        0L,
-                        "")));
-        sessionSection.onRefreshRequested(() -> viewInputEventHandler.accept(
-                new SessionPlannerControlsViewInputEvent(
-                        SessionPlannerControlsViewInputEvent.Kind.REFRESH,
-                        0L,
-                        0L,
-                        "")));
+                        new SessionPlannerControlsViewInputEvent.CreateSessionInput())));
         sessionSection.onEncounterDaysRequested(encounterDaysText -> viewInputEventHandler.accept(
                 new SessionPlannerControlsViewInputEvent(
-                        SessionPlannerControlsViewInputEvent.Kind.SET_ENCOUNTER_DAYS,
-                        0L,
-                        0L,
-                        encounterDaysText)));
+                        new SessionPlannerControlsViewInputEvent.SetEncounterDaysInput(encounterDaysText))));
         activePartySection.onActionRequested(characterId -> viewInputEventHandler.accept(
                 new SessionPlannerControlsViewInputEvent(
-                        SessionPlannerControlsViewInputEvent.Kind.ADD_PARTICIPANT,
-                        characterId,
-                        0L,
-                        "")));
+                        new SessionPlannerControlsViewInputEvent.AddParticipantInput(characterId))));
         sessionParticipantSection.onRemoveRequested(characterId -> viewInputEventHandler.accept(
                 new SessionPlannerControlsViewInputEvent(
-                        SessionPlannerControlsViewInputEvent.Kind.REMOVE_PARTICIPANT,
-                        characterId,
-                        0L,
-                        "")));
+                        new SessionPlannerControlsViewInputEvent.RemoveParticipantInput(characterId))));
         plansSection.onImportRequested(planId -> viewInputEventHandler.accept(
                 new SessionPlannerControlsViewInputEvent(
-                        SessionPlannerControlsViewInputEvent.Kind.ATTACH_PLAN,
-                        0L,
-                        planId,
-                        "")));
+                        new SessionPlannerControlsViewInputEvent.AttachPlanInput(planId))));
 
         VBox content = new VBox(12);
         ObservableList<Node> contentChildren = content.getChildren();
@@ -120,6 +99,14 @@ public final class SessionPlannerControlsView extends ScrollPane {
         viewInputEventHandler = handler == null ? ignored -> { } : handler;
     }
 
+    public void bind(SessionPlannerContributionModel contributionModel) {
+        if (contributionModel == null) {
+            return;
+        }
+        contributionModel.controlsProjectionProperty().addListener((ignored, before, after) -> show(after));
+        show(contributionModel.controlsProjectionProperty().get());
+    }
+
     private static final class SessionSection {
 
         private final Label sessionIdLabel = Factory.createLabel("", true);
@@ -127,12 +114,10 @@ public final class SessionPlannerControlsView extends ScrollPane {
         private final TextField encounterDaysField = new TextField();
         private final VBox root;
         private Runnable createRequested = () -> { };
-        private Runnable refreshRequested = () -> { };
         private Consumer<String> encounterDaysRequested = ignored -> { };
 
         private SessionSection() {
             Label headerLabel = Factory.createLabel("SESSION PLANNER", false, "section-header", "text-muted");
-            Button refreshButton = Factory.createButton("Aktualisieren", event -> refreshRequested.run(), "compact", "flat");
             Button createButton = Factory.createButton("Neue Session", event -> createRequested.run(), "compact", "accent");
             Button applyDaysButton = Factory.createButton("Tage setzen", event -> encounterDaysRequested.accept(encounterDaysField.getText()), "compact", "flat");
             encounterDaysField.setPromptText("1.0");
@@ -142,7 +127,7 @@ public final class SessionPlannerControlsView extends ScrollPane {
                     applyDaysButton);
             HBox.setHgrow(encounterDaysField, Priority.ALWAYS);
             root = new VBox(10,
-                    Factory.createHeaderRow(headerLabel, refreshButton, createButton),
+                    Factory.createHeaderRow(headerLabel, createButton),
                     Factory.createSectionCard("Session",
                             sessionIdLabel,
                             selectionLabel,
@@ -155,10 +140,6 @@ public final class SessionPlannerControlsView extends ScrollPane {
 
         private void onCreateRequested(Runnable handler) {
             createRequested = handler == null ? () -> { } : handler;
-        }
-
-        private void onRefreshRequested(Runnable handler) {
-            refreshRequested = handler == null ? () -> { } : handler;
         }
 
         private void onEncounterDaysRequested(Consumer<String> handler) {

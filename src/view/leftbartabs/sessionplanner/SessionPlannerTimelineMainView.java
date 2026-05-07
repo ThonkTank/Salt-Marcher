@@ -3,6 +3,7 @@ package src.view.leftbartabs.sessionplanner;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 import javafx.geometry.Insets;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
@@ -17,8 +18,6 @@ public final class SessionPlannerTimelineMainView extends VBox {
     private static final String STYLE_FLAT = "flat";
 
     private final TimelineSection timelineSection = new TimelineSection();
-    private List<MainProjection.EncounterModel> encounters = List.of();
-    private List<MainProjection.RestGapModel> gaps = List.of();
     private Consumer<SessionPlannerTimelineMainViewInputEvent> viewInputEventHandler = ignored -> { };
 
     public SessionPlannerTimelineMainView() {
@@ -26,19 +25,21 @@ public final class SessionPlannerTimelineMainView extends VBox {
         getChildren().add(timelineSection);
     }
 
-    public void show(MainProjection projection) {
-        MainProjection safe = projection == null ? MainProjection.empty() : projection;
-        encounters = safe.encounters();
-        gaps = safe.restGaps();
-        renderTimeline();
-    }
-
     public void onViewInputEvent(Consumer<SessionPlannerTimelineMainViewInputEvent> handler) {
         viewInputEventHandler = handler == null ? ignored -> { } : handler;
     }
 
-    private void renderTimeline() {
-        timelineSection.show(encounters, gaps, this::publish);
+    public void bind(SessionPlannerContributionModel contributionModel) {
+        if (contributionModel == null) {
+            return;
+        }
+        contributionModel.mainProjectionProperty().addListener((ignored, before, after) -> show(after));
+        show(contributionModel.mainProjectionProperty().get());
+    }
+
+    private void show(MainProjection projection) {
+        MainProjection safe = projection == null ? MainProjection.empty() : projection;
+        timelineSection.show(safe.encounters(), safe.restGaps(), this::publish);
     }
 
     private void publish(SessionPlannerTimelineMainViewInputEvent event) {
@@ -120,34 +121,34 @@ public final class SessionPlannerTimelineMainView extends VBox {
 
             ActionButton select = new ActionButton(
                     encounter.selected() ? "Ausgewaehlt" : "Auswaehlen",
-                    event(SessionPlannerTimelineMainViewInputEvent.Kind.SELECT_ENCOUNTER, encounter.token()),
+                    () -> selectEncounterEvent(encounter.token()),
                     encounter.selected() ? STYLE_FLAT : "accent");
             select.setDisable(encounter.selected());
 
             ActionButton decreaseAllocation = new ActionButton(
                     "-10%",
-                    allocationEvent(encounter, ALLOCATION_STEP.negate()),
+                    () -> allocationEvent(encounter, ALLOCATION_STEP.negate()),
                     STYLE_FLAT);
             ActionButton increaseAllocation = new ActionButton(
                     "+10%",
-                    allocationEvent(encounter, ALLOCATION_STEP),
+                    () -> allocationEvent(encounter, ALLOCATION_STEP),
                     STYLE_FLAT);
 
             ActionButton up = new ActionButton(
                     "Hoch",
-                    event(SessionPlannerTimelineMainViewInputEvent.Kind.MOVE_ENCOUNTER_UP, encounter.token()),
+                    () -> moveEvent(encounter.token(), SessionPlannerTimelineMainViewInputEvent.Direction.UP),
                     STYLE_FLAT);
             up.setDisable(!encounter.canMoveUp());
 
             ActionButton down = new ActionButton(
                     "Runter",
-                    event(SessionPlannerTimelineMainViewInputEvent.Kind.MOVE_ENCOUNTER_DOWN, encounter.token()),
+                    () -> moveEvent(encounter.token(), SessionPlannerTimelineMainViewInputEvent.Direction.DOWN),
                     STYLE_FLAT);
             down.setDisable(!encounter.canMoveDown());
 
             ActionButton remove = new ActionButton(
                     "Entfernen",
-                    event(SessionPlannerTimelineMainViewInputEvent.Kind.REMOVE_ENCOUNTER, encounter.token()),
+                    () -> removeEncounterEvent(encounter.token()),
                     STYLE_FLAT);
 
             bind(select, publisher);
@@ -193,24 +194,24 @@ public final class SessionPlannerTimelineMainView extends VBox {
 
             ActionButton shortRest = new ActionButton(
                     "Kurze Rast",
-                    restEvent(
-                            SessionPlannerTimelineMainViewInputEvent.Kind.SET_SHORT_REST,
+                    () -> restEvent(
                             gap.leftEncounterId(),
-                            gap.rightEncounterId()),
+                            gap.rightEncounterId(),
+                            SessionPlannerTimelineMainViewInputEvent.RestSelection.SHORT_REST),
                     STYLE_FLAT);
             ActionButton longRest = new ActionButton(
                     "Lange Rast",
-                    restEvent(
-                            SessionPlannerTimelineMainViewInputEvent.Kind.SET_LONG_REST,
+                    () -> restEvent(
                             gap.leftEncounterId(),
-                            gap.rightEncounterId()),
+                            gap.rightEncounterId(),
+                            SessionPlannerTimelineMainViewInputEvent.RestSelection.LONG_REST),
                     STYLE_FLAT);
             ActionButton clear = new ActionButton(
                     "Leeren",
-                    restEvent(
-                            SessionPlannerTimelineMainViewInputEvent.Kind.CLEAR_REST,
+                    () -> restEvent(
                             gap.leftEncounterId(),
-                            gap.rightEncounterId()),
+                            gap.rightEncounterId(),
+                            SessionPlannerTimelineMainViewInputEvent.RestSelection.NONE),
                     STYLE_FLAT);
             clear.setDisable(!gap.hasAssignedRest());
 
@@ -248,15 +249,15 @@ public final class SessionPlannerTimelineMainView extends VBox {
 
     private static final class ActionButton extends Button {
 
-        private final SessionPlannerTimelineMainViewInputEvent event;
+        private final Supplier<SessionPlannerTimelineMainViewInputEvent> eventSupplier;
 
         private ActionButton(
                 String text,
-                SessionPlannerTimelineMainViewInputEvent event,
+                Supplier<SessionPlannerTimelineMainViewInputEvent> eventSupplier,
                 String emphasisStyle
         ) {
             super(text);
-            this.event = event;
+            this.eventSupplier = eventSupplier;
             getStyleClass().addAll(STYLE_COMPACT, emphasisStyle);
         }
     }
@@ -273,14 +274,25 @@ public final class SessionPlannerTimelineMainView extends VBox {
             ActionButton button,
             Consumer<SessionPlannerTimelineMainViewInputEvent> publisher
     ) {
-        button.setOnAction(ignored -> publisher.accept(button.event));
+        button.setOnAction(ignored -> publisher.accept(button.eventSupplier.get()));
     }
 
-    private static SessionPlannerTimelineMainViewInputEvent event(
-            SessionPlannerTimelineMainViewInputEvent.Kind kind,
-            long encounterToken
+    private static SessionPlannerTimelineMainViewInputEvent selectEncounterEvent(long encounterToken) {
+        return new SessionPlannerTimelineMainViewInputEvent(
+                new SessionPlannerTimelineMainViewInputEvent.SelectEncounterInput(encounterToken));
+    }
+
+    private static SessionPlannerTimelineMainViewInputEvent moveEvent(
+            long encounterToken,
+            SessionPlannerTimelineMainViewInputEvent.Direction direction
     ) {
-        return new SessionPlannerTimelineMainViewInputEvent(kind, encounterToken, BigDecimal.ZERO, 0L, 0L);
+        return new SessionPlannerTimelineMainViewInputEvent(
+                new SessionPlannerTimelineMainViewInputEvent.MoveEncounterInput(encounterToken, direction));
+    }
+
+    private static SessionPlannerTimelineMainViewInputEvent removeEncounterEvent(long encounterToken) {
+        return new SessionPlannerTimelineMainViewInputEvent(
+                new SessionPlannerTimelineMainViewInputEvent.RemoveEncounterInput(encounterToken));
     }
 
     private static SessionPlannerTimelineMainViewInputEvent allocationEvent(
@@ -288,23 +300,20 @@ public final class SessionPlannerTimelineMainView extends VBox {
             BigDecimal allocationDelta
     ) {
         return new SessionPlannerTimelineMainViewInputEvent(
-                SessionPlannerTimelineMainViewInputEvent.Kind.SET_ENCOUNTER_ALLOCATION,
-                encounter.token(),
-                encounter.budgetPercentage().add(allocationDelta),
-                0L,
-                0L);
+                new SessionPlannerTimelineMainViewInputEvent.SetEncounterAllocationInput(
+                        encounter.token(),
+                        encounter.budgetPercentage().add(allocationDelta)));
     }
 
     private static SessionPlannerTimelineMainViewInputEvent restEvent(
-            SessionPlannerTimelineMainViewInputEvent.Kind kind,
             long leftEncounterId,
-            long rightEncounterId
+            long rightEncounterId,
+            SessionPlannerTimelineMainViewInputEvent.RestSelection restSelection
     ) {
         return new SessionPlannerTimelineMainViewInputEvent(
-                kind,
-                0L,
-                BigDecimal.ZERO,
-                leftEncounterId,
-                rightEncounterId);
+                new SessionPlannerTimelineMainViewInputEvent.RestGapInput(
+                        leftEncounterId,
+                        rightEncounterId,
+                        restSelection));
     }
 }
