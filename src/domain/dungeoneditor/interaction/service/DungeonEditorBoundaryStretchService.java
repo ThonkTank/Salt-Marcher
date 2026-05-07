@@ -30,7 +30,7 @@ public final class DungeonEditorBoundaryStretchService {
             return null;
         }
         long clusterId = clusterResolver.resolveBoundaryClusterId(snapshot, boundaryTarget);
-        if (clusterId <= 0L) {
+        if (!DungeonEditorWorkspaceValues.hasId(clusterId)) {
             return null;
         }
         List<DungeonEditorWorkspaceValues.Edge> sourceEdges =
@@ -114,7 +114,7 @@ public final class DungeonEditorBoundaryStretchService {
             return null;
         }
         return snapshot.areas().stream()
-                .filter(area -> area.kind() == DungeonEditorWorkspaceValues.AreaKind.ROOM && area.clusterId() == clusterId)
+                .filter(area -> area.kind().isRoom() && area.clusterId() == clusterId)
                 .findFirst()
                 .orElse(null);
     }
@@ -168,12 +168,12 @@ public final class DungeonEditorBoundaryStretchService {
             long clusterId,
             int level
     ) {
-        if (snapshot == null || clusterId <= 0L) {
+        if (snapshot == null || !DungeonEditorWorkspaceValues.hasId(clusterId)) {
             return Set.of();
         }
         Set<DungeonEditorWorkspaceValues.Cell> result = new java.util.LinkedHashSet<>();
         for (DungeonEditorWorkspaceValues.Area area : snapshot.areas()) {
-            if (area.kind() != DungeonEditorWorkspaceValues.AreaKind.ROOM || area.clusterId() != clusterId) {
+            if (!area.kind().isRoom() || area.clusterId() != clusterId) {
                 continue;
             }
             for (DungeonEditorWorkspaceValues.Cell cell : area.cells()) {

@@ -2,6 +2,7 @@ package src.domain.dungeoneditor.application;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.NavigableSet;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
@@ -39,8 +40,8 @@ final class BuildDungeonEditorSnapshotUseCase {
             String statusText
     ) {
         State {
-            viewMode = viewMode == null ? DungeonEditorSessionValues.ViewMode.GRID : viewMode;
-            selectedTool = selectedTool == null ? DungeonEditorSessionValues.Tool.SELECT : selectedTool;
+            viewMode = viewMode == null ? DungeonEditorSessionValues.ViewMode.defaultMode() : viewMode;
+            selectedTool = selectedTool == null ? DungeonEditorSessionValues.Tool.defaultTool() : selectedTool;
             overlaySettings = overlaySettings == null
                     ? DungeonEditorSessionValues.OverlaySettings.defaults()
                     : overlaySettings;
@@ -51,8 +52,7 @@ final class BuildDungeonEditorSnapshotUseCase {
     }
 
     private final Function<DungeonMapCatalogCommand, DungeonMapCatalogResponse> catalog;
-    private final Function<DungeonAuthoredMutationCommand, DungeonAuthoredMutationResult> mutateAuthored;
-    private final Function<DungeonAuthoredReadQuery, DungeonAuthoredReadResult> loadAuthored;
+    private final DungeonEditorSnapshotSurfaceLoader surfaceLoader;
 
     BuildDungeonEditorSnapshotUseCase(
             Function<DungeonMapCatalogCommand, DungeonMapCatalogResponse> catalog,
@@ -60,32 +60,27 @@ final class BuildDungeonEditorSnapshotUseCase {
             Function<DungeonAuthoredReadQuery, DungeonAuthoredReadResult> loadAuthored
     ) {
         this.catalog = catalog;
-        this.mutateAuthored = mutateAuthored;
-        this.loadAuthored = loadAuthored;
+        this.surfaceLoader = new DungeonEditorSnapshotSurfaceLoader(mutateAuthored, loadAuthored);
     }
 
     DungeonEditorSessionSnapshot.SnapshotData execute(State state) {
-        State safeState = state == null
-                ? new State(
-                        null,
-                        DungeonEditorSessionValues.ViewMode.GRID,
-                        DungeonEditorSessionValues.Tool.SELECT,
-                        0,
-                        DungeonEditorSessionValues.OverlaySettings.defaults(),
-                        DungeonEditorSessionValues.Selection.empty(),
-                        DungeonEditorSessionValues.Preview.none(),
-                        "")
-                : state;
-        List<MapSummary> maps =
-                mapSummaries(catalog.apply(new DungeonMapCatalogCommand.Search("")));
-        @Nullable MapId resolvedMapId = resolveSelectedMapId(safeState.selectedMapId(), maps);
-        DungeonEditorSessionSnapshot.SurfaceData surface = loadCurrentSurface(
+        State safeState = DungeonEditorSnapshotStateSupport.safeState(state);
+        List<MapSummary> maps = DungeonEditorSnapshotSelectionSupport.mapSummaries(
+                catalog.apply(new DungeonMapCatalogCommand.Search("")));
+        @Nullable MapId resolvedMapId = DungeonEditorSnapshotSelectionSupport.resolveSelectedMapId(
+                safeState.selectedMapId(),
+                maps);
+        DungeonEditorSessionSnapshot.SurfaceData surface = surfaceLoader.loadCurrentSurface(
                 resolvedMapId,
                 safeState.selection(),
                 safeState.preview());
-        int clampedProjectionLevel = clampProjectionLevel(surface, safeState.projectionLevel());
+        int clampedProjectionLevel = DungeonEditorSnapshotProjectionLevelSupport.clampProjectionLevel(
+                surface,
+                safeState.projectionLevel());
         String nextStatus = safeState.statusText().isBlank()
-                ? ApplyDungeonEditorSessionUseCase.statusFromMessages(previewMessages(resolvedMapId, safeState.preview()))
+                ? ApplyDungeonEditorSessionUseCase.statusFromMessages(surfaceLoader.previewMessages(
+                        resolvedMapId,
+                        safeState.preview()))
                 : safeState.statusText();
         return new DungeonEditorSessionSnapshot.SnapshotData(
                 maps,
@@ -103,11 +98,72 @@ final class BuildDungeonEditorSnapshotUseCase {
     @Nullable MapSnapshot loadCommittedSnapshot(
             @Nullable MapId mapId
     ) {
-        DungeonSnapshot snapshot = loadCommittedSnapshotRecord(mapId);
-        return snapshot == null ? null : DungeonEditorWorkspaceBoundaryTranslator.toWorkspaceMapSnapshot(snapshot.map());
+        return surfaceLoader.loadCommittedSnapshot(mapId);
+    }
+}
+
+final class DungeonEditorSnapshotStateSupport {
+
+    private DungeonEditorSnapshotStateSupport() {
     }
 
-    private DungeonEditorSessionSnapshot.@Nullable SurfaceData loadCurrentSurface(
+    static BuildDungeonEditorSnapshotUseCase.State safeState(
+            BuildDungeonEditorSnapshotUseCase.State state
+    ) {
+        return state == null
+                ? new BuildDungeonEditorSnapshotUseCase.State(
+                        null,
+                        DungeonEditorSessionValues.ViewMode.defaultMode(),
+                        DungeonEditorSessionValues.Tool.defaultTool(),
+                        0,
+                        DungeonEditorSessionValues.OverlaySettings.defaults(),
+                        DungeonEditorSessionValues.Selection.empty(),
+                        DungeonEditorSessionValues.Preview.none(),
+                        "")
+                : state;
+    }
+}
+
+final class DungeonEditorSnapshotSelectionSupport {
+
+    private DungeonEditorSnapshotSelectionSupport() {
+    }
+
+    static @Nullable MapId resolveSelectedMapId(@Nullable MapId requestedMapId, List<MapSummary> maps) {
+        if (requestedMapId != null && maps.stream().anyMatch(summary -> requestedMapId.equals(summary.mapId()))) {
+            return requestedMapId;
+        }
+        return maps.isEmpty() ? null : maps.getFirst().mapId();
+    }
+
+    static List<MapSummary> mapSummaries(@Nullable DungeonMapCatalogResponse response) {
+        if (response instanceof DungeonMapCatalogResponse.MapList mapList) {
+            return mapList.maps().stream()
+                    .map(DungeonEditorWorkspaceMapBoundaryTranslator::toWorkspaceMapSummary)
+                    .toList();
+        }
+        return List.of();
+    }
+}
+
+final class DungeonEditorSnapshotSurfaceLoader {
+    private final Function<DungeonAuthoredMutationCommand, DungeonAuthoredMutationResult> mutateAuthored;
+    private final Function<DungeonAuthoredReadQuery, DungeonAuthoredReadResult> loadAuthored;
+
+    DungeonEditorSnapshotSurfaceLoader(
+            Function<DungeonAuthoredMutationCommand, DungeonAuthoredMutationResult> mutateAuthored,
+            Function<DungeonAuthoredReadQuery, DungeonAuthoredReadResult> loadAuthored
+    ) {
+        this.mutateAuthored = mutateAuthored;
+        this.loadAuthored = loadAuthored;
+    }
+
+    @Nullable MapSnapshot loadCommittedSnapshot(@Nullable MapId mapId) {
+        DungeonSnapshot snapshot = loadCommittedSnapshotRecord(mapId);
+        return snapshot == null ? null : DungeonEditorWorkspaceMapBoundaryTranslator.toWorkspaceMapSnapshot(snapshot.map());
+    }
+
+    DungeonEditorSessionSnapshot.@Nullable SurfaceData loadCurrentSurface(
             @Nullable MapId mapId,
             DungeonEditorSessionValues.Selection selection,
             DungeonEditorSessionValues.Preview preview
@@ -117,12 +173,12 @@ final class BuildDungeonEditorSnapshotUseCase {
             return null;
         }
         MapSnapshot committedMap =
-                DungeonEditorWorkspaceBoundaryTranslator.toWorkspaceMapSnapshot(committedSnapshot.map());
+                DungeonEditorWorkspaceMapBoundaryTranslator.toWorkspaceMapSnapshot(committedSnapshot.map());
         @Nullable Inspector inspector = loadInspector(mapId, selection);
         DungeonOperationResult previewResult = previewMessages(mapId, preview);
         DungeonSnapshot previewSnapshot = previewResult == null ? null : previewResult.snapshot();
         @Nullable MapSnapshot previewMap =
-                DungeonEditorWorkspaceBoundaryTranslator.toWorkspacePreviewMap(previewSnapshot);
+                DungeonEditorWorkspaceMapBoundaryTranslator.toWorkspacePreviewMap(previewSnapshot);
         return new DungeonEditorSessionSnapshot.SurfaceData(
                 committedSnapshot.mapName(),
                 committedSnapshot.revision(),
@@ -131,27 +187,17 @@ final class BuildDungeonEditorSnapshotUseCase {
                 inspector);
     }
 
-    private @Nullable DungeonOperationResult previewMessages(
-            @Nullable MapId mapId,
-            DungeonEditorSessionValues.Preview preview
-    ) {
+    @Nullable DungeonOperationResult previewMessages(@Nullable MapId mapId, DungeonEditorSessionValues.Preview preview) {
         if (mapId == null) {
             return null;
         }
-        return previewQuery(mapId, preview);
-    }
-
-    private @Nullable DungeonOperationResult previewQuery(
-            MapId mapId,
-            DungeonEditorSessionValues.Preview preview
-    ) {
         DungeonEditorOperation operation = DungeonEditorSessionBridge.toDungeonOperation(preview);
         if (operation == null) {
             return null;
         }
         return ApplyDungeonEditorSessionUseCase.requireOperationResult(mutateAuthored.apply(
                 new DungeonAuthoredMutationCommand.PreviewOperation(
-                        Objects.requireNonNull(DungeonEditorWorkspaceBoundaryTranslator.toDomainMapId(mapId)),
+                        Objects.requireNonNull(DungeonEditorWorkspaceMapBoundaryTranslator.toDomainMapId(mapId)),
                         operation)));
     }
 
@@ -165,41 +211,35 @@ final class BuildDungeonEditorSnapshotUseCase {
             return null;
         }
         DungeonAuthoredReadResult result = loadAuthored.apply(new DungeonAuthoredReadQuery.DescribeSelection(
-                Objects.requireNonNull(DungeonEditorWorkspaceBoundaryTranslator.toDomainMapId(mapId)),
-                DungeonEditorWorkspaceBoundaryTranslator.toDomainTopologyRef(selection.topologyRef()),
+                Objects.requireNonNull(DungeonEditorWorkspaceMapBoundaryTranslator.toDomainMapId(mapId)),
+                DungeonEditorWorkspaceTopologyBoundaryTranslator.toDomainTopologyRef(selection.topologyRef()),
                 selection.clusterId(),
                 selection.clusterSelection()));
         if (result instanceof DungeonAuthoredReadResult.SelectionInspector selectionInspector) {
-            return DungeonEditorWorkspaceBoundaryTranslator.toWorkspaceInspector(selectionInspector.inspector());
+            return DungeonEditorWorkspaceInspectorBoundaryTranslator.toWorkspaceInspector(selectionInspector.inspector());
         }
         throw new IllegalStateException("Dungeon-Read-Antwort enthielt keinen Inspektor.");
     }
 
-    private @Nullable DungeonSnapshot loadCommittedSnapshotRecord(
-            @Nullable MapId mapId
-    ) {
+    private @Nullable DungeonSnapshot loadCommittedSnapshotRecord(@Nullable MapId mapId) {
         if (mapId == null) {
             return null;
         }
         DungeonAuthoredReadResult result = loadAuthored.apply(new DungeonAuthoredReadQuery.LoadSnapshot(
-                Objects.requireNonNull(DungeonEditorWorkspaceBoundaryTranslator.toDomainMapId(mapId))));
+                Objects.requireNonNull(DungeonEditorWorkspaceMapBoundaryTranslator.toDomainMapId(mapId))));
         if (result instanceof DungeonAuthoredReadResult.CommittedSnapshot committedSnapshot) {
             return committedSnapshot.snapshot();
         }
         throw new IllegalStateException("Dungeon-Read-Antwort enthielt keinen Snapshot.");
     }
+}
 
-    private static @Nullable MapId resolveSelectedMapId(
-            @Nullable MapId requestedMapId,
-            List<MapSummary> maps
-    ) {
-        if (requestedMapId != null && maps.stream().anyMatch(summary -> requestedMapId.equals(summary.mapId()))) {
-            return requestedMapId;
-        }
-        return maps.isEmpty() ? null : maps.getFirst().mapId();
+final class DungeonEditorSnapshotProjectionLevelSupport {
+
+    private DungeonEditorSnapshotProjectionLevelSupport() {
     }
 
-    private static int clampProjectionLevel(
+    static int clampProjectionLevel(
             DungeonEditorSessionSnapshot.@Nullable SurfaceData surface,
             int projectionLevel
     ) {
@@ -214,7 +254,7 @@ final class BuildDungeonEditorSnapshotUseCase {
             DungeonEditorSessionSnapshot.@Nullable SurfaceData surface,
             int fallbackLevel
     ) {
-        TreeSet<Integer> levels = new TreeSet<>();
+        NavigableSet<Integer> levels = new TreeSet<>();
         if (surface != null) {
             surface.map().areas().forEach(area -> addCellLevels(levels, area.cells()));
             for (Feature feature : surface.map().features()) {
@@ -239,14 +279,5 @@ final class BuildDungeonEditorSnapshotUseCase {
         for (Cell cell : cells == null ? List.<Cell>of() : cells) {
             levels.add(cell.level());
         }
-    }
-
-    private static List<MapSummary> mapSummaries(@Nullable DungeonMapCatalogResponse response) {
-        if (response instanceof DungeonMapCatalogResponse.MapList mapList) {
-            return mapList.maps().stream()
-                    .map(DungeonEditorWorkspaceBoundaryTranslator::toWorkspaceMapSummary)
-                    .toList();
-        }
-        return List.of();
     }
 }

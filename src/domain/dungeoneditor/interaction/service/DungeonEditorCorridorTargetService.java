@@ -39,7 +39,7 @@ public final class DungeonEditorCorridorTargetService {
         if (roomTarget != null) {
             return roomTarget;
         }
-            return corridorTarget(input);
+        return corridorTarget(input);
     }
 
     public @Nullable PendingCorridorTarget resolveDeleteTarget(PointerState input) {
@@ -51,10 +51,10 @@ public final class DungeonEditorCorridorTargetService {
         if (hit == null
                 || hit.handleRef() == null
                 || !hit.handleRef().doorHandle()
-                || hit.handleRef().roomId() <= 0L
-                || hit.handleRef().clusterId() <= 0L
+                || !DungeonEditorWorkspaceValues.hasId(hit.handleRef().roomId())
+                || !DungeonEditorWorkspaceValues.hasId(hit.handleRef().clusterId())
                 || hit.handleRef().direction().isBlank()
-                || hit.topologyRefId() <= 0L) {
+                || !DungeonEditorWorkspaceValues.hasId(hit.topologyRefId())) {
             return null;
         }
         HandleTarget handleRef = hit.handleRef();
@@ -153,7 +153,7 @@ public final class DungeonEditorCorridorTargetService {
             return null;
         }
         long hostCorridorId = hit.handleRef().corridorId();
-        if (hostCorridorId <= 0L) {
+        if (!DungeonEditorWorkspaceValues.hasId(hostCorridorId)) {
             return null;
         }
         return new PendingCorridorTarget.EndpointTarget(
@@ -183,11 +183,11 @@ public final class DungeonEditorCorridorTargetService {
         if (hit == null) {
             return null;
         }
-        long corridorId = hit.topologyRefId() > 0L
-                && DungeonEditorWorkspaceValues.TopologyElementKind.CORRIDOR.name().equals(hit.topologyRefKind())
+        long corridorId = DungeonEditorWorkspaceValues.hasId(hit.topologyRefId())
+                && DungeonEditorWorkspaceValues.TopologyElementKind.fromName(hit.topologyRefKind()).isCorridor()
                 ? hit.topologyRefId()
                 : hit.kind() == HitKind.CORRIDOR ? hit.ownerId() : 0L;
-        if (corridorId <= 0L) {
+        if (!DungeonEditorWorkspaceValues.hasId(corridorId)) {
             return null;
         }
         return new PendingCorridorTarget.EndpointTarget(

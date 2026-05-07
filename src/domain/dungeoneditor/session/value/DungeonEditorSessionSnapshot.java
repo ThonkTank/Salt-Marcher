@@ -12,6 +12,10 @@ public final class DungeonEditorSessionSnapshot {
     private DungeonEditorSessionSnapshot() {
     }
 
+    public static SnapshotData emptySnapshot(String statusText) {
+        return SnapshotData.empty(statusText);
+    }
+
     public record SnapshotData(
             List<DungeonEditorWorkspaceValues.MapSummary> maps,
             @Nullable MapId selectedMapId,
@@ -26,8 +30,8 @@ public final class DungeonEditorSessionSnapshot {
     ) {
         public SnapshotData {
             maps = maps == null ? List.of() : List.copyOf(maps);
-            viewMode = viewMode == null ? DungeonEditorSessionValues.ViewMode.GRID : viewMode;
-            selectedTool = selectedTool == null ? DungeonEditorSessionValues.Tool.SELECT : selectedTool;
+            viewMode = viewMode == null ? DungeonEditorSessionValues.ViewMode.defaultMode() : viewMode;
+            selectedTool = selectedTool == null ? DungeonEditorSessionValues.Tool.defaultTool() : selectedTool;
             overlaySettings = overlaySettings == null ? DungeonEditorSessionValues.OverlaySettings.defaults() : overlaySettings;
             selection = selection == null ? DungeonEditorSessionValues.Selection.empty() : selection;
             preview = preview == null ? DungeonEditorSessionValues.Preview.none() : preview;
@@ -38,8 +42,8 @@ public final class DungeonEditorSessionSnapshot {
             return new SnapshotData(
                     List.of(),
                     null,
-                    DungeonEditorSessionValues.ViewMode.GRID,
-                    DungeonEditorSessionValues.Tool.SELECT,
+                    DungeonEditorSessionValues.ViewMode.defaultMode(),
+                    DungeonEditorSessionValues.Tool.defaultTool(),
                     0,
                     DungeonEditorSessionValues.OverlaySettings.defaults(),
                     DungeonEditorSessionValues.Selection.empty(),

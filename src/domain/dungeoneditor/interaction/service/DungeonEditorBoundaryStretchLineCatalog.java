@@ -1,7 +1,6 @@
 package src.domain.dungeoneditor.interaction.service;
 
 import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 import src.domain.dungeoneditor.interaction.value.DungeonEditorMainViewInteractionValues.BoundaryStretchOrientation;
@@ -105,10 +104,10 @@ public final class DungeonEditorBoundaryStretchLineCatalog {
             BoundaryStretchOrientation orientation,
             DungeonEditorWorkspaceValues.Edge edge
     ) {
-        return switch (orientation) {
-            case HORIZONTAL -> edge.from().r() == edge.to().r();
-            case VERTICAL -> edge.from().q() == edge.to().q();
-        };
+        if (orientation == BoundaryStretchOrientation.HORIZONTAL) {
+            return edge.from().r() == edge.to().r();
+        }
+        return edge.from().q() == edge.to().q();
     }
 
     private static int fixedCoordinate(

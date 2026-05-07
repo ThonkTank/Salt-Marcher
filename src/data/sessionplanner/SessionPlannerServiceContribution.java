@@ -1,5 +1,6 @@
 package src.data.sessionplanner;
 
+import java.util.Objects;
 import shell.api.ServiceContribution;
 import shell.api.ServiceRegistry;
 import src.data.sessionplanner.query.ApplicationSessionPlannerFactsQueryAdapter;
@@ -27,51 +28,100 @@ public final class SessionPlannerServiceContribution implements ServiceContribut
 
     @Override
     public void register(ServiceRegistry.Builder builder) {
-        SharedRuntime sharedRuntime = new SharedRuntime();
+        SessionPlanRepository repository = new SqliteSessionPlanRepository();
+        ForeignServices foreignServices = new ForeignServices();
+        ApplicationSessionPlannerFactsQueryAdapter facts = new ApplicationSessionPlannerFactsQueryAdapter(
+                foreignServices::party,
+                foreignServices::activePartyModel,
+                foreignServices::adventuringDayCalculationModel,
+                foreignServices::encounters,
+                foreignServices::savedPlansModel,
+                foreignServices::planBudgetModel);
+        SessionPlannerPublishedStateRepositoryAdapter publishedState =
+                new SessionPlannerPublishedStateRepositoryAdapter(repository, facts, facts);
+        SessionPlannerApplicationService applicationService =
+                new SessionPlannerApplicationService(repository, facts, facts, publishedState);
         builder.registerFactory(
                 SessionPlannerApplicationService.class,
-                services -> sharedRuntime.resolve(services).applicationService());
+                services -> {
+                    foreignServices.bind(services);
+                    return applicationService;
+                });
         builder.registerFactory(
                 SessionPlannerCurrentSessionModel.class,
-                services -> sharedRuntime.resolve(services).publishedStateRepository().currentSessionModel());
+                services -> {
+                    foreignServices.bind(services);
+                    services.require(SessionPlannerApplicationService.class);
+                    return publishedState.currentSessionModel;
+                });
         builder.registerFactory(
                 SessionPlannerParticipantsModel.class,
-                services -> sharedRuntime.resolve(services).publishedStateRepository().participantsModel());
+                services -> {
+                    foreignServices.bind(services);
+                    services.require(SessionPlannerApplicationService.class);
+                    return publishedState.participantsModel;
+                });
         builder.registerFactory(
                 SessionPlannerEncountersModel.class,
-                services -> sharedRuntime.resolve(services).publishedStateRepository().encountersModel());
+                services -> {
+                    foreignServices.bind(services);
+                    services.require(SessionPlannerApplicationService.class);
+                    return publishedState.encountersModel;
+                });
         builder.registerFactory(
                 SessionPlannerStatePanelModel.class,
-                services -> sharedRuntime.resolve(services).publishedStateRepository().statePanelModel());
+                services -> {
+                    foreignServices.bind(services);
+                    services.require(SessionPlannerApplicationService.class);
+                    return publishedState.statePanelModel;
+                });
     }
 
-    private static final class SharedRuntime {
+    private static final class ForeignServices {
 
-        private RuntimeServices services;
+        private boolean bound;
+        private PartyApplicationService party;
+        private ActivePartyModel activePartyModel;
+        private AdventuringDayCalculationModel adventuringDayCalculationModel;
+        private EncounterApplicationService encounters;
+        private SavedEncounterPlanListModel savedPlansModel;
+        private EncounterPlanBudgetModel planBudgetModel;
 
-        private RuntimeServices resolve(ServiceRegistry serviceRegistry) {
-            if (services == null) {
-                SessionPlanRepository repository = new SqliteSessionPlanRepository();
-                ApplicationSessionPlannerFactsQueryAdapter facts = new ApplicationSessionPlannerFactsQueryAdapter(
-                        serviceRegistry.require(PartyApplicationService.class),
-                        serviceRegistry.require(ActivePartyModel.class),
-                        serviceRegistry.require(AdventuringDayCalculationModel.class),
-                        serviceRegistry.require(EncounterApplicationService.class),
-                        serviceRegistry.require(SavedEncounterPlanListModel.class),
-                        serviceRegistry.require(EncounterPlanBudgetModel.class));
-                SessionPlannerPublishedStateRepositoryAdapter publishedStateRepository =
-                        new SessionPlannerPublishedStateRepositoryAdapter(repository, facts, facts);
-                services = new RuntimeServices(
-                        new SessionPlannerApplicationService(repository, facts, facts, publishedStateRepository),
-                        publishedStateRepository);
+        private void bind(ServiceRegistry services) {
+            if (bound) {
+                return;
             }
-            return services;
+            party = services.require(PartyApplicationService.class);
+            activePartyModel = services.require(ActivePartyModel.class);
+            adventuringDayCalculationModel = services.require(AdventuringDayCalculationModel.class);
+            encounters = services.require(EncounterApplicationService.class);
+            savedPlansModel = services.require(SavedEncounterPlanListModel.class);
+            planBudgetModel = services.require(EncounterPlanBudgetModel.class);
+            bound = true;
         }
-    }
 
-    private record RuntimeServices(
-            SessionPlannerApplicationService applicationService,
-            SessionPlannerPublishedStateRepositoryAdapter publishedStateRepository
-    ) {
+        private PartyApplicationService party() {
+            return Objects.requireNonNull(party, "party");
+        }
+
+        private ActivePartyModel activePartyModel() {
+            return Objects.requireNonNull(activePartyModel, "activePartyModel");
+        }
+
+        private AdventuringDayCalculationModel adventuringDayCalculationModel() {
+            return Objects.requireNonNull(adventuringDayCalculationModel, "adventuringDayCalculationModel");
+        }
+
+        private EncounterApplicationService encounters() {
+            return Objects.requireNonNull(encounters, "encounters");
+        }
+
+        private SavedEncounterPlanListModel savedPlansModel() {
+            return Objects.requireNonNull(savedPlansModel, "savedPlansModel");
+        }
+
+        private EncounterPlanBudgetModel planBudgetModel() {
+            return Objects.requireNonNull(planBudgetModel, "planBudgetModel");
+        }
     }
 }

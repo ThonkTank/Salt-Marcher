@@ -31,16 +31,16 @@ public final class SessionPlannerPublishedStateRepositoryAdapter implements Sess
     private final List<Consumer<SessionPlannerParticipantsProjection>> participantsListeners = new ArrayList<>();
     private final List<Consumer<SessionPlannerEncountersProjection>> encountersListeners = new ArrayList<>();
     private final List<Consumer<SessionPlannerStatePanelProjection>> statePanelListeners = new ArrayList<>();
-    private final SessionPlannerCurrentSessionModel currentSessionModel = new SessionPlannerCurrentSessionModel(
+    public final SessionPlannerCurrentSessionModel currentSessionModel = new SessionPlannerCurrentSessionModel(
             this::currentSessionSnapshot,
             this::subscribeSessionListener);
-    private final SessionPlannerParticipantsModel participantsModel = new SessionPlannerParticipantsModel(
+    public final SessionPlannerParticipantsModel participantsModel = new SessionPlannerParticipantsModel(
             this::currentParticipantsProjection,
             this::subscribeParticipantsListener);
-    private final SessionPlannerEncountersModel encountersModel = new SessionPlannerEncountersModel(
+    public final SessionPlannerEncountersModel encountersModel = new SessionPlannerEncountersModel(
             this::currentEncountersProjection,
             this::subscribeEncountersListener);
-    private final SessionPlannerStatePanelModel statePanelModel = new SessionPlannerStatePanelModel(
+    public final SessionPlannerStatePanelModel statePanelModel = new SessionPlannerStatePanelModel(
             this::currentStatePanelProjection,
             this::subscribeStatePanelListener);
     private @Nullable SessionPlannerSessionSnapshot currentSessionSnapshot;
@@ -69,22 +69,6 @@ public final class SessionPlannerPublishedStateRepositoryAdapter implements Sess
         notifyParticipantsListeners(currentParticipantsProjection);
         notifyEncountersListeners(currentEncountersProjection);
         notifyStatePanelListeners(currentStatePanelProjection);
-    }
-
-    public SessionPlannerCurrentSessionModel currentSessionModel() {
-        return currentSessionModel;
-    }
-
-    public SessionPlannerParticipantsModel participantsModel() {
-        return participantsModel;
-    }
-
-    public SessionPlannerEncountersModel encountersModel() {
-        return encountersModel;
-    }
-
-    public SessionPlannerStatePanelModel statePanelModel() {
-        return statePanelModel;
     }
 
     private SessionPlannerSessionSnapshot currentSessionSnapshot() {

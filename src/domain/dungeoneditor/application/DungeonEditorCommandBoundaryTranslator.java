@@ -13,7 +13,6 @@ import src.domain.dungeoneditor.published.LoadDungeonEditorQuery;
 import src.domain.dungeoneditor.session.value.DungeonEditorSessionCommand;
 import src.domain.dungeoneditor.session.value.DungeonEditorSessionValues;
 import src.domain.dungeoneditor.workspace.value.DungeonEditorWorkspaceValues;
-import src.domain.dungeoneditor.application.DungeonEditorWorkspaceBoundaryTranslator;
 
 public final class DungeonEditorCommandBoundaryTranslator {
 
@@ -23,9 +22,8 @@ public final class DungeonEditorCommandBoundaryTranslator {
     public static @Nullable DungeonMapId requestedDomainMapId(@Nullable LoadDungeonEditorQuery query) {
         LoadDungeonEditorQuery effectiveQuery = query == null ? new LoadDungeonEditorQuery(null) : query;
         DungeonEditorMapId mapId = effectiveQuery.mapId();
-        return mapId == null
-                ? null
-                : DungeonEditorWorkspaceBoundaryTranslator.toDomainMapId(toWorkspaceMapId(mapId));
+        DungeonEditorWorkspaceValues.MapId workspaceMapId = toWorkspaceMapId(mapId);
+        return workspaceMapId == null ? null : new DungeonMapId(workspaceMapId.value());
     }
 
     public static DungeonEditorSessionCommand toInternalCommand(@Nullable ApplyDungeonEditorSessionCommand command) {

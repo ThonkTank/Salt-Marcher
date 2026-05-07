@@ -16,6 +16,14 @@ public final class DungeonEditorSessionValues {
         public static ViewMode fromName(@Nullable String name) {
             return "GRAPH".equals(name) ? GRAPH : GRID;
         }
+
+        public static ViewMode defaultMode() {
+            return GRID;
+        }
+
+        public boolean isGrid() {
+            return this == GRID;
+        }
     }
 
     public enum Tool {
@@ -39,6 +47,10 @@ public final class DungeonEditorSessionValues {
             } catch (IllegalArgumentException ignored) {
                 return SELECT;
             }
+        }
+
+        public static Tool defaultTool() {
+            return SELECT;
         }
 
         public boolean isSelectionTool() {
@@ -159,7 +171,7 @@ public final class DungeonEditorSessionValues {
         public ClusterBoundariesPreview {
             clusterId = Math.max(0L, clusterId);
             edges = edges == null ? List.of() : List.copyOf(edges);
-            boundaryKind = boundaryKind == null ? DungeonEditorWorkspaceValues.BoundaryKind.WALL : boundaryKind;
+            boundaryKind = boundaryKind == null ? DungeonEditorWorkspaceValues.BoundaryKind.defaultKind() : boundaryKind;
         }
 
         @Override

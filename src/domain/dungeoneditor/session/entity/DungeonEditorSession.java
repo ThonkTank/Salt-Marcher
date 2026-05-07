@@ -2,7 +2,6 @@ package src.domain.dungeoneditor.session.entity;
 
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeoneditor.session.value.DungeonEditorSessionValues;
-import src.domain.dungeoneditor.workspace.value.DungeonEditorWorkspaceValues;
 import src.domain.dungeoneditor.workspace.value.DungeonEditorWorkspaceValues.MapId;
 
 public record DungeonEditorSession(
@@ -17,8 +16,8 @@ public record DungeonEditorSession(
 ) {
 
     public DungeonEditorSession {
-        viewMode = viewMode == null ? DungeonEditorSessionValues.ViewMode.GRID : viewMode;
-        selectedTool = selectedTool == null ? DungeonEditorSessionValues.Tool.SELECT : selectedTool;
+        viewMode = viewMode == null ? DungeonEditorSessionValues.ViewMode.defaultMode() : viewMode;
+        selectedTool = selectedTool == null ? DungeonEditorSessionValues.Tool.defaultTool() : selectedTool;
         overlaySettings = overlaySettings == null ? DungeonEditorSessionValues.OverlaySettings.defaults() : overlaySettings;
         selection = selection == null ? DungeonEditorSessionValues.Selection.empty() : selection;
         preview = preview == null ? DungeonEditorSessionValues.Preview.none() : preview;
@@ -28,8 +27,8 @@ public record DungeonEditorSession(
     public static DungeonEditorSession empty() {
         return new DungeonEditorSession(
                 null,
-                DungeonEditorSessionValues.ViewMode.GRID,
-                DungeonEditorSessionValues.Tool.SELECT,
+                DungeonEditorSessionValues.ViewMode.defaultMode(),
+                DungeonEditorSessionValues.Tool.defaultTool(),
                 0,
                 DungeonEditorSessionValues.OverlaySettings.defaults(),
                 DungeonEditorSessionValues.Selection.empty(),

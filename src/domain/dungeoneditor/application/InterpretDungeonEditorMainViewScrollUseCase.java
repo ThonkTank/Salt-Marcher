@@ -1,12 +1,11 @@
 package src.domain.dungeoneditor.application;
 
+import org.jspecify.annotations.Nullable;
 import src.domain.dungeoneditor.interaction.value.DungeonEditorMainViewEffect;
 import src.domain.dungeoneditor.interaction.value.DungeonEditorMainViewInteractionValues.DragSession;
 import src.domain.dungeoneditor.interaction.value.DungeonEditorMainViewInteractionValues.InteractionState;
 import src.domain.dungeoneditor.interaction.value.DungeonEditorMainViewInterpretation;
-import org.jspecify.annotations.Nullable;
 import src.domain.dungeoneditor.session.value.DungeonEditorSessionValues;
-import src.domain.dungeoneditor.workspace.value.DungeonEditorWorkspaceValues;
 import src.domain.dungeoneditor.workspace.value.DungeonEditorWorkspaceValues.MapSnapshot;
 
 final class InterpretDungeonEditorMainViewScrollUseCase {

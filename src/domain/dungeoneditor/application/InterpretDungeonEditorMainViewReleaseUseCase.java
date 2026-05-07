@@ -16,28 +16,58 @@ final class InterpretDungeonEditorMainViewReleaseUseCase {
             DungeonEditorSessionValues.Tool selectedTool,
             InteractionState state
     ) {
-        if (state.paintSession().present() && roomPaintToolSelected(selectedTool)) {
-            PaintSession released = input == null
-                    ? state.paintSession()
-                    : state.paintSession().withEnd(input.q(), input.r());
-            return new DungeonEditorMainViewInterpretation(
-                    state.withPaintSession(PaintSession.none()),
-                    DungeonEditorMainViewEffect.apply(released.preview()));
+        if (state.paintSession().present()) {
+            return releasePaintSession(input, selectedTool, state);
         }
         if (state.boundaryStretchSession().present()) {
-            BoundaryStretchSession releasedSession = input == null
-                    ? state.boundaryStretchSession()
-                    : state.boundaryStretchSession().withCurrentPointer(input.q(), input.r());
-            InteractionState nextState = state.withBoundaryStretchSession(BoundaryStretchSession.none());
-            if (!selectionToolSelected(selectedTool)) {
-                return new DungeonEditorMainViewInterpretation(nextState, DungeonEditorMainViewEffect.none());
-            }
-            if (!releasedSession.moved()) {
-                return new DungeonEditorMainViewInterpretation(nextState, DungeonEditorMainViewEffect.select(releasedSession.selection()));
-            }
-            return new DungeonEditorMainViewInterpretation(nextState, DungeonEditorMainViewEffect.apply(releasedSession.preview()));
+            return releaseBoundaryStretchSession(input, selectedTool, state);
         }
-        if (!state.dragSession().present() || input == null) {
+        if (!state.dragSession().present()) {
+            return new DungeonEditorMainViewInterpretation(state, DungeonEditorMainViewEffect.clearPreviewIfNeeded(false));
+        }
+        return releaseDragSession(input, selectedTool, state);
+    }
+
+    private static DungeonEditorMainViewInterpretation releasePaintSession(
+            PointerState input,
+            DungeonEditorSessionValues.Tool selectedTool,
+            InteractionState state
+    ) {
+        if (!roomPaintToolSelected(selectedTool)) {
+            return new DungeonEditorMainViewInterpretation(state, DungeonEditorMainViewEffect.none());
+        }
+        PaintSession released = input == null
+                ? state.paintSession()
+                : state.paintSession().withEnd(input.q(), input.r());
+        return new DungeonEditorMainViewInterpretation(
+                state.withPaintSession(PaintSession.none()),
+                DungeonEditorMainViewEffect.apply(released.preview()));
+    }
+
+    private static DungeonEditorMainViewInterpretation releaseBoundaryStretchSession(
+            PointerState input,
+            DungeonEditorSessionValues.Tool selectedTool,
+            InteractionState state
+    ) {
+        BoundaryStretchSession releasedSession = input == null
+                ? state.boundaryStretchSession()
+                : state.boundaryStretchSession().withCurrentPointer(input.q(), input.r());
+        InteractionState nextState = state.withBoundaryStretchSession(BoundaryStretchSession.none());
+        if (!selectionToolSelected(selectedTool)) {
+            return new DungeonEditorMainViewInterpretation(nextState, DungeonEditorMainViewEffect.none());
+        }
+        if (!releasedSession.moved()) {
+            return new DungeonEditorMainViewInterpretation(nextState, DungeonEditorMainViewEffect.select(releasedSession.selection()));
+        }
+        return new DungeonEditorMainViewInterpretation(nextState, DungeonEditorMainViewEffect.apply(releasedSession.preview()));
+    }
+
+    private static DungeonEditorMainViewInterpretation releaseDragSession(
+            PointerState input,
+            DungeonEditorSessionValues.Tool selectedTool,
+            InteractionState state
+    ) {
+        if (input == null) {
             return new DungeonEditorMainViewInterpretation(state, DungeonEditorMainViewEffect.clearPreviewIfNeeded(false));
         }
         DragSession releasedSession = state.dragSession();

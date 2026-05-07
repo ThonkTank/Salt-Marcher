@@ -71,7 +71,7 @@ public final class DungeonEditorBoundaryRoomTouchService {
                 .map(cell -> new CellKey(cell.q(), cell.r(), cell.level()))
                 .toList();
         for (DungeonEditorWorkspaceValues.Area area : snapshot.areas()) {
-            if (area.kind() != DungeonEditorWorkspaceValues.AreaKind.ROOM) {
+            if (!area.kind().isRoom()) {
                 continue;
             }
             for (DungeonEditorWorkspaceValues.Cell cell : area.cells()) {
@@ -89,7 +89,7 @@ public final class DungeonEditorBoundaryRoomTouchService {
     ) {
         List<BoundaryRoomTouch> touches = new ArrayList<>();
         for (DungeonEditorWorkspaceValues.Area area : areas) {
-            if (area.kind() != DungeonEditorWorkspaceValues.AreaKind.ROOM) {
+            if (!area.kind().isRoom()) {
                 continue;
             }
             for (DungeonEditorWorkspaceValues.Cell cell : area.cells()) {

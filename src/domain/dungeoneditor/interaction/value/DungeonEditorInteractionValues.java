@@ -9,6 +9,10 @@ public final class DungeonEditorInteractionValues {
     private DungeonEditorInteractionValues() {
     }
 
+    public static VertexKey vertexKey(VertexTarget target) {
+        return new VertexKey(target.q(), target.r(), target.level());
+    }
+
     public record CellTarget(
             int q,
             int r,

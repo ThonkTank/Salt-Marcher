@@ -8,6 +8,10 @@ public final class DungeonEditorWorkspaceValues {
     private DungeonEditorWorkspaceValues() {
     }
 
+    public static boolean hasId(long id) {
+        return id > 0L;
+    }
+
     public record MapId(long value) {
         public MapId {
             value = Math.max(1L, value);
@@ -70,6 +74,10 @@ public final class DungeonEditorWorkspaceValues {
             return "door".equalsIgnoreCase(kind) ? DOOR : WALL;
         }
 
+        public static BoundaryKind defaultKind() {
+            return WALL;
+        }
+
         public String externalKind() {
             return externalKind;
         }
@@ -108,6 +116,14 @@ public final class DungeonEditorWorkspaceValues {
             } catch (IllegalArgumentException ignored) {
                 return EMPTY;
             }
+        }
+
+        public boolean isRoom() {
+            return this == ROOM;
+        }
+
+        public boolean isCorridor() {
+            return this == CORRIDOR;
         }
     }
 

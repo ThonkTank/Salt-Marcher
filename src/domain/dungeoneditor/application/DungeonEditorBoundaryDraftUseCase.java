@@ -34,17 +34,13 @@ final class DungeonEditorBoundaryDraftUseCase {
             return new DungeonEditorMainViewInterpretation(state, applyDoorBoundaryPress(input, snapshot, selectedTool));
         }
         var vertex = input.vertexTarget();
-        if (vertex == null || !vertex.present()) {
-            return new DungeonEditorMainViewInterpretation(
-                    state.boundaryDraft().present() ? state : state.clear(),
-                    DungeonEditorMainViewEffect.none());
+        if (!vertexPresent(vertex)) {
+            return clearedBoundaryDraft(state);
         }
-        boolean deleteMode = selectedTool == DungeonEditorSessionValues.Tool.WALL_DELETE;
+        boolean deleteMode = selectedTool.deleteMode();
         long clusterId = clusterResolver.resolveClusterId(input, vertex, deleteMode, snapshot, currentSelection, graphService);
-        if (clusterId <= 0L) {
-            return new DungeonEditorMainViewInterpretation(
-                    state.boundaryDraft().present() ? state : state.clear(),
-                    DungeonEditorMainViewEffect.none());
+        if (!DungeonEditorWorkspaceValues.hasId(clusterId)) {
+            return clearedBoundaryDraft(state);
         }
         VertexKey nextVertex = new VertexKey(vertex.q(), vertex.r(), vertex.level());
         if (!state.boundaryDraft().present() || state.boundaryDraft().clusterId() != clusterId) {
@@ -177,5 +173,17 @@ final class DungeonEditorBoundaryDraftUseCase {
                             current.deleteMode())));
         }
         return new DungeonEditorMainViewInterpretation(state, preview(input, snapshot, selectedTool, state));
+    }
+
+    private static DungeonEditorMainViewInterpretation clearedBoundaryDraft(InteractionState state) {
+        return new DungeonEditorMainViewInterpretation(
+                state.boundaryDraft().present() ? state : state.clear(),
+                DungeonEditorMainViewEffect.none());
+    }
+
+    private static boolean vertexPresent(
+            src.domain.dungeoneditor.interaction.value.DungeonEditorInteractionValues.VertexTarget vertex
+    ) {
+        return vertex != null && vertex.present();
     }
 }

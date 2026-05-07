@@ -21,8 +21,8 @@ public record DungeonEditorSessionCommand(
     public DungeonEditorSessionCommand {
         action = action == null ? Action.INTERPRET_MAIN_VIEW : action;
         mapName = mapName == null ? "" : mapName;
-        viewMode = viewMode == null ? DungeonEditorSessionValues.ViewMode.GRID : viewMode;
-        selectedTool = selectedTool == null ? DungeonEditorSessionValues.Tool.SELECT : selectedTool;
+        viewMode = viewMode == null ? DungeonEditorSessionValues.ViewMode.defaultMode() : viewMode;
+        selectedTool = selectedTool == null ? DungeonEditorSessionValues.Tool.defaultTool() : selectedTool;
         overlaySettings = overlaySettings == null ? DungeonEditorSessionValues.OverlaySettings.defaults() : overlaySettings;
         mainViewInput = mainViewInput == null ? MainViewInput.empty() : mainViewInput;
         roomNarration = roomNarration == null ? RoomNarrationInput.empty() : roomNarration;
@@ -46,6 +46,20 @@ public record DungeonEditorSessionCommand(
             } catch (IllegalArgumentException ignored) {
                 return INTERPRET_MAIN_VIEW;
             }
+        }
+
+        public boolean isCatalogAction() {
+            return switch (this) {
+                case SELECT_MAP,
+                        CREATE_MAP,
+                        RENAME_MAP,
+                        DELETE_MAP,
+                        SET_VIEW_MODE,
+                        SET_TOOL,
+                        SHIFT_PROJECTION_LEVEL,
+                        SET_OVERLAY -> true;
+                case INTERPRET_MAIN_VIEW, SAVE_ROOM_NARRATION -> false;
+            };
         }
     }
 
@@ -157,7 +171,7 @@ public record DungeonEditorSessionCommand(
                     && primaryButtonDown == that.primaryButtonDown
                     && secondaryButtonDown == that.secondaryButtonDown
                     && levelDelta == that.levelDelta
-                    && source.equals(that.source)
+                    && source == that.source
                     && hitRef.equals(that.hitRef);
         }
 

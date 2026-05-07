@@ -2,6 +2,7 @@ package src.data.sessionplanner.query;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Supplier;
 import src.domain.encounter.EncounterApplicationService;
 import src.domain.encounter.published.EncounterPlanBudgetModel;
 import src.domain.encounter.published.EncounterPlanBudgetResult;
@@ -25,32 +26,34 @@ import src.domain.sessionplanner.session.port.SessionPartyFactsLookup;
 public final class ApplicationSessionPlannerFactsQueryAdapter
         implements SessionPartyFactsLookup, SessionEncounterFactsLookup {
 
-    private final PartyApplicationService party;
-    private final ActivePartyModel activePartyModel;
-    private final AdventuringDayCalculationModel adventuringDayCalculationModel;
-    private final EncounterApplicationService encounters;
-    private final SavedEncounterPlanListModel savedPlansModel;
-    private final EncounterPlanBudgetModel planBudgetModel;
+    private final Supplier<PartyApplicationService> partySupplier;
+    private final Supplier<ActivePartyModel> activePartyModelSupplier;
+    private final Supplier<AdventuringDayCalculationModel> adventuringDayCalculationModelSupplier;
+    private final Supplier<EncounterApplicationService> encountersSupplier;
+    private final Supplier<SavedEncounterPlanListModel> savedPlansModelSupplier;
+    private final Supplier<EncounterPlanBudgetModel> planBudgetModelSupplier;
 
     public ApplicationSessionPlannerFactsQueryAdapter(
-            PartyApplicationService party,
-            ActivePartyModel activePartyModel,
-            AdventuringDayCalculationModel adventuringDayCalculationModel,
-            EncounterApplicationService encounters,
-            SavedEncounterPlanListModel savedPlansModel,
-            EncounterPlanBudgetModel planBudgetModel
+            Supplier<PartyApplicationService> partySupplier,
+            Supplier<ActivePartyModel> activePartyModelSupplier,
+            Supplier<AdventuringDayCalculationModel> adventuringDayCalculationModelSupplier,
+            Supplier<EncounterApplicationService> encountersSupplier,
+            Supplier<SavedEncounterPlanListModel> savedPlansModelSupplier,
+            Supplier<EncounterPlanBudgetModel> planBudgetModelSupplier
     ) {
-        this.party = Objects.requireNonNull(party, "party");
-        this.activePartyModel = Objects.requireNonNull(activePartyModel, "activePartyModel");
-        this.adventuringDayCalculationModel =
-                Objects.requireNonNull(adventuringDayCalculationModel, "adventuringDayCalculationModel");
-        this.encounters = Objects.requireNonNull(encounters, "encounters");
-        this.savedPlansModel = Objects.requireNonNull(savedPlansModel, "savedPlansModel");
-        this.planBudgetModel = Objects.requireNonNull(planBudgetModel, "planBudgetModel");
+        this.partySupplier = Objects.requireNonNull(partySupplier, "partySupplier");
+        this.activePartyModelSupplier = Objects.requireNonNull(activePartyModelSupplier, "activePartyModelSupplier");
+        this.adventuringDayCalculationModelSupplier = Objects.requireNonNull(
+                adventuringDayCalculationModelSupplier,
+                "adventuringDayCalculationModelSupplier");
+        this.encountersSupplier = Objects.requireNonNull(encountersSupplier, "encountersSupplier");
+        this.savedPlansModelSupplier = Objects.requireNonNull(savedPlansModelSupplier, "savedPlansModelSupplier");
+        this.planBudgetModelSupplier = Objects.requireNonNull(planBudgetModelSupplier, "planBudgetModelSupplier");
     }
 
     @Override
     public ActivePartyMembersFact loadActivePartyMembers() {
+        ActivePartyModel activePartyModel = activePartyModelSupplier.get();
         ActivePartyResult result = activePartyModel.current();
         if (result.status() != ReadStatus.SUCCESS) {
             return new ActivePartyMembersFact(false, List.of(), "Aktive Party konnte nicht geladen werden.");
@@ -63,6 +66,8 @@ public final class ApplicationSessionPlannerFactsQueryAdapter
 
     @Override
     public AdventuringDayFact calculateAdventuringDay(List<Integer> levels, int plannedEncounterXp) {
+        PartyApplicationService party = partySupplier.get();
+        AdventuringDayCalculationModel adventuringDayCalculationModel = adventuringDayCalculationModelSupplier.get();
         party.calculateAdventuringDay(new CalculateAdventuringDayCommand(levels, plannedEncounterXp));
         AdventuringDayCalculationResult result = adventuringDayCalculationModel.current();
         if (result.status() != ReadStatus.SUCCESS
@@ -81,6 +86,7 @@ public final class ApplicationSessionPlannerFactsQueryAdapter
 
     @Override
     public EncounterPlanListFact listEncounterPlans() {
+        SavedEncounterPlanListModel savedPlansModel = savedPlansModelSupplier.get();
         SavedEncounterPlanListResult result = savedPlansModel.current();
         if (result.status() != SavedEncounterPlanStatus.SUCCESS) {
             return new EncounterPlanListFact(false, List.of(), result.message());
@@ -93,6 +99,8 @@ public final class ApplicationSessionPlannerFactsQueryAdapter
 
     @Override
     public EncounterPlanFact loadEncounterPlan(long encounterPlanId) {
+        EncounterApplicationService encounters = encountersSupplier.get();
+        EncounterPlanBudgetModel planBudgetModel = planBudgetModelSupplier.get();
         encounters.refreshPlanBudget(new RefreshEncounterPlanBudgetCommand(encounterPlanId));
         EncounterPlanBudgetResult result = planBudgetModel.current();
         if (result.status() != EncounterPlanBudgetStatus.SUCCESS || result.summary() == null) {

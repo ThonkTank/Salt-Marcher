@@ -22,19 +22,17 @@ public final class DungeonEditorRoomInteractionLookupService {
         if (snapshot == null || hit == null) {
             return null;
         }
-        if (hit.kind() == HitKind.ROOM && hit.ownerId() > 0L) {
+        if (roomHit(hit)) {
             return roomAreaById(snapshot, hit.ownerId());
         }
-        if (hit.kind() == HitKind.LABEL
-                && DungeonEditorMainViewInteractionValues.ROOM_KIND.equals(hit.topologyRefKind())
-                && hit.topologyRefId() > 0L) {
+        if (roomLabelHit(hit)) {
             return roomAreaById(snapshot, hit.topologyRefId());
         }
-        if (hit.kind() != HitKind.LABEL || hit.clusterId() <= 0L) {
+        if (!clusterLabelHit(hit)) {
             return null;
         }
         return snapshot.areas().stream()
-                .filter(area -> area.kind() == DungeonEditorWorkspaceValues.AreaKind.ROOM && area.clusterId() == hit.clusterId())
+                .filter(area -> area.kind().isRoom() && area.clusterId() == hit.clusterId())
                 .findFirst()
                 .orElse(null);
     }
@@ -43,11 +41,11 @@ public final class DungeonEditorRoomInteractionLookupService {
             DungeonEditorWorkspaceValues.@Nullable MapSnapshot snapshot,
             long roomId
     ) {
-        if (snapshot == null || roomId <= 0L) {
+        if (snapshot == null || !DungeonEditorWorkspaceValues.hasId(roomId)) {
             return null;
         }
         return snapshot.areas().stream()
-                .filter(area -> area.kind() == DungeonEditorWorkspaceValues.AreaKind.ROOM && area.id() == roomId)
+                .filter(area -> area.kind().isRoom() && area.id() == roomId)
                 .findFirst()
                 .orElse(null);
     }
@@ -86,5 +84,19 @@ public final class DungeonEditorRoomInteractionLookupService {
                 clusterId,
                 false,
                 DungeonEditorSessionValues.emptyHandleRef());
+    }
+
+    private static boolean roomHit(HitTarget hit) {
+        return hit.kind() == HitKind.ROOM && DungeonEditorWorkspaceValues.hasId(hit.ownerId());
+    }
+
+    private static boolean roomLabelHit(HitTarget hit) {
+        return hit.kind() == HitKind.LABEL
+                && DungeonEditorMainViewInteractionValues.ROOM_KIND.equals(hit.topologyRefKind())
+                && DungeonEditorWorkspaceValues.hasId(hit.topologyRefId());
+    }
+
+    private static boolean clusterLabelHit(HitTarget hit) {
+        return hit.kind() == HitKind.LABEL && DungeonEditorWorkspaceValues.hasId(hit.clusterId());
     }
 }

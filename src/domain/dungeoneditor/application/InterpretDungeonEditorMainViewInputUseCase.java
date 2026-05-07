@@ -7,7 +7,6 @@ import src.domain.dungeoneditor.interaction.value.DungeonEditorMainViewInterpret
 import src.domain.dungeoneditor.interaction.value.DungeonEditorMainViewInteractionValues.PointerState;
 import src.domain.dungeoneditor.session.value.DungeonEditorSessionCommand;
 import src.domain.dungeoneditor.session.value.DungeonEditorSessionValues;
-import src.domain.dungeoneditor.workspace.value.DungeonEditorWorkspaceValues;
 import src.domain.dungeoneditor.workspace.value.DungeonEditorWorkspaceValues.MapSnapshot;
 
 final class InterpretDungeonEditorMainViewInputUseCase {
@@ -45,7 +44,7 @@ final class InterpretDungeonEditorMainViewInputUseCase {
                     snapshot,
                     state));
         }
-        if (viewMode != DungeonEditorSessionValues.ViewMode.GRID || snapshot == null) {
+        if (!pointerInteractionEnabled(viewMode, snapshot)) {
             return DungeonEditorMainViewEffect.none();
         }
         PointerState pointer = inputTranslator.resolvePointerState(
@@ -55,19 +54,7 @@ final class InterpretDungeonEditorMainViewInputUseCase {
                 safeInput.primaryButtonDown(),
                 safeInput.secondaryButtonDown(),
                 safeInput.hitRef());
-        if (safeInput.isPointerPressed()) {
-            return apply(pressUseCase.interpret(pointer, snapshot, selection, selectedTool, state));
-        }
-        if (safeInput.isPointerDragged()) {
-            return apply(dragUseCase.interpret(pointer, snapshot, selectedTool, state));
-        }
-        if (safeInput.isPointerReleased()) {
-            return apply(releaseUseCase.interpret(pointer, selectedTool, state));
-        }
-        if (safeInput.isPointerMoved()) {
-            return hoverUseCase.interpret(pointer, snapshot, selectedTool, state);
-        }
-        return DungeonEditorMainViewEffect.none();
+        return pointerEffect(safeInput, pointer, snapshot, selection, selectedTool);
     }
 
     void clear() {
@@ -77,5 +64,28 @@ final class InterpretDungeonEditorMainViewInputUseCase {
     private DungeonEditorMainViewEffect apply(DungeonEditorMainViewInterpretation interpretation) {
         state = interpretation.nextState();
         return interpretation.effect();
+    }
+
+    private DungeonEditorMainViewEffect pointerEffect(
+            DungeonEditorSessionCommand.MainViewInput input,
+            PointerState pointer,
+            MapSnapshot snapshot,
+            DungeonEditorSessionValues.Selection selection,
+            DungeonEditorSessionValues.Tool selectedTool
+    ) {
+        return switch (input.source()) {
+            case POINTER_PRESSED -> apply(pressUseCase.interpret(pointer, snapshot, selection, selectedTool, state));
+            case POINTER_DRAGGED -> apply(dragUseCase.interpret(pointer, snapshot, selectedTool, state));
+            case POINTER_RELEASED -> apply(releaseUseCase.interpret(pointer, selectedTool, state));
+            case POINTER_MOVED -> hoverUseCase.interpret(pointer, snapshot, selectedTool, state);
+            case LEVEL_SCROLLED -> DungeonEditorMainViewEffect.none();
+        };
+    }
+
+    private static boolean pointerInteractionEnabled(
+            DungeonEditorSessionValues.ViewMode viewMode,
+            @Nullable MapSnapshot snapshot
+    ) {
+        return viewMode != null && viewMode.isGrid() && snapshot != null;
     }
 }

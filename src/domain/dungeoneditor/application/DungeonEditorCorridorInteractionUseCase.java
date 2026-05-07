@@ -26,7 +26,7 @@ final class DungeonEditorCorridorInteractionUseCase {
             PendingCorridorTarget target = targetService.resolveDeleteTarget(input);
             InteractionState nextState = state.withCorridorDraft(CorridorDraft.none());
             long corridorId = target == null ? 0L : target.deleteCorridorId();
-            if (corridorId > 0L) {
+            if (DungeonEditorWorkspaceValues.hasId(corridorId)) {
                 return new DungeonEditorMainViewInterpretation(
                         nextState,
                         DungeonEditorMainViewEffect.applyWithStatus(
@@ -67,7 +67,7 @@ final class DungeonEditorCorridorInteractionUseCase {
     ) {
         if (selectedTool == DungeonEditorSessionValues.Tool.CORRIDOR_DELETE) {
             PendingCorridorTarget target = targetService.resolveDeleteTarget(input);
-            if (target == null || target.deleteCorridorId() <= 0L) {
+            if (target == null || !DungeonEditorWorkspaceValues.hasId(target.deleteCorridorId())) {
                 return DungeonEditorMainViewEffect.clearPreviewIfNeeded(true);
             }
             return DungeonEditorMainViewEffect.preview(
