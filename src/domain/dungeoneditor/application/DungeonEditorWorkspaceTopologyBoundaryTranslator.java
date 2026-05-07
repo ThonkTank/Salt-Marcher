@@ -37,19 +37,7 @@ final class DungeonEditorWorkspaceTopologyBoundaryTranslator {
     private static DungeonEditorWorkspaceValues.TopologyElementKind toWorkspaceTopologyKind(
             @Nullable DungeonTopologyElementKind kind
     ) {
-        if (kind == null) {
-            return DungeonEditorWorkspaceValues.TopologyElementKind.EMPTY;
-        }
-        return switch (kind) {
-            case ROOM -> DungeonEditorWorkspaceValues.TopologyElementKind.ROOM;
-            case CORRIDOR -> DungeonEditorWorkspaceValues.TopologyElementKind.CORRIDOR;
-            case CORRIDOR_ANCHOR -> DungeonEditorWorkspaceValues.TopologyElementKind.CORRIDOR_ANCHOR;
-            case DOOR -> DungeonEditorWorkspaceValues.TopologyElementKind.DOOR;
-            case WALL -> DungeonEditorWorkspaceValues.TopologyElementKind.WALL;
-            case STAIR -> DungeonEditorWorkspaceValues.TopologyElementKind.STAIR;
-            case TRANSITION -> DungeonEditorWorkspaceValues.TopologyElementKind.TRANSITION;
-            case EMPTY -> DungeonEditorWorkspaceValues.TopologyElementKind.EMPTY;
-        };
+        return DungeonEditorWorkspaceValues.TopologyElementKind.fromName(kind == null ? null : kind.name());
     }
 
     private static DungeonTopologyElementKind toDomainTopologyKind(
@@ -58,15 +46,6 @@ final class DungeonEditorWorkspaceTopologyBoundaryTranslator {
         DungeonEditorWorkspaceValues.TopologyElementKind safeKind = kind == null
                 ? DungeonEditorWorkspaceValues.TopologyElementKind.EMPTY
                 : kind;
-        return switch (safeKind) {
-            case ROOM -> DungeonTopologyElementKind.ROOM;
-            case CORRIDOR -> DungeonTopologyElementKind.CORRIDOR;
-            case CORRIDOR_ANCHOR -> DungeonTopologyElementKind.CORRIDOR_ANCHOR;
-            case DOOR -> DungeonTopologyElementKind.DOOR;
-            case WALL -> DungeonTopologyElementKind.WALL;
-            case STAIR -> DungeonTopologyElementKind.STAIR;
-            case TRANSITION -> DungeonTopologyElementKind.TRANSITION;
-            case EMPTY -> DungeonTopologyElementKind.EMPTY;
-        };
+        return DungeonTopologyElementKind.valueOf(safeKind.name());
     }
 }

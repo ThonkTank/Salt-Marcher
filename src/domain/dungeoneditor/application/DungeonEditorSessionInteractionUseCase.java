@@ -11,12 +11,12 @@ import src.domain.dungeoneditor.session.entity.DungeonEditorSession;
 import src.domain.dungeoneditor.session.value.DungeonEditorSessionCommand;
 import src.domain.dungeoneditor.workspace.value.DungeonEditorWorkspaceValues;
 
-final class DungeonEditorSessionInteractionWorkflow {
+final class DungeonEditorSessionInteractionUseCase {
     private final Function<DungeonAuthoredMutationCommand, DungeonAuthoredMutationResult> mutateAuthored;
     private final BuildDungeonEditorSnapshotUseCase snapshotBuilder;
     private final InterpretDungeonEditorMainViewInputUseCase mainViewInterpreter = new InterpretDungeonEditorMainViewInputUseCase();
 
-    DungeonEditorSessionInteractionWorkflow(
+    DungeonEditorSessionInteractionUseCase(
             Function<DungeonAuthoredMutationCommand, DungeonAuthoredMutationResult> mutateAuthored,
             BuildDungeonEditorSnapshotUseCase snapshotBuilder
     ) {
@@ -114,7 +114,7 @@ final class DungeonEditorSessionInteractionWorkflow {
         DungeonOperationResult result = ApplyDungeonEditorSessionUseCase.requireOperationResult(mutateAuthored.apply(
                 new DungeonAuthoredMutationCommand.ApplyOperation(
                         ApplyDungeonEditorSessionUseCase.requireMapId(nextSession.selectedMapId()),
-                        DungeonEditorSessionBridge.toDungeonOperation(effect.applyPreview()))));
+                        DungeonEditorSessionOperationBoundaryTranslator.toDungeonOperation(effect.applyPreview()))));
         return nextSession.clearPreview().withStatusText(ApplyDungeonEditorSessionUseCase.statusFromMessages(result));
     }
 }

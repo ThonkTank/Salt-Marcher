@@ -17,7 +17,7 @@ import src.domain.dungeoneditor.workspace.value.DungeonEditorWorkspaceValues;
 
 public final class ApplyDungeonEditorSessionUseCase {
     private final BuildDungeonEditorSnapshotUseCase snapshotBuilder;
-    private final DungeonEditorSessionCommandWorkflow commandWorkflow;
+    private final DungeonEditorSessionCommandUseCase commandWorkflow;
     private DungeonEditorSession session = DungeonEditorSession.empty();
 
     public ApplyDungeonEditorSessionUseCase(
@@ -26,7 +26,7 @@ public final class ApplyDungeonEditorSessionUseCase {
             Function<DungeonAuthoredReadQuery, DungeonAuthoredReadResult> loadAuthored
     ) {
         this.snapshotBuilder = new BuildDungeonEditorSnapshotUseCase(catalog, mutateAuthored, loadAuthored);
-        this.commandWorkflow = new DungeonEditorSessionCommandWorkflow(catalog, mutateAuthored, snapshotBuilder);
+        this.commandWorkflow = new DungeonEditorSessionCommandUseCase(catalog, mutateAuthored, snapshotBuilder);
     }
 
     public void primeSelectedMap(@Nullable DungeonMapId mapId) {

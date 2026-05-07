@@ -1,5 +1,6 @@
 package src.data.sessionplanner.model;
 
+import java.util.stream.Collectors;
 import src.data.persistencecore.model.SqliteTableSpec;
 
 import static src.data.persistencecore.model.SqliteTableSpec.column;
@@ -8,107 +9,126 @@ import static src.data.persistencecore.model.SqliteTableSpec.table;
 public final class SessionPlannerPersistenceSchema {
 
     public static final String DATABASE_FILE_NAME = "game.db";
+    private static final String SESSION_ID = "session_id";
+    private static final String CHARACTER_ID = "character_id";
+    private static final String ENCOUNTER_ID = "encounter_id";
+    private static final String LEFT_ENCOUNTER_ID = "left_encounter_id";
+    private static final String RIGHT_ENCOUNTER_ID = "right_encounter_id";
+    private static final String LOOT_ID = "loot_id";
+    private static final String SORT_ORDER = "sort_order";
+    private static final String TEXT_REQUIRED = "TEXT NOT NULL";
+    private static final String INTEGER_REQUIRED = "INTEGER NOT NULL";
+    private static final String INTEGER_ONE_DEFAULT = "INTEGER NOT NULL DEFAULT 1";
+    private static final String CREATE_TABLE_PREFIX = "CREATE TABLE IF NOT EXISTS ";
+    private static final String CREATE_INDEX_PREFIX = "CREATE INDEX IF NOT EXISTS ";
+    private static final String COLUMN_SEPARATOR = ", ";
 
     public static final SqliteTableSpec SESSION_PLANS = table(
             "session_planner_sessions",
-            column("session_id", "INTEGER PRIMARY KEY"),
-            column("encounter_days", "TEXT NOT NULL"),
+            column(SESSION_ID, "INTEGER PRIMARY KEY"),
+            column("encounter_days", TEXT_REQUIRED),
             column("selected_encounter_id", "INTEGER NOT NULL DEFAULT 0"),
-            column("status_text", "TEXT NOT NULL DEFAULT ''"),
-            column("next_encounter_id", "INTEGER NOT NULL DEFAULT 1"),
-            column("next_loot_id", "INTEGER NOT NULL DEFAULT 1"),
-            column("updated_at", "TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP"));
+            column("status_text", TEXT_REQUIRED + " DEFAULT ''"),
+            column("next_encounter_id", INTEGER_ONE_DEFAULT),
+            column("next_loot_id", INTEGER_ONE_DEFAULT),
+            column("updated_at", TEXT_REQUIRED + " DEFAULT CURRENT_TIMESTAMP"));
 
     public static final SqliteTableSpec CURRENT_SESSION = table(
             "session_planner_current_session",
             column("singleton_id", "INTEGER PRIMARY KEY CHECK (singleton_id = 1)"),
-            column("session_id", "INTEGER REFERENCES " + SESSION_PLANS.name() + "(session_id) ON DELETE SET NULL"));
+            column(SESSION_ID, nullableSessionPlanReference()));
 
     public static final SqliteTableSpec SESSION_PARTICIPANTS = table(
             "session_planner_participants",
-            column("session_id", "INTEGER NOT NULL REFERENCES " + SESSION_PLANS.name() + "(session_id) ON DELETE CASCADE"),
-            column("character_id", "INTEGER NOT NULL"),
-            column("sort_order", "INTEGER NOT NULL"));
+            column(SESSION_ID, requiredSessionPlanReference()),
+            column(CHARACTER_ID, INTEGER_REQUIRED),
+            column(SORT_ORDER, INTEGER_REQUIRED));
 
     public static final SqliteTableSpec SESSION_ENCOUNTERS = table(
             "session_planner_encounters",
-            column("session_id", "INTEGER NOT NULL REFERENCES " + SESSION_PLANS.name() + "(session_id) ON DELETE CASCADE"),
-            column("encounter_id", "INTEGER NOT NULL"),
+            column(SESSION_ID, requiredSessionPlanReference()),
+            column(ENCOUNTER_ID, INTEGER_REQUIRED),
             column("encounter_plan_id", "INTEGER NOT NULL"),
-            column("budget_percentage", "TEXT NOT NULL"),
-            column("sort_order", "INTEGER NOT NULL"));
+            column("budget_percentage", TEXT_REQUIRED),
+            column(SORT_ORDER, INTEGER_REQUIRED));
 
     public static final SqliteTableSpec SESSION_RESTS = table(
             "session_planner_rests",
-            column("session_id", "INTEGER NOT NULL REFERENCES " + SESSION_PLANS.name() + "(session_id) ON DELETE CASCADE"),
-            column("left_encounter_id", "INTEGER NOT NULL"),
-            column("right_encounter_id", "INTEGER NOT NULL"),
-            column("rest_kind", "TEXT NOT NULL"),
-            column("sort_order", "INTEGER NOT NULL"));
+            column(SESSION_ID, requiredSessionPlanReference()),
+            column(LEFT_ENCOUNTER_ID, INTEGER_REQUIRED),
+            column(RIGHT_ENCOUNTER_ID, INTEGER_REQUIRED),
+            column("rest_kind", TEXT_REQUIRED),
+            column(SORT_ORDER, INTEGER_REQUIRED));
 
     public static final SqliteTableSpec SESSION_LOOT_PLACEHOLDERS = table(
             "session_planner_loot_placeholders",
-            column("session_id", "INTEGER NOT NULL REFERENCES " + SESSION_PLANS.name() + "(session_id) ON DELETE CASCADE"),
-            column("loot_id", "INTEGER NOT NULL"),
-            column("label", "TEXT NOT NULL"),
-            column("sort_order", "INTEGER NOT NULL"));
+            column(SESSION_ID, requiredSessionPlanReference()),
+            column(LOOT_ID, INTEGER_REQUIRED),
+            column("label", TEXT_REQUIRED),
+            column(SORT_ORDER, INTEGER_REQUIRED));
 
     public static final String CREATE_SESSION_PLANS_SQL = SESSION_PLANS.createTableSql();
 
     public static final String CREATE_CURRENT_SESSION_SQL = CURRENT_SESSION.createTableSql();
 
     public static final String CREATE_SESSION_PARTICIPANTS_SQL =
-            "CREATE TABLE IF NOT EXISTS " + SESSION_PARTICIPANTS.name() + " ("
-                    + "session_id INTEGER NOT NULL REFERENCES " + SESSION_PLANS.name() + "(session_id) ON DELETE CASCADE, "
-                    + "character_id INTEGER NOT NULL, "
-                    + "sort_order INTEGER NOT NULL, "
-                    + "PRIMARY KEY(session_id, character_id)"
-                    + ")";
+            createCompositePrimaryKeyTableSql(SESSION_PARTICIPANTS, SESSION_ID, CHARACTER_ID);
 
     public static final String CREATE_SESSION_ENCOUNTERS_SQL =
-            "CREATE TABLE IF NOT EXISTS " + SESSION_ENCOUNTERS.name() + " ("
-                    + "session_id INTEGER NOT NULL REFERENCES " + SESSION_PLANS.name() + "(session_id) ON DELETE CASCADE, "
-                    + "encounter_id INTEGER NOT NULL, "
-                    + "encounter_plan_id INTEGER NOT NULL, "
-                    + "budget_percentage TEXT NOT NULL, "
-                    + "sort_order INTEGER NOT NULL, "
-                    + "PRIMARY KEY(session_id, encounter_id)"
-                    + ")";
+            createCompositePrimaryKeyTableSql(SESSION_ENCOUNTERS, SESSION_ID, ENCOUNTER_ID);
 
     public static final String CREATE_SESSION_RESTS_SQL =
-            "CREATE TABLE IF NOT EXISTS " + SESSION_RESTS.name() + " ("
-                    + "session_id INTEGER NOT NULL REFERENCES " + SESSION_PLANS.name() + "(session_id) ON DELETE CASCADE, "
-                    + "left_encounter_id INTEGER NOT NULL, "
-                    + "right_encounter_id INTEGER NOT NULL, "
-                    + "rest_kind TEXT NOT NULL, "
-                    + "sort_order INTEGER NOT NULL, "
-                    + "PRIMARY KEY(session_id, left_encounter_id, right_encounter_id)"
-                    + ")";
+            createCompositePrimaryKeyTableSql(SESSION_RESTS, SESSION_ID, LEFT_ENCOUNTER_ID, RIGHT_ENCOUNTER_ID);
 
     public static final String CREATE_SESSION_LOOT_PLACEHOLDERS_SQL =
-            "CREATE TABLE IF NOT EXISTS " + SESSION_LOOT_PLACEHOLDERS.name() + " ("
-                    + "session_id INTEGER NOT NULL REFERENCES " + SESSION_PLANS.name() + "(session_id) ON DELETE CASCADE, "
-                    + "loot_id INTEGER NOT NULL, "
-                    + "label TEXT NOT NULL, "
-                    + "sort_order INTEGER NOT NULL, "
-                    + "PRIMARY KEY(session_id, loot_id)"
-                    + ")";
+            createCompositePrimaryKeyTableSql(SESSION_LOOT_PLACEHOLDERS, SESSION_ID, LOOT_ID);
 
     public static final String CREATE_SESSION_PARTICIPANTS_ORDER_INDEX_SQL =
-            "CREATE INDEX IF NOT EXISTS idx_session_planner_participants_order ON "
-                    + SESSION_PARTICIPANTS.name() + "(session_id, sort_order)";
+            createIndexSql("idx_session_planner_participants_order", SESSION_PARTICIPANTS, SESSION_ID, SORT_ORDER);
 
     public static final String CREATE_SESSION_ENCOUNTERS_ORDER_INDEX_SQL =
-            "CREATE INDEX IF NOT EXISTS idx_session_planner_encounters_order ON "
-                    + SESSION_ENCOUNTERS.name() + "(session_id, sort_order)";
+            createIndexSql("idx_session_planner_encounters_order", SESSION_ENCOUNTERS, SESSION_ID, SORT_ORDER);
 
     public static final String CREATE_SESSION_RESTS_ORDER_INDEX_SQL =
-            "CREATE INDEX IF NOT EXISTS idx_session_planner_rests_order ON "
-                    + SESSION_RESTS.name() + "(session_id, sort_order)";
+            createIndexSql("idx_session_planner_rests_order", SESSION_RESTS, SESSION_ID, SORT_ORDER);
 
     public static final String CREATE_SESSION_LOOT_PLACEHOLDERS_ORDER_INDEX_SQL =
-            "CREATE INDEX IF NOT EXISTS idx_session_planner_loot_order ON "
-                    + SESSION_LOOT_PLACEHOLDERS.name() + "(session_id, sort_order)";
+            createIndexSql("idx_session_planner_loot_order", SESSION_LOOT_PLACEHOLDERS, SESSION_ID, SORT_ORDER);
+
+    private static String nullableSessionPlanReference() {
+        return "INTEGER REFERENCES " + SESSION_PLANS.name() + "(" + SESSION_ID + ") ON DELETE SET NULL";
+    }
+
+    private static String requiredSessionPlanReference() {
+        return INTEGER_REQUIRED + " REFERENCES " + SESSION_PLANS.name() + "(" + SESSION_ID + ") ON DELETE CASCADE";
+    }
+
+    private static String createCompositePrimaryKeyTableSql(SqliteTableSpec tableSpec, String... primaryKeyColumns) {
+        return CREATE_TABLE_PREFIX + tableSpec.name() + " (" + renderColumns(tableSpec) + COLUMN_SEPARATOR
+                + primaryKey(primaryKeyColumns) + ")";
+    }
+
+    private static String createIndexSql(String indexName, SqliteTableSpec tableSpec, String... columnNames) {
+        return CREATE_INDEX_PREFIX + indexName + " ON " + tableSpec.name() + "(" + joinNames(columnNames) + ")";
+    }
+
+    private static String primaryKey(String... columnNames) {
+        return "PRIMARY KEY(" + joinNames(columnNames) + ")";
+    }
+
+    private static String renderColumns(SqliteTableSpec tableSpec) {
+        return tableSpec.columns().stream()
+                .map(SessionPlannerPersistenceSchema::renderColumn)
+                .collect(Collectors.joining(COLUMN_SEPARATOR));
+    }
+
+    private static String renderColumn(SqliteTableSpec.ColumnSpec columnSpec) {
+        return columnSpec.name() + " " + columnSpec.definition();
+    }
+
+    private static String joinNames(String... names) {
+        return String.join(COLUMN_SEPARATOR, names);
+    }
 
     private SessionPlannerPersistenceSchema() {
     }

@@ -17,7 +17,7 @@ import src.domain.dungeoneditor.workspace.value.DungeonEditorWorkspaceValues.Map
 
 final class BuildDungeonEditorSnapshotUseCase {
     private final Function<DungeonMapCatalogCommand, DungeonMapCatalogResponse> catalog;
-    private final DungeonEditorSnapshotSurfaceLoader surfaceLoader;
+    private final DungeonEditorSnapshotSurfaceRuntimeAccess surfaceRuntimeAccess;
 
     BuildDungeonEditorSnapshotUseCase(
             Function<DungeonMapCatalogCommand, DungeonMapCatalogResponse> catalog,
@@ -25,25 +25,25 @@ final class BuildDungeonEditorSnapshotUseCase {
             Function<DungeonAuthoredReadQuery, DungeonAuthoredReadResult> loadAuthored
     ) {
         this.catalog = catalog;
-        this.surfaceLoader = new DungeonEditorSnapshotSurfaceLoader(mutateAuthored, loadAuthored);
+        this.surfaceRuntimeAccess = new DungeonEditorSnapshotSurfaceRuntimeAccess(mutateAuthored, loadAuthored);
     }
 
     DungeonEditorSessionSnapshot.SnapshotData execute(@Nullable DungeonEditorSession state) {
-        DungeonEditorSession safeState = DungeonEditorSnapshotStateSupport.safeState(state);
-        List<MapSummary> maps = DungeonEditorSnapshotSelectionSupport.mapSummaries(
+        DungeonEditorSession safeState = DungeonEditorSnapshotStateProjector.safeState(state);
+        List<MapSummary> maps = DungeonEditorSnapshotSelectionProjector.mapSummaries(
                 catalog.apply(new DungeonMapCatalogCommand.Search("")));
-        @Nullable MapId resolvedMapId = DungeonEditorSnapshotSelectionSupport.resolveSelectedMapId(
+        @Nullable MapId resolvedMapId = DungeonEditorSnapshotSelectionProjector.resolveSelectedMapId(
                 safeState.selectedMapId(),
                 maps);
-        DungeonEditorSessionSnapshot.SurfaceData surface = surfaceLoader.loadCurrentSurface(
+        DungeonEditorSessionSnapshot.SurfaceData surface = surfaceRuntimeAccess.loadCurrentSurface(
                 resolvedMapId,
                 safeState.selection(),
                 safeState.preview());
-        int clampedProjectionLevel = DungeonEditorSnapshotProjectionLevelSupport.clampProjectionLevel(
+        int clampedProjectionLevel = DungeonEditorSnapshotProjectionLevelProjector.clampProjectionLevel(
                 surface,
                 safeState.projectionLevel());
         String nextStatus = safeState.statusText().isBlank()
-                ? ApplyDungeonEditorSessionUseCase.statusFromMessages(surfaceLoader.previewMessages(
+                ? ApplyDungeonEditorSessionUseCase.statusFromMessages(surfaceRuntimeAccess.previewMessages(
                         resolvedMapId,
                         safeState.preview()))
                 : safeState.statusText();
@@ -63,6 +63,6 @@ final class BuildDungeonEditorSnapshotUseCase {
     @Nullable MapSnapshot loadCommittedSnapshot(
             @Nullable MapId mapId
     ) {
-        return surfaceLoader.loadCommittedSnapshot(mapId);
+        return surfaceRuntimeAccess.loadCommittedSnapshot(mapId);
     }
 }

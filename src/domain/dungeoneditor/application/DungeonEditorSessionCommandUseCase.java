@@ -9,17 +9,17 @@ import src.domain.dungeon.published.DungeonMapCatalogResponse;
 import src.domain.dungeoneditor.session.entity.DungeonEditorSession;
 import src.domain.dungeoneditor.session.value.DungeonEditorSessionCommand;
 
-final class DungeonEditorSessionCommandWorkflow {
-    private final DungeonEditorSessionCatalogWorkflow catalogWorkflow;
-    private final DungeonEditorSessionInteractionWorkflow interactionWorkflow;
+final class DungeonEditorSessionCommandUseCase {
+    private final DungeonEditorSessionCatalogUseCase catalogWorkflow;
+    private final DungeonEditorSessionInteractionUseCase interactionWorkflow;
 
-    DungeonEditorSessionCommandWorkflow(
+    DungeonEditorSessionCommandUseCase(
             Function<DungeonMapCatalogCommand, DungeonMapCatalogResponse> catalog,
             Function<DungeonAuthoredMutationCommand, DungeonAuthoredMutationResult> mutateAuthored,
             BuildDungeonEditorSnapshotUseCase snapshotBuilder
     ) {
-        this.interactionWorkflow = new DungeonEditorSessionInteractionWorkflow(mutateAuthored, snapshotBuilder);
-        this.catalogWorkflow = new DungeonEditorSessionCatalogWorkflow(catalog, interactionWorkflow);
+        this.interactionWorkflow = new DungeonEditorSessionInteractionUseCase(mutateAuthored, snapshotBuilder);
+        this.catalogWorkflow = new DungeonEditorSessionCatalogUseCase(catalog, interactionWorkflow);
     }
 
     DungeonEditorSession apply(DungeonEditorSession session, @Nullable DungeonEditorSessionCommand command) {

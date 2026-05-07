@@ -6,6 +6,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.OptionalInt;
+import org.jspecify.annotations.Nullable;
+import src.domain.encounter.session.service.CombatRosterBuilderService;
+import src.domain.encounter.session.service.CombatRosterMutationService;
+import src.domain.encounter.session.service.CombatTurnService;
 
 final class EncounterSessionCombat {
 
@@ -25,14 +29,17 @@ final class EncounterSessionCombat {
     private static final int MULTIPLE_CREATURE_THRESHOLD = 1;
 
     private final List<InitiativeEntryData> pendingInitiativeRows = new ArrayList<>();
-    private final CombatRuntime combatRuntime = new CombatRuntime();
+    private final CombatRoster combatRoster = new CombatRoster();
+    private final CombatRosterBuilderService combatRosterBuilder = new CombatRosterBuilderService();
+    private final CombatRosterMutationService combatRosterMutations = new CombatRosterMutationService();
+    private final CombatTurnService combatTurns = new CombatTurnService();
     private ResultStateData resultState = ResultStateData.empty();
     private OptionalInt currentTurnIndex = OptionalInt.empty();
     private int round = FIRST_COMBAT_ROUND;
 
     void resetForLoadedPlan() {
         pendingInitiativeRows.clear();
-        combatRuntime.clear();
+        combatRoster.clear();
         resultState = ResultStateData.empty();
         currentTurnIndex = OptionalInt.empty();
         round = FIRST_COMBAT_ROUND;
@@ -55,10 +62,10 @@ final class EncounterSessionCombat {
                     member.id(),
                     member.name() + " (Lv. " + member.level() + ")",
                     CombatantKind.PLAYER_CHARACTER,
-                    CombatRuntime.defaultPlayerInitiative(index)));
+                    CombatRosterBuilderService.defaultPlayerInitiative(index)));
         }
         for (EncounterCreatureData creature : roster) {
-            int rolled = CombatRuntime.defaultMonsterInitiative(creature.initiativeBonus());
+            int rolled = CombatRosterBuilderService.defaultMonsterInitiative(creature.initiativeBonus());
             String label = creature.count() > MULTIPLE_CREATURE_THRESHOLD
                     ? creature.name() + " x" + creature.count()
                     : creature.name();
@@ -72,7 +79,7 @@ final class EncounterSessionCombat {
     }
 
     void confirmInitiative(List<InitiativeInput> initiatives, List<EncounterCreatureData> roster, EncounterSessionContext context) {
-        combatRuntime.clear();
+        combatRoster.clear();
         int fallbackIndex = 0;
         for (InitiativeInput input : safeInitiatives(initiatives)) {
             InitiativeEntryData entry = initiativeEntry(input.id()).orElse(null);
@@ -80,7 +87,8 @@ final class EncounterSessionCombat {
                 continue;
             }
             if (entry.kind() == CombatantKind.PLAYER_CHARACTER) {
-                fallbackIndex = combatRuntime.addPlayer(
+                fallbackIndex = combatRosterBuilder.addPlayer(
+                        combatRoster,
                         entry.id(),
                         nameOnly(entry.label()),
                         input.initiative(),
@@ -91,38 +99,30 @@ final class EncounterSessionCombat {
             if (creature == null) {
                 continue;
             }
-            fallbackIndex = combatRuntime.addMonsters(
-                    creature.id(),
-                    creature.name(),
-                    creature.creatureId(),
-                    creature.count(),
-                    creature.hp(),
-                    creature.armorClass(),
-                    creature.xp(),
-                    creature.challengeRating(),
-                    creature.creatureType(),
-                    creature.encounterRole(),
-                    input.initiative(),
-                    fallbackIndex);
+            fallbackIndex = combatRosterBuilder.addMonsters(combatRoster, creature, input.initiative(), fallbackIndex);
         }
-        combatRuntime.sort();
-        currentTurnIndex = combatRuntime.hasTurnEntries()
-                ? OptionalInt.of(CombatRuntime.FIRST_TURN_INDEX)
+        combatRoster.sort();
+        currentTurnIndex = combatTurns.hasTurnEntries(combatRoster.combatants())
+                ? OptionalInt.of(CombatTurnService.FIRST_TURN_INDEX)
                 : OptionalInt.empty();
         round = FIRST_COMBAT_ROUND;
         context.enterCombat(COMBAT_RUNNING_STATUS);
     }
 
     void advanceTurn() {
-        CombatRuntime.TurnAdvance turn = combatRuntime.nextTurn(
-                currentTurnIndex.orElse(CombatRuntime.NO_ACTIVE_TURN_INDEX),
+        CombatTurnService.TurnAdvance turn = combatTurns.nextTurn(
+                combatRoster.combatants(),
+                currentTurnIndex.orElse(CombatTurnService.NO_ACTIVE_TURN_INDEX),
                 round);
         currentTurnIndex = toOptionalTurnIndex(turn.currentTurnIndex());
         round = turn.round();
     }
 
     void adjustInitiative(String combatantId, int initiative) {
-        combatRuntime.adjustInitiative(combatantId, initiative);
+        combatRosterMutations.updateInitiative(
+                combatRoster,
+                combatTurns.turnEntry(combatRoster.combatants(), combatantId),
+                initiative);
     }
 
     void addPartyMemberToCombat(
@@ -140,7 +140,7 @@ final class EncounterSessionCombat {
             return;
         }
         String activeTurnId = activeTurnId();
-        boolean added = combatRuntime.addPlayerToRunningCombat(member.id(), member.name(), initiative);
+        boolean added = combatRosterBuilder.addPlayerToRunningCombat(combatRoster, member.id(), member.name(), initiative);
         restoreTurnIndex(activeTurnId);
         context.setStatus(added
                 ? member.name() + " betritt den laufenden Kampf."
@@ -149,22 +149,17 @@ final class EncounterSessionCombat {
 
     void addReinforcement(CreatureDetailData creature, EncounterSessionContext context) {
         String activeTurnId = activeTurnId();
-        String displayName = combatRuntime.addMonsterReinforcement(
-                creature.name(),
-                creature.id(),
-                minimumHitPoints(creature.hitPoints()),
-                creature.armorClass(),
-                creature.xp(),
-                creature.challengeRating(),
-                creature.creatureType(),
+        String displayName = combatRosterBuilder.addReinforcement(
+                combatRoster,
+                creature,
                 REINFORCEMENT_CREATURE_ROLE,
-                CombatRuntime.defaultMonsterInitiative(creature.initiativeBonus()));
+                CombatRosterBuilderService.defaultMonsterInitiative(creature.initiativeBonus()));
         restoreTurnIndex(activeTurnId);
         context.setStatus(displayName + " betritt den laufenden Kampf.");
     }
 
     void endCombat(int activePartySize, boolean hasActiveParty, EncounterSessionContext context) {
-        List<ResultEnemyData> enemies = combatRuntime.resultEnemies();
+        List<ResultEnemyData> enemies = combatRosterMutations.resultEnemies(combatRoster);
         int eligibleXp = enemies.stream()
                 .filter(ResultEnemyData::defeatedByDefault)
                 .mapToInt(ResultEnemyData::xp)
@@ -198,7 +193,7 @@ final class EncounterSessionCombat {
     }
 
     void returnToBuilder(EncounterSessionContext context) {
-        combatRuntime.clear();
+        combatRoster.clear();
         pendingInitiativeRows.clear();
         resultState = ResultStateData.empty();
         currentTurnIndex = OptionalInt.empty();
@@ -207,7 +202,11 @@ final class EncounterSessionCombat {
     }
 
     void mutateHp(String combatantId, int amount, boolean healing) {
-        if (!combatRuntime.mutateHp(combatantId, Math.max(0, amount), healing)) {
+        if (!combatRosterMutations.mutateHp(
+                combatRoster,
+                combatTurns.turnEntry(combatRoster.combatants(), combatantId),
+                Math.max(0, amount),
+                healing)) {
             return;
         }
         restoreTurnIndex(activeTurnId());
@@ -218,11 +217,12 @@ final class EncounterSessionCombat {
     }
 
     CombatProjectionData combatProjection() {
-        if (!combatRuntime.hasTurnEntries()) {
+        if (!combatTurns.hasTurnEntries(combatRoster.combatants())) {
             return CombatProjectionData.empty();
         }
-        CombatProjectionData projection = combatRuntime.combatProjection(
-                currentTurnIndex.orElse(CombatRuntime.NO_ACTIVE_TURN_INDEX),
+        CombatProjectionData projection = combatTurns.combatProjection(
+                combatRoster.combatants(),
+                currentTurnIndex.orElse(CombatTurnService.NO_ACTIVE_TURN_INDEX),
                 round);
         currentTurnIndex = toOptionalTurnIndex(projection.currentTurnIndex());
         return projection;
@@ -242,14 +242,15 @@ final class EncounterSessionCombat {
         return resultState;
     }
 
-    private String activeTurnId() {
-        return combatRuntime.activeTurnId(currentTurnIndex.orElse(CombatRuntime.NO_ACTIVE_TURN_INDEX));
+    private @Nullable String activeTurnId() {
+        return combatTurns.activeTurnId(combatRoster.combatants(), currentTurnIndex.orElse(CombatTurnService.NO_ACTIVE_TURN_INDEX));
     }
 
-    private void restoreTurnIndex(String activeTurnId) {
-        currentTurnIndex = toOptionalTurnIndex(combatRuntime.turnIndexOf(
+    private void restoreTurnIndex(@Nullable String activeTurnId) {
+        currentTurnIndex = toOptionalTurnIndex(combatTurns.turnIndexOf(
+                combatRoster.combatants(),
                 activeTurnId,
-                currentTurnIndex.orElse(CombatRuntime.NO_ACTIVE_TURN_INDEX)));
+                currentTurnIndex.orElse(CombatTurnService.NO_ACTIVE_TURN_INDEX)));
     }
 
     private Optional<InitiativeEntryData> initiativeEntry(String id) {
@@ -277,11 +278,6 @@ final class EncounterSessionCombat {
     private static List<InitiativeInput> safeInitiatives(List<InitiativeInput> initiatives) {
         return initiatives == null ? List.of() : List.copyOf(initiatives);
     }
-
-    private static int minimumHitPoints(int hitPoints) {
-        return Math.max(1, hitPoints);
-    }
-
     private static String nameOnly(String label) {
         int detailStart = label.indexOf(" (");
         return detailStart < 0 ? label : label.substring(0, detailStart);

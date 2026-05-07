@@ -7,13 +7,13 @@ import src.domain.dungeoneditor.session.entity.DungeonEditorSession;
 import src.domain.dungeoneditor.session.value.DungeonEditorSessionCommand;
 import src.domain.dungeoneditor.workspace.value.DungeonEditorWorkspaceValues;
 
-final class DungeonEditorSessionCatalogWorkflow {
+final class DungeonEditorSessionCatalogUseCase {
     private final Function<DungeonMapCatalogCommand, DungeonMapCatalogResponse> catalog;
-    private final DungeonEditorSessionInteractionWorkflow interactionWorkflow;
+    private final DungeonEditorSessionInteractionUseCase interactionWorkflow;
 
-    DungeonEditorSessionCatalogWorkflow(
+    DungeonEditorSessionCatalogUseCase(
             Function<DungeonMapCatalogCommand, DungeonMapCatalogResponse> catalog,
-            DungeonEditorSessionInteractionWorkflow interactionWorkflow
+            DungeonEditorSessionInteractionUseCase interactionWorkflow
     ) {
         this.catalog = catalog;
         this.interactionWorkflow = interactionWorkflow;

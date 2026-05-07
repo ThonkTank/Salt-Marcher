@@ -10,9 +10,9 @@ import src.domain.dungeoneditor.session.value.DungeonEditorSessionSnapshot;
 import src.domain.dungeoneditor.workspace.value.DungeonEditorWorkspaceValues.Cell;
 import src.domain.dungeoneditor.workspace.value.DungeonEditorWorkspaceValues.Feature;
 
-final class DungeonEditorSnapshotProjectionLevelSupport {
+final class DungeonEditorSnapshotProjectionLevelProjector {
 
-    private DungeonEditorSnapshotProjectionLevelSupport() {
+    private DungeonEditorSnapshotProjectionLevelProjector() {
     }
 
     static int clampProjectionLevel(

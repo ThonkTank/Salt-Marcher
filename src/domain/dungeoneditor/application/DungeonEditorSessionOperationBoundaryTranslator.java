@@ -4,9 +4,9 @@ import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.published.DungeonEditorOperation;
 import src.domain.dungeoneditor.session.value.DungeonEditorSessionValues;
 
-final class DungeonEditorSessionBridge {
+final class DungeonEditorSessionOperationBoundaryTranslator {
 
-    private DungeonEditorSessionBridge() {
+    private DungeonEditorSessionOperationBoundaryTranslator() {
     }
 
     static @Nullable DungeonEditorOperation toDungeonOperation(DungeonEditorSessionValues.Preview preview) {

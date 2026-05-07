@@ -6,9 +6,9 @@ import src.domain.dungeon.published.DungeonMapCatalogResponse;
 import src.domain.dungeoneditor.workspace.value.DungeonEditorWorkspaceValues.MapId;
 import src.domain.dungeoneditor.workspace.value.DungeonEditorWorkspaceValues.MapSummary;
 
-final class DungeonEditorSnapshotSelectionSupport {
+final class DungeonEditorSnapshotSelectionProjector {
 
-    private DungeonEditorSnapshotSelectionSupport() {
+    private DungeonEditorSnapshotSelectionProjector() {
     }
 
     static @Nullable MapId resolveSelectedMapId(@Nullable MapId requestedMapId, List<MapSummary> maps) {

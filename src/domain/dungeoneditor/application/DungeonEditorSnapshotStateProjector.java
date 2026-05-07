@@ -3,9 +3,9 @@ package src.domain.dungeoneditor.application;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeoneditor.session.entity.DungeonEditorSession;
 
-final class DungeonEditorSnapshotStateSupport {
+final class DungeonEditorSnapshotStateProjector {
 
-    private DungeonEditorSnapshotStateSupport() {
+    private DungeonEditorSnapshotStateProjector() {
     }
 
     static DungeonEditorSession safeState(@Nullable DungeonEditorSession state) {

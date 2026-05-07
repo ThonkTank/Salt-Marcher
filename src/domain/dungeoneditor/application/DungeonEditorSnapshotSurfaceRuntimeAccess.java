@@ -17,11 +17,11 @@ import src.domain.dungeoneditor.workspace.value.DungeonEditorWorkspaceValues.Ins
 import src.domain.dungeoneditor.workspace.value.DungeonEditorWorkspaceValues.MapId;
 import src.domain.dungeoneditor.workspace.value.DungeonEditorWorkspaceValues.MapSnapshot;
 
-final class DungeonEditorSnapshotSurfaceLoader {
+final class DungeonEditorSnapshotSurfaceRuntimeAccess {
     private final Function<DungeonAuthoredMutationCommand, DungeonAuthoredMutationResult> mutateAuthored;
     private final Function<DungeonAuthoredReadQuery, DungeonAuthoredReadResult> loadAuthored;
 
-    DungeonEditorSnapshotSurfaceLoader(
+    DungeonEditorSnapshotSurfaceRuntimeAccess(
             Function<DungeonAuthoredMutationCommand, DungeonAuthoredMutationResult> mutateAuthored,
             Function<DungeonAuthoredReadQuery, DungeonAuthoredReadResult> loadAuthored
     ) {
@@ -62,7 +62,7 @@ final class DungeonEditorSnapshotSurfaceLoader {
         if (mapId == null) {
             return null;
         }
-        DungeonEditorOperation operation = DungeonEditorSessionBridge.toDungeonOperation(preview);
+        DungeonEditorOperation operation = DungeonEditorSessionOperationBoundaryTranslator.toDungeonOperation(preview);
         if (operation == null) {
             return null;
         }
