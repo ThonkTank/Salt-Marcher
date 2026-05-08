@@ -1,6 +1,6 @@
 ---
 name: domain-layer
-description: Use before planning, implementing, refactoring, or reviewing anything under `src/domain/**`, any root `*ApplicationService`, `application/`, `published/`, named domain modules, or adjacent context docs such as `DOMAIN.md`. The canonical source of truth is `docs/project/architecture/patterns/domain-layer.md`.
+description: Use before planning, implementing, refactoring, or reviewing anything under `src/domain/**`, any root `*ApplicationService`, `application/`, `published/`, `model/`, domain role package, or adjacent context docs such as `DOMAIN.md`. The canonical source of truth is `docs/project/architecture/patterns/domain-layer.md`.
 ---
 
 # Domain Layer
@@ -27,8 +27,8 @@ redefine the architecture.
 
 - any file under `src/domain/**`
 - any root `*ApplicationService.java`
-- any `published/`, `application/`, domain-concept module, or module
-  role package
+- any `published/`, `application/`, `model/`, domain-concept module, or
+  module role package
 - any `README.md`, `SPEC.md`, `DOMAIN.md`, or `DELIVERY.md` that defines or
   reviews a domain context
 - domain-layer governance rewrites where role enforcement docs, `AGENTS.md`,
@@ -42,8 +42,8 @@ Before changing domain code:
    `docs/project/architecture/patterns/domain-layer.md`, and the touched
    context's `DOMAIN.md` before making placement decisions.
 2. Assign every touched type one domain-layer role before refactoring:
-   root `*ApplicationService`, `published/**`, `application/**`, named module,
-   or one explicit module role package.
+   family `*ApplicationService`, `published/**`, root `application/**`,
+   `model/**`, or one explicit subordinate role package.
 3. If the task touches a governed role doc under
    `docs/project/architecture/enforcement/`, keep architectural truth in
    `domain-layer.md` and keep the role doc limited to role-local enforcement
@@ -60,10 +60,10 @@ Before changing domain code:
 
 ### `*ApplicationService.java`
 
-- treat the root boundary exactly as described by `domain-layer.md`
-- keep it thin and boundary-owned
-- do not let it become a second composition root, policy owner, or return-path
-  workaround
+- treat direct root services as family-scoped intent interpreters and routers
+- keep them thin and boundary-owned
+- do not let them become policy owners, composition roots, or direct reply
+  channels
 
 ### `published/`
 
@@ -74,17 +74,26 @@ Before changing domain code:
 
 ### `application/`
 
-- use-case orchestration and internal application coordination
+- root-level cross-model orchestration only
 - direct Java files are named `*UseCase.java`
-- direct helper files are only the owner-doc-approved boundary helpers
+- legacy direct helper files are tolerated only where the owner doc calls out
+  current mechanical drift
 - do not let `application/` become a catch-all for displaced business policy
-- generic `*Operations` coordinator buckets are migration debt
 
-### `port/`
+### `model/`
 
-- keep it to domain-owned outbound interfaces only
-- do not let it become a home for adapters, records, schemas, or runtime
-  registration
+- treat `model/` as the primary home of current domain work state
+- model-local work operations belong under `model/<family>/usecase/`
+- pure work steps belong under `helper/`; shared immutable values belong under
+  `constants/`
+
+### `port/` and `repository/`
+
+- follow the owner doc's target semantics first: `Port` is inbound published
+  listening and `Repository` is outbound triggering or layered data access
+- check the role-local enforcement doc before claiming the current mechanics
+  already prove that target; some port checks still reflect legacy outbound
+  interface enforcement
 
 ### Domain Modules And Role Packages
 
@@ -105,10 +114,11 @@ When reviewing domain-layer work, look for:
 - `Context Role:` declarations matching the domain-layer standard
 - role subpackages under every named domain module
 - no direct Java files under named domain modules
+- no direct Java files under `model/<family>/`
 - no `published/` imports from named domain modules
 - no forbidden technical buckets under domain modules
-- ports stated in domain language without data-source, shell, JavaFX, SQL,
-  filesystem, network, or runtime-registration terms
+- repositories and ports stated in domain language without data-source, shell,
+  JavaFX, SQL, filesystem, network, or runtime-registration terms
 - thin application use cases without hidden adapter composition
 - no `src/domain/mapcore/**`
 

@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-26
+Last Reviewed: 2026-05-08
 Source of Truth: Binding data-layer adapter model, source-boundary roles,
 runtime composition placement, and data-layer topology for `src/data/**`.
 
@@ -17,11 +17,11 @@ second business model, public backend layer, or policy language beside
 ## Pattern Alignment
 
 - `Ports and Adapters` / `Hexagonal Architecture` govern the relationship
-  between domain-owned outbound ports and technology-specific adapter
+  between domain-owned repository abstractions and technology-specific adapter
   implementations
-- domain `port/` packages own outbound port interfaces. Write-model ports may
-  be named `*Repository`; read-only lookup, catalog, or search ports may be
-  named `*Lookup`, `*Catalog`, or `*Search`
+- the target domain model uses `Repository` as the outbound domain role for
+  foreign domain writes and layered data access; data code satisfies those
+  abstractions without leaking `src.data/**` types back into the domain layer
 - data package names are adapter implementation roles, not a second
   architecture model. They exist to keep source mechanics out of the domain
 - `repository/` is the current package for write-model port adapters
@@ -57,9 +57,9 @@ real source, mapping, or persistence complexity.
   connection lifecycle, remote protocol details, schema readiness, and payload
   translation belong in `src/data/**`; business rules, invariants, and policy
   decisions do not
-- domain-owned ports remain the stable outbound abstraction. `src/domain/**`
-  defines port interfaces and published boundary types; `src/data/**`
-  implements the ports
+- domain-owned repository abstractions remain the stable outbound abstraction
+  toward concrete sources. `src/domain/**` defines those abstractions and the
+  internal return types they use; `src/data/**` implements them
 - `repository/` implements authored write-model persistence ports when a
   repository-style adapter is the clearest current package
 - `query/` implements read-only lookup, search, and projection ports when a
@@ -162,7 +162,9 @@ The canonical data flow is:
 4. a data port adapter satisfies one same-feature domain-owned port
 5. internal source adapters talk to SQLite, files, remote services, or other
    concrete sources
-6. `mapper/` and `model/` keep source-local shapes from leaking into the
+6. repository or query adapters return only domain-owned internal
+   domain/application types
+7. `mapper/` and `model/` keep source-local shapes from leaking into the
    domain core
 
 Additional rules:

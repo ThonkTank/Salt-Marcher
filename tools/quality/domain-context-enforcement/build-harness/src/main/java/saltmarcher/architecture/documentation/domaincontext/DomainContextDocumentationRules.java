@@ -24,6 +24,8 @@ public final class DomainContextDocumentationRules implements ArchitectureRule {
             Pattern.compile("(?m)^\\s*Context Name:\\s+([A-Z][A-Za-z0-9_]*)\\s*$");
     private static final Pattern DOMAIN_CONTEXT_ROLE_MARKER_PATTERN =
             Pattern.compile("(?m)^\\s*Context Role:\\s+(.+?)\\s*$");
+    private static final Pattern APPLICATION_SERVICE_MARKER_PATTERN =
+            Pattern.compile("(?m)^\\s*Application Service:\\s+([A-Z][A-Za-z0-9_]*)\\s*$");
     private static final Pattern AGGREGATE_ROOT_MARKER_PATTERN =
             Pattern.compile("(?m)^\\s*Aggregate Root:\\s+([A-Z][A-Za-z0-9_]*)\\s*$");
     private static final Pattern WRITE_MODEL_NONE_PATTERN =
@@ -220,6 +222,7 @@ public final class DomainContextDocumentationRules implements ArchitectureRule {
                 continue;
             }
             validateBaseContextDocument(documentPath, content, violations);
+            validateApplicationServiceMarkers(documentPath, content, violations);
             if (AUTHORED_CONTEXT_ROLES.contains(role)) {
                 validateAggregateOwningContextDocument(context, featureName, documentPath, content, violations);
             }
@@ -251,6 +254,18 @@ public final class DomainContextDocumentationRules implements ArchitectureRule {
                 violations.add(documentPath, "domain-context-base-sections",
                         "Every DOMAIN.md must include a non-empty '" + heading + "' section.");
             }
+        }
+    }
+
+    private void validateApplicationServiceMarkers(
+            String documentPath,
+            String content,
+            ViolationSink violations) {
+        String boundarySection = sectionBody(content, "## Application Boundary");
+        Matcher matcher = APPLICATION_SERVICE_MARKER_PATTERN.matcher(boundarySection);
+        if (!matcher.find()) {
+            violations.add(documentPath, "domain-context-application-service-marker",
+                    "Every DOMAIN.md must declare at least one 'Application Service: <TypeName>' marker inside '## Application Boundary'.");
         }
     }
 

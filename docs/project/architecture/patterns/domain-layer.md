@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-05-03
+Last Reviewed: 2026-05-08
 Source of Truth: Binding domain-layer pattern, role ownership, communication
 seams, context map, and topology for `src/domain/**`.
 
@@ -8,187 +8,243 @@ seams, context map, and topology for `src/domain/**`.
 
 ## Goal
 
-SaltMarcher treats `src/domain/**` as the application core in a Hexagonal
-Architecture. Domain code owns business meaning, invariants, policy, use-case
-coordination, published language, and outbound port interfaces. It does not own
-UI translation, shell registration, persistence mechanics, data-source records,
-runtime service composition, SQL, filesystem, network, or framework concerns.
+SaltMarcher treats `src/domain/**` as the application core. Domain code owns
+business meaning, current work state, workflow orchestration, published domain
+language, and the cross-context coordination seams below the view layer. It
+does not own UI translation, shell registration, persistence mechanics,
+data-source records, runtime service composition, SQL, filesystem, network, or
+framework concerns.
 
 This document is the sole architectural source of truth for `src/domain/**`.
 The repo-owned `tools/quality/skills/domain-layer/SKILL.md` operationalizes
 this standard for agent work. Domain enforcement documents under
 `docs/project/architecture/enforcement/` may inventory gates, candidate rows,
-review-owned rows, and current mechanical drift, but they must not redefine the
-domain-layer pattern or become a second architectural owner.
+review-owned rows, and current mechanical drift, but they must not redefine
+the pattern or become a second architecture owner.
 
-Hexagonal Architecture is the one boundary model. DDD vocabulary is optional
-tactical modelling language inside the core. Fowler persistence patterns and
-data-layer adapter roles are implementation tools outside the core, not
-additional domain-layer taxonomies.
+## Current State And Target State
 
-## Pattern Alignment
+Current state:
 
-- `Hexagonal Architecture` / `Ports and Adapters` is the canonical model for
-  `src/domain/**`
-- `ApplicationService` is the inbound callable boundary of one domain context
-- `application/` owns direct `*UseCase` orchestration plus narrow internal
-  boundary helpers for translation, projection, and runtime adaptation behind
-  that boundary
-- `port/` contains outbound port interfaces owned by the domain core
-- outbound ports are implemented outside `src/domain/**`; adapter placement is
-  defined by the data-layer standard, not by this document
-- `DDD` names tactical modelling roles only when they clarify real domain
-  behaviour. It does not require every context to contain every role
-- `Repository` is allowed only as a write-oriented outbound port interface
-  name, such as `PartyRosterRepository`, placed under a domain module's
-  `port/` package. It is not a domain package role
+- active production code still contains legacy named-module tactical packages
+  such as `aggregate/`, `entity/`, `policy/`, `service/`, and outbound
+  `port/` interfaces
+- active mechanical blockers still cover parts of that legacy shape
+- some contexts still expose only one root `*ApplicationService`
 
-## Minimal Concept Set
+Target state:
 
-The standard domain concepts are deliberately small:
+- one context MAY expose one or more direct root `*ApplicationService` files,
+  one per decision family
+- `ApplicationService` interprets inbound intent only when the view-side
+  `IntentHandler` lacks domain decision context, then routes to exactly one
+  focused `UseCase`
+- `UseCase` owns exactly one work operation and orchestration only
+- `Helper` owns pure explicit work steps and reads no current context
+- `Constants` owns immutable shared constants
+- `Model` owns internal dynamic work state
+- `Published` is the only outward communication seam
+- `Port` is the inbound domain-internal listener role for foreign published
+  state
+- `Repository` is the outbound domain role for foreign domain writes and
+  layered data access
 
-| Concept | Meaning |
+Until production migration catches up, enforcement documents MUST state any
+remaining drift literally instead of silently reintroducing the old model as a
+second truth.
+
+## Role Family
+
+The closed architectural role family is:
+
+| Role | Meaning |
 | --- | --- |
-| Context | The owning business language and decision boundary, such as `party`, `dungeon`, or `creatures`. |
-| Application Boundary | The root `<PascalContext>ApplicationService.java` callable from the view layer or allowed foreign contexts. |
-| Use Case | Application coordination behind the root boundary. |
-| Domain Model | Business objects, facts, rules, invariants, and policies owned by the context. |
-| Port | A domain-owned outbound need expressed in business language. |
-| Published Contract | Public commands, results, IDs, statuses, snapshots, and read-only publication handles exposed to outer layers. |
+| `ApplicationService` | Family-scoped public backend boundary below the view layer. |
+| `UseCase` | One concrete work operation and its orchestration. |
+| `Helper` | Pure explicit work step with all context supplied as input. |
+| `Constants` | Immutable shared constants used by helpers or models. |
+| `Model` | Internal dynamic work-state owner. |
+| `Published` | Outward communication surface for commands and observable state. |
+| `Port` | Inbound listener on foreign published state. |
+| `Repository` | Outbound trigger for foreign domain work and layered data access. |
 
-Other names are subordinate. `aggregate`, `entity`, `value`, `policy`,
-`factory`, `service`, `event`, and `specification` are optional tactical roles
-inside a domain module. `repository`, `query`, `gateway`, `mapper`, `model`,
-`schema`, `record`, and `adapter` are not domain concepts.
+Legacy tactical DDD names are subordinate only. `aggregate`, `entity`,
+`value`, `policy`, `factory`, `service`, `event`, and `specification` MAY
+survive inside `model/**` when they describe a real subordinate model or pure
+helper subrole. They are not the primary domain-layer taxonomy anymore.
 
 ## Core Principles
 
-- each real domain context exposes exactly one public callable backend
-  boundary: `<PascalContext>ApplicationService.java`
-- `published/` is exported published language: commands, results, ids,
-  statuses, snapshots, and read-only publication handles when a context must
-  expose observable current state without leaking private model internals;
-  such boundary handles may appear as same-context `published/*Model` types
-  that outer layers observe only through read-side methods like `current()`
-  and `subscribe(...)`; these read-side `*Model` handles own outward
-  publication of observable domain state, including mutation feedback
-- `application/` contains direct `*UseCase.java` files plus direct internal
-  `*BoundaryTranslator.java`, `*Projector.java`, `*RuntimeAccess.java`, and
-  `*RuntimeAdapter.java` helper files
-- named domain modules use role subpackages only as needed. The only outbound
-  role package is `port/`
-- a domain port expresses what the core needs from outside. It must not expose
-  SQL rows, source-local records, JavaFX, shell APIs, filesystem paths,
-  network clients, transaction objects, or adapter lifecycle
-- named domain modules must not depend on any `src.domain.*.published.*`
-  carrier, same-context or foreign. Same-context published command
-  language stops at the root boundary, and same-context published feedback
-  leaves only through read-side `published/*Model` owners rather than
-  top-level internal application files or named domain modules
-- domain code may call outward only through domain-owned outbound ports or
-  allowed foreign root application services from application orchestration
-- domain code must not depend on `bootstrap`, `shell.*`, `src.view.*`,
-  `src.data.*`, JavaFX, SQL, filesystem, network, or registration/runtime
-  composition APIs
+- a context exposes one or more direct root `*ApplicationService.java` files
+- each `ApplicationService` belongs to one decision family and stays thin
+- each public root method accepts exactly one same-context
+  `published/*Command` carrier and returns `void`
+- each root method routes to exactly one focused `UseCase`
+- each `UseCase` owns one work operation only and contains orchestration, not
+  embedded business-policy logic
+- `Helper` code receives all required context through parameters and must not
+  look up current model state, repositories, ports, or published handles by
+  itself
+- `Constants` contains only static immutable domain-owned constants
+- `Model` owns mutable internal state; changing model state is what changes the
+  outward `Published` view of that state
+- same-context outward readback or feedback does not travel back as a direct
+  `ApplicationService` return value; it is observed through same-context
+  `published/*Model`
+- foreign-domain writes are initiated through same-context `Repository`
+  ownership, not by scattering foreign `ApplicationService` knowledge through
+  arbitrary use cases
+- foreign-domain publications are consumed through same-context `Port`
+  listeners, not by polling foreign internals
+- domain code does not depend on `bootstrap/**`, `shell/**`, `src/view/**`,
+  `src/data/**`, JavaFX, SQL, filesystem, network, or runtime composition APIs
 
-## Boundary Contracts
+## Canonical Flows
 
-### `<PascalContext>ApplicationService.java`
+### View Write
 
-The root application service is the only public callable backend boundary of
-one domain context.
+`IntentHandler -> family ApplicationService -> one UseCase -> Model ->
+Published`
 
-- it is a public final top-level class named
-  `<PascalContext>ApplicationService`
-- it accepts exactly one same-context `published/*Command` carrier per public
-  boundary method
-- command methods return `void`
-- it exposes no same-context read/load/open/query return path; read-side
-  publication must not cross the root boundary a second time
-- it translates public command carriers into internal types before
-  control enters top-level application workflows or named domain modules
-- it does not directly publish same-context mutation feedback, snapshots, or
-  result carriers; outward feedback stays on read-side `published/*Model`
-  handles
-- it does not own shell registration, runtime service lookup, data adapter
-  construction, or business policy
+### Cross-Domain Write
+
+`own Repository -> foreign ApplicationService -> foreign UseCase -> foreign
+Model -> foreign Published -> own Port -> own UseCase -> own Model -> own
+Published`
+
+### Data Roundtrip
+
+`own Repository -> layered data adapter -> internal domain/application return
+types -> own UseCase -> own Model -> own Published`
+
+## Role Contracts
+
+### `*ApplicationService.java`
+
+- direct root file under `src/domain/<context>/`
+- named `<Context><Family>ApplicationService.java`
+- `public final` top-level class
+- interprets inbound command only where domain decision context is missing on
+  the view side
+- delegates to exactly one focused `UseCase`
+- does not own business policy, model mutation details, publication ownership,
+  shell registration, runtime service lookup, or adapter construction
+
+### `UseCase`
+
+- owns exactly one work operation such as moving one corridor, saving one
+  encounter, or adding one creature
+- orchestrates reads, writes, repository calls, port-triggered follow-up work,
+  and helper invocation
+- may construct, load, edit, and persist `Model`
+- does not hide business-policy logic that belongs in `Helper` or subordinate
+  model roles
+
+### `Helper`
+
+- pure explicit work step such as a calculation, validation, derivation, or
+  deterministic construction
+- receives every needed value as input
+- may depend on `Constants` and local pure support types only
+- must not inspect current `Model`, subscribe to `Published`, invoke
+  `Repository`, or talk to `Port`
+
+### `Constants`
+
+- immutable shared domain constants only
+- no current-state access
+- no lifecycle, listeners, or infrastructure knowledge
+
+### `Model`
+
+- owns internal dynamic work state such as current encounter plans, loaded
+  maps, active editor session state, or authored aggregates
+- is created, read, and edited by `UseCase`
+- may expose subordinate model families under `model/**`
+- state change is the source that updates outward `Published`
 
 ### `published/`
 
-`published/` owns exported boundary carriers only.
+`published/` owns exported boundary language only.
 
-- allowed: commands, results, snapshots, ids, statuses, enums, sealed
-  carrier abstractions, simple public boundary records, and read-only
-  same-context `*Model` handles for observable current domain state
-- same-context `*Model` handles expose outward readback through `current()`
-  and `subscribe(...)` only and may carry the status/error/success payloads
-  consumers need for feedback; they are the upward publication seam and not a
-  callback wrapper around `*ApplicationService`; they must not become
-  consumer-private answer channels for imperative two-way roundtrips
-- public non-`*Model` payload carriers remain passive shared fact surfaces and
-  stay thinner than the internal work or display forms behind them; foreign
-  readers should not need a broader mirror of private domain plan state than
-  the stable facts they actually consume
-- forbidden: callable services, facades, repositories, ports, gateways,
-  factories, locators, policy helpers, or invariant-owning objects
-- public non-`*Model` carriers remain passive domain facts rather than
-  alternate publication owners, render layers, widget state, canvas cells, or
-  storage DTOs
+- allowed: commands, ids, statuses, enums, passive records, sealed carrier
+  abstractions, and same-context `*Model` publication handles
+- same-context `published/*Model` exposes public readback through `current()`
+  and `subscribe(...)` only
+- non-`*Model` published carriers stay passive and thinner than the internal
+  working state behind them
+- forbidden: services, helpers, repositories, ports, gateways, factories, or
+  invariant-owning active objects
 
-### `port/`
+### `Port`
 
-`port/` owns outbound interfaces required by the domain core.
+- domain-internal inbound listener on foreign `published/*Model`
+- listens through `current()` and `subscribe(...)`
+- converts foreign published change intake into same-context `UseCase` work
+- does not own foreign mutation triggers or data-source access
 
-- write-model persistence ports may end with `Repository`
-- read-only lookup, catalog, or search ports may end with `Lookup`,
-  `Catalog`, or `Search`
-- ports use domain language and domain-owned carrier or value types
-- implementations belong outside `src/domain/**`
+### `Repository`
+
+- domain-owned outbound collaborator
+- may trigger foreign family `ApplicationService` calls
+- may perform layered data access through outer adapters
+- returns only same-context internal domain/application types; never `src.data`
+  types or foreign published carriers
+- does not own long-lived current state; that remains in `Model`
 
 ## Domain Topology
 
-The canonical physical domain layout is:
+Target topology:
 
 ```text
 src/domain/<context>/
-  <PascalContext>ApplicationService.java
+  <Context><Family>ApplicationService.java
   published/
   application/
     *UseCase.java
-    *BoundaryTranslator.java
-    *Projector.java
-    *RuntimeAccess.java
-    *RuntimeAdapter.java
-  <domain-module>/
-    aggregate/
-    entity/
-    value/
-    policy/
-    port/
-    factory/
-    service/
-    event/
-    specification/
+  model/
+    <family>/
+      usecase/
+      helper/
+      constants/
+      port/
+      repository/
+      aggregate/
+      entity/
+      value/
+      policy/
+      factory/
+      service/
+      event/
+      specification/
 ```
 
 Rules:
 
-- `published/` and `application/` are the only technical buckets directly
-  under a context root
-- every other direct directory is a domain-concept module, such as `roster`,
-  `map`, `generation`, or `catalog`
-- domain-module Java files must live under an allowed role subpackage
-- direct Java files under a named domain module are forbidden
-- the allowed role package names are exactly `aggregate`, `entity`, `value`,
-  `policy`, `port`, `factory`, `service`, `event`, and `specification`
-- domain `repository/`, `query/`, `gateway/`, `adapter/`, `model/`,
-  `mapper/`, `schema/`, `record/`, and `api/` technical buckets are forbidden
-  as direct context buckets or role packages
+- direct root technical buckets are `published/`, `application/`, and `model/`
+- `application/` is reserved for root-level cross-model orchestration use
+  cases; model-local operations live under `model/<family>/usecase/`
+- `model/` is the primary home of context-owned dynamic state
+- `usecase/`, `helper/`, `constants/`, `port/`, and `repository/` are the
+  primary subordinate role buckets under a model family
+- legacy tactical subroles MAY exist under `model/<family>/` when they clarify
+  real subordinate model behavior or pure helper semantics
+- direct Java files under named model families are forbidden; Java files belong
+  in an explicit role package
 
-This layout is an enforcement shape, not a required concept inventory. A domain
-module should contain only the role packages that represent real behaviour or
-contracts in that module. Do not create empty or ceremonial role packages to
-make a context look more "DDD".
+## Current Mechanical Drift
+
+The active blockers do not yet prove the full target topology.
+
+- `checkDomainApplicationServiceEnforcement` now allows one or more direct root
+  `*ApplicationService` files and validates `DOMAIN.md`-declared root services
+- `checkDomainLayerEnforcement` now tolerates a root `model/` bucket and the
+  new subordinate role package names
+- current use-case checks still tolerate legacy direct `application/`
+  helper files such as `*BoundaryTranslator`, `*Projector`, `*RuntimeAccess`,
+  and `*RuntimeAdapter`
+- current port checks still inventory legacy outbound `port/` interfaces until
+  the repository/port role migration reaches production code
 
 ## Context Roles
 
@@ -198,16 +254,16 @@ make a context look more "DDD".
 - `creatures`: `Context Role: Reference Catalog Context`. Exports imported
   creature catalog lookup language and reference profiles. It does not own
   encounter ranking, choice, or creature lifecycle truth.
-- `encounter`: `Context Role: Roster Truth Context`. Owns saved
-  encounter-plan roster truth while consuming party, creatures, and
-  encounter-table published language for encounter-generation policy.
+- `encounter`: `Context Role: Roster Truth Context`. Owns saved encounter-plan
+  roster truth while consuming party, creatures, and encounter-table published
+  language for encounter-generation policy.
 - `encountertable`: `Context Role: Reference Catalog Context`. Publishes
   authored encounter-table membership as read-only generator input without
   owning creature truth, table mutation policy, or encounter-generation
   policy.
 - `dungeon`: `Context Role: Authored World-Space Context`. Owns authored
-  dungeon world-space truth, map topology, rooms or spaces, connections,
-  stable identity, and map mutation rules.
+  dungeon world-space truth, map topology, spaces, connections, stable
+  identity, and mutation rules.
 - `dungeoneditor`: `Context Role: Generation Policy Context`. Owns transient
   runtime editor-session composition derived from `dungeon` public boundaries
   without owning authored map persistence.
@@ -222,54 +278,59 @@ make a context look more "DDD".
 ## Context Relationships
 
 - `party`: `Party Character State Context`; publishes roster, membership, XP,
-  rest cadence, adventuring-day facts, and character travel position facts to
+  rest cadence, adventuring-day facts, and character travel-position facts to
   downstream contexts.
-- `creatures`: `Reference Catalog Context`; publishes imported creature catalog
+- `creatures`: `Reference Catalog Context`; publishes imported creature-catalog
   lookup facts and encounter-candidate reference profiles to downstream policy
   contexts.
-- `encounter`: `Roster Truth Context`; consumes `party`, `creatures`, and
-  `encountertable` through their root application services and `published/`
-  carriers and owns saved encounter-plan roster truth.
+- `encounter`: `Roster Truth Context`; uses repositories to trigger allowed
+  foreign party, creatures, and encounter-table workflows and consumes their
+  published state through own ports where continued orchestration is required.
 - `encountertable`: `Reference Catalog Context`; consumes creature persistence
-  snapshots through its data source adapter and publishes table summaries and
-  weighted candidate rows through its root application service.
+  snapshots through layered data access and publishes table summaries and
+  weighted candidate rows.
 - `dungeon`: `Authored World-Space Context`; owns authored world-space truth
-  independently of party, creatures, and encounter. Party-aware runtime
-  travel-session composition lives in `travel`, and runtime editor-session
-  composition lives in `dungeoneditor`, not in `dungeon`.
-- `dungeoneditor`: `Generation Policy Context`; consumes `dungeon` through its
-  root application service and `published/` carriers to build one transient
-  runtime editor workspace for selection, tool policy, preview state, overlay
-  state, projection level, and pointer interpretation.
+  independently of party, creatures, and encounter. Runtime travel composition
+  belongs in `travel`, and runtime editor composition belongs in
+  `dungeoneditor`.
+- `dungeoneditor`: `Generation Policy Context`; consumes `dungeon` published
+  state through own ports to build one transient runtime editor workspace for
+  selection, tool policy, preview state, overlay state, projection level, and
+  pointer interpretation.
 - `travel`: `Generation Policy Context`; consumes `party` and `dungeon`
-  through their root application services and `published/` carriers to build
-  one transient runtime travel workspace for dungeon traversal, overlay
-  state, projection level, and overworld fallback handling.
+  published state through own ports to build one transient runtime travel
+  workspace for traversal, overlay state, projection level, and overworld
+  fallback handling.
 - `sessionplanner`: `Roster Truth Context`; consumes `party` and `encounter`
-  through their root application services and `published/` carriers to
-  persist one session plan for participant references, encounter order,
-  allocations, rest placement, placeholders, and selected encounter context.
+  published state through own ports to persist one session plan for participant
+  references, encounter order, allocations, rest placement, placeholders, and
+  selected encounter context.
 
 ## Domain Document Contract
 
-Every `DOMAIN.md` remains a binding feature-local model contract, not a
-free-form note.
+Every active `src/domain/<context>/DOMAIN.md` remains a binding context
+contract.
 
-Each active context must include:
+Each active context MUST include:
 
 - `## Context Role`
-- exactly one `Context Role: ...` marker
-- exactly one `Context Name: <PascalContext>` marker
+- `Context Name: <PascalContext>`
+- one or more `Application Service: <TypeName>` markers in
+  `## Application Boundary`
 - `## Published Language`
 - `## Application Boundary`
 - `## Ubiquitous Language`
 
-Contexts with authored truth must also include:
+Authored contexts MUST additionally include:
 
 - `## Aggregate Model`
 - `## Commands And Invariants`
 - `## Consistency Model`
-- at least one `Aggregate Root: <TypeName>` marker
+
+Generation-policy contexts MUST additionally include:
+
+- `## Commands And Invariants`
+- `## Consistency Model`
 
 ## References
 
@@ -277,17 +338,11 @@ Contexts with authored truth must also include:
 - [Layering Architecture Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/layering-architecture.md:1)
 - [Data Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/data-layer.md:1)
 - [Domain Layer Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/domain-layer-enforcement.md:1)
-- [Domain Context Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/domain-context-enforcement.md:1)
 - [Domain ApplicationService Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/domain-application-service-enforcement.md:1)
 - [Domain UseCase Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/domain-use-case-enforcement.md:1)
 - [Domain Published Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/domain-published-enforcement.md:1)
 - [Domain Port Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/domain-port-enforcement.md:1)
-- [Domain Aggregate Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/domain-aggregate-enforcement.md:1)
-- [Domain Entity Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/domain-entity-enforcement.md:1)
-- [Domain Value Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/domain-value-enforcement.md:1)
-- [Domain Policy Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/domain-policy-enforcement.md:1)
-- [Domain Factory Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/domain-factory-enforcement.md:1)
-- [Domain Service Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/domain-service-enforcement.md:1)
-- [Domain Event Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/domain-event-enforcement.md:1)
-- [Domain Specification Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/domain-specification-enforcement.md:1)
-- [Quality Platforms Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/verification/quality-platforms.md:1)
+- [Domain Repository Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/domain-repository-enforcement.md:1)
+- [Domain Model Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/domain-model-enforcement.md:1)
+- [Domain Helper Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/domain-helper-enforcement.md:1)
+- [Domain Constants Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/domain-constants-enforcement.md:1)

@@ -1,6 +1,6 @@
 Status: Deprecated
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-26
+Last Reviewed: 2026-05-08
 Source of Truth: Compatibility mirror for canonical documentation at `docs/dungeon/domain/domain-dungeon.md`.
 
 # Dungeon Domain Model Compatibility Mirror
@@ -36,6 +36,8 @@ Published dungeon carriers must not own:
 - display styling
 
 ## Application Boundary
+
+Application Service: DungeonApplicationService
 
 `application/` coordinates authored dungeon load, mutate, save, search, and
 raw travel-surface queries through the domain-owned ports. The root application

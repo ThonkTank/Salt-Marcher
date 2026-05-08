@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-05-06
+Last Reviewed: 2026-05-08
 Source of Truth: Compatibility-visible domain contract for the session planner
 context.
 
@@ -35,6 +35,8 @@ Target state:
   models while remaining planner-owned public language only
 
 ## Application Boundary
+
+Application Service: SessionPlannerApplicationService
 
 The root application service coordinates active-party composition reads,
 party-based adventuring-day calculations, saved encounter-plan budget reads

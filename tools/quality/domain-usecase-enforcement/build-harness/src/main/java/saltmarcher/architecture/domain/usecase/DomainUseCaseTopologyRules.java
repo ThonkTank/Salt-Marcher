@@ -42,7 +42,7 @@ public final class DomainUseCaseTopologyRules implements ArchitectureRule {
     private static void validateDirectPlacement(SourceFile sourceFile, ViolationSink violations) {
         if (sourceFile.relativeSegments().size() != 5 || !hasAllowedApplicationSuffix(sourceFile.fileName())) {
             violations.add(sourceFile.relativePath(), "domain-usecase-direct-file-placement",
-                    "Domain application orchestration and narrow boundary helpers must stay as direct *UseCase.java, *BoundaryTranslator.java, *Projector.java, *RuntimeAccess.java, or *RuntimeAdapter.java files under src/domain/<context>/application/.");
+                    "Root application/ orchestration files must stay as direct *UseCase.java files or currently tolerated legacy helper files under src/domain/<context>/application/.");
         }
     }
 

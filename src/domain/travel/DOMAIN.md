@@ -1,6 +1,6 @@
 Status: Draft
 Owner: SaltMarcher Team
-Last Reviewed: 2026-05-03
+Last Reviewed: 2026-05-08
 Source of Truth: Runtime travel composition, session ownership, and domain
 boundary of the `travel` context.
 
@@ -29,6 +29,8 @@ Published travel carriers must not own:
 - shell lifecycle
 
 ## Application Boundary
+
+Application Service: TravelApplicationService
 
 `TravelApplicationService` is the only callable travel backend boundary. It
 coordinates runtime dungeon-travel session state through foreign root

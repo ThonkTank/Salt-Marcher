@@ -1,6 +1,6 @@
 Status: Deprecated
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-26
+Last Reviewed: 2026-05-08
 Source of Truth: Compatibility mirror for canonical documentation at `docs/encountertable/domain/domain-encountertable.md`.
 
 # Encounter Table Domain Model Compatibility Mirror
@@ -31,6 +31,8 @@ generation plus the selected table weight. They do not expose table-entry
 mutation commands.
 
 ## Application Boundary
+
+Application Service: EncounterTableApplicationService
 
 `EncounterTableApplicationService` is the only public backend boundary. It
 offers summary and generation-candidate lookup over authored encounter-table

@@ -1,6 +1,6 @@
 Status: Draft
 Owner: SaltMarcher Team
-Last Reviewed: 2026-05-04
+Last Reviewed: 2026-05-08
 Source of Truth: Runtime dungeon-editor composition, session ownership, and
 domain boundary of the `dungeoneditor` context.
 
@@ -30,6 +30,8 @@ Published dungeon-editor carriers must not own:
 - shell lifecycle
 
 ## Application Boundary
+
+Application Service: DungeonEditorApplicationService
 
 `DungeonEditorApplicationService` is the only callable dungeon-editor backend
 boundary. It coordinates transient editor-session state through the foreign

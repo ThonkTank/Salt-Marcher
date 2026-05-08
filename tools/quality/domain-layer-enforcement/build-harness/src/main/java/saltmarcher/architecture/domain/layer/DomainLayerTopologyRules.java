@@ -36,8 +36,6 @@ public final class DomainLayerTopologyRules implements ArchitectureRule {
             "interactors",
             "mapper",
             "mappers",
-            "model",
-            "models",
             "query",
             "queries",
             "port",
@@ -58,6 +56,7 @@ public final class DomainLayerTopologyRules implements ArchitectureRule {
             "valueobjects",
             "view",
             "viewmodel");
+    private static final Set<String> ROOT_TECHNICAL_BUCKETS = Set.of("published", "application", "model");
 
     @Override
     public void check(ArchitectureContext context, ViolationSink violations) {
@@ -102,6 +101,11 @@ public final class DomainLayerTopologyRules implements ArchitectureRule {
             return;
         }
 
+        if (isModelFamilySource(segments)) {
+            validateModelFamilyFileLayout(sourceFile, violations);
+            return;
+        }
+
         if (segments.size() < 6) {
             violations.add(sourceFile.relativePath(), "domain-layer-named-module-role-subpackage-required",
                     "Named domain modules must place Java files under an allowed tactical role package at src/domain/<context>/<module>/<role>/.");
@@ -121,15 +125,43 @@ public final class DomainLayerTopologyRules implements ArchitectureRule {
         }
     }
 
+    private void validateModelFamilyFileLayout(SourceFile sourceFile, ViolationSink violations) {
+        List<String> segments = sourceFile.relativeSegments();
+        if (segments.size() < 7) {
+            violations.add(sourceFile.relativePath(), "domain-layer-named-module-role-subpackage-required",
+                    "Model families must place Java files under src/domain/<context>/model/<family>/<role>/.");
+            return;
+        }
+
+        String role = segments.get(5);
+        if (!SourceLayoutRules.isAllowedDomainRolePackage(role)) {
+            violations.add(sourceFile.relativePath(), "domain-layer-tactical-role-package-name-allowlist",
+                    "Model-family role packages must be one of: aggregate, constants, entity, event, factory, helper, policy, port, repository, service, specification, usecase, value.");
+            return;
+        }
+
+        if (segments.size() != 7) {
+            violations.add(sourceFile.relativePath(), "domain-layer-named-module-role-subpackage-required",
+                    "Model-family Java files must stay as direct files under src/domain/<context>/model/<family>/<role>/.");
+        }
+    }
+
     private static boolean isNamedModuleSource(List<String> segments) {
         return segments.size() >= 5
                 && "src".equals(segments.get(0))
                 && "domain".equals(segments.get(1))
-                && !Set.of("published", "application").contains(segments.get(3));
+                && !ROOT_TECHNICAL_BUCKETS.contains(segments.get(3));
+    }
+
+    private static boolean isModelFamilySource(List<String> segments) {
+        return segments.size() >= 6
+                && "src".equals(segments.get(0))
+                && "domain".equals(segments.get(1))
+                && "model".equals(segments.get(3));
     }
 
     private static void validateDomainBucket(String source, String bucket, ViolationSink violations) {
-        if ("published".equals(bucket) || "application".equals(bucket)) {
+        if (ROOT_TECHNICAL_BUCKETS.contains(bucket)) {
             return;
         }
         if ("api".equals(bucket)) {
@@ -139,12 +171,12 @@ public final class DomainLayerTopologyRules implements ArchitectureRule {
         }
         if (FORBIDDEN_TOP_LEVEL_BUCKETS.contains(bucket)) {
             violations.add(source, "domain-layer-forbidden-top-level-domain-buckets",
-                    "Top-level technical role buckets are forbidden under src/domain/<context>/. Use published/, application/, or a lower-case named domain module.");
+                    "Top-level technical role buckets are forbidden under src/domain/<context>/. Use published/, application/, model/, or a lower-case named domain module.");
             return;
         }
         if (!bucket.matches("[a-z][a-z0-9_]*")) {
             violations.add(source, "domain-layer-forbidden-top-level-domain-buckets",
-                    "Direct non-published, non-application domain buckets must be lower-case named domain modules matching [a-z][a-z0-9_]*.");
+                    "Direct non-published, non-application, non-model domain buckets must be lower-case named domain modules matching [a-z][a-z0-9_]*.");
         }
     }
 }

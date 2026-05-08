@@ -38,6 +38,11 @@ public final class DomainContextEnforcementCoverageRules implements Architecture
                     List.of("domain-context-enforcement", "DomainContextDocumentationRules"),
                     List.of("./gradlew checkDomainContextEnforcement")),
             row(
+                    "domain-context-application-service-marker",
+                    "Enforced",
+                    List.of("domain-context-enforcement", "DomainContextDocumentationRules"),
+                    List.of("./gradlew checkDomainContextEnforcement")),
+            row(
                     "domain-context-authored-truth-required-sections",
                     "Enforced",
                     List.of("domain-context-enforcement", "DomainContextDocumentationRules"),

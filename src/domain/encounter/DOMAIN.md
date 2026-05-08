@@ -1,6 +1,6 @@
 Status: Deprecated
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-26
+Last Reviewed: 2026-05-08
 Source of Truth: Compatibility mirror for canonical documentation at `docs/encounter/domain/domain-encounter.md`.
 
 # Encounter Domain Model Compatibility Mirror
@@ -34,6 +34,8 @@ published read models. Creature details remain owned by the creatures context
 and are reloaded when a saved plan is opened.
 
 ## Application Boundary
+
+Application Service: EncounterApplicationService
 
 `application/` coordinates foreign party, creature, and encounter-table
 application services, loads public inputs, translates foreign `published/`

@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-27
+Last Reviewed: 2026-05-08
 Source of Truth: System-wide routing summary and entry point into the canonical
 layer-owner standards under `docs/project/architecture/patterns/` and their
 matching mechanical enforcement documents under
@@ -54,13 +54,13 @@ tools/       build infrastructure, quality platforms, and engineering scripts
 - `src/view/slotcontent/**` owns reusable generic UI units; the internal role
   shape and all reusable-view rules are owned only by the
   [View Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/view-layer.md:1)
-- `src/domain/<context>/` owns the hexagonal application core: domain truth,
-  invariants, policy decisions, application services, published language, and
-  outbound ports; detailed role and seam rules are owned only by the
+- `src/domain/<context>/` owns the application core: domain truth, internal
+  models, family-scoped application services, published language, repositories,
+  and ports; detailed role and seam rules are owned only by the
   [Domain Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/domain-layer.md:1)
-- `src/data/<feature>/` owns outer adapters that implement domain-owned
-  outbound ports and confront concrete sources such as SQLite, files, imports,
-  or remote systems
+- `src/data/<feature>/` owns outer adapters that satisfy domain-owned
+  repository abstractions and confront concrete sources such as SQLite, files,
+  imports, or remote systems
 
 Feature documentation follows the same ownership model. System-wide canonical
 documents live under `docs/project/<type>/`, feature-owned canonical documents
@@ -77,13 +77,13 @@ Dependencies point inward toward the application core:
   public boundaries; the internal View/Binder/Model/IntentHandler contract is
   owned only by the
   [View Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/view-layer.md:1)
-- domain code owns business rules, published language, and domain-owned
-  outbound ports
-- data code implements domain-owned outbound ports and externalizes source and
-  infrastructure details
+- domain code owns business rules, internal models, published language,
+  repositories, and ports
+- data code satisfies domain-owned repository abstractions and externalizes
+  source and infrastructure details
 
-Below the view layer, the only public client-facing backend boundary is a
-feature's `*ApplicationService`.
+Below the view layer, the public backend boundary is a context's one-or-more
+family `*ApplicationService` roots.
 
 ## Registration Model
 

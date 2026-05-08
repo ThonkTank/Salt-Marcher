@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-05-07
+Last Reviewed: 2026-05-08
 Source of Truth: Cross-layer responsibility matrix, dependency direction,
 boundary crossings, and the only allowed inter-layer seams for active
 SaltMarcher code.
@@ -41,8 +41,8 @@ Responsibilities:
 - `src/view/**` owns the presentation-layer adapters and observable
   presentation state surface; the internal role split is owned only by the
   View Layer Standard
-- `src/domain/**` owns business meaning, invariants, published language,
-  application services, and outbound port interfaces
+- `src/domain/**` owns business meaning, internal models, published language,
+  family application services, repositories, and ports
 - `src/data/**` owns concrete adapters, source mechanics, persistence,
   transport, and translation between domain-facing contracts and external
   sources
@@ -75,7 +75,6 @@ decision-heavy logic:
 - view `*ViewInputEvent`
 - view `*PublishedEvent`
 - domain `published/**`
-- domain `port/**`
 - data `model/**`
 
 ### Non-Ceremonial Substantive Roles
@@ -87,6 +86,9 @@ construction work:
 - domain `service/`
 - domain `policy/`
 - domain `factory/`
+- domain `model/**`
+- domain `repository/**`
+- domain `port/**`
 
 ## Dependency Direction
 
@@ -117,11 +119,11 @@ The only intentional public boundaries across layers are:
   `ShellRuntimeContext`, `ServiceContribution`, and `ServiceRegistry`
 - view `*Contribution` roots as shell-facing registration adapters
 - view `*Binder` roots as runtime composition adapters
-- domain `*ApplicationService` roots as the only public backend boundary below
-  the view layer
+- domain family `*ApplicationService` roots as the public backend boundary
+  below the view layer
 - `src/domain/<context>/published/**` as carrier-only published language used
   at the root domain boundary
-- domain-owned outbound ports declared under named domain modules
+- domain-owned repository abstractions declared under the domain layer
 
 ## Canonical Cross-Layer Flows
 

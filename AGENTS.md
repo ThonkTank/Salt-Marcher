@@ -28,15 +28,17 @@ document exists.
 ## Core Terms
 
 - `Feature`: a project-local vertical slice with view, domain, and data code.
-- `Application Service`: the public backend boundary of a feature below the
-  view layer.
+- `Application Service`: a family-scoped public backend boundary of a domain
+  context below the view layer.
 - `Shell Contribution`: a feature entrypoint that registers UI content with the
   passive shell.
 - `Service Contribution`: a feature entrypoint that registers exported runtime
   services with the passive shell.
+- `Domain Repository`: a domain-owned outbound collaborator that triggers
+  foreign domain work or layered data access.
+- `Domain Port`: a domain-internal listener that reacts to foreign published
+  state.
 - `Write Model`: the authored state a feature owns and is allowed to persist.
-- `Outbound Port`: a domain-owned interface that states what the application
-  core needs from an outer adapter.
 - `Derived State`: any state rebuilt deterministically from the write model.
 - `Source of Truth`: the single document that is authoritative for a topic.
 

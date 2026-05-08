@@ -1,6 +1,6 @@
 Status: Deprecated
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-26
+Last Reviewed: 2026-05-08
 Source of Truth: Compatibility mirror for canonical documentation at `docs/party/domain/domain-party.md`.
 
 # Party Domain Model Compatibility Mirror
@@ -28,6 +28,8 @@ membership states, rest carriers, adventuring-day calculation carriers, and
 published read models exported by the party runtime surface.
 
 ## Application Boundary
+
+Application Service: PartyApplicationService
 
 `application/` contains party use cases and party-owned boundary projection.
 Use cases load one `PartyRoster`, delegate mutation or query decisions to the

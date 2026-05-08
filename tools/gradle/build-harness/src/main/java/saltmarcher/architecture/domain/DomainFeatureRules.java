@@ -1,7 +1,5 @@
 package saltmarcher.architecture.domain;
 
-import static saltmarcher.architecture.ArchitectureNaming.expectedDomainRootFileName;
-
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -42,15 +40,15 @@ public final class DomainFeatureRules implements ArchitectureRule {
             List<SourceFile> roots = rootsByFeature.getOrDefault(featureName, List.of()).stream()
                     .sorted(Comparator.comparing(SourceFile::relativePath))
                     .toList();
-            if (roots.size() == 1) {
+            if (!roots.isEmpty()) {
                 continue;
             }
             String files = roots.isEmpty()
                     ? "none found"
                     : roots.stream().map(SourceFile::relativePath).collect(Collectors.joining(", "));
             violations.add("src/domain/" + featureName, "domain-root-presence",
-                    "Domain feature '" + featureName + "' must expose exactly one root application service."
-                            + " Expected " + expectedDomainRootFileName(featureName) + ". Found: " + files);
+                    "Domain feature '" + featureName
+                            + "' must expose at least one direct root *ApplicationService.java file. Found: " + files);
         }
     }
 

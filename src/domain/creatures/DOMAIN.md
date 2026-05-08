@@ -1,6 +1,6 @@
 Status: Deprecated
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-26
+Last Reviewed: 2026-05-08
 Source of Truth: Compatibility mirror for canonical documentation at `docs/creatures/domain/domain-creatures.md`.
 
 # Creatures Domain Model Compatibility Mirror
@@ -33,6 +33,8 @@ results. They do not encode encounter ranking, choice, balancing, or
 composition policy.
 
 ## Application Boundary
+
+Application Service: CreaturesApplicationService
 
 `application/` owns query normalization, paging coordination, detail lookup,
 filter option loading, and domain lookup-port coordination. The root

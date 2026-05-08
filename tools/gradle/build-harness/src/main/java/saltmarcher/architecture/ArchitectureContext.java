@@ -22,6 +22,8 @@ public final class ArchitectureContext {
             Set.of(".codex", ".git", ".gradle", "build");
     private static final Pattern DOMAIN_CONTEXT_NAME_MARKER_PATTERN =
             Pattern.compile("(?m)^\\s*Context Name:\\s+([A-Z][A-Za-z0-9_]*)\\s*$");
+    private static final Pattern DOMAIN_APPLICATION_SERVICE_MARKER_PATTERN =
+            Pattern.compile("(?m)^\\s*Application Service:\\s+([A-Z][A-Za-z0-9_]*)\\s*$");
 
     private final Path repoRoot;
     private List<SourceFile> sourceFiles;
@@ -106,6 +108,18 @@ public final class ArchitectureContext {
         }
     }
 
+    public List<String> domainApplicationServices(String featureName) {
+        Path document = repoRoot.resolve("src/domain").resolve(featureName).resolve("DOMAIN.md");
+        if (!Files.isRegularFile(document)) {
+            return List.of();
+        }
+        try {
+            return declaredDomainApplicationServices(Files.readString(document, StandardCharsets.UTF_8));
+        } catch (IOException ignored) {
+            return List.of();
+        }
+    }
+
     public boolean isIgnoredRepositoryScanPath(Path path) {
         return relativeSegments(path).stream().anyMatch(IGNORED_REPOSITORY_SCAN_SEGMENTS::contains);
     }
@@ -181,5 +195,14 @@ public final class ArchitectureContext {
             result.add(matcher.group(1));
         }
         return result.stream().sorted().toList();
+    }
+
+    private static List<String> declaredDomainApplicationServices(String content) {
+        List<String> result = new java.util.ArrayList<>();
+        Matcher matcher = DOMAIN_APPLICATION_SERVICE_MARKER_PATTERN.matcher(content);
+        while (matcher.find()) {
+            result.add(matcher.group(1).trim());
+        }
+        return result.stream().sorted().distinct().toList();
     }
 }

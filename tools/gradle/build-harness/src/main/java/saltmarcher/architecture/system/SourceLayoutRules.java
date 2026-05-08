@@ -12,14 +12,18 @@ public final class SourceLayoutRules implements ArchitectureRule {
     private static final Set<String> DOMAIN_ALLOWED_ROLE_PACKAGES =
             Set.of(
                     "aggregate",
+                    "constants",
                     "entity",
                     "value",
                     "policy",
+                    "helper",
                     "port",
+                    "repository",
                     "factory",
                     "service",
                     "event",
-                    "specification");
+                    "specification",
+                    "usecase");
     @Override
     public void check(ArchitectureContext context, ViolationSink violations) {
         for (SourceFile sourceFile : context.sourceFiles(violations)) {

@@ -1,7 +1,6 @@
 package saltmarcher.architecture.documentation.domain;
 
 import static saltmarcher.architecture.ArchitectureNaming.expectedDataRootFileName;
-import static saltmarcher.architecture.ArchitectureNaming.expectedDomainRootFileName;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -38,21 +37,23 @@ public final class DomainDocumentationRules implements ArchitectureRule {
         }
 
         for (String featureName : domainFeatures) {
-            String contextName = context.domainContextName(featureName);
-            if (contextName == null || contextName.isBlank()) {
+            List<String> declaredServices = context.domainApplicationServices(featureName);
+            if (declaredServices.isEmpty()) {
                 continue;
             }
-            String expectedFileName = expectedDomainRootFileName(featureName, contextName);
             List<SourceFile> roots = rootsByFeature.getOrDefault(featureName, List.of()).stream()
                     .sorted(Comparator.comparing(SourceFile::relativePath))
                     .toList();
-            if (roots.stream().noneMatch(sourceFile -> expectedFileName.equals(sourceFile.fileName()))) {
-                String actualFiles = roots.isEmpty()
-                        ? "none found"
-                        : roots.stream().map(SourceFile::relativePath).collect(Collectors.joining(", "));
-                violations.add("src/domain/" + featureName + "/DOMAIN.md", "domain-applicationservice-root-presence",
-                        "Context document declares '" + contextName + "', so src/domain/" + featureName
-                                + "/ must expose " + expectedFileName + ". Found: " + actualFiles);
+            for (String declaredService : declaredServices) {
+                String expectedFileName = declaredService + ".java";
+                if (roots.stream().noneMatch(sourceFile -> expectedFileName.equals(sourceFile.fileName()))) {
+                    String actualFiles = roots.isEmpty()
+                            ? "none found"
+                            : roots.stream().map(SourceFile::relativePath).collect(Collectors.joining(", "));
+                    violations.add("src/domain/" + featureName + "/DOMAIN.md", "domain-applicationservice-root-presence",
+                            "Context document declares application service '" + declaredService + "', so src/domain/"
+                                    + featureName + "/ must expose " + expectedFileName + ". Found: " + actualFiles);
+                }
             }
         }
     }

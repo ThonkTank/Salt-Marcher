@@ -1,7 +1,5 @@
 package saltmarcher.architecture.domain.applicationservice;
 
-import static saltmarcher.architecture.ArchitectureNaming.isFeatureFileName;
-
 import java.util.List;
 import saltmarcher.architecture.ArchitectureContext;
 import saltmarcher.architecture.ArchitectureRule;
@@ -35,10 +33,9 @@ public final class DomainApplicationServiceTopologyRules implements Architecture
         }
 
         if (segments.size() == 4) {
-            String feature = segments.get(2);
-            if (!isFeatureFileName(feature, sourceFile.fileName(), "ApplicationService")) {
+            if (!sourceFile.fileName().endsWith("ApplicationService.java")) {
                 violations.add(sourceFile.relativePath(), "domain-applicationservice-root-presence",
-                        "Only <PascalContext>ApplicationService.java may live directly under src/domain/<context>/.");
+                        "Only direct *ApplicationService.java root files may live under src/domain/<context>/.");
             }
             return;
         }
