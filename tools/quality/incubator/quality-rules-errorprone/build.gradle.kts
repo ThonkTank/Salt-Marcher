@@ -1,4 +1,5 @@
 import java.io.File
+import java.util.Properties
 import org.gradle.api.tasks.SourceSetContainer
 import org.gradle.api.tasks.compile.JavaCompile
 import org.gradle.api.tasks.testing.Test
@@ -45,21 +46,45 @@ fun repoVerificationFiles(relativeSuffix: String): List<File> {
         .toList()
 }
 
+fun activeBundleOwnerDirs(): Set<String> {
+    if (activeEnforcementBundleIds.isEmpty()) {
+        return emptySet()
+    }
+    val qualityDir = repoRootDir.resolve("tools/quality")
+    if (!qualityDir.isDirectory) {
+        return emptySet()
+    }
+    return qualityDir.walkTopDown()
+        .filter { file -> file.isFile && file.name == "bundle.properties" }
+        .mapNotNull { descriptorFile ->
+            val properties = Properties()
+            descriptorFile.inputStream().use(properties::load)
+            val bundleId = properties.getProperty("bundleId")?.trim().orEmpty()
+            descriptorFile.parentFile.absolutePath.takeIf { bundleId in activeEnforcementBundleIds }
+        }
+        .toSet()
+}
+
 fun bundleIdFor(file: File): String = file.relativeTo(repoRootDir).invariantSeparatorsPath
     .substringAfter("tools/quality/")
     .substringBefore('/')
 
 val effectiveErrorProneSourceDirs = repoVerificationFiles("/errorprone/src/main/java")
 val effectiveBugCheckerServices = repoVerificationFiles("/errorprone/src/main/resources/META-INF/services/com.google.errorprone.bugpatterns.BugChecker")
-val activeErrorProneSourceDirs = if (activeEnforcementBundleIds.isEmpty()) {
-    effectiveErrorProneSourceDirs
-} else {
-    effectiveErrorProneSourceDirs.filter { sourceDir -> bundleIdFor(sourceDir) in activeEnforcementBundleIds }
-}
+val activeBundleDirs = activeBundleOwnerDirs()
 val activeBundleBugCheckerServices = if (activeEnforcementBundleIds.isEmpty()) {
     effectiveBugCheckerServices
 } else {
-    effectiveBugCheckerServices.filter { serviceFile -> bundleIdFor(serviceFile) in activeEnforcementBundleIds }
+    effectiveBugCheckerServices.filter { serviceFile ->
+        activeBundleDirs.any { ownerDir -> serviceFile.absolutePath.startsWith(ownerDir) }
+    }
+}
+val activeErrorProneSourceDirs = if (activeEnforcementBundleIds.isEmpty()) {
+    effectiveErrorProneSourceDirs
+} else {
+    effectiveErrorProneSourceDirs.filter { sourceDir ->
+        activeBundleDirs.any { ownerDir -> sourceDir.absolutePath.startsWith(ownerDir) }
+    }
 }
 
 val sourceSets = the<SourceSetContainer>()

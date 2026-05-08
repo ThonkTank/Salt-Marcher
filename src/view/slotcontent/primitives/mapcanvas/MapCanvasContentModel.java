@@ -117,7 +117,7 @@ public final class MapCanvasContentModel {
             return new Viewport(0.0, 0.0, DEFAULT_ZOOM);
         }
 
-        private Viewport {
+        public Viewport {
             zoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, zoom));
         }
 

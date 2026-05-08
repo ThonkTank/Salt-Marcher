@@ -96,7 +96,7 @@ public class DungeonControlPanelView extends VBox {
         return contentModel;
     }
 
-    protected final OverlayControlsPanel newOverlayControls() {
+    public final OverlayControlsPanel newOverlayControls() {
         return new OverlayControlsPanel();
     }
 
@@ -104,7 +104,7 @@ public class DungeonControlPanelView extends VBox {
         viewInputEventHandler.accept(event);
     }
 
-    protected final class OverlayControlsPanel {
+    public final class OverlayControlsPanel {
 
         private final Button triggerButton = new Button();
         private final OverlayPopupContentView popupContent = new OverlayPopupContentView();

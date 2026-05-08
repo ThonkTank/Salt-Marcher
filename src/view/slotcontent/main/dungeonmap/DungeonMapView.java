@@ -24,7 +24,6 @@ import src.domain.dungeoneditor.published.DungeonEditorViewMode;
 import src.domain.travel.published.TravelDungeonMapProjectionSnapshot;
 import src.domain.travel.published.TravelDungeonSnapshot;
 import src.domain.travel.published.TravelOverlaySettings;
-import src.view.slotcontent.primitives.mapcanvas.MapCanvasContentModel.ViewMode;
 import src.view.slotcontent.primitives.mapcanvas.MapCanvasView;
 
 public class DungeonMapView extends BorderPane {
@@ -105,8 +104,10 @@ record DungeonMapRenderState(
         return viewMode == ViewMode.GRAPH;
     }
 
-    ViewMode sceneViewMode() {
-        return isGraphView() ? ViewMode.GRAPH : ViewMode.GRID;
+    src.view.slotcontent.primitives.mapcanvas.MapCanvasContentModel.ViewMode sceneViewMode() {
+        return isGraphView()
+                ? src.view.slotcontent.primitives.mapcanvas.MapCanvasContentModel.ViewMode.GRAPH
+                : src.view.slotcontent.primitives.mapcanvas.MapCanvasContentModel.ViewMode.GRID;
     }
 
     String statusLabel() {

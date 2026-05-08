@@ -397,7 +397,7 @@ Focused investigation entrypoints are `compileJava`, `pmdMain`,
 `checkViewContributionModelEnforcement`,
 `checkViewContentModelEnforcement`,
 `checkViewInspectorEntryEnforcement`, `checkViewLayerEnforcement`,
-`checkViewInputEventEnforcement`, `checkViewPublishedEventEnforcement`,
+`checkViewInputEventEnforcement`,
 `checkViewIntentHandlerEnforcement`, `checkLayeringArchitectureEnforcement`,
 `checkLayeringIndirectionEnforcement`,
 `checkLayeringIndirectionRelayCandidates`, `checkLayeringIndirectionCandidates`,
@@ -436,7 +436,7 @@ Architecture-focused entrypoints:
   `checkViewContributionModelEnforcement`,
   `checkViewContentModelEnforcement`,
   `checkViewInspectorEntryEnforcement`, `checkViewLayerEnforcement`,
-  `checkViewInputEventEnforcement`, `checkViewPublishedEventEnforcement`,
+  `checkViewInputEventEnforcement`,
   `checkViewIntentHandlerEnforcement`,
   `checkShellRuntimeContextEnforcement`, `pmdArchitectureMain`, and
   `:build-harness:architectureCheck`.
@@ -624,9 +624,6 @@ Architecture-focused entrypoints:
 - `./gradlew checkViewInputEventEnforcement --console=plain`
   Aggregates the current `ViewInputEvent` bundle through `compileJava`,
   `viewInputEventArchitectureTest`, and `:build-harness:viewInputEventTopologyCheck`.
-- `./gradlew checkViewPublishedEventEnforcement --console=plain`
-  Aggregates the current `PublishedEvent` bundle through `compileJava` and
-  `viewPublishedEventArchitectureTest`.
 - `./gradlew checkViewIntentHandlerEnforcement --console=plain`
   Aggregates the current `IntentHandler` bundle through `compileJava`,
   `viewIntentHandlerArchitectureTest`, and

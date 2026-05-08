@@ -92,10 +92,17 @@ final class DungeonTravelIntentHandler {
             }
             if (event.interaction() == MapCanvasViewInputEvent.Interaction.SCROLL
                     && !event.modifiers().controlDown()) {
-                mapCanvasContentModel.zoomAround(
-                        event.position().canvasX(),
-                        event.position().canvasY(),
-                        event.scrollDeltaY() >= 0.0 ? ZOOM_IN_FACTOR : ZOOM_OUT_FACTOR);
+                if (event.scrollDeltaY() > 0.0) {
+                    mapCanvasContentModel.zoomAround(
+                            event.position().canvasX(),
+                            event.position().canvasY(),
+                            ZOOM_IN_FACTOR);
+                } else if (event.scrollDeltaY() < 0.0) {
+                    mapCanvasContentModel.zoomAround(
+                            event.position().canvasX(),
+                            event.position().canvasY(),
+                            ZOOM_OUT_FACTOR);
+                }
             }
         }
     }

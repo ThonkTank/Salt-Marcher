@@ -51,7 +51,9 @@ public final class LayeringArchitectureEnforcementCoverageRules implements Archi
             row(
                     "layering-no-direct-view-domain-connection-outside-documented-seams",
                     "Enforced Elsewhere",
-                    List.of("view-binder-dependency-boundary", "view-intenthandler-no-direct-backend-communication"),
+                    List.of(
+                            "view-binder-no-legacy-intenthandler-write-sink-injection",
+                            "view-intenthandler-root-applicationservice-boundary-surface"),
                     List.of("see neighboring owner docs and their listed entrypoints")),
             row("layering-no-non-applicationservice-public-backend-boundary-below-view", "Review-Owned"),
             row("layering-no-outer-format-object-leak-inward", "Review-Owned"),
@@ -71,7 +73,7 @@ public final class LayeringArchitectureEnforcementCoverageRules implements Archi
             row(
                     "layering-view-domain-write-and-readback-seams-only",
                     "Enforced Elsewhere",
-                    List.of("view-binder-publishedevent-sink-injection-only", "view-contentmodel-read-side-only-direct-boundary"),
+                    List.of("view-binder-no-legacy-intenthandler-write-sink-injection", "view-contentmodel-read-side-only-direct-boundary"),
                     List.of("./gradlew compileJava", "./gradlew checkViewArchitecture")),
             row("layering-no-third-presentation-state-mutation-route", "Review-Owned"),
             row(

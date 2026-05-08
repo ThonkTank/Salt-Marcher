@@ -63,7 +63,7 @@ public final class DungeonEditorControlsView extends DungeonControlPanelView {
         getChildren().setAll(mapControls.row(), projectionControls.row(), toolControls.row());
     }
 
-    public void onViewInputEvent(Consumer<DungeonEditorControlsViewInputEvent> handler) {
+    public void onDungeonEditorControlsInputEvent(Consumer<DungeonEditorControlsViewInputEvent> handler) {
         viewInputEventHandler = handler == null ? ignored -> { } : handler;
     }
 
@@ -609,7 +609,7 @@ final class DungeonEditorProjectionControls {
     private final Label levelLabel = new Label("Ebene z=0");
     private final Button previousLevelButton = new Button("-");
     private final Button nextLevelButton = new Button("+");
-    private final OverlayControlsPanel overlayControls;
+    private final DungeonControlPanelView.OverlayControlsPanel overlayControls;
     private final ToggleButton gridButton = createToolToggle(VIEW_GRID);
     private final ToggleButton graphButton = createToolToggle(VIEW_GRAPH);
     private final ToggleGroup viewModeGroup = new ToggleGroup();

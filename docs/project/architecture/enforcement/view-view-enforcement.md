@@ -31,9 +31,7 @@ routing. Those stay in the neighboring role documents.
 It does own the passive-View-side claim that the outward input seam emits the
 same-stem carrier built by the `View` itself rather than by a foreign role.
 
-Where current passive-View gates still encode the older primitive exception,
-the rows below call that out only as drift relative to the View Layer
-Standard.
+The rows below describe the current passive-View blocker surface directly.
 
 ## Enforced
 
@@ -78,8 +76,7 @@ Standard.
   presentation code while waiting for same-root interpretation.
 - `view-view-no-contentmodel-reusable-projection-expansion`
   a reusable passive `View` must not absorb projection or interpretation logic
-  that belongs in its own `ContentModel`, even when current gates still permit
-  legacy primitive-support-carrier arrangements.
+  that belongs in its own `ContentModel`.
 - `view-view-commandless-reactivity`
   passive `View`s react to model changes through bindings or listeners; they do
   not receive presenter-style imperative commands as an alternate presentation
@@ -104,4 +101,3 @@ Standard.
 - [Shell Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/shell-layer.md:1)
 - [View Layer Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/view-layer-enforcement.md:1)
 - [ViewInputEvent Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/view-view-input-event-enforcement.md:1)
-- [PublishedEvent Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/view-published-event-enforcement.md:1)

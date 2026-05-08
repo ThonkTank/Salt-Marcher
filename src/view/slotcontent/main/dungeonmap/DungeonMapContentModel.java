@@ -14,7 +14,6 @@ import src.view.slotcontent.primitives.mapcanvas.MapCanvasContentModel.GlyphPrim
 import src.view.slotcontent.primitives.mapcanvas.MapCanvasContentModel.HitArea;
 import src.view.slotcontent.primitives.mapcanvas.MapCanvasContentModel.MapCanvasPoint;
 import src.view.slotcontent.primitives.mapcanvas.MapCanvasContentModel.MapCanvasPolygonPrimitive;
-import src.view.slotcontent.primitives.mapcanvas.MapCanvasContentModel.OverlayPrimitive;
 import src.view.slotcontent.primitives.mapcanvas.MapCanvasContentModel.PaintStyle;
 import src.view.slotcontent.primitives.mapcanvas.MapCanvasContentModel.PolygonHitArea;
 import src.view.slotcontent.primitives.mapcanvas.MapCanvasContentModel.PolylineHitArea;

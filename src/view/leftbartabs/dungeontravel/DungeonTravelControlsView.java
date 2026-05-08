@@ -33,7 +33,7 @@ public final class DungeonTravelControlsView extends DungeonControlPanelView {
                 new ProjectionRow(zoomLabel, new LevelStepper(levelLabel, previousLevelButton, nextLevelButton), overlayControls.trigger()));
     }
 
-    public void onViewInputEvent(Consumer<DungeonTravelControlsViewInputEvent> handler) {
+    public void onTravelControlsInputEvent(Consumer<DungeonTravelControlsViewInputEvent> handler) {
         viewInputEventHandler = handler == null ? ignored -> {} : handler;
     }
 

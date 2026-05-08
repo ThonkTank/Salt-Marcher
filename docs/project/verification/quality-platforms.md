@@ -120,8 +120,8 @@ Operationally, architecture checks enter local quality through:
 
 - `compileJava`
   runs Error Prone architecture checks, including compiler-precise
-  `ContributionModel`/`ContentModel`, `IntentHandler`, `PublishedEvent`,
-  Binder, passive-View dependency rules, shell API use, `AppShell`
+  `ContributionModel`/`ContentModel`, `IntentHandler`, Binder, passive-View
+  dependency rules, shell API use, `AppShell`
   lifecycle-hook ownership, passive panel restrictions, the broad
   styling-layer programmatic-style-value ban, passive-`View` direct-render
   styling placement, the focused Domain Layer infrastructure-dependency and
@@ -260,8 +260,7 @@ Operationally, architecture checks enter local quality through:
 - `architectureTest`
   runs the remaining generic ArchUnit dependency and cycle checks outside the
   focused `AppBootstrap`, Domain Layer, `Shell Layer`, passive-`View`,
-  `Contribution`,
-  `Binder`, `ContributionModel`, `ContentModel`, `PublishedEvent`,
+  `Contribution`, `Binder`, `ContributionModel`, `ContentModel`,
   `IntentHandler`, and `View Layer` bundle suites
 - `checkViewEnforcement`
   runs the focused passive `View` enforcement bundle by aggregating the
@@ -306,10 +305,6 @@ Operationally, architecture checks enter local quality through:
   runs the focused `ViewInputEvent` enforcement bundle by aggregating the
   current compiler-integrated checks, the dedicated ArchUnit suite, and the
   dedicated build-harness topology check through one direct root entrypoint
-- `checkViewPublishedEventEnforcement`
-  runs the focused `PublishedEvent` enforcement bundle by aggregating the
-  current compiler-integrated checks and the dedicated ArchUnit suite through
-  one direct root entrypoint
 - `checkViewIntentHandlerEnforcement`
   runs the focused `IntentHandler` enforcement bundle by aggregating the
   current compiler-integrated checks, the dedicated ArchUnit suite, and the
@@ -358,8 +353,8 @@ Operationally, architecture checks enter local quality through:
   Data Model, Data Repository, Data Query, Data Mapper, Data Persistencecore,
   `Domain Port`, `Domain Factory`, `Domain Service`, Domain Event,
   `Contribution`, `Binder`, `ContributionModel`, `ContentModel`,
-  `ViewInputEvent`, `PublishedEvent`, `IntentHandler`, and
-  `ShellRuntimeContext` bundles, ArchUnit, PMD architecture rules, and the
+  `ViewInputEvent`, `IntentHandler`, and `ShellRuntimeContext` bundles,
+  ArchUnit, PMD architecture rules, and the
   non-documentation build-harness path
 - `check`
   runs the architecture harness plus adjacent non-architecture quality gates.

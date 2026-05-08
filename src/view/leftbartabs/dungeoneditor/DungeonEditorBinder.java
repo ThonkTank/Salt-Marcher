@@ -38,7 +38,7 @@ final class DungeonEditorBinder {
         controls.bind(contributionModel);
         state.bind(contributionModel);
         main.onViewInputEvent(intentHandler::consume);
-        controls.onViewInputEvent(intentHandler::consume);
+        controls.onDungeonEditorControlsInputEvent(intentHandler::consume);
         state.onViewInputEvent(intentHandler::consume);
         intentHandler.onPublishedEventRequested(event -> editor.applyEditorSession(toCommand(event)));
         editorModel.subscribe(snapshot -> applySnapshot(snapshot, contributionModel, mapContentModel));

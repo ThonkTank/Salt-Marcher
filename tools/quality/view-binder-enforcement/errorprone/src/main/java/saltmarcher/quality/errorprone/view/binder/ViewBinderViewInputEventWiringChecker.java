@@ -18,7 +18,7 @@ import saltmarcher.quality.errorprone.view.ViewArchitectureSupport;
 
 @BugPattern(
         name = "ViewBinderViewInputEventWiring",
-        summary = "Binders may wire passive Views to their co-located IntentHandlers only through onViewInputEvent(intentHandler::consume).",
+        summary = "Binders may wire passive Views to same-root IntentHandlers only through onViewInputEvent(intentHandler::consume).",
         severity = BugPattern.SeverityLevel.ERROR)
 public final class ViewBinderViewInputEventWiringChecker extends BugChecker
         implements BugChecker.CompilationUnitTreeMatcher {

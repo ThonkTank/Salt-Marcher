@@ -58,7 +58,7 @@ public final class ViewContributionModelRequestProtocolChecker extends BugChecke
                 .setMessage(topLevelSimpleName
                         + " exposes outward request/publish protocol members: "
                         + String.join(", ", violations)
-                        + ". Binder-facing outward work must leave the view layer through Binder-installed Consumer<...PublishedEvent> seams, not through ContributionModel request channels.")
+                        + ". Outward write work must leave directly from the same-root IntentHandler through the matching root *ApplicationService, not through ContributionModel request channels.")
                 .build();
     }
 

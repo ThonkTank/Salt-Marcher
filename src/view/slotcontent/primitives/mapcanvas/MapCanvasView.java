@@ -641,11 +641,11 @@ public class MapCanvasView extends BorderPane {
                 Viewport viewport
         ) {
             shapePainter.applyStyle(gc, style, viewport);
-            Color fill = style.fill();
+            Color fill = fxColor(style.fill());
             if (fill != null) {
                 gc.fillRoundRect(x, y, width, height, ROUNDED_BOX_ARC, ROUNDED_BOX_ARC);
             }
-            Color stroke = style.stroke();
+            Color stroke = fxColor(style.stroke());
             if (stroke != null && style.strokeWidth() > 0.0) {
                 gc.strokeRoundRect(x, y, width, height, ROUNDED_BOX_ARC, ROUNDED_BOX_ARC);
             }
@@ -654,13 +654,14 @@ public class MapCanvasView extends BorderPane {
         }
 
         private Color defaultTextColor(@Nullable SceneColor textColor) {
-            return textColor == null ? Color.WHITE : fxColor(textColor);
+            Color resolved = fxColor(textColor);
+            return resolved == null ? Color.WHITE : resolved;
         }
     }
 
     private static final class SceneHitTester {
 
-        private static @Nullable MapCanvasViewInputEvent.CanvasHit hit(
+        private static MapCanvasViewInputEvent.CanvasHit hit(
                 RenderScene renderScene,
                 double sceneX,
                 double sceneY,

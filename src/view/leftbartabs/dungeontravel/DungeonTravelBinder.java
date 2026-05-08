@@ -37,7 +37,7 @@ final class DungeonTravelBinder {
         main.bind(mapContentModel);
         controls.bind(contributionModel);
         state.bind(contributionModel);
-        controls.onViewInputEvent(intentHandler::consume);
+        controls.onTravelControlsInputEvent(intentHandler::consume);
         main.onViewInputEvent(intentHandler::consume);
         mapContentModel.mapCanvasContentModel().zoomProperty().addListener((ignored, before, after) ->
                 controls.showZoom(after.doubleValue()));

@@ -11,8 +11,6 @@ import com.sun.source.util.TreePathScanner;
 import com.sun.tools.javac.code.Symbol;
 import java.util.LinkedHashSet;
 import java.util.Set;
-import javax.lang.model.type.TypeKind;
-import javax.lang.model.type.TypeMirror;
 import saltmarcher.quality.errorprone.view.ViewArchitectureSupport;
 
 @BugPattern(

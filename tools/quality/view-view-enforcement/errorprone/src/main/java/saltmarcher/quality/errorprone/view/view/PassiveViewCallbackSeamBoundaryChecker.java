@@ -18,7 +18,7 @@ import javax.lang.model.element.Modifier;
 import saltmarcher.quality.errorprone.view.ViewSourceDescriptor;
 @BugPattern(
         name = "PassiveViewCallbackSeamBoundary",
-        summary = "Passive Views outside technical primitive packages may not expose callback or result-bearing outward seams.",
+        summary = "Passive Views may not expose callback or result-bearing outward seams beyond onViewInputEvent(...).",
         severity = BugPattern.SeverityLevel.ERROR)
 public final class PassiveViewCallbackSeamBoundaryChecker extends BugChecker
         implements BugChecker.CompilationUnitTreeMatcher {
