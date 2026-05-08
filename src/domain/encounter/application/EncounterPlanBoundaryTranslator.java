@@ -2,20 +2,12 @@ package src.domain.encounter.application;
 
 import src.domain.encounter.plan.value.EncounterPlanSummary;
 import src.domain.encounter.published.SavedEncounterPlanChoice;
-import src.domain.encounter.published.SavedEncounterPlanStatus;
 
 public final class EncounterPlanBoundaryTranslator {
 
     private static final String CREATURES_SUFFIX = " Kreaturen";
 
     private EncounterPlanBoundaryTranslator() {
-    }
-
-    public static SavedEncounterPlanStatus toPublishedListPlansStatus(
-            ListSavedEncounterPlansUseCase.Status status
-    ) {
-        return SavedEncounterPlanStatus.valueOf(
-                status != null && status.loadedSuccessfully() ? "SUCCESS" : "STORAGE_ERROR");
     }
 
     public static SavedEncounterPlanChoice toPublishedChoice(EncounterPlanSummary summary) {

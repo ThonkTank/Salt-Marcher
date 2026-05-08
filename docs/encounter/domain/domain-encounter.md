@@ -22,8 +22,8 @@ Context Name: Encounter
 
 ## Published Language
 
-`published/` owns the planner-facing saved-plan list and plan-budget read
-language plus three view-facing flat runtime surfaces:
+`published/` owns three view-facing flat runtime surfaces plus shared request
+and chooser-display language:
 
 - `EncounterStateModel`, `ApplyEncounterStateCommand`, and
   `EncounterStateSnapshot`
@@ -31,25 +31,20 @@ language plus three view-facing flat runtime surfaces:
   `EncounterBuilderInputs`
 - `EncounterTuningPreviewModel` and `EncounterTuningPreviewResult`
 
-It also owns direct planner-facing readback handles:
-
-- `SavedEncounterPlanListModel` and `SavedEncounterPlanListResult`
-- `EncounterPlanBudgetModel`, `RefreshEncounterPlanBudgetCommand`, and
-  `EncounterPlanBudgetResult`
-
 It also owns shared request/read vocabulary such as difficulty bands, tuning
-preview labels, one saved-plan chooser display carrier, one planner-facing
-saved-plan budget summary, and status enums.
+preview labels, one saved-plan chooser display carrier, and status enums.
 
 `EncounterDifficultyBand.AUTO` and Auto tuning sentinels are public request
 language only. The application boundary resolves them into concrete generation
 values before invoking draft construction.
 
-Saved encounter plans publish only list-facing chooser display language plus
-planner-facing budget reads. The chooser surface is intentionally thin and
-does not mirror the internal `EncounterPlanSummary` record. Creature details
-remain owned by the creatures context and are reloaded when a saved plan is
-opened.
+Saved encounter plans publish only the chooser display language reused by the
+encounter builder. SessionPlanner-specific list and budget/detail work forms
+leave encounter through the foreign `SessionEncounterFactsLookup` service seam
+instead of an encounter-owned `published/*Model` reply channel. The chooser
+surface is intentionally thin and does not mirror the internal
+`EncounterPlanSummary` record. Creature details remain owned by the creatures
+context and are reloaded when a saved plan is opened.
 
 The generation and plan models must not depend on any
 `src.domain.*.published.*` carriers as invariant inputs. The application
@@ -62,16 +57,15 @@ ports.
 `application/` coordinates foreign party, creature, and encounter-table
 application services, translates foreign `published/` results into encounter
 application values, and delegates generation or saved-plan work. The root
-application service is command-only and refreshes encounter-owned read-side
-`published/*Model` handles through encounter-owned publication ports instead of
-exporting the internal session carrier shape or a same-context root read
-method family.
+application service is command-only and refreshes only the encounter-owned
+session-state `published/*Model` handles instead of exporting the internal
+session carrier shape or a same-context root read method family.
 
 `EncounterGenerationUseCase` remains orchestration and foreign-service
 coordination only. `LoadEncounterBudgetUseCase` exposes party-derived
 encounter thresholds without constructing a generated encounter.
-`LoadEncounterPlanBudgetUseCase` exposes one saved encounter plan as a
-party-specific budget summary for downstream planning surfaces.
+`LoadEncounterPlanBudgetUseCase` exposes one saved encounter plan as
+party-specific internal planning facts for downstream planning surfaces.
 The catalog tuning preview remains a read-only published model payload rather
 than a root query result.
 
@@ -125,7 +119,7 @@ It derives:
   search quality, stop category, candidate-pool size, and attempt/evaluation
   counts
 - party-derived budget summaries for the active runtime session
-- party-derived saved-plan budget summaries for downstream planner surfaces
+- party-derived saved-plan planning facts for downstream planner surfaces
 - party-derived tuning preview labels for catalog encounter controls
 
 Generated alternatives remain ephemeral derived state until the user saves the
@@ -198,8 +192,8 @@ runtime state.
 - `GeneratedEncounter`: exported generated encounter suggestion.
 - `EncounterPlan`: saved encounter roster aggregate.
 - `SavedEncounterPlanChoice`: published saved-plan chooser display row.
-- `EncounterPlanBudgetSummary`: published planner-facing saved-plan budget
-  readout.
+- `SessionEncounterFactsLookup.EncounterPlanFact`: sessionplanner-facing
+  saved-plan planning readout.
 
 ## Domain Policies
 

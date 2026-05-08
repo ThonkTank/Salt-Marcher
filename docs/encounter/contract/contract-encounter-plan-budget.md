@@ -1,59 +1,45 @@
 Status: Active
 Owner: SaltMarcher Team
 Last Reviewed: 2026-05-07
-Source of Truth: Public refresh-and-read contract for reading saved
-encounter-plan budget summaries.
+Source of Truth: Service contract for the encounter-owned saved-plan planning
+facts consumed by SessionPlanner.
 
 # Encounter Plan Budget Contract
 
 ## Purpose
 
-This contract defines the public encounter budget surface used by downstream
-planning surfaces to read one saved encounter plan as a budget summary.
+This contract defines the encounter-owned planning surface used by
+SessionPlanner to read one saved encounter plan as worker-facing planning
+facts.
 
 ## Read Surface
 
-- `EncounterPlanBudgetModel`
-  exposes `current()` plus passive subscription for the last requested saved
-  encounter-plan budget result
-
-## Refresh Surface
-
-- `RefreshEncounterPlanBudgetCommand`
-  requests one saved encounter plan by plan id through the command-only
-  `EncounterApplicationService`
+- `SessionEncounterFactsLookup.loadEncounterPlan(long planId)`
+  returns one `EncounterPlanFact`
 
 ## Payload
 
-- `EncounterPlanBudgetResult`
-  returns one status, an optional `EncounterPlanBudgetSummary`, and a message
-- `EncounterPlanBudgetSummary`
-  returns the saved plan identity and label, party threshold context, creature
-  count, total base XP, adjusted XP, multiplier, and difficulty label
+- `EncounterPlanFact`
+  returns availability, saved-plan identity, label, creature count, total base
+  XP, adjusted XP, multiplier, difficulty label, and status text
 
 ## Status Semantics
 
-- `SUCCESS`
-  the saved plan and active party were available and a budget summary was
+- `available = true`
+  the saved plan and active party were available and a planning fact was
   produced
-- `NOT_FOUND`
-  no saved encounter plan exists for the requested id
-- `NO_ACTIVE_PARTY`
-  the budget read could not be resolved because no active party is available
-- `INVALID_REQUEST`
-  the query does not identify a valid plan
-- `STORAGE_ERROR`
-  the saved plan, party data, or required creature detail could not be loaded
+- `available = false`
+  the saved plan, party data, or required creature detail could not be loaded,
+  or the plan id was invalid or missing
 
 ## Boundary Rules
 
-- the refresh command does not mutate the saved encounter plan
-- the budget payload is read-only
-- the model does not expose encounter persistence rows directly
+- the planning payload is read-only
+- the service does not expose encounter persistence rows directly
 - creature XP stays creature-owned and is reloaded through creature detail
   reads instead of being duplicated into encounter-plan persistence
-- consumers read the refreshed payload through the model handle rather than a
-  direct root return value
+- SessionPlanner consumes the facts through its owned foreign-facts port rather
+  than through an encounter `published/*Model` answer channel
 
 ## References
 

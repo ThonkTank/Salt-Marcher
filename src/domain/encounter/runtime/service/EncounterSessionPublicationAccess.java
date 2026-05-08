@@ -8,6 +8,7 @@ import src.domain.encounter.published.EncounterBuilderInputs;
 import src.domain.encounter.published.EncounterGenerationStatus;
 import src.domain.encounter.published.EncounterStateSnapshot;
 import src.domain.encounter.published.EncounterTuningPreviewResult;
+import src.domain.encounter.runtime.port.EncounterSessionPublishedStateRepository;
 import src.domain.encounter.session.entity.EncounterSession;
 
 final class EncounterSessionPublicationAccess {
@@ -48,14 +49,27 @@ final class EncounterSessionPublicationAccess {
         try {
             LoadEncounterBudgetUseCase.Result result = loadBudgetUseCase.execute();
             return new EncounterTuningPreviewResult(
-                    result.status(),
+                    toPublishedStatus(result.status()),
                     EncounterBudgetBoundaryTranslator.tuningPreviewLabels(result.budget()),
                     result.message());
         } catch (IllegalStateException exception) {
             return new EncounterTuningPreviewResult(
                     EncounterGenerationStatus.STORAGE_ERROR,
-                    EncounterBudgetBoundaryTranslator.tuningPreviewLabels(null),
-                    TUNING_PREVIEW_LOAD_FAILED);
+                EncounterBudgetBoundaryTranslator.tuningPreviewLabels(null),
+                TUNING_PREVIEW_LOAD_FAILED);
         }
+    }
+
+    private static EncounterGenerationStatus toPublishedStatus(
+            src.domain.encounter.session.port.EncounterPartyFactsRepository.Status status
+    ) {
+        if (status == null) {
+            return EncounterGenerationStatus.STORAGE_ERROR;
+        }
+        return switch (status) {
+            case SUCCESS -> EncounterGenerationStatus.SUCCESS;
+            case NO_ACTIVE_PARTY -> EncounterGenerationStatus.NO_ACTIVE_PARTY;
+            case STORAGE_ERROR -> EncounterGenerationStatus.STORAGE_ERROR;
+        };
     }
 }

@@ -119,6 +119,10 @@ one domain context.
   consumers need for feedback; they are the upward publication seam and not a
   callback wrapper around `*ApplicationService`; they must not become
   consumer-private answer channels for imperative two-way roundtrips
+- public non-`*Model` payload carriers remain passive shared fact surfaces and
+  stay thinner than the internal work or display forms behind them; foreign
+  readers should not need a broader mirror of private domain plan state than
+  the stable facts they actually consume
 - forbidden: callable services, facades, repositories, ports, gateways,
   factories, locators, policy helpers, or invariant-owning objects
 - public non-`*Model` carriers remain passive domain facts rather than

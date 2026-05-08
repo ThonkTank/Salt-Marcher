@@ -4,8 +4,8 @@ import org.jspecify.annotations.Nullable;
 import src.domain.creatures.CreaturesApplicationService;
 import src.domain.encounter.plan.port.EncounterPlanRepository;
 import src.domain.encounter.published.ApplyEncounterStateCommand;
-import src.domain.encounter.published.RefreshEncounterPlanBudgetCommand;
 import src.domain.encounter.published.UpdateEncounterBuilderInputsCommand;
+import src.domain.encounter.runtime.port.EncounterSessionPublishedStateRepository;
 import src.domain.encounter.session.port.EncounterPartyFactsRepository;
 import src.domain.encountertable.EncounterTableApplicationService;
 
@@ -22,16 +22,14 @@ public final class EncounterApplicationService {
             @Nullable CreaturesApplicationService creatures,
             @Nullable EncounterTableApplicationService encounterTables,
             @Nullable EncounterPlanRepository encounterPlans,
-            EncounterSessionPublishedStateRepository sessionPublishedStateRepository,
-            EncounterPlanPublishedStateRepository planPublishedStateRepository
+            EncounterSessionPublishedStateRepository sessionPublishedStateRepository
     ) {
         this.runtimeAccess = new EncounterApplicationRuntimeAccess(EncounterRuntimeBootstrap.create(
                 party,
                 creatures,
                 encounterTables,
                 encounterPlans,
-                sessionPublishedStateRepository,
-                planPublishedStateRepository));
+                sessionPublishedStateRepository));
     }
 
     public void applyState(ApplyEncounterStateCommand command) {
@@ -40,9 +38,5 @@ public final class EncounterApplicationService {
 
     public void updateBuilderInputs(UpdateEncounterBuilderInputsCommand command) {
         runtimeAccess.updateBuilderInputs(command);
-    }
-
-    public void refreshPlanBudget(RefreshEncounterPlanBudgetCommand command) {
-        runtimeAccess.refreshPlanBudget(command == null ? 0L : command.planId());
     }
 }

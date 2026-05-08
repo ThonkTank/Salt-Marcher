@@ -11,11 +11,13 @@ import com.sun.source.tree.MethodInvocationTree;
 import com.sun.source.tree.MethodTree;
 import com.sun.source.tree.Tree;
 import com.sun.tools.javac.code.Symbol;
+import java.util.ArrayDeque;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
+import javax.lang.model.element.Modifier;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeMirror;
 import saltmarcher.quality.errorprone.flow.MethodFlowSupport;
@@ -36,36 +38,63 @@ public final class DataQueryForeignPublishedReplyChannelRoundTripChecker extends
         }
         String queryFeature = queryMatcher.group(1);
 
-        Map<Symbol.MethodSymbol, MethodTree> localMethodBodies = collectLocalMethodBodies(tree);
-        for (MethodTree methodTree : localMethodBodies.values()) {
-            if (methodTree.getBody() == null) {
+        Map<Symbol.MethodSymbol, MethodFlowSupport.MethodContext> localMethodContexts =
+                collectLocalMethodContexts(tree, state);
+        for (MethodFlowSupport.MethodContext methodContext : localMethodContexts.values()) {
+            if (methodContext.methodTree().getBody() == null) {
                 continue;
             }
             MethodFlowSupport<ForeignCommandFact> flowSupport = new MethodFlowSupport<>(
-                    localMethodBodies,
-                    new RoundTripInvocationTransfer(queryFeature, methodName(methodTree), state));
-            flowSupport.analyze(methodTree, Set.of());
+                    localMethodContexts,
+                    state,
+                    new RoundTripInvocationTransfer(queryFeature, methodName(methodContext.methodTree()), state));
+            flowSupport.analyze(methodContext.methodSymbol(), Set.of());
         }
         return Description.NO_MATCH;
     }
 
-    private static Map<Symbol.MethodSymbol, MethodTree> collectLocalMethodBodies(CompilationUnitTree tree) {
-        Map<Symbol.MethodSymbol, MethodTree> methods = new LinkedHashMap<>();
+    private static Map<Symbol.MethodSymbol, MethodFlowSupport.MethodContext> collectLocalMethodContexts(
+            CompilationUnitTree tree,
+            VisitorState state
+    ) {
+        Map<Symbol.MethodSymbol, MethodFlowSupport.MethodContext> methods = new LinkedHashMap<>();
+        ArrayDeque<ClassTree> classStack = new ArrayDeque<>();
         for (Tree typeDeclaration : tree.getTypeDecls()) {
-            if (!(typeDeclaration instanceof ClassTree classTree)) {
-                continue;
-            }
-            for (Tree member : classTree.getMembers()) {
-                if (!(member instanceof MethodTree methodTree)) {
-                    continue;
-                }
-                Symbol.MethodSymbol symbol = ASTHelpers.getSymbol(methodTree);
-                if (symbol != null) {
-                    methods.put(symbol, methodTree);
-                }
-            }
+            collectFromMember(typeDeclaration, tree, state, classStack, methods);
         }
         return methods;
+    }
+
+    private static void collectFromMember(
+            Tree member,
+            CompilationUnitTree compilationUnit,
+            VisitorState state,
+            ArrayDeque<ClassTree> classStack,
+            Map<Symbol.MethodSymbol, MethodFlowSupport.MethodContext> methods
+    ) {
+        if (member instanceof ClassTree classTree) {
+            classStack.addLast(classTree);
+            try {
+                for (Tree nestedMember : classTree.getMembers()) {
+                    collectFromMember(nestedMember, compilationUnit, state, classStack, methods);
+                }
+            } finally {
+                classStack.removeLast();
+            }
+            return;
+        }
+        if (!(member instanceof MethodTree methodTree) || classStack.isEmpty()) {
+            return;
+        }
+        Symbol.MethodSymbol symbol = ASTHelpers.getSymbol(methodTree);
+        if (symbol == null) {
+            return;
+        }
+        methods.put(symbol, new MethodFlowSupport.MethodContext(
+                symbol,
+                compilationUnit,
+                classStack.getLast(),
+                methodTree));
     }
 
     private static boolean isForeignCommandBoundary(Symbol.MethodSymbol methodSymbol, String foreignFeature) {
@@ -204,7 +233,13 @@ public final class DataQueryForeignPublishedReplyChannelRoundTripChecker extends
         public boolean shouldInline(Symbol.MethodSymbol symbol) {
             return symbol.getModifiers().contains(javax.lang.model.element.Modifier.PRIVATE)
                     || symbol.getModifiers().contains(javax.lang.model.element.Modifier.STATIC)
-                    || symbol.getModifiers().contains(javax.lang.model.element.Modifier.FINAL);
+                    || symbol.getModifiers().contains(javax.lang.model.element.Modifier.FINAL)
+                    || ownerClassIsEffectivelyNonOverridable(symbol);
+        }
+
+        private boolean ownerClassIsEffectivelyNonOverridable(Symbol.MethodSymbol symbol) {
+            return symbol.owner instanceof Symbol.ClassSymbol classSymbol
+                    && classSymbol.getModifiers().contains(Modifier.FINAL);
         }
     }
 }

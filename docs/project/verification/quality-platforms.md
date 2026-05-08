@@ -344,9 +344,9 @@ Operationally, architecture checks enter local quality through:
   and staged `production-handoff` transitively without changing blocker
   semantics
 - `checkDataQueryPublishedCarrierCandidates`
-  runs the report-only Data Query foreign published carrier thinning scan and
-  stays intentionally outside `checkArchitecture`, `check`, `build`, and
-  staged `production-handoff`
+  runs the report-only Data Query build-harness shared-carrier partial-use
+  diagnostics and stays intentionally outside `checkArchitecture`, `check`,
+  `build`, and staged `production-handoff`
 - `checkArchitecture`
   aggregates the focused Domain Layer, Domain ApplicationService,
   Data ServiceContribution,

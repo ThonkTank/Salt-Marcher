@@ -27,16 +27,16 @@ in the neighboring data enforcement documents.
 Unified focused bundle entrypoint:
 
 - `./gradlew checkDataQueryEnforcement --rerun-tasks --console=plain`
-  runs the currently active Data Query-focused Error Prone, PMD, and
-  documentation-coverage checks through one root task. Canonical compile-side
-  and architecture-aggregate blocking behavior remains at
-  `./gradlew compileJava` and `./gradlew checkArchitecture`; the focused
+  runs the currently active Data Query-focused Error Prone, PMD, build-harness
+  topology, and documentation-coverage checks through one root task.
+  Canonical compile-side and architecture-aggregate blocking behavior remains
+  at `./gradlew compileJava` and `./gradlew checkArchitecture`; the focused
   bundle proof route keeps the query-role checks colocated without pulling the
   broader architecture bundles.
 - `./gradlew checkDataQueryPublishedCarrierCandidates --rerun-tasks --console=plain`
-  runs the report-only foreign published carrier thinning scan for query
-  adapters without attaching that candidate surface to `checkArchitecture`,
-  `check`, `build`, or staged `production-handoff`.
+  runs the report-only build-harness candidate surface for shared foreign
+  published carrier partial-use diagnostics without attaching that surface to
+  `checkArchitecture`, `check`, `build`, or staged `production-handoff`.
 
 ## Invariant Catalog
 
@@ -75,15 +75,17 @@ Unified focused bundle entrypoint:
 
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
-| `data-query-foreign-published-carrier-thinning-candidate` | Candidate | every query adapter that reads foreign passive published carriers or result-chained passive carriers | none | none | The query adapter may be rebuilding own-feature facts from only a narrow subset of a broader foreign published carrier. This is a report-only signal for the over-broad foreign published carrier / consumer-private transport seam anti-pattern. |
+| `data-query-foreign-published-carrier-thinning-candidate` | Candidate | every query adapter that reads a globally shared foreign passive published carrier through only part of that carrier's globally used accessor surface | none | none | The query adapter may be rebuilding own-feature facts from only a narrow subset of a broader shared foreign published carrier whose full accessor surface is still globally used elsewhere. This is report-only refactor guidance for the foreign published carrier thinning pattern, not a blocker. |
 
 `./gradlew checkDataQueryPublishedCarrierCandidates --console=plain` runs the
-report-only PMD candidate scan `DataQueryForeignPublishedCarrierCandidateRule`.
-Its findings name the foreign carrier, the accessors the consumer actually
-uses, the accessors it leaves unused, and the correct target pattern: publish
-the stable shared facts through a thinner foreign carrier or a narrower
-published-state slice instead of relaying a broader internal-shaped transport
-carrier into query-local facts.
+report-only build-harness candidate scan backed by the same symbol-resolved
+`DataQueryPublishedCarrierAnalysis` engine as the blocker. It reports only
+true shared-carrier partial-use cases: the carrier has no globally unused
+accessors, but this one consumer still reads only a subset of the carrier's
+globally used accessor surface. The findings name the foreign carrier, the
+consumer-local accessor subset, the globally used accessor surface, and the
+correct target pattern: keep the shared carrier minimal, or split a thinner
+foreign published sub-carrier for the narrower consumer slice.
 
 ## References
 

@@ -39,7 +39,7 @@ Unified focused bundle entrypoint:
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
 | `domain-published-carrier-family-allowlist` | Review-Owned | every `published/**` carrier family | none | none | `published/**` may contain commands, results, snapshots, ids, statuses, enums, sealed carrier abstractions, simple public boundary records, and direct read-side `*Model` publication handles. |
-| `domain-published-observable-state-handle-necessity` | Review-Owned | every `published/**` carrier family that exposes read-only boundary handles | none | none | Read-only boundary handles are allowed only when a context must expose observable current state without leaking private model internals. They are not consumer-private answer channels for imperative query/response roundtrips. |
+| `domain-published-observable-state-handle-necessity` | Review-Owned | every `published/**` carrier family that exposes read-only boundary handles | none | none | Read-only boundary handles are allowed only when a context must expose observable current state without leaking private model internals. `published/*Model` remains the one-way outward feedback seam and must not become a consumer-private answer channel for imperative query/response roundtrips. |
 
 ### Must Contain
 
@@ -56,7 +56,7 @@ Unified focused bundle entrypoint:
 | --- | --- | --- | --- | --- | --- |
 | `domain-published-no-callable-contracts` | Enforced | every Java type under `src/domain/<context>/published/` | domain-published bundle build-harness `DomainPublishedTopologyRules` | `./gradlew checkArchitecture` and `./gradlew checkDomainPublishedEnforcement` | `published/` does not contain callable services, facades, repositories, ports, gateways, factories, locators, or policy contracts. |
 | `domain-published-nonmodel-passive-only` | Enforced | every public `published/**` type whose simple name does not end with `Model` | domain-published bundle Error Prone `DomainPublishedReadModelShape` | `./gradlew compileJava` and `./gradlew checkDomainPublishedEnforcement` | Non-`*Model` published carriers stay passive and do not expose `current()/subscribe()` read-side handle semantics. |
-| `domain-published-domain-facts-only` | Review-Owned | every `published/**` carrier family | none | none | Published carriers describe domain facts and boundary language only. They do not encode render-layer terms, widget state, canvas cells, storage DTOs, or other outer-format convenience shapes. |
+| `domain-published-domain-facts-only` | Review-Owned | every `published/**` carrier family | none | none | Published carriers describe domain facts and boundary language only. Passive non-`*Model` carriers stay minimal shared fact surfaces rather than mirrors of broader internal work or display forms, and they do not encode render-layer terms, widget state, canvas cells, storage DTOs, or other outer-format convenience shapes. |
 | `domain-published-passive-boundary-language` | Review-Owned | every `published/**` carrier family | none | none | Published carriers remain passive boundary language rather than invariant-owning objects hidden behind otherwise legal record, enum, or sealed shapes. |
 
 ### Communication Contract

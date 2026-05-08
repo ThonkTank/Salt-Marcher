@@ -3,15 +3,6 @@ package src.data.sessionplanner.query;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Supplier;
-import src.domain.encounter.EncounterApplicationService;
-import src.domain.encounter.published.EncounterPlanBudgetModel;
-import src.domain.encounter.published.EncounterPlanBudgetResult;
-import src.domain.encounter.published.EncounterPlanBudgetStatus;
-import src.domain.encounter.published.RefreshEncounterPlanBudgetCommand;
-import src.domain.encounter.published.SavedEncounterPlanListResult;
-import src.domain.encounter.published.SavedEncounterPlanListModel;
-import src.domain.encounter.published.SavedEncounterPlanChoice;
-import src.domain.encounter.published.SavedEncounterPlanStatus;
 import src.domain.party.PartyApplicationService;
 import src.domain.party.published.ActivePartyModel;
 import src.domain.party.published.ActivePartyResult;
@@ -30,26 +21,20 @@ public final class ApplicationSessionPlannerFactsQueryAdapter
     private final Supplier<PartyApplicationService> partySupplier;
     private final Supplier<ActivePartyModel> activePartyModelSupplier;
     private final Supplier<AdventuringDayCalculationModel> adventuringDayCalculationModelSupplier;
-    private final Supplier<EncounterApplicationService> encountersSupplier;
-    private final Supplier<SavedEncounterPlanListModel> savedPlansModelSupplier;
-    private final Supplier<EncounterPlanBudgetModel> planBudgetModelSupplier;
+    private final Supplier<SessionEncounterFactsLookup> encounterFactsSupplier;
 
     public ApplicationSessionPlannerFactsQueryAdapter(
             Supplier<PartyApplicationService> partySupplier,
             Supplier<ActivePartyModel> activePartyModelSupplier,
             Supplier<AdventuringDayCalculationModel> adventuringDayCalculationModelSupplier,
-            Supplier<EncounterApplicationService> encountersSupplier,
-            Supplier<SavedEncounterPlanListModel> savedPlansModelSupplier,
-            Supplier<EncounterPlanBudgetModel> planBudgetModelSupplier
+            Supplier<SessionEncounterFactsLookup> encounterFactsSupplier
     ) {
         this.partySupplier = Objects.requireNonNull(partySupplier, "partySupplier");
         this.activePartyModelSupplier = Objects.requireNonNull(activePartyModelSupplier, "activePartyModelSupplier");
         this.adventuringDayCalculationModelSupplier = Objects.requireNonNull(
                 adventuringDayCalculationModelSupplier,
                 "adventuringDayCalculationModelSupplier");
-        this.encountersSupplier = Objects.requireNonNull(encountersSupplier, "encountersSupplier");
-        this.savedPlansModelSupplier = Objects.requireNonNull(savedPlansModelSupplier, "savedPlansModelSupplier");
-        this.planBudgetModelSupplier = Objects.requireNonNull(planBudgetModelSupplier, "planBudgetModelSupplier");
+        this.encounterFactsSupplier = Objects.requireNonNull(encounterFactsSupplier, "encounterFactsSupplier");
     }
 
     @Override
@@ -87,40 +72,12 @@ public final class ApplicationSessionPlannerFactsQueryAdapter
 
     @Override
     public EncounterPlanListFact listEncounterPlans() {
-        SavedEncounterPlanListModel savedPlansModel = savedPlansModelSupplier.get();
-        SavedEncounterPlanListResult result = savedPlansModel.current();
-        if (result.status() != SavedEncounterPlanStatus.SUCCESS) {
-            return new EncounterPlanListFact(false, List.of(), result.message());
-        }
-        return new EncounterPlanListFact(
-                true,
-                result.plans().stream().map(ApplicationSessionPlannerFactsQueryAdapter::toSavedEncounterPlanFact).toList(),
-                "");
+        return encounterFactsSupplier.get().listEncounterPlans();
     }
 
     @Override
     public EncounterPlanFact loadEncounterPlan(long encounterPlanId) {
-        EncounterApplicationService encounters = encountersSupplier.get();
-        EncounterPlanBudgetModel planBudgetModel = planBudgetModelSupplier.get();
-        encounters.refreshPlanBudget(new RefreshEncounterPlanBudgetCommand(encounterPlanId));
-        EncounterPlanBudgetResult result = planBudgetModel.current();
-        if (result.status() != EncounterPlanBudgetStatus.SUCCESS || result.summary() == null) {
-            String message = result.message().isBlank()
-                    ? "Encounter-Plan konnte nicht geladen werden."
-                    : result.message();
-            return EncounterPlanFact.unavailable(encounterPlanId, message);
-        }
-        return new EncounterPlanFact(
-                true,
-                result.summary().planId(),
-                result.summary().name(),
-                result.summary().generatedLabel(),
-                result.summary().creatureCount(),
-                result.summary().totalBaseXp(),
-                result.summary().adjustedXp(),
-                result.summary().xpMultiplier(),
-                result.summary().difficultyLabel(),
-                "Adj. XP " + result.summary().adjustedXp() + " · " + result.summary().difficultyLabel());
+        return encounterFactsSupplier.get().loadEncounterPlan(encounterPlanId);
     }
 
     private static PartyMemberProfile toPartyMemberFact(PartyMemberSummary member) {
@@ -130,10 +87,4 @@ public final class ApplicationSessionPlannerFactsQueryAdapter
                 member == null ? 0 : member.level());
     }
 
-    private static SavedEncounterPlanFact toSavedEncounterPlanFact(SavedEncounterPlanChoice plan) {
-        return new SavedEncounterPlanFact(
-                plan == null ? 0L : plan.planId(),
-                plan == null ? "" : plan.name(),
-                plan == null ? "" : plan.summaryText());
-    }
 }

@@ -67,6 +67,12 @@ internal fun Project.configureVerificationCore() {
 
         val aggregateDependencies = mutableListOf<Any>()
 
+        if (checkerNames.isNotEmpty()) {
+            val compileTask = selectedCompileJava
+                ?: tasks.named<JavaCompile>("compileJava")
+            aggregateDependencies += compileTask
+        }
+
         descriptor.archunit?.let { archunit ->
             val compileTask = selectedCompileJava
                 ?: error("Missing selected compile task for ArchUnit enforcement bundle '$bundleId'.")
@@ -112,12 +118,25 @@ internal fun Project.configureVerificationCore() {
                 }
             }
 
-        descriptor.buildHarnessTaskMainClasses
+        val buildHarnessTasks = descriptor.buildHarnessTaskMainClasses
             .keys
             .sortedBy(descriptor.taskNames::indexOf)
-            .forEach { taskName ->
-                aggregateDependencies += gradle.includedBuild("build-harness").task(":$taskName")
+            .associateWith { taskName -> gradle.includedBuild("build-harness").task(":$taskName") }
+
+        buildHarnessTasks
+            .filterKeys { taskName -> taskName.startsWith("check") && taskName != rootTaskName }
+            .forEach { (taskName, taskDependency) ->
+                tasks.register(taskName) {
+                    group = LifecycleBasePlugin.VERIFICATION_GROUP
+                    description = "Run the focused $bundleDisplayName verification surface '$taskName'."
+                    dependsOn(taskDependency)
+                }
             }
+
+        val aggregateBuildHarnessTasks = buildHarnessTasks
+            .filterKeys { taskName -> !taskName.startsWith("check") || taskName == rootTaskName }
+            .values
+        aggregateDependencies.addAll(aggregateBuildHarnessTasks)
 
         val pmdTasks = descriptor.pmdTasks.associateBy(
             keySelector = { pmd -> pmd.taskName },

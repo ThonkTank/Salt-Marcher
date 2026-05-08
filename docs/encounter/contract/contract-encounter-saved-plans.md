@@ -1,30 +1,33 @@
 Status: Active
 Owner: SaltMarcher Team
 Last Reviewed: 2026-05-07
-Source of Truth: Public read-side contract for the saved encounter-plan list.
+Source of Truth: Service contract for the encounter-owned saved-plan chooser
+facts consumed by SessionPlanner.
 
 # Encounter Saved Plans Contract
 
 ## Purpose
 
-This contract defines the public saved-plan list surface consumed by planner
-and encounter UI read paths.
+This contract defines the encounter-owned saved-plan chooser surface consumed
+by SessionPlanner.
 
 ## Read Surface
 
-- `SavedEncounterPlanListModel`
-  is the direct same-context read-side runtime service for the saved
-  encounter-plan list and exposes `current()` plus passive subscription
-- `SavedEncounterPlanListResult`
-  returns one status, a list of `SavedEncounterPlanSummary`, and a message
-- `SavedEncounterPlanSummary`
-  returns the saved plan id, name, generated label, and creature count
+- `SessionEncounterFactsLookup.listEncounterPlans()`
+  returns one `EncounterPlanListFact`
+- `EncounterPlanListFact`
+  returns availability, a list of `SavedEncounterPlanFact`, and a status text
+- `SavedEncounterPlanFact`
+  returns the saved plan id, name, and one encounter-owned `summaryText`
+  display line
 
 ## Boundary Rules
 
 - the list is read-only
-- the model is maintained by encounter-owned publication; there is no separate
-  root query method for loading the list
+- encounter owns the summary-text formatting and supplies it as a thin chooser
+  display form
+- there is no separate encounter `published/*Model` reply channel for loading
+  the list
 - the list does not expose encounter persistence rows directly
 - creature detail remains creature-owned and does not appear in the summary
 

@@ -62,7 +62,7 @@ public final class EncounterSessionRuntimeAdapter implements EncounterSession.Ru
         }
         try {
             LoadEncounterBudgetUseCase.Result result = useCase.execute();
-            return result.status() == EncounterGenerationStatus.SUCCESS && result.budget() != null
+            return result.status() == EncounterPartyFactsRepository.Status.SUCCESS && result.budget() != null
                     ? Optional.of(EncounterSessionRuntimeProjector.toSessionBudget(result.budget()))
                     : Optional.empty();
         } catch (IllegalStateException exception) {

@@ -144,7 +144,7 @@ public final class DungeonTravelControlsView extends DungeonControlPanelView {
         }
     }
 
-    private final class MapRow extends HBox {
+    private static final class MapRow extends HBox {
 
         private MapRow(Label mapLabel, Button resetViewButton) {
             super(6, mapLabel, resetViewButton);
@@ -154,7 +154,7 @@ public final class DungeonTravelControlsView extends DungeonControlPanelView {
         }
     }
 
-    private final class ProjectionRow extends HBox {
+    private static final class ProjectionRow extends HBox {
 
         private ProjectionRow(Label zoomLabel, HBox levelStepper, Node overlayTrigger) {
             super(6, zoomLabel, levelStepper, overlayTrigger);
@@ -164,7 +164,7 @@ public final class DungeonTravelControlsView extends DungeonControlPanelView {
         }
     }
 
-    private final class LevelStepper extends HBox {
+    private static final class LevelStepper extends HBox {
 
         private LevelStepper(Label levelLabel, Button previousLevelButton, Button nextLevelButton) {
             super(0, levelLabel, previousLevelButton, nextLevelButton);

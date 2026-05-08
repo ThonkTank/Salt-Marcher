@@ -1,10 +1,7 @@
 package src.domain.encounter.application;
 
 import java.util.Objects;
-import org.jspecify.annotations.Nullable;
 import src.domain.encounter.generation.policy.EncounterDifficultyMath;
-import src.domain.encounter.published.EncounterBudgetSummary;
-import src.domain.encounter.published.EncounterGenerationStatus;
 import src.domain.encounter.session.port.EncounterPartyFactsRepository;
 
 public final class LoadEncounterBudgetUseCase {
@@ -27,39 +24,30 @@ public final class LoadEncounterBudgetUseCase {
                 facts.activePartyLevels(),
                 facts.consumedDailyXp(),
                 facts.totalBudgetXp());
-        return Result.success(new EncounterBudgetSummary(
-                summary.activePartyLevels(),
-                summary.averagePartyLevel(),
-                summary.easyThreshold(),
-                summary.mediumThreshold(),
-                summary.hardThreshold(),
-                summary.deadlyThreshold(),
-                summary.dailyBudgetXp(),
-                summary.consumedDailyXp(),
-                summary.remainingDailyXp()));
+        return Result.success(summary);
     }
 
     public record Result(
-            EncounterGenerationStatus status,
-            @Nullable EncounterBudgetSummary budget,
+            EncounterPartyFactsRepository.Status status,
+            EncounterDifficultyMath.BudgetSummary budget,
             String message
     ) {
 
         public Result {
-            status = status == null ? EncounterGenerationStatus.defaultFailure() : status;
+            status = status == null ? EncounterPartyFactsRepository.Status.STORAGE_ERROR : status;
             message = message == null ? "" : message;
         }
 
-        static Result success(EncounterBudgetSummary budget) {
-            return new Result(EncounterGenerationStatus.SUCCESS, budget, "");
+        static Result success(EncounterDifficultyMath.BudgetSummary budget) {
+            return new Result(EncounterPartyFactsRepository.Status.SUCCESS, budget, "");
         }
 
         static Result noActiveParty() {
-            return new Result(EncounterGenerationStatus.NO_ACTIVE_PARTY, null, "No active party is available.");
+            return new Result(EncounterPartyFactsRepository.Status.NO_ACTIVE_PARTY, null, "No active party is available.");
         }
 
         static Result storageError() {
-            return new Result(EncounterGenerationStatus.STORAGE_ERROR, null, "Party data could not be loaded.");
+            return new Result(EncounterPartyFactsRepository.Status.STORAGE_ERROR, null, "Party data could not be loaded.");
         }
     }
 }

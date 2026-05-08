@@ -24,20 +24,22 @@ Context Name: Encounter
 
 `published/` owns public generation and budget-load commands, difficulty
 bands, generator tuning, budget summaries, generated encounter results,
-encounter creature entries, saved encounter-plan commands and queries, saved
-plan summaries, and status vocabulary.
+encounter creature entries, saved encounter-plan commands and queries, thin
+chooser display language, and status vocabulary.
 
-Saved encounter plans publish only thin chooser display language plus
-planner-facing budget reads. Creature details remain owned by the creatures
-context and are reloaded when a saved plan is opened.
+Saved encounter plans publish only thin chooser display language. The
+SessionPlanner list/detail work forms leave encounter through the foreign
+`SessionEncounterFactsLookup` service seam instead of encounter-owned
+published read models. Creature details remain owned by the creatures context
+and are reloaded when a saved plan is opened.
 
 ## Application Boundary
 
 `application/` coordinates foreign party, creature, and encounter-table
 application services, loads public inputs, translates foreign `published/`
 results into encounter application values, and delegates generation or
-saved-plan work. The root application service maps generated results and saved
-plans into encounter `published/` carriers.
+saved-plan work while only the session-state read models stay
+encounter-published.
 
 ## Aggregate Model
 

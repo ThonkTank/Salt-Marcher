@@ -220,6 +220,203 @@ public final class DataQueryForeignPublishedReplyChannelRoundTripCheckerTest {
     }
 
     @Test
+    public void rejectsCallerCommandThenPrivateStaticHelperPoll() {
+        compilationHelper
+                .addSourceLines(
+                        "src/data/sessionplanner/query/ApplicationSessionPlannerFactsQueryAdapter.java",
+                        "package src.data.sessionplanner.query;",
+                        "import src.domain.encounter.EncounterApplicationService;",
+                        "import src.domain.encounter.published.EncounterPlanBudgetModel;",
+                        "import src.domain.encounter.published.RefreshEncounterPlanBudgetCommand;",
+                        "final class ApplicationSessionPlannerFactsQueryAdapter {",
+                        "  private final EncounterApplicationService encounters;",
+                        "  private final EncounterPlanBudgetModel planBudgetModel;",
+                        "  ApplicationSessionPlannerFactsQueryAdapter(",
+                        "      EncounterApplicationService encounters, EncounterPlanBudgetModel planBudgetModel) {",
+                        "    this.encounters = encounters;",
+                        "    this.planBudgetModel = planBudgetModel;",
+                        "  }",
+                        "  void load(long id) {",
+                        "    encounters.refreshPlanBudget(new RefreshEncounterPlanBudgetCommand(id));",
+                        "    readBudget(planBudgetModel);",
+                        "  }",
+                        "  private static void readBudget(EncounterPlanBudgetModel planBudgetModel) {",
+                        "    // BUG: Diagnostic contains: foreign published reply-channel roundtrip anti-pattern",
+                        "    planBudgetModel.current();",
+                        "  }",
+                        "}")
+                .addSourceLines(
+                        "src/domain/encounter/EncounterApplicationService.java",
+                        "package src.domain.encounter;",
+                        "import src.domain.encounter.published.RefreshEncounterPlanBudgetCommand;",
+                        "public final class EncounterApplicationService {",
+                        "  public void refreshPlanBudget(RefreshEncounterPlanBudgetCommand command) { }",
+                        "}")
+                .addSourceLines(
+                        "src/domain/encounter/published/RefreshEncounterPlanBudgetCommand.java",
+                        "package src.domain.encounter.published;",
+                        "public record RefreshEncounterPlanBudgetCommand(long planId) { }")
+                .addSourceLines(
+                        "src/domain/encounter/published/EncounterPlanBudgetModel.java",
+                        "package src.domain.encounter.published;",
+                        "import java.lang.Runnable;",
+                        "import java.util.function.Consumer;",
+                        "public final class EncounterPlanBudgetModel {",
+                        "  public EncounterPlanBudgetResult current() { return new EncounterPlanBudgetResult(); }",
+                        "  public Runnable subscribe(Consumer<EncounterPlanBudgetResult> listener) { return () -> { }; }",
+                        "}")
+                .addSourceLines(
+                        "src/domain/encounter/published/EncounterPlanBudgetResult.java",
+                        "package src.domain.encounter.published;",
+                        "public final class EncounterPlanBudgetResult { }")
+                .doTest();
+    }
+
+    @Test
+    public void rejectsFinalOwnerHelperCommandThenCallerPoll() {
+        compilationHelper
+                .addSourceLines(
+                        "src/data/sessionplanner/query/ApplicationSessionPlannerFactsQueryAdapter.java",
+                        "package src.data.sessionplanner.query;",
+                        "import src.domain.encounter.EncounterApplicationService;",
+                        "import src.domain.encounter.published.EncounterPlanBudgetModel;",
+                        "import src.domain.encounter.published.RefreshEncounterPlanBudgetCommand;",
+                        "final class ApplicationSessionPlannerFactsQueryAdapter {",
+                        "  private final EncounterApplicationService encounters;",
+                        "  private final EncounterPlanBudgetModel planBudgetModel;",
+                        "  ApplicationSessionPlannerFactsQueryAdapter(",
+                        "      EncounterApplicationService encounters, EncounterPlanBudgetModel planBudgetModel) {",
+                        "    this.encounters = encounters;",
+                        "    this.planBudgetModel = planBudgetModel;",
+                        "  }",
+                        "  void load(long id) {",
+                        "    commandHelper(id);",
+                        "    // BUG: Diagnostic contains: foreign published reply-channel roundtrip anti-pattern",
+                        "    planBudgetModel.current();",
+                        "  }",
+                        "  void commandHelper(long id) {",
+                        "    encounters.refreshPlanBudget(new RefreshEncounterPlanBudgetCommand(id));",
+                        "  }",
+                        "}")
+                .addSourceLines(
+                        "src/domain/encounter/EncounterApplicationService.java",
+                        "package src.domain.encounter;",
+                        "import src.domain.encounter.published.RefreshEncounterPlanBudgetCommand;",
+                        "public final class EncounterApplicationService {",
+                        "  public void refreshPlanBudget(RefreshEncounterPlanBudgetCommand command) { }",
+                        "}")
+                .addSourceLines(
+                        "src/domain/encounter/published/RefreshEncounterPlanBudgetCommand.java",
+                        "package src.domain.encounter.published;",
+                        "public record RefreshEncounterPlanBudgetCommand(long planId) { }")
+                .addSourceLines(
+                        "src/domain/encounter/published/EncounterPlanBudgetModel.java",
+                        "package src.domain.encounter.published;",
+                        "import java.lang.Runnable;",
+                        "import java.util.function.Consumer;",
+                        "public final class EncounterPlanBudgetModel {",
+                        "  public EncounterPlanBudgetResult current() { return new EncounterPlanBudgetResult(); }",
+                        "  public Runnable subscribe(Consumer<EncounterPlanBudgetResult> listener) { return () -> { }; }",
+                        "}")
+                .addSourceLines(
+                        "src/domain/encounter/published/EncounterPlanBudgetResult.java",
+                        "package src.domain.encounter.published;",
+                        "public final class EncounterPlanBudgetResult { }")
+                .doTest();
+    }
+
+    @Test
+    public void allowsPollReachedOnlyThroughOverridableHelper() {
+        compilationHelper
+                .addSourceLines(
+                        "src/data/sessionplanner/query/ApplicationSessionPlannerFactsQueryAdapter.java",
+                        "package src.data.sessionplanner.query;",
+                        "import src.domain.encounter.EncounterApplicationService;",
+                        "import src.domain.encounter.published.EncounterPlanBudgetModel;",
+                        "import src.domain.encounter.published.RefreshEncounterPlanBudgetCommand;",
+                        "class ApplicationSessionPlannerFactsQueryAdapter {",
+                        "  private final EncounterApplicationService encounters;",
+                        "  private final EncounterPlanBudgetModel planBudgetModel;",
+                        "  ApplicationSessionPlannerFactsQueryAdapter(",
+                        "      EncounterApplicationService encounters, EncounterPlanBudgetModel planBudgetModel) {",
+                        "    this.encounters = encounters;",
+                        "    this.planBudgetModel = planBudgetModel;",
+                        "  }",
+                        "  void load(long id) {",
+                        "    encounters.refreshPlanBudget(new RefreshEncounterPlanBudgetCommand(id));",
+                        "    readBudget();",
+                        "  }",
+                        "  void readBudget() {",
+                        "    planBudgetModel.current();",
+                        "  }",
+                        "}")
+                .addSourceLines(
+                        "src/domain/encounter/EncounterApplicationService.java",
+                        "package src.domain.encounter;",
+                        "import src.domain.encounter.published.RefreshEncounterPlanBudgetCommand;",
+                        "public final class EncounterApplicationService {",
+                        "  public void refreshPlanBudget(RefreshEncounterPlanBudgetCommand command) { }",
+                        "}")
+                .addSourceLines(
+                        "src/domain/encounter/published/RefreshEncounterPlanBudgetCommand.java",
+                        "package src.domain.encounter.published;",
+                        "public record RefreshEncounterPlanBudgetCommand(long planId) { }")
+                .addSourceLines(
+                        "src/domain/encounter/published/EncounterPlanBudgetModel.java",
+                        "package src.domain.encounter.published;",
+                        "import java.lang.Runnable;",
+                        "import java.util.function.Consumer;",
+                        "public final class EncounterPlanBudgetModel {",
+                        "  public EncounterPlanBudgetResult current() { return new EncounterPlanBudgetResult(); }",
+                        "  public Runnable subscribe(Consumer<EncounterPlanBudgetResult> listener) { return () -> { }; }",
+                        "}")
+                .addSourceLines(
+                        "src/domain/encounter/published/EncounterPlanBudgetResult.java",
+                        "package src.domain.encounter.published;",
+                        "public final class EncounterPlanBudgetResult { }")
+                .doTest();
+    }
+
+    @Test
+    public void allowsForeignPublishedCurrentWithoutApplicationServiceCommand() {
+        compilationHelper
+                .addSourceLines(
+                        "src/data/sessionplanner/query/ApplicationSessionPlannerFactsQueryAdapter.java",
+                        "package src.data.sessionplanner.query;",
+                        "import src.domain.encounter.published.EncounterPlanBudgetModel;",
+                        "import src.domain.encounter.published.RefreshEncounterPlanBudgetCommand;",
+                        "final class ApplicationSessionPlannerFactsQueryAdapter {",
+                        "  private final EncounterPlanBudgetModel planBudgetModel;",
+                        "  ApplicationSessionPlannerFactsQueryAdapter(EncounterPlanBudgetModel planBudgetModel) {",
+                        "    this.planBudgetModel = planBudgetModel;",
+                        "  }",
+                        "  void load(long id) {",
+                        "    localRefresh(new RefreshEncounterPlanBudgetCommand(id));",
+                        "    planBudgetModel.current();",
+                        "  }",
+                        "  private void localRefresh(RefreshEncounterPlanBudgetCommand command) { }",
+                        "}")
+                .addSourceLines(
+                        "src/domain/encounter/published/RefreshEncounterPlanBudgetCommand.java",
+                        "package src.domain.encounter.published;",
+                        "public record RefreshEncounterPlanBudgetCommand(long planId) { }")
+                .addSourceLines(
+                        "src/domain/encounter/published/EncounterPlanBudgetModel.java",
+                        "package src.domain.encounter.published;",
+                        "import java.lang.Runnable;",
+                        "import java.util.function.Consumer;",
+                        "public final class EncounterPlanBudgetModel {",
+                        "  public EncounterPlanBudgetResult current() { return new EncounterPlanBudgetResult(); }",
+                        "  public Runnable subscribe(Consumer<EncounterPlanBudgetResult> listener) { return () -> { }; }",
+                        "}")
+                .addSourceLines(
+                        "src/domain/encounter/published/EncounterPlanBudgetResult.java",
+                        "package src.domain.encounter.published;",
+                        "public final class EncounterPlanBudgetResult { }")
+                .doTest();
+    }
+
+    @Test
     public void allowsOwnFeatureReadback() {
         compilationHelper
                 .addSourceLines(

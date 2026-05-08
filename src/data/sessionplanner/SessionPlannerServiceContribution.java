@@ -6,9 +6,6 @@ import shell.api.ServiceRegistry;
 import src.data.sessionplanner.query.ApplicationSessionPlannerFactsQueryAdapter;
 import src.data.sessionplanner.repository.SessionPlannerPublishedStateRepositoryAdapter;
 import src.data.sessionplanner.repository.SqliteSessionPlanRepository;
-import src.domain.encounter.EncounterApplicationService;
-import src.domain.encounter.published.EncounterPlanBudgetModel;
-import src.domain.encounter.published.SavedEncounterPlanListModel;
 import src.domain.party.PartyApplicationService;
 import src.domain.party.published.ActivePartyModel;
 import src.domain.party.published.AdventuringDayCalculationModel;
@@ -17,6 +14,7 @@ import src.domain.sessionplanner.published.SessionPlannerCurrentSessionModel;
 import src.domain.sessionplanner.published.SessionPlannerEncountersModel;
 import src.domain.sessionplanner.published.SessionPlannerParticipantsModel;
 import src.domain.sessionplanner.published.SessionPlannerStatePanelModel;
+import src.domain.sessionplanner.session.port.SessionEncounterFactsLookup;
 import src.domain.sessionplanner.session.port.SessionPlanRepository;
 
 public final class SessionPlannerServiceContribution implements ServiceContribution {
@@ -34,9 +32,7 @@ public final class SessionPlannerServiceContribution implements ServiceContribut
                 foreignServices::party,
                 foreignServices::activePartyModel,
                 foreignServices::adventuringDayCalculationModel,
-                foreignServices::encounters,
-                foreignServices::savedPlansModel,
-                foreignServices::planBudgetModel);
+                foreignServices::encounterFacts);
         SessionPlannerPublishedStateRepositoryAdapter publishedState =
                 new SessionPlannerPublishedStateRepositoryAdapter(repository, facts, facts);
         SessionPlannerApplicationService applicationService =
@@ -83,9 +79,7 @@ public final class SessionPlannerServiceContribution implements ServiceContribut
         private PartyApplicationService party;
         private ActivePartyModel activePartyModel;
         private AdventuringDayCalculationModel adventuringDayCalculationModel;
-        private EncounterApplicationService encounters;
-        private SavedEncounterPlanListModel savedPlansModel;
-        private EncounterPlanBudgetModel planBudgetModel;
+        private SessionEncounterFactsLookup encounterFacts;
 
         private void bind(ServiceRegistry services) {
             if (bound) {
@@ -94,9 +88,7 @@ public final class SessionPlannerServiceContribution implements ServiceContribut
             party = services.require(PartyApplicationService.class);
             activePartyModel = services.require(ActivePartyModel.class);
             adventuringDayCalculationModel = services.require(AdventuringDayCalculationModel.class);
-            encounters = services.require(EncounterApplicationService.class);
-            savedPlansModel = services.require(SavedEncounterPlanListModel.class);
-            planBudgetModel = services.require(EncounterPlanBudgetModel.class);
+            encounterFacts = services.require(SessionEncounterFactsLookup.class);
             bound = true;
         }
 
@@ -112,16 +104,8 @@ public final class SessionPlannerServiceContribution implements ServiceContribut
             return Objects.requireNonNull(adventuringDayCalculationModel, "adventuringDayCalculationModel");
         }
 
-        private EncounterApplicationService encounters() {
-            return Objects.requireNonNull(encounters, "encounters");
-        }
-
-        private SavedEncounterPlanListModel savedPlansModel() {
-            return Objects.requireNonNull(savedPlansModel, "savedPlansModel");
-        }
-
-        private EncounterPlanBudgetModel planBudgetModel() {
-            return Objects.requireNonNull(planBudgetModel, "planBudgetModel");
+        private SessionEncounterFactsLookup encounterFacts() {
+            return Objects.requireNonNull(encounterFacts, "encounterFacts");
         }
     }
 }

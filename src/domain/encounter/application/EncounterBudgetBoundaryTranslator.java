@@ -2,9 +2,7 @@ package src.domain.encounter.application;
 
 import java.util.ArrayList;
 import java.util.List;
-import org.jspecify.annotations.Nullable;
 import src.domain.encounter.generation.policy.EncounterDifficultyMath;
-import src.domain.encounter.published.EncounterBudgetSummary;
 import src.domain.encounter.published.EncounterDifficultyBand;
 import src.domain.encounter.published.EncounterTuningPreviewLabels;
 
@@ -13,9 +11,11 @@ public final class EncounterBudgetBoundaryTranslator {
     private EncounterBudgetBoundaryTranslator() {
     }
 
-    public static EncounterTuningPreviewLabels tuningPreviewLabels(@Nullable EncounterBudgetSummary budget) {
-        int averageLevel = budget == null ? 1 : Math.max(1, Math.min(20, budget.averageLevel()));
-        int partySize = budget == null || budget.partyLevels().isEmpty() ? 1 : Math.max(1, budget.partyLevels().size());
+    public static EncounterTuningPreviewLabels tuningPreviewLabels(EncounterDifficultyMath.BudgetSummary budget) {
+        int averageLevel = budget == null ? 1 : Math.max(1, Math.min(20, budget.averagePartyLevel()));
+        int partySize = budget == null || budget.activePartyLevels().isEmpty()
+                ? 1
+                : Math.max(1, budget.activePartyLevels().size());
         return new EncounterTuningPreviewLabels(
                 List.of(
                         previewLabel(1.0, difficultyRangeLabel(EncounterDifficultyBand.EASY, averageLevel, partySize)),
