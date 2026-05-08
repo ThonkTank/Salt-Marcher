@@ -20,12 +20,8 @@
             SET
               type:SaltMarcher:ViewLayerType,
               type.viewBucket = CASE
-                WHEN size(segments) >= 6 AND segments[2] = 'slotcontent' AND segments[3] = 'primitives' AND (sourceFileName ENDS WITH 'PointerEvent.java' OR sourceFileName ENDS WITH 'Scene.java' OR sourceFileName ENDS WITH 'Signal.java' OR sourceFileName ENDS WITH 'Support.java') THEN 'SUPPORT_VALUE'
-                WHEN size(segments) >= 6 AND segments[2] = 'slotcontent' AND (sourceFileName ENDS WITH 'ViewModel.java' OR sourceFileName ENDS WITH 'PresentationModel.java' OR sourceFileName ENDS WITH 'ContentModel.java' OR sourceFileName ENDS WITH 'ContributionModel.java') THEN 'MODEL'
-                WHEN size(segments) >= 6 AND segments[2] = 'slotcontent' AND sourceFileName ENDS WITH 'IntentHandler.java' THEN 'HANDLER'
+                WHEN size(segments) >= 6 AND segments[2] = 'slotcontent' AND sourceFileName ENDS WITH 'ContentModel.java' THEN 'MODEL'
                 WHEN size(segments) >= 6 AND segments[2] = 'slotcontent' AND sourceFileName ENDS WITH 'ViewInputEvent.java' THEN 'VIEW_INPUT_EVENT'
-                WHEN size(segments) >= 6 AND segments[2] = 'slotcontent' AND sourceFileName ENDS WITH 'PublishedEvent.java' THEN 'PUBLISHED_EVENT'
-                WHEN size(segments) >= 6 AND segments[2] = 'slotcontent' AND sourceFileName ENDS WITH 'InspectorEntry.java' THEN 'INSPECTOR_ENTRY'
                 WHEN size(segments) >= 6 AND segments[2] = 'slotcontent' AND sourceFileName ENDS WITH 'View.java' THEN 'VIEW'
                 WHEN size(segments) >= 5 AND segments[2] IN ['leftbartabs', 'statetabs', 'dropdowns'] AND sourceFileName ENDS WITH 'Binder.java' THEN 'BINDER'
                 WHEN size(segments) >= 5 AND segments[2] IN ['leftbartabs', 'statetabs', 'dropdowns'] AND (sourceFileName ENDS WITH 'ViewModel.java' OR sourceFileName ENDS WITH 'PresentationModel.java' OR sourceFileName ENDS WITH 'ContributionModel.java' OR sourceFileName ENDS WITH 'ContentModel.java') THEN 'MODEL'
@@ -148,42 +144,6 @@
                   )
                 )
                 OR (
-                  target.viewBucket = 'SUPPORT_VALUE'
-                  AND (
-                    (
-                      size(sourceSegments) >= 4
-                      AND sourceSegments[2] IN ['leftbartabs', 'statetabs', 'dropdowns']
-                      AND size(targetSegments) >= 5
-                      AND targetSegments[2] = 'slotcontent'
-                      AND targetSegments[3] = 'primitives'
-                    )
-                    OR (
-                      size(sourceSegments) >= 5
-                      AND size(targetSegments) >= 5
-                      AND sourceSegments[2] = 'slotcontent'
-                      AND targetSegments[2] = 'slotcontent'
-                      AND sourceSegments[3] = targetSegments[3]
-                      AND sourceSegments[4] = targetSegments[4]
-                    )
-                    OR (
-                      size(sourceSegments) >= 5
-                      AND size(targetSegments) >= 5
-                      AND sourceSegments[2] = 'slotcontent'
-                      AND sourceSegments[3] <> 'primitives'
-                      AND targetSegments[2] = 'slotcontent'
-                      AND targetSegments[3] = 'primitives'
-                    )
-                    OR (
-                      size(sourceSegments) >= 5
-                      AND size(targetSegments) >= 5
-                      AND sourceSegments[2] = 'slotcontent'
-                      AND sourceSegments[3] = 'primitives'
-                      AND targetSegments[2] = 'slotcontent'
-                      AND targetSegments[3] = 'primitives'
-                    )
-                  )
-                )
-                OR (
                   target.viewBucket = 'VIEW'
                   AND (
                     (
@@ -218,9 +178,9 @@
               )
             RETURN DISTINCT
               source.relativePath AS Source,
-              'same-root model/view/input-event surfaces, passive reusable slotcontent, or allowed primitive support values only' AS ExpectedDirection,
+              'same-root model/view/input-event surfaces or passive reusable slotcontent only' AS ExpectedDirection,
               target.fqn AS ActualDirection,
-              'Passive views may depend only on co-located passive-view surfaces and documented reusable support seams.' AS Details
+              'Passive views may depend only on co-located passive-view surfaces and the closed reusable slotcontent three-role seam.' AS Details
             ORDER BY Source, ActualDirection
         ]]></cypher>
         <report primaryColumn="Source" keyColumns="Source, ActualDirection"/>

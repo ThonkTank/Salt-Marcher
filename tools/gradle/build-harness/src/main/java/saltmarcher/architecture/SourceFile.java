@@ -22,12 +22,6 @@ public record SourceFile(
 ) {
     private static final Pattern PACKAGE_PATTERN =
             Pattern.compile("(?m)^\\s*package\\s+([A-Za-z_][\\w.]*)\\s*;");
-    private static final Set<String> PRIMITIVE_SUPPORT_VALUE_SUFFIXES = Set.of(
-            "PointerEvent.java",
-            "Scene.java",
-            "Signal.java",
-            "Support.java");
-
     static SourceFile parse(Path repoRoot, Path path) throws IOException {
         String content = Files.readString(path, StandardCharsets.UTF_8);
         String relativePath = repoRoot.relativize(path.toAbsolutePath().normalize()).toString().replace('\\', '/');
@@ -103,10 +97,7 @@ public record SourceFile(
                 if (segments.size() == 6
                         && segments.get(2).equals("slotcontent")
                         && Set.of("controls", "main", "state", "details", "topbar", "primitives").contains(segments.get(3))) {
-                    if (fileName.endsWith("ViewModel.java")
-                            || fileName.endsWith("PresentationModel.java")
-                            || fileName.endsWith("ContributionModel.java")
-                            || fileName.endsWith("ContentModel.java")) {
+                    if (fileName.endsWith("ContentModel.java")) {
                         yield SourceKind.VIEW_PROJECTION_MODEL;
                     }
                     if (fileName.endsWith("IntentHandler.java")) {
@@ -124,12 +115,6 @@ public record SourceFile(
                     if (fileName.endsWith("View.java")) {
                         yield SourceKind.VIEW_PANEL;
                     }
-                }
-                if (segments.size() == 6
-                        && segments.get(2).equals("slotcontent")
-                        && "primitives".equals(segments.get(3))
-                        && hasPrimitiveSupportValueSuffix(fileName)) {
-                    yield SourceKind.VIEW_SUPPORT_VALUE;
                 }
                 yield SourceKind.UNKNOWN;
             }
@@ -199,9 +184,5 @@ public record SourceFile(
             return segments.size() >= 4 ? segments.get(3) : null;
         }
         return null;
-    }
-
-    private static boolean hasPrimitiveSupportValueSuffix(String fileName) {
-        return PRIMITIVE_SUPPORT_VALUE_SUFFIXES.stream().anyMatch(fileName::endsWith);
     }
 }

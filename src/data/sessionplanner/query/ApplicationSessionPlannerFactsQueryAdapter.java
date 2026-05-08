@@ -7,9 +7,9 @@ import src.domain.encounter.published.EncounterPlanBudgetModel;
 import src.domain.encounter.published.EncounterPlanBudgetResult;
 import src.domain.encounter.published.EncounterPlanBudgetStatus;
 import src.domain.encounter.published.RefreshEncounterPlanBudgetCommand;
-import src.domain.encounter.published.SavedEncounterPlanChoice;
 import src.domain.encounter.published.SavedEncounterPlanListModel;
 import src.domain.encounter.published.SavedEncounterPlanListResult;
+import src.domain.encounter.published.SavedEncounterPlanSummary;
 import src.domain.encounter.published.SavedEncounterPlanStatus;
 import src.domain.party.PartyApplicationService;
 import src.domain.party.published.ActivePartyModel;
@@ -130,7 +130,7 @@ public final class ApplicationSessionPlannerFactsQueryAdapter
                 member == null ? 0 : member.level());
     }
 
-    private static SavedEncounterPlanFact toSavedEncounterPlanFact(SavedEncounterPlanChoice plan) {
+    private static SavedEncounterPlanFact toSavedEncounterPlanFact(SavedEncounterPlanSummary plan) {
         return new SavedEncounterPlanFact(
                 plan == null ? 0L : plan.planId(),
                 plan == null ? "" : plan.name(),

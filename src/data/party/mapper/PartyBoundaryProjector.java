@@ -13,14 +13,18 @@ import src.domain.party.published.ActivePartyResult;
 import src.domain.party.published.AdventuringDayBudget;
 import src.domain.party.published.AdventuringDayCalculation;
 import src.domain.party.published.AdventuringDayCalculationResult;
+import src.domain.party.published.AdventuringDayLevelProgress;
 import src.domain.party.published.AdventuringDayPlanningSummary;
 import src.domain.party.published.AdventuringDayProgress;
+import src.domain.party.published.AdventuringDayProgressEvent;
+import src.domain.party.published.AdventuringDayProgressEventType;
 import src.domain.party.published.AdventuringDayResult;
 import src.domain.party.published.AdventuringDaySummary;
 import src.domain.party.published.CharacterDraft;
 import src.domain.party.published.MembershipState;
 import src.domain.party.published.MutationResult;
 import src.domain.party.published.MutationStatus;
+import src.domain.party.published.PartyDungeonTravelLocationKind;
 import src.domain.party.published.PartyDungeonTravelLocationSnapshot;
 import src.domain.party.published.PartyMemberDetails;
 import src.domain.party.published.PartyMemberSummary;
@@ -28,11 +32,15 @@ import src.domain.party.published.PartyOverworldTravelLocationSnapshot;
 import src.domain.party.published.PartySnapshot;
 import src.domain.party.published.PartySnapshotResult;
 import src.domain.party.published.PartySummary;
+import src.domain.party.published.PartyTravelHeading;
 import src.domain.party.published.PartyTravelLocationSnapshot;
 import src.domain.party.published.PartyTravelPositionSnapshot;
 import src.domain.party.published.PartyTravelPositionsResult;
+import src.domain.party.published.PartyTravelTile;
 import src.domain.party.published.ReadStatus;
+import src.domain.party.published.RestCadenceUrgency;
 import src.domain.party.published.RestCadenceStatus;
+import src.domain.party.published.RestMilestone;
 import src.domain.party.published.RestType;
 import src.domain.party.roster.entity.PartyCharacter;
 import src.domain.party.roster.policy.PartyLevelProgressionPolicy;
@@ -160,29 +168,52 @@ public final class PartyBoundaryProjector {
     }
 
     public static MutationStatus mapMutationStatus(PartyMutationStatus status) {
-        return MutationStatus.fromInternal(status);
+        if (status == null) {
+            return MutationStatus.STORAGE_ERROR;
+        }
+        return switch (status) {
+            case SUCCESS -> MutationStatus.SUCCESS;
+            case NOT_FOUND -> MutationStatus.NOT_FOUND;
+            case INVALID_INPUT -> MutationStatus.INVALID_INPUT;
+            case STORAGE_ERROR -> MutationStatus.STORAGE_ERROR;
+        };
     }
 
     public static PartyMembership toPartyMembership(@Nullable MembershipState membershipState) {
-        return membershipState == null ? PartyMembership.RESERVE : membershipState.toInternal();
+        return membershipState == MembershipState.ACTIVE ? PartyMembership.ACTIVE : PartyMembership.RESERVE;
     }
 
     public static PartyRestType toPartyRestType(@Nullable RestType restType) {
-        return restType == null ? PartyRestType.SHORT_REST : restType.toInternal();
+        return restType == RestType.LONG_REST ? PartyRestType.LONG_REST : PartyRestType.SHORT_REST;
     }
 
     public static PartyCharacterDraft toDomainDraft(@Nullable CharacterDraft draft) {
-        return draft == null ? new PartyCharacterDraft("", "", 0, 0, 0) : draft.toInternal();
+        if (draft == null) {
+            return new PartyCharacterDraft("", "", 0, 0, 0);
+        }
+        return new PartyCharacterDraft(
+                draft.name(),
+                draft.playerName(),
+                draft.level(),
+                draft.passivePerception(),
+                draft.armorClass());
     }
 
     public static @Nullable PartyTravelLocation toDomainTravelLocation(
             @Nullable PartyTravelLocationSnapshot location
     ) {
         if (location instanceof PartyDungeonTravelLocationSnapshot dungeon) {
-            return dungeon.toInternal();
+            return new src.domain.party.roster.value.PartyDungeonTravelLocation(
+                    dungeon.mapId(),
+                    toDungeonLocationKind(dungeon.locationKind()),
+                    dungeon.ownerId(),
+                    toDomainTile(dungeon.tile()),
+                    toDomainHeading(dungeon.heading()));
         }
         if (location instanceof PartyOverworldTravelLocationSnapshot overworld) {
-            return overworld.toInternal();
+            return new src.domain.party.roster.value.PartyOverworldTravelLocation(
+                    overworld.mapId(),
+                    overworld.tileId());
         }
         return null;
     }
@@ -222,16 +253,45 @@ public final class PartyBoundaryProjector {
 
     private static @Nullable PartyTravelLocationSnapshot mapTravelLocation(@Nullable PartyTravelLocation location) {
         if (location instanceof src.domain.party.roster.value.PartyDungeonTravelLocation dungeon) {
-            return PartyDungeonTravelLocationSnapshot.fromInternal(dungeon);
+            return new PartyDungeonTravelLocationSnapshot(
+                    dungeon.mapId(),
+                    dungeon.locationKind() == src.domain.party.roster.value.PartyDungeonTravelLocationKind.TRANSITION
+                            ? PartyDungeonTravelLocationKind.TRANSITION
+                            : PartyDungeonTravelLocationKind.TILE,
+                    dungeon.ownerId(),
+                    new PartyTravelTile(dungeon.tile().q(), dungeon.tile().r(), dungeon.tile().level()),
+                    switch (dungeon.heading()) {
+                        case NORTH -> PartyTravelHeading.NORTH;
+                        case EAST -> PartyTravelHeading.EAST;
+                        case WEST -> PartyTravelHeading.WEST;
+                        case SOUTH -> PartyTravelHeading.SOUTH;
+                    });
         }
         if (location instanceof src.domain.party.roster.value.PartyOverworldTravelLocation overworld) {
-            return PartyOverworldTravelLocationSnapshot.fromInternal(overworld);
+            return new PartyOverworldTravelLocationSnapshot(overworld.mapId(), overworld.tileId());
         }
         return null;
     }
 
     private static RestCadenceStatus mapRestCadenceStatus(LoadAdventuringDaySummaryUseCase.RestCadenceStatus status) {
-        return RestCadenceStatus.fromInternal(status);
+        if (status == null) {
+            return new RestCadenceStatus(null, RestMilestone.LONG_REST, 0, RestCadenceUrgency.NORMAL);
+        }
+        LoadAdventuringDaySummaryUseCase.RestMilestone milestone = status.nextMilestone();
+        LoadAdventuringDaySummaryUseCase.RestCadenceUrgency urgency = status.urgency();
+        return new RestCadenceStatus(
+                status.characterId(),
+                milestone == LoadAdventuringDaySummaryUseCase.RestMilestone.SHORT_REST_ONE
+                        ? RestMilestone.SHORT_REST_ONE
+                        : milestone == LoadAdventuringDaySummaryUseCase.RestMilestone.SHORT_REST_TWO
+                                ? RestMilestone.SHORT_REST_TWO
+                                : RestMilestone.LONG_REST,
+                status.xpDelta(),
+                urgency == LoadAdventuringDaySummaryUseCase.RestCadenceUrgency.SOON
+                        ? RestCadenceUrgency.SOON
+                        : urgency == LoadAdventuringDaySummaryUseCase.RestCadenceUrgency.OVERDUE
+                                ? RestCadenceUrgency.OVERDUE
+                                : RestCadenceUrgency.NORMAL);
     }
 
     private static AdventuringDayBudget mapAdventuringDayBudget(CalculateAdventuringDayUseCase.Budget budget) {
@@ -244,7 +304,45 @@ public final class PartyBoundaryProjector {
     }
 
     private static AdventuringDayProgress mapAdventuringDayProgress(CalculateAdventuringDayUseCase.Progress progress) {
-        return AdventuringDayProgress.fromInternal(progress);
+        CalculateAdventuringDayUseCase.Progress safeProgress = progress == null
+                ? new CalculateAdventuringDayUseCase.Progress(0, 0, 0, 0, 0.0, 0, 0, List.of(), List.of())
+                : progress;
+        return new AdventuringDayProgress(
+                safeProgress.totalGroupXp(),
+                safeProgress.perCharacterAwardedXp(),
+                safeProgress.partySize(),
+                safeProgress.fullDays(),
+                safeProgress.totalDays(),
+                safeProgress.shortRests(),
+                safeProgress.longRests(),
+                safeProgress.levelProgressions().stream()
+                        .map(levelProgress -> new AdventuringDayLevelProgress(
+                                levelProgress.startLevel(),
+                                levelProgress.endLevel(),
+                                levelProgress.characterCount(),
+                                levelProgress.levelUps()))
+                        .toList(),
+                safeProgress.events().stream()
+                        .map(event -> new AdventuringDayProgressEvent(
+                                event.groupXp(),
+                                toPublishedProgressEventType(event.type()),
+                                event.dayNumber(),
+                                event.newLevel(),
+                                event.affectedCharacters(),
+                                event.partialDay()))
+                        .toList());
+    }
+
+    private static AdventuringDayProgressEventType toPublishedProgressEventType(
+            CalculateAdventuringDayUseCase.ProgressEventType type
+    ) {
+        if (type == CalculateAdventuringDayUseCase.ProgressEventType.LEVEL_UP) {
+            return AdventuringDayProgressEventType.LEVEL_UP;
+        }
+        if (type == CalculateAdventuringDayUseCase.ProgressEventType.SHORT_REST) {
+            return AdventuringDayProgressEventType.SHORT_REST;
+        }
+        return AdventuringDayProgressEventType.LONG_REST;
     }
 
     private static PartySnapshot emptySnapshot() {
@@ -252,6 +350,34 @@ public final class PartyBoundaryProjector {
     }
 
     private static MembershipState toMembershipState(PartyMembership membership) {
-        return MembershipState.fromInternal(membership);
+        return membership == PartyMembership.ACTIVE ? MembershipState.ACTIVE : MembershipState.RESERVE;
+    }
+
+    private static src.domain.party.roster.value.PartyDungeonTravelLocationKind toDungeonLocationKind(
+            @Nullable PartyDungeonTravelLocationKind locationKind
+    ) {
+        return locationKind == PartyDungeonTravelLocationKind.TRANSITION
+                ? src.domain.party.roster.value.PartyDungeonTravelLocationKind.TRANSITION
+                : src.domain.party.roster.value.PartyDungeonTravelLocationKind.TILE;
+    }
+
+    private static src.domain.party.roster.value.PartyTravelTile toDomainTile(@Nullable PartyTravelTile tile) {
+        PartyTravelTile safeTile = tile == null ? new PartyTravelTile(0, 0, 0) : tile;
+        return new src.domain.party.roster.value.PartyTravelTile(
+                safeTile.q(),
+                safeTile.r(),
+                safeTile.level());
+    }
+
+    private static src.domain.party.roster.value.PartyTravelHeading toDomainHeading(
+            @Nullable PartyTravelHeading heading
+    ) {
+        PartyTravelHeading effective = heading == null ? PartyTravelHeading.defaultHeading() : heading;
+        return switch (effective) {
+            case NORTH -> src.domain.party.roster.value.PartyTravelHeading.NORTH;
+            case EAST -> src.domain.party.roster.value.PartyTravelHeading.EAST;
+            case WEST -> src.domain.party.roster.value.PartyTravelHeading.WEST;
+            case SOUTH -> src.domain.party.roster.value.PartyTravelHeading.SOUTH;
+        };
     }
 }

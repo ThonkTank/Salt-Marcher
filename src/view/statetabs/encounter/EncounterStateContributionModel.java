@@ -394,7 +394,7 @@ public final class EncounterStateContributionModel {
                 safeSource.partySize());
     }
 
-    private static SavedEncounterPlanView toSavedPlan(src.domain.encounter.published.SavedEncounterPlanChoice plan) {
+    private static SavedEncounterPlanView toSavedPlan(src.domain.encounter.published.SavedEncounterPlanSummary plan) {
         return new SavedEncounterPlanView(
                 plan.planId(),
                 plan.name(),

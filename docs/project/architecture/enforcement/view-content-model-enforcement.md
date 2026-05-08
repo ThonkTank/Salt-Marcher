@@ -11,6 +11,11 @@ role itself in `src/view/slotcontent/**`.
 This document owns the complete architecture-enforcement catalog for the
 reusable `*ContentModel` role itself.
 
+Architectural truth for reusable `*ContentModel` lives only in the
+[View Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/view-layer.md:1).
+This document owns only ContentModel-local enforcement inventory and current
+mechanical drift.
+
 It answers three questions for every reusable `*ContentModel` surface:
 
 - what the role MUST or MAY contain
@@ -18,10 +23,10 @@ It answers three questions for every reusable `*ContentModel` surface:
 - which direct communication boundaries the role itself MAY cross
 
 This document does not own reusable-unit role count or required-existence
-rules, passive `View` read or mutation rules, Binder-owned readback wiring,
-or `IntentHandler` / `*ViewInputEvent` / `*PublishedEvent` protocol rules.
-Those stay in the neighboring role-enforcement documents and in the
-view-layer and layering standards.
+rules, passive `View` read or mutation rules, Binder-owned runtime-service
+lookup, or `IntentHandler` / `*ViewInputEvent` / legacy `*PublishedEvent`
+protocol rules. Those stay in the neighboring role-enforcement documents and
+in the view-layer and layering standards.
 
 Only supported focused bundle entrypoint:
 
@@ -70,7 +75,7 @@ with reusable local `*IntentHandler`s in the target architecture.
 
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
-| `view-contentmodel-read-side-and-local-support-direct-boundary-only` | Enforced | every reusable `*ContentModel.java` under `src/view/**` | Error Prone `ViewContentModelDependencyBoundary`, ArchUnit `contentModelsMustStayShellDataAndServiceFree`, ArchUnit `contentModelsMustNotDependOnApplicationServices`, and jQAssistant `saltmarcher:ViewContentModelDependencies` | `./gradlew compileJava`, `./gradlew checkArchitecture`, and `./gradlew checkViewArchitecture` | A `ContentModel` communicates directly only with read-side domain `published/**` carriers, JavaFX beans or collections, and allowed same-surface local value/support types. |
+| `view-contentmodel-read-side-and-local-support-direct-boundary-only` | Enforced | every reusable `*ContentModel.java` under `src/view/**` | Error Prone `ViewContentModelDependencyBoundary`, ArchUnit `contentModelsMustStayShellDataAndServiceFree`, ArchUnit `contentModelsMustNotDependOnApplicationServices`, and jQAssistant `saltmarcher:ViewContentModelDependencies` | `./gradlew compileJava`, `./gradlew checkArchitecture`, and `./gradlew checkViewArchitecture` | A `ContentModel` communicates directly only with read-side domain `published/**` carriers, JavaFX beans or collections, and allowed same-surface local value/support types. In target architecture that includes owning the listener-side reaction for any component-local `published/*Model` readback it projects. |
 | `view-contentmodel-no-shell-data-bootstrap-or-applicationservice-communication` | Enforced | every reusable `*ContentModel.java` under `src/view/**` | Error Prone `ViewContentModelDependencyBoundary`, ArchUnit `contentModelsMustStayShellDataAndServiceFree`, ArchUnit `contentModelsMustNotDependOnApplicationServices`, and jQAssistant `saltmarcher:ViewContentModelDependencies` | `./gradlew compileJava`, `./gradlew checkArchitecture`, and `./gradlew checkViewArchitecture` | A `ContentModel` does not communicate directly with `shell/**`, `bootstrap/**`, `src/data/**`, or root `*ApplicationService` boundaries. |
 | `view-contentmodel-no-domain-internal-or-write-side-communication` | Enforced | every reusable `*ContentModel.java` under `src/view/**` | Error Prone `ViewContentModelDependencyBoundary` and jQAssistant `saltmarcher:ViewContentModelDependencies` | `./gradlew compileJava` and `./gradlew checkViewArchitecture` | A `ContentModel` does not communicate directly with domain internals or with write-side `published/**` carrier families such as `*Command`, `*Query`, `*Operation`, or `*Edit`. Domain reach stays read-side only. |
 | `view-contentmodel-no-foreign-view-role-or-foreign-unit-communication` | Enforced | every reusable `*ContentModel.java` under `src/view/**` | Error Prone `ViewContentModelDependencyBoundary` and jQAssistant `saltmarcher:ViewContentModelDependencies` | `./gradlew compileJava` and `./gradlew checkViewArchitecture` | A `ContentModel` does not communicate directly with `*Contribution`, `*Binder`, `*IntentHandler`, `*View`, `*ViewInputEvent`, `*PublishedEvent`, `*InspectorEntry`, or foreign view-unit role families. |

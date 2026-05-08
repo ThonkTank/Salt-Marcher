@@ -5,17 +5,10 @@ import static src.domain.encounter.session.value.EncounterSessionValues.*;
 import java.util.List;
 import java.util.Optional;
 import org.jspecify.annotations.Nullable;
-import src.domain.creatures.CreaturesApplicationService;
-import src.domain.creatures.published.CreatureDetailResult;
-import src.domain.creatures.published.CreatureLookupStatus;
-import src.domain.creatures.published.LoadCreatureDetailQuery;
 import src.domain.encounter.generation.value.EncounterGenerationRequest;
 import src.domain.encounter.plan.aggregate.EncounterPlan;
-import src.domain.encounter.published.EncounterCreature;
-import src.domain.encounter.published.EncounterGenerationAdvisory;
-import src.domain.encounter.published.EncounterGenerationDiagnostics;
-import src.domain.encounter.published.EncounterGenerationStatus;
-import src.domain.encounter.published.GeneratedEncounter;
+import src.domain.encounter.reference.port.EncounterCreatureLookup;
+import src.domain.encounter.reference.value.EncounterCreatureReference;
 import src.domain.encounter.session.entity.EncounterSession;
 import src.domain.encounter.session.port.EncounterPartyFactsRepository;
 
@@ -24,7 +17,7 @@ public final class EncounterSessionRuntimeAdapter implements EncounterSession.Ru
     private static final String DEFAULT_CREATURE_ROLE = "Creature";
 
     private final EncounterPartyFactsRepository party;
-    private final CreaturesApplicationService creatures;
+    private final EncounterCreatureLookup creatures;
     private final @Nullable EncounterGenerationUseCase generator;
     private final @Nullable LoadEncounterBudgetUseCase loadBudgetUseCase;
     private final @Nullable SaveEncounterPlanUseCase savePlanUseCase;
@@ -33,7 +26,7 @@ public final class EncounterSessionRuntimeAdapter implements EncounterSession.Ru
 
     public EncounterSessionRuntimeAdapter(
             EncounterPartyFactsRepository party,
-            CreaturesApplicationService creatures,
+            EncounterCreatureLookup creatures,
             @Nullable EncounterGenerationUseCase generator,
             @Nullable LoadEncounterBudgetUseCase loadBudgetUseCase,
             @Nullable SaveEncounterPlanUseCase savePlanUseCase,
@@ -79,13 +72,15 @@ public final class EncounterSessionRuntimeAdapter implements EncounterSession.Ru
         try {
             EncounterGenerationUseCase.GenerateResult result = useCase.execute(request);
             return new GenerationResultData(
-                    result.status() == EncounterGenerationStatus.SUCCESS,
+                    result.success(),
                     result.encounters().stream()
-                            .map(encounter -> toSessionGeneratedEncounter(encounter, advisoryMessages(result.advisories())))
+                            .map(encounter -> toSessionGeneratedEncounter(
+                                    encounter,
+                                    advisoryMessages(result.autoResolved(), result.fallbackUsed())))
                             .toList(),
                     result.message(),
                     toSessionDiagnostics(result.diagnostics()),
-                    result.advisories().contains(EncounterGenerationAdvisory.FALLBACK_USED));
+                    result.fallbackUsed());
         } catch (IllegalStateException exception) {
             return new GenerationResultData(false, List.of(), "Encounter generation failed.", Optional.empty(), false);
         }
@@ -144,11 +139,7 @@ public final class EncounterSessionRuntimeAdapter implements EncounterSession.Ru
 
     @Override
     public Optional<CreatureDetailData> loadCreature(long creatureId) {
-        CreatureDetailResult result = creatures.loadCreatureDetail(new LoadCreatureDetailQuery(creatureId));
-        if (result.status() != CreatureLookupStatus.SUCCESS || result.detail() == null) {
-            return Optional.empty();
-        }
-        return Optional.of(EncounterSessionRuntimeProjector.toSessionCreatureDetail(result.detail()));
+        return creatures.loadCreature(creatureId).map(EncounterSessionRuntimeAdapter::toSessionCreatureDetail);
     }
 
     @Override
@@ -157,7 +148,7 @@ public final class EncounterSessionRuntimeAdapter implements EncounterSession.Ru
     }
 
     private GeneratedEncounterData toSessionGeneratedEncounter(
-            GeneratedEncounter encounter,
+            EncounterGenerationUseCase.GeneratedAlternative encounter,
             List<String> advisoryMessages
     ) {
         return new GeneratedEncounterData(
@@ -168,7 +159,7 @@ public final class EncounterSessionRuntimeAdapter implements EncounterSession.Ru
                 advisoryMessages);
     }
 
-    private EncounterCreatureData toSessionCreature(EncounterCreature creature) {
+    private EncounterCreatureData toSessionCreature(EncounterGenerationUseCase.GeneratedCreature creature) {
         Optional<CreatureDetailData> detail = loadCreature(creature.creatureId());
         if (detail.isPresent()) {
             CreatureDetailData current = detail.orElseThrow();
@@ -202,7 +193,7 @@ public final class EncounterSessionRuntimeAdapter implements EncounterSession.Ru
     }
 
     private static Optional<GenerationDiagnosticsData> toSessionDiagnostics(
-            @Nullable EncounterGenerationDiagnostics diagnostics
+            @Nullable EncounterGenerationDiagnosticsData diagnostics
     ) {
         if (diagnostics == null) {
             return Optional.empty();
@@ -212,18 +203,15 @@ public final class EncounterSessionRuntimeAdapter implements EncounterSession.Ru
                 EncounterSessionRuntimeProjector.tuningLabel(diagnostics.resolvedTuning())));
     }
 
-    private static List<String> advisoryMessages(List<EncounterGenerationAdvisory> advisories) {
-        if (advisories == null || advisories.isEmpty()) {
-            return List.of();
+    private static List<String> advisoryMessages(boolean autoResolved, boolean fallbackUsed) {
+        java.util.ArrayList<String> messages = new java.util.ArrayList<>();
+        if (autoResolved) {
+            messages.add("Auto-Einstellungen wurden fuer diese Generierung auf konkrete Zielwerte aufgeloest.");
         }
-        return advisories.stream().map(EncounterSessionRuntimeAdapter::advisoryMessage).toList();
-    }
-
-    private static String advisoryMessage(EncounterGenerationAdvisory advisory) {
-        if (advisory == EncounterGenerationAdvisory.AUTO_RESOLVED) {
-            return "Auto-Einstellungen wurden fuer diese Generierung auf konkrete Zielwerte aufgeloest.";
+        if (fallbackUsed) {
+            messages.add("Kein exakter Treffer war verfuegbar. Die beste gefundene Alternative wurde uebernommen.");
         }
-        return "Kein exakter Treffer war verfuegbar. Die beste gefundene Alternative wurde uebernommen.";
+        return List.copyOf(messages);
     }
 
     private static String defaultMessage(@Nullable String message, String fallback) {
@@ -232,5 +220,17 @@ public final class EncounterSessionRuntimeAdapter implements EncounterSession.Ru
 
     private static String normalizeRole(String role) {
         return role == null || role.isBlank() ? DEFAULT_CREATURE_ROLE : role;
+    }
+
+    private static CreatureDetailData toSessionCreatureDetail(EncounterCreatureReference creature) {
+        return new CreatureDetailData(
+                creature.id(),
+                creature.name(),
+                creature.challengeRating(),
+                creature.xp(),
+                creature.hitPoints(),
+                creature.armorClass(),
+                creature.initiativeBonus(),
+                creature.creatureType());
     }
 }

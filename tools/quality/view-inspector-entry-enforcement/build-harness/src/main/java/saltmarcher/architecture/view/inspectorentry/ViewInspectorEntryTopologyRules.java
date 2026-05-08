@@ -14,17 +14,8 @@ public final class ViewInspectorEntryTopologyRules implements ArchitectureRule {
             if (!ViewRoleSupport.isInspectorEntryFile(sourceFile)) {
                 continue;
             }
-
-            ViewRoleSupport.ViewUnit unit = ViewRoleSupport.viewUnit(sourceFile);
-            if (unit == null || !ViewRoleSupport.isSlotcontent(unit)) {
-                violations.add(sourceFile.relativePath(), "view-inspectorentry-slotcontent-only",
-                        "*InspectorEntry.java files may exist only inside reusable slotcontent units.");
-                continue;
-            }
-            if (!"details".equals(unit.slot())) {
-                violations.add(sourceFile.relativePath(), "view-inspectorentry-details-only",
-                        "*InspectorEntry.java files may exist only inside reusable slotcontent/details/** units.");
-            }
+            violations.add(sourceFile.relativePath(), "view-inspectorentry-forbidden",
+                    "*InspectorEntry.java is no longer a legal top-level view-layer role. Reusable slotcontent units must stay closed to *View.java, same-stem *ViewInputEvent.java, and *ContentModel.java only.");
         }
     }
 }

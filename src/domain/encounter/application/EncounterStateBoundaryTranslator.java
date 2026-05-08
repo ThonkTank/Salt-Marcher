@@ -44,7 +44,7 @@ public final class EncounterStateBoundaryTranslator {
             return List.of();
         }
         return values.stream()
-                .map(ApplyEncounterStateCommand.InitiativeValue::toInternal)
+                .map(value -> new InitiativeInput(value.id(), value.initiative()))
                 .toList();
     }
 }

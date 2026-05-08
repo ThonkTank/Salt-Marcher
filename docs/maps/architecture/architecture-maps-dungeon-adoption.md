@@ -83,8 +83,9 @@ Direct token drag is adapter-side travel action resolution, not a second
 backend movement path.
 
 These canvas-specific seams are current implementation seams, not new
-canonical reusable role families. The target view-layer architecture still is
-`View + ViewInputEvent + ContentModel` for reusable slotcontent.
+canonical reusable role families. The canonical reusable-slotcontent target
+lives only in the
+[View Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/view-layer.md:1).
 
 ### Map Catalog
 

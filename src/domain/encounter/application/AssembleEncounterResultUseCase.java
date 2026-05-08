@@ -1,48 +1,37 @@
 package src.domain.encounter.application;
 
-import org.jspecify.annotations.Nullable;
-import src.domain.creatures.published.CreatureDetail;
-import src.domain.creatures.published.CreatureDetailResult;
-import src.domain.creatures.published.CreatureLookupStatus;
-import src.domain.creatures.published.LoadCreatureDetailQuery;
-import src.domain.creatures.CreaturesApplicationService;
-import src.domain.encounter.generation.value.EncounterCreatureFacts;
-import src.domain.encounter.generation.value.EncounterDraft;
-import src.domain.encounter.generation.value.EncounterDraftEntry;
-import src.domain.encounter.generation.value.EncounterDraftMetrics;
-import src.domain.encounter.published.EncounterCreature;
-import src.domain.encounter.published.EncounterDifficultyBand;
-import src.domain.encounter.published.GeneratedEncounter;
-import src.domain.encounter.generation.policy.EncounterRoleClassifier;
-
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import org.jspecify.annotations.Nullable;
+import src.domain.encounter.generation.policy.EncounterRoleClassifier;
+import src.domain.encounter.generation.value.EncounterCreatureFacts;
+import src.domain.encounter.generation.value.EncounterDraft;
+import src.domain.encounter.generation.value.EncounterDraftEntry;
+import src.domain.encounter.generation.value.EncounterDraftMetrics;
+import src.domain.encounter.reference.port.EncounterCreatureLookup;
+import src.domain.encounter.reference.value.EncounterCreatureReference;
 
 final class AssembleEncounterResultUseCase {
 
-    private static final int MINIMUM_BLENDED_ROLE_COUNT = 2;
-    private static final int ACTION_ECONOMY_CREATURE_COUNT = 5;
-    private static final int BASE_HIGHLIGHT_COUNT = 1;
+    private final EncounterCreatureLookup creatures;
 
-    private final CreaturesApplicationService creatures;
-
-    AssembleEncounterResultUseCase(CreaturesApplicationService creatures) {
+    AssembleEncounterResultUseCase(EncounterCreatureLookup creatures) {
         this.creatures = creatures;
     }
 
-    List<GeneratedEncounter> assemble(List<EncounterDraft> drafts, int alternativeCount) {
-        Map<Long, CreatureDetail> detailCache = new LinkedHashMap<>();
-        List<GeneratedEncounter> encounters = new ArrayList<>();
+    List<EncounterGenerationUseCase.GeneratedAlternative> assemble(List<EncounterDraft> drafts, int alternativeCount) {
+        Map<Long, EncounterCreatureReference> detailCache = new LinkedHashMap<>();
+        List<EncounterGenerationUseCase.GeneratedAlternative> encounters = new ArrayList<>();
         for (EncounterDraft draft : drafts.stream().limit(alternativeCount).toList()) {
             EncounterDraftMetrics metrics = draft.metrics();
-            List<EncounterCreature> creatures = new ArrayList<>();
+            List<EncounterGenerationUseCase.GeneratedCreature> creatures = new ArrayList<>();
             for (EncounterDraftEntry entry : draft.entries()) {
-                CreatureDetail detail = detailCache.computeIfAbsent(entry.creatureId(), this::loadCreatureDetailOrNull);
+                EncounterCreatureReference detail = detailCache.computeIfAbsent(entry.creatureId(), this::loadCreatureDetailOrNull);
                 EncounterCreatureFacts facts = detail == null ? entry.facts() : PrepareEncounterGenerationUseCase.toFacts(detail);
                 EncounterRoleClassifier.Classification classification = EncounterRoleClassifier.classify(facts);
-                creatures.add(new EncounterCreature(
+                creatures.add(new EncounterGenerationUseCase.GeneratedCreature(
                         entry.creatureId(),
                         entry.creatureName(),
                         entry.challengeRating(),
@@ -51,47 +40,16 @@ final class AssembleEncounterResultUseCase {
                         classification.role(),
                         classification.tags()));
             }
-            encounters.add(new GeneratedEncounter(
+            encounters.add(new EncounterGenerationUseCase.GeneratedAlternative(
                     draft.title(),
-                    EncounterDifficultyBand.valueOf(draft.achievedDifficulty().name()),
-                    metrics.creatureCount(),
-                    metrics.totalBaseXp(),
+                    draft.achievedDifficulty(),
                     metrics.adjustedXp(),
-                    metrics.multiplier(),
-                    highlightsFor(draft, creatures),
                     creatures));
         }
         return encounters;
     }
 
-    private @Nullable CreatureDetail loadCreatureDetailOrNull(long creatureId) {
-        CreatureDetailResult result = creatures.loadCreatureDetail(new LoadCreatureDetailQuery(creatureId));
-        if (result.status() != CreatureLookupStatus.SUCCESS) {
-            return null;
-        }
-        return result.detail();
-    }
-
-    private static List<String> highlightsFor(
-            EncounterDraft draft,
-            List<EncounterCreature> creatures
-    ) {
-        EncounterDraftMetrics metrics = draft.metrics();
-        List<String> highlights = new ArrayList<>();
-        highlights.add("Adjusted XP " + metrics.adjustedXp() + " vs target " + metrics.targetAdjustedXp());
-        if (creatures.stream().anyMatch(creature -> "Boss".equals(creature.role()))) {
-            highlights.add("Includes a boss-style anchor.");
-        }
-        long distinctRoles = creatures.stream().map(EncounterCreature::role).distinct().count();
-        if (distinctRoles >= MINIMUM_BLENDED_ROLE_COUNT) {
-            highlights.add("Blends " + distinctRoles + " combat roles.");
-        }
-        if (metrics.creatureCount() >= ACTION_ECONOMY_CREATURE_COUNT) {
-            highlights.add("Leans on action economy through numbers.");
-        }
-        if (highlights.size() == BASE_HIGHLIGHT_COUNT) {
-            highlights.add("Compact composition that stays close to the requested band.");
-        }
-        return highlights;
+    private @Nullable EncounterCreatureReference loadCreatureDetailOrNull(long creatureId) {
+        return creatures.loadCreature(creatureId).orElse(null);
     }
 }

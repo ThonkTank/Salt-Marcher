@@ -5,16 +5,19 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-public record CreatureCatalogModel(
-        Supplier<CreatureCatalogPageResult> currentSupplier,
-        Function<Consumer<CreatureCatalogPageResult>, Runnable> subscribeAction
-) {
+public final class CreatureCatalogModel {
 
-    public CreatureCatalogModel {
-        currentSupplier = currentSupplier == null
-                ? () -> new CreatureCatalogPageResult(CreatureQueryStatus.STORAGE_ERROR, CreatureCatalogPage.empty(50, 0))
+    private final Supplier<CreatureCatalogPageResult> currentSupplier;
+    private final Function<Consumer<CreatureCatalogPageResult>, Runnable> subscribeAction;
+
+    public CreatureCatalogModel(
+            Supplier<CreatureCatalogPageResult> currentSupplier,
+            Function<Consumer<CreatureCatalogPageResult>, Runnable> subscribeAction
+    ) {
+        this.currentSupplier = currentSupplier == null
+                ? CreatureCatalogModel::emptyResult
                 : currentSupplier;
-        subscribeAction = subscribeAction == null
+        this.subscribeAction = subscribeAction == null
                 ? listener -> () -> { }
                 : subscribeAction;
     }
@@ -25,5 +28,11 @@ public record CreatureCatalogModel(
 
     public Runnable subscribe(Consumer<CreatureCatalogPageResult> listener) {
         return subscribeAction.apply(Objects.requireNonNull(listener, "listener"));
+    }
+
+    private static CreatureCatalogPageResult emptyResult() {
+        return new CreatureCatalogPageResult(
+                CreatureQueryStatus.STORAGE_ERROR,
+                CreatureCatalogPage.empty(50, 0));
     }
 }

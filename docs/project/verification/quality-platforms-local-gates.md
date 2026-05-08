@@ -618,7 +618,9 @@ Architecture-focused entrypoints:
   technical-primitive architecture. This surface does not change the Gradle
   exit code, but it is still attached to `checkViewArchitecture`, staged
   `view-topology`, `check`, `build`, and staged `production-handoff` until the
-  reusable-slotcontent gate migration replaces or removes it.
+  reusable-slotcontent gate migration replaces or removes it. The canonical
+  view-layer target remains the
+  [View Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/view-layer.md:1).
 - `./gradlew checkViewInputEventEnforcement --console=plain`
   Aggregates the current `ViewInputEvent` bundle through `compileJava`,
   `viewInputEventArchitectureTest`, and `:build-harness:viewInputEventTopologyCheck`.

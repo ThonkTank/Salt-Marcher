@@ -4,8 +4,8 @@ This bundle co-locates all currently active SaltMarcher checks that back
 `docs/project/architecture/enforcement/view-layer-enforcement.md`.
 
 It keeps the existing checker identity `ViewLayerTopologyRules` while making
-this directory the canonical home for the focused host wiring and the
-slotcontent `ContentModel` requirement proof.
+this directory the canonical home for the focused host wiring and the closed
+reusable-slotcontent three-role topology proof.
 
 It owns:
 
@@ -15,14 +15,10 @@ It owns:
   `ViewLayerTopologyRules` and `ViewLayerTopologyCheckMain`
 - `archunit/`
   `architecture.view.viewlayer.ViewLayerArchitectureTest`
-- `pmd/`
-  the report-only refactor-direction candidate surface for shared view-layer
-  primitives and similar owner-pure guidance diagnostics
 
 Unified root entrypoint:
 
 - `./gradlew checkViewLayerEnforcement --rerun-tasks --console=plain`
-- `./gradlew checkViewRefactorCandidates --rerun-tasks --console=plain`
 
 Shared baseline ArchUnit/build-harness infrastructure remains intentionally
 outside this directory; view-layer-specific rule ownership and bundle metadata

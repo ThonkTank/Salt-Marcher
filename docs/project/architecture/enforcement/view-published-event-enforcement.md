@@ -9,7 +9,13 @@ itself in `src/view/**`.
 ## Goal
 
 This document owns the complete architecture-enforcement catalog for the
-`*PublishedEvent` role itself.
+current mechanical `*PublishedEvent` role surface itself.
+
+Architectural truth for the view layer no longer treats `*PublishedEvent` as a
+normal target role and lives only in the
+[View Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/view-layer.md:1).
+This document exists only as PublishedEvent-local enforcement inventory for the
+current mechanical legacy surface.
 
 It answers four questions for every `*PublishedEvent` surface:
 
@@ -24,10 +30,8 @@ file-role topology, or non-`*PublishedEvent` mutation semantics. Those stay in
 the neighboring role-enforcement documents and in the view-layer and layering
 standards.
 
-The target architecture keeps `*PublishedEvent` as an active-root write-seam
-role only. Reusable `slotcontent/**` units do not own `*PublishedEvent`
-families in the target model, even where current mechanical gates still admit
-or discuss them.
+Rows below describe only the remaining legal shape of the current mechanical
+legacy seam, not a second target architecture.
 
 Unified focused bundle entrypoint:
 
@@ -43,8 +47,8 @@ Unified focused bundle entrypoint:
 
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
-| `view-publishedevent-local-intenthandler-required` | Enforced | every `*PublishedEvent.java` under `src/view/**` | ArchUnit `publishedEventsMustBelongToLocalIntentHandlers` | `./gradlew checkArchitecture` | A `*PublishedEvent` may exist only in a local unit that owns exactly one local `*IntentHandler` exposing `onPublishedEventRequested(Consumer<SamePublishedEvent>)` for that carrier family. In target architecture that local unit is an active root, not a reusable `slotcontent/**` unit. |
-| `view-publishedevent-domain-write-seam-necessity` | Enforced | every `*PublishedEvent.java` under `src/view/**` | Error Prone `ViewPublishedEventRequestSemantics`, together with Error Prone `ViewPublishedEventProducerOwnership` for production/publication ownership | `./gradlew compileJava`, `./gradlew checkViewPublishedEventEnforcement`, and `./gradlew checkArchitecture` | A `*PublishedEvent` exists only for authoritative outward work that roundtrips back through a read-side same-context `published/*Model`. Request-, query-, refresh-, search-, detail-open-, preview-, load-, and reset-style carrier semantics are mechanically rejected when they appear in carrier helper/factory methods, enum constants, or record-component names. |
+| `view-publishedevent-local-intenthandler-required` | Enforced | every `*PublishedEvent.java` under `src/view/**` | ArchUnit `publishedEventsMustBelongToLocalIntentHandlers` | `./gradlew checkArchitecture` | The current mechanical surface allows a `*PublishedEvent` only in a local unit that owns exactly one local `*IntentHandler` exposing `onPublishedEventRequested(Consumer<SamePublishedEvent>)` for that carrier family. That is current gate behavior, not target architecture. |
+| `view-publishedevent-domain-write-seam-necessity` | Enforced | every `*PublishedEvent.java` under `src/view/**` | Error Prone `ViewPublishedEventRequestSemantics`, together with Error Prone `ViewPublishedEventProducerOwnership` for production/publication ownership | `./gradlew compileJava`, `./gradlew checkViewPublishedEventEnforcement`, and `./gradlew checkArchitecture` | When current mechanical code still uses `*PublishedEvent`, that carrier may exist only for authoritative outward work that roundtrips back through a read-side same-context `published/*Model`. Request-, query-, refresh-, search-, detail-open-, preview-, load-, and reset-style carrier semantics are mechanically rejected when they appear in carrier helper/factory methods, enum constants, or record-component names. |
 
 ### May Contain
 
@@ -65,7 +69,7 @@ Unified focused bundle entrypoint:
 
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
-| `view-publishedevent-intenthandler-only-production-and-publication` | Enforced | every same-root top-level `*PublishedEvent` production or publication inside `src/view/**` | Error Prone `ViewPublishedEventProducerOwnership` | `./gradlew compileJava` | Outside the `*PublishedEvent` file's own constructor or static-factory implementation details, only the co-located `IntentHandler` may construct and publish top-level same-root `*PublishedEvent` carriers. Carrier ownership and carrier semantics are enforced separately; semantic request-style bans are owned by `ViewPublishedEventRequestSemantics`. |
+| `view-publishedevent-intenthandler-only-production-and-publication` | Enforced | every same-root top-level `*PublishedEvent` production or publication inside `src/view/**` | Error Prone `ViewPublishedEventProducerOwnership` | `./gradlew compileJava` | Outside the `*PublishedEvent` file's own constructor or static-factory implementation details, only the co-located `IntentHandler` may construct and publish top-level same-root `*PublishedEvent` carriers. This proves only the current mechanical legacy surface; carrier ownership and carrier semantics are enforced separately. |
 
 ## References
 

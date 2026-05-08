@@ -4,21 +4,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
-import org.jspecify.annotations.Nullable;
-import src.domain.encounter.application.EncounterBudgetBoundaryTranslator;
-import src.domain.encounter.application.EncounterPlanBoundaryTranslator;
-import src.domain.encounter.application.EncounterStateSnapshotProjector;
-import src.domain.encounter.application.ListSavedEncounterPlansUseCase;
-import src.domain.encounter.application.LoadEncounterBudgetUseCase;
-import src.domain.encounter.application.LoadEncounterPlanBudgetUseCase;
-import src.domain.encounter.generation.policy.EncounterDifficultyMath;
 import src.domain.encounter.published.EncounterBuilderInputs;
 import src.domain.encounter.published.EncounterBuilderInputsModel;
 import src.domain.encounter.published.EncounterGenerationStatus;
 import src.domain.encounter.published.EncounterPlanBudgetModel;
 import src.domain.encounter.published.EncounterPlanBudgetResult;
 import src.domain.encounter.published.EncounterPlanBudgetStatus;
-import src.domain.encounter.published.EncounterPlanBudgetSummary;
 import src.domain.encounter.published.EncounterStateModel;
 import src.domain.encounter.published.EncounterStateSnapshot;
 import src.domain.encounter.published.EncounterTuningPreviewLabels;
@@ -29,14 +20,18 @@ import src.domain.encounter.published.SavedEncounterPlanListResult;
 import src.domain.encounter.published.SavedEncounterPlanStatus;
 import src.domain.encounter.runtime.port.EncounterPlanPublishedStateRepository;
 import src.domain.encounter.runtime.port.EncounterSessionPublishedStateRepository;
-import src.domain.encounter.session.entity.EncounterSession;
 
 public final class EncounterPublishedStateRepositoryAdapter
-        implements EncounterSessionPublishedStateRepository, EncounterPlanPublishedStateRepository {
+        implements EncounterSessionPublishedStateRepository<
+                EncounterStateSnapshot,
+                EncounterBuilderInputs,
+                EncounterTuningPreviewResult>,
+        EncounterPlanPublishedStateRepository<
+                SavedEncounterPlanListResult,
+                EncounterPlanBudgetResult> {
 
     private static final String LISTENER_PARAMETER = "listener";
     private static final String SESSION_NOT_REGISTERED = "Encounter session is not registered.";
-    private static final String TUNING_PREVIEW_NOT_REGISTERED = "Encounter tuning preview service is not registered.";
     private static final String PLAN_STORAGE_NOT_REGISTERED = "Encounter plan storage is not registered.";
     private static final String PLAN_BUDGET_NOT_REGISTERED = "Encounter plan budget service is not registered.";
 
@@ -60,7 +55,7 @@ public final class EncounterPublishedStateRepositoryAdapter
     public final EncounterPlanBudgetModel planBudgetModel = new EncounterPlanBudgetModel(
             this::currentPlanBudget,
             this::subscribePlanBudgetListener);
-    private EncounterStateSnapshot currentState = EncounterStateSnapshot.empty("Encounter state is not registered.");
+    private EncounterStateSnapshot currentState = EncounterStateSnapshot.empty(SESSION_NOT_REGISTERED);
     private EncounterBuilderInputs currentBuilderInputs = EncounterBuilderInputs.empty();
     private EncounterTuningPreviewResult currentTuningPreview = emptyTuningPreview();
     private SavedEncounterPlanListResult currentSavedPlans = emptySavedPlans();
@@ -68,35 +63,31 @@ public final class EncounterPublishedStateRepositoryAdapter
 
     @Override
     public void publishCurrentSession(
-            @Nullable EncounterSession session,
-            LoadEncounterBudgetUseCase.Result budgetResult
+            EncounterStateSnapshot state,
+            EncounterBuilderInputs builderInputs,
+            EncounterTuningPreviewResult tuningPreview
     ) {
-        currentState = session == null
-                ? EncounterStateSnapshot.empty(SESSION_NOT_REGISTERED)
-                : EncounterStateSnapshotProjector.toPublishedSnapshot(session);
-        currentBuilderInputs = session == null
-                ? EncounterBuilderInputs.empty()
-                : EncounterStateSnapshotProjector.toPublishedBuilderInputs(session);
-        currentTuningPreview = toTuningPreviewResult(budgetResult);
+        currentState = state == null ? EncounterStateSnapshot.empty(SESSION_NOT_REGISTERED) : state;
+        currentBuilderInputs = builderInputs == null ? EncounterBuilderInputs.empty() : builderInputs;
+        currentTuningPreview = tuningPreview == null ? emptyTuningPreview() : tuningPreview;
         notifyStateListeners(currentState);
         notifyBuilderInputsListeners(currentBuilderInputs);
         notifyTuningPreviewListeners(currentTuningPreview);
     }
 
     @Override
-    public void publishSavedPlans(ListSavedEncounterPlansUseCase.Result result) {
+    public void publishSavedPlans(SavedEncounterPlanListResult result) {
         currentSavedPlans = result == null
                 ? new SavedEncounterPlanListResult(SavedEncounterPlanStatus.STORAGE_ERROR, List.of(), PLAN_STORAGE_NOT_REGISTERED)
-                : new SavedEncounterPlanListResult(
-                        toSavedPlanStatus(result.status()),
-                        result.plans().stream().map(EncounterPlanBoundaryTranslator::toPublishedChoice).toList(),
-                        result.message());
+                : result;
         notifySavedPlansListeners(currentSavedPlans);
     }
 
     @Override
-    public void publishPlanBudget(LoadEncounterPlanBudgetUseCase.Result result) {
-        currentPlanBudget = toPlanBudgetResult(result);
+    public void publishPlanBudget(EncounterPlanBudgetResult result) {
+        currentPlanBudget = result == null
+                ? new EncounterPlanBudgetResult(EncounterPlanBudgetStatus.STORAGE_ERROR, null, PLAN_BUDGET_NOT_REGISTERED)
+                : result;
         notifyPlanBudgetListeners(currentPlanBudget);
     }
 
@@ -193,67 +184,5 @@ public final class EncounterPublishedStateRepositoryAdapter
 
     private static EncounterPlanBudgetResult emptyPlanBudget() {
         return new EncounterPlanBudgetResult(EncounterPlanBudgetStatus.STORAGE_ERROR, null, "");
-    }
-
-    private static EncounterTuningPreviewResult toTuningPreviewResult(LoadEncounterBudgetUseCase.Result result) {
-        if (result == null) {
-            return new EncounterTuningPreviewResult(
-                    EncounterGenerationStatus.STORAGE_ERROR,
-                    defaultTuningPreviewLabels(),
-                    TUNING_PREVIEW_NOT_REGISTERED);
-        }
-        return new EncounterTuningPreviewResult(
-                toEncounterGenerationStatus(result.status()),
-                EncounterBudgetBoundaryTranslator.tuningPreviewLabels(
-                        result.budget() == null ? emptyBudgetSummary() : result.budget()),
-                result.message());
-    }
-
-    private static EncounterPlanBudgetResult toPlanBudgetResult(LoadEncounterPlanBudgetUseCase.Result result) {
-        if (result == null) {
-            return new EncounterPlanBudgetResult(EncounterPlanBudgetStatus.STORAGE_ERROR, null, PLAN_BUDGET_NOT_REGISTERED);
-        }
-        LoadEncounterPlanBudgetUseCase.PlanBudgetSummary summary = result.summary();
-        return new EncounterPlanBudgetResult(
-                EncounterPlanBudgetStatus.valueOf(result.status().name()),
-                summary == null
-                        ? null
-                        : new EncounterPlanBudgetSummary(
-                                summary.planId(),
-                                summary.name(),
-                                summary.generatedLabel(),
-                                summary.creatureCount(),
-                                summary.totalBaseXp(),
-                                summary.adjustedXp(),
-                                summary.xpMultiplier(),
-                                summary.difficultyLabel()),
-                result.message());
-    }
-
-    private static SavedEncounterPlanStatus toSavedPlanStatus(ListSavedEncounterPlansUseCase.Status status) {
-        return status == ListSavedEncounterPlansUseCase.Status.SUCCESS
-                ? SavedEncounterPlanStatus.SUCCESS
-                : SavedEncounterPlanStatus.STORAGE_ERROR;
-    }
-
-    private static EncounterGenerationStatus toEncounterGenerationStatus(
-            src.domain.encounter.session.port.EncounterPartyFactsRepository.Status status
-    ) {
-        if (status == null) {
-            return EncounterGenerationStatus.STORAGE_ERROR;
-        }
-        return switch (status) {
-            case SUCCESS -> EncounterGenerationStatus.SUCCESS;
-            case NO_ACTIVE_PARTY -> EncounterGenerationStatus.NO_ACTIVE_PARTY;
-            case STORAGE_ERROR -> EncounterGenerationStatus.STORAGE_ERROR;
-        };
-    }
-
-    private static EncounterTuningPreviewLabels defaultTuningPreviewLabels() {
-        return EncounterBudgetBoundaryTranslator.tuningPreviewLabels(emptyBudgetSummary());
-    }
-
-    private static EncounterDifficultyMath.BudgetSummary emptyBudgetSummary() {
-        return new EncounterDifficultyMath.BudgetSummary(List.of(), 1, 0, 0, 0, 0, 0, 0, 0);
     }
 }

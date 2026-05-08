@@ -16,16 +16,10 @@ contracts, and shell-owned runtime services. View-layer contributions register
 UI entrypoints, and root-local Binders perform one-time composition and
 wiring without feature-specific bootstrap or shell-host logic.
 
-This document is a routing summary, not the owner of layer rules.
-
-The canonical seams are:
-
-- local presentation cycle:
-  `View -> ViewInputEvent -> active-root IntentHandler -> ContributionModel or ContentModel -> View`
-- domain write transport:
-  `View -> ViewInputEvent -> active-root IntentHandler -> PublishedEvent -> Binder sink -> ApplicationService`
-- readback:
-  `ApplicationService or domain published facts -> Binder readback wiring -> ContributionModel or ContentModel -> View bindings or listeners`
+This document is a routing summary, not the owner of layer rules. View-layer
+roles, seams, reusable `slotcontent/**` rules, and presentation-state cycles
+are owned only by the
+[View Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/view-layer.md:1).
 
 ## Repository Shape
 
@@ -57,18 +51,9 @@ tools/       build infrastructure, quality platforms, and engineering scripts
 - `src/view/dropdowns/<entry>/` owns one shell-hung dropdown-window
   contribution, its Binder, aggregate `ContributionModel`, optional
   `IntentHandler`, and feature-specific colocated Views
-- `src/view/slotcontent/<slot>/<entry>/` owns reusable generic Views and,
-  when the reusable component owns state or input, exactly one reusable
-  `*View.java`, exactly one same-stem reusable `*ViewInputEvent.java`, and
-  exactly one reusable `*ContentModel.java`
-- `src/view/slotcontent/primitives/<entry>/` is only the reusable generic home
-  for especially low-level shared surfaces; it does not define a separate
-  technical-base role family
-- contribution-specific View code may extend reusable `slotcontent/**`
-  components, and reusable `slotcontent/**` components may extend
-  `slotcontent/primitives/**`; the reverse direction is forbidden
-- feature-specific one-off components belong in their owning active-root
-  package, not under `slotcontent/**`
+- `src/view/slotcontent/**` owns reusable generic UI units; the internal role
+  shape and all reusable-view rules are owned only by the
+  [View Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/view-layer.md:1)
 - `src/domain/<context>/` owns the hexagonal application core: domain truth,
   invariants, policy decisions, application services, published language, and
   outbound ports
@@ -87,26 +72,10 @@ Dependencies point inward toward the application core:
 
 - bootstrap depends on shell contracts
 - shell owns generic cockpit hosting and must not import feature code
-- view contributions reach shell public contracts and their own Binder
-- Binders reach shell public contracts, same-root `ContributionModels`,
-  optional same-root `IntentHandlers`, same-root feature Views, reusable
-  `slotcontent`, root domain application-service boundaries, and explicit
-  domain `published/**` carriers
-- `ContributionModels` orchestrate root-wide UI state and child
-  `ContentModels`, while reusable `ContentModels` own component-specific
-  presentation state and component-specific presentation logic
-- same-root `IntentHandlers` own input interpretation for both same-root Views
-  and reused `slotcontent/**` Views and may reach domain writes only through
-  Binder-injected `Consumer<PublishedEvent>` sink seams
-- reusable units stay passive, and component-local interpretation for reused
-  views stays in the same-root `IntentHandler`
-- reusable `slotcontent/**` units keep the closed reusable-unit shape
-  `View + ViewInputEvent + ContentModel`; if rendering or interaction pressure
-  appears, prepared state moves into the unit's `ContentModel` rather than
-  into new top-level roles
-- passive Views react to observable model state and emit full immutable
-  per-View technical snapshots without shell, domain, data, or
-  ApplicationService dependencies
+- view contributions reach shell public contracts and the documented domain
+  public boundaries; the internal View/Binder/Model/IntentHandler contract is
+  owned only by the
+  [View Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/view-layer.md:1)
 - domain code owns business rules, published language, and domain-owned
   outbound ports
 - data code implements domain-owned outbound ports and externalizes source and
@@ -132,12 +101,8 @@ runtime capabilities through service contributions.
   runtime-capability lookup, details/history publishing, and per-shell runtime
   sessions
 
-The view layer target follows SaltMarcher's cockpit view-layer model:
-contributions own shell registration, Binders own one-time runtime wiring,
-`ContributionModels` orchestrate root-wide projection state, reusable
-`ContentModels` own component-specific projection state, optional active-root
-`IntentHandlers` own input interpretation, and Views own passive JavaFX
-content. Detailed rules live only in the dedicated
+The view layer follows SaltMarcher's cockpit view-layer model. Detailed rules
+live only in the dedicated
 [View Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/view-layer.md:1).
 
 ## Canonical Architecture Owners

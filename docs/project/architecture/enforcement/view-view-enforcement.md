@@ -13,6 +13,11 @@ semantics.
 This document owns the complete architecture-enforcement catalog for the
 passive `*View` role itself.
 
+Architectural truth for passive `*View` lives only in the
+[View Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/view-layer.md:1).
+This document owns only passive-View-local enforcement inventory and current
+mechanical drift.
+
 It answers four questions for every passive `*View` surface:
 
 - what the file MUST contain
@@ -26,11 +31,9 @@ routing. Those stay in the neighboring role documents.
 It does own the passive-View-side claim that the outward input seam emits the
 same-stem carrier built by the `View` itself rather than by a foreign role.
 
-The target reusable-slotcontent architecture is uniform across
-`slotcontent/**`, including `slotcontent/primitives/**`: every reusable unit is
-`View + ViewInputEvent + ContentModel`. Some currently blocking passive-View
-gates still encode the older technical-primitive exception; those rows below
-describe current mechanical behavior, not target truth.
+Where current passive-View gates still encode the older primitive exception,
+the rows below call that out only as drift relative to the View Layer
+Standard.
 
 ## Enforced
 

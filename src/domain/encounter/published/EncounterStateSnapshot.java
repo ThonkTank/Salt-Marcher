@@ -38,7 +38,7 @@ public record EncounterStateSnapshot(
             ThresholdMeter thresholds,
             BuilderSettings currentSettings,
             List<String> generationHints,
-            List<SavedEncounterPlanChoice> savedPlanChoices,
+            List<SavedEncounterPlanSummary> savedPlanChoices,
             List<RosterCard> rosterCards,
             boolean rosterEmpty,
             boolean startCombatEnabled,

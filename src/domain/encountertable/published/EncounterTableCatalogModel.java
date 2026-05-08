@@ -6,16 +6,19 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-public record EncounterTableCatalogModel(
-        Supplier<EncounterTableCatalogResult> currentSupplier,
-        Function<Consumer<EncounterTableCatalogResult>, Runnable> subscribeAction
-) {
+public final class EncounterTableCatalogModel {
 
-    public EncounterTableCatalogModel {
-        currentSupplier = currentSupplier == null
-                ? () -> new EncounterTableCatalogResult(EncounterTableReadStatus.STORAGE_ERROR, List.of())
+    private final Supplier<EncounterTableCatalogResult> currentSupplier;
+    private final Function<Consumer<EncounterTableCatalogResult>, Runnable> subscribeAction;
+
+    public EncounterTableCatalogModel(
+            Supplier<EncounterTableCatalogResult> currentSupplier,
+            Function<Consumer<EncounterTableCatalogResult>, Runnable> subscribeAction
+    ) {
+        this.currentSupplier = currentSupplier == null
+                ? EncounterTableCatalogModel::emptyResult
                 : currentSupplier;
-        subscribeAction = subscribeAction == null
+        this.subscribeAction = subscribeAction == null
                 ? listener -> () -> { }
                 : subscribeAction;
     }
@@ -26,5 +29,9 @@ public record EncounterTableCatalogModel(
 
     public Runnable subscribe(Consumer<EncounterTableCatalogResult> listener) {
         return subscribeAction.apply(Objects.requireNonNull(listener, "listener"));
+    }
+
+    private static EncounterTableCatalogResult emptyResult() {
+        return new EncounterTableCatalogResult(EncounterTableReadStatus.STORAGE_ERROR, List.of());
     }
 }

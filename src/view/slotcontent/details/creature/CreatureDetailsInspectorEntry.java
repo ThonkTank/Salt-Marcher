@@ -1,7 +1,5 @@
 package src.view.slotcontent.details.creature;
 
-import java.util.Objects;
-import java.util.function.Function;
 import javafx.scene.Node;
 import shell.api.InspectorEntrySpec;
 import src.domain.creatures.published.CreatureDetailResult;
@@ -13,24 +11,19 @@ public final class CreatureDetailsInspectorEntry {
 
     public static InspectorEntrySpec create(
             long creatureId,
-            Function<Long, CreatureDetailResult> detailLoader
+            CreatureDetailResult detailResult
     ) {
-        Function<Long, CreatureDetailResult> loader =
-                Objects.requireNonNull(detailLoader, "detailLoader");
         return new InspectorEntrySpec(
                 "Creature",
                 "creature:" + creatureId,
-                () -> content(creatureId, loader),
+                () -> content(detailResult),
                 null);
     }
 
-    private static Node content(
-            long creatureId,
-            Function<Long, CreatureDetailResult> detailLoader
-    ) {
+    private static Node content(CreatureDetailResult detailResult) {
         CreatureDetailsView detailView = new CreatureDetailsView();
         CreatureDetailsContentModel presentationModel =
-                new CreatureDetailsContentModel(detailLoader.apply(creatureId));
+                new CreatureDetailsContentModel(detailResult);
         detailView.bind(presentationModel);
         presentationModel.load();
         return detailView;

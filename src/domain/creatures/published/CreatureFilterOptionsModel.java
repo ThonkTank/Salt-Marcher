@@ -5,16 +5,19 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-public record CreatureFilterOptionsModel(
-        Supplier<CreatureFilterOptionsResult> currentSupplier,
-        Function<Consumer<CreatureFilterOptionsResult>, Runnable> subscribeAction
-) {
+public final class CreatureFilterOptionsModel {
 
-    public CreatureFilterOptionsModel {
-        currentSupplier = currentSupplier == null
-                ? () -> new CreatureFilterOptionsResult(CreatureReadStatus.STORAGE_ERROR, CreatureFilterOptions.empty())
+    private final Supplier<CreatureFilterOptionsResult> currentSupplier;
+    private final Function<Consumer<CreatureFilterOptionsResult>, Runnable> subscribeAction;
+
+    public CreatureFilterOptionsModel(
+            Supplier<CreatureFilterOptionsResult> currentSupplier,
+            Function<Consumer<CreatureFilterOptionsResult>, Runnable> subscribeAction
+    ) {
+        this.currentSupplier = currentSupplier == null
+                ? CreatureFilterOptionsModel::emptyResult
                 : currentSupplier;
-        subscribeAction = subscribeAction == null
+        this.subscribeAction = subscribeAction == null
                 ? listener -> () -> { }
                 : subscribeAction;
     }
@@ -25,5 +28,11 @@ public record CreatureFilterOptionsModel(
 
     public Runnable subscribe(Consumer<CreatureFilterOptionsResult> listener) {
         return subscribeAction.apply(Objects.requireNonNull(listener, "listener"));
+    }
+
+    private static CreatureFilterOptionsResult emptyResult() {
+        return new CreatureFilterOptionsResult(
+                CreatureReadStatus.STORAGE_ERROR,
+                CreatureFilterOptions.empty());
     }
 }

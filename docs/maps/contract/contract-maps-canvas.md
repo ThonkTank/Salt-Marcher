@@ -21,10 +21,11 @@ Owners:
 It does not own adopter-native requests, adopter-native payloads, or adopter
 domain truth.
 
-This is not the canonical target reusable-slotcontent contract. The project-
-wide target remains `View + ViewInputEvent + ContentModel`; the `MapRenderScene`
-and `CanvasPointerEvent` seams below describe the current implementation
-boundary that still exists during migration.
+This is not the canonical target reusable-slotcontent contract. The canonical
+reusable-slotcontent target lives only in the
+[View Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/view-layer.md:1).
+The `MapRenderScene` and `CanvasPointerEvent` seams below describe current
+implementation boundary debt relative to that owner.
 
 ## Rules
 

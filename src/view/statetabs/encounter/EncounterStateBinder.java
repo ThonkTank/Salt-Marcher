@@ -9,7 +9,8 @@ import shell.api.ShellBinding;
 import shell.api.ShellRuntimeContext;
 import shell.api.ShellSlot;
 import src.domain.creatures.CreaturesApplicationService;
-import src.domain.creatures.published.LoadCreatureDetailQuery;
+import src.domain.creatures.published.CreatureDetailModel;
+import src.domain.creatures.published.SelectCreatureDetailCommand;
 import src.domain.encounter.EncounterApplicationService;
 import src.domain.encounter.published.ApplyEncounterStateCommand;
 import src.domain.encounter.published.EncounterStateModel;
@@ -25,6 +26,7 @@ final class EncounterStateBinder {
 
     ShellBinding bind() {
         CreaturesApplicationService creatures = runtimeContext.services().require(CreaturesApplicationService.class);
+        CreatureDetailModel detailModel = runtimeContext.services().require(CreatureDetailModel.class);
         EncounterApplicationService encounters = runtimeContext.services().require(EncounterApplicationService.class);
         EncounterStateModel stateModel = runtimeContext.services().require(EncounterStateModel.class);
         EncounterStateContributionModel presentationModel = new EncounterStateContributionModel();
@@ -41,7 +43,7 @@ final class EncounterStateBinder {
             if (after == null || !hasResolvedId(after.longValue())) {
                 return;
             }
-            openCreatureDetails(runtimeContext.inspector(), creatures, after.longValue());
+            openCreatureDetails(runtimeContext.inspector(), creatures, detailModel, after.longValue());
             presentationModel.clearCreatureDetailSelection();
         });
         builderView.onViewInputEvent(intentHandler::consume);
@@ -63,14 +65,16 @@ final class EncounterStateBinder {
     private static void openCreatureDetails(
             InspectorSink inspector,
             CreaturesApplicationService creatures,
+            CreatureDetailModel detailModel,
             long creatureId
     ) {
         if (!hasResolvedId(creatureId)) {
             return;
         }
+        creatures.selectCreatureDetail(new SelectCreatureDetailCommand(creatureId));
         inspector.push(CreatureDetailsInspectorEntry.create(
                 creatureId,
-                id -> creatures.loadCreatureDetail(new LoadCreatureDetailQuery(id))));
+                detailModel.current()));
     }
 
     private void wireRendering(EncounterStateView state, EncounterStateContributionModel presentationModel) {

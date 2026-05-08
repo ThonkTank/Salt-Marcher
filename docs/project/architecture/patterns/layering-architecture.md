@@ -17,6 +17,11 @@ boundaries are public, and which shortcuts are forbidden. Layer-internal rules
 live only in the dedicated owner documents for bootstrap, shell, view, domain,
 and data.
 
+For any internal `src/view/**` roles, reusable `slotcontent/**` rules,
+presentation-state cycles, or view/domain seam details, this document routes
+only to the
+[View Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/view-layer.md:1).
+
 ## Layer Responsibility Matrix
 
 ```text
@@ -33,8 +38,9 @@ Responsibilities:
   creation
 - `shell/` owns passive cockpit surfaces, shell contracts, lifecycle, and
   shell-scoped runtime services
-- `src/view/**` owns shell registration adapters, Binder wiring, passive
-  Views, input interpretation, and observable presentation state
+- `src/view/**` owns the presentation-layer adapters and observable
+  presentation state surface; the internal role split is owned only by the
+  View Layer Standard
 - `src/domain/**` owns business meaning, invariants, published language,
   application services, and outbound port interfaces
 - `src/data/**` owns concrete adapters, source mechanics, persistence,
@@ -87,13 +93,9 @@ construction work:
 Source-code dependencies point inward:
 
 1. `bootstrap -> shell`
-2. `Contribution -> shell public contracts + own Binder`
-3. `Binder -> shell public contracts + own ContributionModel + optional own IntentHandler + same-root Views + reusable slotcontent + domain public boundaries`
-4. `ContributionModel/ContentModel -> read-side domain published carriers + JavaFX beans or collections + same-surface local support types`
-5. `IntentHandler -> co-located ContributionModel or ContentModel + co-located ViewInputEvent + Binder-injected Consumer<PublishedEvent> sink seams + same-surface local support types`
-6. `View -> JavaFX UI APIs + observable ContributionModel or ContentModel surface + reusable slotcontent view bases`
-7. `data -> domain public boundaries and domain-owned outbound ports`
-8. `domain -> no outer layer`
+2. `view -> shell public contracts + documented domain public boundaries`
+3. `data -> domain public boundaries and domain-owned outbound ports`
+4. `domain -> no outer layer`
 
 Additional rules:
 
@@ -103,8 +105,8 @@ Additional rules:
 - outer-format objects must not leak inward; examples include JavaFX
   scene-graph types, shell host classes, SQL rows, gateway records, and
   source-local infrastructure carriers
-- outside the explicitly documented Binder/domain write seam and Binder-owned
-  readback seam, no direct domain/view-layer connection is allowed
+- outside the seam families documented by the View Layer Standard, no direct
+  domain/view-layer connection is allowed
 
 ## Public Boundaries
 
@@ -132,19 +134,11 @@ The only intentional public boundaries across layers are:
 
 ### Presentation Mutation
 
-SaltMarcher allows exactly two presentation-state mutation cycles:
-
-1. local presentation cycle:
-   `View -> ViewInputEvent -> IntentHandler -> co-located ContributionModel or ContentModel -> observable state -> View`
-2. domain-write cycle:
-   `View -> ViewInputEvent -> IntentHandler -> PublishedEvent -> Binder sink -> ApplicationService -> domain internals -> published/** -> Binder-installed readback wiring -> co-located ContributionModel or ContentModel -> observable state -> View`
+Presentation-state mutation rules are owned only by the
+[View Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/view-layer.md:1).
 
 Forbidden shortcuts:
 
-- direct View callback APIs besides `onViewInputEvent(...)`
-- direct `IntentHandler -> ApplicationService` dependencies
-- direct `View -> ApplicationService` paths
-- direct domain writes from `ContributionModel` or `ContentModel`
 - any third presentation-state mutation route
 
 ## Forbidden Patterns
@@ -152,12 +146,7 @@ Forbidden shortcuts:
 - adjacent-layer pass-through wrappers whose only purpose is diagram symmetry
   or naming ceremony around an otherwise unchanged collaborator
 - `src/view/**` reaching directly into `src/data/**`
-- passive Views reaching into shell internals, domain internals, data, or
-  `*ApplicationService` types
-- `ContributionModel` or `ContentModel` reaching into shell APIs, Binder
-  types, concrete view classes, or `*ApplicationService` types
-- `IntentHandler` reaching into shell APIs, `bootstrap`, concrete view
-  classes, data, or `*ApplicationService` types
+- view-layer code bypassing its documented shell or domain public boundaries
 - `src/domain/**` depending on `bootstrap`, `shell`, `src/view`, or `src/data`
 - `shell/**` owning feature logic
 - `bootstrap/**` owning feature-specific business or presentation logic

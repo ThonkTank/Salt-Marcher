@@ -19,6 +19,10 @@ target architecture is defined by:
 This skill operationalizes those documents for agent work in the view layer. It
 does not redefine the architecture.
 
+If another project doc restates view-layer rules, treat `view-layer.md` as the
+only architectural authority. Neighboring `view-*.md` enforcement docs are
+authoritative only for role-local gate inventory and current mechanical drift.
+
 Mandatory default for reusable `src/view/slotcontent/**` work:
 
 - assume one closed reusable-unit shape only:
@@ -30,6 +34,8 @@ Mandatory default for reusable `src/view/slotcontent/**` work:
   presentation logic in the unit's own `*ContentModel`
 - keep active-root `*ContributionModel`s focused on root-wide orchestration
   and child-`ContentModel` coordination
+- use the direct roundtrip:
+  `View -> ViewInputEvent -> same-root IntentHandler -> *ApplicationService -> thin published/*Model readback -> ContributionModel/ContentModel listeners -> View`
 
 ## Required Workflow
 
@@ -50,8 +56,9 @@ Before editing a view surface:
    exact surface state it owns.
 6. For every touched `IntentHandler`, identify the active root whose view
    events it interprets, including any reused `slotcontent/**` surfaces wired
-   into that root, or decide that the root is passive and therefore needs no
-   `IntentHandler`.
+   into that root, which focused work request it builds per interactive view
+   family, and which root `*ApplicationService` entrypoint it calls directly,
+   or decide that the root is passive and therefore needs no `IntentHandler`.
 7. For reusable `slotcontent/**`, assume exactly one local `*View`, one local
    same-stem `*ViewInputEvent`, and one local `*ContentModel`.
 8. Before smell- or size-driven refactors, ask whether the passive `View` is
@@ -76,8 +83,9 @@ When reviewing view-layer changes:
 3. Check that bindable projection state and projection logic stay in the
    owning `ContributionModel` or `ContentModel`.
 4. Check that input interpretation stays in the same-root `IntentHandler`
-   with one focused entrypoint per interactive `View`, rather than growing a
-   reusable slotcontent-local handler.
+   with one focused entrypoint per interactive `View`, and that domain work
+   leaves there through a direct root `*ApplicationService` call rather than
+   through a reusable local handler or a second write protocol.
 5. Check that feature-specific one-off components are colocated in their active
    root and that `slotcontent/**` is used only for genuinely reusable generic
    components.
@@ -99,13 +107,16 @@ When reviewing view-layer changes:
 
 - If code declares shell contribution metadata, it belongs in a contribution.
 - If code chooses shell slot content, performs runtime service lookup,
-  instantiates roles, or wires listeners/callbacks, it belongs in a Binder.
+  instantiates roles, or installs initial listeners/callbacks, it belongs in a Binder.
 - If code decides what should be shown, enabled, selected, labelled, loaded,
   or reported across a surface, it belongs in the owning
   `ContributionModel` or `ContentModel`.
 - If that decision is component-specific reusable presentation logic, it
   belongs in the reusable unit's own `ContentModel`, not in the active-root
   `ContributionModel`.
+- If code reacts to thin same-context `published/*Model` readback to refresh
+  projection state, that reaction belongs in the owning `ContributionModel`
+  or `ContentModel`, not as a Binder-owned projection-forwarding workflow.
 - If code interprets raw gestures into local semantic intent or local UI-state
   mutation for a reusable component, it belongs in the same-root
   `IntentHandler`, not in reusable `slotcontent/**`.
@@ -126,12 +137,13 @@ When reviewing view-layer changes:
 ## Review Flags
 
 - feature-specific one-off code under `src/view/slotcontent/**`
-- new canonical ownership under `src/view/primitives/**`
+- new canonical ownership outside `src/view/slotcontent/primitives/**`
 - Binder logic that turns into long-lived feature orchestration instead of
   one-time wiring plus callback seams
 - projection-model code that reaches beyond read-side `published/**` intake
-- `IntentHandler` code that knows shell APIs, domain carriers, or
-  ApplicationServices
+- `IntentHandler` code that reaches beyond same-root `ContributionModel`,
+  child `ContentModel`, same-root or reused `ViewInputEvent`, matching root
+  `*ApplicationService` entrypoints, and same-surface support
 - Views that command model behavior directly instead of reacting to observable
   state
 - reusable `slotcontent/**` units that grow any top-level role outside the

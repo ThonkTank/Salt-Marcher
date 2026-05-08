@@ -2,10 +2,11 @@ package src.data.encounter;
 
 import shell.api.ServiceContribution;
 import shell.api.ServiceRegistry;
+import src.data.encounter.query.ApplicationEncounterCreatureLookup;
+import src.data.encounter.query.ApplicationEncounterTableCandidateLookup;
 import src.data.encounter.repository.ApplicationEncounterPartyFactsRepository;
 import src.data.encounter.repository.EncounterPublishedStateRepositoryAdapter;
 import src.data.encounter.repository.SqliteEncounterPlanRepository;
-import src.domain.creatures.CreaturesApplicationService;
 import src.domain.encounter.EncounterApplicationService;
 import src.domain.encounter.plan.port.EncounterPlanRepository;
 import src.domain.encounter.published.EncounterBuilderInputsModel;
@@ -13,7 +14,6 @@ import src.domain.encounter.published.EncounterPlanBudgetModel;
 import src.domain.encounter.published.EncounterStateModel;
 import src.domain.encounter.published.EncounterTuningPreviewModel;
 import src.domain.encounter.published.SavedEncounterPlanListModel;
-import src.domain.encountertable.EncounterTableApplicationService;
 import src.domain.party.PartyApplicationService;
 import src.domain.party.published.ActivePartyCompositionModel;
 import src.domain.party.published.ActivePartyModel;
@@ -40,8 +40,8 @@ public final class EncounterServiceContribution implements ServiceContribution {
                                 services.require(ActivePartyCompositionModel.class),
                                 services.require(AdventuringDaySummaryModel.class),
                                 services.require(PartyMutationModel.class)),
-                        services.require(CreaturesApplicationService.class),
-                        services.require(EncounterTableApplicationService.class),
+                        new ApplicationEncounterCreatureLookup(),
+                        new ApplicationEncounterTableCandidateLookup(),
                         repository,
                         publishedState,
                         publishedState));

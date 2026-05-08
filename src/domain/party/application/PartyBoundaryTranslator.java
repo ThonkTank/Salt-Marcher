@@ -10,9 +10,12 @@ import src.domain.party.published.CreateCharacterCommand;
 import src.domain.party.published.DeleteCharacterCommand;
 import src.domain.party.published.MembershipState;
 import src.domain.party.published.MovePartyCharactersCommand;
+import src.domain.party.published.PartyDungeonTravelLocationKind;
 import src.domain.party.published.PartyDungeonTravelLocationSnapshot;
 import src.domain.party.published.PartyOverworldTravelLocationSnapshot;
+import src.domain.party.published.PartyTravelHeading;
 import src.domain.party.published.PartyTravelLocationSnapshot;
+import src.domain.party.published.PartyTravelTile;
 import src.domain.party.published.PerformPartyRestCommand;
 import src.domain.party.published.RestType;
 import src.domain.party.published.SetPartyMembershipCommand;
@@ -96,7 +99,7 @@ public final class PartyBoundaryTranslator {
 
         public static PartyRestRequest from(@Nullable PerformPartyRestCommand command) {
             RestType restType = command == null ? null : command.restType();
-            return new PartyRestRequest(restType == null ? PartyRestType.SHORT_REST : restType.toInternal());
+            return new PartyRestRequest(restType == RestType.LONG_REST ? PartyRestType.LONG_REST : PartyRestType.SHORT_REST);
         }
     }
 
@@ -139,21 +142,67 @@ public final class PartyBoundaryTranslator {
     private static final class BoundaryValues {
 
         private static PartyMembership membership(@Nullable MembershipState membershipState) {
-            return membershipState == null ? PartyMembership.RESERVE : membershipState.toInternal();
+            if (membershipState == MembershipState.ACTIVE) {
+                return PartyMembership.ACTIVE;
+            }
+            return PartyMembership.RESERVE;
         }
 
         private static PartyCharacterDraft draft(@Nullable CharacterDraft draft) {
-            return draft == null ? new PartyCharacterDraft("", "", 0, 0, 0) : draft.toInternal();
+            if (draft == null) {
+                return new PartyCharacterDraft("", "", 0, 0, 0);
+            }
+            return new PartyCharacterDraft(
+                    draft.name(),
+                    draft.playerName(),
+                    draft.level(),
+                    draft.passivePerception(),
+                    draft.armorClass());
         }
 
         private static @Nullable PartyTravelLocation travelLocation(@Nullable PartyTravelLocationSnapshot location) {
             if (location instanceof PartyDungeonTravelLocationSnapshot dungeon) {
-                return dungeon.toInternal();
+                return new src.domain.party.roster.value.PartyDungeonTravelLocation(
+                        dungeon.mapId(),
+                        toInternalDungeonLocationKind(dungeon.locationKind()),
+                        dungeon.ownerId(),
+                        toInternalTile(dungeon.tile()),
+                        toInternalHeading(dungeon.heading()));
             }
             if (location instanceof PartyOverworldTravelLocationSnapshot overworld) {
-                return overworld.toInternal();
+                return new src.domain.party.roster.value.PartyOverworldTravelLocation(
+                        overworld.mapId(),
+                        overworld.tileId());
             }
             return null;
+        }
+
+        private static src.domain.party.roster.value.PartyDungeonTravelLocationKind toInternalDungeonLocationKind(
+                @Nullable PartyDungeonTravelLocationKind locationKind
+        ) {
+            return locationKind == PartyDungeonTravelLocationKind.TRANSITION
+                    ? src.domain.party.roster.value.PartyDungeonTravelLocationKind.TRANSITION
+                    : src.domain.party.roster.value.PartyDungeonTravelLocationKind.TILE;
+        }
+
+        private static src.domain.party.roster.value.PartyTravelTile toInternalTile(@Nullable PartyTravelTile tile) {
+            PartyTravelTile safeTile = tile == null ? new PartyTravelTile(0, 0, 0) : tile;
+            return new src.domain.party.roster.value.PartyTravelTile(
+                    safeTile.q(),
+                    safeTile.r(),
+                    safeTile.level());
+        }
+
+        private static src.domain.party.roster.value.PartyTravelHeading toInternalHeading(
+                @Nullable PartyTravelHeading heading
+        ) {
+            PartyTravelHeading effective = heading == null ? PartyTravelHeading.defaultHeading() : heading;
+            return switch (effective) {
+                case NORTH -> src.domain.party.roster.value.PartyTravelHeading.NORTH;
+                case EAST -> src.domain.party.roster.value.PartyTravelHeading.EAST;
+                case WEST -> src.domain.party.roster.value.PartyTravelHeading.WEST;
+                case SOUTH -> src.domain.party.roster.value.PartyTravelHeading.SOUTH;
+            };
         }
     }
 }

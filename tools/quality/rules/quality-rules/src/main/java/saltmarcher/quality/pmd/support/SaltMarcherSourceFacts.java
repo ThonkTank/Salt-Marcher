@@ -15,12 +15,6 @@ import net.sourceforge.pmd.lang.document.TextDocument;
 import net.sourceforge.pmd.lang.java.ast.ASTCompilationUnit;
 
 public final class SaltMarcherSourceFacts {
-    private static final Set<String> PRIMITIVE_SUPPORT_VALUE_SUFFIXES = Set.of(
-            "PointerEvent",
-            "Scene",
-            "Signal",
-            "Support");
-
     static final Pattern REGISTRATION_SPEC_METHOD_PATTERN =
             Pattern.compile("\\bShellContributionSpec\\s+registrationSpec\\s*\\(\\s*\\)");
     static final Pattern BIND_METHOD_PATTERN =
@@ -109,7 +103,7 @@ public final class SaltMarcherSourceFacts {
     }
 
     public boolean isViewSupportModelSource() {
-        return isPrimitiveSupportValueSource();
+        return false;
     }
 
     public boolean isViewIntentHandlerSource() {
@@ -154,7 +148,6 @@ public final class SaltMarcherSourceFacts {
                 && !isViewIntentHandlerSource()
                 && !isViewInputEventSource()
                 && !isViewPublishedEventSource()
-                && !isViewSupportModelSource()
                 && !isViewInspectorEntrySource()
                 && !isViewPanelSource();
     }
@@ -174,14 +167,6 @@ public final class SaltMarcherSourceFacts {
                 && segments.size() == 6
                 && segments.get(2).equals("slotcontent")
                 && Set.of("controls", "main", "state", "details", "topbar", "primitives").contains(segments.get(3));
-    }
-
-    private boolean isPrimitiveSupportValueSource() {
-        return isViewSource()
-                && segments.size() == 6
-                && "slotcontent".equals(segments.get(2))
-                && "primitives".equals(segments.get(3))
-                && PRIMITIVE_SUPPORT_VALUE_SUFFIXES.stream().anyMatch(simpleName::endsWith);
     }
 
     private boolean isDiscoverableViewContributionArea() {

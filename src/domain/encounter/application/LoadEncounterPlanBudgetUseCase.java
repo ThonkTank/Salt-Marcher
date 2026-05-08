@@ -4,15 +4,12 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import org.jspecify.annotations.Nullable;
-import src.domain.creatures.CreaturesApplicationService;
-import src.domain.creatures.published.CreatureDetailResult;
-import src.domain.creatures.published.CreatureLookupStatus;
-import src.domain.creatures.published.LoadCreatureDetailQuery;
 import src.domain.encounter.generation.policy.EncounterDifficultyMath;
 import src.domain.encounter.generation.policy.EncounterDifficultyTargets;
 import src.domain.encounter.plan.aggregate.EncounterPlan;
 import src.domain.encounter.plan.port.EncounterPlanRepository;
 import src.domain.encounter.plan.value.EncounterPlanCreature;
+import src.domain.encounter.reference.port.EncounterCreatureLookup;
 import src.domain.encounter.session.port.EncounterPartyFactsRepository;
 
 public final class LoadEncounterPlanBudgetUseCase {
@@ -21,12 +18,12 @@ public final class LoadEncounterPlanBudgetUseCase {
 
     private final EncounterPlanRepository plans;
     private final EncounterPartyFactsRepository party;
-    private final CreaturesApplicationService creatures;
+    private final EncounterCreatureLookup creatures;
 
     public LoadEncounterPlanBudgetUseCase(
             EncounterPlanRepository plans,
             EncounterPartyFactsRepository party,
-            CreaturesApplicationService creatures
+            EncounterCreatureLookup creatures
     ) {
         this.plans = Objects.requireNonNull(plans, "plans");
         this.party = Objects.requireNonNull(party, "party");
@@ -69,11 +66,12 @@ public final class LoadEncounterPlanBudgetUseCase {
     private int totalBaseXp(List<EncounterPlanCreature> creaturesInPlan) {
         int total = 0;
         for (EncounterPlanCreature creature : creaturesInPlan == null ? List.<EncounterPlanCreature>of() : creaturesInPlan) {
-            CreatureDetailResult detailResult = creatures.loadCreatureDetail(new LoadCreatureDetailQuery(creature.creatureId()));
-            if (detailResult.status() != CreatureLookupStatus.SUCCESS || detailResult.detail() == null) {
+            Optional<src.domain.encounter.reference.value.EncounterCreatureReference> reference =
+                    creatures.loadCreature(creature.creatureId());
+            if (reference.isEmpty()) {
                 throw new IllegalStateException("Creature detail could not be loaded for plan budget.");
             }
-            total += detailResult.detail().xp() * creature.quantity();
+            total += reference.orElseThrow().xp() * creature.quantity();
         }
         return total;
     }

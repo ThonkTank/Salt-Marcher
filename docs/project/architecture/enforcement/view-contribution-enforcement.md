@@ -11,6 +11,10 @@ Source of Truth: Complete invariant catalog for the active-root
 This document owns the complete architecture-enforcement catalog for the
 active-root `*Contribution` role itself.
 
+Architectural truth for the active-root `*Contribution` role lives only in the
+[View Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/view-layer.md:1).
+This document owns only Contribution-local enforcement inventory.
+
 It answers four questions for every `*Contribution` surface:
 
 - when the role MAY exist

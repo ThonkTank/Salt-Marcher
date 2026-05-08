@@ -3,7 +3,7 @@ package src.domain.encounter.application;
 import java.util.ArrayList;
 import java.util.List;
 import src.domain.encounter.generation.policy.EncounterDifficultyMath;
-import src.domain.encounter.published.EncounterDifficultyBand;
+import src.domain.encounter.generation.value.EncounterRequestedDifficulty;
 import src.domain.encounter.published.EncounterTuningPreviewLabels;
 
 public final class EncounterBudgetBoundaryTranslator {
@@ -18,10 +18,10 @@ public final class EncounterBudgetBoundaryTranslator {
                 : Math.max(1, budget.activePartyLevels().size());
         return new EncounterTuningPreviewLabels(
                 List.of(
-                        previewLabel(1.0, difficultyRangeLabel(EncounterDifficultyBand.EASY, averageLevel, partySize)),
-                        previewLabel(2.0, difficultyRangeLabel(EncounterDifficultyBand.MEDIUM, averageLevel, partySize)),
-                        previewLabel(3.0, difficultyRangeLabel(EncounterDifficultyBand.HARD, averageLevel, partySize)),
-                        previewLabel(4.0, difficultyRangeLabel(EncounterDifficultyBand.DEADLY, averageLevel, partySize))),
+                        previewLabel(1.0, difficultyRangeLabel(EncounterRequestedDifficulty.EASY, averageLevel, partySize)),
+                        previewLabel(2.0, difficultyRangeLabel(EncounterRequestedDifficulty.MEDIUM, averageLevel, partySize)),
+                        previewLabel(3.0, difficultyRangeLabel(EncounterRequestedDifficulty.HARD, averageLevel, partySize)),
+                        previewLabel(4.0, difficultyRangeLabel(EncounterRequestedDifficulty.DEADLY, averageLevel, partySize))),
                 List.of(
                         previewLabel(1.0, "Extreme++"),
                         previewLabel(2.0, "Extreme+"),
@@ -45,30 +45,30 @@ public final class EncounterBudgetBoundaryTranslator {
         return new EncounterTuningPreviewLabels.PreviewLabel(value, label);
     }
 
-    private static String difficultyRangeLabel(EncounterDifficultyBand band, int averageLevel, int partySize) {
+    private static String difficultyRangeLabel(EncounterRequestedDifficulty band, int averageLevel, int partySize) {
         DifficultyPreviewRange range = difficultyPreviewRange(band, averageLevel, partySize);
         return range.lowerAdjustedXp() + "-" + range.upperAdjustedXp() + " XP";
     }
 
     private static DifficultyPreviewRange difficultyPreviewRange(
-            EncounterDifficultyBand band,
+            EncounterRequestedDifficulty band,
             int averageLevel,
             int partySize
     ) {
         EncounterDifficultyMath.Thresholds thresholds = thresholdsForAverageParty(averageLevel, partySize);
         int deadly125 = (int) Math.round(thresholds.deadly() * 1.25);
-        EncounterDifficultyBand effectiveBand = band == null ? EncounterDifficultyBand.MEDIUM : band;
-        if (effectiveBand == EncounterDifficultyBand.EASY) {
+        EncounterRequestedDifficulty effectiveBand = band == null ? EncounterRequestedDifficulty.MEDIUM : band;
+        if (effectiveBand == EncounterRequestedDifficulty.EASY) {
             return new DifficultyPreviewRange(
                     thresholds.easy(),
                     Math.max(thresholds.easy(), thresholds.medium() - 1));
         }
-        if (effectiveBand == EncounterDifficultyBand.HARD) {
+        if (effectiveBand == EncounterRequestedDifficulty.HARD) {
             return new DifficultyPreviewRange(
                     thresholds.hard(),
                     Math.max(thresholds.hard(), thresholds.deadly() - 1));
         }
-        if (effectiveBand == EncounterDifficultyBand.DEADLY) {
+        if (effectiveBand == EncounterRequestedDifficulty.DEADLY) {
             return new DifficultyPreviewRange(
                     thresholds.deadly(),
                     Math.max(thresholds.deadly(), deadly125));

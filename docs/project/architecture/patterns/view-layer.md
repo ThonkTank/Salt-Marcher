@@ -71,10 +71,10 @@ belong in that role.
   command discriminators, may read same-root `ContributionModel` state and
   reused child `ContentModel` state when interpretation needs local UI facts,
   mutates only those same-root projection models when the resulting state is
-  pure view-layer state, and publishes only through Binder-installed
-  `Consumer<*PublishedEvent>` sink seams when a domain write must be
-  triggered; it does not synthesize fallback `*ViewInputEvent` carriers for
-  its own surface
+  pure view-layer state, builds exactly one focused work request when a domain
+  transition is needed, and calls the matching root `*ApplicationService`
+  directly; it does not synthesize fallback `*ViewInputEvent` carriers for its
+  own surface
 - `View`
   passive JavaFX content named `*View`; renders observable model state,
   captures user input, constructs its own same-stem `*ViewInputEvent`
@@ -90,10 +90,8 @@ belong in that role.
   therefore must not encode semantic routing through top-level `source` or
   `action` components or nested `Source` / `Action` enums
 - `PublishedEvent`
-  optional same-root Binder-mediated write-side carrier named
-  `*PublishedEvent`; it is built by the `IntentHandler` only when one local
-  input interpretation must trigger a domain write, consumed only through a
-  Binder-installed sink seam, and never emitted directly by a `View`
+  legacy same-root write-side carrier named `*PublishedEvent`; current gates
+  still model it, but it is no longer part of the canonical target topology
 - `Shell`
   passive cockpit host, fixed surfaces, activation lifecycle, details/history
   hosting, state-pane precedence, and top-bar window hosting
@@ -109,7 +107,6 @@ src/view/
     <Entry>IntentHandler.java         # optional only when the active root owns interactive input interpretation
     <Entry>*View.java                 # at least one
     <Entry>*ViewInputEvent.java       # only for interactive Views
-    <Entry>*PublishedEvent.java       # optional write-side sink carriers
   statetabs/<entry>/
     <Entry>Contribution.java
     <Entry>Binder.java
@@ -117,7 +114,6 @@ src/view/
     <Entry>IntentHandler.java         # optional only when the active root owns interactive input interpretation
     <Entry>*View.java                 # at least one
     <Entry>*ViewInputEvent.java       # only for interactive Views
-    <Entry>*PublishedEvent.java       # optional write-side sink carriers
   dropdowns/<entry>/
     <Entry>Contribution.java
     <Entry>Binder.java
@@ -125,7 +121,6 @@ src/view/
     <Entry>IntentHandler.java         # optional only when the active root owns interactive input interpretation
     <Entry>*View.java                 # at least one
     <Entry>*ViewInputEvent.java       # only for interactive Views
-    <Entry>*PublishedEvent.java       # optional write-side sink carriers
   slotcontent/<slot>/<entry>/
     <Entry>View.java
     <Entry>ContentModel.java
@@ -140,10 +135,6 @@ Rules:
 - active roots may define zero or one root-local `*IntentHandler`
 - active roots with an `*IntentHandler` require same-stem
   `*ViewInputEvent` carriers for each interactive passive `*View`
-- active roots may additionally define write-side `*PublishedEvent` carriers
-  only when one local input interpretation must cross the local
-  `IntentHandler -> Binder -> ApplicationService` seam to trigger a domain
-  write
 - reusable `slotcontent/**` units must not define `*Contribution` or `*Binder`
 - every reusable `slotcontent/**` unit defines exactly one passive `*View`,
   exactly one same-stem `*ViewInputEvent`, and exactly one `*ContentModel`
@@ -183,7 +174,6 @@ Rules:
 Contribution      -> shell.api + same-root Binder
 Binder            -> shell.api + same-root ContributionModel + optional same-root IntentHandler
                    + same-root feature Views + same-root ViewInputEvents
-                   + optional same-root PublishedEvents
                    + reusable slotcontent Views + reusable slotcontent ContentModels
                    + reusable slotcontent ViewInputEvents + root domain ApplicationService types
                    + same-context read-side domain *Model handles
@@ -192,12 +182,11 @@ ContributionModel -> read-side domain published carriers + JavaFX beans/collecti
 ContentModel      -> read-side domain published carriers + JavaFX beans/collections
                    + same-surface local value/support types
 IntentHandler     -> same-root ContributionModel + same-root and reused slotcontent ViewInputEvents
-                   + reused slotcontent ContentModels + Binder-injected Consumer<PublishedEvent> sink seams
+                   + reused slotcontent ContentModels + root domain ApplicationService types
                    + same-surface local value/support types
 View              -> JavaFX UI APIs + observable ContributionModel or ContentModel surface
                    + own ViewInputEvent type + reusable slotcontent base views/support types
 ViewInputEvent    -> JDK/JavaFX technical input/value types + same-surface local support only
-PublishedEvent    -> JDK value types + same-surface local support only
 Model             -> no shell, view, JavaFX, or data implementation types
 Shell             -> shell contracts and generic hosting only
 ```
@@ -205,8 +194,9 @@ Shell             -> shell contracts and generic hosting only
 Additional rules:
 
 - the Binder may know only its same-root `ContributionModel`, `IntentHandler`,
-  feature-specific `View`, same-root `ViewInputEvent` types, and optional
-  same-root write-side `PublishedEvent` types directly
+  feature-specific `View`, same-root `ViewInputEvent` types, reusable
+  slotcontent surfaces, direct runtime-service seams, and same-context
+  `published/*Model` handles directly
 - the Binder may wire forwarding of same-stem `ViewInputEvent` snapshots but
   must not synthesize, cache, or emit `*ViewInputEvent` carriers itself
 - when an active root reuses `slotcontent/**`, the Binder may also know only
@@ -229,16 +219,16 @@ Additional rules:
 - `slotcontent/primitives/**` follows that same closed reusable-unit shape; if
   a reusable primitive needs render-ready or hit-ready data, that data belongs
   in the unit's `*ContentModel` and its same-stem `*ViewInputEvent`
-- outside the explicitly documented Binder/domain and `published/**` readback
-  seams, no direct domain/view-layer connections are allowed
-- direct `View` callback APIs, direct `IntentHandler -> ApplicationService`
-  calls, direct Binder subscriptions to request/token protocols on projection
+- outside the explicitly documented `IntentHandler -> ApplicationService` write
+  seam and model-owned `published/**` readback seam, no direct domain/view-
+  layer connections are allowed
+- direct `View` callback APIs, direct Binder subscriptions to request/token protocols on projection
   models, and any third presentation-state mutation route are forbidden
 - if one same-root `ViewInputEvent` interpretation needs a purely local
   passive-View effect that neither mutates presentation state nor crosses a
   domain boundary, the Binder may install one same-root local effect sink on
-  the `IntentHandler`; that effect stays view-local and must not be modeled as
-  a `PublishedEvent` or as a projection-model request/backchannel protocol
+  the `IntentHandler`; that effect stays view-local and must not become a
+  second write or readback protocol
 - a Binder must not treat direct `ApplicationService` return values such as
   `*Result`, `*Snapshot`, `*Payload`, `*CalculationResult`, `*SearchResult`,
   `*Preview`, or similar one-shot carriers as authoritative view-state input
@@ -277,37 +267,34 @@ Local presentation cycle:
 5. passive Views react through bindings or listeners to the updated
    `ContributionModel` or `ContentModel`
 
-Binder-mediated domain-write roundtrip:
+Direct domain-write roundtrip:
 
 1. an interactive passive `*View` emits exactly one immutable same-stem
    `*ViewInputEvent` full snapshot for its own surface
 2. the Binder-installed listener forwards that carrier into the same-root
    `IntentHandler`
-3. the same-root `IntentHandler` interprets the full snapshot, builds exactly one
-   write-side `*PublishedEvent`, and publishes it only through a
-   Binder-installed `Consumer<*PublishedEvent>` sink seam
-4. the Binder-owned sink translates that carrier into exactly one
-   Binder-owned root `*ApplicationService` entrypoint call that changes the
-   authoritative domain model
-5. domain completion emits the new observable same-context domain state
+3. the same-root `IntentHandler` interprets the full snapshot, builds exactly
+   one focused work request, and calls the matching root `*ApplicationService`
+   entrypoint directly
+4. domain completion emits the new observable same-context domain state
    through a read-side `published/*Model` handle
-6. Binder-owned readback wiring consumes only that `published/*Model` through
-   `current()` and `subscribe(...)` and delivers the resulting domain state
-   into listener-facing model intake seams
-7. the local projection model derives only the flat observable values needed
+5. the same-root `ContributionModel` and any child `ContentModel`s that own
+   reused component state subscribe to that `published/*Model` readback and
+   update only their listener-facing projection state
+6. the local projection model derives only the flat observable values needed
    for rendering and
    local intent interpretation
-8. passive Views react through bindings or listeners
+7. passive Views react through bindings or listeners
 
 Domain read-side contract:
 
 1. a Binder may acquire a same-context read-side `published/*Model` handle
-   only as a direct runtime service, not by calling back into a root
-   `*ApplicationService`
-2. the Binder may read the initial domain state from that handle only through
-   `current()`
-3. the Binder may continue readback only through `subscribe(...)`
-4. the Binder must not treat direct one-shot `ApplicationService` return
+   only as a direct runtime service during root wiring, not by calling back
+   into a root `*ApplicationService`
+2. the same-root `ContributionModel` and any child `ContentModel`s may read
+   initial domain state from that handle only through `current()`
+3. those models may continue readback only through `subscribe(...)`
+4. the view layer must not treat direct one-shot `ApplicationService` return
    carriers such as `*Result`, `*Snapshot`, `*Payload`, `*CalculationResult`,
    `*SearchResult`, `*Preview`, or similar request-response types as the
    source of view-layer truth or mutation feedback
@@ -320,7 +307,7 @@ This means:
 - `ContributionModel` and `ContentModel` do expose active tool, selection,
   hovered target, and other input-relevant state when the same-root
   `IntentHandler` needs those facts to interpret a full `ViewInputEvent`
-- those exposed facts remain projection state only; they are not a Binder or
+- those exposed facts remain projection state only; they are not an
   `IntentHandler` backchannel for reconstructing write-side commands from
   imperative request fields or ad-hoc session mirrors
 - `ContributionModel` and `ContentModel` do not expose request fields, command
@@ -347,24 +334,14 @@ This means:
   that move, the next step is stronger model or readback preparation above the
   primitive, not a spread of free top-level helper files inside the primitive
   package
-- `IntentHandler` owns input interpretation and write-side carrier
-  publication, but not domain lookup, direct service invocation, view
-  instantiation, or shell APIs
-- when a domain roundtrip is needed, the `IntentHandler` emits exactly one
-  same-root `*PublishedEvent` from the received `ViewInputEvent`; it does not
+- `IntentHandler` owns input interpretation and direct service invocation, but
+  not view instantiation or shell APIs
+- when a domain roundtrip is needed, the `IntentHandler` builds exactly one
+  focused work request from the received `ViewInputEvent`; it does not
   synthesize refresh/request protocols or rebuild a richer command/session
-  object from the projection model
-- `PublishedEvent` is reserved for Binder-mediated transitions that advance
-  authoritative state outside the local projection model; this includes
-  authored domain writes and the narrower case of same-context
-  application-owned session transitions whose resulting state still returns
-  only through a read-side `published/*Model`
-- `PublishedEvent` does not model `refresh`, `load`, `search`, `detail-open`,
-  `reset-view`, or other request/refresh styles that bypass the authoritative
-  `published/*Model` readback path
-- one root `*ApplicationService` entrypoint must not be fed by more than one
-  same-root write-side `*PublishedEvent` type; needing several carriers for
-  one entrypoint is a modelling error
+  object from projection state
+- thin same-context `published/*Model` readback remains the only authoritative
+  return path into the view layer
 - passive Views do not imperatively query business meaning, do not receive
   presenter-style commands, do not send ad-hoc partial event bags, and do not
   expect synchronous technical acknowledgements from the `IntentHandler`

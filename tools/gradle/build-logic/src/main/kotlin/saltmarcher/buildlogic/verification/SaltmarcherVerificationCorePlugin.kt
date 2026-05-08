@@ -193,13 +193,6 @@ internal fun Project.configureVerificationCore() {
         .distinct()
         .forEach(pluginManager::apply)
 
-    val viewRefactorCandidatesBundleId = enforcementBundles.catalog.taskToBundleId["checkViewRefactorCandidates"]
-    if (viewRefactorCandidatesBundleId != null && activeEnforcementBundleIds.contains(viewRefactorCandidatesBundleId)) {
-        verificationHarness.checkViewArchitecture.configure {
-            dependsOn(tasks.named("checkViewRefactorCandidates"))
-        }
-    }
-
     val checkDocumentationEnforcement = tasks.register("checkDocumentationEnforcement") {
         group = LifecycleBasePlugin.VERIFICATION_GROUP
         description = "Run all Markdown-backed architecture and enforcement documentation checks through the verification core."

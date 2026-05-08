@@ -343,8 +343,10 @@ Operationally, architecture checks enter local quality through:
   technical-primitive architecture and now enters `checkViewArchitecture`,
   staged `view-topology`, `check`, `build`, and staged `production-handoff`
   transitively without changing blocker semantics. It is no longer the
-  canonical reusable-slotcontent target direction and is slated for
-  replacement or removal in the gate migration wave.
+  authoritative reusable-slotcontent target direction; see the
+  [View Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/view-layer.md:1)
+  for that truth. This surface is slated for replacement or removal in the
+  gate migration wave.
 - `checkDataQueryPublishedCarrierCandidates`
   runs the report-only Data Query build-harness shared-carrier partial-use
   diagnostics and stays intentionally outside `checkArchitecture`, `check`,

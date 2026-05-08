@@ -10,12 +10,13 @@ import shell.api.ShellRuntimeContext;
 import shell.api.ShellSlot;
 import src.domain.creatures.CreaturesApplicationService;
 import src.domain.creatures.published.CreatureCatalogModel;
-import src.domain.creatures.published.CreatureCatalogQuery;
+import src.domain.creatures.published.CreatureDetailModel;
 import src.domain.creatures.published.CreatureCatalogSortField;
 import src.domain.creatures.published.CreatureFilterOptionsModel;
 import src.domain.creatures.published.CreatureSortDirection;
-import src.domain.creatures.published.LoadCreatureDetailQuery;
-import src.domain.creatures.published.LoadCreatureFilterOptionsQuery;
+import src.domain.creatures.published.RefreshCreatureCatalogCommand;
+import src.domain.creatures.published.RefreshCreatureFilterOptionsCommand;
+import src.domain.creatures.published.SelectCreatureDetailCommand;
 import src.domain.encounter.EncounterApplicationService;
 import src.domain.encounter.published.ApplyEncounterStateCommand;
 import src.domain.encounter.published.EncounterBuilderInputs;
@@ -24,7 +25,7 @@ import src.domain.encounter.published.EncounterTuningPreviewModel;
 import src.domain.encounter.published.UpdateEncounterBuilderInputsCommand;
 import src.domain.encountertable.EncounterTableApplicationService;
 import src.domain.encountertable.published.EncounterTableCatalogModel;
-import src.domain.encountertable.published.LoadEncounterTableSummariesQuery;
+import src.domain.encountertable.published.RefreshEncounterTableCatalogCommand;
 import src.view.slotcontent.details.creature.CreatureDetailsInspectorEntry;
 
 @SuppressWarnings("PMD.TooManyMethods")
@@ -51,6 +52,7 @@ final class CatalogBinder {
         CreatureFilterOptionsModel filterOptionsModel =
                 runtimeContext.services().require(CreatureFilterOptionsModel.class);
         CreatureCatalogModel catalogModel = runtimeContext.services().require(CreatureCatalogModel.class);
+        CreatureDetailModel detailModel = runtimeContext.services().require(CreatureDetailModel.class);
         EncounterTableCatalogModel encounterTableModel =
                 runtimeContext.services().require(EncounterTableCatalogModel.class);
         EncounterTuningPreviewModel tuningPreviewModel =
@@ -67,7 +69,7 @@ final class CatalogBinder {
             if (after == null || after.longValue() <= 0L) {
                 return;
             }
-            openCreatureDetails(runtimeContext.inspector(), creatures, after.longValue());
+            openCreatureDetails(runtimeContext.inspector(), creatures, detailModel, after.longValue());
             presentationModel.setCreatureDetailSelection(0L);
         });
 
@@ -86,8 +88,8 @@ final class CatalogBinder {
         presentationModel.applyEncounterTuningPreview(tuningPreviewModel.current().labels());
         presentationModel.applyEncounterBuilderInputs(builderInputsModel.current());
 
-        creatures.loadFilterOptions(new LoadCreatureFilterOptionsQuery());
-        encounterTables.loadSummaries(new LoadEncounterTableSummariesQuery());
+        creatures.refreshFilterOptions(new RefreshCreatureFilterOptionsCommand());
+        encounterTables.refreshCatalog(new RefreshEncounterTableCatalogCommand());
         runSearch(creatures, presentationModel.searchEvent());
         return new Binding(controls, main);
     }
@@ -114,18 +116,20 @@ final class CatalogBinder {
     private static void openCreatureDetails(
             InspectorSink inspector,
             CreaturesApplicationService creatures,
+            CreatureDetailModel detailModel,
             long creatureId
     ) {
+        creatures.selectCreatureDetail(new SelectCreatureDetailCommand(creatureId));
         inspector.push(CreatureDetailsInspectorEntry.create(
                 creatureId,
-                id -> creatures.loadCreatureDetail(new LoadCreatureDetailQuery(id))));
+                detailModel.current()));
     }
 
     private static void runSearch(
             CreaturesApplicationService creatures,
             CatalogPublishedEvent event
     ) {
-        creatures.searchCatalog(new CreatureCatalogQuery(
+        creatures.refreshCatalog(new RefreshCreatureCatalogCommand(
                 event.nameQuery(),
                 event.challengeRatingMin(),
                 event.challengeRatingMax(),

@@ -1,11 +1,8 @@
 package src.domain.encounter.runtime.port;
 
-import src.domain.encounter.application.ListSavedEncounterPlansUseCase;
-import src.domain.encounter.application.LoadEncounterPlanBudgetUseCase;
+public interface EncounterPlanPublishedStateRepository<S, B> {
 
-public interface EncounterPlanPublishedStateRepository {
+    void publishSavedPlans(S result);
 
-    void publishSavedPlans(ListSavedEncounterPlansUseCase.Result result);
-
-    void publishPlanBudget(LoadEncounterPlanBudgetUseCase.Result result);
+    void publishPlanBudget(B result);
 }

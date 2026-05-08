@@ -1,7 +1,7 @@
 package src.domain.encounter.application;
 
 import src.domain.encounter.plan.value.EncounterPlanSummary;
-import src.domain.encounter.published.SavedEncounterPlanChoice;
+import src.domain.encounter.published.SavedEncounterPlanSummary;
 
 public final class EncounterPlanBoundaryTranslator {
 
@@ -10,11 +10,11 @@ public final class EncounterPlanBoundaryTranslator {
     private EncounterPlanBoundaryTranslator() {
     }
 
-    public static SavedEncounterPlanChoice toPublishedChoice(EncounterPlanSummary summary) {
+    public static SavedEncounterPlanSummary toPublishedSummary(EncounterPlanSummary summary) {
         if (summary == null) {
-            return new SavedEncounterPlanChoice(0L, "", "");
+            return new SavedEncounterPlanSummary(0L, "", "");
         }
-        return new SavedEncounterPlanChoice(
+        return new SavedEncounterPlanSummary(
                 summary.id(),
                 summary.name(),
                 summaryText(summary.generatedLabel(), summary.creatureCount()));

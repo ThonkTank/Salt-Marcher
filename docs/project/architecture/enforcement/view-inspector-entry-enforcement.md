@@ -11,6 +11,11 @@ Source of Truth: Complete invariant catalog for the reusable
 This document owns the complete architecture-enforcement catalog for the
 `*InspectorEntry` role itself.
 
+Architectural truth for reusable `slotcontent/**` lives only in the
+[View Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/view-layer.md:1).
+This document exists only as InspectorEntry-local enforcement inventory for one
+current mechanical legacy role.
+
 It answers four questions for every `*InspectorEntry` surface:
 
 - when the adapter MAY exist

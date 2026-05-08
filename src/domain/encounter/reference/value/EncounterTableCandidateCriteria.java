@@ -1,12 +1,13 @@
-package src.domain.encountertable.published;
+package src.domain.encounter.reference.value;
 
 import java.util.List;
 
-public record LoadEncounterTableCandidatesQuery(
+public record EncounterTableCandidateCriteria(
         List<Long> tableIds,
         int maximumXp
 ) {
-    public LoadEncounterTableCandidatesQuery {
+
+    public EncounterTableCandidateCriteria {
         tableIds = tableIds == null ? List.of() : List.copyOf(tableIds);
     }
 }

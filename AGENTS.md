@@ -54,19 +54,11 @@ document exists.
 - Work under `src/view/**` must use the repo-owned `view-layer-mvvm` skill and
   follow the canonical cockpit view-layer standard before changes are made or
   reviewed.
-- Reusable `src/view/slotcontent/**` units follow one closed target shape
-  only: exactly one `*View.java`, exactly one same-stem
-  `*ViewInputEvent.java`, and exactly one `*ContentModel.java`. The same rule
-  applies under `slotcontent/primitives/**`.
-- Reusable `slotcontent/**` `*View`s stay dumb and flat, bound directly to
-  their local `*ContentModel`; component-specific presentation state and
-  component-specific presentation logic belong in that `*ContentModel`.
-- Active-root `*ContributionModel`s orchestrate child `*ContentModel`s and
-  root-wide UI state. They must not absorb component-specific child logic into
-  a second god-model.
-- `*IntentHandler` is an active-root-only role. Reused `slotcontent/**`
-  `*ViewInputEvent`s are interpreted only by the same-root active
-  `*IntentHandler`.
+- For `src/view/**`, `docs/project/architecture/patterns/view-layer.md` is the
+  sole architectural source of truth and
+  `tools/quality/skills/view-layer-mvvm/SKILL.md` is the sole operative agent
+  guidance. Other docs may only route or summarize; they must not become a
+  second source of view-layer truth.
 
 ## SaltMarcher Verification
 

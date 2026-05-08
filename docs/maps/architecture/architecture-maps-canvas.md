@@ -24,11 +24,10 @@ It owns:
 It does not own adopter-native payload fields or adopter gameplay behavior.
 
 This document is not the canonical target model for reusable `slotcontent/**`.
-The project-wide target is the uniform reusable unit
-`View + ViewInputEvent + ContentModel`, including under
-`slotcontent/primitives/**`. The canvas-specific `CanvasPointerEvent` and
-`MapRenderScene` seams described here are current implementation debt that must
-eventually collapse into that reusable unit model.
+The canonical reusable-slotcontent architecture lives only in the
+[View Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/view-layer.md:1).
+The canvas-specific `CanvasPointerEvent` and `MapRenderScene` seams described
+here are current implementation debt relative to that owner.
 
 ## Roles
 

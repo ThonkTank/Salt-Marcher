@@ -2,13 +2,13 @@ package src.data.creatures;
 
 import shell.api.ServiceContribution;
 import shell.api.ServiceRegistry;
+import src.data.creatures.repository.CreaturePublishedStateRepositoryAdapter;
 import src.data.creatures.query.SqliteCreatureCatalogQueryAdapter;
 import src.domain.creatures.CreaturesApplicationService;
 import src.domain.creatures.catalog.port.CreatureCatalogLookup;
 import src.domain.creatures.published.CreatureCatalogModel;
-import src.domain.creatures.published.CreatureCatalogQuery;
+import src.domain.creatures.published.CreatureDetailModel;
 import src.domain.creatures.published.CreatureFilterOptionsModel;
-import src.domain.creatures.published.LoadCreatureFilterOptionsQuery;
 
 /**
  * Root service entrypoint for the creatures feature.
@@ -22,17 +22,14 @@ public final class CreaturesServiceContribution implements ServiceContribution {
 
     @Override
     public void register(ServiceRegistry.Builder builder) {
-        CreatureCatalogLookup queryPort =
-                new SqliteCreatureCatalogQueryAdapter();
-        CreaturesApplicationService applicationService = new CreaturesApplicationService(queryPort);
+        CreatureCatalogLookup queryPort = new SqliteCreatureCatalogQueryAdapter();
+        CreaturePublishedStateRepositoryAdapter publishedState = new CreaturePublishedStateRepositoryAdapter();
+        CreaturesApplicationService applicationService = new CreaturesApplicationService(queryPort, publishedState);
         builder.register(
                 CreaturesApplicationService.class,
                 applicationService);
-        builder.register(
-                CreatureFilterOptionsModel.class,
-                applicationService.loadFilterOptionsModel(new LoadCreatureFilterOptionsQuery()));
-        builder.register(
-                CreatureCatalogModel.class,
-                applicationService.loadCatalogModel(CreatureCatalogQuery.defaults()));
+        builder.register(CreatureFilterOptionsModel.class, publishedState.filterOptionsModel);
+        builder.register(CreatureCatalogModel.class, publishedState.catalogModel);
+        builder.register(CreatureDetailModel.class, publishedState.detailModel);
     }
 }

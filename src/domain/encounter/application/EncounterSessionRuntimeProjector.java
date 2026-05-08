@@ -2,10 +2,10 @@ package src.domain.encounter.application;
 
 import static src.domain.encounter.session.value.EncounterSessionValues.*;
 
-import src.domain.creatures.published.CreatureDetail;
 import src.domain.encounter.generation.policy.EncounterDifficultyMath;
-import src.domain.encounter.published.EncounterDifficultyBand;
-import src.domain.encounter.published.EncounterGenerationTuning;
+import src.domain.encounter.generation.value.EncounterDifficultyIntent;
+import src.domain.encounter.generation.value.EncounterTuningIntent;
+import src.domain.encounter.reference.value.EncounterCreatureReference;
 
 public final class EncounterSessionRuntimeProjector {
 
@@ -22,7 +22,7 @@ public final class EncounterSessionRuntimeProjector {
                 budget.deadlyThreshold());
     }
 
-    public static CreatureDetailData toSessionCreatureDetail(CreatureDetail detail) {
+    public static CreatureDetailData toSessionCreatureDetail(EncounterCreatureReference detail) {
         return new CreatureDetailData(
                 detail.id(),
                 detail.name(),
@@ -34,8 +34,8 @@ public final class EncounterSessionRuntimeProjector {
                 detail.creatureType());
     }
 
-    public static String difficultyLabel(EncounterDifficultyBand band) {
-        EncounterDifficultyBand effective = band == null ? EncounterDifficultyBand.defaultBand() : band;
+    public static String difficultyLabel(EncounterDifficultyIntent band) {
+        EncounterDifficultyIntent effective = band == null ? EncounterDifficultyIntent.MEDIUM : band;
         return switch (effective.name()) {
             case "EASY" -> "Easy";
             case "HARD" -> "Hard";
@@ -44,8 +44,8 @@ public final class EncounterSessionRuntimeProjector {
         };
     }
 
-    public static String tuningLabel(EncounterGenerationTuning tuning) {
-        EncounterGenerationTuning effective = tuning == null ? EncounterGenerationTuning.defaultTuning() : tuning;
+    public static String tuningLabel(EncounterTuningIntent tuning) {
+        EncounterTuningIntent effective = tuning == null ? EncounterTuningIntent.defaultIntent() : tuning;
         return "B" + effective.balanceLevel()
                 + "/M" + Math.round(effective.amountValue())
                 + "/D" + effective.diversityLevel();

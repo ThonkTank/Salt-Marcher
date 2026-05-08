@@ -70,7 +70,7 @@ public final class EncounterStateSnapshotProjector {
                 toPublishedBuilderSettings(safeState.builderInputs()),
                 safeState.generationAdvisoryMessages(),
                 safeState.savedPlans().stream()
-                        .map(EncounterPlanBoundaryTranslator::toPublishedChoice)
+                        .map(EncounterPlanBoundaryTranslator::toPublishedSummary)
                         .toList(),
                 safeState.roster().stream()
                         .map(creature -> new EncounterStateSnapshot.RosterCard(

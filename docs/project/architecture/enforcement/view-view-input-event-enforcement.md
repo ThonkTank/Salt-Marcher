@@ -11,6 +11,11 @@ Source of Truth: Mechanically enforced and review-owned invariants for
 This document owns the complete architecture-enforcement catalog for the
 `*ViewInputEvent` role itself.
 
+Architectural truth for `*ViewInputEvent` lives only in the
+[View Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/view-layer.md:1).
+This document owns only carrier-local enforcement inventory and current
+mechanical drift.
+
 It answers four questions for every `*ViewInputEvent` surface:
 
 - when the carrier MAY and MUST exist
@@ -25,13 +30,9 @@ It does own the carrier-local rule that top-level `*ViewInputEvent` snapshot
 construction belongs only to the same-stem passive `View`, never to Binder or
 `IntentHandler` fallback code.
 
-The target reusable-slotcontent architecture keeps `*ViewInputEvent` as one of
-the three reusable-unit roles. Each interactive `View` owns exactly one same-
-stem `*ViewInputEvent`, and reused `slotcontent/**` carriers are interpreted
-only by the same-root active `*IntentHandler`, not by a reusable local
-handler. Some current gates still encode the older reusable-local-
-`IntentHandler` model; those rows below are described as current mechanical
-drift when needed.
+Where current gates still encode the older reusable-local-`*IntentHandler`
+model, the rows below call that out only as drift relative to the View Layer
+Standard.
 
 Unified focused bundle entrypoint:
 
