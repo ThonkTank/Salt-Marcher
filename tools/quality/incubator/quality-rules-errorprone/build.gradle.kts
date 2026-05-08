@@ -205,6 +205,8 @@ tasks.named<Jar>("jar") {
 
 dependencies {
     compileOnly("com.google.errorprone:error_prone_check_api:2.48.0")
+    compileOnly("org.checkerframework:dataflow-nullaway:3.53.0")
+    testImplementation("org.checkerframework:dataflow-nullaway:3.53.0")
     testImplementation("com.google.errorprone:error_prone_test_helpers:2.48.0")
     testImplementation("junit:junit:4.13.2")
 }

@@ -132,7 +132,7 @@ public final class ApplicationSessionPlannerFactsQueryAdapter
 
     private static SavedEncounterPlanFact toSavedEncounterPlanFact(SavedEncounterPlanChoice plan) {
         return new SavedEncounterPlanFact(
-                plan == null ? 0L : plan.id(),
+                plan == null ? 0L : plan.planId(),
                 plan == null ? "" : plan.name(),
                 plan == null ? "" : plan.summaryText());
     }

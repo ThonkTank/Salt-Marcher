@@ -2,6 +2,7 @@ package src.view.leftbartabs.dungeontravel;
 
 import java.util.List;
 import java.util.function.Consumer;
+import javafx.collections.ObservableList;
 import javafx.beans.property.StringProperty;
 import javafx.geometry.Insets;
 import javafx.scene.Node;
@@ -10,8 +11,6 @@ import javafx.scene.control.Label;
 import javafx.scene.layout.VBox;
 
 public final class DungeonTravelStateView extends VBox {
-
-    private static final String PMD_LAW_OF_DEMETER = "PMD.LawOfDemeter";
 
     private final Label body = new Label();
     private final VBox actions = new VBox(6);
@@ -32,29 +31,26 @@ public final class DungeonTravelStateView extends VBox {
         viewInputEventHandler = handler == null ? ignored -> {} : handler;
     }
 
-    @SuppressWarnings(PMD_LAW_OF_DEMETER)
     private VBox createStateCard() {
         Label title = new Label("Reisestatus");
-        title.getStyleClass().add("panel-title");
+        addStyleClass(title, "panel-title");
         body.setWrapText(true);
         VBox card = new VBox(6, title, body, actions);
-        card.getStyleClass().addAll("card-surface", "content-card");
+        addStyleClasses(card, "card-surface", "content-card");
         return card;
     }
 
-    @SuppressWarnings(PMD_LAW_OF_DEMETER)
-    private void showActions(List<DungeonTravelActionProjection> items) {
-        actions.getChildren().clear();
-        List<DungeonTravelActionProjection> safeItems = items == null ? List.of() : items;
+    private void showActions(List<DungeonTravelContributionModel.ActionProjection> items) {
+        ObservableList<Node> children = actions.getChildren();
+        children.clear();
+        List<DungeonTravelContributionModel.ActionProjection> safeItems = items == null ? List.of() : items;
         if (safeItems.isEmpty()) {
-            actions.getChildren().add(emptyActionsHint());
+            children.add(emptyActionsHint());
             return;
         }
-        actions.getChildren().add(actionsTitle());
-        for (DungeonTravelActionProjection item : safeItems) {
-            for (Node node : actionNodes(item)) {
-                actions.getChildren().add(node);
-            }
+        children.add(actionsTitle());
+        for (DungeonTravelContributionModel.ActionProjection projection : safeItems) {
+            appendActionNodes(children, ActionItem.from(projection));
         }
     }
 
@@ -67,42 +63,84 @@ public final class DungeonTravelStateView extends VBox {
         showActions(contributionModel.actionsProperty().get());
     }
 
-    @SuppressWarnings(PMD_LAW_OF_DEMETER)
     private static Label emptyActionsHint() {
         Label hint = new Label("Keine Reiseaktionen am aktuellen Standort.");
-        hint.getStyleClass().add("text-muted");
+        addStyleClass(hint, "text-muted");
         hint.setWrapText(true);
         return hint;
     }
 
-    @SuppressWarnings(PMD_LAW_OF_DEMETER)
     private static Label actionsTitle() {
         Label title = new Label("Aktionen");
-        title.getStyleClass().addAll("section-header", "text-muted");
+        addStyleClasses(title, "section-header", "text-muted");
         return title;
     }
 
-    private List<Node> actionNodes(DungeonTravelActionProjection item) {
-        if (!item.description().isBlank()) {
-            return List.of(actionButton(item), actionDescription(item.description()));
+    private void appendActionNodes(ObservableList<Node> children, ActionItem item) {
+        children.add(actionButton(item));
+        if (item.hasDescription()) {
+            children.add(actionDescription(item.descriptionText()));
         }
-        return List.of(actionButton(item));
     }
 
-    @SuppressWarnings(PMD_LAW_OF_DEMETER)
-    private Button actionButton(DungeonTravelActionProjection item) {
-        Button button = new Button(item.label());
-        button.getStyleClass().addAll("toolbar-action-button", "neutral-action");
+    private Button actionButton(ActionItem item) {
+        Button button = new Button(item.buttonLabel());
+        addStyleClasses(button, "toolbar-action-button", "neutral-action");
         button.setMaxWidth(Double.MAX_VALUE);
         button.setOnAction(event -> viewInputEventHandler.accept(new DungeonTravelStateViewInputEvent(item.actionId())));
         return button;
     }
 
-    @SuppressWarnings(PMD_LAW_OF_DEMETER)
     private static Label actionDescription(String text) {
         Label description = new Label(text);
-        description.getStyleClass().add("text-muted");
+        addStyleClass(description, "text-muted");
         description.setWrapText(true);
         return description;
+    }
+
+    private static void addStyleClass(Node node, String styleClass) {
+        ObservableList<String> styleClasses = node.getStyleClass();
+        styleClasses.add(styleClass);
+    }
+
+    private static void addStyleClasses(Node node, String... styleClasses) {
+        ObservableList<String> classes = node.getStyleClass();
+        classes.addAll(styleClasses);
+    }
+
+    private static final class ActionItem {
+
+        private final String actionId;
+        private final String buttonLabel;
+        private final String descriptionText;
+
+        private ActionItem(String actionId, String buttonLabel, String descriptionText) {
+            this.actionId = actionId;
+            this.buttonLabel = buttonLabel;
+            this.descriptionText = descriptionText;
+        }
+
+        static ActionItem from(DungeonTravelContributionModel.ActionProjection projection) {
+            return new ActionItem(
+                    projection.actionId(),
+                    projection.buttonLabel(),
+                    projection.descriptionText());
+        }
+
+        String actionId() {
+            return actionId;
+        }
+
+        String buttonLabel() {
+            return buttonLabel;
+        }
+
+        boolean hasDescription() {
+            return !descriptionText.isBlank();
+        }
+
+        String descriptionText() {
+            return descriptionText;
+        }
     }
 }

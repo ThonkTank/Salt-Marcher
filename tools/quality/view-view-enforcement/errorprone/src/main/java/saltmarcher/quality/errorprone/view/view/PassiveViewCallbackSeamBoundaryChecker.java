@@ -9,6 +9,7 @@ import com.sun.source.tree.ClassTree;
 import com.sun.source.tree.CompilationUnitTree;
 import com.sun.source.tree.MethodTree;
 import com.sun.source.tree.ModifiersTree;
+import com.sun.source.tree.Tree;
 import com.sun.source.tree.VariableTree;
 import com.sun.source.util.TreeScanner;
 import java.util.LinkedHashSet;
@@ -107,17 +108,29 @@ public final class PassiveViewCallbackSeamBoundaryChecker extends BugChecker
                 ? viewSimpleName
                 : sourcePackageName + "." + viewSimpleName;
         Set<String> violations = new LinkedHashSet<>();
+        Tree[] firstViolation = {null};
         for (var member : topLevelClass.getMembers()) {
             if (member instanceof MethodTree methodTree) {
-                collectPrimitiveMethodViolation(methodTree, sourcePackageName, viewSimpleName, violations);
+                collectPrimitiveMethodViolation(
+                        methodTree,
+                        sourcePackageName,
+                        viewSimpleName,
+                        violations,
+                        firstViolation);
             } else if (member instanceof VariableTree variableTree) {
-                collectPrimitiveFieldViolation(variableTree, sourcePackageName, viewSimpleName, violations);
+                collectPrimitiveFieldViolation(
+                        variableTree,
+                        sourcePackageName,
+                        viewSimpleName,
+                        violations,
+                        firstViolation);
             }
         }
         if (violations.isEmpty()) {
             return Description.NO_MATCH;
         }
-        return buildDescription(topLevelClass)
+        Tree diagnosticTree = firstViolation[0] == null ? topLevelClass : firstViolation[0];
+        return buildDescription(diagnosticTree)
                 .setMessage("Technical primitive View '" + qualifiedViewName
                         + "' exposes non-technical callback or result seams "
                         + String.join(", ", violations)
@@ -129,7 +142,8 @@ public final class PassiveViewCallbackSeamBoundaryChecker extends BugChecker
             MethodTree methodTree,
             String sourcePackageName,
             String viewSimpleName,
-            Set<String> violations
+            Set<String> violations,
+            Tree[] firstViolation
     ) {
         if (!isOutwardVisible(methodTree.getModifiers())) {
             return;
@@ -141,6 +155,9 @@ public final class PassiveViewCallbackSeamBoundaryChecker extends BugChecker
                 sourcePackageName,
                 viewSimpleName)) {
             violations.add(methodTree.getName() + "(" + methodTree.getParameters().size() + ")");
+            if (firstViolation[0] == null) {
+                firstViolation[0] = methodTree;
+            }
             return;
         }
         for (VariableTree parameter : methodTree.getParameters()) {
@@ -150,6 +167,9 @@ public final class PassiveViewCallbackSeamBoundaryChecker extends BugChecker
                     sourcePackageName,
                     viewSimpleName)) {
                 violations.add(methodTree.getName() + "(" + methodTree.getParameters().size() + ")");
+                if (firstViolation[0] == null) {
+                    firstViolation[0] = methodTree;
+                }
                 return;
             }
         }
@@ -159,7 +179,8 @@ public final class PassiveViewCallbackSeamBoundaryChecker extends BugChecker
             VariableTree variableTree,
             String sourcePackageName,
             String viewSimpleName,
-            Set<String> violations
+            Set<String> violations,
+            Tree[] firstViolation
     ) {
         if (!isOutwardVisible(variableTree.getModifiers())) {
             return;
@@ -170,6 +191,9 @@ public final class PassiveViewCallbackSeamBoundaryChecker extends BugChecker
                 sourcePackageName,
                 viewSimpleName)) {
             violations.add(variableTree.getName() + " field");
+            if (firstViolation[0] == null) {
+                firstViolation[0] = variableTree;
+            }
         }
     }
 
