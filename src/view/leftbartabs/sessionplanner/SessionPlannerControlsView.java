@@ -47,7 +47,7 @@ public final class SessionPlannerControlsView extends ScrollPane {
     public SessionPlannerControlsView() {
         sessionSection.onCreateRequested(() -> viewInputEventHandler.accept(
                 new SessionPlannerControlsViewInputEvent(
-                        new SessionPlannerControlsViewInputEvent.CreateSessionInput())));
+                        SessionPlannerControlsViewInputEvent.CreateSessionTrigger.CREATE_SESSION)));
         sessionSection.onEncounterDaysRequested(encounterDaysText -> viewInputEventHandler.accept(
                 new SessionPlannerControlsViewInputEvent(
                         new SessionPlannerControlsViewInputEvent.SetEncounterDaysInput(encounterDaysText))));

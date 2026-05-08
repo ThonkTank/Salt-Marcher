@@ -2,19 +2,21 @@ package src.view.leftbartabs.sessionplanner;
 
 import java.util.Objects;
 
-public record SessionPlannerLootMainViewInputEvent(Interaction interaction) {
+public record SessionPlannerLootMainViewInputEvent(LootInput lootInput) {
 
     public SessionPlannerLootMainViewInputEvent {
-        Objects.requireNonNull(interaction, "interaction");
+        Objects.requireNonNull(lootInput, "lootInput");
     }
 
-    public sealed interface Interaction permits AddLootPlaceholderInput, RemoveLootPlaceholderInput {
+    public sealed interface LootInput permits AddLootPlaceholderTrigger, RemoveLootPlaceholderInput {
     }
 
-    public record AddLootPlaceholderInput() implements Interaction {
+    public enum AddLootPlaceholderTrigger implements LootInput, SessionPlannerPublishedEvent.Mutation {
+        ADD_LOOT_PLACEHOLDER
     }
 
-    public record RemoveLootPlaceholderInput(long lootToken) implements Interaction {
+    public record RemoveLootPlaceholderInput(long lootToken)
+            implements LootInput, SessionPlannerPublishedEvent.Mutation {
         public RemoveLootPlaceholderInput {
             lootToken = Math.max(0L, lootToken);
         }

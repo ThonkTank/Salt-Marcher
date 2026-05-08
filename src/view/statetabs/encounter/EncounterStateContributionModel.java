@@ -72,11 +72,11 @@ public final class EncounterStateContributionModel {
 
     void apply(EncounterStateSnapshot snapshot) {
         EncounterStateSnapshot safeSnapshot = snapshot == null ? EncounterStateSnapshot.empty("") : snapshot;
-        mode.set(EncounterStateProjectionMapper.toMode(safeSnapshot.activeMode()));
-        builderState.set(EncounterStateProjectionMapper.toBuilderState(safeSnapshot.builderPane(), safeSnapshot.statusLine()));
-        initiativeState.set(EncounterStateProjectionMapper.toInitiativeState(safeSnapshot.initiativePane()));
-        combatState.set(EncounterStateProjectionMapper.toCombatState(safeSnapshot.combatPane()));
-        resultState.set(EncounterStateProjectionMapper.toResultState(safeSnapshot.resolutionPane()));
+        mode.set(toMode(safeSnapshot.activeMode()));
+        builderState.set(toBuilderState(safeSnapshot.builderPane(), safeSnapshot.statusLine()));
+        initiativeState.set(toInitiativeState(safeSnapshot.initiativePane()));
+        combatState.set(toCombatState(safeSnapshot.combatPane()));
+        resultState.set(toResultState(safeSnapshot.resolutionPane()));
         status.set(safeSnapshot.statusLine());
     }
 
@@ -280,5 +280,149 @@ public final class EncounterStateContributionModel {
         static ResultStateView empty() {
             return new ResultStateView(List.of(), 0, 0, 0, "Kein Loot", "", "", false, false, 1);
         }
+    }
+
+    private static Mode toMode(EncounterStateSnapshot.Mode source) {
+        EncounterStateSnapshot.Mode effective = source == null ? EncounterStateSnapshot.Mode.BUILDER : source;
+        return Mode.valueOf(effective.name());
+    }
+
+    private static BuilderState toBuilderState(
+            EncounterStateSnapshot.BuilderPane source,
+            String statusMessage
+    ) {
+        EncounterStateSnapshot.BuilderPane safeSource = source == null
+                ? EncounterStateSnapshot.BuilderPane.empty()
+                : source;
+        EncounterStateSnapshot.ThresholdMeter difficulty = safeSource.thresholds();
+        return new BuilderState(
+                safeSource.partySummary(),
+                safeSource.templateTitle(),
+                new DifficultySummary(
+                        difficulty.easyThreshold(),
+                        difficulty.mediumThreshold(),
+                        difficulty.hardThreshold(),
+                        difficulty.deadlyThreshold(),
+                        difficulty.adjustedXp(),
+                        difficulty.difficultyLabel()),
+                statusMessage,
+                safeSource.generationHints(),
+                safeSource.savedPlanChoices().stream()
+                        .map(EncounterStateContributionModel::toSavedPlan)
+                        .toList(),
+                toBuilderSettings(safeSource.currentSettings()),
+                safeSource.rosterCards().stream()
+                        .map(EncounterStateContributionModel::toRosterCard)
+                        .toList(),
+                safeSource.rosterEmpty(),
+                safeSource.startCombatEnabled(),
+                safeSource.previousAlternativeEnabled(),
+                safeSource.nextAlternativeEnabled(),
+                safeSource.savePlanEnabled(),
+                safeSource.clearHistoryEnabled(),
+                safeSource.undoNotice() == null
+                        ? null
+                        : new UndoRemoveView(
+                                safeSource.undoNotice().undoToken(),
+                                safeSource.undoNotice().creatureName()));
+    }
+
+    private static InitiativeStateView toInitiativeState(EncounterStateSnapshot.InitiativePane source) {
+        EncounterStateSnapshot.InitiativePane safeSource = source == null
+                ? EncounterStateSnapshot.InitiativePane.empty()
+                : source;
+        return new InitiativeStateView(safeSource.rows().stream()
+                .map(entry -> new InitiativeEntryView(
+                        entry.combatantId(),
+                        entry.displayLabel(),
+                        entry.kindLabel(),
+                        entry.initiativeValue()))
+                .toList());
+    }
+
+    private static CombatStateView toCombatState(EncounterStateSnapshot.CombatPane source) {
+        EncounterStateSnapshot.CombatPane safeSource = source == null
+                ? EncounterStateSnapshot.CombatPane.empty()
+                : source;
+        return new CombatStateView(
+                safeSource.roundIndex(),
+                safeSource.combatStatus(),
+                safeSource.combatCards().stream()
+                        .map(card -> new CombatCardView(
+                                card.combatantId(),
+                                card.displayName(),
+                                card.playerCharacter(),
+                                card.activeTurn(),
+                                card.alive(),
+                                card.currentHp(),
+                                card.maxHp(),
+                                card.armorClass(),
+                                card.initiativeValue(),
+                                card.count(),
+                                card.detailText()))
+                        .toList(),
+                safeSource.allEnemiesDefeated(),
+                safeSource.addablePartyMembers().stream()
+                        .map(member -> new PartyMemberCandidate(
+                                member.partyMemberId(),
+                                member.displayName(),
+                                member.level()))
+                        .toList());
+    }
+
+    private static ResultStateView toResultState(EncounterStateSnapshot.ResolutionPane source) {
+        EncounterStateSnapshot.ResolutionPane safeSource = source == null
+                ? EncounterStateSnapshot.ResolutionPane.empty()
+                : source;
+        return new ResultStateView(
+                safeSource.enemyResults().stream()
+                        .map(enemy -> new ResultEnemyView(
+                                enemy.displayName(),
+                                enemy.statusLabel(),
+                                enemy.hpLoss(),
+                                enemy.xp(),
+                                enemy.defeatedByDefault(),
+                                enemy.loot()))
+                        .toList(),
+                safeSource.defeatedCount(),
+                safeSource.eligibleXp(),
+                safeSource.perPlayerXp(),
+                safeSource.goldSummary(),
+                safeSource.lootDetail(),
+                safeSource.awardStatus(),
+                safeSource.xpAwarded(),
+                safeSource.canAwardXp(),
+                safeSource.partySize());
+    }
+
+    private static SavedEncounterPlanView toSavedPlan(EncounterStateSnapshot.PlanChoice plan) {
+        return new SavedEncounterPlanView(
+                plan.planId(),
+                plan.displayName(),
+                plan.generatedName(),
+                plan.totalCreatureCount());
+    }
+
+    private static RosterCardView toRosterCard(EncounterStateSnapshot.RosterCard creature) {
+        return new RosterCardView(
+                creature.creatureId(),
+                creature.displayName(),
+                creature.challengeRating(),
+                creature.xpTotal(),
+                creature.armorClass(),
+                creature.creatureType(),
+                creature.encounterRole(),
+                creature.count());
+    }
+
+    private static BuilderSettings toBuilderSettings(EncounterStateSnapshot.BuilderSettings builderInputs) {
+        EncounterStateSnapshot.BuilderSettings safeInputs = builderInputs == null
+                ? EncounterStateSnapshot.BuilderSettings.defaultSettings()
+                : builderInputs;
+        return new BuilderSettings(
+                safeInputs.difficultyLabel(),
+                safeInputs.balanceLevel(),
+                safeInputs.amountValue(),
+                safeInputs.diversityLevel());
     }
 }

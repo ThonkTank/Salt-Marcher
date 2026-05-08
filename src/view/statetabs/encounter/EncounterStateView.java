@@ -8,9 +8,22 @@ import javafx.scene.layout.VBox;
 
 public final class EncounterStateView extends VBox {
 
+    private final EncounterBuilderStateView builderView;
+    private final EncounterInitiativeStateView initiativeView;
+    private final EncounterCombatStateView combatView;
+    private final EncounterResultsStateView resultsView;
     private final ContentArea contentArea = new ContentArea();
 
-    public EncounterStateView() {
+    public EncounterStateView(
+            EncounterBuilderStateView builderView,
+            EncounterInitiativeStateView initiativeView,
+            EncounterCombatStateView combatView,
+            EncounterResultsStateView resultsView
+    ) {
+        this.builderView = builderView;
+        this.initiativeView = initiativeView;
+        this.combatView = combatView;
+        this.resultsView = resultsView;
         setSpacing(0);
         setPadding(new Insets(0));
         getStyleClass().add("surface-root");
@@ -19,7 +32,40 @@ public final class EncounterStateView extends VBox {
         getChildren().add(contentArea);
     }
 
-    public void showContent(Node node) {
+    public void render(EncounterStateContributionModel contributionModel) {
+        EncounterStateContributionModel safeModel = contributionModel == null
+                ? new EncounterStateContributionModel()
+                : contributionModel;
+        switch (safeModel.modeProperty().get()) {
+            case INITIATIVE -> showInitiative(safeModel.initiativeStateProperty().get());
+            case COMBAT -> showCombat(safeModel.combatStateProperty().get());
+            case RESULTS -> showResults(safeModel.resultStateProperty().get());
+            case BUILDER -> showBuilder(safeModel.builderStateProperty().get());
+            default -> showBuilder(safeModel.builderStateProperty().get());
+        }
+    }
+
+    private void showBuilder(EncounterStateContributionModel.BuilderState state) {
+        builderView.showBuilder(state);
+        showContent(builderView);
+    }
+
+    private void showInitiative(EncounterStateContributionModel.InitiativeStateView state) {
+        initiativeView.showInitiative(state);
+        showContent(initiativeView);
+    }
+
+    private void showCombat(EncounterStateContributionModel.CombatStateView state) {
+        combatView.showCombat(state);
+        showContent(combatView);
+    }
+
+    private void showResults(EncounterStateContributionModel.ResultStateView state) {
+        resultsView.showResults(state);
+        showContent(resultsView);
+    }
+
+    private void showContent(Node node) {
         if (contentArea.shows(node)) {
             return;
         }

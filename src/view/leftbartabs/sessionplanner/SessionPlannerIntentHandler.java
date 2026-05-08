@@ -16,26 +16,24 @@ final class SessionPlannerIntentHandler {
         if (event == null) {
             return;
         }
-        SessionPlannerControlsViewInputEvent.Interaction interaction = event.interaction();
-        if (interaction instanceof SessionPlannerControlsViewInputEvent.CreateSessionInput) {
-            publish(new SessionPlannerPublishedEvent(new SessionPlannerPublishedEvent.CreateSessionMutation()));
+        SessionPlannerControlsViewInputEvent.ControlsInput controlsInput = event.controlsInput();
+        if (controlsInput instanceof SessionPlannerControlsViewInputEvent.CreateSessionTrigger createSessionTrigger) {
+            publish(new SessionPlannerPublishedEvent(createSessionTrigger));
             return;
         }
-        if (interaction instanceof SessionPlannerControlsViewInputEvent.AddParticipantInput addParticipant) {
-            if (addParticipant.characterId() > 0L) {
-                publish(new SessionPlannerPublishedEvent(
-                        new SessionPlannerPublishedEvent.AddParticipantMutation(addParticipant.characterId())));
+        if (controlsInput instanceof SessionPlannerControlsViewInputEvent.AddParticipantInput addParticipant) {
+            if (addParticipant.participantToAddId() > 0L) {
+                publish(new SessionPlannerPublishedEvent(addParticipant));
             }
             return;
         }
-        if (interaction instanceof SessionPlannerControlsViewInputEvent.RemoveParticipantInput removeParticipant) {
-            if (removeParticipant.characterId() > 0L) {
-                publish(new SessionPlannerPublishedEvent(
-                        new SessionPlannerPublishedEvent.RemoveParticipantMutation(removeParticipant.characterId())));
+        if (controlsInput instanceof SessionPlannerControlsViewInputEvent.RemoveParticipantInput removeParticipant) {
+            if (removeParticipant.participantToRemoveId() > 0L) {
+                publish(new SessionPlannerPublishedEvent(removeParticipant));
             }
             return;
         }
-        if (interaction instanceof SessionPlannerControlsViewInputEvent.SetEncounterDaysInput encounterDaysInput) {
+        if (controlsInput instanceof SessionPlannerControlsViewInputEvent.SetEncounterDaysInput encounterDaysInput) {
             BigDecimal encounterDays = parsePositiveDecimal(encounterDaysInput.encounterDaysText());
             if (encounterDays != null) {
                 publish(new SessionPlannerPublishedEvent(
@@ -43,10 +41,9 @@ final class SessionPlannerIntentHandler {
             }
             return;
         }
-        if (interaction instanceof SessionPlannerControlsViewInputEvent.AttachPlanInput attachPlan
-                && attachPlan.selectedPlanId() > 0L) {
-            publish(new SessionPlannerPublishedEvent(
-                    new SessionPlannerPublishedEvent.AttachPlanMutation(attachPlan.selectedPlanId())));
+        if (controlsInput instanceof SessionPlannerControlsViewInputEvent.AttachPlanInput attachPlan
+                && attachPlan.planIdToAttach() > 0L) {
+            publish(new SessionPlannerPublishedEvent(attachPlan));
         }
     }
 
@@ -54,25 +51,25 @@ final class SessionPlannerIntentHandler {
         if (event == null) {
             return;
         }
-        SessionPlannerTimelineMainViewInputEvent.Interaction interaction = event.interaction();
-        if (interaction instanceof SessionPlannerTimelineMainViewInputEvent.SelectEncounterInput selection) {
-            publishSelectEncounter(selection.encounterToken());
+        SessionPlannerTimelineMainViewInputEvent.TimelineInput timelineInput = event.timelineInput();
+        if (timelineInput instanceof SessionPlannerTimelineMainViewInputEvent.SelectEncounterInput selection) {
+            publishSelectEncounter(selection);
             return;
         }
-        if (interaction instanceof SessionPlannerTimelineMainViewInputEvent.SetEncounterAllocationInput allocation) {
-            publishAllocationChange(allocation.encounterToken(), allocation.targetAllocationPercentage());
+        if (timelineInput instanceof SessionPlannerTimelineMainViewInputEvent.SetEncounterAllocationInput allocation) {
+            publishAllocationChange(allocation);
             return;
         }
-        if (interaction instanceof SessionPlannerTimelineMainViewInputEvent.MoveEncounterInput move) {
-            publishEncounterMove(move.encounterToken(), move.direction());
+        if (timelineInput instanceof SessionPlannerTimelineMainViewInputEvent.MoveEncounterInput move) {
+            publishEncounterMove(move);
             return;
         }
-        if (interaction instanceof SessionPlannerTimelineMainViewInputEvent.RemoveEncounterInput removal) {
-            publishRemoveEncounter(removal.encounterToken());
+        if (timelineInput instanceof SessionPlannerTimelineMainViewInputEvent.RemoveEncounterInput removal) {
+            publishRemoveEncounter(removal);
             return;
         }
-        if (interaction instanceof SessionPlannerTimelineMainViewInputEvent.RestGapInput restGap) {
-            publishRestGap(restGap.leftEncounterId(), restGap.rightEncounterId(), restGap.restSelection());
+        if (timelineInput instanceof SessionPlannerTimelineMainViewInputEvent.RestGapInput restGap) {
+            publishRestGap(restGap);
         }
     }
 
@@ -80,77 +77,48 @@ final class SessionPlannerIntentHandler {
         if (event == null) {
             return;
         }
-        if (event.interaction() instanceof SessionPlannerLootMainViewInputEvent.RemoveLootPlaceholderInput removeLoot) {
+        if (event.lootInput() instanceof SessionPlannerLootMainViewInputEvent.RemoveLootPlaceholderInput removeLoot) {
             if (removeLoot.lootToken() > 0L) {
-                publish(new SessionPlannerPublishedEvent(
-                        new SessionPlannerPublishedEvent.RemoveLootPlaceholderMutation(removeLoot.lootToken())));
+                publish(new SessionPlannerPublishedEvent(removeLoot));
             }
             return;
         }
-        if (event.interaction() instanceof SessionPlannerLootMainViewInputEvent.AddLootPlaceholderInput) {
-            publish(new SessionPlannerPublishedEvent(new SessionPlannerPublishedEvent.AddLootPlaceholderMutation()));
+        if (event.lootInput() instanceof SessionPlannerLootMainViewInputEvent.AddLootPlaceholderTrigger addLoot) {
+            publish(new SessionPlannerPublishedEvent(addLoot));
         }
     }
 
-    private void publishSelectEncounter(long encounterToken) {
-        if (encounterToken > 0L) {
-            publish(new SessionPlannerPublishedEvent(
-                    new SessionPlannerPublishedEvent.SelectEncounterMutation(encounterToken)));
+    private void publishSelectEncounter(SessionPlannerTimelineMainViewInputEvent.SelectEncounterInput selection) {
+        if (selection.selectedEncounterToken() > 0L) {
+            publish(new SessionPlannerPublishedEvent(selection));
         }
     }
 
-    private void publishAllocationChange(long encounterToken, BigDecimal allocation) {
-        if (encounterToken <= 0L || allocation == null) {
+    private void publishAllocationChange(SessionPlannerTimelineMainViewInputEvent.SetEncounterAllocationInput allocation) {
+        if (allocation.encounterToken() <= 0L || allocation.targetAllocationPercentage() == null) {
             return;
         }
-        publish(new SessionPlannerPublishedEvent(
-                new SessionPlannerPublishedEvent.SetEncounterAllocationMutation(encounterToken, allocation)));
+        publish(new SessionPlannerPublishedEvent(allocation));
     }
 
-    private void publishEncounterMove(
-            long encounterToken,
-            SessionPlannerTimelineMainViewInputEvent.Direction direction
-    ) {
-        if (encounterToken <= 0L) {
+    private void publishEncounterMove(SessionPlannerTimelineMainViewInputEvent.MoveEncounterInput move) {
+        if (move.encounterToken() <= 0L) {
             return;
         }
-        SessionPlannerPublishedEvent.Direction publishedDirection =
-                direction == SessionPlannerTimelineMainViewInputEvent.Direction.DOWN
-                        ? SessionPlannerPublishedEvent.Direction.DOWN
-                        : SessionPlannerPublishedEvent.Direction.UP;
-        publish(new SessionPlannerPublishedEvent(
-                new SessionPlannerPublishedEvent.MoveEncounterMutation(encounterToken, publishedDirection)));
+        publish(new SessionPlannerPublishedEvent(move));
     }
 
-    private void publishRemoveEncounter(long encounterToken) {
-        if (encounterToken > 0L) {
-            publish(new SessionPlannerPublishedEvent(
-                    new SessionPlannerPublishedEvent.RemoveEncounterMutation(encounterToken)));
+    private void publishRemoveEncounter(SessionPlannerTimelineMainViewInputEvent.RemoveEncounterInput removal) {
+        if (removal.encounterTokenToRemove() > 0L) {
+            publish(new SessionPlannerPublishedEvent(removal));
         }
     }
 
-    private void publishRestGap(
-            long leftEncounterId,
-            long rightEncounterId,
-            SessionPlannerTimelineMainViewInputEvent.RestSelection selection
-    ) {
-        if (!isResolvedGap(leftEncounterId, rightEncounterId)) {
+    private void publishRestGap(SessionPlannerTimelineMainViewInputEvent.RestGapInput restGap) {
+        if (!isResolvedGap(restGap.leftEncounterId(), restGap.rightEncounterId())) {
             return;
         }
-        if (selection == null || selection == SessionPlannerTimelineMainViewInputEvent.RestSelection.NONE) {
-            publish(new SessionPlannerPublishedEvent(
-                    new SessionPlannerPublishedEvent.ClearRestGapMutation(leftEncounterId, rightEncounterId)));
-            return;
-        }
-        SessionPlannerPublishedEvent.RestSelection publishedSelection =
-                selection == SessionPlannerTimelineMainViewInputEvent.RestSelection.LONG_REST
-                        ? SessionPlannerPublishedEvent.RestSelection.LONG_REST
-                        : SessionPlannerPublishedEvent.RestSelection.SHORT_REST;
-        publish(new SessionPlannerPublishedEvent(
-                new SessionPlannerPublishedEvent.SetRestGapMutation(
-                        leftEncounterId,
-                        rightEncounterId,
-                        publishedSelection)));
+        publish(new SessionPlannerPublishedEvent(restGap));
     }
 
     private static boolean isResolvedGap(long leftEncounterId, long rightEncounterId) {

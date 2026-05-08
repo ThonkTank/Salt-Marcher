@@ -87,45 +87,46 @@ final class SessionPlannerBinder {
 
     private static ApplySessionPlannerCommand toCommand(SessionPlannerPublishedEvent.Mutation mutation) {
         return switch (mutation) {
-            case SessionPlannerPublishedEvent.CreateSessionMutation ignored -> ApplySessionPlannerCommand.createSession();
-            case SessionPlannerPublishedEvent.AddParticipantMutation addParticipant ->
-                    ApplySessionPlannerCommand.addParticipant(new SessionPlannerParticipantRef(addParticipant.characterId()));
-            case SessionPlannerPublishedEvent.RemoveParticipantMutation removeParticipant ->
-                    ApplySessionPlannerCommand.removeParticipant(new SessionPlannerParticipantRef(removeParticipant.characterId()));
+            case SessionPlannerControlsViewInputEvent.CreateSessionTrigger ignored ->
+                    ApplySessionPlannerCommand.createSession();
+            case SessionPlannerControlsViewInputEvent.AddParticipantInput addParticipant ->
+                    ApplySessionPlannerCommand.addParticipant(new SessionPlannerParticipantRef(addParticipant.participantToAddId()));
+            case SessionPlannerControlsViewInputEvent.RemoveParticipantInput removeParticipant ->
+                    ApplySessionPlannerCommand.removeParticipant(new SessionPlannerParticipantRef(removeParticipant.participantToRemoveId()));
             case SessionPlannerPublishedEvent.SetEncounterDaysMutation encounterDays ->
                     ApplySessionPlannerCommand.encounterDays(new SetSessionEncounterDaysCommand(encounterDays.encounterDays()));
-            case SessionPlannerPublishedEvent.AttachPlanMutation attachPlan ->
-                    ApplySessionPlannerCommand.attachEncounter(new SessionPlannerEncounterPlanRef(attachPlan.planId()));
-            case SessionPlannerPublishedEvent.RemoveEncounterMutation removeEncounter ->
-                    ApplySessionPlannerCommand.removeEncounter(new SessionPlannerEncounterRef(removeEncounter.encounterToken()));
-            case SessionPlannerPublishedEvent.MoveEncounterMutation moveEncounter ->
-                    moveEncounter.direction() == SessionPlannerPublishedEvent.Direction.DOWN
+            case SessionPlannerControlsViewInputEvent.AttachPlanInput attachPlan ->
+                    ApplySessionPlannerCommand.attachEncounter(new SessionPlannerEncounterPlanRef(attachPlan.planIdToAttach()));
+            case SessionPlannerTimelineMainViewInputEvent.RemoveEncounterInput removeEncounter ->
+                    ApplySessionPlannerCommand.removeEncounter(new SessionPlannerEncounterRef(removeEncounter.encounterTokenToRemove()));
+            case SessionPlannerTimelineMainViewInputEvent.MoveEncounterInput moveEncounter ->
+                    moveEncounter.direction() == SessionPlannerTimelineMainViewInputEvent.Direction.DOWN
                             ? ApplySessionPlannerCommand.moveEncounterDown(new SessionPlannerEncounterRef(moveEncounter.encounterToken()))
                             : ApplySessionPlannerCommand.moveEncounterUp(new SessionPlannerEncounterRef(moveEncounter.encounterToken()));
-            case SessionPlannerPublishedEvent.SelectEncounterMutation selectEncounter ->
-                    ApplySessionPlannerCommand.selectEncounter(new SessionPlannerEncounterRef(selectEncounter.encounterToken()));
-            case SessionPlannerPublishedEvent.SetEncounterAllocationMutation allocation ->
+            case SessionPlannerTimelineMainViewInputEvent.SelectEncounterInput selectEncounter ->
+                    ApplySessionPlannerCommand.selectEncounter(new SessionPlannerEncounterRef(selectEncounter.selectedEncounterToken()));
+            case SessionPlannerTimelineMainViewInputEvent.SetEncounterAllocationInput allocation ->
                     ApplySessionPlannerCommand.allocation(new SessionPlannerEncounterAllocationCommand(
                             allocation.encounterToken(),
-                            allocation.budgetPercentage()));
-            case SessionPlannerPublishedEvent.SetRestGapMutation setRestGap ->
-                    ApplySessionPlannerCommand.restGap(new SessionPlannerRestGapChange(
-                            setRestGap.leftEncounterId(),
-                            setRestGap.rightEncounterId(),
-                            toRestKind(setRestGap.restSelection())));
-            case SessionPlannerPublishedEvent.ClearRestGapMutation clearRestGap ->
-                    ApplySessionPlannerCommand.clearRestGap(new SessionPlannerRestGapRef(
-                            clearRestGap.leftEncounterId(),
-                            clearRestGap.rightEncounterId()));
-            case SessionPlannerPublishedEvent.AddLootPlaceholderMutation ignored ->
+                            allocation.targetAllocationPercentage()));
+            case SessionPlannerTimelineMainViewInputEvent.RestGapInput restGap ->
+                    restGap.restSelection() == SessionPlannerTimelineMainViewInputEvent.RestSelection.NONE
+                            ? ApplySessionPlannerCommand.clearRestGap(new SessionPlannerRestGapRef(
+                                    restGap.leftEncounterId(),
+                                    restGap.rightEncounterId()))
+                            : ApplySessionPlannerCommand.restGap(new SessionPlannerRestGapChange(
+                                    restGap.leftEncounterId(),
+                                    restGap.rightEncounterId(),
+                                    toRestKind(restGap.restSelection())));
+            case SessionPlannerLootMainViewInputEvent.AddLootPlaceholderTrigger ignored ->
                     ApplySessionPlannerCommand.addLootPlaceholder();
-            case SessionPlannerPublishedEvent.RemoveLootPlaceholderMutation removeLoot ->
+            case SessionPlannerLootMainViewInputEvent.RemoveLootPlaceholderInput removeLoot ->
                     ApplySessionPlannerCommand.removeLoot(new SessionPlannerLootRef(removeLoot.lootToken()));
         };
     }
 
-    private static SessionPlannerRestKind toRestKind(SessionPlannerPublishedEvent.RestSelection selection) {
-        return switch (selection == null ? SessionPlannerPublishedEvent.RestSelection.NONE : selection) {
+    private static SessionPlannerRestKind toRestKind(SessionPlannerTimelineMainViewInputEvent.RestSelection selection) {
+        return switch (selection == null ? SessionPlannerTimelineMainViewInputEvent.RestSelection.NONE : selection) {
             case NONE -> SessionPlannerRestKind.NONE;
             case SHORT_REST -> SessionPlannerRestKind.SHORT_REST;
             case LONG_REST -> SessionPlannerRestKind.LONG_REST;

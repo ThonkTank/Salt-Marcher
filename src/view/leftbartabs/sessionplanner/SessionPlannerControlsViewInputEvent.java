@@ -2,40 +2,44 @@ package src.view.leftbartabs.sessionplanner;
 
 import java.util.Objects;
 
-public record SessionPlannerControlsViewInputEvent(Interaction interaction) {
+public record SessionPlannerControlsViewInputEvent(ControlsInput controlsInput) {
 
     public SessionPlannerControlsViewInputEvent {
-        Objects.requireNonNull(interaction, "interaction");
+        Objects.requireNonNull(controlsInput, "controlsInput");
     }
 
-    public sealed interface Interaction permits CreateSessionInput, AddParticipantInput, RemoveParticipantInput,
+    public sealed interface ControlsInput permits CreateSessionTrigger, AddParticipantInput, RemoveParticipantInput,
             SetEncounterDaysInput, AttachPlanInput {
     }
 
-    public record CreateSessionInput() implements Interaction {
+    public enum CreateSessionTrigger implements ControlsInput, SessionPlannerPublishedEvent.Mutation {
+        CREATE_SESSION
     }
 
-    public record AddParticipantInput(long characterId) implements Interaction {
+    public record AddParticipantInput(long participantToAddId)
+            implements ControlsInput, SessionPlannerPublishedEvent.Mutation {
         public AddParticipantInput {
-            characterId = Math.max(0L, characterId);
+            participantToAddId = Math.max(0L, participantToAddId);
         }
     }
 
-    public record RemoveParticipantInput(long characterId) implements Interaction {
+    public record RemoveParticipantInput(long participantToRemoveId)
+            implements ControlsInput, SessionPlannerPublishedEvent.Mutation {
         public RemoveParticipantInput {
-            characterId = Math.max(0L, characterId);
+            participantToRemoveId = Math.max(0L, participantToRemoveId);
         }
     }
 
-    public record SetEncounterDaysInput(String encounterDaysText) implements Interaction {
+    public record SetEncounterDaysInput(String encounterDaysText) implements ControlsInput {
         public SetEncounterDaysInput {
             encounterDaysText = encounterDaysText == null ? "" : encounterDaysText.trim();
         }
     }
 
-    public record AttachPlanInput(long selectedPlanId) implements Interaction {
+    public record AttachPlanInput(long planIdToAttach)
+            implements ControlsInput, SessionPlannerPublishedEvent.Mutation {
         public AttachPlanInput {
-            selectedPlanId = Math.max(0L, selectedPlanId);
+            planIdToAttach = Math.max(0L, planIdToAttach);
         }
     }
 }

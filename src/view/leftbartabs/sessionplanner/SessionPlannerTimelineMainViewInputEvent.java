@@ -3,26 +3,27 @@ package src.view.leftbartabs.sessionplanner;
 import java.math.BigDecimal;
 import java.util.Objects;
 
-public record SessionPlannerTimelineMainViewInputEvent(Interaction interaction) {
+public record SessionPlannerTimelineMainViewInputEvent(TimelineInput timelineInput) {
 
     public SessionPlannerTimelineMainViewInputEvent {
-        Objects.requireNonNull(interaction, "interaction");
+        Objects.requireNonNull(timelineInput, "timelineInput");
     }
 
-    public sealed interface Interaction permits SelectEncounterInput, SetEncounterAllocationInput, MoveEncounterInput,
+    public sealed interface TimelineInput permits SelectEncounterInput, SetEncounterAllocationInput, MoveEncounterInput,
             RemoveEncounterInput, RestGapInput {
     }
 
-    public record SelectEncounterInput(long encounterToken) implements Interaction {
+    public record SelectEncounterInput(long selectedEncounterToken)
+            implements TimelineInput, SessionPlannerPublishedEvent.Mutation {
         public SelectEncounterInput {
-            encounterToken = Math.max(0L, encounterToken);
+            selectedEncounterToken = Math.max(0L, selectedEncounterToken);
         }
     }
 
     public record SetEncounterAllocationInput(
             long encounterToken,
             BigDecimal targetAllocationPercentage
-    ) implements Interaction {
+    ) implements TimelineInput, SessionPlannerPublishedEvent.Mutation {
         public SetEncounterAllocationInput {
             encounterToken = Math.max(0L, encounterToken);
             targetAllocationPercentage = targetAllocationPercentage == null
@@ -34,16 +35,17 @@ public record SessionPlannerTimelineMainViewInputEvent(Interaction interaction) 
     public record MoveEncounterInput(
             long encounterToken,
             Direction direction
-    ) implements Interaction {
+    ) implements TimelineInput, SessionPlannerPublishedEvent.Mutation {
         public MoveEncounterInput {
             encounterToken = Math.max(0L, encounterToken);
             direction = direction == null ? Direction.UP : direction;
         }
     }
 
-    public record RemoveEncounterInput(long encounterToken) implements Interaction {
+    public record RemoveEncounterInput(long encounterTokenToRemove)
+            implements TimelineInput, SessionPlannerPublishedEvent.Mutation {
         public RemoveEncounterInput {
-            encounterToken = Math.max(0L, encounterToken);
+            encounterTokenToRemove = Math.max(0L, encounterTokenToRemove);
         }
     }
 
@@ -51,7 +53,7 @@ public record SessionPlannerTimelineMainViewInputEvent(Interaction interaction) 
             long leftEncounterId,
             long rightEncounterId,
             RestSelection restSelection
-    ) implements Interaction {
+    ) implements TimelineInput, SessionPlannerPublishedEvent.Mutation {
         public RestGapInput {
             leftEncounterId = Math.max(0L, leftEncounterId);
             rightEncounterId = Math.max(0L, rightEncounterId);

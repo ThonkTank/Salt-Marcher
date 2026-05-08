@@ -48,7 +48,7 @@ public final class SessionPlannerLootMainView extends VBox {
         Button addButton = new StyledButton("Loot-Platzhalter", "compact", "accent");
         addButton.setOnAction(event -> viewInputEventHandler.accept(
                 new SessionPlannerLootMainViewInputEvent(
-                        new SessionPlannerLootMainViewInputEvent.AddLootPlaceholderInput())));
+                        SessionPlannerLootMainViewInputEvent.AddLootPlaceholderTrigger.ADD_LOOT_PLACEHOLDER)));
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
         HBox row = new HBox(8, header, spacer, addButton);
