@@ -36,7 +36,7 @@ public final class PassiveViewCallbackSeamBoundaryChecker extends BugChecker
         }
 
         if (ViewArchitectureSupport.isPrimitiveViewSource(tree)) {
-            return Description.NO_MATCH;
+            return matchPrimitiveView(tree, topLevelClass);
         }
 
         String sourcePackageName = ViewArchitectureSupport.packageName(tree);
@@ -98,6 +98,79 @@ public final class PassiveViewCallbackSeamBoundaryChecker extends BugChecker
             return;
         }
         violations.add(variableTree.getName() + " field");
+    }
+
+    private Description matchPrimitiveView(CompilationUnitTree tree, ClassTree topLevelClass) {
+        String sourcePackageName = ViewArchitectureSupport.packageName(tree);
+        String viewSimpleName = ViewArchitectureSupport.topLevelSimpleName(tree);
+        String qualifiedViewName = sourcePackageName.isBlank()
+                ? viewSimpleName
+                : sourcePackageName + "." + viewSimpleName;
+        Set<String> violations = new LinkedHashSet<>();
+        for (var member : topLevelClass.getMembers()) {
+            if (member instanceof MethodTree methodTree) {
+                collectPrimitiveMethodViolation(methodTree, sourcePackageName, viewSimpleName, violations);
+            } else if (member instanceof VariableTree variableTree) {
+                collectPrimitiveFieldViolation(variableTree, sourcePackageName, viewSimpleName, violations);
+            }
+        }
+        if (violations.isEmpty()) {
+            return Description.NO_MATCH;
+        }
+        return buildDescription(topLevelClass)
+                .setMessage("Technical primitive View '" + qualifiedViewName
+                        + "' exposes non-technical callback or result seams "
+                        + String.join(", ", violations)
+                        + ". slotcontent/primitives/** may use only JavaFX technical callback/listener seams or Consumer<same-unit *PointerEvent/*Scene/*Signal/*Support> style technical carriers.")
+                .build();
+    }
+
+    private static void collectPrimitiveMethodViolation(
+            MethodTree methodTree,
+            String sourcePackageName,
+            String viewSimpleName,
+            Set<String> violations
+    ) {
+        if (!isOutwardVisible(methodTree.getModifiers())) {
+            return;
+        }
+        if (methodTree.getReturnType() != null
+                && ViewArchitectureSupport.isCallbackOrResultProtocolType(ASTHelpers.getType(methodTree.getReturnType()))
+                && !ViewArchitectureSupport.isAllowedTechnicalPrimitiveProtocolType(
+                ASTHelpers.getType(methodTree.getReturnType()),
+                sourcePackageName,
+                viewSimpleName)) {
+            violations.add(methodTree.getName() + "(" + methodTree.getParameters().size() + ")");
+            return;
+        }
+        for (VariableTree parameter : methodTree.getParameters()) {
+            if (ViewArchitectureSupport.isCallbackOrResultProtocolType(ASTHelpers.getType(parameter.getType()))
+                    && !ViewArchitectureSupport.isAllowedTechnicalPrimitiveProtocolType(
+                    ASTHelpers.getType(parameter.getType()),
+                    sourcePackageName,
+                    viewSimpleName)) {
+                violations.add(methodTree.getName() + "(" + methodTree.getParameters().size() + ")");
+                return;
+            }
+        }
+    }
+
+    private static void collectPrimitiveFieldViolation(
+            VariableTree variableTree,
+            String sourcePackageName,
+            String viewSimpleName,
+            Set<String> violations
+    ) {
+        if (!isOutwardVisible(variableTree.getModifiers())) {
+            return;
+        }
+        if (ViewArchitectureSupport.isCallbackOrResultProtocolType(ASTHelpers.getType(variableTree.getType()))
+                && !ViewArchitectureSupport.isAllowedTechnicalPrimitiveProtocolType(
+                ASTHelpers.getType(variableTree.getType()),
+                sourcePackageName,
+                viewSimpleName)) {
+            violations.add(variableTree.getName() + " field");
+        }
     }
 
     private static boolean containsProtocolParameter(MethodTree methodTree, String sourcePackageName) {

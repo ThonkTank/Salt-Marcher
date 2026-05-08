@@ -91,4 +91,35 @@ public final class TechnicalPrimitiveViewBoundaryCheckerTest {
                         "final class FooContentModel { }")
                 .doTest();
     }
+
+    @Test
+    public void rejectsGenericJdkCallbackProtocolWithoutTechnicalCarrierRoot() {
+        compilationHelper
+                .addSourceLines(
+                        "src/view/slotcontent/primitives/foo/FooView.java",
+                        "package src.view.slotcontent.primitives.foo;",
+                        "import java.util.function.Consumer;",
+                        "final class FooView {",
+                        "  // BUG: Diagnostic contains: java.util.function.Consumer<java.lang.String>",
+                        "  void onPointer(Consumer<String> handler) { }",
+                        "}")
+                .doTest();
+    }
+
+    @Test
+    public void rejectsApplicationServiceBoundaryTypeOnPrimitiveBoundary() {
+        compilationHelper
+                .addSourceLines(
+                        "src/view/slotcontent/primitives/foo/FooView.java",
+                        "package src.view.slotcontent.primitives.foo;",
+                        "final class FooView {",
+                        "  // BUG: Diagnostic contains: src.domain.foo.FooApplicationService",
+                        "  private src.domain.foo.FooApplicationService applicationService;",
+                        "}")
+                .addSourceLines(
+                        "src/domain/foo/FooApplicationService.java",
+                        "package src.domain.foo;",
+                        "public final class FooApplicationService { }")
+                .doTest();
+    }
 }

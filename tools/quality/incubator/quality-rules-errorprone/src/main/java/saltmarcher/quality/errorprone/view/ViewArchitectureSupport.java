@@ -64,6 +64,11 @@ public final class ViewArchitectureSupport {
             "java.lang.ThreadGroup",
             "java.util.Timer",
             "java.util.TimerTask");
+    private static final Set<String> PRIMITIVE_SUPPORT_VALUE_SUFFIXES = Set.of(
+            "PointerEvent",
+            "Scene",
+            "Signal",
+            "Support");
     private ViewArchitectureSupport() {
     }
 
@@ -357,8 +362,7 @@ public final class ViewArchitectureSupport {
             if (topLevelSimpleName.endsWith("InspectorEntry")) {
                 return new ViewTypeInfo(segments[1], "INSPECTOR_ENTRY");
             }
-            if (topLevelSimpleName.endsWith("CanvasPointerEvent")
-                    || topLevelSimpleName.endsWith("MapRenderScene")) {
+            if ("primitives".equals(segments[1]) && hasPrimitiveSupportValueSuffix(topLevelSimpleName)) {
                 return new ViewTypeInfo(segments[1], "SUPPORT_VALUE");
             }
             return new ViewTypeInfo(segments[1], "VIEW");
@@ -444,6 +448,10 @@ public final class ViewArchitectureSupport {
     public static boolean isSupportValueReference(String referencedType) {
         ViewTypeInfo viewType = parseViewType(referencedType);
         return viewType != null && "SUPPORT_VALUE".equals(viewType.bucket());
+    }
+
+    private static boolean hasPrimitiveSupportValueSuffix(String topLevelSimpleName) {
+        return PRIMITIVE_SUPPORT_VALUE_SUFFIXES.stream().anyMatch(topLevelSimpleName::endsWith);
     }
 
     public static boolean isDetailEntryViewReference(String referencedType) {

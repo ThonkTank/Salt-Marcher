@@ -3,40 +3,27 @@ package saltmarcher.quality.pmd.view.layer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.regex.Pattern;
 import net.sourceforge.pmd.lang.java.ast.ASTCompilationUnit;
 import net.sourceforge.pmd.lang.java.rule.AbstractJavaRule;
 import saltmarcher.quality.pmd.support.SaltMarcherSourceFacts;
 
 public final class ViewRefactorCandidateRule extends AbstractJavaRule {
 
-    private static final String MAP_CANVAS_VIEW_PATH =
-            "src/view/slotcontent/primitives/mapcanvas/MapCanvasView.java";
-
     private static final Set<String> PHASE_SEAMS = Set.of(
             "onPrimaryPressed(",
             "onPrimaryDragged(",
             "onPrimaryReleased(",
             "onPointerMoved(");
-
-    private static final Set<String> HIT_STAGES = Set.of(
-            "actorHit(",
-            "glyphHit(",
-            "textHit(",
-            "boundaryHit(",
-            "relationHit(");
-
-    private static final Set<String> DRAW_STAGES = Set.of(
-            "drawSurface(",
-            "drawBoundaries(",
-            "drawRelations(",
-            "drawGlyphs(",
-            "drawTexts(",
-            "drawOverlays(");
+    private static final Pattern PRIMITIVE_VIEW_PATH = Pattern.compile(
+            "^src/view/slotcontent/primitives/[^/]+/[^/]+View\\.java$");
+    private static final Pattern HIT_STAGE_PATTERN = Pattern.compile("\\b(?:hit[A-Z]\\w*|[A-Za-z]+Hit)\\s*\\(");
+    private static final Pattern DRAW_STAGE_PATTERN = Pattern.compile("\\bdraw[A-Z]\\w*\\s*\\(");
 
     @Override
     public Object visit(ASTCompilationUnit node, Object data) {
         SaltMarcherSourceFacts sourceFacts = SaltMarcherSourceFacts.from(node);
-        if (!MAP_CANVAS_VIEW_PATH.equals(sourceFacts.relativePath())) {
+        if (!PRIMITIVE_VIEW_PATH.matcher(sourceFacts.relativePath()).matches()) {
             return data;
         }
 
@@ -45,10 +32,10 @@ public final class ViewRefactorCandidateRule extends AbstractJavaRule {
         if (countMatches(sourceText, PHASE_SEAMS) >= 3) {
             findings.add("phase-specific outward pointer seams");
         }
-        if (countMatches(sourceText, HIT_STAGES) >= 4) {
+        if (countPatternMatches(sourceText, HIT_STAGE_PATTERN) >= 4) {
             findings.add("view-local hit-priority reconstruction");
         }
-        if (countMatches(sourceText, DRAW_STAGES) >= 4) {
+        if (countPatternMatches(sourceText, DRAW_STAGE_PATTERN) >= 4) {
             findings.add("view-local scene draw staging");
         }
         if (findings.isEmpty()) {
@@ -59,8 +46,8 @@ public final class ViewRefactorCandidateRule extends AbstractJavaRule {
                 node,
                 "Shared view primitive refactor candidate '" + sourceFacts.relativePath() + "': "
                         + String.join(", ", findings)
-                        + ". Prefer one technical canvas event seam, keep the View limited to viewport/render/raw-hit execution,"
-                        + " and move primitive ordering, hit priority, prepared geometry, and scene assembly into MapRenderScene"
+                        + ". Prefer one technical primitive seam, keep the View limited to raw technical rendering/input execution,"
+                        + " and move primitive ordering, hit priority, prepared geometry, and scene assembly into same-unit technical carriers"
                         + " plus the owning ContentModel or upstream read-side projection.");
         return data;
     }
@@ -71,6 +58,15 @@ public final class ViewRefactorCandidateRule extends AbstractJavaRule {
             if (sourceText.contains(probe)) {
                 matches++;
             }
+        }
+        return matches;
+    }
+
+    private static int countPatternMatches(String sourceText, Pattern pattern) {
+        int matches = 0;
+        var matcher = pattern.matcher(sourceText);
+        while (matcher.find()) {
+            matches++;
         }
         return matches;
     }

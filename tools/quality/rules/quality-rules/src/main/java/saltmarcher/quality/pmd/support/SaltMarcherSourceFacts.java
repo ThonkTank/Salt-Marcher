@@ -15,6 +15,11 @@ import net.sourceforge.pmd.lang.document.TextDocument;
 import net.sourceforge.pmd.lang.java.ast.ASTCompilationUnit;
 
 public final class SaltMarcherSourceFacts {
+    private static final Set<String> PRIMITIVE_SUPPORT_VALUE_SUFFIXES = Set.of(
+            "PointerEvent",
+            "Scene",
+            "Signal",
+            "Support");
 
     static final Pattern REGISTRATION_SPEC_METHOD_PATTERN =
             Pattern.compile("\\bShellContributionSpec\\s+registrationSpec\\s*\\(\\s*\\)");
@@ -104,7 +109,7 @@ public final class SaltMarcherSourceFacts {
     }
 
     public boolean isViewSupportModelSource() {
-        return isSharedMapCanvasCarrierSource();
+        return isPrimitiveSupportValueSource();
     }
 
     public boolean isViewIntentHandlerSource() {
@@ -171,13 +176,12 @@ public final class SaltMarcherSourceFacts {
                 && Set.of("controls", "main", "state", "details", "topbar", "primitives").contains(segments.get(3));
     }
 
-    private boolean isSharedMapCanvasCarrierSource() {
+    private boolean isPrimitiveSupportValueSource() {
         return isViewSource()
                 && segments.size() == 6
                 && "slotcontent".equals(segments.get(2))
                 && "primitives".equals(segments.get(3))
-                && "mapcanvas".equals(segments.get(4))
-                && Set.of("MapRenderScene.java", "CanvasPointerEvent.java").contains(fileName);
+                && PRIMITIVE_SUPPORT_VALUE_SUFFIXES.stream().anyMatch(simpleName::endsWith);
     }
 
     private boolean isDiscoverableViewContributionArea() {

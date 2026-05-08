@@ -129,6 +129,15 @@ public final class TechnicalPrimitiveViewBoundaryChecker extends BugChecker
         if (typeMirror == null) {
             return forbiddenTypes;
         }
+        if (ViewArchitectureSupport.isCallbackOrResultProtocolType(typeMirror)) {
+            if (!ViewArchitectureSupport.isAllowedTechnicalPrimitiveProtocolType(
+                    typeMirror,
+                    sourcePackageName,
+                    viewSimpleName)) {
+                forbiddenTypes.add(typeMirror.toString());
+            }
+            return forbiddenTypes;
+        }
         for (String referencedType : ViewArchitectureSupport.collectTypeReferences(typeMirror)) {
             if (isAllowedTechnicalPrimitiveReference(referencedType, sourcePackageName, viewSimpleName)) {
                 continue;

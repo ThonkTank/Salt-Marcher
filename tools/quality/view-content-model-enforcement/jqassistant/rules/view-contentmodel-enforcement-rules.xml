@@ -18,7 +18,7 @@
             SET
               type:SaltMarcher:ViewLayerType,
               type.viewBucket = CASE
-                WHEN size(segments) >= 6 AND segments[2] = 'slotcontent' AND segments[3] = 'primitives' AND segments[4] = 'mapcanvas' AND (sourceFileName ENDS WITH 'MapRenderScene.java' OR sourceFileName ENDS WITH 'CanvasPointerEvent.java') THEN 'SUPPORT_VALUE'
+                WHEN size(segments) >= 6 AND segments[2] = 'slotcontent' AND segments[3] = 'primitives' AND (sourceFileName ENDS WITH 'PointerEvent.java' OR sourceFileName ENDS WITH 'Scene.java' OR sourceFileName ENDS WITH 'Signal.java' OR sourceFileName ENDS WITH 'Support.java') THEN 'SUPPORT_VALUE'
                 WHEN size(segments) >= 6 AND segments[2] = 'slotcontent' AND (sourceFileName ENDS WITH 'ViewModel.java' OR sourceFileName ENDS WITH 'PresentationModel.java' OR sourceFileName ENDS WITH 'ContentModel.java' OR sourceFileName ENDS WITH 'ContributionModel.java') THEN 'MODEL'
                 WHEN size(segments) >= 6 AND segments[2] = 'slotcontent' AND sourceFileName ENDS WITH 'IntentHandler.java' THEN 'HANDLER'
                 WHEN size(segments) >= 6 AND segments[2] = 'slotcontent' AND sourceFileName ENDS WITH 'ViewInputEvent.java' THEN 'VIEW_INPUT_EVENT'

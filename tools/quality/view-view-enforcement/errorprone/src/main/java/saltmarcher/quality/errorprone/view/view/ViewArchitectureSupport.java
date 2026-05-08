@@ -479,6 +479,20 @@ final class ViewArchitectureSupport {
         return referencedTypes.stream().anyMatch(ViewArchitectureSupport::isKnownAsyncProtocolType);
     }
 
+    static boolean isAllowedTechnicalPrimitiveProtocolType(
+            TypeMirror typeMirror,
+            String sourcePackageName,
+            String viewSimpleName
+    ) {
+        if (typeMirror == null) {
+            return false;
+        }
+        if (isConsumerOfSameUnitPrimitiveCarrier(typeMirror, sourcePackageName, viewSimpleName)) {
+            return true;
+        }
+        return isKnownJavafxTechnicalProtocolType(typeMirror);
+    }
+
     static boolean isObservableReadSurfaceType(TypeMirror typeMirror) {
         if (typeMirror == null) {
             return false;
@@ -529,6 +543,63 @@ final class ViewArchitectureSupport {
         return referencedType.equals("java.util.concurrent.Future")
                 || referencedType.equals("java.util.concurrent.CompletableFuture")
                 || referencedType.equals("java.util.concurrent.CompletionStage");
+    }
+
+    private static boolean isKnownJavafxTechnicalProtocolType(TypeMirror typeMirror) {
+        if (!isCallbackSurfaceType(typeMirror)) {
+            return false;
+        }
+        boolean referencesJavafxCallbackSurface = false;
+        for (String referencedType : collectTypeReferences(typeMirror)) {
+            if (isKnownCallbackSurfaceType(referencedType)) {
+                referencesJavafxCallbackSurface = true;
+                continue;
+            }
+            if (referencedType.startsWith("java.")
+                    || referencedType.startsWith("javafx.")
+                    || referencedType.startsWith("org.jspecify.annotations.")) {
+                continue;
+            }
+            return false;
+        }
+        return referencesJavafxCallbackSurface;
+    }
+
+    private static boolean isConsumerOfSameUnitPrimitiveCarrier(
+            TypeMirror typeMirror,
+            String sourcePackageName,
+            String viewSimpleName
+    ) {
+        if (!(typeMirror instanceof DeclaredType declaredType)) {
+            return false;
+        }
+        Element element = declaredType.asElement();
+        if (!(element instanceof TypeElement typeElement)
+                || !"java.util.function.Consumer".contentEquals(typeElement.getQualifiedName())
+                || declaredType.getTypeArguments().size() != 1) {
+            return false;
+        }
+        return isSameUnitPrimitiveCarrierType(
+                declaredType.getTypeArguments().get(0),
+                sourcePackageName,
+                viewSimpleName);
+    }
+
+    private static boolean isSameUnitPrimitiveCarrierType(
+            TypeMirror typeMirror,
+            String sourcePackageName,
+            String viewSimpleName
+    ) {
+        if (!(typeMirror instanceof DeclaredType declaredType)) {
+            return false;
+        }
+        Element element = declaredType.asElement();
+        if (!(element instanceof TypeElement typeElement)) {
+            return false;
+        }
+        String referencedType = typeElement.getQualifiedName().toString();
+        return isOwnTopLevelOrNestedTypeReference(sourcePackageName, viewSimpleName, referencedType)
+                || (isSupportValueReference(referencedType) && packageNameOf(referencedType).equals(sourcePackageName));
     }
 
     private static boolean isJavaLangObjectMethod(ExecutableElement method) {
