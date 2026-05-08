@@ -152,11 +152,10 @@ public final class EncounterStateContributionModel {
         }
     }
 
-    public record SavedEncounterPlanView(long id, String name, String generatedLabel, int creatureCount) {
+    public record SavedEncounterPlanView(long id, String name, String summaryText) {
         public SavedEncounterPlanView {
             name = name == null ? "" : name.trim();
-            generatedLabel = generatedLabel == null ? "" : generatedLabel.trim();
-            creatureCount = Math.max(0, creatureCount);
+            summaryText = summaryText == null ? "" : summaryText.trim();
         }
     }
 
@@ -395,12 +394,11 @@ public final class EncounterStateContributionModel {
                 safeSource.partySize());
     }
 
-    private static SavedEncounterPlanView toSavedPlan(EncounterStateSnapshot.PlanChoice plan) {
+    private static SavedEncounterPlanView toSavedPlan(src.domain.encounter.published.SavedEncounterPlanChoice plan) {
         return new SavedEncounterPlanView(
                 plan.planId(),
-                plan.displayName(),
-                plan.generatedName(),
-                plan.totalCreatureCount());
+                plan.name(),
+                plan.summaryText());
     }
 
     private static RosterCardView toRosterCard(EncounterStateSnapshot.RosterCard creature) {

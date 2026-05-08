@@ -50,6 +50,10 @@ Before editing a view surface:
 10. Only after that ownership check may you use nested/private helper types as
     a local cleanup tactic; do not default to new top-level helper files under
     `src/view/**`.
+11. When touching `slotcontent/primitives/**`, require an explicit technical
+    role signal for every top-level file: exactly one `*View.java` root plus
+    only same-unit technical `*PointerEvent.java`, `*Scene.java`,
+    `*Signal.java`, or `*Support.java` carriers.
 
 When reviewing view-layer changes:
 
@@ -72,6 +76,8 @@ When reviewing view-layer changes:
    `Model/`, `Controller/`, or `interactor/` buckets as findings.
 9. Treat PMD-driven helper splits as findings when the real missing owner is
    the co-located model or the upstream readback path.
+10. Treat any new top-level file under `slotcontent/primitives/**` without one
+    of the explicit technical role suffixes as a finding.
 
 ## Placement Heuristics
 
@@ -109,6 +115,8 @@ When reviewing view-layer changes:
   state
 - shared technical primitives that grow several phase-specific outward seams or
   reconstruct scene/hit preparation locally instead of staying technical
+- top-level helper files under `slotcontent/primitives/**` that rely on name
+  drift instead of an explicit technical role suffix
 
 ## Correctness Rule
 

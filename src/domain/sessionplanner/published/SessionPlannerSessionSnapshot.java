@@ -126,8 +126,7 @@ public record SessionPlannerSessionSnapshot(
     public record AvailableEncounterPlan(
             long planId,
             String name,
-            String generatedLabel,
-            int creatureCount,
+            String summaryText,
             int adjustedXp,
             String difficultyLabel,
             String statusText,
@@ -137,8 +136,7 @@ public record SessionPlannerSessionSnapshot(
         public AvailableEncounterPlan {
             planId = Math.max(0L, planId);
             name = name == null ? "" : name.trim();
-            generatedLabel = generatedLabel == null ? "" : generatedLabel.trim();
-            creatureCount = Math.max(0, creatureCount);
+            summaryText = summaryText == null ? "" : summaryText.trim();
             adjustedXp = Math.max(0, adjustedXp);
             difficultyLabel = difficultyLabel == null ? "" : difficultyLabel.trim();
             statusText = statusText == null ? "" : statusText.trim();

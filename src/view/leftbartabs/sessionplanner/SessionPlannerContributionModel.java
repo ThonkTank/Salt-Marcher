@@ -198,8 +198,7 @@ record ControlsProjection(
         return new AvailablePlanModel(
                 plan.planId(),
                 plan.name(),
-                plan.generatedLabel(),
-                plan.creatureCount(),
+                plan.summaryText(),
                 plan.adjustedXp(),
                 plan.difficultyLabel(),
                 plan.statusText(),
@@ -344,8 +343,7 @@ record ControlsProjection(
     record AvailablePlanModel(
             long planId,
             String name,
-            String generatedLabel,
-            int creatureCount,
+            String summaryText,
             int adjustedXp,
             String difficultyLabel,
             String statusText,
@@ -354,7 +352,7 @@ record ControlsProjection(
 
         AvailablePlanModel {
             name = safeText(name);
-            generatedLabel = safeText(generatedLabel);
+            summaryText = safeText(summaryText);
             difficultyLabel = safeText(difficultyLabel);
             statusText = safeText(statusText);
         }

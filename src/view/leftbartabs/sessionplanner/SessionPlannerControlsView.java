@@ -342,11 +342,7 @@ public final class SessionPlannerControlsView extends ScrollPane {
             Factory.addStyles(card, "session-planner-plan-card");
             children.addAll(
                     Factory.createLabel(plan.name(), false, "session-planner-plan-name"),
-                    Factory.createLabel(
-                            plan.creatureCount() + " Kreaturen"
-                                    + (plan.generatedLabel().isBlank() ? "" : " · " + plan.generatedLabel()),
-                            true,
-                            STYLE_TEXT_SECONDARY),
+                    Factory.createLabel(plan.summaryText(), true, STYLE_TEXT_SECONDARY),
                     Factory.createLabel(plan.statusText(), true, STYLE_TEXT_SECONDARY),
                     importButton);
             return card;

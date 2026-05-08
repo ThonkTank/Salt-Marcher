@@ -27,9 +27,9 @@ bands, generator tuning, budget summaries, generated encounter results,
 encounter creature entries, saved encounter-plan commands and queries, saved
 plan summaries, and status vocabulary.
 
-Saved encounter plans publish only creature identity, quantity, display name,
-and generated label. Creature details remain owned by the creatures context
-and are reloaded when a saved plan is opened.
+Saved encounter plans publish only thin chooser display language plus
+planner-facing budget reads. Creature details remain owned by the creatures
+context and are reloaded when a saved plan is opened.
 
 ## Application Boundary
 

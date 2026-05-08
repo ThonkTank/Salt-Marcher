@@ -23,15 +23,13 @@ public interface SessionEncounterFactsLookup {
     record SavedEncounterPlanFact(
             long planId,
             String name,
-            String generatedLabel,
-            int creatureCount
+            String summaryText
     ) {
 
         public SavedEncounterPlanFact {
             planId = Math.max(0L, planId);
             name = name == null ? "" : name.trim();
-            generatedLabel = generatedLabel == null ? "" : generatedLabel.trim();
-            creatureCount = Math.max(0, creatureCount);
+            summaryText = summaryText == null ? "" : summaryText.trim();
         }
     }
 

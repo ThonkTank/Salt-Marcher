@@ -1,7 +1,6 @@
 package saltmarcher.quality.errorprone.view.view;
 
 import com.google.errorprone.BugPattern;
-import com.google.errorprone.ErrorProneFlags;
 import com.google.errorprone.VisitorState;
 import com.google.errorprone.bugpatterns.BugChecker;
 import com.google.errorprone.matchers.Description;
@@ -10,10 +9,8 @@ import com.sun.source.tree.ClassTree;
 import com.sun.source.tree.CompilationUnitTree;
 import com.sun.source.tree.Tree;
 import com.sun.source.tree.VariableTree;
-import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.Set;
-import java.util.stream.Collectors;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.type.TypeMirror;
 
@@ -23,20 +20,6 @@ import javax.lang.model.type.TypeMirror;
         severity = BugPattern.SeverityLevel.ERROR)
 public final class PassiveViewLocalStateBoundaryChecker extends BugChecker
         implements BugChecker.CompilationUnitTreeMatcher {
-
-    private static final String TECHNICAL_BASE_VIEWS_FLAG = "PassiveViewLocalStateBoundary:TechnicalBaseViews";
-
-    private final Set<String> technicalBaseViews;
-
-    public PassiveViewLocalStateBoundaryChecker() {
-        this(ErrorProneFlags.empty());
-    }
-
-    public PassiveViewLocalStateBoundaryChecker(ErrorProneFlags flags) {
-        this.technicalBaseViews = flags.get(TECHNICAL_BASE_VIEWS_FLAG)
-                .map(PassiveViewLocalStateBoundaryChecker::parseAllowlist)
-                .orElseGet(Set::of);
-    }
 
     @Override
     public Description matchCompilationUnit(CompilationUnitTree tree, VisitorState state) {
@@ -49,12 +32,13 @@ public final class PassiveViewLocalStateBoundaryChecker extends BugChecker
             return Description.NO_MATCH;
         }
 
+        if (ViewArchitectureSupport.isPrimitiveViewSource(tree)) {
+            return Description.NO_MATCH;
+        }
+
         String sourcePackageName = ViewArchitectureSupport.packageName(tree);
         String viewSimpleName = ViewArchitectureSupport.topLevelSimpleName(tree);
         String qualifiedViewName = ViewArchitectureSupport.qualifiedTopLevelTypeName(tree);
-        if (technicalBaseViews.contains(qualifiedViewName)) {
-            return Description.NO_MATCH;
-        }
 
         Tree[] firstViolationTree = {null};
         Set<String> violations = new LinkedHashSet<>();
@@ -228,12 +212,5 @@ public final class PassiveViewLocalStateBoundaryChecker extends BugChecker
         }
         return referencedType.startsWith(qualifiedViewName + "$")
                 || referencedType.startsWith(qualifiedViewName + ".");
-    }
-
-    private static Set<String> parseAllowlist(String value) {
-        return Arrays.stream(value.split(","))
-                .map(String::trim)
-                .filter(entry -> !entry.isEmpty())
-                .collect(Collectors.toUnmodifiableSet());
     }
 }

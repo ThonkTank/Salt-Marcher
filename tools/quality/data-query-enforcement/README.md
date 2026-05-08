@@ -11,13 +11,14 @@ It keeps the full query-role proof route in one package:
   `DataQueryGatewayCollaboratorBoundary`,
   `DataQueryGatewayMutationBoundary`, and
   `DataQueryForeignPublishedReplyChannelRoundTrip`
+- `build-harness/`
+  `DataQueryForeignPublishedPayloadSurfaceRules` and
+  `DataQueryEnforcementDocumentationRules`
 - `pmd/`
   `DataQueryNoSourceMechanicsRule`,
   `DataQueryReadOnlySourceShapeRule`,
   `DataQueryForeignPublishedCarrierCandidateRule`,
   and the dedicated bundle-local PMD ruleset
-- `build-harness/`
-  `DataQueryEnforcementDocumentationRules`
 - `bundle.properties`
   descriptor-based registration into the focused-enforcement Gradle path
 

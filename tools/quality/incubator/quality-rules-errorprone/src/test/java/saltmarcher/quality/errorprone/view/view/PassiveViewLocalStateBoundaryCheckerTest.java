@@ -1,7 +1,6 @@
 package saltmarcher.quality.errorprone.view.view;
 
 import com.google.errorprone.CompilationTestHelper;
-import java.util.List;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -46,11 +45,8 @@ public final class PassiveViewLocalStateBoundaryCheckerTest {
     }
 
     @Test
-    public void allowsTechnicalBasePrimitiveViewViaFlag() {
-        CompilationTestHelper.newInstance(PassiveViewLocalStateBoundaryChecker.class, getClass())
-                .setArgs(List.of(
-                        "-XepOpt:PassiveViewLocalStateBoundary:TechnicalBaseViews="
-                                + "src.view.slotcontent.primitives.mapcanvas.MapCanvasView"))
+    public void allowsTechnicalPrimitiveViewViaPathSignal() {
+        compilationHelper
                 .addSourceLines(
                         "src/view/slotcontent/primitives/mapcanvas/MapCanvasView.java",
                         "package src.view.slotcontent.primitives.mapcanvas;",

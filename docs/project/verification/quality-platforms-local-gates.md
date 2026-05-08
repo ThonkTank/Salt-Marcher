@@ -514,7 +514,11 @@ Architecture-focused entrypoints:
   `:build-harness:dataQueryEnforcementDocumentationCheck`. The compile-side
   blocker now includes `DataQueryForeignPublishedReplyChannelRoundTrip`, which
   reports the foreign published reply-channel roundtrip anti-pattern together
-  with the correct one-way published-state target pattern.
+  with the correct one-way published-state target pattern. The same focused
+  bundle now also includes the build-harness blocker
+  `DataQueryForeignPublishedPayloadSurfaceRules`, which fails when foreign
+  published passive payload carriers consumed by query adapters export unused
+  accessor surface.
 - `./gradlew checkDataQueryPublishedCarrierCandidates --console=plain`
   Runs the report-only Data Query PMD scan for over-broad foreign published
   carriers and consumer-private transport seams. It names the foreign carrier,

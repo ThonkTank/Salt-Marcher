@@ -38,7 +38,7 @@ public record EncounterStateSnapshot(
             ThresholdMeter thresholds,
             BuilderSettings currentSettings,
             List<String> generationHints,
-            List<PlanChoice> savedPlanChoices,
+            List<SavedEncounterPlanChoice> savedPlanChoices,
             List<RosterCard> rosterCards,
             boolean rosterEmpty,
             boolean startCombatEnabled,
@@ -106,14 +106,6 @@ public record EncounterStateSnapshot(
 
         public static BuilderSettings defaultSettings() {
             return new BuilderSettings("Auto", -1, -1.0, -1);
-        }
-    }
-
-    public record PlanChoice(long planId, String displayName, String generatedName, int totalCreatureCount) {
-        public PlanChoice {
-            displayName = displayName == null ? "" : displayName.trim();
-            generatedName = generatedName == null ? "" : generatedName.trim();
-            totalCreatureCount = Math.max(0, totalCreatureCount);
         }
     }
 

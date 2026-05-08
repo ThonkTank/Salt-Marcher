@@ -39,6 +39,11 @@ final class ViewArchitectureSupport {
     private static final Set<String> ROOT_VIEW_AREAS = Set.of("leftbartabs", "statetabs", "dropdowns");
     private static final Set<String> REUSABLE_VIEW_COMPONENTS = Set.of(
             "controls", "main", "state", "details", "topbar", "primitives");
+    private static final Set<String> PRIMITIVE_SUPPORT_VALUE_SUFFIXES = Set.of(
+            "PointerEvent",
+            "Scene",
+            "Signal",
+            "Support");
     private static final Set<String> FORBIDDEN_VIEW_JDK_INFRASTRUCTURE_TYPES = Set.of(
             "java.lang.ClassLoader",
             "java.lang.Process",
@@ -169,6 +174,10 @@ final class ViewArchitectureSupport {
         return packageName != null && packageName.matches("^src\\.view\\.slotcontent\\.primitives\\.[^.]+$");
     }
 
+    static boolean isPrimitiveViewSource(CompilationUnitTree tree) {
+        return isPanelViewSource(tree) && isPrimitiveViewPackage(packageName(tree));
+    }
+
     static boolean isPrimitiveModelReference(String referencedType) {
         ViewTypeInfo viewType = parseViewType(referencedType);
         return viewType != null && "primitives".equals(viewType.component()) && "MODEL".equals(viewType.bucket());
@@ -218,7 +227,7 @@ final class ViewArchitectureSupport {
                 referencedType);
     }
 
-    private static boolean isOwnTopLevelOrNestedTypeReference(
+    static boolean isOwnTopLevelOrNestedTypeReference(
             String sourcePackageName,
             String topLevelSimpleName,
             String referencedType
@@ -263,8 +272,7 @@ final class ViewArchitectureSupport {
             if (topLevelSimpleName.endsWith("PublishedEvent")) {
                 return new ViewTypeInfo(segments[1], "PUBLISHED_EVENT");
             }
-            if (topLevelSimpleName.endsWith("CanvasPointerEvent")
-                    || topLevelSimpleName.endsWith("MapRenderScene")) {
+            if ("primitives".equals(segments[1]) && hasPrimitiveSupportValueSuffix(topLevelSimpleName)) {
                 return new ViewTypeInfo(segments[1], "SUPPORT_VALUE");
             }
             return new ViewTypeInfo(segments[1], "VIEW");
@@ -531,7 +539,7 @@ final class ViewArchitectureSupport {
         return "java.lang.Object".contentEquals(typeElement.getQualifiedName());
     }
 
-    private static String packageNameOf(String referencedType) {
+    static String packageNameOf(String referencedType) {
         if (referencedType == null || referencedType.isBlank()) {
             return "";
         }
@@ -650,6 +658,10 @@ final class ViewArchitectureSupport {
                 return null;
             }
         }, null);
+    }
+
+    private static boolean hasPrimitiveSupportValueSuffix(String topLevelSimpleName) {
+        return PRIMITIVE_SUPPORT_VALUE_SUFFIXES.stream().anyMatch(topLevelSimpleName::endsWith);
     }
 
     record ViewTypeInfo(String component, String bucket) {

@@ -11,6 +11,11 @@ import saltmarcher.architecture.SourceFile;
 public final class ViewRoleSupport {
 
     private static final Set<String> ACTIVE_AREAS = Set.of("leftbartabs", "statetabs", "dropdowns");
+    private static final Set<String> PRIMITIVE_SUPPORT_VALUE_SUFFIXES = Set.of(
+            "PointerEvent.java",
+            "Scene.java",
+            "Signal.java",
+            "Support.java");
 
     private ViewRoleSupport() {
     }
@@ -49,6 +54,10 @@ public final class ViewRoleSupport {
 
     public static boolean isSlotcontent(ViewUnit unit) {
         return "slotcontent".equals(unit.area());
+    }
+
+    public static boolean isPrimitiveUnit(ViewUnit unit) {
+        return isSlotcontent(unit) && "primitives".equals(unit.slot());
     }
 
     public static boolean requiresContribution(ViewUnit unit) {
@@ -158,16 +167,14 @@ public final class ViewRoleSupport {
         return sourceFile.fileName().endsWith("InspectorEntry.java");
     }
 
-    public static boolean isSharedMapCanvasCarrierFile(SourceFile sourceFile) {
+    public static boolean isPrimitiveSupportValueFile(SourceFile sourceFile) {
         List<String> segments = sourceFile.relativeSegments();
         return segments.size() >= 6
                 && "src".equals(segments.get(0))
                 && "view".equals(segments.get(1))
                 && "slotcontent".equals(segments.get(2))
                 && "primitives".equals(segments.get(3))
-                && "mapcanvas".equals(segments.get(4))
-                && ("MapRenderScene.java".equals(sourceFile.fileName())
-                || "CanvasPointerEvent.java".equals(sourceFile.fileName()));
+                && PRIMITIVE_SUPPORT_VALUE_SUFFIXES.stream().anyMatch(sourceFile.fileName()::endsWith);
     }
 
     public static boolean isProjectorFile(SourceFile sourceFile) {

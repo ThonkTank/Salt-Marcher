@@ -19,12 +19,6 @@ class SaltmarcherViewViewEnforcementPlugin : Plugin<Project> {
 }
 
 internal fun Project.configureViewViewEnforcement() {
-    val passiveViewTechnicalBaseViews = listOf(
-        "src.view.slotcontent.primitives.mapcanvas.MapCanvasView",
-        "src.view.slotcontent.primitives.popup.AnchoredPopupView",
-        "src.view.slotcontent.topbar.dropdown.DropdownPopupView"
-    ).joinToString(",")
-
     val enforcementBundles = extensions.getByType(EnforcementBundlesExtension::class.java)
     val focusedEnforcementBundleMode = enforcementBundles.focusedEnforcementBundleMode
     val verificationHarness = extensions.getByType<VerificationHarnessExtension>()
@@ -37,26 +31,14 @@ internal fun Project.configureViewViewEnforcement() {
         "PassiveViewProjectionConstructionBoundary",
         "ViewPresentationDecisionLeak",
         "ViewInputEventApi",
-        "PassiveViewCallbackSeamBoundary"
+        "PassiveViewCallbackSeamBoundary",
+        "TechnicalPrimitiveViewBoundary"
     )
     val compileViewVerificationJava = verificationHarness.registerFocusedVerificationCompileTask(
         "view",
         viewCheckerNames,
         "Compile only the passive View verification slice with the passive View Error Prone checks enabled."
     )
-    compileViewVerificationJava.configure {
-        val errorproneOptions = (options as ExtensionAware).extensions.getByName("errorprone")
-        errorproneOptions.withGroovyBuilder {
-            "option"(
-                "PassiveViewCallbackSeamBoundary:TechnicalBaseViews",
-                passiveViewTechnicalBaseViews
-            )
-            "option"(
-                "PassiveViewLocalStateBoundary:TechnicalBaseViews",
-                passiveViewTechnicalBaseViews
-            )
-        }
-    }
     val selectedViewCompileJava = if (focusedEnforcementBundleMode) {
         compileViewVerificationJava
     } else {
@@ -69,14 +51,6 @@ internal fun Project.configureViewViewEnforcement() {
             viewCheckerNames.forEach { checkName ->
                 "error"(checkName)
             }
-            "option"(
-                "PassiveViewCallbackSeamBoundary:TechnicalBaseViews",
-                passiveViewTechnicalBaseViews
-            )
-            "option"(
-                "PassiveViewLocalStateBoundary:TechnicalBaseViews",
-                passiveViewTechnicalBaseViews
-            )
         }
     }
 

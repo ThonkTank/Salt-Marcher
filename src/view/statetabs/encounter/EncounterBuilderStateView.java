@@ -366,8 +366,9 @@ public final class EncounterBuilderStateView extends VBox {
         }
 
         private static String labelFor(EncounterStateContributionModel.SavedEncounterPlanView plan) {
-            String suffix = plan.generatedLabel().isBlank() ? "" : " - " + plan.generatedLabel();
-            return plan.name() + suffix + " (" + plan.creatureCount() + ")";
+            return plan.summaryText().isBlank()
+                    ? plan.name()
+                    : plan.name() + " - " + plan.summaryText();
         }
     }
 

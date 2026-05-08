@@ -26,7 +26,7 @@ public final class ViewLayerTopologyRules implements ArchitectureRule {
                             "Active contribution roots may contain only *Contribution.java, *Binder.java, *ContributionModel.java, optional *IntentHandler.java, passive *View.java, optional *ViewInputEvent.java files, and optional write-side *PublishedEvent.java files. Move projection, formatting, or selection preparation into the owning *ContributionModel or into nested/private helper types inside an allowed role file instead of adding standalone helper files.");
                 } else if (ViewRoleSupport.isSlotcontent(unit) && !isAllowedSlotcontentFile(sourceFile)) {
                     violations.add(sourceFile.relativePath(), "view-layer-slotcontent-file-role",
-                            "Reusable slotcontent units may contain only passive *View.java files, optional *ContentModel.java files, optional *IntentHandler.java files, optional *ViewInputEvent.java files, optional write-side *PublishedEvent.java files, *InspectorEntry.java adapters, and the allowed mapcanvas support carriers. If a reusable View needs extra render or input preparation, prefer the unit's *ContentModel or upstream readback over new standalone helper files.");
+                            "Reusable slotcontent units may contain only passive *View.java files, optional *ContentModel.java files, optional *IntentHandler.java files, optional *ViewInputEvent.java files, optional write-side *PublishedEvent.java files, *InspectorEntry.java adapters, and only in slotcontent/primitives/** same-unit technical *PointerEvent.java, *Scene.java, *Signal.java, or *Support.java carriers. If a reusable View needs extra render or input preparation, prefer the unit's *ContentModel or upstream readback over new standalone helper files.");
                 }
             }
             validateUnitShape(unit, files, violations);
@@ -41,6 +41,10 @@ public final class ViewLayerTopologyRules implements ArchitectureRule {
         long binderCount = files.stream().filter(ViewRoleSupport::isBinderFile).count();
         long contributionModelCount = files.stream().filter(ViewRoleSupport::isContributionModelFile).count();
         long contentModelCount = files.stream().filter(ViewRoleSupport::isContentModelFile).count();
+        long intentHandlerCount = files.stream().filter(ViewRoleSupport::isIntentHandlerFile).count();
+        long viewInputEventCount = files.stream().filter(ViewRoleSupport::isViewInputEventFile).count();
+        long publishedEventCount = files.stream().filter(ViewRoleSupport::isPublishedEventFile).count();
+        long inspectorEntryCount = files.stream().filter(ViewRoleSupport::isInspectorEntryFile).count();
         long viewCount = files.stream().filter(ViewRoleSupport::isPassiveViewFile).count();
 
         if (ViewRoleSupport.isActiveRoot(unit)) {
@@ -81,6 +85,32 @@ public final class ViewLayerTopologyRules implements ArchitectureRule {
                 violations.add(unit.source(), "view-layer-slotcontent-contentmodel-count",
                         "Each reusable slotcontent unit may define at most one *ContentModel.java file.");
             }
+            if (ViewRoleSupport.isPrimitiveUnit(unit)) {
+                if (contentModelCount > 0) {
+                    violations.add(unit.source(), "view-layer-primitives-no-contentmodel",
+                            "slotcontent/primitives/** units must stay technical and must not define *ContentModel.java files.");
+                }
+                if (intentHandlerCount > 0) {
+                    violations.add(unit.source(), "view-layer-primitives-no-intenthandler",
+                            "slotcontent/primitives/** units must not define *IntentHandler.java files.");
+                }
+                if (viewInputEventCount > 0) {
+                    violations.add(unit.source(), "view-layer-primitives-no-viewinputevent",
+                            "slotcontent/primitives/** units must not define *ViewInputEvent.java files.");
+                }
+                if (publishedEventCount > 0) {
+                    violations.add(unit.source(), "view-layer-primitives-no-publishedevent",
+                            "slotcontent/primitives/** units must not define *PublishedEvent.java files.");
+                }
+                if (inspectorEntryCount > 0) {
+                    violations.add(unit.source(), "view-layer-primitives-no-inspectorentry",
+                            "slotcontent/primitives/** units must not define *InspectorEntry.java files.");
+                }
+                if (viewCount != 1) {
+                    violations.add(unit.source(), "view-layer-primitives-view-count",
+                            "Each slotcontent/primitives/** unit must define exactly one top-level technical *View.java root.");
+                }
+            }
         }
     }
 
@@ -100,6 +130,7 @@ public final class ViewLayerTopologyRules implements ArchitectureRule {
                 || ViewRoleSupport.isPassiveViewFile(sourceFile)
                 || ViewRoleSupport.isViewInputEventFile(sourceFile)
                 || ViewRoleSupport.isPublishedEventFile(sourceFile)
-                || ViewRoleSupport.isSharedMapCanvasCarrierFile(sourceFile);
+                || ViewRoleSupport.isPrimitiveSupportValueFile(sourceFile)
+                || ViewRoleSupport.isInspectorEntryFile(sourceFile);
     }
 }

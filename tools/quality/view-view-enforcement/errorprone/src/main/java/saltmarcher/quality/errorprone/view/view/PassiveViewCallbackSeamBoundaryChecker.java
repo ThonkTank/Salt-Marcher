@@ -1,7 +1,6 @@
 package saltmarcher.quality.errorprone.view.view;
 
 import com.google.errorprone.BugPattern;
-import com.google.errorprone.ErrorProneFlags;
 import com.google.errorprone.VisitorState;
 import com.google.errorprone.bugpatterns.BugChecker;
 import com.google.errorprone.matchers.Description;
@@ -12,31 +11,15 @@ import com.sun.source.tree.MethodTree;
 import com.sun.source.tree.ModifiersTree;
 import com.sun.source.tree.VariableTree;
 import com.sun.source.util.TreeScanner;
-import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.Set;
-import java.util.stream.Collectors;
 import javax.lang.model.element.Modifier;
 @BugPattern(
         name = "PassiveViewCallbackSeamBoundary",
-        summary = "Passive Views outside the technical-base allowlist may not expose callback or result-bearing outward seams.",
+        summary = "Passive Views outside technical primitive packages may not expose callback or result-bearing outward seams.",
         severity = BugPattern.SeverityLevel.ERROR)
 public final class PassiveViewCallbackSeamBoundaryChecker extends BugChecker
         implements BugChecker.CompilationUnitTreeMatcher {
-
-    private static final String TECHNICAL_BASE_VIEWS_FLAG = "PassiveViewCallbackSeamBoundary:TechnicalBaseViews";
-
-    private final Set<String> technicalBaseViews;
-
-    public PassiveViewCallbackSeamBoundaryChecker() {
-        this(ErrorProneFlags.empty());
-    }
-
-    public PassiveViewCallbackSeamBoundaryChecker(ErrorProneFlags flags) {
-        this.technicalBaseViews = flags.get(TECHNICAL_BASE_VIEWS_FLAG)
-                .map(PassiveViewCallbackSeamBoundaryChecker::parseAllowlist)
-                .orElseGet(Set::of);
-    }
 
     @Override
     public Description matchCompilationUnit(CompilationUnitTree tree, VisitorState state) {
@@ -52,14 +35,15 @@ public final class PassiveViewCallbackSeamBoundaryChecker extends BugChecker
             return Description.NO_MATCH;
         }
 
+        if (ViewArchitectureSupport.isPrimitiveViewSource(tree)) {
+            return Description.NO_MATCH;
+        }
+
         String sourcePackageName = ViewArchitectureSupport.packageName(tree);
         String viewSimpleName = ViewArchitectureSupport.topLevelSimpleName(tree);
         String qualifiedViewName = sourcePackageName.isBlank()
                 ? viewSimpleName
                 : sourcePackageName + "." + viewSimpleName;
-        if (technicalBaseViews.contains(qualifiedViewName)) {
-            return Description.NO_MATCH;
-        }
 
         Set<String> violations = new LinkedHashSet<>();
         for (var member : topLevelClass.getMembers()) {
@@ -77,7 +61,7 @@ public final class PassiveViewCallbackSeamBoundaryChecker extends BugChecker
                 .setMessage("Passive View '" + qualifiedViewName
                         + "' exposes alternate callback or result-bearing outward seams "
                         + String.join(", ", violations)
-                        + ". Outside the explicit technical-base allowlist, passive Views must stay callback-flat and use only onViewInputEvent(Consumer<SameStemViewInputEvent>) when interactive. If a shared primitive appears to need several phase-specific outward seams, collapse them into one technical event seam and interpret that event above the View.")
+                        + ". Outside slotcontent/primitives/** technical primitive units, passive Views must stay callback-flat and use only onViewInputEvent(Consumer<SameStemViewInputEvent>) when interactive. Shared technical primitives use their own path-signaled technical contract instead of extra callback families.")
                 .build();
     }
 
@@ -191,12 +175,5 @@ public final class PassiveViewCallbackSeamBoundaryChecker extends BugChecker
             }
         }.scan(tree, null);
         return result[0];
-    }
-
-    private static Set<String> parseAllowlist(String value) {
-        return Arrays.stream(value.split(","))
-                .map(String::trim)
-                .filter(entry -> !entry.isEmpty())
-                .collect(Collectors.toUnmodifiableSet());
     }
 }

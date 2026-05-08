@@ -231,8 +231,7 @@ public final class SessionPlannerPublishedStateProjector {
             availablePlans.add(new SessionPlannerSessionSnapshot.AvailableEncounterPlan(
                     plan.planId(),
                     detail.name().isBlank() ? plan.name() : detail.name(),
-                    detail.generatedLabel().isBlank() ? plan.generatedLabel() : detail.generatedLabel(),
-                    detail.creatureCount() <= 0 ? plan.creatureCount() : detail.creatureCount(),
+                    plan.summaryText(),
                     detail.adjustedXp(),
                     detail.difficultyLabel(),
                     detail.statusText(),

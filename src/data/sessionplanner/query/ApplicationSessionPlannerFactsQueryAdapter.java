@@ -10,8 +10,8 @@ import src.domain.encounter.published.EncounterPlanBudgetStatus;
 import src.domain.encounter.published.RefreshEncounterPlanBudgetCommand;
 import src.domain.encounter.published.SavedEncounterPlanListResult;
 import src.domain.encounter.published.SavedEncounterPlanListModel;
+import src.domain.encounter.published.SavedEncounterPlanChoice;
 import src.domain.encounter.published.SavedEncounterPlanStatus;
-import src.domain.encounter.published.SavedEncounterPlanSummary;
 import src.domain.party.PartyApplicationService;
 import src.domain.party.published.ActivePartyModel;
 import src.domain.party.published.ActivePartyResult;
@@ -130,11 +130,10 @@ public final class ApplicationSessionPlannerFactsQueryAdapter
                 member == null ? 0 : member.level());
     }
 
-    private static SavedEncounterPlanFact toSavedEncounterPlanFact(SavedEncounterPlanSummary plan) {
+    private static SavedEncounterPlanFact toSavedEncounterPlanFact(SavedEncounterPlanChoice plan) {
         return new SavedEncounterPlanFact(
                 plan == null ? 0L : plan.id(),
                 plan == null ? "" : plan.name(),
-                plan == null ? "" : plan.generatedLabel(),
-                plan == null ? 0 : plan.creatureCount());
+                plan == null ? "" : plan.summaryText());
     }
 }

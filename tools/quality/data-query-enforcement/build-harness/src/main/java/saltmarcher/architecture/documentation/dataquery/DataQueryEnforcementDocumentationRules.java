@@ -57,6 +57,13 @@ public final class DataQueryEnforcementDocumentationRules implements Architectur
                     List.of("data-query bundle Error Prone", "DataQueryForeignPublishedReplyChannelRoundTrip"),
                     List.of("./gradlew compileJava", "./gradlew checkDataQueryEnforcement")),
             row(
+                    "data-query-no-overbroad-foreign-published-payload-surface",
+                    "Enforced",
+                    List.of(
+                            "data-query bundle build-harness",
+                            "DataQueryForeignPublishedPayloadSurfaceRules"),
+                    List.of("./gradlew checkArchitecture", "./gradlew checkDataQueryEnforcement")),
+            row(
                     "data-query-gateway-collaborator-boundary",
                     "Enforced",
                     List.of("data-query bundle Error Prone", "DataQueryGatewayCollaboratorBoundary"),

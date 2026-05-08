@@ -127,8 +127,10 @@ src/view/
     <Entry>ViewInputEvent.java        # only for interactive reusable Views
     <Entry>PublishedEvent.java        # optional write-side sink carriers
     <Entry>InspectorEntry.java        # details only
-    MapRenderScene.java               # allowed mapcanvas support values only
-    CanvasPointerEvent.java           # allowed mapcanvas support values only
+    <Entry>PointerEvent.java          # primitives only, technical support values
+    <Entry>Scene.java                 # primitives only, technical support values
+    <Entry>Signal.java                # primitives only, technical support values
+    <Entry>Support.java               # primitives only, technical support values
 ```
 
 Rules:
@@ -148,6 +150,11 @@ Rules:
   zero or one `*IntentHandler`
 - interactive reusable `slotcontent/**` units with an `*IntentHandler` must
   own exactly one `*ContentModel`
+- reusable `slotcontent/primitives/**` units are stricter: they define exactly
+  one technical `*View.java` root plus optional same-unit technical
+  `*PointerEvent.java`, `*Scene.java`, `*Signal.java`, or `*Support.java`
+  carriers, and they must not define `*ContentModel`, `*IntentHandler`,
+  `*ViewInputEvent`, `*PublishedEvent`, or `*InspectorEntry` files
 - the absence of an `*IntentHandler` never expands `*View` responsibilities;
   non-interactive units remain passive and must not interpret intent, mutate
   model state from callbacks, or publish write-side carriers
@@ -219,7 +226,8 @@ Additional rules:
   execution against already prepared scene data; primitive ordering, hit
   priority, label-box geometry, and surface-specific scene assembly belong in
   the owning `*ContentModel` or upstream read-side projection, not in new
-  top-level helper files under the primitive package
+  top-level helper files under the primitive package; additional top-level
+  primitive files need one of the explicit technical role suffixes
 - outside the explicitly documented Binder/domain and `published/**` readback
   seams, no direct domain/view-layer connections are allowed
 - direct `View` callback APIs, direct `IntentHandler -> ApplicationService`

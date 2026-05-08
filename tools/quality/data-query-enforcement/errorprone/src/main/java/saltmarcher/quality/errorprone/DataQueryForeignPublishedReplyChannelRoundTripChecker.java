@@ -6,17 +6,19 @@ import com.google.errorprone.bugpatterns.BugChecker;
 import com.google.errorprone.matchers.Description;
 import com.google.errorprone.util.ASTHelpers;
 import com.sun.source.tree.CompilationUnitTree;
+import com.sun.source.tree.ClassTree;
 import com.sun.source.tree.MethodInvocationTree;
 import com.sun.source.tree.MethodTree;
-import com.sun.source.util.TreePathScanner;
+import com.sun.source.tree.Tree;
 import com.sun.tools.javac.code.Symbol;
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.regex.Matcher;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeMirror;
+import saltmarcher.quality.errorprone.flow.MethodFlowSupport;
 
 @BugPattern(
         name = "DataQueryForeignPublishedReplyChannelRoundTrip",
@@ -34,58 +36,36 @@ public final class DataQueryForeignPublishedReplyChannelRoundTripChecker extends
         }
         String queryFeature = queryMatcher.group(1);
 
-        List<String> violations = new ArrayList<>();
-        new TreePathScanner<Void, Void>() {
-            @Override
-            public Void visitMethod(MethodTree methodTree, Void unused) {
-                if (methodTree.getBody() == null) {
-                    return null;
-                }
-                MethodEvidence evidence = new MethodEvidence();
-                new TreePathScanner<Void, Void>() {
-                    @Override
-                    public Void visitMethodInvocation(MethodInvocationTree methodInvocation, Void nestedUnused) {
-                        Symbol symbol = ASTHelpers.getSymbol(methodInvocation);
-                        if (!(symbol instanceof Symbol.MethodSymbol methodSymbol)) {
-                            return super.visitMethodInvocation(methodInvocation, nestedUnused);
-                        }
-                        String ownerType = ownerTypeName(methodSymbol);
-                        if (ownerType == null) {
-                            return super.visitMethodInvocation(methodInvocation, nestedUnused);
-                        }
-
-                        String foreignApplicationFeature = foreignApplicationServiceFeature(ownerType, queryFeature);
-                        if (foreignApplicationFeature != null
-                                && isForeignCommandBoundary(methodSymbol, foreignApplicationFeature)) {
-                            evidence.recordCommandCall(
-                                    foreignApplicationFeature,
-                                    simpleCall(ownerType, methodSymbol, foreignApplicationFeature));
-                        }
-
-                        String foreignPublishedModelFeature = foreignPublishedModelFeature(ownerType, queryFeature);
-                        if (foreignPublishedModelFeature != null
-                                && methodSymbol.getSimpleName().contentEquals("current")
-                                && methodSymbol.getParameters().isEmpty()) {
-                            evidence.recordModelPoll(
-                                    foreignPublishedModelFeature,
-                                    ownerType.substring(ownerType.lastIndexOf('.') + 1) + ".current()");
-                        }
-                        return super.visitMethodInvocation(methodInvocation, nestedUnused);
-                    }
-                }.scan(methodTree.getBody(), null);
-                evidence.reportViolations(methodName(methodTree), violations);
-                return null;
+        Map<Symbol.MethodSymbol, MethodTree> localMethodBodies = collectLocalMethodBodies(tree);
+        for (MethodTree methodTree : localMethodBodies.values()) {
+            if (methodTree.getBody() == null) {
+                continue;
             }
-        }.scan(tree, null);
-
-        if (violations.isEmpty()) {
-            return Description.NO_MATCH;
+            MethodFlowSupport<ForeignCommandFact> flowSupport = new MethodFlowSupport<>(
+                    localMethodBodies,
+                    new RoundTripInvocationTransfer(queryFeature, methodName(methodTree), state));
+            flowSupport.analyze(methodTree, Set.of());
         }
-        return buildDescription(tree)
-                .setMessage("Data query adapter package '" + packageName
-                        + "' violates the one-way foreign published-state contract: "
-                        + String.join("; ", violations))
-                .build();
+        return Description.NO_MATCH;
+    }
+
+    private static Map<Symbol.MethodSymbol, MethodTree> collectLocalMethodBodies(CompilationUnitTree tree) {
+        Map<Symbol.MethodSymbol, MethodTree> methods = new LinkedHashMap<>();
+        for (Tree typeDeclaration : tree.getTypeDecls()) {
+            if (!(typeDeclaration instanceof ClassTree classTree)) {
+                continue;
+            }
+            for (Tree member : classTree.getMembers()) {
+                if (!(member instanceof MethodTree methodTree)) {
+                    continue;
+                }
+                Symbol.MethodSymbol symbol = ASTHelpers.getSymbol(methodTree);
+                if (symbol != null) {
+                    methods.put(symbol, methodTree);
+                }
+            }
+        }
+        return methods;
     }
 
     private static boolean isForeignCommandBoundary(Symbol.MethodSymbol methodSymbol, String foreignFeature) {
@@ -159,34 +139,72 @@ public final class DataQueryForeignPublishedReplyChannelRoundTripChecker extends
         return foreignFeature.equals(queryFeature) ? null : foreignFeature;
     }
 
-    private static final class MethodEvidence {
+    private record ForeignCommandFact(String featureName, String commandCall) {
+    }
 
-        private final Map<String, List<String>> commandCallsByFeature = new LinkedHashMap<>();
-        private final Map<String, List<String>> modelPollsByFeature = new LinkedHashMap<>();
+    private final class RoundTripInvocationTransfer implements MethodFlowSupport.InvocationTransfer<ForeignCommandFact> {
 
-        private void recordCommandCall(String featureName, String commandCall) {
-            commandCallsByFeature.computeIfAbsent(featureName, ignored -> new ArrayList<>()).add(commandCall);
+        private final String queryFeature;
+        private final String methodName;
+        private final VisitorState state;
+
+        private RoundTripInvocationTransfer(String queryFeature, String methodName, VisitorState state) {
+            this.queryFeature = queryFeature;
+            this.methodName = methodName;
+            this.state = state;
         }
 
-        private void recordModelPoll(String featureName, String modelPoll) {
-            modelPollsByFeature.computeIfAbsent(featureName, ignored -> new ArrayList<>()).add(modelPoll);
-        }
-
-        private void reportViolations(String methodName, List<String> violations) {
-            for (Map.Entry<String, List<String>> entry : commandCallsByFeature.entrySet()) {
-                List<String> modelPolls = modelPollsByFeature.get(entry.getKey());
-                if (modelPolls == null || modelPolls.isEmpty()) {
-                    continue;
-                }
-                violations.add("method '" + methodName
-                        + "' sends foreign command call(s) "
-                        + String.join(", ", entry.getValue())
-                        + " and then polls foreign published state handle(s) "
-                        + String.join(", ", modelPolls)
-                        + ". This violates the foreign published reply-channel roundtrip anti-pattern. "
-                        + "Correct pattern: send the command to the foreign ApplicationService and consume later "
-                        + "published state changes as a real state seam, not as a private current()-style answer channel.");
+        @Override
+        public Set<ForeignCommandFact> afterInvocation(
+                MethodInvocationTree invocationTree,
+                Symbol.MethodSymbol symbol,
+                Set<ForeignCommandFact> incomingFacts
+        ) {
+            String ownerType = ownerTypeName(symbol);
+            if (ownerType == null) {
+                return incomingFacts;
             }
+
+            String foreignApplicationFeature = foreignApplicationServiceFeature(ownerType, queryFeature);
+            if (foreignApplicationFeature != null
+                    && isForeignCommandBoundary(symbol, foreignApplicationFeature)) {
+                Set<ForeignCommandFact> nextFacts = new java.util.LinkedHashSet<>(incomingFacts);
+                nextFacts.add(new ForeignCommandFact(
+                        foreignApplicationFeature,
+                        simpleCall(ownerType, symbol, foreignApplicationFeature)));
+                return nextFacts;
+            }
+
+            String foreignPublishedFeature = foreignPublishedModelFeature(ownerType, queryFeature);
+            if (foreignPublishedFeature != null
+                    && symbol.getSimpleName().contentEquals("current")
+                    && symbol.getParameters().isEmpty()) {
+                List<String> commandCalls = incomingFacts.stream()
+                        .filter(fact -> fact.featureName().equals(foreignPublishedFeature))
+                        .map(ForeignCommandFact::commandCall)
+                        .distinct()
+                        .toList();
+                if (!commandCalls.isEmpty()) {
+                    state.reportMatch(buildDescription(invocationTree)
+                            .setMessage("method '" + methodName
+                                    + "' sends foreign command call(s) "
+                                    + String.join(", ", commandCalls)
+                                    + " and then polls foreign published state handle(s) "
+                                    + ownerType.substring(ownerType.lastIndexOf('.') + 1)
+                                    + ".current(). This violates the foreign published reply-channel roundtrip anti-pattern. "
+                                    + "Correct pattern: send the command to the foreign ApplicationService and consume later "
+                                    + "published state changes as a real state seam, not as a private current()-style answer channel.")
+                            .build());
+                }
+            }
+            return incomingFacts;
+        }
+
+        @Override
+        public boolean shouldInline(Symbol.MethodSymbol symbol) {
+            return symbol.getModifiers().contains(javax.lang.model.element.Modifier.PRIVATE)
+                    || symbol.getModifiers().contains(javax.lang.model.element.Modifier.STATIC)
+                    || symbol.getModifiers().contains(javax.lang.model.element.Modifier.FINAL);
         }
     }
 }

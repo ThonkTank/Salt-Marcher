@@ -22,6 +22,11 @@ public record SourceFile(
 ) {
     private static final Pattern PACKAGE_PATTERN =
             Pattern.compile("(?m)^\\s*package\\s+([A-Za-z_][\\w.]*)\\s*;");
+    private static final Set<String> PRIMITIVE_SUPPORT_VALUE_SUFFIXES = Set.of(
+            "PointerEvent.java",
+            "Scene.java",
+            "Signal.java",
+            "Support.java");
 
     static SourceFile parse(Path repoRoot, Path path) throws IOException {
         String content = Files.readString(path, StandardCharsets.UTF_8);
@@ -123,7 +128,7 @@ public record SourceFile(
                 if (segments.size() == 6
                         && segments.get(2).equals("slotcontent")
                         && "primitives".equals(segments.get(3))
-                        && Set.of("CanvasPointerEvent.java", "MapRenderScene.java").contains(fileName)) {
+                        && hasPrimitiveSupportValueSuffix(fileName)) {
                     yield SourceKind.VIEW_SUPPORT_VALUE;
                 }
                 yield SourceKind.UNKNOWN;
@@ -194,5 +199,9 @@ public record SourceFile(
             return segments.size() >= 4 ? segments.get(3) : null;
         }
         return null;
+    }
+
+    private static boolean hasPrimitiveSupportValueSuffix(String fileName) {
+        return PRIMITIVE_SUPPORT_VALUE_SUFFIXES.stream().anyMatch(fileName::endsWith);
     }
 }

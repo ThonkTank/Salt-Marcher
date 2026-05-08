@@ -4,7 +4,7 @@ import java.util.List;
 
 public record SavedEncounterPlanListResult(
         SavedEncounterPlanStatus status,
-        List<SavedEncounterPlanSummary> plans,
+        List<SavedEncounterPlanChoice> plans,
         String message
 ) {
     public SavedEncounterPlanListResult {

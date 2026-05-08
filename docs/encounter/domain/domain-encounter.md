@@ -38,16 +38,18 @@ It also owns direct planner-facing readback handles:
   `EncounterPlanBudgetResult`
 
 It also owns shared request/read vocabulary such as difficulty bands, tuning
-preview labels, saved-plan summaries, saved-plan budget summaries, and status
-enums.
+preview labels, one saved-plan chooser display carrier, one planner-facing
+saved-plan budget summary, and status enums.
 
 `EncounterDifficultyBand.AUTO` and Auto tuning sentinels are public request
 language only. The application boundary resolves them into concrete generation
 values before invoking draft construction.
 
-Saved encounter plans publish only list-facing summary language plus
-planner-facing budget reads. Creature details remain owned by the creatures
-context and are reloaded when a saved plan is opened.
+Saved encounter plans publish only list-facing chooser display language plus
+planner-facing budget reads. The chooser surface is intentionally thin and
+does not mirror the internal `EncounterPlanSummary` record. Creature details
+remain owned by the creatures context and are reloaded when a saved plan is
+opened.
 
 The generation and plan models must not depend on any
 `src.domain.*.published.*` carriers as invariant inputs. The application
@@ -195,7 +197,9 @@ runtime state.
 - `EncounterCandidateProfile`: creature candidate enriched for generation.
 - `GeneratedEncounter`: exported generated encounter suggestion.
 - `EncounterPlan`: saved encounter roster aggregate.
-- `EncounterPlanBudgetSummary`: published saved-plan budget readout.
+- `SavedEncounterPlanChoice`: published saved-plan chooser display row.
+- `EncounterPlanBudgetSummary`: published planner-facing saved-plan budget
+  readout.
 
 ## Domain Policies
 
