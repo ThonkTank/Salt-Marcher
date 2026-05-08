@@ -26,7 +26,10 @@ import src.domain.encounter.published.UpdateEncounterBuilderInputsCommand;
 import src.domain.encountertable.EncounterTableApplicationService;
 import src.domain.encountertable.published.EncounterTableCatalogModel;
 import src.domain.encountertable.published.RefreshEncounterTableCatalogCommand;
-import src.view.slotcontent.details.creature.CreatureDetailsInspectorEntry;
+import shell.api.InspectorEntrySpec;
+import src.domain.creatures.published.CreatureDetailResult;
+import src.view.slotcontent.details.creature.CreatureDetailsContentModel;
+import src.view.slotcontent.details.creature.CreatureDetailsView;
 
 @SuppressWarnings("PMD.TooManyMethods")
 final class CatalogBinder {
@@ -120,9 +123,19 @@ final class CatalogBinder {
             long creatureId
     ) {
         creatures.selectCreatureDetail(new SelectCreatureDetailCommand(creatureId));
-        inspector.push(CreatureDetailsInspectorEntry.create(
-                creatureId,
-                detailModel.current()));
+        inspector.push(new InspectorEntrySpec(
+                "Creature",
+                "creature:" + creatureId,
+                () -> creatureDetailsContent(detailModel.current()),
+                null));
+    }
+
+    private static Node creatureDetailsContent(CreatureDetailResult detailResult) {
+        CreatureDetailsView detailView = new CreatureDetailsView();
+        CreatureDetailsContentModel contentModel = new CreatureDetailsContentModel(detailResult);
+        detailView.bind(contentModel);
+        contentModel.load();
+        return detailView;
     }
 
     private static void runSearch(

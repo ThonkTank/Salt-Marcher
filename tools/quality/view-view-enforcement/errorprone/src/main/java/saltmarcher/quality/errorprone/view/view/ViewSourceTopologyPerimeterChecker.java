@@ -66,6 +66,7 @@ public final class ViewSourceTopologyPerimeterChecker extends BugChecker
         }
         if (source.unitKind() == ViewUnitKind.ACTIVE_ROOT) {
             return source.role() != ViewRole.CONTENT_MODEL
+                    && source.role() != ViewRole.PUBLISHED_EVENT
                     && source.role() != ViewRole.INSPECTOR_ENTRY
                     && source.role() != ViewRole.LEGACY_VIEW_MODEL
                     && source.role() != ViewRole.PROJECTOR;

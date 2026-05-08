@@ -5,33 +5,42 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
-import javafx.beans.property.ReadOnlyObjectProperty;
-import javafx.beans.property.ReadOnlyObjectWrapper;
-import javafx.scene.paint.Color;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeoneditor.published.DungeonEditorSnapshot;
 import src.domain.travel.published.TravelDungeonSnapshot;
-import src.view.slotcontent.primitives.mapcanvas.CanvasPointerEvent;
-import src.view.slotcontent.primitives.mapcanvas.CanvasPointerEvent.MapCanvasPoint;
-import src.view.slotcontent.primitives.mapcanvas.MapRenderScene;
-import src.view.slotcontent.primitives.mapcanvas.MapRenderScene.MapCanvasPolygonPrimitive;
+import src.view.slotcontent.primitives.mapcanvas.MapCanvasContentModel;
+import src.view.slotcontent.primitives.mapcanvas.MapCanvasContentModel.BoundaryPrimitive;
+import src.view.slotcontent.primitives.mapcanvas.MapCanvasContentModel.GlyphPrimitive;
+import src.view.slotcontent.primitives.mapcanvas.MapCanvasContentModel.HitArea;
+import src.view.slotcontent.primitives.mapcanvas.MapCanvasContentModel.MapCanvasPoint;
+import src.view.slotcontent.primitives.mapcanvas.MapCanvasContentModel.MapCanvasPolygonPrimitive;
+import src.view.slotcontent.primitives.mapcanvas.MapCanvasContentModel.OverlayPrimitive;
+import src.view.slotcontent.primitives.mapcanvas.MapCanvasContentModel.PaintStyle;
+import src.view.slotcontent.primitives.mapcanvas.MapCanvasContentModel.PolygonHitArea;
+import src.view.slotcontent.primitives.mapcanvas.MapCanvasContentModel.PolylineHitArea;
+import src.view.slotcontent.primitives.mapcanvas.MapCanvasContentModel.RelationPrimitive;
+import src.view.slotcontent.primitives.mapcanvas.MapCanvasContentModel.RenderScene;
+import src.view.slotcontent.primitives.mapcanvas.MapCanvasContentModel.SceneColor;
+import src.view.slotcontent.primitives.mapcanvas.MapCanvasContentModel.TextPrimitive;
+import src.view.slotcontent.primitives.mapcanvas.MapCanvasViewInputEvent;
 
 public final class DungeonMapContentModel {
 
     private static final SceneProjector SCENE_PROJECTOR = new SceneProjector();
 
     private final String placeholderTitle;
-    private final ReadOnlyObjectWrapper<MapRenderScene> renderScene;
+    private final MapCanvasContentModel mapCanvasContentModel;
     private DungeonMapRenderState renderState;
 
     public DungeonMapContentModel(String placeholderTitle, boolean editorMode) {
         this.placeholderTitle = normalizePlaceholderTitle(placeholderTitle);
         renderState = DungeonMapRenderState.empty(this.placeholderTitle, editorMode);
-        renderScene = new ReadOnlyObjectWrapper<>(SCENE_PROJECTOR.toScene(renderState));
+        mapCanvasContentModel = new MapCanvasContentModel(this.placeholderTitle);
+        mapCanvasContentModel.showRenderScene(SCENE_PROJECTOR.toScene(renderState));
     }
 
-    public ReadOnlyObjectProperty<MapRenderScene> renderSceneProperty() {
-        return renderScene.getReadOnlyProperty();
+    public MapCanvasContentModel mapCanvasContentModel() {
+        return mapCanvasContentModel;
     }
 
     public void selectViewMode(DungeonMapRenderState.ViewMode nextViewMode) {
@@ -69,7 +78,7 @@ public final class DungeonMapContentModel {
 
     private void showRenderState(DungeonMapRenderState nextRenderState) {
         renderState = nextRenderState == null ? renderState : nextRenderState;
-        renderScene.set(SCENE_PROJECTOR.toScene(renderState));
+        mapCanvasContentModel.showRenderScene(SCENE_PROJECTOR.toScene(renderState));
     }
 
     private static String normalizePlaceholderTitle(String placeholderTitle) {
@@ -80,12 +89,12 @@ public final class DungeonMapContentModel {
 
     private record SceneBuckets(
             List<MapCanvasPolygonPrimitive> surfaces,
-            List<MapRenderScene.BoundaryPrimitive> boundaries,
-            List<MapRenderScene.GlyphPrimitive> glyphs,
-            List<MapRenderScene.TextPrimitive> texts,
-            List<MapRenderScene.RelationPrimitive> relations,
+            List<BoundaryPrimitive> boundaries,
+            List<GlyphPrimitive> glyphs,
+            List<TextPrimitive> texts,
+            List<RelationPrimitive> relations,
             List<MapCanvasPolygonPrimitive> actors,
-            List<MapRenderScene.HitArea> hitAreas
+            List<HitArea> hitAreas
     ) {
     }
 
@@ -94,14 +103,14 @@ public final class DungeonMapContentModel {
         private final GridSceneAssembler gridSceneAssembler = new GridSceneAssembler();
         private final GraphSceneAssembler graphSceneAssembler = new GraphSceneAssembler();
 
-        private MapRenderScene toScene(DungeonMapRenderState displayModel) {
+        private RenderScene toScene(DungeonMapRenderState displayModel) {
             if (displayModel == null) {
-                return MapRenderScene.empty("Dungeon Map");
+                return RenderScene.empty("Dungeon Map");
             }
             SceneBuckets buckets = displayModel.isGraphView()
                     ? graphSceneAssembler.assemble(displayModel)
                     : gridSceneAssembler.assemble(displayModel);
-            return new MapRenderScene(
+            return new RenderScene(
                     displayModel.title(),
                     displayModel.subtitle(),
                     displayModel.modeLabel(),
@@ -125,9 +134,9 @@ public final class DungeonMapContentModel {
 
         private SceneBuckets assemble(DungeonMapRenderState displayModel) {
             List<MapCanvasPolygonPrimitive> surfaces = new ArrayList<>();
-            List<MapRenderScene.BoundaryPrimitive> boundaries = new ArrayList<>();
-            List<MapRenderScene.GlyphPrimitive> glyphs = new ArrayList<>();
-            List<MapRenderScene.TextPrimitive> texts = new ArrayList<>();
+            List<BoundaryPrimitive> boundaries = new ArrayList<>();
+            List<GlyphPrimitive> glyphs = new ArrayList<>();
+            List<TextPrimitive> texts = new ArrayList<>();
             List<MapCanvasPolygonPrimitive> actors = new ArrayList<>();
             addCells(displayModel, surfaces);
             addEdges(displayModel, boundaries);
@@ -163,13 +172,13 @@ public final class DungeonMapContentModel {
 
         private void addEdges(
                 DungeonMapRenderState displayModel,
-                List<MapRenderScene.BoundaryPrimitive> boundaries
+                List<BoundaryPrimitive> boundaries
         ) {
             for (DungeonMapRenderState.Edge edge : displayModel.edges()) {
                 if (!LevelFilter.includeLevel(displayModel, edge.z())) {
                     continue;
                 }
-                boundaries.add(new MapRenderScene.BoundaryPrimitive(
+                boundaries.add(new BoundaryPrimitive(
                         SceneIdentity.edgeHitRef(edge),
                         SceneIdentity.selectionRef(edge.topologyRef()),
                         edge.z(),
@@ -182,13 +191,13 @@ public final class DungeonMapContentModel {
 
         private void addMarkers(
                 DungeonMapRenderState displayModel,
-                List<MapRenderScene.GlyphPrimitive> glyphs
+                List<GlyphPrimitive> glyphs
         ) {
             for (DungeonMapRenderState.Marker marker : displayModel.markers()) {
                 if (!LevelFilter.includeLevel(displayModel, marker.z())) {
                     continue;
                 }
-                glyphs.add(new MapRenderScene.GlyphPrimitive(
+                glyphs.add(new GlyphPrimitive(
                         SceneIdentity.markerHitRef(marker),
                         SceneIdentity.selectionRef(marker.handle().topologyRef()),
                         marker.z(),
@@ -201,13 +210,13 @@ public final class DungeonMapContentModel {
 
         private void addLabels(
                 DungeonMapRenderState displayModel,
-                List<MapRenderScene.TextPrimitive> texts
+                List<TextPrimitive> texts
         ) {
             for (DungeonMapRenderState.Label label : displayModel.labels()) {
                 if (!LevelFilter.includeLevel(displayModel, label.z())) {
                     continue;
                 }
-                texts.add(new MapRenderScene.TextPrimitive(
+                texts.add(new TextPrimitive(
                         SceneIdentity.labelHitRef(label),
                         SceneIdentity.selectionRef(label.topologyRef()),
                         label.z(),
@@ -234,7 +243,7 @@ public final class DungeonMapContentModel {
                     null,
                     token.z(),
                     SceneGeometry.partyTokenShape(token),
-                    new MapRenderScene.PaintStyle(
+                    new PaintStyle(
                             ScenePalette.PARTY_FILL,
                             ScenePalette.PARTY_STROKE,
                             1.8 / 32.0,
@@ -247,8 +256,8 @@ public final class DungeonMapContentModel {
 
         private SceneBuckets assemble(DungeonMapRenderState displayModel) {
             List<MapCanvasPolygonPrimitive> surfaces = new ArrayList<>();
-            List<MapRenderScene.TextPrimitive> texts = new ArrayList<>();
-            List<MapRenderScene.RelationPrimitive> relations = new ArrayList<>();
+            List<TextPrimitive> texts = new ArrayList<>();
+            List<RelationPrimitive> relations = new ArrayList<>();
             Map<Long, DungeonMapRenderState.GraphNode> nodesById = indexNodes(displayModel.graphNodes());
             addLinks(displayModel, relations, nodesById);
             addNodes(displayModel, surfaces, texts);
@@ -272,7 +281,7 @@ public final class DungeonMapContentModel {
 
         private void addLinks(
                 DungeonMapRenderState displayModel,
-                List<MapRenderScene.RelationPrimitive> relations,
+                List<RelationPrimitive> relations,
                 Map<Long, DungeonMapRenderState.GraphNode> nodesById
         ) {
             for (DungeonMapRenderState.GraphLink link : displayModel.graphLinks()) {
@@ -281,13 +290,13 @@ public final class DungeonMapContentModel {
                 if (from == null || to == null) {
                     continue;
                 }
-                relations.add(new MapRenderScene.RelationPrimitive(
+                relations.add(new RelationPrimitive(
                         "",
                         displayModel.projectionLevel(),
                         List.of(
                                 new MapCanvasPoint(from.q(), from.r()),
                                 new MapCanvasPoint(to.q(), to.r())),
-                        new MapRenderScene.PaintStyle(
+                        new PaintStyle(
                                 null,
                                 link.selected() ? ScenePalette.HIGHLIGHT_STROKE : ScenePalette.GRAPH_LINK,
                                 link.selected() ? 2.4 / 32.0 : 1.7 / 32.0,
@@ -299,7 +308,7 @@ public final class DungeonMapContentModel {
         private void addNodes(
                 DungeonMapRenderState displayModel,
                 List<MapCanvasPolygonPrimitive> surfaces,
-                List<MapRenderScene.TextPrimitive> texts
+                List<TextPrimitive> texts
         ) {
             for (DungeonMapRenderState.GraphNode node : displayModel.graphNodes()) {
                 surfaces.add(new MapCanvasPolygonPrimitive(
@@ -307,13 +316,13 @@ public final class DungeonMapContentModel {
                         "ROOM:" + node.id(),
                         displayModel.projectionLevel(),
                         SceneGeometry.roundedRect(node.q(), node.r(), 1.8, 1.1),
-                        new MapRenderScene.PaintStyle(
+                        new PaintStyle(
                                 ScenePalette.GRAPH_NODE_FILL,
                                 node.selected() ? ScenePalette.HIGHLIGHT_STROKE : ScenePalette.ROOM_CELL_STROKE,
                                 node.selected() ? 2.4 / 32.0 : 1.2 / 32.0,
                                 1.0,
                                 false)));
-                texts.add(new MapRenderScene.TextPrimitive(
+                texts.add(new TextPrimitive(
                         SceneIdentity.graphNodeHitRef(node),
                         "ROOM:" + node.id(),
                         displayModel.projectionLevel(),
@@ -322,7 +331,7 @@ public final class DungeonMapContentModel {
                         node.r(),
                         Math.max(1.8, SceneGeometry.labelWidthScene(node.label())),
                         SceneGeometry.LABEL_HEIGHT_SCENE,
-                        new MapRenderScene.PaintStyle(null, null, 0.0, 1.0, false),
+                        new PaintStyle(null, null, 0.0, 1.0, false),
                         ScenePalette.LABEL_TEXT));
             }
         }
@@ -330,48 +339,48 @@ public final class DungeonMapContentModel {
 
     private static final class HitAreaProjector {
 
-        private static List<MapRenderScene.HitArea> gridHitAreas(
+        private static List<HitArea> gridHitAreas(
                 List<MapCanvasPolygonPrimitive> actors,
-                List<MapRenderScene.GlyphPrimitive> glyphs,
-                List<MapRenderScene.TextPrimitive> texts,
-                List<MapRenderScene.BoundaryPrimitive> boundaries,
+                List<GlyphPrimitive> glyphs,
+                List<TextPrimitive> texts,
+                List<BoundaryPrimitive> boundaries,
                 List<MapCanvasPolygonPrimitive> surfaces
         ) {
-            List<MapRenderScene.HitArea> hitAreas = new ArrayList<>();
+            List<HitArea> hitAreas = new ArrayList<>();
             addPolygonHits(hitAreas, actors, MapCanvasPolygonPrimitive::hitRef, MapCanvasPolygonPrimitive::selectionRef,
-                    MapCanvasPolygonPrimitive::polygon, CanvasPointerEvent.CanvasPrimitive.ACTOR);
-            addPolygonHits(hitAreas, glyphs, MapRenderScene.GlyphPrimitive::hitRef, MapRenderScene.GlyphPrimitive::selectionRef,
-                    MapRenderScene.GlyphPrimitive::polygon, CanvasPointerEvent.CanvasPrimitive.GLYPH);
+                    MapCanvasPolygonPrimitive::polygon, MapCanvasViewInputEvent.CanvasPrimitive.ACTOR);
+            addPolygonHits(hitAreas, glyphs, GlyphPrimitive::hitRef, GlyphPrimitive::selectionRef,
+                    GlyphPrimitive::polygon, MapCanvasViewInputEvent.CanvasPrimitive.GLYPH);
             addTextHits(hitAreas, texts);
-            addPolylineHits(hitAreas, boundaries, MapRenderScene.BoundaryPrimitive::hitRef,
-                    MapRenderScene.BoundaryPrimitive::selectionRef, MapRenderScene.BoundaryPrimitive::polyline,
-                    CanvasPointerEvent.CanvasPrimitive.BOUNDARY);
+            addPolylineHits(hitAreas, boundaries, BoundaryPrimitive::hitRef,
+                    BoundaryPrimitive::selectionRef, BoundaryPrimitive::polyline,
+                    MapCanvasViewInputEvent.CanvasPrimitive.BOUNDARY);
             addPolygonHits(hitAreas, surfaces, MapCanvasPolygonPrimitive::hitRef, MapCanvasPolygonPrimitive::selectionRef,
-                    MapCanvasPolygonPrimitive::polygon, CanvasPointerEvent.CanvasPrimitive.SURFACE);
+                    MapCanvasPolygonPrimitive::polygon, MapCanvasViewInputEvent.CanvasPrimitive.SURFACE);
             return List.copyOf(hitAreas);
         }
 
-        private static List<MapRenderScene.HitArea> graphHitAreas(
-                List<MapRenderScene.TextPrimitive> texts,
-                List<MapRenderScene.RelationPrimitive> relations,
+        private static List<HitArea> graphHitAreas(
+                List<TextPrimitive> texts,
+                List<RelationPrimitive> relations,
                 List<MapCanvasPolygonPrimitive> surfaces
         ) {
-            List<MapRenderScene.HitArea> hitAreas = new ArrayList<>();
+            List<HitArea> hitAreas = new ArrayList<>();
             addTextHits(hitAreas, texts);
-            addPolylineHits(hitAreas, relations, MapRenderScene.RelationPrimitive::hitRef, ignored -> "",
-                    MapRenderScene.RelationPrimitive::polyline, CanvasPointerEvent.CanvasPrimitive.RELATION);
+            addPolylineHits(hitAreas, relations, RelationPrimitive::hitRef, ignored -> "",
+                    RelationPrimitive::polyline, MapCanvasViewInputEvent.CanvasPrimitive.RELATION);
             addPolygonHits(hitAreas, surfaces, MapCanvasPolygonPrimitive::hitRef, MapCanvasPolygonPrimitive::selectionRef,
-                    MapCanvasPolygonPrimitive::polygon, CanvasPointerEvent.CanvasPrimitive.SURFACE);
+                    MapCanvasPolygonPrimitive::polygon, MapCanvasViewInputEvent.CanvasPrimitive.SURFACE);
             return List.copyOf(hitAreas);
         }
 
         private static <T> void addPolygonHits(
-                List<MapRenderScene.HitArea> target,
+                List<HitArea> target,
                 List<T> source,
                 Function<T, String> hitRefReader,
                 Function<T, String> selectionRefReader,
                 Function<T, List<MapCanvasPoint>> polygonReader,
-                CanvasPointerEvent.CanvasPrimitive primitive
+                MapCanvasViewInputEvent.CanvasPrimitive primitive
         ) {
             for (T item : source) {
                 String hitRef = hitRefReader.apply(item);
@@ -379,7 +388,7 @@ public final class DungeonMapContentModel {
                 if (hitRef.isBlank() || polygon.isEmpty()) {
                     continue;
                 }
-                target.add(new MapRenderScene.PolygonHitArea(
+                target.add(new PolygonHitArea(
                         hitRef,
                         primitive,
                         selectionRefReader.apply(item),
@@ -388,12 +397,12 @@ public final class DungeonMapContentModel {
         }
 
         private static <T> void addPolylineHits(
-                List<MapRenderScene.HitArea> target,
+                List<HitArea> target,
                 List<T> source,
                 Function<T, String> hitRefReader,
                 Function<T, String> selectionRefReader,
                 Function<T, List<MapCanvasPoint>> polylineReader,
-                CanvasPointerEvent.CanvasPrimitive primitive
+                MapCanvasViewInputEvent.CanvasPrimitive primitive
         ) {
             for (T item : source) {
                 String hitRef = hitRefReader.apply(item);
@@ -401,7 +410,7 @@ public final class DungeonMapContentModel {
                 if (hitRef.isBlank() || polyline.isEmpty()) {
                     continue;
                 }
-                target.add(new MapRenderScene.PolylineHitArea(
+                target.add(new PolylineHitArea(
                         hitRef,
                         primitive,
                         selectionRefReader.apply(item),
@@ -410,16 +419,16 @@ public final class DungeonMapContentModel {
         }
 
         private static void addTextHits(
-                List<MapRenderScene.HitArea> target,
-                List<MapRenderScene.TextPrimitive> texts
+                List<HitArea> target,
+                List<TextPrimitive> texts
         ) {
-            for (MapRenderScene.TextPrimitive text : texts) {
+            for (TextPrimitive text : texts) {
                 if (text.hitRef().isBlank() || text.text().isBlank()) {
                     continue;
                 }
-                target.add(new MapRenderScene.PolygonHitArea(
+                target.add(new PolygonHitArea(
                         text.hitRef(),
-                        CanvasPointerEvent.CanvasPrimitive.TEXT,
+                        MapCanvasViewInputEvent.CanvasPrimitive.TEXT,
                         text.selectionRef(),
                         SceneGeometry.centeredRect(text.centerX(), text.centerY(), text.width(), text.height())));
             }
@@ -602,7 +611,7 @@ public final class DungeonMapContentModel {
 
     private static final class SurfaceStyler {
 
-        private static MapRenderScene.PaintStyle style(
+        private static PaintStyle style(
                 DungeonMapRenderState.Cell cell,
                 DungeonMapRenderState displayModel
         ) {
@@ -612,7 +621,7 @@ public final class DungeonMapContentModel {
             if (cell.z() != displayModel.projectionLevel()) {
                 return overlayStyle(cell, displayModel);
             }
-            return new MapRenderScene.PaintStyle(
+            return new PaintStyle(
                     cell.selected() ? ScenePalette.SELECTED_FILL : baseFill(cell),
                     cell.selected() ? ScenePalette.SELECTED_STROKE : baseStroke(cell),
                     cell.selected() ? 2.4 / 32.0 : 1.0 / 32.0,
@@ -620,8 +629,8 @@ public final class DungeonMapContentModel {
                     false);
         }
 
-        private static MapRenderScene.PaintStyle previewStyle(DungeonMapRenderState.Cell cell) {
-            return new MapRenderScene.PaintStyle(
+        private static PaintStyle previewStyle(DungeonMapRenderState.Cell cell) {
+            return new PaintStyle(
                     cell.destructivePreview() ? ScenePalette.DESTRUCTIVE_PREVIEW_FILL : ScenePalette.PREVIEW_FILL,
                     cell.destructivePreview() ? ScenePalette.DESTRUCTIVE_PREVIEW_STROKE : ScenePalette.PREVIEW_STROKE,
                     cell.selected() ? 2.4 / 32.0 : 1.0 / 32.0,
@@ -629,14 +638,14 @@ public final class DungeonMapContentModel {
                     false);
         }
 
-        private static MapRenderScene.PaintStyle overlayStyle(
+        private static PaintStyle overlayStyle(
                 DungeonMapRenderState.Cell cell,
                 DungeonMapRenderState displayModel
         ) {
             boolean above = cell.z() > displayModel.projectionLevel();
-            Color tint = above ? ScenePalette.ABOVE_TINT : ScenePalette.BELOW_TINT;
-            Color baseFill = above ? ScenePalette.ROOM_FILL : ScenePalette.CORRIDOR_FILL;
-            return new MapRenderScene.PaintStyle(
+            SceneColor tint = above ? ScenePalette.ABOVE_TINT : ScenePalette.BELOW_TINT;
+            SceneColor baseFill = above ? ScenePalette.ROOM_FILL : ScenePalette.CORRIDOR_FILL;
+            return new PaintStyle(
                     ScenePalette.blend(baseFill, tint, 0.56),
                     ScenePalette.blend(ScenePalette.ROOM_CELL_STROKE, tint, 0.62),
                     cell.selected() ? 2.4 / 32.0 : 1.0 / 32.0,
@@ -644,7 +653,7 @@ public final class DungeonMapContentModel {
                     false);
         }
 
-        private static Color baseFill(DungeonMapRenderState.Cell cell) {
+        private static SceneColor baseFill(DungeonMapRenderState.Cell cell) {
             return switch (cell.kind()) {
                 case ROOM -> ScenePalette.ROOM_FILL;
                 case CORRIDOR -> ScenePalette.CORRIDOR_FILL;
@@ -653,7 +662,7 @@ public final class DungeonMapContentModel {
             };
         }
 
-        private static Color baseStroke(DungeonMapRenderState.Cell cell) {
+        private static SceneColor baseStroke(DungeonMapRenderState.Cell cell) {
             return switch (cell.kind()) {
                 case ROOM -> ScenePalette.ROOM_CELL_STROKE;
                 case CORRIDOR, STAIR -> ScenePalette.CORRIDOR_STROKE;
@@ -664,12 +673,12 @@ public final class DungeonMapContentModel {
 
     private static final class EdgeStyler {
 
-        private static MapRenderScene.PaintStyle style(
+        private static PaintStyle style(
                 DungeonMapRenderState.Edge edge,
                 DungeonMapRenderState displayModel
         ) {
             if (edge.preview()) {
-                return new MapRenderScene.PaintStyle(null, ScenePalette.PREVIEW_STROKE, 2.6 / 32.0, 0.72, true);
+                return new PaintStyle(null, ScenePalette.PREVIEW_STROKE, 2.6 / 32.0, 0.72, true);
             }
             if (edge.z() != displayModel.projectionLevel()) {
                 return overlayStyle(edge, displayModel);
@@ -677,11 +686,11 @@ public final class DungeonMapContentModel {
             return visibleStyle(edge);
         }
 
-        private static MapRenderScene.PaintStyle overlayStyle(
+        private static PaintStyle overlayStyle(
                 DungeonMapRenderState.Edge edge,
                 DungeonMapRenderState displayModel
         ) {
-            return new MapRenderScene.PaintStyle(
+            return new PaintStyle(
                     null,
                     edge.isDoor() ? ScenePalette.DOOR_STROKE : ScenePalette.WALL_STROKE,
                     edge.isDoor() ? 3.6 / 32.0 : 2.0 / 32.0,
@@ -689,30 +698,30 @@ public final class DungeonMapContentModel {
                     false);
         }
 
-        private static MapRenderScene.PaintStyle visibleStyle(DungeonMapRenderState.Edge edge) {
-            Color stroke = edge.isDoor()
+        private static PaintStyle visibleStyle(DungeonMapRenderState.Edge edge) {
+            SceneColor stroke = edge.isDoor()
                     ? ScenePalette.DOOR_STROKE
                     : edge.selected() ? ScenePalette.HIGHLIGHT_STROKE : ScenePalette.WALL_STROKE;
             double strokeWidth = edge.isDoor() ? 3.6 / 32.0 : edge.selected() ? 2.8 / 32.0 : 2.0 / 32.0;
-            return new MapRenderScene.PaintStyle(null, stroke, strokeWidth, 1.0, false);
+            return new PaintStyle(null, stroke, strokeWidth, 1.0, false);
         }
     }
 
     private static final class MarkerStyler {
 
-        private static MapRenderScene.PaintStyle style(
+        private static PaintStyle style(
                 DungeonMapRenderState.Marker marker,
                 DungeonMapRenderState displayModel
         ) {
             if (marker.preview()) {
-                return new MapRenderScene.PaintStyle(
+                return new PaintStyle(
                         ScenePalette.PREVIEW_FILL,
                         ScenePalette.PREVIEW_STROKE,
                         marker.selected() ? 2.2 / 32.0 : 1.4 / 32.0,
                         0.72,
                         false);
             }
-            return new MapRenderScene.PaintStyle(
+            return new PaintStyle(
                     fill(marker),
                     stroke(marker),
                     marker.selected() ? 2.2 / 32.0 : 1.4 / 32.0,
@@ -725,7 +734,7 @@ public final class DungeonMapContentModel {
                     false);
         }
 
-        private static Color fill(DungeonMapRenderState.Marker marker) {
+        private static SceneColor fill(DungeonMapRenderState.Marker marker) {
             return switch (marker.kind()) {
                 case DOOR, CLUSTER -> ScenePalette.LABEL_FILL;
                 case STAIR -> ScenePalette.STAIR_FILL;
@@ -734,7 +743,7 @@ public final class DungeonMapContentModel {
             };
         }
 
-        private static Color stroke(DungeonMapRenderState.Marker marker) {
+        private static SceneColor stroke(DungeonMapRenderState.Marker marker) {
             if (marker.selected()) {
                 return ScenePalette.HIGHLIGHT_STROKE;
             }
@@ -750,11 +759,11 @@ public final class DungeonMapContentModel {
 
     private static final class LabelStyler {
 
-        private static MapRenderScene.PaintStyle style(
+        private static PaintStyle style(
                 DungeonMapRenderState.Label label,
                 DungeonMapRenderState displayModel
         ) {
-            return new MapRenderScene.PaintStyle(
+            return new PaintStyle(
                     label.preview() ? ScenePalette.PREVIEW_FILL : ScenePalette.LABEL_FILL,
                     label.preview()
                             ? ScenePalette.PREVIEW_STROKE
@@ -780,44 +789,38 @@ public final class DungeonMapContentModel {
 
     private static final class ScenePalette {
 
-        private static final Color ROOM_FILL = color(0x2a, 0x32, 0x38, 1.0);
-        private static final Color ROOM_CELL_STROKE = color(0x6d, 0x78, 0x81, 0.72);
-        private static final Color WALL_STROKE = color(0x8a, 0x6a, 0x35, 1.0);
-        private static final Color HIGHLIGHT_STROKE = color(0xf1, 0xd3, 0x8a, 1.0);
-        private static final Color CORRIDOR_FILL = color(0x3b, 0x50, 0x53, 0.8);
-        private static final Color CORRIDOR_STROKE = color(0x91, 0xb6, 0xb0, 1.0);
-        private static final Color SELECTED_FILL = color(0x58, 0x70, 0x6e, 0.95);
-        private static final Color SELECTED_STROKE = color(0xd7, 0xec, 0xe7, 1.0);
-        private static final Color PREVIEW_FILL = color(0xd7, 0xec, 0xe7, 0.72);
-        private static final Color PREVIEW_STROKE = color(0xf1, 0xd3, 0x8a, 1.0);
-        private static final Color PARTY_FILL = color(0xff, 0xb6, 0x2a, 1.0);
-        private static final Color PARTY_STROKE = color(0xff, 0xf0, 0xc6, 1.0);
-        private static final Color LABEL_FILL = color(0x18, 0x1f, 0x24, 1.0);
-        private static final Color LABEL_BORDER = color(0x76, 0x84, 0x8d, 1.0);
-        private static final Color LABEL_TEXT = color(0xf2, 0xf4, 0xf5, 1.0);
-        private static final Color STAIR_FILL = color(0x4b, 0x3a, 0x6e, 0.95);
-        private static final Color TRANSITION_FILL = color(0x6f, 0x3f, 0x28, 0.95);
-        private static final Color TRANSITION_STROKE = color(0xe0, 0xa3, 0x6a, 1.0);
-        private static final Color DOOR_STROKE = color(0xc6, 0xe2, 0xff, 1.0);
-        private static final Color GRAPH_LINK = color(0x88, 0x96, 0xa1, 0.9);
-        private static final Color GRAPH_NODE_FILL = color(0x21, 0x29, 0x2f, 1.0);
-        private static final Color ABOVE_TINT = color(0x86, 0x90, 0xd8, 0.75);
-        private static final Color BELOW_TINT = color(0x55, 0x8a, 0x9c, 0.75);
-        private static final Color DESTRUCTIVE_PREVIEW_FILL = color(0x99, 0x43, 0x3d, 1.0);
-        private static final Color DESTRUCTIVE_PREVIEW_STROKE = color(0xff, 0xc1, 0x87, 1.0);
+        private static final SceneColor ROOM_FILL = color(0x2a, 0x32, 0x38, 1.0);
+        private static final SceneColor ROOM_CELL_STROKE = color(0x6d, 0x78, 0x81, 0.72);
+        private static final SceneColor WALL_STROKE = color(0x8a, 0x6a, 0x35, 1.0);
+        private static final SceneColor HIGHLIGHT_STROKE = color(0xf1, 0xd3, 0x8a, 1.0);
+        private static final SceneColor CORRIDOR_FILL = color(0x3b, 0x50, 0x53, 0.8);
+        private static final SceneColor CORRIDOR_STROKE = color(0x91, 0xb6, 0xb0, 1.0);
+        private static final SceneColor SELECTED_FILL = color(0x58, 0x70, 0x6e, 0.95);
+        private static final SceneColor SELECTED_STROKE = color(0xd7, 0xec, 0xe7, 1.0);
+        private static final SceneColor PREVIEW_FILL = color(0xd7, 0xec, 0xe7, 0.72);
+        private static final SceneColor PREVIEW_STROKE = color(0xf1, 0xd3, 0x8a, 1.0);
+        private static final SceneColor PARTY_FILL = color(0xff, 0xb6, 0x2a, 1.0);
+        private static final SceneColor PARTY_STROKE = color(0xff, 0xf0, 0xc6, 1.0);
+        private static final SceneColor LABEL_FILL = color(0x18, 0x1f, 0x24, 1.0);
+        private static final SceneColor LABEL_BORDER = color(0x76, 0x84, 0x8d, 1.0);
+        private static final SceneColor LABEL_TEXT = color(0xf2, 0xf4, 0xf5, 1.0);
+        private static final SceneColor STAIR_FILL = color(0x4b, 0x3a, 0x6e, 0.95);
+        private static final SceneColor TRANSITION_FILL = color(0x6f, 0x3f, 0x28, 0.95);
+        private static final SceneColor TRANSITION_STROKE = color(0xe0, 0xa3, 0x6a, 1.0);
+        private static final SceneColor DOOR_STROKE = color(0xc6, 0xe2, 0xff, 1.0);
+        private static final SceneColor GRAPH_LINK = color(0x88, 0x96, 0xa1, 0.9);
+        private static final SceneColor GRAPH_NODE_FILL = color(0x21, 0x29, 0x2f, 1.0);
+        private static final SceneColor ABOVE_TINT = color(0x86, 0x90, 0xd8, 0.75);
+        private static final SceneColor BELOW_TINT = color(0x55, 0x8a, 0x9c, 0.75);
+        private static final SceneColor DESTRUCTIVE_PREVIEW_FILL = color(0x99, 0x43, 0x3d, 1.0);
+        private static final SceneColor DESTRUCTIVE_PREVIEW_STROKE = color(0xff, 0xc1, 0x87, 1.0);
 
-        private static Color blend(Color base, Color tint, double weight) {
-            double clampedWeight = Math.max(0.0, Math.min(1.0, weight));
-            double inverseWeight = 1.0 - clampedWeight;
-            return new Color(
-                    base.getRed() * inverseWeight + tint.getRed() * clampedWeight,
-                    base.getGreen() * inverseWeight + tint.getGreen() * clampedWeight,
-                    base.getBlue() * inverseWeight + tint.getBlue() * clampedWeight,
-                    base.getOpacity() * inverseWeight + tint.getOpacity() * clampedWeight);
+        private static SceneColor blend(SceneColor base, SceneColor tint, double weight) {
+            return SceneColor.blend(base, tint, weight);
         }
 
-        private static Color color(int red, int green, int blue, double opacity) {
-            return new Color(red / 255.0, green / 255.0, blue / 255.0, opacity);
+        private static SceneColor color(int red, int green, int blue, double opacity) {
+            return SceneColor.color(red, green, blue, opacity);
         }
     }
 }

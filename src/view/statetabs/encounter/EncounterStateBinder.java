@@ -5,16 +5,19 @@ import java.util.Map;
 import java.util.Objects;
 import javafx.scene.Node;
 import shell.api.InspectorSink;
+import shell.api.InspectorEntrySpec;
 import shell.api.ShellBinding;
 import shell.api.ShellRuntimeContext;
 import shell.api.ShellSlot;
 import src.domain.creatures.CreaturesApplicationService;
 import src.domain.creatures.published.CreatureDetailModel;
+import src.domain.creatures.published.CreatureDetailResult;
 import src.domain.creatures.published.SelectCreatureDetailCommand;
 import src.domain.encounter.EncounterApplicationService;
 import src.domain.encounter.published.ApplyEncounterStateCommand;
 import src.domain.encounter.published.EncounterStateModel;
-import src.view.slotcontent.details.creature.CreatureDetailsInspectorEntry;
+import src.view.slotcontent.details.creature.CreatureDetailsContentModel;
+import src.view.slotcontent.details.creature.CreatureDetailsView;
 
 final class EncounterStateBinder {
 
@@ -72,9 +75,19 @@ final class EncounterStateBinder {
             return;
         }
         creatures.selectCreatureDetail(new SelectCreatureDetailCommand(creatureId));
-        inspector.push(CreatureDetailsInspectorEntry.create(
-                creatureId,
-                detailModel.current()));
+        inspector.push(new InspectorEntrySpec(
+                "Creature",
+                "creature:" + creatureId,
+                () -> creatureDetailsContent(detailModel.current()),
+                null));
+    }
+
+    private static Node creatureDetailsContent(CreatureDetailResult detailResult) {
+        CreatureDetailsView detailView = new CreatureDetailsView();
+        CreatureDetailsContentModel contentModel = new CreatureDetailsContentModel(detailResult);
+        detailView.bind(contentModel);
+        contentModel.load();
+        return detailView;
     }
 
     private void wireRendering(EncounterStateView state, EncounterStateContributionModel presentationModel) {

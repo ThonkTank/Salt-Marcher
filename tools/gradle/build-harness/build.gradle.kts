@@ -1,8 +1,5 @@
 import java.io.File
 import org.gradle.api.tasks.SourceSetContainer
-import org.gradle.api.tasks.compile.JavaCompile
-import org.gradle.language.jvm.tasks.ProcessResources
-import org.gradle.jvm.tasks.Jar
 import org.gradle.kotlin.dsl.named
 import org.gradle.kotlin.dsl.register
 import org.gradle.kotlin.dsl.the
@@ -29,15 +26,31 @@ val focusedEnforcementBundleMode = enforcementBundles.focusedEnforcementBundleMo
 val activeEnforcementBundleIds = enforcementBundles.activeEnforcementBundleIds
 
 val sourceSets = the<SourceSetContainer>()
+
+fun repoVerificationJavaDirs(relativePath: String): List<String> {
+    val root = repoRootDir.resolve("tools/quality")
+    if (!root.isDirectory) {
+        return emptyList()
+    }
+    return root.walkTopDown()
+        .filter { file -> file.isDirectory && file.relativeTo(repoRootDir).path.replace(File.separatorChar, '/') == relativePath }
+        .map(File::getAbsolutePath)
+        .toList()
+}
+
 sourceSets.named("main") {
     java.setSrcDirs(
         listOf(layout.projectDirectory.dir("src/main/java").asFile.absolutePath) +
-            activeEnforcementBundleIds.mapNotNull { bundleId -> enforcementBundles.descriptor(bundleId).buildHarnessSourceDir } +
-            listOfNotNull(
-                repoRootDir.resolve("tools/quality/documentation-enforcement/build-harness/src/main/java")
-                    .takeIf { !focusedEnforcementBundleMode }
-                    ?.absolutePath
-            )
+            repoVerificationJavaDirs("tools/quality/documentation-enforcement/build-harness/src/main/java") +
+            repoRootDir.resolve("tools/quality")
+                .walkTopDown()
+                .filter { file ->
+                    file.isDirectory &&
+                        file.relativeTo(repoRootDir).path.replace(File.separatorChar, '/').endsWith("/build-harness/src/main/java") &&
+                        file.relativeTo(repoRootDir).path.replace(File.separatorChar, '/') != "tools/quality/documentation-enforcement/build-harness/src/main/java"
+                }
+                .map(File::getAbsolutePath)
+                .toList()
     )
     resources.setSrcDirs(emptyList<String>())
 }
@@ -85,6 +98,9 @@ fun activeBuildHarnessDocumentationRuleClasses() = activeEnforcementBundleIds
     .flatMap { bundleId -> enforcementBundles.descriptor(bundleId).buildHarnessDocumentationRuleClasses }
     .distinct()
 
+fun descriptorBuildHarnessRuleClasses(bundleId: String, taskName: String): List<String> =
+    enforcementBundles.descriptor(bundleId).buildHarnessTaskRuleClasses(taskName)
+
 fun registerBuildHarnessTask(
     taskName: String,
     bundleLabel: String,
@@ -117,18 +133,15 @@ fun registerBuildHarnessTask(
 activeEnforcementBundleIds.forEach { bundleId ->
     val bundleLabel = humanizeBundleLabel(bundleId)
     val descriptor = enforcementBundles.descriptor(bundleId)
-    (descriptor.buildHarnessTaskMainClasses.keys + descriptor.buildHarnessTaskRuleClasses.keys)
-        .distinct()
-        .sorted()
+    descriptor.buildHarnessTaskNames()
         .forEach { taskName ->
             registerBuildHarnessTask(
                 taskName,
                 bundleLabel,
                 descriptor.buildHarnessTaskMainClasses[taskName],
-                descriptor.buildHarnessTaskRuleClasses[taskName].orEmpty()
+                descriptorBuildHarnessRuleClasses(bundleId, taskName)
             )
         }
-    
 }
 
 if (!focusedEnforcementBundleMode) {
@@ -165,20 +178,6 @@ tasks.register<RepoVerificationMainTask>("architectureCheck") {
         )
     )
     successMarker.set(layout.buildDirectory.file("verification-markers/architectureCheck/success.marker"))
-}
-
-// This included build derives active verification sources from propagated
-// bundle selection, so cached outputs can restore an incomplete harness.
-tasks.named<JavaCompile>("compileJava") {
-    outputs.cacheIf("build-harness compile output must track dynamic bundle selection live") { false }
-}
-
-tasks.named<ProcessResources>("processResources") {
-    outputs.cacheIf("build-harness resources must track dynamic bundle selection live") { false }
-}
-
-tasks.named<Jar>("jar") {
-    outputs.cacheIf("build-harness jar must track dynamic bundle selection live") { false }
 }
 
 tasks.named("check") {

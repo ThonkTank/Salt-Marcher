@@ -39,30 +39,42 @@ data class EnforcementPmdTask(
     val consoleOutput: Boolean
 )
 
+data class EnforcementCustomTask(
+    val taskName: String,
+    val kind: String
+)
+
 data class EnforcementBundleDescriptor(
     val bundleId: String,
     val order: Int,
     val taskNames: List<String>,
-    val rootPluginId: String?,
     val rootTask: EnforcementRootTask?,
-    val buildHarnessSourceDir: String?,
     val buildHarnessArchitectureRuleClasses: List<String>,
     val buildHarnessDocumentationRuleClasses: List<String>,
     val buildHarnessTaskMainClasses: Map<String, String>,
     val buildHarnessTaskRuleClasses: Map<String, List<String>>,
     val errorProneCheckers: List<String>,
-    val errorProneSourceDir: String?,
-    val errorProneServiceFile: String?,
     val archunit: EnforcementArchunitTask?,
     val jqassistantTasks: List<EnforcementJqassistantTask>,
     val pmdTasks: List<EnforcementPmdTask>,
-    val pmdSourceDir: String?,
+    val customTasks: List<EnforcementCustomTask>,
     val verificationSourceRoots: List<String>,
     val verificationSourceIncludes: List<String>
 ) {
     fun publicCheckTaskName(): String = publicCheckTaskName(taskNames, bundleId)
 
-    fun requiresFocusedCompile(): Boolean = errorProneSourceDir != null || archunit != null || jqassistantTasks.isNotEmpty()
+    fun requiresFocusedCompile(): Boolean = errorProneCheckers.isNotEmpty() || archunit != null || jqassistantTasks.isNotEmpty()
+
+    fun buildHarnessTaskRuleClasses(taskName: String): List<String> = buildHarnessTaskRuleClasses[taskName]
+        ?: when {
+            taskName.endsWith("DocumentationEnforcementCheck") -> buildHarnessDocumentationRuleClasses
+            taskName.endsWith("TopologyCheck") -> buildHarnessArchitectureRuleClasses
+            else -> emptyList()
+        }
+
+    fun buildHarnessTaskNames(): List<String> = taskNames.filter { taskName ->
+        buildHarnessTaskMainClasses.containsKey(taskName) || buildHarnessTaskRuleClasses(taskName).isNotEmpty()
+    }
 }
 
 data class EnforcementBundleCatalog(
@@ -166,24 +178,16 @@ private fun loadEnforcementBundleDescriptors(
                         bundleId = bundleId,
                         order = properties.requiredTrimmed("order").toInt(),
                     taskNames = properties.list("taskNames"),
-                    rootPluginId = properties.optionalTrimmed("rootPluginId"),
                     rootTask = properties.readRootTask(""),
-                    buildHarnessSourceDir = properties.optionalTrimmed("buildHarnessSourceDir")
-                        ?.let { rawPath -> resolveDescriptorPath(repoRootDir, descriptorFile, rawPath) },
                     buildHarnessArchitectureRuleClasses = properties.list("buildHarnessArchitectureRuleClasses"),
                     buildHarnessDocumentationRuleClasses = properties.list("buildHarnessDocumentationRuleClasses"),
                     buildHarnessTaskMainClasses = properties.mapEntries("buildHarnessTask.", ".mainClass"),
                     buildHarnessTaskRuleClasses = properties.mapListEntries("buildHarnessTask.", ".ruleClasses"),
                     errorProneCheckers = properties.list("errorProneCheckers"),
-                    errorProneSourceDir = properties.optionalTrimmed("errorProneSourceDir")
-                        ?.let { rawPath -> resolveDescriptorPath(repoRootDir, descriptorFile, rawPath) },
-                    errorProneServiceFile = properties.optionalTrimmed("errorProneServiceFile")
-                        ?.let { rawPath -> resolveDescriptorPath(repoRootDir, descriptorFile, rawPath) },
                     archunit = properties.readArchunitTask("", repoRootDir, descriptorFile),
                     jqassistantTasks = properties.readJqassistantTasks("", repoRootDir, descriptorFile, properties.list("taskNames")),
                     pmdTasks = properties.readPmdTasks("", repoRootDir, descriptorFile, properties.list("taskNames")),
-                    pmdSourceDir = properties.optionalTrimmed("pmdSourceDir")
-                        ?.let { rawPath -> resolveDescriptorPath(repoRootDir, descriptorFile, rawPath) },
+                    customTasks = properties.readCustomTasks(descriptorFile, properties.list("taskNames")),
                     verificationSourceRoots = properties.list("verificationSourceRoots"),
                     verificationSourceIncludes = properties.list("verificationSourceIncludes")
                     ).validated()
@@ -200,9 +204,6 @@ private fun EnforcementBundleDescriptor.validated(): EnforcementBundleDescriptor
     publicCheckTaskName()
 
     if (buildHarnessTaskMainClasses.isNotEmpty() || buildHarnessTaskRuleClasses.isNotEmpty()) {
-        require(buildHarnessSourceDir != null) {
-            "Enforcement bundle '$bundleId' must declare buildHarnessSourceDir when buildHarnessTask.*.mainClass or buildHarnessTask.*.ruleClasses is present."
-        }
         val declaredTaskNames = buildHarnessTaskMainClasses.keys + buildHarnessTaskRuleClasses.keys
         val missingTaskNames = declaredTaskNames - taskNames.toSet()
         require(missingTaskNames.isEmpty()) {
@@ -213,33 +214,6 @@ private fun EnforcementBundleDescriptor.validated(): EnforcementBundleDescriptor
             "Enforcement bundle '$bundleId' must not declare both buildHarnessTask.*.mainClass and buildHarnessTask.*.ruleClasses for the same task: ${overlappingTaskNames.joinToString()}."
         }
     }
-    if (buildHarnessSourceDir != null) {
-        require(
-            buildHarnessTaskMainClasses.isNotEmpty() ||
-                buildHarnessTaskRuleClasses.isNotEmpty() ||
-                buildHarnessArchitectureRuleClasses.isNotEmpty() ||
-                buildHarnessDocumentationRuleClasses.isNotEmpty()
-        ) {
-            "Enforcement bundle '$bundleId' must declare buildHarnessTask.*.mainClass, buildHarnessTask.*.ruleClasses, or buildHarness*RuleClasses when buildHarnessSourceDir is present."
-        }
-    }
-    if (buildHarnessArchitectureRuleClasses.isNotEmpty() || buildHarnessDocumentationRuleClasses.isNotEmpty()) {
-        require(buildHarnessSourceDir != null) {
-            "Enforcement bundle '$bundleId' must declare buildHarnessSourceDir when buildHarness*RuleClasses are present."
-        }
-    }
-
-    val hasErrorProneSource = errorProneSourceDir != null
-    val hasErrorProneService = errorProneServiceFile != null
-    require(hasErrorProneSource == hasErrorProneService) {
-        "Enforcement bundle '$bundleId' must declare both errorProneSourceDir and errorProneServiceFile together."
-    }
-    if (errorProneCheckers.isNotEmpty()) {
-        require(hasErrorProneSource) {
-            "Enforcement bundle '$bundleId' must declare errorProneSourceDir/errorProneServiceFile when errorProneCheckers are configured."
-        }
-    }
-
     if (pmdTasks.isNotEmpty()) {
         val missingTaskNames = pmdTasks.map(EnforcementPmdTask::taskName) - taskNames.toSet()
         require(missingTaskNames.isEmpty()) {
@@ -256,6 +230,13 @@ private fun EnforcementBundleDescriptor.validated(): EnforcementBundleDescriptor
         }
     }
 
+    if (customTasks.isNotEmpty()) {
+        val missingTaskNames = customTasks.map(EnforcementCustomTask::taskName) - taskNames.toSet()
+        require(missingTaskNames.isEmpty()) {
+            "Enforcement bundle '$bundleId' declares custom verification tasks that are missing from taskNames: ${missingTaskNames.joinToString()}."
+        }
+    }
+
     if (requiresFocusedCompile()) {
         require(verificationSourceRoots.isNotEmpty()) {
             "Enforcement bundle '$bundleId' must declare verificationSourceRoots for compile-backed verification."
@@ -265,10 +246,8 @@ private fun EnforcementBundleDescriptor.validated(): EnforcementBundleDescriptor
         }
     }
 
-    if (rootPluginId == null) {
-        require(rootTask != null) {
-            "Standard enforcement bundle '$bundleId' must declare rootTask.* metadata."
-        }
+    require(rootTask != null) {
+        "Enforcement bundle '$bundleId' must declare rootTask.* metadata."
     }
 
     return this
@@ -487,6 +466,25 @@ private fun Properties.readPmdTasks(
     return tasks
 }
 
+private fun Properties.readCustomTasks(
+    descriptorFile: File,
+    taskNames: List<String>
+): List<EnforcementCustomTask> {
+    val declaredTaskNames = customTaskNames()
+    val undeclaredTaskNames = declaredTaskNames - taskNames.toSet()
+    require(undeclaredTaskNames.isEmpty()) {
+        "Enforcement bundle descriptor '$descriptorFile' declares custom tasks outside taskNames: ${undeclaredTaskNames.joinToString()}."
+    }
+    return taskNames
+        .filter { taskName -> taskName in declaredTaskNames }
+        .map { taskName ->
+            EnforcementCustomTask(
+                taskName = taskName,
+                kind = requiredTrimmed("customTask.$taskName.kind")
+            )
+        }
+}
+
 private fun Properties.readNamedPmdTask(
     propertyPrefix: String,
     repoRootDir: File,
@@ -588,6 +586,18 @@ private fun Properties.pmdTaskNames(propertyPrefix: String): List<String> {
         .map { propertyName ->
             propertyName.removePrefix(prefix).substringBefore('.')
         }
+        .filter(String::isNotEmpty)
+        .distinct()
+        .sorted()
+        .toList()
+}
+
+private fun Properties.customTaskNames(): List<String> {
+    val prefix = "customTask."
+    return stringPropertyNames()
+        .asSequence()
+        .filter { propertyName -> propertyName.startsWith(prefix) && propertyName.endsWith(".kind") }
+        .map { propertyName -> propertyName.removePrefix(prefix).substringBefore('.') }
         .filter(String::isNotEmpty)
         .distinct()
         .sorted()

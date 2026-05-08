@@ -71,7 +71,9 @@ public final class ViewRoleDependencySupport {
                 case BINDER -> !ViewArchitectureSupport.isAllowedViewModelDomainBoundary(referencedType);
                 case CONTRIBUTION_MODEL, CONTENT_MODEL ->
                         !ViewArchitectureSupport.isAllowedPresentationModelDomainBoundary(referencedType);
-                case INTENT_HANDLER -> true;
+                case INTENT_HANDLER -> !ViewArchitectureSupport.isAllowedIntentHandlerDomainBoundary(
+                        sourcePackageName,
+                        referencedType);
             };
         }
 
@@ -97,8 +99,13 @@ public final class ViewRoleDependencySupport {
                 || ViewArchitectureSupport.isSlotcontentModelReference(referencedType)) {
             return false;
         }
-        if ("VIEW_INPUT_EVENT".equals(viewType.bucket()) || "PUBLISHED_EVENT".equals(viewType.bucket())) {
-            return !ViewArchitectureSupport.isSameViewRootReference(sourcePackageName, referencedType);
+        if ("VIEW_INPUT_EVENT".equals(viewType.bucket())) {
+            return !ViewArchitectureSupport.isSameViewRootOrReusableSlotcontentViewInputEventReference(
+                    sourcePackageName,
+                    referencedType);
+        }
+        if ("PUBLISHED_EVENT".equals(viewType.bucket())) {
+            return true;
         }
         if (Set.of("CONTRIBUTION", "BINDER", "MODEL", "HANDLER").contains(viewType.bucket())) {
             return !ViewArchitectureSupport.isSameViewRootReference(sourcePackageName, referencedType);
@@ -134,11 +141,21 @@ public final class ViewRoleDependencySupport {
             String referencedType,
             ViewArchitectureSupport.ViewTypeInfo viewType
     ) {
-        if (Set.of("HANDLER", "VIEW_INPUT_EVENT", "PUBLISHED_EVENT").contains(viewType.bucket())) {
+        if ("HANDLER".equals(viewType.bucket())) {
             return !ViewArchitectureSupport.isSameViewRootReference(sourcePackageName, referencedType);
         }
+        if ("VIEW_INPUT_EVENT".equals(viewType.bucket())) {
+            return !ViewArchitectureSupport.isSameViewRootOrReusableSlotcontentViewInputEventReference(
+                    sourcePackageName,
+                    referencedType);
+        }
+        if ("PUBLISHED_EVENT".equals(viewType.bucket())) {
+            return true;
+        }
         return !"MODEL".equals(viewType.bucket())
-                || !ViewArchitectureSupport.isSameViewRootReference(sourcePackageName, referencedType);
+                || !ViewArchitectureSupport.isSameViewRootOrReusableSlotcontentModelReference(
+                        sourcePackageName,
+                        referencedType);
     }
 
     private static String sourceText(CompilationUnitTree tree, VisitorState state) {

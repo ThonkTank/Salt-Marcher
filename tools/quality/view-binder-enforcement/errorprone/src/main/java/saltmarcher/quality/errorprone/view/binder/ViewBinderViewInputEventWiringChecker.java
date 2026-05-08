@@ -45,7 +45,7 @@ public final class ViewBinderViewInputEventWiringChecker extends BugChecker
 
                 String methodName = symbol.getSimpleName().toString();
                 if ("onViewInputEvent".equals(methodName)) {
-                    if (!isAllowedViewInputEventWiring(methodInvocationTree, ownerType)) {
+                    if (!isAllowedViewInputEventWiring(methodInvocationTree, sourcePackageName, ownerType)) {
                         violations.add(methodName + " -> " + ownerType);
                     }
                     return super.visitMethodInvocation(methodInvocationTree, unused);
@@ -106,6 +106,7 @@ public final class ViewBinderViewInputEventWiringChecker extends BugChecker
 
     private static boolean isAllowedViewInputEventWiring(
             MethodInvocationTree methodInvocationTree,
+            String binderPackageName,
             String ownerType
     ) {
         if (methodInvocationTree.getArguments().size() != 1) {
@@ -121,7 +122,7 @@ public final class ViewBinderViewInputEventWiringChecker extends BugChecker
         }
         String handlerOwnerType = ViewArchitectureSupport.getQualifiedOwnerTypeName(methodSymbol);
         return "consume".contentEquals(methodSymbol.getSimpleName())
-                && ViewArchitectureSupport.isSameViewUnitReference(ownerType, handlerOwnerType)
+                && ViewArchitectureSupport.isSameViewRootReference(binderPackageName, handlerOwnerType)
                 && ViewArchitectureSupport.parseViewType(handlerOwnerType) != null
                 && "HANDLER".equals(ViewArchitectureSupport.parseViewType(handlerOwnerType).bucket());
     }

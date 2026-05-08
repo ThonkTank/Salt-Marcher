@@ -124,7 +124,7 @@ src/view/
   slotcontent/<slot>/<entry>/
     <Entry>View.java
     <Entry>ContentModel.java
-    <Entry>ViewInputEvent.java
+    <Entry>ViewInputEvent.java       # only for interactive Views
 ```
 
 Rules:
@@ -137,7 +137,8 @@ Rules:
   `*ViewInputEvent` carriers for each interactive passive `*View`
 - reusable `slotcontent/**` units must not define `*Contribution` or `*Binder`
 - every reusable `slotcontent/**` unit defines exactly one passive `*View`,
-  exactly one same-stem `*ViewInputEvent`, and exactly one `*ContentModel`
+  exactly one `*ContentModel`, and for interactive reusable Views exactly one
+  same-stem `*ViewInputEvent`
 - `slotcontent/primitives/**` is only a placement bucket for especially low-
   level reusable UI surfaces; it is not a separate technical-base role family
   with different file types

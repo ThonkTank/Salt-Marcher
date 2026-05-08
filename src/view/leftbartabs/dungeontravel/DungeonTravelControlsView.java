@@ -8,6 +8,8 @@ import javafx.scene.control.Label;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import src.view.slotcontent.controls.dungeoncontrol.DungeonControlPanelView;
+import src.view.slotcontent.controls.dungeoncontrol.DungeonControlPanelContentModel;
+import src.view.slotcontent.controls.dungeoncontrol.DungeonControlPanelViewInputEvent;
 
 public final class DungeonTravelControlsView extends DungeonControlPanelView {
 
@@ -17,13 +19,14 @@ public final class DungeonTravelControlsView extends DungeonControlPanelView {
     private final ToolbarButton resetViewButton = new ToolbarButton("Ansicht zurücksetzen");
     private final ToolbarButton previousLevelButton = new ToolbarButton("-");
     private final ToolbarButton nextLevelButton = new ToolbarButton("+");
-    private final OverlayControlsPanel overlayControls = new OverlayControlsPanel(this::sectionLabel);
+    private final OverlayControlsPanel overlayControls = newOverlayControls();
     private final InputPublisher inputPublisher = new InputPublisher();
     private Consumer<DungeonTravelControlsViewInputEvent> viewInputEventHandler = ignored -> {};
 
     public DungeonTravelControlsView() {
         super("");
         getStyleClass().add("control-toolbar");
+        super.onViewInputEvent(this::handleDungeonControlInput);
         configureControls();
         getChildren().setAll(
                 new MapRow(mapLabel, resetViewButton),
@@ -52,8 +55,8 @@ public final class DungeonTravelControlsView extends DungeonControlPanelView {
         nextLevelButton.setDisable(busy || !navigationEnabled);
     }
 
-    public void showOverlaySettings(OverlayControlsPanel.Settings settings, boolean disabled) {
-        overlayControls.showSettings(settings, disabled);
+    public void showOverlaySettings(DungeonControlPanelContentModel.OverlaySettings settings, boolean disabled) {
+        contentModel().showOverlaySettings(settings, disabled);
     }
 
     public void bind(DungeonTravelContributionModel contributionModel) {
@@ -74,13 +77,19 @@ public final class DungeonTravelControlsView extends DungeonControlPanelView {
         mapLabel.setMinWidth(0.0);
         mapLabel.setMaxWidth(Double.MAX_VALUE);
         HBox.setHgrow(mapLabel, Priority.ALWAYS);
-        resetViewButton.setOnAction(event -> inputPublisher.publish(true, 0, overlayControls.snapshot()));
-        previousLevelButton.setOnAction(event -> inputPublisher.publish(false, -1, overlayControls.snapshot()));
-        nextLevelButton.setOnAction(event -> inputPublisher.publish(false, 1, overlayControls.snapshot()));
-        overlayControls.onChanged(snapshot -> inputPublisher.publish(false, 0, snapshot));
+        resetViewButton.setOnAction(event -> inputPublisher.publish(true, 0, contentModel().currentOverlayInput()));
+        previousLevelButton.setOnAction(event -> inputPublisher.publish(false, -1, contentModel().currentOverlayInput()));
+        nextLevelButton.setOnAction(event -> inputPublisher.publish(false, 1, contentModel().currentOverlayInput()));
         describe(resetViewButton, "Kamera auf die Dungeon-Karte zurücksetzen");
         describe(previousLevelButton, "Vorherige Dungeon-Ebene anzeigen");
         describe(nextLevelButton, "Nächste Dungeon-Ebene anzeigen");
+    }
+
+    private void handleDungeonControlInput(DungeonControlPanelViewInputEvent event) {
+        if (event == null || event.overlay() == null) {
+            return;
+        }
+        inputPublisher.publish(false, 0, event.overlay());
     }
 
     private final class InputPublisher {
@@ -88,43 +97,43 @@ public final class DungeonTravelControlsView extends DungeonControlPanelView {
         private void publish(
                 boolean resetViewRequested,
                 int projectionLevelShift,
-                OverlayControlsPanel.InputSnapshot overlaySnapshot
+                DungeonControlPanelViewInputEvent.OverlayInput overlayInput
         ) {
             viewInputEventHandler.accept(new DungeonTravelControlsViewInputEvent(
                     resetViewRequested,
                     projectionLevelShift,
-                    overlaySnapshot.modeKey(),
-                    overlaySnapshot.range(),
-                    overlaySnapshot.opacity(),
-                    overlaySnapshot.levelsText()));
+                    overlayInput.modeKey(),
+                    overlayInput.levelRange(),
+                    overlayInput.opacity(),
+                    overlayInput.selectedLevelsText()));
         }
     }
 
     private static final class OverlaySettingsAdapter {
 
-        private static OverlayControlsPanel.Settings toOverlaySettings(
+        private static DungeonControlPanelContentModel.OverlaySettings toOverlaySettings(
                 DungeonTravelContributionModel.OverlayProjection settings
         ) {
             DungeonTravelContributionModel.OverlayProjection resolved = settings == null
                     ? DungeonTravelContributionModel.OverlayProjection.defaults()
                     : settings;
-            return new OverlayControlsPanel.Settings(
+            return new DungeonControlPanelContentModel.OverlaySettings(
                     toOverlayMode(resolved),
                     resolved.levelRange(),
                     resolved.opacity(),
                     resolved.selectedLevels());
         }
 
-        private static OverlayControlsPanel.Mode toOverlayMode(
+        private static DungeonControlPanelContentModel.Mode toOverlayMode(
                 DungeonTravelContributionModel.OverlayProjection overlayProjection
         ) {
             if (overlayProjection.usesNearbyLevels()) {
-                return OverlayControlsPanel.Mode.NEARBY;
+                return DungeonControlPanelContentModel.Mode.NEARBY;
             }
             if (overlayProjection.usesSelectedLevels()) {
-                return OverlayControlsPanel.Mode.SELECTED;
+                return DungeonControlPanelContentModel.Mode.SELECTED;
             }
-            return OverlayControlsPanel.Mode.OFF;
+            return DungeonControlPanelContentModel.Mode.OFF;
         }
     }
 

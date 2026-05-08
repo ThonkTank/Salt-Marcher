@@ -24,7 +24,8 @@ import javafx.scene.layout.VBox;
 import javafx.util.StringConverter;
 import org.jspecify.annotations.Nullable;
 import src.view.slotcontent.controls.dungeoncontrol.DungeonControlPanelView;
-import src.view.slotcontent.controls.dungeoncontrol.DungeonControlPanelView.OverlayControlsPanel;
+import src.view.slotcontent.controls.dungeoncontrol.DungeonControlPanelContentModel;
+import src.view.slotcontent.controls.dungeoncontrol.DungeonControlPanelViewInputEvent;
 import src.view.slotcontent.primitives.dialog.DialogSurfaceView;
 import src.view.slotcontent.primitives.dialog.DialogSurfaceView.BodyPolicy;
 import src.view.slotcontent.primitives.popup.AnchoredPopupView;
@@ -57,6 +58,7 @@ public final class DungeonEditorControlsView extends DungeonControlPanelView {
     public DungeonEditorControlsView() {
         super("");
         DungeonEditorControlsFxAccess.addStyle(this, "control-toolbar");
+        super.onViewInputEvent(this::handleDungeonControlInput);
         setFillWidth(true);
         getChildren().setAll(mapControls.row(), projectionControls.row(), toolControls.row());
     }
@@ -94,13 +96,18 @@ public final class DungeonEditorControlsView extends DungeonControlPanelView {
                 resolvedProjection.projectionLevel(),
                 busy,
                 hasMap);
-        projectionControls.showOverlaySettings(
-                DungeonEditorProjectionControls.toSettings(resolvedProjection.overlayProjection()),
-                busy);
+        projectionControls.showOverlaySettings(DungeonEditorProjectionControls.toSettings(resolvedProjection.overlayProjection()), busy);
         projectionControls.showViewMode(resolvedProjection.viewModeLabel());
         toolControls.showTool(resolvedProjection.selectedToolLabel());
         mapControls.showMapEditor(resolvedProjection.mapEditorUiState());
         toolControls.showToolPalette(resolvedProjection.toolPaletteUiState());
+    }
+
+    private void handleDungeonControlInput(DungeonControlPanelViewInputEvent event) {
+        if (event == null || event.overlay() == null) {
+            return;
+        }
+        events.overlayInput(event.overlay());
     }
 
     HBox controlsRow(Node... nodes) {
@@ -238,7 +245,7 @@ final class DungeonEditorControlsEvents {
                 null));
     }
 
-    void overlayInput(OverlayControlsPanel.InputSnapshot overlaySnapshot) {
+    void overlayInput(DungeonControlPanelViewInputEvent.OverlayInput overlayInput) {
         sink.accept(new DungeonEditorControlsViewInputEvent(
                 null,
                 null,
@@ -246,10 +253,10 @@ final class DungeonEditorControlsEvents {
                 null,
                 0,
                 new DungeonEditorControlsViewInputEvent.OverlayInput(
-                        overlaySnapshot.modeKey(),
-                        overlaySnapshot.range(),
-                        overlaySnapshot.opacity(),
-                        overlaySnapshot.levelsText())));
+                        overlayInput.modeKey(),
+                        overlayInput.levelRange(),
+                        overlayInput.opacity(),
+                        overlayInput.selectedLevelsText())));
     }
 }
 
@@ -610,10 +617,12 @@ final class DungeonEditorProjectionControls {
             handleViewModeChanged(oldToggle, newToggle);
     private final HBox row;
     private final DungeonEditorControlsEvents events;
+    private final DungeonEditorControlsView panelView;
 
     DungeonEditorProjectionControls(DungeonEditorControlsView panelView, DungeonEditorControlsEvents events) {
+        this.panelView = panelView;
         this.events = events;
-        this.overlayControls = new OverlayControlsPanel(panelView::newSectionLabel);
+        this.overlayControls = panelView.newOverlayControls();
         DungeonEditorControlsFxAccess.addStyle(previousLevelButton, "toolbar-action-button");
         DungeonEditorControlsFxAccess.addStyle(nextLevelButton, "toolbar-action-button");
         previousLevelButton.setOnAction(event -> events.projectionShift(-1));
@@ -621,8 +630,6 @@ final class DungeonEditorProjectionControls {
         DungeonEditorControlsFxAccess.addStyle(levelLabel, "text-muted");
         panelView.describeNode(previousLevelButton, "Vorherige Dungeon-Ebene anzeigen");
         panelView.describeNode(nextLevelButton, "Nächste Dungeon-Ebene anzeigen");
-
-        overlayControls.onChanged(events::overlayInput);
 
         gridButton.setToggleGroup(viewModeGroup);
         graphButton.setToggleGroup(viewModeGroup);
@@ -637,8 +644,8 @@ final class DungeonEditorProjectionControls {
         DungeonEditorControlsFxAccess.addStyle(row, "dungeon-control-projection-row");
     }
 
-    static OverlayControlsPanel.Settings toSettings(DungeonEditorContributionModel.OverlayProjection settings) {
-        return new OverlayControlsPanel.Settings(
+    static DungeonControlPanelContentModel.OverlaySettings toSettings(DungeonEditorContributionModel.OverlayProjection settings) {
+        return new DungeonControlPanelContentModel.OverlaySettings(
                 OverlayModeKey.fromModelKey(settings.modeKey()).overlayMode(),
                 settings.levelRange(),
                 settings.opacity(),
@@ -655,8 +662,8 @@ final class DungeonEditorProjectionControls {
         nextLevelButton.setDisable(busy || !navigationEnabled);
     }
 
-    void showOverlaySettings(OverlayControlsPanel.Settings settings, boolean disabled) {
-        overlayControls.showSettings(settings, disabled);
+    void showOverlaySettings(DungeonControlPanelContentModel.OverlaySettings settings, boolean disabled) {
+        panelView.contentModel().showOverlaySettings(settings, disabled);
     }
 
     void showViewMode(String viewMode) {
@@ -684,17 +691,17 @@ final class DungeonEditorProjectionControls {
     }
 
     private enum OverlayModeKey {
-        OFF(OverlayControlsPanel.Mode.OFF),
-        NEARBY(OverlayControlsPanel.Mode.NEARBY),
-        SELECTED(OverlayControlsPanel.Mode.SELECTED);
+        OFF(DungeonControlPanelContentModel.Mode.OFF),
+        NEARBY(DungeonControlPanelContentModel.Mode.NEARBY),
+        SELECTED(DungeonControlPanelContentModel.Mode.SELECTED);
 
-        private final OverlayControlsPanel.Mode overlayMode;
+        private final DungeonControlPanelContentModel.Mode overlayMode;
 
-        OverlayModeKey(OverlayControlsPanel.Mode overlayMode) {
+        OverlayModeKey(DungeonControlPanelContentModel.Mode overlayMode) {
             this.overlayMode = overlayMode;
         }
 
-        private OverlayControlsPanel.Mode overlayMode() {
+        private DungeonControlPanelContentModel.Mode overlayMode() {
             return overlayMode;
         }
 

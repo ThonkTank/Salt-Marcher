@@ -19,7 +19,7 @@ import saltmarcher.quality.errorprone.view.ViewArchitectureSupport;
 
 @BugPattern(
         name = "ViewIntentHandlerViewInputEvent",
-        summary = "IntentHandlers must expose a same-root consume(SameRootViewInputEvent) entrypoint for interactive View input.",
+        summary = "IntentHandlers must expose consume(...) entrypoints for same-root and reused slotcontent ViewInputEvent input.",
         severity = BugPattern.SeverityLevel.ERROR)
 public final class ViewIntentHandlerViewInputEventChecker extends BugChecker
         implements BugChecker.CompilationUnitTreeMatcher {
@@ -50,7 +50,7 @@ public final class ViewIntentHandlerViewInputEventChecker extends BugChecker
 
         if (!hasAllowedConsumeMethod) {
             return buildDescription(tree)
-                    .setMessage("IntentHandlers must expose a fire-and-forget consume(SameRootViewInputEvent) entrypoint for their interactive View surface.")
+                    .setMessage("IntentHandlers must expose a fire-and-forget consume(...) entrypoint for their same-root or reused slotcontent ViewInputEvent surfaces.")
                     .build();
         }
         if (violations.isEmpty()) {
@@ -70,10 +70,10 @@ public final class ViewIntentHandlerViewInputEventChecker extends BugChecker
             return false;
         }
         VariableTree parameter = methodTree.getParameters().get(0);
-        return referencesSameRootViewInputEvent(parameter, sourcePackageName);
+        return referencesAllowedViewInputEvent(parameter, sourcePackageName);
     }
 
-    private static boolean referencesSameRootViewInputEvent(
+    private static boolean referencesAllowedViewInputEvent(
             VariableTree parameter,
             String sourcePackageName
     ) {
@@ -90,7 +90,9 @@ public final class ViewIntentHandlerViewInputEventChecker extends BugChecker
         return referencedTypes.stream()
                 .anyMatch(referencedType ->
                         ViewArchitectureSupport.isTargetViewInputEventReference(referencedType)
-                                && ViewArchitectureSupport.isSameViewRootReference(sourcePackageName, referencedType));
+                                && ViewArchitectureSupport.isSameViewRootOrReusableSlotcontentViewInputEventReference(
+                                        sourcePackageName,
+                                        referencedType));
     }
 
     private static void collectDiscriminatorDispatchViolations(
@@ -119,7 +121,7 @@ public final class ViewIntentHandlerViewInputEventChecker extends BugChecker
                 if (receiverSymbol == null || !receiverSymbol.equals(parameterSymbol)) {
                     return super.visitMethodInvocation(methodInvocationTree, unused);
                 }
-                if (referencesSameRootViewInputEvent(parameter, sourcePackageName)) {
+                if (referencesAllowedViewInputEvent(parameter, sourcePackageName)) {
                     violations.add(methodTree.getName() + "(" + parameter.getType() + ")." + methodName + "()");
                 }
                 return super.visitMethodInvocation(methodInvocationTree, unused);

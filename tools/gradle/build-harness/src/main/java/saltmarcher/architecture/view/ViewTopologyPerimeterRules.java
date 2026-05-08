@@ -20,19 +20,19 @@ public final class ViewTopologyPerimeterRules implements ArchitectureRule {
                         ? "view-topology-active-root-role"
                         : "view-topology-slotcontent-role";
                 String details = descriptor.isActiveRootSource()
-                        ? "Active view roots may contain only *Contribution.java, *Binder.java, *ContributionModel.java, optional *IntentHandler.java, passive *View.java, optional *ViewInputEvent.java, and optional *PublishedEvent.java files."
-                        : "Reusable slotcontent units may contain only exactly one passive *View.java file, exactly one same-stem *ViewInputEvent.java file, and exactly one *ContentModel.java file. Every other top-level role file in slotcontent/** is illegal.";
+                        ? "Active view roots may contain only *Contribution.java, *Binder.java, *ContributionModel.java, optional *IntentHandler.java, passive *View.java, and optional *ViewInputEvent.java files."
+                        : "Reusable slotcontent units may contain only exactly one passive *View.java file, exactly one *ContentModel.java file, and a same-stem *ViewInputEvent.java file only when that View is interactive. Every other top-level role file in slotcontent/** is illegal.";
                 violations.add(descriptor.source(), rule, details);
                 continue;
             }
             if (descriptor.isActiveRootSource() && descriptor.role() == ViewRole.UNKNOWN) {
                 violations.add(descriptor.source(), "view-topology-active-root-role",
-                        "Active view roots may contain only *Contribution.java, *Binder.java, *ContributionModel.java, optional *IntentHandler.java, passive *View.java, optional *ViewInputEvent.java, and optional *PublishedEvent.java files.");
+                        "Active view roots may contain only *Contribution.java, *Binder.java, *ContributionModel.java, optional *IntentHandler.java, passive *View.java, and optional *ViewInputEvent.java files.");
                 continue;
             }
             if (descriptor.isSlotcontentSource() && descriptor.role() == ViewRole.UNKNOWN) {
                 violations.add(descriptor.source(), "view-topology-slotcontent-role",
-                        "Reusable slotcontent units may contain only exactly one passive *View.java file, exactly one same-stem *ViewInputEvent.java file, and exactly one *ContentModel.java file. Every other top-level role file in slotcontent/** is illegal.");
+                        "Reusable slotcontent units may contain only exactly one passive *View.java file, exactly one *ContentModel.java file, and a same-stem *ViewInputEvent.java file only when that View is interactive. Every other top-level role file in slotcontent/** is illegal.");
             }
         }
     }

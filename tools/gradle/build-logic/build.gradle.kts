@@ -38,14 +38,6 @@ gradlePlugin {
             id = "saltmarcher.verification-core"
             implementationClass = "saltmarcher.buildlogic.verification.SaltmarcherVerificationCorePlugin"
         }
-        register("saltmarcherViewViewEnforcement") {
-            id = "saltmarcher.view-view-enforcement"
-            implementationClass = "saltmarcher.buildlogic.verification.SaltmarcherViewViewEnforcementPlugin"
-        }
-        register("saltmarcherStylingLayerEnforcement") {
-            id = "saltmarcher.styling-layer-enforcement"
-            implementationClass = "saltmarcher.buildlogic.verification.SaltmarcherStylingLayerEnforcementPlugin"
-        }
     }
 }
 

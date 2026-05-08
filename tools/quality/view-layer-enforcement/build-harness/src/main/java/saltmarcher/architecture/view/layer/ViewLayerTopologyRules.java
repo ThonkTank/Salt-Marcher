@@ -5,6 +5,8 @@ import java.util.Map;
 import saltmarcher.architecture.ArchitectureContext;
 import saltmarcher.architecture.ArchitectureRule;
 import saltmarcher.architecture.ViolationSink;
+import saltmarcher.architecture.view.PassiveViewInputEventSeamSupport;
+import saltmarcher.architecture.view.PassiveViewInputEventSeamSupport.InteractivePassiveView;
 import saltmarcher.architecture.view.ViewRole;
 import saltmarcher.architecture.view.ViewSourceDescriptor;
 import saltmarcher.architecture.view.ViewTopologyCatalog;
@@ -23,20 +25,23 @@ public final class ViewLayerTopologyRules implements ArchitectureRule {
             for (ViewSourceDescriptor source : files) {
                 if (unit.kind() == ViewUnitKind.ACTIVE_ROOT && !source.role().isAllowedIn(ViewUnitKind.ACTIVE_ROOT)) {
                     violations.add(source.source(), "view-layer-active-root-file-role",
-                            "Active contribution roots may contain only *Contribution.java, *Binder.java, *ContributionModel.java, optional *IntentHandler.java, passive *View.java, optional *ViewInputEvent.java files, and optional write-side *PublishedEvent.java files. Move projection, formatting, or selection preparation into the owning *ContributionModel or into nested/private helper types inside an allowed role file instead of adding standalone helper files.");
+                            "Active contribution roots may contain only *Contribution.java, *Binder.java, *ContributionModel.java, optional *IntentHandler.java, passive *View.java, and optional *ViewInputEvent.java files. Move projection, formatting, or selection preparation into the owning *ContributionModel or into nested/private helper types inside an allowed role file instead of adding standalone helper files.");
                 } else if (unit.kind() == ViewUnitKind.REUSABLE_SLOTCONTENT
                         && !source.role().isAllowedIn(ViewUnitKind.REUSABLE_SLOTCONTENT)) {
                     violations.add(source.source(), "view-layer-slotcontent-file-role",
-                            "Reusable slotcontent units may contain only exactly one passive *View.java file, exactly one same-stem *ViewInputEvent.java file, and exactly one *ContentModel.java file. Top-level *IntentHandler.java, *PublishedEvent.java, *InspectorEntry.java, *Scene.java, *PointerEvent.java, *Signal.java, *Support.java, and standalone helper files are illegal reusable slotcontent roles.");
+                            "Reusable slotcontent units may contain only exactly one passive *View.java file, exactly one *ContentModel.java file, and a same-stem *ViewInputEvent.java file only when that View is interactive. Top-level *IntentHandler.java, *PublishedEvent.java, *InspectorEntry.java, *Scene.java, *PointerEvent.java, *Signal.java, *Support.java, and standalone helper files are illegal reusable slotcontent roles.");
                 }
             }
-            validateUnitShape(unit, files, violations);
+            List<InteractivePassiveView> interactiveViews =
+                    PassiveViewInputEventSeamSupport.scan(context, files, violations);
+            validateUnitShape(unit, files, interactiveViews, violations);
         }
     }
 
     private static void validateUnitShape(
             ViewUnitDescriptor unit,
             List<ViewSourceDescriptor> files,
+            List<InteractivePassiveView> interactiveViews,
             ViolationSink violations) {
         long contributionCount = count(files, ViewRole.CONTRIBUTION);
         long binderCount = count(files, ViewRole.BINDER);
@@ -44,7 +49,6 @@ public final class ViewLayerTopologyRules implements ArchitectureRule {
         long contentModelCount = count(files, ViewRole.CONTENT_MODEL);
         long intentHandlerCount = count(files, ViewRole.INTENT_HANDLER);
         long viewInputEventCount = count(files, ViewRole.VIEW_INPUT_EVENT);
-        long publishedEventCount = count(files, ViewRole.PUBLISHED_EVENT);
         long inspectorEntryCount = count(files, ViewRole.INSPECTOR_ENTRY);
         long viewCount = count(files, ViewRole.VIEW);
 
@@ -69,6 +73,10 @@ public final class ViewLayerTopologyRules implements ArchitectureRule {
                 violations.add(unit.source(), "view-layer-view-required",
                         "Each active contribution root must define at least one passive *View.java surface.");
             }
+            if (count(files, ViewRole.PUBLISHED_EVENT) > 0) {
+                violations.add(unit.source(), "view-layer-active-root-no-publishedevent",
+                        "Active contribution roots must not define top-level *PublishedEvent.java files; domain writes leave through the root *IntentHandler -> *ApplicationService seam.");
+            }
         } else {
             if (contributionCount > 0) {
                 violations.add(unit.source(), "view-layer-slotcontent-no-contribution",
@@ -90,11 +98,16 @@ public final class ViewLayerTopologyRules implements ArchitectureRule {
                 violations.add(unit.source(), "view-layer-slotcontent-no-intenthandler",
                         "Reusable slotcontent units must not define *IntentHandler.java files.");
             }
-            if (viewInputEventCount != 1) {
+            if (interactiveViews.isEmpty()) {
+                if (viewInputEventCount > 0) {
+                    violations.add(unit.source(), "view-layer-slotcontent-viewinputevent-count",
+                            "Non-interactive reusable slotcontent units must not define *ViewInputEvent.java files.");
+                }
+            } else if (viewInputEventCount != 1) {
                 violations.add(unit.source(), "view-layer-slotcontent-viewinputevent-count",
-                        "Each reusable slotcontent unit must define exactly one same-stem *ViewInputEvent.java file.");
+                        "Interactive reusable slotcontent units must define exactly one same-stem *ViewInputEvent.java file.");
             }
-            if (publishedEventCount > 0) {
+            if (count(files, ViewRole.PUBLISHED_EVENT) > 0) {
                 violations.add(unit.source(), "view-layer-slotcontent-no-publishedevent",
                         "Reusable slotcontent units must not define *PublishedEvent.java files.");
             }

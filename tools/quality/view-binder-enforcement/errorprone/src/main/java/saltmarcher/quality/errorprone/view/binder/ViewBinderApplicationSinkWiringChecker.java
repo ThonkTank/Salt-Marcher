@@ -17,7 +17,7 @@ import saltmarcher.quality.errorprone.view.ViewArchitectureSupport;
 
 @BugPattern(
         name = "ViewBinderApplicationSinkWiring",
-        summary = "Binders may inject domain-write sinks into IntentHandlers only through same-root Consumer<PublishedEvent> seams.",
+        summary = "Binders must not inject legacy outward-work sinks such as onPublishedEventRequested(...) into IntentHandlers.",
         severity = BugPattern.SeverityLevel.ERROR)
 public final class ViewBinderApplicationSinkWiringChecker extends BugChecker
         implements BugChecker.CompilationUnitTreeMatcher {
@@ -42,11 +42,7 @@ public final class ViewBinderApplicationSinkWiringChecker extends BugChecker
                 if (ownerViewType == null || !"HANDLER".equals(ownerViewType.bucket())) {
                     return super.visitMethodInvocation(methodInvocationTree, unused);
                 }
-                if (!hasFunctionalInterfaceParameter(symbol)) {
-                    return super.visitMethodInvocation(methodInvocationTree, unused);
-                }
-                String handlerPackageName = ViewArchitectureSupport.packageNameOfReferencedType(ownerType);
-                if (!isExactPublishedEventSinkRegistration(symbol, handlerPackageName)) {
+                if ("onPublishedEventRequested".contentEquals(symbol.getSimpleName())) {
                     violations.add(symbol.getSimpleName() + " -> " + ownerType);
                 }
                 return super.visitMethodInvocation(methodInvocationTree, unused);
@@ -58,29 +54,9 @@ public final class ViewBinderApplicationSinkWiringChecker extends BugChecker
         }
         return buildDescription(tree)
                 .setMessage("Binder package '" + sourcePackageName
-                        + "' injects non-PublishedEvent callback seams into same-root IntentHandlers: "
+                        + "' injects legacy outward-work sinks into same-root IntentHandlers: "
                         + String.join(", ", violations)
-                        + ". Domain-write sinks may enter the IntentHandler only as same-root Consumer<...PublishedEvent> seams.")
+                        + ". Domain writes must leave directly from the IntentHandler through the matching root *ApplicationService.")
                 .build();
-    }
-
-    private static boolean hasFunctionalInterfaceParameter(Symbol.MethodSymbol symbol) {
-        if (symbol.getParameters().size() != 1) {
-            return false;
-        }
-        return ViewArchitectureSupport.isFunctionalInterface(symbol.getParameters().getFirst().asType());
-    }
-
-    private static boolean isExactPublishedEventSinkRegistration(
-            Symbol.MethodSymbol symbol,
-            String handlerPackageName
-    ) {
-        if (!"onPublishedEventRequested".contentEquals(symbol.getSimpleName())
-                || symbol.getParameters().size() != 1
-                || symbol.getReturnType().getKind() != TypeKind.VOID) {
-            return false;
-        }
-        TypeMirror parameterType = symbol.getParameters().getFirst().asType();
-        return ViewArchitectureSupport.isConsumerOfSameRootPublishedEvent(parameterType, handlerPackageName);
     }
 }

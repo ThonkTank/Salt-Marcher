@@ -95,9 +95,9 @@ tasks when the same owner needs a non-blocking diagnostic surface beside the
 root blocker. The verification core may attach selected report-only sibling
 surfaces to staged lifecycle paths such as `view-topology` or
 `production-handoff` when that diagnostic is part of the canonical handoff
-guidance and still remains non-blocking. Explicit exception bundles now expose
-`rootPluginId` metadata and keep their custom wiring in dedicated
-verification-core plugins inside `tools/gradle/build-logic`.
+guidance and still remains non-blocking. Bundles with small local extras such
+as stylesheet or FXML checks still register through the same standard
+verification-core path instead of through dedicated root plugins.
 
 Bundle owners MAY know their private ArchUnit, Error Prone, PMD,
 jQAssistant, or build-harness tasks. They MUST NOT depend on shell wrappers.
@@ -154,18 +154,17 @@ state from alternative checkout-relative guessing when the propagated repo root
 is available. Project-build plugin code likewise MUST NOT re-derive focused
 bundle selection from `StartParameter` task names once the settings-owned
 selection facts were published.
-Included builds own their technical registration from descriptor metadata such
-as source directories, generated service files, PMD support sources, and
-build-harness task main classes. The root build likewise owns standard
-`check*Enforcement` task registration from descriptor metadata such as
-Error Prone checker lists, ArchUnit task shapes, PMD task shapes, and
-jQAssistant task shapes. A jQAssistant task shape may declare one local rule
+Included builds own their technical registration from descriptor metadata and
+direct repo scans such as build-harness rule classes, Error Prone checker
+lists, ArchUnit task shapes, PMD task shapes, jQAssistant task shapes, and
+generic custom-task kinds. A jQAssistant task shape may declare one local rule
 directory or multiple rule directories; the verification core materializes one
 effective rules root from that descriptor metadata instead of forcing bundles
-to duplicate shared taxonomy files. Harness wiring MUST NOT rely on parallel families of
-tiny `*-host.gradle.kts` scripts as a second source of truth for the same
-metadata, and it MUST NOT regenerate a second snapshot copy of the same
-descriptor metadata just to make same-worktree parallelism safe.
+to duplicate shared taxonomy files. Harness wiring MUST NOT rely on parallel
+families of tiny launcher mains or `*-host.gradle.kts` scripts as a second
+source of truth for the same metadata, and it MUST NOT regenerate a second
+snapshot copy of the same descriptor metadata just to make same-worktree
+parallelism safe.
 Shared verification task registration inside `tools/gradle/build-logic` should
 flow through typed plugin or extension APIs rather than through untyped
 `extra[...]` function exports between precompiled script plugins.
@@ -178,8 +177,10 @@ as well: bundles contribute root `architectureCheck` and
 `buildHarnessArchitectureRuleClasses` and
 `buildHarnessDocumentationRuleClasses` metadata instead of hidden
 `ServiceLoader` resources or hardcoded optional-class tables in the owning
-checkers. `build-harness:processResources` is therefore expected to stay
-`NO-SOURCE` in steady-state wrapper runs.
+checkers. Focused build-harness tasks should execute through the generic
+`ArchitectureCheckMain` path with task-local rule-class lists instead of one
+bundle-specific Java launcher per focused task. `build-harness:processResources`
+is therefore expected to stay `NO-SOURCE` in steady-state wrapper runs.
 Focused verification tasks with stable declared inputs and outputs SHOULD use
 normal Gradle up-to-date and build-cache behavior instead of forcing fresh
 execution every run. Successful unchanged verification results may be reused;
@@ -192,9 +193,9 @@ must declare their own deterministic inputs and marker or report outputs
 instead of relying on blanket rerun forcing.
 Bundle-local wiring that still uses relative source paths must resolve from the
 active repo-root owner or descriptor owner declared in the descriptor itself.
-`rootPluginId` is now exception-only metadata for bundles whose wiring still
-cannot be expressed by the closed standard bundle model, currently the passive
-`View` bundle and the styling-layer bundle.
+Root-plugin escape hatches are no longer part of the intended model. If a
+bundle needs extra verification tasks, it should declare them as typed extras
+inside the same standard bundle registration path.
 
 ## Lazy Wiring And Runtime Constraints
 

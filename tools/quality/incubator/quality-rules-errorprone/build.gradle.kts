@@ -1,12 +1,11 @@
 import java.io.File
-import java.util.Properties
 import org.gradle.api.tasks.SourceSetContainer
+import org.gradle.api.tasks.compile.JavaCompile
 import org.gradle.api.tasks.testing.Test
 import org.gradle.jvm.tasks.Jar
-import org.gradle.kotlin.dsl.register
 import org.gradle.kotlin.dsl.named
+import org.gradle.kotlin.dsl.register
 import org.gradle.kotlin.dsl.the
-import saltmarcher.buildlogic.enforcement.EnforcementBundlesExtension
 import saltmarcher.buildlogic.tasks.MergeBugCheckerServicesTask
 import saltmarcher.buildlogic.tasks.ValidateBugCheckerRegistriesTask
 
@@ -28,137 +27,51 @@ java {
     }
 }
 
-val enforcementBundles = extensions.getByType(EnforcementBundlesExtension::class.java)
-val focusedEnforcementBundleMode = enforcementBundles.focusedEnforcementBundleMode
-val activeEnforcementBundleIds = enforcementBundles.activeEnforcementBundleIds
 val repoRootDir = layout.projectDirectory.dir("../../../..").asFile
 
-data class StandaloneBundleDescriptor(
-    val bundleId: String,
-    val errorProneSourceDir: String?,
-    val errorProneServiceFile: String?
-)
-
-fun resolveStandaloneDescriptorPath(repoRootDir: File, descriptorFile: File, rawPath: String): String {
-    val trimmedPath = rawPath.trim()
-    if (trimmedPath.isEmpty()) {
-        error("Encountered an empty descriptor path in ${descriptorFile.path}.")
-    }
-    val rawFile = File(trimmedPath)
-    val strippedLegacyPrefix = trimmedPath.removePrefix("../../")
-    val candidatePaths = buildList {
-        if (rawFile.isAbsolute) {
-            add(rawFile)
-        }
-        add(repoRootDir.resolve(trimmedPath))
-        add(descriptorFile.parentFile.resolve(trimmedPath))
-        if (trimmedPath.startsWith("../../")) {
-            add(repoRootDir.resolve("tools/$strippedLegacyPrefix"))
-            add(repoRootDir.resolve("tools/quality/$strippedLegacyPrefix"))
-        }
-    }.distinctBy { file -> file.path }
-    return candidatePaths.firstOrNull(File::exists)?.canonicalPath
-        ?: error(
-            "Could not resolve descriptor path '$trimmedPath' from ${descriptorFile.path}. " +
-                "Tried: ${candidatePaths.joinToString { it.path }}"
-        )
-}
-
-fun loadStandaloneBundleDescriptors(): List<StandaloneBundleDescriptor> {
-    val qualityDir = File(repoRootDir, "tools/quality")
+fun repoVerificationFiles(relativeSuffix: String): List<File> {
+    val qualityDir = repoRootDir.resolve("tools/quality")
     if (!qualityDir.isDirectory) {
         return emptyList()
     }
     return qualityDir.walkTopDown()
-        .filter { file -> file.isFile && file.name == "bundle.properties" }
-        .mapNotNull { descriptorFile ->
-            val properties = Properties()
-            descriptorFile.inputStream().use { stream ->
-                properties.load(stream)
-            }
-            if (!properties.getProperty("descriptorOwned", "false").trim().toBoolean()) {
-                null
-            } else {
-                StandaloneBundleDescriptor(
-                    bundleId = properties.getProperty("bundleId").trim(),
-                    errorProneSourceDir = properties.getProperty("errorProneSourceDir")
-                        ?.trim()
-                        ?.takeIf(String::isNotEmpty)
-                        ?.let { rawPath -> resolveStandaloneDescriptorPath(repoRootDir, descriptorFile, rawPath) },
-                    errorProneServiceFile = properties.getProperty("errorProneServiceFile")
-                        ?.trim()
-                        ?.takeIf(String::isNotEmpty)
-                        ?.let { rawPath -> resolveStandaloneDescriptorPath(repoRootDir, descriptorFile, rawPath) }
-                )
-            }
+        .filter { file ->
+            val relativePath = file.relativeTo(repoRootDir).path.replace(File.separatorChar, '/')
+            relativePath.endsWith(relativeSuffix)
         }
         .toList()
 }
 
-val standaloneBundleDescriptors = loadStandaloneBundleDescriptors()
-val effectiveBundleDescriptors = if (activeEnforcementBundleIds.isEmpty()) {
-    standaloneBundleDescriptors
-} else {
-    val focusedDescriptors = activeEnforcementBundleIds.map { bundleId ->
-        enforcementBundles.descriptor(bundleId).let { descriptor ->
-            StandaloneBundleDescriptor(
-                bundleId = descriptor.bundleId,
-                errorProneSourceDir = descriptor.errorProneSourceDir,
-                errorProneServiceFile = descriptor.errorProneServiceFile
-            )
-        }
-    }
-    focusedDescriptors
-        .filter { descriptor ->
-            descriptor.errorProneSourceDir != null && descriptor.errorProneServiceFile != null
-        }
-        .ifEmpty {
-            // Focused bundles such as jQAssistant-only layering checks still compile with the shared
-            // Error Prone plugin on the classpath, so fall back to the full checker registry instead of
-            // producing a focus-sensitive partial plugin jar with stale or missing service entries.
-            standaloneBundleDescriptors
-        }
-}
-val effectiveErrorProneSourceDirs = effectiveBundleDescriptors.mapNotNull(StandaloneBundleDescriptor::errorProneSourceDir)
-val effectiveBugCheckerServices = effectiveBundleDescriptors.mapNotNull(StandaloneBundleDescriptor::errorProneServiceFile).map(::File)
+val effectiveErrorProneSourceDirs = repoVerificationFiles("/errorprone/src/main/java")
+val effectiveBugCheckerServices = repoVerificationFiles("/errorprone/src/main/resources/META-INF/services/com.google.errorprone.bugpatterns.BugChecker")
 
 val sourceSets = the<SourceSetContainer>()
 sourceSets.named("main") {
     java.setSrcDirs(
         listOf(layout.projectDirectory.dir("src/main/java").asFile.absolutePath)
-            + effectiveErrorProneSourceDirs
+            + effectiveErrorProneSourceDirs.map(File::getAbsolutePath)
     )
     resources.setSrcDirs(emptyList<String>())
 }
 sourceSets.named("test") {
-    java.setSrcDirs(
-        listOf(layout.projectDirectory.dir("src/test/java").asFile.absolutePath)
-            + listOf(
-                File(repoRootDir, "tools/quality/view-view-enforcement/errorprone/src/main/java").absolutePath,
-                File(repoRootDir, "tools/quality/viewinputevent-enforcement/errorprone/src/main/java").absolutePath
-            )
-    )
+    java.setSrcDirs(listOf(layout.projectDirectory.dir("src/test/java").asFile.absolutePath))
     resources.setSrcDirs(emptyList<String>())
 }
 
 val bugCheckerServicePath = "META-INF/services/com.google.errorprone.bugpatterns.BugChecker"
 val hostBugCheckerService = layout.projectDirectory.file("src/main/resources/$bugCheckerServicePath").asFile
 val bundleBugCheckerServices = effectiveBugCheckerServices
-val activeBugCheckerServices = if (focusedEnforcementBundleMode) {
-    bundleBugCheckerServices
-} else {
-    listOf(hostBugCheckerService) + bundleBugCheckerServices
-}
+val activeBugCheckerServices = listOf(hostBugCheckerService) + bundleBugCheckerServices
 val generatedResourcesDir = layout.buildDirectory.dir("generated/quality-rules-errorprone/resources")
 val generatedBugCheckerService = generatedResourcesDir.map { dir -> dir.file(bugCheckerServicePath) }
 val bugCheckerRegistrySpecs = buildList {
-    if (!focusedEnforcementBundleMode) {
-        add("host\t${hostBugCheckerService.absolutePath}\t${layout.projectDirectory.dir("src/main/java").asFile.absolutePath}")
-    }
-    effectiveBundleDescriptors.forEach { descriptor ->
-        val serviceFile = descriptor.errorProneServiceFile ?: return@forEach
-        val sourceDir = descriptor.errorProneSourceDir ?: return@forEach
-        add("${descriptor.bundleId}\t${File(serviceFile).absolutePath}\t${File(sourceDir).absolutePath}")
+    add("host\t${hostBugCheckerService.absolutePath}\t${layout.projectDirectory.dir("src/main/java").asFile.absolutePath}")
+    bundleBugCheckerServices.forEach { serviceFile ->
+        val sourceDir = serviceFile.parentFile.parentFile.parentFile.parentFile.resolve("java")
+        val bundleId = serviceFile.relativeTo(repoRootDir).invariantSeparatorsPath
+            .substringAfter("tools/quality/")
+            .substringBefore('/')
+        add("$bundleId\t${serviceFile.absolutePath}\t${sourceDir.absolutePath}")
     }
 }
 
@@ -175,9 +88,7 @@ val validateQualityRulesErrorProneServices = tasks.register<ValidateBugCheckerRe
         layout.projectDirectory.dir("src/main/java"),
         bundleBugCheckerServices
     )
-    if (!focusedEnforcementBundleMode) {
-        registryInputFiles.from(hostBugCheckerService)
-    }
+    registryInputFiles.from(hostBugCheckerService)
     effectiveErrorProneSourceDirs.forEach { sourceDir ->
         registryInputFiles.from(project.files(sourceDir))
     }

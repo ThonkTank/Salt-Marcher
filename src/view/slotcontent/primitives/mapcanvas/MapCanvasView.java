@@ -2,8 +2,6 @@ package src.view.slotcontent.primitives.mapcanvas;
 
 import java.util.List;
 import java.util.function.Consumer;
-import javafx.beans.property.ObjectProperty;
-import javafx.beans.property.SimpleObjectProperty;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.canvas.Canvas;
@@ -18,8 +16,20 @@ import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
 import javafx.scene.text.TextAlignment;
 import org.jspecify.annotations.Nullable;
-import src.view.slotcontent.primitives.mapcanvas.CanvasPointerEvent.MapCanvasPoint;
-import src.view.slotcontent.primitives.mapcanvas.MapRenderScene.MapCanvasPolygonPrimitive;
+import src.view.slotcontent.primitives.mapcanvas.MapCanvasContentModel.BoundaryPrimitive;
+import src.view.slotcontent.primitives.mapcanvas.MapCanvasContentModel.GlyphPrimitive;
+import src.view.slotcontent.primitives.mapcanvas.MapCanvasContentModel.HitArea;
+import src.view.slotcontent.primitives.mapcanvas.MapCanvasContentModel.MapCanvasPoint;
+import src.view.slotcontent.primitives.mapcanvas.MapCanvasContentModel.MapCanvasPolygonPrimitive;
+import src.view.slotcontent.primitives.mapcanvas.MapCanvasContentModel.OverlayPrimitive;
+import src.view.slotcontent.primitives.mapcanvas.MapCanvasContentModel.PaintStyle;
+import src.view.slotcontent.primitives.mapcanvas.MapCanvasContentModel.PolygonHitArea;
+import src.view.slotcontent.primitives.mapcanvas.MapCanvasContentModel.PolylineHitArea;
+import src.view.slotcontent.primitives.mapcanvas.MapCanvasContentModel.RelationPrimitive;
+import src.view.slotcontent.primitives.mapcanvas.MapCanvasContentModel.RenderScene;
+import src.view.slotcontent.primitives.mapcanvas.MapCanvasContentModel.SceneColor;
+import src.view.slotcontent.primitives.mapcanvas.MapCanvasContentModel.TextPrimitive;
+import src.view.slotcontent.primitives.mapcanvas.MapCanvasContentModel.ViewMode;
 
 public class MapCanvasView extends BorderPane {
 
@@ -47,58 +57,34 @@ public class MapCanvasView extends BorderPane {
     private static final int MIN_POLYLINE_POINTS = 2;
     private static final int[] GRID_STEPS = {1, 5, 10, 25};
 
-    private final ObjectProperty<MapRenderScene> scene =
-            new SimpleObjectProperty<>(MapRenderScene.empty(DEFAULT_TITLE));
+    private MapCanvasContentModel contentModel = new MapCanvasContentModel(DEFAULT_TITLE);
     private final SurfaceNodes surfaceNodes = new SurfaceNodes(this::redraw);
     private final Viewport viewport = new Viewport();
     private final MapSceneRenderer renderer = new MapSceneRenderer();
     private final CanvasInteractionController interactionController = new CanvasInteractionController();
-    private Runnable viewportChangedHandler = () -> {};
-    private Consumer<CanvasPointerEvent> canvasPointerEventHandler = ignored -> {};
-    private Consumer<Integer> levelScrolledHandler = ignored -> {};
+    private Consumer<MapCanvasViewInputEvent> viewInputEventHandler = ignored -> {};
 
     public MapCanvasView() {
         getStyleClass().add(SURFACE_ROOT_STYLE);
         setPadding(new Insets(8));
-        scene.addListener((ignored, before, after) -> redraw());
+        contentModel.canvasStateProperty().addListener((ignored, before, after) -> redraw());
         setCenter(surfaceNodes.host());
         interactionController.install();
         redraw();
     }
 
-    public final ObjectProperty<MapRenderScene> renderSceneProperty() {
-        return scene;
-    }
-
-    public final double zoom() {
-        return viewport.zoom();
-    }
-
-    public final void onViewportChanged(Runnable action) {
-        viewportChangedHandler = action == null ? () -> {} : action;
-    }
-
-    public final void onCanvasPointerEvent(Consumer<CanvasPointerEvent> action) {
-        canvasPointerEventHandler = action == null ? ignored -> {} : action;
-    }
-
-    public final void onLevelScrolled(Consumer<Integer> action) {
-        levelScrolledHandler = action == null ? ignored -> {} : action;
-    }
-
-    public final void resetCamera() {
-        viewport.reset();
-        cameraChanged();
-        surfaceNodes.requestFocus();
-    }
-
-    private void cameraChanged() {
+    public final void bind(MapCanvasContentModel contentModel) {
+        this.contentModel = contentModel == null ? new MapCanvasContentModel(DEFAULT_TITLE) : contentModel;
+        this.contentModel.canvasStateProperty().addListener((ignored, before, after) -> redraw());
         redraw();
-        viewportChangedHandler.run();
+    }
+
+    public final void onViewInputEvent(Consumer<MapCanvasViewInputEvent> action) {
+        viewInputEventHandler = action == null ? ignored -> {} : action;
     }
 
     private void redraw() {
-        MapRenderScene renderScene = surfaceNodes.currentScene(scene.get());
+        RenderScene renderScene = surfaceNodes.currentScene(contentModel.currentRenderScene());
         CanvasBounds bounds = surfaceNodes.renderBounds();
         GraphicsContext gc = surfaceNodes.graphicsContext();
         renderer.render(gc, renderScene, viewport, bounds);
@@ -179,8 +165,8 @@ public class MapCanvasView extends BorderPane {
             canvasLayer.requestFocus();
         }
 
-        private MapRenderScene currentScene(@Nullable MapRenderScene renderScene) {
-            return renderScene == null ? MapRenderScene.empty(DEFAULT_TITLE) : renderScene;
+        private RenderScene currentScene(@Nullable RenderScene renderScene) {
+            return renderScene == null ? RenderScene.empty(DEFAULT_TITLE) : renderScene;
         }
 
         private CanvasBounds renderBounds() {
@@ -228,15 +214,16 @@ public class MapCanvasView extends BorderPane {
                     middleDragActive = true;
                     lastDragSceneX = event.getSceneX();
                     lastDragSceneY = event.getSceneY();
+                    emitViewInputEvent(event, MapCanvasViewInputEvent.Interaction.PRESS, 0.0, 0.0);
                     event.consume();
                 }
                 case PRIMARY -> {
                     primaryInteractionActive = true;
-                    emitPointerEvent(event, CanvasPointerEvent.PointerPhase.PRESS, true, false);
+                    emitViewInputEvent(event, MapCanvasViewInputEvent.Interaction.PRESS, 0.0, 0.0);
                     event.consume();
                 }
                 case SECONDARY -> {
-                    emitPointerEvent(event, CanvasPointerEvent.PointerPhase.PRESS, false, true);
+                    emitViewInputEvent(event, MapCanvasViewInputEvent.Interaction.PRESS, 0.0, 0.0);
                     event.consume();
                 }
                 default -> {
@@ -246,146 +233,137 @@ public class MapCanvasView extends BorderPane {
 
         private void handleMouseDragged(MouseEvent event) {
             if (primaryInteractionActive) {
-                emitPointerEvent(
-                        event,
-                        CanvasPointerEvent.PointerPhase.DRAG,
-                        event.isPrimaryButtonDown(),
-                        event.isSecondaryButtonDown());
+                emitViewInputEvent(event, MapCanvasViewInputEvent.Interaction.DRAG, 0.0, 0.0);
                 event.consume();
                 return;
             }
             if (!middleDragActive) {
                 return;
             }
-            viewport.panByPixels(event.getSceneX() - lastDragSceneX, event.getSceneY() - lastDragSceneY);
+            emitViewInputEvent(
+                    event,
+                    MapCanvasViewInputEvent.Interaction.DRAG,
+                    event.getSceneX() - lastDragSceneX,
+                    event.getSceneY() - lastDragSceneY);
             lastDragSceneX = event.getSceneX();
             lastDragSceneY = event.getSceneY();
-            cameraChanged();
             event.consume();
         }
 
         private void handleMouseMoved(MouseEvent event) {
             if (!middleDragActive && !primaryInteractionActive) {
-                emitPointerEvent(event, CanvasPointerEvent.PointerPhase.MOVE, false, false);
+                emitViewInputEvent(event, MapCanvasViewInputEvent.Interaction.MOVE, 0.0, 0.0);
             }
         }
 
         private void handleMouseReleased(MouseEvent event) {
             MouseButton button = event.getButton();
             if (button == MouseButton.MIDDLE) {
+                emitViewInputEvent(event, MapCanvasViewInputEvent.Interaction.RELEASE, 0.0, 0.0);
                 middleDragActive = false;
                 event.consume();
                 return;
             }
             if (button == MouseButton.PRIMARY) {
                 if (primaryInteractionActive) {
-                    emitPointerEvent(event, CanvasPointerEvent.PointerPhase.RELEASE, true, false);
+                    emitViewInputEvent(event, MapCanvasViewInputEvent.Interaction.RELEASE, 0.0, 0.0);
                 }
                 primaryInteractionActive = false;
+                event.consume();
+                return;
+            }
+            if (button == MouseButton.SECONDARY) {
+                emitViewInputEvent(event, MapCanvasViewInputEvent.Interaction.RELEASE, 0.0, 0.0);
                 event.consume();
             }
         }
 
         private void handleScroll(ScrollEvent event) {
-            double deltaY = event.getDeltaY();
-            if (event.isControlDown() && deltaY != NO_DELTA) {
-                levelScrolledHandler.accept(deltaY > NO_DELTA ? 1 : -1);
-                cameraChanged();
-                event.consume();
-                return;
-            }
-            if (deltaY > NO_DELTA) {
-                viewport.zoomAround(event.getX(), event.getY(), ZOOM_STEP_FACTOR);
-            } else if (deltaY < NO_DELTA) {
-                viewport.zoomAround(event.getX(), event.getY(), 1.0 / ZOOM_STEP_FACTOR);
-            }
-            cameraChanged();
+            emitScrollInputEvent(event);
             event.consume();
         }
 
-        private void emitPointerEvent(
+        private void emitViewInputEvent(
                 MouseEvent event,
-                CanvasPointerEvent.PointerPhase phase,
-                boolean primaryButtonDown,
-                boolean secondaryButtonDown
-        ) {
-            canvasPointerEventHandler.accept(pointerEvent(event, phase, primaryButtonDown, secondaryButtonDown));
-        }
-
-        private CanvasPointerEvent pointerEvent(
-                MouseEvent event,
-                CanvasPointerEvent.PointerPhase phase,
-                boolean primaryButtonDown,
-                boolean secondaryButtonDown
+                MapCanvasViewInputEvent.Interaction interaction,
+                double dragDeltaX,
+                double dragDeltaY
         ) {
             double sceneX = viewport.screenToSceneX(event.getX());
             double sceneY = viewport.screenToSceneY(event.getY());
-            MapRenderScene renderScene = surfaceNodes.currentScene(scene.get());
-            return new CanvasPointerEvent(
-                    phase,
-                    new CanvasPointerEvent.CanvasButtons(primaryButtonDown, secondaryButtonDown),
-                    new CanvasPointerEvent.CanvasModifiers(
+            RenderScene renderScene = surfaceNodes.currentScene(contentModel.currentRenderScene());
+            viewInputEventHandler.accept(new MapCanvasViewInputEvent(
+                    interaction,
+                    new MapCanvasViewInputEvent.CanvasButtons(
+                            event.isPrimaryButtonDown() || primaryInteractionActive,
+                            middleDragActive,
+                            event.isSecondaryButtonDown()),
+                    new MapCanvasViewInputEvent.CanvasModifiers(
                             event.isControlDown(),
                             event.isShiftDown(),
                             event.isAltDown()),
-                    new MapCanvasPoint(sceneX, sceneY),
-                    SceneHitTester.hit(renderScene, sceneX, sceneY, viewport.gridSize()));
+                    new MapCanvasViewInputEvent.CanvasPosition(event.getX(), event.getY(), sceneX, sceneY),
+                    SceneHitTester.hit(renderScene, sceneX, sceneY, viewport.gridSize()),
+                    NO_DELTA,
+                    dragDeltaX,
+                    dragDeltaY));
+        }
+
+        private void emitScrollInputEvent(ScrollEvent event) {
+            double sceneX = viewport.screenToSceneX(event.getX());
+            double sceneY = viewport.screenToSceneY(event.getY());
+            RenderScene renderScene = surfaceNodes.currentScene(contentModel.currentRenderScene());
+            viewInputEventHandler.accept(new MapCanvasViewInputEvent(
+                    MapCanvasViewInputEvent.Interaction.SCROLL,
+                    new MapCanvasViewInputEvent.CanvasButtons(false, false, false),
+                    new MapCanvasViewInputEvent.CanvasModifiers(
+                            event.isControlDown(),
+                            event.isShiftDown(),
+                            event.isAltDown()),
+                    new MapCanvasViewInputEvent.CanvasPosition(event.getX(), event.getY(), sceneX, sceneY),
+                    SceneHitTester.hit(renderScene, sceneX, sceneY, viewport.gridSize()),
+                    event.getDeltaY(),
+                    0.0,
+                    0.0));
         }
     }
 
-    private static final class Viewport {
-
-        private double panX;
-        private double panY;
-        private double zoom = DEFAULT_ZOOM;
+    private final class Viewport {
 
         private double zoom() {
-            return zoom;
-        }
-
-        private void reset() {
-            panX = 0.0;
-            panY = 0.0;
-            zoom = DEFAULT_ZOOM;
+            return contentModel.zoom();
         }
 
         private void panByPixels(double deltaX, double deltaY) {
-            panX += deltaX;
-            panY += deltaY;
+            contentModel.panByPixels(deltaX, deltaY);
         }
 
         private void zoomAround(double canvasX, double canvasY, double factor) {
-            double nextZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, zoom * factor));
-            double scale = nextZoom / zoom;
-            panX = canvasX - (canvasX - panX) * scale;
-            panY = canvasY - (canvasY - panY) * scale;
-            zoom = nextZoom;
+            contentModel.zoomAround(canvasX, canvasY, factor);
         }
 
         private double gridSize() {
-            return BASE_GRID * zoom;
+            return contentModel.gridSize();
         }
 
         private double sceneToScreenX(double sceneX) {
-            return panX + sceneX * gridSize();
+            return contentModel.sceneToScreenX(sceneX);
         }
 
         private double sceneToScreenY(double sceneY) {
-            return panY + sceneY * gridSize();
+            return contentModel.sceneToScreenY(sceneY);
         }
 
         private double screenToSceneX(double screenX) {
-            return (screenX - panX) / gridSize();
+            return contentModel.screenToSceneX(screenX);
         }
 
         private double screenToSceneY(double screenY) {
-            return (screenY - panY) / gridSize();
+            return contentModel.screenToSceneY(screenY);
         }
 
         private double normalizedOffset(double spacing, boolean horizontal) {
-            double pan = horizontal ? panX : panY;
-            double offset = pan % spacing;
-            return offset < 0.0 ? offset + spacing : offset;
+            return contentModel.normalizedOffset(spacing, horizontal);
         }
     }
 
@@ -397,13 +375,13 @@ public class MapCanvasView extends BorderPane {
 
         private void render(
                 GraphicsContext gc,
-                MapRenderScene renderScene,
+                RenderScene renderScene,
                 Viewport viewport,
                 CanvasBounds bounds
         ) {
             gc.clearRect(0.0, 0.0, bounds.width(), bounds.height());
             fillBackground(gc, bounds);
-            if (renderScene.viewMode() == MapRenderScene.ViewMode.GRID) {
+            if (renderScene.viewMode() == ViewMode.GRID) {
                 gridPainter.draw(gc, viewport, bounds);
             }
             shapePainter.drawRelations(gc, renderScene.relations(), viewport);
@@ -486,10 +464,10 @@ public class MapCanvasView extends BorderPane {
 
         private void drawBoundaries(
                 GraphicsContext gc,
-                List<MapRenderScene.BoundaryPrimitive> boundaries,
+                List<BoundaryPrimitive> boundaries,
                 Viewport viewport
         ) {
-            for (MapRenderScene.BoundaryPrimitive boundary : boundaries) {
+            for (BoundaryPrimitive boundary : boundaries) {
                 drawPolyline(gc, boundary.polyline(), boundary.style(), viewport);
             }
         }
@@ -502,10 +480,10 @@ public class MapCanvasView extends BorderPane {
 
         private void drawRelations(
                 GraphicsContext gc,
-                List<MapRenderScene.RelationPrimitive> relations,
+                List<RelationPrimitive> relations,
                 Viewport viewport
         ) {
-            for (MapRenderScene.RelationPrimitive relation : relations) {
+            for (RelationPrimitive relation : relations) {
                 drawPolyline(gc, relation.polyline(), relation.style(), viewport);
             }
         }
@@ -513,7 +491,7 @@ public class MapCanvasView extends BorderPane {
         private void drawPolygon(
                 GraphicsContext gc,
                 List<MapCanvasPoint> points,
-                MapRenderScene.PaintStyle style,
+                PaintStyle style,
                 Viewport viewport
         ) {
             if (points.size() < MIN_POLYGON_POINTS) {
@@ -527,11 +505,11 @@ public class MapCanvasView extends BorderPane {
                 yPoints[index] = viewport.sceneToScreenY(point.y());
             }
             applyStyle(gc, style, viewport);
-            Color fill = style.fill();
+            Color fill = fxColor(style.fill());
             if (fill != null) {
                 gc.fillPolygon(xPoints, yPoints, xPoints.length);
             }
-            Color stroke = style.stroke();
+            Color stroke = fxColor(style.stroke());
             if (stroke != null && style.strokeWidth() > 0.0) {
                 gc.strokePolygon(xPoints, yPoints, xPoints.length);
             }
@@ -541,7 +519,7 @@ public class MapCanvasView extends BorderPane {
         private void drawPolyline(
                 GraphicsContext gc,
                 List<MapCanvasPoint> points,
-                MapRenderScene.PaintStyle style,
+                PaintStyle style,
                 Viewport viewport
         ) {
             if (points.size() < MIN_POLYLINE_POINTS) {
@@ -559,14 +537,14 @@ public class MapCanvasView extends BorderPane {
             gc.restore();
         }
 
-        private void applyStyle(GraphicsContext gc, MapRenderScene.PaintStyle style, Viewport viewport) {
+        private void applyStyle(GraphicsContext gc, PaintStyle style, Viewport viewport) {
             gc.save();
             gc.setGlobalAlpha(style.alpha());
-            Color fill = style.fill();
+            Color fill = fxColor(style.fill());
             if (fill != null) {
                 gc.setFill(fill);
             }
-            Color stroke = style.stroke();
+            Color stroke = fxColor(style.stroke());
             if (stroke != null) {
                 gc.setStroke(stroke);
                 gc.setLineWidth(style.strokeWidth() * viewport.gridSize());
@@ -589,16 +567,16 @@ public class MapCanvasView extends BorderPane {
 
         private void drawGlyphs(
                 GraphicsContext gc,
-                List<MapRenderScene.GlyphPrimitive> glyphs,
+                List<GlyphPrimitive> glyphs,
                 Viewport viewport
         ) {
             gc.setTextAlign(TextAlignment.CENTER);
-            for (MapRenderScene.GlyphPrimitive glyph : glyphs) {
+            for (GlyphPrimitive glyph : glyphs) {
                 shapePainter.drawPolygon(gc, glyph.polygon(), glyph.style(), viewport);
                 String label = glyph.label();
                 if (!label.isBlank()) {
                     MapCanvasPoint center = Geometry.polygonCenter(glyph.polygon());
-                    gc.setFill(glyph.labelColor());
+                    gc.setFill(defaultTextColor(glyph.labelColor()));
                     gc.fillText(
                             label,
                             viewport.sceneToScreenX(center.x()),
@@ -608,9 +586,9 @@ public class MapCanvasView extends BorderPane {
             gc.setTextAlign(TextAlignment.LEFT);
         }
 
-        private void drawTexts(GraphicsContext gc, List<MapRenderScene.TextPrimitive> texts, Viewport viewport) {
+        private void drawTexts(GraphicsContext gc, List<TextPrimitive> texts, Viewport viewport) {
             gc.setTextAlign(TextAlignment.CENTER);
-            for (MapRenderScene.TextPrimitive text : texts) {
+            for (TextPrimitive text : texts) {
                 double width = text.width() * viewport.gridSize();
                 double height = text.height() * viewport.gridSize();
                 double x = viewport.sceneToScreenX(text.centerX()) - text.width() * viewport.gridSize() / 2.0;
@@ -626,11 +604,11 @@ public class MapCanvasView extends BorderPane {
 
         private void drawOverlays(
                 GraphicsContext gc,
-                List<MapRenderScene.OverlayPrimitive> overlays,
+                List<OverlayPrimitive> overlays,
                 Viewport viewport
         ) {
             gc.setTextAlign(TextAlignment.CENTER);
-            for (MapRenderScene.OverlayPrimitive overlay : overlays) {
+            for (OverlayPrimitive overlay : overlays) {
                 double width = overlay.width() * viewport.gridSize();
                 double height = overlay.height() * viewport.gridSize();
                 double x = viewport.sceneToScreenX(overlay.centerX()) - overlay.width() * viewport.gridSize() / 2.0;
@@ -654,7 +632,7 @@ public class MapCanvasView extends BorderPane {
 
         private void drawLabelBox(
                 GraphicsContext gc,
-                MapRenderScene.PaintStyle style,
+                PaintStyle style,
                 Color textColor,
                 double x,
                 double y,
@@ -675,23 +653,23 @@ public class MapCanvasView extends BorderPane {
             gc.restore();
         }
 
-        private Color defaultTextColor(@Nullable Color textColor) {
-            return textColor == null ? Color.WHITE : textColor;
+        private Color defaultTextColor(@Nullable SceneColor textColor) {
+            return textColor == null ? Color.WHITE : fxColor(textColor);
         }
     }
 
     private static final class SceneHitTester {
 
-        private static CanvasPointerEvent.@Nullable CanvasHit hit(
-                MapRenderScene renderScene,
+        private static @Nullable MapCanvasViewInputEvent.CanvasHit hit(
+                RenderScene renderScene,
                 double sceneX,
                 double sceneY,
                 double gridSize
         ) {
             double tolerance = Math.max(HIT_TOLERANCE_PIXELS / gridSize, MIN_HIT_TOLERANCE);
-            for (MapRenderScene.HitArea hitArea : renderScene.hitAreas()) {
+            for (HitArea hitArea : renderScene.hitAreas()) {
                 if (matches(hitArea, sceneX, sceneY, tolerance)) {
-                    return new CanvasPointerEvent.CanvasHit(
+                    return new MapCanvasViewInputEvent.CanvasHit(
                             hitArea.hitRef(),
                             hitArea.primitive(),
                             hitArea.selectionRef().isBlank() ? null : hitArea.selectionRef());
@@ -701,7 +679,7 @@ public class MapCanvasView extends BorderPane {
         }
 
         private static boolean matches(
-                MapRenderScene.HitArea hitArea,
+                HitArea hitArea,
                 double sceneX,
                 double sceneY,
                 double tolerance
@@ -709,10 +687,10 @@ public class MapCanvasView extends BorderPane {
             if (hitArea.hitRef().isBlank()) {
                 return false;
             }
-            if (hitArea instanceof MapRenderScene.PolygonHitArea polygonHitArea) {
+            if (hitArea instanceof PolygonHitArea polygonHitArea) {
                 return Geometry.pointInPolygon(sceneX, sceneY, polygonHitArea.polygon());
             }
-            if (hitArea instanceof MapRenderScene.PolylineHitArea polylineHitArea) {
+            if (hitArea instanceof PolylineHitArea polylineHitArea) {
                 return polylineHitArea.polyline().size() >= MIN_POLYLINE_POINTS
                         && Geometry.distanceToPolyline(sceneX, sceneY, polylineHitArea.polyline()) <= tolerance;
             }
@@ -794,7 +772,7 @@ public class MapCanvasView extends BorderPane {
 
     private static final class OverlayPresenter {
 
-        private static void show(OverlayMessage overlayMessage, MapRenderScene renderScene) {
+        private static void show(OverlayMessage overlayMessage, RenderScene renderScene) {
             overlayMessage.showState(renderScene.sceneLoaded());
             String message = renderScene.overlayMessage();
             boolean visible = !message.isBlank();
@@ -806,5 +784,9 @@ public class MapCanvasView extends BorderPane {
 
     private static Color color(int red, int green, int blue, double opacity) {
         return new Color(red / 255.0, green / 255.0, blue / 255.0, opacity);
+    }
+
+    private static @Nullable Color fxColor(@Nullable SceneColor color) {
+        return color == null ? null : new Color(color.red(), color.green(), color.blue(), color.opacity());
     }
 }

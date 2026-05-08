@@ -118,9 +118,15 @@ internal fun Project.configureVerificationCore() {
                 }
             }
 
-        val buildHarnessTasks = (descriptor.buildHarnessTaskMainClasses.keys + descriptor.buildHarnessTaskRuleClasses.keys)
-            .distinct()
-            .sortedBy(descriptor.taskNames::indexOf)
+        descriptor.customTasks.forEach { customTask ->
+            aggregateDependencies += verificationHarness.registerCustomVerificationTask(
+                bundleId,
+                customTask.taskName,
+                customTask.kind
+            )
+        }
+
+        val buildHarnessTasks = descriptor.buildHarnessTaskNames()
             .associateWith { taskName -> gradle.includedBuild("build-harness").task(":$taskName") }
 
         buildHarnessTasks
@@ -185,13 +191,7 @@ internal fun Project.configureVerificationCore() {
     }
 
     activeEnforcementBundleIds
-        .filter { bundleId -> descriptor(bundleId).rootPluginId == null }
         .forEach(::registerStandardBundle)
-
-    activeEnforcementBundleIds
-        .mapNotNull { bundleId -> descriptor(bundleId).rootPluginId }
-        .distinct()
-        .forEach(pluginManager::apply)
 
     val checkDocumentationEnforcement = tasks.register("checkDocumentationEnforcement") {
         group = LifecycleBasePlugin.VERIFICATION_GROUP

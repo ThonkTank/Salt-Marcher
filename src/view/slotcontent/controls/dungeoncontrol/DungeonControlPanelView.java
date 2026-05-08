@@ -2,22 +2,29 @@ package src.view.slotcontent.controls.dungeoncontrol;
 
 import java.util.List;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
+import javafx.scene.control.ComboBox;
 import javafx.scene.control.Control;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
+import javafx.scene.control.Slider;
+import javafx.scene.control.Spinner;
+import javafx.scene.control.TextField;
 import javafx.scene.control.Tooltip;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
+import javafx.util.StringConverter;
 import src.view.slotcontent.primitives.popup.AnchoredPopupView;
 
 public class DungeonControlPanelView extends VBox {
+
+    private final DungeonControlPanelContentModel contentModel = new DungeonControlPanelContentModel();
+    private Consumer<DungeonControlPanelViewInputEvent> viewInputEventHandler = ignored -> { };
 
     @SuppressWarnings("PMD.ConstructorCallsOverridableMethod")
     public DungeonControlPanelView(String titleText) {
@@ -81,105 +88,47 @@ public class DungeonControlPanelView extends VBox {
         return spacer;
     }
 
-    public static final class OverlayControlsPanel {
+    public void onViewInputEvent(Consumer<DungeonControlPanelViewInputEvent> handler) {
+        viewInputEventHandler = handler == null ? ignored -> { } : handler;
+    }
+
+    public final DungeonControlPanelContentModel contentModel() {
+        return contentModel;
+    }
+
+    protected final OverlayControlsPanel newOverlayControls() {
+        return new OverlayControlsPanel();
+    }
+
+    private void publish(DungeonControlPanelViewInputEvent event) {
+        viewInputEventHandler.accept(event);
+    }
+
+    protected final class OverlayControlsPanel {
 
         private final Button triggerButton = new Button();
-        private final OverlayPopupContentView popupContent;
+        private final OverlayPopupContentView popupContent = new OverlayPopupContentView();
         private final AnchoredPopupView popup = new AnchoredPopupView();
-        private Consumer<InputSnapshot> onChanged = ignored -> { };
 
-        public OverlayControlsPanel(Function<String, Label> sectionLabelFactory) {
-            popupContent = new OverlayPopupContentView(sectionLabelFactory, this::publishChange);
+        private OverlayControlsPanel() {
             popup.setContent(popupContent);
             FxAccess.addStyles(triggerButton, "toolbar-action-button", "dungeon-overlay-trigger");
             triggerButton.setMinWidth(USE_PREF_SIZE);
             triggerButton.setOnAction(event -> togglePopup());
-            showSettings(Settings.defaults(), false);
+            contentModel.overlaySettingsProperty().addListener((ignored, before, after) -> showState());
+            contentModel.overlayDisabledProperty().addListener((ignored, before, after) -> showState());
+            showState();
         }
 
         public Node trigger() {
             return triggerButton;
         }
 
-        public void onChanged(Consumer<InputSnapshot> action) {
-            onChanged = action == null ? ignored -> { } : action;
-        }
-
-        public void showSettings(Settings settings, boolean disabled) {
-            Settings resolved = settings == null ? Settings.defaults() : settings;
-            popupContent.showSettings(resolved, disabled);
-            triggerButton.setText(OverlayPopupContentView.summaryText(resolved));
-            triggerButton.setDisable(disabled);
-        }
-
-        public InputSnapshot snapshot() {
-            return popupContent.snapshot();
-        }
-
-        public record InputSnapshot(
-                String modeKey,
-                int range,
-                double opacity,
-                String levelsText
-        ) {
-
-            public InputSnapshot {
-                modeKey = modeKey == null ? "" : modeKey;
-                range = Math.max(0, range);
-                opacity = Math.max(0.0, Math.min(1.0, opacity));
-                levelsText = levelsText == null ? "" : levelsText.strip();
-            }
-        }
-
-        public enum Mode {
-            OFF("Aus"),
-            NEARBY("Nahe Ebenen"),
-            SELECTED("Auswahl");
-
-            private final String label;
-
-            Mode(String label) {
-                this.label = label;
-            }
-
-            String label() {
-                return label;
-            }
-
-            boolean usesRange() {
-                return this == NEARBY;
-            }
-
-            boolean usesSelectedLevels() {
-                return this == SELECTED;
-            }
-
-            static Mode defaultMode() {
-                return OFF;
-            }
-        }
-
-        public record Settings(
-                Mode mode,
-                int levelRange,
-                double opacity,
-                List<Integer> selectedLevels
-        ) {
-
-            public Settings {
-                mode = mode == null ? Mode.OFF : mode;
-                levelRange = Math.max(1, levelRange);
-                opacity = Math.max(0.1, Math.min(0.9, opacity));
-                selectedLevels = selectedLevels == null ? List.of() : List.copyOf(selectedLevels);
-            }
-
-            static Settings defaults() {
-                return new Settings(Mode.OFF, 2, 0.35, List.of());
-            }
-        }
-
-        private void publishChange() {
-            onChanged.accept(snapshot());
+        private void showState() {
+            DungeonControlPanelContentModel.OverlaySettings settings = contentModel.currentOverlaySettings();
+            popupContent.showSettings(settings, contentModel.overlayDisabled());
+            triggerButton.setText(DungeonControlPanelContentModel.summaryText(settings));
+            triggerButton.setDisable(contentModel.overlayDisabled());
         }
 
         private void togglePopup() {
@@ -195,6 +144,155 @@ public class DungeonControlPanelView extends VBox {
         }
     }
 
+    private final class OverlayPopupContentView extends VBox {
+
+        private final ComboBox<DungeonControlPanelContentModel.Mode> modeSelector = new ComboBox<>();
+        private final Spinner<Integer> rangeSpinner = new Spinner<>(1, 6, 2);
+        private final Slider opacitySlider = new Slider(10, 90, 35);
+        private final Label opacityLabel = new Label();
+        private final TextField selectedLevelsField = new TextField();
+        private final HBox rangeRow;
+        private final HBox selectedRow;
+        private boolean syncing;
+        private boolean globalDisabled;
+        private List<Integer> displayedSelectedLevels = List.of();
+
+        private OverlayPopupContentView() {
+            super(6);
+            FxAccess.setComboItems(modeSelector, DungeonControlPanelContentModel.Mode.values());
+            modeSelector.setConverter(new StringConverter<>() {
+                @Override
+                public String toString(DungeonControlPanelContentModel.Mode mode) {
+                    return mode == null ? "" : mode.label();
+                }
+
+                @Override
+                public DungeonControlPanelContentModel.Mode fromString(String string) {
+                    return null;
+                }
+            });
+            modeSelector.setMaxWidth(Double.MAX_VALUE);
+            HBox.setHgrow(modeSelector, Priority.ALWAYS);
+
+            rangeSpinner.setEditable(true);
+            rangeSpinner.setPrefWidth(84);
+
+            opacitySlider.setShowTickMarks(false);
+            opacitySlider.setShowTickLabels(false);
+            HBox.setHgrow(opacitySlider, Priority.ALWAYS);
+            opacityLabel.setMinWidth(USE_PREF_SIZE);
+
+            selectedLevelsField.setPromptText("-1, 1, 3");
+            selectedLevelsField.setPrefColumnCount(10);
+            HBox.setHgrow(selectedLevelsField, Priority.ALWAYS);
+
+            HBox modeRow = row(new Label("Modus"), modeSelector);
+            HBox opacityRow = row(new Label("Staerke"), opacitySlider, opacityLabel);
+            rangeRow = row(new Label("Umfang"), rangeSpinner);
+            selectedRow = row(new Label("Ebenen"), selectedLevelsField);
+            getChildren().addAll(sectionLabel("Overlay"), modeRow, opacityRow, rangeRow, selectedRow);
+            setPadding(new Insets(8));
+            getStyleClass().addAll("filter-dropdown", "dungeon-overlay-dropdown");
+            configureListeners();
+        }
+
+        private Node focusTarget() {
+            return modeSelector;
+        }
+
+        private void showSettings(
+                DungeonControlPanelContentModel.OverlaySettings settings,
+                boolean disabled
+        ) {
+            syncing = true;
+            globalDisabled = disabled;
+            modeSelector.setValue(settings.mode());
+            FxAccess.setSpinnerValue(rangeSpinner, settings.levelRange());
+            opacitySlider.setValue(settings.opacity() * 100.0);
+            displayedSelectedLevels = settings.selectedLevels();
+            selectedLevelsField.setText(DungeonControlPanelContentModel.formatLevels(displayedSelectedLevels));
+            updateOpacityLabel();
+            modeSelector.setDisable(disabled);
+            opacitySlider.setDisable(disabled);
+            updateEnabledState(settings.mode());
+            syncing = false;
+        }
+
+        private void configureListeners() {
+            modeSelector.valueProperty().addListener((ignored, before, after) -> {
+                if (syncing || after == null) {
+                    return;
+                }
+                updateEnabledState(after);
+                publishOverlayInput();
+            });
+            rangeSpinner.valueProperty().addListener((ignored, before, after) -> {
+                if (!syncing && after != null) {
+                    publishOverlayInput();
+                }
+            });
+            opacitySlider.valueProperty().addListener((ignored, before, after) -> {
+                updateOpacityLabel();
+                if (!syncing && after != null) {
+                    publishOverlayInput();
+                }
+            });
+            selectedLevelsField.setOnAction(event -> commitSelectedLevels());
+            selectedLevelsField.focusedProperty().addListener((ignored, before, focused) -> {
+                if (!focused) {
+                    commitSelectedLevels();
+                }
+            });
+        }
+
+        private void publishOverlayInput() {
+            publish(new DungeonControlPanelViewInputEvent(new DungeonControlPanelViewInputEvent.OverlayInput(
+                    modeSelector.getValue() == null ? "" : modeSelector.getValue().name(),
+                    rangeSpinner.getValue() == null ? 0 : rangeSpinner.getValue(),
+                    opacitySlider.getValue() / 100.0,
+                    selectedLevelsField.getText())));
+        }
+
+        private void commitSelectedLevels() {
+            if (syncing) {
+                return;
+            }
+            java.util.Optional<List<Integer>> parsedLevels =
+                    DungeonControlPanelContentModel.parseLevels(selectedLevelsField.getText());
+            if (parsedLevels.isEmpty()) {
+                selectedLevelsField.setText(DungeonControlPanelContentModel.formatLevels(displayedSelectedLevels));
+                return;
+            }
+            displayedSelectedLevels = parsedLevels.orElseThrow();
+            selectedLevelsField.setText(DungeonControlPanelContentModel.formatLevels(displayedSelectedLevels));
+            publishOverlayInput();
+        }
+
+        private void updateEnabledState(DungeonControlPanelContentModel.Mode mode) {
+            DungeonControlPanelContentModel.Mode resolvedMode =
+                    mode == null ? DungeonControlPanelContentModel.Mode.OFF : mode;
+            boolean rangeVisible = resolvedMode.usesRange();
+            boolean selectedVisible = resolvedMode.usesSelectedLevels();
+            rangeRow.setManaged(rangeVisible);
+            rangeRow.setVisible(rangeVisible);
+            selectedRow.setManaged(selectedVisible);
+            selectedRow.setVisible(selectedVisible);
+            rangeSpinner.setDisable(globalDisabled || !rangeVisible);
+            selectedLevelsField.setDisable(globalDisabled || !selectedVisible);
+        }
+
+        private void updateOpacityLabel() {
+            opacityLabel.setText(Math.round(opacitySlider.getValue()) + "%");
+        }
+
+        private HBox row(Node... nodes) {
+            HBox row = new HBox(8, nodes);
+            row.setAlignment(Pos.CENTER_LEFT);
+            row.setMaxWidth(Double.MAX_VALUE);
+            return row;
+        }
+    }
+
     @SuppressWarnings("PMD.LawOfDemeter")
     private static final class FxAccess {
 
@@ -204,6 +302,16 @@ public class DungeonControlPanelView extends VBox {
 
         private static void addStyles(Node node, String... styleClasses) {
             node.getStyleClass().addAll(styleClasses);
+        }
+
+        private static <T> void setComboItems(ComboBox<T> comboBox, T[] values) {
+            comboBox.getItems().setAll(values);
+        }
+
+        private static <T> void setSpinnerValue(Spinner<T> spinner, T value) {
+            if (spinner.getValueFactory() != null) {
+                spinner.getValueFactory().setValue(value);
+            }
         }
     }
 }

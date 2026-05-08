@@ -17,6 +17,10 @@ import org.gradle.kotlin.dsl.named
 import org.gradle.kotlin.dsl.register
 import org.gradle.language.base.plugins.LifecycleBasePlugin
 import saltmarcher.buildlogic.enforcement.EnforcementBundlesExtension
+import saltmarcher.buildlogic.tasks.CheckCentralizedStylesheetsTask
+import saltmarcher.buildlogic.tasks.CheckDefinedStyleClassSelectorsTask
+import saltmarcher.buildlogic.tasks.CheckStylingCentralStylesheetOwnerTask
+import saltmarcher.buildlogic.tasks.CheckViewFxmlResourcesTask
 import saltmarcher.buildlogic.tasks.MainClassesSystemPropertyProvider
 
 internal open class VerificationHarnessExtension(
@@ -210,4 +214,66 @@ internal open class VerificationHarnessExtension(
         reportsDirectoryPath = reportsDirectoryPath,
         selectedCompileJava = selectedCompileJava
     )
+
+    fun registerCustomVerificationTask(
+        bundleId: String,
+        taskName: String,
+        kind: String
+    ): TaskProvider<out Task> = when (kind) {
+        "viewFxmlResources" -> project.tasks.register<CheckViewFxmlResourcesTask>(taskName) {
+            group = LifecycleBasePlugin.VERIFICATION_GROUP
+            description = "Validate declarative passive-view FXML resource placement and controller ownership."
+            projectRoot.set(project.layout.projectDirectory)
+            verificationInputs.from(
+                project.layout.projectDirectory.asFileTree.matching {
+                    include("resources/**")
+                    include("shell/**")
+                    include("src/**")
+                    exclude("**/.gradle/**")
+                    exclude("**/build/**")
+                    exclude("**/.git/**")
+                }
+            )
+            successMarker.set(project.layout.buildDirectory.file("verification-markers/$taskName/success.marker"))
+        }
+        "centralizedStylesheets" -> project.tasks.register<CheckCentralizedStylesheetsTask>(taskName) {
+            group = LifecycleBasePlugin.VERIFICATION_GROUP
+            description = "Fail if stylesheet files exist outside the central resources/salt-marcher.css file."
+            stylesheetFiles.from(
+                project.layout.projectDirectory.asFileTree.matching {
+                    include("**/*.css", "**/*.scss", "**/*.sass", "**/*.less", "**/*.styl")
+                    exclude("**/.git/**", "**/.gradle/**", "**/build/**")
+                }
+            )
+            canonicalStylesheetRelativePath.set("resources/salt-marcher.css")
+            canonicalStylesheetFile.set(project.layout.projectDirectory.file("resources/salt-marcher.css"))
+            successMarker.set(project.layout.buildDirectory.file("verification-markers/$taskName/success.marker"))
+        }
+        "stylingCentralStylesheetOwner" -> project.tasks.register<CheckStylingCentralStylesheetOwnerTask>(taskName) {
+            group = LifecycleBasePlugin.VERIFICATION_GROUP
+            description = "Fail if SaltMarcher styling stops using the canonical resources/salt-marcher.css owner."
+            configuredStylesheetPath.set(project.providers.gradleProperty("saltMarcherStylesheet").orElse("resources/salt-marcher.css"))
+            canonicalStylesheetRelativePath.set("resources/salt-marcher.css")
+            canonicalStylesheetFile.set(project.layout.projectDirectory.file("resources/salt-marcher.css"))
+            successMarker.set(project.layout.buildDirectory.file("verification-markers/$taskName/success.marker"))
+        }
+        "definedStyleClassSelectors" -> project.tasks.register<CheckDefinedStyleClassSelectorsTask>(taskName) {
+            group = LifecycleBasePlugin.VERIFICATION_GROUP
+            description = "Fail if Java-authored style classes are missing from resources/salt-marcher.css selectors."
+            stylesheetFiles.from(
+                project.layout.projectDirectory.asFileTree.matching {
+                    include("**/*.css", "**/*.scss", "**/*.sass", "**/*.less", "**/*.styl")
+                    exclude("**/.git/**", "**/.gradle/**", "**/build/**")
+                }
+            )
+            javaSourceFiles.from(
+                project.files("bootstrap", "shell", "src").asFileTree.matching {
+                    include("**/*.java")
+                    exclude("**/build/**")
+                }
+            )
+            successMarker.set(project.layout.buildDirectory.file("verification-markers/$taskName/success.marker"))
+        }
+        else -> error("Unsupported custom verification task kind '$kind' for enforcement bundle '$bundleId'.")
+    }
 }

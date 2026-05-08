@@ -61,7 +61,7 @@ public enum ViewRole {
         return switch (unitKind) {
             case ACTIVE_ROOT -> switch (this) {
                 case CONTRIBUTION, BINDER, CONTRIBUTION_MODEL, INTENT_HANDLER,
-                        VIEW_INPUT_EVENT, PUBLISHED_EVENT, VIEW -> true;
+                        VIEW_INPUT_EVENT, VIEW -> true;
                 default -> false;
             };
             case REUSABLE_SLOTCONTENT -> switch (this) {

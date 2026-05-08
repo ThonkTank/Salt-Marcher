@@ -15,7 +15,7 @@ import saltmarcher.quality.errorprone.view.ViewArchitectureSupport;
 
 @BugPattern(
         name = "ViewBinderProjectionModelRequestProtocol",
-        summary = "Binders must not wire request-token or publish-like protocols off view models; outward work must flow through PublishedEvent sinks.",
+        summary = "Binders must not wire request-token or publish-like protocols off projection models.",
         severity = BugPattern.SeverityLevel.ERROR)
 public final class ViewBinderProjectionModelRequestProtocolChecker extends BugChecker
         implements BugChecker.CompilationUnitTreeMatcher {
@@ -51,7 +51,7 @@ public final class ViewBinderProjectionModelRequestProtocolChecker extends BugCh
                 .setMessage("Binder package '" + sourcePackageName
                         + "' wires request/token protocol APIs from view models: "
                         + String.join(", ", violations)
-                        + ". Binder side-effects must be driven through same-root Consumer<...PublishedEvent> seams instead.")
+                        + ". Binder side-effects must not be reconstructed from projection-model request protocols.")
                 .build();
     }
 

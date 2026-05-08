@@ -192,7 +192,7 @@ public final class ViewArchitectureSupport {
     }
 
     public static boolean isAllowedIntentHandlerDomainBoundary(String sourcePackageName, String referencedType) {
-        return false;
+        return isApplicationServiceReference(referencedType);
     }
 
     private static boolean isDomainApplicationServiceRoot(String referencedType) {
@@ -373,6 +373,13 @@ public final class ViewArchitectureSupport {
                 && "MODEL".equals(viewType.bucket());
     }
 
+    public static boolean isReusableSlotcontentViewInputEventReference(String referencedType) {
+        ViewTypeInfo viewType = parseViewType(referencedType);
+        return viewType != null
+                && Set.of("controls", "main", "state", "details", "topbar", "primitives").contains(viewType.component())
+                && "VIEW_INPUT_EVENT".equals(viewType.bucket());
+    }
+
     public static boolean isSupportValueReference(String referencedType) {
         return false;
     }
@@ -400,6 +407,22 @@ public final class ViewArchitectureSupport {
     public static boolean isSameViewRootOrReusablePassiveViewReference(String sourcePackageName, String referencedType) {
         return isSameViewRootReference(sourcePackageName, referencedType)
                 || isReusablePassiveViewReference(referencedType);
+    }
+
+    public static boolean isSameViewRootOrReusableSlotcontentViewInputEventReference(
+            String sourcePackageName,
+            String referencedType
+    ) {
+        return isSameViewRootReference(sourcePackageName, referencedType)
+                || isReusableSlotcontentViewInputEventReference(referencedType);
+    }
+
+    public static boolean isSameViewRootOrReusableSlotcontentModelReference(
+            String sourcePackageName,
+            String referencedType
+    ) {
+        return isSameViewRootReference(sourcePackageName, referencedType)
+                || isSlotcontentModelReference(referencedType);
     }
 
     public static boolean isSameViewRootModelReference(String sourcePackageName, String referencedType) {

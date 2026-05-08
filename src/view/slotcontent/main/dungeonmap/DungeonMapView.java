@@ -6,11 +6,13 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.ToDoubleFunction;
 import java.util.function.ToIntFunction;
 import java.util.function.ToLongFunction;
+import javafx.scene.layout.BorderPane;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.published.DungeonTopologyKind;
 import src.domain.dungeoneditor.published.DungeonEditorHandleRef;
@@ -22,17 +24,28 @@ import src.domain.dungeoneditor.published.DungeonEditorViewMode;
 import src.domain.travel.published.TravelDungeonMapProjectionSnapshot;
 import src.domain.travel.published.TravelDungeonSnapshot;
 import src.domain.travel.published.TravelOverlaySettings;
+import src.view.slotcontent.primitives.mapcanvas.MapCanvasContentModel.ViewMode;
 import src.view.slotcontent.primitives.mapcanvas.MapCanvasView;
-import src.view.slotcontent.primitives.mapcanvas.MapRenderScene;
 
-public class DungeonMapView extends MapCanvasView {
+public class DungeonMapView extends BorderPane {
+
+    private final MapCanvasView mapCanvasView = new MapCanvasView();
+    private Consumer<DungeonMapViewInputEvent> viewInputEventHandler = ignored -> {};
+
+    public DungeonMapView() {
+        setCenter(mapCanvasView);
+        mapCanvasView.onViewInputEvent(event -> viewInputEventHandler.accept(new DungeonMapViewInputEvent(event)));
+    }
 
     public void bind(DungeonMapContentModel presentationModel) {
         if (presentationModel == null) {
             return;
         }
-        renderSceneProperty().unbind();
-        renderSceneProperty().bind(presentationModel.renderSceneProperty());
+        mapCanvasView.bind(presentationModel.mapCanvasContentModel());
+    }
+
+    public void onViewInputEvent(Consumer<DungeonMapViewInputEvent> handler) {
+        viewInputEventHandler = handler == null ? ignored -> {} : handler;
     }
 }
 
@@ -92,8 +105,8 @@ record DungeonMapRenderState(
         return viewMode == ViewMode.GRAPH;
     }
 
-    MapRenderScene.ViewMode sceneViewMode() {
-        return isGraphView() ? MapRenderScene.ViewMode.GRAPH : MapRenderScene.ViewMode.GRID;
+    ViewMode sceneViewMode() {
+        return isGraphView() ? ViewMode.GRAPH : ViewMode.GRID;
     }
 
     String statusLabel() {
