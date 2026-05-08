@@ -28,6 +28,20 @@ public record EncounterTuningIntent(
         return new EncounterTuningIntent(AUTO_BALANCE_LEVEL, AUTO_AMOUNT_VALUE, AUTO_DIVERSITY_LEVEL);
     }
 
+    public static EncounterTuningIntent fromPublishedValues(
+            boolean autoBalance,
+            int balanceLevel,
+            boolean autoAmount,
+            double amountValue,
+            boolean autoDiversity,
+            int diversityLevel
+    ) {
+        return new EncounterTuningIntent(
+                autoBalance ? AUTO_BALANCE_LEVEL : balanceLevel,
+                autoAmount ? AUTO_AMOUNT_VALUE : amountValue,
+                autoDiversity ? AUTO_DIVERSITY_LEVEL : diversityLevel);
+    }
+
     public boolean isBalanceAuto() {
         return balanceLevel == AUTO_BALANCE_LEVEL;
     }
@@ -42,6 +56,18 @@ public record EncounterTuningIntent(
 
     public boolean hasAuto() {
         return isBalanceAuto() || isAmountAuto() || isDiversityAuto();
+    }
+
+    public int publishedBalanceLevel() {
+        return isBalanceAuto() ? defaultIntent().balanceLevel() : balanceLevel;
+    }
+
+    public double publishedAmountValue() {
+        return isAmountAuto() ? defaultIntent().amountValue() : amountValue;
+    }
+
+    public int publishedDiversityLevel() {
+        return isDiversityAuto() ? defaultIntent().diversityLevel() : diversityLevel;
     }
 
     private static int normalizeBalance(int value) {

@@ -1,4 +1,7 @@
 package src.domain.party.published;
 
-public record LoadAdventuringDaySummaryQuery() {
+public final class LoadAdventuringDaySummaryQuery {
+
+    public LoadAdventuringDaySummaryQuery() {
+    }
 }

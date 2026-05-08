@@ -2,21 +2,41 @@ package src.domain.dungeon.map.value;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
-public record DungeonEdge(
-        DungeonCell from,
-        DungeonCell to
-) {
+public final class DungeonEdge {
+    private final DungeonCell from;
+    private final DungeonCell to;
+
+    public DungeonEdge(
+            DungeonCell from,
+            DungeonCell to
+    ) {
+        this.from = from;
+        this.to = to;
+    }
+
+    public DungeonCell from() {
+        return from;
+    }
+
+    public DungeonCell to() {
+        return to;
+    }
 
     public static DungeonEdge sideOf(DungeonCell cell, DungeonEdgeDirection direction) {
         DungeonCell origin = cell == null ? new DungeonCell(0, 0, 0) : cell;
         DungeonEdgeDirection resolvedDirection = direction == null ? DungeonEdgeDirection.NORTH : direction;
-        return switch (resolvedDirection) {
-            case NORTH -> new DungeonEdge(origin, offset(origin, 1, 0));
-            case EAST -> new DungeonEdge(offset(origin, 1, 0), offset(origin, 1, 1));
-            case SOUTH -> new DungeonEdge(offset(origin, 0, 1), offset(origin, 1, 1));
-            case WEST -> new DungeonEdge(origin, offset(origin, 0, 1));
-        };
+        if (resolvedDirection == DungeonEdgeDirection.NORTH) {
+            return new DungeonEdge(origin, offset(origin, 1, 0));
+        }
+        if (resolvedDirection == DungeonEdgeDirection.EAST) {
+            return new DungeonEdge(offset(origin, 1, 0), offset(origin, 1, 1));
+        }
+        if (resolvedDirection == DungeonEdgeDirection.SOUTH) {
+            return new DungeonEdge(offset(origin, 0, 1), offset(origin, 1, 1));
+        }
+        return new DungeonEdge(origin, offset(origin, 0, 1));
     }
 
     public List<DungeonCell> touchingCells() {
@@ -56,5 +76,22 @@ public record DungeonEdge(
 
     private static DungeonCell offset(DungeonCell cell, int deltaQ, int deltaR) {
         return new DungeonCell(cell.q() + deltaQ, cell.r() + deltaR, cell.level());
+    }
+
+    @Override
+    public boolean equals(Object other) {
+        return other instanceof DungeonEdge that
+                && Objects.equals(from, that.from)
+                && Objects.equals(to, that.to);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(from, to);
+    }
+
+    @Override
+    public String toString() {
+        return "DungeonEdge[from=" + from + ", to=" + to + "]";
     }
 }

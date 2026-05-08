@@ -144,16 +144,29 @@ public record DungeonMapTopology(
     }
 
     private static String labelFor(DungeonTopologyElementKind kind) {
-        return switch (kind == null ? DungeonTopologyElementKind.EMPTY : kind) {
-            case DOOR -> "Door";
-            case WALL -> "Wall";
-            case ROOM -> "Room";
-            case CORRIDOR -> "Corridor";
-            case CORRIDOR_ANCHOR -> "Corridor Anchor";
-            case STAIR -> "Stair";
-            case TRANSITION -> "Transition";
-            case EMPTY -> "";
-        };
+        DungeonTopologyElementKind resolvedKind = kind == null ? DungeonTopologyElementKind.EMPTY : kind;
+        if (resolvedKind == DungeonTopologyElementKind.DOOR) {
+            return "Door";
+        }
+        if (resolvedKind == DungeonTopologyElementKind.WALL) {
+            return "Wall";
+        }
+        if (resolvedKind == DungeonTopologyElementKind.ROOM) {
+            return "Room";
+        }
+        if (resolvedKind == DungeonTopologyElementKind.CORRIDOR) {
+            return "Corridor";
+        }
+        if (resolvedKind == DungeonTopologyElementKind.CORRIDOR_ANCHOR) {
+            return "Corridor Anchor";
+        }
+        if (resolvedKind == DungeonTopologyElementKind.STAIR) {
+            return "Stair";
+        }
+        if (resolvedKind == DungeonTopologyElementKind.TRANSITION) {
+            return "Transition";
+        }
+        return "";
     }
 
     public record DungeonTopologyBinding(

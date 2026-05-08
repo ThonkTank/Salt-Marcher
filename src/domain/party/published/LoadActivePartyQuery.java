@@ -1,4 +1,7 @@
 package src.domain.party.published;
 
-public record LoadActivePartyQuery() {
+public final class LoadActivePartyQuery {
+
+    public LoadActivePartyQuery() {
+    }
 }

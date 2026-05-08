@@ -2,6 +2,7 @@ package src.view.leftbartabs.dungeontravel;
 
 import java.util.function.Consumer;
 import javafx.geometry.Pos;
+import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.layout.HBox;
@@ -10,21 +11,23 @@ import src.view.slotcontent.controls.dungeoncontrol.DungeonControlPanelView;
 
 public final class DungeonTravelControlsView extends DungeonControlPanelView {
 
-    private final Label zoomLabel = new Label("Zoom: 100%");
-    private final Label mapLabel = new Label("Dungeon");
-    private final Label levelLabel = new Label("Ebene z=0");
-    private final Button resetViewButton = new Button("Ansicht zurücksetzen");
-    private final Button previousLevelButton = new Button("-");
-    private final Button nextLevelButton = new Button("+");
+    private final ToolbarLabel zoomLabel = new ToolbarLabel("Zoom: 100%");
+    private final ToolbarLabel mapLabel = new ToolbarLabel("Dungeon");
+    private final ToolbarLabel levelLabel = new ToolbarLabel("Ebene z=0");
+    private final ToolbarButton resetViewButton = new ToolbarButton("Ansicht zurücksetzen");
+    private final ToolbarButton previousLevelButton = new ToolbarButton("-");
+    private final ToolbarButton nextLevelButton = new ToolbarButton("+");
     private final OverlayControlsPanel overlayControls = new OverlayControlsPanel(this::sectionLabel);
+    private final InputPublisher inputPublisher = new InputPublisher();
     private Consumer<DungeonTravelControlsViewInputEvent> viewInputEventHandler = ignored -> {};
 
-    @SuppressWarnings("PMD.ConstructorCallsOverridableMethod")
     public DungeonTravelControlsView() {
         super("");
         getStyleClass().add("control-toolbar");
         configureControls();
-        getChildren().setAll(dungeonRow(), projectionRow());
+        getChildren().setAll(
+                new MapRow(mapLabel, resetViewButton),
+                new ProjectionRow(zoomLabel, new LevelStepper(levelLabel, previousLevelButton, nextLevelButton), overlayControls.trigger()));
     }
 
     public void onViewInputEvent(Consumer<DungeonTravelControlsViewInputEvent> handler) {
@@ -59,97 +62,112 @@ public final class DungeonTravelControlsView extends DungeonControlPanelView {
         }
         contributionModel.mapNameProperty().addListener((ignored, before, after) -> showMapName(after));
         contributionModel.overlaySettingsProperty().addListener((ignored, before, after) ->
-                showOverlaySettings(toOverlaySettings(after), false));
+                showOverlaySettings(OverlaySettingsAdapter.toOverlaySettings(after), false));
         contributionModel.projectionLevelProperty().addListener((ignored, before, after) ->
                 showLevels(after.intValue(), false, true));
         showMapName(contributionModel.mapNameProperty().get());
-        showOverlaySettings(toOverlaySettings(contributionModel.overlaySettingsProperty().get()), false);
+        showOverlaySettings(OverlaySettingsAdapter.toOverlaySettings(contributionModel.overlaySettingsProperty().get()), false);
         showLevels(contributionModel.projectionLevelProperty().get(), false, true);
     }
 
-    private HBox levelRow() {
-        HBox row = compactControlRow(
-                zoomLabel,
-                levelStepper(),
-                overlayControls.trigger());
-        row.getStyleClass().add("dungeon-control-projection-row");
-        row.setAlignment(Pos.CENTER_LEFT);
-        return row;
-    }
-
     private void configureControls() {
-        mapLabel.getStyleClass().add("text-muted");
         mapLabel.setMinWidth(0.0);
         mapLabel.setMaxWidth(Double.MAX_VALUE);
         HBox.setHgrow(mapLabel, Priority.ALWAYS);
-        zoomLabel.getStyleClass().add("text-muted");
-        levelLabel.getStyleClass().add("text-muted");
-        resetViewButton.getStyleClass().add("toolbar-action-button");
-        previousLevelButton.getStyleClass().add("toolbar-action-button");
-        nextLevelButton.getStyleClass().add("toolbar-action-button");
-        resetViewButton.setOnAction(event -> publishSnapshot(true, 0));
-        previousLevelButton.setOnAction(event -> publishSnapshot(false, -1));
-        nextLevelButton.setOnAction(event -> publishSnapshot(false, 1));
-        overlayControls.onChanged(snapshot -> publishSnapshot(false, 0, snapshot));
+        resetViewButton.setOnAction(event -> inputPublisher.publish(true, 0, overlayControls.snapshot()));
+        previousLevelButton.setOnAction(event -> inputPublisher.publish(false, -1, overlayControls.snapshot()));
+        nextLevelButton.setOnAction(event -> inputPublisher.publish(false, 1, overlayControls.snapshot()));
+        overlayControls.onChanged(snapshot -> inputPublisher.publish(false, 0, snapshot));
         describe(resetViewButton, "Kamera auf die Dungeon-Karte zurücksetzen");
         describe(previousLevelButton, "Vorherige Dungeon-Ebene anzeigen");
         describe(nextLevelButton, "Nächste Dungeon-Ebene anzeigen");
     }
 
-    private void publishSnapshot(boolean resetViewRequested, int projectionLevelShift) {
-        publishSnapshot(resetViewRequested, projectionLevelShift, overlayControls.snapshot());
+    private final class InputPublisher {
+
+        private void publish(
+                boolean resetViewRequested,
+                int projectionLevelShift,
+                OverlayControlsPanel.InputSnapshot overlaySnapshot
+        ) {
+            viewInputEventHandler.accept(new DungeonTravelControlsViewInputEvent(
+                    resetViewRequested,
+                    projectionLevelShift,
+                    overlaySnapshot.modeKey(),
+                    overlaySnapshot.range(),
+                    overlaySnapshot.opacity(),
+                    overlaySnapshot.levelsText()));
+        }
     }
 
-    private void publishSnapshot(
-            boolean resetViewRequested,
-            int projectionLevelShift,
-            OverlayControlsPanel.InputSnapshot overlaySnapshot
-    ) {
-        viewInputEventHandler.accept(new DungeonTravelControlsViewInputEvent(
-                resetViewRequested,
-                projectionLevelShift,
-                overlaySnapshot.modeKey(),
-                overlaySnapshot.range(),
-                overlaySnapshot.opacity(),
-                overlaySnapshot.levelsText()));
+    private static final class OverlaySettingsAdapter {
+
+        private static OverlayControlsPanel.Settings toOverlaySettings(
+                DungeonTravelContributionModel.OverlayProjection settings
+        ) {
+            DungeonTravelContributionModel.OverlayProjection resolved = settings == null
+                    ? DungeonTravelContributionModel.OverlayProjection.defaults()
+                    : settings;
+            return new OverlayControlsPanel.Settings(
+                    toOverlayMode(resolved.modeKey()),
+                    resolved.levelRange(),
+                    resolved.opacity(),
+                    resolved.selectedLevels());
+        }
+
+        private static OverlayControlsPanel.Mode toOverlayMode(String overlayModeKey) {
+            return switch (overlayModeKey == null ? "OFF" : overlayModeKey) {
+                case "OFF" -> OverlayControlsPanel.Mode.OFF;
+                case "NEARBY" -> OverlayControlsPanel.Mode.NEARBY;
+                case "SELECTED" -> OverlayControlsPanel.Mode.SELECTED;
+                default -> OverlayControlsPanel.Mode.OFF;
+            };
+        }
     }
 
-    private HBox dungeonRow() {
-        HBox row = compactControlRow(mapLabel, resetViewButton);
-        row.getStyleClass().add("dungeon-control-map-row");
-        row.setAlignment(Pos.CENTER_LEFT);
-        return row;
+    private static final class ToolbarLabel extends Label {
+
+        private ToolbarLabel(String text) {
+            super(text);
+            getStyleClass().add("text-muted");
+        }
     }
 
-    private HBox projectionRow() {
-        return levelRow();
+    private static final class ToolbarButton extends Button {
+
+        private ToolbarButton(String text) {
+            super(text);
+            getStyleClass().add("toolbar-action-button");
+        }
     }
 
-    private static OverlayControlsPanel.Settings toOverlaySettings(
-            DungeonTravelContributionModel.OverlayProjection settings
-    ) {
-        DungeonTravelContributionModel.OverlayProjection resolved = settings == null
-                ? DungeonTravelContributionModel.OverlayProjection.defaults()
-                : settings;
-        return new OverlayControlsPanel.Settings(
-                toOverlayMode(resolved.modeKey()),
-                resolved.levelRange(),
-                resolved.opacity(),
-                resolved.selectedLevels());
+    private final class MapRow extends HBox {
+
+        private MapRow(Label mapLabel, Button resetViewButton) {
+            super(6, mapLabel, resetViewButton);
+            getStyleClass().addAll("dungeon-control-row", "dungeon-control-map-row");
+            setAlignment(Pos.CENTER_LEFT);
+            setMaxWidth(Double.MAX_VALUE);
+        }
     }
 
-    private static OverlayControlsPanel.Mode toOverlayMode(String overlayModeKey) {
-        return switch (overlayModeKey == null ? "OFF" : overlayModeKey) {
-            case "OFF" -> OverlayControlsPanel.Mode.OFF;
-            case "NEARBY" -> OverlayControlsPanel.Mode.NEARBY;
-            case "SELECTED" -> OverlayControlsPanel.Mode.SELECTED;
-            default -> OverlayControlsPanel.Mode.OFF;
-        };
+    private final class ProjectionRow extends HBox {
+
+        private ProjectionRow(Label zoomLabel, HBox levelStepper, Node overlayTrigger) {
+            super(6, zoomLabel, levelStepper, overlayTrigger);
+            getStyleClass().addAll("dungeon-control-row", "dungeon-control-projection-row");
+            setAlignment(Pos.CENTER_LEFT);
+            setMaxWidth(Double.MAX_VALUE);
+        }
     }
 
-    private HBox levelStepper() {
-        HBox stepper = compactControlGroup(levelLabel, previousLevelButton, nextLevelButton);
-        stepper.getStyleClass().add("dungeon-stepper-group");
-        return stepper;
+    private final class LevelStepper extends HBox {
+
+        private LevelStepper(Label levelLabel, Button previousLevelButton, Button nextLevelButton) {
+            super(0, levelLabel, previousLevelButton, nextLevelButton);
+            getStyleClass().addAll("dungeon-control-group", "dungeon-stepper-group");
+            setAlignment(Pos.CENTER_LEFT);
+            setMaxWidth(USE_PREF_SIZE);
+        }
     }
 }

@@ -8,10 +8,25 @@ public sealed interface DungeonTransitionDestination
 
     String typeKey();
 
-    record OverworldTileDestination(
-            long mapId,
-            long tileId
-    ) implements DungeonTransitionDestination {
+    final class OverworldTileDestination implements DungeonTransitionDestination {
+        private final long mapId;
+        private final long tileId;
+
+        public OverworldTileDestination(
+                long mapId,
+                long tileId
+        ) {
+            this.mapId = mapId;
+            this.tileId = tileId;
+        }
+
+        public long mapId() {
+            return mapId;
+        }
+
+        public long tileId() {
+            return tileId;
+        }
 
         @Override
         public String typeKey() {

@@ -4,14 +4,19 @@ public sealed interface DungeonAuthoredReadQuery permits
         DungeonAuthoredReadQuery.LoadSnapshot,
         DungeonAuthoredReadQuery.DescribeSelection {
 
-    record LoadSnapshot(DungeonMapId mapId) implements DungeonAuthoredReadQuery {
+    final class LoadSnapshot implements DungeonAuthoredReadQuery {
+        private final DungeonMapId mapId;
 
         public LoadSnapshot() {
             this(new DungeonMapId(1L));
         }
 
-        public LoadSnapshot {
-            mapId = mapId == null ? new DungeonMapId(1L) : mapId;
+        public LoadSnapshot(DungeonMapId mapId) {
+            this.mapId = mapId == null ? new DungeonMapId(1L) : mapId;
+        }
+
+        public DungeonMapId mapId() {
+            return mapId;
         }
     }
 

@@ -3,7 +3,6 @@ package src.view.leftbartabs.dungeoneditor;
 import java.util.Map;
 import java.util.Objects;
 import javafx.scene.Node;
-import org.jspecify.annotations.Nullable;
 import shell.api.ShellBinding;
 import shell.api.ShellRuntimeContext;
 import shell.api.ShellSlot;

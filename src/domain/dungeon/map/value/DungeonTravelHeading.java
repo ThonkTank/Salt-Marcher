@@ -2,11 +2,17 @@ package src.domain.dungeon.map.value;
 
 import java.util.Locale;
 
-public enum DungeonTravelHeading {
-    NORTH,
-    EAST,
-    SOUTH,
-    WEST;
+public final class DungeonTravelHeading {
+    public static final DungeonTravelHeading NORTH = new DungeonTravelHeading("NORTH");
+    public static final DungeonTravelHeading EAST = new DungeonTravelHeading("EAST");
+    public static final DungeonTravelHeading SOUTH = new DungeonTravelHeading("SOUTH");
+    public static final DungeonTravelHeading WEST = new DungeonTravelHeading("WEST");
+
+    private final String name;
+
+    private DungeonTravelHeading(String name) {
+        this.name = name;
+    }
 
     public static DungeonTravelHeading defaultHeading() {
         return SOUTH;
@@ -21,5 +27,23 @@ public enum DungeonTravelHeading {
         } catch (IllegalArgumentException ignored) {
             return defaultHeading();
         }
+    }
+
+    public static DungeonTravelHeading valueOf(String name) {
+        return switch (name) {
+            case "NORTH" -> NORTH;
+            case "EAST" -> EAST;
+            case "WEST" -> WEST;
+            default -> SOUTH;
+        };
+    }
+
+    public String name() {
+        return name;
+    }
+
+    @Override
+    public String toString() {
+        return name;
     }
 }

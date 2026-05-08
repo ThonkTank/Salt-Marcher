@@ -21,33 +21,25 @@ public final class TravelStateView extends VBox {
     private static final int SECTION_HEADER_SLOT = 4;
     private static final int SECTION_VALUE_SLOT = 5;
 
-    private final Label[] textLabels = new Label[6];
-    private final Label[] detailKeyLabels = new Label[3];
-    private final Label[] detailValueLabels = new Label[3];
+    private final StyledLabel[] textLabels = new StyledLabel[6];
+    private final StyledLabel[] detailKeyLabels = new StyledLabel[3];
+    private final StyledLabel[] detailValueLabels = new StyledLabel[3];
     private final VBox actionItems = new VBox(6);
-    private final Button actionButton = new Button();
+    private final ActionButton actionButton = new ActionButton();
 
     public TravelStateView() {
         getStyleClass().add("travel-pane");
 
-        for (int index = 0; index < textLabels.length; index++) {
-            textLabels[index] = new Label();
-        }
+        textLabels[ICON_SLOT] = new StyledLabel("travel-location-icon");
+        textLabels[LOCATION_SLOT] = new StyledLabel(STYLE_TEXT_MUTED, "text-italic");
+        textLabels[STATUS_SLOT] = new StyledLabel("travel-status-badge");
+        textLabels[CONTEXT_SLOT] = new StyledLabel(STYLE_TEXT_MUTED, "text-italic");
+        textLabels[SECTION_HEADER_SLOT] = new StyledLabel("section-header", STYLE_TEXT_MUTED);
+        textLabels[SECTION_VALUE_SLOT] = new StyledLabel(STYLE_TEXT_MUTED, "text-italic");
         for (int index = 0; index < detailKeyLabels.length; index++) {
-            detailKeyLabels[index] = new Label();
-            detailValueLabels[index] = new Label();
+            detailKeyLabels[index] = new StyledLabel(STYLE_TEXT_MUTED);
+            detailValueLabels[index] = new StyledLabel();
         }
-
-        textLabels[ICON_SLOT].getStyleClass().add("travel-location-icon");
-        textLabels[LOCATION_SLOT].getStyleClass().addAll(STYLE_TEXT_MUTED, "text-italic");
-        textLabels[STATUS_SLOT].getStyleClass().add("travel-status-badge");
-        textLabels[CONTEXT_SLOT].getStyleClass().addAll(STYLE_TEXT_MUTED, "text-italic");
-        detailKeyLabels[0].getStyleClass().add(STYLE_TEXT_MUTED);
-        detailKeyLabels[1].getStyleClass().add(STYLE_TEXT_MUTED);
-        detailKeyLabels[2].getStyleClass().add(STYLE_TEXT_MUTED);
-        textLabels[SECTION_HEADER_SLOT].getStyleClass().addAll("section-header", STYLE_TEXT_MUTED);
-        textLabels[SECTION_VALUE_SLOT].getStyleClass().addAll(STYLE_TEXT_MUTED, "text-italic");
-        actionButton.getStyleClass().add("accent");
         actionButton.setMaxWidth(Double.MAX_VALUE);
         actionButton.setVisible(false);
         actionButton.setManaged(false);
@@ -89,8 +81,7 @@ public final class TravelStateView extends VBox {
     }
 
     private GridPane buildDetailsGrid() {
-        GridPane grid = new GridPane();
-        grid.getStyleClass().add("travel-details-grid");
+        GridPane grid = new DetailsGrid();
         grid.setHgap(12);
         grid.setVgap(4);
         int rowIndex = 0;
@@ -104,5 +95,28 @@ public final class TravelStateView extends VBox {
 
     private VBox buildActionSection() {
         return new VBox(4, textLabels[SECTION_HEADER_SLOT], textLabels[SECTION_VALUE_SLOT], actionItems, actionButton);
+    }
+
+    private static final class StyledLabel extends Label {
+
+        private StyledLabel(String... styles) {
+            if (styles.length > 0) {
+                getStyleClass().addAll(styles);
+            }
+        }
+    }
+
+    private static final class ActionButton extends Button {
+
+        private ActionButton() {
+            getStyleClass().add("accent");
+        }
+    }
+
+    private static final class DetailsGrid extends GridPane {
+
+        private DetailsGrid() {
+            getStyleClass().add("travel-details-grid");
+        }
     }
 }

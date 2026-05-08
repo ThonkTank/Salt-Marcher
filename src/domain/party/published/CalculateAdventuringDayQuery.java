@@ -2,12 +2,28 @@ package src.domain.party.published;
 
 import java.util.List;
 
-public record CalculateAdventuringDayQuery(
-        List<Integer> levels,
-        int totalGroupXp
-) {
-    public CalculateAdventuringDayQuery {
-        levels = levels == null ? List.of() : List.copyOf(levels);
-        totalGroupXp = Math.max(0, totalGroupXp);
+public final class CalculateAdventuringDayQuery {
+
+    private final CalculateAdventuringDayCommand command;
+
+    public CalculateAdventuringDayQuery(
+            List<Integer> levels,
+            int totalGroupXp
+    ) {
+        this.command = new CalculateAdventuringDayCommand(
+                levels == null ? List.of() : List.copyOf(levels),
+                Math.max(0, totalGroupXp));
+    }
+
+    public CalculateAdventuringDayCommand toCommand() {
+        return command;
+    }
+
+    public List<Integer> levels() {
+        return command.levels();
+    }
+
+    public int totalGroupXp() {
+        return command.totalGroupXp();
     }
 }

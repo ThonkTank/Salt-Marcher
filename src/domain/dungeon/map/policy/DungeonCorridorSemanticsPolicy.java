@@ -89,6 +89,25 @@ public final class DungeonCorridorSemanticsPolicy {
     ) implements CorridorEndpointSemantics {
     }
 
-    private record AnchorSemantics(long hostCorridorId, DungeonTopologyRef topologyRef) implements CorridorEndpointSemantics {
+    private static final class AnchorSemantics implements CorridorEndpointSemantics {
+        private final long hostCorridorId;
+        private final DungeonTopologyRef topologyRef;
+
+        private AnchorSemantics(long hostCorridorId, DungeonTopologyRef topologyRef) {
+            this.hostCorridorId = hostCorridorId;
+            this.topologyRef = topologyRef;
+        }
+
+        @Override
+        public boolean equals(Object other) {
+            return other instanceof AnchorSemantics that
+                    && hostCorridorId == that.hostCorridorId
+                    && Objects.equals(topologyRef, that.topologyRef);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(hostCorridorId, topologyRef);
+        }
     }
 }

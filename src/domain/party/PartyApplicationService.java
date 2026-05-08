@@ -151,49 +151,25 @@ public final class PartyApplicationService {
     }
 
     private static PartyMembership toPartyMembership(@Nullable MembershipState membershipState) {
-        if (membershipState == null) {
-            return PartyMembership.RESERVE;
-        }
-        return membershipState == MembershipState.ACTIVE ? PartyMembership.ACTIVE : PartyMembership.RESERVE;
+        return membershipState == null ? PartyMembership.RESERVE : membershipState.toInternal();
     }
 
     private static PartyRestType toPartyRestType(@Nullable RestType restType) {
-        if (restType == null) {
-            return PartyRestType.SHORT_REST;
-        }
-        return restType == RestType.LONG_REST ? PartyRestType.LONG_REST : PartyRestType.SHORT_REST;
+        return restType == null ? PartyRestType.SHORT_REST : restType.toInternal();
     }
 
     private static PartyCharacterDraft toDomainDraft(@Nullable CharacterDraft draft) {
-        if (draft == null) {
-            return new PartyCharacterDraft("", "", 0, 0, 0);
-        }
-        return new PartyCharacterDraft(
-                draft.name(),
-                draft.playerName(),
-                draft.level(),
-                draft.passivePerception(),
-                draft.armorClass());
+        return draft == null ? new PartyCharacterDraft("", "", 0, 0, 0) : draft.toInternal();
     }
 
     private static @Nullable PartyTravelLocation toDomainTravelLocation(
             @Nullable PartyTravelLocationSnapshot location
     ) {
         if (location instanceof PartyDungeonTravelLocationSnapshot dungeon) {
-            return new PartyDungeonTravelLocation(
-                    dungeon.mapId(),
-                    PartyDungeonTravelLocationKind.valueOf(dungeon.locationKind().name()),
-                    dungeon.ownerId(),
-                    new PartyTravelTile(
-                            dungeon.tile().q(),
-                            dungeon.tile().r(),
-                            dungeon.tile().level()),
-                    PartyTravelHeading.valueOf(dungeon.heading().name()));
+            return dungeon.toInternal();
         }
         if (location instanceof PartyOverworldTravelLocationSnapshot overworld) {
-            return new PartyOverworldTravelLocation(
-                    overworld.mapId(),
-                    overworld.tileId());
+            return overworld.toInternal();
         }
         return null;
     }

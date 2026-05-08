@@ -1,13 +1,25 @@
 package src.domain.dungeon.map.value;
 
-public record DungeonTopologyRef(
-        DungeonTopologyElementKind kind,
-        long id
-) {
+import java.util.Objects;
 
-    public DungeonTopologyRef {
-        kind = kind == null ? DungeonTopologyElementKind.EMPTY : kind;
-        id = Math.max(0L, id);
+public final class DungeonTopologyRef {
+    private final DungeonTopologyElementKind kind;
+    private final long id;
+
+    public DungeonTopologyRef(
+            DungeonTopologyElementKind kind,
+            long id
+    ) {
+        this.kind = kind == null ? DungeonTopologyElementKind.EMPTY : kind;
+        this.id = Math.max(0L, id);
+    }
+
+    public DungeonTopologyElementKind kind() {
+        return kind;
+    }
+
+    public long id() {
+        return id;
     }
 
     public static DungeonTopologyRef empty() {
@@ -36,5 +48,22 @@ public record DungeonTopologyRef(
 
     public boolean isCorridorAnchor() {
         return kind == DungeonTopologyElementKind.CORRIDOR_ANCHOR;
+    }
+
+    @Override
+    public boolean equals(Object other) {
+        return other instanceof DungeonTopologyRef that
+                && id == that.id
+                && Objects.equals(kind, that.kind);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(kind, id);
+    }
+
+    @Override
+    public String toString() {
+        return "DungeonTopologyRef[kind=" + kind + ", id=" + id + "]";
     }
 }

@@ -493,7 +493,7 @@ public final class DungeonEditorContributionModel {
             SetToolPaletteMutation {
     }
 
-    record OpenCreateMapEditorMutation() implements LocalMutation {
+    static final class OpenCreateMapEditorMutation implements LocalMutation {
     }
 
     record OpenSelectedMapEditorMutation(

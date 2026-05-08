@@ -1,4 +1,7 @@
 package src.domain.party.published;
 
-public record LoadPartySnapshotQuery() {
+public final class LoadPartySnapshotQuery {
+
+    public LoadPartySnapshotQuery() {
+    }
 }

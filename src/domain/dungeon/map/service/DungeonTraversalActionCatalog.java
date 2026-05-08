@@ -222,21 +222,31 @@ final class DungeonTraversalActionCatalog {
     }
 
     private static int headingOrder(DungeonTravelHeading heading) {
-        return switch (heading == null ? DungeonTravelHeading.defaultHeading() : heading) {
-            case NORTH -> 0;
-            case EAST -> 1;
-            case SOUTH -> 2;
-            case WEST -> 3;
-        };
+        DungeonTravelHeading resolvedHeading = heading == null ? DungeonTravelHeading.defaultHeading() : heading;
+        if (resolvedHeading == DungeonTravelHeading.NORTH) {
+            return 0;
+        }
+        if (resolvedHeading == DungeonTravelHeading.EAST) {
+            return 1;
+        }
+        if (resolvedHeading == DungeonTravelHeading.SOUTH) {
+            return 2;
+        }
+        return 3;
     }
 
     private static int directionOrder(@Nullable DungeonEdgeDirection direction) {
-        return switch (direction == null ? DungeonEdgeDirection.NORTH : direction) {
-            case NORTH -> 0;
-            case EAST -> 1;
-            case SOUTH -> 2;
-            case WEST -> 3;
-        };
+        DungeonEdgeDirection resolvedDirection = direction == null ? DungeonEdgeDirection.NORTH : direction;
+        if (resolvedDirection == DungeonEdgeDirection.NORTH) {
+            return 0;
+        }
+        if (resolvedDirection == DungeonEdgeDirection.EAST) {
+            return 1;
+        }
+        if (resolvedDirection == DungeonEdgeDirection.SOUTH) {
+            return 2;
+        }
+        return 3;
     }
 
     private static String tileLabel(DungeonCell tile) {

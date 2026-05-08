@@ -5,10 +5,8 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
-import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
-import javafx.scene.Node;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.Label;
@@ -52,10 +50,7 @@ public class MapCanvasView extends BorderPane {
 
     private final ObjectProperty<MapRenderScene> scene =
             new SimpleObjectProperty<>(MapRenderScene.empty(DEFAULT_TITLE));
-    private final StackPane contentHost = new StackPane();
-    private final Pane canvasLayer = new Pane();
-    private final Canvas canvas = new Canvas(DEFAULT_WIDTH, DEFAULT_HEIGHT);
-    private final Label overlayMessage = new Label();
+    private final SurfaceNodes surfaceNodes = new SurfaceNodes(this::redraw);
     private final Viewport viewport = new Viewport();
     private final SceneHitTester hitTester = new SceneHitTester();
     private final MapSceneRenderer renderer = new MapSceneRenderer();
@@ -69,12 +64,10 @@ public class MapCanvasView extends BorderPane {
     private Consumer<Integer> levelScrolledHandler = ignored -> {};
 
     public MapCanvasView() {
-        ObservableList<String> styles = getStyleClass();
-        styles.add(SURFACE_ROOT_STYLE);
+        getStyleClass().add(SURFACE_ROOT_STYLE);
         setPadding(new Insets(8));
-        configureSurface();
         scene.addListener((ignored, before, after) -> redraw());
-        setCenter(contentHost);
+        setCenter(surfaceNodes.host());
         interactionController.install();
         redraw();
     }
@@ -114,37 +107,7 @@ public class MapCanvasView extends BorderPane {
     public final void resetCamera() {
         viewport.reset();
         cameraChanged();
-        canvasLayer.requestFocus();
-    }
-
-    private void configureSurface() {
-        ObservableList<String> overlayStyles = overlayMessage.getStyleClass();
-        overlayStyles.add(OVERLAY_PLACEHOLDER_STYLE);
-        overlayMessage.setWrapText(true);
-        overlayMessage.setMouseTransparent(true);
-
-        ObservableList<String> hostStyles = contentHost.getStyleClass();
-        hostStyles.add(CONTENT_STYLE);
-        contentHost.setAlignment(Pos.CENTER);
-
-        canvasLayer.setMinSize(0.0, 0.0);
-        canvasLayer.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
-        canvasLayer.setFocusTraversable(true);
-
-        ObservableList<String> canvasStyles = canvas.getStyleClass();
-        canvasStyles.add(CANVAS_STYLE);
-        canvas.widthProperty().bind(canvasLayer.widthProperty());
-        canvas.heightProperty().bind(canvasLayer.heightProperty());
-        canvas.widthProperty().addListener((ignored, before, after) -> redraw());
-        canvas.heightProperty().addListener((ignored, before, after) -> redraw());
-
-        ObservableList<Node> canvasChildren = canvasLayer.getChildren();
-        canvasChildren.setAll(canvas);
-
-        ObservableList<Node> contentChildren = contentHost.getChildren();
-        contentChildren.setAll(canvasLayer, overlayMessage);
-        StackPane.setAlignment(canvasLayer, Pos.TOP_LEFT);
-        StackPane.setAlignment(overlayMessage, Pos.CENTER);
+        surfaceNodes.requestFocus();
     }
 
     private void cameraChanged() {
@@ -153,27 +116,84 @@ public class MapCanvasView extends BorderPane {
     }
 
     private void redraw() {
-        MapRenderScene renderScene = currentScene();
-        CanvasBounds bounds = renderBounds();
-        GraphicsContext gc = canvas.getGraphicsContext2D();
+        MapRenderScene renderScene = surfaceNodes.currentScene(scene.get());
+        CanvasBounds bounds = surfaceNodes.renderBounds();
+        GraphicsContext gc = surfaceNodes.graphicsContext();
         renderer.render(gc, renderScene, viewport, bounds);
-        overlayPresenter.show(overlayMessage, renderScene);
-    }
-
-    private MapRenderScene currentScene() {
-        MapRenderScene renderScene = scene.get();
-        return renderScene == null ? MapRenderScene.empty(DEFAULT_TITLE) : renderScene;
-    }
-
-    private CanvasBounds renderBounds() {
-        double currentWidth = canvas.getWidth();
-        double currentHeight = canvas.getHeight();
-        double renderWidth = currentWidth > MIN_CANVAS_SIZE ? currentWidth : DEFAULT_WIDTH;
-        double renderHeight = currentHeight > MIN_CANVAS_SIZE ? currentHeight : DEFAULT_HEIGHT;
-        return new CanvasBounds(renderWidth, renderHeight);
+        overlayPresenter.show(surfaceNodes.overlayMessage(), renderScene);
     }
 
     private record CanvasBounds(double width, double height) {
+    }
+
+    private final class SurfaceNodes {
+
+        private final StackPane host = new StackPane();
+        private final Pane canvasLayer = new Pane();
+        private final Canvas canvas = new Canvas(DEFAULT_WIDTH, DEFAULT_HEIGHT);
+        private final OverlayMessage overlayMessage = new OverlayMessage();
+
+        private SurfaceNodes(Runnable redrawAction) {
+            host.getStyleClass().add(CONTENT_STYLE);
+            host.setAlignment(Pos.CENTER);
+            canvasLayer.setMinSize(0.0, 0.0);
+            canvasLayer.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
+            canvasLayer.setFocusTraversable(true);
+            canvas.getStyleClass().add(CANVAS_STYLE);
+            canvas.widthProperty().bind(canvasLayer.widthProperty());
+            canvas.heightProperty().bind(canvasLayer.heightProperty());
+            canvas.widthProperty().addListener((ignored, before, after) -> redrawAction.run());
+            canvas.heightProperty().addListener((ignored, before, after) -> redrawAction.run());
+            canvasLayer.getChildren().setAll(canvas);
+            host.getChildren().setAll(canvasLayer, overlayMessage);
+            StackPane.setAlignment(canvasLayer, Pos.TOP_LEFT);
+            StackPane.setAlignment(overlayMessage, Pos.CENTER);
+        }
+
+        private StackPane host() {
+            return host;
+        }
+
+        private Pane canvasLayer() {
+            return canvasLayer;
+        }
+
+        private GraphicsContext graphicsContext() {
+            return canvas.getGraphicsContext2D();
+        }
+
+        private OverlayMessage overlayMessage() {
+            return overlayMessage;
+        }
+
+        private void requestFocus() {
+            canvasLayer.requestFocus();
+        }
+
+        private MapRenderScene currentScene(@Nullable MapRenderScene renderScene) {
+            return renderScene == null ? MapRenderScene.empty(DEFAULT_TITLE) : renderScene;
+        }
+
+        private CanvasBounds renderBounds() {
+            double currentWidth = canvas.getWidth();
+            double currentHeight = canvas.getHeight();
+            double renderWidth = currentWidth > MIN_CANVAS_SIZE ? currentWidth : DEFAULT_WIDTH;
+            double renderHeight = currentHeight > MIN_CANVAS_SIZE ? currentHeight : DEFAULT_HEIGHT;
+            return new CanvasBounds(renderWidth, renderHeight);
+        }
+    }
+
+    private static final class OverlayMessage extends Label {
+
+        private OverlayMessage() {
+            getStyleClass().add(OVERLAY_PLACEHOLDER_STYLE);
+            setWrapText(true);
+            setMouseTransparent(true);
+        }
+
+        private void showState(boolean sceneLoaded) {
+            getStyleClass().setAll(sceneLoaded ? OVERLAY_NOTE_STYLE : OVERLAY_PLACEHOLDER_STYLE);
+        }
     }
 
     private final class CanvasInteractionController {
@@ -184,15 +204,15 @@ public class MapCanvasView extends BorderPane {
         private boolean primaryInteractionActive;
 
         private void install() {
-            canvasLayer.addEventFilter(MouseEvent.MOUSE_PRESSED, this::handleMousePressed);
-            canvasLayer.addEventFilter(MouseEvent.MOUSE_DRAGGED, this::handleMouseDragged);
-            canvasLayer.addEventFilter(MouseEvent.MOUSE_MOVED, this::handleMouseMoved);
-            canvasLayer.addEventFilter(MouseEvent.MOUSE_RELEASED, this::handleMouseReleased);
-            canvasLayer.addEventFilter(ScrollEvent.SCROLL, this::handleScroll);
+            surfaceNodes.canvasLayer().addEventFilter(MouseEvent.MOUSE_PRESSED, this::handleMousePressed);
+            surfaceNodes.canvasLayer().addEventFilter(MouseEvent.MOUSE_DRAGGED, this::handleMouseDragged);
+            surfaceNodes.canvasLayer().addEventFilter(MouseEvent.MOUSE_MOVED, this::handleMouseMoved);
+            surfaceNodes.canvasLayer().addEventFilter(MouseEvent.MOUSE_RELEASED, this::handleMouseReleased);
+            surfaceNodes.canvasLayer().addEventFilter(ScrollEvent.SCROLL, this::handleScroll);
         }
 
         private void handleMousePressed(MouseEvent event) {
-            canvasLayer.requestFocus();
+            surfaceNodes.requestFocus();
             MouseButton button = event.getButton();
             switch (button) {
                 case MIDDLE -> {
@@ -284,7 +304,7 @@ public class MapCanvasView extends BorderPane {
         ) {
             double sceneX = viewport.screenToSceneX(event.getX());
             double sceneY = viewport.screenToSceneY(event.getY());
-            MapRenderScene renderScene = currentScene();
+            MapRenderScene renderScene = surfaceNodes.currentScene(scene.get());
             return new CanvasPointerEvent(
                     phase,
                     new CanvasPointerEvent.CanvasButtons(primaryButtonDown, secondaryButtonDown),
@@ -896,10 +916,8 @@ public class MapCanvasView extends BorderPane {
 
     private static final class OverlayPresenter {
 
-        private void show(Label overlayMessage, MapRenderScene renderScene) {
-            ObservableList<String> styles = overlayMessage.getStyleClass();
-            styles.removeAll(OVERLAY_PLACEHOLDER_STYLE, OVERLAY_NOTE_STYLE);
-            styles.add(renderScene.sceneLoaded() ? OVERLAY_NOTE_STYLE : OVERLAY_PLACEHOLDER_STYLE);
+        private void show(OverlayMessage overlayMessage, MapRenderScene renderScene) {
+            overlayMessage.showState(renderScene.sceneLoaded());
             String message = renderScene.overlayMessage();
             boolean visible = !message.isBlank();
             overlayMessage.setText(message);

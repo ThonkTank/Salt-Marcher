@@ -55,7 +55,22 @@ public sealed interface DungeonEditorOperation permits
     record PaintRoomRectangle(DungeonCellRef start, DungeonCellRef end) implements DungeonEditorOperation {
     }
 
-    record DeleteRoomRectangle(DungeonCellRef start, DungeonCellRef end) implements DungeonEditorOperation {
+    final class DeleteRoomRectangle implements DungeonEditorOperation {
+        private final DungeonCellRef start;
+        private final DungeonCellRef end;
+
+        public DeleteRoomRectangle(DungeonCellRef start, DungeonCellRef end) {
+            this.start = start;
+            this.end = end;
+        }
+
+        public DungeonCellRef start() {
+            return start;
+        }
+
+        public DungeonCellRef end() {
+            return end;
+        }
     }
 
     record EditClusterBoundaries(

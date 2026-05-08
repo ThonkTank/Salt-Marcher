@@ -2,6 +2,7 @@ package src.domain.dungeoneditor.interaction.value;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 import src.domain.dungeoneditor.workspace.value.DungeonEditorWorkspaceValues;
 
 public final class DungeonEditorInteractionValues {
@@ -13,19 +14,58 @@ public final class DungeonEditorInteractionValues {
         return new VertexKey(target.q(), target.r(), target.level());
     }
 
-    public record CellTarget(
-            int q,
-            int r,
-            int level
-    ) {
+    public static final class CellTarget {
         private static final CellTarget EMPTY = new CellTarget(0, 0, 0);
+
+        private final int q;
+        private final int r;
+        private final int level;
+
+        public CellTarget(int q, int r, int level) {
+            this.q = q;
+            this.r = r;
+            this.level = level;
+        }
 
         public static CellTarget empty() {
             return EMPTY;
         }
 
+        public int q() {
+            return q;
+        }
+
+        public int r() {
+            return r;
+        }
+
+        public int level() {
+            return level;
+        }
+
         public DungeonEditorWorkspaceValues.Cell toWorkspaceCell() {
             return new DungeonEditorWorkspaceValues.Cell(q, r, level);
+        }
+
+        @Override
+        public boolean equals(Object other) {
+            if (this == other) {
+                return true;
+            }
+            if (!(other instanceof CellTarget that)) {
+                return false;
+            }
+            return q == that.q && r == that.r && level == that.level;
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(q, r, level);
+        }
+
+        @Override
+        public String toString() {
+            return "CellTarget[q=%d, r=%d, level=%d]".formatted(q, r, level);
         }
     }
 
@@ -42,57 +82,148 @@ public final class DungeonEditorInteractionValues {
         }
     }
 
-    public record CellKey(
-            int q,
-            int r,
-            int level
-    ) {
+    public static final class CellKey {
+        private final int q;
+        private final int r;
+        private final int level;
+
+        public CellKey(int q, int r, int level) {
+            this.q = q;
+            this.r = r;
+            this.level = level;
+        }
+
+        public int q() {
+            return q;
+        }
+
+        public int r() {
+            return r;
+        }
+
+        public int level() {
+            return level;
+        }
+
         public CellKey neighbor(TravelHeading heading) {
             return new CellKey(q + heading.deltaQ(), r + heading.deltaR(), level);
         }
+
+        @Override
+        public boolean equals(Object other) {
+            if (this == other) {
+                return true;
+            }
+            if (!(other instanceof CellKey that)) {
+                return false;
+            }
+            return q == that.q && r == that.r && level == that.level;
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(q, r, level);
+        }
+
+        @Override
+        public String toString() {
+            return "CellKey[q=%d, r=%d, level=%d]".formatted(q, r, level);
+        }
     }
 
-    public record VertexKey(
-            int q,
-            int r,
-            int level
-    ) {
+    public static final class VertexKey {
         private static final Comparator<VertexKey> ORDER = Comparator
                 .comparingInt(VertexKey::level)
                 .thenComparingInt(VertexKey::r)
                 .thenComparingInt(VertexKey::q);
 
+        private final int q;
+        private final int r;
+        private final int level;
+
+        public VertexKey(int q, int r, int level) {
+            this.q = q;
+            this.r = r;
+            this.level = level;
+        }
+
         public static Comparator<VertexKey> order() {
             return ORDER;
         }
+
+        public int q() {
+            return q;
+        }
+
+        public int r() {
+            return r;
+        }
+
+        public int level() {
+            return level;
+        }
+
+        @Override
+        public boolean equals(Object other) {
+            if (this == other) {
+                return true;
+            }
+            if (!(other instanceof VertexKey that)) {
+                return false;
+            }
+            return q == that.q && r == that.r && level == that.level;
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(q, r, level);
+        }
+
+        @Override
+        public String toString() {
+            return "VertexKey[q=%d, r=%d, level=%d]".formatted(q, r, level);
+        }
     }
 
-    public enum TravelHeading {
-        NORTH(0, -1),
-        EAST(1, 0),
-        SOUTH(0, 1),
-        WEST(-1, 0);
+    public static final class TravelHeading {
+        public static final TravelHeading NORTH = new TravelHeading("NORTH", 0, -1);
+        public static final TravelHeading EAST = new TravelHeading("EAST", 1, 0);
+        public static final TravelHeading SOUTH = new TravelHeading("SOUTH", 0, 1);
+        public static final TravelHeading WEST = new TravelHeading("WEST", -1, 0);
 
-        private static final List<TravelHeading> VALUES = List.of(values());
+        private static final TravelHeading[] VALUES = {NORTH, EAST, SOUTH, WEST};
+        private static final List<TravelHeading> VALUES_LIST = List.of(NORTH, EAST, SOUTH, WEST);
 
+        private final String name;
         private final int deltaQ;
         private final int deltaR;
 
-        TravelHeading(int deltaQ, int deltaR) {
+        private TravelHeading(String name, int deltaQ, int deltaR) {
+            this.name = name;
             this.deltaQ = deltaQ;
             this.deltaR = deltaR;
         }
 
+        public static TravelHeading[] values() {
+            return VALUES.clone();
+        }
+
         public static List<TravelHeading> valuesList() {
-            return VALUES;
+            return VALUES_LIST;
         }
 
         public static TravelHeading fromName(String name) {
-            try {
-                return valueOf(name == null ? NORTH.name() : name);
-            } catch (IllegalArgumentException ignored) {
-                return NORTH;
+            String safeName = name == null ? NORTH.name : name;
+            for (TravelHeading heading : VALUES) {
+                if (heading.name.equals(safeName)) {
+                    return heading;
+                }
             }
+            return NORTH;
+        }
+
+        public String name() {
+            return name;
         }
 
         public int deltaQ() {
@@ -101,6 +232,11 @@ public final class DungeonEditorInteractionValues {
 
         public int deltaR() {
             return deltaR;
+        }
+
+        @Override
+        public String toString() {
+            return name;
         }
     }
 }

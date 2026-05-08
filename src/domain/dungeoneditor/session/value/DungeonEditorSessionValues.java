@@ -1,6 +1,7 @@
 package src.domain.dungeoneditor.session.value;
 
 import java.util.List;
+import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeoneditor.workspace.value.DungeonEditorWorkspaceValues;
 
@@ -9,9 +10,15 @@ public final class DungeonEditorSessionValues {
     private DungeonEditorSessionValues() {
     }
 
-    public enum ViewMode {
-        GRID,
-        GRAPH;
+    public static final class ViewMode {
+        public static final ViewMode GRID = new ViewMode("GRID");
+        public static final ViewMode GRAPH = new ViewMode("GRAPH");
+
+        private final String name;
+
+        private ViewMode(String name) {
+            this.name = name;
+        }
 
         public static ViewMode fromName(@Nullable String name) {
             return "GRAPH".equals(name) ? GRAPH : GRID;
@@ -21,36 +28,92 @@ public final class DungeonEditorSessionValues {
             return GRID;
         }
 
+        public static ViewMode valueOf(String name) {
+            if (GRAPH.name.equals(name)) {
+                return GRAPH;
+            }
+            if (GRID.name.equals(name)) {
+                return GRID;
+            }
+            throw new IllegalArgumentException("Unknown ViewMode: " + name);
+        }
+
+        public String name() {
+            return name;
+        }
+
         public boolean isGrid() {
             return this == GRID;
         }
+
+        @Override
+        public String toString() {
+            return name;
+        }
     }
 
-    public enum Tool {
-        SELECT,
-        ROOM_PAINT,
-        ROOM_DELETE,
-        WALL_CREATE,
-        WALL_DELETE,
-        DOOR_CREATE,
-        DOOR_DELETE,
-        CORRIDOR_CREATE,
-        CORRIDOR_DELETE,
-        STAIR_CREATE,
-        STAIR_DELETE,
-        TRANSITION_CREATE,
-        TRANSITION_DELETE;
+    public static final class Tool {
+        public static final Tool SELECT = new Tool("SELECT");
+        public static final Tool ROOM_PAINT = new Tool("ROOM_PAINT");
+        public static final Tool ROOM_DELETE = new Tool("ROOM_DELETE");
+        public static final Tool WALL_CREATE = new Tool("WALL_CREATE");
+        public static final Tool WALL_DELETE = new Tool("WALL_DELETE");
+        public static final Tool DOOR_CREATE = new Tool("DOOR_CREATE");
+        public static final Tool DOOR_DELETE = new Tool("DOOR_DELETE");
+        public static final Tool CORRIDOR_CREATE = new Tool("CORRIDOR_CREATE");
+        public static final Tool CORRIDOR_DELETE = new Tool("CORRIDOR_DELETE");
+        public static final Tool STAIR_CREATE = new Tool("STAIR_CREATE");
+        public static final Tool STAIR_DELETE = new Tool("STAIR_DELETE");
+        public static final Tool TRANSITION_CREATE = new Tool("TRANSITION_CREATE");
+        public static final Tool TRANSITION_DELETE = new Tool("TRANSITION_DELETE");
+
+        private static final Tool[] VALUES = {
+                SELECT,
+                ROOM_PAINT,
+                ROOM_DELETE,
+                WALL_CREATE,
+                WALL_DELETE,
+                DOOR_CREATE,
+                DOOR_DELETE,
+                CORRIDOR_CREATE,
+                CORRIDOR_DELETE,
+                STAIR_CREATE,
+                STAIR_DELETE,
+                TRANSITION_CREATE,
+                TRANSITION_DELETE
+        };
+
+        private final String name;
+
+        private Tool(String name) {
+            this.name = name;
+        }
 
         public static Tool fromName(@Nullable String name) {
-            try {
-                return valueOf(name == null ? SELECT.name() : name);
-            } catch (IllegalArgumentException ignored) {
-                return SELECT;
+            String safeName = name == null ? SELECT.name : name;
+            for (Tool tool : VALUES) {
+                if (tool.name.equals(safeName)) {
+                    return tool;
+                }
             }
+            return SELECT;
         }
 
         public static Tool defaultTool() {
             return SELECT;
+        }
+
+        public static Tool valueOf(String name) {
+            for (Tool tool : VALUES) {
+                if (tool.name.equals(name)) {
+                    return tool;
+                }
+            }
+            throw new IllegalArgumentException("Unknown Tool: " + name);
+        }
+
+        public String name() {
+            return name;
         }
 
         public boolean isSelectionTool() {
@@ -84,28 +147,69 @@ public final class DungeonEditorSessionValues {
                     || this == STAIR_DELETE
                     || this == TRANSITION_DELETE;
         }
+
+        @Override
+        public String toString() {
+            return name;
+        }
     }
 
-    public record OverlaySettings(
-            String modeKey,
-            int levelRange,
-            double opacity,
-            List<Integer> selectedLevels
-    ) {
-        public OverlaySettings {
-            modeKey = modeKey == null || modeKey.isBlank() ? "OFF" : modeKey;
-            levelRange = Math.max(0, levelRange);
-            opacity = Math.max(0.0, Math.min(1.0, opacity));
-            selectedLevels = selectedLevels == null ? List.of() : List.copyOf(selectedLevels);
+    public static final class OverlaySettings {
+        private final String modeKey;
+        private final int levelRange;
+        private final double opacity;
+        private final List<Integer> selectedLevels;
+
+        public OverlaySettings(String modeKey, int levelRange, double opacity, List<Integer> selectedLevels) {
+            this.modeKey = modeKey == null || modeKey.isBlank() ? "OFF" : modeKey;
+            this.levelRange = Math.max(0, levelRange);
+            this.opacity = Math.max(0.0, Math.min(1.0, opacity));
+            this.selectedLevels = selectedLevels == null ? List.of() : List.copyOf(selectedLevels);
         }
 
         public static OverlaySettings defaults() {
             return new OverlaySettings("OFF", 2, 0.35, List.of());
         }
 
-        @Override
+        public String modeKey() {
+            return modeKey;
+        }
+
+        public int levelRange() {
+            return levelRange;
+        }
+
+        public double opacity() {
+            return opacity;
+        }
+
         public List<Integer> selectedLevels() {
             return List.copyOf(selectedLevels);
+        }
+
+        @Override
+        public boolean equals(Object other) {
+            if (this == other) {
+                return true;
+            }
+            if (!(other instanceof OverlaySettings that)) {
+                return false;
+            }
+            return levelRange == that.levelRange
+                    && Double.compare(opacity, that.opacity) == 0
+                    && Objects.equals(modeKey, that.modeKey)
+                    && Objects.equals(selectedLevels, that.selectedLevels);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(modeKey, levelRange, opacity, selectedLevels);
+        }
+
+        @Override
+        public String toString() {
+            return "OverlaySettings[modeKey=%s, levelRange=%d, opacity=%s, selectedLevels=%s]"
+                    .formatted(modeKey, levelRange, opacity, selectedLevels);
         }
     }
 
@@ -147,18 +251,61 @@ public final class DungeonEditorSessionValues {
         }
     }
 
-    public enum NoPreview implements Preview {
-        INSTANCE
+    public static final class NoPreview implements Preview {
+        private static final NoPreview INSTANCE = new NoPreview();
+
+        private NoPreview() {
+        }
     }
 
-    public record RoomRectanglePreview(
-            DungeonEditorWorkspaceValues.Cell start,
-            DungeonEditorWorkspaceValues.Cell end,
-            boolean deleteMode
-    ) implements Preview {
-        public RoomRectanglePreview {
-            start = start == null ? DungeonEditorWorkspaceValues.Cell.empty() : start;
-            end = end == null ? DungeonEditorWorkspaceValues.Cell.empty() : end;
+    public static final class RoomRectanglePreview implements Preview {
+        private final DungeonEditorWorkspaceValues.Cell start;
+        private final DungeonEditorWorkspaceValues.Cell end;
+        private final boolean deleteMode;
+
+        public RoomRectanglePreview(
+                DungeonEditorWorkspaceValues.Cell start,
+                DungeonEditorWorkspaceValues.Cell end,
+                boolean deleteMode
+        ) {
+            this.start = start == null ? DungeonEditorWorkspaceValues.Cell.empty() : start;
+            this.end = end == null ? DungeonEditorWorkspaceValues.Cell.empty() : end;
+            this.deleteMode = deleteMode;
+        }
+
+        public DungeonEditorWorkspaceValues.Cell start() {
+            return start;
+        }
+
+        public DungeonEditorWorkspaceValues.Cell end() {
+            return end;
+        }
+
+        public boolean deleteMode() {
+            return deleteMode;
+        }
+
+        @Override
+        public boolean equals(Object other) {
+            if (this == other) {
+                return true;
+            }
+            if (!(other instanceof RoomRectanglePreview that)) {
+                return false;
+            }
+            return deleteMode == that.deleteMode
+                    && Objects.equals(start, that.start)
+                    && Objects.equals(end, that.end);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(start, end, deleteMode);
+        }
+
+        @Override
+        public String toString() {
+            return "RoomRectanglePreview[start=%s, end=%s, deleteMode=%s]".formatted(start, end, deleteMode);
         }
     }
 
@@ -203,21 +350,71 @@ public final class DungeonEditorSessionValues {
         }
     }
 
-    public record MoveBoundaryStretchPreview(
-            long clusterId,
-            List<DungeonEditorWorkspaceValues.Edge> sourceEdges,
-            int deltaQ,
-            int deltaR,
-            int deltaLevel
-    ) implements Preview {
-        public MoveBoundaryStretchPreview {
-            clusterId = Math.max(0L, clusterId);
-            sourceEdges = sourceEdges == null ? List.of() : List.copyOf(sourceEdges);
+    public static final class MoveBoundaryStretchPreview implements Preview {
+        private final long clusterId;
+        private final List<DungeonEditorWorkspaceValues.Edge> sourceEdges;
+        private final int deltaQ;
+        private final int deltaR;
+        private final int deltaLevel;
+
+        public MoveBoundaryStretchPreview(
+                long clusterId,
+                List<DungeonEditorWorkspaceValues.Edge> sourceEdges,
+                int deltaQ,
+                int deltaR,
+                int deltaLevel
+        ) {
+            this.clusterId = Math.max(0L, clusterId);
+            this.sourceEdges = sourceEdges == null ? List.of() : List.copyOf(sourceEdges);
+            this.deltaQ = deltaQ;
+            this.deltaR = deltaR;
+            this.deltaLevel = deltaLevel;
+        }
+
+        public long clusterId() {
+            return clusterId;
+        }
+
+        public List<DungeonEditorWorkspaceValues.Edge> sourceEdges() {
+            return List.copyOf(sourceEdges);
+        }
+
+        public int deltaQ() {
+            return deltaQ;
+        }
+
+        public int deltaR() {
+            return deltaR;
+        }
+
+        public int deltaLevel() {
+            return deltaLevel;
         }
 
         @Override
-        public List<DungeonEditorWorkspaceValues.Edge> sourceEdges() {
-            return List.copyOf(sourceEdges);
+        public boolean equals(Object other) {
+            if (this == other) {
+                return true;
+            }
+            if (!(other instanceof MoveBoundaryStretchPreview that)) {
+                return false;
+            }
+            return clusterId == that.clusterId
+                    && deltaQ == that.deltaQ
+                    && deltaR == that.deltaR
+                    && deltaLevel == that.deltaLevel
+                    && Objects.equals(sourceEdges, that.sourceEdges);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(clusterId, sourceEdges, deltaQ, deltaR, deltaLevel);
+        }
+
+        @Override
+        public String toString() {
+            return "MoveBoundaryStretchPreview[clusterId=%d, sourceEdges=%s, deltaQ=%d, deltaR=%d, deltaLevel=%d]"
+                    .formatted(clusterId, sourceEdges, deltaQ, deltaR, deltaLevel);
         }
     }
 

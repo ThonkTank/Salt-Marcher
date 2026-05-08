@@ -17,10 +17,6 @@ public final class EncounterPlanBoundaryTranslator {
     }
 
     public static SavedEncounterPlanSummary toPublishedSummary(EncounterPlanSummary summary) {
-        return new SavedEncounterPlanSummary(
-                summary.id(),
-                summary.name(),
-                summary.generatedLabel(),
-                summary.creatureCount());
+        return SavedEncounterPlanSummary.fromSummary(summary);
     }
 }

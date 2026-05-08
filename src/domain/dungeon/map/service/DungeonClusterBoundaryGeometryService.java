@@ -41,7 +41,7 @@ final class DungeonClusterBoundaryGeometryService {
                     .sorted(Comparator
                             .comparingInt((DungeonClusterBoundary boundary) -> boundary.relativeCell().r())
                             .thenComparingInt(boundary -> boundary.relativeCell().q())
-                            .thenComparing(DungeonClusterBoundary::direction))
+                            .thenComparing(boundary -> boundary.direction().name()))
                     .toList());
         }
         return Map.copyOf(result);

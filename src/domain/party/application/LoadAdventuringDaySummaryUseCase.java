@@ -28,16 +28,38 @@ public final class LoadAdventuringDaySummaryUseCase {
         return summary.toStatus(activeMembers);
     }
 
-    public enum RestMilestone {
-        SHORT_REST_ONE,
-        SHORT_REST_TWO,
-        LONG_REST
+    public static final class RestMilestone {
+
+        public static final RestMilestone SHORT_REST_ONE = new RestMilestone("SHORT_REST_ONE");
+        public static final RestMilestone SHORT_REST_TWO = new RestMilestone("SHORT_REST_TWO");
+        public static final RestMilestone LONG_REST = new RestMilestone("LONG_REST");
+
+        private final String name;
+
+        private RestMilestone(String name) {
+            this.name = name;
+        }
+
+        public String name() {
+            return name;
+        }
     }
 
-    public enum RestCadenceUrgency {
-        NORMAL,
-        SOON,
-        OVERDUE
+    public static final class RestCadenceUrgency {
+
+        public static final RestCadenceUrgency NORMAL = new RestCadenceUrgency("NORMAL");
+        public static final RestCadenceUrgency SOON = new RestCadenceUrgency("SOON");
+        public static final RestCadenceUrgency OVERDUE = new RestCadenceUrgency("OVERDUE");
+
+        private final String name;
+
+        private RestCadenceUrgency(String name) {
+            this.name = name;
+        }
+
+        public String name() {
+            return name;
+        }
     }
 
     public record RestCadenceStatus(
@@ -88,10 +110,9 @@ public final class LoadAdventuringDaySummaryUseCase {
         if (xpDelta <= 0) {
             return RestCadenceUrgency.OVERDUE;
         }
-        int segmentSize = switch (milestone) {
-            case SHORT_REST_ONE, SHORT_REST_TWO -> PartyAdventuringDayBudgetPolicy.perThird(level);
-            case LONG_REST -> PartyAdventuringDayBudgetPolicy.finalSegment(level);
-        };
+        int segmentSize = milestone == RestMilestone.LONG_REST
+                ? PartyAdventuringDayBudgetPolicy.finalSegment(level)
+                : PartyAdventuringDayBudgetPolicy.perThird(level);
         int soonThreshold = Math.max(1, (int) Math.round(segmentSize * 0.25));
         return xpDelta <= soonThreshold ? RestCadenceUrgency.SOON : RestCadenceUrgency.NORMAL;
     }

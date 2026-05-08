@@ -415,13 +415,22 @@ public final class DungeonCorridorReadProjector {
         return Map.copyOf(result);
     }
 
-    private record DirectionStep(DungeonEdgeDirection direction) {
+    private static final class DirectionStep {
+        private final DungeonEdgeDirection direction;
 
         private static final List<DirectionStep> CARDINAL = List.of(
                 new DirectionStep(DungeonEdgeDirection.NORTH),
                 new DirectionStep(DungeonEdgeDirection.EAST),
                 new DirectionStep(DungeonEdgeDirection.SOUTH),
                 new DirectionStep(DungeonEdgeDirection.WEST));
+
+        private DirectionStep(DungeonEdgeDirection direction) {
+            this.direction = direction;
+        }
+
+        private DungeonEdgeDirection direction() {
+            return direction;
+        }
 
         DungeonCell neighbor(DungeonCell cell) {
             return direction.neighborOf(cell);

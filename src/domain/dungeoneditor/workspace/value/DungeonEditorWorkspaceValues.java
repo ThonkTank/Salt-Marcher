@@ -1,6 +1,7 @@
 package src.domain.dungeoneditor.workspace.value;
 
 import java.util.List;
+import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 
 public final class DungeonEditorWorkspaceValues {
@@ -12,21 +13,77 @@ public final class DungeonEditorWorkspaceValues {
         return id > 0L;
     }
 
-    public record MapId(long value) {
-        public MapId {
-            value = Math.max(1L, value);
+    public static final class MapId {
+        private final long value;
+
+        public MapId(long value) {
+            this.value = Math.max(1L, value);
+        }
+
+        public long value() {
+            return value;
+        }
+
+        @Override
+        public boolean equals(Object other) {
+            return this == other || other instanceof MapId that && value == that.value;
+        }
+
+        @Override
+        public int hashCode() {
+            return Long.hashCode(value);
+        }
+
+        @Override
+        public String toString() {
+            return "MapId[value=%d]".formatted(value);
         }
     }
 
-    public record MapSummary(
-            MapId mapId,
-            String mapName,
-            long revision
-    ) {
-        public MapSummary {
-            mapId = mapId == null ? new MapId(1L) : mapId;
-            mapName = mapName == null || mapName.isBlank() ? "Dungeon Map" : mapName;
-            revision = Math.max(0L, revision);
+    public static final class MapSummary {
+        private final MapId mapId;
+        private final String mapName;
+        private final long revision;
+
+        public MapSummary(MapId mapId, String mapName, long revision) {
+            this.mapId = mapId == null ? new MapId(1L) : mapId;
+            this.mapName = mapName == null || mapName.isBlank() ? "Dungeon Map" : mapName;
+            this.revision = Math.max(0L, revision);
+        }
+
+        public MapId mapId() {
+            return mapId;
+        }
+
+        public String mapName() {
+            return mapName;
+        }
+
+        public long revision() {
+            return revision;
+        }
+
+        @Override
+        public boolean equals(Object other) {
+            if (this == other) {
+                return true;
+            }
+            if (!(other instanceof MapSummary that)) {
+                return false;
+            }
+            return revision == that.revision
+                    && Objects.equals(mapId, that.mapId)
+                    && Objects.equals(mapName, that.mapName);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(mapId, mapName, revision);
+        }
+
+        @Override
+        public String toString() {
+            return "MapSummary[mapId=%s, mapName=%s, revision=%d]".formatted(mapId, mapName, revision);
         }
     }
 
@@ -60,13 +117,15 @@ public final class DungeonEditorWorkspaceValues {
         }
     }
 
-    public enum BoundaryKind {
-        WALL("wall"),
-        DOOR("door");
+    public static final class BoundaryKind {
+        public static final BoundaryKind WALL = new BoundaryKind("WALL", "wall");
+        public static final BoundaryKind DOOR = new BoundaryKind("DOOR", "door");
 
+        private final String name;
         private final String externalKind;
 
-        BoundaryKind(String externalKind) {
+        private BoundaryKind(String name, String externalKind) {
+            this.name = name;
             this.externalKind = externalKind;
         }
 
@@ -78,12 +137,21 @@ public final class DungeonEditorWorkspaceValues {
             return WALL;
         }
 
+        public String name() {
+            return name;
+        }
+
         public String externalKind() {
             return externalKind;
         }
 
         public boolean isDoor() {
             return this == DOOR;
+        }
+
+        @Override
+        public String toString() {
+            return name;
         }
     }
 
@@ -161,23 +229,92 @@ public final class DungeonEditorWorkspaceValues {
         }
     }
 
-    public record Cell(
-            int q,
-            int r,
-            int level
-    ) {
+    public static final class Cell {
+        private final int q;
+        private final int r;
+        private final int level;
+
+        public Cell(int q, int r, int level) {
+            this.q = q;
+            this.r = r;
+            this.level = level;
+        }
+
         public static Cell empty() {
             return new Cell(0, 0, 0);
         }
+
+        public int q() {
+            return q;
+        }
+
+        public int r() {
+            return r;
+        }
+
+        public int level() {
+            return level;
+        }
+
+        @Override
+        public boolean equals(Object other) {
+            if (this == other) {
+                return true;
+            }
+            if (!(other instanceof Cell that)) {
+                return false;
+            }
+            return q == that.q && r == that.r && level == that.level;
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(q, r, level);
+        }
+
+        @Override
+        public String toString() {
+            return "Cell[q=%d, r=%d, level=%d]".formatted(q, r, level);
+        }
     }
 
-    public record Edge(
-            Cell from,
-            Cell to
-    ) {
-        public Edge {
-            from = from == null ? Cell.empty() : from;
-            to = to == null ? from : to;
+    public static final class Edge {
+        private final Cell from;
+        private final Cell to;
+
+        public Edge(Cell from, Cell to) {
+            Cell safeFrom = from == null ? Cell.empty() : from;
+            this.from = safeFrom;
+            this.to = to == null ? safeFrom : to;
+        }
+
+        public Cell from() {
+            return from;
+        }
+
+        public Cell to() {
+            return to;
+        }
+
+        @Override
+        public boolean equals(Object other) {
+            if (this == other) {
+                return true;
+            }
+            if (!(other instanceof Edge that)) {
+                return false;
+            }
+            return Objects.equals(from, that.from) && Objects.equals(to, that.to);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(from, to);
+        }
+
+        @Override
+        public String toString() {
+            return "Edge[from=%s, to=%s]".formatted(from, to);
         }
     }
 
@@ -322,45 +459,168 @@ public final class DungeonEditorWorkspaceValues {
         }
     }
 
-    public record RoomExitNarration(
-            String label,
-            Cell cell,
-            String direction,
-            String description
-    ) {
-        public RoomExitNarration {
-            label = label == null || label.isBlank() ? "Ausgang" : label.trim();
-            cell = cell == null ? Cell.empty() : cell;
-            direction = direction == null || direction.isBlank() ? "NORTH" : direction.trim();
-            description = description == null ? "" : description;
+    public static final class RoomExitNarration {
+        private final String label;
+        private final Cell cell;
+        private final String direction;
+        private final String description;
+
+        public RoomExitNarration(String label, Cell cell, String direction, String description) {
+            this.label = label == null || label.isBlank() ? "Ausgang" : label.trim();
+            this.cell = cell == null ? Cell.empty() : cell;
+            this.direction = direction == null || direction.isBlank() ? "NORTH" : direction.trim();
+            this.description = description == null ? "" : description;
+        }
+
+        public String label() {
+            return label;
+        }
+
+        public Cell cell() {
+            return cell;
+        }
+
+        public String direction() {
+            return direction;
+        }
+
+        public String description() {
+            return description;
+        }
+
+        @Override
+        public boolean equals(Object other) {
+            if (this == other) {
+                return true;
+            }
+            if (!(other instanceof RoomExitNarration that)) {
+                return false;
+            }
+            return Objects.equals(label, that.label)
+                    && Objects.equals(cell, that.cell)
+                    && Objects.equals(direction, that.direction)
+                    && Objects.equals(description, that.description);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(label, cell, direction, description);
+        }
+
+        @Override
+        public String toString() {
+            return "RoomExitNarration[label=%s, cell=%s, direction=%s, description=%s]"
+                    .formatted(label, cell, direction, description);
         }
     }
 
-    public record RoomNarrationCard(
-            long roomId,
-            String roomName,
-            String visualDescription,
-            List<RoomExitNarration> exits
-    ) {
-        public RoomNarrationCard {
-            roomId = Math.max(0L, roomId);
-            roomName = roomName == null || roomName.isBlank() ? "Raum" : roomName.trim();
-            visualDescription = visualDescription == null ? "" : visualDescription;
-            exits = exits == null ? List.of() : List.copyOf(exits);
+    public static final class RoomNarrationCard {
+        private final long roomId;
+        private final String roomName;
+        private final String visualDescription;
+        private final List<RoomExitNarration> exits;
+
+        public RoomNarrationCard(long roomId, String roomName, String visualDescription, List<RoomExitNarration> exits) {
+            this.roomId = Math.max(0L, roomId);
+            this.roomName = roomName == null || roomName.isBlank() ? "Raum" : roomName.trim();
+            this.visualDescription = visualDescription == null ? "" : visualDescription;
+            this.exits = exits == null ? List.of() : List.copyOf(exits);
+        }
+
+        public long roomId() {
+            return roomId;
+        }
+
+        public String roomName() {
+            return roomName;
+        }
+
+        public String visualDescription() {
+            return visualDescription;
+        }
+
+        public List<RoomExitNarration> exits() {
+            return List.copyOf(exits);
+        }
+
+        @Override
+        public boolean equals(Object other) {
+            if (this == other) {
+                return true;
+            }
+            if (!(other instanceof RoomNarrationCard that)) {
+                return false;
+            }
+            return roomId == that.roomId
+                    && Objects.equals(roomName, that.roomName)
+                    && Objects.equals(visualDescription, that.visualDescription)
+                    && Objects.equals(exits, that.exits);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(roomId, roomName, visualDescription, exits);
+        }
+
+        @Override
+        public String toString() {
+            return "RoomNarrationCard[roomId=%d, roomName=%s, visualDescription=%s, exits=%s]"
+                    .formatted(roomId, roomName, visualDescription, exits);
         }
     }
 
-    public record Inspector(
-            String title,
-            String summary,
-            List<String> facts,
-            List<RoomNarrationCard> roomNarrations
-    ) {
-        public Inspector {
-            title = title == null || title.isBlank() ? "Dungeon" : title;
-            summary = summary == null ? "" : summary;
-            facts = facts == null ? List.of() : List.copyOf(facts);
-            roomNarrations = roomNarrations == null ? List.of() : List.copyOf(roomNarrations);
+    public static final class Inspector {
+        private final String title;
+        private final String summary;
+        private final List<String> facts;
+        private final List<RoomNarrationCard> roomNarrations;
+
+        public Inspector(String title, String summary, List<String> facts, List<RoomNarrationCard> roomNarrations) {
+            this.title = title == null || title.isBlank() ? "Dungeon" : title;
+            this.summary = summary == null ? "" : summary;
+            this.facts = facts == null ? List.of() : List.copyOf(facts);
+            this.roomNarrations = roomNarrations == null ? List.of() : List.copyOf(roomNarrations);
+        }
+
+        public String title() {
+            return title;
+        }
+
+        public String summary() {
+            return summary;
+        }
+
+        public List<String> facts() {
+            return List.copyOf(facts);
+        }
+
+        public List<RoomNarrationCard> roomNarrations() {
+            return List.copyOf(roomNarrations);
+        }
+
+        @Override
+        public boolean equals(Object other) {
+            if (this == other) {
+                return true;
+            }
+            if (!(other instanceof Inspector that)) {
+                return false;
+            }
+            return Objects.equals(title, that.title)
+                    && Objects.equals(summary, that.summary)
+                    && Objects.equals(facts, that.facts)
+                    && Objects.equals(roomNarrations, that.roomNarrations);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(title, summary, facts, roomNarrations);
+        }
+
+        @Override
+        public String toString() {
+            return "Inspector[title=%s, summary=%s, facts=%s, roomNarrations=%s]"
+                    .formatted(title, summary, facts, roomNarrations);
         }
     }
 

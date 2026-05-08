@@ -130,20 +130,24 @@ public final class EncounterBudgetBoundaryTranslator {
         EncounterDifficultyMath.Thresholds thresholds = thresholdsForAverageParty(averageLevel, partySize);
         int deadly125 = (int) Math.round(thresholds.deadly() * 1.25);
         EncounterDifficultyBand effectiveBand = band == null ? EncounterDifficultyBand.MEDIUM : band;
-        return switch (effectiveBand) {
-            case EASY -> new DifficultyPreviewRange(
+        if (effectiveBand == EncounterDifficultyBand.EASY) {
+            return new DifficultyPreviewRange(
                     thresholds.easy(),
                     Math.max(thresholds.easy(), thresholds.medium() - 1));
-            case MEDIUM, AUTO -> new DifficultyPreviewRange(
-                    thresholds.medium(),
-                    Math.max(thresholds.medium(), thresholds.hard() - 1));
-            case HARD -> new DifficultyPreviewRange(
+        }
+        if (effectiveBand == EncounterDifficultyBand.HARD) {
+            return new DifficultyPreviewRange(
                     thresholds.hard(),
                     Math.max(thresholds.hard(), thresholds.deadly() - 1));
-            case DEADLY -> new DifficultyPreviewRange(
+        }
+        if (effectiveBand == EncounterDifficultyBand.DEADLY) {
+            return new DifficultyPreviewRange(
                     thresholds.deadly(),
                     Math.max(thresholds.deadly(), deadly125));
-        };
+        }
+        return new DifficultyPreviewRange(
+                thresholds.medium(),
+                Math.max(thresholds.medium(), thresholds.hard() - 1));
     }
 
     private static EncounterDifficultyMath.Thresholds thresholdsForAverageParty(int averageLevel, int partySize) {

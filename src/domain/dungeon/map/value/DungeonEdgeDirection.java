@@ -2,16 +2,19 @@ package src.domain.dungeon.map.value;
 
 import java.util.Locale;
 
-public enum DungeonEdgeDirection {
-    NORTH(0, -1),
-    EAST(1, 0),
-    SOUTH(0, 1),
-    WEST(-1, 0);
+public final class DungeonEdgeDirection {
+    public static final DungeonEdgeDirection NORTH = new DungeonEdgeDirection("NORTH", 0, -1);
+    public static final DungeonEdgeDirection EAST = new DungeonEdgeDirection("EAST", 1, 0);
+    public static final DungeonEdgeDirection SOUTH = new DungeonEdgeDirection("SOUTH", 0, 1);
+    public static final DungeonEdgeDirection WEST = new DungeonEdgeDirection("WEST", -1, 0);
+    private static final DungeonEdgeDirection[] CARDINAL = {NORTH, EAST, SOUTH, WEST};
 
+    private final String name;
     private final int deltaQ;
     private final int deltaR;
 
-    DungeonEdgeDirection(int deltaQ, int deltaR) {
+    private DungeonEdgeDirection(String name, int deltaQ, int deltaR) {
+        this.name = name;
         this.deltaQ = deltaQ;
         this.deltaR = deltaR;
     }
@@ -32,6 +35,19 @@ public enum DungeonEdgeDirection {
         };
     }
 
+    public static DungeonEdgeDirection valueOf(String name) {
+        return switch (name) {
+            case "EAST" -> EAST;
+            case "SOUTH" -> SOUTH;
+            case "WEST" -> WEST;
+            default -> NORTH;
+        };
+    }
+
+    public static DungeonEdgeDirection[] values() {
+        return CARDINAL.clone();
+    }
+
     public DungeonCell neighborOf(DungeonCell cell) {
         if (cell == null) {
             return new DungeonCell(deltaQ, deltaR, 0);
@@ -45,5 +61,14 @@ public enum DungeonEdgeDirection {
 
     public int deltaR() {
         return deltaR;
+    }
+
+    public String name() {
+        return name;
+    }
+
+    @Override
+    public String toString() {
+        return name;
     }
 }

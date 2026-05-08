@@ -257,15 +257,22 @@ public final class CalculateAdventuringDayUseCase {
             boolean partialDay) {
     }
 
-    public enum ProgressEventType {
-        LEVEL_UP(0),
-        SHORT_REST(1),
-        LONG_REST(2);
+    public static final class ProgressEventType {
 
+        public static final ProgressEventType LEVEL_UP = new ProgressEventType("LEVEL_UP", 0);
+        public static final ProgressEventType SHORT_REST = new ProgressEventType("SHORT_REST", 1);
+        public static final ProgressEventType LONG_REST = new ProgressEventType("LONG_REST", 2);
+
+        private final String name;
         private final int sortOrder;
 
-        ProgressEventType(int sortOrder) {
+        private ProgressEventType(String name, int sortOrder) {
+            this.name = name;
             this.sortOrder = sortOrder;
+        }
+
+        public String name() {
+            return name;
         }
 
         int sortOrder() {

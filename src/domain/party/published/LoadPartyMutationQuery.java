@@ -1,4 +1,7 @@
 package src.domain.party.published;
 
-public record LoadPartyMutationQuery() {
+public final class LoadPartyMutationQuery {
+
+    public LoadPartyMutationQuery() {
+    }
 }

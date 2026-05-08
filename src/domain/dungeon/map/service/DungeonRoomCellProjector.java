@@ -301,13 +301,20 @@ public final class DungeonRoomCellProjector {
                 .toList();
     }
 
-    private record DirectionStep(int deltaQ, int deltaR) {
+    private static final class DirectionStep {
+        private final int deltaQ;
+        private final int deltaR;
 
         private static final List<DirectionStep> CARDINAL = List.of(
                 new DirectionStep(0, -1),
                 new DirectionStep(1, 0),
                 new DirectionStep(0, 1),
                 new DirectionStep(-1, 0));
+
+        private DirectionStep(int deltaQ, int deltaR) {
+            this.deltaQ = deltaQ;
+            this.deltaR = deltaR;
+        }
 
         DungeonCell neighbor(DungeonCell cell) {
             return new DungeonCell(cell.q() + deltaQ, cell.r() + deltaR, cell.level());

@@ -2,13 +2,15 @@ package src.domain.dungeon.map.value;
 
 import java.util.Locale;
 
-public enum DungeonClusterBoundaryKind {
-    WALL("wall"),
-    DOOR("door");
+public final class DungeonClusterBoundaryKind {
+    public static final DungeonClusterBoundaryKind WALL = new DungeonClusterBoundaryKind("WALL", "wall");
+    public static final DungeonClusterBoundaryKind DOOR = new DungeonClusterBoundaryKind("DOOR", "door");
 
+    private final String name;
     private final String primitiveKind;
 
-    DungeonClusterBoundaryKind(String primitiveKind) {
+    private DungeonClusterBoundaryKind(String name, String primitiveKind) {
+        this.name = name;
         this.primitiveKind = primitiveKind;
     }
 
@@ -19,7 +21,20 @@ public enum DungeonClusterBoundaryKind {
         return "DOOR".equals(value.trim().toUpperCase(Locale.ROOT)) ? DOOR : WALL;
     }
 
+    public static DungeonClusterBoundaryKind valueOf(String name) {
+        return "DOOR".equals(name) ? DOOR : WALL;
+    }
+
     public String primitiveKind() {
         return primitiveKind;
+    }
+
+    public String name() {
+        return name;
+    }
+
+    @Override
+    public String toString() {
+        return name;
     }
 }

@@ -1,6 +1,7 @@
 package src.domain.encounter.published;
 
 import java.util.List;
+import src.domain.encounter.session.value.EncounterSessionValues;
 
 public record ApplyEncounterStateCommand(
         Action action,
@@ -51,9 +52,32 @@ public record ApplyEncounterStateCommand(
         MUTATE_HP
     }
 
-    public record InitiativeValue(String id, int initiative) {
-        public InitiativeValue {
-            id = id == null ? "" : id;
+    public static final class InitiativeValue {
+
+        private final EncounterSessionValues.InitiativeInput input;
+
+        public InitiativeValue(String id, int initiative) {
+            this(new EncounterSessionValues.InitiativeInput(id, initiative));
+        }
+
+        public InitiativeValue(EncounterSessionValues.InitiativeInput input) {
+            this.input = input == null ? new EncounterSessionValues.InitiativeInput("", 0) : input;
+        }
+
+        public static InitiativeValue fromInput(EncounterSessionValues.InitiativeInput input) {
+            return new InitiativeValue(input);
+        }
+
+        public EncounterSessionValues.InitiativeInput toInternal() {
+            return input;
+        }
+
+        public String id() {
+            return input.id();
+        }
+
+        public int initiative() {
+            return input.initiative();
         }
     }
 }

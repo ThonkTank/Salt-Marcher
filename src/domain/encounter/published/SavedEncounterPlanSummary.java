@@ -1,10 +1,36 @@
 package src.domain.encounter.published;
 
-public record SavedEncounterPlanSummary(long id, String name, String generatedLabel, int creatureCount) {
+import src.domain.encounter.plan.value.EncounterPlanSummary;
 
-    public SavedEncounterPlanSummary {
-        name = name == null ? "" : name.trim();
-        generatedLabel = generatedLabel == null ? "" : generatedLabel.trim();
-        creatureCount = Math.max(0, creatureCount);
+public final class SavedEncounterPlanSummary {
+
+    private final EncounterPlanSummary summary;
+
+    public SavedEncounterPlanSummary(long id, String name, String generatedLabel, int creatureCount) {
+        this(new EncounterPlanSummary(Math.max(1L, id), name, generatedLabel, creatureCount));
+    }
+
+    public SavedEncounterPlanSummary(EncounterPlanSummary summary) {
+        this.summary = summary == null ? new EncounterPlanSummary(1L, "", "", 0) : summary;
+    }
+
+    public static SavedEncounterPlanSummary fromSummary(EncounterPlanSummary summary) {
+        return new SavedEncounterPlanSummary(summary);
+    }
+
+    public long id() {
+        return summary.id();
+    }
+
+    public String name() {
+        return summary.name();
+    }
+
+    public String generatedLabel() {
+        return summary.generatedLabel();
+    }
+
+    public int creatureCount() {
+        return summary.creatureCount();
     }
 }

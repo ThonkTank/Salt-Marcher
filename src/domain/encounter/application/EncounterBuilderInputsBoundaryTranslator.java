@@ -16,11 +16,16 @@ public final class EncounterBuilderInputsBoundaryTranslator {
                 safeInputs.creatureTypes(),
                 safeInputs.creatureSubtypes(),
                 safeInputs.biomes(),
-                toInternalDifficulty(safeInputs.autoDifficulty(), safeInputs.difficultyLevel()),
-                new EncounterTuningIntent(
-                        safeInputs.autoBalance() ? EncounterTuningIntent.AUTO_BALANCE_LEVEL : safeInputs.balanceLevel(),
-                        safeInputs.autoAmount() ? EncounterTuningIntent.AUTO_AMOUNT_VALUE : safeInputs.amountValue(),
-                        safeInputs.autoDiversity() ? EncounterTuningIntent.AUTO_DIVERSITY_LEVEL : safeInputs.diversityLevel()),
+                EncounterRequestedDifficulty.fromPublishedDifficulty(
+                        safeInputs.autoDifficulty(),
+                        safeInputs.difficultyLevel()),
+                EncounterTuningIntent.fromPublishedValues(
+                        safeInputs.autoBalance(),
+                        safeInputs.balanceLevel(),
+                        safeInputs.autoAmount(),
+                        safeInputs.amountValue(),
+                        safeInputs.autoDiversity(),
+                        safeInputs.diversityLevel()),
                 safeInputs.encounterTableIds());
     }
 
@@ -33,13 +38,17 @@ public final class EncounterBuilderInputsBoundaryTranslator {
                 safeInputs.creatureSubtypes(),
                 safeInputs.biomes(),
                 isAutoDifficulty(difficulty),
-                difficultyLevel(difficulty),
+                difficulty == null
+                        ? EncounterRequestedDifficulty.autoDifficulty().publishedDifficultyLevel()
+                        : difficulty.publishedDifficultyLevel(),
                 isAutoBalance(tuning),
-                balanceLevel(tuning),
+                tuning == null ? EncounterTuningIntent.defaultIntent().publishedBalanceLevel() : tuning.publishedBalanceLevel(),
                 isAutoAmount(tuning),
-                amountValue(tuning),
+                tuning == null ? EncounterTuningIntent.defaultIntent().publishedAmountValue() : tuning.publishedAmountValue(),
                 isAutoDiversity(tuning),
-                diversityLevel(tuning),
+                tuning == null
+                        ? EncounterTuningIntent.defaultIntent().publishedDiversityLevel()
+                        : tuning.publishedDiversityLevel(),
                 safeInputs.encounterTableIds());
     }
 
@@ -51,47 +60,11 @@ public final class EncounterBuilderInputsBoundaryTranslator {
         return tuning == null || tuning.isBalanceAuto();
     }
 
-    private static int balanceLevel(EncounterTuningIntent tuning) {
-        return tuning == null ? EncounterBuilderInputs.empty().balanceLevel() : tuning.balanceLevel();
-    }
-
     private static boolean isAutoAmount(EncounterTuningIntent tuning) {
         return tuning == null || tuning.isAmountAuto();
     }
 
-    private static double amountValue(EncounterTuningIntent tuning) {
-        return tuning == null ? EncounterBuilderInputs.empty().amountValue() : tuning.amountValue();
-    }
-
     private static boolean isAutoDiversity(EncounterTuningIntent tuning) {
         return tuning == null || tuning.isDiversityAuto();
-    }
-
-    private static int diversityLevel(EncounterTuningIntent tuning) {
-        return tuning == null ? EncounterBuilderInputs.empty().diversityLevel() : tuning.diversityLevel();
-    }
-
-    private static EncounterRequestedDifficulty toInternalDifficulty(boolean auto, int difficultyLevel) {
-        if (auto) {
-            return EncounterRequestedDifficulty.AUTO;
-        }
-        return switch (difficultyLevel) {
-            case 1 -> EncounterRequestedDifficulty.EASY;
-            case 3 -> EncounterRequestedDifficulty.HARD;
-            case 4 -> EncounterRequestedDifficulty.DEADLY;
-            default -> EncounterRequestedDifficulty.MEDIUM;
-        };
-    }
-
-    private static int difficultyLevel(EncounterRequestedDifficulty difficulty) {
-        EncounterRequestedDifficulty effective = difficulty == null
-                ? EncounterRequestedDifficulty.AUTO
-                : difficulty;
-        return switch (effective) {
-            case EASY -> 1;
-            case HARD -> 3;
-            case DEADLY -> 4;
-            case AUTO, MEDIUM -> 2;
-        };
     }
 }

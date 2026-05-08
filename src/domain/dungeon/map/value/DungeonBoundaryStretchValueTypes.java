@@ -119,7 +119,28 @@ public final class DungeonBoundaryStretchValueTypes {
         }
     }
 
-    public record BoundaryVertex(int q, int r, int level) {
+    public static final class BoundaryVertex {
+        private final int q;
+        private final int r;
+        private final int level;
+
+        public BoundaryVertex(int q, int r, int level) {
+            this.q = q;
+            this.r = r;
+            this.level = level;
+        }
+
+        public int q() {
+            return q;
+        }
+
+        public int r() {
+            return r;
+        }
+
+        public int level() {
+            return level;
+        }
     }
 
     public record StretchSelection(

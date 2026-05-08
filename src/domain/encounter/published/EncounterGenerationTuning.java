@@ -1,65 +1,68 @@
 package src.domain.encounter.published;
 
-public record EncounterGenerationTuning(
-        int balanceLevel,
-        double amountValue,
-        int diversityLevel
-) {
+import src.domain.encounter.generation.value.EncounterTuningIntent;
 
-    public static final int AUTO_BALANCE_LEVEL = -1;
-    public static final double AUTO_AMOUNT_VALUE = -1.0;
-    public static final int AUTO_DIVERSITY_LEVEL = -1;
+public final class EncounterGenerationTuning {
 
-    private static final int DEFAULT_BALANCE_LEVEL = 3;
-    private static final double DEFAULT_AMOUNT_VALUE = 3.0;
-    private static final int DEFAULT_DIVERSITY_LEVEL = 2;
+    public static final int AUTO_BALANCE_LEVEL = EncounterTuningIntent.AUTO_BALANCE_LEVEL;
+    public static final double AUTO_AMOUNT_VALUE = EncounterTuningIntent.AUTO_AMOUNT_VALUE;
+    public static final int AUTO_DIVERSITY_LEVEL = EncounterTuningIntent.AUTO_DIVERSITY_LEVEL;
 
-    public EncounterGenerationTuning {
-        if (balanceLevel != AUTO_BALANCE_LEVEL && (balanceLevel < 1 || balanceLevel > 5)) {
-            balanceLevel = DEFAULT_BALANCE_LEVEL;
-        }
-        if (amountValue != AUTO_AMOUNT_VALUE
-                && (!Double.isFinite(amountValue) || amountValue < 1.0 || amountValue > 5.0)) {
-            amountValue = DEFAULT_AMOUNT_VALUE;
-        }
-        if (diversityLevel != AUTO_DIVERSITY_LEVEL && (diversityLevel < 1 || diversityLevel > 4)) {
-            diversityLevel = DEFAULT_DIVERSITY_LEVEL;
-        }
+    private final EncounterTuningIntent tuning;
+
+    public EncounterGenerationTuning(
+            int balanceLevel,
+            double amountValue,
+            int diversityLevel
+    ) {
+        this(new EncounterTuningIntent(balanceLevel, amountValue, diversityLevel));
+    }
+
+    public EncounterGenerationTuning(EncounterTuningIntent tuning) {
+        this.tuning = tuning == null ? EncounterTuningIntent.defaultIntent() : tuning;
     }
 
     public static EncounterGenerationTuning defaultTuning() {
-        return new EncounterGenerationTuning(DEFAULT_BALANCE_LEVEL, DEFAULT_AMOUNT_VALUE, DEFAULT_DIVERSITY_LEVEL);
+        return new EncounterGenerationTuning(EncounterTuningIntent.defaultIntent());
     }
 
     public static EncounterGenerationTuning autoTuning() {
-        return new EncounterGenerationTuning(AUTO_BALANCE_LEVEL, AUTO_AMOUNT_VALUE, AUTO_DIVERSITY_LEVEL);
+        return new EncounterGenerationTuning(EncounterTuningIntent.autoIntent());
+    }
+
+    public static EncounterGenerationTuning fromIntent(EncounterTuningIntent tuning) {
+        return new EncounterGenerationTuning(tuning);
+    }
+
+    public EncounterTuningIntent toIntent() {
+        return tuning;
+    }
+
+    public int balanceLevel() {
+        return tuning.balanceLevel();
+    }
+
+    public double amountValue() {
+        return tuning.amountValue();
+    }
+
+    public int diversityLevel() {
+        return tuning.diversityLevel();
     }
 
     public boolean isBalanceAuto() {
-        return autoBalance(balanceLevel);
+        return tuning.isBalanceAuto();
     }
 
     public boolean isAmountAuto() {
-        return autoAmount(amountValue);
+        return tuning.isAmountAuto();
     }
 
     public boolean isDiversityAuto() {
-        return autoDiversity(diversityLevel);
+        return tuning.isDiversityAuto();
     }
 
     public boolean hasAuto() {
-        return autoBalance(balanceLevel) || autoAmount(amountValue) || autoDiversity(diversityLevel);
-    }
-
-    private static boolean autoBalance(int candidate) {
-        return candidate == AUTO_BALANCE_LEVEL;
-    }
-
-    private static boolean autoAmount(double candidate) {
-        return candidate == AUTO_AMOUNT_VALUE;
-    }
-
-    private static boolean autoDiversity(int candidate) {
-        return candidate == AUTO_DIVERSITY_LEVEL;
+        return tuning.hasAuto();
     }
 }

@@ -200,12 +200,17 @@ public final class DungeonTravelSurfaceProjector {
     }
 
     private static String headingLabel(DungeonTravelHeading heading) {
-        return switch (heading == null ? DungeonTravelHeading.defaultHeading() : heading) {
-            case NORTH -> "Norden";
-            case EAST -> "Osten";
-            case SOUTH -> "Sueden";
-            case WEST -> "Westen";
-        };
+        DungeonTravelHeading resolvedHeading = heading == null ? DungeonTravelHeading.defaultHeading() : heading;
+        if (resolvedHeading == DungeonTravelHeading.NORTH) {
+            return "Norden";
+        }
+        if (resolvedHeading == DungeonTravelHeading.EAST) {
+            return "Osten";
+        }
+        if (resolvedHeading == DungeonTravelHeading.SOUTH) {
+            return "Sueden";
+        }
+        return "Westen";
     }
 
     private static String destinationLabel(DungeonTransitionDestination destination) {
