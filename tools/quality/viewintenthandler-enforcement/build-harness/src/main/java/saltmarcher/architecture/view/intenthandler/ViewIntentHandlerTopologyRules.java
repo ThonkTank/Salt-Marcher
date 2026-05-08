@@ -22,9 +22,9 @@ public final class ViewIntentHandlerTopologyRules implements ArchitectureRule {
                 violations.add(unit.source(), "view-intenthandler-count",
                         "Each active view root may define at most one *IntentHandler.java file.");
             }
-            if (ViewIntentHandlerTopologySupport.isSlotcontent(unit) && intentHandlerCount > 1) {
+            if (ViewIntentHandlerTopologySupport.isSlotcontent(unit) && intentHandlerCount > 0) {
                 violations.add(unit.source(), "view-slotcontent-intenthandler-count",
-                        "Each reusable slotcontent unit may define at most one *IntentHandler.java file.");
+                        "Reusable slotcontent units must not define *IntentHandler.java files.");
             }
         }
     }

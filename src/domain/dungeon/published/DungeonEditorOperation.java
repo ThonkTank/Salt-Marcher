@@ -55,21 +55,13 @@ public sealed interface DungeonEditorOperation permits
     record PaintRoomRectangle(DungeonCellRef start, DungeonCellRef end) implements DungeonEditorOperation {
     }
 
-    final class DeleteRoomRectangle implements DungeonEditorOperation {
-        private final DungeonCellRef start;
-        private final DungeonCellRef end;
-
-        public DeleteRoomRectangle(DungeonCellRef start, DungeonCellRef end) {
-            this.start = start;
-            this.end = end;
-        }
-
-        public DungeonCellRef start() {
-            return start;
-        }
-
-        public DungeonCellRef end() {
-            return end;
+    record DeleteRoomRectangle(
+            DungeonCellRef start,
+            DungeonCellRef end
+    ) implements DungeonEditorOperation {
+        public DeleteRoomRectangle {
+            start = start == null ? new DungeonCellRef(0, 0, 0) : start;
+            end = end == null ? start : end;
         }
     }
 

@@ -3,6 +3,7 @@ package src.domain.dungeon.map.service;
 import src.domain.dungeon.map.entity.DungeonRoom;
 import src.domain.dungeon.map.entity.DungeonRoomCluster;
 import src.domain.dungeon.map.value.DungeonCell;
+import src.domain.dungeon.map.value.DungeonClusterBoundary;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -23,32 +24,11 @@ public final class DungeonRoomCellProjector {
             List<DungeonRoom> rooms
     ) {
         Map<Long, List<DungeonCell>> result = new LinkedHashMap<>();
-        Set<Integer> levels = levels(cluster, rooms);
-        for (Integer level : levels) {
-            Set<DungeonCell> clusterCells = new LinkedHashSet<>(clusterCells(cluster, rooms, level));
-            Set<DungeonCell> unclaimedCells = new LinkedHashSet<>(clusterCells);
-            List<DungeonClusterBoundary> barriers = cluster.boundariesByLevel().getOrDefault(level, List.of());
-            for (DungeonRoom room : rooms == null ? List.<DungeonRoom>of() : rooms) {
-                DungeonCell anchor = room.floorAnchors().get(level);
-                if (anchor == null) {
-                    continue;
-                }
-                if (!clusterCells.contains(anchor)) {
-                    clusterCells.add(anchor);
-                    unclaimedCells.add(anchor);
-                } else if (!unclaimedCells.contains(anchor)) {
-                    result.computeIfAbsent(room.roomId(), ignored -> new ArrayList<>()).add(anchor);
-                    continue;
-                }
-                Set<DungeonCell> reachable = TRAVERSAL_SUPPORT.reachableCells(anchor, unclaimedCells, barriers, cluster.center());
-                if (reachable.isEmpty()) {
-                    reachable = Set.of(anchor);
-                }
-                unclaimedCells.removeAll(reachable);
-                result.computeIfAbsent(room.roomId(), ignored -> new ArrayList<>()).addAll(reachable);
-            }
+        List<DungeonRoom> safeRooms = rooms == null ? List.of() : rooms;
+        for (Integer level : levels(cluster, safeRooms)) {
+            DungeonRoomCellAssignmentSupport.assignLevelCells(result, this, cluster, safeRooms, level);
         }
-        for (DungeonRoom room : rooms == null ? List.<DungeonRoom>of() : rooms) {
+        for (DungeonRoom room : safeRooms) {
             result.computeIfAbsent(room.roomId(), ignored -> new ArrayList<>()).add(room.primaryAnchor());
         }
         return normalizeCellsByRoom(result);
@@ -126,7 +106,7 @@ public final class DungeonRoomCellProjector {
         levels.add(cluster.center().level());
         levels.addAll(cluster.relativeVerticesByLevel().keySet());
         levels.addAll(cluster.boundariesByLevel().keySet());
-        for (DungeonRoom room : rooms == null ? List.<DungeonRoom>of() : rooms) {
+        for (DungeonRoom room : rooms) {
             levels.addAll(room.floorAnchors().keySet());
         }
         return levels;
@@ -138,6 +118,15 @@ public final class DungeonRoomCellProjector {
             List<DungeonCell> relativeVertices
     ) {
         return RASTERIZER.cellsFromRelativeVertices(center, level, relativeVertices, LOOP_SEPARATOR);
+    }
+
+    static Set<DungeonCell> reachableCells(
+            DungeonCell anchor,
+            Set<DungeonCell> traversableCells,
+            List<DungeonClusterBoundary> barriers,
+            DungeonCell center
+    ) {
+        return TRAVERSAL_SUPPORT.reachableCells(anchor, traversableCells, barriers, center);
     }
 
     public static List<DungeonCell> sortedCells(Iterable<DungeonCell> cells) {

@@ -3,6 +3,7 @@ package src.domain.dungeon.map.service;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.map.aggregate.DungeonMap;
 import src.domain.dungeon.map.entity.DungeonCorridor;
 import src.domain.dungeon.map.policy.DungeonCorridorSemanticsPolicy;
@@ -92,8 +93,8 @@ final class DungeonCorridorCreationService {
         return List.copyOf(roomIds);
     }
 
-    private void addRoomId(List<Long> roomIds, Long roomId) {
-        if (MUTATION_RULES.hasPersistedRoomId(roomId) && !roomIds.contains(roomId)) {
+    private void addRoomId(List<Long> roomIds, @Nullable Long roomId) {
+        if (roomId != null && MUTATION_RULES.hasPersistedRoomId(roomId) && !roomIds.contains(roomId)) {
             roomIds.add(roomId);
         }
     }

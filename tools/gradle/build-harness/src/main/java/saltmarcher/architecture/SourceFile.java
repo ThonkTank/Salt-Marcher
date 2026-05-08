@@ -100,17 +100,8 @@ public record SourceFile(
                     if (fileName.endsWith("ContentModel.java")) {
                         yield SourceKind.VIEW_PROJECTION_MODEL;
                     }
-                    if (fileName.endsWith("IntentHandler.java")) {
-                        yield SourceKind.VIEW_INTENT_HANDLER;
-                    }
                     if (fileName.endsWith("ViewInputEvent.java")) {
                         yield SourceKind.VIEW_INPUT_EVENT;
-                    }
-                    if (fileName.endsWith("PublishedEvent.java")) {
-                        yield SourceKind.VIEW_PUBLISHED_EVENT;
-                    }
-                    if (fileName.endsWith("InspectorEntry.java")) {
-                        yield SourceKind.VIEW_INSPECTOR_ENTRY;
                     }
                     if (fileName.endsWith("View.java")) {
                         yield SourceKind.VIEW_PANEL;

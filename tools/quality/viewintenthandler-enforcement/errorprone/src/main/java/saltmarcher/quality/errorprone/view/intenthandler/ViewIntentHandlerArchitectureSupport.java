@@ -31,8 +31,7 @@ import javax.lang.model.util.SimpleTypeVisitor14;
 final class ViewIntentHandlerArchitectureSupport {
 
     private static final Pattern INTENT_HANDLER_PACKAGE = Pattern.compile(
-            "^src\\.view\\.(leftbartabs|statetabs|dropdowns)\\.[^.]+$"
-                    + "|^src\\.view\\.slotcontent\\.(controls|main|state|details|topbar|primitives)\\.[^.]+$");
+            "^src\\.view\\.(leftbartabs|statetabs|dropdowns)\\.[^.]+$");
 
     private static final Set<String> FORBIDDEN_VIEW_JDK_INFRASTRUCTURE_TYPES = Set.of(
             "java.lang.ClassLoader",

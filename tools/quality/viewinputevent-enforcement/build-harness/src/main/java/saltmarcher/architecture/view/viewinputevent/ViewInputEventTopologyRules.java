@@ -27,20 +27,14 @@ public final class ViewInputEventTopologyRules implements ArchitectureRule {
             Set<String> viewInputEventStems = ViewRoleSupport.viewInputEventStems(files);
             List<InteractivePassiveView> interactiveViews =
                     PassiveViewInputEventSeamSupport.scan(context, files, violations);
-            if (intentHandlerCount == 0) {
-                if (viewInputEventCount > 0) {
-                    violations.add(unit.source(), "view-viewinputevent-no-intenthandler",
-                            "*ViewInputEvent files may exist only when the view unit also defines a local *IntentHandler.");
-                }
-                for (InteractivePassiveView interactiveView : interactiveViews) {
-                    violations.add(interactiveView.source(), "view-viewinputevent-no-intenthandler",
-                            "Passive *View surfaces that expose onViewInputEvent(...) may exist only when the view unit also defines a local *IntentHandler.");
-                }
-                continue;
-            }
-            if (viewCount == 0) {
-                violations.add(unit.source(), "view-viewinputevent-view-required",
-                        "Interactive view units with an *IntentHandler must also define at least one passive *View.java surface.");
+            if (ViewRoleSupport.isActiveRoot(unit)) {
+                validateActiveRootUnit(
+                        unit,
+                        viewCount,
+                        intentHandlerCount,
+                        viewInputEventCount,
+                        interactiveViews,
+                        violations);
             }
             for (String eventStem : viewInputEventStems) {
                 if (!passiveViewStems.contains(eventStem)) {
@@ -51,6 +45,31 @@ public final class ViewInputEventTopologyRules implements ArchitectureRule {
             for (InteractivePassiveView interactiveView : interactiveViews) {
                 validateInteractiveView(interactiveView, viewInputEventStems, violations);
             }
+        }
+    }
+
+    private static void validateActiveRootUnit(
+            ViewRoleSupport.ViewUnit unit,
+            long viewCount,
+            long intentHandlerCount,
+            long viewInputEventCount,
+            List<InteractivePassiveView> interactiveViews,
+            ViolationSink violations
+    ) {
+        if (intentHandlerCount == 0) {
+            if (viewInputEventCount > 0) {
+                violations.add(unit.source(), "view-viewinputevent-no-intenthandler",
+                        "*ViewInputEvent files may exist only when the active view unit also defines a local *IntentHandler.");
+            }
+            for (InteractivePassiveView interactiveView : interactiveViews) {
+                violations.add(interactiveView.source(), "view-viewinputevent-no-intenthandler",
+                        "Active-root passive *View surfaces that expose onViewInputEvent(...) may exist only when the same view unit also defines a local *IntentHandler.");
+            }
+            return;
+        }
+        if (viewCount == 0) {
+            violations.add(unit.source(), "view-viewinputevent-view-required",
+                    "Interactive active view units with an *IntentHandler must also define at least one passive *View.java surface.");
         }
     }
 

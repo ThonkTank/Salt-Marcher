@@ -107,11 +107,11 @@ public final class SaltMarcherSourceFacts {
     }
 
     public boolean isViewIntentHandlerSource() {
-        return (isActiveViewRootSource() || isSlotcontentSource()) && simpleName.endsWith("IntentHandler");
+        return isActiveViewRootSource() && simpleName.endsWith("IntentHandler");
     }
 
     public boolean isViewPublishedEventSource() {
-        return (isActiveViewRootSource() || isSlotcontentSource()) && simpleName.endsWith("PublishedEvent");
+        return isActiveViewRootSource() && simpleName.endsWith("PublishedEvent");
     }
 
     public boolean isViewInputEventSource() {
@@ -119,7 +119,7 @@ public final class SaltMarcherSourceFacts {
     }
 
     public boolean isViewInspectorEntrySource() {
-        return isSlotcontentSource() && simpleName.endsWith("InspectorEntry");
+        return false;
     }
 
     public boolean isViewModelSource() {

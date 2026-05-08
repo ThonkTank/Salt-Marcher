@@ -9,7 +9,8 @@ the canonical home for passive `*View` host wiring:
 - `errorprone/`
   `PassiveViewDependencyBoundaries`, `PassiveViewModelReadApis`,
   `PassiveViewModelMutationBoundary`, `ViewPresentationDecisionLeak`,
-  `ViewInputEventApi`, `PassiveViewCallbackSeamBoundary`
+  `ViewInputEventApi`, `PassiveViewCallbackSeamBoundary`,
+  `ViewSourceTopologyPerimeter`
 - `archunit/`
   bundle-local `architecture.view.view.ViewSurfaceArchitectureTest`
 - `jqassistant/`

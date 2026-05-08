@@ -140,7 +140,7 @@ final class EncounterStateIntentHandler {
         if (event == null) {
             return;
         }
-        if (event.action() == EncounterResultsStateViewInputEvent.Action.AWARD_XP) {
+        if (event.awardExperienceRequested()) {
             publish(new EncounterStatePublishedEvent.ResultMutation(true));
             return;
         }

@@ -97,7 +97,7 @@ public final class DungeonStair {
                             .thenComparingInt(exit -> exit.position().q())
                             .thenComparingLong(DungeonStairExit::exitId))
                     .toList();
-            corridorId = corridorId == null || corridorId <= 0L ? null : corridorId;
+            corridorId = positiveCorridorId(corridorId);
         }
 
         static Geometry empty() {
@@ -109,6 +109,13 @@ public final class DungeonStair {
                     List.of(),
                     List.of(),
                     null);
+        }
+
+        private static @Nullable Long positiveCorridorId(@Nullable Long corridorId) {
+            if (corridorId == null || corridorId <= 0L) {
+                return null;
+            }
+            return corridorId;
         }
     }
 }

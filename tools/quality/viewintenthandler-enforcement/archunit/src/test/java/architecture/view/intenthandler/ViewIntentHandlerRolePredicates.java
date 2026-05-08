@@ -12,8 +12,7 @@ final class ViewIntentHandlerRolePredicates {
         return new DescribedPredicate<>("view intent handler role classes") {
             @Override
             public boolean test(JavaClass input) {
-                return isTopLevelRole(input, "^src\\.view\\.(leftbartabs|statetabs|dropdowns)\\.[^.]+$", "IntentHandler")
-                        || isTopLevelRole(input, "^src\\.view\\.slotcontent\\.(controls|main|state|details|topbar|primitives)\\.[^.]+$", "IntentHandler");
+                return isTopLevelRole(input, "^src\\.view\\.(leftbartabs|statetabs|dropdowns)\\.[^.]+$", "IntentHandler");
             }
         };
     }

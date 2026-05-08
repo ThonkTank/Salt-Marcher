@@ -1,5 +1,6 @@
 package src.domain.travel.application;
 
+import java.util.Locale;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.published.DungeonTopologyKind;
 import src.domain.travel.published.TravelDungeonMapProjectionSnapshot;
@@ -61,7 +62,7 @@ public final class TravelDungeonMapProjectionValueProjector {
                 edge.to().q(),
                 edge.to().r(),
                 edge.from().level(),
-                edgeKind(boundary.kind()),
+                edgeKind(boundary.doorBoundary()),
                 boundary.label(),
                 boundary.id(),
                 TravelDungeonMapProjectionSnapshot.TopologyRef.empty(),
@@ -108,9 +109,9 @@ public final class TravelDungeonMapProjectionValueProjector {
     }
 
     public static TravelDungeonMapProjectionSnapshot.EdgeKind edgeKind(
-            ApplyTravelDungeonSessionUseCase.BoundaryKind boundaryKind
+            boolean doorBoundary
     ) {
-        return boundaryKind != null && boundaryKind.isDoor()
+        return doorBoundary
                 ? TravelDungeonMapProjectionSnapshot.EdgeKind.DOOR
                 : TravelDungeonMapProjectionSnapshot.EdgeKind.WALL;
     }
@@ -132,11 +133,11 @@ public final class TravelDungeonMapProjectionValueProjector {
     }
 
     public static TravelDungeonMapProjectionSnapshot.Heading heading(
-            ApplyTravelDungeonSessionUseCase.@Nullable Direction heading
+            @Nullable String headingToken
     ) {
-        String directionName = heading == null
-                ? ApplyTravelDungeonSessionUseCase.Direction.defaultDirection().name()
-                : heading.name();
+        String directionName = headingToken == null
+                ? "SOUTH"
+                : headingToken.trim().toUpperCase(Locale.ROOT);
         return switch (directionName) {
             case "NORTH" -> TravelDungeonMapProjectionSnapshot.Heading.NORTH;
             case "EAST" -> TravelDungeonMapProjectionSnapshot.Heading.EAST;

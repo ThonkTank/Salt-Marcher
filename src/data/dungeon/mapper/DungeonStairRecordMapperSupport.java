@@ -23,13 +23,14 @@ final class DungeonStairRecordMapperSupport {
                     record.stairId(),
                     record.mapId(),
                     record.name(),
-                    DungeonStairShape.parse(record.shape()),
-                    DungeonEdgeDirection.fromCode(record.direction()),
-                    record.dimension1(),
-                    record.dimension2(),
-                    toStairPath(record.pathNodes()),
-                    toStairExits(record.exits()),
-                    record.corridorId()));
+                    new DungeonStair.Geometry(
+                            DungeonStairShape.parse(record.shape()),
+                            DungeonEdgeDirection.fromCode(record.direction()),
+                            record.dimension1(),
+                            record.dimension2(),
+                            toStairPath(record.pathNodes()),
+                            toStairExits(record.exits()),
+                            record.corridorId())));
         }
         return List.copyOf(result);
     }

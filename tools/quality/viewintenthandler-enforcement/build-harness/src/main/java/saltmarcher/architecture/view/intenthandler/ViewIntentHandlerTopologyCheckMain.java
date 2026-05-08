@@ -3,6 +3,7 @@ package saltmarcher.architecture.view.intenthandler;
 import java.nio.file.Path;
 import saltmarcher.architecture.ArchitectureContext;
 import saltmarcher.architecture.ViolationSink;
+import saltmarcher.architecture.view.ViewTopologyPerimeterRules;
 
 public final class ViewIntentHandlerTopologyCheckMain {
 
@@ -16,6 +17,7 @@ public final class ViewIntentHandlerTopologyCheckMain {
 
         ArchitectureContext context = new ArchitectureContext(Path.of(args[0]).normalize().toAbsolutePath());
         ViolationSink sink = new ViolationSink();
+        new ViewTopologyPerimeterRules().check(context, sink);
         new ViewIntentHandlerTopologyRules().check(context, sink);
         if (!sink.violations().isEmpty()) {
             System.err.println("ViewIntentHandler topology check failed with " + sink.violations().size() + " violation(s):");

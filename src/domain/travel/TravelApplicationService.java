@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
+import src.domain.dungeon.DungeonApplicationService;
 import src.domain.travel.application.ApplyTravelDungeonSessionUseCase;
 import src.domain.travel.application.TravelDungeonRuntimeAccess;
 import src.domain.travel.application.TravelDungeonSnapshotProjector;
@@ -12,7 +13,6 @@ import src.domain.travel.published.LoadTravelDungeonQuery;
 import src.domain.travel.published.TravelDungeonModel;
 import src.domain.travel.published.TravelDungeonSnapshot;
 import src.domain.travel.published.TravelOverlaySettings;
-import src.domain.dungeon.DungeonApplicationService;
 import src.domain.travel.session.port.TravelPartyStateRepository;
 
 /**
@@ -28,10 +28,14 @@ public final class TravelApplicationService {
 
     public TravelApplicationService(
             TravelPartyStateRepository partyStateRepository,
-            DungeonApplicationService dungeonApplicationService
+            DungeonApplicationService dungeonApplicationService,
+            src.domain.dungeon.published.DungeonTravelModel dungeonTravelReadModel
     ) {
         this.applyTravelDungeonSessionUseCase = new ApplyTravelDungeonSessionUseCase(
-                new TravelDungeonRuntimeAccess(partyStateRepository, dungeonApplicationService));
+                new TravelDungeonRuntimeAccess(
+                        partyStateRepository,
+                        dungeonApplicationService,
+                        Objects.requireNonNull(dungeonTravelReadModel, "dungeonTravelReadModel")));
     }
 
     public TravelDungeonModel loadDungeonTravel(LoadTravelDungeonQuery query) {

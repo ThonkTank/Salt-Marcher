@@ -4,19 +4,27 @@ import java.util.List;
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.DungeonApplicationService;
+import src.domain.dungeon.published.DungeonTravelCommand;
+import src.domain.dungeon.published.DungeonTravelMoveResult;
+import src.domain.dungeon.published.DungeonTravelModel;
+import src.domain.dungeon.published.DungeonTravelResponse;
+import src.domain.dungeon.published.DungeonTravelSurfaceSnapshot;
 import src.domain.travel.session.port.TravelPartyStateRepository;
 
 public final class TravelDungeonRuntimeAccess implements ApplyTravelDungeonSessionUseCase.RuntimeAccess {
 
     private final TravelPartyStateRepository partyStateRepository;
     private final DungeonApplicationService dungeonApplicationService;
+    private final DungeonTravelModel dungeonTravelModel;
 
     public TravelDungeonRuntimeAccess(
             TravelPartyStateRepository partyStateRepository,
-            DungeonApplicationService dungeonApplicationService
+            DungeonApplicationService dungeonApplicationService,
+            DungeonTravelModel dungeonTravelModel
     ) {
         this.partyStateRepository = Objects.requireNonNull(partyStateRepository, "partyStateRepository");
         this.dungeonApplicationService = Objects.requireNonNull(dungeonApplicationService, "dungeonApplicationService");
+        this.dungeonTravelModel = Objects.requireNonNull(dungeonTravelModel, "dungeonTravelModel");
     }
 
     @Override
@@ -28,7 +36,9 @@ public final class TravelDungeonRuntimeAccess implements ApplyTravelDungeonSessi
     public ApplyTravelDungeonSessionUseCase.SurfaceData loadDungeonSurface(
             ApplyTravelDungeonSessionUseCase.@Nullable PositionData position
     ) {
-        return TravelDungeonBoundaryTranslator.loadDungeonSurface(dungeonApplicationService, position);
+        dungeonApplicationService.travel(new DungeonTravelCommand.LoadSurface(
+                TravelDungeonSurfaceProjector.toDungeonPosition(position)));
+        return TravelDungeonSurfaceProjector.toInternalSurface(surfaceResponse(dungeonTravelModel.current()));
     }
 
     @Override
@@ -36,7 +46,10 @@ public final class TravelDungeonRuntimeAccess implements ApplyTravelDungeonSessi
             ApplyTravelDungeonSessionUseCase.@Nullable PositionData position,
             String actionId
     ) {
-        return TravelDungeonBoundaryTranslator.moveDungeonAction(dungeonApplicationService, position, actionId);
+        dungeonApplicationService.travel(new DungeonTravelCommand.MoveAction(
+                TravelDungeonSurfaceProjector.toDungeonPosition(position),
+                actionId));
+        return TravelDungeonSurfaceProjector.toInternalMoveResult(moveResponse(dungeonTravelModel.current()));
     }
 
     @Override
@@ -50,5 +63,19 @@ public final class TravelDungeonRuntimeAccess implements ApplyTravelDungeonSessi
             List<Long> characterIds
     ) {
         return partyStateRepository.saveOverworldPosition(target, characterIds);
+    }
+
+    private static @Nullable DungeonTravelSurfaceSnapshot surfaceResponse(@Nullable DungeonTravelResponse response) {
+        if (response instanceof DungeonTravelResponse.Surface surface) {
+            return surface.surface();
+        }
+        return null;
+    }
+
+    private static @Nullable DungeonTravelMoveResult moveResponse(@Nullable DungeonTravelResponse response) {
+        if (response instanceof DungeonTravelResponse.Move move) {
+            return move.result();
+        }
+        return null;
     }
 }

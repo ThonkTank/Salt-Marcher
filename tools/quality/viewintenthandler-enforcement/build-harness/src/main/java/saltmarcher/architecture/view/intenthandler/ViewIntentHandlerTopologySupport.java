@@ -10,6 +10,8 @@ import saltmarcher.architecture.SourceFile;
 final class ViewIntentHandlerTopologySupport {
 
     private static final Set<String> ACTIVE_AREAS = Set.of("leftbartabs", "statetabs", "dropdowns");
+    private static final Set<String> SLOTCONTENT_SLOTS = Set.of(
+            "controls", "main", "state", "details", "topbar", "primitives");
 
     private ViewIntentHandlerTopologySupport() {
     }
@@ -45,10 +47,12 @@ final class ViewIntentHandlerTopologySupport {
             return null;
         }
         String area = segments.get(2);
-        if ("slotcontent".equals(area) && segments.size() >= 5) {
+        if ("slotcontent".equals(area)
+                && segments.size() == 6
+                && SLOTCONTENT_SLOTS.contains(segments.get(3))) {
             return new ViewUnit(area, segments.get(3), segments.get(4));
         }
-        if (ACTIVE_AREAS.contains(area) && segments.size() >= 4) {
+        if (ACTIVE_AREAS.contains(area) && segments.size() == 5) {
             return new ViewUnit(area, null, segments.get(3));
         }
         return null;

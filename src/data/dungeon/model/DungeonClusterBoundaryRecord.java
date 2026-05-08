@@ -26,6 +26,6 @@ public record DungeonClusterBoundaryRecord(
     public DungeonClusterBoundaryRecord {
         edgeDirection = edgeDirection == null || edgeDirection.isBlank() ? "NORTH" : edgeDirection;
         edgeType = edgeType == null || edgeType.isBlank() ? "WALL" : edgeType;
-        topologyElementId = topologyElementId == null || topologyElementId <= 0L ? null : topologyElementId;
+        topologyElementId = DungeonRecordIdNormalizer.positiveLongOrNull(topologyElementId);
     }
 }

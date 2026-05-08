@@ -28,12 +28,11 @@ import src.domain.creatures.runtime.port.CreaturesPublishedStateRepository;
  * Public backend facade for creature catalog publication.
  */
 @SuppressWarnings({
-        "PMD.AvoidCatchingGenericException",
-        "PMD.CouplingBetweenObjects",
-        "PMD.ExcessiveImports"
+        "PMD.AvoidCatchingGenericException"
 })
 public final class CreaturesApplicationService {
 
+    private static final long NO_CREATURE_ID = 0L;
     private static final CreatureCatalogLookup.DistinctFilterValues EMPTY_FILTER_VALUES =
             new CreatureCatalogLookup.DistinctFilterValues(List.of(), List.of(), List.of(), List.of(), List.of());
 
@@ -100,8 +99,8 @@ public final class CreaturesApplicationService {
 
     public void selectCreatureDetail(SelectCreatureDetailCommand command) {
         try {
-            long creatureId = command == null ? 0L : command.creatureId();
-            if (creatureId <= 0L) {
+            long creatureId = command == null ? NO_CREATURE_ID : command.creatureId();
+            if (creatureId <= NO_CREATURE_ID) {
                 publishedStateRepository.publishCreatureDetail(new CreatureDetailResult(
                         CreatureLookupStatus.NOT_FOUND,
                         null));

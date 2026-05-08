@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import src.domain.dungeon.map.entity.DungeonCorridor;
+import src.domain.dungeon.map.service.DungeonCorridorOps;
 import src.domain.dungeon.map.value.DungeonCorridorAnchorBinding;
 import src.domain.dungeon.map.value.DungeonCorridorAnchorRef;
 import src.domain.dungeon.map.value.DungeonTopologyRef;
@@ -46,15 +47,12 @@ public final class DungeonCorridorAnchorPruningPolicy {
                 .filter(Objects::nonNull)
                 .map(DungeonCorridorAnchorBinding::topologyRef)
                 .collect(LinkedHashSet::new, Set::add, Set::addAll);
-        if (ownedRefs.isEmpty()) {
-            return false;
-        }
-        return (corridors == null ? List.<DungeonCorridor>of() : corridors).stream()
+        return !ownedRefs.isEmpty() && (corridors == null ? List.<DungeonCorridor>of() : corridors).stream()
                 .filter(candidate -> candidate.corridorId() != owner.corridorId())
                 .flatMap(candidate -> candidate.bindings().anchorRefs().stream())
                 .filter(Objects::nonNull)
                 .map(DungeonCorridorAnchorRef::topologyRef)
-                .anyMatch(ownedRefs::contains);
+                .noneMatch(ownedRefs::contains);
     }
 
     private record AnchorUsage(

@@ -47,7 +47,7 @@ public final class DungeonCorridorConnectionNormalizationService {
         Map<Long, DungeonRoomCluster> clustersById = clustersById(dungeonMap);
         Map<Long, DungeonRoom> roomsById = roomsById(dungeonMap);
         Map<Long, List<DungeonCell>> roomCellsByRoom = roomCellsByRoom(dungeonMap);
-        DungeonCorridorReadProjector.Result projection = new DungeonCorridorReadProjector().project(
+        DungeonCorridorProjection projection = new DungeonCorridorReadProjector().project(
                 corridors,
                 clustersById,
                 roomsById,

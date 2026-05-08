@@ -5,6 +5,7 @@ import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.published.DungeonCellRef;
 import src.domain.dungeon.published.DungeonTravelActionSnapshot;
 import src.domain.dungeon.published.DungeonTravelExternalTarget;
+import src.domain.dungeon.published.DungeonTravelHeading;
 import src.domain.dungeon.published.DungeonTravelMoveResult;
 import src.domain.dungeon.published.DungeonTravelPosition;
 import src.domain.dungeon.published.DungeonTravelSurfaceSnapshot;
@@ -76,9 +77,7 @@ public final class TravelDungeonSurfaceProjector {
                         position == null ? 0 : position.tile().q(),
                         position == null ? 0 : position.tile().r(),
                         position == null ? 0 : position.tile().level()),
-                position == null
-                        ? ApplyTravelDungeonSessionUseCase.Direction.defaultDirection()
-                        : ApplyTravelDungeonSessionUseCase.Direction.fromName(position.heading().name()));
+                position == null ? "SOUTH" : position.heading().name());
     }
 
     public static @Nullable DungeonTravelPosition toDungeonPosition(
@@ -92,7 +91,7 @@ public final class TravelDungeonSurfaceProjector {
                 src.domain.dungeon.published.DungeonTravelLocationKind.valueOf(position.locationKind().name()),
                 position.ownerId(),
                 new DungeonCellRef(position.tile().q(), position.tile().r(), position.tile().level()),
-                src.domain.dungeon.published.DungeonTravelHeading.valueOf(position.heading().name()));
+                toDungeonHeading(position.headingToken()));
     }
 
     public static ApplyTravelDungeonSessionUseCase.SurfaceData outsideDungeonSurfaceData(long tileId) {
@@ -106,7 +105,7 @@ public final class TravelDungeonSurfaceProjector {
                         ApplyTravelDungeonSessionUseCase.LocationKind.TILE,
                         0L,
                         new ApplyTravelDungeonSessionUseCase.CellData(0, 0, 0),
-                        ApplyTravelDungeonSessionUseCase.Direction.defaultDirection()),
+                        "SOUTH"),
                 "Overworld",
                 "Overworld-Feld " + tileId,
                 "-",
@@ -114,5 +113,14 @@ public final class TravelDungeonSurfaceProjector {
                 "Gruppe befindet sich ausserhalb des Dungeons",
                 "",
                 List.of());
+    }
+
+    private static DungeonTravelHeading toDungeonHeading(@Nullable String headingToken) {
+        return switch (headingToken == null ? "" : headingToken.trim()) {
+            case "NORTH" -> DungeonTravelHeading.NORTH;
+            case "EAST" -> DungeonTravelHeading.EAST;
+            case "WEST" -> DungeonTravelHeading.WEST;
+            default -> DungeonTravelHeading.SOUTH;
+        };
     }
 }

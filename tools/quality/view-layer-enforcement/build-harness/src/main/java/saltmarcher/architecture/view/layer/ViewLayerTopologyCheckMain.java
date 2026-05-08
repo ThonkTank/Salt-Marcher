@@ -7,6 +7,7 @@ import java.util.stream.Collectors;
 import saltmarcher.architecture.ArchitectureChecker;
 import saltmarcher.architecture.ArchitectureContext;
 import saltmarcher.architecture.ViolationSink;
+import saltmarcher.architecture.view.ViewTopologyPerimeterRules;
 
 public final class ViewLayerTopologyCheckMain {
 
@@ -20,6 +21,7 @@ public final class ViewLayerTopologyCheckMain {
 
         ArchitectureContext context = new ArchitectureContext(Path.of(args[0]).normalize().toAbsolutePath());
         ViolationSink sink = new ViolationSink();
+        new ViewTopologyPerimeterRules().check(context, sink);
         new ViewLayerTopologyRules().check(context, sink);
         List<ArchitectureChecker.Violation> ordered = sink.violations().stream()
                 .sorted(Comparator.comparing(ArchitectureChecker.Violation::source)

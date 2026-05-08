@@ -144,7 +144,7 @@ public final class TravelDungeonMapProjectionProjector {
                 position.tile().q() + 0.5,
                 position.tile().r() + 0.5,
                 position.tile().level(),
-                TravelDungeonMapProjectionValueProjector.heading(position.heading()),
+                TravelDungeonMapProjectionValueProjector.heading(position.headingToken()),
                 true);
     }
 

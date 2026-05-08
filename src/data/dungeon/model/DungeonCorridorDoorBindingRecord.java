@@ -25,6 +25,6 @@ public record DungeonCorridorDoorBindingRecord(
 
     public DungeonCorridorDoorBindingRecord {
         edgeDirection = edgeDirection == null || edgeDirection.isBlank() ? "NORTH" : edgeDirection;
-        topologyElementId = topologyElementId == null || topologyElementId <= 0L ? null : topologyElementId;
+        topologyElementId = DungeonRecordIdNormalizer.positiveLongOrNull(topologyElementId);
     }
 }

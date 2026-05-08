@@ -44,7 +44,7 @@ public final class TravelDungeonMapDataProjector {
     ) {
         if (boundary == null) {
             return new ApplyTravelDungeonSessionUseCase.BoundaryData(
-                    ApplyTravelDungeonSessionUseCase.BoundaryKind.fromExternalKind("wall"),
+                    false,
                     1L,
                     "wall",
                     new ApplyTravelDungeonSessionUseCase.EdgeData(
@@ -52,7 +52,7 @@ public final class TravelDungeonMapDataProjector {
                             new ApplyTravelDungeonSessionUseCase.CellData(0, 0, 0)));
         }
         return new ApplyTravelDungeonSessionUseCase.BoundaryData(
-                ApplyTravelDungeonSessionUseCase.BoundaryKind.fromExternalKind(boundary.kind()),
+                "door".equalsIgnoreCase(boundary.kind()),
                 boundary.id(),
                 boundary.label(),
                 new ApplyTravelDungeonSessionUseCase.EdgeData(

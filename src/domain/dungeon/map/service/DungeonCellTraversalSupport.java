@@ -25,35 +25,10 @@ final class DungeonCellTraversalSupport {
             List<DungeonClusterBoundary> barriers,
             @Nullable DungeonCell center
     ) {
-        Set<DungeonCell> remaining = new LinkedHashSet<>();
-        for (DungeonCell cell : cells == null ? List.<DungeonCell>of() : cells) {
-            if (cell != null) {
-                remaining.add(cell);
-            }
-        }
+        Set<DungeonCell> remaining = cellSet(cells);
         List<Set<DungeonCell>> components = new ArrayList<>();
         while (!remaining.isEmpty()) {
-            DungeonCell start = remaining.iterator().next();
-            Set<DungeonCell> component = new LinkedHashSet<>();
-            Set<DungeonCell> frontier = new LinkedHashSet<>(remaining);
-            Deque<DungeonCell> queue = new ArrayDeque<>();
-            queue.add(start);
-            frontier.remove(start);
-            remaining.remove(start);
-            while (!queue.isEmpty()) {
-                DungeonCell current = queue.removeFirst();
-                component.add(current);
-                for (DungeonEdgeDirection direction : DungeonEdgeDirection.values()) {
-                    DungeonCell neighbor = direction.neighborOf(current);
-                    if (!frontier.contains(neighbor) || isBlocked(barriers, center, current, neighbor)) {
-                        continue;
-                    }
-                    frontier.remove(neighbor);
-                    remaining.remove(neighbor);
-                    queue.addLast(neighbor);
-                }
-            }
-            components.add(Set.copyOf(component));
+            components.add(floodComponent(remaining.iterator().next(), remaining, barriers, center));
         }
         return List.copyOf(components);
     }
@@ -85,6 +60,55 @@ final class DungeonCellTraversalSupport {
             }
         }
         return Set.copyOf(visited);
+    }
+
+    private static Set<DungeonCell> floodComponent(
+            DungeonCell start,
+            Set<DungeonCell> remaining,
+            List<DungeonClusterBoundary> barriers,
+            @Nullable DungeonCell center
+    ) {
+        Set<DungeonCell> component = new LinkedHashSet<>();
+        Set<DungeonCell> frontier = new LinkedHashSet<>(remaining);
+        Deque<DungeonCell> queue = new ArrayDeque<>();
+        queue.add(start);
+        frontier.remove(start);
+        remaining.remove(start);
+        while (!queue.isEmpty()) {
+            DungeonCell current = queue.removeFirst();
+            component.add(current);
+            enqueueNeighbors(queue, frontier, remaining, barriers, center, current);
+        }
+        return Set.copyOf(component);
+    }
+
+    private static void enqueueNeighbors(
+            Deque<DungeonCell> queue,
+            Set<DungeonCell> frontier,
+            Set<DungeonCell> remaining,
+            List<DungeonClusterBoundary> barriers,
+            @Nullable DungeonCell center,
+            DungeonCell current
+    ) {
+        for (DungeonEdgeDirection direction : DungeonEdgeDirection.values()) {
+            DungeonCell neighbor = direction.neighborOf(current);
+            if (!frontier.contains(neighbor) || isBlocked(barriers, center, current, neighbor)) {
+                continue;
+            }
+            frontier.remove(neighbor);
+            remaining.remove(neighbor);
+            queue.addLast(neighbor);
+        }
+    }
+
+    private static Set<DungeonCell> cellSet(Iterable<DungeonCell> cells) {
+        Set<DungeonCell> result = new LinkedHashSet<>();
+        for (DungeonCell cell : cells == null ? List.<DungeonCell>of() : cells) {
+            if (cell != null) {
+                result.add(cell);
+            }
+        }
+        return result;
     }
 
     private static boolean isBlocked(

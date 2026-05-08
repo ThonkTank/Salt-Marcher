@@ -53,6 +53,10 @@ public final class DungeonTravelContributionModel {
         return projectionLevel.getReadOnlyProperty();
     }
 
+    int currentProjectionLevel() {
+        return projectionLevel.get();
+    }
+
     void apply(TravelDungeonSnapshot snapshot) {
         TravelDungeonSnapshot safeSnapshot = snapshot == null
                 ? TravelDungeonSnapshot.empty()
@@ -71,56 +75,6 @@ public final class DungeonTravelContributionModel {
                         .map(ActionProjection::from)
                         .toList());
         refreshStateText(workspaceState);
-    }
-
-    int currentProjectionLevel() {
-        return projectionLevel.get();
-    }
-
-    private void refreshStateText(TravelDungeonWorkspaceState workspaceState) {
-        OverlayProjection currentOverlay = overlaySettings.get();
-        if (workspaceState == null) {
-            state.set(defaultStateText(projectionLevel.get(), currentOverlay));
-            return;
-        }
-        state.set(stateTextFrom(workspaceState, currentOverlay));
-    }
-
-    private static String defaultStateText(int projectionLevel, OverlayProjection overlayProjection) {
-        OverlayProjection resolvedOverlay = resolveOverlayProjection(overlayProjection);
-        return "Position: " + NO_LOCATION_LABEL + "\n"
-                + "Tile: z=" + projectionLevel + "\n"
-                + "Heading: " + DEFAULT_HEADING_LABEL + "\n"
-                + "Status: " + DEFAULT_STATUS_LABEL + "\n"
-                + resolvedOverlay.overlayLabel();
-    }
-
-    private static String stateTextFrom(
-            TravelDungeonWorkspaceState workspaceState,
-            OverlayProjection overlayProjection
-    ) {
-        if (workspaceState == null) {
-            return defaultStateText(0, overlayProjection);
-        }
-        OverlayProjection resolvedOverlay = resolveOverlayProjection(overlayProjection);
-        return "Position: " + workspaceState.areaLabel() + "\n"
-                + "Tile: " + workspaceState.tileLabel() + "\n"
-                + "Heading: " + workspaceState.headingLabel() + "\n"
-                + "Status: " + statusLabel(workspaceState) + "\n"
-                + resolvedOverlay.overlayLabel();
-    }
-
-    private static String statusLabel(TravelDungeonWorkspaceState workspaceState) {
-        if (!workspaceState.statusLabel().isBlank()) {
-            return workspaceState.statusLabel();
-        }
-        return workspaceState.outsideDungeon()
-                ? OUTSIDE_DUNGEON_STATUS
-                : DEFAULT_STATUS_LABEL;
-    }
-
-    private static OverlayProjection resolveOverlayProjection(OverlayProjection overlayProjection) {
-        return overlayProjection == null ? OverlayProjection.defaults() : overlayProjection;
     }
 
     static final class ActionProjection {
@@ -252,6 +206,54 @@ public final class DungeonTravelContributionModel {
                 return SELECTED;
             }
             return OFF;
+        }
+    }
+
+    private void refreshStateText(TravelDungeonWorkspaceState workspaceState) {
+        state.set(StateText.from(
+                workspaceState,
+                projectionLevel.get(),
+                overlaySettings.get()));
+    }
+
+    private static final class StateText {
+
+        private static String from(
+                TravelDungeonWorkspaceState workspaceState,
+                int projectionLevel,
+                OverlayProjection overlayProjection
+        ) {
+            if (workspaceState == null) {
+                return defaultText(projectionLevel, overlayProjection);
+            }
+            OverlayProjection resolvedOverlay = overlayProjection == null
+                    ? OverlayProjection.defaults()
+                    : overlayProjection;
+            return "Position: " + workspaceState.areaLabel() + "\n"
+                    + "Tile: " + workspaceState.tileLabel() + "\n"
+                    + "Heading: " + workspaceState.headingLabel() + "\n"
+                    + "Status: " + statusLabel(workspaceState) + "\n"
+                    + resolvedOverlay.overlayLabel();
+        }
+
+        private static String defaultText(int projectionLevel, OverlayProjection overlayProjection) {
+            OverlayProjection resolvedOverlay = overlayProjection == null
+                    ? OverlayProjection.defaults()
+                    : overlayProjection;
+            return "Position: " + NO_LOCATION_LABEL + "\n"
+                    + "Tile: z=" + projectionLevel + "\n"
+                    + "Heading: " + DEFAULT_HEADING_LABEL + "\n"
+                    + "Status: " + DEFAULT_STATUS_LABEL + "\n"
+                    + resolvedOverlay.overlayLabel();
+        }
+
+        private static String statusLabel(TravelDungeonWorkspaceState workspaceState) {
+            if (!workspaceState.statusLabel().isBlank()) {
+                return workspaceState.statusLabel();
+            }
+            return workspaceState.outsideDungeon()
+                    ? OUTSIDE_DUNGEON_STATUS
+                    : DEFAULT_STATUS_LABEL;
         }
     }
 }

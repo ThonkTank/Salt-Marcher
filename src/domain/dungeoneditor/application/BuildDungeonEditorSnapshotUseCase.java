@@ -5,7 +5,7 @@ import java.util.function.Function;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.published.DungeonAuthoredMutationCommand;
 import src.domain.dungeon.published.DungeonAuthoredMutationResult;
-import src.domain.dungeon.published.DungeonAuthoredReadQuery;
+import src.domain.dungeon.published.DungeonAuthoredReadCommand;
 import src.domain.dungeon.published.DungeonAuthoredReadResult;
 import src.domain.dungeon.published.DungeonMapCatalogCommand;
 import src.domain.dungeon.published.DungeonMapCatalogResponse;
@@ -22,7 +22,7 @@ final class BuildDungeonEditorSnapshotUseCase {
     BuildDungeonEditorSnapshotUseCase(
             Function<DungeonMapCatalogCommand, DungeonMapCatalogResponse> catalog,
             Function<DungeonAuthoredMutationCommand, DungeonAuthoredMutationResult> mutateAuthored,
-            Function<DungeonAuthoredReadQuery, DungeonAuthoredReadResult> loadAuthored
+            Function<DungeonAuthoredReadCommand, DungeonAuthoredReadResult> loadAuthored
     ) {
         this.catalog = catalog;
         this.surfaceRuntimeAccess = new DungeonEditorSnapshotSurfaceRuntimeAccess(mutateAuthored, loadAuthored);

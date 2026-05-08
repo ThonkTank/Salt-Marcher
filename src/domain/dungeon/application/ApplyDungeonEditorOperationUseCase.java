@@ -19,7 +19,7 @@ public final class ApplyDungeonEditorOperationUseCase {
             new DungeonMapOperationFeedbackPolicy();
 
     @FunctionalInterface
-    interface OperationMutation {
+    public interface OperationMutation {
         DungeonMap apply(DungeonMap current);
 
         static OperationMutation identity() {

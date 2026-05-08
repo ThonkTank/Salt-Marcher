@@ -20,7 +20,7 @@ public record DungeonStairRecord(
         shape = shape == null || shape.isBlank() ? "LADDER" : shape;
         dimension1 = Math.max(0, dimension1);
         dimension2 = Math.max(0, dimension2);
-        corridorId = corridorId == null || corridorId <= 0L ? null : corridorId;
+        corridorId = DungeonRecordIdNormalizer.positiveLongOrNull(corridorId);
         pathNodes = pathNodes == null ? List.of() : List.copyOf(pathNodes);
         exits = exits == null ? List.of() : List.copyOf(exits);
     }

@@ -77,7 +77,7 @@ public final class ApplicationTravelPartyStateRepository implements TravelPartyS
                                 : PartyDungeonTravelLocationKind.TILE,
                         position.ownerId(),
                         new PartyTravelTile(position.tile().q(), position.tile().r(), position.tile().level()),
-                        PartyTravelHeading.valueOf(position.heading().name())),
+                        partyTravelHeading(position.headingToken())),
                 true));
     }
 
@@ -120,7 +120,7 @@ public final class ApplicationTravelPartyStateRepository implements TravelPartyS
                                     dungeonLocation.tile().q(),
                                     dungeonLocation.tile().r(),
                                     dungeonLocation.tile().level()),
-                            ApplyTravelDungeonSessionUseCase.Direction.fromName(dungeonLocation.heading().name())),
+                            dungeonLocation.heading().name()),
                     0L,
                     false);
         }
@@ -131,5 +131,14 @@ public final class ApplicationTravelPartyStateRepository implements TravelPartyS
                     true);
         }
         return null;
+    }
+
+    private static PartyTravelHeading partyTravelHeading(String headingToken) {
+        return switch (headingToken == null ? "" : headingToken.trim()) {
+            case "NORTH" -> PartyTravelHeading.NORTH;
+            case "EAST" -> PartyTravelHeading.EAST;
+            case "WEST" -> PartyTravelHeading.WEST;
+            default -> PartyTravelHeading.SOUTH;
+        };
     }
 }

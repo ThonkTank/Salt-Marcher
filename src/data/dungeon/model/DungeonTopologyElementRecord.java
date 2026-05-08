@@ -19,8 +19,8 @@ public record DungeonTopologyElementRecord(
                 ? "EMPTY"
                 : elementKind.trim().toUpperCase(Locale.ROOT);
         elementId = Math.max(0L, elementId);
-        clusterId = clusterId == null || clusterId <= 0L ? null : clusterId;
-        corridorId = corridorId == null || corridorId <= 0L ? null : corridorId;
+        clusterId = DungeonRecordIdNormalizer.positiveLongOrNull(clusterId);
+        corridorId = DungeonRecordIdNormalizer.positiveLongOrNull(corridorId);
         label = label == null ? "" : label.trim();
         sortOrder = Math.max(0, sortOrder);
     }

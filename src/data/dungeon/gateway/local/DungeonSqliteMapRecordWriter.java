@@ -71,8 +71,8 @@ final class DungeonSqliteMapRecordWriter {
             replaceRoomFloors(connection, room);
             replaceRoomExitDescriptions(connection, room);
         }
-        DungeonSqliteStatementSupport.deleteObsoleteRooms(connection, record.mapId(), roomIds);
-        DungeonSqliteStatementSupport.deleteObsoleteRoomClusters(connection, record.mapId(), clusterIds);
+        DungeonSqliteRetainedIdCleanup.deleteObsoleteRooms(connection, record.mapId(), roomIds);
+        DungeonSqliteRetainedIdCleanup.deleteObsoleteRoomClusters(connection, record.mapId(), clusterIds);
     }
 
     private static void upsertRoomCluster(Connection connection, DungeonRoomClusterRecord cluster) throws SQLException {

@@ -1,6 +1,7 @@
 package src.domain.travel.application;
 
 import java.util.List;
+import java.util.Locale;
 import org.jspecify.annotations.Nullable;
 
 public final class ApplyTravelDungeonSessionUseCase {
@@ -100,7 +101,7 @@ public final class ApplyTravelDungeonSessionUseCase {
                         LocationKind.TILE,
                         0L,
                         new CellData(0, 0, 0),
-                        Direction.SOUTH),
+                        "SOUTH"),
                 "Overworld",
                 "Overworld-Feld " + tileId,
                 "-",
@@ -206,7 +207,7 @@ public final class ApplyTravelDungeonSessionUseCase {
 
         private static PositionData normalizePosition(PositionData position) {
             return position == null
-                    ? new PositionData(1L, LocationKind.TILE, 0L, new CellData(0, 0, 0), Direction.SOUTH)
+                    ? new PositionData(1L, LocationKind.TILE, 0L, new CellData(0, 0, 0), "SOUTH")
                     : position;
         }
 
@@ -246,40 +247,29 @@ public final class ApplyTravelDungeonSessionUseCase {
             LocationKind locationKind,
             long ownerId,
             CellData tile,
-            Direction heading
+            String headingToken
     ) {
         public PositionData {
             mapId = Math.max(1L, mapId);
             locationKind = locationKind == null ? LocationKind.TILE : locationKind;
             ownerId = Math.max(0L, ownerId);
             tile = tile == null ? new CellData(0, 0, 0) : tile;
-            heading = heading == null ? Direction.SOUTH : heading;
+            headingToken = normalizeHeadingToken(headingToken);
+        }
+
+        private static String normalizeHeadingToken(@Nullable String token) {
+            return switch (token == null ? "" : token.trim().toUpperCase(Locale.ROOT)) {
+                case "NORTH" -> "NORTH";
+                case "EAST" -> "EAST";
+                case "WEST" -> "WEST";
+                default -> "SOUTH";
+            };
         }
     }
 
     public enum LocationKind {
         TILE,
         TRANSITION
-    }
-
-    public enum Direction {
-        NORTH,
-        EAST,
-        SOUTH,
-        WEST;
-
-        public static Direction fromName(String directionName) {
-            return switch (directionName == null ? "" : directionName.trim().toUpperCase()) {
-                case "NORTH" -> NORTH;
-                case "EAST" -> EAST;
-                case "WEST" -> WEST;
-                default -> SOUTH;
-            };
-        }
-
-        public static Direction defaultDirection() {
-            return SOUTH;
-        }
     }
 
     public record MapData(
@@ -357,39 +347,15 @@ public final class ApplyTravelDungeonSessionUseCase {
     }
 
     public record BoundaryData(
-            BoundaryKind kind,
+            boolean doorBoundary,
             long id,
             String label,
             EdgeData edge
     ) {
         public BoundaryData {
-            kind = kind == null ? BoundaryKind.WALL : kind;
             id = Math.max(1L, id);
-            label = label == null || label.isBlank() ? kind.externalKind() : label.trim();
+            label = label == null || label.isBlank() ? (doorBoundary ? "door" : "wall") : label.trim();
             edge = edge == null ? new EdgeData(new CellData(0, 0, 0), new CellData(0, 0, 0)) : edge;
-        }
-    }
-
-    public enum BoundaryKind {
-        WALL("wall"),
-        DOOR("door");
-
-        private final String externalKind;
-
-        BoundaryKind(String externalKind) {
-            this.externalKind = externalKind;
-        }
-
-        public static BoundaryKind fromExternalKind(String kind) {
-            return "door".equalsIgnoreCase(kind) ? DOOR : WALL;
-        }
-
-        public String externalKind() {
-            return externalKind;
-        }
-
-        public boolean isDoor() {
-            return this == DOOR;
         }
     }
 

@@ -11,6 +11,9 @@ import saltmarcher.architecture.SourceFile;
 public final class ViewRoleSupport {
 
     private static final Set<String> ACTIVE_AREAS = Set.of("leftbartabs", "statetabs", "dropdowns");
+    private static final Set<String> SLOTCONTENT_SLOTS = Set.of(
+            "controls", "main", "state", "details", "topbar", "primitives");
+
     private ViewRoleSupport() {
     }
 
@@ -27,19 +30,47 @@ public final class ViewRoleSupport {
 
     public static ViewUnit viewUnit(SourceFile sourceFile) {
         List<String> segments = sourceFile.relativeSegments();
-        if (segments.size() < 4
-                || !"src".equals(segments.get(0))
-                || !"view".equals(segments.get(1))) {
+        if (!isViewSource(sourceFile)) {
             return null;
         }
         String area = segments.get(2);
-        if ("slotcontent".equals(area) && segments.size() >= 5) {
+        if ("slotcontent".equals(area) && isRecognizedSlotcontentSource(sourceFile)) {
             return new ViewUnit(area, segments.get(3), segments.get(4));
         }
-        if (ACTIVE_AREAS.contains(area) && segments.size() >= 4) {
+        if (ACTIVE_AREAS.contains(area) && isRecognizedActiveRootSource(sourceFile)) {
             return new ViewUnit(area, null, segments.get(3));
         }
         return null;
+    }
+
+    public static boolean isViewSource(SourceFile sourceFile) {
+        List<String> segments = sourceFile.relativeSegments();
+        return segments.size() >= 4
+                && "src".equals(segments.get(0))
+                && "view".equals(segments.get(1));
+    }
+
+    public static boolean isRecognizedViewSource(SourceFile sourceFile) {
+        return isRecognizedActiveRootSource(sourceFile) || isRecognizedSlotcontentSource(sourceFile);
+    }
+
+    public static boolean isRecognizedActiveRootSource(SourceFile sourceFile) {
+        List<String> segments = sourceFile.relativeSegments();
+        return isViewSource(sourceFile)
+                && segments.size() == 5
+                && ACTIVE_AREAS.contains(segments.get(2));
+    }
+
+    public static boolean isRecognizedSlotcontentSource(SourceFile sourceFile) {
+        List<String> segments = sourceFile.relativeSegments();
+        return isViewSource(sourceFile)
+                && segments.size() == 6
+                && "slotcontent".equals(segments.get(2))
+                && SLOTCONTENT_SLOTS.contains(segments.get(3));
+    }
+
+    public static Set<String> slotcontentSlots() {
+        return SLOTCONTENT_SLOTS;
     }
 
     public static boolean isActiveRoot(ViewUnit unit) {

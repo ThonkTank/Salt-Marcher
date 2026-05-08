@@ -5,7 +5,6 @@ import src.domain.dungeon.map.entity.DungeonAggregate;
 import src.domain.dungeon.map.entity.DungeonPrimitive;
 import src.domain.dungeon.map.value.DungeonAreaFacts;
 import src.domain.dungeon.map.value.DungeonBoundaryFacts;
-import src.domain.dungeon.map.value.DungeonCell;
 import src.domain.dungeon.map.value.DungeonDerivedState;
 import src.domain.dungeon.map.value.DungeonFeatureFacts;
 import src.domain.dungeon.map.value.DungeonMapFacts;
@@ -30,10 +29,10 @@ public final class DungeonDerivedStateProjector {
     private DungeonDerivedState authoredState(DungeonMap dungeonMap, SpatialTopology topology) {
         List<DungeonFeatureFacts> features = new ArrayList<>();
         List<DungeonRelationGraph.FeatureRelation> featureRelations = new ArrayList<>();
-        DungeonRoomBoundaryReadProjector.Projection roomProjection =
+        DungeonRoomBoundaryProjection roomProjection =
                 new DungeonRoomBoundaryReadProjector().project(dungeonMap, topology);
         DungeonCorridorReadProjector corridorReadProjector = new DungeonCorridorReadProjector();
-        DungeonCorridorReadProjector.Result corridorProjection = corridorReadProjector.project(
+        DungeonCorridorProjection corridorProjection = corridorReadProjector.project(
                 dungeonMap.connections().corridors(),
                 roomProjection.clustersById(),
                 roomProjection.roomsById(),

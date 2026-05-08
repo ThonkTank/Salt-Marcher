@@ -4,7 +4,6 @@ import java.util.List;
 import org.jspecify.annotations.Nullable;
 import src.domain.creatures.published.CreatureActionDetail;
 import src.domain.creatures.published.CreatureCatalogPage;
-import src.domain.creatures.published.CreatureCatalogRow;
 import src.domain.creatures.published.CreatureCatalogSortField;
 import src.domain.creatures.published.CreatureSortDirection;
 

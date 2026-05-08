@@ -1,6 +1,5 @@
 package src.view.slotcontent.details.creature;
 
-import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -17,7 +16,6 @@ import src.domain.creatures.published.CreatureLookupStatus;
 
 public final class CreatureDetailsContentModel {
 
-    private static final NumberFormat INTEGER_FORMAT = NumberFormat.getIntegerInstance(Locale.US);
     private static final String FEET_SUFFIX = " ft.";
 
     private final CreatureDetailResult result;
@@ -50,190 +48,7 @@ public final class CreatureDetailsContentModel {
             errorText.set(errorText(result.status()));
             return;
         }
-        detail.set(toPresentation(result.detail()));
-    }
-
-    private static DetailState toPresentation(CreatureDetail creature) {
-        return new DetailState(
-                creature.name(),
-                meta(creature),
-                coreProperties(creature),
-                abilities(creature),
-                properties(creature),
-                sections(creature));
-    }
-
-    private static String meta(CreatureDetail creature) {
-        StringBuilder meta = new StringBuilder();
-        append(meta, creature.size(), " ");
-        append(meta, creature.creatureType(), " ");
-        if (!creature.subtypes().isEmpty()) {
-            meta.append(" (").append(String.join(", ", creature.subtypes())).append(")");
-        }
-        if (present(creature.alignment())) {
-            if (!meta.isEmpty()) {
-                meta.append(", ");
-            }
-            meta.append(creature.alignment());
-        }
-        return meta.toString();
-    }
-
-    private static List<PropertyLine> coreProperties(CreatureDetail creature) {
-        List<PropertyLine> lines = new ArrayList<>();
-        String armorClassNotes = creature.armorClassNotes();
-        String hitDiceExpression = creature.hitDiceExpression();
-        lines.add(new PropertyLine("Armor Class", creature.armorClass()
-                + (present(armorClassNotes) ? " (" + armorClassNotes + ")" : "")));
-        lines.add(new PropertyLine("Hit Points", creature.hitPoints()
-                + (present(hitDiceExpression) ? " (" + hitDiceExpression + ")" : "")));
-        lines.add(new PropertyLine("Speed", speed(creature)));
-        return lines;
-    }
-
-    private static List<PropertyLine> abilities(CreatureDetail creature) {
-        return List.of(
-                ability("STR", creature.strength()),
-                ability("DEX", creature.dexterity()),
-                ability("CON", creature.constitution()),
-                ability("INT", creature.intelligence()),
-                ability("WIS", creature.wisdom()),
-                ability("CHA", creature.charisma()));
-    }
-
-    private static PropertyLine ability(String label, int value) {
-        int modifier = Math.floorDiv(value - 10, 2);
-        String modifierText = modifier >= 0 ? "+" + modifier : String.valueOf(modifier);
-        return new PropertyLine(label, value + " (" + modifierText + ")");
-    }
-
-    private static List<PropertyLine> properties(CreatureDetail creature) {
-        List<PropertyLine> lines = new ArrayList<>();
-        addIfPresent(lines, "Saving Throws", formatDelimited(creature.savingThrows()));
-        addIfPresent(lines, "Skills", formatDelimited(creature.skills()));
-        addIfPresent(lines, "Damage Vulnerabilities", creature.damageVulnerabilities());
-        addIfPresent(lines, "Damage Resistances", creature.damageResistances());
-        addIfPresent(lines, "Damage Immunities", creature.damageImmunities());
-        addIfPresent(lines, "Condition Immunities", creature.conditionImmunities());
-        addIfPresent(lines, "Senses", senses(creature));
-        addIfPresent(lines, "Languages", creature.languages());
-        lines.add(new PropertyLine("Challenge", creature.challengeRating()
-                + " (" + INTEGER_FORMAT.format(creature.xp()) + " XP)"));
-        if (creature.proficiencyBonus() > 0) {
-            lines.add(new PropertyLine("Proficiency Bonus", "+" + creature.proficiencyBonus()));
-        }
-        return lines;
-    }
-
-    private static List<ActionGroup> sections(CreatureDetail creature) {
-        List<ActionGroup> sections = new ArrayList<>();
-        List<ActionLine> actions = creature.actions().stream()
-                .map(CreatureDetailsContentModel::actionLine)
-                .toList();
-        if (!actions.isEmpty()) {
-            sections.add(new ActionGroup("Actions", "", actions));
-        }
-        return sections;
-    }
-
-    private static ActionLine actionLine(CreatureActionDetail action) {
-        return new ActionLine(action.name(), action.description());
-    }
-
-    private static String speed(CreatureDetail creature) {
-        StringBuilder speed = new StringBuilder().append(creature.walkSpeed()).append(FEET_SUFFIX);
-        if (creature.flySpeed() > 0) {
-            speed.append(", fly ").append(creature.flySpeed()).append(FEET_SUFFIX);
-        }
-        if (creature.swimSpeed() > 0) {
-            speed.append(", swim ").append(creature.swimSpeed()).append(FEET_SUFFIX);
-        }
-        if (creature.climbSpeed() > 0) {
-            speed.append(", climb ").append(creature.climbSpeed()).append(FEET_SUFFIX);
-        }
-        if (creature.burrowSpeed() > 0) {
-            speed.append(", burrow ").append(creature.burrowSpeed()).append(FEET_SUFFIX);
-        }
-        return speed.toString();
-    }
-
-    private static @Nullable String senses(CreatureDetail creature) {
-        StringBuilder text = new StringBuilder();
-        String formatted = reformatColonDelimited(creature.senses(), FEET_SUFFIX);
-        if (formatted != null) {
-            text.append(formatted);
-        }
-        if (creature.passivePerception() > 0) {
-            if (!text.isEmpty()) {
-                text.append(", ");
-            }
-            text.append("passive Perception ").append(creature.passivePerception());
-        }
-        return text.isEmpty() ? null : text.toString();
-    }
-
-    private static @Nullable String formatDelimited(@Nullable String raw) {
-        return reformatColonDelimited(raw, "");
-    }
-
-    private static @Nullable String reformatColonDelimited(@Nullable String raw, String valueSuffix) {
-        if (raw == null || raw.isBlank()) {
-            return null;
-        }
-        StringBuilder text = new StringBuilder();
-        for (String part : commaParts(raw)) {
-            if (!text.isEmpty()) {
-                text.append(", ");
-            }
-            String trimmed = part.trim();
-            int colon = trimmed.indexOf(':');
-            if (colon > 0) {
-                text.append(trimmed, 0, colon)
-                        .append(" ")
-                        .append(trimmed.substring(colon + 1))
-                        .append(valueSuffix);
-            } else {
-                text.append(trimmed);
-            }
-        }
-        return text.toString();
-    }
-
-    private static List<String> commaParts(String raw) {
-        List<String> parts = new ArrayList<>();
-        int start = 0;
-        int separator = raw.indexOf(',');
-        while (separator >= 0) {
-            parts.add(raw.substring(start, separator));
-            start = separator + 1;
-            separator = raw.indexOf(',', start);
-        }
-        parts.add(raw.substring(start));
-        return parts;
-    }
-
-    private static void append(StringBuilder target, @Nullable String value, String separator) {
-        if (!present(value)) {
-            return;
-        }
-        if (!target.isEmpty()) {
-            target.append(separator);
-        }
-        target.append(value);
-    }
-
-    private static void addIfPresent(
-            List<PropertyLine> lines,
-            String label,
-            @Nullable String value
-    ) {
-        if (value != null && !value.isBlank()) {
-            lines.add(new PropertyLine(label, value));
-        }
-    }
-
-    private static boolean present(@Nullable String value) {
-        return value != null && !value.isBlank();
+        detail.set(DetailPresenter.toPresentation(result.detail()));
     }
 
     private static String errorText(CreatureLookupStatus status) {
@@ -269,5 +84,195 @@ public final class CreatureDetailsContentModel {
     }
 
     public record ActionLine(String name, String description) {
+    }
+
+    private static final class DetailPresenter {
+
+        private static DetailState toPresentation(CreatureDetail creature) {
+            return new DetailState(
+                    creature.name(),
+                    meta(creature),
+                    coreProperties(creature),
+                    abilities(creature),
+                    properties(creature),
+                    sections(creature));
+        }
+
+        private static String meta(CreatureDetail creature) {
+            StringBuilder meta = new StringBuilder();
+            append(meta, creature.size(), " ");
+            append(meta, creature.creatureType(), " ");
+            if (!creature.subtypes().isEmpty()) {
+                meta.append(" (").append(String.join(", ", creature.subtypes())).append(")");
+            }
+            if (present(creature.alignment())) {
+                if (!meta.isEmpty()) {
+                    meta.append(", ");
+                }
+                meta.append(creature.alignment());
+            }
+            return meta.toString();
+        }
+
+        private static List<PropertyLine> coreProperties(CreatureDetail creature) {
+            List<PropertyLine> lines = new ArrayList<>();
+            String armorClassNotes = creature.armorClassNotes();
+            String hitDiceExpression = creature.hitDiceExpression();
+            lines.add(new PropertyLine("Armor Class", creature.armorClass()
+                    + (present(armorClassNotes) ? " (" + armorClassNotes + ")" : "")));
+            lines.add(new PropertyLine("Hit Points", creature.hitPoints()
+                    + (present(hitDiceExpression) ? " (" + hitDiceExpression + ")" : "")));
+            lines.add(new PropertyLine("Speed", speed(creature)));
+            return lines;
+        }
+
+        private static List<PropertyLine> abilities(CreatureDetail creature) {
+            return List.of(
+                    ability("STR", creature.strength()),
+                    ability("DEX", creature.dexterity()),
+                    ability("CON", creature.constitution()),
+                    ability("INT", creature.intelligence()),
+                    ability("WIS", creature.wisdom()),
+                    ability("CHA", creature.charisma()));
+        }
+
+        private static PropertyLine ability(String label, int value) {
+            int modifier = Math.floorDiv(value - 10, 2);
+            String modifierText = modifier >= 0 ? "+" + modifier : String.valueOf(modifier);
+            return new PropertyLine(label, value + " (" + modifierText + ")");
+        }
+
+        private static List<PropertyLine> properties(CreatureDetail creature) {
+            List<PropertyLine> lines = new ArrayList<>();
+            addIfPresent(lines, "Saving Throws", formatDelimited(creature.savingThrows()));
+            addIfPresent(lines, "Skills", formatDelimited(creature.skills()));
+            addIfPresent(lines, "Damage Vulnerabilities", creature.damageVulnerabilities());
+            addIfPresent(lines, "Damage Resistances", creature.damageResistances());
+            addIfPresent(lines, "Damage Immunities", creature.damageImmunities());
+            addIfPresent(lines, "Condition Immunities", creature.conditionImmunities());
+            addIfPresent(lines, "Senses", senses(creature));
+            addIfPresent(lines, "Languages", creature.languages());
+            lines.add(new PropertyLine("Challenge", creature.challengeRating()
+                    + " (" + formatNumber(creature.xp()) + " XP)"));
+            if (creature.proficiencyBonus() > 0) {
+                lines.add(new PropertyLine("Proficiency Bonus", "+" + creature.proficiencyBonus()));
+            }
+            return lines;
+        }
+
+        private static List<ActionGroup> sections(CreatureDetail creature) {
+            List<ActionGroup> sections = new ArrayList<>();
+            List<ActionLine> actions = creature.actions().stream()
+                    .map(DetailPresenter::actionLine)
+                    .toList();
+            if (!actions.isEmpty()) {
+                sections.add(new ActionGroup("Actions", "", actions));
+            }
+            return sections;
+        }
+
+        private static ActionLine actionLine(CreatureActionDetail action) {
+            return new ActionLine(action.name(), action.description());
+        }
+
+        private static String speed(CreatureDetail creature) {
+            StringBuilder speed = new StringBuilder().append(creature.walkSpeed()).append(FEET_SUFFIX);
+            if (creature.flySpeed() > 0) {
+                speed.append(", fly ").append(creature.flySpeed()).append(FEET_SUFFIX);
+            }
+            if (creature.swimSpeed() > 0) {
+                speed.append(", swim ").append(creature.swimSpeed()).append(FEET_SUFFIX);
+            }
+            if (creature.climbSpeed() > 0) {
+                speed.append(", climb ").append(creature.climbSpeed()).append(FEET_SUFFIX);
+            }
+            if (creature.burrowSpeed() > 0) {
+                speed.append(", burrow ").append(creature.burrowSpeed()).append(FEET_SUFFIX);
+            }
+            return speed.toString();
+        }
+
+        private static @Nullable String senses(CreatureDetail creature) {
+            StringBuilder text = new StringBuilder();
+            String formatted = reformatColonDelimited(creature.senses(), FEET_SUFFIX);
+            if (formatted != null) {
+                text.append(formatted);
+            }
+            if (creature.passivePerception() > 0) {
+                if (!text.isEmpty()) {
+                    text.append(", ");
+                }
+                text.append("passive Perception ").append(creature.passivePerception());
+            }
+            return text.isEmpty() ? null : text.toString();
+        }
+
+        private static @Nullable String formatDelimited(@Nullable String raw) {
+            return reformatColonDelimited(raw, "");
+        }
+
+        private static @Nullable String reformatColonDelimited(@Nullable String raw, String valueSuffix) {
+            if (raw == null || raw.isBlank()) {
+                return null;
+            }
+            StringBuilder text = new StringBuilder();
+            for (String part : commaParts(raw)) {
+                if (!text.isEmpty()) {
+                    text.append(", ");
+                }
+                String trimmed = part.trim();
+                int colon = trimmed.indexOf(':');
+                if (colon > 0) {
+                    text.append(trimmed, 0, colon)
+                            .append(" ")
+                            .append(trimmed.substring(colon + 1))
+                            .append(valueSuffix);
+                } else {
+                    text.append(trimmed);
+                }
+            }
+            return text.toString();
+        }
+
+        private static List<String> commaParts(String raw) {
+            List<String> parts = new ArrayList<>();
+            int start = 0;
+            int separator = raw.indexOf(',');
+            while (separator >= 0) {
+                parts.add(raw.substring(start, separator));
+                start = separator + 1;
+                separator = raw.indexOf(',', start);
+            }
+            parts.add(raw.substring(start));
+            return parts;
+        }
+
+        private static void append(StringBuilder target, @Nullable String value, String separator) {
+            if (!present(value)) {
+                return;
+            }
+            if (!target.isEmpty()) {
+                target.append(separator);
+            }
+            target.append(value);
+        }
+
+        private static void addIfPresent(
+                List<PropertyLine> lines,
+                String label,
+                @Nullable String value
+        ) {
+            if (value != null && !value.isBlank()) {
+                lines.add(new PropertyLine(label, value));
+            }
+        }
+
+        private static boolean present(@Nullable String value) {
+            return value != null && !value.isBlank();
+        }
+
+        private static String formatNumber(int value) {
+            return java.text.NumberFormat.getIntegerInstance(Locale.US).format(value);
+        }
     }
 }

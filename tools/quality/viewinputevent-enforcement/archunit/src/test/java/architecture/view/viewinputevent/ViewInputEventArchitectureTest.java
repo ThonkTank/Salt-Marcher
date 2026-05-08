@@ -51,10 +51,10 @@ public final class ViewInputEventArchitectureTest {
                     .haveSimpleNameEndingWith("ApplicationService");
 
     @ArchTest
-    static final ArchRule interactiveViewsMustOwnSameStemViewInputEventsAndIntentHandlers =
+    static final ArchRule interactiveViewsMustOwnSameStemViewInputEvents =
             classes()
                     .that(ViewRolePredicates.arePassiveViews())
-                    .should(declareSameStemViewInputEventAndIntentHandler());
+                    .should(declareSameStemViewInputEventAndRequiredHandler());
 
     @ArchTest
     static final ArchRule viewInputEventsMustBelongToInteractiveSameStemViews =
@@ -74,8 +74,8 @@ public final class ViewInputEventArchitectureTest {
                     .that(ViewRolePredicates.areViewInputEvents())
                     .should(exposeOnlyComponentsConsumedByLocalIntentHandler());
 
-    private static ArchCondition<JavaClass> declareSameStemViewInputEventAndIntentHandler() {
-        return new ArchCondition<>("declare a same-stem ViewInputEvent and local IntentHandler when exposing onViewInputEvent") {
+    private static ArchCondition<JavaClass> declareSameStemViewInputEventAndRequiredHandler() {
+        return new ArchCondition<>("declare a same-stem ViewInputEvent and require a local IntentHandler only for active roots when exposing onViewInputEvent") {
             @Override
             public void check(JavaClass item, ConditionEvents events) {
                 if (!declaresInteractiveViewInputSeam(item)) {
@@ -90,6 +90,9 @@ public final class ViewInputEventArchitectureTest {
                             item.getName() + " exposes onViewInputEvent(...) but is missing "
                                     + packageName + "." + expectedViewInputEvent));
                 }
+                if (isReusableSlotcontentPackage(packageName)) {
+                    return;
+                }
                 if (countClassesEndingWith(packageClassNames, "IntentHandler") == 0) {
                     events.add(SimpleConditionEvent.violated(
                             item,
@@ -100,7 +103,7 @@ public final class ViewInputEventArchitectureTest {
     }
 
     private static ArchCondition<JavaClass> belongToInteractiveSameStemView() {
-        return new ArchCondition<>("belong to an interactive same-stem View with a local IntentHandler") {
+        return new ArchCondition<>("belong to an interactive same-stem View, with a local IntentHandler only for active roots") {
             @Override
             public void check(JavaClass item, ConditionEvents events) {
                 String packageName = item.getPackageName();
@@ -118,6 +121,9 @@ public final class ViewInputEventArchitectureTest {
                             item.getName() + " belongs to " + packageName + "." + expectedView
                                     + " but that View does not expose a valid onViewInputEvent(Consumer<SameStemViewInputEvent>) seam"));
                 }
+                if (isReusableSlotcontentPackage(packageName)) {
+                    return;
+                }
                 if (countClassesEndingWith(packageClassNames, "IntentHandler") == 0) {
                     events.add(SimpleConditionEvent.violated(
                             item,
@@ -132,6 +138,9 @@ public final class ViewInputEventArchitectureTest {
             @Override
             public void check(JavaClass item, ConditionEvents events) {
                 Class<?> eventClass = loadClass(item.getName());
+                if (isReusableSlotcontentPackage(item.getPackageName())) {
+                    return;
+                }
                 if (!eventClass.isRecord()) {
                     return;
                 }
@@ -166,6 +175,9 @@ public final class ViewInputEventArchitectureTest {
             @Override
             public void check(JavaClass item, ConditionEvents events) {
                 Class<?> eventClass = loadClass(item.getName());
+                if (isReusableSlotcontentPackage(item.getPackageName())) {
+                    return;
+                }
                 if (localIntentHandlerFor(item, eventClass).isPresent()) {
                     return;
                 }
@@ -291,6 +303,10 @@ public final class ViewInputEventArchitectureTest {
             }
         }
         return count;
+    }
+
+    private static boolean isReusableSlotcontentPackage(String packageName) {
+        return packageName.startsWith("src.view.slotcontent.");
     }
 
     private static String expectedViewInputEventSimpleName(String viewSimpleName) {

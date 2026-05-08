@@ -5,7 +5,7 @@ import java.util.function.Function;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.published.DungeonAuthoredMutationCommand;
 import src.domain.dungeon.published.DungeonAuthoredMutationResult;
-import src.domain.dungeon.published.DungeonAuthoredReadQuery;
+import src.domain.dungeon.published.DungeonAuthoredReadCommand;
 import src.domain.dungeon.published.DungeonAuthoredReadResult;
 import src.domain.dungeon.published.DungeonEditorOperation;
 import src.domain.dungeon.published.DungeonOperationResult;
@@ -19,11 +19,11 @@ import src.domain.dungeoneditor.workspace.value.DungeonEditorWorkspaceValues.Map
 
 final class DungeonEditorSnapshotSurfaceRuntimeAccess {
     private final Function<DungeonAuthoredMutationCommand, DungeonAuthoredMutationResult> mutateAuthored;
-    private final Function<DungeonAuthoredReadQuery, DungeonAuthoredReadResult> loadAuthored;
+    private final Function<DungeonAuthoredReadCommand, DungeonAuthoredReadResult> loadAuthored;
 
     DungeonEditorSnapshotSurfaceRuntimeAccess(
             Function<DungeonAuthoredMutationCommand, DungeonAuthoredMutationResult> mutateAuthored,
-            Function<DungeonAuthoredReadQuery, DungeonAuthoredReadResult> loadAuthored
+            Function<DungeonAuthoredReadCommand, DungeonAuthoredReadResult> loadAuthored
     ) {
         this.mutateAuthored = mutateAuthored;
         this.loadAuthored = loadAuthored;
@@ -81,7 +81,7 @@ final class DungeonEditorSnapshotSurfaceRuntimeAccess {
                 && !selection.clusterSelection())) {
             return null;
         }
-        DungeonAuthoredReadResult result = loadAuthored.apply(new DungeonAuthoredReadQuery.DescribeSelection(
+        DungeonAuthoredReadResult result = loadAuthored.apply(new DungeonAuthoredReadCommand.DescribeSelection(
                 Objects.requireNonNull(DungeonEditorWorkspaceMapBoundaryTranslator.toDomainMapId(mapId)),
                 DungeonEditorWorkspaceTopologyBoundaryTranslator.toDomainTopologyRef(selection.topologyRef()),
                 selection.clusterId(),
@@ -96,7 +96,7 @@ final class DungeonEditorSnapshotSurfaceRuntimeAccess {
         if (mapId == null) {
             return null;
         }
-        DungeonAuthoredReadResult result = loadAuthored.apply(new DungeonAuthoredReadQuery.LoadSnapshot(
+        DungeonAuthoredReadResult result = loadAuthored.apply(new DungeonAuthoredReadCommand.LoadSnapshot(
                 Objects.requireNonNull(DungeonEditorWorkspaceMapBoundaryTranslator.toDomainMapId(mapId))));
         if (result instanceof DungeonAuthoredReadResult.CommittedSnapshot committedSnapshot) {
             return committedSnapshot.snapshot();

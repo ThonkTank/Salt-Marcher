@@ -5,6 +5,9 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
 import src.domain.dungeon.DungeonApplicationService;
+import src.domain.dungeon.published.DungeonAuthoredMutationModel;
+import src.domain.dungeon.published.DungeonAuthoredReadModel;
+import src.domain.dungeon.published.DungeonMapCatalogModel;
 import src.domain.dungeon.published.DungeonMapId;
 import src.domain.dungeoneditor.application.ApplyDungeonEditorSessionUseCase;
 import src.domain.dungeoneditor.application.DungeonEditorCommandBoundaryTranslator;
@@ -22,12 +25,30 @@ public final class DungeonEditorApplicationService {
             this::currentEditorSnapshot,
             this::subscribeEditorListener);
 
-    public DungeonEditorApplicationService(DungeonApplicationService dungeonApplicationService) {
+    public DungeonEditorApplicationService(
+            DungeonApplicationService dungeonApplicationService,
+            DungeonMapCatalogModel dungeonMapCatalogModel,
+            DungeonAuthoredMutationModel dungeonAuthoredMutationModel,
+            DungeonAuthoredReadModel dungeonAuthoredReadModel
+    ) {
         DungeonApplicationService dungeon = Objects.requireNonNull(dungeonApplicationService, "dungeonApplicationService");
+        DungeonMapCatalogModel catalogModel = Objects.requireNonNull(dungeonMapCatalogModel, "dungeonMapCatalogModel");
+        DungeonAuthoredMutationModel mutationModel =
+                Objects.requireNonNull(dungeonAuthoredMutationModel, "dungeonAuthoredMutationModel");
+        DungeonAuthoredReadModel readModel = Objects.requireNonNull(dungeonAuthoredReadModel, "dungeonAuthoredReadModel");
         this.applyDungeonEditorSessionUseCase = new ApplyDungeonEditorSessionUseCase(
-                dungeon::catalog,
-                dungeon::mutateAuthored,
-                dungeon::loadAuthored);
+                command -> {
+                    dungeon.catalog(command);
+                    return catalogModel.current();
+                },
+                command -> {
+                    dungeon.mutateAuthored(command);
+                    return mutationModel.current();
+                },
+                command -> {
+                    dungeon.refreshAuthored(command);
+                    return readModel.current();
+                });
     }
 
     public DungeonEditorModel loadEditor(LoadDungeonEditorQuery query) {

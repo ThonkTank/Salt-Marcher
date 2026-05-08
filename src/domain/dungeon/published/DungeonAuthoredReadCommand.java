@@ -1,22 +1,16 @@
 package src.domain.dungeon.published;
 
-public sealed interface DungeonAuthoredReadQuery permits
-        DungeonAuthoredReadQuery.LoadSnapshot,
-        DungeonAuthoredReadQuery.DescribeSelection {
+public sealed interface DungeonAuthoredReadCommand permits
+        DungeonAuthoredReadCommand.LoadSnapshot,
+        DungeonAuthoredReadCommand.DescribeSelection {
 
-    final class LoadSnapshot implements DungeonAuthoredReadQuery {
-        private final DungeonMapId mapId;
-
+    record LoadSnapshot(DungeonMapId mapId) implements DungeonAuthoredReadCommand {
         public LoadSnapshot() {
             this(new DungeonMapId(1L));
         }
 
-        public LoadSnapshot(DungeonMapId mapId) {
-            this.mapId = mapId == null ? new DungeonMapId(1L) : mapId;
-        }
-
-        public DungeonMapId mapId() {
-            return mapId;
+        public LoadSnapshot {
+            mapId = mapId == null ? new DungeonMapId(1L) : mapId;
         }
     }
 
@@ -25,7 +19,7 @@ public sealed interface DungeonAuthoredReadQuery permits
             DungeonTopologyElementRef topologyRef,
             long clusterId,
             boolean clusterSelection
-    ) implements DungeonAuthoredReadQuery {
+    ) implements DungeonAuthoredReadCommand {
 
         public DescribeSelection {
             mapId = mapId == null ? new DungeonMapId(1L) : mapId;
