@@ -223,9 +223,15 @@ Rules:
 - `model/<family>/model/` is the internal model subtree; it MAY contain direct
   model files or deeper semantic subpackages for subordinate models of the
   same family
+- nested subpackages inside `model/<family>/model/**` stay semantic; technical
+  buckets such as `published`, `application`, `usecase`, `helper`,
+  `constants`, `port`, `repository`, and rejected legacy role names are
+  illegal there
 - `usecase/`, `helper/`, `constants/`, `port/`, and `repository/` are the
   only non-model subordinate role buckets under a model family
 - non-model role buckets stay direct-file only
+- direct root Java files under `src/domain/<context>/` are limited to
+  `*ApplicationService.java`
 - direct Java files under named model families are forbidden; Java files belong
   in an explicit role package
 - reserved role suffixes are path-owned: `*ApplicationService`, `*UseCase`,
@@ -242,8 +248,13 @@ suffix placement, but production migration still lags behind that target.
 
 - `checkDomainApplicationServiceEnforcement` now allows one or more direct root
   `*ApplicationService` files and validates `DOMAIN.md`-declared root services
-- `checkDomainLayerEnforcement` now hard-cuts root buckets, model-family role
-  buckets, direct-file placement, and reserved role suffix ownership
+- `checkDomainLayerEnforcement` now hard-cuts root buckets, direct root
+  `*ApplicationService` file ownership, model-family role buckets, model
+  subtree technical-bucket rejection, direct-file placement, and reserved role
+  suffix ownership
+- `compileJava` now blocks path/package/file-shape drift for domain sources
+  through a dedicated closed-topology perimeter checker instead of leaving role
+  renames and moves to build-harness scanning alone
 - `checkDomainUseCaseEnforcement` now hard-cuts root `application/` to direct
   `*UseCase.java` files only
 - current port checks still inventory legacy outbound `port/` interfaces until

@@ -96,9 +96,7 @@ public final class ViewPresentationDecisionLeakChecker extends BugChecker
             }
         }.scan(tree, null);
         return referencedTypes.stream().anyMatch(referencedType ->
-                ViewArchitectureSupport.isSameViewRootModelReference(sourcePackageName, referencedType)
-                        || (ViewArchitectureSupport.isSupportValueReference(referencedType)
-                        && ViewArchitectureSupport.isSameViewRootReference(sourcePackageName, referencedType)));
+                ViewArchitectureSupport.isSameViewRootModelReference(sourcePackageName, referencedType));
     }
 
     private static boolean containsPresentationMutation(Tree tree) {

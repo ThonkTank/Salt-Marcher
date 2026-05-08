@@ -15,6 +15,22 @@ import saltmarcher.architecture.system.SourceLayoutRules;
 public final class DomainLayerTopologyRules implements ArchitectureRule {
 
     private static final Set<String> ROOT_TECHNICAL_BUCKETS = Set.of("published", "application", "model");
+    private static final Set<String> FORBIDDEN_MODEL_SUBTREE_TECHNICAL_BUCKETS = Set.of(
+            "aggregate",
+            "application",
+            "constants",
+            "entity",
+            "event",
+            "factory",
+            "helper",
+            "policy",
+            "port",
+            "published",
+            "repository",
+            "service",
+            "specification",
+            "usecase",
+            "value");
     private static final Set<String> LEGACY_ROLE_SUFFIXES = Set.of(
             "Aggregate.java",
             "BoundaryTranslator.java",
@@ -68,7 +84,19 @@ public final class DomainLayerTopologyRules implements ArchitectureRule {
 
     private void validateDomainSourceLayout(SourceFile sourceFile, ViolationSink violations) {
         List<String> segments = sourceFile.relativeSegments();
-        if (!isDomainSource(segments) || segments.size() < 5) {
+        if (!isDomainSource(segments)) {
+            return;
+        }
+
+        if (segments.size() == 4) {
+            if (!sourceFile.fileName().endsWith("ApplicationService.java")) {
+                violations.add(sourceFile.relativePath(), "domain-layer-root-direct-file-role-allowlist",
+                        "Direct root domain files under src/domain/<context>/ must be *ApplicationService.java only.");
+            }
+            return;
+        }
+
+        if (segments.size() < 5) {
             return;
         }
 
@@ -112,12 +140,25 @@ public final class DomainLayerTopologyRules implements ArchitectureRule {
         }
 
         if ("model".equals(role)) {
+            validateModelSubtree(sourceFile, violations);
             return;
         }
 
         if (segments.size() != 7) {
             violations.add(sourceFile.relativePath(), "domain-layer-model-role-direct-file-placement",
                     "Model-family non-model role buckets must keep Java files as direct files under src/domain/<context>/model/<family>/<role>/.");
+        }
+    }
+
+    private void validateModelSubtree(SourceFile sourceFile, ViolationSink violations) {
+        List<String> segments = sourceFile.relativeSegments();
+        for (int index = 6; index < segments.size() - 1; index++) {
+            String segment = segments.get(index);
+            if (FORBIDDEN_MODEL_SUBTREE_TECHNICAL_BUCKETS.contains(segment)) {
+                violations.add(sourceFile.relativePath(), "domain-layer-model-subtree-no-technical-buckets",
+                        "Nested technical buckets are forbidden inside src/domain/<context>/model/<family>/model/**. Use only semantic subpackages for subordinate models.");
+                return;
+            }
         }
     }
 

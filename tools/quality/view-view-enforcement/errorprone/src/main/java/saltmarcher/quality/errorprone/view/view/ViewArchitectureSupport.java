@@ -10,7 +10,6 @@ import com.sun.source.util.TreeScanner;
 import com.sun.tools.javac.code.Symbol;
 import java.util.LinkedHashSet;
 import java.util.Set;
-import java.util.regex.Pattern;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
@@ -29,21 +28,14 @@ import javax.lang.model.type.UnionType;
 import javax.lang.model.type.WildcardType;
 import javax.lang.model.util.ElementFilter;
 import javax.lang.model.util.SimpleTypeVisitor14;
+import saltmarcher.quality.errorprone.view.ViewRole;
+import saltmarcher.quality.errorprone.view.ViewSourceDescriptor;
 
 final class ViewArchitectureSupport {
 
-    private static final Pattern VIEW_PANEL_PACKAGE = Pattern.compile(
-            "^src\\.view\\.slotcontent\\.(controls|main|state|details|topbar|primitives)\\.[^.]+$");
-    private static final Pattern VIEW_SLOT_PACKAGE = Pattern.compile(
-            "^src\\.view\\.(leftbartabs|statetabs|dropdowns)\\.[^.]+$");
     private static final Set<String> ROOT_VIEW_AREAS = Set.of("leftbartabs", "statetabs", "dropdowns");
     private static final Set<String> REUSABLE_VIEW_COMPONENTS = Set.of(
             "controls", "main", "state", "details", "topbar", "primitives");
-    private static final Set<String> PRIMITIVE_SUPPORT_VALUE_SUFFIXES = Set.of(
-            "PointerEvent",
-            "Scene",
-            "Signal",
-            "Support");
     private static final Set<String> FORBIDDEN_VIEW_JDK_INFRASTRUCTURE_TYPES = Set.of(
             "java.lang.ClassLoader",
             "java.lang.Process",
@@ -62,15 +54,7 @@ final class ViewArchitectureSupport {
     }
 
     static boolean isPanelViewSource(CompilationUnitTree tree) {
-        String packageName = packageName(tree);
-        String sourceFileName = sourceFileName(tree);
-        return (VIEW_PANEL_PACKAGE.matcher(packageName).matches()
-                || VIEW_SLOT_PACKAGE.matcher(packageName).matches())
-                && sourceFileName.endsWith("View.java")
-                && !sourceFileName.endsWith("ViewModel.java")
-                && !sourceFileName.endsWith("PresentationModel.java")
-                && !sourceFileName.endsWith("ContributionModel.java")
-                && !sourceFileName.endsWith("ContentModel.java");
+        return ViewSourceDescriptor.describe(tree).isPassiveViewSource();
     }
 
     static String topLevelSimpleName(CompilationUnitTree tree) {
@@ -170,19 +154,6 @@ final class ViewArchitectureSupport {
                 && referencedType.matches("^src\\.domain\\.[^.]+\\.[^.]+ApplicationService((\\$|\\.).*)?$");
     }
 
-    static boolean isPrimitiveViewPackage(String packageName) {
-        return packageName != null && packageName.matches("^src\\.view\\.slotcontent\\.primitives\\.[^.]+$");
-    }
-
-    static boolean isPrimitiveViewSource(CompilationUnitTree tree) {
-        return isPanelViewSource(tree) && isPrimitiveViewPackage(packageName(tree));
-    }
-
-    static boolean isPrimitiveModelReference(String referencedType) {
-        ViewTypeInfo viewType = parseViewType(referencedType);
-        return viewType != null && "primitives".equals(viewType.component()) && "MODEL".equals(viewType.bucket());
-    }
-
     static boolean isForbiddenViewInfrastructureJdkType(String referencedType) {
         if (referencedType == null) {
             return false;
@@ -247,69 +218,25 @@ final class ViewArchitectureSupport {
     }
 
     static ViewTypeInfo parseViewType(String referencedType) {
-        if (referencedType == null || !referencedType.startsWith("src.view.")) {
+        ViewSourceDescriptor source = ViewSourceDescriptor.describeQualifiedType(referencedType);
+        if (!source.packageName().startsWith("src.view.")) {
             return null;
         }
-        String remainder = referencedType.substring("src.view.".length());
-        String[] segments = remainder.split("\\.");
-        if (segments.length == 0) {
-            return new ViewTypeInfo("VIEW_ROOT", "LEGACY");
-        }
-        if ("slotcontent".equals(segments[0]) && segments.length >= 4) {
-            String topLevelSimpleName = segments[3].replaceFirst("\\$.*$", "");
-            if (topLevelSimpleName.endsWith("ViewModel")
-                    || topLevelSimpleName.endsWith("PresentationModel")
-                    || topLevelSimpleName.endsWith("ContentModel")
-                    || topLevelSimpleName.endsWith("ContributionModel")) {
-                return new ViewTypeInfo(segments[1], "MODEL");
-            }
-            if (topLevelSimpleName.endsWith("IntentHandler")) {
-                return new ViewTypeInfo(segments[1], "HANDLER");
-            }
-            if (topLevelSimpleName.endsWith("ViewInputEvent")) {
-                return new ViewTypeInfo(segments[1], "VIEW_INPUT_EVENT");
-            }
-            if (topLevelSimpleName.endsWith("PublishedEvent")) {
-                return new ViewTypeInfo(segments[1], "PUBLISHED_EVENT");
-            }
-            if ("primitives".equals(segments[1]) && hasPrimitiveSupportValueSuffix(topLevelSimpleName)) {
-                return new ViewTypeInfo(segments[1], "SUPPORT_VALUE");
-            }
-            return new ViewTypeInfo(segments[1], "VIEW");
-        }
-        if (ROOT_VIEW_AREAS.contains(segments[0]) && segments.length >= 3) {
-            for (int index = 2; index < segments.length; index++) {
-                String simpleName = segments[index].replaceFirst("\\$.*$", "");
-                if (simpleName.endsWith("ViewModel")
-                        || simpleName.endsWith("PresentationModel")
-                        || simpleName.endsWith("ContributionModel")
-                        || simpleName.endsWith("ContentModel")) {
-                    return new ViewTypeInfo(segments[0], "MODEL");
-                }
-                if (simpleName.endsWith("IntentHandler")) {
-                    return new ViewTypeInfo(segments[0], "HANDLER");
-                }
-                if (simpleName.endsWith("ViewInputEvent")) {
-                    return new ViewTypeInfo(segments[0], "VIEW_INPUT_EVENT");
-                }
-                if (simpleName.endsWith("PublishedEvent")) {
-                    return new ViewTypeInfo(segments[0], "PUBLISHED_EVENT");
-                }
-                if (simpleName.endsWith("View")) {
-                    return new ViewTypeInfo(segments[0], "VIEW");
-                }
-            }
-        }
-        return new ViewTypeInfo(segments[0], "LEGACY");
+        String component = source.isSlotcontentSource() ? source.slot() : source.area();
+        String bucket = switch (source.role()) {
+            case CONTRIBUTION, BINDER, PROJECTOR, UNKNOWN -> "LEGACY";
+            case CONTRIBUTION_MODEL, CONTENT_MODEL, LEGACY_VIEW_MODEL -> "MODEL";
+            case INTENT_HANDLER -> "HANDLER";
+            case VIEW_INPUT_EVENT -> "VIEW_INPUT_EVENT";
+            case PUBLISHED_EVENT -> "PUBLISHED_EVENT";
+            case INSPECTOR_ENTRY -> "LEGACY";
+            case VIEW -> "VIEW";
+        };
+        return new ViewTypeInfo(component == null ? "VIEW_ROOT" : component, bucket);
     }
 
     static boolean isSameViewRootReference(String sourcePackageName, String referencedType) {
         return packageNameOf(referencedType).equals(sourcePackageName);
-    }
-
-    static boolean isSupportValueReference(String referencedType) {
-        ViewTypeInfo viewType = parseViewType(referencedType);
-        return viewType != null && "SUPPORT_VALUE".equals(viewType.bucket());
     }
 
     static boolean isSameViewRootOrReusablePassiveViewReference(String sourcePackageName, String referencedType) {
@@ -322,22 +249,6 @@ final class ViewArchitectureSupport {
         return viewType != null
                 && REUSABLE_VIEW_COMPONENTS.contains(viewType.component())
                 && "VIEW".equals(viewType.bucket());
-    }
-
-    static boolean isPrimitiveViewReferenceAllowedFromPrimitiveView(String sourcePackageName, String referencedType) {
-        return isPrimitiveViewPackage(sourcePackageName)
-                && isPrimitiveViewReference(referencedType);
-    }
-
-    private static boolean isPrimitiveViewReference(String referencedType) {
-        ViewTypeInfo viewType = parseViewType(referencedType);
-        return viewType != null && "primitives".equals(viewType.component()) && "VIEW".equals(viewType.bucket());
-    }
-
-    static boolean isPrimitiveModelReferenceAllowedFromPrimitiveView(String sourcePackageName, String referencedType) {
-        return isPrimitiveViewPackage(sourcePackageName)
-                && isPrimitiveModelReference(referencedType)
-                && isSameViewRootReference(sourcePackageName, referencedType);
     }
 
     static boolean isSameViewRootModelReference(String sourcePackageName, String referencedType) {
@@ -479,20 +390,6 @@ final class ViewArchitectureSupport {
         return referencedTypes.stream().anyMatch(ViewArchitectureSupport::isKnownAsyncProtocolType);
     }
 
-    static boolean isAllowedTechnicalPrimitiveProtocolType(
-            TypeMirror typeMirror,
-            String sourcePackageName,
-            String viewSimpleName
-    ) {
-        if (typeMirror == null) {
-            return false;
-        }
-        if (isConsumerOfSameUnitPrimitiveCarrier(typeMirror, sourcePackageName, viewSimpleName)) {
-            return true;
-        }
-        return isKnownJavafxTechnicalProtocolType(typeMirror);
-    }
-
     static boolean isObservableReadSurfaceType(TypeMirror typeMirror) {
         if (typeMirror == null) {
             return false;
@@ -543,63 +440,6 @@ final class ViewArchitectureSupport {
         return referencedType.equals("java.util.concurrent.Future")
                 || referencedType.equals("java.util.concurrent.CompletableFuture")
                 || referencedType.equals("java.util.concurrent.CompletionStage");
-    }
-
-    private static boolean isKnownJavafxTechnicalProtocolType(TypeMirror typeMirror) {
-        if (!isCallbackSurfaceType(typeMirror)) {
-            return false;
-        }
-        boolean referencesJavafxCallbackSurface = false;
-        for (String referencedType : collectTypeReferences(typeMirror)) {
-            if (isKnownCallbackSurfaceType(referencedType)) {
-                referencesJavafxCallbackSurface = true;
-                continue;
-            }
-            if (referencedType.startsWith("java.")
-                    || referencedType.startsWith("javafx.")
-                    || referencedType.startsWith("org.jspecify.annotations.")) {
-                continue;
-            }
-            return false;
-        }
-        return referencesJavafxCallbackSurface;
-    }
-
-    private static boolean isConsumerOfSameUnitPrimitiveCarrier(
-            TypeMirror typeMirror,
-            String sourcePackageName,
-            String viewSimpleName
-    ) {
-        if (!(typeMirror instanceof DeclaredType declaredType)) {
-            return false;
-        }
-        Element element = declaredType.asElement();
-        if (!(element instanceof TypeElement typeElement)
-                || !"java.util.function.Consumer".contentEquals(typeElement.getQualifiedName())
-                || declaredType.getTypeArguments().size() != 1) {
-            return false;
-        }
-        return isSameUnitPrimitiveCarrierType(
-                declaredType.getTypeArguments().get(0),
-                sourcePackageName,
-                viewSimpleName);
-    }
-
-    private static boolean isSameUnitPrimitiveCarrierType(
-            TypeMirror typeMirror,
-            String sourcePackageName,
-            String viewSimpleName
-    ) {
-        if (!(typeMirror instanceof DeclaredType declaredType)) {
-            return false;
-        }
-        Element element = declaredType.asElement();
-        if (!(element instanceof TypeElement typeElement)) {
-            return false;
-        }
-        String referencedType = typeElement.getQualifiedName().toString();
-        return isOwnTopLevelOrNestedTypeReference(sourcePackageName, viewSimpleName, referencedType)
-                || (isSupportValueReference(referencedType) && packageNameOf(referencedType).equals(sourcePackageName));
     }
 
     private static boolean isJavaLangObjectMethod(ExecutableElement method) {
@@ -729,10 +569,6 @@ final class ViewArchitectureSupport {
                 return null;
             }
         }, null);
-    }
-
-    private static boolean hasPrimitiveSupportValueSuffix(String topLevelSimpleName) {
-        return PRIMITIVE_SUPPORT_VALUE_SUFFIXES.stream().anyMatch(topLevelSimpleName::endsWith);
     }
 
     record ViewTypeInfo(String component, String bucket) {

@@ -32,8 +32,8 @@ boundary contract itself. Those stay in the neighboring role-enforcement
 documents and in the view-layer and layering standards. This role therefore
 consumes documented same-stem carriers but does not own or synthesize them.
 
-Where current gates still model reusable local handlers or Binder-mediated
-`*PublishedEvent` write seams, the rows below call that out only as drift
+Where current gates still model Binder-mediated `*PublishedEvent` write seams,
+the rows below call that out only as drift
 relative to the View Layer Standard.
 
 Unified focused bundle entrypoint:
@@ -51,7 +51,7 @@ Unified focused bundle entrypoint:
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
 | `view-intenthandler-active-root-count` | Enforced | every active root under `src/view/leftbartabs/**`, `src/view/statetabs/**`, and `src/view/dropdowns/**` | build-harness `ViewIntentHandlerTopologyRules` | `./gradlew checkArchitecture` | Each active root may define at most one local `*IntentHandler.java`. |
-| `view-intenthandler-slotcontent-count` | Enforced | every reusable `slotcontent/**` unit under `src/view/**` | build-harness `ViewIntentHandlerTopologyRules` | `./gradlew checkArchitecture` | The current topology gate still permits at most one reusable local `*IntentHandler.java`. That is legacy gate behavior; target architecture forbids reusable local handlers entirely. |
+| `view-intenthandler-slotcontent-count` | Enforced | every reusable `slotcontent/**` unit under `src/view/**` | build-harness `ViewIntentHandlerTopologyRules` | `./gradlew checkArchitecture` | Reusable `slotcontent/**` units define no local `*IntentHandler.java`; input interpretation stays in the same-root contribution `IntentHandler`. |
 | `view-intenthandler-local-input-interpretation-necessity` | Review-Owned | every active root that defines a `*IntentHandler` | none | none | An active-root `*IntentHandler` exists only when the contribution really owns input interpretation. Reusable `slotcontent/**` units stay without a handler instead of parking non-essential orchestration behind a legal role file. |
 
 ### May Contain

@@ -23,10 +23,67 @@ public record ViewSourceDescriptor(
     public static ViewSourceDescriptor describe(CompilationUnitTree tree) {
         String packageName = ViewArchitectureSupport.packageName(tree);
         String sourceFileName = sourceFileName(tree);
+        String qualifiedTopLevelTypeName = packageName.isBlank() ? topLevelSimpleName(sourceFileName) : packageName + "." + topLevelSimpleName(sourceFileName);
+        return describeQualifiedTypeName(packageName, sourceFileName, qualifiedTopLevelTypeName);
+    }
+
+    public static ViewSourceDescriptor describeQualifiedType(String qualifiedTypeName) {
+        if (qualifiedTypeName == null || qualifiedTypeName.isBlank()) {
+            return new ViewSourceDescriptor("", "", "", "", null, null, null, null, ViewRole.UNKNOWN, false);
+        }
+        String topLevelTypeName = qualifiedTypeName.replaceFirst("\\$.*$", "");
+        int separator = topLevelTypeName.lastIndexOf('.');
+        String packageName = separator < 0 ? "" : topLevelTypeName.substring(0, separator);
+        String topLevelSimpleName = separator < 0 ? topLevelTypeName : topLevelTypeName.substring(separator + 1);
+        return describeQualifiedTypeName(packageName, topLevelSimpleName + ".java", topLevelTypeName);
+    }
+
+    public boolean isViewSource() {
+        return packageName.startsWith("src.view.");
+    }
+
+    public boolean isRecognizedViewSource() {
+        return recognizedDirectory && unitKind != null;
+    }
+
+    public boolean isActiveRootSource() {
+        return unitKind == ViewUnitKind.ACTIVE_ROOT;
+    }
+
+    public boolean isSlotcontentSource() {
+        return unitKind == ViewUnitKind.REUSABLE_SLOTCONTENT;
+    }
+
+    public boolean isPassiveViewSource() {
+        return isRecognizedViewSource() && role == ViewRole.VIEW;
+    }
+
+    public boolean isPrimitiveReusableViewSource() {
+        return isSlotcontentSource() && "primitives".equals(slot) && role == ViewRole.VIEW;
+    }
+
+    private static String sourceFileName(CompilationUnitTree tree) {
+        if (tree.getSourceFile() == null) {
+            return "";
+        }
+        String name = tree.getSourceFile().getName().replace('\\', '/');
+        int separator = name.lastIndexOf('/');
+        return separator < 0 ? name : name.substring(separator + 1);
+    }
+
+    private static String topLevelSimpleName(String sourceFileName) {
+        if (sourceFileName.endsWith(".java")) {
+            return sourceFileName.substring(0, sourceFileName.length() - ".java".length());
+        }
+        return sourceFileName;
+    }
+
+    private static ViewSourceDescriptor describeQualifiedTypeName(
+            String packageName,
+            String sourceFileName,
+            String qualifiedTopLevelTypeName
+    ) {
         String topLevelSimpleName = topLevelSimpleName(sourceFileName);
-        String qualifiedTopLevelTypeName = packageName.isBlank()
-                ? topLevelSimpleName
-                : packageName + "." + topLevelSimpleName;
         ViewRole role = ViewRole.fromFileName(sourceFileName);
         if (!packageName.startsWith("src.view.")) {
             return new ViewSourceDescriptor(
@@ -81,45 +138,5 @@ public record ViewSourceDescriptor(
                 null,
                 role,
                 false);
-    }
-
-    public boolean isViewSource() {
-        return packageName.startsWith("src.view.");
-    }
-
-    public boolean isRecognizedViewSource() {
-        return recognizedDirectory && unitKind != null;
-    }
-
-    public boolean isActiveRootSource() {
-        return unitKind == ViewUnitKind.ACTIVE_ROOT;
-    }
-
-    public boolean isSlotcontentSource() {
-        return unitKind == ViewUnitKind.REUSABLE_SLOTCONTENT;
-    }
-
-    public boolean isPassiveViewSource() {
-        return isRecognizedViewSource() && role == ViewRole.VIEW;
-    }
-
-    public boolean isPrimitiveReusableViewSource() {
-        return isSlotcontentSource() && "primitives".equals(slot) && role == ViewRole.VIEW;
-    }
-
-    private static String sourceFileName(CompilationUnitTree tree) {
-        if (tree.getSourceFile() == null) {
-            return "";
-        }
-        String name = tree.getSourceFile().getName().replace('\\', '/');
-        int separator = name.lastIndexOf('/');
-        return separator < 0 ? name : name.substring(separator + 1);
-    }
-
-    private static String topLevelSimpleName(String sourceFileName) {
-        if (sourceFileName.endsWith(".java")) {
-            return sourceFileName.substring(0, sourceFileName.length() - ".java".length());
-        }
-        return sourceFileName;
     }
 }

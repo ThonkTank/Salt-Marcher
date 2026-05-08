@@ -60,8 +60,7 @@ public final class PassiveViewModelReadApisChecker extends BugChecker
 
     private static boolean isAllowedViewModelOwner(String sourcePackageName, String ownerType) {
         return ViewArchitectureSupport.isTopLevelViewModelReference(ownerType)
-                && (ViewArchitectureSupport.isSameViewRootModelReference(sourcePackageName, ownerType)
-                || ViewArchitectureSupport.isPrimitiveModelReference(ownerType));
+                && ViewArchitectureSupport.isSameViewRootModelReference(sourcePackageName, ownerType);
     }
 
     private static boolean isAllowedObservableReadSurface(Symbol.MethodSymbol methodSymbol) {

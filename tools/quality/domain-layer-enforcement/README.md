@@ -14,7 +14,8 @@ It keeps the generic domain-layer proof owner-local and bundle-local:
   `DomainLayerDocumentationEnforcementCheckMain`
 - `errorprone/`
   `DomainForbiddenInfrastructureDependency`,
-  `DomainModuleNoPublishedCarrierDependency`
+  `DomainModuleNoPublishedCarrierDependency`,
+  `DomainSourceTopologyPerimeter`
 - `bundle.properties`
   descriptor-based registration into the focused-enforcement Gradle path
 

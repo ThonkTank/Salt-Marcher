@@ -5,39 +5,20 @@ import com.tngtech.archunit.core.domain.JavaClass;
 
 public final class ViewRolePredicates {
 
+    private static final String ACTIVE_ROOT_PACKAGE =
+            "^src\\.view\\.(leftbartabs|statetabs|dropdowns)\\.[^.]+$";
+    private static final String REUSABLE_SLOTCONTENT_PACKAGE =
+            "^src\\.view\\.slotcontent\\.(controls|main|state|details|topbar|primitives)\\.[^.]+$";
+
     private ViewRolePredicates() {
-    }
-
-    public static DescribedPredicate<JavaClass> areBinders() {
-        return rolePredicate(
-                "view binder role classes",
-                "^src\\.view\\.(leftbartabs|statetabs|dropdowns)\\.[^.]+$",
-                "Binder");
-    }
-
-    public static DescribedPredicate<JavaClass> areIntentHandlers() {
-        return new DescribedPredicate<>("view intent handler role classes") {
-            @Override
-            public boolean test(JavaClass input) {
-                return isTopLevelRole(input, "^src\\.view\\.(leftbartabs|statetabs|dropdowns)\\.[^.]+$", "IntentHandler")
-                        || isTopLevelRole(input, "^src\\.view\\.slotcontent\\.(controls|main|state|details|topbar|primitives)\\.[^.]+$", "IntentHandler");
-            }
-        };
-    }
-
-    public static DescribedPredicate<JavaClass> areContentModels() {
-        return rolePredicate(
-                "view content model role classes",
-                "^src\\.view\\.slotcontent\\.(controls|main|state|details|topbar|primitives)\\.[^.]+$",
-                "ContentModel");
     }
 
     public static DescribedPredicate<JavaClass> arePassiveViews() {
         return new DescribedPredicate<>("passive view role classes") {
             @Override
             public boolean test(JavaClass input) {
-                if (!isTopLevelRole(input, "^src\\.view\\.(leftbartabs|statetabs|dropdowns)\\.[^.]+$", "View")
-                        && !isTopLevelRole(input, "^src\\.view\\.slotcontent\\.(controls|main|state|details|topbar|primitives)\\.[^.]+$", "View")) {
+                if (!isTopLevelRole(input, ACTIVE_ROOT_PACKAGE, "View")
+                        && !isTopLevelRole(input, REUSABLE_SLOTCONTENT_PACKAGE, "View")) {
                     return false;
                 }
                 String simpleName = input.getSimpleName();
@@ -49,24 +30,38 @@ public final class ViewRolePredicates {
         };
     }
 
+    public static DescribedPredicate<JavaClass> areContributions() {
+        return rolePredicate("view contribution role classes", ACTIVE_ROOT_PACKAGE, "Contribution");
+    }
+
+    public static DescribedPredicate<JavaClass> areBinders() {
+        return rolePredicate("view binder role classes", ACTIVE_ROOT_PACKAGE, "Binder");
+    }
+
+    public static DescribedPredicate<JavaClass> areContributionModels() {
+        return rolePredicate("view contribution model role classes", ACTIVE_ROOT_PACKAGE, "ContributionModel");
+    }
+
+    public static DescribedPredicate<JavaClass> areContentModels() {
+        return rolePredicate("view content model role classes", REUSABLE_SLOTCONTENT_PACKAGE, "ContentModel");
+    }
+
+    public static DescribedPredicate<JavaClass> areIntentHandlers() {
+        return rolePredicate("view intent handler role classes", ACTIVE_ROOT_PACKAGE, "IntentHandler");
+    }
+
     public static DescribedPredicate<JavaClass> areViewInputEvents() {
         return new DescribedPredicate<>("view input event role classes") {
             @Override
             public boolean test(JavaClass input) {
-                return isTopLevelRole(input, "^src\\.view\\.(leftbartabs|statetabs|dropdowns)\\.[^.]+$", "ViewInputEvent")
-                        || isTopLevelRole(input, "^src\\.view\\.slotcontent\\.(controls|main|state|details|topbar|primitives)\\.[^.]+$", "ViewInputEvent");
+                return isTopLevelRole(input, ACTIVE_ROOT_PACKAGE, "ViewInputEvent")
+                        || isTopLevelRole(input, REUSABLE_SLOTCONTENT_PACKAGE, "ViewInputEvent");
             }
         };
     }
 
     public static DescribedPredicate<JavaClass> arePublishedEvents() {
-        return new DescribedPredicate<>("published event role classes") {
-            @Override
-            public boolean test(JavaClass input) {
-                return isTopLevelRole(input, "^src\\.view\\.(leftbartabs|statetabs|dropdowns)\\.[^.]+$", "PublishedEvent")
-                        || isTopLevelRole(input, "^src\\.view\\.slotcontent\\.(controls|main|state|details|topbar|primitives)\\.[^.]+$", "PublishedEvent");
-            }
-        };
+        return rolePredicate("view published event role classes", ACTIVE_ROOT_PACKAGE, "PublishedEvent");
     }
 
     private static DescribedPredicate<JavaClass> rolePredicate(

@@ -15,6 +15,7 @@ import com.sun.source.util.TreeScanner;
 import com.sun.tools.javac.code.Symbol;
 import java.util.LinkedHashSet;
 import java.util.Set;
+import saltmarcher.quality.errorprone.view.ViewArchitectureSupport;
 
 @BugPattern(
         name = "ViewIntentHandlerViewInputEvent",
@@ -25,7 +26,7 @@ public final class ViewIntentHandlerViewInputEventChecker extends BugChecker
 
     @Override
     public Description matchCompilationUnit(CompilationUnitTree tree, VisitorState state) {
-        if (!ViewIntentHandlerArchitectureSupport.isIntentHandlerSource(tree)) {
+        if (!ViewArchitectureSupport.isIntentHandlerSource(tree)) {
             return Description.NO_MATCH;
         }
 
@@ -34,7 +35,7 @@ public final class ViewIntentHandlerViewInputEventChecker extends BugChecker
             return Description.NO_MATCH;
         }
 
-        String sourcePackageName = ViewIntentHandlerArchitectureSupport.packageName(tree);
+        String sourcePackageName = ViewArchitectureSupport.packageName(tree);
         Set<String> violations = new LinkedHashSet<>();
         boolean hasAllowedConsumeMethod = false;
         for (var member : topLevelClass.getMembers()) {
@@ -77,7 +78,7 @@ public final class ViewIntentHandlerViewInputEventChecker extends BugChecker
             String sourcePackageName
     ) {
         Set<String> referencedTypes = new LinkedHashSet<>();
-        ViewIntentHandlerArchitectureSupport.collectReferencedTypes(parameter.getType(), referencedTypes);
+        ViewArchitectureSupport.collectReferencedTypes(parameter.getType(), referencedTypes);
         if (referencedTypes.isEmpty()) {
             String renderedType = ASTHelpers.getType(parameter.getType()) == null
                     ? ""
@@ -88,8 +89,8 @@ public final class ViewIntentHandlerViewInputEventChecker extends BugChecker
         }
         return referencedTypes.stream()
                 .anyMatch(referencedType ->
-                        ViewIntentHandlerArchitectureSupport.isTargetViewInputEventReference(referencedType)
-                                && ViewIntentHandlerArchitectureSupport.isSameViewRootReference(sourcePackageName, referencedType));
+                        ViewArchitectureSupport.isTargetViewInputEventReference(referencedType)
+                                && ViewArchitectureSupport.isSameViewRootReference(sourcePackageName, referencedType));
     }
 
     private static void collectDiscriminatorDispatchViolations(

@@ -120,8 +120,7 @@ public final class PassiveViewModelMutationBoundaryChecker extends BugChecker
 
     private static boolean isAllowedViewModelOwner(String sourcePackageName, String ownerType) {
         return ViewArchitectureSupport.isTopLevelViewModelReference(ownerType)
-                && (ViewArchitectureSupport.isSameViewRootModelReference(sourcePackageName, ownerType)
-                || ViewArchitectureSupport.isPrimitiveModelReference(ownerType));
+                && ViewArchitectureSupport.isSameViewRootModelReference(sourcePackageName, ownerType);
     }
 
     private static String describeMutation(

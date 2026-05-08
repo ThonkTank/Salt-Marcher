@@ -1,2 +1,3 @@
 saltmarcher.quality.errorprone.DomainForbiddenInfrastructureDependencyChecker
 saltmarcher.quality.errorprone.DomainModulePublishedCarrierDependencyChecker
+saltmarcher.quality.errorprone.DomainSourceTopologyPerimeterChecker

@@ -135,7 +135,8 @@ if (!focusedEnforcementBundleMode) {
     registerBuildHarnessTask(
         "documentationEnforcementCheck",
         "documentation",
-        "saltmarcher.architecture.documentation.DocumentationEnforcementCheckMain"
+        null,
+        activeBuildHarnessDocumentationRuleClasses()
     )
 }
 
@@ -164,12 +165,6 @@ tasks.register<RepoVerificationMainTask>("architectureCheck") {
         )
     )
     successMarker.set(layout.buildDirectory.file("verification-markers/architectureCheck/success.marker"))
-}
-
-if (!focusedEnforcementBundleMode) {
-    tasks.named<RepoVerificationMainTask>("documentationEnforcementCheck") {
-        verificationArgs.set(activeBuildHarnessDocumentationRuleClasses())
-    }
 }
 
 // This included build derives active verification sources from propagated

@@ -12,6 +12,9 @@ import com.sun.tools.javac.code.Symbol;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import saltmarcher.quality.errorprone.view.ViewArchitectureSupport;
+import saltmarcher.quality.errorprone.view.ViewRole;
+import saltmarcher.quality.errorprone.view.ViewRolePolicy;
+import saltmarcher.quality.errorprone.view.ViewSourceDescriptor;
 
 @BugPattern(
         name = "ViewContributionShellApiAllowlist",
@@ -22,11 +25,12 @@ public final class ViewContributionShellApiAllowlistChecker extends BugChecker
 
     @Override
     public Description matchCompilationUnit(CompilationUnitTree tree, VisitorState state) {
-        if (!ViewContributionArchitectureSupport.isContributionSource(tree)) {
+        ViewSourceDescriptor source = ViewSourceDescriptor.describe(tree);
+        if (!source.isRecognizedViewSource() || source.role() != ViewRole.CONTRIBUTION) {
             return Description.NO_MATCH;
         }
 
-        String packageName = ViewContributionArchitectureSupport.packageName(tree);
+        String packageName = source.packageName();
         Set<String> forbiddenReferences = new LinkedHashSet<>();
         for (String referencedType : ViewArchitectureSupport.collectReferencedTypes(tree)) {
             if (referencedType.startsWith("shell.host.")) {
@@ -34,7 +38,7 @@ public final class ViewContributionShellApiAllowlistChecker extends BugChecker
                 continue;
             }
             if (referencedType.startsWith("shell.api.")
-                    && !ViewContributionArchitectureSupport.isAllowedContributionShellType(referencedType)) {
+                    && !ViewRolePolicy.isAllowedContributionShellType(referencedType)) {
                 forbiddenReferences.add(referencedType);
             }
         }

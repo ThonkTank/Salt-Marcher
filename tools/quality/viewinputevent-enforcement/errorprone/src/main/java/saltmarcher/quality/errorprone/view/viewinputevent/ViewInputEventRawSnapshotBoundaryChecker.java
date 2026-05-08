@@ -167,9 +167,7 @@ public final class ViewInputEventRawSnapshotBoundaryChecker extends BugChecker
                 || referencedType.startsWith("src.data.")
                 || ViewArchitectureSupport.isApplicationServiceReference(referencedType)
                 || ViewArchitectureSupport.isSameViewRootModelReference(sourcePackageName, referencedType)
-                || ViewArchitectureSupport.isTargetPublishedEventReference(referencedType)
-                || (ViewArchitectureSupport.isSupportValueReference(referencedType)
-                && ViewArchitectureSupport.isSameViewRootReference(sourcePackageName, referencedType));
+                || ViewArchitectureSupport.isTargetPublishedEventReference(referencedType);
     }
 
     private static boolean isSameViewHelperOwner(String ownerType, String qualifiedViewName) {

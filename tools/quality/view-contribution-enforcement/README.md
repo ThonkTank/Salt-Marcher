@@ -14,7 +14,7 @@ role-local support, host wiring, and bundle metadata:
   `ViewContributionDependencySupport`
 - `archunit/`
   `architecture.view.contribution.ViewContributionArchitectureTest`,
-  `ViewContributionPredicates`
+  shared `architecture.view.ViewRolePredicates`
 - `pmd/`
   `ViewContributionEntrypointRule` and the dedicated single-rule PMD ruleset
 - `bundle.properties`

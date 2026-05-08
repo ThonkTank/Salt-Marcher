@@ -53,9 +53,6 @@ public final class ViewRestrictedDependencyChecker extends BugChecker
         if (viewType == null) {
             return false;
         }
-        if ("MODEL".equals(viewType.bucket()) && ViewArchitectureSupport.isPrimitiveModelReference(referencedType)) {
-            return false;
-        }
         if ("VIEW_INPUT_EVENT".equals(viewType.bucket())) {
             return !ViewArchitectureSupport.isSameViewRootReference(sourcePackageName, referencedType);
         }

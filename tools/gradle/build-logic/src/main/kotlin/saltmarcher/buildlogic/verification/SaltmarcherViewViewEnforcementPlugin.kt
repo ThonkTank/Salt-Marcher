@@ -50,7 +50,10 @@ internal fun Project.configureViewViewEnforcement() {
         "viewSurfaceArchitectureTest",
         "Run only the passive View-focused architecture test suite.",
         selectedViewCompileJava,
-        listOf(project.file("tools/quality/view-view-enforcement/archunit/src/test/java").absolutePath),
+        listOf(
+            project.file("tools/quality/view-view-enforcement/archunit/src/test/java").absolutePath,
+            project.file("test").absolutePath
+        ),
         listOf("architecture/**"),
         listOf("architecture/view/view/**"),
         false

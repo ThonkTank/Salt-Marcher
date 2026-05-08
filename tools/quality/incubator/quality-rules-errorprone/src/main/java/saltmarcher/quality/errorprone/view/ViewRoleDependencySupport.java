@@ -94,9 +94,7 @@ public final class ViewRoleDependencySupport {
             ViewArchitectureSupport.ViewTypeInfo viewType
     ) {
         if (ViewArchitectureSupport.isDetailEntryReference(referencedType)
-                || ViewArchitectureSupport.isSlotcontentModelReference(referencedType)
-                || ViewArchitectureSupport.isPrimitiveModelReference(referencedType)
-                || "SUPPORT_VALUE".equals(viewType.bucket())) {
+                || ViewArchitectureSupport.isSlotcontentModelReference(referencedType)) {
             return false;
         }
         if ("VIEW_INPUT_EVENT".equals(viewType.bucket()) || "PUBLISHED_EVENT".equals(viewType.bucket())) {
@@ -128,7 +126,7 @@ public final class ViewRoleDependencySupport {
                 && ViewArchitectureSupport.isSlotcontentModelReference(referencedType)) {
             return false;
         }
-        return !ViewArchitectureSupport.isPrimitiveModelReference(referencedType);
+        return true;
     }
 
     private static boolean isForbiddenForIntentHandler(

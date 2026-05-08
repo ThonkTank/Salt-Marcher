@@ -7,6 +7,7 @@ import com.google.errorprone.matchers.Description;
 import com.sun.source.tree.CompilationUnitTree;
 import java.util.LinkedHashSet;
 import java.util.Set;
+import saltmarcher.quality.errorprone.view.ViewArchitectureSupport;
 
 @BugPattern(
         name = "ViewIntentHandlerApplicationSinkBoundary",
@@ -17,13 +18,13 @@ public final class ViewIntentHandlerApplicationSinkBoundaryChecker extends BugCh
 
     @Override
     public Description matchCompilationUnit(CompilationUnitTree tree, VisitorState state) {
-        if (!ViewIntentHandlerArchitectureSupport.isIntentHandlerSource(tree)) {
+        if (!ViewArchitectureSupport.isIntentHandlerSource(tree)) {
             return Description.NO_MATCH;
         }
 
         Set<String> forbiddenReferences = new LinkedHashSet<>();
-        for (String referencedType : ViewIntentHandlerArchitectureSupport.collectReferencedTypes(tree)) {
-            if (ViewIntentHandlerArchitectureSupport.isApplicationServiceReference(referencedType)) {
+        for (String referencedType : ViewArchitectureSupport.collectReferencedTypes(tree)) {
+            if (ViewArchitectureSupport.isApplicationServiceReference(referencedType)) {
                 forbiddenReferences.add(referencedType);
             }
         }

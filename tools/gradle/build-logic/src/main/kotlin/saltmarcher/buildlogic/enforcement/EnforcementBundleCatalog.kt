@@ -107,7 +107,6 @@ fun loadEnforcementBundlesExtension(rootDir: File): EnforcementBundlesExtension 
         ?.takeIf(String::isNotEmpty)
         ?.let(::File)
         ?: rootDir
-    val catalog = EnforcementBundleCatalog(loadEnforcementBundleDescriptors(repoRootDir))
     val propagatedFocusedEnforcementBundleMode = System.getProperty("saltmarcher.focusedEnforcementBundleMode")
         ?.trim()
         ?.takeIf(String::isNotEmpty)
@@ -121,6 +120,13 @@ fun loadEnforcementBundlesExtension(rootDir: File): EnforcementBundlesExtension 
         "Focused enforcement bundle mode requires propagated active bundle ids from the settings plugin."
     }
     val focusedEnforcementBundleMode = propagatedFocusedEnforcementBundleMode ?: false
+    val focusedBundleIds = propagatedActiveEnforcementBundleIds?.toSet()
+    val catalog = EnforcementBundleCatalog(
+        loadEnforcementBundleDescriptors(
+            repoRootDir,
+            focusedBundleIds.takeIf { focusedEnforcementBundleMode }
+        )
+    )
     val activeEnforcementBundleIds = if (propagatedActiveEnforcementBundleIds != null) {
         catalog.bundleIdsInOrder.filter { bundleId -> bundleId in propagatedActiveEnforcementBundleIds }
     } else {
@@ -137,7 +143,10 @@ fun loadEnforcementBundlesExtension(rootDir: File): EnforcementBundlesExtension 
     )
 }
 
-private fun loadEnforcementBundleDescriptors(repoRootDir: File): Map<String, EnforcementBundleDescriptor> {
+private fun loadEnforcementBundleDescriptors(
+    repoRootDir: File,
+    focusedBundleIds: Set<String>?
+): Map<String, EnforcementBundleDescriptor> {
     val qualityDir = File(repoRootDir, "tools/quality")
     if (!qualityDir.isDirectory) {
         return emptyMap()
@@ -149,9 +158,13 @@ private fun loadEnforcementBundleDescriptors(repoRootDir: File): Map<String, Enf
             if (!properties.boolean("descriptorOwned")) {
                 null
             } else {
-                EnforcementBundleDescriptor(
-                    bundleId = properties.requiredTrimmed("bundleId"),
-                    order = properties.requiredTrimmed("order").toInt(),
+                val bundleId = properties.requiredTrimmed("bundleId")
+                if (focusedBundleIds != null && bundleId !in focusedBundleIds) {
+                    null
+                } else {
+                    EnforcementBundleDescriptor(
+                        bundleId = bundleId,
+                        order = properties.requiredTrimmed("order").toInt(),
                     taskNames = properties.list("taskNames"),
                     rootPluginId = properties.optionalTrimmed("rootPluginId"),
                     rootTask = properties.readRootTask(""),
@@ -173,7 +186,8 @@ private fun loadEnforcementBundleDescriptors(repoRootDir: File): Map<String, Enf
                         ?.let { rawPath -> resolveDescriptorPath(repoRootDir, descriptorFile, rawPath) },
                     verificationSourceRoots = properties.list("verificationSourceRoots"),
                     verificationSourceIncludes = properties.list("verificationSourceIncludes")
-                ).validated()
+                    ).validated()
+                }
             }
         }
         .associateBy(EnforcementBundleDescriptor::bundleId)
