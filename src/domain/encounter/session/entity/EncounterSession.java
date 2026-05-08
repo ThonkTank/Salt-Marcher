@@ -83,7 +83,7 @@ public final class EncounterSession {
             return;
         }
         CreatureDetailData creature = detail.orElseThrow();
-        if (context.isCombatMode()) {
+        if (src.domain.encounter.session.value.EncounterSessionValues.Mode.isCombatMode(context.mode())) {
             CombatRosterRuntimeSupport.addReinforcement(
                     creature,
                     context,
@@ -103,7 +103,8 @@ public final class EncounterSession {
     private static Map<EncounterSessionCommand.Action, SessionCommandHandler> createHandlers() {
         Map<EncounterSessionCommand.Action, SessionCommandHandler> handlers =
                 new EnumMap<>(EncounterSessionCommand.Action.class);
-        handlers.put(EncounterSessionCommand.Action.REFRESH, (session, command, access) -> session.context.refresh(access));
+        handlers.put(EncounterSessionCommand.Action.REFRESH, (session, command, access) ->
+                session.context.refresh(access, true));
         handlers.put(EncounterSessionCommand.Action.UPDATE_BUILDER_INPUTS, (session, command, access) ->
                 session.builder.updateBuilderInputs(command.builderInputs()));
         handlers.put(EncounterSessionCommand.Action.GENERATE, (session, command, access) ->
@@ -129,7 +130,9 @@ public final class EncounterSession {
         handlers.put(EncounterSessionCommand.Action.OPEN_INITIATIVE, (session, command, access) ->
                 session.combatInitiative.open(session.context, session.builder.roster()));
         handlers.put(EncounterSessionCommand.Action.BACK_TO_BUILDER, (session, command, access) ->
-                session.context.enterBuilder("Zurueck zur Encounter-Erstellung."));
+                session.context.enterMode(
+                        src.domain.encounter.session.value.EncounterSessionValues.Mode.BUILDER,
+                        "Zurueck zur Encounter-Erstellung."));
         handlers.put(EncounterSessionCommand.Action.CONFIRM_INITIATIVE, (session, command, access) ->
                 session.combatInitiative.confirm(
                         command.initiativeInputs(),

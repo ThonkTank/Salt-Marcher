@@ -13,6 +13,8 @@ import java.util.Set;
 
 final class DungeonRoomCellAssignmentSupport {
 
+    private static final DungeonCellTraversalSupport TRAVERSAL_SUPPORT = new DungeonCellTraversalSupport();
+
     private DungeonRoomCellAssignmentSupport() {
     }
 
@@ -51,7 +53,7 @@ final class DungeonRoomCellAssignmentSupport {
             result.computeIfAbsent(room.roomId(), ignored -> new ArrayList<>()).add(anchor);
             return;
         }
-        Set<DungeonCell> reachable = DungeonRoomCellProjector.reachableCells(anchor, unclaimedCells, barriers, cluster.center());
+        Set<DungeonCell> reachable = TRAVERSAL_SUPPORT.reachableCells(anchor, unclaimedCells, barriers, cluster.center());
         reachable = reachable.isEmpty() ? Set.of(anchor) : reachable;
         unclaimedCells.removeAll(reachable);
         result.computeIfAbsent(room.roomId(), ignored -> new ArrayList<>()).addAll(reachable);

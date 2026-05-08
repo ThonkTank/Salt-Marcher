@@ -1,11 +1,11 @@
 package src.domain.encounter.application;
 
-import static src.domain.encounter.session.value.EncounterSessionValues.*;
-
 import src.domain.encounter.generation.policy.EncounterDifficultyMath;
 import src.domain.encounter.generation.value.EncounterDifficultyIntent;
 import src.domain.encounter.generation.value.EncounterTuningIntent;
 import src.domain.encounter.reference.value.EncounterCreatureReference;
+import src.domain.encounter.session.value.EncounterSessionValues.BudgetData;
+import src.domain.encounter.session.value.EncounterSessionValues.CreatureDetailData;
 
 public final class EncounterSessionRuntimeProjector {
 

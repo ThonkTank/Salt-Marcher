@@ -53,8 +53,7 @@ public final class EncounterInitiativeStateView extends VBox {
 
     private DialogSurfaceView buildPane() {
         DialogSurfaceView nextDialog = new DialogSurfaceView();
-        Label title = new Label("Initiative");
-        title.getStyleClass().add("title");
+        Label title = new StyledLabel("Initiative", "title");
         initiativeList.setPadding(DialogSurfaceView.contentInsets());
 
         Button backButton = new Button("\u2190 Zurueck");

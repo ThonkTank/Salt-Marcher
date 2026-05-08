@@ -14,8 +14,6 @@ import src.domain.encounter.session.port.EncounterPartyFactsRepository;
 
 public final class EncounterSessionRuntimeAdapter implements EncounterSession.RuntimeAccess {
 
-    private static final String DEFAULT_CREATURE_ROLE = "Creature";
-
     private final EncounterPartyFactsRepository party;
     private final EncounterCreatureLookup creatures;
     private final @Nullable EncounterGenerationUseCase generator;
@@ -23,6 +21,7 @@ public final class EncounterSessionRuntimeAdapter implements EncounterSession.Ru
     private final @Nullable SaveEncounterPlanUseCase savePlanUseCase;
     private final @Nullable LoadSavedEncounterPlanUseCase loadSavedPlanUseCase;
     private final @Nullable ListSavedEncounterPlansUseCase listSavedPlansUseCase;
+    private final SessionDataMapper dataMapper = new SessionDataMapper();
 
     public EncounterSessionRuntimeAdapter(
             EncounterPartyFactsRepository party,
@@ -55,7 +54,7 @@ public final class EncounterSessionRuntimeAdapter implements EncounterSession.Ru
         }
         try {
             LoadEncounterBudgetUseCase.Result result = useCase.execute();
-            return result.status() == EncounterPartyFactsRepository.Status.SUCCESS && result.budget() != null
+            return result.status().isSuccess() && result.budget() != null
                     ? Optional.of(EncounterSessionRuntimeProjector.toSessionBudget(result.budget()))
                     : Optional.empty();
         } catch (IllegalStateException exception) {
@@ -74,12 +73,13 @@ public final class EncounterSessionRuntimeAdapter implements EncounterSession.Ru
             return new GenerationResultData(
                     result.success(),
                     result.encounters().stream()
-                            .map(encounter -> toSessionGeneratedEncounter(
+                            .map(encounter -> dataMapper.toGeneratedEncounter(
                                     encounter,
-                                    advisoryMessages(result.autoResolved(), result.fallbackUsed())))
+                                    result.autoResolved(),
+                                    result.fallbackUsed()))
                             .toList(),
                     result.message(),
-                    toSessionDiagnostics(result.diagnostics()),
+                    SessionDataMapper.toDiagnostics(result.diagnostics()),
                     result.fallbackUsed());
         } catch (IllegalStateException exception) {
             return new GenerationResultData(false, List.of(), "Encounter generation failed.", Optional.empty(), false);
@@ -100,9 +100,13 @@ public final class EncounterSessionRuntimeAdapter implements EncounterSession.Ru
                     plan.creatures());
             return new PlanOutcome(Optional.of(savedPlan), "Encounter saved.");
         } catch (IllegalArgumentException exception) {
-            return new PlanOutcome(Optional.empty(), defaultMessage(exception.getMessage(), "Encounter plan is invalid."));
+            return new PlanOutcome(Optional.empty(), SessionDataMapper.defaultMessage(
+                    exception.getMessage(),
+                    "Encounter plan is invalid."));
         } catch (IllegalStateException exception) {
-            return new PlanOutcome(Optional.empty(), defaultMessage(exception.getMessage(), "Encounter plan could not be saved."));
+            return new PlanOutcome(Optional.empty(), SessionDataMapper.defaultMessage(
+                    exception.getMessage(),
+                    "Encounter plan could not be saved."));
         }
     }
 
@@ -118,9 +122,13 @@ public final class EncounterSessionRuntimeAdapter implements EncounterSession.Ru
                     ? new PlanOutcome(loadedPlan, "Encounter loaded.")
                     : new PlanOutcome(Optional.empty(), "Encounter plan not found.");
         } catch (IllegalArgumentException exception) {
-            return new PlanOutcome(Optional.empty(), defaultMessage(exception.getMessage(), "Encounter plan id must be positive."));
+            return new PlanOutcome(Optional.empty(), SessionDataMapper.defaultMessage(
+                    exception.getMessage(),
+                    "Encounter plan id must be positive."));
         } catch (IllegalStateException exception) {
-            return new PlanOutcome(Optional.empty(), defaultMessage(exception.getMessage(), "Encounter plan could not be loaded."));
+            return new PlanOutcome(Optional.empty(), SessionDataMapper.defaultMessage(
+                    exception.getMessage(),
+                    "Encounter plan could not be loaded."));
         }
     }
 
@@ -139,7 +147,7 @@ public final class EncounterSessionRuntimeAdapter implements EncounterSession.Ru
 
     @Override
     public Optional<CreatureDetailData> loadCreature(long creatureId) {
-        return creatures.loadCreature(creatureId).map(EncounterSessionRuntimeAdapter::toSessionCreatureDetail);
+        return creatures.loadCreature(creatureId).map(SessionDataMapper::toCreatureDetail);
     }
 
     @Override
@@ -147,90 +155,100 @@ public final class EncounterSessionRuntimeAdapter implements EncounterSession.Ru
         return new AwardXpOutcome(party.awardXp(partyMemberIds, xpPerCharacter));
     }
 
-    private GeneratedEncounterData toSessionGeneratedEncounter(
-            EncounterGenerationUseCase.GeneratedAlternative encounter,
-            List<String> advisoryMessages
-    ) {
-        return new GeneratedEncounterData(
-                encounter.title(),
-                EncounterSessionRuntimeProjector.difficultyLabel(encounter.achievedDifficulty()),
-                encounter.adjustedXp(),
-                encounter.creatures().stream().map(this::toSessionCreature).toList(),
-                advisoryMessages);
-    }
+    private final class SessionDataMapper {
 
-    private EncounterCreatureData toSessionCreature(EncounterGenerationUseCase.GeneratedCreature creature) {
-        Optional<CreatureDetailData> detail = loadCreature(creature.creatureId());
-        if (detail.isPresent()) {
-            CreatureDetailData current = detail.orElseThrow();
+        private static final String DEFAULT_CREATURE_ROLE = "Creature";
+        private static final String AUTO_RESOLVED_MESSAGE =
+                "Auto-Einstellungen wurden fuer diese Generierung auf konkrete Zielwerte aufgeloest.";
+        private static final String FALLBACK_MESSAGE =
+                "Kein exakter Treffer war verfuegbar. Die beste gefundene Alternative wurde uebernommen.";
+
+        private GeneratedEncounterData toGeneratedEncounter(
+                EncounterGenerationUseCase.GeneratedAlternative encounter,
+                boolean autoResolved,
+                boolean fallbackUsed
+        ) {
+            return new GeneratedEncounterData(
+                    encounter.title(),
+                    EncounterSessionRuntimeProjector.difficultyLabel(encounter.achievedDifficulty()),
+                    encounter.adjustedXp(),
+                    encounter.creatures().stream().map(this::toCreature).toList(),
+                    advisoryMessages(autoResolved, fallbackUsed));
+        }
+
+        private EncounterCreatureData toCreature(EncounterGenerationUseCase.GeneratedCreature creature) {
+            Optional<CreatureDetailData> detail = loadCreature(creature.creatureId());
+            if (detail.isPresent()) {
+                CreatureDetailData current = detail.orElseThrow();
+                return new EncounterCreatureData(
+                        "monster-" + current.id(),
+                        current.id(),
+                        current.name(),
+                        current.challengeRating(),
+                        current.xp(),
+                        Math.max(1, current.hitPoints()),
+                        current.armorClass(),
+                        current.initiativeBonus(),
+                        current.creatureType(),
+                        normalizeRole(creature.role()),
+                        creature.quantity(),
+                        creature.tags());
+            }
             return new EncounterCreatureData(
-                    "monster-" + current.id(),
-                    current.id(),
-                    current.name(),
-                    current.challengeRating(),
-                    current.xp(),
-                    Math.max(1, current.hitPoints()),
-                    current.armorClass(),
-                    current.initiativeBonus(),
-                    current.creatureType(),
+                    "monster-" + creature.creatureId(),
+                    creature.creatureId(),
+                    creature.name(),
+                    creature.challengeRating(),
+                    creature.xp(),
+                    1,
+                    10,
+                    0,
+                    "",
                     normalizeRole(creature.role()),
                     creature.quantity(),
                     creature.tags());
         }
-        return new EncounterCreatureData(
-                "monster-" + creature.creatureId(),
-                creature.creatureId(),
-                creature.name(),
-                creature.challengeRating(),
-                creature.xp(),
-                1,
-                10,
-                0,
-                "",
-                normalizeRole(creature.role()),
-                creature.quantity(),
-                creature.tags());
-    }
 
-    private static Optional<GenerationDiagnosticsData> toSessionDiagnostics(
-            @Nullable EncounterGenerationDiagnosticsData diagnostics
-    ) {
-        if (diagnostics == null) {
-            return Optional.empty();
+        private List<String> advisoryMessages(boolean autoResolved, boolean fallbackUsed) {
+            List<String> messages = new java.util.ArrayList<>();
+            if (autoResolved) {
+                messages.add(AUTO_RESOLVED_MESSAGE);
+            }
+            if (fallbackUsed) {
+                messages.add(FALLBACK_MESSAGE);
+            }
+            return List.copyOf(messages);
         }
-        return Optional.of(new GenerationDiagnosticsData(
-                EncounterSessionRuntimeProjector.difficultyLabel(diagnostics.resolvedDifficulty()),
-                EncounterSessionRuntimeProjector.tuningLabel(diagnostics.resolvedTuning())));
-    }
 
-    private static List<String> advisoryMessages(boolean autoResolved, boolean fallbackUsed) {
-        java.util.ArrayList<String> messages = new java.util.ArrayList<>();
-        if (autoResolved) {
-            messages.add("Auto-Einstellungen wurden fuer diese Generierung auf konkrete Zielwerte aufgeloest.");
+        private String normalizeRole(String role) {
+            return role == null || role.isBlank() ? DEFAULT_CREATURE_ROLE : role;
         }
-        if (fallbackUsed) {
-            messages.add("Kein exakter Treffer war verfuegbar. Die beste gefundene Alternative wurde uebernommen.");
+
+        private static Optional<GenerationDiagnosticsData> toDiagnostics(
+                @Nullable EncounterGenerationDiagnosticsData diagnostics
+        ) {
+            if (diagnostics == null) {
+                return Optional.empty();
+            }
+            return Optional.of(new GenerationDiagnosticsData(
+                    EncounterSessionRuntimeProjector.difficultyLabel(diagnostics.resolvedDifficulty()),
+                    EncounterSessionRuntimeProjector.tuningLabel(diagnostics.resolvedTuning())));
         }
-        return List.copyOf(messages);
-    }
 
-    private static String defaultMessage(@Nullable String message, String fallback) {
-        return message == null || message.isBlank() ? fallback : message;
-    }
+        private static CreatureDetailData toCreatureDetail(EncounterCreatureReference creature) {
+            return new CreatureDetailData(
+                    creature.id(),
+                    creature.name(),
+                    creature.challengeRating(),
+                    creature.xp(),
+                    creature.hitPoints(),
+                    creature.armorClass(),
+                    creature.initiativeBonus(),
+                    creature.creatureType());
+        }
 
-    private static String normalizeRole(String role) {
-        return role == null || role.isBlank() ? DEFAULT_CREATURE_ROLE : role;
-    }
-
-    private static CreatureDetailData toSessionCreatureDetail(EncounterCreatureReference creature) {
-        return new CreatureDetailData(
-                creature.id(),
-                creature.name(),
-                creature.challengeRating(),
-                creature.xp(),
-                creature.hitPoints(),
-                creature.armorClass(),
-                creature.initiativeBonus(),
-                creature.creatureType());
+        private static String defaultMessage(@Nullable String message, String fallback) {
+            return message == null || message.isBlank() ? fallback : message;
+        }
     }
 }

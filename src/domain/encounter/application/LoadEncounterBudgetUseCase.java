@@ -36,24 +36,24 @@ public final class LoadEncounterBudgetUseCase {
     ) {
 
         public Result {
-            status = status == null ? EncounterPartyFactsRepository.Status.STORAGE_ERROR : status;
+            status = status == null ? EncounterPartyFactsRepository.Status.storageErrorStatus() : status;
             message = message == null ? "" : message;
         }
 
         static Result success(EncounterDifficultyMath.BudgetSummary budget) {
-            return new Result(EncounterPartyFactsRepository.Status.SUCCESS, budget, "");
+            return new Result(EncounterPartyFactsRepository.Status.successStatus(), budget, "");
         }
 
         static Result noActiveParty() {
             return new Result(
-                    EncounterPartyFactsRepository.Status.NO_ACTIVE_PARTY,
+                    EncounterPartyFactsRepository.Status.noActivePartyStatus(),
                     EMPTY_BUDGET,
                     "No active party is available.");
         }
 
         static Result storageError() {
             return new Result(
-                    EncounterPartyFactsRepository.Status.STORAGE_ERROR,
+                    EncounterPartyFactsRepository.Status.storageErrorStatus(),
                     EMPTY_BUDGET,
                     "Party data could not be loaded.");
         }

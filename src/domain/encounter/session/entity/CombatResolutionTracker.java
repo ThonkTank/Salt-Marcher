@@ -3,6 +3,7 @@ package src.domain.encounter.session.entity;
 import java.util.List;
 import src.domain.encounter.session.service.CombatRosterMutationService;
 import src.domain.encounter.session.value.EncounterSessionValues.AwardXpOutcome;
+import src.domain.encounter.session.value.EncounterSessionValues.PartyMemberData;
 import src.domain.encounter.session.value.EncounterSessionValues.ResultEnemyData;
 import src.domain.encounter.session.value.EncounterSessionValues.ResultStateData;
 
@@ -43,12 +44,14 @@ final class CombatResolutionTracker {
         if (resultState.xpAwarded() || resultState.perPlayerXp() <= 0 || !context.hasActiveParty()) {
             return;
         }
-        AwardXpOutcome outcome = access.awardXp(context.activePartyIds(), resultState.perPlayerXp());
+        AwardXpOutcome outcome = access.awardXp(
+                context.activeParty().stream().map(PartyMemberData::numericId).toList(),
+                resultState.perPlayerXp());
         resultState = resultState.withAwardStatus(
                 outcome.success() ? XP_AWARDED_STATUS : XP_AWARD_FAILED_STATUS,
                 outcome.success());
         if (outcome.success()) {
-            context.refreshPartyAndBudget(access);
+            context.refresh(access, false);
         }
     }
 

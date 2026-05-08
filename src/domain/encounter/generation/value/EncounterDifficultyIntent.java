@@ -4,5 +4,9 @@ public enum EncounterDifficultyIntent {
     EASY,
     MEDIUM,
     HARD,
-    DEADLY
+    DEADLY;
+
+    public static EncounterDifficultyIntent defaultIntent() {
+        return MEDIUM;
+    }
 }

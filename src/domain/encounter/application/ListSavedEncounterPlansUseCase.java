@@ -45,7 +45,7 @@ public final class ListSavedEncounterPlansUseCase {
         SUCCESS,
         STORAGE_ERROR;
 
-        boolean loadedSuccessfully() {
+        public boolean loadedSuccessfully() {
             return this == SUCCESS;
         }
     }

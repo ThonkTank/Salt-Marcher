@@ -10,7 +10,7 @@ record EncounterGenerationDiagnosticsData(
 
     EncounterGenerationDiagnosticsData {
         resolvedDifficulty = resolvedDifficulty == null
-                ? src.domain.encounter.generation.value.EncounterDifficultyIntent.MEDIUM
+                ? src.domain.encounter.generation.value.EncounterDifficultyIntent.defaultIntent()
                 : resolvedDifficulty;
         resolvedTuning = resolvedTuning == null
                 ? src.domain.encounter.generation.value.EncounterTuningIntent.defaultIntent()

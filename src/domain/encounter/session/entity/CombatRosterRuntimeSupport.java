@@ -5,6 +5,7 @@ import static src.domain.encounter.session.value.EncounterSessionValues.*;
 import java.util.List;
 import src.domain.encounter.session.service.CombatRosterBuilderService;
 import src.domain.encounter.session.service.CombatTurnService;
+import src.domain.encounter.session.value.EncounterSessionValues.Mode;
 
 final class CombatRosterRuntimeSupport {
 
@@ -24,7 +25,7 @@ final class CombatRosterRuntimeSupport {
             CombatTurnTracker combatTurnTracker,
             CombatTurnService combatTurns
     ) {
-        if (!context.isCombatMode()) {
+        if (context.mode() != Mode.COMBAT) {
             return;
         }
         PartyMemberData member = CombatSessionSupport.partyMember(activeParty, partyMemberId).orElse(null);

@@ -24,6 +24,10 @@ public final class EncounterSessionValues {
 
         private Mode() {
         }
+
+        public static boolean isCombatMode(int mode) {
+            return mode == COMBAT;
+        }
     }
 
     public enum CombatantKind {

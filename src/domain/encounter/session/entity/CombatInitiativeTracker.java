@@ -50,7 +50,7 @@ final class CombatInitiativeTracker {
                     CombatantKind.MONSTER,
                     rolled));
         }
-        context.enterInitiative(INITIATIVE_READY_STATUS);
+        context.enterMode(Mode.INITIATIVE, INITIATIVE_READY_STATUS);
     }
 
     void confirm(
@@ -86,7 +86,7 @@ final class CombatInitiativeTracker {
         }
         combatRoster.sort();
         combatTurnTracker.beginCombat(combatTurns, combatRoster);
-        context.enterCombat(COMBAT_RUNNING_STATUS);
+        context.enterMode(Mode.COMBAT, COMBAT_RUNNING_STATUS);
     }
 
     List<InitiativeEntryData> entries() {

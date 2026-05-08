@@ -51,6 +51,22 @@ public interface EncounterPartyFactsRepository {
         NO_ACTIVE_PARTY,
         STORAGE_ERROR;
 
+        public static Status successStatus() {
+            return SUCCESS;
+        }
+
+        public static Status noActivePartyStatus() {
+            return NO_ACTIVE_PARTY;
+        }
+
+        public static Status storageErrorStatus() {
+            return STORAGE_ERROR;
+        }
+
+        public boolean isSuccess() {
+            return this == SUCCESS;
+        }
+
         public boolean isNoActiveParty() {
             return this == NO_ACTIVE_PARTY;
         }

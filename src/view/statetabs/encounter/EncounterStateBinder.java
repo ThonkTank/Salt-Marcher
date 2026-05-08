@@ -117,17 +117,41 @@ final class EncounterStateBinder {
         }
 
         private static ApplyEncounterStateCommand toBuilderCommand(EncounterStatePublishedEvent.BuilderMutation builder) {
-            return switch (builder.change()) {
-                case GENERATE -> command(ApplyEncounterStateCommand.Action.GENERATE);
-                case SHIFT_ALTERNATIVE -> command(ApplyEncounterStateCommand.Action.SHIFT_ALTERNATIVE, builder.delta());
-                case SAVE_CURRENT_PLAN -> command(ApplyEncounterStateCommand.Action.SAVE_CURRENT_PLAN);
-                case OPEN_SAVED_PLAN -> command(ApplyEncounterStateCommand.Action.OPEN_SAVED_PLAN, builder.referenceId());
-                case INCREMENT_CREATURE -> command(ApplyEncounterStateCommand.Action.INCREMENT_CREATURE, builder.referenceId());
-                case DECREMENT_CREATURE -> command(ApplyEncounterStateCommand.Action.DECREMENT_CREATURE, builder.referenceId());
-                case REMOVE_CREATURE -> command(ApplyEncounterStateCommand.Action.REMOVE_CREATURE, builder.referenceId());
-                case UNDO_REMOVE -> command(ApplyEncounterStateCommand.Action.UNDO_REMOVE, builder.referenceId());
-                case CLEAR_GENERATION_HISTORY -> command(ApplyEncounterStateCommand.Action.CLEAR_GENERATION_HISTORY);
-                case OPEN_INITIATIVE -> command(ApplyEncounterStateCommand.Action.OPEN_INITIATIVE);
+            EncounterStatePublishedEvent.BuilderChange change = builder.change();
+            if (change == EncounterStatePublishedEvent.BuilderChange.SHIFT_ALTERNATIVE) {
+                return command(ApplyEncounterStateCommand.Action.SHIFT_ALTERNATIVE, builder.delta());
+            }
+            if (usesReferenceId(change)) {
+                return command(builderAction(change), builder.referenceId());
+            }
+            return command(builderAction(change));
+        }
+
+        private static boolean usesReferenceId(EncounterStatePublishedEvent.BuilderChange change) {
+            return switch (change) {
+                case OPEN_SAVED_PLAN,
+                        INCREMENT_CREATURE,
+                        DECREMENT_CREATURE,
+                        REMOVE_CREATURE,
+                        UNDO_REMOVE -> true;
+                default -> false;
+            };
+        }
+
+        private static ApplyEncounterStateCommand.Action builderAction(
+                EncounterStatePublishedEvent.BuilderChange change
+        ) {
+            return switch (change) {
+                case GENERATE -> ApplyEncounterStateCommand.Action.GENERATE;
+                case SHIFT_ALTERNATIVE -> ApplyEncounterStateCommand.Action.SHIFT_ALTERNATIVE;
+                case SAVE_CURRENT_PLAN -> ApplyEncounterStateCommand.Action.SAVE_CURRENT_PLAN;
+                case OPEN_SAVED_PLAN -> ApplyEncounterStateCommand.Action.OPEN_SAVED_PLAN;
+                case INCREMENT_CREATURE -> ApplyEncounterStateCommand.Action.INCREMENT_CREATURE;
+                case DECREMENT_CREATURE -> ApplyEncounterStateCommand.Action.DECREMENT_CREATURE;
+                case REMOVE_CREATURE -> ApplyEncounterStateCommand.Action.REMOVE_CREATURE;
+                case UNDO_REMOVE -> ApplyEncounterStateCommand.Action.UNDO_REMOVE;
+                case CLEAR_GENERATION_HISTORY -> ApplyEncounterStateCommand.Action.CLEAR_GENERATION_HISTORY;
+                case OPEN_INITIATIVE -> ApplyEncounterStateCommand.Action.OPEN_INITIATIVE;
             };
         }
 

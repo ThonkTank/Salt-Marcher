@@ -53,7 +53,7 @@ final class EncounterSessionBuilder {
     ) {
         pendingUndo = Optional.empty();
         activeSavedPlanId = OptionalLong.empty();
-        context.refresh(access);
+        context.refresh(access, true);
         if (!context.hasActiveParty()) {
             context.setStatus(NO_PARTY_STATUS);
             return;
@@ -124,7 +124,7 @@ final class EncounterSessionBuilder {
         activeSavedPlanId = OptionalLong.of(plan.id());
         selectedAlternativeIndex = 0;
         resetCombatState.run();
-        context.enterBuilder(plan.name() + " geoeffnet.");
+        context.enterMode(Mode.BUILDER, plan.name() + " geoeffnet.");
         context.refreshSavedPlans(access);
     }
 
@@ -176,34 +176,30 @@ final class EncounterSessionBuilder {
     }
 
     void decrementCreature(long creatureId, EncounterSessionContext context) {
-        for (int index = 0; index < roster.size(); index++) {
-            EncounterCreatureData creature = roster.get(index);
-            if (creature.creatureId() != creatureId) {
-                continue;
-            }
-            if (creature.count() == MINIMUM_CREATURE_COUNT) {
-                context.setStatus(creature.name() + " bleibt mindestens einmal im Roster.");
-                return;
-            }
-            clearGeneratedSelection();
-            roster.set(index, creature.withCount(creature.count() - 1, MAX_CREATURES_PER_SLOT));
-            context.setStatus(creature.name() + " Anzahl angepasst.");
+        Optional<RosterEntry> rosterEntry = findRosterEntry(creatureId);
+        if (rosterEntry.isEmpty()) {
             return;
         }
+        EncounterCreatureData creature = rosterEntry.orElseThrow().creature();
+        if (creature.count() == MINIMUM_CREATURE_COUNT) {
+            context.setStatus(creature.name() + " bleibt mindestens einmal im Roster.");
+            return;
+        }
+        clearGeneratedSelection();
+        roster.set(rosterEntry.orElseThrow().index(), creature.withCount(creature.count() - 1, MAX_CREATURES_PER_SLOT));
+        context.setStatus(creature.name() + " Anzahl angepasst.");
     }
 
     void removeCreature(long creatureId, EncounterSessionContext context) {
-        for (int index = 0; index < roster.size(); index++) {
-            EncounterCreatureData creature = roster.get(index);
-            if (creature.creatureId() != creatureId) {
-                continue;
-            }
-            clearGeneratedSelection();
-            roster.remove(index);
-            pendingUndo = Optional.of(new RemovedRosterEntryData(nextUndoToken(), index, creature));
-            context.setStatus(creature.name() + " wurde entfernt.");
+        Optional<RosterEntry> rosterEntry = findRosterEntry(creatureId);
+        if (rosterEntry.isEmpty()) {
             return;
         }
+        EncounterCreatureData creature = rosterEntry.orElseThrow().creature();
+        clearGeneratedSelection();
+        roster.remove(rosterEntry.orElseThrow().index());
+        pendingUndo = Optional.of(new RemovedRosterEntryData(nextUndoToken(), rosterEntry.orElseThrow().index(), creature));
+        context.setStatus(creature.name() + " wurde entfernt.");
     }
 
     void undoRemove(long token, EncounterSessionContext context) {
@@ -328,6 +324,16 @@ final class EncounterSessionBuilder {
         return nextUndoToken;
     }
 
+    private Optional<RosterEntry> findRosterEntry(long creatureId) {
+        for (int index = 0; index < roster.size(); index++) {
+            EncounterCreatureData creature = roster.get(index);
+            if (creature.creatureId() == creatureId) {
+                return Optional.of(new RosterEntry(index, creature));
+            }
+        }
+        return Optional.empty();
+    }
+
     private static int minimumHitPoints(int hitPoints) {
         return Math.max(1, hitPoints);
     }
@@ -380,5 +386,8 @@ final class EncounterSessionBuilder {
                 role,
                 quantity,
                 tags);
+    }
+
+    private record RosterEntry(int index, EncounterCreatureData creature) {
     }
 }

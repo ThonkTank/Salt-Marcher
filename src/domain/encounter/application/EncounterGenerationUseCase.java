@@ -109,7 +109,7 @@ public final class EncounterGenerationUseCase {
         GeneratedAlternative {
             title = title == null ? "" : title;
             achievedDifficulty = achievedDifficulty == null
-                    ? src.domain.encounter.generation.value.EncounterDifficultyIntent.MEDIUM
+                    ? src.domain.encounter.generation.value.EncounterDifficultyIntent.defaultIntent()
                     : achievedDifficulty;
             adjustedXp = Math.max(0, adjustedXp);
             creatures = creatures == null ? List.of() : List.copyOf(creatures);

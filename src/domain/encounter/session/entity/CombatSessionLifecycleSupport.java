@@ -1,5 +1,6 @@
 package src.domain.encounter.session.entity;
 
+import src.domain.encounter.session.value.EncounterSessionValues.Mode;
 import src.domain.encounter.session.service.CombatRosterMutationService;
 import src.domain.encounter.session.service.CombatTurnService;
 
@@ -32,7 +33,7 @@ final class CombatSessionLifecycleSupport {
             EncounterSessionContext context
     ) {
         combatResolution.endCombat(combatRosterMutations, combatRoster, activePartySize, hasActiveParty);
-        context.enterResults(RESULTS_READY_STATUS);
+        context.enterMode(Mode.RESULTS, RESULTS_READY_STATUS);
     }
 
     static void returnToBuilder(
@@ -43,7 +44,7 @@ final class CombatSessionLifecycleSupport {
             EncounterSessionContext context
     ) {
         reset(combatRoster, combatInitiative, combatTurnTracker, combatResolution);
-        context.enterBuilder(RETURNED_TO_BUILDER_STATUS);
+        context.enterMode(Mode.BUILDER, RETURNED_TO_BUILDER_STATUS);
     }
 
     static void mutateHp(

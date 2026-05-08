@@ -3,7 +3,6 @@ package src.domain.dungeon.map.service;
 import src.domain.dungeon.map.entity.DungeonRoom;
 import src.domain.dungeon.map.entity.DungeonRoomCluster;
 import src.domain.dungeon.map.value.DungeonCell;
-import src.domain.dungeon.map.value.DungeonClusterBoundary;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -118,15 +117,6 @@ public final class DungeonRoomCellProjector {
             List<DungeonCell> relativeVertices
     ) {
         return RASTERIZER.cellsFromRelativeVertices(center, level, relativeVertices, LOOP_SEPARATOR);
-    }
-
-    static Set<DungeonCell> reachableCells(
-            DungeonCell anchor,
-            Set<DungeonCell> traversableCells,
-            List<DungeonClusterBoundary> barriers,
-            DungeonCell center
-    ) {
-        return TRAVERSAL_SUPPORT.reachableCells(anchor, traversableCells, barriers, center);
     }
 
     public static List<DungeonCell> sortedCells(Iterable<DungeonCell> cells) {
