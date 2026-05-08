@@ -1,15 +1,17 @@
 Status: Active
 Owner: SaltMarcher Team
 Last Reviewed: 2026-04-30
-Source of Truth: Complete architecture-enforcement catalog for exported
-`published/**` boundary carriers in `src/domain/**`.
+Source of Truth: Role-local enforcement inventory and focused verification
+surface for exported `published/**` boundary carriers in `src/domain/**`.
 
 # Domain Published Enforcement
 
 ## Goal
 
-This document owns the complete architecture-enforcement catalog for the
-`published/**` role itself.
+Architectural truth for the `published/**` role lives only in the
+[Domain Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/domain-layer.md:1).
+This document owns only the role-local enforcement inventory, focused
+verification surface, and current mechanical drift for that role.
 
 It answers four questions for every published boundary carrier:
 
@@ -20,7 +22,8 @@ It answers four questions for every published boundary carrier:
 
 This document does not own root `ApplicationService` method shape, use case
 internals, named tactical model-role semantics, or layer-wide domain
-communication boundaries. Those live in the neighboring owner docs.
+communication boundaries. Those live in the Domain Layer Standard and
+neighboring enforcement owners.
 
 Unified focused bundle entrypoint:
 

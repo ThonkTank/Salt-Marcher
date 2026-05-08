@@ -1,6 +1,6 @@
 ---
 name: domain-layer
-description: Use before planning, implementing, refactoring, or reviewing anything under `src/domain/**` or adjacent context docs (`README.md`, `SPEC.md`, `DOMAIN.md`, `DELIVERY.md`). Supporting guidance only; the canonical source of truth is `docs/project/architecture/patterns/domain-layer.md`.
+description: Use before planning, implementing, refactoring, or reviewing anything under `src/domain/**`, any root `*ApplicationService`, `application/`, `published/`, named domain modules, or adjacent context docs such as `DOMAIN.md`. The canonical source of truth is `docs/project/architecture/patterns/domain-layer.md`.
 ---
 
 # Domain Layer
@@ -8,10 +8,20 @@ description: Use before planning, implementing, refactoring, or reviewing anythi
 ## Overview
 
 Use this skill to keep domain-layer work aligned with the canonical
-domain-layer standard.
+domain-layer standard and the repo's instruction routing.
 
-This skill is not the source of truth. If it conflicts with
-`docs/project/architecture/patterns/domain-layer.md`, follow the standard.
+This skill operationalizes:
+
+- [docs/project/architecture/patterns/domain-layer.md](../../../../docs/project/architecture/patterns/domain-layer.md)
+- [AGENTS.md](../../../../AGENTS.md)
+
+This skill is not the source of truth. If any neighboring doc, enforcement
+catalog, or legacy guidance conflicts with `domain-layer.md`, follow the
+standard.
+
+Domain enforcement docs are authoritative only for role-local gate inventory,
+current mechanical drift, and focused verification entrypoints. They do not
+redefine the architecture.
 
 ## Use This Skill For
 
@@ -21,106 +31,96 @@ This skill is not the source of truth. If it conflicts with
   role package
 - any `README.md`, `SPEC.md`, `DOMAIN.md`, or `DELIVERY.md` that defines or
   reviews a domain context
+- domain-layer governance rewrites where role enforcement docs, `AGENTS.md`,
+  and the repo-local skill must stay aligned to one architectural owner
 
-## Working Heuristics
+## Required Workflow
 
 Before changing domain code:
 
-1. Read the context's `DOMAIN.md` and confirm its `Context Role:`.
-2. Treat the root `<Context>ApplicationService` as the only callable public
-   client boundary for that context.
-3. Treat `published/` as carrier-only published language: commands, queries,
-   results, IDs, snapshots, statuses, enums, and sealed carrier abstractions.
-4. Keep `application/` to use-case orchestration. Direct Java files are named
-   `*UseCase`.
-5. Assign each internal type to a domain-concept module and an explicit
-   role package: `aggregate`, `entity`, `value`, `policy`, `port`,
-   `factory`, `service`, `event`, or `specification`.
-6. Check whether behavior belongs on an aggregate, entity, value object,
-   policy, factory, domain service, or specification before placing it in
-   `application/`.
-7. Check mutation boundaries. External mutation must enter through the owning
-   aggregate root when the context has a write model.
-8. Check published-language access. Named domain modules must not import any
-   `src.domain.*.published.*` carriers; root/application boundaries translate
-   those carriers before entering the model.
-9. Check cross-context access. Below the view layer, access goes only through
-   foreign root application services and foreign `published/` carriers.
-10. Reject `src/domain/mapcore/**`; shared render input belongs in the view
-   layer, while domain dungeon map/world facts belong to `dungeon/published`.
+1. Read `AGENTS.md`, the canonical
+   `docs/project/architecture/patterns/domain-layer.md`, and the touched
+   context's `DOMAIN.md` before making placement decisions.
+2. Assign every touched type one domain-layer role before refactoring:
+   root `*ApplicationService`, `published/**`, `application/**`, named module,
+   or one explicit module role package.
+3. If the task touches a governed role doc under
+   `docs/project/architecture/enforcement/`, keep architectural truth in
+   `domain-layer.md` and keep the role doc limited to role-local enforcement
+   inventory and routing.
+4. Check the touched role's live enforcement doc for current mechanical drift
+   and focused gate ownership before claiming a rule is enforced.
+5. Move ambiguous logic to the owning role instead of copying nearby legacy
+   placement.
+6. Treat `src/domain/mapcore/**` as rejected placement; shared render input
+   belongs in the view layer, while domain dungeon map/world facts belong to
+   `dungeon/published`.
 
 ## Role Reminders
 
 ### `*ApplicationService.java`
 
-- exactly one callable public backend boundary of one context
-- accepts commands and queries in domain terms
-- returns `published/` carriers
-- thin coordination only
-- not a composition root for infrastructure
+- treat the root boundary exactly as described by `domain-layer.md`
+- keep it thin and boundary-owned
+- do not let it become a second composition root, policy owner, or return-path
+  workaround
 
 ### `published/`
 
-- exported published-language carriers only
-- records, enums, or sealed carrier abstractions
-- not a home for service, facade, repository, port, factory, locator, gateway,
-  policy, or invariant-owning contracts
-- not a home for render layers, styles, canvas cells, widget state, or display
-  selections
+- keep it to exported published-language carriers only
+- keep non-`*Model` carriers passive
+- treat `published/*Model` as the read-side publication seam defined by the
+  owner doc, not as a convenience reply channel
 
 ### `application/`
 
 - use-case orchestration and internal application coordination
 - direct Java files are named `*UseCase.java`
-- coordinates domain objects, domain-owned outbound ports, and allowed foreign
-  application services
-- does not replace rich domain behavior
+- direct helper files are only the owner-doc-approved boundary helpers
+- do not let `application/` become a catch-all for displaced business policy
 - generic `*Operations` coordinator buckets are migration debt
 
 ### `port/`
 
-- outbound interfaces required by the domain core
-- write-model persistence ports may end with `Repository`
-- read-only lookup, catalog, or search ports may end with `Lookup`, `Catalog`,
-  or `Search`
-- not a home for data adapter classes, records, schemas, gateways, runtime
-  registration, SQL, filesystem, network, or JavaFX types
+- keep it to domain-owned outbound interfaces only
+- do not let it become a home for adapters, records, schemas, or runtime
+  registration
 
 ### Domain Modules And Role Packages
 
 - direct domain module names are concepts in the ubiquitous language
 - Java files inside a domain module live under a tactical role package
-- `aggregate/` contains aggregate roots only
-- `entity/` contains identity-bearing child entities
-- `value/` contains immutable value objects and enums
-- `policy/` contains stateless domain policies and rules
-- `port/` contains domain-owned outbound port interfaces
-- `factory/`, `service/`, `event/`, and `specification/` are used only when
-  the corresponding tactical role exists
+- use only the role packages allowed by `domain-layer.md`
+- use `factory/`, `service/`, `event/`, and `specification/` only when the
+  role genuinely exists
 - domain modules must not import any `src.domain.*.published.*` carriers
 
 ## Review Focus
 
 When reviewing domain-layer work, look for:
 
-- a single callable root application-service boundary per context
-- carrier-only `published/` packages
+- the touched files still match the owner rules in `domain-layer.md`
+- role enforcement docs that stay on gate inventory and do not restate
+  architectural truth
 - `Context Role:` declarations matching the domain-layer standard
 - role subpackages under every named domain module
 - no direct Java files under named domain modules
 - no `published/` imports from named domain modules
-- no `repository/`, `query/`, `gateway/`, `adapter/`, `model/`,
-  or `mapper/` role packages under domain modules
+- no forbidden technical buckets under domain modules
 - ports stated in domain language without data-source, shell, JavaFX, SQL,
   filesystem, network, or runtime-registration terms
-- rich behavior moving into aggregates, entities, values, policies, factories,
-  specifications, or domain services instead of procedural coordinators
 - thin application use cases without hidden adapter composition
-- aggregate-root-only mutation boundaries
 - no `src/domain/mapcore/**`
+
+## Correctness Rule
+
+Correct domain work follows the canonical `domain-layer.md` owner doc even when
+nearby legacy code or older enforcement prose still reflects a previous shape.
+If a role doc and the owner doc disagree, fix the role doc or report the drift;
+do not copy the drift into new code or new governance text.
 
 ## References
 
 - [Domain Layer Standard](../../../../docs/project/architecture/patterns/domain-layer.md)
-- [Agent Instruction Standard](../../../../docs/standards/agent-instructions.md)
+- [Agent Instruction Standard](../../../../docs/project/architecture/agent-instructions.md)
 - [AGENTS.md](../../../../AGENTS.md)

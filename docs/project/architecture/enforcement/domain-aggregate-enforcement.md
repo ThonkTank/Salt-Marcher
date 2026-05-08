@@ -1,15 +1,17 @@
 Status: Active
 Owner: SaltMarcher Team
 Last Reviewed: 2026-04-29
-Source of Truth: Complete architecture-enforcement catalog for tactical
-`aggregate/` role types in named domain modules.
+Source of Truth: Role-local enforcement inventory for tactical `aggregate/`
+role types in named domain modules.
 
 # Domain Aggregate Enforcement
 
 ## Goal
 
-This document owns the complete architecture-enforcement catalog for the
-tactical `aggregate/` role itself.
+Architectural truth for the tactical `aggregate/` role lives only in the
+[Domain Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/domain-layer.md:1).
+This document owns only the role-local enforcement inventory and current
+mechanical drift for that role.
 
 It answers four questions for every domain aggregate role:
 
@@ -20,7 +22,8 @@ It answers four questions for every domain aggregate role:
 
 This document does not own generic named-module shape rules, generic
 named-module forbidden-content rules, or generic named-module communication
-boundaries that also constrain `aggregate/`. Those live in
+boundaries that also constrain `aggregate/`. Those live in the Domain Layer
+Standard and
 [Domain Layer Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/domain-layer-enforcement.md:1).
 
 ## Invariant Catalog

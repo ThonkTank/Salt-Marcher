@@ -56,7 +56,8 @@ tools/       build infrastructure, quality platforms, and engineering scripts
   [View Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/view-layer.md:1)
 - `src/domain/<context>/` owns the hexagonal application core: domain truth,
   invariants, policy decisions, application services, published language, and
-  outbound ports
+  outbound ports; detailed role and seam rules are owned only by the
+  [Domain Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/domain-layer.md:1)
 - `src/data/<feature>/` owns outer adapters that implement domain-owned
   outbound ports and confront concrete sources such as SQLite, files, imports,
   or remote systems
@@ -127,6 +128,9 @@ live only in the dedicated
   contract
 - `patterns/` defines the architectural intent; `enforcement/` defines which
   of those invariants are currently mechanical, candidate, or review-owned
+- for domain roles, `domain-layer.md` owns the architecture and the split
+  `domain-*.md` enforcement files own only role-local gate inventory and
+  current mechanical drift
 - the styling package is split between layer-wide centralized styling ownership
   and passive-`View` direct-render styling ownership
 - verification operation and Gradle gate entrypoints live under

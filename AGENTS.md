@@ -48,12 +48,18 @@ document exists.
   meta-test layers; enforce repository policy directly in the owning gate.
 - New compile/build/check gates require explicit user request. Detailed
   verification policy lives in `docs/project/verification/quality-platforms.md`.
-- Work under `src/domain/**` must follow the canonical domain-layer standard
-  before changes are made or reviewed. The repo-owned `domain-layer` skill is
-  supporting guidance only and must not override the canonical standard.
+- Work under `src/domain/**` must use the repo-owned `domain-layer` skill and
+  follow the canonical domain-layer standard before changes are made or
+  reviewed.
 - Work under `src/view/**` must use the repo-owned `view-layer-mvvm` skill and
   follow the canonical cockpit view-layer standard before changes are made or
   reviewed.
+- For `src/domain/**`,
+  `docs/project/architecture/patterns/domain-layer.md` is the sole
+  architectural source of truth and
+  `tools/quality/skills/domain-layer/SKILL.md` is the sole operative agent
+  guidance. Other docs may only route or summarize; they must not become a
+  second source of domain-layer truth.
 - For `src/view/**`, `docs/project/architecture/patterns/view-layer.md` is the
   sole architectural source of truth and
   `tools/quality/skills/view-layer-mvvm/SKILL.md` is the sole operative agent

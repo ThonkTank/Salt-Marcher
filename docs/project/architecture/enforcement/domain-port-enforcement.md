@@ -1,15 +1,17 @@
 Status: Active
 Owner: SaltMarcher Team
 Last Reviewed: 2026-04-30
-Source of Truth: Complete architecture-enforcement catalog for outbound
-`port/` interfaces in named domain modules.
+Source of Truth: Role-local enforcement inventory and focused verification
+surface for outbound `port/` interfaces in named domain modules.
 
 # Domain Port Enforcement
 
 ## Goal
 
-This document owns the complete architecture-enforcement catalog for the
-outbound `port/` role itself.
+Architectural truth for the outbound `port/` role lives only in the
+[Domain Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/domain-layer.md:1).
+This document owns only the role-local enforcement inventory, focused
+verification surface, and current mechanical drift for that role.
 
 It answers four questions for every domain outbound port:
 
@@ -21,8 +23,8 @@ It answers four questions for every domain outbound port:
 This document does not own generic named-module topology, generic optional
 role-package necessity, published-carrier bans, or generic named-module
 communication rules such as same-context application-boundary dependencies and
-foreign-context dependencies. Those live in the layer-wide domain enforcement
-catalog and neighboring role docs.
+foreign-context dependencies. Those live in the Domain Layer Standard, the
+layer-wide domain enforcement catalog, and neighboring role docs.
 
 This document also does not own positive data-layer adapter placement
 semantics. It owns only the negative domain-side prohibition that outbound

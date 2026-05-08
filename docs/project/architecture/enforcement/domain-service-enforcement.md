@@ -1,15 +1,17 @@
 Status: Active
 Owner: SaltMarcher Team
 Last Reviewed: 2026-05-05
-Source of Truth: Complete architecture-enforcement catalog for tactical
-`service/` role types in named domain modules.
+Source of Truth: Role-local enforcement inventory and focused verification
+surface for tactical `service/` role types in named domain modules.
 
 # Domain Service Enforcement
 
 ## Goal
 
-This document owns the complete architecture-enforcement catalog for the
-tactical `service/` role itself.
+Architectural truth for the tactical `service/` role lives only in the
+[Domain Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/domain-layer.md:1).
+This document owns only the role-local enforcement inventory, focused
+verification surface, and current mechanical drift for that role.
 
 It answers three questions for every domain service role:
 
@@ -19,7 +21,8 @@ It answers three questions for every domain service role:
 
 This document does not own generic named-module shape rules, generic
 named-module forbidden-content rules, or generic named-module communication
-boundaries that also constrain `service/`. Those live in
+boundaries that also constrain `service/`. Those live in the Domain Layer
+Standard and
 [Domain Layer Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/domain-layer-enforcement.md:1).
 
 Unified focused bundle entrypoint:

@@ -1,9 +1,8 @@
 Status: Active
 Owner: SaltMarcher Team
 Last Reviewed: 2026-05-03
-Source of Truth: Binding Hexagonal Architecture model, domain-core concepts,
-published language, application-service boundary, outbound port ownership, and
-domain-layer topology for `src/domain/**`.
+Source of Truth: Binding domain-layer pattern, role ownership, communication
+seams, context map, and topology for `src/domain/**`.
 
 # Domain Layer Standard
 
@@ -14,6 +13,13 @@ Architecture. Domain code owns business meaning, invariants, policy, use-case
 coordination, published language, and outbound port interfaces. It does not own
 UI translation, shell registration, persistence mechanics, data-source records,
 runtime service composition, SQL, filesystem, network, or framework concerns.
+
+This document is the sole architectural source of truth for `src/domain/**`.
+The repo-owned `tools/quality/skills/domain-layer/SKILL.md` operationalizes
+this standard for agent work. Domain enforcement documents under
+`docs/project/architecture/enforcement/` may inventory gates, candidate rows,
+review-owned rows, and current mechanical drift, but they must not redefine the
+domain-layer pattern or become a second architectural owner.
 
 Hexagonal Architecture is the one boundary model. DDD vocabulary is optional
 tactical modelling language inside the core. Fowler persistence patterns and

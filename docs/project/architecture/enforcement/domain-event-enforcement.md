@@ -1,15 +1,17 @@
 Status: Active
 Owner: SaltMarcher Team
 Last Reviewed: 2026-04-30
-Source of Truth: Complete architecture-enforcement catalog for tactical
-`event/` role types in named domain modules.
+Source of Truth: Role-local enforcement inventory and focused verification
+surface for tactical `event/` role types in named domain modules.
 
 # Domain Event Enforcement
 
 ## Goal
 
-This document owns the complete architecture-enforcement catalog for the
-tactical `event/` role itself.
+Architectural truth for the tactical `event/` role lives only in the
+[Domain Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/domain-layer.md:1).
+This document owns only the role-local enforcement inventory, focused
+verification surface, and current mechanical drift for that role.
 
 It answers four questions for every domain event role:
 
@@ -21,7 +23,7 @@ It answers four questions for every domain event role:
 This document does not own generic named-module topology, generic public-type
 shape or field-purity rules, generic named-module forbidden-content rules, or
 generic named-module and model-role communication boundaries that also
-constrain `event/`. Those live in
+constrain `event/`. Those live in the Domain Layer Standard and
 [Domain Layer Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/domain-layer-enforcement.md:1).
 
 Unified focused bundle entrypoint:

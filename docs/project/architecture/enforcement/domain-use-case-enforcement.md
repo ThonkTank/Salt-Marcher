@@ -1,16 +1,18 @@
 Status: Active
 Owner: SaltMarcher Team
 Last Reviewed: 2026-04-30
-Source of Truth: Complete architecture-enforcement catalog for direct
-`application/` orchestration surfaces and direct internal boundary helpers in
-`src/domain/**`.
+Source of Truth: Role-local enforcement inventory and focused verification
+surface for direct `application/` orchestration surfaces and direct internal
+boundary helpers in `src/domain/**`.
 
 # Domain UseCase Enforcement
 
 ## Goal
 
-This document owns the complete architecture-enforcement catalog for the
-`application/` role itself.
+Architectural truth for the `application/` role lives only in the
+[Domain Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/domain-layer.md:1).
+This document owns only the role-local enforcement inventory, focused
+verification surface, and current mechanical drift for that role.
 
 It answers three questions for every direct `application/` surface:
 
@@ -21,7 +23,8 @@ It answers three questions for every direct `application/` surface:
 This document does not own root `ApplicationService` public-boundary shape,
 `published/` carrier shape, outbound port role shape, generic domain-layer
 forbidden-content rules, generic domain-layer communication boundaries, or
-tactical model-role semantics. Those live in the neighboring owner docs.
+tactical model-role semantics. Those live in the Domain Layer Standard and
+neighboring enforcement owners.
 
 Unified focused bundle entrypoint:
 

@@ -1,15 +1,19 @@
 Status: Active
 Owner: SaltMarcher Team
 Last Reviewed: 2026-04-29
-Source of Truth: Complete architecture-enforcement catalog for root
-`<PascalContext>ApplicationService` boundaries in `src/domain/**`.
+Source of Truth: Role-local enforcement inventory and focused verification
+surface for root `<PascalContext>ApplicationService` boundaries in
+`src/domain/**`.
 
 # Domain ApplicationService Enforcement
 
 ## Goal
 
-This document owns the complete architecture-enforcement catalog for the root
-`<PascalContext>ApplicationService` role itself.
+Architectural truth for the root `<PascalContext>ApplicationService` role lives
+only in the
+[Domain Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/domain-layer.md:1).
+This document owns only the role-local enforcement inventory, focused
+verification surface, and current mechanical drift for that role.
 
 It answers three questions for every root application boundary:
 
@@ -21,7 +25,7 @@ This document does not own `application/*UseCase` internals, `published/`
 carrier shape, outbound `port/` role semantics, `DOMAIN.md` context
 documentation, data-root `ServiceRegistry` export shape, generic foreign-
 context access policy, or layer-wide domain dependency bans. Those live in the
-neighboring owner docs.
+Domain Layer Standard and neighboring enforcement owners.
 
 Unified focused bundle entrypoint:
 
