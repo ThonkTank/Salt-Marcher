@@ -51,10 +51,10 @@ wiring makes the declaration mechanically unused but semantically live. The
 project does not treat blanket unused-check disablement as an acceptable
 steady-state policy.
 
-`compileJava` does not run the dedicated jQAssistant bundles. Passive `View`
-graph and FXML analysis enter local quality through `checkViewEnforcement`,
-whole-program public dead-code analysis enters through
-`checkNoPublicDeadCode`,
+`compileJava` does not run the dedicated topology or whole-program dead-code
+bundles. Passive `View` graph and FXML analysis enter local quality through
+`checkViewEnforcement`, whole-program compiled dead-code analysis enters
+through `checkNoDeadCode`,
 focused Domain Layer topology, dependency, and documentation proof enters
 through `checkDomainLayerEnforcement`,
 focused Domain ApplicationService API-shape, topology, signature-purity,
@@ -130,7 +130,7 @@ architecture harness through `check`.
 | Platform | Status | Entrypoint | Current policy |
 | --- | --- | --- | --- |
 | PMD non-architecture smells | `Blocking Local Gate` | `./gradlew pmdMain`, `./gradlew pmdStrictMain` | Runs `tools/quality/config/pmd/complexity-ruleset.xml` on production Java sources. `pmdMain` is the central blocking gate; `pmdStrictMain` is the text-first direct entrypoint for the same ruleset. PMD owns non-architecture smell policy plus `UnusedAssignment`, including generic source-smell families such as `LawOfDemeter`, `GodClass`, `CouplingBetweenObjects`, `TooManyMethods`, `TooManyFields`, and `UselessOverridingMethod`; `compileJava` owns `UnusedLabel`, `UnusedMethod`, `UnusedNestedClass`, and `UnusedVariable`. |
-| Public dead code | `Blocking Local Gate` | `./gradlew checkNoPublicDeadCode` | Runs jQAssistant whole-program reachability analysis for public top-level concrete production types and declared public methods. Structural roots currently include JavaFX entry classes plus reflectively discovered `ShellContribution` and `ServiceContribution` implementations. |
+| Dead code reachability | `Blocking Local Gate` | `./gradlew checkNoDeadCode` | Runs the verification-core whole-program reachability analysis for compiled concrete production files, types, constructors, methods, and fields. Structural roots currently include JavaFX entry classes, reflectively discovered `ShellContribution` and `ServiceContribution` implementations, FXML controller resources, `META-INF/services` providers, literal `Class.forName("...")` references, and the explicit fallback catalog `tools/quality/config/deadcode/keep-roots.txt`. `checkNoPublicDeadCode` remains a deprecated compatibility alias. |
 | SpotBugs plus FindSecBugs | `Blocking Local Gate` | `./gradlew spotbugsMain` | Runs bytecode bug and security-smell analysis with SpotBugs effort `MAX` and confidence `MEDIUM`. |
 | CPD | `Blocking Local Gate` | `./gradlew cpdMain` | Runs PMD CPD for Java with `minimumTokens = 100`, matching PMD's documented Java example value, and writes its report under the active worktree's normal `build/reports/cpd/` surface. |
 | Lizard | `Blocking Local Gate` | `./gradlew lizardMain` | Runs pinned `lizard==1.21.3` for Java with max cyclomatic complexity `15`, matching Lizard's default warning threshold, and writes its report under the active worktree's normal `build/reports/lizard/` surface. |
@@ -166,11 +166,11 @@ an additional aggregate dependency. `pmdTest` is disabled; PMD
 non-architecture smell policy applies to production source roots, not
 architecture test sources.
 
-Whole-program dead-code discovery for public top-level concrete production
-types and declared public methods is now mechanically enforced by
-`checkNoPublicDeadCode`. Local declaration hygiene remains owned by
-`compileJava`, while public abstract declarations and interfaces without an
-in-repo call path remain `Review-Owned`.
+Whole-program dead-code discovery for compiled concrete production files,
+types, constructors, methods, and fields is now mechanically enforced by
+`checkNoDeadCode`. Local declaration hygiene remains owned by `compileJava`,
+while public abstract declarations and interfaces without an in-repo concrete
+runtime path remain `Review-Owned`.
 
 SpotBugs uses the official Gradle plugin with `findsecbugs-plugin` enabled,
 effort `MAX`, and confidence `MEDIUM`. `MAX` is the strongest analysis effort;
@@ -216,16 +216,16 @@ report does not block the build.
 
 Broader architecture-sprawl signals are therefore intentionally split. Generic
 source smells stay with PMD, cycle blockers stay with the generic and focused
-ArchUnit suites, public reachability stays with `checkNoPublicDeadCode`,
-hotspot regression stays with CKJM and CodeScene, relay-only tactical wrappers
-stay with the focused layering-indirection bundle, and the new broader
-role-aware hub or sprawl diagnostics stay with
+ArchUnit suites, whole-program dead-code reachability stays with
+`checkNoDeadCode`, hotspot regression stays with CKJM and CodeScene,
+relay-only tactical wrappers stay with the focused layering-indirection
+bundle, and the new broader role-aware hub or sprawl diagnostics stay with
 `checkLayeringSprawlCandidates`.
 
 Focused PMD, SpotBugs, CPD, Lizard, and CKJM entrypoints must stay independent
 of the jQAssistant view-topology blocker; they may be run together for quality
 investigation without pulling in the view-architecture graph analysis. The
-dedicated `checkNoPublicDeadCode` blocker is the only non-view jQAssistant
+dedicated `checkNoDeadCode` blocker is the only whole-program dead-code
 hygiene gate in the central quality path.
 
 Checkstyle metrics and Semgrep are deferred unless current tooling cannot

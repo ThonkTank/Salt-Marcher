@@ -72,7 +72,7 @@ fun bundleIdFor(file: File): String = file.relativeTo(repoRootDir).invariantSepa
 val effectiveErrorProneSourceDirs = repoVerificationFiles("/errorprone/src/main/java")
 val effectiveBugCheckerServices = repoVerificationFiles("/errorprone/src/main/resources/META-INF/services/com.google.errorprone.bugpatterns.BugChecker")
 val activeBundleDirs = activeBundleOwnerDirs()
-val activeBundleBugCheckerServices = if (activeEnforcementBundleIds.isEmpty()) {
+val validatedBugCheckerServices = if (activeEnforcementBundleIds.isEmpty()) {
     effectiveBugCheckerServices
 } else {
     effectiveBugCheckerServices.filter { serviceFile ->
@@ -102,13 +102,12 @@ sourceSets.named("test") {
 
 val bugCheckerServicePath = "META-INF/services/com.google.errorprone.bugpatterns.BugChecker"
 val hostBugCheckerService = layout.projectDirectory.file("src/main/resources/$bugCheckerServicePath").asFile
-val bundleBugCheckerServices = activeBundleBugCheckerServices
-val activeBugCheckerServices = listOf(hostBugCheckerService) + activeBundleBugCheckerServices
+val mergedBugCheckerServices = listOf(hostBugCheckerService) + effectiveBugCheckerServices
 val generatedResourcesDir = layout.buildDirectory.dir("generated/quality-rules-errorprone/resources")
 val generatedBugCheckerService = generatedResourcesDir.map { dir -> dir.file(bugCheckerServicePath) }
 val bugCheckerRegistrySpecs = buildList {
     add("host\t${hostBugCheckerService.absolutePath}\t${layout.projectDirectory.dir("src/main/java").asFile.absolutePath}")
-    activeBundleBugCheckerServices.forEach { serviceFile ->
+    validatedBugCheckerServices.forEach { serviceFile ->
         val sourceDir = serviceFile.parentFile.parentFile.parentFile.parentFile.resolve("java")
         val bundleId = bundleIdFor(serviceFile)
         add("$bundleId\t${serviceFile.absolutePath}\t${sourceDir.absolutePath}")
@@ -126,7 +125,7 @@ val validateQualityRulesErrorProneServices = tasks.register<ValidateBugCheckerRe
     )
     registryInputFiles.from(
         layout.projectDirectory.dir("src/main/java"),
-        bundleBugCheckerServices
+        validatedBugCheckerServices
     )
     registryInputFiles.from(hostBugCheckerService)
     activeErrorProneSourceDirs.forEach { sourceDir ->
@@ -137,7 +136,7 @@ val validateQualityRulesErrorProneServices = tasks.register<ValidateBugCheckerRe
 val syncQualityRulesErrorProneServices = tasks.register<MergeBugCheckerServicesTask>(
     "syncQualityRulesErrorProneServices"
 ) {
-    serviceFiles.from(activeBugCheckerServices)
+    serviceFiles.from(mergedBugCheckerServices)
     mergedServiceFile.set(generatedBugCheckerService)
 }
 

@@ -1,0 +1,7 @@
+# Explicit dead-code roots are a narrow fallback when structural scanners
+# cannot derive runtime reachability mechanically.
+#
+# Supported forms:
+# class:src.view.example.ExampleContribution
+# method:src.view.example.ExampleContribution#bind
+# field:src.view.example.ExampleView#contentPane

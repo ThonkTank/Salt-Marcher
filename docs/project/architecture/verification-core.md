@@ -75,7 +75,7 @@ Mechanically enforced public lifecycle surfaces are:
 
 Beyond the staged lifecycle names, the verification core also owns direct
 root lifecycle tasks that feed those aggregates. These root-owned tasks include
-shared hygiene gates such as `checkNoPublicDeadCode`; they are verification
+shared hygiene gates such as `checkNoDeadCode`; they are verification
 core surfaces, not descriptor-owned enforcement bundles. Staged surfaces may
 also depend on explicitly selected report-only sibling diagnostics when the
 standard handoff path should print guidance without changing pass/fail

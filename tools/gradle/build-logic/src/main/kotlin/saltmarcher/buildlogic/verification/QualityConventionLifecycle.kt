@@ -12,6 +12,7 @@ import org.gradle.kotlin.dsl.withType
 import org.gradle.language.base.plugins.LifecycleBasePlugin
 import saltmarcher.buildlogic.tasks.CheckNoCompiledArtifactsTask
 import saltmarcher.buildlogic.tasks.hygiene.CkjmReportTask
+import saltmarcher.buildlogic.tasks.hygiene.CheckNoDeadCodeTask
 import saltmarcher.buildlogic.tasks.hygiene.CpdCheckTask
 import saltmarcher.buildlogic.tasks.hygiene.LizardCheckTask
 import saltmarcher.buildlogic.tasks.hygiene.PmdSourceCheckTask
@@ -28,8 +29,7 @@ internal data class QualityConventionLifecycleTasks(
 internal fun Project.registerQualityConventionLifecycleTasks(
     environment: QualityConventionEnvironment,
     toolConfigurations: QualityConventionToolConfigurations,
-    checkViewArchitecture: TaskProvider<out Task>,
-    checkNoPublicDeadCode: TaskProvider<out Task>
+    checkViewArchitecture: TaskProvider<out Task>
 ): QualityConventionLifecycleTasks {
     val verificationLayout = environment.verificationLayout
     val resetMainJavaClassesOutput = tasks.register<Delete>("resetMainJavaClassesOutput") {
@@ -136,6 +136,28 @@ internal fun Project.registerQualityConventionLifecycleTasks(
         successMarker.set(layout.buildDirectory.file("verification-markers/checkNoCompiledArtifactsInSource/success.marker"))
     }
 
+    val checkNoDeadCode = tasks.register<CheckNoDeadCodeTask>("checkNoDeadCode") {
+        group = LifecycleBasePlugin.VERIFICATION_GROUP
+        description = "Fail if production code contains unreachable files, types, methods, constructors, or fields."
+        dependsOn(tasks.named("classes"))
+        compiledClassesDirectory.set(verificationLayout.mainJavaClassesDir)
+        sourceRoots.from(
+            layout.projectDirectory.dir("bootstrap"),
+            layout.projectDirectory.dir("shell"),
+            layout.projectDirectory.dir("src")
+        )
+        resourceRoots.from(layout.projectDirectory.dir("resources"))
+        keepRootsFiles.from(layout.projectDirectory.file("tools/quality/config/deadcode/keep-roots.txt"))
+        reportFile.set(layout.buildDirectory.file("reports/deadcode/main.txt"))
+        successMarker.set(layout.buildDirectory.file("verification-markers/checkNoDeadCode/success.marker"))
+    }
+
+    tasks.register("checkNoPublicDeadCode") {
+        group = LifecycleBasePlugin.VERIFICATION_GROUP
+        description = "Deprecated compatibility alias for checkNoDeadCode."
+        dependsOn(checkNoDeadCode)
+    }
+
     val checkQualityHygiene = tasks.register("checkQualityHygiene") {
         group = LifecycleBasePlugin.VERIFICATION_GROUP
         description = "Run the staged non-architecture hygiene gates without the architecture or view-topology aggregates."
@@ -144,7 +166,7 @@ internal fun Project.registerQualityConventionLifecycleTasks(
         dependsOn(cpdMain)
         dependsOn(lizardMain)
         dependsOn(checkNoCompiledArtifactsInSource)
-        dependsOn(checkNoPublicDeadCode)
+        dependsOn(checkNoDeadCode)
         dependsOn(pmdStrictMain)
     }
 

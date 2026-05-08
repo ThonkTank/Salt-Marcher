@@ -22,6 +22,7 @@ kotlin {
 
 dependencies {
     implementation("net.ltgt.errorprone:net.ltgt.errorprone.gradle.plugin:5.1.0")
+    implementation("org.ow2.asm:asm-tree:9.7.1")
 }
 
 gradlePlugin {

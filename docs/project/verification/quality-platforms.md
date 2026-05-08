@@ -33,8 +33,8 @@ Broader architecture debt is intentionally split across several owners rather
 than one smell scoreboard. PMD retains generic source-smell families such as
 `LawOfDemeter`, `GodClass`, `CouplingBetweenObjects`, `TooManyMethods`,
 `TooManyFields`, and `UselessOverridingMethod`; generic ArchUnit suites retain
-cycle and broad dependency-direction blockers; `checkNoPublicDeadCode` retains
-whole-program public reachability; CKJM retains hotspot and regression
+cycle and broad dependency-direction blockers; `checkNoDeadCode` retains
+whole-program production reachability; CKJM retains hotspot and regression
 reporting; and the focused layering bundles retain role-aware relay and sprawl
 graph diagnostics that generic smell tools cannot classify by SaltMarcher role
 semantics.
@@ -42,20 +42,26 @@ semantics.
 For unused-code hygiene, the active mechanical scope is split by proof route:
 `compileJava` owns `UnusedLabel`, `UnusedMethod`, `UnusedNestedClass`, and
 `UnusedVariable` for local declarations, PMD retains `UnusedAssignment` beside
-the broader smell policy, and `checkNoPublicDeadCode` owns whole-program
-reachability for public top-level concrete types and public methods. The
-combined mechanical surface therefore covers removable local declarations,
-local variables, labels, assignment-smell detection, and structural
-whole-program dead-code reachability for public concrete APIs. Public abstract
-or interface declarations that remain intentionally exposed without an in-repo
-call path stay review-owned until a stronger explicit scope decision is made.
+the broader smell policy, and `checkNoDeadCode` owns whole-program
+reachability for compiled concrete production files, types, constructors,
+methods, and fields. The combined mechanical surface therefore covers
+removable local declarations, local variables, labels,
+assignment-smell detection, and structural whole-program dead-code
+reachability for compiled production declarations. Public abstract or
+interface declarations that remain intentionally exposed without a concrete
+in-repo runtime path stay review-owned until a stronger explicit scope
+decision is made.
 
 Unused-code false positives are handled by narrow, explicit structural roots
-or narrow local escape hatches instead of weakening the blocking gates.
-Generated code is excluded through the shared Error Prone configuration, and
-any future framework- or reflection-driven exception must stay local,
-documented, and attributable rather than becoming a blanket disablement of the
-unused checks.
+or narrow local keep roots instead of weakening the blocking gates. Generated
+code is excluded through the shared Error Prone configuration, while
+whole-program reachability derives its live roots mechanically from JavaFX
+entry classes, view contribution discovery, service contribution discovery,
+FXML controller resources, `META-INF/services` providers, literal
+`Class.forName("...")` references, and the explicit fallback catalog under
+`tools/quality/config/deadcode/keep-roots.txt`. Any future framework- or
+reflection-driven exception must stay local, documented, and attributable
+rather than becoming a blanket disablement of the unused checks.
 
 Architecture enforcement enters local quality through the same Gradle
 aggregates, but the owner model now lives in the matching layer and role
