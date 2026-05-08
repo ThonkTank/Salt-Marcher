@@ -11,23 +11,36 @@
               type,
               coalesce(type.sourceFileName, '') AS sourceFileName,
               split(type.fqn, '.') AS segments
-            SET
-              type:SaltMarcher:ViewLayerType,
-              type.viewBucket = CASE
-                WHEN size(segments) >= 6 AND segments[2] = 'slotcontent' AND sourceFileName ENDS WITH 'ContentModel.java' THEN 'MODEL'
-                WHEN size(segments) >= 6 AND segments[2] = 'slotcontent' AND sourceFileName ENDS WITH 'ViewInputEvent.java' THEN 'VIEW_INPUT_EVENT'
-                WHEN size(segments) >= 6 AND segments[2] = 'slotcontent' AND sourceFileName ENDS WITH 'InspectorEntry.java' THEN 'INSPECTOR_ENTRY'
-                WHEN size(segments) >= 6 AND segments[2] = 'slotcontent' AND sourceFileName ENDS WITH 'View.java' THEN 'VIEW'
-                WHEN size(segments) >= 5 AND segments[2] IN ['leftbartabs', 'statetabs', 'dropdowns'] AND sourceFileName ENDS WITH 'Binder.java' THEN 'BINDER'
-                WHEN size(segments) >= 5 AND segments[2] IN ['leftbartabs', 'statetabs', 'dropdowns'] AND (sourceFileName ENDS WITH 'ViewModel.java' OR sourceFileName ENDS WITH 'PresentationModel.java' OR sourceFileName ENDS WITH 'ContributionModel.java' OR sourceFileName ENDS WITH 'ContentModel.java') THEN 'MODEL'
-                WHEN size(segments) >= 5 AND segments[2] IN ['leftbartabs', 'statetabs', 'dropdowns'] AND sourceFileName ENDS WITH 'Contribution.java' THEN 'CONTRIBUTION'
-                WHEN size(segments) >= 5 AND segments[2] IN ['leftbartabs', 'statetabs', 'dropdowns'] AND sourceFileName ENDS WITH 'IntentHandler.java' THEN 'HANDLER'
-                WHEN size(segments) >= 5 AND segments[2] IN ['leftbartabs', 'statetabs', 'dropdowns'] AND sourceFileName ENDS WITH 'ViewInputEvent.java' THEN 'VIEW_INPUT_EVENT'
-                WHEN size(segments) >= 5 AND segments[2] IN ['leftbartabs', 'statetabs', 'dropdowns'] AND sourceFileName ENDS WITH 'PublishedEvent.java' THEN 'PUBLISHED_EVENT'
-                WHEN size(segments) >= 5 AND segments[2] IN ['leftbartabs', 'statetabs', 'dropdowns'] AND sourceFileName ENDS WITH 'View.java' THEN 'VIEW'
-                ELSE 'LEGACY'
-              END,
-              type.relativePath = CASE
+            WITH
+              type,
+              sourceFileName,
+              segments,
+              CASE
+                WHEN sourceFileName ENDS WITH 'Contribution.java' THEN 'CONTRIBUTION'
+                WHEN sourceFileName ENDS WITH 'Binder.java' THEN 'BINDER'
+                WHEN sourceFileName ENDS WITH 'ContributionModel.java' THEN 'CONTRIBUTION_MODEL'
+                WHEN sourceFileName ENDS WITH 'ContentModel.java' THEN 'CONTENT_MODEL'
+                WHEN sourceFileName ENDS WITH 'IntentHandler.java' THEN 'INTENT_HANDLER'
+                WHEN sourceFileName ENDS WITH 'ViewInputEvent.java' THEN 'VIEW_INPUT_EVENT'
+                WHEN sourceFileName ENDS WITH 'PublishedEvent.java' THEN 'PUBLISHED_EVENT'
+                WHEN sourceFileName ENDS WITH 'InspectorEntry.java' THEN 'INSPECTOR_ENTRY'
+                WHEN sourceFileName ENDS WITH 'ViewModel.java' OR sourceFileName ENDS WITH 'PresentationModel.java' THEN 'LEGACY_VIEW_MODEL'
+                WHEN sourceFileName ENDS WITH 'Projector.java' THEN 'PROJECTOR'
+                WHEN sourceFileName ENDS WITH 'View.java' THEN 'VIEW'
+                ELSE 'UNKNOWN'
+              END AS viewRole,
+              CASE
+                WHEN size(segments) = 5 AND segments[2] IN ['leftbartabs', 'statetabs', 'dropdowns'] THEN 'ACTIVE_ROOT'
+                WHEN size(segments) = 6 AND segments[2] = 'slotcontent' AND segments[3] IN ['controls', 'main', 'state', 'details', 'topbar', 'primitives'] THEN 'REUSABLE_SLOTCONTENT'
+                ELSE 'NONE'
+              END AS viewUnitKind
+            WITH
+              type,
+              sourceFileName,
+              segments,
+              viewRole,
+              viewUnitKind,
+              CASE
                 WHEN type.sourceFileName IS NULL OR type.sourceFileName = ''
                   THEN replace(type.fqn, '.', '/') + '.java'
                 WHEN type.name IS NULL
@@ -35,7 +48,53 @@
                   OR NOT type.fqn ENDS WITH '.' + type.name
                   THEN replace(type.fqn, '.', '/') + '.java'
                 ELSE replace(substring(type.fqn, 0, size(type.fqn) - size(type.name) - 1), '.', '/') + '/' + type.sourceFileName
-              END
+              END AS relativePath,
+              CASE
+                WHEN viewUnitKind = 'ACTIVE_ROOT' AND viewRole IN ['CONTRIBUTION', 'BINDER', 'CONTRIBUTION_MODEL', 'INTENT_HANDLER', 'VIEW_INPUT_EVENT', 'VIEW'] THEN true
+                WHEN viewUnitKind = 'REUSABLE_SLOTCONTENT' AND viewRole IN ['CONTENT_MODEL', 'VIEW_INPUT_EVENT', 'VIEW'] THEN true
+                ELSE false
+              END AS recognizedViewSource
+            SET
+              type:SaltMarcher:ViewLayerType,
+              type.viewRole = viewRole,
+              type.viewUnitKind = viewUnitKind,
+              type.recognizedViewSource = recognizedViewSource,
+              type.knownForbiddenRole = CASE
+                WHEN viewRole IN ['PUBLISHED_EVENT', 'INSPECTOR_ENTRY', 'LEGACY_VIEW_MODEL', 'PROJECTOR'] THEN true
+                ELSE false
+              END,
+              type.unknownRoleForm = CASE WHEN viewRole = 'UNKNOWN' THEN true ELSE false END,
+              type.wrongDepth = CASE
+                WHEN size(segments) >= 3 AND segments[2] IN ['leftbartabs', 'statetabs', 'dropdowns'] AND size(segments) <> 5 THEN true
+                WHEN size(segments) >= 4 AND segments[2] = 'slotcontent' AND segments[3] IN ['controls', 'main', 'state', 'details', 'topbar', 'primitives'] AND size(segments) <> 6 THEN true
+                ELSE false
+              END,
+              type.wrongDirectory = CASE
+                WHEN viewUnitKind <> 'NONE' THEN false
+                WHEN size(segments) >= 3 AND segments[2] IN ['leftbartabs', 'statetabs', 'dropdowns'] THEN false
+                WHEN size(segments) >= 4 AND segments[2] = 'slotcontent' AND segments[3] IN ['controls', 'main', 'state', 'details', 'topbar', 'primitives'] THEN false
+                ELSE true
+              END,
+              type.sameRootKey = CASE
+                WHEN viewUnitKind = 'ACTIVE_ROOT' THEN segments[2] + '/' + segments[3]
+                WHEN viewUnitKind = 'REUSABLE_SLOTCONTENT' THEN 'slotcontent/' + segments[3] + '/' + segments[4]
+                ELSE ''
+              END,
+              type.sameUnitKey = CASE
+                WHEN viewUnitKind = 'ACTIVE_ROOT' THEN segments[2] + '/' + segments[3]
+                WHEN viewUnitKind = 'REUSABLE_SLOTCONTENT' THEN 'slotcontent/' + segments[3] + '/' + segments[4]
+                ELSE ''
+              END,
+              type.viewBucket = CASE
+                WHEN viewRole = 'CONTRIBUTION' THEN 'CONTRIBUTION'
+                WHEN viewRole = 'BINDER' THEN 'BINDER'
+                WHEN viewRole IN ['CONTRIBUTION_MODEL', 'CONTENT_MODEL', 'LEGACY_VIEW_MODEL'] THEN 'MODEL'
+                WHEN viewRole = 'INTENT_HANDLER' THEN 'HANDLER'
+                WHEN viewRole = 'VIEW_INPUT_EVENT' THEN 'VIEW_INPUT_EVENT'
+                WHEN viewRole = 'VIEW' THEN 'VIEW'
+                ELSE 'LEGACY'
+              END,
+              type.relativePath = relativePath
             RETURN
               type AS ViewLayerType
         ]]></cypher>

@@ -8,9 +8,7 @@ import com.sun.source.tree.ClassTree;
 import com.sun.source.tree.CompilationUnitTree;
 import java.util.LinkedHashSet;
 import java.util.Set;
-import saltmarcher.quality.errorprone.view.ViewRole;
 import saltmarcher.quality.errorprone.view.ViewSourceDescriptor;
-import saltmarcher.quality.errorprone.view.ViewUnitKind;
 
 @BugPattern(
         name = "ViewSourceTopologyPerimeter",
@@ -38,9 +36,8 @@ public final class ViewSourceTopologyPerimeterChecker extends BugChecker
         }
 
         if (!source.isRecognizedViewSource()) {
-            violations.add("view source must live only under src.view.leftbartabs.<entry>, src.view.statetabs.<entry>, src.view.dropdowns.<entry>, or src.view.slotcontent.<controls|main|state|details|topbar|primitives>.<entry>");
-        } else if (!isAllowedRole(source)) {
-            violations.add("file '" + sourceFileName + "' is not an allowed top-level role in package '" + packageName + "'");
+            violations.add("source must use only the documented view directories, depths, and top-level role file forms; offending file is '"
+                    + sourceFileName + "' in package '" + packageName + "'");
         }
 
         if (topLevelClass != null) {
@@ -58,22 +55,6 @@ public final class ViewSourceTopologyPerimeterChecker extends BugChecker
                         + String.join("; ", violations)
                         + ". Only the documented view directories and role file forms are legal, so role-specific checks cannot be bypassed by renaming or moving a file.")
                 .build();
-    }
-
-    private static boolean isAllowedRole(ViewSourceDescriptor source) {
-        if (source.role() == ViewRole.UNKNOWN) {
-            return false;
-        }
-        if (source.unitKind() == ViewUnitKind.ACTIVE_ROOT) {
-            return source.role() != ViewRole.CONTENT_MODEL
-                    && source.role() != ViewRole.PUBLISHED_EVENT
-                    && source.role() != ViewRole.INSPECTOR_ENTRY
-                    && source.role() != ViewRole.LEGACY_VIEW_MODEL
-                    && source.role() != ViewRole.PROJECTOR;
-        }
-        return source.role() == ViewRole.CONTENT_MODEL
-                || source.role() == ViewRole.VIEW_INPUT_EVENT
-                || source.role() == ViewRole.VIEW;
     }
 
     private static boolean isViewSourcePath(String sourcePath) {

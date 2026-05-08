@@ -11,6 +11,7 @@ public final class ViewRoleDependencySupport {
     }
 
     public enum SourceRole {
+        CONTRIBUTION,
         BINDER,
         CONTRIBUTION_MODEL,
         CONTENT_MODEL,
@@ -52,13 +53,14 @@ public final class ViewRoleDependencySupport {
         }
         if (referencedType.startsWith("javafx.")) {
             return switch (sourceRole) {
+                case CONTRIBUTION, INTENT_HANDLER -> true;
                 case BINDER -> !ViewArchitectureSupport.isAllowedModelJavafxType(referencedType);
                 case CONTRIBUTION_MODEL, CONTENT_MODEL -> !ViewArchitectureSupport.isAllowedViewModelJavafxType(referencedType);
-                case INTENT_HANDLER -> true;
             };
         }
         if (referencedType.startsWith("shell.")) {
             return switch (sourceRole) {
+                case CONTRIBUTION -> !ViewRolePolicy.isAllowedContributionShellType(referencedType);
                 case BINDER -> !ViewArchitectureSupport.isAllowedBinderShellType(referencedType);
                 case CONTRIBUTION_MODEL, CONTENT_MODEL, INTENT_HANDLER -> true;
             };
@@ -83,11 +85,25 @@ public final class ViewRoleDependencySupport {
         }
 
         return switch (sourceRole) {
+            case CONTRIBUTION -> isForbiddenForContribution(sourcePackageName, referencedType, viewType);
             case BINDER -> isForbiddenForBinder(sourcePackageName, referencedType, viewType);
             case CONTRIBUTION_MODEL, CONTENT_MODEL ->
                     isForbiddenForProjectionModel(sourcePackageName, referencedType, viewType);
             case INTENT_HANDLER -> isForbiddenForIntentHandler(sourcePackageName, referencedType, viewType);
         };
+    }
+
+    private static boolean isForbiddenForContribution(
+            String sourcePackageName,
+            String referencedType,
+            ViewArchitectureSupport.ViewTypeInfo viewType
+    ) {
+        if ("CONTRIBUTION".equals(viewType.bucket())
+                && ViewArchitectureSupport.isSameViewRootReference(sourcePackageName, referencedType)) {
+            return false;
+        }
+        return !"BINDER".equals(viewType.bucket())
+                || !ViewArchitectureSupport.isSameViewRootReference(sourcePackageName, referencedType);
     }
 
     private static boolean isForbiddenForBinder(

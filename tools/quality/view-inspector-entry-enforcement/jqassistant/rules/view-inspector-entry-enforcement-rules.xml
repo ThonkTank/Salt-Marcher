@@ -10,7 +10,8 @@
         <requiresConcept refId="saltmarcher:ViewLayerType"/>
         <description>InspectorEntry is no longer a legal top-level reusable slotcontent role.</description>
         <cypher><![CDATA[
-            MATCH (type:Java:Type:SaltMarcher:ViewLayerType {viewBucket: 'INSPECTOR_ENTRY'})
+            MATCH (type:Java:Type:SaltMarcher:ViewLayerType)
+            WHERE type.viewRole = 'INSPECTOR_ENTRY'
             RETURN
               type.relativePath AS Source,
               'no *InspectorEntry.java files in src/view/**' AS ExpectedDirection,

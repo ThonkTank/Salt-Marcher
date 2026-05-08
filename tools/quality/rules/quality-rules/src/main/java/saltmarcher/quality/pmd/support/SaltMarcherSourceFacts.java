@@ -33,6 +33,9 @@ public final class SaltMarcherSourceFacts {
             Pattern.compile("\\bregister\\s*\\(\\s*([A-Za-z_][A-Za-z0-9_$.]*)\\s*\\.class\\s*,");
     static final Pattern NEW_TYPE_PATTERN =
             Pattern.compile("\\bnew\\s+([A-Za-z_][A-Za-z0-9_$.]*)\\s*\\(");
+    private static final Set<String> ACTIVE_VIEW_AREAS = Set.of("leftbartabs", "statetabs", "dropdowns");
+    private static final Set<String> SLOTCONTENT_SLOTS = Set.of(
+            "controls", "main", "state", "details", "topbar", "primitives");
 
     private final String absolutePath;
     private final String relativePath;
@@ -40,6 +43,9 @@ public final class SaltMarcherSourceFacts {
     private final String fileName;
     private final String simpleName;
     private final String text;
+    private final ViewUnitKind viewUnitKind;
+    private final ViewRole viewRole;
+    private final boolean recognizedViewSource;
 
     private SaltMarcherSourceFacts(String absolutePath, String relativePath, List<String> segments, String fileName, String text) {
         this.absolutePath = absolutePath;
@@ -48,6 +54,9 @@ public final class SaltMarcherSourceFacts {
         this.fileName = fileName;
         this.simpleName = fileName.endsWith(".java") ? fileName.substring(0, fileName.length() - 5) : fileName;
         this.text = text;
+        this.viewUnitKind = classifyViewUnitKind();
+        this.viewRole = ViewRole.fromFileName(fileName);
+        this.recognizedViewSource = viewUnitKind != ViewUnitKind.NONE && viewRole.isAllowedIn(viewUnitKind);
     }
 
     public static SaltMarcherSourceFacts from(ASTCompilationUnit node) {
@@ -99,7 +108,7 @@ public final class SaltMarcherSourceFacts {
     }
 
     public boolean isViewBinderSource() {
-        return isActiveViewRootSource() && simpleName.endsWith("Binder");
+        return viewUnitKind == ViewUnitKind.ACTIVE_ROOT && viewRole == ViewRole.BINDER;
     }
 
     public boolean isViewSupportModelSource() {
@@ -107,72 +116,86 @@ public final class SaltMarcherSourceFacts {
     }
 
     public boolean isViewIntentHandlerSource() {
-        return isActiveViewRootSource() && simpleName.endsWith("IntentHandler");
+        return viewUnitKind == ViewUnitKind.ACTIVE_ROOT && viewRole == ViewRole.INTENT_HANDLER;
     }
 
     public boolean isViewPublishedEventSource() {
-        return isActiveViewRootSource() && simpleName.endsWith("PublishedEvent");
+        return viewUnitKind == ViewUnitKind.ACTIVE_ROOT && viewRole == ViewRole.PUBLISHED_EVENT;
     }
 
     public boolean isViewInputEventSource() {
-        return (isActiveViewRootSource() || isSlotcontentSource()) && simpleName.endsWith("ViewInputEvent");
+        return viewUnitKind != ViewUnitKind.NONE && viewRole == ViewRole.VIEW_INPUT_EVENT;
     }
 
     public boolean isViewInspectorEntrySource() {
-        return false;
+        return viewUnitKind == ViewUnitKind.REUSABLE_SLOTCONTENT && viewRole == ViewRole.INSPECTOR_ENTRY;
     }
 
     public boolean isViewModelSource() {
-        return (isActiveViewRootSource() || isSlotcontentSource())
-                && (simpleName.endsWith("ViewModel")
-                || simpleName.endsWith("PresentationModel")
-                || simpleName.endsWith("ContributionModel")
-                || simpleName.endsWith("ContentModel"));
+        return viewUnitKind != ViewUnitKind.NONE
+                && (viewRole == ViewRole.LEGACY_VIEW_MODEL
+                || viewRole == ViewRole.CONTRIBUTION_MODEL
+                || viewRole == ViewRole.CONTENT_MODEL);
     }
 
     public boolean isViewPanelSource() {
+        return viewUnitKind != ViewUnitKind.NONE && viewRole == ViewRole.VIEW;
+    }
+
+    public boolean isRecognizedViewSource() {
+        return recognizedViewSource;
+    }
+
+    public boolean isKnownForbiddenViewRoleSource() {
         return isViewSource()
-                && ((isSlotcontentSource() || isActiveViewRootSource())
-                && simpleName.endsWith("View")
-                && !simpleName.endsWith("ViewModel")
-                && !simpleName.endsWith("PresentationModel")
-                && !simpleName.endsWith("ContributionModel")
-                && !simpleName.endsWith("ContentModel"));
+                && viewUnitKind != ViewUnitKind.NONE
+                && !recognizedViewSource
+                && viewRole != ViewRole.UNKNOWN;
+    }
+
+    public boolean isUnknownViewRoleSource() {
+        return isViewSource()
+                && viewUnitKind != ViewUnitKind.NONE
+                && viewRole == ViewRole.UNKNOWN;
+    }
+
+    public boolean isMisplacedViewSource() {
+        return isViewSource() && viewUnitKind == ViewUnitKind.NONE;
     }
 
     public boolean isLegacyViewSource() {
-        return isViewSource()
-                && !isDiscoverableViewContributionRole()
-                && !isViewBinderSource()
-                && !isViewModelSource()
-                && !isViewIntentHandlerSource()
-                && !isViewInputEventSource()
-                && !isViewPublishedEventSource()
-                && !isViewInspectorEntrySource()
-                && !isViewPanelSource();
+        return isViewSource() && !recognizedViewSource;
     }
 
     private boolean isDiscoverableViewContributionRole() {
-        return isDiscoverableViewContributionArea() && simpleName.endsWith("Contribution");
+        return viewUnitKind == ViewUnitKind.ACTIVE_ROOT && viewRole == ViewRole.CONTRIBUTION;
     }
 
     private boolean isActiveViewRootSource() {
-        return isViewSource()
-                && segments.size() == 5
-                && Set.of("leftbartabs", "statetabs", "dropdowns").contains(segments.get(2));
+        return viewUnitKind == ViewUnitKind.ACTIVE_ROOT;
     }
 
     private boolean isSlotcontentSource() {
-        return isViewSource()
-                && segments.size() == 6
-                && segments.get(2).equals("slotcontent")
-                && Set.of("controls", "main", "state", "details", "topbar", "primitives").contains(segments.get(3));
+        return viewUnitKind == ViewUnitKind.REUSABLE_SLOTCONTENT;
     }
 
     private boolean isDiscoverableViewContributionArea() {
-        return isViewSource()
-                && segments.size() == 5
-                && Set.of("leftbartabs", "statetabs", "dropdowns").contains(segments.get(2));
+        return isActiveViewRootSource();
+    }
+
+    private ViewUnitKind classifyViewUnitKind() {
+        if (!isViewSource()) {
+            return ViewUnitKind.NONE;
+        }
+        if (segments.size() == 5 && ACTIVE_VIEW_AREAS.contains(segments.get(2))) {
+            return ViewUnitKind.ACTIVE_ROOT;
+        }
+        if (segments.size() == 6
+                && "slotcontent".equals(segments.get(2))
+                && SLOTCONTENT_SLOTS.contains(segments.get(3))) {
+            return ViewUnitKind.REUSABLE_SLOTCONTENT;
+        }
+        return ViewUnitKind.NONE;
     }
 
     public boolean isDomainSource() {
@@ -540,5 +563,77 @@ public final class SaltMarcherSourceFacts {
             imports.add(matcher.group(1).trim());
         }
         return imports;
+    }
+
+    private enum ViewUnitKind {
+        NONE,
+        ACTIVE_ROOT,
+        REUSABLE_SLOTCONTENT
+    }
+
+    private enum ViewRole {
+        CONTRIBUTION,
+        BINDER,
+        CONTRIBUTION_MODEL,
+        CONTENT_MODEL,
+        INTENT_HANDLER,
+        VIEW_INPUT_EVENT,
+        PUBLISHED_EVENT,
+        INSPECTOR_ENTRY,
+        LEGACY_VIEW_MODEL,
+        PROJECTOR,
+        VIEW,
+        UNKNOWN;
+
+        private static ViewRole fromFileName(String fileName) {
+            if (fileName.endsWith("Contribution.java")) {
+                return CONTRIBUTION;
+            }
+            if (fileName.endsWith("Binder.java")) {
+                return BINDER;
+            }
+            if (fileName.endsWith("ContributionModel.java")) {
+                return CONTRIBUTION_MODEL;
+            }
+            if (fileName.endsWith("ContentModel.java")) {
+                return CONTENT_MODEL;
+            }
+            if (fileName.endsWith("IntentHandler.java")) {
+                return INTENT_HANDLER;
+            }
+            if (fileName.endsWith("ViewInputEvent.java")) {
+                return VIEW_INPUT_EVENT;
+            }
+            if (fileName.endsWith("PublishedEvent.java")) {
+                return PUBLISHED_EVENT;
+            }
+            if (fileName.endsWith("InspectorEntry.java")) {
+                return INSPECTOR_ENTRY;
+            }
+            if (fileName.endsWith("ViewModel.java") || fileName.endsWith("PresentationModel.java")) {
+                return LEGACY_VIEW_MODEL;
+            }
+            if (fileName.endsWith("Projector.java")) {
+                return PROJECTOR;
+            }
+            if (fileName.endsWith("View.java")) {
+                return VIEW;
+            }
+            return UNKNOWN;
+        }
+
+        private boolean isAllowedIn(ViewUnitKind unitKind) {
+            return switch (unitKind) {
+                case NONE -> false;
+                case ACTIVE_ROOT -> switch (this) {
+                    case CONTRIBUTION, BINDER, CONTRIBUTION_MODEL, INTENT_HANDLER, VIEW_INPUT_EVENT, VIEW -> true;
+                    default -> false;
+                };
+                case REUSABLE_SLOTCONTENT -> switch (this) {
+                    case CONTENT_MODEL, VIEW_INPUT_EVENT, VIEW -> true;
+                    default -> false;
+                };
+            };
+        }
     }
 }

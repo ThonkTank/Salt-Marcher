@@ -17,8 +17,9 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
+import src.view.slotcontent.primitives.dialog.DialogSurfaceContentModel;
 import src.view.slotcontent.primitives.dialog.DialogSurfaceView;
-import src.view.slotcontent.primitives.dialog.DialogSurfaceView.BodyPolicy;
+import src.view.slotcontent.primitives.popup.AnchoredPopupContentModel;
 import src.view.slotcontent.primitives.popup.AnchoredPopupView;
 
 public final class EncounterBuilderStateView extends VBox {
@@ -53,6 +54,7 @@ public final class EncounterBuilderStateView extends VBox {
     private final Button clearHistoryButton = new StyledButton("Clear", STYLE_COMPACT, STYLE_NEUTRAL_ACTION);
     private final Button startCombatButton = new StyledButton("_Kampf starten", STYLE_ACCENT);
     private final BuilderBody body;
+    private final DialogSurfaceContentModel dialogContentModel = new DialogSurfaceContentModel();
     private final DialogSurfaceView dialog;
 
     private Consumer<EncounterBuilderStateViewInputEvent> viewInputEventHandler = ignored -> { };
@@ -79,10 +81,11 @@ public final class EncounterBuilderStateView extends VBox {
     }
 
     private DialogSurfaceView buildPane() {
-        DialogSurfaceView nextDialog = new DialogSurfaceView();
-        nextDialog.setHeader(buildTitleRow());
-        nextDialog.setBody(body, BodyPolicy.FIXED);
-        nextDialog.setFooter(buildFooter());
+        HBox footer = new HBox(8, buildFooter());
+        footer.setAlignment(Pos.CENTER_LEFT);
+        DialogSurfaceView nextDialog = new DialogSurfaceView(buildTitleRow(), body, footer);
+        nextDialog.bind(dialogContentModel);
+        dialogContentModel.showLayout(DialogSurfaceContentModel.BodyPolicy.FIXED, true, true);
         return nextDialog;
     }
 
@@ -142,20 +145,21 @@ public final class EncounterBuilderStateView extends VBox {
     }
 
     private void showSavedPlansPopup(Node anchor) {
-        AnchoredPopupView popup = new AnchoredPopupView();
+        AnchoredPopupContentModel popupContentModel = new AnchoredPopupContentModel();
         SavedPlansPopupContent content = new SavedPlansPopupContent();
+        AnchoredPopupView popup = new AnchoredPopupView(content, () -> anchor);
+        popup.bind(popupContentModel);
         if (savedPlans.isEmpty()) {
             content.showEmpty();
         } else {
             for (EncounterStateContributionModel.SavedEncounterPlanView plan : savedPlans) {
                 content.addOption(new SavedPlanOptionButton(plan, () -> {
-                    popup.hide();
+                    popupContentModel.hide();
                     publish(new EncounterBuilderStateViewInputEvent.OpenSavedPlanInput(plan.id()));
                 }));
             }
         }
-        popup.setContent(content);
-        popup.showBelow(anchor, 8);
+        popupContentModel.showBelow(8.0, false);
     }
 
     private void publish(EncounterBuilderStateViewInputEvent.Interaction input) {

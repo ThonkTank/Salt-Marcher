@@ -21,6 +21,7 @@ import src.domain.party.published.PartySnapshotModel;
 import src.domain.party.published.RestType;
 import src.domain.party.published.SetPartyMembershipCommand;
 import src.domain.party.published.UpdateCharacterCommand;
+import src.view.slotcontent.topbar.dropdown.DropdownPopupContentModel;
 
 @SuppressWarnings("PMD.CouplingBetweenObjects")
 final class PartyTopBarBinder {
@@ -36,21 +37,23 @@ final class PartyTopBarBinder {
         EncounterApplicationService encounters = runtimeContext.services().require(EncounterApplicationService.class);
         PartyTopBarContributionModel presentationModel = new PartyTopBarContributionModel();
         PartyTopBarIntentHandler intentHandler = new PartyTopBarIntentHandler(presentationModel);
+        DropdownPopupContentModel popupContentModel = new DropdownPopupContentModel();
         PartyRosterTopBarView rosterView = new PartyRosterTopBarView();
         PartyEditorTopBarView editorView = new PartyEditorTopBarView();
-        PartyTopBarView topBarView = new PartyTopBarView(rosterView, editorView);
+        PartyTopBarView topBarView = new PartyTopBarView(popupContentModel, rosterView, editorView);
         PartySnapshotModel snapshotModel = runtimeContext.services().require(PartySnapshotModel.class);
         AdventuringDaySummaryModel summaryModel = runtimeContext.services().require(AdventuringDaySummaryModel.class);
         PartyMutationModel mutationModel = runtimeContext.services().require(PartyMutationModel.class);
         bindPartyRequests(party, encounters, intentHandler);
-        topBarView.setTriggerText(presentationModel.triggerTextProperty().get());
+        applyPopupPresentation(popupContentModel, presentationModel.triggerTextProperty().get());
         PartyTopBarContributionModel.PanelModel initialModel = presentationModel.panelProperty().get();
         PartyTopBarContributionModel.EditorPanelModel initialEditorModel = initialModel == null
                 ? PartyTopBarContributionModel.EditorPanelModel.hidden()
                 : initialModel.editorPanel();
         rosterView.showPanel(toRosterContent(initialModel));
         editorView.showEditor(initialEditorModel);
-        presentationModel.triggerTextProperty().addListener((ignored, before, after) -> topBarView.setTriggerText(after));
+        presentationModel.triggerTextProperty().addListener((ignored, before, after) ->
+                applyPopupPresentation(popupContentModel, after));
         presentationModel.panelProperty().addListener((ignored, before, after) -> {
             PartyTopBarContributionModel.EditorPanelModel editorModel = after == null
                     ? PartyTopBarContributionModel.EditorPanelModel.hidden()
@@ -186,6 +189,20 @@ final class PartyTopBarBinder {
                 safeModel.actionStatusError(),
                 safeModel.restActionsDisabled(),
                 safeModel.actionsDisabled());
+    }
+
+    private static void applyPopupPresentation(
+            DropdownPopupContentModel popupContentModel,
+            String triggerText
+    ) {
+        String safeTriggerText = triggerText == null ? "" : triggerText;
+        popupContentModel.showPresentation(
+                safeTriggerText,
+                safeTriggerText.replace("_", ""),
+                PartyTopBarView.OPEN_ACCESSIBLE_TEXT,
+                PartyTopBarView.TOOLTIP_TEXT,
+                true,
+                PartyTopBarView.POPUP_WIDTH);
     }
 
     private record Binding(Node topBar) implements ShellBinding {

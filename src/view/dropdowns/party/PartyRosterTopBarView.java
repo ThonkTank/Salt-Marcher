@@ -21,9 +21,9 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
+import src.view.slotcontent.primitives.progressmeter.ProgressMeterContentModel;
 import src.view.slotcontent.primitives.progressmeter.ProgressMeterView;
-import src.view.slotcontent.primitives.progressmeter.ProgressMeterView.PopupAction;
-import src.view.slotcontent.primitives.progressmeter.ProgressMeterView.PopupSpec;
+import src.view.slotcontent.primitives.progressmeter.ProgressMeterViewInputEvent;
 
 @SuppressWarnings("PMD.CouplingBetweenObjects")
 public final class PartyRosterTopBarView extends VBox {
@@ -33,6 +33,8 @@ public final class PartyRosterTopBarView extends VBox {
     private static final String STYLE_TEXT_SECONDARY = "text-secondary";
     private static final String STYLE_ACCENT = "accent";
     private static final String STYLE_NEUTRAL_ACTION = "neutral-action";
+    private static final String ACTION_XP_DECREASE = "xp-decrease";
+    private static final String ACTION_XP_INCREASE = "xp-increase";
 
     private final EventPublisher eventPublisher = new EventPublisher();
     private final MemberListPane memberList = new MemberListPane(
@@ -344,25 +346,54 @@ public final class PartyRosterTopBarView extends VBox {
                 boolean actionsDisabled,
                 BiConsumer<PartyTopBarContributionModel.MemberModel, Integer> onXpAdjustmentRequested
         ) {
-            PopupSpec popupSpec = actionsDisabled ? null : new PopupSpec(
-                    "XP korrigieren",
-                    100,
-                    List.of(
-                            new PopupAction("-XP", "", false, amount -> onXpAdjustmentRequested.accept(member, -amount)),
-                            new PopupAction("+XP", "accent", true, amount -> onXpAdjustmentRequested.accept(member, amount))));
-            ProgressMeterView progressMeter = new ProgressMeterView(
+            ProgressMeterContentModel progressMeterContentModel = new ProgressMeterContentModel();
+            progressMeterContentModel.showMeter(
                     member.levelProgressFraction(),
                     member.levelProgressText(),
                     "Level-Fortschritt " + member.levelProgressText(),
                     "progress-meter-fill-xp",
-                    "progress-meter-level",
-                    popupSpec);
+                    "progress-meter-level");
+            if (actionsDisabled) {
+                progressMeterContentModel.hidePopupActions();
+            } else {
+                progressMeterContentModel.configurePopup(
+                        "XP korrigieren",
+                        100,
+                        List.of(
+                                new ProgressMeterContentModel.PopupActionModel(
+                                        ACTION_XP_DECREASE,
+                                        "-XP",
+                                        "",
+                                        false),
+                                new ProgressMeterContentModel.PopupActionModel(
+                                        ACTION_XP_INCREASE,
+                                        "+XP",
+                                        "accent",
+                                        true)));
+            }
+            ProgressMeterView progressMeter = new ProgressMeterView();
+            progressMeter.bind(progressMeterContentModel);
+            progressMeter.onViewInputEvent(event ->
+                    onXpAdjustmentRequested.accept(member, xpDelta(event)));
             getChildren().addAll(
                     new LevelEdgeLabel(member.levelLabel()),
                     progressMeter,
                     new LevelEdgeLabel(member.nextLevelLabel()));
             setAlignment(Pos.CENTER_LEFT);
             setSpacing(5);
+        }
+
+        private static int xpDelta(ProgressMeterViewInputEvent event) {
+            if (event == null) {
+                return 0;
+            }
+            if (ACTION_XP_DECREASE.equals(event.actionId())) {
+                return -event.amount();
+            }
+            if (ACTION_XP_INCREASE.equals(event.actionId())) {
+                return event.amount();
+            }
+            return 0;
         }
     }
 

@@ -7,7 +7,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.function.Consumer;
-import javafx.beans.property.StringProperty;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
@@ -19,15 +18,14 @@ import javafx.scene.control.TextField;
 import javafx.scene.control.TextFormatter;
 import javafx.scene.control.ToggleButton;
 import javafx.scene.control.ToggleGroup;
-import javafx.scene.control.Tooltip;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
+import src.view.slotcontent.primitives.dialog.DialogSurfaceContentModel;
 import src.view.slotcontent.primitives.dialog.DialogSurfaceView;
-import src.view.slotcontent.primitives.dialog.DialogSurfaceView.BodyPolicy;
-import src.view.slotcontent.primitives.popup.AnchoredPopupView;
+import src.view.slotcontent.topbar.dropdown.DropdownPopupContentModel;
 import src.view.slotcontent.topbar.dropdown.DropdownPopupView;
 
 @SuppressWarnings({
@@ -37,29 +35,32 @@ import src.view.slotcontent.topbar.dropdown.DropdownPopupView;
 public final class AdventuringDayTopBarView extends HBox {
 
     private static final String PMD_LOD = "PMD.LawOfDemeter";
-    private static final double POPUP_WIDTH = 420.0;
-    private static final String CLEAR_LABEL = "Lee\u0072en";
-    private static final String TOTAL_GROUP_XP_LABEL = "Gesamt-\u0058\u0050";
+    static final double POPUP_WIDTH = 420.0;
+    private static final String CLEAR_LABEL = "Leeren";
+    private static final String TOTAL_GROUP_XP_LABEL = "Gesamt-XP";
     private static final String TOTAL_GROUP_XP_HINT = TOTAL_GROUP_XP_LABEL + " für die Gruppe";
     private static final String STYLE_COMPACT = "compact";
     private static final String STYLE_TEXT_MUTED = "text-muted";
     private static final String STYLE_TEXT_SECONDARY = "text-secondary";
+    static final String TOOLTIP_TEXT = "Adventuring-Day-Rechner öffnen";
 
-    private final Button triggerButton = new Button("Rastbudget ▼");
-    private final AnchoredPopupView popup = new AnchoredPopupView();
+    private final DropdownPopupContentModel popupContentModel;
+    private final DropdownPopupView popupView;
     private final CalculatorPane calculatorPane = new CalculatorPane(this::publishCalculationSubmit);
     private Consumer<AdventuringDayTopBarViewInputEvent> viewInputEventHandler = ignored -> { };
 
-    AdventuringDayTopBarView() {
+    AdventuringDayTopBarView(DropdownPopupContentModel popupContentModel) {
+        this.popupContentModel = popupContentModel;
         setSpacing(8);
         setPadding(new Insets(4, 0, 4, 8));
-        configureTrigger();
-        configurePopup();
-        getChildren().add(triggerButton);
-    }
-
-    StringProperty triggerTextProperty() {
-        return triggerButton.textProperty();
+        popupView = new DropdownPopupView(buildPanel());
+        popupView.bind(this.popupContentModel);
+        popupView.onViewInputEvent(event -> {
+            if (event.popupOpening()) {
+                publish(new AdventuringDayTopBarViewInputEvent(true, List.of(), 0));
+            }
+        });
+        getChildren().add(popupView);
     }
 
     void showPanel(AdventuringDayTopBarContributionModel.PanelModel panelModel) {
@@ -81,26 +82,13 @@ public final class AdventuringDayTopBarView extends HBox {
         viewInputEventHandler = handler == null ? ignored -> { } : handler;
     }
 
-    private void configureTrigger() {
-        addStyleClass(triggerButton, STYLE_TEXT_SECONDARY);
-        triggerButton.setTooltip(new Tooltip("Adventuring-Day-Rechner öffnen"));
-        triggerButton.setOnAction(event -> togglePopup());
-    }
-
-    private void configurePopup() {
-        DialogSurfaceView panel = buildPanel();
-        panel.getStyleClass().addAll("party-panel", "adventuring-day-toolbar-popup");
-        popup.setContent(panel);
-    }
-
     private DialogSurfaceView buildPanel() {
-        DialogSurfaceView dialog = new DialogSurfaceView();
         Label headerLabel = new Label("ADVENTURING DAY");
         addStyleClass(headerLabel, "title-large");
         Button closeButton = new Button("×");
         addStyleClass(closeButton, STYLE_COMPACT);
         closeButton.setAccessibleText("Adventuring-Day-Rechner schliessen");
-        closeButton.setOnAction(event -> popup.hide());
+        closeButton.setOnAction(event -> popupContentModel.close());
         Region spacer = new Region();
         setAlwaysHgrow(spacer);
         HBox header = new HBox(6, headerLabel, spacer, closeButton);
@@ -117,17 +105,12 @@ public final class AdventuringDayTopBarView extends HBox {
 
         VBox body = new VBox(scrollPane);
         body.setPadding(new Insets(0, 12, 12, 12));
-        dialog.setHeader(header);
-        dialog.setBody(body, BodyPolicy.FIXED);
+        DialogSurfaceView dialog = new DialogSurfaceView(header, body, null);
+        DialogSurfaceContentModel dialogContentModel = new DialogSurfaceContentModel();
+        dialogContentModel.showLayout(DialogSurfaceContentModel.BodyPolicy.FIXED, true, false);
+        dialog.bind(dialogContentModel);
+        dialog.getStyleClass().addAll("party-panel", "adventuring-day-toolbar-popup");
         return dialog;
-    }
-
-    private void togglePopup() {
-        DropdownPopupView.toggleTrailing(
-                popup,
-                triggerButton,
-                POPUP_WIDTH,
-                () -> publish(new AdventuringDayTopBarViewInputEvent(true, List.of(), 0)));
     }
 
     private void publishCalculationSubmit(List<Integer> levels, int totalGroupXp) {

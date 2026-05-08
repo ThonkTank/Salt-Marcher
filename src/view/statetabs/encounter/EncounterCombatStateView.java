@@ -16,23 +16,26 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
+import src.view.slotcontent.primitives.dialog.DialogSurfaceContentModel;
 import src.view.slotcontent.primitives.dialog.DialogSurfaceView;
-import src.view.slotcontent.primitives.dialog.DialogSurfaceView.BodyPolicy;
+import src.view.slotcontent.primitives.popup.AnchoredPopupContentModel;
 import src.view.slotcontent.primitives.popup.AnchoredPopupView;
+import src.view.slotcontent.primitives.progressmeter.ProgressMeterContentModel;
 import src.view.slotcontent.primitives.progressmeter.ProgressMeterView;
-import src.view.slotcontent.primitives.progressmeter.ProgressMeterView.PopupAction;
-import src.view.slotcontent.primitives.progressmeter.ProgressMeterView.PopupSpec;
 
 public final class EncounterCombatStateView extends VBox {
 
     private static final String STYLE_ACCENT = "accent";
     private static final String STYLE_TEXT_SECONDARY = "text-secondary";
+    private static final String ACTION_HP_DECREASE = "hp-decrease";
+    private static final String ACTION_HP_INCREASE = "hp-increase";
 
     private final StyledLabel combatRoundLabel = new StyledLabel("", "title");
     private final StyledLabel combatStatusLabel = new StyledLabel("", STYLE_TEXT_SECONDARY);
     private final CombatCardList combatCardList = new CombatCardList();
     private final EndCombatActions endCombatActions = new EndCombatActions(this::publish);
     private final PartyMemberAction addPartyButton = new PartyMemberAction();
+    private final DialogSurfaceContentModel dialogContentModel = new DialogSurfaceContentModel();
     private final DialogSurfaceView dialog = buildPane();
     private Consumer<EncounterCombatStateViewInputEvent> viewInputEventHandler = ignored -> { };
 
@@ -59,9 +62,9 @@ public final class EncounterCombatStateView extends VBox {
     }
 
     private DialogSurfaceView buildPane() {
-        DialogSurfaceView nextDialog = new DialogSurfaceView();
         HBox actions = new HBox(addPartyButton.button());
         actions.setAlignment(Pos.CENTER_RIGHT);
+        VBox header = new VBox(2, combatRoundLabel, combatStatusLabel, actions);
 
         combatCardList.setPadding(DialogSurfaceView.contentInsets());
 
@@ -71,9 +74,11 @@ public final class EncounterCombatStateView extends VBox {
         endCombatActions.setAlignment(Pos.CENTER);
         DialogSurfaceView.grow(nextTurnButton);
         DialogSurfaceView.grow(endCombatActions);
-        nextDialog.setHeader(combatRoundLabel, combatStatusLabel, actions);
-        nextDialog.setBody(combatCardList, BodyPolicy.SCROLL);
-        nextDialog.setFooter(nextTurnButton, endCombatActions);
+        HBox footer = new HBox(8, nextTurnButton, endCombatActions);
+        footer.setAlignment(Pos.CENTER_LEFT);
+        DialogSurfaceView nextDialog = new DialogSurfaceView(header, combatCardList, footer);
+        nextDialog.bind(dialogContentModel);
+        dialogContentModel.showLayout(DialogSurfaceContentModel.BodyPolicy.SCROLL, true, true);
         return nextDialog;
     }
 
@@ -176,32 +181,31 @@ public final class EncounterCombatStateView extends VBox {
             double fraction = card.maxHp() > 0
                     ? Math.max(0.0, Math.min(1.0, (double) card.currentHp() / card.maxHp()))
                     : 0.0;
-            return new ProgressMeterView(
+            ProgressMeterContentModel progressMeterContentModel = new ProgressMeterContentModel();
+            progressMeterContentModel.showMeter(
                     fraction,
                     (fraction <= WOUNDED_THRESHOLD ? "! " : "") + card.currentHp() + " / " + card.maxHp(),
                     card.name() + " HP " + card.currentHp() + "/" + card.maxHp(),
                     hpFillStyle(fraction),
-                    "progress-meter-combat",
-                    new PopupSpec(
+                    "progress-meter-combat");
+            progressMeterContentModel.configurePopup(
                             "HP bearbeiten",
                             HP_POPUP_STEP,
                             List.of(
-                                    new PopupAction(
+                                    new ProgressMeterContentModel.PopupActionModel(
+                                            ACTION_HP_DECREASE,
                                             "-",
                                             "",
-                                            true,
-                                            amount -> publish.accept(new EncounterCombatStateViewInputEvent.HpChangeInput(
-                                                    card.id(),
-                                                    amount,
-                                                    false))),
-                                    new PopupAction(
+                                            true),
+                                    new ProgressMeterContentModel.PopupActionModel(
+                                            ACTION_HP_INCREASE,
                                             "+",
                                             "",
-                                            false,
-                                            amount -> publish.accept(new EncounterCombatStateViewInputEvent.HpChangeInput(
-                                                    card.id(),
-                                                    amount,
-                                                    true))))));
+                                            false)));
+            ProgressMeterView progressMeterView = new ProgressMeterView();
+            progressMeterView.bind(progressMeterContentModel);
+            progressMeterView.onViewInputEvent(event -> publish.accept(hpInput(card.id(), event)));
+            return progressMeterView;
         }
 
         private static String hpFillStyle(double fraction) {
@@ -212,6 +216,14 @@ public final class EncounterCombatStateView extends VBox {
                 return "hp-fill-wounded";
             }
             return "hp-fill-critical";
+        }
+
+        private static EncounterCombatStateViewInputEvent.HpChangeInput hpInput(
+                String cardId,
+                src.view.slotcontent.primitives.progressmeter.ProgressMeterViewInputEvent event
+        ) {
+            boolean increase = ACTION_HP_INCREASE.equals(event.actionId());
+            return new EncounterCombatStateViewInputEvent.HpChangeInput(cardId, event.amount(), increase);
         }
 
         private static Button buildInitiativeButton(
@@ -236,10 +248,20 @@ public final class EncounterCombatStateView extends VBox {
 
     private static final class InitiativeEditorPopup {
 
-        private final AnchoredPopupView popup = new AnchoredPopupView();
+        private final AnchoredPopupContentModel popupContentModel = new AnchoredPopupContentModel();
+        private final StyledHBox popupContent = new StyledHBox(4, "anchored-popup");
+        private final AnchoredPopupView popup = new AnchoredPopupView(popupContent, this::anchor, this::focusTarget);
+        private Node anchor;
+        private PopupNumberField focusTarget;
+
+        private InitiativeEditorPopup() {
+            popup.bind(popupContentModel);
+        }
 
         private void show(Node anchor, int currentInitiative, IntConsumer onApply) {
+            this.anchor = anchor;
             PopupNumberField field = new PopupNumberField(String.valueOf(currentInitiative));
+            focusTarget = field;
             Button down = spinnerButton("\u25BC");
             Button up = spinnerButton("\u25B2");
             down.setOnAction(event -> field.adjust(currentInitiative, -1));
@@ -247,13 +269,20 @@ public final class EncounterCombatStateView extends VBox {
             StyledButton set = new StyledButton("\u2713 Setzen", STYLE_ACCENT);
             set.setDefaultButton(true);
             set.setOnAction(event -> {
-                popup.hide();
+                popupContentModel.hide();
                 onApply.accept(field.parse(currentInitiative));
             });
             field.setOnAction(event -> set.fire());
-            popup.setContent(new StyledHBox(4, "anchored-popup", down, field, up, set));
-            popup.showBelow(anchor, 8);
-            popup.focusAfterShown(field);
+            popupContent.getChildren().setAll(down, field, up, set);
+            popupContentModel.showBelow(8.0, true);
+        }
+
+        private Node anchor() {
+            return anchor;
+        }
+
+        private Node focusTarget() {
+            return focusTarget;
         }
     }
 
@@ -361,8 +390,16 @@ public final class EncounterCombatStateView extends VBox {
 
         private static final PartyMemberSelectionListener NO_SELECTION = (memberId, initiative) -> { };
 
-        private final AnchoredPopupView popup = new AnchoredPopupView();
+        private final AnchoredPopupContentModel popupContentModel = new AnchoredPopupContentModel();
+        private final StyledVBox popupContent = new StyledVBox(6, "anchored-popup", new Insets(8));
+        private final AnchoredPopupView popup = new AnchoredPopupView(popupContent, this::anchor, this::focusTarget);
         private PartyMemberSelectionListener selectionListener = NO_SELECTION;
+        private Node anchor;
+        private PopupNumberField focusTarget;
+
+        private PartyMemberPopup() {
+            popup.bind(popupContentModel);
+        }
 
         private void onPartyMemberSelected(PartyMemberSelectionListener listener) {
             selectionListener = listener == null ? NO_SELECTION : listener;
@@ -372,7 +409,8 @@ public final class EncounterCombatStateView extends VBox {
             if (anchor == null || candidates == null || candidates.isEmpty()) {
                 return;
             }
-            popup.hide();
+            this.anchor = anchor;
+            popupContentModel.hide();
             PopupNumberField firstField = null;
             List<Node> rows = new ArrayList<>();
             for (EncounterStateContributionModel.PartyMemberCandidate candidate : candidates) {
@@ -398,19 +436,25 @@ public final class EncounterCombatStateView extends VBox {
                     firstField = initiativeField;
                 }
             }
-            popup.setContent(new StyledVBox(6, "anchored-popup", new Insets(8), rows.toArray(Node[]::new)));
-            popup.showBelow(anchor, 8);
-            if (firstField != null) {
-                popup.focusAfterShown(firstField);
-            }
+            focusTarget = firstField;
+            popupContent.getChildren().setAll(rows);
+            popupContentModel.showBelow(8.0, firstField != null);
         }
 
         private void selectCandidate(
                 EncounterStateContributionModel.PartyMemberCandidate candidate,
                 int initiative
         ) {
-            popup.hide();
+            popupContentModel.hide();
             selectionListener.onPartyMemberSelected(candidate.memberId(), initiative);
+        }
+
+        private Node anchor() {
+            return anchor;
+        }
+
+        private Node focusTarget() {
+            return focusTarget;
         }
     }
 

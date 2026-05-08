@@ -76,7 +76,7 @@
               OR (
                 target.fqn =~ 'src\\.view\\..*'
                 AND (
-                  NOT (target.viewBucket IN ['CONTRIBUTION', 'BINDER', 'MODEL', 'HANDLER', 'VIEW', 'VIEW_INPUT_EVENT', 'PUBLISHED_EVENT'])
+                  NOT (target.viewBucket IN ['CONTRIBUTION', 'BINDER', 'MODEL', 'HANDLER', 'VIEW', 'VIEW_INPUT_EVENT'])
                   OR NOT (
                     (
                       size(sourceSegments) >= 4

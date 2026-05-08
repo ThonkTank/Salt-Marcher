@@ -14,6 +14,7 @@ import src.domain.party.PartyApplicationService;
 import src.domain.party.published.AdventuringDayCalculationModel;
 import src.domain.party.published.AdventuringDaySummaryModel;
 import src.domain.party.published.CalculateAdventuringDayCommand;
+import src.view.slotcontent.topbar.dropdown.DropdownPopupContentModel;
 
 @SuppressWarnings("PMD.TooManyMethods")
 final class AdventuringDayTopBarBinder {
@@ -33,11 +34,14 @@ final class AdventuringDayTopBarBinder {
                 runtimeContext.services().require(AdventuringDayCalculationModel.class);
         AdventuringDayTopBarContributionModel presentationModel = new AdventuringDayTopBarContributionModel();
         AdventuringDayTopBarIntentHandler intentHandler = new AdventuringDayTopBarIntentHandler(presentationModel);
-        AdventuringDayTopBarView view = new AdventuringDayTopBarView();
+        DropdownPopupContentModel popupContentModel = new DropdownPopupContentModel();
+        AdventuringDayTopBarView view = new AdventuringDayTopBarView(popupContentModel);
         bindRequests(party, intentHandler);
-        view.triggerTextProperty().bind(presentationModel.triggerTextProperty());
+        applyPopupPresentation(popupContentModel, presentationModel.triggerTextProperty().get());
         view.onViewInputEvent(intentHandler::consume);
         view.showPanel(presentationModel.panelProperty().get());
+        presentationModel.triggerTextProperty().addListener((ignored, before, after) ->
+                applyPopupPresentation(popupContentModel, after));
         presentationModel.panelProperty().addListener((ignored, before, after) -> view.showPanel(after));
         view.showCalculation(toCalculationContent(presentationModel.calculationProperty().get()));
         presentationModel.calculationProperty()
@@ -198,6 +202,20 @@ final class AdventuringDayTopBarBinder {
         format.setMinimumFractionDigits(0);
         format.setMaximumFractionDigits(2);
         return format.format(value);
+    }
+
+    private static void applyPopupPresentation(
+            DropdownPopupContentModel popupContentModel,
+            String triggerText
+    ) {
+        String safeTriggerText = triggerText == null ? "" : triggerText;
+        popupContentModel.showPresentation(
+                safeTriggerText,
+                safeTriggerText,
+                safeTriggerText,
+                AdventuringDayTopBarView.TOOLTIP_TEXT,
+                false,
+                AdventuringDayTopBarView.POPUP_WIDTH);
     }
 
     private record Binding(Node topBar) implements ShellBinding {

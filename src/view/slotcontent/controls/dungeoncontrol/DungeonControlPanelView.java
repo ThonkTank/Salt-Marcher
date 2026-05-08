@@ -19,6 +19,7 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.util.StringConverter;
+import src.view.slotcontent.primitives.popup.AnchoredPopupContentModel;
 import src.view.slotcontent.primitives.popup.AnchoredPopupView;
 
 public class DungeonControlPanelView extends VBox {
@@ -108,10 +109,14 @@ public class DungeonControlPanelView extends VBox {
 
         private final Button triggerButton = new Button();
         private final OverlayPopupContentView popupContent = new OverlayPopupContentView();
-        private final AnchoredPopupView popup = new AnchoredPopupView();
+        private final AnchoredPopupContentModel popupContentModel = new AnchoredPopupContentModel();
+        private final AnchoredPopupView popup = new AnchoredPopupView(
+                popupContent,
+                () -> triggerButton,
+                popupContent::focusTarget);
 
         private OverlayControlsPanel() {
-            popup.setContent(popupContent);
+            popup.bind(popupContentModel);
             FxAccess.addStyles(triggerButton, "toolbar-action-button", "dungeon-overlay-trigger");
             triggerButton.setMinWidth(USE_PREF_SIZE);
             triggerButton.setOnAction(event -> togglePopup());
@@ -135,12 +140,11 @@ public class DungeonControlPanelView extends VBox {
             if (triggerButton.isDisabled()) {
                 return;
             }
-            if (popup.isShowing()) {
-                popup.hide();
+            if (popupContentModel.isOpen()) {
+                popupContentModel.hide();
                 return;
             }
-            popup.showBelow(triggerButton);
-            popup.focusAfterShown(popupContent.focusTarget());
+            popupContentModel.showBelow(2.0, true);
         }
     }
 

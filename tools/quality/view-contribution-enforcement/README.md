@@ -10,8 +10,7 @@ role-local support, host wiring, and bundle metadata:
 - `errorprone/`
   `ViewContributionDependencyBoundary`,
   `ViewContributionShellApiAllowlist`,
-  `ViewContributionArchitectureSupport`,
-  `ViewContributionDependencySupport`
+  `ViewContributionArchitectureSupport`
 - `archunit/`
   `architecture.view.contribution.ViewContributionArchitectureTest`,
   shared `architecture.view.ViewRolePredicates`
@@ -21,8 +20,9 @@ role-local support, host wiring, and bundle metadata:
   descriptor-based registration into the focused-enforcement Gradle path
 
 Shared descriptor loading and shared engine host projects remain central
-Gradle/tool infrastructure. Contribution-specific source detection, shell
-allowlists, and dependency policy live in this bundle.
+Gradle/tool infrastructure. Contribution-specific shell allowlists live in
+this bundle; the closed-world view source classification and dependency policy
+now come from the shared Error Prone view core.
 
 Unified root entrypoint:
 

@@ -3,8 +3,7 @@
                    xsi:schemaLocation="http://schema.jqassistant.org/rule/v2.9 https://jqassistant.github.io/jqassistant/current/schema/jqassistant-rule-v2.9.xsd">
 
     <group id="saltmarcher:view-architecture" severity="blocker">
-        <includeConstraint refId="saltmarcher:ViewLayerAllowedBuckets"/>
-        <includeConstraint refId="saltmarcher:ViewLayerNoLegacyBuckets"/>
+        <includeConstraint refId="saltmarcher:ViewLayerClosedWorldTopology"/>
         <includeConstraint refId="saltmarcher:ViewLayerRootOnlyContribution"/>
         <includeConstraint refId="saltmarcher:ViewLayerOneModelPerFile"/>
         <includeConstraint refId="saltmarcher:ViewLayerRootEntrypointCount"/>
@@ -22,33 +21,23 @@
         ]]></cypher>
     </concept>
 
-    <constraint id="saltmarcher:ViewLayerAllowedBuckets">
+    <constraint id="saltmarcher:ViewLayerClosedWorldTopology">
         <requiresConcept refId="saltmarcher:ViewLayerType"/>
-        <description>Cockpit topology allows active view Java only in active roots or reusable slotcontent roots.</description>
+        <description>View sources form one closed world of allowed directories, depths, and top-level role file shapes.</description>
         <cypher><![CDATA[
             MATCH (type:Java:Type:SaltMarcher:ViewLayerType)
-            WHERE type.viewBucket = 'LEGACY'
+            WHERE NOT coalesce(type.recognizedViewSource, false)
             RETURN DISTINCT
               type.relativePath AS Source,
-              'src/view/leftbartabs, src/view/statetabs, src/view/dropdowns, or src/view/slotcontent' AS ExpectedDirection,
-              type.fqn AS ActualDirection,
-              'Active view Java must use the cockpit contribution topology.' AS Details
-            ORDER BY Source
-        ]]></cypher>
-        <report primaryColumn="Source" keyColumns="Source, ActualDirection"/>
-    </constraint>
-
-    <constraint id="saltmarcher:ViewLayerNoLegacyBuckets">
-        <requiresConcept refId="saltmarcher:ViewLayerType"/>
-        <description>Component-local view buckets are migration debt and forbidden for active Java.</description>
-        <cypher><![CDATA[
-            MATCH (type:Java:Type:SaltMarcher:ViewLayerType)
-            WHERE type.viewBucket = 'LEGACY'
-            RETURN DISTINCT
-              type.relativePath AS Source,
-              'src/view/leftbartabs, src/view/statetabs, src/view/dropdowns, or src/view/slotcontent' AS ExpectedDirection,
-              type.fqn AS ActualDirection,
-              'Legacy component-local View/ViewModel/api/assembly-style topology is not active target code.' AS Details
+              'src/view/(leftbartabs|statetabs|dropdowns)/<entry>/ or src/view/slotcontent/<slot>/<entry>/' AS ExpectedDirection,
+              type.fqn + ' [' + coalesce(type.viewRole, 'UNKNOWN') + ']' AS ActualDirection,
+              CASE
+                WHEN coalesce(type.wrongDirectory, false) THEN 'View code must live only in the documented active-root or reusable slotcontent directories.'
+                WHEN coalesce(type.wrongDepth, false) THEN 'View code must be a direct top-level file in its active root or reusable slotcontent unit.'
+                WHEN coalesce(type.knownForbiddenRole, false) THEN 'View code must not use foreign top-level roles such as PublishedEvent, InspectorEntry, ViewModel, PresentationModel, or Projector.'
+                WHEN coalesce(type.unknownRoleForm, false) THEN 'View code must use only the documented top-level role file names.'
+                ELSE 'View code must stay inside the closed active-root and reusable-slotcontent topology.'
+              END AS Details
             ORDER BY Source
         ]]></cypher>
         <report primaryColumn="Source" keyColumns="Source, ActualDirection"/>
@@ -125,7 +114,7 @@
               OR (
                 target.fqn =~ 'src\\.view\\..*'
                 AND (
-                  NOT (target.viewBucket IN ['CONTRIBUTION', 'BINDER', 'MODEL', 'HANDLER', 'VIEW', 'VIEW_INPUT_EVENT', 'PUBLISHED_EVENT'])
+                  NOT (target.viewBucket IN ['CONTRIBUTION', 'BINDER', 'MODEL', 'HANDLER', 'VIEW', 'VIEW_INPUT_EVENT'])
                   OR NOT (
                     size(sourceSegments) >= 4
                     AND size(targetSegments) >= 4

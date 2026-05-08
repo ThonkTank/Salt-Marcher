@@ -15,8 +15,8 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.util.StringConverter;
+import src.view.slotcontent.primitives.dialog.DialogSurfaceContentModel;
 import src.view.slotcontent.primitives.dialog.DialogSurfaceView;
-import src.view.slotcontent.primitives.dialog.DialogSurfaceView.BodyPolicy;
 
 public final class EncounterResultsStateView extends VBox {
 
@@ -34,6 +34,7 @@ public final class EncounterResultsStateView extends VBox {
     private final Label resultFractionValueLabel = new Label();
     private final EnemySelectionList resultEnemyList = new EnemySelectionList();
     private final Button resultAwardButton = new Button("XP verteilen");
+    private final DialogSurfaceContentModel dialogContentModel = new DialogSurfaceContentModel();
     private final DialogSurfaceView dialog = buildPane();
     private EncounterStateContributionModel.ResultStateView lastState = EncounterStateContributionModel.ResultStateView.empty();
     private Consumer<EncounterResultsStateViewInputEvent> viewInputEventHandler = ignored -> { };
@@ -59,7 +60,6 @@ public final class EncounterResultsStateView extends VBox {
     }
 
     private DialogSurfaceView buildPane() {
-        DialogSurfaceView nextDialog = new DialogSurfaceView();
         Label title = styledLabel("Kampfergebnis", "title");
         resultLootLabel.setWrapText(true);
 
@@ -85,9 +85,12 @@ public final class EncounterResultsStateView extends VBox {
         VBox body = new VBox(8, summary, separator(), controls, separator(), resultEnemyList,
                 separator(), resultAwardStatusLabel);
         body.setPadding(DialogSurfaceView.contentInsets());
-        nextDialog.setHeader(title, resultSubtitleLabel);
-        nextDialog.setBody(body, BodyPolicy.SCROLL);
-        nextDialog.setFooter(resultAwardButton, doneButton);
+        VBox header = new VBox(2, title, resultSubtitleLabel);
+        HBox footer = new HBox(8, resultAwardButton, doneButton);
+        footer.setAlignment(Pos.CENTER_LEFT);
+        DialogSurfaceView nextDialog = new DialogSurfaceView(header, body, footer);
+        nextDialog.bind(dialogContentModel);
+        dialogContentModel.showLayout(DialogSurfaceContentModel.BodyPolicy.SCROLL, true, true);
         return nextDialog;
     }
 

@@ -121,9 +121,17 @@ public final class SaltMarcherSourcePolicyRule extends AbstractJavaRule {
         }
 
         if (sourceFacts.isViewSource()) {
-            if (sourceFacts.isLegacyViewSource()) {
+            if (sourceFacts.isMisplacedViewSource()) {
                 asCtx(data).addViolationWithMessage(node,
-                        "View code must migrate to src/view/leftbartabs, src/view/statetabs, src/view/dropdowns, or reusable src/view/slotcontent; old component-local roots are forbidden.");
+                        "View code must live only in src/view/leftbartabs, src/view/statetabs, src/view/dropdowns, or direct-file reusable src/view/slotcontent units.");
+            }
+            if (sourceFacts.isKnownForbiddenViewRoleSource()) {
+                asCtx(data).addViolationWithMessage(node,
+                        "View code must use only the closed active-root and reusable-slotcontent role families; foreign top-level view roles are forbidden.");
+            }
+            if (sourceFacts.isUnknownViewRoleSource()) {
+                asCtx(data).addViolationWithMessage(node,
+                        "View code must use only the documented top-level role file names; unknown view role forms are forbidden.");
             }
             for (String legacyType : VIEW_LEGACY_SHELL_TYPES) {
                 if (sourceFacts.text().contains(legacyType)) {

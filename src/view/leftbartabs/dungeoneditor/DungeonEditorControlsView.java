@@ -26,8 +26,9 @@ import org.jspecify.annotations.Nullable;
 import src.view.slotcontent.controls.dungeoncontrol.DungeonControlPanelView;
 import src.view.slotcontent.controls.dungeoncontrol.DungeonControlPanelContentModel;
 import src.view.slotcontent.controls.dungeoncontrol.DungeonControlPanelViewInputEvent;
+import src.view.slotcontent.primitives.dialog.DialogSurfaceContentModel;
 import src.view.slotcontent.primitives.dialog.DialogSurfaceView;
-import src.view.slotcontent.primitives.dialog.DialogSurfaceView.BodyPolicy;
+import src.view.slotcontent.primitives.popup.AnchoredPopupContentModel;
 import src.view.slotcontent.primitives.popup.AnchoredPopupView;
 
 public final class DungeonEditorControlsView extends DungeonControlPanelView {
@@ -475,7 +476,7 @@ final class DungeonEditorMapControls {
 
 final class DungeonEditorMapEditorPopup {
 
-    private final AnchoredPopupView popup = new AnchoredPopupView();
+    private final AnchoredPopupContentModel popupContentModel = new AnchoredPopupContentModel();
     private final Label titleLabel = new Label();
     private final TextField draftField = new TextField();
     private final Label errorLabel = new Label();
@@ -487,6 +488,7 @@ final class DungeonEditorMapEditorPopup {
     private final HBox actionRow;
     private final Node anchor;
     private final DungeonEditorControlsEvents events;
+    private final AnchoredPopupView popup;
 
     DungeonEditorMapEditorPopup(DungeonEditorControlsView panelView, DungeonEditorControlsEvents events, Node anchor) {
         this.events = events;
@@ -509,14 +511,19 @@ final class DungeonEditorMapEditorPopup {
         actionRow.setAlignment(Pos.CENTER_LEFT);
 
         VBox body = new VBox(10, draftField, errorLabel, deleteConfirmRow);
-        DialogSurfaceView panel = new DialogSurfaceView();
+        DialogSurfaceContentModel dialogContentModel = new DialogSurfaceContentModel();
+        DialogSurfaceView panel = new DialogSurfaceView(titleLabel, body, actionRow);
+        panel.bind(dialogContentModel);
+        dialogContentModel.showLayout(DialogSurfaceContentModel.BodyPolicy.FIXED, true, true);
         panel.setPadding(new Insets(10));
         DungeonEditorControlsFxAccess.addStyles(panel, "dropdown-window", "dropdown-form");
-        panel.setHeader(titleLabel);
-        panel.setBody(body, BodyPolicy.FIXED);
-        panel.setFooter(actionRow);
-        popup.setContent(panel);
-        popup.addOnHidden(event -> handleHidden());
+        popup = new AnchoredPopupView(panel, () -> this.anchor, () -> draftField);
+        popup.bind(popupContentModel);
+        popup.onViewInputEvent(event -> {
+            if (event.interaction() == src.view.slotcontent.primitives.popup.AnchoredPopupViewInputEvent.Interaction.HIDDEN) {
+                handleHidden();
+            }
+        });
 
         cancelButton.setOnAction(event -> publishInput(false, false, false, true, false, false));
         cancelDeleteButton.setOnAction(event -> publishInput(false, false, false, true, false, false));
@@ -548,7 +555,7 @@ final class DungeonEditorMapEditorPopup {
         DungeonEditorContributionModel.MapEditorUiState resolvedState = mapEditorUiState == null
                 ? DungeonEditorContributionModel.MapEditorUiState.hidden()
                 : mapEditorUiState;
-        boolean popupWasShowing = popup.isShowing();
+        boolean popupWasShowing = popupContentModel.isOpen();
         titleLabel.setText(resolvedState.title());
         DungeonEditorControlsListeners.withDetachedTextUpdate(draftField, draftListener, () ->
                 draftField.setText(resolvedState.draftName()));
@@ -569,10 +576,12 @@ final class DungeonEditorMapEditorPopup {
             return;
         }
         if (!popupWasShowing) {
-            popup.showBelow(anchor);
+            popupContentModel.showBelow(2.0, resolvedState.draftFieldVisible());
         }
         if (resolvedState.draftFieldVisible()) {
-            popup.focusAfterShown(draftField);
+            if (popupWasShowing) {
+                draftField.requestFocus();
+            }
             if (!popupWasShowing) {
                 draftField.selectAll();
             }
@@ -590,8 +599,8 @@ final class DungeonEditorMapEditorPopup {
     }
 
     private void hidePopup() {
-        if (popup.isShowing()) {
-            hiddenGate.runSuppressed(popup::hide);
+        if (popupContentModel.isOpen()) {
+            hiddenGate.runSuppressed(popupContentModel::hide);
         }
     }
 
@@ -866,12 +875,14 @@ final class DungeonEditorToolControls {
 
 final class DungeonEditorToolPalettePopup {
 
-    private final AnchoredPopupView popup = new AnchoredPopupView();
+    private final AnchoredPopupContentModel popupContentModel = new AnchoredPopupContentModel();
     private final Button primaryToolOption = createToolButton("");
     private final Button secondaryToolOption = createToolButton("");
     private final DungeonEditorControlsGate hiddenGate = new DungeonEditorControlsGate();
     private final DungeonEditorControlsEvents events;
     private final DungeonEditorToolControls toolControls;
+    private final AnchoredPopupView popup;
+    private @Nullable Button anchor;
 
     DungeonEditorToolPalettePopup(DungeonEditorControlsEvents events, DungeonEditorToolControls toolControls) {
         this.events = events;
@@ -879,8 +890,13 @@ final class DungeonEditorToolPalettePopup {
         HBox panel = new HBox(8, primaryToolOption, secondaryToolOption);
         panel.setPadding(new Insets(10));
         DungeonEditorControlsFxAccess.addStyles(panel, "dropdown-window", "dropdown-form");
-        popup.setContent(panel);
-        popup.addOnHidden(event -> handleHidden());
+        popup = new AnchoredPopupView(panel, () -> anchor, () -> primaryToolOption);
+        popup.bind(popupContentModel);
+        popup.onViewInputEvent(event -> {
+            if (event.interaction() == src.view.slotcontent.primitives.popup.AnchoredPopupViewInputEvent.Interaction.HIDDEN) {
+                handleHidden();
+            }
+        });
     }
 
     void show(DungeonEditorContributionModel.ToolPaletteUiState toolPaletteUiState) {
@@ -895,16 +911,15 @@ final class DungeonEditorToolPalettePopup {
             hidePopup();
             return;
         }
-        Button anchor = toolControls.anchorFor(resolvedState.family());
+        anchor = toolControls.anchorFor(resolvedState.family());
         if (anchor == null) {
             hidePopup();
             return;
         }
-        if (popup.isShowing()) {
+        if (popupContentModel.isOpen()) {
             hidePopup();
         }
-        popup.showBelow(anchor);
-        popup.focusAfterShown(primaryToolOption);
+        popupContentModel.showBelow(2.0, true);
     }
 
     private void handleHidden() {
@@ -914,8 +929,8 @@ final class DungeonEditorToolPalettePopup {
     }
 
     private void hidePopup() {
-        if (popup.isShowing()) {
-            hiddenGate.runSuppressed(popup::hide);
+        if (popupContentModel.isOpen()) {
+            hiddenGate.runSuppressed(popupContentModel::hide);
         }
     }
 

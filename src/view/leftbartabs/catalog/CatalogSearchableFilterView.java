@@ -10,6 +10,7 @@ import javafx.scene.control.CheckBox;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.VBox;
+import src.view.slotcontent.primitives.popup.AnchoredPopupContentModel;
 import src.view.slotcontent.primitives.popup.AnchoredPopupView;
 
 final class CatalogSearchableFilterView extends javafx.scene.control.Button {
@@ -19,8 +20,9 @@ final class CatalogSearchableFilterView extends javafx.scene.control.Button {
 
     private final String label;
     private final Runnable onInteraction;
-    private final AnchoredPopupView popup = new AnchoredPopupView();
     private final PopupContentView popupContent;
+    private final AnchoredPopupContentModel popupContentModel = new AnchoredPopupContentModel();
+    private final AnchoredPopupView popup;
     private final Set<String> selectedValues = new LinkedHashSet<>();
 
     private List<String> options = List.of();
@@ -42,7 +44,16 @@ final class CatalogSearchableFilterView extends javafx.scene.control.Button {
         setText(label + CLOSED_SUFFIX);
         setAccessibleText(label + " geschlossen");
         setOnAction(event -> togglePopup());
-        popup.setContent(popupContent);
+        popup = new AnchoredPopupView(popupContent, () -> this);
+        popup.bind(popupContentModel);
+        popup.onViewInputEvent(event -> {
+            if (event.interaction() == src.view.slotcontent.primitives.popup.AnchoredPopupViewInputEvent.Interaction.HIDDEN) {
+                updateTriggerText();
+                if (onInteraction != null) {
+                    onInteraction.run();
+                }
+            }
+        });
     }
 
     void applyProjection(Projection projection) {
@@ -53,11 +64,11 @@ final class CatalogSearchableFilterView extends javafx.scene.control.Button {
             selectedValues.addAll(safeProjection.selectedValues());
             popupContent.render(options, selectedValues, safeProjection.dropdownState().searchQuery());
             if (safeProjection.dropdownState().open()) {
-                if (!popup.isShowing()) {
-                    popup.showBelow(this);
+                if (!popupContentModel.isOpen()) {
+                    popupContentModel.showBelow();
                 }
-            } else if (popup.isShowing()) {
-                popup.hide();
+            } else if (popupContentModel.isOpen()) {
+                popupContentModel.hide();
             }
             updateTriggerText();
         });
@@ -66,13 +77,13 @@ final class CatalogSearchableFilterView extends javafx.scene.control.Button {
     Snapshot snapshot() {
         return new Snapshot(
                 List.copyOf(selectedValues),
-                new CatalogContributionModel.FilterDropdownState(popup.isShowing(), popupContent.query()));
+                new CatalogContributionModel.FilterDropdownState(popupContentModel.isOpen(), popupContent.query()));
     }
 
     void removeValue(String value) {
         if (selectedValues.remove(value)) {
             runSilently(() -> {
-                if (popup.isShowing()) {
+                if (popupContentModel.isOpen()) {
                     popupContent.render(options, selectedValues, popupContent.query());
                 }
                 updateTriggerText();
@@ -84,7 +95,7 @@ final class CatalogSearchableFilterView extends javafx.scene.control.Button {
         if (!selectedValues.isEmpty()) {
             runSilently(() -> {
                 selectedValues.clear();
-                if (popup.isShowing()) {
+                if (popupContentModel.isOpen()) {
                     popupContent.render(options, selectedValues, popupContent.query());
                 }
                 updateTriggerText();
@@ -116,11 +127,11 @@ final class CatalogSearchableFilterView extends javafx.scene.control.Button {
     }
 
     private void togglePopup() {
-        if (popup.isShowing()) {
-            popup.hide();
+        if (popupContentModel.isOpen()) {
+            popupContentModel.hide();
         } else {
             popupContent.render(options, selectedValues, popupContent.query());
-            popup.showBelow(this);
+            popupContentModel.showBelow();
         }
         updateTriggerText();
         if (onInteraction != null) {
@@ -152,7 +163,7 @@ final class CatalogSearchableFilterView extends javafx.scene.control.Button {
         } else {
             setText(label + CLOSED_SUFFIX);
         }
-        setAccessibleText(popup.isShowing() ? label + " geöffnet - Escape zum Schließen" : getText());
+        setAccessibleText(popupContentModel.isOpen() ? label + " geöffnet - Escape zum Schließen" : getText());
     }
 
     private void runSilently(Runnable action) {

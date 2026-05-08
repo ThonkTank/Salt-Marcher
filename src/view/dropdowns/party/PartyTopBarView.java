@@ -5,51 +5,44 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
-import javafx.scene.control.Tooltip;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
-import src.view.slotcontent.primitives.popup.AnchoredPopupView;
+import src.view.slotcontent.topbar.dropdown.DropdownPopupContentModel;
 import src.view.slotcontent.topbar.dropdown.DropdownPopupView;
 
 @SuppressWarnings("PMD.LawOfDemeter")
 public final class PartyTopBarView extends HBox {
 
-    private static final double POPUP_WIDTH = 380.0;
+    static final double POPUP_WIDTH = 380.0;
+    static final String OPEN_ACCESSIBLE_TEXT = "Party-Panel geöffnet, Escape zum Schließen";
+    static final String TOOLTIP_TEXT = "Party-Panel öffnen (Alt+P)";
 
-    private final Button triggerButton = new Button("Keine _Party ▼");
-    private final AnchoredPopupView popup = new AnchoredPopupView();
+    private final DropdownPopupContentModel popupContentModel;
+    private final DropdownPopupView popupView;
     private Consumer<PartyTopBarViewInputEvent> viewInputEventHandler = ignored -> { };
 
     public PartyTopBarView(
+            DropdownPopupContentModel popupContentModel,
             PartyRosterTopBarView rosterView,
             PartyEditorTopBarView editorView
     ) {
+        this.popupContentModel = popupContentModel;
         setSpacing(8);
         setPadding(new Insets(4, 8, 4, 8));
-        configureTrigger();
-        popup.setContent(buildPanel(rosterView, editorView));
-        popup.addOnShowing(event -> triggerButton.setAccessibleText("Party-Panel geöffnet, Escape zum Schließen"));
-        popup.addOnHiding(event -> triggerButton.setAccessibleText(triggerButton.getText().replace("_", "")));
-        getChildren().add(triggerButton);
-    }
-
-    public void setTriggerText(String text) {
-        String safeText = safe(text);
-        triggerButton.setText(safeText);
-        triggerButton.setAccessibleText(safeText.replace("_", ""));
+        popupView = new DropdownPopupView(buildPanel(rosterView, editorView));
+        popupView.bind(this.popupContentModel);
+        popupView.onViewInputEvent(event -> {
+            if (event.popupOpening()) {
+                viewInputEventHandler.accept(new PartyTopBarViewInputEvent());
+            }
+        });
+        getChildren().add(popupView);
     }
 
     public void onViewInputEvent(Consumer<PartyTopBarViewInputEvent> handler) {
         viewInputEventHandler = handler == null ? ignored -> { } : handler;
-    }
-
-    private void configureTrigger() {
-        addStyleClass(triggerButton, "text-secondary");
-        triggerButton.setMnemonicParsing(true);
-        triggerButton.setTooltip(new Tooltip("Party-Panel öffnen (Alt+P)"));
-        triggerButton.setOnAction(event -> togglePopup());
     }
 
     private VBox buildPanel(
@@ -59,7 +52,7 @@ public final class PartyTopBarView extends HBox {
         Button closeButton = new Button("x");
         addStyleClass(closeButton, "compact");
         closeButton.setAccessibleText("Party-Panel schließen");
-        closeButton.setOnAction(event -> popup.hide());
+        closeButton.setOnAction(event -> popupContentModel.close());
         Region headerSpacer = new Region();
         setHgrow(headerSpacer, Priority.ALWAYS);
         Label headerLabel = new Label("PARTY");
@@ -72,18 +65,6 @@ public final class PartyTopBarView extends HBox {
         addStyleClass(panel, "party-panel");
         panel.setFillWidth(true);
         return panel;
-    }
-
-    private void togglePopup() {
-        DropdownPopupView.toggleTrailing(
-                popup,
-                triggerButton,
-                POPUP_WIDTH,
-                () -> viewInputEventHandler.accept(new PartyTopBarViewInputEvent()));
-    }
-
-    private static String safe(String value) {
-        return value == null ? "" : value;
     }
 
     private static void addStyleClass(javafx.scene.Node node, String styleClass) {

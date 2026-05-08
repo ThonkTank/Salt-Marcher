@@ -14,13 +14,14 @@ import javafx.scene.control.Spinner;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
+import src.view.slotcontent.primitives.dialog.DialogSurfaceContentModel;
 import src.view.slotcontent.primitives.dialog.DialogSurfaceView;
-import src.view.slotcontent.primitives.dialog.DialogSurfaceView.BodyPolicy;
 
 public final class EncounterInitiativeStateView extends VBox {
 
     private final Map<String, Spinner<Integer>> initiativeSpinnerById = new LinkedHashMap<>();
     private final InitiativeList initiativeList = new InitiativeList();
+    private final DialogSurfaceContentModel dialogContentModel = new DialogSurfaceContentModel();
     private final DialogSurfaceView dialog = buildPane();
     private Consumer<EncounterInitiativeStateViewInputEvent> viewInputEventHandler = ignored -> { };
 
@@ -52,7 +53,6 @@ public final class EncounterInitiativeStateView extends VBox {
     }
 
     private DialogSurfaceView buildPane() {
-        DialogSurfaceView nextDialog = new DialogSurfaceView();
         Label title = new StyledLabel("Initiative", "title");
         initiativeList.setPadding(DialogSurfaceView.contentInsets());
 
@@ -62,9 +62,11 @@ public final class EncounterInitiativeStateView extends VBox {
         rollAllButton.setOnAction(event -> rollAllInitiatives());
         Button startButton = new StyledButton("Kampf starten", "accent");
         startButton.setOnAction(event -> publish(new EncounterInitiativeStateViewInputEvent(false, readInitiatives())));
-        nextDialog.setHeader(title);
-        nextDialog.setBody(initiativeList, BodyPolicy.SCROLL);
-        nextDialog.setFooter(backButton, rollAllButton, DialogSurfaceView.spacer(), startButton);
+        HBox footer = new HBox(8, backButton, rollAllButton, DialogSurfaceView.spacer(), startButton);
+        footer.setAlignment(Pos.CENTER_LEFT);
+        DialogSurfaceView nextDialog = new DialogSurfaceView(title, initiativeList, footer);
+        nextDialog.bind(dialogContentModel);
+        dialogContentModel.showLayout(DialogSurfaceContentModel.BodyPolicy.SCROLL, true, true);
         return nextDialog;
     }
 

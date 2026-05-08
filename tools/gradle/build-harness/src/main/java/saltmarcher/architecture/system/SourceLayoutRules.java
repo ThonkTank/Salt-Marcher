@@ -6,6 +6,7 @@ import saltmarcher.architecture.ArchitectureContext;
 import saltmarcher.architecture.ArchitectureRule;
 import saltmarcher.architecture.SourceFile;
 import saltmarcher.architecture.ViolationSink;
+import saltmarcher.architecture.view.ViewTopologyCatalog;
 
 public final class SourceLayoutRules implements ArchitectureRule {
 
@@ -62,32 +63,7 @@ public final class SourceLayoutRules implements ArchitectureRule {
         }
 
         switch (segments.get(1)) {
-            case "view" -> {
-                if (segments.size() < 3) {
-                    violations.add(sourceFile.relativePath(), "view-layout",
-                            "View sources must live under src/view/leftbartabs, src/view/statetabs, src/view/dropdowns, or src/view/slotcontent.");
-                    return;
-                }
-                String bucket = segments.get(2);
-                if (bucket.equals("slotcontent")) {
-                    if (segments.size() != 6
-                            || !Set.of("controls", "main", "state", "details", "topbar", "primitives")
-                            .contains(segments.get(3))) {
-                        violations.add(sourceFile.relativePath(), "view-layout",
-                                "Slotcontent Java sources must be direct files under src/view/slotcontent/<slot>/<entry>/.");
-                    }
-                    return;
-                }
-                if (!Set.of("leftbartabs", "statetabs", "dropdowns").contains(bucket)) {
-                    violations.add(sourceFile.relativePath(), "view-layout",
-                            "View Java sources must live under src/view/leftbartabs, src/view/statetabs, src/view/dropdowns, or src/view/slotcontent.");
-                    return;
-                }
-                if (segments.size() != 5) {
-                    violations.add(sourceFile.relativePath(), "view-layout",
-                            "Active view Java sources must be direct files under src/view/<area>/<entry>/.");
-                }
-            }
+            case "view" -> validateViewLayout(sourceFile, violations);
             case "domain" -> validateDomainLayout(sourceFile, violations);
             case "data" -> {
                 // Data layer layout and feature-root topology live in the dedicated data-layer bundle.
@@ -117,6 +93,28 @@ public final class SourceLayoutRules implements ArchitectureRule {
             validateDomainApplicationLayout(sourceFile, violations);
             return;
         }
+    }
+
+    private void validateViewLayout(SourceFile sourceFile, ViolationSink violations) {
+        List<String> segments = sourceFile.relativeSegments();
+        if (segments.size() < 3) {
+            violations.add(sourceFile.relativePath(), "view-layout",
+                    "View sources must live under src/view/leftbartabs, src/view/statetabs, src/view/dropdowns, or src/view/slotcontent.");
+            return;
+        }
+
+        if (ViewTopologyCatalog.describe(sourceFile).isRecognizedViewSource()) {
+            return;
+        }
+
+        if ("slotcontent".equals(segments.get(2))) {
+            violations.add(sourceFile.relativePath(), "view-layout",
+                    "Slotcontent Java sources must be direct files under src/view/slotcontent/<slot>/<entry>/.");
+            return;
+        }
+
+        violations.add(sourceFile.relativePath(), "view-layout",
+                "View Java sources must live under src/view/leftbartabs, src/view/statetabs, src/view/dropdowns, or src/view/slotcontent.");
     }
     private void validateDomainApplicationLayout(SourceFile sourceFile, ViolationSink violations) {
         // Domain UseCase bundle owns all application/*UseCase layout and naming enforcement.

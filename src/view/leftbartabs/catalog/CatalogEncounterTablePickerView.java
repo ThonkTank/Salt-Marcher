@@ -11,6 +11,7 @@ import javafx.scene.control.Label;
 import javafx.scene.control.Tooltip;
 import javafx.scene.layout.VBox;
 import org.jspecify.annotations.Nullable;
+import src.view.slotcontent.primitives.popup.AnchoredPopupContentModel;
 import src.view.slotcontent.primitives.popup.AnchoredPopupView;
 
 final class CatalogEncounterTablePickerView extends Button {
@@ -25,8 +26,9 @@ final class CatalogEncounterTablePickerView extends Button {
 
     private final Runnable onInteraction;
     private final Tooltip tableTooltip = new Tooltip(DEFAULT_TOOLTIP);
-    private final AnchoredPopupView popup = new AnchoredPopupView();
     private final PopupContentView popupContent = new PopupContentView();
+    private final AnchoredPopupContentModel popupContentModel = new AnchoredPopupContentModel();
+    private final AnchoredPopupView popup = new AnchoredPopupView(popupContent, () -> this);
     private final SelectionState selectionState = new SelectionState();
 
     CatalogEncounterTablePickerView(Runnable onInteraction) {
@@ -34,7 +36,7 @@ final class CatalogEncounterTablePickerView extends Button {
         getStyleClass().addAll("compact", "filter-trigger");
         setTooltip(tableTooltip);
         setOnAction(event -> togglePopup());
-        popup.setContent(popupContent);
+        popup.bind(popupContentModel);
         updateTriggerState();
     }
 
@@ -45,20 +47,20 @@ final class CatalogEncounterTablePickerView extends Button {
     }
 
     Snapshot snapshot() {
-        return selectionState.snapshot(popup.isShowing());
+        return selectionState.snapshot(popupContentModel.isOpen());
     }
 
     boolean clearChip(String key) {
         if (!selectionState.clearChip(key)) {
             return false;
         }
-        renderPopup(popup.isShowing());
+        renderPopup(popupContentModel.isOpen());
         updateTriggerState();
         return true;
     }
 
     private void togglePopup() {
-        renderPopup(!popup.isShowing());
+        renderPopup(!popupContentModel.isOpen());
         onInteraction.run();
     }
 
@@ -69,13 +71,13 @@ final class CatalogEncounterTablePickerView extends Button {
                     selectionState.selectedEncounterTableIds(),
                     this::handleSelectionChange,
                     this::handleClearAll);
-            if (!popup.isShowing()) {
-                popup.showBelow(this);
+            if (!popupContentModel.isOpen()) {
+                popupContentModel.showBelow();
             }
             return;
         }
-        if (popup.isShowing()) {
-            popup.hide();
+        if (popupContentModel.isOpen()) {
+            popupContentModel.hide();
         }
     }
 
@@ -91,14 +93,14 @@ final class CatalogEncounterTablePickerView extends Button {
 
     private void handleSelectionChange(long tableId, boolean selected) {
         selectionState.select(tableId, selected);
-        renderPopup(popup.isShowing());
+        renderPopup(popupContentModel.isOpen());
         updateTriggerState();
         onInteraction.run();
     }
 
     private void handleClearAll() {
         selectionState.clearAll();
-        renderPopup(popup.isShowing());
+        renderPopup(popupContentModel.isOpen());
         updateTriggerState();
         onInteraction.run();
     }
