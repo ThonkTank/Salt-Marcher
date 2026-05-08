@@ -23,6 +23,7 @@ import src.domain.party.published.ReadStatus;
 import src.domain.sessionplanner.session.port.SessionEncounterFactsLookup;
 import src.domain.sessionplanner.session.port.SessionPartyFactsLookup;
 
+@SuppressWarnings("PMD.CouplingBetweenObjects")
 public final class ApplicationSessionPlannerFactsQueryAdapter
         implements SessionPartyFactsLookup, SessionEncounterFactsLookup {
 

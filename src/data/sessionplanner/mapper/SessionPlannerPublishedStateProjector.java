@@ -17,6 +17,11 @@ import src.domain.sessionplanner.session.port.SessionPartyFactsLookup;
 import src.domain.sessionplanner.session.value.SessionEncounter;
 import src.domain.sessionplanner.session.value.SessionRestPlacement;
 
+@SuppressWarnings({
+        "PMD.CouplingBetweenObjects",
+        "PMD.GodClass",
+        "PMD.TooManyMethods"
+})
 public final class SessionPlannerPublishedStateProjector {
 
     private static final BigDecimal HUNDRED = new BigDecimal("100");
@@ -380,19 +385,22 @@ public final class SessionPlannerPublishedStateProjector {
         if (participants.isEmpty()) {
             return "Session hat noch keine Teilnehmer.";
         }
-        boolean missingParticipants = participants.stream().anyMatch(participant -> !participant.available());
-        if (missingParticipants) {
+        if (hasMissingParticipants(participants)) {
             return "Session enthaelt nicht mehr aufloesbare Teilnehmer-Referenzen.";
         }
-        if (!partyMembersFact.available()) {
-            return partyMembersFact.statusText().isBlank()
-                    ? "Aktive Party konnte nicht geladen werden."
-                    : partyMembersFact.statusText();
+        String partyStatus = unavailableStatus(
+                partyMembersFact.available(),
+                partyMembersFact.statusText(),
+                "Aktive Party konnte nicht geladen werden.");
+        if (!partyStatus.isBlank()) {
+            return partyStatus;
         }
-        if (!encounterPlansFact.available()) {
-            return encounterPlansFact.statusText().isBlank()
-                    ? "Encounter-Plaene konnten nicht geladen werden."
-                    : encounterPlansFact.statusText();
+        String encounterStatus = unavailableStatus(
+                encounterPlansFact.available(),
+                encounterPlansFact.statusText(),
+                "Encounter-Plaene konnten nicht geladen werden.");
+        if (!encounterStatus.isBlank()) {
+            return encounterStatus;
         }
         if (encounterPlansFact.plans().isEmpty()) {
             return "Keine gespeicherten Encounter-Plaene gefunden.";
@@ -430,15 +438,11 @@ public final class SessionPlannerPublishedStateProjector {
             long rightEncounterId,
             List<SessionRestPlacement> placements
     ) {
-        for (SessionRestPlacement placement : placements) {
-            if (!placement.matchesGap(leftEncounterId, rightEncounterId)) {
-                continue;
-            }
-            return placement.isLongRest()
-                    ? SessionPlannerRestKind.LONG_REST
-                    : SessionPlannerRestKind.SHORT_REST;
-        }
-        return SessionPlannerRestKind.NONE;
+        return placements.stream()
+                .filter(placement -> placement.matchesGap(leftEncounterId, rightEncounterId))
+                .findFirst()
+                .map(SessionPlannerPublishedStateProjector::toRestKind)
+                .orElse(SessionPlannerRestKind.NONE);
     }
 
     private static String joinLevels(List<Integer> levels) {
@@ -446,6 +450,23 @@ public final class SessionPlannerPublishedStateProjector {
                 .map(String::valueOf)
                 .reduce((left, right) -> left + ", " + right)
                 .orElse("-");
+    }
+
+    private static boolean hasMissingParticipants(
+            List<SessionPlannerParticipantsProjection.SessionParticipant> participants
+    ) {
+        return participants.stream().anyMatch(participant -> !participant.available());
+    }
+
+    private static String unavailableStatus(boolean available, String statusText, String fallbackMessage) {
+        if (available) {
+            return "";
+        }
+        return statusText == null || statusText.isBlank() ? fallbackMessage : statusText;
+    }
+
+    private static SessionPlannerRestKind toRestKind(SessionRestPlacement placement) {
+        return placement.isLongRest() ? SessionPlannerRestKind.LONG_REST : SessionPlannerRestKind.SHORT_REST;
     }
 
     private record ProjectionContext(

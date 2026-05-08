@@ -17,6 +17,9 @@ import src.domain.party.roster.value.PartyTravelTile;
 
 final class PartyCharacterMapper {
 
+    private static final String DUNGEON_LOCATION_KIND = "DUNGEON";
+    private static final String OVERWORLD_LOCATION_KIND = "OVERWORLD";
+
     private PartyCharacterMapper() {
     }
 
@@ -72,7 +75,7 @@ final class PartyCharacterMapper {
     }
 
     private static @Nullable PartyTravelLocation toDomainTravelLocation(PartyCharacterRecord.Travel travel) {
-        if ("DUNGEON".equalsIgnoreCase(travel.locationKind())) {
+        if (DUNGEON_LOCATION_KIND.equalsIgnoreCase(travel.locationKind())) {
             return new PartyDungeonTravelLocation(
                     valueOrDefault(travel.dungeonMapId(), 1L),
                     PartyDungeonTravelLocationKind.parse(travel.dungeonLocationKind()),
@@ -83,7 +86,7 @@ final class PartyCharacterMapper {
                             valueOrDefault(travel.dungeonLevel(), 0)),
                     PartyTravelHeading.parse(travel.dungeonHeading()));
         }
-        if ("OVERWORLD".equalsIgnoreCase(travel.locationKind())) {
+        if (OVERWORLD_LOCATION_KIND.equalsIgnoreCase(travel.locationKind())) {
             return new PartyOverworldTravelLocation(
                     valueOrDefault(travel.overworldMapId(), 0L),
                     valueOrDefault(travel.overworldTileId(), 0L));
@@ -98,7 +101,7 @@ final class PartyCharacterMapper {
         PartyTravelLocation location = safeTravel.location();
         if (location instanceof PartyDungeonTravelLocation dungeon) {
             return new PartyCharacterRecord.Travel(
-                    "DUNGEON",
+                    DUNGEON_LOCATION_KIND,
                     dungeon.mapId(),
                     dungeon.locationKind().name(),
                     dungeon.ownerId(),
@@ -112,7 +115,7 @@ final class PartyCharacterMapper {
         }
         if (location instanceof PartyOverworldTravelLocation overworld) {
             return new PartyCharacterRecord.Travel(
-                    "OVERWORLD",
+                    OVERWORLD_LOCATION_KIND,
                     null,
                     "",
                     null,

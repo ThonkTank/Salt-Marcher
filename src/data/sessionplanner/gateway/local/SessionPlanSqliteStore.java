@@ -16,13 +16,21 @@ import src.data.sessionplanner.model.SessionPlanSnapshotRecord;
 import src.data.sessionplanner.model.SessionPlannerPersistenceSchema;
 import src.data.sessionplanner.model.SessionRestPlacementRecord;
 
+@SuppressWarnings("PMD.TooManyMethods")
 final class SessionPlanSqliteStore {
 
+    private static final String INSERT_INTO = "INSERT INTO ";
+    private static final String DELETE_FROM = "DELETE FROM ";
+    private static final String FROM = " FROM ";
+    private static final String WHERE_SESSION_ID = " WHERE session_id = ?";
+    private static final String ORDER_BY = " ORDER BY ";
+    private static final String SORT_ORDER = "sort_order";
+    private static final String SORT_ORDER_COLUMN = ", " + SORT_ORDER;
     private static final String LOAD_CURRENT_SESSION_ID_SQL =
             "SELECT session_id FROM " + SessionPlannerPersistenceSchema.CURRENT_SESSION.name()
                     + " WHERE singleton_id = 1";
     private static final String UPSERT_CURRENT_SESSION_ID_SQL =
-            "INSERT INTO " + SessionPlannerPersistenceSchema.CURRENT_SESSION.name()
+            INSERT_INTO + SessionPlannerPersistenceSchema.CURRENT_SESSION.name()
                     + " (singleton_id, session_id) VALUES (1, ?) "
                     + "ON CONFLICT(singleton_id) DO UPDATE SET session_id = excluded.session_id";
     private static final String NEXT_SESSION_ID_SQL =
@@ -35,7 +43,7 @@ final class SessionPlanSqliteStore {
     private static final String EXISTS_PLAN_SQL =
             "SELECT 1 FROM " + SessionPlannerPersistenceSchema.SESSION_PLANS.name() + " WHERE session_id = ?";
     private static final String INSERT_PLAN_SQL =
-            "INSERT INTO " + SessionPlannerPersistenceSchema.SESSION_PLANS.name()
+            INSERT_INTO + SessionPlannerPersistenceSchema.SESSION_PLANS.name()
                     + " (session_id, encounter_days, selected_encounter_id, status_text, next_encounter_id, next_loot_id) "
                     + "VALUES (?, ?, ?, ?, ?, ?)";
     private static final String UPDATE_PLAN_SQL =
@@ -43,39 +51,42 @@ final class SessionPlanSqliteStore {
                     + " SET encounter_days = ?, selected_encounter_id = ?, status_text = ?, next_encounter_id = ?, "
                     + "next_loot_id = ?, updated_at = CURRENT_TIMESTAMP WHERE session_id = ?";
     private static final String LOAD_PARTICIPANTS_SQL =
-            "SELECT character_id, sort_order FROM " + SessionPlannerPersistenceSchema.SESSION_PARTICIPANTS.name()
-                    + " WHERE session_id = ? ORDER BY sort_order, character_id";
+            "SELECT character_id" + SORT_ORDER_COLUMN + FROM + SessionPlannerPersistenceSchema.SESSION_PARTICIPANTS.name()
+                    + WHERE_SESSION_ID + ORDER_BY + SORT_ORDER + ", character_id";
     private static final String DELETE_PARTICIPANTS_SQL =
-            "DELETE FROM " + SessionPlannerPersistenceSchema.SESSION_PARTICIPANTS.name() + " WHERE session_id = ?";
+            DELETE_FROM + SessionPlannerPersistenceSchema.SESSION_PARTICIPANTS.name() + WHERE_SESSION_ID;
     private static final String INSERT_PARTICIPANT_SQL =
-            "INSERT INTO " + SessionPlannerPersistenceSchema.SESSION_PARTICIPANTS.name()
-                    + " (session_id, character_id, sort_order) VALUES (?, ?, ?)";
+            INSERT_INTO + SessionPlannerPersistenceSchema.SESSION_PARTICIPANTS.name()
+                    + " (session_id, character_id, " + SORT_ORDER + ") VALUES (?, ?, ?)";
     private static final String LOAD_ENCOUNTERS_SQL =
-            "SELECT encounter_id, encounter_plan_id, budget_percentage, sort_order FROM "
+            "SELECT encounter_id, encounter_plan_id, budget_percentage" + SORT_ORDER_COLUMN + FROM
                     + SessionPlannerPersistenceSchema.SESSION_ENCOUNTERS.name()
-                    + " WHERE session_id = ? ORDER BY sort_order, encounter_id";
+                    + WHERE_SESSION_ID + ORDER_BY + SORT_ORDER + ", encounter_id";
     private static final String DELETE_ENCOUNTERS_SQL =
-            "DELETE FROM " + SessionPlannerPersistenceSchema.SESSION_ENCOUNTERS.name() + " WHERE session_id = ?";
+            DELETE_FROM + SessionPlannerPersistenceSchema.SESSION_ENCOUNTERS.name() + WHERE_SESSION_ID;
     private static final String INSERT_ENCOUNTER_SQL =
-            "INSERT INTO " + SessionPlannerPersistenceSchema.SESSION_ENCOUNTERS.name()
-                    + " (session_id, encounter_id, encounter_plan_id, budget_percentage, sort_order) VALUES (?, ?, ?, ?, ?)";
+            INSERT_INTO + SessionPlannerPersistenceSchema.SESSION_ENCOUNTERS.name()
+                    + " (session_id, encounter_id, encounter_plan_id, budget_percentage, " + SORT_ORDER
+                    + ") VALUES (?, ?, ?, ?, ?)";
     private static final String LOAD_RESTS_SQL =
-            "SELECT left_encounter_id, right_encounter_id, rest_kind, sort_order FROM "
+            "SELECT left_encounter_id, right_encounter_id, rest_kind" + SORT_ORDER_COLUMN + FROM
                     + SessionPlannerPersistenceSchema.SESSION_RESTS.name()
-                    + " WHERE session_id = ? ORDER BY sort_order, left_encounter_id, right_encounter_id";
+                    + WHERE_SESSION_ID + ORDER_BY + SORT_ORDER + ", left_encounter_id, right_encounter_id";
     private static final String DELETE_RESTS_SQL =
-            "DELETE FROM " + SessionPlannerPersistenceSchema.SESSION_RESTS.name() + " WHERE session_id = ?";
+            DELETE_FROM + SessionPlannerPersistenceSchema.SESSION_RESTS.name() + WHERE_SESSION_ID;
     private static final String INSERT_REST_SQL =
-            "INSERT INTO " + SessionPlannerPersistenceSchema.SESSION_RESTS.name()
-                    + " (session_id, left_encounter_id, right_encounter_id, rest_kind, sort_order) VALUES (?, ?, ?, ?, ?)";
+            INSERT_INTO + SessionPlannerPersistenceSchema.SESSION_RESTS.name()
+                    + " (session_id, left_encounter_id, right_encounter_id, rest_kind, " + SORT_ORDER
+                    + ") VALUES (?, ?, ?, ?, ?)";
     private static final String LOAD_LOOT_SQL =
-            "SELECT loot_id, label, sort_order FROM " + SessionPlannerPersistenceSchema.SESSION_LOOT_PLACEHOLDERS.name()
-                    + " WHERE session_id = ? ORDER BY sort_order, loot_id";
+            "SELECT loot_id, label" + SORT_ORDER_COLUMN + FROM
+                    + SessionPlannerPersistenceSchema.SESSION_LOOT_PLACEHOLDERS.name()
+                    + WHERE_SESSION_ID + ORDER_BY + SORT_ORDER + ", loot_id";
     private static final String DELETE_LOOT_SQL =
-            "DELETE FROM " + SessionPlannerPersistenceSchema.SESSION_LOOT_PLACEHOLDERS.name() + " WHERE session_id = ?";
+            DELETE_FROM + SessionPlannerPersistenceSchema.SESSION_LOOT_PLACEHOLDERS.name() + WHERE_SESSION_ID;
     private static final String INSERT_LOOT_SQL =
-            "INSERT INTO " + SessionPlannerPersistenceSchema.SESSION_LOOT_PLACEHOLDERS.name()
-                    + " (session_id, loot_id, label, sort_order) VALUES (?, ?, ?, ?)";
+            INSERT_INTO + SessionPlannerPersistenceSchema.SESSION_LOOT_PLACEHOLDERS.name()
+                    + " (session_id, loot_id, label, " + SORT_ORDER + ") VALUES (?, ?, ?, ?)";
 
     Optional<CurrentSessionPointerRecord> loadCurrentPointer(Connection connection) throws SQLException {
         try (PreparedStatement statement = connection.prepareStatement(LOAD_CURRENT_SESSION_ID_SQL);
@@ -195,7 +206,7 @@ final class SessionPlanSqliteStore {
                 while (resultSet.next()) {
                     participants.add(new SessionParticipantRecord(
                             resultSet.getLong("character_id"),
-                            resultSet.getInt("sort_order")));
+                            resultSet.getInt(SORT_ORDER)));
                 }
                 return participants;
             }
@@ -212,7 +223,7 @@ final class SessionPlanSqliteStore {
                             resultSet.getLong("encounter_id"),
                             resultSet.getLong("encounter_plan_id"),
                             resultSet.getString("budget_percentage"),
-                            resultSet.getInt("sort_order")));
+                            resultSet.getInt(SORT_ORDER)));
                 }
                 return encounters;
             }
@@ -229,7 +240,7 @@ final class SessionPlanSqliteStore {
                             resultSet.getLong("left_encounter_id"),
                             resultSet.getLong("right_encounter_id"),
                             resultSet.getString("rest_kind"),
-                            resultSet.getInt("sort_order")));
+                            resultSet.getInt(SORT_ORDER)));
                 }
                 return rests;
             }
@@ -245,7 +256,7 @@ final class SessionPlanSqliteStore {
                     lootPlaceholders.add(new SessionLootPlaceholderRecord(
                             resultSet.getLong("loot_id"),
                             resultSet.getString("label"),
-                            resultSet.getInt("sort_order")));
+                            resultSet.getInt(SORT_ORDER)));
                 }
                 return lootPlaceholders;
             }

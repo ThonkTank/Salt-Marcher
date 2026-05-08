@@ -13,17 +13,13 @@ import src.domain.party.published.ActivePartyResult;
 import src.domain.party.published.AdventuringDayBudget;
 import src.domain.party.published.AdventuringDayCalculation;
 import src.domain.party.published.AdventuringDayCalculationResult;
-import src.domain.party.published.AdventuringDayLevelProgress;
 import src.domain.party.published.AdventuringDayProgress;
-import src.domain.party.published.AdventuringDayProgressEvent;
-import src.domain.party.published.AdventuringDayProgressEventType;
 import src.domain.party.published.AdventuringDayResult;
 import src.domain.party.published.AdventuringDaySummary;
 import src.domain.party.published.CharacterDraft;
 import src.domain.party.published.MembershipState;
 import src.domain.party.published.MutationResult;
 import src.domain.party.published.MutationStatus;
-import src.domain.party.published.PartyDungeonTravelLocationKind;
 import src.domain.party.published.PartyDungeonTravelLocationSnapshot;
 import src.domain.party.published.PartyMemberDetails;
 import src.domain.party.published.PartyMemberSummary;
@@ -31,15 +27,11 @@ import src.domain.party.published.PartyOverworldTravelLocationSnapshot;
 import src.domain.party.published.PartySnapshot;
 import src.domain.party.published.PartySnapshotResult;
 import src.domain.party.published.PartySummary;
-import src.domain.party.published.PartyTravelHeading;
 import src.domain.party.published.PartyTravelLocationSnapshot;
 import src.domain.party.published.PartyTravelPositionSnapshot;
 import src.domain.party.published.PartyTravelPositionsResult;
-import src.domain.party.published.PartyTravelTile;
 import src.domain.party.published.ReadStatus;
 import src.domain.party.published.RestCadenceStatus;
-import src.domain.party.published.RestCadenceUrgency;
-import src.domain.party.published.RestMilestone;
 import src.domain.party.published.RestType;
 import src.domain.party.roster.entity.PartyCharacter;
 import src.domain.party.roster.policy.PartyLevelProgressionPolicy;
@@ -49,6 +41,11 @@ import src.domain.party.roster.value.PartyMutationStatus;
 import src.domain.party.roster.value.PartyRestType;
 import src.domain.party.roster.value.PartyTravelLocation;
 
+@SuppressWarnings({
+        "PMD.ExcessiveImports",
+        "PMD.CouplingBetweenObjects",
+        "PMD.TooManyMethods"
+})
 public final class PartyBoundaryProjector {
 
     private PartyBoundaryProjector() {
@@ -240,18 +237,6 @@ public final class PartyBoundaryProjector {
 
     private static AdventuringDayProgress mapAdventuringDayProgress(CalculateAdventuringDayUseCase.Progress progress) {
         return AdventuringDayProgress.fromInternal(progress);
-    }
-
-    private static AdventuringDayLevelProgress mapAdventuringDayLevelProgress(
-            CalculateAdventuringDayUseCase.LevelProgress progress
-    ) {
-        return AdventuringDayLevelProgress.fromInternal(progress);
-    }
-
-    private static AdventuringDayProgressEvent mapAdventuringDayProgressEvent(
-            CalculateAdventuringDayUseCase.ProgressEvent event
-    ) {
-        return AdventuringDayProgressEvent.fromInternal(event);
     }
 
     private static PartySnapshot emptySnapshot() {

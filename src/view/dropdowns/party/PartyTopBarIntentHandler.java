@@ -3,6 +3,10 @@ package src.view.dropdowns.party;
 import java.util.Objects;
 import java.util.function.Consumer;
 
+@SuppressWarnings({
+        "PMD.GodClass",
+        "PMD.TooManyMethods"
+})
 final class PartyTopBarIntentHandler {
 
     private static final String CHARACTER_NOT_FOUND = "Charakter konnte nicht gefunden werden.";
@@ -30,11 +34,10 @@ final class PartyTopBarIntentHandler {
     }
 
     void consume(PartyTopBarViewInputEvent event) {
-        if (event == null) {
-            return;
-        }
+        // Popup toggling currently needs no local state mutation.
     }
 
+    @SuppressWarnings("PMD.CyclomaticComplexity")
     void consume(PartyRosterTopBarViewInputEvent event) {
         if (event == null) {
             return;
@@ -47,13 +50,7 @@ final class PartyTopBarIntentHandler {
             PartyRosterTopBarViewInputEvent.EditorSeed seed = event.editorSeed() == null
                     ? PartyRosterTopBarViewInputEvent.EditorSeed.empty()
                     : event.editorSeed();
-            presentationModel.openEditEditor(
-                    seed.memberId(),
-                    seed.memberName(),
-                    seed.playerName(),
-                    seed.rawLevel(),
-                    seed.rawPassivePerception(),
-                    seed.rawArmorClass());
+            presentationModel.openEditEditor(seed);
             return;
         }
         if (event.addExistingRequested()) {
@@ -119,17 +116,9 @@ final class PartyTopBarIntentHandler {
         if (!presentationModel.beginMutation(successMessage)) {
             return;
         }
-        publishedEventListener.accept(new PartyTopBarPublishedEvent(
-                PartyTopBarPublishedEvent.Kind.SET_MEMBERSHIP,
+        publishedEventListener.accept(PartyTopBarPublishedEvent.setMembership(
                 memberId,
                 PartyTopBarPublishedEvent.MembershipTarget.ACTIVE,
-                "",
-                "",
-                0,
-                0,
-                0,
-                0,
-                PartyTopBarPublishedEvent.RestAction.NONE,
                 successMessage));
     }
 
@@ -142,17 +131,9 @@ final class PartyTopBarIntentHandler {
         if (!presentationModel.beginMutation(successMessage)) {
             return;
         }
-        publishedEventListener.accept(new PartyTopBarPublishedEvent(
-                PartyTopBarPublishedEvent.Kind.SET_MEMBERSHIP,
+        publishedEventListener.accept(PartyTopBarPublishedEvent.setMembership(
                 memberId,
                 PartyTopBarPublishedEvent.MembershipTarget.RESERVE,
-                "",
-                "",
-                0,
-                0,
-                0,
-                0,
-                PartyTopBarPublishedEvent.RestAction.NONE,
                 successMessage));
     }
 
@@ -165,18 +146,7 @@ final class PartyTopBarIntentHandler {
         if (!presentationModel.beginMutation(successMessage)) {
             return;
         }
-        publishedEventListener.accept(new PartyTopBarPublishedEvent(
-                PartyTopBarPublishedEvent.Kind.DELETE_CHARACTER,
-                memberId,
-                PartyTopBarPublishedEvent.MembershipTarget.ACTIVE,
-                "",
-                "",
-                0,
-                0,
-                0,
-                0,
-                PartyTopBarPublishedEvent.RestAction.NONE,
-                successMessage));
+        publishedEventListener.accept(PartyTopBarPublishedEvent.deleteCharacter(memberId, successMessage));
     }
 
     private void adjustXp(long memberId, String memberName, int xpDelta) {
@@ -195,36 +165,14 @@ final class PartyTopBarIntentHandler {
         if (!presentationModel.beginMutation(successMessage)) {
             return;
         }
-        publishedEventListener.accept(new PartyTopBarPublishedEvent(
-                PartyTopBarPublishedEvent.Kind.ADJUST_XP,
-                memberId,
-                PartyTopBarPublishedEvent.MembershipTarget.ACTIVE,
-                "",
-                "",
-                0,
-                0,
-                0,
-                xpDelta,
-                PartyTopBarPublishedEvent.RestAction.NONE,
-                successMessage));
+        publishedEventListener.accept(PartyTopBarPublishedEvent.adjustXp(memberId, xpDelta, successMessage));
     }
 
     private void performRest(PartyTopBarPublishedEvent.RestAction restAction, String successMessage) {
         if (!presentationModel.beginMutation(successMessage)) {
             return;
         }
-        publishedEventListener.accept(new PartyTopBarPublishedEvent(
-                PartyTopBarPublishedEvent.Kind.PERFORM_REST,
-                0L,
-                PartyTopBarPublishedEvent.MembershipTarget.ACTIVE,
-                "",
-                "",
-                0,
-                0,
-                0,
-                0,
-                restAction,
-                successMessage));
+        publishedEventListener.accept(PartyTopBarPublishedEvent.performRest(restAction, successMessage));
     }
 
     private void createCharacter(PartyEditorTopBarViewInputEvent.EditorDraft draft) {
@@ -238,17 +186,12 @@ final class PartyTopBarIntentHandler {
         if (!presentationModel.beginMutation(successMessage)) {
             return;
         }
-        publishedEventListener.accept(new PartyTopBarPublishedEvent(
-                PartyTopBarPublishedEvent.Kind.CREATE_CHARACTER,
-                0L,
-                PartyTopBarPublishedEvent.MembershipTarget.ACTIVE,
+        publishedEventListener.accept(PartyTopBarPublishedEvent.createCharacter(
                 name,
                 parsedDraft.playerName(),
                 parsedDraft.level(),
                 parsedDraft.passivePerception(),
                 parsedDraft.armorClass(),
-                0,
-                PartyTopBarPublishedEvent.RestAction.NONE,
                 successMessage));
     }
 
@@ -267,17 +210,13 @@ final class PartyTopBarIntentHandler {
         if (!presentationModel.beginMutation(successMessage)) {
             return;
         }
-        publishedEventListener.accept(new PartyTopBarPublishedEvent(
-                PartyTopBarPublishedEvent.Kind.UPDATE_CHARACTER,
+        publishedEventListener.accept(PartyTopBarPublishedEvent.updateCharacter(
                 draft.id(),
-                PartyTopBarPublishedEvent.MembershipTarget.ACTIVE,
                 name,
                 parsedDraft.playerName(),
                 parsedDraft.level(),
                 parsedDraft.passivePerception(),
                 parsedDraft.armorClass(),
-                0,
-                PartyTopBarPublishedEvent.RestAction.NONE,
                 successMessage));
     }
 

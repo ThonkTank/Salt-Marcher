@@ -41,6 +41,7 @@ sourceSets.named("main") {
     )
     resources.setSrcDirs(emptyList<String>())
 }
+val mainSourceSet = sourceSets["main"]
 
 fun humanizeBundleLabel(bundleId: String): String = bundleId
     .replace(Regex("([a-z0-9])([A-Z])"), "$1 $2")
@@ -95,7 +96,9 @@ fun registerBuildHarnessTask(taskName: String, bundleLabel: String, mainClassNam
     tasks.register<RepoVerificationMainTask>(taskName) {
         group = LifecycleBasePlugin.VERIFICATION_GROUP
         this.description = description
-        runtimeClasspath.from(sourceSets["main"].runtimeClasspath)
+        dependsOn(tasks.named(mainSourceSet.classesTaskName))
+        runtimeClasspath.from(mainSourceSet.output)
+        runtimeClasspath.from(mainSourceSet.runtimeClasspath)
         verificationMainClass.set(mainClassName)
         repoRootPath.set(repoRootDir.absolutePath)
         verificationInputs.from(buildHarnessInputs(taskName))
@@ -121,7 +124,9 @@ if (!focusedEnforcementBundleMode) {
 tasks.register<RepoVerificationMainTask>("architectureCheck") {
     group = LifecycleBasePlugin.VERIFICATION_GROUP
     description = "Checks repository layout, package-path alignment, and documented root-entrypoint presence."
-    runtimeClasspath.from(sourceSets["main"].runtimeClasspath)
+    dependsOn(tasks.named(mainSourceSet.classesTaskName))
+    runtimeClasspath.from(mainSourceSet.output)
+    runtimeClasspath.from(mainSourceSet.runtimeClasspath)
     verificationMainClass.set("saltmarcher.architecture.ArchitectureCheckMain")
     repoRootPath.set(repoRootDir.absolutePath)
     verificationArgs.set(activeBuildHarnessArchitectureRuleClasses())

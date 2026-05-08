@@ -1,6 +1,7 @@
 package src.data.sessionplanner.mapper;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 import src.data.sessionplanner.model.SessionEncounterRecord;
 import src.data.sessionplanner.model.SessionLootPlaceholderRecord;
@@ -105,7 +106,7 @@ public final class SessionPlanMapper {
         if (values == null || values.isEmpty()) {
             return List.of();
         }
-        java.util.ArrayList<R> mapped = new java.util.ArrayList<>(values.size());
+        List<R> mapped = new ArrayList<>(values.size());
         for (int index = 0; index < values.size(); index++) {
             mapped.add(mapper.map(values.get(index), index));
         }

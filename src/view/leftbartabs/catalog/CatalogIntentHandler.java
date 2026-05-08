@@ -5,6 +5,8 @@ import java.util.function.Consumer;
 
 final class CatalogIntentHandler {
 
+    private static final long NO_CREATURE_ID = 0L;
+
     private final CatalogContributionModel presentationModel;
     private Consumer<CatalogPublishedEvent> publishedEventListener = ignored -> { };
 
@@ -98,11 +100,11 @@ final class CatalogIntentHandler {
             publishSearch();
             return;
         }
-        if (event.openedCreatureId() > 0L) {
+        if (event.openedCreatureId() > NO_CREATURE_ID) {
             presentationModel.setCreatureDetailSelection(event.openedCreatureId());
             return;
         }
-        if (event.actionCreatureId() > 0L) {
+        if (event.actionCreatureId() > NO_CREATURE_ID) {
             publishedEventListener.accept(CatalogPublishedEvent.addCreature(event.actionCreatureId()));
         }
     }

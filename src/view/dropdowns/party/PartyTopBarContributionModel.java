@@ -23,17 +23,20 @@ import src.domain.party.published.ReadStatus;
 import src.domain.party.published.RestCadenceStatus;
 import src.domain.party.published.RestCadenceUrgency;
 
+@SuppressWarnings({
+        "PMD.CouplingBetweenObjects",
+        "PMD.GodClass",
+        "PMD.TooManyMethods"
+})
 public final class PartyTopBarContributionModel {
+
+    private static final int MAX_CHARACTER_LEVEL = 20;
 
     private final ReadOnlyStringWrapper triggerText = new ReadOnlyStringWrapper("Keine _Party ▼");
     private final ReadOnlyObjectWrapper<PanelModel> panel =
             new ReadOnlyObjectWrapper<>(PanelModel.loadingModel());
 
     private boolean mutationInFlight;
-    private ActionResult lastActionResult = ActionResult.success();
-
-    public PartyTopBarContributionModel() {
-    }
 
     public ReadOnlyStringProperty triggerTextProperty() {
         return triggerText.getReadOnlyProperty();
@@ -54,34 +57,28 @@ public final class PartyTopBarContributionModel {
         }
         mutationInFlight = true;
         panel.set(safePanel().withPending("Speichere..."));
-        lastActionResult = ActionResult.pending(successMessage);
         return true;
     }
 
     public void rejectMutation(String message) {
         showStatus(message, true);
-        lastActionResult = ActionResult.failure(message);
     }
 
     public void openCreateEditor() {
         panel.set(safePanel().withEditor(EditorPanelModel.createDraft()));
     }
 
-    public void openEditEditor(
-            long memberId,
-            String memberName,
-            String playerName,
-            String rawLevel,
-            String rawPassivePerception,
-            String rawArmorClass
-    ) {
+    public void openEditEditor(PartyRosterTopBarViewInputEvent.EditorSeed seed) {
+        PartyRosterTopBarViewInputEvent.EditorSeed safeSeed = seed == null
+                ? PartyRosterTopBarViewInputEvent.EditorSeed.empty()
+                : seed;
         panel.set(safePanel().withEditor(EditorPanelModel.editDraft(
-                memberId,
-                memberName,
-                playerName,
-                rawLevel,
-                rawPassivePerception,
-                rawArmorClass)));
+                safeSeed.memberId(),
+                safeSeed.memberName(),
+                safeSeed.playerName(),
+                safeSeed.rawLevel(),
+                safeSeed.rawPassivePerception(),
+                safeSeed.rawArmorClass())));
     }
 
     public void cancelEditor() {
@@ -105,7 +102,7 @@ public final class PartyTopBarContributionModel {
         applySnapshot(snapshotResult.snapshot(), data.dayResult(), "", false);
     }
 
-    ActionResult applyMutationResult(MutationAndLoadResult result) {
+    void applyMutationResult(MutationAndLoadResult result) {
         mutationInFlight = false;
         MutationStatus status = result == null || result.mutationResult() == null
                 ? MutationStatus.STORAGE_ERROR
@@ -113,36 +110,29 @@ public final class PartyTopBarContributionModel {
         if (status != MutationStatus.SUCCESS) {
             String message = mutationMessage(status);
             showStatus(message, true);
-            lastActionResult = ActionResult.failure(message);
-            return lastActionResult;
+            return;
         }
         PanelData data = result.panelData();
         if (data == null) {
             String message = "Party konnte nach der Änderung nicht neu geladen werden.";
             applyStorageError();
             showStatus(message, true);
-            lastActionResult = ActionResult.failure(message);
-            return lastActionResult;
+            return;
         }
         PartySnapshotResult snapshotResult = data.snapshotResult();
         if (snapshotResult == null || snapshotResult.status() != ReadStatus.SUCCESS) {
             String message = "Party konnte nach der Änderung nicht neu geladen werden.";
             applyStorageError();
             showStatus(message, true);
-            lastActionResult = ActionResult.failure(message);
-            return lastActionResult;
+            return;
         }
         applySnapshot(snapshotResult.snapshot(), data.dayResult(), result.successMessage(), false);
-        lastActionResult = ActionResult.success();
-        return lastActionResult;
     }
 
-    ActionResult applyMutationFailure() {
+    void applyMutationFailure() {
         mutationInFlight = false;
         String message = "Party-Aktion konnte nicht gespeichert werden.";
         showStatus(message, true);
-        lastActionResult = ActionResult.failure(message);
-        return lastActionResult;
     }
 
     private void applySnapshot(
@@ -157,10 +147,10 @@ public final class PartyTopBarContributionModel {
                 : dayResult.summary();
         Map<Long, RestCadenceStatus> restStatusByMemberId = restStatusByMemberId(daySummary);
         List<MemberModel> activeMembers = safeMembers(safeSnapshot.activeMembers()).stream()
-                .map(member -> toMemberModel(member, restStatusByMemberId.get(member.id())))
+                .map(member -> MemberProjectionSupport.toMemberModel(member, restStatusByMemberId.get(member.id())))
                 .toList();
         List<MemberModel> reserveMembers = safeMembers(safeSnapshot.reserveMembers()).stream()
-                .map(member -> toMemberModel(member, restStatusByMemberId.get(member.id())))
+                .map(member -> MemberProjectionSupport.toMemberModel(member, restStatusByMemberId.get(member.id())))
                 .toList();
         int activeCount = activeMembers.size();
         int averageLevel = safeSnapshot.summary() == null ? averageLevel(activeMembers) : safeSnapshot.summary().averageLevel();
@@ -217,100 +207,6 @@ public final class PartyTopBarContributionModel {
             return "Eingaben sind ungültig.";
         }
         return "Party-Aktion konnte nicht gespeichert werden.";
-    }
-
-    private static MemberModel toMemberModel(@Nullable PartyMemberDetails member, @Nullable RestCadenceStatus restStatus) {
-        PartyMemberDetails safeMember = member == null
-                ? new PartyMemberDetails(0L, "", "", 1, 0, 0, 300, 300, false, 10, 10, 0, 0, 0,
-                MembershipState.ACTIVE)
-                : member;
-        String progression = safe(progressionDetails(safeMember));
-        String restText = safe(restStatusText(restStatus));
-        LevelProgressDisplay levelProgress = levelProgressDisplay(safeMember);
-        return new MemberModel(
-                safeMember.id(),
-                safe(safeMember.name()),
-                safe(safeMember.playerName()),
-                safeMember.level(),
-                safeMember.currentXp(),
-                safeMember.currentLevelXp(),
-                safeMember.nextLevelXp(),
-                safeMember.passivePerception(),
-                safeMember.armorClass(),
-                "Lv " + safeMember.level(),
-                levelProgress.nextLevelLabel(),
-                memberDetails(safeMember),
-                progression,
-                levelProgress.text(),
-                levelProgress.fraction(),
-                restText,
-                restUrgencyStyleClass(restStatus));
-    }
-
-    private static String memberDetails(PartyMemberDetails member) {
-        String playerName = safe(member.playerName()).trim();
-        String prefix = playerName.isEmpty() ? "" : playerName + "  .  ";
-        return prefix + "AC " + member.armorClass() + "  .  PP " + member.passivePerception();
-    }
-
-    private static String progressionDetails(PartyMemberDetails member) {
-        if (member.level() >= 20) {
-            return "Max-Level erreicht";
-        }
-        if (member.readyToLevel()) {
-            return "Level-up bereit";
-        }
-        return member.xpToNextLevel() + " XP bis Level " + (member.level() + 1);
-    }
-
-    private static LevelProgressDisplay levelProgressDisplay(PartyMemberDetails member) {
-        int currentXp = Math.max(0, member.currentXp());
-        int currentLevelXp = Math.max(0, member.currentLevelXp());
-        int nextLevelXp = Math.max(currentLevelXp, member.nextLevelXp());
-        if (member.level() >= 20 || nextLevelXp <= currentLevelXp) {
-            return new LevelProgressDisplay("Max", formatProgressText(currentXp, currentXp, 100), 1.0);
-        }
-        int span = Math.max(1, nextLevelXp - currentLevelXp);
-        int earnedInLevel = Math.max(0, currentXp - currentLevelXp);
-        double fraction = Math.max(0.0, Math.min(1.0, (double) earnedInLevel / span));
-        int percent = (int) Math.round(fraction * 100.0);
-        if (member.readyToLevel()) {
-            fraction = 1.0;
-            percent = 100;
-        }
-        return new LevelProgressDisplay(
-                "Lv " + (member.level() + 1),
-                formatProgressText(currentXp, nextLevelXp, percent),
-                fraction);
-    }
-
-    private static String formatProgressText(int currentXp, int targetXp, int percent) {
-        return currentXp + "/" + Math.max(0, targetXp) + " XP (" + Math.max(0, Math.min(100, percent)) + "%)";
-    }
-
-    private static String restStatusText(@Nullable RestCadenceStatus status) {
-        if (status == null) {
-            return "";
-        }
-        return switch (status.nextMilestone()) {
-            case SHORT_REST_ONE -> "Short Rest 1";
-            case SHORT_REST_TWO -> "Short Rest 2";
-            case LONG_REST -> "Long Rest";
-        } + ": " + status.xpDelta() + " XP";
-    }
-
-    private static String restUrgencyStyleClass(@Nullable RestCadenceStatus status) {
-        if (status == null) {
-            return "";
-        }
-        RestCadenceUrgency urgency = status.urgency();
-        if (urgency == RestCadenceUrgency.OVERDUE) {
-            return "party-rest-chip-overdue";
-        }
-        if (urgency == RestCadenceUrgency.SOON) {
-            return "party-rest-chip-soon";
-        }
-        return "party-rest-chip-normal";
     }
 
     private static Map<Long, RestCadenceStatus> restStatusByMemberId(@Nullable AdventuringDaySummary summary) {
@@ -549,28 +445,6 @@ public final class PartyTopBarContributionModel {
         }
     }
 
-    private record LevelProgressDisplay(String nextLevelLabel, String text, double fraction) {
-    }
-
-    public record ActionResult(boolean accepted, boolean pending, String message) {
-
-        public ActionResult {
-            message = safe(message);
-        }
-
-        static ActionResult success() {
-            return new ActionResult(true, false, "");
-        }
-
-        static ActionResult failure(String message) {
-            return new ActionResult(false, false, message);
-        }
-
-        static ActionResult pending(String message) {
-            return new ActionResult(false, true, message);
-        }
-    }
-
     record PanelData(
             @Nullable PartySnapshotResult snapshotResult,
             @Nullable AdventuringDayResult dayResult
@@ -585,6 +459,113 @@ public final class PartyTopBarContributionModel {
 
         MutationAndLoadResult {
             successMessage = safe(successMessage);
+        }
+    }
+
+    private record LevelProgressDisplay(String nextLevelLabel, String text, double fraction) {
+    }
+
+    @SuppressWarnings("PMD.UnnecessaryConstructor")
+    private static final class MemberProjectionSupport {
+
+        private MemberProjectionSupport() {
+        }
+
+        private static MemberModel toMemberModel(
+                @Nullable PartyMemberDetails member,
+                @Nullable RestCadenceStatus restStatus
+        ) {
+            PartyMemberDetails safeMember = member == null
+                    ? new PartyMemberDetails(0L, "", "", 1, 0, 0, 300, 300, false, 10, 10, 0, 0, 0,
+                    MembershipState.ACTIVE)
+                    : member;
+            String progression = safe(progressionDetails(safeMember));
+            String restText = safe(restStatusText(restStatus));
+            LevelProgressDisplay levelProgress = levelProgressDisplay(safeMember);
+            return new MemberModel(
+                    safeMember.id(),
+                    safe(safeMember.name()),
+                    safe(safeMember.playerName()),
+                    safeMember.level(),
+                    safeMember.currentXp(),
+                    safeMember.currentLevelXp(),
+                    safeMember.nextLevelXp(),
+                    safeMember.passivePerception(),
+                    safeMember.armorClass(),
+                    "Lv " + safeMember.level(),
+                    levelProgress.nextLevelLabel(),
+                    memberDetails(safeMember),
+                    progression,
+                    levelProgress.text(),
+                    levelProgress.fraction(),
+                    restText,
+                    restUrgencyStyleClass(restStatus));
+        }
+
+        private static String memberDetails(PartyMemberDetails member) {
+            String playerName = safe(member.playerName()).trim();
+            String prefix = playerName.isEmpty() ? "" : playerName + "  .  ";
+            return prefix + "AC " + member.armorClass() + "  .  PP " + member.passivePerception();
+        }
+
+        private static String progressionDetails(PartyMemberDetails member) {
+            if (member.level() >= MAX_CHARACTER_LEVEL) {
+                return "Max-Level erreicht";
+            }
+            if (member.readyToLevel()) {
+                return "Level-up bereit";
+            }
+            return member.xpToNextLevel() + " XP bis Level " + (member.level() + 1);
+        }
+
+        private static LevelProgressDisplay levelProgressDisplay(PartyMemberDetails member) {
+            int currentXp = Math.max(0, member.currentXp());
+            int currentLevelXp = Math.max(0, member.currentLevelXp());
+            int nextLevelXp = Math.max(currentLevelXp, member.nextLevelXp());
+            if (member.level() >= MAX_CHARACTER_LEVEL || nextLevelXp <= currentLevelXp) {
+                return new LevelProgressDisplay("Max", formatProgressText(currentXp, currentXp, 100), 1.0);
+            }
+            int span = Math.max(1, nextLevelXp - currentLevelXp);
+            int earnedInLevel = Math.max(0, currentXp - currentLevelXp);
+            double fraction = Math.max(0.0, Math.min(1.0, (double) earnedInLevel / span));
+            int percent = (int) Math.round(fraction * 100.0);
+            if (member.readyToLevel()) {
+                fraction = 1.0;
+                percent = 100;
+            }
+            return new LevelProgressDisplay(
+                    "Lv " + (member.level() + 1),
+                    formatProgressText(currentXp, nextLevelXp, percent),
+                    fraction);
+        }
+
+        private static String formatProgressText(int currentXp, int targetXp, int percent) {
+            return currentXp + "/" + Math.max(0, targetXp) + " XP (" + Math.max(0, Math.min(100, percent)) + "%)";
+        }
+
+        private static String restStatusText(@Nullable RestCadenceStatus status) {
+            if (status == null) {
+                return "";
+            }
+            return switch (status.nextMilestone()) {
+                case SHORT_REST_ONE -> "Short Rest 1";
+                case SHORT_REST_TWO -> "Short Rest 2";
+                case LONG_REST -> "Long Rest";
+            } + ": " + status.xpDelta() + " XP";
+        }
+
+        private static String restUrgencyStyleClass(@Nullable RestCadenceStatus status) {
+            if (status == null) {
+                return "";
+            }
+            RestCadenceUrgency urgency = status.urgency();
+            if (urgency == RestCadenceUrgency.OVERDUE) {
+                return "party-rest-chip-overdue";
+            }
+            if (urgency == RestCadenceUrgency.SOON) {
+                return "party-rest-chip-soon";
+            }
+            return "party-rest-chip-normal";
         }
     }
 }

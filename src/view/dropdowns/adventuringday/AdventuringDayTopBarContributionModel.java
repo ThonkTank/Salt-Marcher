@@ -15,9 +15,8 @@ import src.domain.party.published.AdventuringDayResult;
 import src.domain.party.published.AdventuringDaySummary;
 import src.domain.party.published.ReadStatus;
 
+@SuppressWarnings("PMD.TooManyMethods")
 final class AdventuringDayTopBarContributionModel {
-
-    private static final NumberFormat INTEGER_FORMAT = NumberFormat.getIntegerInstance(Locale.GERMANY);
 
     private final ReadOnlyStringWrapper triggerText = new ReadOnlyStringWrapper("Rastbudget \u25be");
     private final ReadOnlyObjectWrapper<PanelModel> panel =
@@ -119,7 +118,8 @@ final class AdventuringDayTopBarContributionModel {
     }
 
     private static String format(int value) {
-        return INTEGER_FORMAT.format(Math.max(0, value));
+        NumberFormat integerFormat = NumberFormat.getIntegerInstance(Locale.GERMANY);
+        return integerFormat.format(Math.max(0, value));
     }
 
     record PanelModel(

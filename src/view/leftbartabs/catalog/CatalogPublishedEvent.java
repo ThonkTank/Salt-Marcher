@@ -42,6 +42,7 @@ public record CatalogPublishedEvent(
         creatureId = Math.max(0L, creatureId);
     }
 
+    @SuppressWarnings("PMD.ExcessiveParameterList")
     static CatalogPublishedEvent search(
             String nameQuery,
             String challengeRatingMin,
@@ -78,6 +79,7 @@ public record CatalogPublishedEvent(
                 0L);
     }
 
+    @SuppressWarnings("PMD.ExcessiveParameterList")
     static CatalogPublishedEvent updateBuilderInputs(
             List<String> creatureTypes,
             List<String> creatureSubtypes,

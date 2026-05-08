@@ -21,7 +21,13 @@ import src.domain.sessionplanner.session.port.SessionPartyFactsLookup;
 import src.domain.sessionplanner.session.port.SessionPlanRepository;
 import src.domain.sessionplanner.session.port.SessionPlannerPublishedStateRepository;
 
+@SuppressWarnings({
+        "PMD.CouplingBetweenObjects",
+        "PMD.TooManyMethods"
+})
 public final class SessionPlannerPublishedStateRepositoryAdapter implements SessionPlannerPublishedStateRepository {
+
+    private static final String LISTENER_PARAMETER = "listener";
 
     private final SessionPlanRepository repository;
     private final SessionPartyFactsLookup partyFacts;
@@ -110,25 +116,25 @@ public final class SessionPlannerPublishedStateRepositoryAdapter implements Sess
     }
 
     private Runnable subscribeSessionListener(Consumer<SessionPlannerSessionSnapshot> listener) {
-        Consumer<SessionPlannerSessionSnapshot> safeListener = Objects.requireNonNull(listener, "listener");
+        Consumer<SessionPlannerSessionSnapshot> safeListener = Objects.requireNonNull(listener, LISTENER_PARAMETER);
         sessionListeners.add(safeListener);
         return () -> sessionListeners.remove(safeListener);
     }
 
     private Runnable subscribeParticipantsListener(Consumer<SessionPlannerParticipantsProjection> listener) {
-        Consumer<SessionPlannerParticipantsProjection> safeListener = Objects.requireNonNull(listener, "listener");
+        Consumer<SessionPlannerParticipantsProjection> safeListener = Objects.requireNonNull(listener, LISTENER_PARAMETER);
         participantsListeners.add(safeListener);
         return () -> participantsListeners.remove(safeListener);
     }
 
     private Runnable subscribeEncountersListener(Consumer<SessionPlannerEncountersProjection> listener) {
-        Consumer<SessionPlannerEncountersProjection> safeListener = Objects.requireNonNull(listener, "listener");
+        Consumer<SessionPlannerEncountersProjection> safeListener = Objects.requireNonNull(listener, LISTENER_PARAMETER);
         encountersListeners.add(safeListener);
         return () -> encountersListeners.remove(safeListener);
     }
 
     private Runnable subscribeStatePanelListener(Consumer<SessionPlannerStatePanelProjection> listener) {
-        Consumer<SessionPlannerStatePanelProjection> safeListener = Objects.requireNonNull(listener, "listener");
+        Consumer<SessionPlannerStatePanelProjection> safeListener = Objects.requireNonNull(listener, LISTENER_PARAMETER);
         statePanelListeners.add(safeListener);
         return () -> statePanelListeners.remove(safeListener);
     }

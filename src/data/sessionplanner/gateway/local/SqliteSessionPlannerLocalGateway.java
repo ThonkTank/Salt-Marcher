@@ -40,24 +40,7 @@ public final class SqliteSessionPlannerLocalGateway {
     public SessionPlanSnapshotRecord save(SessionPlanSnapshotRecord snapshot) {
         Objects.requireNonNull(snapshot, "snapshot");
         try (Connection connection = openReadyConnection()) {
-            boolean previousAutoCommit = connection.getAutoCommit();
-            connection.setAutoCommit(false);
-            try {
-                long sessionId = snapshot.plan().sessionId();
-                store.savePlan(connection, snapshot.plan());
-                store.replaceParticipants(connection, sessionId, snapshot.participants());
-                store.replaceEncounters(connection, sessionId, snapshot.encounters());
-                store.replaceRests(connection, sessionId, snapshot.rests());
-                store.replaceLootPlaceholders(connection, sessionId, snapshot.lootPlaceholders());
-                connection.commit();
-                return store.loadSession(connection, sessionId)
-                        .orElseThrow(() -> new SQLException("Saved session plan vanished after save."));
-            } catch (SQLException exception) {
-                connection.rollback();
-                throw exception;
-            } finally {
-                connection.setAutoCommit(previousAutoCommit);
-            }
+            return saveSnapshot(connection, snapshot);
         } catch (SQLException exception) {
             throw new IllegalStateException("Failed to save session plan to SQLite.", exception);
         }
@@ -87,6 +70,33 @@ public final class SqliteSessionPlannerLocalGateway {
         } catch (SQLException exception) {
             connection.close();
             throw exception;
+        }
+    }
+
+    private SessionPlanSnapshotRecord saveSnapshot(
+            Connection connection,
+            SessionPlanSnapshotRecord snapshot
+    ) throws SQLException {
+        boolean previousAutoCommit = connection.getAutoCommit();
+        connection.setAutoCommit(false);
+        try {
+            long sessionId = snapshot.plan().sessionId();
+            store.savePlan(connection, snapshot.plan());
+            store.replaceParticipants(connection, sessionId, snapshot.participants());
+            store.replaceEncounters(connection, sessionId, snapshot.encounters());
+            store.replaceRests(connection, sessionId, snapshot.rests());
+            store.replaceLootPlaceholders(connection, sessionId, snapshot.lootPlaceholders());
+            connection.commit();
+            Optional<SessionPlanSnapshotRecord> savedSession = store.loadSession(connection, sessionId);
+            if (savedSession.isEmpty()) {
+                throw new IllegalStateException("Saved session plan vanished after save.");
+            }
+            return savedSession.get();
+        } catch (SQLException exception) {
+            connection.rollback();
+            throw exception;
+        } finally {
+            connection.setAutoCommit(previousAutoCommit);
         }
     }
 }

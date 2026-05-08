@@ -15,6 +15,12 @@ import javafx.scene.layout.VBox;
 
 public final class PartyEditorTopBarView extends VBox {
 
+    private static final String CHARACTER_NAME_PROMPT = "Charaktername";
+    private static final String PLAYER_NAME_PROMPT = "Spielername";
+    private static final String LEVEL_PROMPT = "Level";
+    private static final String PASSIVE_PERCEPTION_PROMPT = "Passive Perception";
+    private static final String ARMOR_CLASS_PROMPT = "AC";
+
     private final Label titleLabel = new PanelTitleLabel();
     private final EditorFields fields = new EditorFields(this::submit, this::updateSubmitDisabled);
     private final DeleteButton revealDeleteButton = new DeleteButton(() -> publish(false, false, true, false, false));
@@ -182,11 +188,11 @@ public final class PartyEditorTopBarView extends VBox {
 
     private static final class EditorFields {
 
-        private final TextField nameField = new PromptField("Charaktername");
-        private final TextField playerNameField = new PromptField("Spielername");
-        private final TextField levelField = new IntegerField("Level");
-        private final TextField passivePerceptionField = new IntegerField("Passive Perception");
-        private final TextField armorClassField = new IntegerField("AC");
+        private final TextField nameField = new PromptField(CHARACTER_NAME_PROMPT);
+        private final TextField playerNameField = new PromptField(PLAYER_NAME_PROMPT);
+        private final TextField levelField = new IntegerField(LEVEL_PROMPT);
+        private final TextField passivePerceptionField = new IntegerField(PASSIVE_PERCEPTION_PROMPT);
+        private final TextField armorClassField = new IntegerField(ARMOR_CLASS_PROMPT);
 
         private EditorFields(Runnable onSubmit, Runnable onNameChanged) {
             bindSubmit(nameField, onSubmit);

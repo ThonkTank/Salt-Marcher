@@ -22,6 +22,7 @@ import src.domain.party.published.RestType;
 import src.domain.party.published.SetPartyMembershipCommand;
 import src.domain.party.published.UpdateCharacterCommand;
 
+@SuppressWarnings("PMD.CouplingBetweenObjects")
 final class PartyTopBarBinder {
 
     private final ShellRuntimeContext runtimeContext;
@@ -138,6 +139,8 @@ final class PartyTopBarBinder {
             case DELETE_CHARACTER -> party.deleteCharacter(new DeleteCharacterCommand(intent.characterId()));
             case ADJUST_XP -> party.adjustXp(new AdjustPartyXpCommand(List.of(intent.characterId()), intent.xpDelta()));
             case PERFORM_REST -> party.performRest(new PerformPartyRestCommand(toRestType(intent.restAction())));
+            default -> {
+            }
         }
     }
 
@@ -148,17 +151,23 @@ final class PartyTopBarBinder {
     private static src.domain.party.published.MembershipState toMembershipState(
             PartyTopBarPublishedEvent.MembershipTarget membershipTarget
     ) {
-        return switch (membershipTarget == null ? PartyTopBarPublishedEvent.MembershipTarget.ACTIVE : membershipTarget) {
-            case ACTIVE -> src.domain.party.published.MembershipState.ACTIVE;
-            case RESERVE -> src.domain.party.published.MembershipState.RESERVE;
-        };
+        PartyTopBarPublishedEvent.MembershipTarget safeTarget = membershipTarget == null
+                ? PartyTopBarPublishedEvent.MembershipTarget.ACTIVE
+                : membershipTarget;
+        if (safeTarget == PartyTopBarPublishedEvent.MembershipTarget.RESERVE) {
+            return src.domain.party.published.MembershipState.RESERVE;
+        }
+        return src.domain.party.published.MembershipState.ACTIVE;
     }
 
     private static RestType toRestType(PartyTopBarPublishedEvent.RestAction restAction) {
-        return switch (restAction == null ? PartyTopBarPublishedEvent.RestAction.NONE : restAction) {
-            case NONE, SHORT_REST -> RestType.SHORT_REST;
-            case LONG_REST -> RestType.LONG_REST;
-        };
+        PartyTopBarPublishedEvent.RestAction safeAction = restAction == null
+                ? PartyTopBarPublishedEvent.RestAction.NONE
+                : restAction;
+        if (safeAction == PartyTopBarPublishedEvent.RestAction.LONG_REST) {
+            return RestType.LONG_REST;
+        }
+        return RestType.SHORT_REST;
     }
 
     private static PartyRosterTopBarView.PanelContent toRosterContent(PartyTopBarContributionModel.PanelModel model) {

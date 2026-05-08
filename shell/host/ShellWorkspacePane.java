@@ -45,8 +45,8 @@ final class ShellWorkspacePane extends SplitPane {
         ShellFx.addStyleClass(controlsPanel, "control-panel");
         controlsPanel.setPrefWidth(240);
         controlsPanel.setMinWidth(200);
-        controlsPanel.setMinHeight(Region.USE_PREF_SIZE);
-        controlsPanel.setMaxHeight(Region.USE_PREF_SIZE);
+        controlsPanel.setMinHeight(USE_PREF_SIZE);
+        controlsPanel.setMaxHeight(USE_PREF_SIZE);
         controlsPanel.setMaxWidth(Double.MAX_VALUE);
         controlsPanel.setFillWidth(true);
         ShellContentLayout.clipToBounds(controlsPanel);

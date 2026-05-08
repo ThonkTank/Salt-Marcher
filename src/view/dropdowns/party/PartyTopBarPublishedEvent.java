@@ -23,6 +23,115 @@ public record PartyTopBarPublishedEvent(
         successMessage = successMessage == null ? "" : successMessage;
     }
 
+    static PartyTopBarPublishedEvent setMembership(
+            long characterId,
+            MembershipTarget membershipTarget,
+            String successMessage
+    ) {
+        return new PartyTopBarPublishedEvent(
+                Kind.SET_MEMBERSHIP,
+                characterId,
+                membershipTarget,
+                "",
+                "",
+                0,
+                0,
+                0,
+                0,
+                RestAction.NONE,
+                successMessage);
+    }
+
+    static PartyTopBarPublishedEvent createCharacter(
+            String name,
+            String playerName,
+            int level,
+            int passivePerception,
+            int armorClass,
+            String successMessage
+    ) {
+        return new PartyTopBarPublishedEvent(
+                Kind.CREATE_CHARACTER,
+                0L,
+                MembershipTarget.ACTIVE,
+                name,
+                playerName,
+                level,
+                passivePerception,
+                armorClass,
+                0,
+                RestAction.NONE,
+                successMessage);
+    }
+
+    static PartyTopBarPublishedEvent updateCharacter(
+            long characterId,
+            String name,
+            String playerName,
+            int level,
+            int passivePerception,
+            int armorClass,
+            String successMessage
+    ) {
+        return new PartyTopBarPublishedEvent(
+                Kind.UPDATE_CHARACTER,
+                characterId,
+                MembershipTarget.ACTIVE,
+                name,
+                playerName,
+                level,
+                passivePerception,
+                armorClass,
+                0,
+                RestAction.NONE,
+                successMessage);
+    }
+
+    static PartyTopBarPublishedEvent deleteCharacter(long characterId, String successMessage) {
+        return new PartyTopBarPublishedEvent(
+                Kind.DELETE_CHARACTER,
+                characterId,
+                MembershipTarget.ACTIVE,
+                "",
+                "",
+                0,
+                0,
+                0,
+                0,
+                RestAction.NONE,
+                successMessage);
+    }
+
+    static PartyTopBarPublishedEvent adjustXp(long characterId, int xpDelta, String successMessage) {
+        return new PartyTopBarPublishedEvent(
+                Kind.ADJUST_XP,
+                characterId,
+                MembershipTarget.ACTIVE,
+                "",
+                "",
+                0,
+                0,
+                0,
+                xpDelta,
+                RestAction.NONE,
+                successMessage);
+    }
+
+    static PartyTopBarPublishedEvent performRest(RestAction restAction, String successMessage) {
+        return new PartyTopBarPublishedEvent(
+                Kind.PERFORM_REST,
+                0L,
+                MembershipTarget.ACTIVE,
+                "",
+                "",
+                0,
+                0,
+                0,
+                0,
+                restAction,
+                successMessage);
+    }
+
     enum Kind {
         SET_MEMBERSHIP,
         CREATE_CHARACTER,

@@ -22,6 +22,10 @@ import src.domain.encountertable.published.EncounterTableCatalogResult;
 import src.domain.encountertable.published.EncounterTableReadStatus;
 import src.domain.encountertable.published.EncounterTableSummary;
 
+@SuppressWarnings({
+        "PMD.CouplingBetweenObjects",
+        "PMD.TooManyMethods"
+})
 public final class CatalogContributionModel {
 
     private static final int PAGE_SIZE = 50;
@@ -786,6 +790,10 @@ public final class CatalogContributionModel {
         }
     }
 
+    @SuppressWarnings({
+            "PMD.TooManyMethods",
+            "PMD.TooManyFields"
+    })
     private static final class ProjectionState {
 
         private LocalFilterState localFilters = LocalFilterState.empty();

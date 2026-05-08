@@ -27,7 +27,13 @@ import src.domain.encountertable.published.EncounterTableCatalogModel;
 import src.domain.encountertable.published.LoadEncounterTableSummariesQuery;
 import src.view.slotcontent.details.creature.CreatureDetailsInspectorEntry;
 
+@SuppressWarnings("PMD.TooManyMethods")
 final class CatalogBinder {
+
+    private static final int MIN_DIFFICULTY_LEVEL = 1;
+    private static final int DEFAULT_DIFFICULTY_LEVEL = 2;
+    private static final int NEUTRAL_DIFFICULTY_LEVEL = 3;
+    private static final int MAX_DIFFICULTY_LEVEL = 4;
 
     private final ShellRuntimeContext runtimeContext;
 
@@ -177,6 +183,8 @@ final class CatalogBinder {
                     0L,
                     0,
                     false));
+            default -> {
+            }
         }
     }
 
@@ -197,16 +205,16 @@ final class CatalogBinder {
 
     private static int toDifficultyLevel(double value) {
         int rounded = (int) Math.round(value);
-        if (rounded <= 1) {
-            return 1;
+        if (rounded <= MIN_DIFFICULTY_LEVEL) {
+            return MIN_DIFFICULTY_LEVEL;
         }
-        if (rounded == 3) {
-            return 3;
+        if (rounded == NEUTRAL_DIFFICULTY_LEVEL) {
+            return NEUTRAL_DIFFICULTY_LEVEL;
         }
-        if (rounded >= 4) {
-            return 4;
+        if (rounded >= MAX_DIFFICULTY_LEVEL) {
+            return MAX_DIFFICULTY_LEVEL;
         }
-        return 2;
+        return DEFAULT_DIFFICULTY_LEVEL;
     }
 
     private static int toBalanceLevel(double value) {

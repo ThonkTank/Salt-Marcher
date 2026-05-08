@@ -3,7 +3,6 @@ package src.view.dropdowns.party;
 import java.util.function.Consumer;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
-import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.Tooltip;
@@ -14,6 +13,7 @@ import javafx.scene.layout.VBox;
 import src.view.slotcontent.primitives.popup.AnchoredPopupView;
 import src.view.slotcontent.topbar.dropdown.DropdownPopupView;
 
+@SuppressWarnings("PMD.LawOfDemeter")
 public final class PartyTopBarView extends HBox {
 
     private static final double POPUP_WIDTH = 380.0;
@@ -46,7 +46,7 @@ public final class PartyTopBarView extends HBox {
     }
 
     private void configureTrigger() {
-        triggerButton.getStyleClass().add("text-secondary");
+        addStyleClass(triggerButton, "text-secondary");
         triggerButton.setMnemonicParsing(true);
         triggerButton.setTooltip(new Tooltip("Party-Panel öffnen (Alt+P)"));
         triggerButton.setOnAction(event -> togglePopup());
@@ -57,19 +57,19 @@ public final class PartyTopBarView extends HBox {
             PartyEditorTopBarView editorView
     ) {
         Button closeButton = new Button("x");
-        closeButton.getStyleClass().add("compact");
+        addStyleClass(closeButton, "compact");
         closeButton.setAccessibleText("Party-Panel schließen");
         closeButton.setOnAction(event -> popup.hide());
         Region headerSpacer = new Region();
-        HBox.setHgrow(headerSpacer, Priority.ALWAYS);
+        setHgrow(headerSpacer, Priority.ALWAYS);
         Label headerLabel = new Label("PARTY");
-        headerLabel.getStyleClass().add("title-large");
+        addStyleClass(headerLabel, "title-large");
         HBox header = new HBox(6, headerLabel, headerSpacer, closeButton);
-        header.getStyleClass().add("party-header");
+        addStyleClass(header, "party-header");
         header.setAlignment(Pos.CENTER_LEFT);
 
         VBox panel = new VBox(10, header, rosterView, editorView);
-        panel.getStyleClass().add("party-panel");
+        addStyleClass(panel, "party-panel");
         panel.setFillWidth(true);
         return panel;
     }
@@ -84,5 +84,9 @@ public final class PartyTopBarView extends HBox {
 
     private static String safe(String value) {
         return value == null ? "" : value;
+    }
+
+    private static void addStyleClass(javafx.scene.Node node, String styleClass) {
+        node.getStyleClass().add(styleClass);
     }
 }

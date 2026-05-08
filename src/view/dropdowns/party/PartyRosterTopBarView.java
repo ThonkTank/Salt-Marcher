@@ -25,6 +25,7 @@ import src.view.slotcontent.primitives.progressmeter.ProgressMeterView;
 import src.view.slotcontent.primitives.progressmeter.ProgressMeterView.PopupAction;
 import src.view.slotcontent.primitives.progressmeter.ProgressMeterView.PopupSpec;
 
+@SuppressWarnings("PMD.CouplingBetweenObjects")
 public final class PartyRosterTopBarView extends VBox {
 
     private static final String STYLE_COMPACT = "compact";

@@ -21,6 +21,7 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 
+@SuppressWarnings("PMD.CouplingBetweenObjects")
 public final class CatalogMainView extends BorderPane {
 
     static final int FIRST_COLUMN_INDEX = 0;

@@ -30,6 +30,10 @@ import src.domain.party.roster.port.PartyRosterRepository;
 import src.domain.party.roster.port.PartyRuntimeRepository;
 import src.domain.party.roster.value.PartyMutationStatus;
 
+@SuppressWarnings({
+        "PMD.CouplingBetweenObjects",
+        "PMD.TooManyMethods"
+})
 public final class PartyBoundaryRuntimeAdapter implements PartyRosterRepository, PartyRuntimeRepository {
 
     private static final String LISTENER_PARAMETER = "listener";
