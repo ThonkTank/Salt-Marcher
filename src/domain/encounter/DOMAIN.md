@@ -83,7 +83,7 @@ session runtime state.
 - `EncounterDraft`: candidate generated encounter before export.
 - `GeneratedEncounter`: exported generated encounter suggestion.
 - `EncounterPlan`: saved encounter roster aggregate.
-- `SavedEncounterPlan`: published saved-plan snapshot.
+- `SavedEncounterPlanChoice`: published saved-plan chooser display row.
 
 ## References
 

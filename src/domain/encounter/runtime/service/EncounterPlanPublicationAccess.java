@@ -42,7 +42,7 @@ final class EncounterPlanPublicationAccess {
         ListSavedEncounterPlansUseCase.Result result = useCase.execute();
         publishedStateRepository.publishSavedPlans(new SavedEncounterPlanListResult(
                 EncounterPlanBoundaryTranslator.toPublishedListPlansStatus(result.status()),
-                result.plans().stream().map(EncounterPlanBoundaryTranslator::toPublishedSummary).toList(),
+                result.plans().stream().map(EncounterPlanBoundaryTranslator::toPublishedChoice).toList(),
                 result.message()));
     }
 
