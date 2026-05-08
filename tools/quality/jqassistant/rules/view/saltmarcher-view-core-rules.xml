@@ -1,0 +1,43 @@
+<jqassistant-rules xmlns="http://schema.jqassistant.org/rule/v2.9"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://schema.jqassistant.org/rule/v2.9 https://jqassistant.github.io/jqassistant/current/schema/jqassistant-rule-v2.9.xsd">
+
+    <concept id="saltmarcher:ViewLayerType">
+        <description>Annotates compiled SaltMarcher view-layer types once for all focused View enforcement bundles.</description>
+        <cypher><![CDATA[
+            MATCH (type:Java:Type)
+            WHERE type.fqn =~ 'src\\.view\\..*'
+            WITH
+              type,
+              coalesce(type.sourceFileName, '') AS sourceFileName,
+              split(type.fqn, '.') AS segments
+            SET
+              type:SaltMarcher:ViewLayerType,
+              type.viewBucket = CASE
+                WHEN size(segments) >= 6 AND segments[2] = 'slotcontent' AND sourceFileName ENDS WITH 'ContentModel.java' THEN 'MODEL'
+                WHEN size(segments) >= 6 AND segments[2] = 'slotcontent' AND sourceFileName ENDS WITH 'ViewInputEvent.java' THEN 'VIEW_INPUT_EVENT'
+                WHEN size(segments) >= 6 AND segments[2] = 'slotcontent' AND sourceFileName ENDS WITH 'InspectorEntry.java' THEN 'INSPECTOR_ENTRY'
+                WHEN size(segments) >= 6 AND segments[2] = 'slotcontent' AND sourceFileName ENDS WITH 'View.java' THEN 'VIEW'
+                WHEN size(segments) >= 5 AND segments[2] IN ['leftbartabs', 'statetabs', 'dropdowns'] AND sourceFileName ENDS WITH 'Binder.java' THEN 'BINDER'
+                WHEN size(segments) >= 5 AND segments[2] IN ['leftbartabs', 'statetabs', 'dropdowns'] AND (sourceFileName ENDS WITH 'ViewModel.java' OR sourceFileName ENDS WITH 'PresentationModel.java' OR sourceFileName ENDS WITH 'ContributionModel.java' OR sourceFileName ENDS WITH 'ContentModel.java') THEN 'MODEL'
+                WHEN size(segments) >= 5 AND segments[2] IN ['leftbartabs', 'statetabs', 'dropdowns'] AND sourceFileName ENDS WITH 'Contribution.java' THEN 'CONTRIBUTION'
+                WHEN size(segments) >= 5 AND segments[2] IN ['leftbartabs', 'statetabs', 'dropdowns'] AND sourceFileName ENDS WITH 'IntentHandler.java' THEN 'HANDLER'
+                WHEN size(segments) >= 5 AND segments[2] IN ['leftbartabs', 'statetabs', 'dropdowns'] AND sourceFileName ENDS WITH 'ViewInputEvent.java' THEN 'VIEW_INPUT_EVENT'
+                WHEN size(segments) >= 5 AND segments[2] IN ['leftbartabs', 'statetabs', 'dropdowns'] AND sourceFileName ENDS WITH 'PublishedEvent.java' THEN 'PUBLISHED_EVENT'
+                WHEN size(segments) >= 5 AND segments[2] IN ['leftbartabs', 'statetabs', 'dropdowns'] AND sourceFileName ENDS WITH 'View.java' THEN 'VIEW'
+                ELSE 'LEGACY'
+              END,
+              type.relativePath = CASE
+                WHEN type.sourceFileName IS NULL OR type.sourceFileName = ''
+                  THEN replace(type.fqn, '.', '/') + '.java'
+                WHEN type.name IS NULL
+                  OR type.name = ''
+                  OR NOT type.fqn ENDS WITH '.' + type.name
+                  THEN replace(type.fqn, '.', '/') + '.java'
+                ELSE replace(substring(type.fqn, 0, size(type.fqn) - size(type.name) - 1), '.', '/') + '/' + type.sourceFileName
+              END
+            RETURN
+              type AS ViewLayerType
+        ]]></cypher>
+    </concept>
+</jqassistant-rules>

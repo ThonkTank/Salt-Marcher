@@ -17,6 +17,7 @@ Current mechanical drift:
 
 - the active `checkDomainPortEnforcement` bundle still inventories and blocks
   the legacy outbound `port/` interface family
+- the target placement is `src/domain/<context>/model/<family>/port/`
 - until production migration replaces that legacy shape, this document records
   the live blocker surface literally instead of pretending the target port role
   is already enforced

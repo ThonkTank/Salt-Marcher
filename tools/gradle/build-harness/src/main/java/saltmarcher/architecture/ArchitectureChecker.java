@@ -14,23 +14,32 @@ public final class ArchitectureChecker {
 
     private final ArchitectureContext context;
     private final List<String> optionalRuleClassNames;
+    private final boolean includeDefaultRules;
 
     public ArchitectureChecker(Path repoRoot) {
-        this(repoRoot, List.of());
+        this(repoRoot, List.of(), true);
     }
 
     public ArchitectureChecker(Path repoRoot, List<String> optionalRuleClassNames) {
+        this(repoRoot, optionalRuleClassNames, true);
+    }
+
+    public ArchitectureChecker(Path repoRoot, List<String> optionalRuleClassNames, boolean includeDefaultRules) {
         this.context = new ArchitectureContext(repoRoot.normalize().toAbsolutePath());
         this.optionalRuleClassNames = List.copyOf(optionalRuleClassNames);
+        this.includeDefaultRules = includeDefaultRules;
     }
 
     public Result check() {
         ViolationSink sink = new ViolationSink();
-        List<ArchitectureRule> rules = new ArrayList<>(List.of(
-                new BuildHarnessPolicyRules(),
-                new SourceLayoutRules(),
-                new DomainFeatureRules(),
-                new DataPersistenceRules()));
+        List<ArchitectureRule> rules = new ArrayList<>();
+        if (includeDefaultRules) {
+            rules.addAll(List.of(
+                    new BuildHarnessPolicyRules(),
+                    new SourceLayoutRules(),
+                    new DomainFeatureRules(),
+                    new DataPersistenceRules()));
+        }
         rules.addAll(ArchitectureRuleLoader.instantiateRules(optionalRuleClassNames, "architectureCheck"));
 
         for (ArchitectureRule rule : rules) {

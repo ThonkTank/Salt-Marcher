@@ -118,8 +118,8 @@ internal fun Project.configureVerificationCore() {
                 }
             }
 
-        val buildHarnessTasks = descriptor.buildHarnessTaskMainClasses
-            .keys
+        val buildHarnessTasks = (descriptor.buildHarnessTaskMainClasses.keys + descriptor.buildHarnessTaskRuleClasses.keys)
+            .distinct()
             .sortedBy(descriptor.taskNames::indexOf)
             .associateWith { taskName -> gradle.includedBuild("build-harness").task(":$taskName") }
 

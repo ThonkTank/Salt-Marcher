@@ -17,6 +17,7 @@ import com.sun.tools.javac.code.Symbol;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import javax.lang.model.element.Modifier;
+import saltmarcher.quality.errorprone.view.ViewSourceDescriptor;
 
 @BugPattern(
         name = "ViewInputEventApi",
@@ -27,11 +28,12 @@ public final class ViewInputEventApiChecker extends BugChecker
 
     @Override
     public Description matchCompilationUnit(CompilationUnitTree tree, VisitorState state) {
-        if (!ViewArchitectureSupport.isPanelViewSource(tree)) {
+        ViewSourceDescriptor source = ViewSourceDescriptor.describe(tree);
+        if (!source.isPassiveViewSource()) {
             return Description.NO_MATCH;
         }
 
-        String sourcePackageName = ViewArchitectureSupport.packageName(tree);
+        String sourcePackageName = source.packageName();
         ClassTree topLevelClass = topLevelClass(tree);
         if (topLevelClass == null) {
             return Description.NO_MATCH;

@@ -68,10 +68,9 @@ The closed architectural role family is:
 | `Port` | Inbound listener on foreign published state. |
 | `Repository` | Outbound trigger for foreign domain work and layered data access. |
 
-Legacy tactical DDD names are subordinate only. `aggregate`, `entity`,
-`value`, `policy`, `factory`, `service`, `event`, and `specification` MAY
-survive inside `model/**` when they describe a real subordinate model or pure
-helper subrole. They are not the primary domain-layer taxonomy anymore.
+Legacy tactical DDD names such as `aggregate`, `entity`, `value`, `policy`,
+`factory`, `service`, `event`, and `specification` are rejected as domain
+topology roles. New domain topology uses only the closed role family above.
 
 ## Core Principles
 
@@ -160,7 +159,8 @@ types -> own UseCase -> own Model -> own Published`
 - owns internal dynamic work state such as current encounter plans, loaded
   maps, active editor session state, or authored aggregates
 - is created, read, and edited by `UseCase`
-- may expose subordinate model families under `model/**`
+- lives under `model/<family>/model/`, where a family MAY add deeper semantic
+  subpackages for subordinate models of that same family
 - state change is the source that updates outward `Published`
 
 ### `published/`
@@ -204,45 +204,48 @@ src/domain/<context>/
     *UseCase.java
   model/
     <family>/
+      model/
       usecase/
       helper/
       constants/
       port/
       repository/
-      aggregate/
-      entity/
-      value/
-      policy/
-      factory/
-      service/
-      event/
-      specification/
 ```
 
 Rules:
 
 - direct root technical buckets are `published/`, `application/`, and `model/`
+- no named domain modules remain at context root; any other direct child
+  bucket is illegal
 - `application/` is reserved for root-level cross-model orchestration use
   cases; model-local operations live under `model/<family>/usecase/`
 - `model/` is the primary home of context-owned dynamic state
+- `model/<family>/model/` is the internal model subtree; it MAY contain direct
+  model files or deeper semantic subpackages for subordinate models of the
+  same family
 - `usecase/`, `helper/`, `constants/`, `port/`, and `repository/` are the
-  primary subordinate role buckets under a model family
-- legacy tactical subroles MAY exist under `model/<family>/` when they clarify
-  real subordinate model behavior or pure helper semantics
+  only non-model subordinate role buckets under a model family
+- non-model role buckets stay direct-file only
 - direct Java files under named model families are forbidden; Java files belong
   in an explicit role package
+- reserved role suffixes are path-owned: `*ApplicationService`, `*UseCase`,
+  `*Helper`, `*Constants`, `*Port`, and `*Repository` may appear only in their
+  canonical buckets
+- legacy suffixes such as `*BoundaryTranslator`, `*Projector`,
+  `*RuntimeAccess`, `*RuntimeAdapter`, `*Policy`, `*Service`, `*Factory`,
+  `*Aggregate`, `*Entity`, and `*Specification` are forbidden
 
 ## Current Mechanical Drift
 
-The active blockers do not yet prove the full target topology.
+The active blockers now prove the target root/model topology and reserved role
+suffix placement, but production migration still lags behind that target.
 
 - `checkDomainApplicationServiceEnforcement` now allows one or more direct root
   `*ApplicationService` files and validates `DOMAIN.md`-declared root services
-- `checkDomainLayerEnforcement` now tolerates a root `model/` bucket and the
-  new subordinate role package names
-- current use-case checks still tolerate legacy direct `application/`
-  helper files such as `*BoundaryTranslator`, `*Projector`, `*RuntimeAccess`,
-  and `*RuntimeAdapter`
+- `checkDomainLayerEnforcement` now hard-cuts root buckets, model-family role
+  buckets, direct-file placement, and reserved role suffix ownership
+- `checkDomainUseCaseEnforcement` now hard-cuts root `application/` to direct
+  `*UseCase.java` files only
 - current port checks still inventory legacy outbound `port/` interfaces until
   the repository/port role migration reaches production code
 

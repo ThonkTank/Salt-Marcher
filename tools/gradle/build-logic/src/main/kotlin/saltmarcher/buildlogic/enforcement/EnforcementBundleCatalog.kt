@@ -49,6 +49,7 @@ data class EnforcementBundleDescriptor(
     val buildHarnessArchitectureRuleClasses: List<String>,
     val buildHarnessDocumentationRuleClasses: List<String>,
     val buildHarnessTaskMainClasses: Map<String, String>,
+    val buildHarnessTaskRuleClasses: Map<String, List<String>>,
     val errorProneCheckers: List<String>,
     val errorProneSourceDir: String?,
     val errorProneServiceFile: String?,
@@ -159,6 +160,7 @@ private fun loadEnforcementBundleDescriptors(repoRootDir: File): Map<String, Enf
                     buildHarnessArchitectureRuleClasses = properties.list("buildHarnessArchitectureRuleClasses"),
                     buildHarnessDocumentationRuleClasses = properties.list("buildHarnessDocumentationRuleClasses"),
                     buildHarnessTaskMainClasses = properties.mapEntries("buildHarnessTask.", ".mainClass"),
+                    buildHarnessTaskRuleClasses = properties.mapListEntries("buildHarnessTask.", ".ruleClasses"),
                     errorProneCheckers = properties.list("errorProneCheckers"),
                     errorProneSourceDir = properties.optionalTrimmed("errorProneSourceDir")
                         ?.let { rawPath -> resolveDescriptorPath(repoRootDir, descriptorFile, rawPath) },
@@ -183,22 +185,28 @@ private fun EnforcementBundleDescriptor.validated(): EnforcementBundleDescriptor
     }
     publicCheckTaskName()
 
-    if (buildHarnessTaskMainClasses.isNotEmpty()) {
+    if (buildHarnessTaskMainClasses.isNotEmpty() || buildHarnessTaskRuleClasses.isNotEmpty()) {
         require(buildHarnessSourceDir != null) {
-            "Enforcement bundle '$bundleId' must declare buildHarnessSourceDir when buildHarnessTask.*.mainClass is present."
+            "Enforcement bundle '$bundleId' must declare buildHarnessSourceDir when buildHarnessTask.*.mainClass or buildHarnessTask.*.ruleClasses is present."
         }
-        val missingTaskNames = buildHarnessTaskMainClasses.keys - taskNames.toSet()
+        val declaredTaskNames = buildHarnessTaskMainClasses.keys + buildHarnessTaskRuleClasses.keys
+        val missingTaskNames = declaredTaskNames - taskNames.toSet()
         require(missingTaskNames.isEmpty()) {
             "Enforcement bundle '$bundleId' declares buildHarness tasks that are missing from taskNames: ${missingTaskNames.joinToString()}."
+        }
+        val overlappingTaskNames = buildHarnessTaskMainClasses.keys.intersect(buildHarnessTaskRuleClasses.keys)
+        require(overlappingTaskNames.isEmpty()) {
+            "Enforcement bundle '$bundleId' must not declare both buildHarnessTask.*.mainClass and buildHarnessTask.*.ruleClasses for the same task: ${overlappingTaskNames.joinToString()}."
         }
     }
     if (buildHarnessSourceDir != null) {
         require(
             buildHarnessTaskMainClasses.isNotEmpty() ||
+                buildHarnessTaskRuleClasses.isNotEmpty() ||
                 buildHarnessArchitectureRuleClasses.isNotEmpty() ||
                 buildHarnessDocumentationRuleClasses.isNotEmpty()
         ) {
-            "Enforcement bundle '$bundleId' must declare buildHarnessTask.*.mainClass or buildHarness*RuleClasses when buildHarnessSourceDir is present."
+            "Enforcement bundle '$bundleId' must declare buildHarnessTask.*.mainClass, buildHarnessTask.*.ruleClasses, or buildHarness*RuleClasses when buildHarnessSourceDir is present."
         }
     }
     if (buildHarnessArchitectureRuleClasses.isNotEmpty() || buildHarnessDocumentationRuleClasses.isNotEmpty()) {
@@ -579,4 +587,13 @@ private fun Properties.mapEntries(namePrefix: String, nameSuffix: String): Map<S
     .associate { propertyName ->
         val name = propertyName.removePrefix(namePrefix).removeSuffix(nameSuffix)
         name to requiredTrimmed(propertyName)
+    }
+
+private fun Properties.mapListEntries(namePrefix: String, nameSuffix: String): Map<String, List<String>> = stringPropertyNames()
+    .asSequence()
+    .filter { propertyName -> propertyName.startsWith(namePrefix) && propertyName.endsWith(nameSuffix) }
+    .sorted()
+    .associate { propertyName ->
+        val name = propertyName.removePrefix(namePrefix).removeSuffix(nameSuffix)
+        name to list(propertyName)
     }

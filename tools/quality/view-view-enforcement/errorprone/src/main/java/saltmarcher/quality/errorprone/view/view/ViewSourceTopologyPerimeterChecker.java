@@ -8,7 +8,9 @@ import com.sun.source.tree.ClassTree;
 import com.sun.source.tree.CompilationUnitTree;
 import java.util.LinkedHashSet;
 import java.util.Set;
-import java.util.regex.Pattern;
+import saltmarcher.quality.errorprone.view.ViewRole;
+import saltmarcher.quality.errorprone.view.ViewSourceDescriptor;
+import saltmarcher.quality.errorprone.view.ViewUnitKind;
 
 @BugPattern(
         name = "ViewSourceTopologyPerimeter",
@@ -17,11 +19,6 @@ import java.util.regex.Pattern;
 public final class ViewSourceTopologyPerimeterChecker extends BugChecker
         implements BugChecker.CompilationUnitTreeMatcher {
 
-    private static final Pattern ACTIVE_ROOT_PACKAGE = Pattern.compile(
-            "^src\\.view\\.(leftbartabs|statetabs|dropdowns)\\.[^.]+$");
-    private static final Pattern SLOTCONTENT_PACKAGE = Pattern.compile(
-            "^src\\.view\\.slotcontent\\.(controls|main|state|details|topbar|primitives)\\.[^.]+$");
-
     @Override
     public Description matchCompilationUnit(CompilationUnitTree tree, VisitorState state) {
         String sourcePath = sourcePath(tree);
@@ -29,8 +26,9 @@ public final class ViewSourceTopologyPerimeterChecker extends BugChecker
             return Description.NO_MATCH;
         }
 
-        String packageName = ViewArchitectureSupport.packageName(tree);
-        String sourceFileName = sourceFileName(tree);
+        ViewSourceDescriptor source = ViewSourceDescriptor.describe(tree);
+        String packageName = source.packageName();
+        String sourceFileName = source.sourceFileName();
         ClassTree topLevelClass = ViewArchitectureSupport.topLevelClass(tree);
         Set<String> violations = new LinkedHashSet<>();
 
@@ -39,9 +37,9 @@ public final class ViewSourceTopologyPerimeterChecker extends BugChecker
             violations.add("package '" + packageName + "' must match path package '" + expectedPackage + "'");
         }
 
-        if (!isAllowedViewPackage(packageName)) {
+        if (!source.isRecognizedViewSource()) {
             violations.add("view source must live only under src.view.leftbartabs.<entry>, src.view.statetabs.<entry>, src.view.dropdowns.<entry>, or src.view.slotcontent.<controls|main|state|details|topbar|primitives>.<entry>");
-        } else if (!isAllowedRoleFile(packageName, sourceFileName)) {
+        } else if (!isAllowedRole(source)) {
             violations.add("file '" + sourceFileName + "' is not an allowed top-level role in package '" + packageName + "'");
         }
 
@@ -62,35 +60,19 @@ public final class ViewSourceTopologyPerimeterChecker extends BugChecker
                 .build();
     }
 
-    private static boolean isAllowedViewPackage(String packageName) {
-        return ACTIVE_ROOT_PACKAGE.matcher(packageName).matches()
-                || SLOTCONTENT_PACKAGE.matcher(packageName).matches();
-    }
-
-    private static boolean isAllowedRoleFile(String packageName, String sourceFileName) {
-        if (ACTIVE_ROOT_PACKAGE.matcher(packageName).matches()) {
-            return sourceFileName.endsWith("Contribution.java")
-                    || sourceFileName.endsWith("Binder.java")
-                    || sourceFileName.endsWith("ContributionModel.java")
-                    || sourceFileName.endsWith("IntentHandler.java")
-                    || sourceFileName.endsWith("ViewInputEvent.java")
-                    || sourceFileName.endsWith("PublishedEvent.java")
-                    || isPassiveViewFileName(sourceFileName);
+    private static boolean isAllowedRole(ViewSourceDescriptor source) {
+        if (source.role() == ViewRole.UNKNOWN) {
+            return false;
         }
-        if (SLOTCONTENT_PACKAGE.matcher(packageName).matches()) {
-            return sourceFileName.endsWith("ContentModel.java")
-                    || sourceFileName.endsWith("ViewInputEvent.java")
-                    || isPassiveViewFileName(sourceFileName);
+        if (source.unitKind() == ViewUnitKind.ACTIVE_ROOT) {
+            return source.role() != ViewRole.CONTENT_MODEL
+                    && source.role() != ViewRole.INSPECTOR_ENTRY
+                    && source.role() != ViewRole.LEGACY_VIEW_MODEL
+                    && source.role() != ViewRole.PROJECTOR;
         }
-        return false;
-    }
-
-    private static boolean isPassiveViewFileName(String sourceFileName) {
-        return sourceFileName.endsWith("View.java")
-                && !sourceFileName.endsWith("ViewModel.java")
-                && !sourceFileName.endsWith("PresentationModel.java")
-                && !sourceFileName.endsWith("ContributionModel.java")
-                && !sourceFileName.endsWith("ContentModel.java");
+        return source.role() == ViewRole.CONTENT_MODEL
+                || source.role() == ViewRole.VIEW_INPUT_EVENT
+                || source.role() == ViewRole.VIEW;
     }
 
     private static boolean isViewSourcePath(String sourcePath) {
@@ -115,14 +97,5 @@ public final class ViewSourceTopologyPerimeterChecker extends BugChecker
         String absoluteOrRelative = tree.getSourceFile().getName().replace('\\', '/');
         int viewRoot = absoluteOrRelative.indexOf("src/view/");
         return viewRoot < 0 ? absoluteOrRelative : absoluteOrRelative.substring(viewRoot);
-    }
-
-    private static String sourceFileName(CompilationUnitTree tree) {
-        if (tree.getSourceFile() == null) {
-            return "";
-        }
-        String name = tree.getSourceFile().getName().replace('\\', '/');
-        int separator = name.lastIndexOf('/');
-        return separator < 0 ? name : name.substring(separator + 1);
     }
 }

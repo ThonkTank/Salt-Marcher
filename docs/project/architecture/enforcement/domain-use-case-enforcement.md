@@ -29,7 +29,7 @@ Unified focused bundle entrypoint:
 
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
-| `domain-usecase-direct-file-placement` | Enforced | every Java type under root `src/domain/<context>/application/` | domain-usecase bundle build-harness `DomainUseCaseTopologyRules` | `./gradlew checkDomainUseCaseEnforcement` | Root `application/` orchestration remains direct-file only. The current blocker still tolerates legacy direct helpers such as `*BoundaryTranslator`, `*Projector`, `*RuntimeAccess`, and `*RuntimeAdapter` while model-local `usecase/` migration is still pending. |
+| `domain-usecase-direct-file-placement` | Enforced | every Java type under root `src/domain/<context>/application/` | domain-usecase bundle build-harness `DomainUseCaseTopologyRules` | `./gradlew checkDomainUseCaseEnforcement` | Root `application/` orchestration remains direct-file only and consists exclusively of `*UseCase.java` files. |
 
 ### Must Not Contain
 
@@ -55,7 +55,7 @@ generic domain-layer communication and outer-dependency boundaries owned by
 | `domain-usecase-collaborator-surface-discipline` | Review-Owned | every `*UseCase.java` under `src/domain/**` | none | none | A legal use case still limits direct collaborators to same-context models, helpers, repositories, ports, constants, and allowed foreign root boundaries. |
 | `domain-usecase-no-hidden-business-policy` | Review-Owned | every `*UseCase.java` under `src/domain/**` | none | none | Real business policy has not been pushed into legal orchestration code simply because the current blockers do not catch it. |
 | `domain-usecase-no-hidden-carrier-bypass-into-model` | Review-Owned | every use-case handoff into same-context internal model work | none | none | No legal type shape is being used to smuggle same-context or foreign `published/**` carriers into private model code. |
-| `domain-usecase-helper-role-discipline` | Review-Owned | every non-`*UseCase.java` helper near use-case orchestration | none | none | Any remaining legacy helper near root `application/` stays migration-sized and does not become a hidden policy owner, second boundary, or generic mapper dump. |
+| `domain-usecase-helper-role-discipline` | Review-Owned | every helper or model-local collaborator used by `*UseCase.java` | none | none | Business policy has not been smuggled into helper-shaped collaborators just because root `application/` itself is now hard-cut to `*UseCase.java` only. |
 
 ## References
 

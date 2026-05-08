@@ -9,21 +9,24 @@ import saltmarcher.architecture.ViolationSink;
 
 public final class SourceLayoutRules implements ArchitectureRule {
 
-    private static final Set<String> DOMAIN_ALLOWED_ROLE_PACKAGES =
+    private static final Set<String> DOMAIN_TARGET_ROLE_PACKAGES =
             Set.of(
-                    "aggregate",
+                    "model",
                     "constants",
-                    "entity",
-                    "value",
-                    "policy",
                     "helper",
                     "port",
                     "repository",
+                    "usecase");
+    private static final Set<String> DOMAIN_LEGACY_ROLE_PACKAGES =
+            Set.of(
+                    "aggregate",
+                    "entity",
+                    "value",
+                    "policy",
                     "factory",
                     "service",
                     "event",
-                    "specification",
-                    "usecase");
+                    "specification");
     @Override
     public void check(ArchitectureContext context, ViolationSink violations) {
         for (SourceFile sourceFile : context.sourceFiles(violations)) {
@@ -137,6 +140,14 @@ public final class SourceLayoutRules implements ArchitectureRule {
     }
 
     public static boolean isAllowedDomainRolePackage(String role) {
-        return DOMAIN_ALLOWED_ROLE_PACKAGES.contains(role);
+        return isAllowedTargetDomainRolePackage(role) || isLegacyDomainRolePackage(role);
+    }
+
+    public static boolean isAllowedTargetDomainRolePackage(String role) {
+        return DOMAIN_TARGET_ROLE_PACKAGES.contains(role);
+    }
+
+    public static boolean isLegacyDomainRolePackage(String role) {
+        return DOMAIN_LEGACY_ROLE_PACKAGES.contains(role);
     }
 }

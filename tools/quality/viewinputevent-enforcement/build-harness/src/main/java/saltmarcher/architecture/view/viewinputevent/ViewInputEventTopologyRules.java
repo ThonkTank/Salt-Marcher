@@ -3,31 +3,43 @@ package saltmarcher.architecture.view.viewinputevent;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import saltmarcher.architecture.ArchitectureContext;
 import saltmarcher.architecture.ArchitectureRule;
-import saltmarcher.architecture.SourceFile;
 import saltmarcher.architecture.ViolationSink;
 import saltmarcher.architecture.view.PassiveViewInputEventSeamSupport;
 import saltmarcher.architecture.view.PassiveViewInputEventSeamSupport.InteractivePassiveView;
-import saltmarcher.architecture.view.ViewRoleSupport;
+import saltmarcher.architecture.view.ViewRole;
+import saltmarcher.architecture.view.ViewSourceDescriptor;
+import saltmarcher.architecture.view.ViewTopologyCatalog;
+import saltmarcher.architecture.view.ViewUnitDescriptor;
+import saltmarcher.architecture.view.ViewUnitKind;
 
 public final class ViewInputEventTopologyRules implements ArchitectureRule {
 
     @Override
     public void check(ArchitectureContext context, ViolationSink violations) {
-        Map<ViewRoleSupport.ViewUnit, List<SourceFile>> units =
-                ViewRoleSupport.groupByUnit(context.sourceFiles(violations));
-        for (Map.Entry<ViewRoleSupport.ViewUnit, List<SourceFile>> entry : units.entrySet()) {
-            ViewRoleSupport.ViewUnit unit = entry.getKey();
-            List<SourceFile> files = entry.getValue();
-            long viewCount = files.stream().filter(ViewRoleSupport::isPassiveViewFile).count();
-            long intentHandlerCount = files.stream().filter(ViewRoleSupport::isIntentHandlerFile).count();
-            long viewInputEventCount = files.stream().filter(ViewRoleSupport::isViewInputEventFile).count();
-            Set<String> passiveViewStems = ViewRoleSupport.passiveViewStems(files);
-            Set<String> viewInputEventStems = ViewRoleSupport.viewInputEventStems(files);
+        Map<ViewUnitDescriptor, List<ViewSourceDescriptor>> units =
+                ViewTopologyCatalog.groupRecognizedUnits(context.sourceFiles(violations));
+        for (Map.Entry<ViewUnitDescriptor, List<ViewSourceDescriptor>> entry : units.entrySet()) {
+            ViewUnitDescriptor unit = entry.getKey();
+            List<ViewSourceDescriptor> files = entry.getValue();
+            long viewCount = files.stream().filter(source -> source.role() == ViewRole.VIEW).count();
+            long intentHandlerCount = files.stream().filter(source -> source.role() == ViewRole.INTENT_HANDLER).count();
+            long viewInputEventCount = files.stream().filter(source -> source.role() == ViewRole.VIEW_INPUT_EVENT).count();
+            Set<String> passiveViewStems = files.stream()
+                    .filter(source -> source.role() == ViewRole.VIEW)
+                    .map(ViewSourceDescriptor::stem)
+                    .filter(stem -> !stem.isBlank())
+                    .collect(Collectors.toCollection(java.util.LinkedHashSet::new));
+            Set<String> viewInputEventStems = files.stream()
+                    .filter(source -> source.role() == ViewRole.VIEW_INPUT_EVENT)
+                    .map(ViewSourceDescriptor::stem)
+                    .filter(stem -> !stem.isBlank())
+                    .collect(Collectors.toCollection(java.util.LinkedHashSet::new));
             List<InteractivePassiveView> interactiveViews =
                     PassiveViewInputEventSeamSupport.scan(context, files, violations);
-            if (ViewRoleSupport.isActiveRoot(unit)) {
+            if (unit.kind() == ViewUnitKind.ACTIVE_ROOT) {
                 validateActiveRootUnit(
                         unit,
                         viewCount,
@@ -49,7 +61,7 @@ public final class ViewInputEventTopologyRules implements ArchitectureRule {
     }
 
     private static void validateActiveRootUnit(
-            ViewRoleSupport.ViewUnit unit,
+            ViewUnitDescriptor unit,
             long viewCount,
             long intentHandlerCount,
             long viewInputEventCount,

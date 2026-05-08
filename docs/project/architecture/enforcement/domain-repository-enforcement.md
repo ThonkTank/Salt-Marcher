@@ -19,7 +19,7 @@ repository bundle exists yet.
 
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
-| `domain-repository-outbound-trigger-ownership` | Review-Owned | every repository under `src/domain/**` | none | none | Repositories own outbound triggering of foreign domain work or layered data access. |
+| `domain-repository-outbound-trigger-ownership` | Review-Owned | every repository under `src/domain/**` | none | none | Repositories live under `src/domain/<context>/model/<family>/repository/` and own outbound triggering of foreign domain work or layered data access. |
 
 ### Must Not Contain
 

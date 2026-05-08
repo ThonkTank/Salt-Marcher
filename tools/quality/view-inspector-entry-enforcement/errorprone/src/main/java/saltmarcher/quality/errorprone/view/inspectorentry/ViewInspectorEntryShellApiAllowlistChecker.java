@@ -5,8 +5,12 @@ import com.google.errorprone.VisitorState;
 import com.google.errorprone.bugpatterns.BugChecker;
 import com.google.errorprone.matchers.Description;
 import com.sun.source.tree.CompilationUnitTree;
+import java.util.LinkedHashSet;
 import java.util.Set;
 import saltmarcher.quality.errorprone.view.ViewArchitectureSupport;
+import saltmarcher.quality.errorprone.view.ViewRole;
+import saltmarcher.quality.errorprone.view.ViewRolePolicy;
+import saltmarcher.quality.errorprone.view.ViewSourceDescriptor;
 
 @BugPattern(
         name = "ViewInspectorEntryShellApiAllowlist",
@@ -17,12 +21,18 @@ public final class ViewInspectorEntryShellApiAllowlistChecker extends BugChecker
 
     @Override
     public Description matchCompilationUnit(CompilationUnitTree tree, VisitorState state) {
-        if (!ViewInspectorEntrySupport.isInspectorEntrySource(tree)) {
+        ViewSourceDescriptor source = ViewSourceDescriptor.describe(tree);
+        if (source.role() != ViewRole.INSPECTOR_ENTRY) {
             return Description.NO_MATCH;
         }
 
-        String packageName = ViewArchitectureSupport.packageName(tree);
-        Set<String> forbiddenReferences = ViewInspectorEntrySupport.collectForbiddenShellReferences(tree);
+        String packageName = source.packageName();
+        Set<String> forbiddenReferences = new LinkedHashSet<>();
+        for (String referencedType : ViewArchitectureSupport.collectReferencedTypes(tree)) {
+            if (referencedType.startsWith("shell.") && !ViewRolePolicy.isAllowedInspectorShellType(referencedType)) {
+                forbiddenReferences.add(referencedType);
+            }
+        }
         if (forbiddenReferences.isEmpty()) {
             return Description.NO_MATCH;
         }

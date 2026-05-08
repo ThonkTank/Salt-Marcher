@@ -15,6 +15,7 @@ import com.sun.source.util.TreeScanner;
 import com.sun.tools.javac.code.Symbol;
 import java.util.LinkedHashSet;
 import java.util.Set;
+import saltmarcher.quality.errorprone.view.ViewSourceDescriptor;
 @BugPattern(
         name = "ViewPresentationDecisionLeak",
         summary = "Presentation decisions derived from model carriers belong in the model, not View widgets.",
@@ -30,11 +31,12 @@ public final class ViewPresentationDecisionLeakChecker extends BugChecker
 
     @Override
     public Description matchCompilationUnit(CompilationUnitTree tree, VisitorState state) {
-        if (!ViewArchitectureSupport.isPanelViewSource(tree)) {
+        ViewSourceDescriptor source = ViewSourceDescriptor.describe(tree);
+        if (!source.isPassiveViewSource()) {
             return Description.NO_MATCH;
         }
 
-        String packageName = ViewArchitectureSupport.packageName(tree);
+        String packageName = source.packageName();
         Tree[] violatingTree = {null};
         new TreeScanner<Void, Void>() {
             @Override

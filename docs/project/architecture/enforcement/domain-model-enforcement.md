@@ -20,6 +20,7 @@ bundle exists yet.
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
 | `domain-model-dynamic-state-ownership` | Review-Owned | every model family under `src/domain/**` | none | none | Models own the dynamic internal work state of the context. |
+| `domain-model-tree-placement` | Review-Owned | every internal model subtree under `src/domain/<context>/model/<family>/model/` | none | none | Internal model types live under the dedicated `model/<family>/model/` subtree rather than being scattered across helper or orchestration buckets. |
 
 ### Must Not Contain
 

@@ -15,6 +15,7 @@ import com.sun.source.util.TreeScanner;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import javax.lang.model.element.Modifier;
+import saltmarcher.quality.errorprone.view.ViewSourceDescriptor;
 @BugPattern(
         name = "PassiveViewCallbackSeamBoundary",
         summary = "Passive Views outside technical primitive packages may not expose callback or result-bearing outward seams.",
@@ -24,7 +25,8 @@ public final class PassiveViewCallbackSeamBoundaryChecker extends BugChecker
 
     @Override
     public Description matchCompilationUnit(CompilationUnitTree tree, VisitorState state) {
-        if (!ViewArchitectureSupport.isPanelViewSource(tree)) {
+        ViewSourceDescriptor source = ViewSourceDescriptor.describe(tree);
+        if (!source.isPassiveViewSource()) {
             return Description.NO_MATCH;
         }
 
@@ -36,12 +38,8 @@ public final class PassiveViewCallbackSeamBoundaryChecker extends BugChecker
             return Description.NO_MATCH;
         }
 
-        if (ViewArchitectureSupport.isPrimitiveViewSource(tree)) {
-            return matchPrimitiveView(tree, topLevelClass);
-        }
-
-        String sourcePackageName = ViewArchitectureSupport.packageName(tree);
-        String viewSimpleName = ViewArchitectureSupport.topLevelSimpleName(tree);
+        String sourcePackageName = source.packageName();
+        String viewSimpleName = source.topLevelSimpleName();
         String qualifiedViewName = sourcePackageName.isBlank()
                 ? viewSimpleName
                 : sourcePackageName + "." + viewSimpleName;
@@ -62,7 +60,7 @@ public final class PassiveViewCallbackSeamBoundaryChecker extends BugChecker
                 .setMessage("Passive View '" + qualifiedViewName
                         + "' exposes alternate callback or result-bearing outward seams "
                         + String.join(", ", violations)
-                        + ". Outside slotcontent/primitives/** technical primitive units, passive Views must stay callback-flat and use only onViewInputEvent(Consumer<SameStemViewInputEvent>) when interactive. Shared technical primitives use their own path-signaled technical contract instead of extra callback families.")
+                        + ". Passive Views must stay callback-flat and use only onViewInputEvent(Consumer<SameStemViewInputEvent>) when interactive.")
                 .build();
     }
 
@@ -99,102 +97,6 @@ public final class PassiveViewCallbackSeamBoundaryChecker extends BugChecker
             return;
         }
         violations.add(variableTree.getName() + " field");
-    }
-
-    private Description matchPrimitiveView(CompilationUnitTree tree, ClassTree topLevelClass) {
-        String sourcePackageName = ViewArchitectureSupport.packageName(tree);
-        String viewSimpleName = ViewArchitectureSupport.topLevelSimpleName(tree);
-        String qualifiedViewName = sourcePackageName.isBlank()
-                ? viewSimpleName
-                : sourcePackageName + "." + viewSimpleName;
-        Set<String> violations = new LinkedHashSet<>();
-        Tree[] firstViolation = {null};
-        for (var member : topLevelClass.getMembers()) {
-            if (member instanceof MethodTree methodTree) {
-                collectPrimitiveMethodViolation(
-                        methodTree,
-                        sourcePackageName,
-                        viewSimpleName,
-                        violations,
-                        firstViolation);
-            } else if (member instanceof VariableTree variableTree) {
-                collectPrimitiveFieldViolation(
-                        variableTree,
-                        sourcePackageName,
-                        viewSimpleName,
-                        violations,
-                        firstViolation);
-            }
-        }
-        if (violations.isEmpty()) {
-            return Description.NO_MATCH;
-        }
-        Tree diagnosticTree = firstViolation[0] == null ? topLevelClass : firstViolation[0];
-        return buildDescription(diagnosticTree)
-                .setMessage("Technical primitive View '" + qualifiedViewName
-                        + "' exposes non-technical callback or result seams "
-                        + String.join(", ", violations)
-                        + ". slotcontent/primitives/** may use only JavaFX technical callback/listener seams or Consumer<same-unit *PointerEvent/*Scene/*Signal/*Support> style technical carriers.")
-                .build();
-    }
-
-    private static void collectPrimitiveMethodViolation(
-            MethodTree methodTree,
-            String sourcePackageName,
-            String viewSimpleName,
-            Set<String> violations,
-            Tree[] firstViolation
-    ) {
-        if (!isOutwardVisible(methodTree.getModifiers())) {
-            return;
-        }
-        if (methodTree.getReturnType() != null
-                && ViewArchitectureSupport.isCallbackOrResultProtocolType(ASTHelpers.getType(methodTree.getReturnType()))
-                && !ViewArchitectureSupport.isAllowedTechnicalPrimitiveProtocolType(
-                ASTHelpers.getType(methodTree.getReturnType()),
-                sourcePackageName,
-                viewSimpleName)) {
-            violations.add(methodTree.getName() + "(" + methodTree.getParameters().size() + ")");
-            if (firstViolation[0] == null) {
-                firstViolation[0] = methodTree;
-            }
-            return;
-        }
-        for (VariableTree parameter : methodTree.getParameters()) {
-            if (ViewArchitectureSupport.isCallbackOrResultProtocolType(ASTHelpers.getType(parameter.getType()))
-                    && !ViewArchitectureSupport.isAllowedTechnicalPrimitiveProtocolType(
-                    ASTHelpers.getType(parameter.getType()),
-                    sourcePackageName,
-                    viewSimpleName)) {
-                violations.add(methodTree.getName() + "(" + methodTree.getParameters().size() + ")");
-                if (firstViolation[0] == null) {
-                    firstViolation[0] = methodTree;
-                }
-                return;
-            }
-        }
-    }
-
-    private static void collectPrimitiveFieldViolation(
-            VariableTree variableTree,
-            String sourcePackageName,
-            String viewSimpleName,
-            Set<String> violations,
-            Tree[] firstViolation
-    ) {
-        if (!isOutwardVisible(variableTree.getModifiers())) {
-            return;
-        }
-        if (ViewArchitectureSupport.isCallbackOrResultProtocolType(ASTHelpers.getType(variableTree.getType()))
-                && !ViewArchitectureSupport.isAllowedTechnicalPrimitiveProtocolType(
-                ASTHelpers.getType(variableTree.getType()),
-                sourcePackageName,
-                viewSimpleName)) {
-            violations.add(variableTree.getName() + " field");
-            if (firstViolation[0] == null) {
-                firstViolation[0] = variableTree;
-            }
-        }
     }
 
     private static boolean containsProtocolParameter(MethodTree methodTree, String sourcePackageName) {

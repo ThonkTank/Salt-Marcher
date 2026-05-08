@@ -5,6 +5,7 @@ import com.sun.source.tree.CompilationUnitTree;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import saltmarcher.quality.errorprone.view.ViewArchitectureSupport;
+import saltmarcher.quality.errorprone.view.ViewRolePolicy;
 
 final class ViewContributionDependencySupport {
 
@@ -12,7 +13,7 @@ final class ViewContributionDependencySupport {
     }
 
     static Set<String> collectForbiddenReferences(CompilationUnitTree tree, VisitorState state) {
-        String sourcePackageName = ViewContributionArchitectureSupport.packageName(tree);
+        String sourcePackageName = ViewArchitectureSupport.packageName(tree);
         String sourceText = sourceText(tree, state);
         Set<String> forbiddenReferences = new LinkedHashSet<>();
         for (String referencedType : ViewArchitectureSupport.collectReferencedTypes(tree)) {
@@ -36,14 +37,14 @@ final class ViewContributionDependencySupport {
                 && !sourceText.contains("java.util.concurrent")) {
             return false;
         }
-        if (ViewContributionArchitectureSupport.isForbiddenViewInfrastructureJdkType(referencedType)) {
+        if (ViewArchitectureSupport.isForbiddenViewInfrastructureJdkType(referencedType)) {
             return true;
         }
         if (referencedType.startsWith("javafx.")) {
             return true;
         }
         if (referencedType.startsWith("shell.")) {
-            return !ViewContributionArchitectureSupport.isAllowedContributionShellType(referencedType);
+            return !ViewRolePolicy.isAllowedContributionShellType(referencedType);
         }
         if (referencedType.startsWith("src.data.")
                 || referencedType.startsWith("src.domain.")) {
@@ -55,11 +56,11 @@ final class ViewContributionDependencySupport {
             return false;
         }
         if ("CONTRIBUTION".equals(viewType.bucket())
-                && ViewContributionArchitectureSupport.isSameViewRootReference(sourcePackageName, referencedType)) {
+                && ViewArchitectureSupport.isSameViewRootReference(sourcePackageName, referencedType)) {
             return false;
         }
         return !"BINDER".equals(viewType.bucket())
-                || !ViewContributionArchitectureSupport.isSameViewRootReference(sourcePackageName, referencedType);
+                || !ViewArchitectureSupport.isSameViewRootReference(sourcePackageName, referencedType);
     }
 
     private static String sourceText(CompilationUnitTree tree, VisitorState state) {

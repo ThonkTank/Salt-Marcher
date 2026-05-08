@@ -6,6 +6,8 @@ import com.google.errorprone.bugpatterns.BugChecker;
 import com.google.errorprone.matchers.Description;
 import com.sun.source.tree.CompilationUnitTree;
 import java.util.Set;
+import saltmarcher.quality.errorprone.view.ViewRole;
+import saltmarcher.quality.errorprone.view.ViewSourceDescriptor;
 
 @BugPattern(
         name = "ViewContributionDependencyBoundary",
@@ -16,11 +18,12 @@ public final class ViewContributionDependencyBoundaryChecker extends BugChecker
 
     @Override
     public Description matchCompilationUnit(CompilationUnitTree tree, VisitorState state) {
-        if (!ViewContributionArchitectureSupport.isContributionSource(tree)) {
+        ViewSourceDescriptor source = ViewSourceDescriptor.describe(tree);
+        if (source.role() != ViewRole.CONTRIBUTION || !source.isActiveRootSource()) {
             return Description.NO_MATCH;
         }
 
-        String packageName = ViewContributionArchitectureSupport.packageName(tree);
+        String packageName = source.packageName();
         Set<String> forbiddenReferences = ViewContributionDependencySupport.collectForbiddenReferences(tree, state);
         if (forbiddenReferences.isEmpty()) {
             return Description.NO_MATCH;

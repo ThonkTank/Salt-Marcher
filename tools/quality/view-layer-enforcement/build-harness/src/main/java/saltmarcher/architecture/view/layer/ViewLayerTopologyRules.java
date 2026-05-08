@@ -4,25 +4,29 @@ import java.util.List;
 import java.util.Map;
 import saltmarcher.architecture.ArchitectureContext;
 import saltmarcher.architecture.ArchitectureRule;
-import saltmarcher.architecture.SourceFile;
 import saltmarcher.architecture.ViolationSink;
-import saltmarcher.architecture.view.ViewRoleSupport;
+import saltmarcher.architecture.view.ViewRole;
+import saltmarcher.architecture.view.ViewSourceDescriptor;
+import saltmarcher.architecture.view.ViewTopologyCatalog;
+import saltmarcher.architecture.view.ViewUnitDescriptor;
+import saltmarcher.architecture.view.ViewUnitKind;
 
 public final class ViewLayerTopologyRules implements ArchitectureRule {
 
     @Override
     public void check(ArchitectureContext context, ViolationSink violations) {
-        Map<ViewRoleSupport.ViewUnit, List<SourceFile>> units =
-                ViewRoleSupport.groupByUnit(context.sourceFiles(violations));
-        for (Map.Entry<ViewRoleSupport.ViewUnit, List<SourceFile>> entry : units.entrySet()) {
-            ViewRoleSupport.ViewUnit unit = entry.getKey();
-            List<SourceFile> files = entry.getValue();
-            for (SourceFile sourceFile : files) {
-                if (ViewRoleSupport.isActiveRoot(unit) && !isAllowedActiveRootFile(sourceFile)) {
-                    violations.add(sourceFile.relativePath(), "view-layer-active-root-file-role",
+        Map<ViewUnitDescriptor, List<ViewSourceDescriptor>> units =
+                ViewTopologyCatalog.groupRecognizedUnits(context.sourceFiles(violations));
+        for (Map.Entry<ViewUnitDescriptor, List<ViewSourceDescriptor>> entry : units.entrySet()) {
+            ViewUnitDescriptor unit = entry.getKey();
+            List<ViewSourceDescriptor> files = entry.getValue();
+            for (ViewSourceDescriptor source : files) {
+                if (unit.kind() == ViewUnitKind.ACTIVE_ROOT && !source.role().isAllowedIn(ViewUnitKind.ACTIVE_ROOT)) {
+                    violations.add(source.source(), "view-layer-active-root-file-role",
                             "Active contribution roots may contain only *Contribution.java, *Binder.java, *ContributionModel.java, optional *IntentHandler.java, passive *View.java, optional *ViewInputEvent.java files, and optional write-side *PublishedEvent.java files. Move projection, formatting, or selection preparation into the owning *ContributionModel or into nested/private helper types inside an allowed role file instead of adding standalone helper files.");
-                } else if (ViewRoleSupport.isSlotcontent(unit) && !isAllowedSlotcontentFile(sourceFile)) {
-                    violations.add(sourceFile.relativePath(), "view-layer-slotcontent-file-role",
+                } else if (unit.kind() == ViewUnitKind.REUSABLE_SLOTCONTENT
+                        && !source.role().isAllowedIn(ViewUnitKind.REUSABLE_SLOTCONTENT)) {
+                    violations.add(source.source(), "view-layer-slotcontent-file-role",
                             "Reusable slotcontent units may contain only exactly one passive *View.java file, exactly one same-stem *ViewInputEvent.java file, and exactly one *ContentModel.java file. Top-level *IntentHandler.java, *PublishedEvent.java, *InspectorEntry.java, *Scene.java, *PointerEvent.java, *Signal.java, *Support.java, and standalone helper files are illegal reusable slotcontent roles.");
                 }
             }
@@ -31,20 +35,20 @@ public final class ViewLayerTopologyRules implements ArchitectureRule {
     }
 
     private static void validateUnitShape(
-            ViewRoleSupport.ViewUnit unit,
-            List<SourceFile> files,
+            ViewUnitDescriptor unit,
+            List<ViewSourceDescriptor> files,
             ViolationSink violations) {
-        long contributionCount = files.stream().filter(ViewRoleSupport::isContributionFile).count();
-        long binderCount = files.stream().filter(ViewRoleSupport::isBinderFile).count();
-        long contributionModelCount = files.stream().filter(ViewRoleSupport::isContributionModelFile).count();
-        long contentModelCount = files.stream().filter(ViewRoleSupport::isContentModelFile).count();
-        long intentHandlerCount = files.stream().filter(ViewRoleSupport::isIntentHandlerFile).count();
-        long viewInputEventCount = files.stream().filter(ViewRoleSupport::isViewInputEventFile).count();
-        long publishedEventCount = files.stream().filter(ViewRoleSupport::isPublishedEventFile).count();
-        long inspectorEntryCount = files.stream().filter(ViewRoleSupport::isInspectorEntryFile).count();
-        long viewCount = files.stream().filter(ViewRoleSupport::isPassiveViewFile).count();
+        long contributionCount = count(files, ViewRole.CONTRIBUTION);
+        long binderCount = count(files, ViewRole.BINDER);
+        long contributionModelCount = count(files, ViewRole.CONTRIBUTION_MODEL);
+        long contentModelCount = count(files, ViewRole.CONTENT_MODEL);
+        long intentHandlerCount = count(files, ViewRole.INTENT_HANDLER);
+        long viewInputEventCount = count(files, ViewRole.VIEW_INPUT_EVENT);
+        long publishedEventCount = count(files, ViewRole.PUBLISHED_EVENT);
+        long inspectorEntryCount = count(files, ViewRole.INSPECTOR_ENTRY);
+        long viewCount = count(files, ViewRole.VIEW);
 
-        if (ViewRoleSupport.isActiveRoot(unit)) {
+        if (unit.kind() == ViewUnitKind.ACTIVE_ROOT) {
             if (contributionCount != 1) {
                 violations.add(unit.source(), "view-layer-contribution-count",
                         "Each active contribution root must define exactly one shell-discovered *Contribution.java file.");
@@ -105,19 +109,7 @@ public final class ViewLayerTopologyRules implements ArchitectureRule {
         }
     }
 
-    private static boolean isAllowedActiveRootFile(SourceFile sourceFile) {
-        return ViewRoleSupport.isContributionFile(sourceFile)
-                || ViewRoleSupport.isBinderFile(sourceFile)
-                || ViewRoleSupport.isContributionModelFile(sourceFile)
-                || ViewRoleSupport.isIntentHandlerFile(sourceFile)
-                || ViewRoleSupport.isPassiveViewFile(sourceFile)
-                || ViewRoleSupport.isViewInputEventFile(sourceFile)
-                || ViewRoleSupport.isPublishedEventFile(sourceFile);
-    }
-
-    private static boolean isAllowedSlotcontentFile(SourceFile sourceFile) {
-        return ViewRoleSupport.isContentModelFile(sourceFile)
-                || ViewRoleSupport.isPassiveViewFile(sourceFile)
-                || ViewRoleSupport.isViewInputEventFile(sourceFile);
+    private static long count(List<ViewSourceDescriptor> files, ViewRole role) {
+        return files.stream().filter(source -> source.role() == role).count();
     }
 }

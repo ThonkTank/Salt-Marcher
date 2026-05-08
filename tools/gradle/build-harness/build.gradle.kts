@@ -85,7 +85,12 @@ fun activeBuildHarnessDocumentationRuleClasses() = activeEnforcementBundleIds
     .flatMap { bundleId -> enforcementBundles.descriptor(bundleId).buildHarnessDocumentationRuleClasses }
     .distinct()
 
-fun registerBuildHarnessTask(taskName: String, bundleLabel: String, mainClassName: String) {
+fun registerBuildHarnessTask(
+    taskName: String,
+    bundleLabel: String,
+    mainClassName: String?,
+    ruleClasses: List<String>
+) {
     val isDocumentationTask = taskName.endsWith("DocumentationEnforcementCheck")
     val description = when {
         isDocumentationTask -> "Run only the $bundleLabel enforcement documentation-coverage rules."
@@ -99,8 +104,11 @@ fun registerBuildHarnessTask(taskName: String, bundleLabel: String, mainClassNam
         dependsOn(tasks.named(mainSourceSet.classesTaskName))
         runtimeClasspath.from(mainSourceSet.output)
         runtimeClasspath.from(mainSourceSet.runtimeClasspath)
-        verificationMainClass.set(mainClassName)
+        verificationMainClass.set(mainClassName ?: "saltmarcher.architecture.ArchitectureCheckMain")
         repoRootPath.set(repoRootDir.absolutePath)
+        if (ruleClasses.isNotEmpty()) {
+            verificationArgs.set(listOf("--only-rules") + ruleClasses)
+        }
         verificationInputs.from(buildHarnessInputs(taskName))
         successMarker.set(layout.buildDirectory.file("verification-markers/$taskName/success.marker"))
     }
@@ -108,9 +116,19 @@ fun registerBuildHarnessTask(taskName: String, bundleLabel: String, mainClassNam
 
 activeEnforcementBundleIds.forEach { bundleId ->
     val bundleLabel = humanizeBundleLabel(bundleId)
-    enforcementBundles.descriptor(bundleId).buildHarnessTaskMainClasses.forEach { (taskName, mainClassName) ->
-        registerBuildHarnessTask(taskName, bundleLabel, mainClassName)
-    }
+    val descriptor = enforcementBundles.descriptor(bundleId)
+    (descriptor.buildHarnessTaskMainClasses.keys + descriptor.buildHarnessTaskRuleClasses.keys)
+        .distinct()
+        .sorted()
+        .forEach { taskName ->
+            registerBuildHarnessTask(
+                taskName,
+                bundleLabel,
+                descriptor.buildHarnessTaskMainClasses[taskName],
+                descriptor.buildHarnessTaskRuleClasses[taskName].orEmpty()
+            )
+        }
+    
 }
 
 if (!focusedEnforcementBundleMode) {

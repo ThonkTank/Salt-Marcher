@@ -13,6 +13,7 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.type.TypeMirror;
+import saltmarcher.quality.errorprone.view.ViewSourceDescriptor;
 
 @BugPattern(
         name = "PassiveViewLocalStateBoundary",
@@ -23,7 +24,8 @@ public final class PassiveViewLocalStateBoundaryChecker extends BugChecker
 
     @Override
     public Description matchCompilationUnit(CompilationUnitTree tree, VisitorState state) {
-        if (!ViewArchitectureSupport.isPanelViewSource(tree)) {
+        ViewSourceDescriptor source = ViewSourceDescriptor.describe(tree);
+        if (!source.isPassiveViewSource()) {
             return Description.NO_MATCH;
         }
 
@@ -32,13 +34,9 @@ public final class PassiveViewLocalStateBoundaryChecker extends BugChecker
             return Description.NO_MATCH;
         }
 
-        if (ViewArchitectureSupport.isPrimitiveViewSource(tree)) {
-            return Description.NO_MATCH;
-        }
-
-        String sourcePackageName = ViewArchitectureSupport.packageName(tree);
-        String viewSimpleName = ViewArchitectureSupport.topLevelSimpleName(tree);
-        String qualifiedViewName = ViewArchitectureSupport.qualifiedTopLevelTypeName(tree);
+        String sourcePackageName = source.packageName();
+        String viewSimpleName = source.topLevelSimpleName();
+        String qualifiedViewName = source.qualifiedTopLevelTypeName();
 
         Tree[] firstViolationTree = {null};
         Set<String> violations = new LinkedHashSet<>();

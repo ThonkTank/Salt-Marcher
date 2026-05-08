@@ -12,6 +12,7 @@ import com.sun.tools.javac.code.Symbol;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import javax.lang.model.element.Modifier;
+import saltmarcher.quality.errorprone.view.ViewSourceDescriptor;
 @BugPattern(
         name = "PassiveViewModelReadApis",
         summary = "Passive Views may call their models only through observable read-surface APIs.",
@@ -21,11 +22,12 @@ public final class PassiveViewModelReadApisChecker extends BugChecker
 
     @Override
     public Description matchCompilationUnit(CompilationUnitTree tree, VisitorState state) {
-        if (!ViewArchitectureSupport.isPanelViewSource(tree)) {
+        ViewSourceDescriptor source = ViewSourceDescriptor.describe(tree);
+        if (!source.isPassiveViewSource()) {
             return Description.NO_MATCH;
         }
 
-        String sourcePackageName = ViewArchitectureSupport.packageName(tree);
+        String sourcePackageName = source.packageName();
         Set<String> violations = new LinkedHashSet<>();
         new TreePathScanner<Void, Void>() {
             @Override
@@ -57,13 +59,9 @@ public final class PassiveViewModelReadApisChecker extends BugChecker
     }
 
     private static boolean isAllowedViewModelOwner(String sourcePackageName, String ownerType) {
-        if (ViewArchitectureSupport.isSameViewRootModelReference(sourcePackageName, ownerType)
-                && ViewArchitectureSupport.isTopLevelViewModelReference(ownerType)) {
-            return true;
-        }
-        return ViewArchitectureSupport.isPrimitiveViewPackage(sourcePackageName)
-                && ViewArchitectureSupport.isPrimitiveModelReferenceAllowedFromPrimitiveView(sourcePackageName, ownerType)
-                && ViewArchitectureSupport.isTopLevelViewModelReference(ownerType);
+        return ViewArchitectureSupport.isTopLevelViewModelReference(ownerType)
+                && (ViewArchitectureSupport.isSameViewRootModelReference(sourcePackageName, ownerType)
+                || ViewArchitectureSupport.isPrimitiveModelReference(ownerType));
     }
 
     private static boolean isAllowedObservableReadSurface(Symbol.MethodSymbol methodSymbol) {

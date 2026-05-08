@@ -9,42 +9,31 @@ public final class ViewTopologyPerimeterRules implements ArchitectureRule {
 
     @Override
     public void check(ArchitectureContext context, ViolationSink violations) {
-        for (SourceFile sourceFile : context.sourceFiles(violations)) {
-            if (!ViewRoleSupport.isViewSource(sourceFile)) {
-                continue;
-            }
-            if (!ViewRoleSupport.isRecognizedViewSource(sourceFile)) {
-                violations.add(sourceFile.relativePath(), "view-topology-directory",
+        for (ViewSourceDescriptor descriptor : ViewTopologyCatalog.describeViewSources(context.sourceFiles(violations))) {
+            if (!descriptor.isRecognizedViewSource()) {
+                violations.add(descriptor.source(), "view-topology-directory",
                         "View Java sources may live only under src/view/leftbartabs/<entry>/, src/view/statetabs/<entry>/, src/view/dropdowns/<entry>/, or src/view/slotcontent/<controls|main|state|details|topbar|primitives>/<entry>/ as direct files.");
                 continue;
             }
-            if (ViewRoleSupport.isRecognizedActiveRootSource(sourceFile)
-                    && !isAllowedActiveRootFile(sourceFile)) {
-                violations.add(sourceFile.relativePath(), "view-topology-active-root-role",
+            if (!descriptor.role().isAllowedIn(descriptor.unit().kind())) {
+                String rule = descriptor.isActiveRootSource()
+                        ? "view-topology-active-root-role"
+                        : "view-topology-slotcontent-role";
+                String details = descriptor.isActiveRootSource()
+                        ? "Active view roots may contain only *Contribution.java, *Binder.java, *ContributionModel.java, optional *IntentHandler.java, passive *View.java, optional *ViewInputEvent.java, and optional *PublishedEvent.java files."
+                        : "Reusable slotcontent units may contain only exactly one passive *View.java file, exactly one same-stem *ViewInputEvent.java file, and exactly one *ContentModel.java file. Every other top-level role file in slotcontent/** is illegal.";
+                violations.add(descriptor.source(), rule, details);
+                continue;
+            }
+            if (descriptor.isActiveRootSource() && descriptor.role() == ViewRole.UNKNOWN) {
+                violations.add(descriptor.source(), "view-topology-active-root-role",
                         "Active view roots may contain only *Contribution.java, *Binder.java, *ContributionModel.java, optional *IntentHandler.java, passive *View.java, optional *ViewInputEvent.java, and optional *PublishedEvent.java files.");
                 continue;
             }
-            if (ViewRoleSupport.isRecognizedSlotcontentSource(sourceFile)
-                    && !isAllowedSlotcontentFile(sourceFile)) {
-                violations.add(sourceFile.relativePath(), "view-topology-slotcontent-role",
+            if (descriptor.isSlotcontentSource() && descriptor.role() == ViewRole.UNKNOWN) {
+                violations.add(descriptor.source(), "view-topology-slotcontent-role",
                         "Reusable slotcontent units may contain only exactly one passive *View.java file, exactly one same-stem *ViewInputEvent.java file, and exactly one *ContentModel.java file. Every other top-level role file in slotcontent/** is illegal.");
             }
         }
-    }
-
-    private static boolean isAllowedActiveRootFile(SourceFile sourceFile) {
-        return ViewRoleSupport.isContributionFile(sourceFile)
-                || ViewRoleSupport.isBinderFile(sourceFile)
-                || ViewRoleSupport.isContributionModelFile(sourceFile)
-                || ViewRoleSupport.isIntentHandlerFile(sourceFile)
-                || ViewRoleSupport.isPassiveViewFile(sourceFile)
-                || ViewRoleSupport.isViewInputEventFile(sourceFile)
-                || ViewRoleSupport.isPublishedEventFile(sourceFile);
-    }
-
-    private static boolean isAllowedSlotcontentFile(SourceFile sourceFile) {
-        return ViewRoleSupport.isContentModelFile(sourceFile)
-                || ViewRoleSupport.isPassiveViewFile(sourceFile)
-                || ViewRoleSupport.isViewInputEventFile(sourceFile);
     }
 }

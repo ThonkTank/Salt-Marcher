@@ -14,8 +14,15 @@ public final class ArchitectureCheckMain {
             throw new IllegalArgumentException("Expected at least one argument: <repo-root> [rule-class ...]");
         }
 
-        List<String> optionalRuleClasses = Arrays.asList(args).subList(1, args.length);
-        ArchitectureChecker checker = new ArchitectureChecker(Path.of(args[0]), optionalRuleClasses);
+        boolean includeDefaultRules = true;
+        List<String> optionalRuleClasses;
+        if (args.length >= 2 && "--only-rules".equals(args[1])) {
+            includeDefaultRules = false;
+            optionalRuleClasses = Arrays.asList(args).subList(2, args.length);
+        } else {
+            optionalRuleClasses = Arrays.asList(args).subList(1, args.length);
+        }
+        ArchitectureChecker checker = new ArchitectureChecker(Path.of(args[0]), optionalRuleClasses, includeDefaultRules);
         ArchitectureChecker.Result result = checker.check();
         if (!result.isSuccess()) {
             System.err.println(result.render());

@@ -16,6 +16,7 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import saltmarcher.quality.errorprone.view.ViewSourceDescriptor;
 @BugPattern(
         name = "PassiveViewModelMutationBoundary",
         summary = "Passive Views must not mutate their co-located model, including through writable observable surfaces.",
@@ -43,11 +44,12 @@ public final class PassiveViewModelMutationBoundaryChecker extends BugChecker
 
     @Override
     public Description matchCompilationUnit(CompilationUnitTree tree, VisitorState state) {
-        if (!ViewArchitectureSupport.isPanelViewSource(tree)) {
+        ViewSourceDescriptor source = ViewSourceDescriptor.describe(tree);
+        if (!source.isPassiveViewSource()) {
             return Description.NO_MATCH;
         }
 
-        String sourcePackageName = ViewArchitectureSupport.packageName(tree);
+        String sourcePackageName = source.packageName();
         Set<String> violations = new LinkedHashSet<>();
         TreePathScanner<Void, Void> scanner = new TreePathScanner<>() {
             private final Map<Symbol, String> mutableAliases = new ConcurrentHashMap<>();
@@ -117,13 +119,9 @@ public final class PassiveViewModelMutationBoundaryChecker extends BugChecker
     }
 
     private static boolean isAllowedViewModelOwner(String sourcePackageName, String ownerType) {
-        if (ViewArchitectureSupport.isSameViewRootModelReference(sourcePackageName, ownerType)
-                && ViewArchitectureSupport.isTopLevelViewModelReference(ownerType)) {
-            return true;
-        }
-        return ViewArchitectureSupport.isPrimitiveViewPackage(sourcePackageName)
-                && ViewArchitectureSupport.isPrimitiveModelReferenceAllowedFromPrimitiveView(sourcePackageName, ownerType)
-                && ViewArchitectureSupport.isTopLevelViewModelReference(ownerType);
+        return ViewArchitectureSupport.isTopLevelViewModelReference(ownerType)
+                && (ViewArchitectureSupport.isSameViewRootModelReference(sourcePackageName, ownerType)
+                || ViewArchitectureSupport.isPrimitiveModelReference(ownerType));
     }
 
     private static String describeMutation(

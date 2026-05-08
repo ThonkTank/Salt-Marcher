@@ -27,8 +27,7 @@ redefine the architecture.
 
 - any file under `src/domain/**`
 - any root `*ApplicationService.java`
-- any `published/`, `application/`, `model/`, domain-concept module, or
-  module role package
+- any `published/`, `application/`, `model/`, or model-family role package
 - any `README.md`, `SPEC.md`, `DOMAIN.md`, or `DELIVERY.md` that defines or
   reviews a domain context
 - domain-layer governance rewrites where role enforcement docs, `AGENTS.md`,
@@ -43,7 +42,7 @@ Before changing domain code:
    context's `DOMAIN.md` before making placement decisions.
 2. Assign every touched type one domain-layer role before refactoring:
    family `*ApplicationService`, `published/**`, root `application/**`,
-   `model/**`, or one explicit subordinate role package.
+   `model/<family>/model/**`, or one explicit subordinate role package.
 3. If the task touches a governed role doc under
    `docs/project/architecture/enforcement/`, keep architectural truth in
    `domain-layer.md` and keep the role doc limited to role-local enforcement
@@ -76,13 +75,12 @@ Before changing domain code:
 
 - root-level cross-model orchestration only
 - direct Java files are named `*UseCase.java`
-- legacy direct helper files are tolerated only where the owner doc calls out
-  current mechanical drift
 - do not let `application/` become a catch-all for displaced business policy
 
 ### `model/`
 
 - treat `model/` as the primary home of current domain work state
+- the internal model subtree is `model/<family>/model/`
 - model-local work operations belong under `model/<family>/usecase/`
 - pure work steps belong under `helper/`; shared immutable values belong under
   `constants/`
@@ -95,14 +93,16 @@ Before changing domain code:
   already prove that target; some port checks still reflect legacy outbound
   interface enforcement
 
-### Domain Modules And Role Packages
+### Model Families And Role Packages
 
-- direct domain module names are concepts in the ubiquitous language
-- Java files inside a domain module live under a tactical role package
-- use only the role packages allowed by `domain-layer.md`
-- use `factory/`, `service/`, `event/`, and `specification/` only when the
-  role genuinely exists
-- domain modules must not import any `src.domain.*.published.*` carriers
+- direct context-root buckets are only `published/`, `application/`, and
+  `model/`
+- lower-case model families live under `model/<family>/`
+- non-model role buckets under a family are only `usecase/`, `helper/`,
+  `constants/`, `port/`, and `repository/`
+- non-model role buckets stay direct-file only
+- `model/<family>/model/` may add deeper semantic subpackages for subordinate
+  models of that same family
 
 ## Review Focus
 
@@ -112,11 +112,11 @@ When reviewing domain-layer work, look for:
 - role enforcement docs that stay on gate inventory and do not restate
   architectural truth
 - `Context Role:` declarations matching the domain-layer standard
-- role subpackages under every named domain module
-- no direct Java files under named domain modules
+- no named modules at context root outside `published/`, `application/`, and
+  `model/`
 - no direct Java files under `model/<family>/`
-- no `published/` imports from named domain modules
-- no forbidden technical buckets under domain modules
+- no forbidden technical buckets under domain roots or model families
+- reserved role suffixes only in their canonical buckets
 - repositories and ports stated in domain language without data-source, shell,
   JavaFX, SQL, filesystem, network, or runtime-registration terms
 - thin application use cases without hidden adapter composition

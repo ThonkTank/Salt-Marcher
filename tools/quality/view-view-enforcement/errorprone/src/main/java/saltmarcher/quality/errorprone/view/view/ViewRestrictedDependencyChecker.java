@@ -7,6 +7,7 @@ import com.google.errorprone.matchers.Description;
 import com.sun.source.tree.CompilationUnitTree;
 import java.util.LinkedHashSet;
 import java.util.Set;
+import saltmarcher.quality.errorprone.view.ViewSourceDescriptor;
 @BugPattern(
         name = "PassiveViewDependencyBoundaries",
         summary = "Passive Views may depend only on their allowed model and passive view surfaces.",
@@ -16,8 +17,9 @@ public final class ViewRestrictedDependencyChecker extends BugChecker
 
     @Override
     public Description matchCompilationUnit(CompilationUnitTree tree, VisitorState state) {
-        String packageName = ViewArchitectureSupport.packageName(tree);
-        if (!ViewArchitectureSupport.isPanelViewSource(tree)) {
+        ViewSourceDescriptor source = ViewSourceDescriptor.describe(tree);
+        String packageName = source.packageName();
+        if (!source.isPassiveViewSource()) {
             return Description.NO_MATCH;
         }
 
@@ -51,22 +53,7 @@ public final class ViewRestrictedDependencyChecker extends BugChecker
         if (viewType == null) {
             return false;
         }
-        if (ViewArchitectureSupport.isPrimitiveViewPackage(sourcePackageName)) {
-            if ("SUPPORT_VALUE".equals(viewType.bucket())) {
-                return false;
-            }
-            if ("MODEL".equals(viewType.bucket())) {
-                return !ViewArchitectureSupport.isPrimitiveModelReferenceAllowedFromPrimitiveView(
-                        sourcePackageName, referencedType);
-            }
-            return !"VIEW".equals(viewType.bucket())
-                    || !ViewArchitectureSupport.isPrimitiveViewReferenceAllowedFromPrimitiveView(
-                    sourcePackageName, referencedType);
-        }
         if ("MODEL".equals(viewType.bucket()) && ViewArchitectureSupport.isPrimitiveModelReference(referencedType)) {
-            return false;
-        }
-        if ("SUPPORT_VALUE".equals(viewType.bucket())) {
             return false;
         }
         if ("VIEW_INPUT_EVENT".equals(viewType.bucket())) {

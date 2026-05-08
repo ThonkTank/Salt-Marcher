@@ -22,18 +22,9 @@ internal fun Project.configureViewViewEnforcement() {
     val enforcementBundles = extensions.getByType(EnforcementBundlesExtension::class.java)
     val focusedEnforcementBundleMode = enforcementBundles.focusedEnforcementBundleMode
     val verificationHarness = extensions.getByType<VerificationHarnessExtension>()
+    val descriptor = enforcementBundles.descriptor("view")
 
-    val viewCheckerNames = listOf(
-        "PassiveViewDependencyBoundaries",
-        "PassiveViewLocalStateBoundary",
-        "PassiveViewModelReadApis",
-        "PassiveViewModelMutationBoundary",
-        "PassiveViewProjectionConstructionBoundary",
-        "ViewPresentationDecisionLeak",
-        "ViewInputEventApi",
-        "PassiveViewCallbackSeamBoundary",
-        "TechnicalPrimitiveViewBoundary"
-    )
+    val viewCheckerNames = descriptor.errorProneCheckers
     val compileViewVerificationJava = verificationHarness.registerFocusedVerificationCompileTask(
         "view",
         viewCheckerNames,
@@ -82,15 +73,16 @@ internal fun Project.configureViewViewEnforcement() {
         successMarker.set(layout.buildDirectory.file("verification-markers/checkViewFxmlResources/success.marker"))
     }
 
+    val jqassistant = descriptor.jqassistantTasks.single { it.taskName == "checkViewEnforcement" }
     val jqassistantViewEnforcementTasks = verificationHarness.registerFocusedJqassistantTaskPair(
         "view",
-        "jqassistantScanViewEnforcement",
-        "jqassistantAnalyzeViewEnforcement",
-        "Scan SaltMarcher passive View topology for the dedicated passive View enforcement bundle.",
-        "Analyze SaltMarcher passive View topology constraints through the dedicated passive View bundle.",
-        project.file("tools/quality/view-view-enforcement/jqassistant/config.yml").absolutePath,
-        listOf(project.file("tools/quality/view-view-enforcement/jqassistant/rules").absolutePath),
-        "reports/jqassistant-view-view-enforcement",
+        jqassistant.scanTaskName,
+        jqassistant.analyzeTaskName,
+        jqassistant.scanDescription,
+        jqassistant.analyzeDescription,
+        jqassistant.ruleGroups,
+        jqassistant.rulesDirPaths,
+        jqassistant.reportsDirPath,
         selectedViewCompileJava
     )
 

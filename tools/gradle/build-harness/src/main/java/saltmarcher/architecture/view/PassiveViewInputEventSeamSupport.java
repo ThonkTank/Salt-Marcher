@@ -28,7 +28,7 @@ public final class PassiveViewInputEventSeamSupport {
 
     public static List<InteractivePassiveView> scan(
             ArchitectureContext context,
-            List<SourceFile> files,
+            List<ViewSourceDescriptor> sources,
             ViolationSink violations
     ) {
         JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
@@ -40,12 +40,12 @@ public final class PassiveViewInputEventSeamSupport {
 
         List<InteractivePassiveView> interactiveViews = new ArrayList<>();
         try (StandardJavaFileManager fileManager = compiler.getStandardFileManager(null, null, null)) {
-            for (SourceFile sourceFile : files) {
-                if (!ViewRoleSupport.isPassiveViewFile(sourceFile)
-                        || !sourceFile.content().contains("onViewInputEvent")) {
+            for (ViewSourceDescriptor source : sources) {
+                SourceFile sourceFile = source.sourceFile();
+                if (source.role() != ViewRole.VIEW || !sourceFile.content().contains("onViewInputEvent")) {
                     continue;
                 }
-                scanSourceFile(context, compiler, fileManager, sourceFile, interactiveViews, violations);
+                scanSourceFile(context, compiler, fileManager, source, interactiveViews, violations);
             }
         } catch (IOException exception) {
             violations.add("src/view", RULE_ID,
@@ -58,10 +58,11 @@ public final class PassiveViewInputEventSeamSupport {
             ArchitectureContext context,
             JavaCompiler compiler,
             StandardJavaFileManager fileManager,
-            SourceFile sourceFile,
+            ViewSourceDescriptor source,
             List<InteractivePassiveView> interactiveViews,
             ViolationSink violations
     ) {
+        SourceFile sourceFile = source.sourceFile();
         Path absolutePath = context.repoRoot().resolve(sourceFile.relativePath()).normalize().toAbsolutePath();
         JavacTask task = (JavacTask) compiler.getTask(
                 null,
@@ -72,7 +73,7 @@ public final class PassiveViewInputEventSeamSupport {
                 fileManager.getJavaFileObjects(absolutePath.toFile()));
         try {
             for (CompilationUnitTree unit : task.parse()) {
-                new InteractiveViewCollector(sourceFile).scan(unit, interactiveViews);
+                new InteractiveViewCollector(source).scan(unit, interactiveViews);
             }
         } catch (IOException exception) {
             violations.add(sourceFile.relativePath(), RULE_ID,
@@ -83,10 +84,12 @@ public final class PassiveViewInputEventSeamSupport {
     private static final class InteractiveViewCollector extends TreeScanner<Void, List<InteractivePassiveView>> {
 
         private final SourceFile sourceFile;
+        private final String viewStem;
         private boolean topLevelVisited;
 
-        private InteractiveViewCollector(SourceFile sourceFile) {
-            this.sourceFile = sourceFile;
+        private InteractiveViewCollector(ViewSourceDescriptor source) {
+            this.sourceFile = source.sourceFile();
+            this.viewStem = source.stem();
         }
 
         @Override
@@ -95,7 +98,6 @@ public final class PassiveViewInputEventSeamSupport {
                 return null;
             }
             topLevelVisited = true;
-            String viewStem = ViewRoleSupport.passiveViewStem(sourceFile);
             String viewSimpleName = sourceFile.fileName().replaceFirst("\\.java$", "");
             for (Tree member : node.getMembers()) {
                 if (!(member instanceof MethodTree methodTree)) {

@@ -9,12 +9,7 @@ import saltmarcher.architecture.ViolationSink;
 
 public final class DomainUseCaseTopologyRules implements ArchitectureRule {
 
-    private static final List<String> ALLOWED_APPLICATION_FILE_SUFFIXES = List.of(
-            "UseCase.java",
-            "BoundaryTranslator.java",
-            "Projector.java",
-            "RuntimeAccess.java",
-            "RuntimeAdapter.java");
+    private static final List<String> ALLOWED_APPLICATION_FILE_SUFFIXES = List.of("UseCase.java");
     private static final Pattern GENERIC_USE_CASE_FILE_PATTERN =
             Pattern.compile(".*(?:Operations|Helper|Adapter|Repository|Mapper|Policy)UseCase\\.java$");
     private static final Pattern BACKEND_PORT_CONTRACT_FILE_PATTERN =
@@ -42,7 +37,7 @@ public final class DomainUseCaseTopologyRules implements ArchitectureRule {
     private static void validateDirectPlacement(SourceFile sourceFile, ViolationSink violations) {
         if (sourceFile.relativeSegments().size() != 5 || !hasAllowedApplicationSuffix(sourceFile.fileName())) {
             violations.add(sourceFile.relativePath(), "domain-usecase-direct-file-placement",
-                    "Root application/ orchestration files must stay as direct *UseCase.java files or currently tolerated legacy helper files under src/domain/<context>/application/.");
+                    "Root application/ orchestration files must stay as direct *UseCase.java files under src/domain/<context>/application/.");
         }
     }
 
