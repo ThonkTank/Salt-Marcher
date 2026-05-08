@@ -339,10 +339,12 @@ Operationally, architecture checks enter local quality through:
   diagnostics and stays intentionally outside `checkArchitecture`, `check`,
   and `build`
 - `checkViewRefactorCandidates`
-  runs the report-only View Layer refactor-direction diagnostics and now
-  enters `checkViewArchitecture`, staged `view-topology`, `check`, `build`,
-  and staged `production-handoff` transitively without changing blocker
-  semantics
+  runs the report-only legacy View Layer refactor diagnostics from the older
+  technical-primitive architecture and now enters `checkViewArchitecture`,
+  staged `view-topology`, `check`, `build`, and staged `production-handoff`
+  transitively without changing blocker semantics. It is no longer the
+  canonical reusable-slotcontent target direction and is slated for
+  replacement or removal in the gate migration wave.
 - `checkDataQueryPublishedCarrierCandidates`
   runs the report-only Data Query build-harness shared-carrier partial-use
   diagnostics and stays intentionally outside `checkArchitecture`, `check`,

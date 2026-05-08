@@ -1,13 +1,16 @@
 Status: Draft
 Owner: SaltMarcher Team
 Last Reviewed: 2026-05-04
-Source of Truth: Dungeon-specific adoption of the generic maps canvas.
+Source of Truth: Dungeon-specific current implementation adoption of the
+generic maps canvas while the view layer migrates to the reusable three-role
+slotcontent model.
 
 # Dungeon Map Adoption Architecture
 
 ## Purpose
 
-This specification binds the generic maps canvas onto the dungeon feature.
+This specification records the current implementation binding of the generic
+maps canvas onto the dungeon feature.
 
 It owns:
 
@@ -67,17 +70,21 @@ as `loadAuthored(...)`, `mutateAuthored(...)`, and `catalog(...)`.
 
 ### Preview And Apply
 
-`Dungeon*MainView -> CanvasPointerEvent -> DungeonEditorBinder wiring -> optional Dungeon*IntentHandler -> DungeonEditorPublishedEvent -> DungeonEditorBinder -> DungeonEditorApplicationService -> DungeonEditorModel -> DungeonEditorSnapshot -> DungeonEditorMapProjectionSnapshot -> DungeonMapContentModel -> MapRenderScene -> DungeonMapMainView -> Dungeon*MainView`
+`Dungeon*MainView -> CanvasPointerEvent -> DungeonEditorBinder wiring -> same-root Dungeon*IntentHandler -> DungeonEditorPublishedEvent -> DungeonEditorBinder -> DungeonEditorApplicationService -> DungeonEditorModel -> DungeonEditorSnapshot -> DungeonEditorMapProjectionSnapshot -> DungeonMapContentModel -> MapRenderScene -> DungeonMapMainView -> Dungeon*MainView`
 
 Preview and apply reuse the same authored dungeon edit body and differ only in
 the boundary wrapper and commit semantics.
 
 ### Travel Action
 
-`Dungeon*MainView or travel controls -> DungeonTravelBinder wiring -> optional DungeonTravelIntentHandler -> DungeonTravelStatePublishedEvent -> DungeonTravelBinder -> TravelApplicationService -> TravelDungeonModel -> TravelDungeonSnapshot -> TravelDungeonMapProjectionSnapshot -> DungeonMapContentModel -> MapRenderScene -> DungeonMapMainView -> Dungeon*MainView`
+`Dungeon*MainView or travel controls -> DungeonTravelBinder wiring -> same-root DungeonTravelIntentHandler -> DungeonTravelStatePublishedEvent -> DungeonTravelBinder -> TravelApplicationService -> TravelDungeonModel -> TravelDungeonSnapshot -> TravelDungeonMapProjectionSnapshot -> DungeonMapContentModel -> MapRenderScene -> DungeonMapMainView -> Dungeon*MainView`
 
 Direct token drag is adapter-side travel action resolution, not a second
 backend movement path.
+
+These canvas-specific seams are current implementation seams, not new
+canonical reusable role families. The target view-layer architecture still is
+`View + ViewInputEvent + ContentModel` for reusable slotcontent.
 
 ### Map Catalog
 
@@ -109,6 +116,8 @@ Catalog behavior remains separate from the shared canvas scene path.
 ## Verification Notes
 
 - This architecture is currently `Review-Owned`.
+- Review must treat `CanvasPointerEvent` and `MapRenderScene` as legacy
+  current-state seams, not as target reusable-slotcontent truth.
 - Review must reject any second dungeon-to-canvas adapter for the same seam.
 
 ## References

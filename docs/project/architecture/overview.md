@@ -58,10 +58,12 @@ tools/       build infrastructure, quality platforms, and engineering scripts
   contribution, its Binder, aggregate `ContributionModel`, optional
   `IntentHandler`, and feature-specific colocated Views
 - `src/view/slotcontent/<slot>/<entry>/` owns reusable generic Views and, when
-  the reusable component owns reusable state or interaction behavior, reusable
-  `ContentModel` and `IntentHandler` roles
-- `src/view/slotcontent/primitives/<entry>/` is the reusable generic home for
-  components that are not tied to exactly one cockpit surface family
+  the reusable component owns reusable state or interaction behavior, exactly
+  one reusable `ContentModel` and exactly one same-stem reusable
+  `ViewInputEvent`
+- `src/view/slotcontent/primitives/<entry>/` is only the reusable generic home
+  for especially low-level shared surfaces; it does not define a separate
+  technical-base role family
 - contribution-specific View code may extend reusable `slotcontent/**`
   components, and reusable `slotcontent/**` components may extend
   `slotcontent/primitives/**`; the reverse direction is forbidden
@@ -93,16 +95,16 @@ Dependencies point inward toward the application core:
 - `ContributionModels` and reusable `ContentModels` own projection state and
   derive observable UI state from read-side `published/**` facts and local UI
   state
-- optional `IntentHandlers` own component-local input interpretation and may
-  reach domain writes only through Binder-injected `Consumer<PublishedEvent>`
-  sink seams
-- missing `IntentHandler` or missing `ContentModel` does not widen View
-  responsibilities; passive/stateless units stay passive rather than absorbing
-  interpretation or projection duties
-- shared technical primitives stay technical: if rendering or interaction
-  pressure appears, prepared scene, hit, and geometry facts move upward into
-  `ContributionModel`, `ContentModel`, or read-side `published/*Model`
-  projection instead of spreading into extra view-helper files
+- same-root `IntentHandlers` own input interpretation for both same-root Views
+  and reused `slotcontent/**` Views and may reach domain writes only through
+  Binder-injected `Consumer<PublishedEvent>` sink seams
+- missing reusable local handlers does not widen `View` responsibilities;
+  reusable units stay passive and component-local interpretation stays in the
+  same-root `IntentHandler`
+- reusable `slotcontent/**` units do not grow top-level support carriers such
+  as `*Scene`, `*PointerEvent`, `*Signal`, or `*Support`; if rendering or
+  interaction pressure appears, prepared state moves into the unit's
+  `ContentModel` rather than into new helper roles
 - passive Views react to observable model state and emit full immutable
   per-View technical snapshots without shell, domain, data, or
   ApplicationService dependencies

@@ -1,4 +1,4 @@
-package src.domain.encounter;
+package src.domain.encounter.runtime.service;
 
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
@@ -8,16 +8,17 @@ import src.domain.encounter.application.EncounterGenerationUseCase;
 import src.domain.encounter.application.EncounterSessionRuntimeAdapter;
 import src.domain.encounter.application.ListSavedEncounterPlansUseCase;
 import src.domain.encounter.application.LoadEncounterBudgetUseCase;
+import src.domain.encounter.application.LoadEncounterPlanBudgetUseCase;
 import src.domain.encounter.application.LoadSavedEncounterPlanUseCase;
 import src.domain.encounter.application.SaveEncounterPlanUseCase;
 import src.domain.encounter.plan.port.EncounterPlanRepository;
-import src.domain.encounter.runtime.port.EncounterSessionPublishedStateRepository;
 import src.domain.encounter.session.port.EncounterPartyFactsRepository;
 import src.domain.encountertable.EncounterTableApplicationService;
 
 record EncounterRuntimeBootstrap(
         @Nullable ApplyEncounterSessionUseCase applySessionUseCase,
-        EncounterSessionPublicationAccess sessionPublicationAccess
+        EncounterSessionPublicationAccess sessionPublicationAccess,
+        EncounterPlanPublicationAccess planPublicationAccess
 ) {
 
     static EncounterRuntimeBootstrap create(
@@ -25,6 +26,7 @@ record EncounterRuntimeBootstrap(
             @Nullable CreaturesApplicationService creatures,
             @Nullable EncounterTableApplicationService encounterTables,
             @Nullable EncounterPlanRepository encounterPlans,
+            EncounterPlanPublishedStateRepository planPublishedStateRepository,
             EncounterSessionPublishedStateRepository sessionPublishedStateRepository
     ) {
         EncounterRuntimeUseCases useCases = createUseCases(party, creatures, encounterTables, encounterPlans);
@@ -32,7 +34,11 @@ record EncounterRuntimeBootstrap(
                 useCases.applySessionUseCase(),
                 new EncounterSessionPublicationAccess(
                         Objects.requireNonNull(sessionPublishedStateRepository, "sessionPublishedStateRepository"),
-                        useCases.loadBudgetUseCase()));
+                        useCases.loadBudgetUseCase()),
+                new EncounterPlanPublicationAccess(
+                        Objects.requireNonNull(planPublishedStateRepository, "planPublishedStateRepository"),
+                        useCases.listSavedPlansUseCase(),
+                        useCases.loadPlanBudgetUseCase()));
     }
 
     private static EncounterRuntimeUseCases createUseCases(
@@ -56,7 +62,9 @@ record EncounterRuntimeBootstrap(
                         loadSavedPlanUseCase,
                         listSavedPlansUseCase,
                         loadBudgetUseCase),
-                loadBudgetUseCase);
+                loadBudgetUseCase,
+                createLoadPlanBudgetUseCase(party, creatures, encounterPlans),
+                listSavedPlansUseCase);
     }
 
     private static @Nullable ApplyEncounterSessionUseCase createApplySessionUseCase(
@@ -82,9 +90,22 @@ record EncounterRuntimeBootstrap(
                 listSavedPlansUseCase));
     }
 
+    private static @Nullable LoadEncounterPlanBudgetUseCase createLoadPlanBudgetUseCase(
+            @Nullable EncounterPartyFactsRepository party,
+            @Nullable CreaturesApplicationService creatures,
+            @Nullable EncounterPlanRepository encounterPlans
+    ) {
+        if (party == null || creatures == null || encounterPlans == null) {
+            return null;
+        }
+        return new LoadEncounterPlanBudgetUseCase(encounterPlans, party, creatures);
+    }
+
     private record EncounterRuntimeUseCases(
             @Nullable ApplyEncounterSessionUseCase applySessionUseCase,
-            @Nullable LoadEncounterBudgetUseCase loadBudgetUseCase
+            @Nullable LoadEncounterBudgetUseCase loadBudgetUseCase,
+            @Nullable LoadEncounterPlanBudgetUseCase loadPlanBudgetUseCase,
+            @Nullable ListSavedEncounterPlansUseCase listSavedPlansUseCase
     ) {
     }
 }

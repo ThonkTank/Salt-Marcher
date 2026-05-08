@@ -1,14 +1,16 @@
 Status: Draft
 Owner: SaltMarcher Team
 Last Reviewed: 2026-04-24
-Source of Truth: Shared canvas-side contract for the generic map canvas.
+Source of Truth: Current implementation shared canvas-side contract for the
+generic map canvas while the view layer migrates to the reusable three-role
+slotcontent model.
 
 # Maps Canvas Contract
 
 ## Purpose
 
-This contract defines the shared boundary language below any adopter-native map
-surface.
+This contract defines the current implementation boundary language below any
+adopter-native map surface.
 
 Owners:
 
@@ -19,6 +21,11 @@ Owners:
 It does not own adopter-native requests, adopter-native payloads, or adopter
 domain truth.
 
+This is not the canonical target reusable-slotcontent contract. The project-
+wide target remains `View + ViewInputEvent + ContentModel`; the `MapRenderScene`
+and `CanvasPointerEvent` seams below describe the current implementation
+boundary that still exists during migration.
+
 ## Rules
 
 - shared renderer input coordinates MUST be canvas-native
@@ -27,8 +34,10 @@ domain truth.
   map view draws
 - shared hit ordering MUST come from the same rendered scene that the passive
   map view draws
-- `MapRenderScene` is the only canonical shared renderer input root
-- `CanvasPointerEvent` is the only canonical pointer-output root
+- in the current implementation, `MapRenderScene` is the shared renderer input
+  root
+- in the current implementation, `CanvasPointerEvent` is the shared
+  pointer-output root
 - all geometry in `MapRenderScene` MUST be canvas-native
 - the shared canvas boundary MUST NOT expose adopter-native commands, queries,
   or coordinates directly
@@ -107,6 +116,8 @@ shared frontend root is superseded by this contract.
 ## Verification Notes
 
 - This contract is currently `Review-Owned`.
+- Review must treat `MapRenderScene` and `CanvasPointerEvent` as current
+  implementation carriers, not as new canonical reusable role families.
 - Review must reject any shared map contract that exposes dungeon-grid or
   hex-native coordinates as the canonical canvas boundary.
 - Review must reject any second shared pointer-output family beside

@@ -1,4 +1,4 @@
-package src.domain.encounter.runtime.port;
+package src.domain.encounter.runtime.service;
 
 import src.domain.encounter.published.EncounterBuilderInputs;
 import src.domain.encounter.published.EncounterBuilderInputsModel;

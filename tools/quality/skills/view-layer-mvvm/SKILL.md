@@ -39,8 +39,10 @@ Before editing a view surface:
 6. For every touched `IntentHandler`, identify the interactive scope whose
    input interpretation it owns, or decide that the surface is passive and
    therefore needs no `IntentHandler`.
-7. For map surfaces, identify the single reusable canvas-facing
-   `ContentModel` that owns the readback-to-render projection path.
+7. For reusable `slotcontent/**`, assume exactly one local `*View`, one local
+   `*ViewInputEvent`, and one local `*ContentModel`; reusable units do not own
+   local `*IntentHandler`, `*PublishedEvent`, `*InspectorEntry`, or technical
+   support-carrier top-level files.
 8. Before smell- or size-driven refactors, ask whether the passive `View` is
    compensating for missing projection, hit preparation, geometry derivation,
    or input-relevant state that belongs in a `ContributionModel`,
@@ -50,10 +52,10 @@ Before editing a view surface:
 10. Only after that ownership check may you use nested/private helper types as
     a local cleanup tactic; do not default to new top-level helper files under
     `src/view/**`.
-11. When touching `slotcontent/primitives/**`, require an explicit technical
-    role signal for every top-level file: exactly one `*View.java` root plus
-    only same-unit technical `*PointerEvent.java`, `*Scene.java`,
-    `*Signal.java`, or `*Support.java` carriers.
+11. When touching `slotcontent/**`, treat new top-level files beyond
+    `*View.java`, `*ViewInputEvent.java`, and `*ContentModel.java` as target-
+    architecture findings unless the user explicitly scopes the work to
+    current-state compatibility only.
 
 When reviewing view-layer changes:
 
@@ -62,22 +64,22 @@ When reviewing view-layer changes:
    lifecycle stay in the Binder.
 3. Check that bindable projection state and projection logic stay in the
    owning `ContributionModel` or `ContentModel`.
-4. Check that component-local input interpretation stays in the optional
-   `IntentHandler`.
+4. Check that input interpretation stays in the same-root `IntentHandler`
+   rather than growing a reusable slotcontent-local handler.
 5. Check that feature-specific one-off components are colocated in their active
    root and that `slotcontent/**` is used only for genuinely reusable generic
    components.
-6. Check that passive Views react through bindings/listeners and emit technical
-   user events instead of issuing imperative commands into a
-   model.
+6. Check that passive Views react through bindings/listeners and emit full
+   same-stem `ViewInputEvent` snapshots instead of issuing imperative commands
+   into a model.
 7. Check that passive Views do not import shell, domain, data, or
    ApplicationService types.
 8. Treat new component-local `View/`, `ViewModel/`, `assembly/`, view `api/`,
    `Model/`, `Controller/`, or `interactor/` buckets as findings.
 9. Treat PMD-driven helper splits as findings when the real missing owner is
    the co-located model or the upstream readback path.
-10. Treat any new top-level file under `slotcontent/primitives/**` without one
-    of the explicit technical role suffixes as a finding.
+10. Treat any new top-level file under reusable `slotcontent/**` beyond
+    `*View`, `*ViewInputEvent`, and `*ContentModel` as a finding.
 
 ## Placement Heuristics
 
@@ -88,13 +90,14 @@ When reviewing view-layer changes:
   or reported across a surface, it belongs in the owning
   `ContributionModel` or `ContentModel`.
 - If code interprets raw gestures into local semantic intent or local UI-state
-  mutation, it belongs in the optional `IntentHandler`.
+  mutation for a reusable component, it belongs in the same-root
+  `IntentHandler`, not in reusable `slotcontent/**`.
 - If code declares JavaFX controls, layout, canvas drawing, dialogs, popups,
   cell factories, or widget event handlers, it belongs in a View.
-- If code prepares scene ordering, hit priority, label geometry, selection
-  facts, or other reusable pre-render/pre-hit state, it belongs in the owning
+- If code prepares render-ready, hit-ready, label, geometry, selection, or
+  other reusable pre-render/pre-hit state, it belongs in the owning
   `ContributionModel`, `ContentModel`, or upstream read-side projection rather
-  than in new standalone View helpers.
+  than in new standalone View helpers or support-carrier top-level files.
 - If code is feature-specific and not reusable, colocate it in the owning
   `leftbartabs`, `dropdowns`, or `statetabs` package.
 - If code is reusable generic view-layer content, place it under
@@ -113,10 +116,9 @@ When reviewing view-layer changes:
   ApplicationServices
 - Views that command model behavior directly instead of reacting to observable
   state
-- shared technical primitives that grow several phase-specific outward seams or
-  reconstruct scene/hit preparation locally instead of staying technical
-- top-level helper files under `slotcontent/primitives/**` that rely on name
-  drift instead of an explicit technical role suffix
+- reusable `slotcontent/**` units that grow local handlers, published-event
+  seams, inspector adapters, or support-carrier files instead of staying a
+  three-role reusable MVVM unit
 
 ## Correctness Rule
 

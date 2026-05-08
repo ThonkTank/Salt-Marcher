@@ -24,6 +24,11 @@ role counts, Binder-owned inspector push wiring, or the wider shell/details
 lifecycle. Those stay in the view-layer and neighboring role-enforcement
 documents.
 
+`*InspectorEntry` is current-state legacy role inventory, not target
+reusable-slotcontent architecture. The target reusable unit is
+`View + ViewInputEvent + ContentModel`; this document remains only because the
+repo still carries dedicated current-state gates for `*InspectorEntry`.
+
 Unified focused bundle entrypoint:
 
 - `./gradlew checkViewInspectorEntryEnforcement --rerun-tasks --console=plain`

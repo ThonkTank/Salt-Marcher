@@ -19,7 +19,8 @@ public final class AdventuringDayCalculationModel {
                         ReadStatus.STORAGE_ERROR,
                         new AdventuringDayCalculation(
                                 new AdventuringDayBudget(0, 0, 0, 0, 0),
-                                new AdventuringDayProgress(0, 0, 0, 0, 0.0, 0, 0, java.util.List.of(), java.util.List.of())))
+                                new AdventuringDayProgress(0, 0, 0, 0, 0.0, 0, 0, java.util.List.of(), java.util.List.of())),
+                        AdventuringDayPlanningSummary.empty())
                 : currentSupplier;
         this.subscribeAction = subscribeAction == null
                 ? listener -> () -> { }

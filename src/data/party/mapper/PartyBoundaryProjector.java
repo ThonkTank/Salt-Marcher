@@ -13,6 +13,7 @@ import src.domain.party.published.ActivePartyResult;
 import src.domain.party.published.AdventuringDayBudget;
 import src.domain.party.published.AdventuringDayCalculation;
 import src.domain.party.published.AdventuringDayCalculationResult;
+import src.domain.party.published.AdventuringDayPlanningSummary;
 import src.domain.party.published.AdventuringDayProgress;
 import src.domain.party.published.AdventuringDayResult;
 import src.domain.party.published.AdventuringDaySummary;
@@ -88,7 +89,8 @@ public final class PartyBoundaryProjector {
                 ReadStatus.STORAGE_ERROR,
                 new AdventuringDayCalculation(
                         new AdventuringDayBudget(0, 0, 0, 0, 0),
-                        new AdventuringDayProgress(0, 0, 0, 0, 0.0, 0, 0, List.of(), List.of())));
+                        new AdventuringDayProgress(0, 0, 0, 0, 0.0, 0, 0, List.of(), List.of())),
+                AdventuringDayPlanningSummary.empty());
     }
 
     public static PartySnapshot mapSnapshot(LoadPartySnapshotUseCase.PartySnapshotProjection projection) {
@@ -148,7 +150,13 @@ public final class PartyBoundaryProjector {
                 ReadStatus.SUCCESS,
                 new AdventuringDayCalculation(
                         mapAdventuringDayBudget(result.budget()),
-                        mapAdventuringDayProgress(result.progress())));
+                        mapAdventuringDayProgress(result.progress())),
+                new AdventuringDayPlanningSummary(
+                        result.budget().totalXp(),
+                        result.budget().firstShortRestXp(),
+                        result.budget().secondShortRestXp(),
+                        result.progress().shortRests(),
+                        result.progress().longRests()));
     }
 
     public static MutationStatus mapMutationStatus(PartyMutationStatus status) {

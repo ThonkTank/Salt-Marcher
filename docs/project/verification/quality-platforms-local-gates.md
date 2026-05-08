@@ -608,17 +608,17 @@ Architecture-focused entrypoints:
   Runs the explicit jQAssistant view-topology analysis for the remaining
   non-passive `View`, non-Binder, and non-InspectorEntry cockpit structure
   and also executes the focused `ContributionModel` and `ContentModel`
-  jQAssistant bundles plus the report-only `checkViewRefactorCandidates`
-  diagnostic surface.
+  jQAssistant bundles plus the report-only legacy
+  `checkViewRefactorCandidates` diagnostic surface.
 - `./gradlew checkViewLayerEnforcement --console=plain`
   Aggregates the current `View Layer` bundle through
   `viewLayerArchitectureTest` and `:build-harness:viewLayerTopologyCheck`.
 - `./gradlew checkViewRefactorCandidates --console=plain`
-  Runs the report-only View Layer refactor-direction PMD scan. This surface
-  does not change the Gradle exit code, but it is intentionally attached to
-  `checkViewArchitecture`, staged `view-topology`, `check`, `build`, and
-  staged `production-handoff` so the normal handoff path prints the preferred
-  refactor direction for shared-view hotspots.
+  Runs the report-only legacy View Layer refactor PMD scan from the superseded
+  technical-primitive architecture. This surface does not change the Gradle
+  exit code, but it is still attached to `checkViewArchitecture`, staged
+  `view-topology`, `check`, `build`, and staged `production-handoff` until the
+  reusable-slotcontent gate migration replaces or removes it.
 - `./gradlew checkViewInputEventEnforcement --console=plain`
   Aggregates the current `ViewInputEvent` bundle through `compileJava`,
   `viewInputEventArchitectureTest`, and `:build-harness:viewInputEventTopologyCheck`.

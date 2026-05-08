@@ -1,4 +1,4 @@
-package src.domain.encounter;
+package src.domain.encounter.runtime.service;
 
 import org.jspecify.annotations.Nullable;
 import src.domain.encounter.application.EncounterBudgetBoundaryTranslator;
@@ -8,7 +8,6 @@ import src.domain.encounter.published.EncounterBuilderInputs;
 import src.domain.encounter.published.EncounterGenerationStatus;
 import src.domain.encounter.published.EncounterStateSnapshot;
 import src.domain.encounter.published.EncounterTuningPreviewResult;
-import src.domain.encounter.runtime.port.EncounterSessionPublishedStateRepository;
 import src.domain.encounter.session.entity.EncounterSession;
 
 final class EncounterSessionPublicationAccess {

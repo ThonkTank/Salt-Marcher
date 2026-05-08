@@ -42,14 +42,21 @@ Only supported focused bundle entrypoint:
 | --- | --- | --- | --- | --- | --- |
 | `view-contentmodel-reusable-role-shape` | Enforced | every reusable projection-model role file in `src/view/slotcontent/**` | build-harness `ViewContentModelTopologyRules` | `./gradlew checkArchitecture` | A reusable `slotcontent/**` projection-model role uses the reusable role shape `*ContentModel.java` rather than active-root `*ContributionModel.java` or legacy `*ViewModel.java`, `*PresentationModel.java`, or `*Projector.java` files. |
 
+The target reusable-slotcontent architecture uses exactly one `*ContentModel`
+per reusable unit. That `ContentModel` owns component-specific presentation
+state and component-specific presentation logic so the active-root
+`*ContributionModel` can orchestrate child components instead of becoming a
+god-model. Reusable `*ContentModel`s do not pair with reusable local
+`*IntentHandler`s in the target architecture.
+
 ### May Contain
 
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
 | `view-contentmodel-observable-bindable-projection-surface` | Review-Owned | every reusable `*ContentModel.java` under `src/view/**` | none | none | A `ContentModel` is a bindable observable projection surface, not a service, adapter, or imperative workflow owner. |
 | `view-contentmodel-render-relevant-state-scope` | Review-Owned | every reusable `*ContentModel.java` under `src/view/**` | none | none | A `ContentModel` may contain the reusable render-relevant state of its own `slotcontent/**` unit, such as text, render data, labels, and enablement facts that its passive `View` surface renders. |
-| `view-contentmodel-input-relevant-state-when-local-interpretation-needs-it` | Review-Owned | every reusable `*ContentModel.java` whose co-located `IntentHandler` needs local facts to interpret a `*ViewInputEvent` | none | none | A `ContentModel` may contain local input-relevant facts such as selections, active tools, hovered targets, and comparable local interpretation state when that state is needed for local intent interpretation. |
-| `view-contentmodel-prepared-shared-primitive-scene-state` | Review-Owned | every reusable `*ContentModel.java` that feeds a shared technical primitive | none | none | A `ContentModel` may own prepared scene ordering, hit-priority data, geometry, and comparable pre-render or pre-hit facts when that preparation keeps the passive shared primitive technical and dumb. |
+| `view-contentmodel-input-relevant-state-when-root-interpretation-needs-it` | Review-Owned | every reusable `*ContentModel.java` whose active-root `IntentHandler` needs local facts to interpret a reused `*ViewInputEvent` | none | none | A `ContentModel` may contain local input-relevant facts such as selections, active tools, hovered targets, and comparable component-local interpretation state when the same-root active `IntentHandler` needs those facts to interpret a reused `*ViewInputEvent`. |
+| `view-contentmodel-render-ready-component-state` | Review-Owned | every reusable `*ContentModel.java` under `src/view/**` | none | none | A `ContentModel` may own render-ready, hit-ready, label, geometry, ordering, and comparable presentation facts for its own reusable `View` when that keeps the View flat and direct instead of reconstructing those facts at render time. |
 
 ### Must Not Contain
 

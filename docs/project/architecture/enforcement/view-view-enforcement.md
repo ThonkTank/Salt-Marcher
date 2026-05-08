@@ -26,6 +26,12 @@ routing. Those stay in the neighboring role documents.
 It does own the passive-View-side claim that the outward input seam emits the
 same-stem carrier built by the `View` itself rather than by a foreign role.
 
+The target reusable-slotcontent architecture is uniform across
+`slotcontent/**`, including `slotcontent/primitives/**`: every reusable unit is
+`View + ViewInputEvent + ContentModel`. Some currently blocking passive-View
+gates still encode the older technical-primitive exception; those rows below
+describe current mechanical behavior, not target truth.
+
 ## Enforced
 
 ### Must Contain
@@ -40,9 +46,9 @@ same-stem carrier built by the `View` itself rather than by a foreign role.
 
 | Invariant ID | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- |
-| `view-view-dependency-boundary` | every passive `*View.java` under `src/view/**` | Error Prone `PassiveViewDependencyBoundaries`, ArchUnit `passiveViewsMustNotReachShellDomainDataOrBootstrap`, and jQAssistant `saltmarcher:PassiveViewAllowedDependencies` | `./gradlew checkViewEnforcement` | A passive `View` references only JavaFX UI APIs, its co-located observable `ContributionModel` or `ContentModel`, same-root `*ViewInputEvent` types, same-surface support values, and the documented passive reusable view seam. It does not reference `shell/**`, `bootstrap/**`, `src/domain/**`, `src/data/**`, `*PublishedEvent`, foreign roots, or foreign non-`View` role families. |
-| `view-view-no-local-semantic-state` | every passive `*View.java` outside `src/view/slotcontent/primitives/**` | Error Prone `PassiveViewLocalStateBoundary` | `./gradlew checkViewEnforcement` | Outside `slotcontent/primitives/**`, a passive `View` does not keep mutable local semantic state bags such as scalar mode flags, string mirrors, collection selections, same-root model mirrors, or nested same-surface helper state objects. The remaining legal mutable fields are limited to widget/popup/scene objects, the same-stem `Consumer<SameStemViewInputEvent>` seam, and narrow technical reentrancy guards; input-relevant or render-preparation state belongs in the owning model or upstream read-side projection instead. |
-| `view-view-technical-primitive-boundary` | every passive `*View.java` under `src/view/slotcontent/primitives/**` | Error Prone `TechnicalPrimitiveViewBoundary` | `./gradlew checkViewEnforcement` | A technical primitive `View` keeps only technical outward seams and technical retained types: JavaFX/JDK surfaces, same-unit `*PointerEvent`/`*Scene`/`*Signal`/`*Support` carriers, and same-type nested carriers. It does not expose or retain `*ViewInputEvent`, `*PublishedEvent`, `*ContentModel`, `*ContributionModel`, `*IntentHandler`, domain, data, or application-service types. |
+| `view-view-dependency-boundary` | every passive `*View.java` under `src/view/**` | Error Prone `PassiveViewDependencyBoundaries`, ArchUnit `passiveViewsMustNotReachShellDomainDataOrBootstrap`, and jQAssistant `saltmarcher:PassiveViewAllowedDependencies` | `./gradlew checkViewEnforcement` | A passive `View` references only JavaFX UI APIs, its co-located observable `ContributionModel` or `ContentModel`, same-root or reused same-unit `*ViewInputEvent` types, and the documented passive reusable view seam. The current implementation still accepts same-surface support-value references because of the legacy primitive-support model; those support-carrier references are no longer target architecture. |
+| `view-view-no-local-semantic-state` | every passive `*View.java` outside `src/view/slotcontent/primitives/**` | Error Prone `PassiveViewLocalStateBoundary` | `./gradlew checkViewEnforcement` | The current local-state gate blocks mutable semantic state bags for non-primitive passive `View`s. The target architecture requires the same dumb-view rule for reusable primitive Views too; the primitive exception is current mechanical drift. |
+| `view-view-technical-primitive-boundary` | every passive `*View.java` under `src/view/slotcontent/primitives/**` | Error Prone `TechnicalPrimitiveViewBoundary` | `./gradlew checkViewEnforcement` | The current primitive-only boundary is a legacy blocker from the superseded technical-primitive architecture. It proves only that primitive Views stay technical under the old model; it does not prove the target reusable-slotcontent `View + ViewInputEvent + ContentModel` contract. |
 | `view-view-model-read-api` | every passive `*View.java` that invokes methods on a co-located model | Error Prone `PassiveViewModelReadApis` | `./gradlew checkViewEnforcement` | Passive `View` code reads its co-located `ContributionModel` or `ContentModel` only through JavaFX observable or binding surfaces instead of imperative non-observable read APIs. |
 | `view-view-no-model-mutation` | every passive `*View.java` that reaches its co-located model through JavaFX writable surfaces | Error Prone `PassiveViewModelMutationBoundary` | `./gradlew checkViewEnforcement` | Passive `View` code does not mutate its co-located `ContributionModel` or `ContentModel` through writable properties, writable values, or observable collections, maps, or sets returned by model accessors. |
 | `view-view-no-projection-carrier-construction` | every passive `*View.java` under `src/view/**` | Error Prone `PassiveViewProjectionConstructionBoundary` | `./gradlew checkViewEnforcement` | A passive `View` does not construct same-root projection-model support carriers, same-root `*PublishedEvent` carriers, or domain/data/application-service carriers. The only authored passive-View carrier construction that remains legal is its own same-stem `*ViewInputEvent` snapshot; prepared render or hit carriers belong in models or upstream read-side projection instead. |
@@ -53,20 +59,25 @@ same-stem carrier built by the `View` itself rather than by a foreign role.
 | Invariant ID | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- |
 | `view-view-input-api` | every passive `View` that participates in the same-stem `*ViewInputEvent` protocol | Error Prone `ViewInputEventApi` | `./gradlew checkViewEnforcement` | An interactive passive `View` exposes exactly one outward input seam, `onViewInputEvent(Consumer<SameStemViewInputEvent>)`, does not misshape that seam, and does not subscribe to another top-level passive `View`'s `onViewInputEvent(...)` route. |
-| `view-view-callback-seam-boundary` | every passive `*View.java` outside `src/view/slotcontent/primitives/**` | Error Prone `PassiveViewCallbackSeamBoundary` and ArchUnit `passiveViewsWithoutLocalIntentHandlersOrViewInputEventsMustNotExposeCallbackSeams` | `./gradlew checkViewEnforcement` | Outside `slotcontent/primitives/**`, a passive `View` does not expose alternate callback, async-result, acknowledgement, or other result-bearing outward seams. Feature views and reusable `slotcontent.controls/**` views therefore must not keep legacy callback-setter APIs. Technical primitive units use their own path-signaled technical boundary instead of callback-family exceptions. |
+| `view-view-callback-seam-boundary` | every passive `*View.java` outside `src/view/slotcontent/primitives/**` | Error Prone `PassiveViewCallbackSeamBoundary` and ArchUnit `passiveViewsWithoutLocalIntentHandlersOrViewInputEventsMustNotExposeCallbackSeams` | `./gradlew checkViewEnforcement` | The current callback gate cleanly enforces the single `onViewInputEvent(...)` route for non-primitive passive `View`s. The target architecture requires that same rule for reusable primitive Views too; their current technical-protocol exception is legacy drift. |
 
 ## Review-Owned
 
 - whether a mechanically legal passive `View` is still too broad and should be
   split into clearer surfaces
+- `view-view-reusable-slotcontent-three-role-shape`
+  every reusable `slotcontent/**` passive `View` belongs to a unit that also
+  owns exactly one same-stem `*ViewInputEvent` and exactly one same-unit
+  `*ContentModel`; any additional top-level support-carrier or helper role is
+  target-state migration debt until the gates catch up.
 - `view-view-no-handler-business-meaning-expansion`
-  a passive `View` without a local `IntentHandler` still stays passive; it must
-  not infer business meaning inside otherwise legal local presentation code.
+  a reusable passive `View` without a local `IntentHandler` still stays
+  passive; it must not infer business meaning inside otherwise legal local
+  presentation code while waiting for same-root interpretation.
 - `view-view-no-contentmodel-reusable-projection-expansion`
-  a reusable passive `View` without a local `ContentModel` stays passive and
-  stateless rather than becoming a hidden place for reusable projection or
-  interpretation logic such as prepared scene ordering, hit priority, or label
-  geometry.
+  a reusable passive `View` must not absorb projection or interpretation logic
+  that belongs in its own `ContentModel`, even when current gates still permit
+  legacy primitive-support-carrier arrangements.
 - `view-view-commandless-reactivity`
   passive `View`s react to model changes through bindings or listeners; they do
   not receive presenter-style imperative commands as an alternate presentation

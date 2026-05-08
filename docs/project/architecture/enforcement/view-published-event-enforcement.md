@@ -24,6 +24,11 @@ file-role topology, or non-`*PublishedEvent` mutation semantics. Those stay in
 the neighboring role-enforcement documents and in the view-layer and layering
 standards.
 
+The target architecture keeps `*PublishedEvent` as an active-root write-seam
+role only. Reusable `slotcontent/**` units do not own `*PublishedEvent`
+families in the target model, even where current mechanical gates still admit
+or discuss them.
+
 Unified focused bundle entrypoint:
 
 - `./gradlew checkViewPublishedEventEnforcement --rerun-tasks --console=plain`
@@ -38,7 +43,7 @@ Unified focused bundle entrypoint:
 
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
-| `view-publishedevent-local-intenthandler-required` | Enforced | every `*PublishedEvent.java` under `src/view/**` | ArchUnit `publishedEventsMustBelongToLocalIntentHandlers` | `./gradlew checkArchitecture` | A `*PublishedEvent` may exist only in a local unit that owns exactly one local `*IntentHandler` exposing `onPublishedEventRequested(Consumer<SamePublishedEvent>)` for that carrier family. |
+| `view-publishedevent-local-intenthandler-required` | Enforced | every `*PublishedEvent.java` under `src/view/**` | ArchUnit `publishedEventsMustBelongToLocalIntentHandlers` | `./gradlew checkArchitecture` | A `*PublishedEvent` may exist only in a local unit that owns exactly one local `*IntentHandler` exposing `onPublishedEventRequested(Consumer<SamePublishedEvent>)` for that carrier family. In target architecture that local unit is an active root, not a reusable `slotcontent/**` unit. |
 | `view-publishedevent-domain-write-seam-necessity` | Enforced | every `*PublishedEvent.java` under `src/view/**` | Error Prone `ViewPublishedEventRequestSemantics`, together with Error Prone `ViewPublishedEventProducerOwnership` for production/publication ownership | `./gradlew compileJava`, `./gradlew checkViewPublishedEventEnforcement`, and `./gradlew checkArchitecture` | A `*PublishedEvent` exists only for authoritative outward work that roundtrips back through a read-side same-context `published/*Model`. Request-, query-, refresh-, search-, detail-open-, preview-, load-, and reset-style carrier semantics are mechanically rejected when they appear in carrier helper/factory methods, enum constants, or record-component names. |
 
 ### May Contain
