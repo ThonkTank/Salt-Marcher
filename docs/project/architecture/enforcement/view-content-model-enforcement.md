@@ -49,6 +49,7 @@ Only supported focused bundle entrypoint:
 | `view-contentmodel-observable-bindable-projection-surface` | Review-Owned | every reusable `*ContentModel.java` under `src/view/**` | none | none | A `ContentModel` is a bindable observable projection surface, not a service, adapter, or imperative workflow owner. |
 | `view-contentmodel-render-relevant-state-scope` | Review-Owned | every reusable `*ContentModel.java` under `src/view/**` | none | none | A `ContentModel` may contain the reusable render-relevant state of its own `slotcontent/**` unit, such as text, render data, labels, and enablement facts that its passive `View` surface renders. |
 | `view-contentmodel-input-relevant-state-when-local-interpretation-needs-it` | Review-Owned | every reusable `*ContentModel.java` whose co-located `IntentHandler` needs local facts to interpret a `*ViewInputEvent` | none | none | A `ContentModel` may contain local input-relevant facts such as selections, active tools, hovered targets, and comparable local interpretation state when that state is needed for local intent interpretation. |
+| `view-contentmodel-prepared-shared-primitive-scene-state` | Review-Owned | every reusable `*ContentModel.java` that feeds a shared technical primitive | none | none | A `ContentModel` may own prepared scene ordering, hit-priority data, geometry, and comparable pre-render or pre-hit facts when that preparation keeps the passive shared primitive technical and dumb. |
 
 ### Must Not Contain
 
@@ -74,6 +75,9 @@ Only supported focused bundle entrypoint:
 - mechanizing broader size or responsibility heuristics for view-owned state
   bags after the hard published-translation and dungeon-map projection
   boundaries above
+- mechanizing broader prepared-scene and prepared-hit candidate detection for
+  reusable shared primitives once the report-only view-layer refactor surface
+  has stabilized
 
 ## References
 

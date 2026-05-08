@@ -67,7 +67,7 @@ public final class PassiveViewLocalStateBoundaryChecker extends BugChecker
                 .setMessage("Passive View '" + qualifiedViewName
                         + "' owns local semantic state through mutable fields "
                         + String.join(", ", violations)
-                        + ". Passive Views may keep only widget state, the same-stem ViewInputEvent callback seam, and narrow technical reentrancy guards.")
+                        + ". Passive Views may keep only widget state, the same-stem ViewInputEvent callback seam, and narrow technical reentrancy guards. If these fields are input-relevant or render-preparation facts, move them into the co-located ContributionModel/ContentModel or upstream read-side projection instead of keeping helper-owned state bags in the View.")
                 .build();
     }
 

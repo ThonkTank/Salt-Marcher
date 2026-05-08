@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ruleset name="SaltMarcher View Layer Refactor Candidates"
+         xmlns="http://pmd.sourceforge.net/ruleset/2.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://pmd.sourceforge.net/ruleset/2.0.0 https://pmd.github.io/schema/ruleset_2_0_0.xsd">
+    <description>
+        Report-only role-aware refactor-direction diagnostics for SaltMarcher
+        passive views.
+    </description>
+
+    <rule name="ViewRefactorCandidateRule"
+          language="java"
+          message="View refactor-direction candidate"
+          class="saltmarcher.quality.pmd.view.layer.ViewRefactorCandidateRule">
+        <priority>3</priority>
+    </rule>
+</ruleset>

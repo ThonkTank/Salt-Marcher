@@ -43,7 +43,9 @@ That naming is migration debt, not a second architecture.
 - dungeon converts `canvas <-> dungeon grid`
 - hex converts `canvas <-> internal hex coordinates`
 - the passive map view never reconstructs adopter-native coordinates itself
-- one render scene owns both draw and hit identity
+- one render scene owns draw order, hit order, and hit identity
+- the passive map view emits pointer output through one technical
+  `CanvasPointerEvent` seam
 - only the adopter-facing Binder may know the adopter boundary and
   adopter-published carriers
 - the adopter-facing map-slot `PresentationModel` owns scene projection state,
@@ -69,12 +71,19 @@ That naming is migration debt, not a second architecture.
 
 `published surface payload -> canvas-facing map-slot PresentationModel -> MapRenderScene -> MapCanvasView -> CanvasHit`
 
+The passive canvas consumes prepared scene hit areas directly from
+`MapRenderScene`; it does not rebuild cross-family hit precedence on its own.
+
 ## Current Implementation
 
 - `src/view/slotcontent/main/mapcanvas/MapCanvasView.java` is the shared passive
   canvas root.
 - `MapRenderScene` and `CanvasPointerEvent` under the same package are the
   shared draw and pointer carriers.
+- `MapCanvasView` now exposes one technical pointer seam that emits
+  `CanvasPointerEvent`; adopter views may wrap that seam into their own
+  same-stem `*ViewInputEvent` families, but the shared canvas does not expose
+  separate phase-specific callback APIs.
 - Active-root Binders own adopter-specific pointer translation wiring and bind
   the adopter boundary to the one canvas-facing map-slot `PresentationModel`.
 - Some adopter classes still carry `*ViewModel` names; those classes must be

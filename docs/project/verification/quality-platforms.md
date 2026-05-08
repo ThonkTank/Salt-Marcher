@@ -338,6 +338,11 @@ Operationally, architecture checks enter local quality through:
   jQAssistant role-hub, cross-feature, and public-boundary breadth
   diagnostics and stays intentionally outside `checkArchitecture`, `check`,
   and `build`
+- `checkViewRefactorCandidates`
+  runs the report-only View Layer refactor-direction diagnostics and now
+  enters `checkViewArchitecture`, staged `view-topology`, `check`, `build`,
+  and staged `production-handoff` transitively without changing blocker
+  semantics
 - `checkArchitecture`
   aggregates the focused Domain Layer, Domain ApplicationService,
   Data ServiceContribution,

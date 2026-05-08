@@ -1,7 +1,7 @@
 package src.view.leftbartabs.dungeoneditor;
 
 public record DungeonEditorMainViewInputEvent(
-        String pointerPhaseKey,
+        PointerPhase pointerPhase,
         double canvasX,
         double canvasY,
         boolean primaryButtonDown,
@@ -11,7 +11,15 @@ public record DungeonEditorMainViewInputEvent(
 ) {
 
     public DungeonEditorMainViewInputEvent {
-        pointerPhaseKey = pointerPhaseKey == null ? "" : pointerPhaseKey;
+        pointerPhase = pointerPhase == null ? PointerPhase.MOVE : pointerPhase;
         hitRef = hitRef == null ? "" : hitRef;
+    }
+
+    public enum PointerPhase {
+        PRESS,
+        DRAG,
+        RELEASE,
+        MOVE,
+        LEVEL_SCROLLED
     }
 }

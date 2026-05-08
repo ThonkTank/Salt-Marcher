@@ -77,7 +77,7 @@ public final class PassiveViewCallbackSeamBoundaryChecker extends BugChecker
                 .setMessage("Passive View '" + qualifiedViewName
                         + "' exposes alternate callback or result-bearing outward seams "
                         + String.join(", ", violations)
-                        + ". Outside the explicit technical-base allowlist, passive Views must stay callback-flat and use only onViewInputEvent(Consumer<SameStemViewInputEvent>) when interactive.")
+                        + ". Outside the explicit technical-base allowlist, passive Views must stay callback-flat and use only onViewInputEvent(Consumer<SameStemViewInputEvent>) when interactive. If a shared primitive appears to need several phase-specific outward seams, collapse them into one technical event seam and interpret that event above the View.")
                 .build();
     }
 

@@ -99,6 +99,10 @@ Dependencies point inward toward the application core:
 - missing `IntentHandler` or missing `ContentModel` does not widen View
   responsibilities; passive/stateless units stay passive rather than absorbing
   interpretation or projection duties
+- shared technical primitives stay technical: if rendering or interaction
+  pressure appears, prepared scene, hit, and geometry facts move upward into
+  `ContributionModel`, `ContentModel`, or read-side `published/*Model`
+  projection instead of spreading into extra view-helper files
 - passive Views react to observable model state and emit full immutable
   per-View technical snapshots without shell, domain, data, or
   ApplicationService dependencies

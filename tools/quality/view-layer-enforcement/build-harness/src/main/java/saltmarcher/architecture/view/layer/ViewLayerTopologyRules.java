@@ -23,10 +23,10 @@ public final class ViewLayerTopologyRules implements ArchitectureRule {
                 }
                 if (ViewRoleSupport.isActiveRoot(unit) && !isAllowedActiveRootFile(sourceFile)) {
                     violations.add(sourceFile.relativePath(), "view-layer-active-root-file-role",
-                            "Active contribution roots may contain only *Contribution.java, *Binder.java, *ContributionModel.java, optional *IntentHandler.java, passive *View.java, optional *ViewInputEvent.java files, and optional write-side *PublishedEvent.java files.");
+                            "Active contribution roots may contain only *Contribution.java, *Binder.java, *ContributionModel.java, optional *IntentHandler.java, passive *View.java, optional *ViewInputEvent.java files, and optional write-side *PublishedEvent.java files. Move projection, formatting, or selection preparation into the owning *ContributionModel or into nested/private helper types inside an allowed role file instead of adding standalone helper files.");
                 } else if (ViewRoleSupport.isSlotcontent(unit) && !isAllowedSlotcontentFile(sourceFile)) {
                     violations.add(sourceFile.relativePath(), "view-layer-slotcontent-file-role",
-                            "Reusable slotcontent units may contain only passive *View.java files, optional *ContentModel.java files, optional *IntentHandler.java files, optional *ViewInputEvent.java files, optional write-side *PublishedEvent.java files, *InspectorEntry.java adapters, and the allowed mapcanvas support carriers.");
+                            "Reusable slotcontent units may contain only passive *View.java files, optional *ContentModel.java files, optional *IntentHandler.java files, optional *ViewInputEvent.java files, optional write-side *PublishedEvent.java files, *InspectorEntry.java adapters, and the allowed mapcanvas support carriers. If a reusable View needs extra render or input preparation, prefer the unit's *ContentModel or upstream readback over new standalone helper files.");
                 }
             }
             validateUnitShape(unit, files, violations);

@@ -41,8 +41,15 @@ Before editing a view surface:
    therefore needs no `IntentHandler`.
 7. For map surfaces, identify the single reusable canvas-facing
    `ContentModel` that owns the readback-to-render projection path.
-8. Move ambiguous logic to the owning role instead of copying nearby legacy
+8. Before smell- or size-driven refactors, ask whether the passive `View` is
+   compensating for missing projection, hit preparation, geometry derivation,
+   or input-relevant state that belongs in a `ContributionModel`,
+   `ContentModel`, or upstream `published/*Model` readback path.
+9. Move ambiguous logic to the owning role instead of copying nearby legacy
    placement.
+10. Only after that ownership check may you use nested/private helper types as
+    a local cleanup tactic; do not default to new top-level helper files under
+    `src/view/**`.
 
 When reviewing view-layer changes:
 
@@ -63,6 +70,8 @@ When reviewing view-layer changes:
    ApplicationService types.
 8. Treat new component-local `View/`, `ViewModel/`, `assembly/`, view `api/`,
    `Model/`, `Controller/`, or `interactor/` buckets as findings.
+9. Treat PMD-driven helper splits as findings when the real missing owner is
+   the co-located model or the upstream readback path.
 
 ## Placement Heuristics
 
@@ -76,6 +85,10 @@ When reviewing view-layer changes:
   mutation, it belongs in the optional `IntentHandler`.
 - If code declares JavaFX controls, layout, canvas drawing, dialogs, popups,
   cell factories, or widget event handlers, it belongs in a View.
+- If code prepares scene ordering, hit priority, label geometry, selection
+  facts, or other reusable pre-render/pre-hit state, it belongs in the owning
+  `ContributionModel`, `ContentModel`, or upstream read-side projection rather
+  than in new standalone View helpers.
 - If code is feature-specific and not reusable, colocate it in the owning
   `leftbartabs`, `dropdowns`, or `statetabs` package.
 - If code is reusable generic view-layer content, place it under
@@ -94,6 +107,8 @@ When reviewing view-layer changes:
   ApplicationServices
 - Views that command model behavior directly instead of reacting to observable
   state
+- shared technical primitives that grow several phase-specific outward seams or
+  reconstruct scene/hit preparation locally instead of staying technical
 
 ## Correctness Rule
 

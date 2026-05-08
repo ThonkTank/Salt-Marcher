@@ -1,7 +1,7 @@
 interface:
   display_name: "View Layer MVVM Alias"
-  short_description: "Apply SaltMarcher's canonical view-layer rules"
-  default_prompt: "Use $view-layer-mvvm before work under src/view/** so the change follows SaltMarcher's canonical contribution, Binder, model, IntentHandler, and slotcontent topology."
+  short_description: "Apply SaltMarcher's canonical view-layer rules and refactor direction"
+  default_prompt: "Use $view-layer-mvvm before work under src/view/** so the change follows SaltMarcher's canonical contribution, Binder, model, IntentHandler, and slotcontent topology. When a passive View is under smell pressure, first ask whether projection, hit preparation, or input-relevant state belongs in a ContributionModel, ContentModel, or upstream readback instead of new helper files."
 
 policy:
   allow_implicit_invocation: true

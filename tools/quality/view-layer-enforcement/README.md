@@ -15,10 +15,14 @@ It owns:
   `ViewLayerTopologyRules` and `ViewLayerTopologyCheckMain`
 - `archunit/`
   `architecture.view.viewlayer.ViewLayerArchitectureTest`
+- `pmd/`
+  the report-only refactor-direction candidate surface for shared view-layer
+  primitives and similar owner-pure guidance diagnostics
 
 Unified root entrypoint:
 
 - `./gradlew checkViewLayerEnforcement --rerun-tasks --console=plain`
+- `./gradlew checkViewRefactorCandidates --rerun-tasks --console=plain`
 
 Shared baseline ArchUnit/build-harness infrastructure remains intentionally
 outside this directory; view-layer-specific rule ownership and bundle metadata

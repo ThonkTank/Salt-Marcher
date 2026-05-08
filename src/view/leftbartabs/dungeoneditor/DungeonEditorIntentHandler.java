@@ -27,7 +27,7 @@ final class DungeonEditorIntentHandler {
             return;
         }
         publish(DungeonEditorPublishedEvent.interpretMainView(new DungeonEditorPublishedEvent.MainViewInput(
-                toMainViewSource(event.pointerPhaseKey(), event.levelDelta()),
+                toMainViewSource(event.pointerPhase(), event.levelDelta()),
                 event.canvasX(),
                 event.canvasY(),
                 event.primaryButtonDown(),
@@ -286,17 +286,18 @@ final class DungeonEditorIntentHandler {
     }
 
     private static DungeonEditorPublishedEvent.MainViewInput.Source toMainViewSource(
-            String pointerPhaseKey,
+            DungeonEditorMainViewInputEvent.PointerPhase pointerPhase,
             int levelDelta
     ) {
-        if (levelDelta != 0) {
+        if (levelDelta != 0 || pointerPhase == DungeonEditorMainViewInputEvent.PointerPhase.LEVEL_SCROLLED) {
             return DungeonEditorPublishedEvent.MainViewInput.Source.LEVEL_SCROLLED;
         }
-        return switch (pointerPhaseKey == null ? "MOVE" : pointerPhaseKey) {
-            case "PRESS" -> DungeonEditorPublishedEvent.MainViewInput.Source.POINTER_PRESSED;
-            case "DRAG" -> DungeonEditorPublishedEvent.MainViewInput.Source.POINTER_DRAGGED;
-            case "RELEASE" -> DungeonEditorPublishedEvent.MainViewInput.Source.POINTER_RELEASED;
-            default -> DungeonEditorPublishedEvent.MainViewInput.Source.POINTER_MOVED;
+        return switch (pointerPhase == null ? DungeonEditorMainViewInputEvent.PointerPhase.MOVE : pointerPhase) {
+            case PRESS -> DungeonEditorPublishedEvent.MainViewInput.Source.POINTER_PRESSED;
+            case DRAG -> DungeonEditorPublishedEvent.MainViewInput.Source.POINTER_DRAGGED;
+            case RELEASE -> DungeonEditorPublishedEvent.MainViewInput.Source.POINTER_RELEASED;
+            case MOVE -> DungeonEditorPublishedEvent.MainViewInput.Source.POINTER_MOVED;
+            case LEVEL_SCROLLED -> DungeonEditorPublishedEvent.MainViewInput.Source.LEVEL_SCROLLED;
         };
     }
 

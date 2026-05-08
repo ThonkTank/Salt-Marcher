@@ -72,7 +72,7 @@ public final class PassiveViewProjectionConstructionBoundaryChecker extends BugC
                 .setMessage("Passive View '" + qualifiedViewName
                         + "' constructs projection or write carriers "
                         + String.join(", ", violations)
-                        + ". A passive View may author only its own same-stem ViewInputEvent snapshots; projection carriers belong in models and write carriers belong behind the IntentHandler/Binder seam.")
+                        + ". A passive View may author only its own same-stem ViewInputEvent snapshots; projection carriers belong in models and write carriers belong behind the IntentHandler/Binder seam. If the View is compensating for missing prepared render or hit state, move that preparation into the co-located ContributionModel/ContentModel or upstream read-side projection.")
                 .build();
     }
 

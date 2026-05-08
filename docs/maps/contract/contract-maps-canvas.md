@@ -25,6 +25,8 @@ domain truth.
 - shared pointer output coordinates MUST be canvas-native
 - shared hit identity MUST come from the same rendered scene that the passive
   map view draws
+- shared hit ordering MUST come from the same rendered scene that the passive
+  map view draws
 - `MapRenderScene` is the only canonical shared renderer input root
 - `CanvasPointerEvent` is the only canonical pointer-output root
 - all geometry in `MapRenderScene` MUST be canvas-native
@@ -67,6 +69,10 @@ Optional fields:
 
 - `hit`
 
+`MapCanvasView` emits `CanvasPointerEvent` through one technical outbound seam.
+Consumers must not require several phase-specific callback families from the
+shared passive canvas.
+
 ### `MapRenderScene`
 
 Required families:
@@ -77,7 +83,12 @@ Required families:
 - `texts`
 - `relations`
 - `actors`
+- `hitAreas`
 - `overlays`
+
+`hitAreas` is the prepared technical hit-evidence list for the same rendered
+scene. The passive canvas consumes that order directly instead of reconstructing
+cross-family hit priority locally.
 
 ## Validation And Error Behavior
 

@@ -76,7 +76,10 @@ Mechanically enforced public lifecycle surfaces are:
 Beyond the staged lifecycle names, the verification core also owns direct
 root lifecycle tasks that feed those aggregates. These root-owned tasks include
 shared hygiene gates such as `checkNoPublicDeadCode`; they are verification
-core surfaces, not descriptor-owned enforcement bundles.
+core surfaces, not descriptor-owned enforcement bundles. Staged surfaces may
+also depend on explicitly selected report-only sibling diagnostics when the
+standard handoff path should print guidance without changing pass/fail
+semantics.
 
 The verification core owns the mapping from a public surface to its underlying
 Gradle dependencies. Root build scripts MUST consume this core instead of
@@ -89,9 +92,12 @@ root public `check*Enforcement` lifecycle task through descriptor-owned bundle
 metadata. Standard bundles are registered centrally by the verification core
 from that metadata; they MAY also expose additional public report-only sibling
 tasks when the same owner needs a non-blocking diagnostic surface beside the
-root blocker. Explicit exception bundles now expose `rootPluginId` metadata and
-keep their custom wiring in dedicated verification-core plugins inside
-`tools/gradle/build-logic`.
+root blocker. The verification core may attach selected report-only sibling
+surfaces to staged lifecycle paths such as `view-topology` or
+`production-handoff` when that diagnostic is part of the canonical handoff
+guidance and still remains non-blocking. Explicit exception bundles now expose
+`rootPluginId` metadata and keep their custom wiring in dedicated
+verification-core plugins inside `tools/gradle/build-logic`.
 
 Bundle owners MAY know their private ArchUnit, Error Prone, PMD,
 jQAssistant, or build-harness tasks. They MUST NOT depend on shell wrappers.

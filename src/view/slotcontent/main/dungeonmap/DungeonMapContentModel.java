@@ -11,6 +11,7 @@ import javafx.scene.paint.Color;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeoneditor.published.DungeonEditorSnapshot;
 import src.domain.travel.published.TravelDungeonSnapshot;
+import src.view.slotcontent.primitives.mapcanvas.CanvasPointerEvent;
 import src.view.slotcontent.primitives.mapcanvas.CanvasPointerEvent.MapCanvasPoint;
 import src.view.slotcontent.primitives.mapcanvas.MapRenderScene;
 import src.view.slotcontent.primitives.mapcanvas.MapRenderScene.MapCanvasPolygonPrimitive;

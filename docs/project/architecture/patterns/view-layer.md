@@ -154,6 +154,11 @@ Rules:
 - the absence of a `*ContentModel` never expands `*View` or parent-model
   responsibilities; a reusable unit without a `*ContentModel` is passive and
   stateless rather than a hidden place for reusable projection logic
+- when passive-View hotspot pressure appears, first move render preparation,
+  hit preparation, label/geometry derivation, ordering, selection, and other
+  input-relevant facts into the owning `*ContributionModel`,
+  `*ContentModel`, or same-context `published/*Model` readback path before
+  introducing more helper structure inside the `View`
 - non-role-bearing standalone files under `src/view/**` are forbidden;
   implementation details must be explicit roles or nested/private helper types
   inside a role file
@@ -209,6 +214,12 @@ Additional rules:
 - reusable `slotcontent/**` units must not depend on contribution-specific
   Views or support types, and `slotcontent/primitives/**` must not depend on
   non-primitive reusable or contribution-specific components
+- a shared technical primitive under `slotcontent/primitives/**` may keep only
+  technical rendering, viewport, raw-event capture, and technical hit
+  execution against already prepared scene data; primitive ordering, hit
+  priority, label-box geometry, and surface-specific scene assembly belong in
+  the owning `*ContentModel` or upstream read-side projection, not in new
+  top-level helper files under the primitive package
 - outside the explicitly documented Binder/domain and `published/**` readback
   seams, no direct domain/view-layer connections are allowed
 - direct `View` callback APIs, direct `IntentHandler -> ApplicationService`
@@ -321,6 +332,10 @@ This means:
 - a reusable unit without a `ContentModel` still stays passive/stateless; it
   does not shift reusable projection or interpretation duties into the `View`
   itself
+- when a reusable shared primitive still needs broad preparation logic after
+  that move, the next step is stronger model or readback preparation above the
+  primitive, not a spread of free top-level helper files inside the primitive
+  package
 - `IntentHandler` owns input interpretation and write-side carrier
   publication, but not domain lookup, direct service invocation, view
   instantiation, or shell APIs
