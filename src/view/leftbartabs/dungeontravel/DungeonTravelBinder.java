@@ -28,21 +28,23 @@ final class DungeonTravelBinder {
         TravelDungeonModel travelModel = travel.loadDungeonTravel(new LoadTravelDungeonQuery());
         DungeonTravelContributionModel contributionModel = new DungeonTravelContributionModel();
         DungeonMapContentModel mapContentModel = new DungeonMapContentModel("Travel workspace", false);
-        DungeonTravelIntentHandler intentHandler = new DungeonTravelIntentHandler(contributionModel);
+        DungeonTravelIntentHandler intentHandler =
+                new DungeonTravelIntentHandler(contributionModel, mapContentModel.mapCanvasContentModel());
         DungeonTravelControlsView controls = new DungeonTravelControlsView();
         DungeonMapView main = new DungeonMapView();
         DungeonTravelStateView state = new DungeonTravelStateView();
         bindTravelRequests(travel, intentHandler);
-        bindViewEffects(intentHandler, main);
         main.bind(mapContentModel);
         controls.bind(contributionModel);
         state.bind(contributionModel);
         controls.onViewInputEvent(intentHandler::consume);
-        main.onViewportChanged(() -> controls.showZoom(main.zoom()));
+        main.onViewInputEvent(intentHandler::consume);
+        mapContentModel.mapCanvasContentModel().zoomProperty().addListener((ignored, before, after) ->
+                controls.showZoom(after.doubleValue()));
         state.onViewInputEvent(intentHandler::consume);
         travelModel.subscribe(snapshot -> applySnapshot(snapshot, contributionModel, mapContentModel));
         applySnapshot(travelModel.current(), contributionModel, mapContentModel);
-        controls.showZoom(main.zoom());
+        controls.showZoom(mapContentModel.mapCanvasContentModel().zoom());
         return new Binding(controls, main, state);
     }
 
@@ -53,13 +55,6 @@ final class DungeonTravelBinder {
         intentHandler.onPublishedEventRequested(actionEvent -> {
             travel.applyDungeonTravelSession(toCommand(actionEvent));
         });
-    }
-
-    private static void bindViewEffects(
-            DungeonTravelIntentHandler intentHandler,
-            DungeonMapView main
-    ) {
-        intentHandler.onResetCameraRequested(main::resetCamera);
     }
 
     private static void applySnapshot(

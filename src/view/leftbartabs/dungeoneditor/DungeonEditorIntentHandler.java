@@ -5,28 +5,38 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
 import org.jspecify.annotations.Nullable;
+import src.view.slotcontent.main.dungeonmap.DungeonMapViewInputEvent;
+import src.view.slotcontent.primitives.mapcanvas.MapCanvasContentModel;
+import src.view.slotcontent.primitives.mapcanvas.MapCanvasViewInputEvent;
 
 final class DungeonEditorIntentHandler {
 
     private static final String NAME_MISSING_ERROR = "Name fehlt.";
     private static final long NO_MAP_ID = 0L;
+    private static final double ZOOM_IN_FACTOR = 1.1;
+    private static final double ZOOM_OUT_FACTOR = 1.0 / ZOOM_IN_FACTOR;
 
     private final DungeonEditorContributionModel presentationModel;
+    private final MapCanvasContentModel mapCanvasContentModel;
     private Consumer<DungeonEditorPublishedEvent> publishedEventListener = ignored -> {};
 
-    DungeonEditorIntentHandler(DungeonEditorContributionModel presentationModel) {
+    DungeonEditorIntentHandler(
+            DungeonEditorContributionModel presentationModel,
+            MapCanvasContentModel mapCanvasContentModel
+    ) {
         this.presentationModel = Objects.requireNonNull(presentationModel, "presentationModel");
+        this.mapCanvasContentModel = Objects.requireNonNull(mapCanvasContentModel, "mapCanvasContentModel");
     }
 
     void onPublishedEventRequested(Consumer<DungeonEditorPublishedEvent> listener) {
         publishedEventListener = listener == null ? ignored -> {} : listener;
     }
 
-    void consume(DungeonEditorMainViewInputEvent event) {
+    void consume(DungeonMapViewInputEvent event) {
         if (event == null) {
             return;
         }
-        publish(MainViewSupport.toPublishedEvent(event));
+        publish(MainViewSupport.toPublishedEvent(mapCanvasContentModel, event.canvasEvent()));
     }
 
     void consume(DungeonEditorControlsViewInputEvent event) {
@@ -52,27 +62,93 @@ final class DungeonEditorIntentHandler {
 
     private static final class MainViewSupport {
 
-        private static DungeonEditorPublishedEvent toPublishedEvent(DungeonEditorMainViewInputEvent event) {
+        private static @Nullable DungeonEditorPublishedEvent toPublishedEvent(
+                MapCanvasContentModel mapCanvasContentModel,
+                MapCanvasViewInputEvent event
+        ) {
+            if (event == null) {
+                return null;
+            }
+            if (event.interaction() == MapCanvasViewInputEvent.Interaction.DRAG
+                    && event.buttons().middleButtonDown()) {
+                mapCanvasContentModel.panByPixels(event.dragDeltaX(), event.dragDeltaY());
+                return null;
+            }
+            if (event.interaction() == MapCanvasViewInputEvent.Interaction.SCROLL) {
+                return handleScroll(mapCanvasContentModel, event);
+            }
+            if (event.buttons().middleButtonDown()) {
+                return null;
+            }
             return DungeonEditorPublishedEvent.interpretMainView(new DungeonEditorPublishedEvent.MainViewInput(
-                    toMainViewSource(event.pointerPhase(), event.levelDelta()),
-                    event.canvasX(),
-                    event.canvasY(),
-                    event.primaryButtonDown(),
-                    event.secondaryButtonDown(),
-                    event.hitRef(),
-                    event.levelDelta()));
+                    toMainViewSource(event.interaction()),
+                    event.position().canvasX(),
+                    event.position().canvasY(),
+                    event.buttons().primaryButtonDown(),
+                    event.buttons().secondaryButtonDown(),
+                    hitRef(event),
+                    0));
+        }
+
+        private static @Nullable DungeonEditorPublishedEvent handleScroll(
+                MapCanvasContentModel mapCanvasContentModel,
+                MapCanvasViewInputEvent event
+        ) {
+            if (!event.modifiers().controlDown()) {
+                if (event.scrollDeltaY() > 0.0) {
+                    mapCanvasContentModel.zoomAround(
+                            event.position().canvasX(),
+                            event.position().canvasY(),
+                            ZOOM_IN_FACTOR);
+                } else if (event.scrollDeltaY() < 0.0) {
+                    mapCanvasContentModel.zoomAround(
+                            event.position().canvasX(),
+                            event.position().canvasY(),
+                            ZOOM_OUT_FACTOR);
+                }
+                return null;
+            }
+            int levelDelta = normalizeLevelDelta(event.scrollDeltaY());
+            if (levelDelta == 0) {
+                return null;
+            }
+            return DungeonEditorPublishedEvent.interpretMainView(new DungeonEditorPublishedEvent.MainViewInput(
+                    DungeonEditorPublishedEvent.MainViewInput.Source.LEVEL_SCROLLED,
+                    event.position().canvasX(),
+                    event.position().canvasY(),
+                    event.buttons().primaryButtonDown(),
+                    event.buttons().secondaryButtonDown(),
+                    hitRef(event),
+                    levelDelta));
+        }
+
+        private static String hitRef(MapCanvasViewInputEvent event) {
+            return event.hit() == null ? "" : event.hit().hitRef();
+        }
+
+        private static int normalizeLevelDelta(double scrollDeltaY) {
+            if (scrollDeltaY > 0.0) {
+                return 1;
+            }
+            if (scrollDeltaY < 0.0) {
+                return -1;
+            }
+            return 0;
         }
 
         private static DungeonEditorPublishedEvent.MainViewInput.Source toMainViewSource(
-                DungeonEditorMainViewInputEvent.PointerPhase pointerPhase,
-                int levelDelta
+                MapCanvasViewInputEvent.Interaction interaction
         ) {
-            DungeonEditorMainViewInputEvent.PointerPhase safePhase =
-                    DungeonEditorMainViewInputEvent.PointerPhase.defaultPhase(pointerPhase);
-            if (levelDelta != 0 || safePhase.isLevelScrolled()) {
-                return DungeonEditorPublishedEvent.MainViewInput.Source.LEVEL_SCROLLED;
-            }
-            return DungeonEditorPublishedEvent.MainViewInput.Source.valueOf(safePhase.publishedSourceName());
+            MapCanvasViewInputEvent.Interaction safeInteraction = interaction == null
+                    ? MapCanvasViewInputEvent.Interaction.MOVE
+                    : interaction;
+            return switch (safeInteraction) {
+                case PRESS -> DungeonEditorPublishedEvent.MainViewInput.Source.POINTER_PRESSED;
+                case DRAG -> DungeonEditorPublishedEvent.MainViewInput.Source.POINTER_DRAGGED;
+                case RELEASE -> DungeonEditorPublishedEvent.MainViewInput.Source.POINTER_RELEASED;
+                case MOVE -> DungeonEditorPublishedEvent.MainViewInput.Source.POINTER_MOVED;
+                case SCROLL -> DungeonEditorPublishedEvent.MainViewInput.Source.LEVEL_SCROLLED;
+            };
         }
     }
 

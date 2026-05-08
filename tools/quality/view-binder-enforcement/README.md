@@ -12,7 +12,8 @@ registration metadata:
   `ViewBinderDependencyBoundary`,
   `ViewBinderViewInputEventWiring`,
   `ViewBinderApplicationSinkWiring`,
-  `ViewBinderApplicationServiceReadback`
+  `ViewBinderApplicationServiceReadback`,
+  `ViewBinderProjectionModelRequestProtocol`
 - `archunit/`
   `architecture.view.binder.ViewBinderArchitectureTest`
 - `jqassistant/`

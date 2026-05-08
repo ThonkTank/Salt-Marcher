@@ -9,7 +9,6 @@ bundle-local registration metadata, and role-specific helper logic:
 
 - `errorprone/`
   `ViewIntentHandlerDependencyBoundary`,
-  `ViewIntentHandlerApplicationSinkBoundary`,
   `ViewIntentHandlerViewInputEvent`
 - `archunit/`
   `architecture.view.intenthandler.ViewIntentHandlerArchitectureTest`

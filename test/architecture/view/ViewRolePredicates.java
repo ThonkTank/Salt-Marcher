@@ -60,10 +60,6 @@ public final class ViewRolePredicates {
         };
     }
 
-    public static DescribedPredicate<JavaClass> arePublishedEvents() {
-        return rolePredicate("view published event role classes", ACTIVE_ROOT_PACKAGE, "PublishedEvent");
-    }
-
     private static DescribedPredicate<JavaClass> rolePredicate(
             String description,
             String packageRegex,

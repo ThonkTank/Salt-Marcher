@@ -83,7 +83,7 @@
                       AND size(targetSegments) >= 4
                       AND sourceSegments[2] = targetSegments[2]
                       AND sourceSegments[3] = targetSegments[3]
-                      AND target.viewBucket IN ['BINDER', 'MODEL', 'HANDLER', 'VIEW', 'VIEW_INPUT_EVENT', 'PUBLISHED_EVENT']
+                      AND target.viewBucket IN ['BINDER', 'MODEL', 'HANDLER', 'VIEW', 'VIEW_INPUT_EVENT']
                     )
                     OR (
                       size(targetSegments) >= 6

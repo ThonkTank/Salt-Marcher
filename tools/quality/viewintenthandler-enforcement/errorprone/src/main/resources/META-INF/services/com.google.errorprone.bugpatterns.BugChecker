@@ -1,3 +1,2 @@
 saltmarcher.quality.errorprone.view.intenthandler.ViewIntentHandlerDependencyBoundaryChecker
-saltmarcher.quality.errorprone.view.intenthandler.ViewIntentHandlerApplicationSinkBoundaryChecker
 saltmarcher.quality.errorprone.view.intenthandler.ViewIntentHandlerViewInputEventChecker

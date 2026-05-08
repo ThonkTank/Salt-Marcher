@@ -1,3 +1,0 @@
-saltmarcher.quality.errorprone.view.publishedevent.ViewPublishedEventBoundaryChecker
-saltmarcher.quality.errorprone.view.publishedevent.ViewPublishedEventProducerOwnershipChecker
-saltmarcher.quality.errorprone.view.publishedevent.ViewPublishedEventRequestSemanticsChecker

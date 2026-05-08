@@ -13,6 +13,7 @@ import src.domain.dungeoneditor.session.value.DungeonEditorSessionCommand;
 import src.domain.dungeoneditor.session.value.DungeonEditorSessionValues;
 import src.domain.dungeoneditor.workspace.value.DungeonEditorWorkspaceValues;
 import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel;
+import src.view.slotcontent.main.dungeonmap.DungeonMapView;
 
 final class DungeonEditorBinder {
 
@@ -27,9 +28,10 @@ final class DungeonEditorBinder {
         DungeonEditorModel editorModel = editor.loadEditor(new LoadDungeonEditorQuery(null));
         DungeonEditorContributionModel contributionModel = new DungeonEditorContributionModel();
         DungeonMapContentModel mapContentModel = new DungeonMapContentModel("Dungeon workspace", true);
-        DungeonEditorIntentHandler intentHandler = new DungeonEditorIntentHandler(contributionModel);
+        DungeonEditorIntentHandler intentHandler =
+                new DungeonEditorIntentHandler(contributionModel, mapContentModel.mapCanvasContentModel());
         DungeonEditorControlsView controls = new DungeonEditorControlsView();
-        DungeonEditorMainView main = new DungeonEditorMainView();
+        DungeonMapView main = new DungeonMapView();
         DungeonEditorStateView state = new DungeonEditorStateView();
 
         main.bind(mapContentModel);
