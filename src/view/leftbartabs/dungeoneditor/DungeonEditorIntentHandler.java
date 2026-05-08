@@ -289,16 +289,12 @@ final class DungeonEditorIntentHandler {
             DungeonEditorMainViewInputEvent.PointerPhase pointerPhase,
             int levelDelta
     ) {
-        if (levelDelta != 0 || pointerPhase == DungeonEditorMainViewInputEvent.PointerPhase.LEVEL_SCROLLED) {
+        DungeonEditorMainViewInputEvent.PointerPhase safePhase =
+                DungeonEditorMainViewInputEvent.PointerPhase.defaultPhase(pointerPhase);
+        if (levelDelta != 0 || safePhase.isLevelScrolled()) {
             return DungeonEditorPublishedEvent.MainViewInput.Source.LEVEL_SCROLLED;
         }
-        return switch (pointerPhase == null ? DungeonEditorMainViewInputEvent.PointerPhase.MOVE : pointerPhase) {
-            case PRESS -> DungeonEditorPublishedEvent.MainViewInput.Source.POINTER_PRESSED;
-            case DRAG -> DungeonEditorPublishedEvent.MainViewInput.Source.POINTER_DRAGGED;
-            case RELEASE -> DungeonEditorPublishedEvent.MainViewInput.Source.POINTER_RELEASED;
-            case MOVE -> DungeonEditorPublishedEvent.MainViewInput.Source.POINTER_MOVED;
-            case LEVEL_SCROLLED -> DungeonEditorPublishedEvent.MainViewInput.Source.LEVEL_SCROLLED;
-        };
+        return DungeonEditorPublishedEvent.MainViewInput.Source.valueOf(safePhase.publishedSourceName());
     }
 
     private static List<Integer> parseLevels(@Nullable String raw) {

@@ -9,10 +9,12 @@ It keeps the full query-role proof route in one package:
   `DataQueryRoleContract`,
   `DataQueryPublicSignatureBoundary`,
   `DataQueryGatewayCollaboratorBoundary`,
-  `DataQueryGatewayMutationBoundary`
+  `DataQueryGatewayMutationBoundary`, and
+  `DataQueryForeignPublishedReplyChannelRoundTrip`
 - `pmd/`
   `DataQueryNoSourceMechanicsRule`,
   `DataQueryReadOnlySourceShapeRule`,
+  `DataQueryForeignPublishedCarrierCandidateRule`,
   and the dedicated bundle-local PMD ruleset
 - `build-harness/`
   `DataQueryEnforcementDocumentationRules`
@@ -27,3 +29,4 @@ their neighboring owner bundles and documents.
 Unified root entrypoint:
 
 - `./gradlew checkDataQueryEnforcement --rerun-tasks --console=plain`
+- `./gradlew checkDataQueryPublishedCarrierCandidates --rerun-tasks --console=plain`

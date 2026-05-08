@@ -33,6 +33,10 @@ Unified focused bundle entrypoint:
   `./gradlew compileJava` and `./gradlew checkArchitecture`; the focused
   bundle proof route keeps the query-role checks colocated without pulling the
   broader architecture bundles.
+- `./gradlew checkDataQueryPublishedCarrierCandidates --rerun-tasks --console=plain`
+  runs the report-only foreign published carrier thinning scan for query
+  adapters without attaching that candidate surface to `checkArchitecture`,
+  `check`, `build`, or staged `production-handoff`.
 
 ## Invariant Catalog
 
@@ -63,7 +67,22 @@ Unified focused bundle entrypoint:
 | --- | --- | --- | --- | --- | --- |
 | `data-query-public-port-surface-only` | Enforced | every public concrete query adapter under `src/data/**/query/` | data-query bundle Error Prone `DataQueryRoleContract` | `./gradlew compileJava` and `./gradlew checkDataQueryEnforcement` | Public/protected query adapter methods, including inherited public/protected superclass methods, are limited to the matching own-feature read-only domain port contracts. |
 | `data-query-public-signature-boundary` | Enforced | every public/protected query adapter API | data-query bundle Error Prone `DataQueryPublicSignatureBoundary` | `./gradlew compileJava` and `./gradlew checkDataQueryEnforcement` | Public/protected query adapter signatures, including inherited public/protected superclass methods, do not leak source-local `model/`, `gateway/`, or `persistencecore` types. |
+| `data-query-no-foreign-published-reply-channel-roundtrip` | Enforced | every query-adapter method that reaches a foreign domain context | data-query bundle Error Prone `DataQueryForeignPublishedReplyChannelRoundTrip` | `./gradlew compileJava` and `./gradlew checkDataQueryEnforcement` | Query adapters do not call a foreign root `ApplicationService` command and then poll a foreign `published/*Model.current()` handle in the same method as a two-way reply channel. Cross-context communication stays one-way: command into the foreign context, feedback out only through durable published state changes. |
 | `data-query-gateway-collaborator-boundary` | Enforced | every query adapter dependency into its own feature gateway code | data-query bundle Error Prone `DataQueryGatewayCollaboratorBoundary` | `./gradlew compileJava` and `./gradlew checkDataQueryEnforcement` | Query adapters depend on own-feature source-adapter facade types ending in `Gateway`, not internal source-mechanics collaborators under `gateway/`. |
+
+## Candidate
+
+| Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
+| --- | --- | --- | --- | --- | --- |
+| `data-query-foreign-published-carrier-thinning-candidate` | Candidate | every query adapter that reads foreign passive published carriers or result-chained passive carriers | none | none | The query adapter may be rebuilding own-feature facts from only a narrow subset of a broader foreign published carrier. This is a report-only signal for the over-broad foreign published carrier / consumer-private transport seam anti-pattern. |
+
+`./gradlew checkDataQueryPublishedCarrierCandidates --console=plain` runs the
+report-only PMD candidate scan `DataQueryForeignPublishedCarrierCandidateRule`.
+Its findings name the foreign carrier, the accessors the consumer actually
+uses, the accessors it leaves unused, and the correct target pattern: publish
+the stable shared facts through a thinner foreign carrier or a narrower
+published-state slice instead of relaying a broader internal-shaped transport
+carrier into query-local facts.
 
 ## References
 

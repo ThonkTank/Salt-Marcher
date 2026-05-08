@@ -20,4 +20,5 @@
           class="saltmarcher.quality.pmd.data.DataQueryReadOnlySourceShapeRule">
         <priority>1</priority>
     </rule>
+
 </ruleset>

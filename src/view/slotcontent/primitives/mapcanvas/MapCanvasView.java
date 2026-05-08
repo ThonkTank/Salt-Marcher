@@ -108,26 +108,53 @@ public class MapCanvasView extends BorderPane {
     private record CanvasBounds(double width, double height) {
     }
 
+    private static final class SurfaceHost extends StackPane {
+
+        private SurfaceHost() {
+            getStyleClass().add(CONTENT_STYLE);
+            setAlignment(Pos.CENTER);
+        }
+
+        private void installContent(Pane canvasLayer, OverlayMessage overlayMessage) {
+            getChildren().setAll(canvasLayer, overlayMessage);
+        }
+    }
+
+    private static final class CanvasLayer extends Pane {
+
+        private CanvasLayer() {
+            setMinSize(0.0, 0.0);
+            setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
+            setFocusTraversable(true);
+        }
+
+        private void installCanvas(Canvas canvas) {
+            getChildren().setAll(canvas);
+        }
+    }
+
+    private static final class StyledCanvas extends Canvas {
+
+        private StyledCanvas() {
+            super(DEFAULT_WIDTH, DEFAULT_HEIGHT);
+            getStyleClass().add(CANVAS_STYLE);
+        }
+    }
+
     private final class SurfaceNodes {
 
-        private final StackPane host = new StackPane();
-        private final Pane canvasLayer = new Pane();
-        private final Canvas canvas = new Canvas(DEFAULT_WIDTH, DEFAULT_HEIGHT);
+        private final SurfaceHost host = new SurfaceHost();
+        private final CanvasLayer canvasLayer = new CanvasLayer();
+        private final StyledCanvas canvas = new StyledCanvas();
         private final OverlayMessage overlayMessage = new OverlayMessage();
 
         private SurfaceNodes(Runnable redrawAction) {
-            host.getStyleClass().add(CONTENT_STYLE);
-            host.setAlignment(Pos.CENTER);
-            canvasLayer.setMinSize(0.0, 0.0);
-            canvasLayer.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
-            canvasLayer.setFocusTraversable(true);
-            canvas.getStyleClass().add(CANVAS_STYLE);
             canvas.widthProperty().bind(canvasLayer.widthProperty());
             canvas.heightProperty().bind(canvasLayer.heightProperty());
             canvas.widthProperty().addListener((ignored, before, after) -> redrawAction.run());
             canvas.heightProperty().addListener((ignored, before, after) -> redrawAction.run());
-            canvasLayer.getChildren().setAll(canvas);
-            host.getChildren().setAll(canvasLayer, overlayMessage);
+            canvasLayer.installCanvas(canvas);
+            host.installContent(canvasLayer, overlayMessage);
             StackPane.setAlignment(canvasLayer, Pos.TOP_LEFT);
             StackPane.setAlignment(overlayMessage, Pos.CENTER);
         }

@@ -31,6 +31,10 @@ final class DataArchitectureSupport {
 
     static final Pattern GATEWAY_PACKAGE = Pattern.compile("^src\\.data\\.([^.]+)\\.gateway\\.(local|remote)(\\..*)?$");
     static final Pattern DATA_ROOT_PACKAGE = Pattern.compile("^src\\.data\\.([^.]+)$");
+    static final Pattern DOMAIN_APPLICATION_SERVICE_TYPE =
+            Pattern.compile("^src\\.domain\\.([^.]+)\\.[A-Za-z0-9_]+ApplicationService$");
+    static final Pattern DOMAIN_PUBLISHED_MODEL_TYPE =
+            Pattern.compile("^src\\.domain\\.([^.]+)\\.published\\.[A-Za-z0-9_]+Model$");
     static final Pattern MODEL_PACKAGE = Pattern.compile("^src\\.data\\.([^.]+)\\.model(\\..*)?$");
     static final Pattern REPOSITORY_PACKAGE = Pattern.compile("^src\\.data\\.([^.]+)\\.repository(\\..*)?$");
     static final Pattern QUERY_PACKAGE = Pattern.compile("^src\\.data\\.([^.]+)\\.query(\\..*)?$");

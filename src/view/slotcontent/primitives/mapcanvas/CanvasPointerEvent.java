@@ -17,6 +17,10 @@ public record CanvasPointerEvent(
         canvasPoint = canvasPoint == null ? new MapCanvasPoint(0.0, 0.0) : canvasPoint;
     }
 
+    static CanvasPrimitive defaultPrimitive(@Nullable CanvasPrimitive primitive) {
+        return primitive == null ? CanvasPrimitive.EMPTY : primitive;
+    }
+
     public record MapCanvasPoint(double x, double y) {
     }
 
@@ -30,7 +34,7 @@ public record CanvasPointerEvent(
 
         public CanvasHit {
             hitRef = hitRef == null ? "" : hitRef;
-            primitive = primitive == null ? CanvasPrimitive.EMPTY : primitive;
+            primitive = defaultPrimitive(primitive);
         }
     }
 

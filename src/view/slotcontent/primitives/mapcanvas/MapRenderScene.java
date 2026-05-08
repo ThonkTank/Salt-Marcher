@@ -192,7 +192,7 @@ public record MapRenderScene(
 
         public PolygonHitArea {
             hitRef = hitRef == null ? "" : hitRef;
-            primitive = primitive == null ? CanvasPointerEvent.CanvasPrimitive.EMPTY : primitive;
+            primitive = defaultPrimitive(primitive);
             selectionRef = selectionRef == null ? "" : selectionRef;
             polygon = polygon == null ? List.of() : List.copyOf(polygon);
         }
@@ -207,7 +207,7 @@ public record MapRenderScene(
 
         public PolylineHitArea {
             hitRef = hitRef == null ? "" : hitRef;
-            primitive = primitive == null ? CanvasPointerEvent.CanvasPrimitive.EMPTY : primitive;
+            primitive = defaultPrimitive(primitive);
             selectionRef = selectionRef == null ? "" : selectionRef;
             polyline = polyline == null ? List.of() : List.copyOf(polyline);
         }
@@ -230,5 +230,11 @@ public record MapRenderScene(
             style = style == null ? new PaintStyle(null, null, 0.0, 1.0, false) : style;
             textColor = textColor == null ? Color.WHITE : textColor;
         }
+    }
+
+    private static CanvasPointerEvent.CanvasPrimitive defaultPrimitive(
+            CanvasPointerEvent.CanvasPrimitive primitive
+    ) {
+        return CanvasPointerEvent.defaultPrimitive(primitive);
     }
 }

@@ -117,7 +117,8 @@ one domain context.
 - same-context `*Model` handles expose outward readback through `current()`
   and `subscribe(...)` only and may carry the status/error/success payloads
   consumers need for feedback; they are the upward publication seam and not a
-  callback wrapper around `*ApplicationService`
+  callback wrapper around `*ApplicationService`; they must not become
+  consumer-private answer channels for imperative two-way roundtrips
 - forbidden: callable services, facades, repositories, ports, gateways,
   factories, locators, policy helpers, or invariant-owning objects
 - public non-`*Model` carriers remain passive domain facts rather than

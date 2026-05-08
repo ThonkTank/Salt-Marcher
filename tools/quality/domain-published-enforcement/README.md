@@ -22,7 +22,9 @@ Root `ApplicationService` public-boundary constraints, `application/*UseCase`
 orchestration, outbound `port/` rules, and generic domain-layer communication
 boundaries stay in their neighboring owner bundles and documents. Within this
 bundle, direct read-side `*Model` publication handles keep their public API to
-`current()` and `subscribe(...)` only.
+`current()` and `subscribe(...)` only. Those handles remain one-way published
+state seams, not imperative answer channels for foreign or same-context
+query/response roundtrips.
 
 Unified root entrypoint:
 

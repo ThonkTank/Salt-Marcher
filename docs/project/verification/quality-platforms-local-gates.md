@@ -511,7 +511,16 @@ Architecture-focused entrypoints:
 - `./gradlew checkDataQueryEnforcement --console=plain`
   Aggregates the focused Data Query bundle through `compileJava`,
   `pmdDataQueryEnforcement`, and
-  `:build-harness:dataQueryEnforcementDocumentationCheck`.
+  `:build-harness:dataQueryEnforcementDocumentationCheck`. The compile-side
+  blocker now includes `DataQueryForeignPublishedReplyChannelRoundTrip`, which
+  reports the foreign published reply-channel roundtrip anti-pattern together
+  with the correct one-way published-state target pattern.
+- `./gradlew checkDataQueryPublishedCarrierCandidates --console=plain`
+  Runs the report-only Data Query PMD scan for over-broad foreign published
+  carriers and consumer-private transport seams. It names the foreign carrier,
+  the accessors the query adapter actually uses, the accessors it leaves
+  unused, and stays outside `checkArchitecture`, `check`, `build`, and staged
+  `production-handoff`.
 - `./gradlew checkDataPersistencecoreEnforcement --console=plain`
   Aggregates the focused Data Persistencecore bundle through
   `dataPersistencecoreArchitectureTest` and

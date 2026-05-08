@@ -12,7 +12,7 @@ final class DungeonEditorMainView extends DungeonMapView {
         onCanvasPointerEvent(event -> viewInputEventHandler.accept(pointerEvent(event)));
         onLevelScrolled(levelDelta -> viewInputEventHandler.accept(
                 new DungeonEditorMainViewInputEvent(
-                        DungeonEditorMainViewInputEvent.PointerPhase.LEVEL_SCROLLED,
+                        DungeonEditorMainViewInputEvent.PointerPhase.levelScrolledPhase(),
                         0.0,
                         0.0,
                         false,
@@ -41,11 +41,6 @@ final class DungeonEditorMainView extends DungeonMapView {
     }
 
     private static DungeonEditorMainViewInputEvent.PointerPhase toPointerPhase(CanvasPointerEvent.PointerPhase phase) {
-        return switch (phase == null ? CanvasPointerEvent.PointerPhase.MOVE : phase) {
-            case PRESS -> DungeonEditorMainViewInputEvent.PointerPhase.PRESS;
-            case DRAG -> DungeonEditorMainViewInputEvent.PointerPhase.DRAG;
-            case RELEASE -> DungeonEditorMainViewInputEvent.PointerPhase.RELEASE;
-            case MOVE -> DungeonEditorMainViewInputEvent.PointerPhase.MOVE;
-        };
+        return DungeonEditorMainViewInputEvent.PointerPhase.fromCanvasPhaseName(phase == null ? null : phase.name());
     }
 }
