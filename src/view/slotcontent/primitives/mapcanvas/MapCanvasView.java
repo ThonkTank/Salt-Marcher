@@ -2,7 +2,6 @@ package src.view.slotcontent.primitives.mapcanvas;
 
 import java.util.List;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.geometry.Insets;
@@ -52,15 +51,10 @@ public class MapCanvasView extends BorderPane {
             new SimpleObjectProperty<>(MapRenderScene.empty(DEFAULT_TITLE));
     private final SurfaceNodes surfaceNodes = new SurfaceNodes(this::redraw);
     private final Viewport viewport = new Viewport();
-    private final SceneHitTester hitTester = new SceneHitTester();
     private final MapSceneRenderer renderer = new MapSceneRenderer();
-    private final OverlayPresenter overlayPresenter = new OverlayPresenter();
     private final CanvasInteractionController interactionController = new CanvasInteractionController();
     private Runnable viewportChangedHandler = () -> {};
-    private Function<CanvasPointerEvent, Boolean> primaryPressedHandler = ignored -> false;
-    private Consumer<CanvasPointerEvent> primaryDraggedHandler = ignored -> {};
-    private Consumer<CanvasPointerEvent> primaryReleasedHandler = ignored -> {};
-    private Consumer<CanvasPointerEvent> pointerMovedHandler = ignored -> {};
+    private Consumer<CanvasPointerEvent> canvasPointerEventHandler = ignored -> {};
     private Consumer<Integer> levelScrolledHandler = ignored -> {};
 
     public MapCanvasView() {
@@ -84,20 +78,8 @@ public class MapCanvasView extends BorderPane {
         viewportChangedHandler = action == null ? () -> {} : action;
     }
 
-    public final void onPrimaryPressed(Function<CanvasPointerEvent, Boolean> action) {
-        primaryPressedHandler = action == null ? ignored -> false : action;
-    }
-
-    public final void onPrimaryDragged(Consumer<CanvasPointerEvent> action) {
-        primaryDraggedHandler = action == null ? ignored -> {} : action;
-    }
-
-    public final void onPrimaryReleased(Consumer<CanvasPointerEvent> action) {
-        primaryReleasedHandler = action == null ? ignored -> {} : action;
-    }
-
-    public final void onPointerMoved(Consumer<CanvasPointerEvent> action) {
-        pointerMovedHandler = action == null ? ignored -> {} : action;
+    public final void onCanvasPointerEvent(Consumer<CanvasPointerEvent> action) {
+        canvasPointerEventHandler = action == null ? ignored -> {} : action;
     }
 
     public final void onLevelScrolled(Consumer<Integer> action) {
@@ -120,7 +102,7 @@ public class MapCanvasView extends BorderPane {
         CanvasBounds bounds = surfaceNodes.renderBounds();
         GraphicsContext gc = surfaceNodes.graphicsContext();
         renderer.render(gc, renderScene, viewport, bounds);
-        overlayPresenter.show(surfaceNodes.overlayMessage(), renderScene);
+        OverlayPresenter.show(surfaceNodes.overlayMessage(), renderScene);
     }
 
     private record CanvasBounds(double width, double height) {
@@ -222,14 +204,12 @@ public class MapCanvasView extends BorderPane {
                     event.consume();
                 }
                 case PRIMARY -> {
-                    primaryInteractionActive = Boolean.TRUE.equals(primaryPressedHandler.apply(
-                            pointerEvent(event, CanvasPointerEvent.PointerPhase.PRESS, true, false)));
+                    primaryInteractionActive = true;
+                    emitPointerEvent(event, CanvasPointerEvent.PointerPhase.PRESS, true, false);
                     event.consume();
                 }
                 case SECONDARY -> {
-                    boolean secondaryHandled = Boolean.TRUE.equals(primaryPressedHandler.apply(
-                            pointerEvent(event, CanvasPointerEvent.PointerPhase.PRESS, false, true)));
-                    primaryInteractionActive = primaryInteractionActive && !secondaryHandled;
+                    emitPointerEvent(event, CanvasPointerEvent.PointerPhase.PRESS, false, true);
                     event.consume();
                 }
                 default -> {
@@ -239,7 +219,11 @@ public class MapCanvasView extends BorderPane {
 
         private void handleMouseDragged(MouseEvent event) {
             if (primaryInteractionActive) {
-                primaryDraggedHandler.accept(pointerEvent(event, CanvasPointerEvent.PointerPhase.DRAG, true, false));
+                emitPointerEvent(
+                        event,
+                        CanvasPointerEvent.PointerPhase.DRAG,
+                        event.isPrimaryButtonDown(),
+                        event.isSecondaryButtonDown());
                 event.consume();
                 return;
             }
@@ -255,7 +239,7 @@ public class MapCanvasView extends BorderPane {
 
         private void handleMouseMoved(MouseEvent event) {
             if (!middleDragActive && !primaryInteractionActive) {
-                pointerMovedHandler.accept(pointerEvent(event, CanvasPointerEvent.PointerPhase.MOVE, false, false));
+                emitPointerEvent(event, CanvasPointerEvent.PointerPhase.MOVE, false, false);
             }
         }
 
@@ -268,11 +252,7 @@ public class MapCanvasView extends BorderPane {
             }
             if (button == MouseButton.PRIMARY) {
                 if (primaryInteractionActive) {
-                    primaryReleasedHandler.accept(pointerEvent(
-                            event,
-                            CanvasPointerEvent.PointerPhase.RELEASE,
-                            true,
-                            false));
+                    emitPointerEvent(event, CanvasPointerEvent.PointerPhase.RELEASE, true, false);
                 }
                 primaryInteractionActive = false;
                 event.consume();
@@ -296,6 +276,15 @@ public class MapCanvasView extends BorderPane {
             event.consume();
         }
 
+        private void emitPointerEvent(
+                MouseEvent event,
+                CanvasPointerEvent.PointerPhase phase,
+                boolean primaryButtonDown,
+                boolean secondaryButtonDown
+        ) {
+            canvasPointerEventHandler.accept(pointerEvent(event, phase, primaryButtonDown, secondaryButtonDown));
+        }
+
         private CanvasPointerEvent pointerEvent(
                 MouseEvent event,
                 CanvasPointerEvent.PointerPhase phase,
@@ -313,7 +302,7 @@ public class MapCanvasView extends BorderPane {
                             event.isShiftDown(),
                             event.isAltDown()),
                     new MapCanvasPoint(sceneX, sceneY),
-                    hitTester.hit(renderScene, sceneX, sceneY, viewport.gridSize()));
+                    SceneHitTester.hit(renderScene, sceneX, sceneY, viewport.gridSize()));
         }
     }
 
@@ -666,179 +655,41 @@ public class MapCanvasView extends BorderPane {
 
     private static final class SceneHitTester {
 
-        private CanvasPointerEvent.@Nullable CanvasHit hit(
+        private static CanvasPointerEvent.@Nullable CanvasHit hit(
                 MapRenderScene renderScene,
                 double sceneX,
                 double sceneY,
                 double gridSize
         ) {
             double tolerance = Math.max(HIT_TOLERANCE_PIXELS / gridSize, MIN_HIT_TOLERANCE);
-            CanvasPointerEvent.CanvasHit actorHit = actorHit(renderScene.actors(), sceneX, sceneY);
-            if (actorHit != null) {
-                return actorHit;
-            }
-            CanvasPointerEvent.CanvasHit glyphHit = glyphHit(renderScene.glyphs(), sceneX, sceneY);
-            if (glyphHit != null) {
-                return glyphHit;
-            }
-            CanvasPointerEvent.CanvasHit textHit = textHit(renderScene.texts(), sceneX, sceneY);
-            if (textHit != null) {
-                return textHit;
-            }
-            CanvasPointerEvent.CanvasHit boundaryHit = boundaryHit(renderScene.boundaries(), sceneX, sceneY, tolerance);
-            if (boundaryHit != null) {
-                return boundaryHit;
-            }
-            CanvasPointerEvent.CanvasHit relationHit = relationHit(renderScene.relations(), sceneX, sceneY, tolerance);
-            if (relationHit != null) {
-                return relationHit;
-            }
-            return surfaceHit(renderScene.surfaces(), sceneX, sceneY);
-        }
-
-        private CanvasPointerEvent.@Nullable CanvasHit actorHit(
-                List<MapCanvasPolygonPrimitive> polygons,
-                double sceneX,
-                double sceneY
-        ) {
-            return polygonHit(
-                    polygons,
-                    sceneX,
-                    sceneY,
-                    MapCanvasPolygonPrimitive::hitRef,
-                    MapCanvasPolygonPrimitive::polygon,
-                    MapCanvasPolygonPrimitive::selectionRef,
-                    CanvasPointerEvent.CanvasPrimitive.ACTOR);
-        }
-
-        private CanvasPointerEvent.@Nullable CanvasHit glyphHit(
-                List<MapRenderScene.GlyphPrimitive> polygons,
-                double sceneX,
-                double sceneY
-        ) {
-            return polygonHit(
-                    polygons,
-                    sceneX,
-                    sceneY,
-                    MapRenderScene.GlyphPrimitive::hitRef,
-                    MapRenderScene.GlyphPrimitive::polygon,
-                    MapRenderScene.GlyphPrimitive::selectionRef,
-                    CanvasPointerEvent.CanvasPrimitive.GLYPH);
-        }
-
-        private CanvasPointerEvent.@Nullable CanvasHit surfaceHit(
-                List<MapCanvasPolygonPrimitive> polygons,
-                double sceneX,
-                double sceneY
-        ) {
-            return polygonHit(
-                    polygons,
-                    sceneX,
-                    sceneY,
-                    MapCanvasPolygonPrimitive::hitRef,
-                    MapCanvasPolygonPrimitive::polygon,
-                    MapCanvasPolygonPrimitive::selectionRef,
-                    CanvasPointerEvent.CanvasPrimitive.SURFACE);
-        }
-
-        private <T> CanvasPointerEvent.@Nullable CanvasHit polygonHit(
-                List<T> polygons,
-                double sceneX,
-                double sceneY,
-                Function<T, String> hitRefReader,
-                Function<T, List<MapCanvasPoint>> polygonReader,
-                Function<T, String> selectionRefReader,
-                CanvasPointerEvent.CanvasPrimitive primitive
-        ) {
-            for (int index = polygons.size() - 1; index >= 0; index--) {
-                T polygon = polygons.get(index);
-                String hitRef = hitRefReader.apply(polygon);
-                List<MapCanvasPoint> points = polygonReader.apply(polygon);
-                if (hitRef.isBlank() || points.isEmpty()) {
-                    continue;
-                }
-                if (Geometry.pointInPolygon(sceneX, sceneY, points)) {
+            for (MapRenderScene.HitArea hitArea : renderScene.hitAreas()) {
+                if (matches(hitArea, sceneX, sceneY, tolerance)) {
                     return new CanvasPointerEvent.CanvasHit(
-                            hitRef,
-                            primitive,
-                            selectionRefReader.apply(polygon));
+                            hitArea.hitRef(),
+                            hitArea.primitive(),
+                            hitArea.selectionRef().isBlank() ? null : hitArea.selectionRef());
                 }
             }
             return null;
         }
 
-        private CanvasPointerEvent.@Nullable CanvasHit boundaryHit(
-                List<MapRenderScene.BoundaryPrimitive> lines,
+        private static boolean matches(
+                MapRenderScene.HitArea hitArea,
                 double sceneX,
                 double sceneY,
                 double tolerance
         ) {
-            for (int index = lines.size() - 1; index >= 0; index--) {
-                MapRenderScene.BoundaryPrimitive line = lines.get(index);
-                String hitRef = line.hitRef();
-                List<MapCanvasPoint> polyline = line.polyline();
-                if (hitRef.isBlank() || polyline.size() < MIN_POLYLINE_POINTS) {
-                    continue;
-                }
-                if (Geometry.distanceToPolyline(sceneX, sceneY, polyline) <= tolerance) {
-                    return new CanvasPointerEvent.CanvasHit(
-                            hitRef,
-                            CanvasPointerEvent.CanvasPrimitive.BOUNDARY,
-                            line.selectionRef());
-                }
+            if (hitArea.hitRef().isBlank()) {
+                return false;
             }
-            return null;
-        }
-
-        private CanvasPointerEvent.@Nullable CanvasHit relationHit(
-                List<MapRenderScene.RelationPrimitive> lines,
-                double sceneX,
-                double sceneY,
-                double tolerance
-        ) {
-            for (int index = lines.size() - 1; index >= 0; index--) {
-                MapRenderScene.RelationPrimitive line = lines.get(index);
-                String hitRef = line.hitRef();
-                List<MapCanvasPoint> polyline = line.polyline();
-                if (hitRef.isBlank() || polyline.size() < MIN_POLYLINE_POINTS) {
-                    continue;
-                }
-                if (Geometry.distanceToPolyline(sceneX, sceneY, polyline) <= tolerance) {
-                    return new CanvasPointerEvent.CanvasHit(
-                            hitRef,
-                            CanvasPointerEvent.CanvasPrimitive.RELATION,
-                            null);
-                }
+            if (hitArea instanceof MapRenderScene.PolygonHitArea polygonHitArea) {
+                return Geometry.pointInPolygon(sceneX, sceneY, polygonHitArea.polygon());
             }
-            return null;
-        }
-
-        private CanvasPointerEvent.@Nullable CanvasHit textHit(
-                List<MapRenderScene.TextPrimitive> texts,
-                double sceneX,
-                double sceneY
-        ) {
-            for (int index = texts.size() - 1; index >= 0; index--) {
-                MapRenderScene.TextPrimitive text = texts.get(index);
-                String hitRef = text.hitRef();
-                String label = text.text();
-                if (hitRef.isBlank() || label.isBlank()) {
-                    continue;
-                }
-                double halfWidth = text.width() / 2.0;
-                double halfHeight = text.height() / 2.0;
-                boolean insideBounds = sceneX >= text.centerX() - halfWidth
-                        && sceneX <= text.centerX() + halfWidth
-                        && sceneY >= text.centerY() - halfHeight
-                        && sceneY <= text.centerY() + halfHeight;
-                if (insideBounds) {
-                    return new CanvasPointerEvent.CanvasHit(
-                            hitRef,
-                            CanvasPointerEvent.CanvasPrimitive.TEXT,
-                            text.selectionRef());
-                }
+            if (hitArea instanceof MapRenderScene.PolylineHitArea polylineHitArea) {
+                return polylineHitArea.polyline().size() >= MIN_POLYLINE_POINTS
+                        && Geometry.distanceToPolyline(sceneX, sceneY, polylineHitArea.polyline()) <= tolerance;
             }
-            return null;
+            return false;
         }
     }
 
@@ -916,7 +767,7 @@ public class MapCanvasView extends BorderPane {
 
     private static final class OverlayPresenter {
 
-        private void show(OverlayMessage overlayMessage, MapRenderScene renderScene) {
+        private static void show(OverlayMessage overlayMessage, MapRenderScene renderScene) {
             overlayMessage.showState(renderScene.sceneLoaded());
             String message = renderScene.overlayMessage();
             boolean visible = !message.isBlank();

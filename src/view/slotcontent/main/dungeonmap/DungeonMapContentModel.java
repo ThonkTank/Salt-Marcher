@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.scene.paint.Color;
@@ -82,7 +83,8 @@ public final class DungeonMapContentModel {
             List<MapRenderScene.GlyphPrimitive> glyphs,
             List<MapRenderScene.TextPrimitive> texts,
             List<MapRenderScene.RelationPrimitive> relations,
-            List<MapCanvasPolygonPrimitive> actors
+            List<MapCanvasPolygonPrimitive> actors,
+            List<MapRenderScene.HitArea> hitAreas
     ) {
     }
 
@@ -113,6 +115,7 @@ public final class DungeonMapContentModel {
                     buckets.texts(),
                     buckets.relations(),
                     buckets.actors(),
+                    buckets.hitAreas(),
                     List.of());
         }
     }
@@ -130,7 +133,14 @@ public final class DungeonMapContentModel {
             addMarkers(displayModel, glyphs);
             addLabels(displayModel, texts);
             addPartyToken(displayModel, actors);
-            return new SceneBuckets(surfaces, boundaries, glyphs, texts, List.of(), actors);
+            return new SceneBuckets(
+                    surfaces,
+                    boundaries,
+                    glyphs,
+                    texts,
+                    List.of(),
+                    actors,
+                    HitAreaProjector.gridHitAreas(actors, glyphs, texts, boundaries, surfaces));
         }
 
         private void addCells(
@@ -241,7 +251,14 @@ public final class DungeonMapContentModel {
             Map<Long, DungeonMapRenderState.GraphNode> nodesById = indexNodes(displayModel.graphNodes());
             addLinks(displayModel, relations, nodesById);
             addNodes(displayModel, surfaces, texts);
-            return new SceneBuckets(surfaces, List.of(), List.of(), texts, relations, List.of());
+            return new SceneBuckets(
+                    surfaces,
+                    List.of(),
+                    List.of(),
+                    texts,
+                    relations,
+                    List.of(),
+                    HitAreaProjector.graphHitAreas(texts, relations, surfaces));
         }
 
         private Map<Long, DungeonMapRenderState.GraphNode> indexNodes(List<DungeonMapRenderState.GraphNode> graphNodes) {
@@ -306,6 +323,104 @@ public final class DungeonMapContentModel {
                         SceneGeometry.LABEL_HEIGHT_SCENE,
                         new MapRenderScene.PaintStyle(null, null, 0.0, 1.0, false),
                         ScenePalette.LABEL_TEXT));
+            }
+        }
+    }
+
+    private static final class HitAreaProjector {
+
+        private static List<MapRenderScene.HitArea> gridHitAreas(
+                List<MapCanvasPolygonPrimitive> actors,
+                List<MapRenderScene.GlyphPrimitive> glyphs,
+                List<MapRenderScene.TextPrimitive> texts,
+                List<MapRenderScene.BoundaryPrimitive> boundaries,
+                List<MapCanvasPolygonPrimitive> surfaces
+        ) {
+            List<MapRenderScene.HitArea> hitAreas = new ArrayList<>();
+            addPolygonHits(hitAreas, actors, MapCanvasPolygonPrimitive::hitRef, MapCanvasPolygonPrimitive::selectionRef,
+                    MapCanvasPolygonPrimitive::polygon, CanvasPointerEvent.CanvasPrimitive.ACTOR);
+            addPolygonHits(hitAreas, glyphs, MapRenderScene.GlyphPrimitive::hitRef, MapRenderScene.GlyphPrimitive::selectionRef,
+                    MapRenderScene.GlyphPrimitive::polygon, CanvasPointerEvent.CanvasPrimitive.GLYPH);
+            addTextHits(hitAreas, texts);
+            addPolylineHits(hitAreas, boundaries, MapRenderScene.BoundaryPrimitive::hitRef,
+                    MapRenderScene.BoundaryPrimitive::selectionRef, MapRenderScene.BoundaryPrimitive::polyline,
+                    CanvasPointerEvent.CanvasPrimitive.BOUNDARY);
+            addPolygonHits(hitAreas, surfaces, MapCanvasPolygonPrimitive::hitRef, MapCanvasPolygonPrimitive::selectionRef,
+                    MapCanvasPolygonPrimitive::polygon, CanvasPointerEvent.CanvasPrimitive.SURFACE);
+            return List.copyOf(hitAreas);
+        }
+
+        private static List<MapRenderScene.HitArea> graphHitAreas(
+                List<MapRenderScene.TextPrimitive> texts,
+                List<MapRenderScene.RelationPrimitive> relations,
+                List<MapCanvasPolygonPrimitive> surfaces
+        ) {
+            List<MapRenderScene.HitArea> hitAreas = new ArrayList<>();
+            addTextHits(hitAreas, texts);
+            addPolylineHits(hitAreas, relations, MapRenderScene.RelationPrimitive::hitRef, ignored -> "",
+                    MapRenderScene.RelationPrimitive::polyline, CanvasPointerEvent.CanvasPrimitive.RELATION);
+            addPolygonHits(hitAreas, surfaces, MapCanvasPolygonPrimitive::hitRef, MapCanvasPolygonPrimitive::selectionRef,
+                    MapCanvasPolygonPrimitive::polygon, CanvasPointerEvent.CanvasPrimitive.SURFACE);
+            return List.copyOf(hitAreas);
+        }
+
+        private static <T> void addPolygonHits(
+                List<MapRenderScene.HitArea> target,
+                List<T> source,
+                Function<T, String> hitRefReader,
+                Function<T, String> selectionRefReader,
+                Function<T, List<MapCanvasPoint>> polygonReader,
+                CanvasPointerEvent.CanvasPrimitive primitive
+        ) {
+            for (T item : source) {
+                String hitRef = hitRefReader.apply(item);
+                List<MapCanvasPoint> polygon = polygonReader.apply(item);
+                if (hitRef.isBlank() || polygon.isEmpty()) {
+                    continue;
+                }
+                target.add(new MapRenderScene.PolygonHitArea(
+                        hitRef,
+                        primitive,
+                        selectionRefReader.apply(item),
+                        polygon));
+            }
+        }
+
+        private static <T> void addPolylineHits(
+                List<MapRenderScene.HitArea> target,
+                List<T> source,
+                Function<T, String> hitRefReader,
+                Function<T, String> selectionRefReader,
+                Function<T, List<MapCanvasPoint>> polylineReader,
+                CanvasPointerEvent.CanvasPrimitive primitive
+        ) {
+            for (T item : source) {
+                String hitRef = hitRefReader.apply(item);
+                List<MapCanvasPoint> polyline = polylineReader.apply(item);
+                if (hitRef.isBlank() || polyline.isEmpty()) {
+                    continue;
+                }
+                target.add(new MapRenderScene.PolylineHitArea(
+                        hitRef,
+                        primitive,
+                        selectionRefReader.apply(item),
+                        polyline));
+            }
+        }
+
+        private static void addTextHits(
+                List<MapRenderScene.HitArea> target,
+                List<MapRenderScene.TextPrimitive> texts
+        ) {
+            for (MapRenderScene.TextPrimitive text : texts) {
+                if (text.hitRef().isBlank() || text.text().isBlank()) {
+                    continue;
+                }
+                target.add(new MapRenderScene.PolygonHitArea(
+                        text.hitRef(),
+                        CanvasPointerEvent.CanvasPrimitive.TEXT,
+                        text.selectionRef(),
+                        SceneGeometry.centeredRect(text.centerX(), text.centerY(), text.width(), text.height())));
             }
         }
     }
@@ -415,6 +530,15 @@ public final class DungeonMapContentModel {
                     new MapCanvasPoint(centerQ + halfWidth, centerR - halfHeight),
                     new MapCanvasPoint(centerQ + halfWidth, centerR + halfHeight),
                     new MapCanvasPoint(centerQ - halfWidth, centerR + halfHeight));
+        }
+
+        private static List<MapCanvasPoint> centeredRect(
+                double centerQ,
+                double centerR,
+                double width,
+                double height
+        ) {
+            return roundedRect(centerQ, centerR, width, height);
         }
 
         private static List<MapCanvasPoint> markerShape(DungeonMapRenderState.Marker marker) {

@@ -19,6 +19,7 @@ public record MapRenderScene(
         List<TextPrimitive> texts,
         List<RelationPrimitive> relations,
         List<MapCanvasPolygonPrimitive> actors,
+        List<HitArea> hitAreas,
         List<OverlayPrimitive> overlays
 ) {
 
@@ -36,6 +37,7 @@ public record MapRenderScene(
         texts = texts == null ? List.of() : List.copyOf(texts);
         relations = relations == null ? List.of() : List.copyOf(relations);
         actors = actors == null ? List.of() : List.copyOf(actors);
+        hitAreas = hitAreas == null ? List.of() : List.copyOf(hitAreas);
         overlays = overlays == null ? List.of() : List.copyOf(overlays);
     }
 
@@ -49,6 +51,7 @@ public record MapRenderScene(
                 false,
                 "No map scene loaded.",
                 ViewMode.GRID,
+                List.of(),
                 List.of(),
                 List.of(),
                 List.of(),
@@ -168,6 +171,45 @@ public record MapRenderScene(
             hitRef = hitRef == null ? "" : hitRef;
             polyline = polyline == null ? List.of() : List.copyOf(polyline);
             style = style == null ? new PaintStyle(null, null, 0.0, 1.0, false) : style;
+        }
+    }
+
+    public sealed interface HitArea permits PolygonHitArea, PolylineHitArea {
+
+        String hitRef();
+
+        CanvasPointerEvent.CanvasPrimitive primitive();
+
+        String selectionRef();
+    }
+
+    public record PolygonHitArea(
+            String hitRef,
+            CanvasPointerEvent.CanvasPrimitive primitive,
+            String selectionRef,
+            List<CanvasPointerEvent.MapCanvasPoint> polygon
+    ) implements HitArea {
+
+        public PolygonHitArea {
+            hitRef = hitRef == null ? "" : hitRef;
+            primitive = primitive == null ? CanvasPointerEvent.CanvasPrimitive.EMPTY : primitive;
+            selectionRef = selectionRef == null ? "" : selectionRef;
+            polygon = polygon == null ? List.of() : List.copyOf(polygon);
+        }
+    }
+
+    public record PolylineHitArea(
+            String hitRef,
+            CanvasPointerEvent.CanvasPrimitive primitive,
+            String selectionRef,
+            List<CanvasPointerEvent.MapCanvasPoint> polyline
+    ) implements HitArea {
+
+        public PolylineHitArea {
+            hitRef = hitRef == null ? "" : hitRef;
+            primitive = primitive == null ? CanvasPointerEvent.CanvasPrimitive.EMPTY : primitive;
+            selectionRef = selectionRef == null ? "" : selectionRef;
+            polyline = polyline == null ? List.of() : List.copyOf(polyline);
         }
     }
 
