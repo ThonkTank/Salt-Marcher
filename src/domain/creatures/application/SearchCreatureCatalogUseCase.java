@@ -3,6 +3,7 @@ package src.domain.creatures.application;
 import src.domain.creatures.catalog.port.CreatureCatalogLookup;
 
 import java.util.Objects;
+import src.domain.creatures.published.CreatureCatalogPage;
 
 public final class SearchCreatureCatalogUseCase {
 
@@ -12,7 +13,7 @@ public final class SearchCreatureCatalogUseCase {
         this.lookup = Objects.requireNonNull(lookup, "lookup");
     }
 
-    public CreatureCatalogLookup.CatalogPage execute(CreatureCatalogLookup.CatalogSearchSpec query) {
+    public CreatureCatalogPage execute(CreatureCatalogLookup.CatalogSearchSpec query) {
         return lookup.searchCatalog(Objects.requireNonNull(query, "query"));
     }
 }

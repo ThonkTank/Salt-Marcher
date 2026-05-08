@@ -5,13 +5,14 @@ import org.jspecify.annotations.Nullable;
 import src.data.creatures.model.CreatureActionRecord;
 import src.data.creatures.model.CreatureDetailRecord;
 import src.domain.creatures.catalog.port.CreatureCatalogLookup;
+import src.domain.creatures.published.CreatureActionDetail;
 
 final class CreatureDetailDomainAssembler {
 
     private final CreatureDetailIdentityFields identity;
     private final CreatureDetailVitalsFields vitals;
     private final CreatureDetailTraitFields traits;
-    private final List<CreatureCatalogLookup.ActionProfile> actions;
+    private final List<CreatureActionDetail> actions;
 
     CreatureDetailDomainAssembler(CreatureDetailRecord record) {
         identity = new CreatureDetailIdentityFields(record.identity());
@@ -68,7 +69,7 @@ final class CreatureDetailDomainAssembler {
                 actions);
     }
 
-    private static List<CreatureCatalogLookup.ActionProfile> mapActions(List<CreatureActionRecord> records) {
+    private static List<CreatureActionDetail> mapActions(List<CreatureActionRecord> records) {
         return records.stream().map(CreatureActionMapper::toDomain).toList();
     }
 

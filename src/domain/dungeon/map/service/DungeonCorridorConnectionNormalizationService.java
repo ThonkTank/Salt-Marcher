@@ -85,7 +85,7 @@ public final class DungeonCorridorConnectionNormalizationService {
                                     binding.absoluteCell(),
                                     cellsByCorridor.getOrDefault(binding.hostCorridorId(), List.of(binding.absoluteCell())))))
                     .toList();
-            result.add(corridor.withBindings(corridor.bindings().replaceAnchorBindings(snapped)));
+            result.add(DungeonCorridorOps.withBindings(corridor, corridor.bindings().replaceAnchorBindings(snapped)));
         }
         return List.copyOf(result);
     }

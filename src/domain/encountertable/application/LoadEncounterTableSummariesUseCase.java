@@ -3,7 +3,7 @@ package src.domain.encountertable.application;
 import java.util.List;
 import java.util.Objects;
 import src.domain.encountertable.catalog.port.EncounterTableCatalog;
-import src.domain.encountertable.catalog.value.EncounterTableSummaryData;
+import src.domain.encountertable.published.EncounterTableSummary;
 
 public final class LoadEncounterTableSummariesUseCase {
 
@@ -13,7 +13,7 @@ public final class LoadEncounterTableSummariesUseCase {
         this.catalog = Objects.requireNonNull(catalog, "catalog");
     }
 
-    public List<EncounterTableSummaryData> execute() {
+    public List<EncounterTableSummary> execute() {
         return catalog.loadSummaries();
     }
 }

@@ -60,6 +60,6 @@ public record EncounterCreatureReference(
                 detail.damageImmunities(),
                 detail.conditionImmunities(),
                 detail.passivePerception(),
-                detail.actions().stream().map(CreatureCatalogLookup.ActionProfile::actionType).toList());
+                detail.actions().stream().map(action -> action.actionType()).toList());
     }
 }

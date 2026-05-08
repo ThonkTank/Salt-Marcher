@@ -76,11 +76,11 @@ final class DungeonCorridorExtensionService {
             DungeonCorridor corridor,
             DungeonCorridorRoomEndpoint endpoint
     ) {
-        DungeonCorridor updated = corridor.withAddedRoom(endpoint.roomId());
+        DungeonCorridor updated = DungeonCorridorOps.withAddedRoom(corridor, endpoint.roomId());
         if (!endpoint.fixedDoor()) {
             return updated;
         }
         DungeonRoomCluster cluster = LOOKUP_SERVICE.cluster(dungeonMap, endpoint.clusterId());
-        return cluster == null ? updated : updated.withDoorBinding(endpoint.toDoorBinding(cluster.center()));
+        return cluster == null ? updated : DungeonCorridorOps.withDoorBinding(updated, endpoint.toDoorBinding(cluster.center()));
     }
 }

@@ -11,6 +11,9 @@ import src.data.creatures.model.EncounterCandidateCriteriaRecord;
 import src.data.creatures.model.EncounterCandidateRecord;
 import src.domain.creatures.catalog.port.CreatureCatalogLookup;
 import src.domain.creatures.catalog.port.CreatureCatalogLookup.CreatureProfile;
+import src.domain.creatures.published.CreatureCatalogPage;
+import src.domain.creatures.published.CreatureCatalogSortField;
+import src.domain.creatures.published.CreatureSortDirection;
 
 public final class CreatureCatalogQueryMappingFacade {
 
@@ -39,7 +42,7 @@ public final class CreatureCatalogQueryMappingFacade {
                 spec.pageOffset());
     }
 
-    public static CreatureCatalogLookup.CatalogPage toDomain(CreatureCatalogPageRecord record) {
+    public static CreatureCatalogPage toDomain(CreatureCatalogPageRecord record) {
         return CreatureCatalogPageMapper.toDomain(record);
     }
 
@@ -66,13 +69,13 @@ public final class CreatureCatalogQueryMappingFacade {
     }
 
     private static CreatureCatalogSearchCriteriaRecord.SortField toSearchSortField(
-            CreatureCatalogLookup.SortField sortField
+            CreatureCatalogSortField sortField
     ) {
         return CreatureCatalogSearchCriteriaRecord.SortField.valueOf(sortField.name());
     }
 
     private static CreatureCatalogSearchCriteriaRecord.SortDirection toSearchSortDirection(
-            CreatureCatalogLookup.SortDirection sortDirection
+            CreatureSortDirection sortDirection
     ) {
         return CreatureCatalogSearchCriteriaRecord.SortDirection.valueOf(sortDirection.name());
     }

@@ -1,8 +1,12 @@
 package src.domain.creatures.catalog.port;
 
-import org.jspecify.annotations.Nullable;
-
 import java.util.List;
+import org.jspecify.annotations.Nullable;
+import src.domain.creatures.published.CreatureActionDetail;
+import src.domain.creatures.published.CreatureCatalogPage;
+import src.domain.creatures.published.CreatureCatalogRow;
+import src.domain.creatures.published.CreatureCatalogSortField;
+import src.domain.creatures.published.CreatureSortDirection;
 
 public interface CreatureCatalogLookup {
 
@@ -56,8 +60,8 @@ public interface CreatureCatalogLookup {
             List<String> subtypes,
             List<String> biomes,
             List<String> alignments,
-            SortField sortField,
-            SortDirection sortDirection,
+            CreatureCatalogSortField sortField,
+            CreatureSortDirection sortDirection,
             int pageSize,
             int pageOffset
     ) {
@@ -95,19 +99,6 @@ public interface CreatureCatalogLookup {
         }
     }
 
-    enum SortField {
-        NAME,
-        CHALLENGE_RATING,
-        XP,
-        TYPE,
-        SIZE
-    }
-
-    enum SortDirection {
-        ASCENDING,
-        DESCENDING
-    }
-
     record EncounterCandidateSpec(
             List<String> types,
             List<String> subtypes,
@@ -136,30 +127,6 @@ public interface CreatureCatalogLookup {
         public List<String> biomes() {
             return copyStrings(biomes);
         }
-    }
-
-    record CatalogPage(
-            List<CatalogRow> rows,
-            int totalCount,
-            int pageSize,
-            int pageOffset
-    ) {
-        public CatalogPage {
-            rows = rows == null ? List.of() : List.copyOf(rows);
-        }
-    }
-
-    record CatalogRow(
-            long id,
-            String name,
-            String size,
-            String creatureType,
-            String alignment,
-            String challengeRating,
-            int xp,
-            int hitPoints,
-            int armorClass
-    ) {
     }
 
     record CreatureIdentity(
@@ -236,7 +203,7 @@ public interface CreatureCatalogLookup {
             CreatureVitals vitals,
             CreatureAbilities abilities,
             CreatureTraits traits,
-            List<ActionProfile> actions
+            List<CreatureActionDetail> actions
     ) {
         public CreatureProfile {
             identity = identity == null
@@ -411,14 +378,6 @@ public interface CreatureCatalogLookup {
         }
     }
 
-    record ActionProfile(
-            String actionType,
-            String name,
-            String description,
-            @Nullable Integer toHitBonus
-    ) {
-    }
-
     record EncounterCandidateProfile(
             long id,
             String name,
@@ -437,7 +396,7 @@ public interface CreatureCatalogLookup {
 
     DistinctFilterValues loadFilterValues();
 
-    CatalogPage searchCatalog(CatalogSearchSpec spec);
+    CreatureCatalogPage searchCatalog(CatalogSearchSpec spec);
 
     @Nullable CreatureProfile loadCreatureDetail(long creatureId);
 

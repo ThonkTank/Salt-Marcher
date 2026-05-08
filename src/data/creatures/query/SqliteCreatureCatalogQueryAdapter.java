@@ -6,6 +6,7 @@ import src.data.creatures.mapper.CreatureCatalogQueryMappingFacade;
 import src.domain.creatures.catalog.port.CreatureCatalogLookup;
 
 import java.util.List;
+import src.domain.creatures.published.CreatureCatalogPage;
 
 public final class SqliteCreatureCatalogQueryAdapter implements CreatureCatalogLookup {
 
@@ -25,7 +26,7 @@ public final class SqliteCreatureCatalogQueryAdapter implements CreatureCatalogL
     }
 
     @Override
-    public CatalogPage searchCatalog(CatalogSearchSpec spec) {
+    public CreatureCatalogPage searchCatalog(CatalogSearchSpec spec) {
         return CreatureCatalogQueryMappingFacade.toDomain(
                 gateway.searchCatalog(CreatureCatalogQueryMappingFacade.toSearchCriteria(spec)));
     }

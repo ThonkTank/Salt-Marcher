@@ -3,9 +3,7 @@ package src.domain.dungeon.map.service;
 import src.domain.dungeon.map.entity.DungeonRoom;
 import src.domain.dungeon.map.entity.DungeonRoomCluster;
 import src.domain.dungeon.map.value.DungeonCell;
-import src.domain.dungeon.map.value.DungeonClusterBoundary;
 
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
@@ -17,6 +15,8 @@ import java.util.Set;
 public final class DungeonRoomCellProjector {
 
     public static final DungeonCell LOOP_SEPARATOR = new DungeonCell(Integer.MIN_VALUE, Integer.MIN_VALUE, 0);
+    private static final DungeonCellTraversalSupport TRAVERSAL_SUPPORT = new DungeonCellTraversalSupport();
+    private static final DungeonRoomCellRasterizer RASTERIZER = new DungeonRoomCellRasterizer();
 
     public Map<Long, List<DungeonCell>> cellsByRoom(
             DungeonRoomCluster cluster,
@@ -40,7 +40,7 @@ public final class DungeonRoomCellProjector {
                     result.computeIfAbsent(room.roomId(), ignored -> new ArrayList<>()).add(anchor);
                     continue;
                 }
-                Set<DungeonCell> reachable = reachableCells(anchor, unclaimedCells, barriers, cluster.center());
+                Set<DungeonCell> reachable = TRAVERSAL_SUPPORT.reachableCells(anchor, unclaimedCells, barriers, cluster.center());
                 if (reachable.isEmpty()) {
                     reachable = Set.of(anchor);
                 }
@@ -88,43 +88,11 @@ public final class DungeonRoomCellProjector {
     }
 
     public List<DungeonCell> relativeCellLoops(DungeonCell center, List<DungeonCell> cells) {
-        if (center == null || cells == null || cells.isEmpty()) {
-            return List.of();
-        }
-        List<DungeonCell> vertices = new ArrayList<>();
-        for (DungeonCell cell : sortedCells(cells)) {
-            int q = cell.q() - center.q();
-            int r = cell.r() - center.r();
-            vertices.add(new DungeonCell(q, r, cell.level()));
-            vertices.add(new DungeonCell(q + 1, r, cell.level()));
-            vertices.add(new DungeonCell(q + 1, r + 1, cell.level()));
-            vertices.add(new DungeonCell(q, r + 1, cell.level()));
-            vertices.add(LOOP_SEPARATOR);
-        }
-        return List.copyOf(vertices);
+        return RASTERIZER.relativeCellLoops(center, cells, LOOP_SEPARATOR);
     }
 
     public List<Set<DungeonCell>> connectedComponents(Set<DungeonCell> cells) {
-        Set<DungeonCell> remaining = new LinkedHashSet<>(cells == null ? Set.<DungeonCell>of() : cells);
-        List<Set<DungeonCell>> components = new ArrayList<>();
-        while (!remaining.isEmpty()) {
-            DungeonCell start = remaining.iterator().next();
-            Set<DungeonCell> component = new LinkedHashSet<>();
-            ArrayDeque<DungeonCell> queue = new ArrayDeque<>();
-            queue.add(start);
-            remaining.remove(start);
-            while (!queue.isEmpty()) {
-                DungeonCell current = queue.removeFirst();
-                component.add(current);
-                for (DirectionStep step : DirectionStep.CARDINAL) {
-                    DungeonCell neighbor = step.neighbor(current);
-                    if (remaining.remove(neighbor)) {
-                        queue.addLast(neighbor);
-                    }
-                }
-            }
-            components.add(Set.copyOf(component));
-        }
+        List<Set<DungeonCell>> components = new ArrayList<>(TRAVERSAL_SUPPORT.connectedComponents(cells));
         components.sort(Comparator
                 .comparingInt((Set<DungeonCell> component) -> component.stream()
                         .mapToInt(DungeonCell::level)
@@ -169,120 +137,7 @@ public final class DungeonRoomCellProjector {
             int level,
             List<DungeonCell> relativeVertices
     ) {
-        List<List<DungeonCell>> loops = splitLoops(relativeVertices);
-        if (loops.isEmpty()) {
-            return Set.of(new DungeonCell(center.q(), center.r(), level));
-        }
-        int minQ = loops.stream().flatMap(List::stream).mapToInt(DungeonCell::q).min().orElse(0);
-        int maxQ = loops.stream().flatMap(List::stream).mapToInt(DungeonCell::q).max().orElse(0);
-        int minR = loops.stream().flatMap(List::stream).mapToInt(DungeonCell::r).min().orElse(0);
-        int maxR = loops.stream().flatMap(List::stream).mapToInt(DungeonCell::r).max().orElse(0);
-        Set<DungeonCell> cells = new LinkedHashSet<>();
-        for (int q = minQ; q <= maxQ; q++) {
-            for (int r = minR; r <= maxR; r++) {
-                if (containsCell(loops, q, r)) {
-                    cells.add(new DungeonCell(center.q() + q, center.r() + r, level));
-                }
-            }
-        }
-        return cells.isEmpty() ? Set.of(new DungeonCell(center.q(), center.r(), level)) : cells;
-    }
-
-    private static List<List<DungeonCell>> splitLoops(List<DungeonCell> vertices) {
-        List<List<DungeonCell>> loops = new ArrayList<>();
-        List<DungeonCell> currentLoop = new ArrayList<>();
-        for (DungeonCell vertex : vertices == null ? List.<DungeonCell>of() : vertices) {
-            if (LOOP_SEPARATOR.equals(vertex)) {
-                if (!currentLoop.isEmpty()) {
-                    loops.add(List.copyOf(currentLoop));
-                    currentLoop = new ArrayList<>();
-                }
-                continue;
-            }
-            currentLoop.add(vertex);
-        }
-        if (!currentLoop.isEmpty()) {
-            loops.add(List.copyOf(currentLoop));
-        }
-        return List.copyOf(loops);
-    }
-
-    private static boolean containsCell(List<List<DungeonCell>> loops, int q, int r) {
-        boolean inside = false;
-        for (List<DungeonCell> loop : loops) {
-            if (polygonContainsCell(loop, q, r)) {
-                inside = !inside;
-            }
-        }
-        return inside;
-    }
-
-    private static boolean polygonContainsCell(List<DungeonCell> polygon, int q, int r) {
-        double px = q + 0.5D;
-        double py = r + 0.5D;
-        boolean inside = false;
-        for (int i = 0, j = polygon.size() - 1; i < polygon.size(); j = i++) {
-            DungeonCell pi = polygon.get(i);
-            DungeonCell pj = polygon.get(j);
-            boolean intersects = ((pi.r() > py) != (pj.r() > py))
-                    && (px < (double) (pj.q() - pi.q()) * (py - pi.r()) / (double) (pj.r() - pi.r()) + pi.q());
-            if (intersects) {
-                inside = !inside;
-            }
-        }
-        return inside;
-    }
-
-    private static Set<DungeonCell> reachableCells(
-            DungeonCell anchor,
-            Set<DungeonCell> traversableCells,
-            List<DungeonClusterBoundary> barriers,
-            DungeonCell center
-    ) {
-        Set<DungeonCell> visited = new LinkedHashSet<>();
-        Set<DungeonCell> frontier = new LinkedHashSet<>(traversableCells);
-        ArrayDeque<DungeonCell> queue = new ArrayDeque<>();
-        queue.add(anchor);
-        frontier.remove(anchor);
-        while (!queue.isEmpty()) {
-            DungeonCell current = queue.removeFirst();
-            visited.add(current);
-            for (DirectionStep step : DirectionStep.CARDINAL) {
-                DungeonCell neighbor = step.neighbor(current);
-                if (!frontier.contains(neighbor) || isBlocked(barriers, center, current, step)) {
-                    continue;
-                }
-                frontier.remove(neighbor);
-                queue.addLast(neighbor);
-            }
-        }
-        return Set.copyOf(visited);
-    }
-
-    private static boolean isBlocked(
-            List<DungeonClusterBoundary> barriers,
-            DungeonCell center,
-            DungeonCell cell,
-            DirectionStep step
-    ) {
-        for (DungeonClusterBoundary barrier : barriers) {
-            if (crosses(barrier, center, cell, step)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private static boolean crosses(
-            DungeonClusterBoundary boundary,
-            DungeonCell center,
-            DungeonCell cell,
-            DirectionStep step
-    ) {
-        DungeonCell from = boundary.absoluteCell(center);
-        DungeonCell to = boundary.direction().neighborOf(from);
-        DungeonCell neighbor = step.neighbor(cell);
-        return (from.equals(cell) && to.equals(neighbor)) || (from.equals(neighbor) && to.equals(cell));
+        return RASTERIZER.cellsFromRelativeVertices(center, level, relativeVertices, LOOP_SEPARATOR);
     }
 
     public static List<DungeonCell> sortedCells(Iterable<DungeonCell> cells) {
@@ -299,25 +154,5 @@ public final class DungeonRoomCellProjector {
                         .thenComparingInt(DungeonCell::r)
                         .thenComparingInt(DungeonCell::q))
                 .toList();
-    }
-
-    private static final class DirectionStep {
-        private final int deltaQ;
-        private final int deltaR;
-
-        private static final List<DirectionStep> CARDINAL = List.of(
-                new DirectionStep(0, -1),
-                new DirectionStep(1, 0),
-                new DirectionStep(0, 1),
-                new DirectionStep(-1, 0));
-
-        private DirectionStep(int deltaQ, int deltaR) {
-            this.deltaQ = deltaQ;
-            this.deltaR = deltaR;
-        }
-
-        DungeonCell neighbor(DungeonCell cell) {
-            return new DungeonCell(cell.q() + deltaQ, cell.r() + deltaR, cell.level());
-        }
     }
 }

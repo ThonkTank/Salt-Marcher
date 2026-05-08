@@ -4,15 +4,15 @@ import org.jspecify.annotations.Nullable;
 import src.data.encountertable.model.EncounterTableCandidateRecord;
 import src.data.encountertable.model.EncounterTableSummaryRecord;
 import src.domain.encountertable.catalog.value.EncounterTableCandidateData;
-import src.domain.encountertable.catalog.value.EncounterTableSummaryData;
+import src.domain.encountertable.published.EncounterTableSummary;
 
 public final class EncounterTableMapper {
 
     private EncounterTableMapper() {
     }
 
-    public static EncounterTableSummaryData toDomain(EncounterTableSummaryRecord record) {
-        return new EncounterTableSummaryData(record.tableId(), safeText(record.name()), record.linkedLootTableId());
+    public static EncounterTableSummary toDomain(EncounterTableSummaryRecord record) {
+        return new EncounterTableSummary(record.tableId(), safeText(record.name()), record.linkedLootTableId());
     }
 
     public static EncounterTableCandidateData toDomain(EncounterTableCandidateRecord record) {

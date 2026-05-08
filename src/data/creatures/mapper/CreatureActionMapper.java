@@ -2,15 +2,15 @@ package src.data.creatures.mapper;
 
 import org.jspecify.annotations.Nullable;
 import src.data.creatures.model.CreatureActionRecord;
-import src.domain.creatures.catalog.port.CreatureCatalogLookup;
+import src.domain.creatures.published.CreatureActionDetail;
 
 public final class CreatureActionMapper {
 
     private CreatureActionMapper() {
     }
 
-    public static CreatureCatalogLookup.ActionProfile toDomain(CreatureActionRecord record) {
-        return new CreatureCatalogLookup.ActionProfile(
+    public static CreatureActionDetail toDomain(CreatureActionRecord record) {
+        return new CreatureActionDetail(
                 safeText(record.actionType()),
                 safeText(record.name()),
                 safeText(record.description()),

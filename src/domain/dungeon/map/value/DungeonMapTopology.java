@@ -38,6 +38,15 @@ public record DungeonMapTopology(
             ConnectionCatalog connections
     ) {
         List<DungeonTopologyBinding> result = new ArrayList<>();
+        appendRoomBindings(result, rooms);
+        appendCorridorBindings(result, connections);
+        appendStairBindings(result, connections);
+        appendTransitionBindings(result, connections);
+        appendBoundaryBindings(result, topology);
+        return new DungeonMapTopology(result);
+    }
+
+    private static void appendRoomBindings(List<DungeonTopologyBinding> result, RoomCatalog rooms) {
         for (DungeonRoom room : rooms == null ? List.<DungeonRoom>of() : rooms.rooms()) {
             result.add(new DungeonTopologyBinding(
                     new DungeonTopologyRef(DungeonTopologyElementKind.ROOM, room.roomId()),
@@ -45,31 +54,45 @@ public record DungeonMapTopology(
                     0L,
                     room.name()));
         }
+    }
+
+    private static void appendCorridorBindings(List<DungeonTopologyBinding> result, ConnectionCatalog connections) {
         for (DungeonCorridor corridor : connections == null ? List.<DungeonCorridor>of() : connections.corridors()) {
             result.add(new DungeonTopologyBinding(
                     new DungeonTopologyRef(DungeonTopologyElementKind.CORRIDOR, corridor.corridorId()),
                     0L,
                     corridor.corridorId(),
                     "Corridor " + corridor.corridorId()));
-            for (DungeonCorridorDoorBinding doorBinding : corridor.bindings().doorBindings()) {
-                if (doorBinding.topologyRef().present()) {
-                    result.add(new DungeonTopologyBinding(
-                            doorBinding.topologyRef(),
-                            doorBinding.clusterId(),
-                            corridor.corridorId(),
-                            "Door " + doorBinding.topologyRef().id()));
-                }
-            }
-            for (DungeonCorridorAnchorBinding anchorBinding : corridor.bindings().anchorBindings()) {
-                if (anchorBinding.topologyRef().present()) {
-                    result.add(new DungeonTopologyBinding(
-                            anchorBinding.topologyRef(),
-                            0L,
-                            corridor.corridorId(),
-                            "Corridor Anchor " + anchorBinding.topologyRef().id()));
-                }
+            appendDoorBindings(result, corridor);
+            appendAnchorBindings(result, corridor);
+        }
+    }
+
+    private static void appendDoorBindings(List<DungeonTopologyBinding> result, DungeonCorridor corridor) {
+        for (DungeonCorridorDoorBinding doorBinding : corridor.bindings().doorBindings()) {
+            if (doorBinding.topologyRef().present()) {
+                result.add(new DungeonTopologyBinding(
+                        doorBinding.topologyRef(),
+                        doorBinding.clusterId(),
+                        corridor.corridorId(),
+                        "Door " + doorBinding.topologyRef().id()));
             }
         }
+    }
+
+    private static void appendAnchorBindings(List<DungeonTopologyBinding> result, DungeonCorridor corridor) {
+        for (DungeonCorridorAnchorBinding anchorBinding : corridor.bindings().anchorBindings()) {
+            if (anchorBinding.topologyRef().present()) {
+                result.add(new DungeonTopologyBinding(
+                        anchorBinding.topologyRef(),
+                        0L,
+                        corridor.corridorId(),
+                        "Corridor Anchor " + anchorBinding.topologyRef().id()));
+            }
+        }
+    }
+
+    private static void appendStairBindings(List<DungeonTopologyBinding> result, ConnectionCatalog connections) {
         for (DungeonStair stair : connections == null ? List.<DungeonStair>of() : connections.stairs()) {
             result.add(new DungeonTopologyBinding(
                     new DungeonTopologyRef(DungeonTopologyElementKind.STAIR, stair.stairId()),
@@ -77,6 +100,9 @@ public record DungeonMapTopology(
                     stair.corridorId() == null ? 0L : stair.corridorId(),
                     stair.name()));
         }
+    }
+
+    private static void appendTransitionBindings(List<DungeonTopologyBinding> result, ConnectionCatalog connections) {
         for (DungeonTransition transition : connections == null ? List.<DungeonTransition>of() : connections.transitions()) {
             result.add(new DungeonTopologyBinding(
                     new DungeonTopologyRef(DungeonTopologyElementKind.TRANSITION, transition.transitionId()),
@@ -84,6 +110,9 @@ public record DungeonMapTopology(
                     0L,
                     transition.label()));
         }
+    }
+
+    private static void appendBoundaryBindings(List<DungeonTopologyBinding> result, SpatialTopology topology) {
         for (DungeonRoomCluster cluster : topology == null ? List.<DungeonRoomCluster>of() : topology.roomClusters()) {
             for (List<DungeonClusterBoundary> boundaries : cluster.boundariesByLevel().values()) {
                 for (DungeonClusterBoundary boundary : boundaries) {
@@ -96,7 +125,6 @@ public record DungeonMapTopology(
                 }
             }
         }
-        return new DungeonMapTopology(result);
     }
 
     public static DungeonMapTopology merge(@Nullable DungeonMapTopology primary, DungeonMapTopology fallback) {

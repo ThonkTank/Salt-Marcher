@@ -4,6 +4,8 @@ import java.util.List;
 import java.util.Objects;
 import src.domain.encountertable.application.LoadEncounterTableSummariesUseCase;
 import src.domain.encountertable.catalog.port.EncounterTableCatalog;
+import src.domain.encountertable.published.EncounterTableCatalogResult;
+import src.domain.encountertable.published.EncounterTableReadStatus;
 import src.domain.encountertable.published.RefreshEncounterTableCatalogCommand;
 import src.domain.encountertable.runtime.port.EncounterTablePublishedStateRepository;
 
@@ -25,12 +27,12 @@ public final class EncounterTableApplicationService {
     public void refreshCatalog(RefreshEncounterTableCatalogCommand command) {
         Objects.requireNonNull(command, "command");
         try {
-            publishedStateRepository.publishCatalog(new EncounterTablePublishedStateRepository.CatalogPublication(
-                    EncounterTablePublishedStateRepository.CatalogStatus.SUCCESS,
+            publishedStateRepository.publishCatalog(new EncounterTableCatalogResult(
+                    EncounterTableReadStatus.SUCCESS,
                     loadSummariesUseCase.execute()));
         } catch (RuntimeException exception) {
-            publishedStateRepository.publishCatalog(new EncounterTablePublishedStateRepository.CatalogPublication(
-                    EncounterTablePublishedStateRepository.CatalogStatus.STORAGE_ERROR,
+            publishedStateRepository.publishCatalog(new EncounterTableCatalogResult(
+                    EncounterTableReadStatus.STORAGE_ERROR,
                     List.of()));
         }
     }

@@ -20,15 +20,25 @@ public final class DungeonFeatureReadProjector {
     public Result project(List<DungeonStair> stairs, List<DungeonTransition> transitions) {
         List<DungeonFeatureFacts> features = new ArrayList<>();
         List<DungeonRelationGraph.FeatureRelation> relations = new ArrayList<>();
+        appendStairFeatures(features, relations, stairs);
+        appendTransitionFeatures(features, relations, transitions);
+        return new Result(features, relations);
+    }
+
+    private static void appendStairFeatures(
+            List<DungeonFeatureFacts> features,
+            List<DungeonRelationGraph.FeatureRelation> relations,
+            List<DungeonStair> stairs
+    ) {
         for (DungeonStair stair : stairs == null ? List.<DungeonStair>of() : stairs) {
-            if (stair == null || !stair.isReadable()) {
+            if (stair == null || !DungeonStairOps.isReadable(stair)) {
                 continue;
             }
             features.add(new DungeonFeatureFacts(
                     DungeonFeatureType.STAIR,
                     stair.stairId(),
                     stair.name(),
-                    sortedCells(stair.occupiedCells().stream().toList()),
+                    sortedCells(DungeonStairOps.occupiedCells(stair).stream().toList()),
                     stairDescription(stair),
                     stairDestinationLabel(stair)));
             if (stair.corridorId() != null) {
@@ -40,6 +50,13 @@ public final class DungeonFeatureReadProjector {
                         "attached"));
             }
         }
+    }
+
+    private static void appendTransitionFeatures(
+            List<DungeonFeatureFacts> features,
+            List<DungeonRelationGraph.FeatureRelation> relations,
+            List<DungeonTransition> transitions
+    ) {
         for (DungeonTransition transition : transitions == null ? List.<DungeonTransition>of() : transitions) {
             if (transition == null || !transition.isPlaced()) {
                 continue;
@@ -62,7 +79,6 @@ public final class DungeonFeatureReadProjector {
                         "linked"));
             }
         }
-        return new Result(features, relations);
     }
 
     private static List<DungeonCell> sortedCells(List<DungeonCell> cells) {

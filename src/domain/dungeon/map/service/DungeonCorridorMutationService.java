@@ -57,7 +57,7 @@ public final class DungeonCorridorMutationService {
         if (kept == null || merged == null) {
             return dungeonMap;
         }
-        DungeonCorridor updated = kept.mergeKeepingThis(merged);
+        DungeonCorridor updated = DungeonCorridorOps.mergeKeepingThis(kept, merged);
         List<DungeonCorridor> nextCorridors = new ArrayList<>();
         for (DungeonCorridor corridor : dungeonMap.connections().corridors()) {
             if (corridor.corridorId() == mergedCorridorId) {
@@ -67,7 +67,7 @@ public final class DungeonCorridorMutationService {
         }
         List<DungeonStair> nextStairs = dungeonMap.connections().stairs().stream()
                 .map(stair -> stair.corridorId() != null && stair.corridorId() == mergedCorridorId
-                        ? stair.withCorridorId(corridorId)
+                        ? DungeonStairOps.withCorridorId(stair, corridorId)
                         : stair)
                 .toList();
         return CONNECTION_NORMALIZATION_SERVICE.copyWithConnections(

@@ -113,7 +113,7 @@ public final class DungeonEditorHandleMovementService {
                     anchors.add(anchor);
                 }
             }
-            movedCorridors.add(corridor.withBindings(corridor.bindings().replaceAnchorBindings(anchors)));
+            movedCorridors.add(DungeonCorridorOps.withBindings(corridor, corridor.bindings().replaceAnchorBindings(anchors)));
         }
         return changed
                 ? copyWithConnections(
@@ -194,13 +194,14 @@ public final class DungeonEditorHandleMovementService {
                     stair.stairId(),
                     stair.mapId(),
                     stair.name(),
-                    stair.shape(),
-                    stair.direction(),
-                    stair.dimension1(),
-                    stair.dimension2(),
-                    path,
-                    exits,
-                    stair.corridorId()));
+                    new DungeonStair.Geometry(
+                            stair.shape(),
+                            stair.direction(),
+                            stair.dimension1(),
+                            stair.dimension2(),
+                            path,
+                            exits,
+                            stair.corridorId())));
         }
         return changed
                 ? copyWithConnections(

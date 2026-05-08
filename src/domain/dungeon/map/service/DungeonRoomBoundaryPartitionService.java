@@ -2,22 +2,20 @@ package src.domain.dungeon.map.service;
 
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.Deque;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.map.entity.DungeonRoom;
-import src.domain.dungeon.map.value.DungeonBoundaryKey;
 import src.domain.dungeon.map.value.DungeonCell;
 import src.domain.dungeon.map.value.DungeonClusterBoundary;
-import src.domain.dungeon.map.value.DungeonEdge;
-import src.domain.dungeon.map.value.DungeonEdgeDirection;
 import src.domain.dungeon.map.value.DungeonRoomNarration;
 import src.domain.dungeon.map.value.DungeonRoomTopologyClusterWork;
 
 final class DungeonRoomBoundaryPartitionService {
+
+    private static final DungeonCellTraversalSupport TRAVERSAL_SUPPORT = new DungeonCellTraversalSupport();
 
     List<DungeonRoom> roomsForBoundaryEdit(
             DungeonRoomTopologyClusterWork work,
@@ -70,65 +68,7 @@ final class DungeonRoomBoundaryPartitionService {
             List<DungeonClusterBoundary> barriers,
             DungeonCell center
     ) {
-        Set<DungeonCell> remaining = new LinkedHashSet<>(cells == null ? List.<DungeonCell>of() : cells);
-        List<Set<DungeonCell>> components = new ArrayList<>();
-        while (!remaining.isEmpty()) {
-            DungeonCell start = remaining.iterator().next();
-            Set<DungeonCell> component = new LinkedHashSet<>();
-            Set<DungeonCell> frontier = new LinkedHashSet<>(remaining);
-            Deque<DungeonCell> queue = new java.util.ArrayDeque<>();
-            queue.add(start);
-            frontier.remove(start);
-            remaining.remove(start);
-            while (!queue.isEmpty()) {
-                DungeonCell current = queue.removeFirst();
-                component.add(current);
-                for (DungeonEdgeDirection direction : DungeonEdgeDirection.values()) {
-                    DungeonCell neighbor = direction.neighborOf(current);
-                    if (!frontier.contains(neighbor) || isBlocked(barriers, center, current, neighbor)) {
-                        continue;
-                    }
-                    frontier.remove(neighbor);
-                    remaining.remove(neighbor);
-                    queue.addLast(neighbor);
-                }
-            }
-            components.add(Set.copyOf(component));
-        }
-        return List.copyOf(components);
-    }
-
-    private boolean isBlocked(
-            List<DungeonClusterBoundary> barriers,
-            DungeonCell center,
-            DungeonCell current,
-            DungeonCell neighbor
-    ) {
-        DungeonEdge movementEdge = edgeBetweenAdjacentCells(current, neighbor);
-        if (movementEdge == null) {
-            return false;
-        }
-        DungeonBoundaryKey movement = DungeonBoundaryKey.from(movementEdge);
-        for (DungeonClusterBoundary barrier : barriers == null ? List.<DungeonClusterBoundary>of() : barriers) {
-            if (DungeonBoundaryKey.from(barrier.absoluteEdge(center)).equals(movement)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private @Nullable DungeonEdge edgeBetweenAdjacentCells(DungeonCell current, DungeonCell neighbor) {
-        if (current == null || neighbor == null || current.level() != neighbor.level()) {
-            return null;
-        }
-        int deltaQ = neighbor.q() - current.q();
-        int deltaR = neighbor.r() - current.r();
-        for (DungeonEdgeDirection direction : DungeonEdgeDirection.values()) {
-            if (direction.deltaQ() == deltaQ && direction.deltaR() == deltaR) {
-                return DungeonEdge.sideOf(current, direction);
-            }
-        }
-        return null;
+        return TRAVERSAL_SUPPORT.connectedComponents(cells, barriers, center);
     }
 
     private @Nullable DungeonRoom templateForComponent(

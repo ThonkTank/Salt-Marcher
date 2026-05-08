@@ -2,14 +2,23 @@ package src.domain.creatures;
 
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 import org.jspecify.annotations.Nullable;
 import src.domain.creatures.application.LoadCreatureDetailUseCase;
 import src.domain.creatures.application.LoadCreatureFilterOptionsUseCase;
 import src.domain.creatures.application.SearchCreatureCatalogUseCase;
 import src.domain.creatures.catalog.port.CreatureCatalogLookup;
-import src.domain.creatures.published.CreatureSortDirection;
+import src.domain.creatures.published.CreatureActionDetail;
+import src.domain.creatures.published.CreatureCatalogPage;
+import src.domain.creatures.published.CreatureCatalogPageResult;
 import src.domain.creatures.published.CreatureCatalogSortField;
+import src.domain.creatures.published.CreatureDetail;
+import src.domain.creatures.published.CreatureDetailResult;
+import src.domain.creatures.published.CreatureFilterOptions;
+import src.domain.creatures.published.CreatureFilterOptionsResult;
+import src.domain.creatures.published.CreatureLookupStatus;
+import src.domain.creatures.published.CreatureQueryStatus;
+import src.domain.creatures.published.CreatureReadStatus;
+import src.domain.creatures.published.CreatureSortDirection;
 import src.domain.creatures.published.RefreshCreatureCatalogCommand;
 import src.domain.creatures.published.RefreshCreatureFilterOptionsCommand;
 import src.domain.creatures.published.SelectCreatureDetailCommand;
@@ -48,34 +57,44 @@ public final class CreaturesApplicationService {
         Objects.requireNonNull(command, "command");
         try {
             LoadCreatureFilterOptionsUseCase.FilterOptions options = loadCreatureFilterOptionsUseCase.execute();
-            publishedStateRepository.publishFilterOptions(new CreaturesPublishedStateRepository.FilterOptionsPublication(
-                    CreaturesPublishedStateRepository.FilterOptionsStatus.SUCCESS,
-                    options.values(),
-                    options.challengeRatings()));
+            publishedStateRepository.publishFilterOptions(new CreatureFilterOptionsResult(
+                    CreatureReadStatus.SUCCESS,
+                    new CreatureFilterOptions(
+                            options.values().sizes(),
+                            options.values().types(),
+                            options.values().subtypes(),
+                            options.values().biomes(),
+                            options.values().alignments(),
+                            options.challengeRatings())));
         } catch (RuntimeException exception) {
-            publishedStateRepository.publishFilterOptions(new CreaturesPublishedStateRepository.FilterOptionsPublication(
-                    CreaturesPublishedStateRepository.FilterOptionsStatus.STORAGE_ERROR,
-                    EMPTY_FILTER_VALUES,
-                    List.of()));
+            publishedStateRepository.publishFilterOptions(new CreatureFilterOptionsResult(
+                    CreatureReadStatus.STORAGE_ERROR,
+                    new CreatureFilterOptions(
+                            EMPTY_FILTER_VALUES.sizes(),
+                            EMPTY_FILTER_VALUES.types(),
+                            EMPTY_FILTER_VALUES.subtypes(),
+                            EMPTY_FILTER_VALUES.biomes(),
+                            EMPTY_FILTER_VALUES.alignments(),
+                            List.of())));
         }
     }
 
     public void refreshCatalog(RefreshCreatureCatalogCommand command) {
         NormalizedCatalogCommand normalizedQuery = NormalizedCatalogCommand.from(command);
         if (!normalizedQuery.valid()) {
-            publishedStateRepository.publishCatalogPage(new CreaturesPublishedStateRepository.CatalogPagePublication(
-                    CreaturesPublishedStateRepository.CatalogPageStatus.INVALID_QUERY,
-                    new CreatureCatalogLookup.CatalogPage(List.of(), 0, normalizedQuery.pageSize(), normalizedQuery.pageOffset())));
+            publishedStateRepository.publishCatalogPage(new CreatureCatalogPageResult(
+                    CreatureQueryStatus.INVALID_QUERY,
+                    CreatureCatalogPage.empty(normalizedQuery.pageSize(), normalizedQuery.pageOffset())));
             return;
         }
         try {
-            publishedStateRepository.publishCatalogPage(new CreaturesPublishedStateRepository.CatalogPagePublication(
-                    CreaturesPublishedStateRepository.CatalogPageStatus.SUCCESS,
+            publishedStateRepository.publishCatalogPage(new CreatureCatalogPageResult(
+                    CreatureQueryStatus.SUCCESS,
                     searchCreatureCatalogUseCase.execute(normalizedQuery.spec())));
         } catch (RuntimeException exception) {
-            publishedStateRepository.publishCatalogPage(new CreaturesPublishedStateRepository.CatalogPagePublication(
-                    CreaturesPublishedStateRepository.CatalogPageStatus.STORAGE_ERROR,
-                    new CreatureCatalogLookup.CatalogPage(List.of(), 0, normalizedQuery.pageSize(), normalizedQuery.pageOffset())));
+            publishedStateRepository.publishCatalogPage(new CreatureCatalogPageResult(
+                    CreatureQueryStatus.STORAGE_ERROR,
+                    CreatureCatalogPage.empty(normalizedQuery.pageSize(), normalizedQuery.pageOffset())));
         }
     }
 
@@ -83,25 +102,25 @@ public final class CreaturesApplicationService {
         try {
             long creatureId = command == null ? 0L : command.creatureId();
             if (creatureId <= 0L) {
-                publishedStateRepository.publishCreatureDetail(new CreaturesPublishedStateRepository.CreatureDetailPublication(
-                        CreaturesPublishedStateRepository.CreatureDetailStatus.NOT_FOUND,
-                        Optional.empty()));
+                publishedStateRepository.publishCreatureDetail(new CreatureDetailResult(
+                        CreatureLookupStatus.NOT_FOUND,
+                        null));
                 return;
             }
             CreatureCatalogLookup.CreatureProfile detail = loadCreatureDetailUseCase.execute(creatureId);
             if (detail == null) {
-                publishedStateRepository.publishCreatureDetail(new CreaturesPublishedStateRepository.CreatureDetailPublication(
-                        CreaturesPublishedStateRepository.CreatureDetailStatus.NOT_FOUND,
-                        Optional.empty()));
+                publishedStateRepository.publishCreatureDetail(new CreatureDetailResult(
+                        CreatureLookupStatus.NOT_FOUND,
+                        null));
             } else {
-                publishedStateRepository.publishCreatureDetail(new CreaturesPublishedStateRepository.CreatureDetailPublication(
-                        CreaturesPublishedStateRepository.CreatureDetailStatus.SUCCESS,
-                        Optional.of(detail)));
+                publishedStateRepository.publishCreatureDetail(new CreatureDetailResult(
+                        CreatureLookupStatus.SUCCESS,
+                        toPublishedCreatureDetail(detail)));
             }
         } catch (RuntimeException exception) {
-            publishedStateRepository.publishCreatureDetail(new CreaturesPublishedStateRepository.CreatureDetailPublication(
-                    CreaturesPublishedStateRepository.CreatureDetailStatus.STORAGE_ERROR,
-                    Optional.empty()));
+            publishedStateRepository.publishCreatureDetail(new CreatureDetailResult(
+                    CreatureLookupStatus.STORAGE_ERROR,
+                    null));
         }
     }
 
@@ -130,8 +149,8 @@ public final class CreaturesApplicationService {
                             normalizeValues(effectiveCommand.creatureSubtypes()),
                             normalizeValues(effectiveCommand.biomes()),
                             normalizeValues(effectiveCommand.alignments()),
-                            toPortSortField(effectiveCommand.sortField()),
-                            toPortSortDirection(effectiveCommand.sortDirection()),
+                            effectiveCommand.sortField() == null ? CreatureCatalogSortField.NAME : effectiveCommand.sortField(),
+                            effectiveCommand.sortDirection() == null ? CreatureSortDirection.ASCENDING : effectiveCommand.sortDirection(),
                             pageSize,
                             pageOffset));
         }
@@ -184,28 +203,55 @@ public final class CreaturesApplicationService {
                     .distinct()
                     .toList();
         }
+    }
 
-        private static CreatureCatalogLookup.SortField toPortSortField(@Nullable CreatureCatalogSortField sortField) {
-            CreatureCatalogSortField effectiveSortField = sortField == null ? CreatureCatalogSortField.NAME : sortField;
-            if (effectiveSortField == CreatureCatalogSortField.CHALLENGE_RATING) {
-                return CreatureCatalogLookup.SortField.CHALLENGE_RATING;
-            }
-            if (effectiveSortField == CreatureCatalogSortField.XP) {
-                return CreatureCatalogLookup.SortField.XP;
-            }
-            if (effectiveSortField == CreatureCatalogSortField.TYPE) {
-                return CreatureCatalogLookup.SortField.TYPE;
-            }
-            if (effectiveSortField == CreatureCatalogSortField.SIZE) {
-                return CreatureCatalogLookup.SortField.SIZE;
-            }
-            return CreatureCatalogLookup.SortField.NAME;
-        }
-
-        private static CreatureCatalogLookup.SortDirection toPortSortDirection(@Nullable CreatureSortDirection sortDirection) {
-            return sortDirection == CreatureSortDirection.DESCENDING
-                    ? CreatureCatalogLookup.SortDirection.DESCENDING
-                    : CreatureCatalogLookup.SortDirection.ASCENDING;
-        }
+    private static CreatureDetail toPublishedCreatureDetail(CreatureCatalogLookup.CreatureProfile detail) {
+        return new CreatureDetail(
+                detail.id(),
+                detail.name(),
+                detail.size(),
+                detail.creatureType(),
+                detail.subtypes(),
+                detail.biomes(),
+                detail.alignment(),
+                detail.challengeRating(),
+                detail.xp(),
+                detail.hitPoints(),
+                detail.hitDiceExpression(),
+                detail.hitDiceCount(),
+                detail.hitDiceSides(),
+                detail.hitDiceModifier(),
+                detail.armorClass(),
+                detail.armorClassNotes(),
+                detail.walkSpeed(),
+                detail.flySpeed(),
+                detail.swimSpeed(),
+                detail.climbSpeed(),
+                detail.burrowSpeed(),
+                detail.strength(),
+                detail.dexterity(),
+                detail.constitution(),
+                detail.intelligence(),
+                detail.wisdom(),
+                detail.charisma(),
+                detail.initiativeBonus(),
+                detail.proficiencyBonus(),
+                detail.savingThrows(),
+                detail.skills(),
+                detail.damageVulnerabilities(),
+                detail.damageResistances(),
+                detail.damageImmunities(),
+                detail.conditionImmunities(),
+                detail.senses(),
+                detail.passivePerception(),
+                detail.languages(),
+                detail.legendaryActionCount(),
+                detail.actions().stream()
+                        .map(action -> new CreatureActionDetail(
+                                action.actionType(),
+                                action.name(),
+                                action.description(),
+                                action.toHitBonus()))
+                        .toList());
     }
 }

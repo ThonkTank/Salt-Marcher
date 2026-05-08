@@ -6,46 +6,25 @@ import src.domain.dungeon.map.value.DungeonEdgeDirection;
 import src.domain.dungeon.map.value.DungeonStairExit;
 import src.domain.dungeon.map.value.DungeonStairShape;
 
-import java.util.Comparator;
-import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Set;
 
 public final class DungeonStair {
 
     private final long stairId;
     private final long mapId;
     private final String name;
-    private final DungeonStairShape shape;
-    private final DungeonEdgeDirection direction;
-    private final int dimension1;
-    private final int dimension2;
-    private final List<DungeonCell> path;
-    private final List<DungeonStairExit> exits;
-    private final @Nullable Long corridorId;
+    private final Geometry geometry;
 
     public DungeonStair(
             long stairId,
             long mapId,
             String name,
-            DungeonStairShape shape,
-            DungeonEdgeDirection direction,
-            int dimension1,
-            int dimension2,
-            List<DungeonCell> path,
-            List<DungeonStairExit> exits,
-            @Nullable Long corridorId
+            Geometry geometry
     ) {
         this.stairId = stairId;
         this.mapId = mapId;
         this.name = name == null || name.isBlank() ? "Treppe " + stairId : name.trim();
-        this.shape = shape == null ? DungeonStairShape.LADDER : shape;
-        this.direction = direction == null ? DungeonEdgeDirection.NORTH : direction;
-        this.dimension1 = Math.max(0, dimension1);
-        this.dimension2 = Math.max(0, dimension2);
-        this.path = normalizeCells(path);
-        this.exits = normalizeExits(exits);
-        this.corridorId = corridorId == null || corridorId <= 0L ? null : corridorId;
+        this.geometry = geometry == null ? Geometry.empty() : geometry;
     }
 
     public long stairId() {
@@ -61,93 +40,75 @@ public final class DungeonStair {
     }
 
     public DungeonStairShape shape() {
-        return shape;
+        return geometry.shape();
     }
 
     public DungeonEdgeDirection direction() {
-        return direction;
+        return geometry.direction();
     }
 
     public int dimension1() {
-        return dimension1;
+        return geometry.dimension1();
     }
 
     public int dimension2() {
-        return dimension2;
+        return geometry.dimension2();
     }
 
     public List<DungeonCell> path() {
-        return path;
+        return geometry.path();
     }
 
     public List<DungeonStairExit> exits() {
-        return exits;
+        return geometry.exits();
     }
 
     public @Nullable Long corridorId() {
-        return corridorId;
+        return geometry.corridorId();
     }
 
-    public Set<DungeonCell> occupiedCells() {
-        LinkedHashSet<DungeonCell> result = new LinkedHashSet<>(path);
-        for (DungeonStairExit exit : exits) {
-            result.add(exit.position());
+    public record Geometry(
+            DungeonStairShape shape,
+            DungeonEdgeDirection direction,
+            int dimension1,
+            int dimension2,
+            List<DungeonCell> path,
+            List<DungeonStairExit> exits,
+            @Nullable Long corridorId
+    ) {
+        public Geometry {
+            shape = shape == null ? DungeonStairShape.LADDER : shape;
+            direction = direction == null ? DungeonEdgeDirection.NORTH : direction;
+            dimension1 = Math.max(0, dimension1);
+            dimension2 = Math.max(0, dimension2);
+            path = (path == null ? List.<DungeonCell>of() : path).stream()
+                    .filter(cell -> cell != null)
+                    .distinct()
+                    .sorted(java.util.Comparator
+                            .comparingInt(DungeonCell::level)
+                            .thenComparingInt(DungeonCell::r)
+                            .thenComparingInt(DungeonCell::q))
+                    .toList();
+            exits = (exits == null ? List.<DungeonStairExit>of() : exits).stream()
+                    .filter(exit -> exit != null)
+                    .sorted(java.util.Comparator
+                            .comparingInt((DungeonStairExit exit) -> exit.position().level())
+                            .thenComparingInt(exit -> exit.position().r())
+                            .thenComparingInt(exit -> exit.position().q())
+                            .thenComparingLong(DungeonStairExit::exitId))
+                    .toList();
+            corridorId = corridorId == null || corridorId <= 0L ? null : corridorId;
         }
-        return Set.copyOf(result);
-    }
 
-    public Set<Integer> reachableLevels() {
-        LinkedHashSet<Integer> result = new LinkedHashSet<>();
-        occupiedCells().stream()
-                .map(DungeonCell::level)
-                .sorted()
-                .forEach(result::add);
-        return Set.copyOf(result);
-    }
-
-    public List<DungeonStairExit> exitsAtLevel(int level) {
-        return exits.stream()
-                .filter(exit -> exit.position().level() == level)
-                .toList();
-    }
-
-    public boolean isReadable() {
-        return !occupiedCells().isEmpty();
-    }
-
-    public DungeonStair withCorridorId(@Nullable Long nextCorridorId) {
-        return new DungeonStair(
-                stairId,
-                mapId,
-                name,
-                shape,
-                direction,
-                dimension1,
-                dimension2,
-                path,
-                exits,
-                nextCorridorId);
-    }
-
-    private static List<DungeonCell> normalizeCells(List<DungeonCell> cells) {
-        return (cells == null ? List.<DungeonCell>of() : cells).stream()
-                .filter(cell -> cell != null)
-                .distinct()
-                .sorted(Comparator
-                        .comparingInt(DungeonCell::level)
-                        .thenComparingInt(DungeonCell::r)
-                        .thenComparingInt(DungeonCell::q))
-                .toList();
-    }
-
-    private static List<DungeonStairExit> normalizeExits(List<DungeonStairExit> exits) {
-        return (exits == null ? List.<DungeonStairExit>of() : exits).stream()
-                .filter(exit -> exit != null)
-                .sorted(Comparator
-                        .comparingInt((DungeonStairExit exit) -> exit.position().level())
-                        .thenComparingInt(exit -> exit.position().r())
-                        .thenComparingInt(exit -> exit.position().q())
-                        .thenComparingLong(DungeonStairExit::exitId))
-                .toList();
+        static Geometry empty() {
+            return new Geometry(
+                    DungeonStairShape.LADDER,
+                    DungeonEdgeDirection.NORTH,
+                    0,
+                    0,
+                    List.of(),
+                    List.of(),
+                    null);
+        }
     }
 }

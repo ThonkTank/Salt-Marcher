@@ -18,31 +18,19 @@ import src.domain.dungeon.map.value.DungeonTopologyRef;
 public final class DungeonCorridorAnchorPruningPolicy {
 
     public List<DungeonCorridor> pruneDetachedAnchors(List<DungeonCorridor> corridors) {
-        Set<DungeonTopologyRef> referenced = new LinkedHashSet<>();
-        Map<DungeonTopologyRef, Long> hosted = new LinkedHashMap<>();
-        for (DungeonCorridor corridor : corridors == null ? List.<DungeonCorridor>of() : corridors) {
-            for (DungeonCorridorAnchorBinding binding : corridor.bindings().anchorBindings()) {
-                if (binding != null) {
-                    hosted.put(binding.topologyRef(), corridor.corridorId());
-                }
-            }
-            for (DungeonCorridorAnchorRef ref : corridor.bindings().anchorRefs()) {
-                if (ref != null && ref.present()) {
-                    referenced.add(ref.topologyRef());
-                }
-            }
-        }
+        AnchorUsage usage = AnchorUsage.from(corridors);
         List<DungeonCorridor> result = new ArrayList<>();
         for (DungeonCorridor corridor : corridors == null ? List.<DungeonCorridor>of() : corridors) {
             List<DungeonCorridorAnchorBinding> keptBindings = corridor.bindings().anchorBindings().stream()
                     .filter(Objects::nonNull)
-                    .filter(binding -> referenced.contains(binding.topologyRef()))
+                    .filter(binding -> usage.referenced().contains(binding.topologyRef()))
                     .toList();
             List<DungeonCorridorAnchorRef> keptRefs = corridor.bindings().anchorRefs().stream()
                     .filter(Objects::nonNull)
-                    .filter(ref -> ref.present() && hosted.containsKey(ref.topologyRef()))
+                    .filter(ref -> ref.present() && usage.hosted().containsKey(ref.topologyRef()))
                     .toList();
-            result.add(corridor.withBindings(
+            result.add(DungeonCorridorOps.withBindings(
+                    corridor,
                     corridor.bindings()
                             .replaceAnchorBindings(keptBindings)
                             .replaceAnchorRefs(keptRefs)));
@@ -67,5 +55,33 @@ public final class DungeonCorridorAnchorPruningPolicy {
                 .filter(Objects::nonNull)
                 .map(DungeonCorridorAnchorRef::topologyRef)
                 .anyMatch(ownedRefs::contains);
+    }
+
+    private record AnchorUsage(
+            Set<DungeonTopologyRef> referenced,
+            Map<DungeonTopologyRef, Long> hosted
+    ) {
+        private AnchorUsage {
+            referenced = Set.copyOf(referenced);
+            hosted = Map.copyOf(hosted);
+        }
+
+        private static AnchorUsage from(List<DungeonCorridor> corridors) {
+            Set<DungeonTopologyRef> referenced = new LinkedHashSet<>();
+            Map<DungeonTopologyRef, Long> hosted = new LinkedHashMap<>();
+            for (DungeonCorridor corridor : corridors == null ? List.<DungeonCorridor>of() : corridors) {
+                for (DungeonCorridorAnchorBinding binding : corridor.bindings().anchorBindings()) {
+                    if (binding != null) {
+                        hosted.put(binding.topologyRef(), corridor.corridorId());
+                    }
+                }
+                for (DungeonCorridorAnchorRef ref : corridor.bindings().anchorRefs()) {
+                    if (ref != null && ref.present()) {
+                        referenced.add(ref.topologyRef());
+                    }
+                }
+            }
+            return new AnchorUsage(referenced, hosted);
+        }
     }
 }
