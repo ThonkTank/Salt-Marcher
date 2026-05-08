@@ -2,10 +2,10 @@ package src.view.statetabs.encounter;
 
 import java.util.Objects;
 
-public record EncounterBuilderStateViewInputEvent(Interaction interaction) {
+public record EncounterBuilderStateViewInputEvent(Interaction builderInput) {
 
     public EncounterBuilderStateViewInputEvent {
-        Objects.requireNonNull(interaction, "interaction");
+        Objects.requireNonNull(builderInput, "builderInput");
     }
 
     public sealed interface Interaction permits GenerateInput, ShiftAlternativeInput, SaveCurrentPlanInput,
@@ -13,13 +13,13 @@ public record EncounterBuilderStateViewInputEvent(Interaction interaction) {
             ClearGenerationHistoryInput, OpenInitiativeInput, OpenCreatureDetailInput {
     }
 
-    public record GenerateInput() implements Interaction {
+    public static final class GenerateInput implements Interaction {
     }
 
     public record ShiftAlternativeInput(int alternativeShift) implements Interaction {
     }
 
-    public record SaveCurrentPlanInput() implements Interaction {
+    public static final class SaveCurrentPlanInput implements Interaction {
     }
 
     public record OpenSavedPlanInput(long selectedPlanId) implements Interaction {
@@ -34,9 +34,16 @@ public record EncounterBuilderStateViewInputEvent(Interaction interaction) {
         }
     }
 
-    public record RemoveCreatureInput(long creatureId) implements Interaction {
-        public RemoveCreatureInput {
-            creatureId = Math.max(0L, creatureId);
+    public static final class RemoveCreatureInput implements Interaction {
+
+        private final long creatureId;
+
+        public RemoveCreatureInput(long creatureId) {
+            this.creatureId = Math.max(0L, creatureId);
+        }
+
+        public long creatureId() {
+            return creatureId;
         }
     }
 
@@ -46,15 +53,22 @@ public record EncounterBuilderStateViewInputEvent(Interaction interaction) {
         }
     }
 
-    public record ClearGenerationHistoryInput() implements Interaction {
+    public static final class ClearGenerationHistoryInput implements Interaction {
     }
 
-    public record OpenInitiativeInput() implements Interaction {
+    public static final class OpenInitiativeInput implements Interaction {
     }
 
-    public record OpenCreatureDetailInput(long creatureId) implements Interaction {
-        public OpenCreatureDetailInput {
-            creatureId = Math.max(0L, creatureId);
+    public static final class OpenCreatureDetailInput implements Interaction {
+
+        private final long creatureId;
+
+        public OpenCreatureDetailInput(long creatureId) {
+            this.creatureId = Math.max(0L, creatureId);
+        }
+
+        public long creatureId() {
+            return creatureId;
         }
     }
 }

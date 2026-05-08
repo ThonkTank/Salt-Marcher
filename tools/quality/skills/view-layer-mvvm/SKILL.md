@@ -19,6 +19,18 @@ target architecture is defined by:
 This skill operationalizes those documents for agent work in the view layer. It
 does not redefine the architecture.
 
+Mandatory default for reusable `src/view/slotcontent/**` work:
+
+- assume one closed reusable-unit shape only:
+  exactly one `*View.java`, exactly one same-stem `*ViewInputEvent.java`, and
+  exactly one `*ContentModel.java`
+- apply that same rule under `slotcontent/primitives/**`
+- keep input interpretation in the same-root active `*IntentHandler`
+- keep component-specific presentation state and component-specific
+  presentation logic in the unit's own `*ContentModel`
+- keep active-root `*ContributionModel`s focused on root-wide orchestration
+  and child-`ContentModel` coordination
+
 ## Required Workflow
 
 Before editing a view surface:
@@ -36,13 +48,12 @@ Before editing a view surface:
 5. For every touched projection model, identify whether it is an active-root
    `*ContributionModel` or a reusable `slotcontent` `*ContentModel`, and which
    exact surface state it owns.
-6. For every touched `IntentHandler`, identify the interactive scope whose
-   input interpretation it owns, or decide that the surface is passive and
-   therefore needs no `IntentHandler`.
+6. For every touched `IntentHandler`, identify the active root whose view
+   events it interprets, including any reused `slotcontent/**` surfaces wired
+   into that root, or decide that the root is passive and therefore needs no
+   `IntentHandler`.
 7. For reusable `slotcontent/**`, assume exactly one local `*View`, one local
-   `*ViewInputEvent`, and one local `*ContentModel`; reusable units do not own
-   local `*IntentHandler`, `*PublishedEvent`, `*InspectorEntry`, or technical
-   support-carrier top-level files.
+   same-stem `*ViewInputEvent`, and one local `*ContentModel`.
 8. Before smell- or size-driven refactors, ask whether the passive `View` is
    compensating for missing projection, hit preparation, geometry derivation,
    or input-relevant state that belongs in a `ContributionModel`,
@@ -52,10 +63,10 @@ Before editing a view surface:
 10. Only after that ownership check may you use nested/private helper types as
     a local cleanup tactic; do not default to new top-level helper files under
     `src/view/**`.
-11. When touching `slotcontent/**`, treat new top-level files beyond
-    `*View.java`, `*ViewInputEvent.java`, and `*ContentModel.java` as target-
-    architecture findings unless the user explicitly scopes the work to
-    current-state compatibility only.
+11. When touching `slotcontent/**`, treat any new top-level file outside the
+    closed reusable-unit shape `*View.java`, `*ViewInputEvent.java`, and
+    `*ContentModel.java` as a target-architecture finding unless the user
+    explicitly scopes the work to current-state compatibility only.
 
 When reviewing view-layer changes:
 
@@ -65,7 +76,8 @@ When reviewing view-layer changes:
 3. Check that bindable projection state and projection logic stay in the
    owning `ContributionModel` or `ContentModel`.
 4. Check that input interpretation stays in the same-root `IntentHandler`
-   rather than growing a reusable slotcontent-local handler.
+   with one focused entrypoint per interactive `View`, rather than growing a
+   reusable slotcontent-local handler.
 5. Check that feature-specific one-off components are colocated in their active
    root and that `slotcontent/**` is used only for genuinely reusable generic
    components.
@@ -77,9 +89,11 @@ When reviewing view-layer changes:
 8. Treat new component-local `View/`, `ViewModel/`, `assembly/`, view `api/`,
    `Model/`, `Controller/`, or `interactor/` buckets as findings.
 9. Treat PMD-driven helper splits as findings when the real missing owner is
-   the co-located model or the upstream readback path.
-10. Treat any new top-level file under reusable `slotcontent/**` beyond
-    `*View`, `*ViewInputEvent`, and `*ContentModel` as a finding.
+   the owning `ContributionModel`, `ContentModel`, or the upstream readback
+   path.
+10. Treat any top-level file under reusable `slotcontent/**` outside the
+    closed shape `*View`, `*ViewInputEvent`, and `*ContentModel` as a
+    finding.
 
 ## Placement Heuristics
 
@@ -89,6 +103,9 @@ When reviewing view-layer changes:
 - If code decides what should be shown, enabled, selected, labelled, loaded,
   or reported across a surface, it belongs in the owning
   `ContributionModel` or `ContentModel`.
+- If that decision is component-specific reusable presentation logic, it
+  belongs in the reusable unit's own `ContentModel`, not in the active-root
+  `ContributionModel`.
 - If code interprets raw gestures into local semantic intent or local UI-state
   mutation for a reusable component, it belongs in the same-root
   `IntentHandler`, not in reusable `slotcontent/**`.
@@ -97,7 +114,8 @@ When reviewing view-layer changes:
 - If code prepares render-ready, hit-ready, label, geometry, selection, or
   other reusable pre-render/pre-hit state, it belongs in the owning
   `ContributionModel`, `ContentModel`, or upstream read-side projection rather
-  than in new standalone View helpers or support-carrier top-level files.
+  than in new standalone top-level files outside the closed reusable-unit
+  shape.
 - If code is feature-specific and not reusable, colocate it in the owning
   `leftbartabs`, `dropdowns`, or `statetabs` package.
 - If code is reusable generic view-layer content, place it under
@@ -116,9 +134,8 @@ When reviewing view-layer changes:
   ApplicationServices
 - Views that command model behavior directly instead of reacting to observable
   state
-- reusable `slotcontent/**` units that grow local handlers, published-event
-  seams, inspector adapters, or support-carrier files instead of staying a
-  three-role reusable MVVM unit
+- reusable `slotcontent/**` units that grow any top-level role outside the
+  closed `View + ViewInputEvent + ContentModel` shape
 
 ## Correctness Rule
 

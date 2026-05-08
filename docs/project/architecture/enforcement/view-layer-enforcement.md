@@ -36,12 +36,14 @@ Focused bundle entrypoint:
   layer invariants below are enforced elsewhere by the neighboring role
   bundles.
 
-The target reusable-slotcontent architecture is now the uniform three-role
-unit `View + ViewInputEvent + ContentModel`, including under
-`slotcontent/primitives/**`. Some currently blocking gates still encode the
-older primitive/support-carrier and reusable-local-IntentHandler model. Those
-legacy gates are listed below as current mechanical behavior, not as the
-canonical target shape.
+The target reusable-slotcontent architecture is now one closed reusable-unit
+shape everywhere under `slotcontent/**`, including `slotcontent/primitives/**`:
+exactly one `*View.java`, exactly one same-stem `*ViewInputEvent.java`, and
+exactly one `*ContentModel.java`. Input interpretation for those reused units
+belongs only to the same-root active `*IntentHandler`. Some currently blocking
+gates still encode the older primitive/support-carrier and reusable-local-
+`IntentHandler` model. Those legacy gates are listed below as current
+mechanical behavior, not as the canonical target shape.
 
 ## Invariant Catalog
 

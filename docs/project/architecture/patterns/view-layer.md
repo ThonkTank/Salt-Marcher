@@ -22,11 +22,14 @@ or more passive `*View` files. Reusable generic content under
 `*ContentModel`.
 
 `ContributionModel` and `ContentModel` are the two concrete forms of the same
-projection-model role. They own the complete state surface relevant to their
-own scope: render text, render data, labels, enablement, selections, active
-tools, and the other input-relevant facts needed so the local `IntentHandler`
-can interpret user input. They do not own shell APIs, domain commands,
-application services, or hidden orchestration channels.
+projection-model role. `ContentModel` owns component-specific presentation
+state and component-specific presentation logic for one reusable
+`slotcontent/**` unit. `ContributionModel` owns root-wide projection state and
+orchestrates child `ContentModel`s so the active root does not collapse into a
+second component-level god-model. Both model forms may expose the input-
+relevant facts their same-root `IntentHandler` needs for interpretation, but
+neither owns shell APIs, domain commands, application services, or hidden
+orchestration channels.
 
 The role lists in this standard are exhaustive. Anything not explicitly named
 as allowed content, allowed dependency, or allowed responsibility does not
@@ -51,21 +54,24 @@ belong in that role.
   as `*ContributionModel` in active roots and `*ContentModel` in reusable
   `slotcontent/**`
 - `ContributionModel`
-  bindable projection surface named `*ContributionModel`; owns all
-  contribution-relevant observable state for one shell-hung contribution,
-  including both render-relevant and input-relevant facts
+  bindable projection surface named `*ContributionModel`; owns the root-wide
+  observable state of one shell-hung contribution, including aggregate
+  render-relevant and input-relevant facts, and orchestrates child
+  `ContentModel`s without absorbing their component-specific logic
 - `ContentModel`
-  bindable projection surface named `*ContentModel`; owns the reusable
-  render-relevant and input-relevant state of one reusable `slotcontent/**`
-  unit when that unit has state of its own
+  bindable projection surface named `*ContentModel`; owns the component-
+  specific render-relevant and input-relevant state of one reusable
+  `slotcontent/**` unit together with that unit's component-specific
+  presentation logic
 - `IntentHandler`
-  optional input-side role named `*IntentHandler`; consumes one full
-  immutable `*ViewInputEvent` snapshot per interactive View surface for one
-  active root or reusable `slotcontent` unit, interprets that snapshot,
-  derives meaning from concrete snapshot fields rather than `source`/`action`
-  command discriminators,
-  mutates only its co-located model when the resulting state is pure
-  view-layer state, and publishes only through Binder-installed
+  optional input-side role named `*IntentHandler` that exists only in active
+  roots; owns one focused `consume(...)` entrypoint per interactive same-root
+  or reused `View` surface, interprets each full immutable `*ViewInputEvent`
+  snapshot from concrete snapshot fields rather than `source`/`action`
+  command discriminators, may read same-root `ContributionModel` state and
+  reused child `ContentModel` state when interpretation needs local UI facts,
+  mutates only those same-root projection models when the resulting state is
+  pure view-layer state, and publishes only through Binder-installed
   `Consumer<*PublishedEvent>` sink seams when a domain write must be
   triggered; it does not synthesize fallback `*ViewInputEvent` carriers for
   its own surface
@@ -100,7 +106,7 @@ src/view/
     <Entry>Contribution.java
     <Entry>Binder.java
     <Entry>ContributionModel.java
-    <Entry>IntentHandler.java         # optional only when the contribution exposes no interactive View
+    <Entry>IntentHandler.java         # optional only when the active root owns interactive input interpretation
     <Entry>*View.java                 # at least one
     <Entry>*ViewInputEvent.java       # only for interactive Views
     <Entry>*PublishedEvent.java       # optional write-side sink carriers
@@ -108,7 +114,7 @@ src/view/
     <Entry>Contribution.java
     <Entry>Binder.java
     <Entry>ContributionModel.java
-    <Entry>IntentHandler.java         # optional only when the contribution exposes no interactive View
+    <Entry>IntentHandler.java         # optional only when the active root owns interactive input interpretation
     <Entry>*View.java                 # at least one
     <Entry>*ViewInputEvent.java       # only for interactive Views
     <Entry>*PublishedEvent.java       # optional write-side sink carriers
@@ -116,7 +122,7 @@ src/view/
     <Entry>Contribution.java
     <Entry>Binder.java
     <Entry>ContributionModel.java
-    <Entry>IntentHandler.java         # optional only when the contribution exposes no interactive View
+    <Entry>IntentHandler.java         # optional only when the active root owns interactive input interpretation
     <Entry>*View.java                 # at least one
     <Entry>*ViewInputEvent.java       # only for interactive Views
     <Entry>*PublishedEvent.java       # optional write-side sink carriers
@@ -144,9 +150,10 @@ Rules:
 - `slotcontent/primitives/**` is only a placement bucket for especially low-
   level reusable UI surfaces; it is not a separate technical-base role family
   with different file types
-- reusable `slotcontent/**` units do not define local `*IntentHandler`,
-  `*PublishedEvent`, `*InspectorEntry`, `*PointerEvent`, `*Scene`,
-  `*Signal`, or `*Support` top-level files
+- reusable `slotcontent/**` units use the closed reusable-unit role shape
+  only: `*View`, same-stem `*ViewInputEvent`, and `*ContentModel`; input
+  interpretation for those units stays in the same-root active
+  `*IntentHandler`
 - a reusable `slotcontent/**` `*View` stays dumb: it renders flat observable
   state from its own `*ContentModel` and emits exactly one same-stem
   `*ViewInputEvent` full snapshot
@@ -154,9 +161,9 @@ Rules:
   presentation state and component-specific presentation logic so the active-
   root `*ContributionModel` can orchestrate child components instead of
   absorbing all reusable component state itself
-- local absence of a reusable `slotcontent/**` `*IntentHandler` never expands
-  `*View` responsibilities; reusable input interpretation belongs in the
-  same-root active `*IntentHandler`
+- reusable input interpretation belongs in the same-root active
+  `*IntentHandler`; that ownership does not widen reusable `*View`
+  responsibilities
 - when passive-View hotspot pressure appears, first move render preparation,
   hit preparation, label/geometry derivation, ordering, selection, and other
   input-relevant facts into the owning `*ContributionModel`,
@@ -219,11 +226,9 @@ Additional rules:
 - reusable `slotcontent/**` units must not depend on contribution-specific
   Views or support types, and `slotcontent/primitives/**` must not depend on
   non-primitive reusable or contribution-specific components
-- `slotcontent/primitives/**` does not admit special support-carrier top-level
-  files; if a reusable primitive needs render-ready or hit-ready data, that
-  data belongs in the unit's `*ContentModel` and its same-stem
-  `*ViewInputEvent`, not in extra top-level `*Scene`, `*PointerEvent`,
-  `*Signal`, or `*Support` files
+- `slotcontent/primitives/**` follows that same closed reusable-unit shape; if
+  a reusable primitive needs render-ready or hit-ready data, that data belongs
+  in the unit's `*ContentModel` and its same-stem `*ViewInputEvent`
 - outside the explicitly documented Binder/domain and `published/**` readback
   seams, no direct domain/view-layer connections are allowed
 - direct `View` callback APIs, direct `IntentHandler -> ApplicationService`
@@ -264,9 +269,11 @@ Local presentation cycle:
    `onViewInputEvent(Consumer<SameStemViewInputEvent>)`
 3. the Binder-installed listener forwards that carrier into the same-root
    `IntentHandler`
-4. the same-root `IntentHandler` interprets the full snapshot into exactly one
-   local input-side meaning from the concrete snapshot fields and mutates only
-   its same-root `ContributionModel` or the reused `ContentModel` it owns
+4. the same-root `IntentHandler` uses the focused entrypoint for that `View`,
+   interprets the full snapshot into exactly one local input-side meaning from
+   the concrete snapshot fields, reads any additional UI facts only from the
+   same-root `ContributionModel` and reused child `ContentModel`s, and mutates
+   only those projection models when the result is pure view-layer state
 5. passive Views react through bindings or listeners to the updated
    `ContributionModel` or `ContentModel`
 
@@ -323,7 +330,8 @@ This means:
   not emit separate presentation-event APIs
 - pure view-layer state such as open dropdown state, transient widget focus,
   or comparable UI-only mode state may be mutated directly by the local
-  `IntentHandler` in its co-located model without a domain roundtrip
+  `IntentHandler` in the same-root `ContributionModel` or a reused child
+  `ContentModel` without a domain roundtrip
 - if one same-context `published/*Model` intentionally represents an
   application-owned session rather than authored write-model truth, that
   session may still own authoritative non-persisted interaction facts such as
@@ -333,9 +341,8 @@ This means:
 - a `View` without a local `IntentHandler` still stays passive; it does not
   infer business meaning, construct write-side carriers, or mutate model state
   through alternate callback seams
-- a reusable unit without a `ContentModel` still stays passive/stateless; it
-  does not shift reusable projection or interpretation duties into the `View`
-  itself
+- a reusable unit owns its own `ContentModel`; reusable projection or
+  interpretation duties do not shift into the passive `View` itself
 - when a reusable shared primitive still needs broad preparation logic after
   that move, the next step is stronger model or readback preparation above the
   primitive, not a spread of free top-level helper files inside the primitive

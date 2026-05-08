@@ -7,6 +7,8 @@ import src.domain.encounter.session.port.EncounterPartyFactsRepository;
 public final class LoadEncounterBudgetUseCase {
 
     private final EncounterPartyFactsRepository party;
+    private static final EncounterDifficultyMath.BudgetSummary EMPTY_BUDGET =
+            new EncounterDifficultyMath.BudgetSummary(java.util.List.of(), 1, 0, 0, 0, 0, 0, 0, 0);
 
     public LoadEncounterBudgetUseCase(EncounterPartyFactsRepository party) {
         this.party = Objects.requireNonNull(party, "party");
@@ -43,11 +45,17 @@ public final class LoadEncounterBudgetUseCase {
         }
 
         static Result noActiveParty() {
-            return new Result(EncounterPartyFactsRepository.Status.NO_ACTIVE_PARTY, null, "No active party is available.");
+            return new Result(
+                    EncounterPartyFactsRepository.Status.NO_ACTIVE_PARTY,
+                    EMPTY_BUDGET,
+                    "No active party is available.");
         }
 
         static Result storageError() {
-            return new Result(EncounterPartyFactsRepository.Status.STORAGE_ERROR, null, "Party data could not be loaded.");
+            return new Result(
+                    EncounterPartyFactsRepository.Status.STORAGE_ERROR,
+                    EMPTY_BUDGET,
+                    "Party data could not be loaded.");
         }
     }
 }

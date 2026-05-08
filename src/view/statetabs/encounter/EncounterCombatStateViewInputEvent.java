@@ -2,20 +2,20 @@ package src.view.statetabs.encounter;
 
 import java.util.Objects;
 
-public record EncounterCombatStateViewInputEvent(Interaction interaction) {
+public record EncounterCombatStateViewInputEvent(Interaction combatInput) {
 
     public EncounterCombatStateViewInputEvent {
-        Objects.requireNonNull(interaction, "interaction");
+        Objects.requireNonNull(combatInput, "combatInput");
     }
 
     public sealed interface Interaction permits AdvanceTurnInput, EndCombatInput, HpChangeInput,
             InitiativeEditInput, PartyMemberJoinInput {
     }
 
-    public record AdvanceTurnInput() implements Interaction {
+    public static final class AdvanceTurnInput implements Interaction {
     }
 
-    public record EndCombatInput() implements Interaction {
+    public static final class EndCombatInput implements Interaction {
     }
 
     public record HpChangeInput(

@@ -66,10 +66,10 @@ describe current mechanical behavior, not target truth.
 - whether a mechanically legal passive `View` is still too broad and should be
   split into clearer surfaces
 - `view-view-reusable-slotcontent-three-role-shape`
-  every reusable `slotcontent/**` passive `View` belongs to a unit that also
-  owns exactly one same-stem `*ViewInputEvent` and exactly one same-unit
-  `*ContentModel`; any additional top-level support-carrier or helper role is
-  target-state migration debt until the gates catch up.
+  every reusable `slotcontent/**` passive `View` belongs to a unit that owns
+  exactly one same-stem `*ViewInputEvent` and exactly one same-unit
+  `*ContentModel`; the closed reusable-unit role shape is `View +
+  ViewInputEvent + ContentModel`.
 - `view-view-no-handler-business-meaning-expansion`
   a reusable passive `View` without a local `IntentHandler` still stays
   passive; it must not infer business meaning inside otherwise legal local

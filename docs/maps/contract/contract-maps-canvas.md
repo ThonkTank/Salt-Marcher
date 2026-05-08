@@ -14,7 +14,7 @@ adopter-native map surface.
 
 Owners:
 
-- producers: canvas-facing adopter `PresentationModel`s
+- producers: canvas-facing adopter `ContentModel`s
 - consumers: `MapCanvasView`, adopter-facing Binders, and adopter-facing
   `IntentHandler` wiring
 

@@ -26,10 +26,12 @@ construction belongs only to the same-stem passive `View`, never to Binder or
 `IntentHandler` fallback code.
 
 The target reusable-slotcontent architecture keeps `*ViewInputEvent` as one of
-the three reusable unit roles, but its interpretation belongs in the same-root
-active `*IntentHandler`, not in a reusable local handler. Some current gates
-still encode the older reusable-local-IntentHandler model; those rows below are
-described as current mechanical drift when needed.
+the three reusable-unit roles. Each interactive `View` owns exactly one same-
+stem `*ViewInputEvent`, and reused `slotcontent/**` carriers are interpreted
+only by the same-root active `*IntentHandler`, not by a reusable local
+handler. Some current gates still encode the older reusable-local-
+`IntentHandler` model; those rows below are described as current mechanical
+drift when needed.
 
 Unified focused bundle entrypoint:
 

@@ -9,111 +9,74 @@ public record EncounterStatePublishedEvent(Mutation mutation) {
         Objects.requireNonNull(mutation, "mutation");
     }
 
-    public sealed interface Mutation permits GenerateMutation, ShiftAlternativeMutation, SaveCurrentPlanMutation,
-            OpenSavedPlanMutation, IncrementCreatureMutation, DecrementCreatureMutation, RemoveCreatureMutation,
-            UndoRemoveMutation, ClearGenerationHistoryMutation, OpenInitiativeMutation, BackToBuilderMutation,
-            ConfirmInitiativeMutation, AdvanceTurnMutation, EndCombatMutation, HpChangeMutation,
-            InitiativeEditMutation, PartyMemberJoinMutation, AwardXpMutation, ReturnToBuilderMutation {
+    public sealed interface Mutation permits BuilderMutation, InitiativeMutation, CombatMutation, ResultMutation {
     }
 
-    public record GenerateMutation() implements Mutation {
+    public enum BuilderChange {
+        GENERATE,
+        SHIFT_ALTERNATIVE,
+        SAVE_CURRENT_PLAN,
+        OPEN_SAVED_PLAN,
+        INCREMENT_CREATURE,
+        DECREMENT_CREATURE,
+        REMOVE_CREATURE,
+        UNDO_REMOVE,
+        CLEAR_GENERATION_HISTORY,
+        OPEN_INITIATIVE
     }
 
-    public record ShiftAlternativeMutation(int alternativeShift) implements Mutation {
-    }
-
-    public record SaveCurrentPlanMutation() implements Mutation {
-    }
-
-    public record OpenSavedPlanMutation(long selectedPlanId) implements Mutation {
-        public OpenSavedPlanMutation {
-            selectedPlanId = Math.max(0L, selectedPlanId);
+    public record BuilderMutation(
+            BuilderChange change,
+            long referenceId,
+            int delta
+    ) implements Mutation {
+        public BuilderMutation {
+            Objects.requireNonNull(change, "change");
+            referenceId = Math.max(0L, referenceId);
         }
     }
 
-    public record IncrementCreatureMutation(long creatureId) implements Mutation {
-        public IncrementCreatureMutation {
-            creatureId = Math.max(0L, creatureId);
+    public record InitiativeMutation(
+            boolean returnToBuilder,
+            List<SubmittedInitiative> submissions
+    ) implements Mutation {
+        public InitiativeMutation {
+            submissions = submissions == null ? List.of() : List.copyOf(submissions);
         }
     }
 
-    public record DecrementCreatureMutation(long creatureId) implements Mutation {
-        public DecrementCreatureMutation {
-            creatureId = Math.max(0L, creatureId);
-        }
-    }
-
-    public record RemoveCreatureMutation(long creatureId) implements Mutation {
-        public RemoveCreatureMutation {
-            creatureId = Math.max(0L, creatureId);
-        }
-    }
-
-    public record UndoRemoveMutation(long undoToken) implements Mutation {
-        public UndoRemoveMutation {
-            undoToken = Math.max(0L, undoToken);
-        }
-    }
-
-    public record ClearGenerationHistoryMutation() implements Mutation {
-    }
-
-    public record OpenInitiativeMutation() implements Mutation {
-    }
-
-    public record BackToBuilderMutation() implements Mutation {
-    }
-
-    public record ConfirmInitiativeMutation(List<InitiativeValue> initiatives) implements Mutation {
-        public ConfirmInitiativeMutation {
-            initiatives = initiatives == null ? List.of() : List.copyOf(initiatives);
-        }
-    }
-
-    public record InitiativeValue(String id, int initiative) {
-        public InitiativeValue {
-            id = id == null ? "" : id;
-        }
-    }
-
-    public record AdvanceTurnMutation() implements Mutation {
-    }
-
-    public record EndCombatMutation() implements Mutation {
-    }
-
-    public record HpChangeMutation(
+    public record SubmittedInitiative(
             String combatantId,
-            int amount,
+            int rolledInitiative
+    ) {
+        public SubmittedInitiative {
+            combatantId = combatantId == null ? "" : combatantId;
+        }
+    }
+
+    public enum CombatChange {
+        ADVANCE_TURN,
+        END_COMBAT,
+        MUTATE_HP,
+        ADJUST_INITIATIVE,
+        ADD_PARTY_MEMBER_TO_COMBAT
+    }
+
+    public record CombatMutation(
+            CombatChange change,
+            String combatantId,
+            int numericValue,
+            long partyMemberId,
             boolean healing
     ) implements Mutation {
-        public HpChangeMutation {
+        public CombatMutation {
+            Objects.requireNonNull(change, "change");
             combatantId = combatantId == null ? "" : combatantId;
-            amount = Math.max(0, amount);
-        }
-    }
-
-    public record InitiativeEditMutation(
-            String combatantId,
-            int initiativeValue
-    ) implements Mutation {
-        public InitiativeEditMutation {
-            combatantId = combatantId == null ? "" : combatantId;
-        }
-    }
-
-    public record PartyMemberJoinMutation(
-            long partyMemberId,
-            int initiativeValue
-    ) implements Mutation {
-        public PartyMemberJoinMutation {
+            numericValue = Math.max(0, numericValue);
             partyMemberId = Math.max(0L, partyMemberId);
         }
     }
 
-    public record AwardXpMutation() implements Mutation {
-    }
-
-    public record ReturnToBuilderMutation() implements Mutation {
+    public record ResultMutation(boolean awardExperience) implements Mutation {
     }
 }

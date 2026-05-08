@@ -1,11 +1,13 @@
 package src.data.sessionplanner;
 
-import java.util.Objects;
 import shell.api.ServiceContribution;
 import shell.api.ServiceRegistry;
 import src.data.sessionplanner.query.ApplicationSessionPlannerFactsQueryAdapter;
 import src.data.sessionplanner.repository.SessionPlannerPublishedStateRepositoryAdapter;
 import src.data.sessionplanner.repository.SqliteSessionPlanRepository;
+import src.domain.encounter.EncounterApplicationService;
+import src.domain.encounter.published.EncounterPlanBudgetModel;
+import src.domain.encounter.published.SavedEncounterPlanListModel;
 import src.domain.party.PartyApplicationService;
 import src.domain.party.published.ActivePartyModel;
 import src.domain.party.published.AdventuringDayCalculationModel;
@@ -14,7 +16,6 @@ import src.domain.sessionplanner.published.SessionPlannerCurrentSessionModel;
 import src.domain.sessionplanner.published.SessionPlannerEncountersModel;
 import src.domain.sessionplanner.published.SessionPlannerParticipantsModel;
 import src.domain.sessionplanner.published.SessionPlannerStatePanelModel;
-import src.domain.sessionplanner.session.port.SessionEncounterFactsLookup;
 import src.domain.sessionplanner.session.port.SessionPlanRepository;
 
 public final class SessionPlannerServiceContribution implements ServiceContribution {
@@ -27,85 +28,64 @@ public final class SessionPlannerServiceContribution implements ServiceContribut
     @Override
     public void register(ServiceRegistry.Builder builder) {
         SessionPlanRepository repository = new SqliteSessionPlanRepository();
-        ForeignServices foreignServices = new ForeignServices();
-        ApplicationSessionPlannerFactsQueryAdapter facts = new ApplicationSessionPlannerFactsQueryAdapter(
-                foreignServices::party,
-                foreignServices::activePartyModel,
-                foreignServices::adventuringDayCalculationModel,
-                foreignServices::encounterFacts);
-        SessionPlannerPublishedStateRepositoryAdapter publishedState =
-                new SessionPlannerPublishedStateRepositoryAdapter(repository, facts, facts);
-        SessionPlannerApplicationService applicationService =
-                new SessionPlannerApplicationService(repository, facts, facts, publishedState);
+        AssemblyFactory assemblies = new AssemblyFactory(repository);
         builder.registerFactory(
                 SessionPlannerApplicationService.class,
-                services -> {
-                    foreignServices.bind(services);
-                    return applicationService;
-                });
+                services -> assemblies.resolve(services).applicationService);
         builder.registerFactory(
                 SessionPlannerCurrentSessionModel.class,
-                services -> {
-                    foreignServices.bind(services);
-                    services.require(SessionPlannerApplicationService.class);
-                    return publishedState.currentSessionModel;
-                });
+                services -> assemblies.resolve(services).currentSessionModel);
         builder.registerFactory(
                 SessionPlannerParticipantsModel.class,
-                services -> {
-                    foreignServices.bind(services);
-                    services.require(SessionPlannerApplicationService.class);
-                    return publishedState.participantsModel;
-                });
+                services -> assemblies.resolve(services).participantsModel);
         builder.registerFactory(
                 SessionPlannerEncountersModel.class,
-                services -> {
-                    foreignServices.bind(services);
-                    services.require(SessionPlannerApplicationService.class);
-                    return publishedState.encountersModel;
-                });
+                services -> assemblies.resolve(services).encountersModel);
         builder.registerFactory(
                 SessionPlannerStatePanelModel.class,
-                services -> {
-                    foreignServices.bind(services);
-                    services.require(SessionPlannerApplicationService.class);
-                    return publishedState.statePanelModel;
-                });
+                services -> assemblies.resolve(services).statePanelModel);
     }
 
-    private static final class ForeignServices {
+    private static final class AssemblyFactory {
 
-        private boolean bound;
-        private PartyApplicationService party;
-        private ActivePartyModel activePartyModel;
-        private AdventuringDayCalculationModel adventuringDayCalculationModel;
-        private SessionEncounterFactsLookup encounterFacts;
+        private final SessionPlanRepository repository;
+        private ResolvedAssembly resolved;
 
-        private void bind(ServiceRegistry services) {
-            if (bound) {
-                return;
+        private AssemblyFactory(SessionPlanRepository repository) {
+            this.repository = repository;
+        }
+
+        private ResolvedAssembly resolve(ServiceRegistry services) {
+            if (resolved == null) {
+                resolved = new ResolvedAssembly(repository, services);
             }
-            party = services.require(PartyApplicationService.class);
-            activePartyModel = services.require(ActivePartyModel.class);
-            adventuringDayCalculationModel = services.require(AdventuringDayCalculationModel.class);
-            encounterFacts = services.require(SessionEncounterFactsLookup.class);
-            bound = true;
+            return resolved;
         }
+    }
 
-        private PartyApplicationService party() {
-            return Objects.requireNonNull(party, "party");
-        }
+    private static final class ResolvedAssembly {
 
-        private ActivePartyModel activePartyModel() {
-            return Objects.requireNonNull(activePartyModel, "activePartyModel");
-        }
+        private final SessionPlannerApplicationService applicationService;
+        private final SessionPlannerCurrentSessionModel currentSessionModel;
+        private final SessionPlannerParticipantsModel participantsModel;
+        private final SessionPlannerEncountersModel encountersModel;
+        private final SessionPlannerStatePanelModel statePanelModel;
 
-        private AdventuringDayCalculationModel adventuringDayCalculationModel() {
-            return Objects.requireNonNull(adventuringDayCalculationModel, "adventuringDayCalculationModel");
-        }
-
-        private SessionEncounterFactsLookup encounterFacts() {
-            return Objects.requireNonNull(encounterFacts, "encounterFacts");
+        private ResolvedAssembly(SessionPlanRepository repository, ServiceRegistry services) {
+            ApplicationSessionPlannerFactsQueryAdapter facts = new ApplicationSessionPlannerFactsQueryAdapter(
+                    services.require(PartyApplicationService.class),
+                    services.require(ActivePartyModel.class),
+                    services.require(AdventuringDayCalculationModel.class),
+                    services.require(EncounterApplicationService.class),
+                    services.require(SavedEncounterPlanListModel.class),
+                    services.require(EncounterPlanBudgetModel.class));
+            SessionPlannerPublishedStateRepositoryAdapter publishedState =
+                    new SessionPlannerPublishedStateRepositoryAdapter(repository, facts, facts);
+            this.applicationService = new SessionPlannerApplicationService(repository, facts, facts, publishedState);
+            this.currentSessionModel = publishedState.currentSessionModel;
+            this.participantsModel = publishedState.participantsModel;
+            this.encountersModel = publishedState.encountersModel;
+            this.statePanelModel = publishedState.statePanelModel;
         }
     }
 }

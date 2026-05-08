@@ -46,7 +46,7 @@ role language. That naming is migration debt, not a second architecture.
 ## Boundary Rules
 
 - the passive map view speaks canvas-space only
-- each adopter owns exactly one canvas-facing map-slot `PresentationModel`
+- each adopter owns exactly one canvas-facing map-slot `ContentModel`
   that projects adopter-native published content into `MapRenderScene`
 - dungeon converts `canvas <-> dungeon grid`
 - hex converts `canvas <-> internal hex coordinates`
@@ -111,8 +111,8 @@ The passive canvas consumes prepared scene hit areas directly from
 - no shared frontend root language that uses dungeon-grid or hex-native
   coordinates
 - no adopter-boundary imports in `MapCanvasView`
-- no pointer-to-domain path that skips `CanvasPointerEvent`,
-  `IntentHandler`/`PresentationModel`, or the Binder
+- no pointer-to-domain path that skips `CanvasPointerEvent`, the same-root
+  `IntentHandler`, the canvas-facing `ContentModel`, or the Binder
 
 ## Verification Notes
 

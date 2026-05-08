@@ -27,10 +27,13 @@ neighboring role-enforcement documents and in the view-layer and layering
 standards. This role therefore consumes documented same-stem carriers but does
 not own or synthesize them.
 
-The target architecture keeps `*IntentHandler` only in active roots. Reusable
-`slotcontent/**` units no longer own local handlers; reused input interpretation
-belongs in the same-root active handler. Some current gates still model
-reusable local handlers and are described below as mechanical drift.
+The target architecture keeps `*IntentHandler` only in active roots. Reused
+`slotcontent/**` `*ViewInputEvent` families are interpreted only by that same-
+root active handler through one focused consume entrypoint per interactive
+same-root or reused `View` surface. The handler may read the same-root
+`ContributionModel` and reused child `ContentModel`s when interpretation needs
+additional UI facts. Some current gates still model reusable local handlers
+and are described below as mechanical drift.
 
 Unified focused bundle entrypoint:
 
@@ -54,7 +57,7 @@ Unified focused bundle entrypoint:
 
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
-| `view-intenthandler-colocated-model-dependency-only` | Enforced | every `*IntentHandler.java` under `src/view/**` | Error Prone `ViewIntentHandlerDependencyBoundary` | `./gradlew compileJava` | The current gate proves only that an `IntentHandler` reaches model state through same-package `*ContributionModel` or `*ContentModel`. Target architecture is slightly broader: an active-root handler may also read reused child `*ContentModel`s that belong to the contribution it orchestrates. |
+| `view-intenthandler-colocated-model-dependency-only` | Enforced | every `*IntentHandler.java` under `src/view/**` | Error Prone `ViewIntentHandlerDependencyBoundary` | `./gradlew compileJava` | The current gate proves only that an `IntentHandler` reaches model state through same-package `*ContributionModel` or `*ContentModel`. Target architecture is slightly broader: an active-root handler may read the same-root `*ContributionModel` and the reused child `*ContentModel`s that belong to the contribution it orchestrates. |
 | `view-intenthandler-colocated-viewinputevent-dependency-only` | Enforced | every `*IntentHandler.java` under `src/view/**` | Error Prone `ViewIntentHandlerDependencyBoundary` and Error Prone `ViewIntentHandlerViewInputEvent` | `./gradlew compileJava` | The current gate proves only same-package `*ViewInputEvent` consumption. Target architecture is slightly broader: an active-root handler may also consume reused child `slotcontent/**` `*ViewInputEvent` families wired in by its Binder. |
 | `view-intenthandler-optional-local-publishedevent-write-seam` | Enforced | every `*IntentHandler.java` that opens a Binder-mediated outward-work seam | Error Prone `ViewIntentHandlerDependencyBoundary` and ArchUnit `intentHandlersWithPublishedEventSinkMustOwnMatchingPublishedEvents` | `./gradlew compileJava` and `./gradlew checkArchitecture` | When a local input interpretation must trigger a domain write, an `IntentHandler` may depend on a matching same-package `*PublishedEvent` family and expose that seam only through the exact `onPublishedEventRequested(Consumer<MatchingLocalPublishedEvent>)` contract. |
 | `view-intenthandler-same-surface-local-support-only` | Review-Owned | every `*IntentHandler.java` under `src/view/**` | none | none | Beyond the allowed model and carrier families above, helper state and helper types stay local to the same handler surface instead of becoming hidden foreign-role or cross-unit coordination channels. |
@@ -76,7 +79,7 @@ communication seam obligations documented below.
 
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
-| `view-intenthandler-viewinputevent-consume-entrypoint` | Enforced | every `*IntentHandler.java` under `src/view/**` | Error Prone `ViewIntentHandlerViewInputEvent` | `./gradlew compileJava` | An `IntentHandler` exposes fire-and-forget `consume(...)` entrypoints for the `*ViewInputEvent` families it owns. The current gate family still proves only same-package consumption, while the target architecture also needs active-root entrypoints for reused `slotcontent/**` carriers. |
+| `view-intenthandler-viewinputevent-consume-entrypoint` | Enforced | every `*IntentHandler.java` under `src/view/**` | Error Prone `ViewIntentHandlerViewInputEvent` | `./gradlew compileJava` | An `IntentHandler` exposes one fire-and-forget `consume(...)` entrypoint per `*ViewInputEvent` family it interprets. The current gate family still proves only same-package consumption, while the target architecture also needs active-root entrypoints for reused `slotcontent/**` carriers. |
 | `view-intenthandler-no-viewinputevent-discriminator-dispatch` | Enforced | every `consume(SameRootViewInputEvent)` overload in `*IntentHandler.java` under `src/view/**` | Error Prone `ViewIntentHandlerViewInputEvent` | `./gradlew compileJava` | `IntentHandler.consume(...)` derives meaning from concrete `*ViewInputEvent` snapshot fields instead of dispatching through `event.source()` or `event.action()` command discriminators. |
 | `view-intenthandler-publishedevent-consumer-sink-contract` | Enforced | every `*IntentHandler.java` that exposes a Binder-mediated outward-work seam | ArchUnit `intentHandlersWithPublishedEventSinkMustOwnMatchingPublishedEvents` | `./gradlew checkArchitecture` | If an `IntentHandler` exposes a Binder-mediated outward-work seam, that seam is `onPublishedEventRequested(Consumer<MatchingLocalPublishedEvent>)` for a matching same-package `*PublishedEvent` family; alternate non-private PublishedEvent sink or proxy methods are forbidden. |
 
