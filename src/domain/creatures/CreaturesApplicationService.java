@@ -25,6 +25,9 @@ import src.domain.creatures.runtime.port.CreaturesPublishedStateRepository;
 })
 public final class CreaturesApplicationService {
 
+    private static final CreatureCatalogLookup.DistinctFilterValues EMPTY_FILTER_VALUES =
+            new CreatureCatalogLookup.DistinctFilterValues(List.of(), List.of(), List.of(), List.of(), List.of());
+
     private final LoadCreatureFilterOptionsUseCase loadCreatureFilterOptionsUseCase;
     private final SearchCreatureCatalogUseCase searchCreatureCatalogUseCase;
     private final LoadCreatureDetailUseCase loadCreatureDetailUseCase;
@@ -52,7 +55,7 @@ public final class CreaturesApplicationService {
         } catch (RuntimeException exception) {
             publishedStateRepository.publishFilterOptions(new CreaturesPublishedStateRepository.FilterOptionsPublication(
                     CreaturesPublishedStateRepository.FilterOptionsStatus.STORAGE_ERROR,
-                    null,
+                    EMPTY_FILTER_VALUES,
                     List.of()));
         }
     }
