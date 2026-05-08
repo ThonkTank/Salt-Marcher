@@ -46,6 +46,23 @@ public record EncounterSessionCommand(
                 false);
     }
 
+    public static EncounterSessionCommand updateBuilderInputs(EncounterGenerationInputs builderInputs) {
+        return new EncounterSessionCommand(
+                Action.UPDATE_BUILDER_INPUTS,
+                Optional.empty(),
+                builderInputs,
+                0L,
+                0L,
+                0,
+                0L,
+                List.of(),
+                "",
+                0,
+                0L,
+                0,
+                false);
+    }
+
     public enum Action {
         REFRESH,
         UPDATE_BUILDER_INPUTS,

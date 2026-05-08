@@ -44,7 +44,7 @@ public final class TravelDungeonMapDataProjector {
     ) {
         if (boundary == null) {
             return new ApplyTravelDungeonSessionUseCase.BoundaryData(
-                    ApplyTravelDungeonSessionUseCase.BoundaryKind.WALL,
+                    ApplyTravelDungeonSessionUseCase.BoundaryKind.fromExternalKind("wall"),
                     1L,
                     "wall",
                     new ApplyTravelDungeonSessionUseCase.EdgeData(

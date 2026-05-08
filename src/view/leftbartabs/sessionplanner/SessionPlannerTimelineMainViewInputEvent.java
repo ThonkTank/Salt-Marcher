@@ -40,6 +40,10 @@ public record SessionPlannerTimelineMainViewInputEvent(TimelineInput timelineInp
             encounterToken = Math.max(0L, encounterToken);
             direction = direction == null ? Direction.UP : direction;
         }
+
+        boolean movesDown() {
+            return direction.isDown();
+        }
     }
 
     public record RemoveEncounterInput(long encounterTokenToRemove)
@@ -59,16 +63,32 @@ public record SessionPlannerTimelineMainViewInputEvent(TimelineInput timelineInp
             rightEncounterId = Math.max(0L, rightEncounterId);
             restSelection = restSelection == null ? RestSelection.NONE : restSelection;
         }
+
+        boolean clearsRestGap() {
+            return restSelection.isNone();
+        }
     }
 
     public enum Direction {
         UP,
-        DOWN
+        DOWN;
+
+        boolean isDown() {
+            return this == DOWN;
+        }
     }
 
     public enum RestSelection {
         NONE,
         SHORT_REST,
-        LONG_REST
+        LONG_REST;
+
+        static RestSelection normalized(RestSelection selection) {
+            return selection == null ? NONE : selection;
+        }
+
+        boolean isNone() {
+            return this == NONE;
+        }
     }
 }

@@ -6,83 +6,11 @@ import org.jspecify.annotations.Nullable;
 import src.domain.encounter.generation.policy.EncounterDifficultyMath;
 import src.domain.encounter.published.EncounterBudgetSummary;
 import src.domain.encounter.published.EncounterDifficultyBand;
-import src.domain.encounter.published.EncounterGenerationStatus;
-import src.domain.encounter.published.EncounterPlanBudgetStatus;
-import src.domain.encounter.published.EncounterPlanBudgetSummary;
 import src.domain.encounter.published.EncounterTuningPreviewLabels;
 
 public final class EncounterBudgetBoundaryTranslator {
 
     private EncounterBudgetBoundaryTranslator() {
-    }
-
-    public static @Nullable EncounterBudgetSummary toPublishedBudget(
-            EncounterGenerationUseCase.@Nullable BudgetSummary budget
-    ) {
-        if (budget == null) {
-            return null;
-        }
-        return new EncounterBudgetSummary(
-                budget.partyLevels(),
-                budget.averageLevel(),
-                budget.easyXp(),
-                budget.mediumXp(),
-                budget.hardXp(),
-                budget.deadlyXp(),
-                budget.dailyBudgetXp(),
-                budget.consumedDailyXp(),
-                budget.remainingDailyXp());
-    }
-
-    public static @Nullable EncounterBudgetSummary toPublishedBudget(
-            EncounterDifficultyMath.@Nullable BudgetSummary budget
-    ) {
-        if (budget == null) {
-            return null;
-        }
-        return new EncounterBudgetSummary(
-                budget.activePartyLevels(),
-                budget.averagePartyLevel(),
-                budget.easyThreshold(),
-                budget.mediumThreshold(),
-                budget.hardThreshold(),
-                budget.deadlyThreshold(),
-                budget.dailyBudgetXp(),
-                budget.consumedDailyXp(),
-                budget.remainingDailyXp());
-    }
-
-    public static @Nullable EncounterPlanBudgetSummary toPublishedPlanBudget(
-            LoadEncounterPlanBudgetUseCase.@Nullable Summary summary
-    ) {
-        if (summary == null) {
-            return null;
-        }
-        return new EncounterPlanBudgetSummary(
-                summary.planId(),
-                summary.name(),
-                summary.generatedLabel(),
-                summary.partyLevels(),
-                summary.averageLevel(),
-                summary.easyXp(),
-                summary.mediumXp(),
-                summary.hardXp(),
-                summary.deadlyXp(),
-                summary.creatureCount(),
-                summary.totalBaseXp(),
-                summary.adjustedXp(),
-                summary.xpMultiplier(),
-                summary.difficultyLabel());
-    }
-
-    public static EncounterPlanBudgetStatus toPublishedPlanBudgetStatus(
-            LoadEncounterPlanBudgetUseCase.Status status
-    ) {
-        return EncounterPlanBudgetStatus.valueOf(status == null ? "STORAGE_ERROR" : status.name());
-    }
-
-    public static EncounterGenerationStatus mapBudgetStatus(LoadEncounterBudgetUseCase.Status status) {
-        return EncounterGenerationStatus.valueOf(status == null ? "STORAGE_ERROR" : status.name());
     }
 
     public static EncounterTuningPreviewLabels tuningPreviewLabels(@Nullable EncounterBudgetSummary budget) {

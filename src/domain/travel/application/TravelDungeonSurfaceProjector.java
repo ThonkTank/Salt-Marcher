@@ -77,7 +77,7 @@ public final class TravelDungeonSurfaceProjector {
                         position == null ? 0 : position.tile().r(),
                         position == null ? 0 : position.tile().level()),
                 position == null
-                        ? ApplyTravelDungeonSessionUseCase.Direction.SOUTH
+                        ? ApplyTravelDungeonSessionUseCase.Direction.defaultDirection()
                         : ApplyTravelDungeonSessionUseCase.Direction.fromName(position.heading().name()));
     }
 
@@ -106,7 +106,7 @@ public final class TravelDungeonSurfaceProjector {
                         ApplyTravelDungeonSessionUseCase.LocationKind.TILE,
                         0L,
                         new ApplyTravelDungeonSessionUseCase.CellData(0, 0, 0),
-                        ApplyTravelDungeonSessionUseCase.Direction.SOUTH),
+                        ApplyTravelDungeonSessionUseCase.Direction.defaultDirection()),
                 "Overworld",
                 "Overworld-Feld " + tileId,
                 "-",

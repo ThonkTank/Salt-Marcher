@@ -1,4 +1,4 @@
-package src.domain.encounter.session.port;
+package src.domain.encounter;
 
 import src.domain.encounter.published.EncounterBuilderInputs;
 import src.domain.encounter.published.EncounterBuilderInputsModel;

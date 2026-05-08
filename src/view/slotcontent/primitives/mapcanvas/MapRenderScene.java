@@ -83,7 +83,7 @@ public record MapRenderScene(
 
     public record MapCanvasPolygonPrimitive(
             String hitRef,
-            @Nullable String selectionRef,
+            String selectionRef,
             int z,
             List<CanvasPointerEvent.MapCanvasPoint> polygon,
             PaintStyle style
@@ -91,7 +91,7 @@ public record MapRenderScene(
 
         public MapCanvasPolygonPrimitive {
             hitRef = hitRef == null ? "" : hitRef;
-            selectionRef = selectionRef == null ? null : selectionRef;
+            selectionRef = selectionRef == null ? "" : selectionRef;
             polygon = polygon == null ? List.of() : List.copyOf(polygon);
             style = style == null ? new PaintStyle(null, null, 0.0, 1.0, false) : style;
         }
@@ -99,7 +99,7 @@ public record MapRenderScene(
 
     public record BoundaryPrimitive(
             String hitRef,
-            @Nullable String selectionRef,
+            String selectionRef,
             int z,
             List<CanvasPointerEvent.MapCanvasPoint> polyline,
             PaintStyle style
@@ -107,7 +107,7 @@ public record MapRenderScene(
 
         public BoundaryPrimitive {
             hitRef = hitRef == null ? "" : hitRef;
-            selectionRef = selectionRef == null ? null : selectionRef;
+            selectionRef = selectionRef == null ? "" : selectionRef;
             polyline = polyline == null ? List.of() : List.copyOf(polyline);
             style = style == null ? new PaintStyle(null, null, 0.0, 1.0, false) : style;
         }
@@ -115,7 +115,7 @@ public record MapRenderScene(
 
     public record GlyphPrimitive(
             String hitRef,
-            @Nullable String selectionRef,
+            String selectionRef,
             int z,
             List<CanvasPointerEvent.MapCanvasPoint> polygon,
             PaintStyle style,
@@ -125,7 +125,7 @@ public record MapRenderScene(
 
         public GlyphPrimitive {
             hitRef = hitRef == null ? "" : hitRef;
-            selectionRef = selectionRef == null ? null : selectionRef;
+            selectionRef = selectionRef == null ? "" : selectionRef;
             polygon = polygon == null ? List.of() : List.copyOf(polygon);
             style = style == null ? new PaintStyle(null, null, 0.0, 1.0, false) : style;
             label = label == null ? "" : label;
@@ -135,7 +135,7 @@ public record MapRenderScene(
 
     public record TextPrimitive(
             String hitRef,
-            @Nullable String selectionRef,
+            String selectionRef,
             int z,
             String text,
             double centerX,
@@ -148,7 +148,7 @@ public record MapRenderScene(
 
         public TextPrimitive {
             hitRef = hitRef == null ? "" : hitRef;
-            selectionRef = selectionRef == null ? null : selectionRef;
+            selectionRef = selectionRef == null ? "" : selectionRef;
             text = text == null ? "" : text;
             width = Math.max(0.0, width);
             height = Math.max(0.0, height);

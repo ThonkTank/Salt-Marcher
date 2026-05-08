@@ -262,34 +262,23 @@ public final class ApplyTravelDungeonSessionUseCase {
         TRANSITION
     }
 
-    public static final class Direction {
-
-        public static final Direction NORTH = new Direction("NORTH");
-        public static final Direction EAST = new Direction("EAST");
-        public static final Direction SOUTH = new Direction("SOUTH");
-        public static final Direction WEST = new Direction("WEST");
-
-        private final String name;
-
-        private Direction(String name) {
-            this.name = name;
-        }
+    public enum Direction {
+        NORTH,
+        EAST,
+        SOUTH,
+        WEST;
 
         public static Direction fromName(String directionName) {
-            if ("NORTH".equals(directionName)) {
-                return NORTH;
-            }
-            if ("EAST".equals(directionName)) {
-                return EAST;
-            }
-            if ("WEST".equals(directionName)) {
-                return WEST;
-            }
-            return SOUTH;
+            return switch (directionName == null ? "" : directionName.trim().toUpperCase()) {
+                case "NORTH" -> NORTH;
+                case "EAST" -> EAST;
+                case "WEST" -> WEST;
+                default -> SOUTH;
+            };
         }
 
-        public String name() {
-            return name;
+        public static Direction defaultDirection() {
+            return SOUTH;
         }
     }
 
@@ -330,23 +319,16 @@ public final class ApplyTravelDungeonSessionUseCase {
         }
     }
 
-    public static final class GridTopology {
-
-        public static final GridTopology SQUARE = new GridTopology("SQUARE");
-        public static final GridTopology HEX = new GridTopology("HEX");
-
-        private final String name;
-
-        private GridTopology(String name) {
-            this.name = name;
-        }
+    public enum GridTopology {
+        SQUARE,
+        HEX;
 
         public static GridTopology fromName(String topologyName) {
-            return "HEX".equals(topologyName) ? HEX : SQUARE;
+            return "HEX".equalsIgnoreCase(topologyName) ? HEX : SQUARE;
         }
 
-        public String name() {
-            return name;
+        public boolean isHex() {
+            return this == HEX;
         }
     }
 
@@ -388,14 +370,13 @@ public final class ApplyTravelDungeonSessionUseCase {
         }
     }
 
-    public static final class BoundaryKind {
-
-        public static final BoundaryKind WALL = new BoundaryKind("wall");
-        public static final BoundaryKind DOOR = new BoundaryKind("door");
+    public enum BoundaryKind {
+        WALL("wall"),
+        DOOR("door");
 
         private final String externalKind;
 
-        private BoundaryKind(String externalKind) {
+        BoundaryKind(String externalKind) {
             this.externalKind = externalKind;
         }
 
@@ -405,6 +386,10 @@ public final class ApplyTravelDungeonSessionUseCase {
 
         public String externalKind() {
             return externalKind;
+        }
+
+        public boolean isDoor() {
+            return this == DOOR;
         }
     }
 

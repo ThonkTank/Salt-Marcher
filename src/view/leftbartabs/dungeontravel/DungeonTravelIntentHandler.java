@@ -8,7 +8,7 @@ final class DungeonTravelIntentHandler {
 
     private final DungeonTravelContributionModel presentationModel;
     private Consumer<DungeonTravelStatePublishedEvent> publishedEventListener = ignored -> {};
-    private Consumer<ViewEffect> viewEffectListener = ignored -> {};
+    private Runnable resetCameraListener = () -> {};
 
     DungeonTravelIntentHandler(DungeonTravelContributionModel presentationModel) {
         this.presentationModel = Objects.requireNonNull(presentationModel, "presentationModel");
@@ -18,8 +18,8 @@ final class DungeonTravelIntentHandler {
         publishedEventListener = listener == null ? ignored -> {} : listener;
     }
 
-    void onViewEffectRequested(Consumer<ViewEffect> listener) {
-        viewEffectListener = listener == null ? ignored -> {} : listener;
+    void onResetCameraRequested(Runnable listener) {
+        resetCameraListener = listener == null ? () -> {} : listener;
     }
 
     void consume(DungeonTravelControlsViewInputEvent event) {
@@ -27,7 +27,7 @@ final class DungeonTravelIntentHandler {
             return;
         }
         if (event.resetViewRequested()) {
-            viewEffectListener.accept(ViewEffect.RESET_CAMERA);
+            resetCameraListener.run();
             return;
         }
         if (event.projectionLevelShift() != 0) {
@@ -66,7 +66,4 @@ final class DungeonTravelIntentHandler {
         }
     }
 
-    enum ViewEffect {
-        RESET_CAMERA
-    }
 }

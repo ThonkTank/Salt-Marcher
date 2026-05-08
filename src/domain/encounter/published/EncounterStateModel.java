@@ -5,16 +5,19 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-public record EncounterStateModel(
-        Supplier<EncounterStateSnapshot> currentSupplier,
-        Function<Consumer<EncounterStateSnapshot>, Runnable> subscribeAction
-) {
+public final class EncounterStateModel {
 
-    public EncounterStateModel {
-        currentSupplier = currentSupplier == null
+    private final Supplier<EncounterStateSnapshot> currentSupplier;
+    private final Function<Consumer<EncounterStateSnapshot>, Runnable> subscribeAction;
+
+    public EncounterStateModel(
+            Supplier<EncounterStateSnapshot> currentSupplier,
+            Function<Consumer<EncounterStateSnapshot>, Runnable> subscribeAction
+    ) {
+        this.currentSupplier = currentSupplier == null
                 ? () -> EncounterStateSnapshot.empty("Encounter state is not registered.")
                 : currentSupplier;
-        subscribeAction = subscribeAction == null ? listener -> () -> { } : subscribeAction;
+        this.subscribeAction = subscribeAction == null ? listener -> () -> { } : subscribeAction;
     }
 
     public EncounterStateSnapshot current() {

@@ -3,23 +3,23 @@ package src.domain.encounter.application;
 import static src.domain.encounter.session.value.EncounterSessionValues.*;
 
 import src.domain.creatures.published.CreatureDetail;
-import src.domain.encounter.generation.policy.EncounterDifficultyMath;
-import src.domain.encounter.generation.value.EncounterDifficultyIntent;
-import src.domain.encounter.generation.value.EncounterTuningIntent;
+import src.domain.encounter.published.EncounterBudgetSummary;
+import src.domain.encounter.published.EncounterDifficultyBand;
+import src.domain.encounter.published.EncounterGenerationTuning;
 
 public final class EncounterSessionRuntimeProjector {
 
     private EncounterSessionRuntimeProjector() {
     }
 
-    public static BudgetData toSessionBudget(EncounterDifficultyMath.BudgetSummary budget) {
+    public static BudgetData toSessionBudget(EncounterBudgetSummary budget) {
         return new BudgetData(
-                budget.activePartyLevels(),
-                budget.averagePartyLevel(),
-                budget.easyThreshold(),
-                budget.mediumThreshold(),
-                budget.hardThreshold(),
-                budget.deadlyThreshold());
+                budget.partyLevels(),
+                budget.averageLevel(),
+                budget.easyXp(),
+                budget.mediumXp(),
+                budget.hardXp(),
+                budget.deadlyXp());
     }
 
     public static CreatureDetailData toSessionCreatureDetail(CreatureDetail detail) {
@@ -34,17 +34,18 @@ public final class EncounterSessionRuntimeProjector {
                 detail.creatureType());
     }
 
-    public static String difficultyLabel(EncounterDifficultyIntent band) {
-        return switch (band == null ? EncounterDifficultyIntent.MEDIUM : band) {
-            case EASY -> "Easy";
-            case MEDIUM -> "Medium";
-            case HARD -> "Hard";
-            case DEADLY -> "Deadly";
+    public static String difficultyLabel(EncounterDifficultyBand band) {
+        EncounterDifficultyBand effective = band == null ? EncounterDifficultyBand.defaultBand() : band;
+        return switch (effective.name()) {
+            case "EASY" -> "Easy";
+            case "HARD" -> "Hard";
+            case "DEADLY" -> "Deadly";
+            default -> "Medium";
         };
     }
 
-    public static String tuningLabel(EncounterTuningIntent tuning) {
-        EncounterTuningIntent effective = tuning == null ? EncounterTuningIntent.defaultIntent() : tuning;
+    public static String tuningLabel(EncounterGenerationTuning tuning) {
+        EncounterGenerationTuning effective = tuning == null ? EncounterGenerationTuning.defaultTuning() : tuning;
         return "B" + effective.balanceLevel()
                 + "/M" + Math.round(effective.amountValue())
                 + "/D" + effective.diversityLevel();

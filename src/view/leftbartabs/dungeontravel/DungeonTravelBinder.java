@@ -59,11 +59,7 @@ final class DungeonTravelBinder {
             DungeonTravelIntentHandler intentHandler,
             DungeonMapView main
     ) {
-        intentHandler.onViewEffectRequested(effect -> {
-            if (effect == DungeonTravelIntentHandler.ViewEffect.RESET_CAMERA) {
-                main.resetCamera();
-            }
-        });
+        intentHandler.onResetCameraRequested(main::resetCamera);
     }
 
     private static void applySnapshot(

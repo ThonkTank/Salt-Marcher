@@ -11,6 +11,11 @@ import src.domain.creatures.published.CreatureLookupStatus;
 import src.domain.creatures.published.LoadCreatureDetailQuery;
 import src.domain.encounter.generation.value.EncounterGenerationRequest;
 import src.domain.encounter.plan.aggregate.EncounterPlan;
+import src.domain.encounter.published.EncounterCreature;
+import src.domain.encounter.published.EncounterGenerationAdvisory;
+import src.domain.encounter.published.EncounterGenerationDiagnostics;
+import src.domain.encounter.published.EncounterGenerationStatus;
+import src.domain.encounter.published.GeneratedEncounter;
 import src.domain.encounter.session.entity.EncounterSession;
 import src.domain.encounter.session.port.EncounterPartyFactsRepository;
 
@@ -57,7 +62,7 @@ public final class EncounterSessionRuntimeAdapter implements EncounterSession.Ru
         }
         try {
             LoadEncounterBudgetUseCase.Result result = useCase.execute();
-            return "SUCCESS".equals(result.status().name()) && result.budget() != null
+            return result.status() == EncounterGenerationStatus.SUCCESS && result.budget() != null
                     ? Optional.of(EncounterSessionRuntimeProjector.toSessionBudget(result.budget()))
                     : Optional.empty();
         } catch (IllegalStateException exception) {
@@ -74,13 +79,13 @@ public final class EncounterSessionRuntimeAdapter implements EncounterSession.Ru
         try {
             EncounterGenerationUseCase.GenerateResult result = useCase.execute(request);
             return new GenerationResultData(
-                    "SUCCESS".equals(result.status().name()),
+                    result.status() == EncounterGenerationStatus.SUCCESS,
                     result.encounters().stream()
                             .map(encounter -> toSessionGeneratedEncounter(encounter, advisoryMessages(result.advisories())))
                             .toList(),
                     result.message(),
                     toSessionDiagnostics(result.diagnostics()),
-                    result.advisories().stream().anyMatch(advisory -> "FALLBACK_USED".equals(advisory.name())));
+                    result.advisories().contains(EncounterGenerationAdvisory.FALLBACK_USED));
         } catch (IllegalStateException exception) {
             return new GenerationResultData(false, List.of(), "Encounter generation failed.", Optional.empty(), false);
         }
@@ -92,12 +97,18 @@ public final class EncounterSessionRuntimeAdapter implements EncounterSession.Ru
         if (useCase == null) {
             return new PlanOutcome(Optional.empty(), "Encounter plan storage is not registered.");
         }
-        SaveEncounterPlanUseCase.Result result = useCase.execute(
-                Math.max(0L, plan.id()),
-                plan.name(),
-                plan.generatedLabel(),
-                plan.creatures());
-        return new PlanOutcome(result.plan() == null ? Optional.empty() : Optional.of(result.plan()), result.message());
+        try {
+            EncounterPlan savedPlan = useCase.execute(
+                    Math.max(0L, plan.id()),
+                    plan.name(),
+                    plan.generatedLabel(),
+                    plan.creatures());
+            return new PlanOutcome(Optional.of(savedPlan), "Encounter saved.");
+        } catch (IllegalArgumentException exception) {
+            return new PlanOutcome(Optional.empty(), defaultMessage(exception.getMessage(), "Encounter plan is invalid."));
+        } catch (IllegalStateException exception) {
+            return new PlanOutcome(Optional.empty(), defaultMessage(exception.getMessage(), "Encounter plan could not be saved."));
+        }
     }
 
     @Override
@@ -106,8 +117,16 @@ public final class EncounterSessionRuntimeAdapter implements EncounterSession.Ru
         if (useCase == null) {
             return new PlanOutcome(Optional.empty(), "Encounter plan storage is not registered.");
         }
-        LoadSavedEncounterPlanUseCase.Result result = useCase.execute(planId);
-        return new PlanOutcome(result.plan() == null ? Optional.empty() : Optional.of(result.plan()), result.message());
+        try {
+            Optional<EncounterPlan> loadedPlan = useCase.execute(planId);
+            return loadedPlan.isPresent()
+                    ? new PlanOutcome(loadedPlan, "Encounter loaded.")
+                    : new PlanOutcome(Optional.empty(), "Encounter plan not found.");
+        } catch (IllegalArgumentException exception) {
+            return new PlanOutcome(Optional.empty(), defaultMessage(exception.getMessage(), "Encounter plan id must be positive."));
+        } catch (IllegalStateException exception) {
+            return new PlanOutcome(Optional.empty(), defaultMessage(exception.getMessage(), "Encounter plan could not be loaded."));
+        }
     }
 
     @Override
@@ -138,7 +157,7 @@ public final class EncounterSessionRuntimeAdapter implements EncounterSession.Ru
     }
 
     private GeneratedEncounterData toSessionGeneratedEncounter(
-            EncounterGenerationUseCase.GeneratedEncounterData encounter,
+            GeneratedEncounter encounter,
             List<String> advisoryMessages
     ) {
         return new GeneratedEncounterData(
@@ -149,7 +168,7 @@ public final class EncounterSessionRuntimeAdapter implements EncounterSession.Ru
                 advisoryMessages);
     }
 
-    private EncounterCreatureData toSessionCreature(EncounterGenerationUseCase.EncounterCreatureData creature) {
+    private EncounterCreatureData toSessionCreature(EncounterCreature creature) {
         Optional<CreatureDetailData> detail = loadCreature(creature.creatureId());
         if (detail.isPresent()) {
             CreatureDetailData current = detail.orElseThrow();
@@ -183,7 +202,7 @@ public final class EncounterSessionRuntimeAdapter implements EncounterSession.Ru
     }
 
     private static Optional<GenerationDiagnosticsData> toSessionDiagnostics(
-            EncounterGenerationUseCase.@Nullable GenerationDiagnostics diagnostics
+            @Nullable EncounterGenerationDiagnostics diagnostics
     ) {
         if (diagnostics == null) {
             return Optional.empty();
@@ -193,18 +212,22 @@ public final class EncounterSessionRuntimeAdapter implements EncounterSession.Ru
                 EncounterSessionRuntimeProjector.tuningLabel(diagnostics.resolvedTuning())));
     }
 
-    private static List<String> advisoryMessages(List<EncounterGenerationUseCase.GenerationAdvisory> advisories) {
+    private static List<String> advisoryMessages(List<EncounterGenerationAdvisory> advisories) {
         if (advisories == null || advisories.isEmpty()) {
             return List.of();
         }
         return advisories.stream().map(EncounterSessionRuntimeAdapter::advisoryMessage).toList();
     }
 
-    private static String advisoryMessage(EncounterGenerationUseCase.GenerationAdvisory advisory) {
-        if ("AUTO_RESOLVED".equals(advisory.name())) {
+    private static String advisoryMessage(EncounterGenerationAdvisory advisory) {
+        if (advisory == EncounterGenerationAdvisory.AUTO_RESOLVED) {
             return "Auto-Einstellungen wurden fuer diese Generierung auf konkrete Zielwerte aufgeloest.";
         }
         return "Kein exakter Treffer war verfuegbar. Die beste gefundene Alternative wurde uebernommen.";
+    }
+
+    private static String defaultMessage(@Nullable String message, String fallback) {
+        return message == null || message.isBlank() ? fallback : message;
     }
 
     private static String normalizeRole(String role) {

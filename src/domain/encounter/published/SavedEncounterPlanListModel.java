@@ -5,19 +5,22 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-public record SavedEncounterPlanListModel(
-        Supplier<SavedEncounterPlanListResult> currentSupplier,
-        Function<Consumer<SavedEncounterPlanListResult>, Runnable> subscribeAction
-) {
+public final class SavedEncounterPlanListModel {
 
-    public SavedEncounterPlanListModel {
-        currentSupplier = currentSupplier == null
+    private final Supplier<SavedEncounterPlanListResult> currentSupplier;
+    private final Function<Consumer<SavedEncounterPlanListResult>, Runnable> subscribeAction;
+
+    public SavedEncounterPlanListModel(
+            Supplier<SavedEncounterPlanListResult> currentSupplier,
+            Function<Consumer<SavedEncounterPlanListResult>, Runnable> subscribeAction
+    ) {
+        this.currentSupplier = currentSupplier == null
                 ? () -> new SavedEncounterPlanListResult(
                         SavedEncounterPlanStatus.STORAGE_ERROR,
                         java.util.List.of(),
                         "")
                 : currentSupplier;
-        subscribeAction = subscribeAction == null ? listener -> () -> { } : subscribeAction;
+        this.subscribeAction = subscribeAction == null ? listener -> () -> { } : subscribeAction;
     }
 
     public SavedEncounterPlanListResult current() {

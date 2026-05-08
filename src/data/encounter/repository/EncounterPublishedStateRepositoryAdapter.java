@@ -4,7 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
-import src.domain.encounter.plan.port.EncounterPlanPublishedStateRepository;
+import src.domain.encounter.EncounterPlanPublishedStateRepository;
+import src.domain.encounter.EncounterSessionPublishedStateRepository;
 import src.domain.encounter.published.EncounterBuilderInputs;
 import src.domain.encounter.published.EncounterBuilderInputsModel;
 import src.domain.encounter.published.EncounterGenerationStatus;
@@ -19,7 +20,6 @@ import src.domain.encounter.published.EncounterTuningPreviewResult;
 import src.domain.encounter.published.SavedEncounterPlanListModel;
 import src.domain.encounter.published.SavedEncounterPlanListResult;
 import src.domain.encounter.published.SavedEncounterPlanStatus;
-import src.domain.encounter.session.port.EncounterSessionPublishedStateRepository;
 
 public final class EncounterPublishedStateRepositoryAdapter
         implements EncounterSessionPublishedStateRepository, EncounterPlanPublishedStateRepository {

@@ -1,4 +1,4 @@
-package src.domain.encounter.plan.port;
+package src.domain.encounter;
 
 import src.domain.encounter.published.EncounterPlanBudgetModel;
 import src.domain.encounter.published.EncounterPlanBudgetResult;

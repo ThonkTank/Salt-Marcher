@@ -43,15 +43,15 @@ public final class DungeonTravelStateView extends VBox {
     }
 
     @SuppressWarnings(PMD_LAW_OF_DEMETER)
-    private void showActions(List<DungeonTravelContributionModel.ActionProjection> items) {
+    private void showActions(List<DungeonTravelActionProjection> items) {
         actions.getChildren().clear();
-        List<DungeonTravelContributionModel.ActionProjection> safeItems = items == null ? List.of() : items;
+        List<DungeonTravelActionProjection> safeItems = items == null ? List.of() : items;
         if (safeItems.isEmpty()) {
             actions.getChildren().add(emptyActionsHint());
             return;
         }
         actions.getChildren().add(actionsTitle());
-        for (DungeonTravelContributionModel.ActionProjection item : safeItems) {
+        for (DungeonTravelActionProjection item : safeItems) {
             for (Node node : actionNodes(item)) {
                 actions.getChildren().add(node);
             }
@@ -82,7 +82,7 @@ public final class DungeonTravelStateView extends VBox {
         return title;
     }
 
-    private List<Node> actionNodes(DungeonTravelContributionModel.ActionProjection item) {
+    private List<Node> actionNodes(DungeonTravelActionProjection item) {
         if (!item.description().isBlank()) {
             return List.of(actionButton(item), actionDescription(item.description()));
         }
@@ -90,7 +90,7 @@ public final class DungeonTravelStateView extends VBox {
     }
 
     @SuppressWarnings(PMD_LAW_OF_DEMETER)
-    private Button actionButton(DungeonTravelContributionModel.ActionProjection item) {
+    private Button actionButton(DungeonTravelActionProjection item) {
         Button button = new Button(item.label());
         button.getStyleClass().addAll("toolbar-action-button", "neutral-action");
         button.setMaxWidth(Double.MAX_VALUE);

@@ -49,7 +49,13 @@ public record ApplyEncounterStateCommand(
         END_COMBAT,
         AWARD_XP,
         RETURN_TO_BUILDER_AFTER_RESULTS,
-        MUTATE_HP
+        MUTATE_HP;
+
+        public boolean republishesSavedPlans() {
+            return this == REFRESH
+                    || this == OPEN_SAVED_PLAN
+                    || this == SAVE_CURRENT_PLAN;
+        }
     }
 
     public static final class InitiativeValue {

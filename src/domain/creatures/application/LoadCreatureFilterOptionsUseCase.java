@@ -63,7 +63,7 @@ public final class LoadCreatureFilterOptionsUseCase {
         return new FilterOptions(values, CHALLENGE_RATINGS);
     }
 
-    static @Nullable Integer xpForChallengeRating(@Nullable String challengeRating) {
+    public static @Nullable Integer xpForChallengeRating(@Nullable String challengeRating) {
         if (challengeRating == null || challengeRating.isBlank()) {
             return null;
         }

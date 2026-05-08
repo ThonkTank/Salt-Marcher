@@ -12,7 +12,7 @@ import src.view.slotcontent.controls.dungeoncontrol.DungeonControlPanelView;
 public final class DungeonTravelControlsView extends DungeonControlPanelView {
 
     private final ToolbarLabel zoomLabel = new ToolbarLabel("Zoom: 100%");
-    private final ToolbarLabel mapLabel = new ToolbarLabel("Dungeon");
+    private final ToolbarLabel mapLabel = new ToolbarLabel(DungeonTravelUiText.DEFAULT_MAP_NAME);
     private final ToolbarLabel levelLabel = new ToolbarLabel("Ebene z=0");
     private final ToolbarButton resetViewButton = new ToolbarButton("Ansicht zurücksetzen");
     private final ToolbarButton previousLevelButton = new ToolbarButton("-");
@@ -35,7 +35,7 @@ public final class DungeonTravelControlsView extends DungeonControlPanelView {
     }
 
     public void showMapName(String mapName) {
-        mapLabel.setText(mapName == null || mapName.isBlank() ? "Dungeon" : mapName);
+        mapLabel.setText(mapName == null || mapName.isBlank() ? DungeonTravelUiText.DEFAULT_MAP_NAME : mapName);
     }
 
     public void showZoom(double zoom) {
@@ -103,23 +103,23 @@ public final class DungeonTravelControlsView extends DungeonControlPanelView {
     private static final class OverlaySettingsAdapter {
 
         private static OverlayControlsPanel.Settings toOverlaySettings(
-                DungeonTravelContributionModel.OverlayProjection settings
+                DungeonTravelOverlayProjection settings
         ) {
-            DungeonTravelContributionModel.OverlayProjection resolved = settings == null
-                    ? DungeonTravelContributionModel.OverlayProjection.defaults()
+            DungeonTravelOverlayProjection resolved = settings == null
+                    ? DungeonTravelOverlayProjection.defaults()
                     : settings;
             return new OverlayControlsPanel.Settings(
-                    toOverlayMode(resolved.modeKey()),
+                    toOverlayMode(resolved.mode()),
                     resolved.levelRange(),
                     resolved.opacity(),
                     resolved.selectedLevels());
         }
 
-        private static OverlayControlsPanel.Mode toOverlayMode(String overlayModeKey) {
-            return switch (overlayModeKey == null ? "OFF" : overlayModeKey) {
-                case "OFF" -> OverlayControlsPanel.Mode.OFF;
-                case "NEARBY" -> OverlayControlsPanel.Mode.NEARBY;
-                case "SELECTED" -> OverlayControlsPanel.Mode.SELECTED;
+        private static OverlayControlsPanel.Mode toOverlayMode(DungeonTravelOverlayMode overlayMode) {
+            DungeonTravelOverlayMode resolvedMode = overlayMode == null ? DungeonTravelOverlayMode.OFF : overlayMode;
+            return switch (resolvedMode) {
+                case NEARBY -> OverlayControlsPanel.Mode.NEARBY;
+                case SELECTED -> OverlayControlsPanel.Mode.SELECTED;
                 default -> OverlayControlsPanel.Mode.OFF;
             };
         }

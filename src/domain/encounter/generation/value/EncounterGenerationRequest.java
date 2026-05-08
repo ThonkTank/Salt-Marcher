@@ -1,13 +1,14 @@
 package src.domain.encounter.generation.value;
 
 import java.util.List;
+import src.domain.encounter.plan.value.EncounterPlanCreature;
 
 public record EncounterGenerationRequest(
         EncounterGenerationInputs inputs,
         int alternativeCount,
         long generationSeed,
         List<Long> excludedCreatureIds,
-        List<EncounterLockedCreature> lockedCreatures
+        List<EncounterPlanCreature> lockedCreatures
 ) {
 
     private static final int DEFAULT_ALTERNATIVE_COUNT = 5;

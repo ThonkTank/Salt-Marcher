@@ -100,7 +100,7 @@ final class SessionPlannerBinder {
             case SessionPlannerTimelineMainViewInputEvent.RemoveEncounterInput removeEncounter ->
                     ApplySessionPlannerCommand.removeEncounter(new SessionPlannerEncounterRef(removeEncounter.encounterTokenToRemove()));
             case SessionPlannerTimelineMainViewInputEvent.MoveEncounterInput moveEncounter ->
-                    moveEncounter.direction() == SessionPlannerTimelineMainViewInputEvent.Direction.DOWN
+                    moveEncounter.movesDown()
                             ? ApplySessionPlannerCommand.moveEncounterDown(new SessionPlannerEncounterRef(moveEncounter.encounterToken()))
                             : ApplySessionPlannerCommand.moveEncounterUp(new SessionPlannerEncounterRef(moveEncounter.encounterToken()));
             case SessionPlannerTimelineMainViewInputEvent.SelectEncounterInput selectEncounter ->
@@ -110,7 +110,7 @@ final class SessionPlannerBinder {
                             allocation.encounterToken(),
                             allocation.targetAllocationPercentage()));
             case SessionPlannerTimelineMainViewInputEvent.RestGapInput restGap ->
-                    restGap.restSelection() == SessionPlannerTimelineMainViewInputEvent.RestSelection.NONE
+                    restGap.clearsRestGap()
                             ? ApplySessionPlannerCommand.clearRestGap(new SessionPlannerRestGapRef(
                                     restGap.leftEncounterId(),
                                     restGap.rightEncounterId()))
@@ -126,7 +126,7 @@ final class SessionPlannerBinder {
     }
 
     private static SessionPlannerRestKind toRestKind(SessionPlannerTimelineMainViewInputEvent.RestSelection selection) {
-        return switch (selection == null ? SessionPlannerTimelineMainViewInputEvent.RestSelection.NONE : selection) {
+        return switch (SessionPlannerTimelineMainViewInputEvent.RestSelection.normalized(selection)) {
             case NONE -> SessionPlannerRestKind.NONE;
             case SHORT_REST -> SessionPlannerRestKind.SHORT_REST;
             case LONG_REST -> SessionPlannerRestKind.LONG_REST;

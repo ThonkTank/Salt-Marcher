@@ -6,19 +6,22 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-public record EncounterTuningPreviewModel(
-        Supplier<EncounterTuningPreviewResult> currentSupplier,
-        Function<Consumer<EncounterTuningPreviewResult>, Runnable> subscribeAction
-) {
+public final class EncounterTuningPreviewModel {
 
-    public EncounterTuningPreviewModel {
-        currentSupplier = currentSupplier == null
+    private final Supplier<EncounterTuningPreviewResult> currentSupplier;
+    private final Function<Consumer<EncounterTuningPreviewResult>, Runnable> subscribeAction;
+
+    public EncounterTuningPreviewModel(
+            Supplier<EncounterTuningPreviewResult> currentSupplier,
+            Function<Consumer<EncounterTuningPreviewResult>, Runnable> subscribeAction
+    ) {
+        this.currentSupplier = currentSupplier == null
                 ? () -> new EncounterTuningPreviewResult(
                         EncounterGenerationStatus.STORAGE_ERROR,
                         new EncounterTuningPreviewLabels(List.of(), List.of(), List.of(), List.of()),
                         "")
                 : currentSupplier;
-        subscribeAction = subscribeAction == null
+        this.subscribeAction = subscribeAction == null
                 ? listener -> () -> { }
                 : subscribeAction;
     }

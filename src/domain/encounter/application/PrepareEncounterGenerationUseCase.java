@@ -1,41 +1,47 @@
 package src.domain.encounter.application;
 
-import org.jspecify.annotations.Nullable;
-import src.domain.encounter.application.EncounterGenerationUseCase.GenerationDiagnostics;
-import src.domain.creatures.published.CreatureDetail;
-import src.domain.creatures.published.CreatureDetailResult;
-import src.domain.creatures.published.CreatureLookupStatus;
-import src.domain.creatures.published.CreatureQueryStatus;
-import src.domain.creatures.published.EncounterCandidate;
-import src.domain.creatures.published.EncounterCandidatesResult;
-import src.domain.creatures.published.EncounterCandidateQuery;
-import src.domain.creatures.published.LoadCreatureDetailQuery;
-import src.domain.creatures.CreaturesApplicationService;
-import src.domain.encountertable.EncounterTableApplicationService;
-import src.domain.encountertable.published.EncounterTableCandidate;
-import src.domain.encountertable.published.EncounterTableCandidatesResult;
-import src.domain.encountertable.published.EncounterTableReadStatus;
-import src.domain.encountertable.published.LoadEncounterTableCandidatesQuery;
-import src.domain.encounter.generation.value.EncounterCreatureFacts;
-import src.domain.encounter.generation.value.EncounterCandidateProfile;
-import src.domain.encounter.generation.value.EncounterLockedCreature;
-import src.domain.encounter.generation.value.EncounterGenerationRequest;
-import src.domain.encounter.generation.value.EncounterGenerationAttempt;
-import src.domain.encounter.generation.policy.EncounterCandidateProfiles;
-import src.domain.encounter.generation.policy.EncounterAutoTuningPolicy;
-import src.domain.encounter.generation.policy.EncounterDifficultyMath;
-import src.domain.encounter.generation.policy.EncounterDifficultyTargets;
-import src.domain.encounter.generation.value.EncounterDraft;
-import src.domain.encounter.generation.factory.EncounterDraftFactory;
-import src.domain.encounter.session.port.EncounterPartyFactsRepository;
-
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.ArrayList;
 import java.util.Set;
+import org.jspecify.annotations.Nullable;
+import src.domain.creatures.CreaturesApplicationService;
+import src.domain.creatures.published.CreatureDetail;
+import src.domain.creatures.published.CreatureDetailResult;
+import src.domain.creatures.published.CreatureLookupStatus;
+import src.domain.creatures.published.CreatureQueryStatus;
+import src.domain.creatures.published.EncounterCandidate;
+import src.domain.creatures.published.EncounterCandidateQuery;
+import src.domain.creatures.published.EncounterCandidatesResult;
+import src.domain.creatures.published.LoadCreatureDetailQuery;
+import src.domain.encounter.generation.factory.EncounterDraftFactory;
+import src.domain.encounter.generation.policy.EncounterAutoTuningPolicy;
+import src.domain.encounter.generation.policy.EncounterCandidateProfiles;
+import src.domain.encounter.generation.policy.EncounterDifficultyMath;
+import src.domain.encounter.generation.policy.EncounterDifficultyTargets;
+import src.domain.encounter.generation.value.EncounterCandidateProfile;
+import src.domain.encounter.generation.value.EncounterCreatureFacts;
+import src.domain.encounter.generation.value.EncounterDraft;
+import src.domain.encounter.generation.value.EncounterGenerationAttempt;
+import src.domain.encounter.generation.value.EncounterGenerationRequest;
+import src.domain.encounter.plan.value.EncounterPlanCreature;
+import src.domain.encounter.published.EncounterBudgetSummary;
+import src.domain.encounter.published.EncounterDifficultyBand;
+import src.domain.encounter.published.EncounterGenerationAdvisory;
+import src.domain.encounter.published.EncounterGenerationDiagnostics;
+import src.domain.encounter.published.EncounterGenerationSolutionQuality;
+import src.domain.encounter.published.EncounterGenerationStatus;
+import src.domain.encounter.published.EncounterGenerationStopCategory;
+import src.domain.encounter.published.EncounterGenerationTuning;
+import src.domain.encounter.session.port.EncounterPartyFactsRepository;
+import src.domain.encountertable.EncounterTableApplicationService;
+import src.domain.encountertable.published.EncounterTableCandidate;
+import src.domain.encountertable.published.EncounterTableCandidatesResult;
+import src.domain.encountertable.published.EncounterTableReadStatus;
+import src.domain.encountertable.published.LoadEncounterTableCandidatesQuery;
 
 // PMD suppression is local: encounter generation intentionally centralizes domain adapters here; see src/domain/encounter/DOMAIN.md.
 @SuppressWarnings("PMD.CouplingBetweenObjects")
@@ -58,7 +64,7 @@ final class PrepareEncounterGenerationUseCase {
         if (!partyLoad.success()) {
             return partyLoad.failure();
         }
-        EncounterGenerationUseCase.BudgetSummary budget = partyLoad.requireBudget();
+        EncounterBudgetSummary budget = partyLoad.requireBudget();
         EncounterDifficultyMath.Thresholds thresholds = partyLoad.requireThresholds();
 
         LockedCreatures lockedCreatures = loadLockedCreatures(creatures, request, budget);
@@ -77,8 +83,8 @@ final class PrepareEncounterGenerationUseCase {
             return candidates.failure();
         }
         if (lockedCreatures.lockedProfiles().isEmpty() && candidates.unlockedProfiles().isEmpty()) {
-                return EncounterGenerationPreparationUseCase.failure(
-                    EncounterGenerationUseCase.GenerateStatus.NO_CREATURES,
+            return EncounterGenerationPreparationUseCase.failure(
+                    EncounterGenerationStatus.NO_CREATURES,
                     budget,
                     "No creatures matched the current filters.");
         }
@@ -91,7 +97,7 @@ final class PrepareEncounterGenerationUseCase {
                 candidates.unlockedProfiles());
         if (searchResult.drafts().isEmpty()) {
             return EncounterGenerationPreparationUseCase.failure(
-                    EncounterGenerationUseCase.GenerateStatus.NO_SOLUTION,
+                    EncounterGenerationStatus.NO_SOLUTION,
                     budget,
                     "No encounter compositions fit the current request.");
         }
@@ -156,10 +162,10 @@ final class PrepareEncounterGenerationUseCase {
     private static PartyLoadResult loadPartyState(EncounterPartyFactsRepository party) {
         EncounterPartyFactsRepository.PartyBudgetFacts facts = party.loadPartyBudgetFacts();
         if (facts.status().isStorageError()) {
-            return PartyLoadResult.failure(EncounterGenerationUseCase.GenerateStatus.STORAGE_ERROR, "Party data could not be loaded.");
+            return PartyLoadResult.failure(EncounterGenerationStatus.STORAGE_ERROR, "Party data could not be loaded.");
         }
         if (facts.status().isNoActiveParty()) {
-            return PartyLoadResult.failure(EncounterGenerationUseCase.GenerateStatus.NO_ACTIVE_PARTY, "No active party is available.");
+            return PartyLoadResult.failure(EncounterGenerationStatus.NO_ACTIVE_PARTY, "No active party is available.");
         }
         List<Integer> partyLevels = facts.activePartyLevels();
         EncounterDifficultyMath.Thresholds thresholds = EncounterDifficultyMath.thresholdsFor(partyLevels);
@@ -167,14 +173,14 @@ final class PrepareEncounterGenerationUseCase {
                 partyLevels,
                 facts.consumedDailyXp(),
                 facts.totalBudgetXp());
-        EncounterGenerationUseCase.BudgetSummary budget = toBudgetSummary(budgetSummary);
+        EncounterBudgetSummary budget = toPublishedBudgetSummary(budgetSummary);
         return PartyLoadResult.success(thresholds, budget, partyLevels.size());
     }
 
     private static LockedCreatures loadLockedCreatures(
             CreaturesApplicationService creatures,
             EncounterGenerationRequest request,
-            EncounterGenerationUseCase.BudgetSummary budget
+            EncounterBudgetSummary budget
     ) {
         Map<Long, Integer> lockedQuantities = toLockedQuantityMap(request.lockedCreatures());
         Map<Long, EncounterCandidateProfile> lockedProfiles = loadLockedProfiles(creatures, lockedQuantities);
@@ -205,10 +211,10 @@ final class PrepareEncounterGenerationUseCase {
                 EncounterDifficultyTargets.candidateMaxXp(thresholds),
                 searchLimit));
         if (candidateResult.status() == CreatureQueryStatus.INVALID_QUERY) {
-            return CandidateLoadResult.failure("Encounter filters are invalid.", EncounterGenerationUseCase.GenerateStatus.INVALID_REQUEST);
+            return CandidateLoadResult.failure("Encounter filters are invalid.", EncounterGenerationStatus.INVALID_REQUEST);
         }
         if (candidateResult.status() != CreatureQueryStatus.SUCCESS) {
-            return CandidateLoadResult.failure("Creature data could not be loaded.", EncounterGenerationUseCase.GenerateStatus.STORAGE_ERROR);
+            return CandidateLoadResult.failure("Creature data could not be loaded.", EncounterGenerationStatus.STORAGE_ERROR);
         }
         List<EncounterCandidateProfile> unlockedProfiles = candidateResult.candidates().stream()
                 .filter(candidate -> !excludedCreatureIds.contains(candidate.id()))
@@ -228,7 +234,7 @@ final class PrepareEncounterGenerationUseCase {
         if (encounterTables == null) {
             return CandidateLoadResult.failure(
                     "Encounter tables are not available.",
-                    EncounterGenerationUseCase.GenerateStatus.STORAGE_ERROR);
+                    EncounterGenerationStatus.STORAGE_ERROR);
         }
         EncounterTableCandidatesResult candidateResult = encounterTables.loadGenerationCandidates(
                 new LoadEncounterTableCandidatesQuery(
@@ -237,7 +243,7 @@ final class PrepareEncounterGenerationUseCase {
         if (candidateResult.status() != EncounterTableReadStatus.SUCCESS) {
             return CandidateLoadResult.failure(
                     "Encounter table data could not be loaded.",
-                    EncounterGenerationUseCase.GenerateStatus.STORAGE_ERROR);
+                    EncounterGenerationStatus.STORAGE_ERROR);
         }
         List<EncounterCandidateProfile> unlockedProfiles = candidateResult.candidates().stream()
                 .filter(candidate -> !excludedCreatureIds.contains(candidate.creatureId()))
@@ -247,9 +253,9 @@ final class PrepareEncounterGenerationUseCase {
         return CandidateLoadResult.success(unlockedProfiles);
     }
 
-    private static Map<Long, Integer> toLockedQuantityMap(List<EncounterLockedCreature> locks) {
+    private static Map<Long, Integer> toLockedQuantityMap(List<EncounterPlanCreature> locks) {
         Map<Long, Integer> quantities = new LinkedHashMap<>();
-        for (EncounterLockedCreature lock : locks) {
+        for (EncounterPlanCreature lock : locks) {
             if (lock == null || lock.creatureId() <= 0) {
                 continue;
             }
@@ -259,8 +265,8 @@ final class PrepareEncounterGenerationUseCase {
     }
 
     private static Map<Long, EncounterCandidateProfile> loadLockedProfiles(
-        CreaturesApplicationService creatures,
-        Map<Long, Integer> lockedQuantities
+            CreaturesApplicationService creatures,
+            Map<Long, Integer> lockedQuantities
     ) {
         Map<Long, EncounterCandidateProfile> profiles = new LinkedHashMap<>();
         for (Long creatureId : lockedQuantities.keySet()) {
@@ -371,8 +377,8 @@ final class PrepareEncounterGenerationUseCase {
                         .toList());
     }
 
-    private static EncounterGenerationUseCase.BudgetSummary toBudgetSummary(EncounterDifficultyMath.BudgetSummary summary) {
-        return new EncounterGenerationUseCase.BudgetSummary(
+    private static EncounterBudgetSummary toPublishedBudgetSummary(EncounterDifficultyMath.BudgetSummary summary) {
+        return new EncounterBudgetSummary(
                 summary.activePartyLevels(),
                 summary.averagePartyLevel(),
                 summary.easyThreshold(),
@@ -385,15 +391,15 @@ final class PrepareEncounterGenerationUseCase {
     }
 
     private record PartyLoadResult(
-            EncounterGenerationUseCase.GenerateStatus status,
+            EncounterGenerationStatus status,
             EncounterDifficultyMath.@Nullable Thresholds thresholds,
-            EncounterGenerationUseCase.@Nullable BudgetSummary budget,
+            @Nullable EncounterBudgetSummary budget,
             int partySize,
             String message
     ) {
 
         private boolean success() {
-            return status.isSuccessful();
+            return status == EncounterGenerationStatus.SUCCESS;
         }
 
         private EncounterGenerationPreparationUseCase failure() {
@@ -407,7 +413,7 @@ final class PrepareEncounterGenerationUseCase {
             return thresholds;
         }
 
-        private EncounterGenerationUseCase.BudgetSummary requireBudget() {
+        private EncounterBudgetSummary requireBudget() {
             if (budget == null) {
                 throw new IllegalStateException("Party budget missing for successful load.");
             }
@@ -416,11 +422,11 @@ final class PrepareEncounterGenerationUseCase {
 
         private static PartyLoadResult success(
                 EncounterDifficultyMath.Thresholds thresholds,
-                EncounterGenerationUseCase.BudgetSummary budget,
+                EncounterBudgetSummary budget,
                 int partySize
         ) {
             return new PartyLoadResult(
-                    EncounterGenerationUseCase.GenerateStatus.successfulStatus(),
+                    EncounterGenerationStatus.SUCCESS,
                     thresholds,
                     budget,
                     partySize,
@@ -428,7 +434,7 @@ final class PrepareEncounterGenerationUseCase {
         }
 
         private static PartyLoadResult failure(
-                EncounterGenerationUseCase.GenerateStatus status,
+                EncounterGenerationStatus status,
                 String message
         ) {
             return new PartyLoadResult(status, null, null, 0, message);
@@ -436,15 +442,15 @@ final class PrepareEncounterGenerationUseCase {
     }
 
     private record LockedCreatures(
-            EncounterGenerationUseCase.GenerateStatus status,
-            EncounterGenerationUseCase.@Nullable BudgetSummary budget,
+            EncounterGenerationStatus status,
+            @Nullable EncounterBudgetSummary budget,
             Map<Long, Integer> lockedQuantities,
             Map<Long, EncounterCandidateProfile> lockedProfiles,
             String message
     ) {
 
         private boolean success() {
-            return status.isSuccessful();
+            return status == EncounterGenerationStatus.SUCCESS;
         }
 
         private EncounterGenerationPreparationUseCase failure() {
@@ -456,20 +462,20 @@ final class PrepareEncounterGenerationUseCase {
                 Map<Long, EncounterCandidateProfile> lockedProfiles
         ) {
             return new LockedCreatures(
-                    EncounterGenerationUseCase.GenerateStatus.successfulStatus(),
+                    EncounterGenerationStatus.SUCCESS,
                     null,
                     lockedQuantities,
                     lockedProfiles,
                     "");
         }
 
-        private static LockedCreatures failure(EncounterGenerationUseCase.BudgetSummary budget, String message) {
+        private static LockedCreatures failure(EncounterBudgetSummary budget, String message) {
             return new LockedCreatures(
-                    EncounterGenerationUseCase.GenerateStatus.INVALID_REQUEST,
+                    EncounterGenerationStatus.INVALID_REQUEST,
                     budget,
                     Map.of(),
                     Map.of(),
-                message);
+                    message);
         }
     }
 
@@ -514,7 +520,7 @@ final class PrepareEncounterGenerationUseCase {
             return result(
                     attempt,
                     drafts,
-                    EncounterGenerationUseCase.GenerationSolutionQuality.EXACT,
+                    EncounterGenerationSolutionQuality.EXACT,
                     "Encounter options generated.");
         }
 
@@ -529,25 +535,25 @@ final class PrepareEncounterGenerationUseCase {
             return result(
                     bestFallbackAttempt,
                     bestFallbackDrafts,
-                    EncounterGenerationUseCase.GenerationSolutionQuality.FALLBACK,
+                    EncounterGenerationSolutionQuality.FALLBACK,
                     "No exact target found; best fallback encounter options generated.");
         }
 
         private GenerationSearchResult result(
                 EncounterGenerationAttempt attempt,
                 List<EncounterDraft> drafts,
-                EncounterGenerationUseCase.GenerationSolutionQuality quality,
+                EncounterGenerationSolutionQuality quality,
                 String message
         ) {
-            List<EncounterGenerationUseCase.GenerationAdvisory> advisories =
+            List<EncounterGenerationAdvisory> advisories =
                     advisoriesFor(attempt.autoResolved(), quality);
             return new GenerationSearchResult(
                     drafts,
-                    new EncounterGenerationUseCase.GenerationDiagnostics(
-                            attempt.targetDifficulty(),
-                            attempt.tuning(),
+                    new EncounterGenerationDiagnostics(
+                            toPublishedDifficulty(attempt.targetDifficulty()),
+                            EncounterGenerationTuning.fromIntent(attempt.tuning()),
                             quality,
-                            EncounterGenerationUseCase.GenerationStopCategory.COMPLETED,
+                            EncounterGenerationStopCategory.COMPLETED,
                             candidatePoolSize,
                             attempts,
                             candidateEvaluations),
@@ -555,16 +561,16 @@ final class PrepareEncounterGenerationUseCase {
                     message);
         }
 
-        private static List<EncounterGenerationUseCase.GenerationAdvisory> advisoriesFor(
+        private static List<EncounterGenerationAdvisory> advisoriesFor(
                 boolean autoResolved,
-                EncounterGenerationUseCase.GenerationSolutionQuality quality
+                EncounterGenerationSolutionQuality quality
         ) {
-            List<EncounterGenerationUseCase.GenerationAdvisory> advisories = new ArrayList<>();
+            List<EncounterGenerationAdvisory> advisories = new ArrayList<>();
             if (autoResolved) {
-                advisories.add(EncounterGenerationUseCase.GenerationAdvisory.AUTO_RESOLVED);
+                advisories.add(EncounterGenerationAdvisory.AUTO_RESOLVED);
             }
-            if (quality.isFallback()) {
-                advisories.add(EncounterGenerationUseCase.GenerationAdvisory.FALLBACK_USED);
+            if (quality == EncounterGenerationSolutionQuality.FALLBACK) {
+                advisories.add(EncounterGenerationAdvisory.FALLBACK_USED);
             }
             return List.copyOf(advisories);
         }
@@ -572,8 +578,8 @@ final class PrepareEncounterGenerationUseCase {
 
     private record GenerationSearchResult(
             List<EncounterDraft> drafts,
-            @Nullable GenerationDiagnostics diagnostics,
-            List<EncounterGenerationUseCase.GenerationAdvisory> advisories,
+            @Nullable EncounterGenerationDiagnostics diagnostics,
+            List<EncounterGenerationAdvisory> advisories,
             String message
     ) {
 
@@ -585,13 +591,13 @@ final class PrepareEncounterGenerationUseCase {
     }
 
     private record CandidateLoadResult(
-            EncounterGenerationUseCase.GenerateStatus status,
+            EncounterGenerationStatus status,
             List<EncounterCandidateProfile> unlockedProfiles,
             String message
     ) {
 
         private boolean success() {
-            return status.isSuccessful();
+            return status == EncounterGenerationStatus.SUCCESS;
         }
 
         private EncounterGenerationPreparationUseCase failure() {
@@ -599,11 +605,18 @@ final class PrepareEncounterGenerationUseCase {
         }
 
         private static CandidateLoadResult success(List<EncounterCandidateProfile> unlockedProfiles) {
-            return new CandidateLoadResult(EncounterGenerationUseCase.GenerateStatus.successfulStatus(), unlockedProfiles, "");
+            return new CandidateLoadResult(EncounterGenerationStatus.SUCCESS, unlockedProfiles, "");
         }
 
-        private static CandidateLoadResult failure(String message, EncounterGenerationUseCase.GenerateStatus status) {
+        private static CandidateLoadResult failure(String message, EncounterGenerationStatus status) {
             return new CandidateLoadResult(status, List.of(), message);
         }
+    }
+
+    private static EncounterDifficultyBand toPublishedDifficulty(
+            src.domain.encounter.generation.value.EncounterDifficultyIntent difficulty
+    ) {
+        return EncounterDifficultyBand.valueOf(
+                difficulty == null ? EncounterDifficultyBand.defaultBand().name() : difficulty.name());
     }
 }

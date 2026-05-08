@@ -5,14 +5,17 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-public record EncounterBuilderInputsModel(
-        Supplier<EncounterBuilderInputs> currentSupplier,
-        Function<Consumer<EncounterBuilderInputs>, Runnable> subscribeAction
-) {
+public final class EncounterBuilderInputsModel {
 
-    public EncounterBuilderInputsModel {
-        currentSupplier = currentSupplier == null ? EncounterBuilderInputs::empty : currentSupplier;
-        subscribeAction = subscribeAction == null ? listener -> () -> { } : subscribeAction;
+    private final Supplier<EncounterBuilderInputs> currentSupplier;
+    private final Function<Consumer<EncounterBuilderInputs>, Runnable> subscribeAction;
+
+    public EncounterBuilderInputsModel(
+            Supplier<EncounterBuilderInputs> currentSupplier,
+            Function<Consumer<EncounterBuilderInputs>, Runnable> subscribeAction
+    ) {
+        this.currentSupplier = currentSupplier == null ? EncounterBuilderInputs::empty : currentSupplier;
+        this.subscribeAction = subscribeAction == null ? listener -> () -> { } : subscribeAction;
     }
 
     public EncounterBuilderInputs current() {

@@ -5,19 +5,22 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-public record EncounterPlanBudgetModel(
-        Supplier<EncounterPlanBudgetResult> currentSupplier,
-        Function<Consumer<EncounterPlanBudgetResult>, Runnable> subscribeAction
-) {
+public final class EncounterPlanBudgetModel {
 
-    public EncounterPlanBudgetModel {
-        currentSupplier = currentSupplier == null
+    private final Supplier<EncounterPlanBudgetResult> currentSupplier;
+    private final Function<Consumer<EncounterPlanBudgetResult>, Runnable> subscribeAction;
+
+    public EncounterPlanBudgetModel(
+            Supplier<EncounterPlanBudgetResult> currentSupplier,
+            Function<Consumer<EncounterPlanBudgetResult>, Runnable> subscribeAction
+    ) {
+        this.currentSupplier = currentSupplier == null
                 ? () -> new EncounterPlanBudgetResult(
                         EncounterPlanBudgetStatus.STORAGE_ERROR,
                         null,
                         "")
                 : currentSupplier;
-        subscribeAction = subscribeAction == null ? listener -> () -> { } : subscribeAction;
+        this.subscribeAction = subscribeAction == null ? listener -> () -> { } : subscribeAction;
     }
 
     public EncounterPlanBudgetResult current() {
