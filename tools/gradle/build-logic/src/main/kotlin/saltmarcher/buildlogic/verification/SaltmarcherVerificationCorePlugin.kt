@@ -13,6 +13,7 @@ import org.gradle.kotlin.dsl.withGroovyBuilder
 import org.gradle.language.base.plugins.LifecycleBasePlugin
 import saltmarcher.buildlogic.enforcement.EnforcementBundleDescriptor
 import saltmarcher.buildlogic.enforcement.EnforcementBundlesExtension
+import saltmarcher.buildlogic.enforcement.standardVerificationSurfaceCatalog
 
 class SaltmarcherVerificationCorePlugin : Plugin<Project> {
     override fun apply(project: Project) {
@@ -26,6 +27,7 @@ internal fun Project.configureVerificationCore() {
     val activeEnforcementBundleIds = enforcementBundles.activeEnforcementBundleIds
     val focusedEnforcementBundleMode = enforcementBundles.focusedEnforcementBundleMode
     val verificationHarness = extensions.getByType<VerificationHarnessExtension>()
+    val verificationSurfaceCatalog = standardVerificationSurfaceCatalog(enforcementBundles.catalog)
 
     fun descriptor(bundleId: String): EnforcementBundleDescriptor = enforcementBundles.descriptor(bundleId)
 
@@ -179,20 +181,22 @@ internal fun Project.configureVerificationCore() {
             rootPmdTask?.let { dependsOn(it) }
         }
 
-        if (descriptor.rootTask?.attachToCheckArchitecture == true) {
-            verificationHarness.checkArchitecture.configure {
-                dependsOn(rootTaskProvider)
-            }
-        }
-        if (descriptor.rootTask?.attachToCheck == true) {
-            verificationHarness.check.configure {
-                dependsOn(rootTaskProvider)
-            }
-        }
     }
 
     activeEnforcementBundleIds
         .forEach(::registerStandardBundle)
+
+    verificationSurfaceCatalog.surfacesInOrder.forEach { surface ->
+        val activeSurfaceBundleIds = surface.bundleIds.filter(activeEnforcementBundleIds::contains)
+        tasks.register(surface.publicTaskName) {
+            group = LifecycleBasePlugin.VERIFICATION_GROUP
+            description = surface.description
+            activeSurfaceBundleIds
+                .map(::descriptor)
+                .map(EnforcementBundleDescriptor::publicCheckTaskName)
+                .forEach(::dependsOn)
+        }
+    }
 
     val checkDocumentationEnforcement = tasks.register("checkDocumentationEnforcement") {
         group = LifecycleBasePlugin.VERIFICATION_GROUP

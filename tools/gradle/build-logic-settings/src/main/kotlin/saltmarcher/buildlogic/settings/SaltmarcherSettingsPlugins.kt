@@ -5,6 +5,7 @@ import java.util.Properties
 import org.gradle.api.Plugin
 import org.gradle.api.initialization.Settings
 import saltmarcher.buildlogic.enforcement.standardEnforcementBundleCatalog
+import saltmarcher.buildlogic.enforcement.standardVerificationSurfaceCatalog
 
 class SaltmarcherRootSettingsPlugin : Plugin<Settings> {
     override fun apply(settings: Settings) {
@@ -18,16 +19,25 @@ class SaltmarcherRootSettingsPlugin : Plugin<Settings> {
 
         val verificationSurfaceCatalog = loadProperties(File(repoRootDir, "tools/gradle/verification-surface-catalog.properties"))
         val bundleCatalog = standardEnforcementBundleCatalog()
+        val publicVerificationSurfaceCatalog = standardVerificationSurfaceCatalog(bundleCatalog)
         val requestedTaskNames = settings.gradle.startParameter.taskNames
             .map { taskName -> taskName.substringAfterLast(":") }
             .toSet()
         val broadBuildTaskNames = verificationSurfaceCatalog.list("broadBuildTaskNames").toSet()
         val taskToBundleId = bundleCatalog.taskToBundleId
-        val requestedBundleIds = requestedTaskNames.mapNotNull(taskToBundleId::get).distinct()
+        val requestedBundleIds = requestedTaskNames
+            .flatMap { taskName ->
+                publicVerificationSurfaceCatalog.taskToBundleIds[taskName]
+                    ?: taskToBundleId[taskName]?.let(::listOf)
+                    ?: emptyList()
+            }
+            .distinct()
         val focusedEnforcementBundleMode = requestedTaskNames.isNotEmpty() &&
             requestedBundleIds.isNotEmpty() &&
             requestedTaskNames.none { taskName -> taskName in broadBuildTaskNames } &&
-            requestedTaskNames.all { taskName -> taskName in taskToBundleId.keys }
+            requestedTaskNames.all { taskName ->
+                taskName in taskToBundleId.keys || taskName in publicVerificationSurfaceCatalog.taskToBundleIds.keys
+            }
         val activeEnforcementBundleIds = if (focusedEnforcementBundleMode) {
             bundleCatalog.expandedBundleIds(requestedBundleIds)
         } else {

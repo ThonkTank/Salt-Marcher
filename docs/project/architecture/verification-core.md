@@ -70,7 +70,10 @@ Mechanically enforced public lifecycle surfaces are:
 - staged lifecycle surfaces: `production-build`, `quality-hygiene`,
   `architecture`, `view-topology`, `docs`, `metrics-report`,
   `desktop-install`, and `production-handoff`
-- focused bundle surfaces: `check*Enforcement`
+- canonical layer surfaces: `checkViewEnforcement`,
+  `checkDomainEnforcement`, `checkDataEnforcement`,
+  `checkShellEnforcement`, `checkBootstrapEnforcement`,
+  `checkStylingEnforcement`, and `checkLayeringEnforcement`
 - focused documentation surface: `checkDocumentationEnforcement`
 
 Beyond the staged lifecycle names, the verification core also owns direct
@@ -88,19 +91,19 @@ reconstructing the surface model themselves.
 ### 3. Bundle Owners
 
 Each focused enforcement package under `tools/quality/*-enforcement/` owns one
-root public `check*Enforcement` lifecycle task through the central typed
-enforcement-spec registry. Standard bundles are registered centrally by the
-verification core from that registry. Bundles with small local extras such as stylesheet or
-FXML checks still register through the same standard verification-core path
-instead of through dedicated root plugins. The staged `view-topology` surface
-is intentionally routed to the dedicated closed-world
-`checkViewLayerEnforcement` bundle owner rather than to a second
-view-specific graph-analysis owner.
+typed bundle descriptor, not one canonical public entrypoint. Standard bundles
+are registered centrally by the verification core from that registry, and the
+verification core then groups them behind the small layer-surface set. Bundles
+with small local extras such as stylesheet or FXML checks still register
+through the same standard verification-core path instead of through dedicated
+root plugins. The staged `view-topology` surface is intentionally routed to
+the dedicated closed-world `checkViewLayerEnforcement` bundle owner rather
+than to a second view-specific graph-analysis owner.
 
 Bundle owners MAY know their private ArchUnit, Error Prone, PMD,
 jQAssistant, or build-harness tasks. They MUST NOT depend on shell wrappers.
 They communicate with the verification core only through stable typed registry
-metadata, their one root public lifecycle task, and any explicitly declared
+metadata, their bundle-local lifecycle tasks, and any explicitly declared
 report-only sibling surfaces.
 
 Root-owned hygiene gates that are not bundle-specific MUST stay registered in
@@ -122,8 +125,8 @@ production-handoff flows, and runtime UX concerns.
 Allowed dependency direction is strictly inward:
 
 - runtime wrappers -> public verification surface names only
-- verification core -> root lifecycle tasks, included-build entrypoints, and
-  enforcement specs
+- verification core -> public layer surfaces, staged surfaces, included-build
+  entrypoints, and enforcement specs
 - bundle owners -> private rule tasks and typed proof wiring
 - rule implementation -> concrete source files, compiled classes, documentation
   inventories, and engine-local support code
@@ -137,12 +140,14 @@ Forbidden shortcuts:
 - build-harness, PMD, Error Prone, or jQAssistant code knowing staged surface
   names
 
-## Focused Bundle Propagation
+## Focused Surface Propagation
 
-Focused bundle selection is computed from the requested public task set during
-root settings evaluation by the `saltmarcher.settings` plugin from
-`tools/gradle/build-logic-settings`. The build publishes only three
-focused-selection facts to the included builds:
+Focused verification selection is computed from the requested public task set
+during root settings evaluation by the `saltmarcher.settings` plugin from
+`tools/gradle/build-logic-settings`. Canonical layer surfaces expand to their
+owning bundle ids there, and direct bundle-task requests are still translated
+to the same bundle-id set. The build publishes only three focused-selection
+facts to the included builds:
 
 - `saltmarcher.repoRootDir`
 - `saltmarcher.focusedEnforcementBundleMode`
@@ -151,8 +156,8 @@ focused-selection facts to the included builds:
 Included builds consume those facts and MUST NOT reconstruct the root repo
 state from alternative checkout-relative guessing when the propagated repo root
 is available. Project-build plugin code likewise MUST NOT re-derive focused
-bundle selection from `StartParameter` task names once the settings-owned
-selection facts were published.
+surface or bundle selection from `StartParameter` task names once the
+settings-owned selection facts were published.
 Included builds own their technical registration from typed registry metadata
 and explicit static source roots such as build-harness rule classes, Error
 Prone checker lists, ArchUnit task shapes, PMD task shapes, jQAssistant task
@@ -168,9 +173,9 @@ parallelism safe.
 Shared verification task registration inside `tools/gradle/build-logic` should
 flow through typed plugin or extension APIs rather than through untyped
 `extra[...]` function exports between precompiled script plugins.
-Public verification aggregates and focused bundles should attach to root
-lifecycle tasks through typed registry providers rather than by matching task
-names at configuration time.
+Public verification aggregates and canonical layer surfaces should register
+through typed registry providers rather than by matching task names at
+configuration time.
 The remaining root-owned build-harness optional rules are now registry-driven
 as well: bundles contribute root `architectureCheck` and
 `documentationEnforcementCheck` rule classes and documentation-coverage spec

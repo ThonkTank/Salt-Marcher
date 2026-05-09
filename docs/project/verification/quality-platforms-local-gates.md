@@ -53,80 +53,16 @@ steady-state policy.
 
 `compileJava` does not run the dedicated topology or whole-program dead-code
 bundles. Passive `View` graph and FXML analysis enter local quality through
-`checkViewEnforcement`, the other focused View role bundles enter through
-`checkViewInputEventEnforcement`, `checkViewContributionEnforcement`,
-`checkViewBinderEnforcement`, `checkViewContributionModelEnforcement`,
-`checkViewContentModelEnforcement`, and
-`checkViewIntentHandlerEnforcement`, while whole-program compiled dead-code analysis enters
-through `checkNoDeadCode`,
-and the technical owner split behind those public View tasks is now only the
+`checkViewEnforcement`, while the canonical Domain, Data, Shell, Bootstrap,
+Styling, and Layering entrypoints are `checkDomainEnforcement`,
+`checkDataEnforcement`, `checkShellEnforcement`,
+`checkBootstrapEnforcement`, `checkStylingEnforcement`, and
+`checkLayeringEnforcement`. Whole-program compiled dead-code analysis enters
+through `checkNoDeadCode`. The detailed role-local bundle tasks still exist as
+technical implementation surfaces beneath those layer entrypoints, and the
+technical owner split behind the public View route is now only the
 build-harness View topology core plus the shared Error Prone View core under
-`tools/quality/incubator/quality-rules-errorprone/**`,
-focused Domain Layer topology, dependency, and documentation proof enters
-through `checkDomainLayerEnforcement`,
-focused Domain ApplicationService API-shape, topology, role-boundary, signature-purity,
-source-pattern policy, and documentation proof enters through
-`checkDomainApplicationServiceEnforcement`,
-focused Data ServiceContribution construction-purity, shell-seam,
-`register(...)` export-shape, source-pattern, and documentation proof enters
-through `checkDataServiceContributionEnforcement`,
-focused Domain Published carrier-shape, ownership-boundary, signature-purity, topology, and
-documentation proof enters through `checkDomainPublishedEnforcement`,
-focused Domain Port topology, inbound-boundary, and documentation proof enters through
-`checkDomainPortEnforcement`,
-focused Domain Repository topology, outbound-boundary, and documentation proof enters through
-`checkDomainRepositoryEnforcement`,
-focused Domain Model topology, boundary, and documentation proof enters through
-`checkDomainModelEnforcement`,
-focused Domain Helper topology, boundary, and documentation proof enters through
-`checkDomainHelperEnforcement`,
-focused Domain Constants topology, boundary, and documentation proof enters through
-`checkDomainConstantsEnforcement`,
-focused styling-layer proof enters through `checkStylingLayerEnforcement`,
-focused passive-`View` direct-render styling placement enters through
-`checkStylingViewEnforcement`,
-focused `AppShell` lifecycle-hook ownership enters through
-`checkShellAppShellEnforcement`,
-focused `AppBootstrap` host-composition boundary proof enters through
-`checkBootstrapAppBootstrapEnforcement`,
-focused shell-layer topology and boundary analysis enters through
-`checkShellLayerEnforcement`,
-focused Domain UseCase topology, same-context `published/**` dependency,
-role-boundary,
-source-pattern policy, and bundle-local enforcement-documentation coverage
-enters through `checkDomainUseCaseEnforcement`,
-focused Data Model source-shape, schema-DDL-placement, model-domain
-independence, topology, and documentation proof enters through
-`checkDataModelEnforcement`,
-focused Data Gateway public-signature-boundary, domain-independence, and
-documentation proof enters through `checkDataGatewayEnforcement`,
-focused Data Repository write-port contract, public-signature-boundary,
-gateway-collaborator, source-mechanics, and documentation proof enters
-through `checkDataRepositoryEnforcement`,
-focused Data Query read-port contract, public-signature-boundary,
-gateway-collaborator, mutation-boundary, source-mechanics, read-only-source
-shape, and documentation proof enters through
-`checkDataQueryEnforcement`,
-focused Data Mapper source-pattern and documentation proof enters through
-`checkDataMapperEnforcement`,
-focused Data Persistencecore dependency and documentation proof enters through
-`checkDataPersistencecoreEnforcement`,
-focused passive-`View` compile-bound enforcement enters through
-`checkViewEnforcement`,
-focused `ViewInputEvent` compile-bound enforcement enters through
-`checkViewInputEventEnforcement`,
-focused `Contribution` compile-bound enforcement enters through
-`checkViewContributionEnforcement`,
-focused `Binder` compile-bound enforcement enters through
-`checkViewBinderEnforcement`,
-focused `ContributionModel` compile-bound enforcement enters through
-`checkViewContributionModelEnforcement`,
-focused `ContentModel` compile-bound enforcement enters through
-`checkViewContentModelEnforcement`,
-focused `IntentHandler` compile-bound enforcement enters through
-`checkViewIntentHandlerEnforcement`,
-closed-world view-directory and role-form topology enters through
-`checkViewLayerEnforcement`.
+`tools/quality/incubator/quality-rules-errorprone/**`.
 The compile/FXML/topology paths are wired into the central `check` aggregate
 through the named architecture aggregates. Passive-`View` direct-render
 styling placement stays compiler-backed through `compileJava` and also enters
@@ -587,12 +523,34 @@ Architecture-focused entrypoints:
   `compileJava` with the dedicated `ViewDirectRenderStylingPlacement`
   compiler check and is also wired explicitly into the root `check`
   aggregate.
+- `./gradlew checkDomainEnforcement --console=plain`
+  Aggregates the canonical Domain enforcement surface through the Domain
+  Context, Layer, UseCase, ApplicationService, Published, Port, Model,
+  Helper, Constants, and Repository bundles.
+- `./gradlew checkDataEnforcement --console=plain`
+  Aggregates the canonical Data enforcement surface through the Data Layer,
+  Model, Gateway, Mapper, Persistencecore, Query, Repository, and
+  ServiceContribution bundles.
+- `./gradlew checkShellEnforcement --console=plain`
+  Aggregates the canonical Shell enforcement surface through the
+  `ShellRuntimeContext`, `AppShell`, and Shell Layer bundles.
+- `./gradlew checkBootstrapEnforcement --console=plain`
+  Aggregates the canonical Bootstrap enforcement surface through the
+  `AppBootstrap` and Bootstrap Layer bundles.
+- `./gradlew checkStylingEnforcement --console=plain`
+  Aggregates the canonical Styling enforcement surface through the
+  styling-layer and passive-`View` direct-render styling bundles.
+- `./gradlew checkLayeringEnforcement --console=plain`
+  Aggregates the canonical Layering enforcement surface through the blocker
+  Layering Architecture and Layering Indirection bundles.
 - `./gradlew checkShellAppShellEnforcement --console=plain`
   Aggregates the focused `AppShell` bundle through `compileJava` with the
   dedicated `ShellLifecycleHookOwnership` compiler check.
 - `./gradlew checkViewEnforcement --console=plain`
-  Aggregates the focused passive-`View` bundle through `compileJava`,
-  `checkViewLayerEnforcement`, and `checkViewFxmlResources`.
+  Aggregates the canonical View enforcement surface through the closed-world
+  View Layer topology proof plus the passive `View`, `ViewInputEvent`,
+  `Contribution`, `Binder`, `ContributionModel`, `ContentModel`, and
+  `IntentHandler` bundles.
 - `./gradlew checkViewInputEventEnforcement --console=plain`
   Aggregates the focused `ViewInputEvent` bundle through `compileJava` and
   `checkViewLayerEnforcement`.

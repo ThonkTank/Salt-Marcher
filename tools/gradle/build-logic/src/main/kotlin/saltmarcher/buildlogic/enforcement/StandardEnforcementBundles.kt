@@ -180,7 +180,7 @@ fun standardEnforcementBundleDescriptors(): List<EnforcementBundleDescriptor> = 
         verificationSources(listOf("shell", "src"), listOf("api/**/*.java", "view/**/*.java", "domain/**/published/**/*.java"))
         buildHarnessRules("checkViewLayerEnforcement", listOf("saltmarcher.architecture.view.ViewTopologyPerimeterRules", "saltmarcher.architecture.view.ViewLayerTopologyRules"))
     },
-    bundle("view", 1, listOf("checkViewEnforcement", "checkViewFxmlResources")) {
+    bundle("view", 1, listOf("checkPassiveViewEnforcement", "checkViewFxmlResources")) {
         focusedViewRoleRootTask("Run the focused passive View enforcement bundle through one root entrypoint.")
         errorProneCheckers(listOf(
             "PassiveViewSurfaceBoundary",

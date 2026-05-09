@@ -43,7 +43,6 @@ public final class PassiveViewInteractionBoundaryChecker extends BugChecker
         for (String referencedType : ViewArchitectureSupport.collectReferencedTypes(tree)) {
             if (isForbiddenReference(referencedType, sourcePackageName, viewSimpleName)) {
                 violations.add("forbidden reference " + referencedType);
-                recordViolationTree(tree, firstViolationTree);
             }
         }
 
