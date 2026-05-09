@@ -1,6 +1,6 @@
 package src.domain.encounter.application;
 
-record EncounterGenerationDiagnosticsData(
+public record EncounterGenerationDiagnosticsData(
         src.domain.encounter.generation.value.EncounterDifficultyIntent resolvedDifficulty,
         src.domain.encounter.generation.value.EncounterTuningIntent resolvedTuning,
         int candidatePoolSize,
@@ -8,7 +8,7 @@ record EncounterGenerationDiagnosticsData(
         int candidateEvaluations
 ) {
 
-    EncounterGenerationDiagnosticsData {
+    public EncounterGenerationDiagnosticsData {
         resolvedDifficulty = resolvedDifficulty == null
                 ? src.domain.encounter.generation.value.EncounterDifficultyIntent.defaultIntent()
                 : resolvedDifficulty;

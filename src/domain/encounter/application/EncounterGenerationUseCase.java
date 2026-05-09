@@ -80,7 +80,7 @@ public final class EncounterGenerationUseCase {
         }
     }
 
-    record GeneratedCreature(
+    public record GeneratedCreature(
             long creatureId,
             String name,
             String challengeRating,
@@ -90,7 +90,7 @@ public final class EncounterGenerationUseCase {
             List<String> tags
     ) {
 
-        GeneratedCreature {
+        public GeneratedCreature {
             name = name == null ? "" : name;
             challengeRating = challengeRating == null ? "" : challengeRating;
             role = role == null ? "" : role;
@@ -99,14 +99,14 @@ public final class EncounterGenerationUseCase {
         }
     }
 
-    record GeneratedAlternative(
+    public record GeneratedAlternative(
             String title,
             src.domain.encounter.generation.value.EncounterDifficultyIntent achievedDifficulty,
             int adjustedXp,
             List<GeneratedCreature> creatures
     ) {
 
-        GeneratedAlternative {
+        public GeneratedAlternative {
             title = title == null ? "" : title;
             achievedDifficulty = achievedDifficulty == null
                     ? src.domain.encounter.generation.value.EncounterDifficultyIntent.defaultIntent()
