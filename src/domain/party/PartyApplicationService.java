@@ -1,12 +1,12 @@
 package src.domain.party;
 
+import java.util.List;
 import java.util.Objects;
 import src.domain.party.application.AdjustPartyXpUseCase;
 import src.domain.party.application.AwardPartyXpUseCase;
 import src.domain.party.application.CreateCharacterUseCase;
 import src.domain.party.application.DeleteCharacterUseCase;
 import src.domain.party.application.MovePartyCharactersUseCase;
-import src.domain.party.application.PartyBoundaryTranslator;
 import src.domain.party.application.PartyRuntimeAccess;
 import src.domain.party.application.PerformPartyRestUseCase;
 import src.domain.party.application.SetPartyMembershipUseCase;
@@ -51,61 +51,146 @@ public final class PartyApplicationService {
     }
 
     public void createCharacter(CreateCharacterCommand command) {
-        var request = PartyBoundaryTranslator.CreateCharacterRequest.from(command);
         runtimeAccess.runMutation(() -> createCharacterUseCase.execute(
-                request.draft(),
-                request.membership()));
+                BoundaryValues.draft(command == null ? null : command.draft()),
+                BoundaryValues.membership(command == null ? null : command.membership())));
     }
 
     public void updateCharacter(UpdateCharacterCommand command) {
-        var request = PartyBoundaryTranslator.UpdateCharacterRequest.from(command);
         runtimeAccess.runMutation(() -> updateCharacterUseCase.execute(
-                request.id(),
-                request.draft()));
+                command == null ? 0L : command.id(),
+                BoundaryValues.draft(command == null ? null : command.draft())));
     }
 
     public void deleteCharacter(DeleteCharacterCommand command) {
-        var request = PartyBoundaryTranslator.DeleteCharacterRequest.from(command);
-        runtimeAccess.runMutation(() -> deleteCharacterUseCase.execute(request.id()));
+        runtimeAccess.runMutation(() -> deleteCharacterUseCase.execute(command == null ? 0L : command.id()));
     }
 
     public void setMembership(SetPartyMembershipCommand command) {
-        var request = PartyBoundaryTranslator.SetMembershipRequest.from(command);
         runtimeAccess.runMutation(() -> setPartyMembershipUseCase.execute(
-                request.id(),
-                request.membership()));
+                command == null ? 0L : command.id(),
+                BoundaryValues.membership(command == null ? null : command.membership())));
     }
 
     public void awardXp(AwardPartyXpCommand command) {
-        var request = PartyBoundaryTranslator.AwardXpRequest.from(command);
         runtimeAccess.runMutation(() -> awardPartyXpUseCase.execute(
-                request.ids(),
-                request.xpPerCharacter()));
+                BoundaryValues.ids(command == null ? null : command.ids()),
+                command == null ? 0 : command.xpPerCharacter()));
     }
 
     public void adjustXp(AdjustPartyXpCommand command) {
-        var request = PartyBoundaryTranslator.AdjustXpRequest.from(command);
         runtimeAccess.runMutation(() -> adjustPartyXpUseCase.execute(
-                request.ids(),
-                request.xpDelta()));
+                BoundaryValues.ids(command == null ? null : command.ids()),
+                command == null ? 0 : command.xpDelta()));
     }
 
     public void performRest(PerformPartyRestCommand command) {
-        var request = PartyBoundaryTranslator.PartyRestRequest.from(command);
         runtimeAccess.runMutation(() -> performPartyRestUseCase.execute(
-                request.restType()));
+                BoundaryValues.restType(command == null ? null : command.restType())));
     }
 
     public void moveCharacters(MovePartyCharactersCommand command) {
-        var request = PartyBoundaryTranslator.MoveCharactersRequest.from(command);
         runtimeAccess.runMutation(() -> movePartyCharactersUseCase.execute(
-                request.characterIds(),
-                request.target(),
-                request.attachToPartyToken()));
+                BoundaryValues.ids(command == null ? null : command.characterIds()),
+                BoundaryValues.travelLocation(command == null ? null : command.target()),
+                command == null || command.attachToPartyToken()));
     }
 
     public void calculateAdventuringDay(CalculateAdventuringDayCommand command) {
-        var request = PartyBoundaryTranslator.AdventuringDayCalculationRequest.from(command);
-        runtimeAccess.publishAdventuringDayCalculation(request.levels(), request.totalGroupXp());
+        runtimeAccess.publishAdventuringDayCalculation(
+                BoundaryValues.levels(command == null ? null : command.levels()),
+                command == null ? 0 : command.totalGroupXp());
+    }
+
+    private static final class BoundaryValues {
+
+        private static src.domain.party.roster.value.PartyMembership membership(
+                src.domain.party.published.MembershipState membershipState
+        ) {
+            src.domain.party.published.MembershipState effective = membershipState == null
+                    ? src.domain.party.published.MembershipState.valueOf("RESERVE")
+                    : membershipState;
+            return src.domain.party.roster.value.PartyMembership.valueOf(effective.name());
+        }
+
+        private static src.domain.party.roster.value.PartyCharacterDraft draft(
+                src.domain.party.published.CharacterDraft draft
+        ) {
+            if (draft == null) {
+                return new src.domain.party.roster.value.PartyCharacterDraft("", "", 0, 0, 0);
+            }
+            return new src.domain.party.roster.value.PartyCharacterDraft(
+                    draft.name(),
+                    draft.playerName(),
+                    draft.level(),
+                    draft.passivePerception(),
+                    draft.armorClass());
+        }
+
+        private static List<Long> ids(List<Long> ids) {
+            return ids == null ? List.of() : List.copyOf(ids);
+        }
+
+        private static List<Integer> levels(List<Integer> levels) {
+            return levels == null ? List.of() : List.copyOf(levels);
+        }
+
+        private static src.domain.party.roster.value.PartyRestType restType(
+                src.domain.party.published.RestType restType
+        ) {
+            src.domain.party.published.RestType effective = restType == null
+                    ? src.domain.party.published.RestType.valueOf("SHORT_REST")
+                    : restType;
+            return src.domain.party.roster.value.PartyRestType.valueOf(effective.name());
+        }
+
+        private static src.domain.party.roster.value.PartyTravelLocation travelLocation(
+                src.domain.party.published.PartyTravelLocationSnapshot location
+        ) {
+            if (location instanceof src.domain.party.published.PartyDungeonTravelLocationSnapshot dungeon) {
+                return new src.domain.party.roster.value.PartyDungeonTravelLocation(
+                        dungeon.mapId(),
+                        toInternalDungeonLocationKind(dungeon.locationKind()),
+                        dungeon.ownerId(),
+                        toInternalTile(dungeon.tile()),
+                        toInternalHeading(dungeon.heading()));
+            }
+            if (location instanceof src.domain.party.published.PartyOverworldTravelLocationSnapshot overworld) {
+                return new src.domain.party.roster.value.PartyOverworldTravelLocation(
+                        overworld.mapId(),
+                        overworld.tileId());
+            }
+            return null;
+        }
+
+        private static src.domain.party.roster.value.PartyDungeonTravelLocationKind toInternalDungeonLocationKind(
+                src.domain.party.published.PartyDungeonTravelLocationKind locationKind
+        ) {
+            src.domain.party.published.PartyDungeonTravelLocationKind effective = locationKind == null
+                    ? src.domain.party.published.PartyDungeonTravelLocationKind.valueOf("TILE")
+                    : locationKind;
+            return src.domain.party.roster.value.PartyDungeonTravelLocationKind.valueOf(effective.name());
+        }
+
+        private static src.domain.party.roster.value.PartyTravelTile toInternalTile(
+                src.domain.party.published.PartyTravelTile tile
+        ) {
+            src.domain.party.published.PartyTravelTile safeTile = tile == null
+                    ? new src.domain.party.published.PartyTravelTile(0, 0, 0)
+                    : tile;
+            return new src.domain.party.roster.value.PartyTravelTile(
+                    safeTile.q(),
+                    safeTile.r(),
+                    safeTile.level());
+        }
+
+        private static src.domain.party.roster.value.PartyTravelHeading toInternalHeading(
+                src.domain.party.published.PartyTravelHeading heading
+        ) {
+            src.domain.party.published.PartyTravelHeading effective = heading == null
+                    ? src.domain.party.published.PartyTravelHeading.defaultHeading()
+                    : heading;
+            return src.domain.party.roster.value.PartyTravelHeading.valueOf(effective.name());
+        }
     }
 }

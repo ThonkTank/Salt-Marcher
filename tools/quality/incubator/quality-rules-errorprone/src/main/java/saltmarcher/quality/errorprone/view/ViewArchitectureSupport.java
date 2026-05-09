@@ -308,7 +308,7 @@ public final class ViewArchitectureSupport {
     }
 
     public static ViewTypeInfo parseViewType(String referencedType) {
-        ViewSourceDescriptor source = ViewSourceDescriptor.describeQualifiedType(referencedType);
+        ViewSourceDescriptor source = ViewSourceDescriptor.describeQualifiedType(topLevelQualifiedTypeNameOf(referencedType));
         if (!source.packageName().startsWith("src.view.")) {
             return null;
         }
@@ -344,7 +344,18 @@ public final class ViewArchitectureSupport {
         if (referencedType == null || referencedType.isBlank()) {
             return "";
         }
-        return referencedType.replaceFirst("\\$.*$", "");
+        String normalizedType = referencedType.replaceFirst("\\$.*$", "");
+        if (!normalizedType.startsWith("src.view.")) {
+            return normalizedType;
+        }
+        String[] segments = normalizedType.split("\\.");
+        if (segments.length >= 6 && "slotcontent".equals(segments[2])) {
+            return String.join(".", segments[0], segments[1], segments[2], segments[3], segments[4], segments[5]);
+        }
+        if (segments.length >= 5 && Set.of("leftbartabs", "statetabs", "dropdowns").contains(segments[2])) {
+            return String.join(".", segments[0], segments[1], segments[2], segments[3], segments[4]);
+        }
+        return normalizedType;
     }
 
     public static boolean isSameViewUnitReference(String leftReferencedType, String rightReferencedType) {
@@ -610,7 +621,7 @@ public final class ViewArchitectureSupport {
         if (referencedType == null || referencedType.isBlank()) {
             return "";
         }
-        String topLevelType = referencedType.replaceFirst("\\$.*$", "");
+        String topLevelType = topLevelQualifiedTypeNameOf(referencedType);
         if (topLevelType.startsWith("src.view.")) {
             String[] segments = topLevelType.split("\\.");
             if (segments.length >= 6 && "slotcontent".equals(segments[2])) {

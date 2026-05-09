@@ -149,8 +149,10 @@ fun standardEnforcementBundleDescriptors(): List<EnforcementBundleDescriptor> = 
         rootTaskDependencies(listOf("checkViewLayerEnforcement"))
         errorProneCheckers(listOf(
             "PassiveViewDependencyBoundaries",
+            "PassiveViewTypeShapeBoundary",
             "PassiveViewLocalStateBoundary",
             "PassiveViewProjectInteractionBoundary",
+            "PassiveViewDataShapingBoundary",
             "PassiveViewProjectionConstructionBoundary",
             "ViewPresentationDecisionLeak",
             "ViewInputEventApi",
@@ -222,9 +224,8 @@ fun standardEnforcementBundleDescriptors(): List<EnforcementBundleDescriptor> = 
         verificationSources(listOf("bootstrap", "shell"), listOf("**/*.java"))
         archunit("bootstrapAppBootstrapArchitectureTest", "Run only the AppBootstrap-focused architecture test suite.", listOf("tools/quality/bootstrap-app-bootstrap-enforcement/archunit/src/test/java"), listOf("architecture/bootstrap/appbootstrap/**"), listOf("architecture/bootstrap/appbootstrap/**"), true)
     },
-    bundle("layeringArchitecture", 11, listOf("checkLayeringArchitectureEnforcement", "layeringArchitectureTopologyCheck", "layeringArchitectureDocumentationEnforcementCheck", "checkLayeringIndirectionCandidates")) {
+    bundle("layeringArchitecture", 11, listOf("checkLayeringArchitectureEnforcement", "layeringArchitectureTopologyCheck", "layeringArchitectureDocumentationEnforcementCheck")) {
         rootTask("Run the dedicated Layering Architecture enforcement bundle through one root entrypoint.", true, true)
-        pmdTask("checkLayeringIndirectionCandidates", "Run the report-only thin-role indirection candidate PMD scan.", "tools/quality/layering-architecture-enforcement/pmd/ruleset.xml", listOf("src"), listOf("domain/*/*ApplicationService.java", "domain/*/application/*UseCase.java", "view/leftbartabs/*/*Binder.java", "view/statetabs/*/*Binder.java", "view/dropdowns/*/*Binder.java", "view/leftbartabs/*/*IntentHandler.java", "view/statetabs/*/*IntentHandler.java", "view/dropdowns/*/*IntentHandler.java", "data/*/*ServiceContribution.java"), true, true)
         buildHarnessDocumentationRules(listOf("saltmarcher.architecture.documentation.layering.LayeringArchitectureEnforcementCoverageRules"))
     },
     bundle("shellAppShell", 11, listOf("checkShellAppShellEnforcement")) {

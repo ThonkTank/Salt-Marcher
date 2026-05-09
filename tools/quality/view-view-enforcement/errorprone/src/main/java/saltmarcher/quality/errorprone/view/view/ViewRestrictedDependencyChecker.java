@@ -50,19 +50,21 @@ public final class ViewRestrictedDependencyChecker extends BugChecker
             return true;
         }
         if (referencedType.startsWith("shell.")
+                || referencedType.startsWith("bootstrap.")
                 || referencedType.startsWith("src.domain.")
                 || referencedType.startsWith("src.data.")) {
             return true;
         }
-        ViewArchitectureSupport.ViewTypeInfo viewType = ViewArchitectureSupport.parseViewType(referencedType);
-        if (viewType == null) {
-            return false;
-        }
-        if (ViewArchitectureSupport.isOwnTopLevelOrNestedTypeReference(
+        if (referencedType.startsWith("src.view.")
+                && ViewArchitectureSupport.isOwnTopLevelOrNestedTypeReference(
                 sourcePackageName,
                 viewSimpleName,
                 referencedType)) {
             return false;
+        }
+        ViewArchitectureSupport.ViewTypeInfo viewType = ViewArchitectureSupport.parseViewType(referencedType);
+        if (viewType == null) {
+            return referencedType.startsWith("src.view.");
         }
         if ("VIEW_INPUT_EVENT".equals(viewType.bucket())) {
             return !ViewArchitectureSupport.isSameStemViewInputEventReference(

@@ -28,15 +28,51 @@ public final class PassiveViewCallbackSeamBoundaryCheckerTest {
     }
 
     @Test
+    public void rejectsBiConsumerPreparedStateAccessor() {
+        compilationHelper
+                .addSourceLines(
+                        "src/view/slotcontent/primitives/foo/FooView.java",
+                        "package src.view.slotcontent.primitives.foo;",
+                        "import java.util.function.BiConsumer;",
+                        " // BUG: Diagnostic contains: illegal callback, result, or imperative render seams",
+                        "final class FooView {",
+                        "  BiConsumer<String, Integer> titleSink() {",
+                        "    return (text, count) -> { };",
+                        "  }",
+                        "}")
+                .doTest();
+    }
+
+    @Test
     public void rejectsImperativeRenderMethod() {
         compilationHelper
                 .addSourceLines(
                         "src/view/slotcontent/primitives/foo/FooView.java",
                         "package src.view.slotcontent.primitives.foo;",
+                        " // BUG: Diagnostic contains: illegal callback, result, or imperative render seams",
                         "final class FooView {",
-                        "  // BUG: Diagnostic contains: illegal callback, result, or imperative render seams",
                         "  void showText(String text) { }",
                         "}")
+                .doTest();
+    }
+
+    @Test
+    public void rejectsProjectTypedPreparedStateAccessor() {
+        compilationHelper
+                .addSourceLines(
+                        "src/view/slotcontent/primitives/foo/FooView.java",
+                        "package src.view.slotcontent.primitives.foo;",
+                        "import java.util.function.Consumer;",
+                        " // BUG: Diagnostic contains: illegal callback, result, or imperative render seams",
+                        "final class FooView {",
+                        "  Consumer<FooContentModel> stateSink() {",
+                        "    return ignored -> { };",
+                        "  }",
+                        "}")
+                .addSourceLines(
+                        "src/view/slotcontent/primitives/foo/FooContentModel.java",
+                        "package src.view.slotcontent.primitives.foo;",
+                        "final class FooContentModel { }")
                 .doTest();
     }
 }

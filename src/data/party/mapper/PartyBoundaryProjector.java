@@ -20,7 +20,6 @@ import src.domain.party.published.AdventuringDayProgressEvent;
 import src.domain.party.published.AdventuringDayProgressEventType;
 import src.domain.party.published.AdventuringDayResult;
 import src.domain.party.published.AdventuringDaySummary;
-import src.domain.party.published.CharacterDraft;
 import src.domain.party.published.MembershipState;
 import src.domain.party.published.MutationResult;
 import src.domain.party.published.MutationStatus;
@@ -41,13 +40,10 @@ import src.domain.party.published.ReadStatus;
 import src.domain.party.published.RestCadenceUrgency;
 import src.domain.party.published.RestCadenceStatus;
 import src.domain.party.published.RestMilestone;
-import src.domain.party.published.RestType;
 import src.domain.party.roster.entity.PartyCharacter;
 import src.domain.party.roster.policy.PartyLevelProgressionPolicy;
-import src.domain.party.roster.value.PartyCharacterDraft;
 import src.domain.party.roster.value.PartyMembership;
 import src.domain.party.roster.value.PartyMutationStatus;
-import src.domain.party.roster.value.PartyRestType;
 import src.domain.party.roster.value.PartyTravelLocation;
 
 @SuppressWarnings({
@@ -179,45 +175,6 @@ public final class PartyBoundaryProjector {
         };
     }
 
-    public static PartyMembership toPartyMembership(@Nullable MembershipState membershipState) {
-        return membershipState == MembershipState.ACTIVE ? PartyMembership.ACTIVE : PartyMembership.RESERVE;
-    }
-
-    public static PartyRestType toPartyRestType(@Nullable RestType restType) {
-        return restType == RestType.LONG_REST ? PartyRestType.LONG_REST : PartyRestType.SHORT_REST;
-    }
-
-    public static PartyCharacterDraft toDomainDraft(@Nullable CharacterDraft draft) {
-        if (draft == null) {
-            return new PartyCharacterDraft("", "", 0, 0, 0);
-        }
-        return new PartyCharacterDraft(
-                draft.name(),
-                draft.playerName(),
-                draft.level(),
-                draft.passivePerception(),
-                draft.armorClass());
-    }
-
-    public static @Nullable PartyTravelLocation toDomainTravelLocation(
-            @Nullable PartyTravelLocationSnapshot location
-    ) {
-        if (location instanceof PartyDungeonTravelLocationSnapshot dungeon) {
-            return new src.domain.party.roster.value.PartyDungeonTravelLocation(
-                    dungeon.mapId(),
-                    toDungeonLocationKind(dungeon.locationKind()),
-                    dungeon.ownerId(),
-                    toDomainTile(dungeon.tile()),
-                    toDomainHeading(dungeon.heading()));
-        }
-        if (location instanceof PartyOverworldTravelLocationSnapshot overworld) {
-            return new src.domain.party.roster.value.PartyOverworldTravelLocation(
-                    overworld.mapId(),
-                    overworld.tileId());
-        }
-        return null;
-    }
-
     private static PartyMemberSummary mapSummary(PartyCharacter character) {
         return new PartyMemberSummary(
                 character.id(),
@@ -255,17 +212,10 @@ public final class PartyBoundaryProjector {
         if (location instanceof src.domain.party.roster.value.PartyDungeonTravelLocation dungeon) {
             return new PartyDungeonTravelLocationSnapshot(
                     dungeon.mapId(),
-                    dungeon.locationKind() == src.domain.party.roster.value.PartyDungeonTravelLocationKind.TRANSITION
-                            ? PartyDungeonTravelLocationKind.TRANSITION
-                            : PartyDungeonTravelLocationKind.TILE,
+                    toPublishedDungeonLocationKind(dungeon.locationKind()),
                     dungeon.ownerId(),
                     new PartyTravelTile(dungeon.tile().q(), dungeon.tile().r(), dungeon.tile().level()),
-                    switch (dungeon.heading()) {
-                        case NORTH -> PartyTravelHeading.NORTH;
-                        case EAST -> PartyTravelHeading.EAST;
-                        case WEST -> PartyTravelHeading.WEST;
-                        case SOUTH -> PartyTravelHeading.SOUTH;
-                    });
+                    toPublishedHeading(dungeon.heading()));
         }
         if (location instanceof src.domain.party.roster.value.PartyOverworldTravelLocation overworld) {
             return new PartyOverworldTravelLocationSnapshot(overworld.mapId(), overworld.tileId());
@@ -353,31 +303,15 @@ public final class PartyBoundaryProjector {
         return membership == PartyMembership.ACTIVE ? MembershipState.ACTIVE : MembershipState.RESERVE;
     }
 
-    private static src.domain.party.roster.value.PartyDungeonTravelLocationKind toDungeonLocationKind(
-            @Nullable PartyDungeonTravelLocationKind locationKind
+    private static PartyDungeonTravelLocationKind toPublishedDungeonLocationKind(
+            src.domain.party.roster.value.PartyDungeonTravelLocationKind locationKind
     ) {
-        return locationKind == PartyDungeonTravelLocationKind.TRANSITION
-                ? src.domain.party.roster.value.PartyDungeonTravelLocationKind.TRANSITION
-                : src.domain.party.roster.value.PartyDungeonTravelLocationKind.TILE;
+        return PartyDungeonTravelLocationKind.valueOf(locationKind.name());
     }
 
-    private static src.domain.party.roster.value.PartyTravelTile toDomainTile(@Nullable PartyTravelTile tile) {
-        PartyTravelTile safeTile = tile == null ? new PartyTravelTile(0, 0, 0) : tile;
-        return new src.domain.party.roster.value.PartyTravelTile(
-                safeTile.q(),
-                safeTile.r(),
-                safeTile.level());
-    }
-
-    private static src.domain.party.roster.value.PartyTravelHeading toDomainHeading(
-            @Nullable PartyTravelHeading heading
+    private static PartyTravelHeading toPublishedHeading(
+            src.domain.party.roster.value.PartyTravelHeading heading
     ) {
-        PartyTravelHeading effective = heading == null ? PartyTravelHeading.defaultHeading() : heading;
-        return switch (effective) {
-            case NORTH -> src.domain.party.roster.value.PartyTravelHeading.NORTH;
-            case EAST -> src.domain.party.roster.value.PartyTravelHeading.EAST;
-            case WEST -> src.domain.party.roster.value.PartyTravelHeading.WEST;
-            case SOUTH -> src.domain.party.roster.value.PartyTravelHeading.SOUTH;
-        };
+        return PartyTravelHeading.valueOf(heading.name());
     }
 }

@@ -150,7 +150,7 @@ Rules:
 - a reusable `slotcontent/**` `*View` stays dumb: it renders flat observable
   state that its own `*ContentModel` already prepared and published into the
   View-owned sink channels, and emits exactly one same-stem `*ViewInputEvent`
-  full snapshot
+  full snapshot authored only from JDK value data
 - reusable `slotcontent/**` `*ContentModel`s own component-specific
   presentation state and component-specific presentation logic so the active-
   root `*ContributionModel` can orchestrate child components instead of
@@ -166,6 +166,10 @@ Rules:
 - passive `View`s must not know projection-model classes directly; if a
   prepared render fact is needed, the owning model or Binder must publish it
   through a project-free sink channel on the `View`
+- passive `View`s must not inherit from, implement, or subscribe to foreign
+  project `View` surfaces; reusable behavior travels through prepared state
+  sinks and same-stem `*ViewInputEvent` snapshots, not through direct view-to-
+  view APIs
 - non-role-bearing standalone files under `src/view/**` are forbidden;
   implementation details must be explicit roles or nested/private helper types
   inside a role file
@@ -193,7 +197,7 @@ IntentHandler     -> same-root ContributionModel + same-root and reused slotcont
 View              -> JavaFX UI APIs + own ViewInputEvent type
                    + project-free prepared-state sink surfaces
                    + same-surface local technical support only
-ViewInputEvent    -> JDK/JavaFX technical input/value types + same-surface local support only
+ViewInputEvent    -> JDK technical value types + same-surface local support only
 Model             -> no shell, view, JavaFX, or data implementation types
 Shell             -> shell contracts and generic hosting only
 ```
@@ -217,6 +221,10 @@ Additional rules:
 - view-to-view reuse does not happen through direct passive-View inheritance or
   direct passive-View acquaintance; reusable presentation facts travel through
   Binder/model assembly and project-free View sink channels instead
+- passive `View` constructors must not accept project roles, callback/result
+  protocols, or direct model/readback carriers; that wiring belongs in Binder-
+  installed prepared-state sink channels and the single `onViewInputEvent(...)`
+  route
 - reusable `slotcontent/**` units must not depend on contribution-specific
   Views or support types, and `slotcontent/primitives/**` must not depend on
   non-primitive reusable or contribution-specific components
@@ -226,8 +234,9 @@ Additional rules:
 - outside the explicitly documented `IntentHandler -> ApplicationService` write
   seam and model-owned `published/**` readback seam, no direct domain/view-
   layer connections are allowed
-- direct `View` callback APIs, direct Binder subscriptions to request/token protocols on projection
-  models, and any third presentation-state mutation route are forbidden
+- direct `View` callback APIs, direct Binder subscriptions to request/token
+  protocols on projection models, and any third presentation-state mutation
+  route are forbidden
 - if one same-root `ViewInputEvent` interpretation needs a purely local
   passive-View effect that neither mutates presentation state nor crosses a
   domain boundary, the Binder may install one same-root local effect sink on
@@ -259,6 +268,7 @@ Local presentation cycle:
    `*ViewInputEvent` full snapshot for its own surface
    that snapshot is constructed in the `View` itself from the current
    technical UI state rather than by a Binder or `IntentHandler`
+   and it carries only JDK value data, not JavaFX event or widget objects
 2. that `*View` exposes exactly one outward input seam:
    `onViewInputEvent(Consumer<SameStemViewInputEvent>)`
 3. the Binder-installed listener forwards that carrier into the same-root
@@ -276,6 +286,7 @@ Direct domain-write roundtrip:
 
 1. an interactive passive `*View` emits exactly one immutable same-stem
    `*ViewInputEvent` full snapshot for its own surface
+   and that carrier remains a JDK-only value snapshot
 2. the Binder-installed listener forwards that carrier into the same-root
    `IntentHandler`
 3. the same-root `IntentHandler` interprets the full snapshot, builds exactly

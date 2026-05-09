@@ -7,8 +7,9 @@ It owns the passive-`View` compile-bound checkers plus the shared FXML
 resource validation support used by the merged root task:
 
 - `errorprone/`
-  `PassiveViewDependencyBoundaries`, `PassiveViewLocalStateBoundary`,
-  `PassiveViewProjectInteractionBoundary`,
+  `PassiveViewDependencyBoundaries`, `PassiveViewTypeShapeBoundary`,
+  `PassiveViewLocalStateBoundary`, `PassiveViewProjectInteractionBoundary`,
+  `PassiveViewDataShapingBoundary`,
   `PassiveViewProjectionConstructionBoundary`, `ViewPresentationDecisionLeak`,
   `ViewInputEventApi`, and `PassiveViewCallbackSeamBoundary`
 - `support/`

@@ -49,7 +49,7 @@ public final class PassiveViewLocalStateBoundaryChecker extends BugChecker
                 .setMessage("Passive View '" + qualifiedViewName
                         + "' owns local semantic state or extra project acquaintances through mutable fields "
                         + String.join(", ", violations)
-                        + ". Passive Views may keep only widget state, project-free prepared-state sink helpers, the same-stem ViewInputEvent callback seam, and narrow technical reentrancy guards. If these fields are input-relevant or render-preparation facts, move them out of the View into the owning model or Binder-owned publication path instead of keeping helper-owned state bags or project references in the View.")
+                        + ". Passive Views may keep only widget state, project-free prepared-state sink helpers, and the same-stem ViewInputEvent callback seam. If these fields are input-relevant or render-preparation facts, move them out of the View into the owning model or Binder-owned publication path instead of keeping helper-owned state bags or project references in the View.")
                 .build();
     }
 
@@ -98,9 +98,6 @@ public final class PassiveViewLocalStateBoundaryChecker extends BugChecker
             return false;
         }
 
-        if (isAllowedTechnicalGuardField(variableTree, typeMirror)) {
-            return false;
-        }
         if (ViewArchitectureSupport.isConsumerOfSameStemViewInputEvent(typeMirror, sourcePackageName, viewSimpleName)) {
             return false;
         }
@@ -118,20 +115,6 @@ public final class PassiveViewLocalStateBoundaryChecker extends BugChecker
             }
         }
         return false;
-    }
-
-    private static boolean isAllowedTechnicalGuardField(VariableTree variableTree, TypeMirror typeMirror) {
-        if (!isScalarType(typeMirror)) {
-            return false;
-        }
-        String fieldName = variableTree.getName().toString();
-        return fieldName.startsWith("sync")
-                || fieldName.startsWith("suppress")
-                || fieldName.startsWith("updating")
-                || fieldName.startsWith("rebuild")
-                || fieldName.startsWith("publishing")
-                || fieldName.startsWith("loading")
-                || fieldName.endsWith("Depth");
     }
 
     private static boolean isAllowedTechnicalWidgetType(TypeMirror typeMirror) {
@@ -172,10 +155,6 @@ public final class PassiveViewLocalStateBoundaryChecker extends BugChecker
                 || qualifiedName.equals("java.lang.Double")
                 || qualifiedName.equals("java.lang.Character")
                 || qualifiedName.equals("java.lang.String");
-    }
-
-    private static boolean isScalarType(TypeMirror typeMirror) {
-        return isScalarSemanticState(typeMirror);
     }
 
     private static boolean isCollectionSemanticState(TypeMirror typeMirror) {

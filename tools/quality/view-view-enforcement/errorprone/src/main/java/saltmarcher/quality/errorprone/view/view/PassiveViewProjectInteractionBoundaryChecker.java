@@ -32,6 +32,7 @@ public final class PassiveViewProjectInteractionBoundaryChecker extends BugCheck
 
         String sourcePackageName = source.packageName();
         String qualifiedViewName = source.qualifiedTopLevelTypeName();
+        Tree[] firstViolationTree = {null};
         Set<String> violations = new LinkedHashSet<>();
         new TreePathScanner<Void, Void>() {
             @Override
@@ -43,19 +44,32 @@ public final class PassiveViewProjectInteractionBoundaryChecker extends BugCheck
                 String ownerType = ViewArchitectureSupport.getQualifiedOwnerTypeName(symbol);
                 if (isForbiddenProjectOwner(ownerType, sourcePackageName, qualifiedViewName)) {
                     violations.add(ownerType + "." + symbol.getSimpleName() + "()");
+                    if (firstViolationTree[0] == null) {
+                        firstViolationTree[0] = methodInvocationTree;
+                    }
                 }
                 return super.visitMethodInvocation(methodInvocationTree, unused);
             }
 
             @Override
             public Void visitIdentifier(IdentifierTree identifierTree, Void unused) {
-                collectProjectMemberViolation(identifierTree, sourcePackageName, qualifiedViewName, violations);
+                collectProjectMemberViolation(
+                        identifierTree,
+                        sourcePackageName,
+                        qualifiedViewName,
+                        violations,
+                        firstViolationTree);
                 return super.visitIdentifier(identifierTree, unused);
             }
 
             @Override
             public Void visitMemberSelect(MemberSelectTree memberSelectTree, Void unused) {
-                collectProjectMemberViolation(memberSelectTree, sourcePackageName, qualifiedViewName, violations);
+                collectProjectMemberViolation(
+                        memberSelectTree,
+                        sourcePackageName,
+                        qualifiedViewName,
+                        violations,
+                        firstViolationTree);
                 return super.visitMemberSelect(memberSelectTree, unused);
             }
         }.scan(tree, null);
@@ -63,7 +77,7 @@ public final class PassiveViewProjectInteractionBoundaryChecker extends BugCheck
         if (violations.isEmpty()) {
             return Description.NO_MATCH;
         }
-        return buildDescription(tree)
+        return buildDescription(firstViolationTree[0] == null ? tree : firstViolationTree[0])
                 .setMessage("Passive View '" + qualifiedViewName
                         + "' invokes or reads project members "
                         + String.join(", ", violations)
@@ -75,7 +89,8 @@ public final class PassiveViewProjectInteractionBoundaryChecker extends BugCheck
             Tree tree,
             String sourcePackageName,
             String qualifiedViewName,
-            Set<String> violations
+            Set<String> violations,
+            Tree[] firstViolationTree
     ) {
         Symbol symbol = ASTHelpers.getSymbol(tree);
         if (symbol == null || symbol instanceof Symbol.ClassSymbol) {
@@ -86,6 +101,9 @@ public final class PassiveViewProjectInteractionBoundaryChecker extends BugCheck
             return;
         }
         violations.add(ownerType + "." + symbol.getSimpleName());
+        if (firstViolationTree[0] == null) {
+            firstViolationTree[0] = tree;
+        }
     }
 
     private static boolean isForbiddenProjectOwner(
@@ -107,9 +125,8 @@ public final class PassiveViewProjectInteractionBoundaryChecker extends BugCheck
                 || ownerType.startsWith("src.data.")) {
             return true;
         }
-        if (ViewArchitectureSupport.isSameViewRootReference(sourcePackageName, ownerType)
-                && ViewArchitectureSupport.parseViewType(ownerType) == null) {
-            return false;
+        if (ownerType.startsWith("src.view.") && ViewArchitectureSupport.parseViewType(ownerType) == null) {
+            return true;
         }
         return ViewArchitectureSupport.parseViewType(ownerType) != null;
     }

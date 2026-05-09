@@ -27,14 +27,13 @@ public final class PassiveViewLocalStateBoundaryCheckerTest {
     }
 
     @Test
-    public void allowsTechnicalGuardAndSameStemSeam() {
+    public void allowsSameStemSeamOnly() {
         compilationHelper
                 .addSourceLines(
                         "src/view/leftbartabs/catalog/CatalogControlsView.java",
                         "package src.view.leftbartabs.catalog;",
                         "import java.util.function.Consumer;",
                         "final class CatalogControlsView {",
-                        "  private int suppressedInputDepth;",
                         "  private Consumer<CatalogControlsViewInputEvent> viewInputEventHandler = event -> { };",
                         "}")
                 .addSourceLines(

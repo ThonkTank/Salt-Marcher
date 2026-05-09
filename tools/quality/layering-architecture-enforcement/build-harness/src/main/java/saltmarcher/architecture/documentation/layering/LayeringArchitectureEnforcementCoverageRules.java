@@ -57,8 +57,31 @@ public final class LayeringArchitectureEnforcementCoverageRules implements Archi
                     List.of("see neighboring owner docs and their listed entrypoints")),
             row("layering-no-non-applicationservice-public-backend-boundary-below-view", "Review-Owned"),
             row("layering-no-outer-format-object-leak-inward", "Review-Owned"),
-            row("layering-no-substantive-domain-role-pass-through-wrapper", "Review-Owned"),
-            row("layering-no-adjacent-layer-pass-through-wrapper-outside-explicit-thin-roles", "Review-Owned"),
+            row(
+                    "layering-no-domain-service-pass-through-wrapper",
+                    "Enforced",
+                    List.of("`layering-indirection` bundle jQAssistant", "saltmarcher:DomainServiceRelayOnlyRole"),
+                    List.of("./gradlew checkLayeringIndirectionEnforcement", "./gradlew checkArchitecture")),
+            row(
+                    "layering-no-domain-policy-pass-through-wrapper",
+                    "Enforced",
+                    List.of("`layering-indirection` bundle jQAssistant", "saltmarcher:DomainPolicyRelayOnlyRole"),
+                    List.of("./gradlew checkLayeringIndirectionEnforcement", "./gradlew checkArchitecture")),
+            row(
+                    "layering-no-domain-factory-pass-through-wrapper",
+                    "Enforced",
+                    List.of("`layering-indirection` bundle jQAssistant", "saltmarcher:DomainFactoryRelayOnlyRole"),
+                    List.of("./gradlew checkLayeringIndirectionEnforcement", "./gradlew checkArchitecture")),
+            row(
+                    "layering-no-domain-port-pass-through-wrapper",
+                    "Enforced",
+                    List.of("`layering-indirection` bundle jQAssistant", "saltmarcher:DomainPortRelayOnlyRole"),
+                    List.of("./gradlew checkLayeringIndirectionEnforcement", "./gradlew checkArchitecture")),
+            row(
+                    "layering-no-domain-repository-pass-through-wrapper",
+                    "Enforced",
+                    List.of("`layering-indirection` bundle jQAssistant", "saltmarcher:DomainRepositoryRelayOnlyRole"),
+                    List.of("./gradlew checkLayeringIndirectionEnforcement", "./gradlew checkArchitecture")),
             row(
                     "layering-source-code-dependencies-point-inward",
                     "Enforced Elsewhere",
@@ -79,7 +102,6 @@ public final class LayeringArchitectureEnforcementCoverageRules implements Archi
                     List.of("./gradlew compileJava", "./gradlew checkDomainRepositoryEnforcement")),
             row("layering-explicit-cross-layer-public-boundary-diagnostic", "Candidate"),
             row("layering-thin-role-relay-stack-diagnostic", "Candidate"),
-            row("layering-thin-role-indirection-candidate-scan", "Candidate"),
             row("layering-role-hub-sprawl-candidate", "Candidate"),
             row("layering-cross-feature-sprawl-candidate", "Candidate"),
             row("layering-public-boundary-breadth-candidate", "Candidate"));

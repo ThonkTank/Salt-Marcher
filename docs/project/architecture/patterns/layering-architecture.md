@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-05-08
+Last Reviewed: 2026-05-09
 Source of Truth: Cross-layer responsibility matrix, dependency direction,
 boundary crossings, and the only allowed inter-layer seams for active
 SaltMarcher code.
@@ -83,11 +83,13 @@ These roles MUST not exist only as relay or wrapper ceremony. If they exist,
 they must own real decision, translation, composition, validation, or
 construction work:
 
-- root domain `*ApplicationService`
-- domain `application/*UseCase`
+- legacy domain `service/**`
+- legacy domain `policy/**`
+- legacy domain `factory/**`
 - domain `model/**`
-- domain `repository/**`
-- domain `port/**`
+- domain repository roles, including the current `*Repository` owners that may
+  still live under `port/**` while topology migration catches up
+- domain `port/**` listener roles
 
 ## Dependency Direction
 

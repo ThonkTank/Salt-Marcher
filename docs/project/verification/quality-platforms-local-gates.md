@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-05-07
+Last Reviewed: 2026-05-09
 Source of Truth: Detailed local gate inventory, aggregate entrypoints, and
 concurrent local invocation policy for SaltMarcher quality platforms.
 
@@ -382,10 +382,10 @@ Focused investigation entrypoints are `compileJava`, `pmdMain`,
   `checkDataQueryEnforcement`,
   `checkDataMapperEnforcement`,
   `checkDataPersistencecoreEnforcement`,
-  `checkViewLayerEnforcement`,
+`checkViewLayerEnforcement`,
 `checkLayeringArchitectureEnforcement`,
 `checkLayeringIndirectionEnforcement`,
-`checkLayeringIndirectionRelayCandidates`, `checkLayeringIndirectionCandidates`,
+`checkLayeringIndirectionRelayCandidates`,
 `checkDocumentationEnforcement`, and `jqassistantEffectiveRules`, each run
 through
 `./gradlew <task> --console=plain`.
@@ -529,10 +529,6 @@ Architecture-focused entrypoints:
   cross-feature, and public-boundary breadth candidates without attaching
   that diagnostic surface to `checkArchitecture`, `check`, `build`, or staged
   `production-handoff`.
-- `./gradlew checkLayeringIndirectionCandidates --console=plain`
-  Runs the descriptor-owned report-only thin-role candidate PMD scan through
-  the dedicated `Layering Architecture` bundle without attaching that
-  heuristic to `checkArchitecture`, `check`, or `build`.
 - `./gradlew checkStylingLayerEnforcement --console=plain`
   Aggregates the styling-layer bundle through `compileJava`,
   `checkCentralizedStylesheets`, `checkDefinedStyleClassSelectors`,

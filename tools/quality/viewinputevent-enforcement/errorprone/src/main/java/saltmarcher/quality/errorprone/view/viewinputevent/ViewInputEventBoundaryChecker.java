@@ -22,7 +22,7 @@ import saltmarcher.quality.errorprone.view.ViewArchitectureSupport;
 
 @BugPattern(
         name = "ViewInputEventBoundary",
-        summary = "ViewInputEvent carriers stay immutable, type-local, and free of shell, domain, data, and service boundaries.",
+        summary = "ViewInputEvent carriers stay immutable, JDK-only, type-local, and free of shell, domain, data, and service boundaries.",
         severity = BugPattern.SeverityLevel.ERROR)
 public final class ViewInputEventBoundaryChecker extends BugChecker
         implements BugChecker.CompilationUnitTreeMatcher {
@@ -35,16 +35,17 @@ public final class ViewInputEventBoundaryChecker extends BugChecker
         }
         String topLevelSimpleName = ViewArchitectureSupport.topLevelSimpleName(tree);
 
+        Tree[] firstViolationTree = {null};
         Set<String> violations = new LinkedHashSet<>();
         if (ViewArchitectureSupport.isViewInputEventSource(tree)) {
-            collectCarrierBoundaryViolations(tree, sourcePackageName, topLevelSimpleName, violations);
+            collectCarrierBoundaryViolations(tree, sourcePackageName, topLevelSimpleName, violations, firstViolationTree);
         }
-        collectCarrierProducerViolations(tree, sourcePackageName, topLevelSimpleName, violations);
+        collectCarrierProducerViolations(tree, sourcePackageName, topLevelSimpleName, violations, firstViolationTree);
 
         if (violations.isEmpty()) {
             return Description.NO_MATCH;
         }
-        return buildDescription(tree)
+        return buildDescription(firstViolationTree[0] == null ? tree : firstViolationTree[0])
                 .setMessage("ViewInputEvent carriers must stay immutable, co-located snapshot records emitted only by their same-stem passive View. Violations: "
                         + String.join(", ", violations))
                 .build();
@@ -54,8 +55,10 @@ public final class ViewInputEventBoundaryChecker extends BugChecker
             CompilationUnitTree tree,
             String sourcePackageName,
             String topLevelSimpleName,
-            Set<String> violations
+            Set<String> violations,
+            Tree[] firstViolationTree
     ) {
+        ClassTree topLevelClass = topLevelClass(tree);
         Set<String> forbiddenReferences = new LinkedHashSet<>();
 
         for (String referencedType : ViewArchitectureSupport.collectReferencedTypes(tree)) {
@@ -67,13 +70,12 @@ public final class ViewInputEventBoundaryChecker extends BugChecker
                     || referencedType.startsWith("src.data.")
                     || ViewArchitectureSupport.isApplicationServiceReference(referencedType)) {
                 forbiddenReferences.add(referencedType);
+                recordViolationTree(topLevelClass, firstViolationTree);
                 continue;
             }
-            if (referencedType.startsWith("javafx.")
-                    && !referencedType.startsWith("javafx.event.")
-                    && !referencedType.startsWith("javafx.geometry.")
-                    && !referencedType.startsWith("javafx.scene.input.")) {
+            if (referencedType.startsWith("javafx.")) {
                 forbiddenReferences.add(referencedType);
+                recordViolationTree(topLevelClass, firstViolationTree);
                 continue;
             }
             ViewArchitectureSupport.ViewTypeInfo viewType = ViewArchitectureSupport.parseViewType(referencedType);
@@ -86,23 +88,29 @@ public final class ViewInputEventBoundaryChecker extends BugChecker
                     topLevelSimpleName,
                     referencedType)) {
                 forbiddenReferences.add(referencedType);
+                recordViolationTree(topLevelClass, firstViolationTree);
             }
         }
 
         if (!isTopLevelRecord(tree)) {
             forbiddenReferences.add("non-record ViewInputEvent shape");
+            recordViolationTree(topLevelClass, firstViolationTree);
         }
         if (hasExplicitTopLevelNonConstructorMethod(tree)) {
             forbiddenReferences.add("top-level ViewInputEvent helper method");
+            recordViolationTree(topLevelClass, firstViolationTree);
         }
         if (hasForbiddenDiscriminatorRecordComponent(tree)) {
             forbiddenReferences.add("top-level ViewInputEvent discriminator component");
+            recordViolationTree(topLevelClass, firstViolationTree);
         }
         if (hasForbiddenNestedDiscriminatorEnum(tree)) {
             forbiddenReferences.add("nested ViewInputEvent discriminator enum");
+            recordViolationTree(topLevelClass, firstViolationTree);
         }
         if (hasPublishedEventProtocolCoupling(tree)) {
             forbiddenReferences.add("ViewInputEvent PublishedEvent protocol coupling");
+            recordViolationTree(topLevelClass, firstViolationTree);
         }
         violations.addAll(forbiddenReferences);
     }
@@ -111,7 +119,8 @@ public final class ViewInputEventBoundaryChecker extends BugChecker
             CompilationUnitTree tree,
             String sourcePackageName,
             String topLevelSimpleName,
-            Set<String> violations
+            Set<String> violations,
+            Tree[] firstViolationTree
     ) {
         new TreePathScanner<Void, Void>() {
             @Override
@@ -121,6 +130,7 @@ public final class ViewInputEventBoundaryChecker extends BugChecker
                         && !isAllowedTopLevelCarrierProducer(tree, sourcePackageName, topLevelSimpleName, constructedType)) {
                     violations.add("constructs " + topLevelViewInputEventTypeName(constructedType)
                             + " outside same-stem View");
+                    recordViolationTree(newClassTree, firstViolationTree);
                 }
                 return super.visitNewClass(newClassTree, unused);
             }
@@ -134,6 +144,7 @@ public final class ViewInputEventBoundaryChecker extends BugChecker
                 String ownerType = ViewArchitectureSupport.getQualifiedOwnerTypeName(symbol);
                 if (isTopLevelViewInputEventType(ownerType)) {
                     violations.add("invokes static ViewInputEvent API " + ownerType + "." + symbol.getSimpleName());
+                    recordViolationTree(methodInvocationTree, firstViolationTree);
                 }
                 return super.visitMethodInvocation(methodInvocationTree, unused);
             }
@@ -216,6 +227,12 @@ public final class ViewInputEventBoundaryChecker extends BugChecker
         return referencedTypes.stream()
                 .map(ViewArchitectureSupport::topLevelQualifiedTypeNameOf)
                 .anyMatch(ViewArchitectureSupport::isTargetPublishedEventReference);
+    }
+
+    private static void recordViolationTree(Tree tree, Tree[] firstViolationTree) {
+        if (firstViolationTree[0] == null && tree != null) {
+            firstViolationTree[0] = tree;
+        }
     }
 
     private static boolean isAllowedTopLevelCarrierProducer(

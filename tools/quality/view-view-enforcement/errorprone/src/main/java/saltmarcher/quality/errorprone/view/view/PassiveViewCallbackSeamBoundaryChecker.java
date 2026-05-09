@@ -34,9 +34,6 @@ public final class PassiveViewCallbackSeamBoundaryChecker extends BugChecker
         if (topLevelClass == null) {
             return Description.NO_MATCH;
         }
-        if (isStaticViewUtility(topLevelClass)) {
-            return Description.NO_MATCH;
-        }
 
         String sourcePackageName = source.packageName();
         String viewSimpleName = source.topLevelSimpleName();
@@ -140,16 +137,15 @@ public final class PassiveViewCallbackSeamBoundaryChecker extends BugChecker
                 || ViewArchitectureSupport.isConsumerOfSameRootViewInputEvent(typeMirror, sourcePackageName)) {
             return false;
         }
-        Set<String> referencedTypes = ViewArchitectureSupport.collectTypeReferences(typeMirror);
-        if (referencedTypes.isEmpty()) {
+        if (!isConsumerType(typeMirror)) {
             return false;
         }
-        if (!(ViewArchitectureSupport.isCallbackSurfaceType(typeMirror)
-                || referencedTypes.contains("java.util.function.Consumer")
-                || referencedTypes.contains("java.util.function.BiConsumer")
-                || referencedTypes.contains("java.util.function.IntConsumer")
-                || referencedTypes.contains("java.util.function.LongConsumer")
-                || referencedTypes.contains("java.util.function.DoubleConsumer"))) {
+        javax.lang.model.type.DeclaredType declaredType = (javax.lang.model.type.DeclaredType) typeMirror;
+        if (declaredType.getTypeArguments().size() != 1) {
+            return false;
+        }
+        Set<String> referencedTypes = ViewArchitectureSupport.collectTypeReferences(typeMirror);
+        if (referencedTypes.isEmpty()) {
             return false;
         }
         return referencedTypes.stream().allMatch(referencedType ->
@@ -159,32 +155,19 @@ public final class PassiveViewCallbackSeamBoundaryChecker extends BugChecker
                         && !ViewArchitectureSupport.isForbiddenViewInfrastructureJdkType(referencedType));
     }
 
-    private static boolean isOutwardVisible(ModifiersTree modifiersTree) {
-        return !modifiersTree.getFlags().contains(Modifier.PRIVATE);
+    private static boolean isConsumerType(javax.lang.model.type.TypeMirror typeMirror) {
+        if (!(typeMirror instanceof javax.lang.model.type.DeclaredType declaredType)) {
+            return false;
+        }
+        javax.lang.model.element.Element element = declaredType.asElement();
+        if (!(element instanceof javax.lang.model.element.TypeElement typeElement)) {
+            return false;
+        }
+        return "java.util.function.Consumer".contentEquals(typeElement.getQualifiedName());
     }
 
-    private static boolean isStaticViewUtility(ClassTree topLevelClass) {
-        boolean hasOutwardStaticMethod = false;
-        for (var member : topLevelClass.getMembers()) {
-            if (member instanceof MethodTree methodTree) {
-                if (methodTree.getReturnType() == null) {
-                    if (!methodTree.getModifiers().getFlags().contains(Modifier.PRIVATE)) {
-                        return false;
-                    }
-                    continue;
-                }
-                if (!methodTree.getModifiers().getFlags().contains(Modifier.STATIC)) {
-                    return false;
-                }
-                if (isOutwardVisible(methodTree.getModifiers())) {
-                    hasOutwardStaticMethod = true;
-                }
-            } else if (member instanceof VariableTree variableTree
-                    && !variableTree.getModifiers().getFlags().contains(Modifier.STATIC)) {
-                return false;
-            }
-        }
-        return hasOutwardStaticMethod;
+    private static boolean isOutwardVisible(ModifiersTree modifiersTree) {
+        return !modifiersTree.getFlags().contains(Modifier.PRIVATE);
     }
 
     private static ClassTree topLevelClass(CompilationUnitTree tree) {

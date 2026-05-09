@@ -47,6 +47,8 @@
                 WHEN type.fqn =~ 'src\\.domain\\.[^.]+\\.[^.]+\\.service\\..*' THEN 'DOMAIN_SERVICE'
                 WHEN type.fqn =~ 'src\\.domain\\.[^.]+\\.[^.]+\\.policy\\..*' THEN 'DOMAIN_POLICY'
                 WHEN type.fqn =~ 'src\\.domain\\.[^.]+\\.[^.]+\\.factory\\..*' THEN 'DOMAIN_FACTORY'
+                WHEN type.fqn =~ 'src\\.domain\\.[^.]+\\.[^.]+\\.(port|repository)\\..*Repository(\\$.*)?' THEN 'DOMAIN_REPOSITORY'
+                WHEN type.fqn =~ 'src\\.domain\\.[^.]+\\.[^.]+\\.port\\..*' THEN 'DOMAIN_PORT'
                 WHEN type.fqn =~ 'src\\.view\\.(leftbartabs|statetabs|dropdowns)\\.[^.]+\\.[^.]+Binder(\\$.*)?' THEN 'VIEW_BINDER'
                 WHEN type.fqn =~ 'src\\.view\\.(leftbartabs|statetabs|dropdowns)\\.[^.]+\\.[^.]+IntentHandler(\\$.*)?' THEN 'VIEW_INTENT_HANDLER'
                 WHEN type.fqn =~ 'src\\.data\\.[^.]+\\.[^.]+ServiceContribution(\\$.*)?' THEN 'DATA_SERVICE_CONTRIBUTION'
@@ -65,7 +67,7 @@
               ],
               type.roleScope = CASE
                 WHEN roleKind IN ['DOMAIN_APPLICATION_SERVICE', 'DOMAIN_USE_CASE'] THEN 'domain:' + segments[2]
-                WHEN roleKind IN ['DOMAIN_SERVICE', 'DOMAIN_POLICY', 'DOMAIN_FACTORY'] THEN 'domain:' + segments[2] + ':' + segments[3]
+                WHEN roleKind IN ['DOMAIN_SERVICE', 'DOMAIN_POLICY', 'DOMAIN_FACTORY', 'DOMAIN_PORT', 'DOMAIN_REPOSITORY'] THEN 'domain:' + segments[2] + ':' + segments[3]
                 WHEN roleKind IN ['VIEW_BINDER', 'VIEW_INTENT_HANDLER'] THEN 'view:' + segments[2] + ':' + segments[3]
                 ELSE 'data:' + segments[2]
               END

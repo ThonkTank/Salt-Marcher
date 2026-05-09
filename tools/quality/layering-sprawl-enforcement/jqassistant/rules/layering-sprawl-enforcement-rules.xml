@@ -22,6 +22,8 @@
                 'DOMAIN_SERVICE',
                 'DOMAIN_POLICY',
                 'DOMAIN_FACTORY',
+                'DOMAIN_PORT',
+                'DOMAIN_REPOSITORY',
                 'VIEW_BINDER',
                 'VIEW_INTENT_HANDLER',
                 'DATA_SERVICE_CONTRIBUTION'
