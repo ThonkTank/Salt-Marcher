@@ -70,7 +70,10 @@ Mechanically enforced public lifecycle surfaces are:
 - staged lifecycle surfaces: `production-build`, `quality-hygiene`,
   `architecture`, `view-topology`, `docs`, `metrics-report`,
   `desktop-install`, and `production-handoff`
-- focused bundle surfaces: `check*Enforcement`
+- focused layer surfaces: `checkViewEnforcement`, `checkStylingEnforcement`,
+  `checkShellEnforcement`, `checkBootstrapEnforcement`,
+  `checkLayeringEnforcement`, `checkDomainEnforcement`,
+  `checkDataEnforcement`
 - focused documentation surface: `checkDocumentationEnforcement`
 
 Beyond the staged lifecycle names, the verification core also owns direct
@@ -85,29 +88,20 @@ The verification core owns the mapping from a public surface to its underlying
 Gradle dependencies. Root build scripts MUST consume this core instead of
 reconstructing the surface model themselves.
 
-### 3. Bundle Owners
+### 3. Surface Owners
 
-Each focused enforcement package under `tools/quality/*-enforcement/` owns one
-root public `check*Enforcement` lifecycle task through descriptor-owned bundle
-metadata. Standard bundles are registered centrally by the verification core
-from that metadata; they MAY also expose additional public report-only sibling
-tasks when the same owner needs a non-blocking diagnostic surface beside the
-root blocker. The verification core may attach selected report-only sibling
-surfaces to staged lifecycle paths such as `view-topology` or
-`production-handoff` when that diagnostic is part of the canonical handoff
-guidance and still remains non-blocking. Bundles with small local extras such
-as stylesheet or FXML checks still register through the same standard
-verification-core path instead of through dedicated root plugins.
+The verification core registers one public blocker surface per architecture
+layer family. Each surface aggregates the matching Error Prone checks,
+build-harness rules, PMD bundles, custom verification tasks, and where still
+needed one grouped ArchUnit or jQAssistant suite.
 
-Bundle owners MAY know their private ArchUnit, Error Prone, PMD,
-jQAssistant, or build-harness tasks. They MUST NOT depend on shell wrappers.
-They communicate with the verification core only through stable descriptor
-metadata, their one root public lifecycle task, and any explicitly declared
-report-only sibling surfaces.
+Legacy role- or bucket-shaped `check*Enforcement` task names may remain as thin
+compatibility aliases, but they no longer own separate registration metadata.
+The owning metadata is the layer surface, not the historical leaf task.
 
 Root-owned hygiene gates that are not bundle-specific MUST stay registered in
 the verification core itself. They MUST NOT be back-ported into fake
-descriptor-owned bundles just to reuse the bundle catalog.
+surface-owned descriptors just to preserve an older task split.
 
 ### 4. Rule Implementation
 
@@ -124,14 +118,14 @@ Allowed dependency direction is strictly inward:
 
 - runtime wrappers -> public verification surface names only
 - verification core -> root lifecycle tasks, included-build entrypoints, and
-  bundle descriptors
-- bundle owners -> private rule tasks and bundle-local proof wiring
+  surface descriptors
+- layer surfaces -> private rule tasks and owner-local proof wiring
 - rule implementation -> concrete source files, compiled classes, documentation
   inventories, and engine-local support code
 
 Forbidden shortcuts:
 
-- runtime wrappers naming private rule tasks or bundle member lists
+- runtime wrappers naming private rule tasks or legacy member lists
 - `settings.gradle.kts` reconstructing public surface mapping, exception-bundle plugins, or private rule membership
 - root build scripts duplicating the public surface mapping already owned by the
   verification core
@@ -152,19 +146,17 @@ focused-selection facts to the included builds:
 Included builds consume those facts and MUST NOT reconstruct the root repo
 state from alternative checkout-relative guessing when the propagated repo root
 is available. Project-build plugin code likewise MUST NOT re-derive focused
-bundle selection from `StartParameter` task names once the settings-owned
+surface selection from `StartParameter` task names once the settings-owned
 selection facts were published.
-Included builds own their technical registration from typed registry metadata
+Included builds own their technical registration from typed surface metadata
 and direct repo scans such as build-harness rule classes, Error Prone checker
-lists, ArchUnit task shapes, PMD task shapes, jQAssistant task shapes, and
-generic custom-task kinds. A jQAssistant task shape may declare one local rule
-directory or multiple rule directories; the verification core materializes one
-effective rules root from that registry metadata instead of forcing bundles
-to duplicate shared taxonomy files. Harness wiring MUST NOT rely on parallel
-families of tiny launcher mains or `*-host.gradle.kts` scripts as a second
-source of truth for the same metadata, and it MUST NOT regenerate a second
-snapshot copy of the same registry metadata just to make same-worktree
-parallelism safe.
+lists, grouped ArchUnit task shapes, PMD task shapes, jQAssistant task shapes,
+and generic custom-task kinds. A jQAssistant task shape may declare one local
+rule directory or multiple rule directories; the verification core
+materializes one effective rules root from that metadata instead of forcing
+owners to duplicate shared taxonomy files. Harness wiring MUST NOT rely on
+parallel families of tiny launcher mains or owner-local service registries as
+a second source of truth for the same checker metadata.
 Shared verification task registration inside `tools/gradle/build-logic` should
 flow through typed plugin or extension APIs rather than through untyped
 `extra[...]` function exports between precompiled script plugins.
@@ -194,8 +186,8 @@ instead of relying on blanket rerun forcing.
 Bundle-local wiring that still uses relative source paths must resolve from the
 active repo-root owner or descriptor owner declared in the descriptor itself.
 Root-plugin escape hatches are no longer part of the intended model. If a
-bundle needs extra verification tasks, it should declare them as typed extras
-inside the same standard bundle registration path.
+surface needs extra verification tasks, it should declare them as typed extras
+inside the same standard registration path.
 
 ## Lazy Wiring And Runtime Constraints
 

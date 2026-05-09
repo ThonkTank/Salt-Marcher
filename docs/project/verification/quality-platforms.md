@@ -141,189 +141,51 @@ Operationally, architecture checks enter local quality through:
   focused `Domain Policy` role-shape/statelessness rules, the focused Domain
   Event role-shape rule, the focused Domain Specification role-shape rule, and
   legacy view-package bans
-- `checkDomainLayerEnforcement`
-  runs the focused Domain Layer bundle by aggregating the dedicated
-  compiler-integrated infrastructure-dependency and named-module-to-published
-  dependency checks, the dedicated Domain Layer ArchUnit suite, the dedicated
-  build-harness topology check, and the dedicated bundle-local
-  enforcement-documentation coverage check through one direct root entrypoint
-- `checkDomainApplicationServiceEnforcement`
-  runs the focused Domain ApplicationService bundle by aggregating the
-  dedicated compiler-integrated API-shape and public-boundary-signature
-  checks, the dedicated root-topology check, the dedicated root source-pattern
-  PMD rule, and the dedicated bundle-local enforcement-documentation coverage
-  check through one direct root entrypoint
-- `checkDataServiceContributionEnforcement`
-  runs the focused Data ServiceContribution bundle by aggregating the
-  dedicated compiler-integrated construction-purity, shell-seam, and direct
-  `register(...)` export-shape checks, the dedicated root PMD role-shape and
-  source-mechanics rules, and the dedicated bundle-local
-  enforcement-documentation coverage check through one direct root entrypoint
-- `checkDomainPortEnforcement`
-  runs the focused Domain Port bundle by aggregating the dedicated
-  Port topology check and the bundle-local documentation-coverage rule through
-  one direct root entrypoint
-- `checkDomainContextEnforcement`
-  runs the focused Domain Context bundle by aggregating the dedicated
-  `DOMAIN.md` contract, context-map, and bundle-local coverage checks through
-  one direct root entrypoint
-- `checkDomainPublishedEnforcement`
-  runs the focused Domain Published bundle by aggregating the dedicated
-  compiler-integrated `published/**` carrier-shape/signature-purity checks,
-  the dedicated Published topology check, and the bundle-local
-  documentation-coverage rule through one direct root entrypoint
-- `checkDomainRepositoryEnforcement`
-  runs the focused Domain Repository bundle by aggregating the dedicated
-  repository topology check and the bundle-local documentation-coverage rule
-  through one direct root entrypoint
-- `checkDomainModelEnforcement`
-  runs the focused Domain Model bundle by aggregating the dedicated model-tree
-  topology check and the bundle-local documentation-coverage rule through one
-  direct root entrypoint
-- `checkDomainHelperEnforcement`
-  runs the focused Domain Helper bundle by aggregating the dedicated helper
-  topology check and the bundle-local documentation-coverage rule through one
-  direct root entrypoint
-- `checkDomainConstantsEnforcement`
-  runs the focused Domain Constants bundle by aggregating the dedicated
-  constants topology check and the bundle-local documentation-coverage rule
-  through one direct root entrypoint
-- `checkStylingLayerEnforcement`
-  runs the focused styling-layer bundle by aggregating centralized stylesheet
-  ownership, centralized stylesheet placement, style-class selector
-  resolution, the dedicated `setStyle(...)` PMD rule, and the
-  compiler-integrated `ViewProgrammaticStyling` check through one direct root
-  entrypoint
-- `checkStylingViewEnforcement`
-  runs the focused passive-`View` direct-render styling bundle by aggregating
-  the dedicated compiler-integrated placement check through one direct root
-  entrypoint
-- `checkShellAppShellEnforcement`
-  runs the focused `AppShell` bundle by aggregating the dedicated
-  compiler-integrated shell lifecycle-hook ownership check through one direct
-  root entrypoint
-- `checkBootstrapAppBootstrapEnforcement`
-  runs the focused `AppBootstrap` bundle by aggregating the dedicated
-  bootstrap-to-`AppShell` host-composition ArchUnit check through one direct
-  root entrypoint
-- `checkShellRuntimeContextEnforcement`
-  runs the focused `ShellRuntimeContext` bundle by aggregating the dedicated
-  PMD gateway-shape rule through one direct root entrypoint
-- `checkShellLayerEnforcement`
-  runs the focused `Shell Layer` bundle by aggregating the dedicated shell
-  ArchUnit boundary/privacy suite and the dedicated shell-layer build-harness
-  topology check through one direct root entrypoint
-- `checkDomainUseCaseEnforcement`
-  runs the focused Domain UseCase bundle by aggregating the dedicated
-  compiler-integrated same-context `published/**` dependency check, the
-  dedicated UseCase PMD helper-prefix rule, the dedicated UseCase
-  build-harness topology check, and the dedicated bundle-local
-  enforcement-documentation coverage check through one direct root entrypoint
-- `checkDataModelEnforcement`
-  runs the focused Data Model bundle by aggregating the dedicated
-  compiler-integrated source-shape/signature-boundary check, the dedicated
-  Data Model PMD schema-DDL-placement rule, the dedicated Data Model ArchUnit
-  suite, the dedicated build-harness topology check, and the dedicated
-  bundle-local enforcement-documentation coverage check through one direct
-  root entrypoint
-- `checkDataGatewayEnforcement`
-  runs the focused Data Gateway bundle by aggregating the dedicated
-  compiler-integrated public-signature-boundary check, the dedicated Data
-  Gateway ArchUnit suite, and the dedicated bundle-local
-  enforcement-documentation coverage check through one direct root entrypoint
-- `checkDataRepositoryEnforcement`
-  runs the focused Data Repository bundle by aggregating the dedicated
-  compiler-integrated write-port contract, public-signature-boundary, and
-  gateway-collaborator checks, the dedicated repository-only PMD
-  source-mechanics rule, and the dedicated bundle-local
-  enforcement-documentation coverage check through one direct root entrypoint
-- `checkDataQueryEnforcement`
-  runs the focused Data Query bundle by aggregating the dedicated
-  compiler-integrated read-port contract, public-signature-boundary,
-  gateway-collaborator, and mutation-boundary checks, the dedicated
-  query-only PMD source-mechanics and read-only-source-shape rules, and the
-  dedicated bundle-local enforcement-documentation coverage check through one
-  direct root entrypoint
-- `checkDataMapperEnforcement`
-  runs the focused Data Mapper bundle by aggregating the dedicated mapper-only
-  PMD source-mechanics rule and the dedicated bundle-local
-  enforcement-documentation coverage check through one direct root entrypoint
+- `checkDomainEnforcement`
+  is the canonical Domain blocker surface. It aggregates Domain Layer,
+  Context, ApplicationService, UseCase, Published, Port, Repository, Model,
+  Helper, and Constants proof owners through one root entrypoint. Historical
+  leaf `checkDomain*Enforcement` task names may remain as compatibility aliases
+  to that same surface.
+- `checkDataEnforcement`
+  is the canonical Data blocker surface. It aggregates Data Layer, Model,
+  Gateway, Mapper, Persistencecore, Query, Repository, and
+  ServiceContribution proof owners through one root entrypoint. Historical
+  leaf `checkData*Enforcement` task names may remain as compatibility aliases
+  to that same surface.
+- `checkStylingEnforcement`
+  is the canonical styling blocker surface. It aggregates centralized
+  stylesheet checks, styling Error Prone checks, and the remaining styling PMD
+  rule.
+- `checkShellEnforcement`
+  is the canonical Shell blocker surface. It aggregates shell lifecycle-hook
+  ownership, the shell ArchUnit boundary suite, shell topology, and the
+  `ShellRuntimeContext` PMD rule.
+- `checkBootstrapEnforcement`
+  is the canonical Bootstrap blocker surface. It aggregates bootstrap boundary
+  and host-composition ArchUnit checks plus bootstrap topology.
+- `checkLayeringEnforcement`
+  is the canonical cross-layer blocker surface. It aggregates layering
+  topology, passive-carrier mirror checks, and the blocking layering
+  indirection analysis. Report-only sprawl/candidate surfaces are no longer
+  part of the blocker path.
 - `architectureTest`
   runs the remaining generic ArchUnit dependency and cycle checks outside the
   focused `AppBootstrap`, Domain Layer, `Shell Layer`, passive-`View`,
   `Contribution`, `Binder`, `ContributionModel`, `ContentModel`,
   `IntentHandler`, and `View Layer` bundle suites
 - `checkViewEnforcement`
-  runs the focused passive `View` enforcement bundle by aggregating the
-  current compiler-integrated passive-`View` checks, the dedicated passive
-  `View` ArchUnit suite from the bundle-owned ArchUnit source set, the
-  dedicated passive-`View` jQAssistant bundle, and the dedicated FXML resource
-  boundary check through one direct root entrypoint
-- `checkViewContributionEnforcement`
-  runs the focused `Contribution` enforcement bundle by aggregating the
-  dedicated compiler-integrated dependency check, the dedicated ArchUnit
-  suite, and the dedicated PMD entrypoint-shape rule through one direct root
-  entrypoint
-- `checkViewContributionModelEnforcement`
-  runs the focused `ContributionModel` enforcement bundle by aggregating the
-  dedicated compiler-integrated checks, the dedicated ArchUnit suite, the
-  dedicated jQAssistant bundle, and the dedicated build-harness topology check
-  through one direct root entrypoint
-- `checkViewContentModelEnforcement`
-  runs the focused `ContentModel` enforcement bundle by aggregating the
-  dedicated compiler-integrated checks, the dedicated ArchUnit suite, the
-  dedicated jQAssistant bundle, and the dedicated build-harness topology check
-  through one direct root entrypoint
-- `checkViewBinderEnforcement`
-  runs the focused `Binder` enforcement bundle by aggregating the dedicated
-  compiler-integrated checks, the dedicated ArchUnit suite, and the dedicated
-  Binder jQAssistant bundle through one direct root entrypoint
-- `checkViewInspectorEntryEnforcement`
-  runs the focused `InspectorEntry` enforcement bundle by aggregating the
-  current compiler-integrated InspectorEntry checks, the dedicated
-  InspectorEntry jQAssistant bundle, and the dedicated build-harness topology
-  check through one direct root entrypoint
-- `checkViewArchitecture`
-  runs explicit jQAssistant view-topology analysis for active roots,
-  contribution-side structure, and the remaining reusable slotcontent
-  topology outside the dedicated `Binder`, `ContentModel`, and
-  `InspectorEntry` bundles
-- `checkViewLayerEnforcement`
-  runs the focused `View Layer` enforcement bundle by aggregating the
-  dedicated slotcontent `ContentModel` ArchUnit proof and the dedicated
-  build-harness topology check through one direct root entrypoint
-- `checkViewInputEventEnforcement`
-  runs the focused `ViewInputEvent` enforcement bundle by aggregating the
-  current compiler-integrated checks, the dedicated ArchUnit suite, and the
-  dedicated build-harness topology check through one direct root entrypoint
-- `checkViewIntentHandlerEnforcement`
-  runs the focused `IntentHandler` enforcement bundle by aggregating the
-  current compiler-integrated checks, the dedicated ArchUnit suite, and the
-  dedicated build-harness topology check through one direct root entrypoint
+  is the canonical View blocker surface. It aggregates passive View, Binder,
+  `Contribution`, `ContributionModel`, `ContentModel`, `ViewInputEvent`, and
+  `IntentHandler` checks together with the closed-world View topology proof,
+  FXML validation, and the remaining contribution-shape PMD rule. Historical
+  leaf `checkView*Enforcement` task names may remain as compatibility aliases
+  to that same surface.
 - `checkDocumentationEnforcement`
   runs the focused Markdown-backed architecture and enforcement-documentation
   bundle through the dedicated documentation-enforcement build-harness path,
   including active bundle-local Markdown rules such as `Domain Context`, and
   stays intentionally outside `checkArchitecture`, `check`, and `build`
-- `checkLayeringArchitectureEnforcement`
-  runs the focused `Layering Architecture` enforcement bundle through the
-  dedicated build-harness topology, passive-carrier mirror, and
-  documentation-coverage checks for repository-wide layer roots and
-  included-build taxonomy
-- `checkLayeringIndirectionEnforcement`
-  runs the focused `Layering Indirection` enforcement bundle through the
-  dedicated jQAssistant substantive relay-wrapper and relay-chain blockers and
-  now enters `checkArchitecture`, `check`, `build`, and staged
-  `production-handoff` transitively
-- `checkLayeringIndirectionRelayCandidates`
-  runs the report-only thin relay-stack diagnostic surface of the focused
-  `Layering Indirection` bundle and stays intentionally outside
-  `checkArchitecture`, `check`, and `build`
-- `checkLayeringSprawlCandidates`
-  runs the report-only `Layering Sprawl` bundle through the dedicated
-  jQAssistant role-hub, cross-feature, and public-boundary breadth
-  diagnostics and stays intentionally outside `checkArchitecture`, `check`,
-  and `build`
 - `checkViewRefactorCandidates`
   runs the report-only legacy View Layer refactor diagnostics from the older
   technical-primitive architecture and now enters `checkViewArchitecture`,
@@ -333,10 +195,6 @@ Operationally, architecture checks enter local quality through:
   [View Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/view-layer.md:1)
   for that truth. This surface is slated for replacement or removal in the
   gate migration wave.
-- `checkDataQueryPublishedCarrierCandidates`
-  runs the report-only Data Query build-harness shared-carrier partial-use
-  diagnostics and stays intentionally outside `checkArchitecture`, `check`,
-  `build`, and staged `production-handoff`
 - `checkArchitecture`
   aggregates the focused Domain Layer, Domain ApplicationService,
   Data ServiceContribution,

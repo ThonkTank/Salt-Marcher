@@ -2,18 +2,11 @@ import java.io.File
 import org.gradle.api.tasks.SourceSetContainer
 import org.gradle.api.tasks.compile.JavaCompile
 import org.gradle.api.tasks.testing.Test
-import org.gradle.jvm.tasks.Jar
 import org.gradle.kotlin.dsl.named
-import org.gradle.kotlin.dsl.register
 import org.gradle.kotlin.dsl.the
-import saltmarcher.buildlogic.enforcement.EnforcementBundlesExtension
-import saltmarcher.buildlogic.enforcement.standardEnforcementBundleCatalog
-import saltmarcher.buildlogic.tasks.MergeBugCheckerServicesTask
-import saltmarcher.buildlogic.tasks.ValidateBugCheckerRegistriesTask
 
 plugins {
     `java-library`
-    id("saltmarcher.enforcement-bundles")
 }
 
 group = "saltmarcher.quality"
@@ -30,9 +23,6 @@ java {
 }
 
 val repoRootDir = layout.projectDirectory.dir("../../../..").asFile
-val enforcementBundles = extensions.getByType(EnforcementBundlesExtension::class.java)
-val activeEnforcementBundleIds = enforcementBundles.activeEnforcementBundleIds.toSet()
-val enforcementBundleCatalog = standardEnforcementBundleCatalog()
 
 fun repoVerificationFiles(relativeSuffix: String): List<File> {
     val qualityDir = repoRootDir.resolve("tools/quality")
@@ -47,125 +37,19 @@ fun repoVerificationFiles(relativeSuffix: String): List<File> {
         .toList()
 }
 
-val checkerToBundleId = enforcementBundleCatalog.descriptorsById.values
-    .flatMap { descriptor -> descriptor.errorProneCheckers.map { checkerName -> checkerName to descriptor.bundleId } }
-    .toMap()
-
-fun activeBundleOwnerDirs(): Map<String, String> {
-    if (activeEnforcementBundleIds.isEmpty()) {
-        return emptyMap()
-    }
-    val activeCheckerNames = activeEnforcementBundleIds
-        .flatMap { bundleId -> enforcementBundleCatalog.descriptor(bundleId).errorProneCheckers }
-        .toSet()
-    if (activeCheckerNames.isEmpty()) {
-        return emptyMap()
-    }
-    val qualityDir = repoRootDir.resolve("tools/quality")
-    if (!qualityDir.isDirectory) {
-        return emptyMap()
-    }
-    return qualityDir.walkTopDown()
-        .filter { file ->
-            file.isFile &&
-                file.extension == "java" &&
-                "/errorprone/src/main/java/" in file.invariantSeparatorsPath &&
-                file.nameWithoutExtension in activeCheckerNames
-        }
-        .mapNotNull { checkerSource ->
-            val relativePath = checkerSource.relativeTo(repoRootDir).invariantSeparatorsPath
-            val ownerDirPath = relativePath.substringBefore("/errorprone/src/main/java/")
-            val bundleId = checkerToBundleId[checkerSource.nameWithoutExtension] ?: return@mapNotNull null
-            repoRootDir.resolve(ownerDirPath).absolutePath to bundleId
-        }
-        .toMap()
-}
-
-val effectiveErrorProneSourceDirs = repoVerificationFiles("/errorprone/src/main/java")
-val effectiveBugCheckerServices = repoVerificationFiles("/errorprone/src/main/resources/META-INF/services/com.google.errorprone.bugpatterns.BugChecker")
-val activeBundleDirs = activeBundleOwnerDirs()
-val validatedBugCheckerServices = if (activeEnforcementBundleIds.isEmpty()) {
-    effectiveBugCheckerServices
-} else {
-    effectiveBugCheckerServices.filter { serviceFile ->
-        activeBundleDirs.keys.any { ownerDir -> serviceFile.absolutePath.startsWith(ownerDir) }
-    }
-}
-val activeErrorProneSourceDirs = if (activeEnforcementBundleIds.isEmpty()) {
-    effectiveErrorProneSourceDirs
-} else {
-    effectiveErrorProneSourceDirs.filter { sourceDir ->
-        activeBundleDirs.keys.any { ownerDir -> sourceDir.absolutePath.startsWith(ownerDir) }
-    }
-}
+val errorProneSourceDirs = repoVerificationFiles("/errorprone/src/main/java")
 
 val sourceSets = the<SourceSetContainer>()
 sourceSets.named("main") {
     java.setSrcDirs(
         listOf(layout.projectDirectory.dir("src/main/java").asFile.absolutePath)
-            + effectiveErrorProneSourceDirs.map(File::getAbsolutePath)
+            + errorProneSourceDirs.map(File::getAbsolutePath)
     )
-    resources.setSrcDirs(emptyList<String>())
+    resources.setSrcDirs(listOf(layout.projectDirectory.dir("src/main/resources").asFile.absolutePath))
 }
 sourceSets.named("test") {
     java.setSrcDirs(listOf(layout.projectDirectory.dir("src/test/java").asFile.absolutePath))
     resources.setSrcDirs(emptyList<String>())
-}
-
-val bugCheckerServicePath = "META-INF/services/com.google.errorprone.bugpatterns.BugChecker"
-val hostBugCheckerService = layout.projectDirectory.file("src/main/resources/$bugCheckerServicePath").asFile
-val mergedBugCheckerServices = listOf(hostBugCheckerService) + effectiveBugCheckerServices
-val generatedResourcesDir = layout.buildDirectory.dir("generated/quality-rules-errorprone/resources")
-val generatedBugCheckerService = generatedResourcesDir.map { dir -> dir.file(bugCheckerServicePath) }
-val bugCheckerRegistrySpecs = buildList {
-    add("host\t${hostBugCheckerService.absolutePath}\t${layout.projectDirectory.dir("src/main/java").asFile.absolutePath}")
-    validatedBugCheckerServices.forEach { serviceFile ->
-        val sourceDir = serviceFile.parentFile.parentFile.parentFile.parentFile.resolve("java")
-        val bundleId = activeBundleDirs.entries
-            .firstOrNull { (ownerDir, _) -> serviceFile.absolutePath.startsWith(ownerDir) }
-            ?.value
-            ?: serviceFile.parentFile.parentFile.parentFile.parentFile.parentFile.parentFile.name
-        add("$bundleId\t${serviceFile.absolutePath}\t${sourceDir.absolutePath}")
-    }
-}
-
-val validateQualityRulesErrorProneServices = tasks.register<ValidateBugCheckerRegistriesTask>(
-    "validateQualityRulesErrorProneServices"
-) {
-    registrySpecs.set(bugCheckerRegistrySpecs)
-    successMarker.set(
-        layout.buildDirectory.file(
-            "verification-markers/validateQualityRulesErrorProneServices/success.marker"
-        )
-    )
-    registryInputFiles.from(
-        layout.projectDirectory.dir("src/main/java"),
-        validatedBugCheckerServices
-    )
-    registryInputFiles.from(hostBugCheckerService)
-    activeErrorProneSourceDirs.forEach { sourceDir ->
-        registryInputFiles.from(project.files(sourceDir))
-    }
-}
-
-val syncQualityRulesErrorProneServices = tasks.register<MergeBugCheckerServicesTask>(
-    "syncQualityRulesErrorProneServices"
-) {
-    serviceFiles.from(mergedBugCheckerServices)
-    mergedServiceFile.set(generatedBugCheckerService)
-}
-
-tasks.named("check") {
-    dependsOn(validateQualityRulesErrorProneServices)
-}
-
-tasks.named<Jar>("jar") {
-    dependsOn(validateQualityRulesErrorProneServices)
-    dependsOn(syncQualityRulesErrorProneServices)
-    from(generatedResourcesDir)
-    isPreserveFileTimestamps = false
-    isReproducibleFileOrder = true
-    outputs.cacheIf("quality-rules-errorprone jar is a hot-path compile dependency") { true }
 }
 
 dependencies {

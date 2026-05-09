@@ -68,6 +68,40 @@ public final class DataLayerArchitectureTest {
     static final ArchRule dataFeaturesMustStayCycleFree =
             slices().matching("src.data.(*)..").should().beFreeOfCycles();
 
+    @ArchTest
+    static final ArchRule dataModelTypesMustStayIndependentFromDomainTypes =
+            noClasses()
+                    .that()
+                    .resideInAPackage("src.data..model..")
+                    .should()
+                    .dependOnClassesThat()
+                    .resideInAPackage("src.domain..");
+
+    @ArchTest
+    static final ArchRule dataGatewaysMustStayIndependentFromDomainTypes =
+            noClasses()
+                    .that()
+                    .resideInAPackage("src.data..gateway..")
+                    .should()
+                    .dependOnClassesThat()
+                    .resideInAPackage("src.domain..");
+
+    @ArchTest
+    static final ArchRule persistencecoreMustStayIndependentFromFeatureSpecificDataPackages =
+            classes()
+                    .that()
+                    .resideInAPackage("src.data.persistencecore..")
+                    .should(notDependOnFeatureSpecificDataPackages());
+
+    @ArchTest
+    static final ArchRule persistencecoreMustNotDependOnDomainTypes =
+            noClasses()
+                    .that()
+                    .resideInAPackage("src.data.persistencecore..")
+                    .should()
+                    .dependOnClassesThat()
+                    .resideInAPackage("src.domain..");
+
     private static ArchCondition<JavaClass> onlyDependOnForeignDomainApis() {
         return new ArchCondition<>("only depend on same-feature domain internals or foreign feature public boundaries") {
             @Override
@@ -152,5 +186,24 @@ public final class DataLayerArchitectureTest {
         String remainder = packageName.substring("src.data.".length());
         int separatorIndex = remainder.indexOf('.');
         return separatorIndex >= 0 ? remainder.substring(0, separatorIndex) : remainder;
+    }
+
+    private static ArchCondition<JavaClass> notDependOnFeatureSpecificDataPackages() {
+        return new ArchCondition<>("not depend on feature-specific data packages") {
+            @Override
+            public void check(JavaClass item, ConditionEvents events) {
+                for (Dependency dependency : item.getDirectDependenciesFromSelf()) {
+                    JavaClass target = dependency.getTargetClass();
+                    String targetPackage = target.getPackageName();
+                    if (targetPackage.startsWith("src.data.persistencecore.")
+                            || !targetPackage.startsWith("src.data.")) {
+                        continue;
+                    }
+                    events.add(SimpleConditionEvent.violated(
+                            item,
+                            item.getName() + " depends on feature-specific data package " + target.getName()));
+                }
+            }
+        };
     }
 }

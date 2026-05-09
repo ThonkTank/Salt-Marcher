@@ -13,6 +13,9 @@ import org.gradle.kotlin.dsl.withGroovyBuilder
 import org.gradle.language.base.plugins.LifecycleBasePlugin
 import saltmarcher.buildlogic.enforcement.EnforcementBundleDescriptor
 import saltmarcher.buildlogic.enforcement.EnforcementBundlesExtension
+import saltmarcher.buildlogic.enforcement.EnforcementCustomTask
+import saltmarcher.buildlogic.enforcement.EnforcementJqassistantTask
+import saltmarcher.buildlogic.enforcement.EnforcementPmdTask
 
 class SaltmarcherVerificationCorePlugin : Plugin<Project> {
     override fun apply(project: Project) {
@@ -50,6 +53,10 @@ internal fun Project.configureVerificationCore() {
         val rootTaskName = descriptor.publicCheckTaskName()
         val checkerNames = descriptor.errorProneCheckers
         val bundleDisplayName = defaultBundleDisplayName(bundleId)
+        val buildHarnessTaskNames = descriptor.buildHarnessTaskNames().toSet()
+        val jqassistantRootTaskNames = descriptor.jqassistantTasks.map(EnforcementJqassistantTask::taskName).toSet()
+        val pmdTaskNames = descriptor.pmdTasks.map(EnforcementPmdTask::taskName).toSet()
+        val customTaskNames = descriptor.customTasks.map(EnforcementCustomTask::taskName).toSet()
 
         configureMainCompileErrorProneChecks(checkerNames)
 
@@ -179,6 +186,21 @@ internal fun Project.configureVerificationCore() {
             rootPmdTask?.let { dependsOn(it) }
         }
 
+        descriptor.taskNames
+            .asSequence()
+            .filter { taskName -> taskName.startsWith("check") && taskName != rootTaskName }
+            .filterNot(buildHarnessTaskNames::contains)
+            .filterNot(jqassistantRootTaskNames::contains)
+            .filterNot(pmdTaskNames::contains)
+            .filterNot(customTaskNames::contains)
+            .forEach { aliasTaskName ->
+                tasks.register(aliasTaskName) {
+                    group = LifecycleBasePlugin.VERIFICATION_GROUP
+                    description = "Run the $bundleDisplayName surface through legacy alias '$aliasTaskName'."
+                    dependsOn(rootTaskProvider)
+                }
+            }
+
         if (descriptor.rootTask?.attachToCheckArchitecture == true) {
             verificationHarness.checkArchitecture.configure {
                 dependsOn(rootTaskProvider)
@@ -230,8 +252,8 @@ internal fun Project.configureVerificationCore() {
 
     val viewTopology = registerSurfaceTask(
         "view-topology",
-        "Run the public staged closed-world view-layer topology verification surface.",
-        "checkViewLayerEnforcement"
+        "Run the public staged view-layer verification surface.",
+        "checkViewEnforcement"
     )
 
     val docs = registerSurfaceTask(
