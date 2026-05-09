@@ -61,7 +61,7 @@ fun standardVerificationSurfaceCatalog(
             surfaceId = "shell",
             publicTaskName = "checkShellEnforcement",
             description = "Run the canonical Shell enforcement surface.",
-            bundleIds = listOf("shellRuntimeContext", "shellAppShell", "shellLayer")
+            bundleIds = listOf("shellAppShell", "shellLayer")
         ),
         verificationSurface(
             surfaceId = "bootstrap",
@@ -73,7 +73,7 @@ fun standardVerificationSurfaceCatalog(
             surfaceId = "layering",
             publicTaskName = "checkLayeringEnforcement",
             description = "Run the canonical Layering enforcement surface.",
-            bundleIds = listOf("layeringArchitecture", "layeringIndirection")
+            bundleIds = listOf("layeringArchitecture")
         ),
         verificationSurface(
             surfaceId = "domain",

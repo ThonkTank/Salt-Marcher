@@ -171,9 +171,8 @@ internal fun Project.registerQualityConventionLifecycleTasks(
 
     val checkArchitecture = tasks.register("checkArchitecture") {
         group = LifecycleBasePlugin.VERIFICATION_GROUP
-        description = "Runs non-documentation architecture checks from ArchUnit, PMD architecture rules, and the external build harness."
+        description = "Runs non-documentation architecture checks from ArchUnit, Error Prone, and the external build harness."
         dependsOn("architectureTest")
-        dependsOn("pmdArchitectureMain")
         dependsOn(gradle.includedBuild("build-harness").task(":architectureCheck"))
     }
 

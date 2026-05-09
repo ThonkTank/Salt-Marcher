@@ -32,7 +32,8 @@ Unified focused bundle entrypoint:
   Canonical compile-side blocking behavior remains at `./gradlew compileJava`;
   aggregate blocking behavior enters `./gradlew checkArchitecture` and
   `./gradlew check` through this bundle. The canonical stylesheet-owner proof
-  now stays local to this bundle.
+  now stays local to this bundle through typed Gradle tasks plus compile-side
+  Error Prone rules.
 
 ## Invariant Catalog
 
@@ -60,7 +61,7 @@ Unified focused bundle entrypoint:
 | `styling-bootstrap-loads-central-stylesheet-resource-only` | Review-Owned | desktop launch framing exists and must attach shared application styling to scene or preloader surfaces | none | none | Bootstrap communicates with the styling layer only by loading the canonical stylesheet resource at `resources/salt-marcher.css`; it does not switch to feature-local stylesheet files or alternate stylesheet owners. |
 | `styling-java-to-css-explicit-selector-channel-only` | Enforced | every Java-authored style-class communication seam in `bootstrap/`, `shell/`, and `src/` | typed Gradle verification task `checkDefinedStyleClassSelectors` | `./gradlew checkDefinedStyleClassSelectors`, `./gradlew checkStylingLayerEnforcement`, and `./gradlew check` | Java communicates style selection to centralized CSS only through explicit selector names that the stylesheet owner defines. |
 | `styling-no-dynamic-selector-construction` | Enforced | every Java-authored style-class communication seam in `bootstrap/`, `shell/`, and `src/` | typed Gradle verification task `checkDefinedStyleClassSelectors` | `./gradlew checkDefinedStyleClassSelectors`, `./gradlew checkStylingLayerEnforcement`, and `./gradlew check` | Dynamic style-class selector construction is forbidden; Java-authored selectors stay explicit enough for centralized ownership and mechanical resolution checks. |
-| `styling-no-inline-setstyle-backchannel` | Enforced | every active source file under `bootstrap/`, `shell/`, and `src/` | PMD `StylingInlineSetStyleBackchannelRule` | `./gradlew pmdStylingLayerEnforcement`, `./gradlew checkStylingLayerEnforcement`, `./gradlew checkArchitecture`, and `./gradlew check` | Active application code does not communicate styling through `setStyle(...)` as an inline backchannel around centralized stylesheet ownership. |
+| `styling-no-inline-setstyle-backchannel` | Review-Owned | every active source file under `bootstrap/`, `shell/`, and `src/` | none | none | Active application code does not communicate styling through `setStyle(...)` as an inline backchannel around centralized stylesheet ownership. |
 | `styling-no-java-owned-visual-value-backchannel` | Enforced | every active Java package under `bootstrap`, `shell`, and `src` outside the dedicated passive-`View` direct-render exception | Error Prone `ViewProgrammaticStyling` | `./gradlew compileJava`, `./gradlew checkStylingLayerEnforcement`, `./gradlew checkArchitecture`, and `./gradlew check` | Active application code outside the dedicated passive-`View` direct-render exception does not communicate styling through the currently blocked JavaFX style-value constructors, color/paint/font factory methods, or static style-value constants instead of through centralized styling truth. |
 
 ## Candidate

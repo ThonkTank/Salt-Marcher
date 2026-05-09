@@ -164,11 +164,9 @@ report does not block the build.
 
 Broader architecture-sprawl signals are therefore intentionally split. Generic
 source smells stay with PMD, cycle blockers stay with the generic and focused
-ArchUnit suites, whole-program dead-code reachability stays with
-`checkNoDeadCode`, hotspot regression stays with CKJM and CodeScene,
-relay-only tactical wrappers stay with the focused layering-indirection
-bundle, and the new broader role-aware hub or sprawl diagnostics stay with
-`checkLayeringSprawlCandidates`.
+ArchUnit suites, and whole-program dead-code reachability stays with
+`checkNoDeadCode`. The former jQAssistant relay-only and sprawl surfaces are
+retired from the public blocker path.
 
 Focused PMD, SpotBugs, CPD, Lizard, and CKJM entrypoints must stay independent
 of the closed-world view-topology blocker; they may be run together for quality
@@ -179,8 +177,8 @@ hygiene gate in the central quality path.
 Checkstyle metrics and Semgrep are deferred unless current tooling cannot
 express a concrete rule.
 
-`./gradlew pmdArchitectureMain` is intentionally separate. It belongs to the
-architecture harness and runs source-level architecture policy rules.
+Architecture blockers now run only through compile-blocking Error Prone,
+ArchUnit, and the external build harness.
 
 ### Repository And Resource Policy
 
@@ -254,7 +252,6 @@ It includes:
   `checkViewContentModelEnforcement`,
   `checkViewIntentHandlerEnforcement`,
   `checkViewLayerEnforcement`,
-  `checkShellRuntimeContextEnforcement`, `pmdArchitectureMain`,
   and `:build-harness:architectureCheck`
 - repository and resource policy checks
 - PMD source-smell detection through `pmdMain`
@@ -317,14 +314,13 @@ documentation-enforcement rerun has completed, or a concrete blocker has been
 reported.
 
 Focused investigation entrypoints are `compileJava`, `pmdMain`,
-`pmdStrictMain`, `spotbugsMain`, `pmdArchitectureMain`, `cpdMain`,
+`pmdStrictMain`, `spotbugsMain`, `cpdMain`,
 `lizardMain`, `ckjmMain`, `checkCentralizedStylesheets`,
 `checkDefinedStyleClassSelectors`, `checkNoCompiledArtifactsInSource`,
 `checkDesktopPackagingInputs`, `checkDesktopAppImageLayout`,
 `checkDomainLayerEnforcement`,
 `checkDomainApplicationServiceEnforcement`,
 `checkDataServiceContributionEnforcement`,
-`pmdDataServiceContributionEnforcement`,
 `checkDomainContextEnforcement`,
 `checkDomainPublishedEnforcement`,
 `checkDomainPortEnforcement`,
@@ -336,7 +332,6 @@ Focused investigation entrypoints are `compileJava`, `pmdMain`,
   `checkShellAppShellEnforcement`,
   `checkBootstrapAppBootstrapEnforcement`,
   `checkShellLayerEnforcement`,
-  `checkShellRuntimeContextEnforcement`,
 `checkViewFxmlResources`, `checkViewEnforcement`,
 `checkViewInputEventEnforcement`,
 `checkViewContributionEnforcement`,
@@ -353,8 +348,6 @@ Focused investigation entrypoints are `compileJava`, `pmdMain`,
 `checkDataPersistencecoreEnforcement`,
 `checkViewLayerEnforcement`,
 `checkLayeringArchitectureEnforcement`,
-`checkLayeringIndirectionEnforcement`,
-`checkLayeringIndirectionRelayCandidates`,
 and `checkDocumentationEnforcement`, each run
 through
 `./gradlew <task> --console=plain`.
@@ -384,7 +377,6 @@ Architecture-focused entrypoints:
   `checkShellLayerEnforcement`,
   `checkDomainUseCaseEnforcement`,
   `checkLayeringArchitectureEnforcement`,
-  `checkLayeringIndirectionEnforcement`,
   `checkViewEnforcement`,
   `checkViewInputEventEnforcement`,
   `checkViewContributionEnforcement`,
@@ -392,8 +384,7 @@ Architecture-focused entrypoints:
   `checkViewContributionModelEnforcement`,
   `checkViewContentModelEnforcement`,
   `checkViewIntentHandlerEnforcement`,
-  `checkViewLayerEnforcement`,
-  `checkShellRuntimeContextEnforcement`, `pmdArchitectureMain`, and
+  `checkViewLayerEnforcement`, and
   `:build-harness:architectureCheck`.
 - `./gradlew checkDocumentationEnforcement --console=plain`
   Aggregates the focused Markdown-backed architecture and enforcement-document
@@ -404,12 +395,12 @@ Architecture-focused entrypoints:
   `:build-harness:domainContextEnforcementDocumentationCheck`.
 - `./gradlew checkDomainApplicationServiceEnforcement --console=plain`
   Aggregates the focused Domain ApplicationService bundle through
-  `compileJava`, `pmdDomainApplicationServiceEnforcement`,
+  `compileJava`,
   `:build-harness:domainApplicationServiceTopologyCheck`, and
   `:build-harness:domainApplicationServiceDocumentationEnforcementCheck`.
 - `./gradlew checkDataServiceContributionEnforcement --console=plain`
   Aggregates the focused Data ServiceContribution bundle through
-  `compileJava`, `pmdDataServiceContributionEnforcement`, and
+  `compileJava` and
   `:build-harness:dataServiceContributionDocumentationEnforcementCheck`.
 - `./gradlew checkDomainLayerEnforcement --console=plain`
   Aggregates the focused Domain Layer bundle through `compileJava`,
@@ -442,12 +433,10 @@ Architecture-focused entrypoints:
   `:build-harness:domainConstantsDocumentationEnforcementCheck`.
 - `./gradlew checkDomainUseCaseEnforcement --console=plain`
   Aggregates the focused Domain UseCase bundle through `compileJava`,
-  `pmdDomainUseCaseEnforcement`,
   `:build-harness:domainUseCaseTopologyCheck`, and
   `:build-harness:domainUseCaseDocumentationEnforcementCheck`.
 - `./gradlew checkDataModelEnforcement --console=plain`
   Aggregates the focused Data Model bundle through `compileJava`,
-  `pmdDataModelEnforcement`,
   `dataModelArchitectureTest`,
   `:build-harness:dataModelTopologyCheck`, and
   `:build-harness:dataModelDocumentationEnforcementCheck`.
@@ -457,11 +446,10 @@ Architecture-focused entrypoints:
   `:build-harness:dataGatewayEnforcementDocumentationCheck`.
 - `./gradlew checkDataRepositoryEnforcement --console=plain`
   Aggregates the focused Data Repository bundle through `compileJava`,
-  `pmdDataRepositoryEnforcement`, and
+  and
   `:build-harness:dataRepositoryEnforcementDocumentationCheck`.
 - `./gradlew checkDataQueryEnforcement --console=plain`
   Aggregates the focused Data Query bundle through `compileJava`,
-  `pmdDataQueryEnforcement`,
   `:build-harness:dataQueryTopologyCheck`, and
   `:build-harness:dataQueryEnforcementDocumentationCheck`. The compile-side
   blocker now includes `DataQueryForeignPublishedReplyChannelRoundTrip`, which
@@ -471,13 +459,6 @@ Architecture-focused entrypoints:
   `DataQueryForeignPublishedPayloadSurfaceRules`, which fails when foreign
   published passive payload carriers consumed by query adapters export unused
   accessor surface.
-- `./gradlew checkDataQueryPublishedCarrierCandidates --console=plain`
-  Runs the report-only Data Query build-harness candidate scan for shared
-  foreign published carrier partial-use diagnostics through
-  `:build-harness:checkDataQueryPublishedCarrierCandidates`. It names the
-  foreign carrier, the consumer-local accessor subset, and the globally used
-  accessor surface, and stays outside `checkArchitecture`, `check`, `build`,
-  and staged `production-handoff`.
 - `./gradlew checkDataPersistencecoreEnforcement --console=plain`
   Aggregates the focused Data Persistencecore bundle through
   `dataPersistencecoreArchitectureTest` and
@@ -486,35 +467,13 @@ Architecture-focused entrypoints:
   Aggregates the dedicated `Layering Architecture` bundle through
   `:build-harness:layeringArchitectureTopologyCheck` and
   `:build-harness:layeringArchitectureDocumentationEnforcementCheck`.
-- `./gradlew checkLayeringIndirectionEnforcement --console=plain`
-  Aggregates the dedicated `Layering Indirection` bundle through the focused
-  `jqassistantAnalyzeLayeringIndirectionEnforcement` path. It blocks on the
-  compiled substantive relay-wrapper and relay-chain constraints and is
-  attached to `checkArchitecture`, `check`, `build`, and staged
-  `production-handoff` through the architecture aggregate.
-- `./gradlew checkLayeringIndirectionRelayCandidates --console=plain`
-  Runs the report-only thin relay-stack diagnostic surface of the dedicated
-  `Layering Indirection` bundle through
-  `jqassistantAnalyzeLayeringIndirectionRelayCandidates` without attaching
-  that diagnostic surface to `checkArchitecture`, `check`, `build`, or staged
-  `production-handoff`.
-- `./gradlew checkLayeringSprawlCandidates --console=plain`
-  Runs the report-only `Layering Sprawl` bundle through
-  `jqassistantAnalyzeLayeringSprawlCandidates` and reports role-hub,
-  cross-feature, and public-boundary breadth candidates without attaching
-  that diagnostic surface to `checkArchitecture`, `check`, `build`, or staged
-  `production-handoff`.
 - `./gradlew checkStylingLayerEnforcement --console=plain`
   Aggregates the styling-layer bundle through `compileJava`,
-  `checkCentralizedStylesheets`, `checkDefinedStyleClassSelectors`,
-  `checkDesktopPackagingInputs`, and the dedicated
-  `pmdStylingLayerEnforcement` rule path.
+  `checkCentralizedStylesheets`, `checkDefinedStyleClassSelectors`, and
+  `checkDesktopPackagingInputs`.
 - `./gradlew checkBootstrapAppBootstrapEnforcement --console=plain`
   Aggregates the focused `AppBootstrap` bundle through the dedicated
   `bootstrapAppBootstrapArchitectureTest` ArchUnit suite.
-- `./gradlew checkShellRuntimeContextEnforcement --console=plain`
-  Aggregates the dedicated `ShellRuntimeContext` PMD gateway-shape rule
-  through one focused root entrypoint.
 - `./gradlew checkShellLayerEnforcement --console=plain`
   Aggregates the dedicated `Shell Layer` bundle through
   `shellLayerArchitectureTest` and `:build-harness:shellLayerTopologyCheck`.

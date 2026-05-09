@@ -155,7 +155,7 @@ activeEnforcementBundleIds.forEach { bundleId ->
             registerBuildHarnessTask(
                 taskName,
                 bundleLabel,
-                descriptor.buildHarnessTaskMainClasses[taskName],
+                null,
                 descriptorBuildHarnessRuleClasses(bundleId, taskName),
                 descriptorBuildHarnessDocumentationCoverageSpecIds(bundleId, taskName)
             )

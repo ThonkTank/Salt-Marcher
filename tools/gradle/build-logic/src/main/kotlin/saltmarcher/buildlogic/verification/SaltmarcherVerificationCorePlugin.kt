@@ -92,35 +92,6 @@ internal fun Project.configureVerificationCore() {
             aggregateDependencies += archunitTask
         }
 
-        descriptor.jqassistantTasks
-            .takeIf(List<*>::isNotEmpty)
-            ?.let { jqassistantTasks ->
-                val compileTask = selectedCompileJava
-                    ?: error("Missing selected compile task for jQAssistant enforcement bundle '$bundleId'.")
-                jqassistantTasks.forEach { jqassistant ->
-                    val taskPair = verificationHarness.registerFocusedJqassistantTaskPair(
-                        bundleId,
-                        jqassistant.scanTaskName,
-                        jqassistant.analyzeTaskName,
-                        jqassistant.scanDescription,
-                        jqassistant.analyzeDescription,
-                        jqassistant.ruleGroups,
-                        jqassistant.rulesDirPaths,
-                        jqassistant.reportsDirPath,
-                        compileTask
-                    )
-                    if (jqassistant.taskName == rootTaskName) {
-                        aggregateDependencies += taskPair.analyzeTask
-                    } else {
-                        tasks.register(jqassistant.taskName) {
-                            group = LifecycleBasePlugin.VERIFICATION_GROUP
-                            description = jqassistant.analyzeDescription
-                            dependsOn(taskPair.analyzeTask)
-                        }
-                    }
-                }
-            }
-
         descriptor.customTasks.forEach { customTask ->
             aggregateDependencies += verificationHarness.registerCustomVerificationTask(
                 bundleId,
@@ -147,38 +118,11 @@ internal fun Project.configureVerificationCore() {
             .values
         aggregateDependencies.addAll(aggregateBuildHarnessTasks)
 
-        val pmdTasks = descriptor.pmdTasks.associateBy(
-            keySelector = { pmd -> pmd.taskName },
-            valueTransform = { pmd ->
-                verificationHarness.registerFocusedPmdTask(
-                    bundleId,
-                    pmd.taskName,
-                    pmd.description,
-                    pmd.rulesetPath,
-                    pmd.sourceRoots,
-                    pmd.sourceIncludes,
-                    pmd.ignoreFailures,
-                    pmd.consoleOutput
-                )
-            }
-        )
-
-        val aggregatePmdTasks = descriptor.pmdTasks
-            .filterNot { pmd -> pmd.taskName.startsWith("check") && pmd.taskName != rootTaskName }
-            .map { pmd -> pmdTasks.getValue(pmd.taskName) }
-
-        val rootPmdTask = pmdTasks[rootTaskName]
-        aggregateDependencies.addAll(aggregatePmdTasks.filter { taskProvider -> taskProvider != rootPmdTask })
-
-        val directRootPmdTask = rootPmdTask?.takeIf {
-            aggregateDependencies.isEmpty()
-        }
-        val rootTaskProvider: TaskProvider<out Task> = directRootPmdTask ?: tasks.register(rootTaskName) {
+        val rootTaskProvider: TaskProvider<out Task> = tasks.register(rootTaskName) {
             group = LifecycleBasePlugin.VERIFICATION_GROUP
             description = descriptor.rootTask?.description
                 ?: "Run the focused $bundleDisplayName enforcement bundle through one root entrypoint."
             aggregateDependencies.forEach(::dependsOn)
-            rootPmdTask?.let { dependsOn(it) }
         }
 
     }

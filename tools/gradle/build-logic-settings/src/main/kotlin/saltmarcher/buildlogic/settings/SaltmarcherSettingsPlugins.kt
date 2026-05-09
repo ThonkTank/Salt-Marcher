@@ -25,6 +25,7 @@ class SaltmarcherRootSettingsPlugin : Plugin<Settings> {
             .toSet()
         val broadBuildTaskNames = verificationSurfaceCatalog.list("broadBuildTaskNames").toSet()
         val taskToBundleId = bundleCatalog.taskToBundleId
+        val publicSurfaceTaskNames = publicVerificationSurfaceCatalog.taskToBundleIds.keys
         val requestedBundleIds = requestedTaskNames
             .flatMap { taskName ->
                 publicVerificationSurfaceCatalog.taskToBundleIds[taskName]
@@ -36,7 +37,7 @@ class SaltmarcherRootSettingsPlugin : Plugin<Settings> {
             requestedBundleIds.isNotEmpty() &&
             requestedTaskNames.none { taskName -> taskName in broadBuildTaskNames } &&
             requestedTaskNames.all { taskName ->
-                taskName in taskToBundleId.keys || taskName in publicVerificationSurfaceCatalog.taskToBundleIds.keys
+                taskName in taskToBundleId.keys || taskName in publicSurfaceTaskNames
             }
         val activeEnforcementBundleIds = if (focusedEnforcementBundleMode) {
             bundleCatalog.expandedBundleIds(requestedBundleIds)

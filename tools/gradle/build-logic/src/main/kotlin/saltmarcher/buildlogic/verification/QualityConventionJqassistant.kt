@@ -1,18 +1,7 @@
 package saltmarcher.buildlogic.verification
 
-import org.gradle.api.tasks.Sync
-import org.gradle.api.tasks.TaskProvider
-import org.gradle.kotlin.dsl.register
-import org.gradle.language.base.plugins.LifecycleBasePlugin
-
-internal data class QualityConventionJqassistantTasks(
-    val installJqassistant: TaskProvider<Sync>,
-    val registrar: JqassistantTaskRegistrar
-)
-
 internal fun org.gradle.api.Project.registerQualityConventionHarness(
     environment: QualityConventionEnvironment,
-    jqassistantTasks: QualityConventionJqassistantTasks,
     lifecycleTasks: QualityConventionLifecycleTasks
 ): VerificationHarnessExtension {
     val verificationLayout = environment.verificationLayout
@@ -24,7 +13,6 @@ internal fun org.gradle.api.Project.registerQualityConventionHarness(
         sourceRoots = verificationLayout.sourceRoots,
         sourceJavaRoots = verificationLayout.sourceJavaRoots,
         commonFocusedArchunitSupportIncludes = verificationLayout.commonFocusedArchunitSupportIncludes,
-        jqassistantTaskRegistrar = jqassistantTasks.registrar,
         configureCommonErrorProneOptions = { applyCommonErrorProneOptions(this) },
         productionBuild = lifecycleTasks.productionBuild,
         checkQualityHygiene = lifecycleTasks.checkQualityHygiene,
@@ -34,39 +22,4 @@ internal fun org.gradle.api.Project.registerQualityConventionHarness(
     )
     extensions.add(VerificationHarnessExtension::class.java, "saltmarcherVerificationHarness", harness)
     return harness
-}
-
-internal fun org.gradle.api.Project.registerQualityConventionJqassistantTasks(
-    environment: QualityConventionEnvironment,
-    toolConfigurations: QualityConventionToolConfigurations
-): QualityConventionJqassistantTasks {
-    val verificationLayout = environment.verificationLayout
-    val jqassistantInstallDir = layout.buildDirectory.dir("tools/jqassistant")
-    val installJqassistant = tasks.register<Sync>("installJqassistant") {
-        group = LifecycleBasePlugin.VERIFICATION_GROUP
-        description = "Install the jQAssistant command-line distribution into the build directory."
-        from({
-            toolConfigurations.jqassistantDistribution.get().resolve().map { zipTree(it) }
-        })
-        into(jqassistantInstallDir)
-    }
-    val jqassistantCliFile = jqassistantInstallDir.map { installDir ->
-        installDir.file("jqassistant-commandline-neo4jv5-${environment.jqassistantVersion}/bin/jqassistant")
-    }
-    val jqassistantJvmOpens = listOf(
-        "--add-opens", "java.base/java.lang=ALL-UNNAMED",
-        "--add-opens", "java.base/sun.nio.ch=ALL-UNNAMED",
-        "--add-opens", "java.base/java.io=ALL-UNNAMED",
-        "--add-opens", "java.base/java.nio=ALL-UNNAMED"
-    ).joinToString(" ")
-    val registrar = JqassistantTaskRegistrar(
-        project = this,
-        cliFile = jqassistantCliFile,
-        jvmOpens = jqassistantJvmOpens,
-        installJqassistant = installJqassistant
-    )
-    return QualityConventionJqassistantTasks(
-        installJqassistant = installJqassistant,
-        registrar = registrar
-    )
 }

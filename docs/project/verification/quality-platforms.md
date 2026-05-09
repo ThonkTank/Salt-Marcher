@@ -164,8 +164,8 @@ Operationally, architecture checks enter local quality through:
   runs the canonical Styling surface by aggregating the styling-layer and
   passive-`View` direct-render styling bundles
 - `checkLayeringEnforcement`
-  runs the canonical Layering surface by aggregating the blocker-owned
-  Layering Architecture and Layering Indirection bundles
+  runs the canonical Layering surface through the blocker-owned Layering
+  Architecture bundle
 - `architectureTest`
   runs the remaining generic ArchUnit dependency and cycle checks outside the
   focused `AppBootstrap`, Domain Layer, `Shell Layer`, `View Layer`, and the
@@ -180,36 +180,17 @@ Operationally, architecture checks enter local quality through:
   dedicated build-harness topology, passive-carrier mirror, and
   documentation-coverage checks for repository-wide layer roots and
   included-build taxonomy
-- `checkLayeringIndirectionEnforcement`
-  runs the focused `Layering Indirection` enforcement bundle through the
-  dedicated jQAssistant substantive relay-wrapper and relay-chain blockers and
-  now enters `checkArchitecture`, `check`, `build`, and staged
-  `production-handoff` transitively
-- `checkLayeringIndirectionRelayCandidates`
-  runs the report-only thin relay-stack diagnostic surface of the focused
-  `Layering Indirection` bundle and stays intentionally outside
-  `checkArchitecture`, `check`, and `build`
-- `checkLayeringSprawlCandidates`
-  runs the report-only `Layering Sprawl` bundle through the dedicated
-  jQAssistant role-hub, cross-feature, and public-boundary breadth
-  diagnostics and stays intentionally outside `checkArchitecture`, `check`,
-  and `build`
-- `checkDataQueryPublishedCarrierCandidates`
-  runs the report-only Data Query build-harness shared-carrier partial-use
-  diagnostics and stays intentionally outside `checkArchitecture`, `check`,
-  `build`, and staged `production-handoff`
 - `checkArchitecture`
   aggregates the focused Domain Layer, Domain ApplicationService,
-  Data ServiceContribution,
-  styling-layer, `Shell Layer`, `Layering Architecture`, Domain UseCase,
-  Data Model, Data Repository, Data Query, Data Mapper, Data Persistencecore,
+  Data ServiceContribution, styling-layer, `Shell Layer`,
+  `Layering Architecture`, Domain UseCase, Data Model, Data Repository,
+  Data Query, Data Mapper, Data Persistencecore,
   `Domain Port`, `Domain Repository`, `Domain Model`, `Domain Helper`,
   `Domain Constants`,
   focused `View`, `ViewInputEvent`, `View Contribution`, `View Binder`,
   `View ContributionModel`, `View ContentModel`, `View IntentHandler`,
-  `View Layer`, and `ShellRuntimeContext` bundles,
-  ArchUnit, PMD architecture rules, and the
-  non-documentation build-harness path
+  and `View Layer` bundles, ArchUnit, compile-blocking Error Prone rules, and
+  the non-documentation build-harness path
 - `check`
   runs the architecture harness plus adjacent non-architecture quality gates.
   Its architecture-focused coverage comes from the explicit
@@ -231,7 +212,6 @@ Operationally, architecture checks enter local quality through:
   `checkBootstrapAppBootstrapEnforcement`,
   `checkShellLayerEnforcement`,
   `checkLayeringArchitectureEnforcement`,
-  `checkLayeringIndirectionEnforcement`,
   `checkDomainUseCaseEnforcement`,
   `checkViewEnforcement`,
   `checkViewInputEventEnforcement`,
@@ -240,8 +220,7 @@ Operationally, architecture checks enter local quality through:
   `checkViewContributionModelEnforcement`,
   `checkViewContentModelEnforcement`,
   `checkViewIntentHandlerEnforcement`,
-  `checkViewLayerEnforcement`,
-  `checkShellRuntimeContextEnforcement`
+  `checkViewLayerEnforcement`
   dependencies. The dedicated
   `checkDocumentationEnforcement` path is intentionally excluded.
 

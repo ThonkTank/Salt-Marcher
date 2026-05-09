@@ -40,21 +40,15 @@ internal fun Project.configureQualityConventions() {
             options.errorprone.error("DomainPublicConcreteTypeShape")
             options.errorprone.error("ServiceRegistryRegistrationPlacement")
             options.errorprone.error("ViewContributionShellApiAllowlist")
-            options.errorprone.error("ViewDetailsSlotBoundary")
-            options.errorprone.error("ProjectionModelOwnershipNaming")
-            options.errorprone.error("ViewReflectionBypass")
-            options.errorprone.error("ViewRootDelegation")
         }
     }
 
-    val jqassistantTasks = registerQualityConventionJqassistantTasks(environment, toolConfigurations)
     val lifecycleTasks = registerQualityConventionLifecycleTasks(
         environment = environment,
         toolConfigurations = toolConfigurations
     )
     registerQualityConventionHarness(
         environment = environment,
-        jqassistantTasks = jqassistantTasks,
         lifecycleTasks = lifecycleTasks
     )
     registerQualityConventionPackagingTasks(environment)

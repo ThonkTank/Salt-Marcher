@@ -39,7 +39,7 @@ Unified focused bundle entrypoint:
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
 | `domain-applicationservice-no-nested-contracts` | Enforced | every root `*ApplicationService.java` under `src/domain/**` | domain-application-service bundle Error Prone `DomainApplicationServiceApiShape` | `./gradlew compileJava` and `./gradlew checkDomainApplicationServiceEnforcement` | Root application services do not expose nested public or protected contract types. |
-| `domain-applicationservice-no-direct-infrastructure-construction-source-pattern` | Source-Pattern Enforced | every root `*ApplicationService.java` under `src/domain/**` | domain-application-service bundle PMD `DomainApplicationServiceSourcePolicyRule` | `./gradlew pmdArchitectureMain` and `./gradlew checkDomainApplicationServiceEnforcement` | Root application service source text does not directly instantiate or cache data-adapter or source-adapter infrastructure at the boundary. |
+| `domain-applicationservice-no-direct-infrastructure-construction-source-pattern` | Review-Owned | every root `*ApplicationService.java` under `src/domain/**` | none | none | Root application service source text does not directly instantiate or cache data-adapter or source-adapter infrastructure at the boundary. |
 
 ### Communication Contract
 

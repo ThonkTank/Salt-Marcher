@@ -22,6 +22,9 @@ contributions and their Binders:
 
 This document keeps only `ShellRuntimeContext`-local invariants that can be
 decided from `shell/api/ShellRuntimeContext.java` and its direct runtime seams.
+The former dedicated PMD proof surface is retired; current truth here is
+review-owned until these shape constraints gain a new owner on the remaining
+Error Prone, ArchUnit, or build-harness stack.
 
 This document does not own generic shell package topology, shell host
 privacy, feature-side consumer subsets, data-side `*ServiceContribution`
@@ -35,15 +38,15 @@ view-role, and layering enforcement documents.
 
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
-| `shell-runtime-context-inspector-method-present` | Enforced | `shell/api/ShellRuntimeContext.java` | PMD `ShellRuntimeContextGatewayShapeRule` | `./gradlew checkShellRuntimeContextEnforcement` and `./gradlew checkArchitecture` | `ShellRuntimeContext` exposes `inspector()` as one of its fixed public runtime-gateway methods. |
-| `shell-runtime-context-services-method-present` | Enforced | `shell/api/ShellRuntimeContext.java` | PMD `ShellRuntimeContextGatewayShapeRule` | `./gradlew checkShellRuntimeContextEnforcement` and `./gradlew checkArchitecture` | `ShellRuntimeContext` exposes `services()` as one of its fixed public runtime-gateway methods. |
-| `shell-runtime-context-session-method-present` | Enforced | `shell/api/ShellRuntimeContext.java` | PMD `ShellRuntimeContextGatewayShapeRule` | `./gradlew checkShellRuntimeContextEnforcement` and `./gradlew checkArchitecture` | `ShellRuntimeContext` exposes `session(...)` as one of its fixed public runtime-gateway methods. |
+| `shell-runtime-context-inspector-method-present` | Review-Owned | `shell/api/ShellRuntimeContext.java` | none | none | `ShellRuntimeContext` exposes `inspector()` as one of its fixed public runtime-gateway methods. |
+| `shell-runtime-context-services-method-present` | Review-Owned | `shell/api/ShellRuntimeContext.java` | none | none | `ShellRuntimeContext` exposes `services()` as one of its fixed public runtime-gateway methods. |
+| `shell-runtime-context-session-method-present` | Review-Owned | `shell/api/ShellRuntimeContext.java` | none | none | `ShellRuntimeContext` exposes `session(...)` as one of its fixed public runtime-gateway methods. |
 
 ### Must Not Contain
 
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
-| `shell-runtime-context-no-extra-public-gateway-methods` | Enforced | `shell/api/ShellRuntimeContext.java` | PMD `ShellRuntimeContextGatewayShapeRule` | `./gradlew checkShellRuntimeContextEnforcement` and `./gradlew checkArchitecture` | `ShellRuntimeContext` does not expose public runtime-gateway methods beyond the fixed set `inspector`, `services`, and `session`. |
+| `shell-runtime-context-no-extra-public-gateway-methods` | Review-Owned | `shell/api/ShellRuntimeContext.java` | none | none | `ShellRuntimeContext` does not expose public runtime-gateway methods beyond the fixed set `inspector`, `services`, and `session`. |
 
 ### Communication Contract
 

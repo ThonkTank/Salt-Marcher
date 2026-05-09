@@ -27,16 +27,12 @@ in the neighboring data enforcement documents.
 Unified focused bundle entrypoint:
 
 - `./gradlew checkDataQueryEnforcement --rerun-tasks --console=plain`
-  runs the currently active Data Query-focused Error Prone, PMD, build-harness
+  runs the currently active Data Query-focused Error Prone and build-harness
   topology, and documentation-coverage checks through one root task.
   Canonical compile-side and architecture-aggregate blocking behavior remains
   at `./gradlew compileJava` and `./gradlew checkArchitecture`; the focused
   bundle proof route keeps the query-role checks colocated without pulling the
   broader architecture bundles.
-- `./gradlew checkDataQueryPublishedCarrierCandidates --rerun-tasks --console=plain`
-  runs the report-only build-harness candidate surface for shared foreign
-  published carrier partial-use diagnostics without attaching that surface to
-  `checkArchitecture`, `check`, `build`, or staged `production-handoff`.
 
 ## Invariant Catalog
 
@@ -56,9 +52,9 @@ Unified focused bundle entrypoint:
 
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
-| `data-query-no-source-mechanics` | Source-Pattern Enforced | every Java type under `src/data/**/query/` | data-query bundle PMD `DataQueryNoSourceMechanicsRule` | `./gradlew checkArchitecture` and `./gradlew checkDataQueryEnforcement` | Query adapters do not reference narrow concrete source APIs directly. |
+| `data-query-no-source-mechanics` | Review-Owned | every Java type under `src/data/**/query/` | none | none | Query adapters do not reference narrow concrete source APIs directly. |
 | `data-query-no-public-non-adapter-boundary-types` | Enforced | every public type under `src/data/**/query/` that is not a public concrete adapter | data-query bundle Error Prone `DataQueryRoleContract` | `./gradlew compileJava` and `./gradlew checkDataQueryEnforcement` | `query/` exposes no public boundary types except public concrete adapter classes. |
-| `data-query-read-only-source-shape` | Enforced | every public/protected method declaration or own-feature gateway call under `src/data/**/query/` | data-query bundle PMD `DataQueryReadOnlySourceShapeRule` and data-query bundle Error Prone `DataQueryGatewayMutationBoundary` | `./gradlew compileJava`, `./gradlew checkArchitecture`, and `./gradlew checkDataQueryEnforcement` | Query adapters stay mechanically read-only: they do not expose mutation-shaped public/protected methods and do not call mutation-shaped operations on own-feature gateway types. |
+| `data-query-read-only-source-shape` | Enforced | every own-feature gateway call under `src/data/**/query/` | data-query bundle Error Prone `DataQueryGatewayMutationBoundary` | `./gradlew compileJava` and `./gradlew checkDataQueryEnforcement` | Query adapters stay mechanically read-only at their own-feature gateway seam: they do not call mutation-shaped operations on own-feature gateway types. Broader public/protected source-shape semantics remain review-owned. |
 | `data-query-read-only-role-semantics` | Review-Owned | every query adapter under `src/data/**/query/` | none | none | A mechanically legal query adapter still remains a read-only lookup, search, paging, or projection adapter rather than a write boundary, policy helper, or generic data convenience wrapper. |
 
 ### Communication Contract
@@ -77,15 +73,10 @@ Unified focused bundle entrypoint:
 | --- | --- | --- | --- | --- | --- |
 | `data-query-foreign-published-carrier-thinning-candidate` | Candidate | every query adapter that reads a globally shared foreign passive published carrier through only part of that carrier's globally used accessor surface | none | none | The query adapter may be rebuilding own-feature facts from only a narrow subset of a broader shared foreign published carrier whose full accessor surface is still globally used elsewhere. This is report-only refactor guidance for the foreign published carrier thinning pattern, not a blocker. |
 
-`./gradlew checkDataQueryPublishedCarrierCandidates --console=plain` runs the
-report-only build-harness candidate scan backed by the same symbol-resolved
-`DataQueryPublishedCarrierAnalysis` engine as the blocker. It reports only
-true shared-carrier partial-use cases: the carrier has no globally unused
-accessors, but this one consumer still reads only a subset of the carrier's
-globally used accessor surface. The findings name the foreign carrier, the
-consumer-local accessor subset, the globally used accessor surface, and the
-correct target pattern: keep the shared carrier minimal, or split a thinner
-foreign published sub-carrier for the narrower consumer slice.
+The former report-only shared-carrier candidate scan is retired from the
+public verification surface. Narrow foreign published payloads are now tracked
+only through the blocking `DataQueryForeignPublishedPayloadSurfaceRules`
+surface and review of real repository drift.
 
 ## References
 

@@ -18,27 +18,6 @@ data class EnforcementArchunitTask(
     val useSharedTestSupport: Boolean
 )
 
-data class EnforcementJqassistantTask(
-    val taskName: String,
-    val scanTaskName: String,
-    val analyzeTaskName: String,
-    val scanDescription: String,
-    val analyzeDescription: String,
-    val ruleGroups: List<String>,
-    val rulesDirPaths: List<String>,
-    val reportsDirPath: String
-)
-
-data class EnforcementPmdTask(
-    val taskName: String,
-    val description: String,
-    val rulesetPath: String,
-    val sourceRoots: List<String>,
-    val sourceIncludes: List<String>,
-    val ignoreFailures: Boolean,
-    val consoleOutput: Boolean
-)
-
 data class EnforcementCustomTask(
     val taskName: String,
     val kind: String
@@ -53,12 +32,9 @@ data class EnforcementBundleDescriptor(
     val buildHarnessArchitectureRuleClasses: List<String>,
     val buildHarnessDocumentationRuleClasses: List<String>,
     val buildHarnessDocumentationCoverageSpecIds: List<String>,
-    val buildHarnessTaskMainClasses: Map<String, String>,
     val buildHarnessTaskRuleClasses: Map<String, List<String>>,
     val errorProneCheckers: List<String>,
     val archunit: EnforcementArchunitTask?,
-    val jqassistantTasks: List<EnforcementJqassistantTask>,
-    val pmdTasks: List<EnforcementPmdTask>,
     val customTasks: List<EnforcementCustomTask>,
     val verificationSourceRoots: List<String>,
     val verificationSourceIncludes: List<String>
@@ -66,7 +42,7 @@ data class EnforcementBundleDescriptor(
     fun publicCheckTaskName(): String = publicCheckTaskName(taskNames, bundleId)
 
     fun requiresFocusedCompile(): Boolean =
-        errorProneCheckers.isNotEmpty() || archunit != null || jqassistantTasks.isNotEmpty()
+        errorProneCheckers.isNotEmpty() || archunit != null
 
     fun buildHarnessTaskRuleClasses(taskName: String): List<String> = buildHarnessTaskRuleClasses[taskName]
         ?: when {
@@ -79,8 +55,7 @@ data class EnforcementBundleDescriptor(
         if (taskName.endsWith("DocumentationEnforcementCheck")) buildHarnessDocumentationCoverageSpecIds else emptyList()
 
     fun buildHarnessTaskNames(): List<String> = taskNames.filter { taskName ->
-        buildHarnessTaskMainClasses.containsKey(taskName) ||
-            buildHarnessTaskRuleClasses(taskName).isNotEmpty() ||
+        buildHarnessTaskRuleClasses(taskName).isNotEmpty() ||
             buildHarnessTaskDocumentationCoverageSpecIds(taskName).isNotEmpty()
     }
 }
@@ -189,31 +164,11 @@ private fun EnforcementBundleDescriptor.validated(): EnforcementBundleDescriptor
     }
     publicCheckTaskName()
 
-    if (buildHarnessTaskMainClasses.isNotEmpty() || buildHarnessTaskRuleClasses.isNotEmpty()) {
-        val declaredTaskNames = buildHarnessTaskMainClasses.keys + buildHarnessTaskRuleClasses.keys
+    if (buildHarnessTaskRuleClasses.isNotEmpty()) {
+        val declaredTaskNames = buildHarnessTaskRuleClasses.keys
         val missingTaskNames = declaredTaskNames - taskNames.toSet()
         require(missingTaskNames.isEmpty()) {
             "Enforcement bundle '$bundleId' declares build-harness tasks that are missing from taskNames: ${missingTaskNames.joinToString()}."
-        }
-        val overlappingTaskNames = buildHarnessTaskMainClasses.keys.intersect(buildHarnessTaskRuleClasses.keys)
-        require(overlappingTaskNames.isEmpty()) {
-            "Enforcement bundle '$bundleId' must not declare both buildHarnessTask.*.mainClass and buildHarnessTask.*.ruleClasses for the same task: ${overlappingTaskNames.joinToString()}."
-        }
-    }
-
-    if (pmdTasks.isNotEmpty()) {
-        val missingTaskNames = pmdTasks.map(EnforcementPmdTask::taskName) - taskNames.toSet()
-        require(missingTaskNames.isEmpty()) {
-            "Enforcement bundle '$bundleId' declares PMD tasks that are missing from taskNames: ${missingTaskNames.joinToString()}."
-        }
-    }
-
-    if (jqassistantTasks.isNotEmpty()) {
-        val missingTaskNames = jqassistantTasks
-            .flatMap { jqassistant -> listOf(jqassistant.taskName, jqassistant.scanTaskName, jqassistant.analyzeTaskName) }
-            .toSet() - taskNames.toSet()
-        require(missingTaskNames.isEmpty()) {
-            "Enforcement bundle '$bundleId' declares jQAssistant tasks that are missing from taskNames: ${missingTaskNames.joinToString()}."
         }
     }
 

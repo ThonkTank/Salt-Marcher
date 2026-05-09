@@ -5,7 +5,6 @@ import org.gradle.api.Project
 import org.gradle.api.Task
 import org.gradle.api.file.Directory
 import org.gradle.api.file.FileCollection
-import org.gradle.api.plugins.quality.Pmd
 import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.SourceSet
@@ -31,7 +30,6 @@ internal open class VerificationHarnessExtension(
     private val sourceRoots: FileCollection,
     private val sourceJavaRoots: FileCollection,
     private val commonFocusedArchunitSupportIncludes: List<String>,
-    private val jqassistantTaskRegistrar: JqassistantTaskRegistrar,
     private val configureCommonErrorProneOptions: JavaCompile.() -> Unit,
     val productionBuild: TaskProvider<out Task>,
     val checkQualityHygiene: TaskProvider<out Task>,
@@ -126,70 +124,6 @@ internal open class VerificationHarnessExtension(
                 this.mainClassesDirectory.set(mainClassesDirectory)
             }
         }
-    }
-
-    fun registerFocusedPmdTask(
-        bundleId: String,
-        taskName: String,
-        taskDescription: String,
-        rulesetPath: String,
-        sourceRoots: List<String>,
-        sourceIncludes: List<String>,
-        ignoreFailures: Boolean,
-        consoleOutput: Boolean
-    ): TaskProvider<Pmd> {
-        val roots = sourceRoots.ifEmpty {
-            enforcementBundles.descriptor(bundleId).verificationSourceRoots.ifEmpty {
-                error("Missing verificationSourceRoots metadata for enforcement bundle '$bundleId'.")
-            }
-        }
-        val rulesetFile = project.file(rulesetPath)
-        return project.tasks.register<Pmd>(taskName) {
-            group = LifecycleBasePlugin.VERIFICATION_GROUP
-            description = taskDescription
-
-            this.ignoreFailures = ignoreFailures
-            isConsoleOutput = consoleOutput
-            ruleSets = listOf()
-            ruleSetFiles = project.files(rulesetFile)
-            source = project.files(roots).asFileTree.matching {
-                sourceIncludes.forEach(::include)
-            }
-            classpath = project.files()
-            reports {
-                html.required.set(true)
-                xml.required.set(true)
-            }
-        }
-    }
-
-    fun registerFocusedJqassistantTaskPair(
-        bundleId: String,
-        scanTaskName: String,
-        analyzeTaskName: String,
-        scanDescription: String,
-        analyzeDescription: String,
-        ruleGroups: List<String>,
-        rulesDirPaths: List<String>,
-        reportsDirectoryPath: String,
-        selectedCompileJava: TaskProvider<JavaCompile>
-    ): JqassistantTaskPair {
-        val selectedMainClassesDirectory = selectedCompileJava.flatMap { task -> task.destinationDirectory }
-        val jqassistantStoreDirectory = project.layout.buildDirectory.dir("tools/$bundleId/jqassistant/store")
-        val jqassistantReportsDirectory = project.layout.buildDirectory.dir(reportsDirectoryPath)
-        return jqassistantTaskRegistrar.registerTaskPair(
-            scanTaskName = scanTaskName,
-            analyzeTaskName = analyzeTaskName,
-            scanDescription = scanDescription,
-            analyzeDescription = analyzeDescription,
-            ruleGroups = ruleGroups,
-            rulesDirPaths = rulesDirPaths,
-            mainClassesDirectory = selectedMainClassesDirectory,
-            sourceRoots = sourceRoots,
-            storeDirectory = jqassistantStoreDirectory,
-            reportsDirectory = jqassistantReportsDirectory,
-            dependsOnTasks = listOf(selectedCompileJava)
-        )
     }
 
     fun registerCustomVerificationTask(

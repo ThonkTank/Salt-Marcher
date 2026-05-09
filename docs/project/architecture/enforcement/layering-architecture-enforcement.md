@@ -32,20 +32,6 @@ Focused bundle entrypoint:
   documentation-coverage checks. `checkArchitecture`, `check`, and `build`
   include the same proof surface transitively, and the neighboring `Enforced
   Elsewhere` rows below stay in their owner-specific bundles.
-- `./gradlew checkLayeringIndirectionEnforcement --console=plain` runs the
-  focused jQAssistant blockers for substantive tactical roles whose
-  indirection shape the older single-class PMD source-pattern checks can miss
-  when the relay is spread across owner-local helper methods or extends into a
-  deeper same-scope relay-only chain. `checkArchitecture`, `check`, `build`,
-  and staged `production-handoff` now consume this blocker transitively.
-- `./gradlew checkLayeringIndirectionRelayCandidates --console=plain` runs the
-  report-only jQAssistant thin relay-stack diagnostic from the same focused
-  Layering Indirection owner for review of deeper thin-orchestration relay
-  chains.
-- `./gradlew checkLayeringSprawlCandidates --console=plain` runs the
-  report-only jQAssistant role-hub, cross-feature, and public-boundary
-  breadth diagnostics for broader architecture sprawl that sits beyond the
-  sharper relay-only blocker surface.
 
 ## Invariant Catalog
 
@@ -65,15 +51,15 @@ Focused bundle entrypoint:
 | `layering-no-extra-active-layer-roots` | Enforced | every active Java source root or non-empty `src/` direct child | `layering-architecture-enforcement` bundle build-harness `LayeringArchitectureTopologyRules` | `./gradlew checkLayeringArchitectureEnforcement` and `./gradlew checkArchitecture` | The repository does not grow extra active layer roots or extra `src/` children beside the documented layer topology. |
 | `layering-no-undocumented-cross-layer-public-extension-points` | Review-Owned | every new public type or registration seam that would let one layer reach another | none | none | The system does not grow new public backend, shell, or registration extension points outside the documented cross-layer boundary set. Existing shell, view, domain, and data blockers constrain parts of that surface, but not the full repository-wide extension-point claim as one hard gate. |
 | `layering-no-passive-carrier-shape-mirror-inside-feature-root` | Enforced | every passive `record` or `enum` carrier under one active `src/` feature root | `layering-architecture-enforcement` bundle build-harness `LayeringPassiveCarrierMirrorRules` | `./gradlew checkLayeringArchitectureEnforcement` and `./gradlew checkArchitecture` | One active feature root does not keep multiple passive `record`/`enum` carriers with the same recursive shape under different names or buckets. |
-| `layering-no-direct-view-data-dependency` | Enforced Elsewhere | every dependency from `src/view/**` into `src/data/**` | Error Prone `PassiveViewDependencyBoundaries`, `ViewContributionModelDependencyBoundary`, `ViewContentModelDependencyBoundary`, `ViewIntentHandlerDependencyBoundary`, and `ViewBinderDependencyBoundary` | `./gradlew compileJava`, `./gradlew checkArchitecture`, and `./gradlew checkViewEnforcement` | View-layer code does not bypass the domain core by depending directly on data-layer implementation code. |
+| `layering-no-direct-view-data-dependency` | Enforced Elsewhere | every dependency from `src/view/**` into `src/data/**` | Error Prone `PassiveViewInteractionBoundary`, `ViewContributionModelDependencyBoundary`, `ViewContentModelDependencyBoundary`, `ViewIntentHandlerDependencyBoundary`, and `ViewBinderDependencyBoundary` | `./gradlew compileJava`, `./gradlew checkArchitecture`, and `./gradlew checkViewEnforcement` | View-layer code does not bypass the domain core by depending directly on data-layer implementation code. |
 | `layering-no-direct-view-domain-connection-outside-documented-seams` | Enforced Elsewhere | every direct connection between `src/view/**` and `src/domain/**` | view `view-binder-dependency-boundary`, `view-binder-domain-public-boundary-surface`, `view-binder-no-legacy-intenthandler-write-sink-injection`, `view-intenthandler-root-applicationservice-boundary-surface`, `view-intenthandler-no-non-applicationservice-domain-dependencies`, `view-viewinputevent-view-origin-and-intenthandler-target-only`, `view-contributionmodel-read-side-only-direct-boundary`, and `view-contentmodel-read-side-only-direct-boundary` | see neighboring owner docs and their listed entrypoints | The allowed view/domain seam is owned only by the [View Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/view-layer.md:1) and the neighboring view-role enforcement documents. This row records the current blocker surface for that contract. |
 | `layering-no-non-applicationservice-public-backend-boundary-below-view` | Review-Owned | every public callable backend surface below `src/view/**` | none | none | Below the view layer, the only intended public backend boundary is a root domain `*ApplicationService`; current domain and data blockers constrain parts of that expectation, but they do not prove the absence of every alternate public backend entrypoint as one hard gate. |
 | `layering-no-outer-format-object-leak-inward` | Review-Owned | every boundary translation from shell, view, data, or source-facing code into inner layers | none | none | JavaFX scene-graph types, shell host classes, SQL rows, gateway records, and similar outer-format carriers do not leak inward across layer boundaries. |
-| `layering-no-domain-service-pass-through-wrapper` | Enforced | every legacy domain `service/**` tactical owner under `src/domain/**` | `layering-indirection` bundle jQAssistant `saltmarcher:DomainServiceRelayOnlyRole` and `saltmarcher:DomainServiceRelayChainDepth` | `./gradlew checkLayeringIndirectionEnforcement` and `./gradlew checkArchitecture` | Domain `service/**` tactical owners do not survive only as single-target relay wrappers or deeper same-scope relay-only chains. |
-| `layering-no-domain-policy-pass-through-wrapper` | Enforced | every legacy domain `policy/**` tactical owner under `src/domain/**` | `layering-indirection` bundle jQAssistant `saltmarcher:DomainPolicyRelayOnlyRole` and `saltmarcher:DomainPolicyRelayChainDepth` | `./gradlew checkLayeringIndirectionEnforcement` and `./gradlew checkArchitecture` | Domain `policy/**` tactical owners do not survive only as single-target relay wrappers or deeper same-scope relay-only chains. |
-| `layering-no-domain-factory-pass-through-wrapper` | Enforced | every legacy domain `factory/**` tactical owner under `src/domain/**` | `layering-indirection` bundle jQAssistant `saltmarcher:DomainFactoryRelayOnlyRole` and `saltmarcher:DomainFactoryRelayChainDepth` | `./gradlew checkLayeringIndirectionEnforcement` and `./gradlew checkArchitecture` | Domain `factory/**` tactical owners do not survive only as single-target relay wrappers or deeper same-scope relay-only chains. |
-| `layering-no-domain-port-pass-through-wrapper` | Enforced | every domain `port/**` listener owner under `src/domain/**` whose concrete methods collapse into one foreign owner | `layering-indirection` bundle jQAssistant `saltmarcher:DomainPortRelayOnlyRole` and `saltmarcher:DomainPortRelayChainDepth` | `./gradlew checkLayeringIndirectionEnforcement` and `./gradlew checkArchitecture` | Domain `port/**` listener owners do not survive only as single-target relay wrappers or deeper same-scope relay-only chains. |
-| `layering-no-domain-repository-pass-through-wrapper` | Enforced | every domain `*Repository` owner under `src/domain/**`, including current repository owners that still live under `port/**` | `layering-indirection` bundle jQAssistant `saltmarcher:DomainRepositoryRelayOnlyRole` and `saltmarcher:DomainRepositoryRelayChainDepth` | `./gradlew checkLayeringIndirectionEnforcement` and `./gradlew checkArchitecture` | Domain repository owners do not survive only as single-target relay wrappers or deeper same-scope relay-only chains, even while topology migration still leaves some of them under `port/**`. |
+| `layering-no-domain-service-pass-through-wrapper` | Review-Owned | every legacy domain `service/**` tactical owner under `src/domain/**` | none | none | Domain `service/**` tactical owners do not survive only as single-target relay wrappers or deeper same-scope relay-only chains. |
+| `layering-no-domain-policy-pass-through-wrapper` | Review-Owned | every legacy domain `policy/**` tactical owner under `src/domain/**` | none | none | Domain `policy/**` tactical owners do not survive only as single-target relay wrappers or deeper same-scope relay-only chains. |
+| `layering-no-domain-factory-pass-through-wrapper` | Review-Owned | every legacy domain `factory/**` tactical owner under `src/domain/**` | none | none | Domain `factory/**` tactical owners do not survive only as single-target relay wrappers or deeper same-scope relay-only chains. |
+| `layering-no-domain-port-pass-through-wrapper` | Review-Owned | every domain `port/**` listener owner under `src/domain/**` whose concrete methods collapse into one foreign owner | none | none | Domain `port/**` listener owners do not survive only as single-target relay wrappers or deeper same-scope relay-only chains. |
+| `layering-no-domain-repository-pass-through-wrapper` | Review-Owned | every domain `*Repository` owner under `src/domain/**`, including current repository owners that still live under `port/**` | none | none | Domain repository owners do not survive only as single-target relay wrappers or deeper same-scope relay-only chains, even while topology migration still leaves some of them under `port/**`. |
 
 ### Communication Contract
 
@@ -96,13 +82,10 @@ Focused bundle entrypoint:
 | `layering-cross-feature-sprawl-candidate` | Candidate | every compiled `src/domain/<context>/**` or `src/data/<feature>/**` production type that contributes to broad acyclic foreign-feature coupling | none | none | Domain and data feature scopes that couple too broadly across foreign feature scopes are reported even when the graph has not yet become cyclic. |
 | `layering-public-boundary-breadth-candidate` | Candidate | every public root `*ApplicationService` and public data `*ServiceContribution` type | none | none | Broad public backend or runtime registration roots with too many collaborators or too wide a callable surface are reported for review before they become hard-to-split coordination shells. |
 
-`./gradlew checkLayeringIndirectionRelayCandidates --console=plain` runs the
-report-only jQAssistant diagnostic `saltmarcher:ThinRelayStackCandidate`.
-`./gradlew checkLayeringSprawlCandidates --console=plain` complements that
-relay-focused diagnostic with broader role-aware graph candidates; it does not
-replace existing cycle blockers, PMD smell rules such as
-`LawOfDemeter`, `GodClass`, and `CouplingBetweenObjects`, or CKJM hotspot
-reporting.
+The former relay-only and sprawl-specific jQAssistant diagnostics are retired
+from the public verification surface. Review of relay-chain thinness and
+sprawl breadth now stays outside the blocker path until those concerns gain a
+new owner on the remaining Error Prone, ArchUnit, or build-harness stack.
 
 ## References
 
