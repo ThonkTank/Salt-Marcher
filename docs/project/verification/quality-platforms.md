@@ -43,26 +43,26 @@ For unused-code hygiene, the active mechanical scope is split by proof route:
 `compileJava` owns `UnusedLabel`, `UnusedMethod`, `UnusedNestedClass`, and
 `UnusedVariable` for local declarations, PMD retains `UnusedAssignment` beside
 the broader smell policy, and `checkNoDeadCode` owns whole-program
-reachability for compiled concrete production files, types, constructors,
+reachability for compiled production declarations: files, top-level types,
+secondary top-level types, nested and named local types, constructors,
 methods, and fields. The combined mechanical surface therefore covers
 removable local declarations, local variables, labels,
 assignment-smell detection, and structural whole-program dead-code
-reachability for compiled production declarations. Public abstract or
-interface declarations that remain intentionally exposed without a concrete
-in-repo runtime path stay review-owned until a stronger explicit scope
-decision is made.
+reachability for compiled production declarations, including public,
+abstract, and interface declarations.
 
 Unused-code false positives are handled by narrow, explicit structural roots
 or narrow local keep roots instead of weakening the blocking gates. Generated
 code is excluded through the shared Error Prone configuration, while
 whole-program reachability derives its live roots mechanically from the
-configured JavaFX launcher and preloader classes, exact view contribution root
-classes matching bootstrap discovery shape, exact data service contribution
-root classes matching service discovery shape, merged FXML controller
-resources, `META-INF/services` providers, and the explicit fallback rules
-under `tools/quality/config/deadcode/keep-rules.pro`. Any future framework- or
-reflection-driven exception must stay local, documented, and attributable
-rather than becoming a blanket disablement of the unused checks.
+configured JavaFX launcher and preloader classes, exact concrete shell
+contribution roots matching `ShellViewDiscovery`, exact concrete data service
+contribution roots matching `ServiceContributionDiscovery`, merged FXML
+controller resources, `META-INF/services` providers, and the explicit fallback
+rules under `tools/quality/config/deadcode/keep-rules.pro`. Any future
+framework- or reflection-driven exception must stay local, documented, and
+attributable through explicit keep rules rather than becoming a blanket
+disablement of the unused checks.
 
 Architecture enforcement enters local quality through the same Gradle
 aggregates, but the owner model now lives in the matching layer and role
@@ -133,9 +133,9 @@ Operationally, architecture checks enter local quality through:
   styling-layer programmatic-style-value ban, passive-`View` direct-render
   styling placement, the focused Domain Layer infrastructure-dependency and
   named-module-to-`published/**` dependency rules, the focused `Domain
-  ApplicationService` API-shape and signature-purity rules, the focused
+  ApplicationService` API-shape, role-boundary, and signature-purity rules, the focused
   Data Model source-shape/signature-boundary rules, the focused
-  `Domain Published` carrier-shape and signature-purity rules, the focused
+  `Domain Published` carrier-shape, ownership-boundary, and signature-purity rules, the focused
   `Domain Port` role-shape/boundary rules, the focused `Domain Factory`
   role-shape/statelessness rules, the focused `Domain Value` role-shape/state
   rule, the focused `Domain Service` role-shape/statelessness rules, the
@@ -150,10 +150,11 @@ Operationally, architecture checks enter local quality through:
   for that owner document through one direct root entrypoint
 - `checkDomainApplicationServiceEnforcement`
   runs the focused Domain ApplicationService bundle by aggregating the
-  dedicated compiler-integrated API-shape and public-boundary-signature
-  checks, the dedicated root-topology check, the dedicated root source-pattern
-  PMD rule, the custom ApplicationService documentation rule, and the generic
-  documentation-coverage spec through one direct root entrypoint
+  dedicated compiler-integrated API-shape, role-boundary, and
+  public-boundary-signature checks, the dedicated root-topology check, the
+  dedicated root source-pattern PMD rule, the custom ApplicationService
+  documentation rule, and the generic documentation-coverage spec through one
+  direct root entrypoint
 - `checkDataServiceContributionEnforcement`
   runs the focused Data ServiceContribution bundle by aggregating the
   dedicated compiler-integrated construction-purity, shell-seam, and direct
@@ -162,33 +163,39 @@ Operationally, architecture checks enter local quality through:
   one direct root entrypoint
 - `checkDomainPortEnforcement`
   runs the focused Domain Port bundle by aggregating the dedicated
-  Port topology check and the generic documentation-coverage spec through
-  one direct root entrypoint
+  compiler-integrated inbound-listener boundary check, the dedicated Port
+  topology check, and the generic documentation-coverage spec through one
+  direct root entrypoint
 - `checkDomainContextEnforcement`
   runs the focused Domain Context bundle by aggregating the dedicated
   `DOMAIN.md` contract, context-map, and the generic documentation-coverage
   spec through one direct root entrypoint
 - `checkDomainPublishedEnforcement`
   runs the focused Domain Published bundle by aggregating the dedicated
-  compiler-integrated `published/**` carrier-shape/signature-purity checks,
-  the dedicated Published topology check, and the generic
-  documentation-coverage spec through one direct root entrypoint
+  compiler-integrated `published/**` carrier-shape,
+  ownership-boundary, and signature-purity checks, the dedicated Published
+  topology check, and the generic documentation-coverage spec through one
+  direct root entrypoint
 - `checkDomainRepositoryEnforcement`
   runs the focused Domain Repository bundle by aggregating the dedicated
-  repository topology check and the generic documentation-coverage spec
-  through one direct root entrypoint
+  compiler-integrated outbound-boundary check, the dedicated repository
+  topology check, and the generic documentation-coverage spec through one
+  direct root entrypoint
 - `checkDomainModelEnforcement`
-  runs the focused Domain Model bundle by aggregating the dedicated model-tree
-  topology check and the generic documentation-coverage spec through one
-  direct root entrypoint
+  runs the focused Domain Model bundle by aggregating the dedicated
+  compiler-integrated model-boundary check, the dedicated model-tree topology
+  check, and the generic documentation-coverage spec through one direct root
+  entrypoint
 - `checkDomainHelperEnforcement`
-  runs the focused Domain Helper bundle by aggregating the dedicated helper
-  topology check and the generic documentation-coverage spec through one
-  direct root entrypoint
+  runs the focused Domain Helper bundle by aggregating the dedicated
+  compiler-integrated helper-boundary check, the dedicated helper topology
+  check, and the generic documentation-coverage spec through one direct root
+  entrypoint
 - `checkDomainConstantsEnforcement`
   runs the focused Domain Constants bundle by aggregating the dedicated
-  constants topology check and the generic documentation-coverage spec
-  through one direct root entrypoint
+  compiler-integrated constants-boundary check, the dedicated constants
+  topology check, and the generic documentation-coverage spec through one
+  direct root entrypoint
 - `checkStylingLayerEnforcement`
   runs the focused styling-layer bundle by aggregating centralized stylesheet
   ownership, centralized stylesheet placement, style-class selector
@@ -216,8 +223,8 @@ Operationally, architecture checks enter local quality through:
   topology check through one direct root entrypoint
 - `checkDomainUseCaseEnforcement`
   runs the focused Domain UseCase bundle by aggregating the dedicated
-  compiler-integrated same-context `published/**` dependency check, the
-  dedicated UseCase PMD helper-prefix rule, the dedicated UseCase
+  compiler-integrated same-context `published/**` dependency and role-boundary
+  checks, the dedicated UseCase PMD helper-prefix rule, the dedicated UseCase
   build-harness topology check, and the generic documentation-coverage spec
   through one direct root entrypoint
 - `checkDataModelEnforcement`
@@ -253,12 +260,41 @@ Operationally, architecture checks enter local quality through:
   focused `AppBootstrap`, Domain Layer, `Shell Layer`, `View Layer`, and the
   other focused enforcement bundles that still keep dedicated ArchUnit suites
 - `checkViewEnforcement`
-  runs the merged View enforcement bundle by aggregating the compiler-integrated
-  passive-`View`, `Contribution`, `Binder`, `ContributionModel`,
-  `ContentModel`, `ViewInputEvent`, and `IntentHandler` checks, the focused
-  FXML resource boundary check, the focused `Contribution` PMD entrypoint
-  rule, and the transitive closed-world `checkViewLayerEnforcement` topology
-  proof through one direct root entrypoint
+  runs the focused passive-`View` enforcement bundle by aggregating the
+  compiler-integrated passive-`View` checks, the focused FXML resource
+  boundary check, and the transitive closed-world
+  `checkViewLayerEnforcement` topology proof through one direct root
+  entrypoint
+- `checkViewInputEventEnforcement`
+  runs the focused `ViewInputEvent` enforcement bundle by aggregating the
+  compiler-integrated carrier-shape and raw-snapshot checks plus the
+  transitive closed-world `checkViewLayerEnforcement` topology proof through
+  one direct root entrypoint
+- `checkViewContributionEnforcement`
+  runs the focused `Contribution` enforcement bundle by aggregating the
+  compiler-integrated discovery-entrypoint-shape and shell/dependency checks
+  plus the transitive closed-world `checkViewLayerEnforcement` topology proof
+  through one direct root entrypoint
+- `checkViewBinderEnforcement`
+  runs the focused `Binder` enforcement bundle by aggregating the
+  compiler-integrated binder dependency and wiring checks plus the transitive
+  closed-world `checkViewLayerEnforcement` topology proof through one direct
+  root entrypoint
+- `checkViewContributionModelEnforcement`
+  runs the focused `ContributionModel` enforcement bundle by aggregating the
+  compiler-integrated projection-model dependency and protocol checks plus the
+  transitive closed-world `checkViewLayerEnforcement` topology proof through
+  one direct root entrypoint
+- `checkViewContentModelEnforcement`
+  runs the focused `ContentModel` enforcement bundle by aggregating the
+  compiler-integrated reusable projection-model dependency and translation
+  checks plus the transitive closed-world `checkViewLayerEnforcement`
+  topology proof through one direct root entrypoint
+- `checkViewIntentHandlerEnforcement`
+  runs the focused `IntentHandler` enforcement bundle by aggregating the
+  compiler-integrated handler dependency and `consume(...)` checks plus the
+  transitive closed-world `checkViewLayerEnforcement` topology proof through
+  one direct root entrypoint
 - `checkViewLayerEnforcement`
   runs the focused `View Layer` enforcement bundle through the dedicated
   build-harness closed-world topology proof for allowed view directories,
@@ -298,7 +334,9 @@ Operationally, architecture checks enter local quality through:
   Data Model, Data Repository, Data Query, Data Mapper, Data Persistencecore,
   `Domain Port`, `Domain Repository`, `Domain Model`, `Domain Helper`,
   `Domain Constants`,
-  merged `View`, `View Layer`, and `ShellRuntimeContext` bundles,
+  focused `View`, `ViewInputEvent`, `View Contribution`, `View Binder`,
+  `View ContributionModel`, `View ContentModel`, `View IntentHandler`,
+  `View Layer`, and `ShellRuntimeContext` bundles,
   ArchUnit, PMD architecture rules, and the
   non-documentation build-harness path
 - `check`
@@ -325,6 +363,12 @@ Operationally, architecture checks enter local quality through:
   `checkLayeringIndirectionEnforcement`,
   `checkDomainUseCaseEnforcement`,
   `checkViewEnforcement`,
+  `checkViewInputEventEnforcement`,
+  `checkViewContributionEnforcement`,
+  `checkViewBinderEnforcement`,
+  `checkViewContributionModelEnforcement`,
+  `checkViewContentModelEnforcement`,
+  `checkViewIntentHandlerEnforcement`,
   `checkViewLayerEnforcement`,
   `checkShellRuntimeContextEnforcement`
   dependencies. The dedicated

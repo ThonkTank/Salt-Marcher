@@ -3,6 +3,7 @@ package saltmarcher.buildlogic.tasks.hygiene
 import java.io.BufferedInputStream
 import java.io.DataInputStream
 import java.io.File
+import java.net.URLClassLoader
 import java.nio.file.Files
 import java.nio.file.Path
 import javax.inject.Inject
@@ -17,9 +18,9 @@ import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.CacheableTask
 import org.gradle.api.tasks.Classpath
+import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputDirectory
 import org.gradle.api.tasks.InputFiles
-import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.OutputFile
@@ -116,8 +117,10 @@ abstract class CheckNoDeadCodeTask @Inject constructor(
         val resourceRootDirs = resourceRoots.files.filter(File::isDirectory).sortedBy(File::invariantPath)
         val fxmlRoots = loadFxmlRoots(resourceRootDirs)
         val serviceLoaderRoots = loadServiceLoaderRoots(resourceRootDirs)
-        val shellContributionRoots = loadShellContributionRoots(classEntries)
-        val serviceContributionRoots = loadServiceContributionRoots(classEntries)
+        val (shellContributionRoots, serviceContributionRoots) = inspectContributionTypes { inspector ->
+            loadShellContributionRoots(classEntries, inspector) to
+                    loadServiceContributionRoots(classEntries, inspector)
+        }
         val explicitKeepFiles = keepRulesFiles.files.filter(File::isFile).sortedBy(File::invariantPath)
         val lines = buildList {
             add("# Generated structural dead-code roots.")
@@ -125,28 +128,28 @@ abstract class CheckNoDeadCodeTask @Inject constructor(
             add("    public <init>();")
             add("    public static void main(java.lang.String[]);")
             add("    public void init();")
-            add("    public void start(...);")
+            add("    public void start(javafx.stage.Stage);")
             add("    public void stop();")
             add("}")
             add("-keep class ${preloaderClassName.get()} {")
             add("    public <init>();")
             add("    public void init();")
-            add("    public void start(...);")
+            add("    public void start(javafx.stage.Stage);")
             add("    public void stop();")
-            add("    public void handleApplicationNotification(...);")
-            add("    public void handleStateChangeNotification(...);")
+            add("    public void handleApplicationNotification(javafx.application.Preloader\$PreloaderNotification);")
+            add("    public void handleStateChangeNotification(javafx.application.Preloader\$StateChangeNotification);")
             add("}")
             shellContributionRoots.forEach { binaryName ->
                 add("-keep class $binaryName {")
                 add("    public <init>();")
-                add("    *** registrationSpec(...);")
-                add("    *** bind(...);")
+                add("    public shell.api.ShellContributionSpec registrationSpec();")
+                add("    public shell.api.ShellBinding bind(shell.api.ShellRuntimeContext);")
                 add("}")
             }
             serviceContributionRoots.forEach { binaryName ->
                 add("-keep class $binaryName {")
                 add("    public <init>();")
-                add("    *** register(...);")
+                add("    public void register(shell.api.ServiceRegistry\$Builder);")
                 add("}")
             }
             fxmlRoots.forEach { root ->
@@ -233,7 +236,12 @@ abstract class CheckNoDeadCodeTask @Inject constructor(
         lines.forEach { line ->
             if (':' !in line) {
                 val entry = classesByBinaryName[line] ?: return@forEach
-                deadTypes += DeadType(entry.sourceRelativePath, entry.binaryName)
+                deadTypes += DeadType(
+                    sourceRelativePath = entry.sourceRelativePath,
+                    name = entry.binaryName,
+                    declarationKind = entry.declarationKind,
+                    nestingKind = entry.nestingKind
+                )
                 return@forEach
             }
             val owner = line.substringBefore(':').trim()
@@ -285,26 +293,26 @@ abstract class CheckNoDeadCodeTask @Inject constructor(
             .mapNotNull { classFile ->
                 val relativePath = rootPath.relativize(classFile.toPath()).invariantPath()
                 val internalName = relativePath.removeSuffix(".class")
-                val simpleName = internalName.substringAfterLast('$')
-                val sourceRelativePath = loadSourceRelativePath(classFile.toPath(), internalName)
-                when {
-                    simpleName.isBlank() -> null
-                    simpleName == "package-info" -> null
-                    simpleName == "module-info" -> null
-                    simpleName.firstOrNull()?.isDigit() == true -> null
-                    "$$" in simpleName -> null
-                    else -> {
-                        val binaryName = internalName.replace('/', '.')
-                        val topLevelBinaryName = internalName.substringBefore('$').replace('/', '.')
-                        ClassEntry(
-                            binaryName = binaryName,
-                            topLevelBinaryName = topLevelBinaryName,
-                            sourceRelativePath = sourceRelativePath
-                        )
-                    }
-                }
+                loadClassEntry(classFile.toPath(), internalName)
             }
             .toList()
+    }
+
+    private fun loadClassEntry(classFile: Path, internalName: String): ClassEntry? {
+        val metadata = loadClassMetadata(classFile, internalName)
+        if (!metadata.shouldReport) {
+            return null
+        }
+        val binaryName = internalName.replace('/', '.')
+        val topLevelBinaryName = internalName.substringBefore('$').replace('/', '.')
+        return ClassEntry(
+            binaryName = binaryName,
+            topLevelBinaryName = topLevelBinaryName,
+            packageName = binaryName.substringBeforeLast('.', missingDelimiterValue = ""),
+            sourceRelativePath = loadSourceRelativePath(internalName, metadata.sourceFileName),
+            declarationKind = metadata.declarationKind,
+            nestingKind = metadata.nestingKind
+        )
     }
 
     private fun loadFxmlRoots(resourceRoots: List<File>): List<FxmlRoot> {
@@ -389,62 +397,94 @@ abstract class CheckNoDeadCodeTask @Inject constructor(
             .toSortedSet()
     }
 
-    private fun loadShellContributionRoots(classEntries: List<ClassEntry>): List<String> {
+    private fun loadShellContributionRoots(
+        classEntries: List<ClassEntry>,
+        inspector: ContributionTypeInspector
+    ): List<String> {
         return classEntries
             .asSequence()
             .filter(ClassEntry::isTopLevelClass)
+            .filter { entry -> isShellContributionRoot(entry, inspector) }
             .map(ClassEntry::binaryName)
-            .filter(::isShellContributionRoot)
             .distinct()
             .sorted()
             .toList()
     }
 
-    private fun loadServiceContributionRoots(classEntries: List<ClassEntry>): List<String> {
+    private fun loadServiceContributionRoots(
+        classEntries: List<ClassEntry>,
+        inspector: ContributionTypeInspector
+    ): List<String> {
         return classEntries
             .asSequence()
             .filter(ClassEntry::isTopLevelClass)
-            .map(ClassEntry::binaryName)
-            .filter(::isServiceContributionRoot)
+            .mapNotNull { entry ->
+                rootFeatureSegment(entry, "src.data")?.let { featureName -> featureName to entry }
+            }
+            .groupBy({ it.first }, { it.second })
+            .values
+            .mapNotNull { rootEntries ->
+                rootEntries.singleOrNull()
+                    ?.takeIf { entry -> isServiceContributionRoot(entry, inspector) }
+                    ?.binaryName
+            }
             .distinct()
             .sorted()
-            .toList()
     }
 
-    private fun isShellContributionRoot(binaryName: String): Boolean {
-        return isRootOwnedFeatureClass(binaryName, "src.view.leftbartabs", "Contribution")
-                || isRootOwnedFeatureClass(binaryName, "src.view.statetabs", "Contribution")
-                || isRootOwnedFeatureClass(binaryName, "src.view.dropdowns", "Contribution")
+    private fun isShellContributionRoot(entry: ClassEntry, inspector: ContributionTypeInspector): Boolean {
+        return isContributionRoot(entry, inspector, "src.view.leftbartabs", "Contribution", ContributionKind.SHELL)
+                || isContributionRoot(entry, inspector, "src.view.statetabs", "Contribution", ContributionKind.SHELL)
+                || isContributionRoot(entry, inspector, "src.view.dropdowns", "Contribution", ContributionKind.SHELL)
     }
 
-    private fun isServiceContributionRoot(binaryName: String): Boolean =
-        isRootOwnedFeatureClass(binaryName, "src.data", "ServiceContribution")
+    private fun isServiceContributionRoot(entry: ClassEntry, inspector: ContributionTypeInspector): Boolean =
+        isContributionRoot(entry, inspector, "src.data", "ServiceContribution", ContributionKind.SERVICE)
 
-    private fun isRootOwnedFeatureClass(binaryName: String, rootPackage: String, classSuffix: String): Boolean {
+    private fun isContributionRoot(
+        entry: ClassEntry,
+        inspector: ContributionTypeInspector,
+        rootPackage: String,
+        classSuffix: String,
+        contributionKind: ContributionKind
+    ): Boolean {
+        val featureName = rootFeatureSegment(entry, rootPackage) ?: return false
+        if (featureName.isBlank()) {
+            return false
+        }
+        if (!entry.binaryName.substringAfterLast('.').endsWith(classSuffix)) {
+            return false
+        }
+        return when (contributionKind) {
+            ContributionKind.SHELL -> inspector.isConcreteShellContribution(entry.binaryName)
+            ContributionKind.SERVICE -> inspector.isConcreteServiceContribution(entry.binaryName)
+        }
+    }
+
+    private fun rootFeatureSegment(entry: ClassEntry, rootPackage: String): String? {
         val prefix = "$rootPackage."
-        if (!binaryName.startsWith(prefix)) {
-            return false
+        if (!entry.packageName.startsWith(prefix)) {
+            return null
         }
-        val remainder = binaryName.removePrefix(prefix)
-        val firstDot = remainder.indexOf('.')
-        if (firstDot <= 0 || firstDot != remainder.lastIndexOf('.')) {
-            return false
+        val remainder = entry.packageName.removePrefix(prefix)
+        if (remainder.isBlank() || '.' in remainder) {
+            return null
         }
-        return remainder.substringAfterLast('.').endsWith(classSuffix)
+        return remainder
     }
 
-    private fun loadSourceRelativePath(classFile: Path, internalName: String): String {
+    private fun loadSourceRelativePath(internalName: String, sourceFileName: String?): String {
         val packagePath = internalName.substringBeforeLast('/', missingDelimiterValue = "")
-        val sourceFileName = loadSourceFileName(classFile)
+        val effectiveSourceFileName = sourceFileName
             ?: "${internalName.substringBefore('$').substringAfterLast('/')}.java"
         return if (packagePath.isBlank()) {
-            sourceFileName
+            effectiveSourceFileName
         } else {
-            "$packagePath/$sourceFileName"
+            "$packagePath/$effectiveSourceFileName"
         }
     }
 
-    private fun loadSourceFileName(classFile: Path): String? {
+    private fun loadClassMetadata(classFile: Path, internalName: String): ClassMetadata {
         return try {
             DataInputStream(BufferedInputStream(Files.newInputStream(classFile))).use { input ->
                 val magic = input.readInt()
@@ -453,35 +493,139 @@ abstract class CheckNoDeadCodeTask @Inject constructor(
                 }
                 input.readUnsignedShort()
                 input.readUnsignedShort()
-                val utf8Entries = readUtf8ConstantPool(input)
-                input.readUnsignedShort()
-                input.readUnsignedShort()
+                val constantPool = readConstantPool(input)
+                val accessFlags = input.readUnsignedShort()
+                val thisClassIndex = input.readUnsignedShort()
                 input.readUnsignedShort()
                 repeat(input.readUnsignedShort()) {
-                    input.skipNBytes(2)
+                    input.readUnsignedShort()
                 }
                 skipMembers(input)
                 skipMembers(input)
+
+                val thisInternalName = constantPool.className(thisClassIndex)
+                    ?: throw IllegalStateException("Missing class name for ${classFile.invariantPath()}.")
+                var sourceFileName: String? = null
+                var innerSimpleName: String? = null
+                var hasEnclosingMethod = false
+                var hasRecordAttribute = false
+
                 repeat(input.readUnsignedShort()) {
-                    val attributeNameIndex = input.readUnsignedShort()
+                    val attributeName = constantPool.utf8(input.readUnsignedShort())
                     val attributeLength = input.readInt().toLong() and 0xffffffffL
-                    val attributeName = utf8Entries.getOrNull(attributeNameIndex)
-                    if (attributeName == "SourceFile" && attributeLength == 2L) {
-                        val sourceFileIndex = input.readUnsignedShort()
-                        return utf8Entries.getOrNull(sourceFileIndex)
+                    when (attributeName) {
+                        "SourceFile" -> {
+                            if (attributeLength == 2L) {
+                                sourceFileName = constantPool.utf8(input.readUnsignedShort())
+                            } else {
+                                input.skipNBytes(attributeLength)
+                            }
+                        }
+                        "InnerClasses" -> {
+                            var bytesRemaining = attributeLength
+                            val entryCount = input.readUnsignedShort()
+                            bytesRemaining -= 2
+                            repeat(entryCount) {
+                                val innerClassIndex = input.readUnsignedShort()
+                                input.readUnsignedShort()
+                                val innerNameIndex = input.readUnsignedShort()
+                                input.readUnsignedShort()
+                                bytesRemaining -= 8
+                                if (constantPool.className(innerClassIndex) == thisInternalName) {
+                                    innerSimpleName = constantPool.utf8OrNull(innerNameIndex)
+                                }
+                            }
+                            if (bytesRemaining > 0L) {
+                                input.skipNBytes(bytesRemaining)
+                            }
+                        }
+                        "EnclosingMethod" -> {
+                            hasEnclosingMethod = true
+                            input.skipNBytes(attributeLength)
+                        }
+                        "Record" -> {
+                            hasRecordAttribute = true
+                            input.skipNBytes(attributeLength)
+                        }
+                        else -> input.skipNBytes(attributeLength)
                     }
-                    input.skipNBytes(attributeLength)
                 }
-                null
+
+                ClassMetadata(
+                    sourceFileName = sourceFileName,
+                    declarationKind = declarationKind(accessFlags, hasRecordAttribute),
+                    nestingKind = nestingKind(internalName, hasEnclosingMethod),
+                    shouldReport = shouldReportClass(
+                        internalName = internalName,
+                        accessFlags = accessFlags,
+                        hasEnclosingMethod = hasEnclosingMethod,
+                        innerSimpleName = innerSimpleName
+                    )
+                )
             }
         } catch (exception: Exception) {
-            throw IllegalStateException("Could not read source mapping from ${classFile.invariantPath()}.", exception)
+            throw IllegalStateException("Could not read class metadata from ${classFile.invariantPath()}.", exception)
         }
     }
 
-    private fun readUtf8ConstantPool(input: DataInputStream): Array<String?> {
+    private fun shouldReportClass(
+        internalName: String,
+        accessFlags: Int,
+        hasEnclosingMethod: Boolean,
+        innerSimpleName: String?
+    ): Boolean {
+        val topLevelSimpleName = internalName.substringBefore('$').substringAfterLast('/')
+        if (topLevelSimpleName.isBlank() || topLevelSimpleName == "package-info" || topLevelSimpleName == "module-info") {
+            return false
+        }
+        if ("$$" in internalName) {
+            return false
+        }
+        if (accessFlags and ACC_SYNTHETIC != 0) {
+            return false
+        }
+        if (hasEnclosingMethod && innerSimpleName == null) {
+            return false
+        }
+        return true
+    }
+
+    private fun declarationKind(accessFlags: Int, hasRecordAttribute: Boolean): DeclarationKind {
+        return when {
+            accessFlags and ACC_ANNOTATION != 0 -> DeclarationKind.ANNOTATION
+            accessFlags and ACC_INTERFACE != 0 -> DeclarationKind.INTERFACE
+            accessFlags and ACC_ENUM != 0 -> DeclarationKind.ENUM
+            hasRecordAttribute -> DeclarationKind.RECORD
+            accessFlags and ACC_ABSTRACT != 0 -> DeclarationKind.ABSTRACT_CLASS
+            else -> DeclarationKind.CLASS
+        }
+    }
+
+    private fun nestingKind(internalName: String, hasEnclosingMethod: Boolean): NestingKind {
+        return when {
+            '$' !in internalName -> NestingKind.TOP_LEVEL
+            hasEnclosingMethod -> NestingKind.LOCAL
+            else -> NestingKind.NESTED
+        }
+    }
+
+    private fun <T> inspectContributionTypes(block: (ContributionTypeInspector) -> T): T {
+        val urls = buildList {
+            add(compiledClassesDirectory.get().asFile.toURI().toURL())
+            runtimeClasspath.files
+                .filter(File::exists)
+                .sortedBy(File::invariantPath)
+                .forEach { file -> add(file.toURI().toURL()) }
+        }
+        URLClassLoader(urls.toTypedArray(), ClassLoader.getPlatformClassLoader()).use { classLoader ->
+            return block(ContributionTypeInspector(classLoader))
+        }
+    }
+
+    private fun readConstantPool(input: DataInputStream): ConstantPool {
         val constantPoolCount = input.readUnsignedShort()
         val utf8Entries = arrayOfNulls<String>(constantPoolCount)
+        val classNameIndexes = IntArray(constantPoolCount)
         var index = 1
         while (index < constantPoolCount) {
             when (val tag = input.readUnsignedByte()) {
@@ -491,14 +635,15 @@ abstract class CheckNoDeadCodeTask @Inject constructor(
                     input.skipNBytes(8)
                     index += 1
                 }
-                7, 8, 16, 19, 20 -> input.skipNBytes(2)
+                7 -> classNameIndexes[index] = input.readUnsignedShort()
+                8, 16, 19, 20 -> input.skipNBytes(2)
                 9, 10, 11, 12, 17, 18 -> input.skipNBytes(4)
                 15 -> input.skipNBytes(3)
                 else -> throw IllegalStateException("Unsupported classfile constant-pool tag $tag.")
             }
             index += 1
         }
-        return utf8Entries
+        return ConstantPool(utf8Entries, classNameIndexes)
     }
 
     private fun skipMembers(input: DataInputStream) {
@@ -526,11 +671,21 @@ abstract class CheckNoDeadCodeTask @Inject constructor(
 private data class ClassEntry(
     val binaryName: String,
     val topLevelBinaryName: String,
-    val sourceRelativePath: String
+    val packageName: String,
+    val sourceRelativePath: String,
+    val declarationKind: DeclarationKind,
+    val nestingKind: NestingKind
 ) {
     val isTopLevelClass: Boolean
         get() = binaryName == topLevelBinaryName
 }
+
+private data class ClassMetadata(
+    val sourceFileName: String?,
+    val declarationKind: DeclarationKind,
+    val nestingKind: NestingKind,
+    val shouldReport: Boolean
+)
 
 private data class FxmlRoot(
     val binaryName: String,
@@ -540,7 +695,9 @@ private data class FxmlRoot(
 
 private data class DeadType(
     val sourceRelativePath: String,
-    val name: String
+    val name: String,
+    val declarationKind: DeclarationKind,
+    val nestingKind: NestingKind
 )
 
 private data class DeadMember(
@@ -572,7 +729,9 @@ private data class DeadCodeFindings(
         appendLine("Fields: ${deadFields.size}")
         appendLine()
         appendSection("Dead Files", deadFiles)
-        appendSection("Dead Types", deadTypes.map { "${it.sourceRelativePath} :: ${it.name}" })
+        appendSection("Dead Types", deadTypes.map { deadType ->
+            "${deadType.sourceRelativePath} :: ${deadType.declarationLabel} ${deadType.name}"
+        })
         appendSection("Dead Constructors", deadConstructors.map { "${it.sourceRelativePath} :: ${it.name}" })
         appendSection("Dead Methods", deadMethods.map { "${it.sourceRelativePath} :: ${it.name}" })
         appendSection("Dead Fields", deadFields.map { "${it.sourceRelativePath} :: ${it.name}" })
@@ -588,6 +747,89 @@ private data class DeadCodeFindings(
         appendLine()
     }
 }
+
+private val DeadType.declarationLabel: String
+    get() {
+        val baseLabel = declarationKind.label
+        return when (nestingKind) {
+            NestingKind.TOP_LEVEL -> baseLabel
+            NestingKind.NESTED -> "nested $baseLabel"
+            NestingKind.LOCAL -> "local $baseLabel"
+        }
+    }
+
+private enum class DeclarationKind(val label: String) {
+    CLASS("class"),
+    ABSTRACT_CLASS("abstract class"),
+    INTERFACE("interface"),
+    ANNOTATION("annotation"),
+    ENUM("enum"),
+    RECORD("record")
+}
+
+private enum class NestingKind {
+    TOP_LEVEL,
+    NESTED,
+    LOCAL
+}
+
+private enum class ContributionKind {
+    SHELL,
+    SERVICE
+}
+
+private data class ConstantPool(
+    private val utf8Entries: Array<String?>,
+    private val classNameIndexes: IntArray
+) {
+    fun utf8(index: Int): String? = utf8Entries.getOrNull(index)
+
+    fun utf8OrNull(index: Int): String? =
+        utf8(index)?.takeIf(String::isNotBlank)
+
+    fun className(index: Int): String? {
+        if (index <= 0 || index >= classNameIndexes.size) {
+            return null
+        }
+        val nameIndex = classNameIndexes[index]
+        return if (nameIndex <= 0) {
+            null
+        } else {
+            utf8(nameIndex)
+        }
+    }
+}
+
+private class ContributionTypeInspector(
+    private val classLoader: URLClassLoader
+) {
+    fun isConcreteShellContribution(binaryName: String): Boolean =
+        isConcreteContribution(binaryName, "shell.api.ShellContribution")
+
+    fun isConcreteServiceContribution(binaryName: String): Boolean =
+        isConcreteContribution(binaryName, "shell.api.ServiceContribution")
+
+    private fun isConcreteContribution(binaryName: String, contractTypeName: String): Boolean {
+        return try {
+            val contractType = Class.forName(contractTypeName, false, classLoader)
+            val rawType = Class.forName(binaryName, false, classLoader)
+            contractType.isAssignableFrom(rawType)
+                    && !rawType.isInterface
+                    && !java.lang.reflect.Modifier.isAbstract(rawType.modifiers)
+                    && runCatching { rawType.getConstructor() }.isSuccess
+        } catch (_: ReflectiveOperationException) {
+            false
+        } catch (_: LinkageError) {
+            false
+        }
+    }
+}
+
+private const val ACC_ABSTRACT = 0x0400
+private const val ACC_INTERFACE = 0x0200
+private const val ACC_ANNOTATION = 0x2000
+private const val ACC_ENUM = 0x4000
+private const val ACC_SYNTHETIC = 0x1000
 
 private fun Path.invariantPath(): String = toString().replace(File.separatorChar, '/')
 

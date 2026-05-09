@@ -39,8 +39,7 @@ public final class AnchoredPopupView {
         this.focusTargetSupplier = focusTargetSupplier == null ? () -> null : focusTargetSupplier;
         popup.setAutoHide(true);
         popup.setHideOnEscape(true);
-        popup.getContent().setAll(contentHost);
-        contentHost.getChildren().setAll(content == null ? java.util.List.of() : java.util.List.of(content));
+        PopupFxAccess.installContent(popup, contentHost, content);
         popup.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
             if (event.getCode() == KeyCode.ESCAPE) {
                 event.consume();
@@ -96,11 +95,11 @@ public final class AnchoredPopupView {
         if (bounds == null) {
             return;
         }
-        if (safeState.placement() == AnchoredPopupContentModel.Placement.TRAILING) {
-            popup.show(anchor, bounds.getMaxX() - safeState.popupWidth(), bounds.getMaxY() + safeState.yOffset());
-        } else {
-            popup.show(anchor, bounds.getMinX(), bounds.getMaxY() + safeState.yOffset());
-        }
+        AnchoredPopupContentModel.BoundsBounds popupBounds = new AnchoredPopupContentModel.BoundsBounds(
+                bounds.getMinX(),
+                bounds.getMaxX(),
+                bounds.getMaxY());
+        popup.show(anchor, safeState.popupX(popupBounds), safeState.popupY(popupBounds));
         if (safeState.focusAfterShown() && safeState.focusRequestId() != appliedFocusRequestId) {
             appliedFocusRequestId = safeState.focusRequestId();
             Node focusTarget = focusTargetSupplier.get();
@@ -126,5 +125,14 @@ public final class AnchoredPopupView {
 
     private static boolean canShow(Node anchor) {
         return anchor != null && anchor.getScene() != null;
+    }
+
+    @SuppressWarnings("PMD.LawOfDemeter")
+    private static final class PopupFxAccess {
+
+        private static void installContent(Popup popup, StackPane contentHost, @Nullable Node content) {
+            popup.getContent().setAll(contentHost);
+            contentHost.getChildren().setAll(content == null ? java.util.List.of() : java.util.List.of(content));
+        }
     }
 }

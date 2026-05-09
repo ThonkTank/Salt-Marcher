@@ -178,7 +178,7 @@ fun standardEnforcementBundleDescriptors(): List<EnforcementBundleDescriptor> = 
     bundle("viewLayer", 0, listOf("checkViewLayerEnforcement")) {
         rootTask("Run the closed-world View Layer topology bundle through one root entrypoint.", false, true)
         verificationSources(listOf("shell", "src"), listOf("api/**/*.java", "view/**/*.java", "domain/**/published/**/*.java"))
-        buildHarnessRules("checkViewLayerEnforcement", listOf("saltmarcher.architecture.view.ViewTopologyPerimeterRules", "saltmarcher.architecture.view.layer.ViewLayerTopologyRules"))
+        buildHarnessRules("checkViewLayerEnforcement", listOf("saltmarcher.architecture.view.ViewTopologyPerimeterRules", "saltmarcher.architecture.view.ViewLayerTopologyRules"))
     },
     bundle("view", 1, listOf("checkViewEnforcement", "checkViewFxmlResources")) {
         focusedViewRoleRootTask("Run the focused passive View enforcement bundle through one root entrypoint.")
@@ -308,8 +308,8 @@ fun standardEnforcementBundleDescriptors(): List<EnforcementBundleDescriptor> = 
     },
     bundle("domainUseCase", 13, listOf("checkDomainUseCaseEnforcement", "domainUseCaseTopologyCheck", "domainUseCaseDocumentationEnforcementCheck", "pmdDomainUseCaseEnforcement")) {
         rootTask("Run the dedicated Domain UseCase enforcement bundle through one root entrypoint.", true, true)
-        errorProneCheckers(listOf("DomainApplicationNoSameContextPublishedDependency"))
-        verificationSources(listOf("src"), listOf("domain/**/application/**/*.java"))
+        errorProneCheckers(listOf("DomainApplicationNoSameContextPublishedDependency", "DomainUseCaseRoleBoundary"))
+        verificationSources(listOf("src"), listOf("domain/**/*.java"))
         pmdTask("pmdDomainUseCaseEnforcement", "Run the dedicated Domain UseCase PMD enforcement bundle.", "tools/quality/domain-usecase-enforcement/pmd/ruleset.xml", emptyList(), listOf("domain/**/application/**/*.java"), false, false)
         buildHarnessDocumentationCoverageSpecs(listOf("domainUseCase"))
     },
@@ -320,8 +320,8 @@ fun standardEnforcementBundleDescriptors(): List<EnforcementBundleDescriptor> = 
     },
     bundle("domainApplicationService", 14, listOf("checkDomainApplicationServiceEnforcement", "domainApplicationServiceTopologyCheck", "domainApplicationServiceDocumentationEnforcementCheck", "pmdDomainApplicationServiceEnforcement")) {
         rootTask("Run the dedicated Domain ApplicationService enforcement bundle through one root entrypoint.", false, true)
-        errorProneCheckers(listOf("DomainApplicationServiceApiShape", "DomainPublicBoundarySignaturePurity"))
-        verificationSources(listOf("src"), listOf("domain/**/*ApplicationService.java"))
+        errorProneCheckers(listOf("DomainApplicationServiceApiShape", "DomainPublicBoundarySignaturePurity", "DomainApplicationServiceRoleBoundary"))
+        verificationSources(listOf("src"), listOf("domain/**/*.java"))
         pmdTask("pmdDomainApplicationServiceEnforcement", "Run the dedicated Domain ApplicationService PMD enforcement bundle.", "tools/quality/domain-application-service-enforcement/pmd/ruleset.xml", emptyList(), listOf("domain/**/*ApplicationService.java"), false, false)
         buildHarnessArchitectureRules(listOf("saltmarcher.architecture.domain.applicationservice.DomainApplicationServiceTopologyRules"))
         buildHarnessDocumentationRules(listOf("saltmarcher.architecture.domain.applicationservice.DomainApplicationServiceDocumentationRules"))
@@ -329,13 +329,15 @@ fun standardEnforcementBundleDescriptors(): List<EnforcementBundleDescriptor> = 
     },
     bundle("domainPublished", 14, listOf("checkDomainPublishedEnforcement", "domainPublishedTopologyCheck", "domainPublishedDocumentationEnforcementCheck")) {
         rootTask("Run the dedicated Domain Published enforcement bundle through one root entrypoint.", false, false)
-        errorProneCheckers(listOf("DomainPublishedCarrierShape", "DomainPublishedBoundarySignaturePurity", "DomainPublishedReadModelShape"))
-        verificationSources(listOf("src"), listOf("domain/**/published/**/*.java", "domain/**/aggregate/**/*.java", "domain/**/context/**/*.java", "domain/**/entity/**/*.java", "domain/**/event/**/*.java", "domain/**/factory/**/*.java", "domain/**/policy/**/*.java", "domain/**/port/**/*.java", "domain/**/service/**/*.java", "domain/**/specification/**/*.java", "domain/**/value/**/*.java"))
+        errorProneCheckers(listOf("DomainPublishedCarrierShape", "DomainPublishedBoundarySignaturePurity", "DomainPublishedReadModelShape", "DomainPublishedOwnershipBoundary"))
+        verificationSources(listOf("src"), listOf("domain/**/*.java"))
         buildHarnessArchitectureRules(listOf("saltmarcher.architecture.domain.published.DomainPublishedTopologyRules"))
         buildHarnessDocumentationCoverageSpecs(listOf("domainPublished"))
     },
     bundle("domainPort", 15, listOf("checkDomainPortEnforcement", "domainPortTopologyCheck", "domainPortEnforcementDocumentationCheck")) {
         rootTask("Run the focused Domain Port enforcement bundle through one root entrypoint.", true, true)
+        errorProneCheckers(listOf("DomainPortRoleBoundary"))
+        verificationSources(listOf("src"), listOf("domain/**/*.java"))
         buildHarnessArchitectureRules(listOf("saltmarcher.architecture.domain.port.DomainPortTopologyRules"))
         buildHarnessDocumentationCoverageSpecs(listOf("domainPort"))
     },
@@ -349,6 +351,8 @@ fun standardEnforcementBundleDescriptors(): List<EnforcementBundleDescriptor> = 
     },
     bundle("domainModel", 16, listOf("checkDomainModelEnforcement", "domainModelTopologyCheck", "domainModelDocumentationEnforcementCheck")) {
         rootTask("Run the dedicated Domain Model enforcement bundle through one root entrypoint.", false, true)
+        errorProneCheckers(listOf("DomainModelRoleBoundary"))
+        verificationSources(listOf("src"), listOf("domain/**/*.java"))
         buildHarnessArchitectureRules(listOf("saltmarcher.architecture.domain.model.DomainModelTopologyRules"))
         buildHarnessDocumentationCoverageSpecs(listOf("domainModel"))
     },
@@ -363,6 +367,8 @@ fun standardEnforcementBundleDescriptors(): List<EnforcementBundleDescriptor> = 
     },
     bundle("domainHelper", 17, listOf("checkDomainHelperEnforcement", "domainHelperTopologyCheck", "domainHelperDocumentationEnforcementCheck")) {
         rootTask("Run the dedicated Domain Helper enforcement bundle through one root entrypoint.", false, true)
+        errorProneCheckers(listOf("DomainHelperRoleBoundary"))
+        verificationSources(listOf("src"), listOf("domain/**/*.java"))
         buildHarnessArchitectureRules(listOf("saltmarcher.architecture.domain.helper.DomainHelperTopologyRules"))
         buildHarnessDocumentationCoverageSpecs(listOf("domainHelper"))
     },
@@ -410,11 +416,15 @@ fun standardEnforcementBundleDescriptors(): List<EnforcementBundleDescriptor> = 
     },
     bundle("domainConstants", 18, listOf("checkDomainConstantsEnforcement", "domainConstantsTopologyCheck", "domainConstantsDocumentationEnforcementCheck")) {
         rootTask("Run the dedicated Domain Constants enforcement bundle through one root entrypoint.", false, true)
+        errorProneCheckers(listOf("DomainConstantsRoleBoundary"))
+        verificationSources(listOf("src"), listOf("domain/**/*.java"))
         buildHarnessArchitectureRules(listOf("saltmarcher.architecture.domain.constants.DomainConstantsTopologyRules"))
         buildHarnessDocumentationCoverageSpecs(listOf("domainConstants"))
     },
     bundle("domainRepository", 19, listOf("checkDomainRepositoryEnforcement", "domainRepositoryTopologyCheck", "domainRepositoryDocumentationEnforcementCheck")) {
         rootTask("Run the dedicated Domain Repository enforcement bundle through one root entrypoint.", false, true)
+        errorProneCheckers(listOf("DomainRepositoryRoleBoundary"))
+        verificationSources(listOf("src"), listOf("domain/**/*.java"))
         buildHarnessArchitectureRules(listOf("saltmarcher.architecture.domain.repository.DomainRepositoryTopologyRules"))
         buildHarnessDocumentationCoverageSpecs(listOf("domainRepository"))
     }

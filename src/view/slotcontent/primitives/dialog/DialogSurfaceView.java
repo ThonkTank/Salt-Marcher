@@ -21,7 +21,6 @@ public final class DialogSurfaceView extends VBox {
     private final StackPane footerContentHost = new StackPane();
 
     private DialogSurfaceContentModel contentModel = new DialogSurfaceContentModel();
-    private Consumer<DialogSurfaceViewInputEvent> viewInputEventHandler = ignored -> { };
     private javafx.beans.value.ChangeListener<DialogSurfaceContentModel.LayoutState> layoutStateListener;
 
     public DialogSurfaceView(Node headerContent, Node bodyContent, Node footerContent) {
@@ -52,10 +51,6 @@ public final class DialogSurfaceView extends VBox {
         applyLayout(this.contentModel.currentLayoutState());
     }
 
-    public void onViewInputEvent(Consumer<DialogSurfaceViewInputEvent> handler) {
-        viewInputEventHandler = handler == null ? ignored -> { } : handler;
-    }
-
     public static Region spacer() {
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
@@ -75,19 +70,19 @@ public final class DialogSurfaceView extends VBox {
                 ? DialogSurfaceContentModel.LayoutState.initial()
                 : layoutState;
         replace(header, headerContentHost);
-        setVisibleAndManaged(header, safeState.headerVisible() && !headerContentHost.getChildren().isEmpty());
-        renderBody(safeState.bodyPolicy());
+        setVisibleAndManaged(header, safeState.showHeader(FxAccess.hasChildren(headerContentHost)));
+        renderBody(safeState.bodyPolicy(), FxAccess.hasChildren(bodyContentHost));
         replace(footerHost, footerContentHost);
-        setVisibleAndManaged(footerHost, safeState.footerVisible() && !footerContentHost.getChildren().isEmpty());
+        setVisibleAndManaged(footerHost, safeState.showFooter(FxAccess.hasChildren(footerContentHost)));
     }
 
-    private void renderBody(DialogSurfaceContentModel.BodyPolicy bodyPolicy) {
+    private void renderBody(DialogSurfaceContentModel.BodyPolicy bodyPolicy, boolean bodyHasContent) {
         FxAccess.clearChildren(bodyHost);
-        if (bodyContentHost.getChildren().isEmpty()) {
+        if (!bodyHasContent) {
             bodyScroll.setContent(null);
             return;
         }
-        if (bodyPolicy == DialogSurfaceContentModel.BodyPolicy.SCROLL) {
+        if (bodyPolicy.usesScrollHost()) {
             bodyScroll.setContent(bodyContentHost);
             FxAccess.setChildren(bodyHost, bodyScroll);
             return;
@@ -126,6 +121,10 @@ public final class DialogSurfaceView extends VBox {
 
         private static void setChildren(Pane parent, Node... children) {
             parent.getChildren().setAll(children);
+        }
+
+        private static boolean hasChildren(Pane parent) {
+            return !parent.getChildren().isEmpty();
         }
     }
 }

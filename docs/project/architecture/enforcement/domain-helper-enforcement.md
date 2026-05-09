@@ -26,19 +26,19 @@ Unified focused bundle entrypoint:
 | --- | --- | --- | --- | --- | --- |
 | `domain-helper-direct-file-placement` | Enforced | every Java type below `src/domain/<context>/model/<family>/helper/` | domain-helper bundle build-harness `DomainHelperTopologyRules` | `./gradlew checkDomainHelperEnforcement` | Helper files stay as direct files under one model-family `helper/` bucket rather than growing secondary technical subpackages. |
 | `domain-helper-role-shape` | Enforced | every domain type whose simple name ends with `Helper` and every Java type below `src/domain/<context>/model/<family>/helper/` | domain-helper bundle build-harness `DomainHelperTopologyRules` | `./gradlew checkDomainHelperEnforcement` | Helper role files use the canonical `*Helper.java` form and may appear only in the canonical helper bucket. |
-| `domain-helper-explicit-work-step` | Review-Owned | every helper under `src/domain/**` | none | none | Each helper represents one explicit deterministic work step such as calculation, validation, derivation, or construction. |
+| `domain-helper-explicit-work-step` | Review-Owned | every helper under `src/domain/**` | none | none | Helper code stays on explicit deterministic work-step inputs instead of absorbing repository, port, use-case, published, or root-boundary concerns. |
 
 ### Must Not Contain
 
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
-| `domain-helper-no-current-context-access` | Review-Owned | every helper under `src/domain/**` | none | none | Helpers do not inspect current model state, subscribe to published state, invoke repositories, or react to ports. |
+| `domain-helper-no-current-context-access` | Review-Owned | every helper under `src/domain/**` | none | none | Helpers do not inspect repositories, ports, use cases, published state, or any other foreign-role concern to recover missing context. |
 
 ### Communication Contract
 
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
-| `domain-helper-constants-only-downward-dependency` | Review-Owned | every helper under `src/domain/**` | none | none | Helpers depend only on `Constants` and local pure support types in the downward direction. |
+| `domain-helper-constants-only-downward-dependency` | Review-Owned | every helper under `src/domain/**` | none | none | Helpers depend only on same-context `Model` input types, same-context `Constants`, and passive platform types. |
 
 ## References
 

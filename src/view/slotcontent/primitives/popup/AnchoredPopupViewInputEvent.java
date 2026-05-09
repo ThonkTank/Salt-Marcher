@@ -8,6 +8,10 @@ public record AnchoredPopupViewInputEvent(Interaction interaction) {
 
     public enum Interaction {
         SHOWN,
-        HIDDEN
+        HIDDEN;
+
+        public boolean isHidden() {
+            return this == HIDDEN;
+        }
     }
 }

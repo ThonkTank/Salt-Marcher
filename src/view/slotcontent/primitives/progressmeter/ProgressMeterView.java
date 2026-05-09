@@ -33,7 +33,7 @@ public final class ProgressMeterView extends StackPane {
     private javafx.beans.value.ChangeListener<ProgressMeterContentModel.MeterState> meterStateListener;
     private String currentFillStyleClass = "";
     private String currentSizeStyleClass = "";
-    private boolean syncingAmountField;
+    private int amountFieldSyncDepth;
     private Tooltip installedTooltip;
 
     public ProgressMeterView() {
@@ -52,7 +52,7 @@ public final class ProgressMeterView extends StackPane {
         configurePopupContent();
         popupView.bind(popupContentModel);
         popupView.onViewInputEvent(event -> {
-            if (event.interaction() == src.view.slotcontent.primitives.popup.AnchoredPopupViewInputEvent.Interaction.HIDDEN) {
+            if (event.interaction().isHidden()) {
                 contentModel.hidePopup();
             }
         });
@@ -79,7 +79,7 @@ public final class ProgressMeterView extends StackPane {
         downButton.setOnAction(event -> contentModel.decreaseAmount());
         upButton.setOnAction(event -> contentModel.increaseAmount());
         amountField.textProperty().addListener((ignored, before, after) -> {
-            if (!syncingAmountField) {
+            if (!isSyncingAmountField()) {
                 contentModel.updateAmountDraft(after);
             }
         });
@@ -91,25 +91,20 @@ public final class ProgressMeterView extends StackPane {
                 : meterState;
         overlayText.setText(safeState.text());
         setAccessibleText(safeState.accessibleText());
-        updateSizeStyleClass(safeState.sizeStyleClass());
-        updateFillStyleClass(safeState.fillStyleClass());
+        updateSizeStyleClass(safeState);
+        updateFillStyleClass(safeState);
         FxAccess.bindWidth(fill, this, safeState.fraction());
-        installTooltip(safeState.tooltipText());
-        boolean clickable = !safeState.popupActions().isEmpty();
+        installTooltip(safeState);
+        boolean clickable = safeState.hasPopupActions();
         getStyleClass().remove("clickable");
         setOnMouseClicked(null);
         if (clickable) {
             getStyleClass().add("clickable");
             setOnMouseClicked(event -> contentModel.showPopup());
         }
-        syncingAmountField = true;
-        try {
-            amountField.setText(String.valueOf(safeState.amountDraft()));
-        } finally {
-            syncingAmountField = false;
-        }
+        syncAmountField(() -> amountField.setText(String.valueOf(safeState.amountDraft())));
         rebuildPopupActions(safeState.popupActions(), safeState.amountDraft());
-        if (safeState.popupOpen()) {
+        if (safeState.popupVisible()) {
             popupContentModel.showBelow(8.0, true);
         } else {
             popupContentModel.hide();
@@ -145,35 +140,48 @@ public final class ProgressMeterView extends StackPane {
         }
     }
 
-    private void installTooltip(String tooltipText) {
+    private void installTooltip(ProgressMeterContentModel.MeterState meterState) {
         if (installedTooltip != null) {
             Tooltip.uninstall(this, installedTooltip);
-            installedTooltip = null;
         }
-        if (safe(tooltipText).isBlank()) {
+        if (!meterState.hasTooltip()) {
+            installedTooltip = null;
             return;
         }
-        installedTooltip = new Tooltip(tooltipText);
+        installedTooltip = new Tooltip(meterState.tooltipText());
         Tooltip.install(this, installedTooltip);
     }
 
-    private void updateFillStyleClass(String fillStyleClass) {
+    private void updateFillStyleClass(ProgressMeterContentModel.MeterState meterState) {
         if (!safe(currentFillStyleClass).isBlank()) {
             fill.getStyleClass().remove(currentFillStyleClass);
         }
-        currentFillStyleClass = safe(fillStyleClass);
-        if (!currentFillStyleClass.isBlank()) {
+        currentFillStyleClass = meterState.fillStyleClass();
+        if (meterState.hasFillStyle()) {
             fill.getStyleClass().add(currentFillStyleClass);
         }
     }
 
-    private void updateSizeStyleClass(String sizeStyleClass) {
+    private void updateSizeStyleClass(ProgressMeterContentModel.MeterState meterState) {
         if (!safe(currentSizeStyleClass).isBlank()) {
             getStyleClass().remove(currentSizeStyleClass);
         }
-        currentSizeStyleClass = safe(sizeStyleClass);
-        if (!currentSizeStyleClass.isBlank()) {
+        currentSizeStyleClass = meterState.sizeStyleClass();
+        if (meterState.hasSizeStyle()) {
             getStyleClass().add(currentSizeStyleClass);
+        }
+    }
+
+    private boolean isSyncingAmountField() {
+        return amountFieldSyncDepth > 0;
+    }
+
+    private void syncAmountField(Runnable syncAction) {
+        amountFieldSyncDepth++;
+        try {
+            syncAction.run();
+        } finally {
+            amountFieldSyncDepth--;
         }
     }
 

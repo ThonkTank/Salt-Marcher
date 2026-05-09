@@ -26,13 +26,13 @@ Unified focused bundle entrypoint:
 | --- | --- | --- | --- | --- | --- |
 | `domain-constants-direct-file-placement` | Enforced | every Java type below `src/domain/<context>/model/<family>/constants/` | domain-constants bundle build-harness `DomainConstantsTopologyRules` | `./gradlew checkDomainConstantsEnforcement` | Constants files stay as direct files under one model-family `constants/` bucket rather than growing helper or adapter subpackages. |
 | `domain-constants-role-shape` | Enforced | every domain type whose simple name ends with `Constants` and every Java type below `src/domain/<context>/model/<family>/constants/` | domain-constants bundle build-harness `DomainConstantsTopologyRules` | `./gradlew checkDomainConstantsEnforcement` | Constants role files use the canonical `*Constants.java` form and may appear only in the canonical constants bucket. |
-| `domain-constants-immutable-only` | Review-Owned | every constants file under `src/domain/**` | none | none | Constants own immutable shared domain values only. |
+| `domain-constants-immutable-only` | Review-Owned | every constants file under `src/domain/**` | none | none | Constants stay immutable holders with final class or enum shape, static-final fields, and no instance behavior beyond unavoidable object methods. |
 
 ### Must Not Contain
 
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
-| `domain-constants-no-runtime-or-state-ownership` | Review-Owned | every constants file under `src/domain/**` | none | none | Constants do not own current state, listeners, adapters, or runtime composition. |
+| `domain-constants-no-runtime-or-state-ownership` | Review-Owned | every constants file under `src/domain/**` | none | none | Constants do not own current state, listeners, callbacks, adapters, or runtime composition. |
 
 ## References
 

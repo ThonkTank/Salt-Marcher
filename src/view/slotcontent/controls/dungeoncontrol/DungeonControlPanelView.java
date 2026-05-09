@@ -130,10 +130,10 @@ public class DungeonControlPanelView extends VBox {
         }
 
         private void showState() {
-            DungeonControlPanelContentModel.OverlaySettings settings = contentModel.currentOverlaySettings();
-            popupContent.showSettings(settings, contentModel.overlayDisabled());
-            triggerButton.setText(DungeonControlPanelContentModel.summaryText(settings));
-            triggerButton.setDisable(contentModel.overlayDisabled());
+            DungeonControlPanelContentModel.OverlayPanelState panelState = contentModel.currentOverlayPanelState();
+            popupContent.showSettings(panelState);
+            triggerButton.setText(panelState.triggerText());
+            triggerButton.setDisable(panelState.controlsDisabled());
         }
 
         private void togglePopup() {
@@ -158,7 +158,6 @@ public class DungeonControlPanelView extends VBox {
         private final HBox rangeRow;
         private final HBox selectedRow;
         private boolean syncing;
-        private boolean globalDisabled;
         private List<Integer> displayedSelectedLevels = List.of();
 
         private OverlayPopupContentView() {
@@ -204,21 +203,17 @@ public class DungeonControlPanelView extends VBox {
             return modeSelector;
         }
 
-        private void showSettings(
-                DungeonControlPanelContentModel.OverlaySettings settings,
-                boolean disabled
-        ) {
+        private void showSettings(DungeonControlPanelContentModel.OverlayPanelState panelState) {
             syncing = true;
-            globalDisabled = disabled;
-            modeSelector.setValue(settings.mode());
-            FxAccess.setSpinnerValue(rangeSpinner, settings.levelRange());
-            opacitySlider.setValue(settings.opacity() * 100.0);
-            displayedSelectedLevels = settings.selectedLevels();
-            selectedLevelsField.setText(DungeonControlPanelContentModel.formatLevels(displayedSelectedLevels));
-            updateOpacityLabel();
-            modeSelector.setDisable(disabled);
-            opacitySlider.setDisable(disabled);
-            updateEnabledState(settings.mode());
+            modeSelector.setValue(panelState.mode());
+            FxAccess.setSpinnerValue(rangeSpinner, panelState.levelRange());
+            opacitySlider.setValue(panelState.opacityPercent());
+            selectedLevelsField.setText(panelState.selectedLevelsText());
+            displayedSelectedLevels = contentModel.parseLevels(panelState.selectedLevelsText()).orElse(List.of());
+            updateOpacityLabel(panelState.opacityPercent());
+            modeSelector.setDisable(panelState.controlsDisabled());
+            opacitySlider.setDisable(panelState.controlsDisabled());
+            applyVisibility(panelState);
             syncing = false;
         }
 
@@ -227,7 +222,13 @@ public class DungeonControlPanelView extends VBox {
                 if (syncing || after == null) {
                     return;
                 }
-                updateEnabledState(after);
+                applyVisibility(DungeonControlPanelContentModel.OverlayPanelState.from(
+                        new DungeonControlPanelContentModel.OverlaySettings(
+                                after,
+                                rangeSpinner.getValue(),
+                                opacitySlider.getValue() / 100.0,
+                                displayedSelectedLevels),
+                        modeSelector.isDisabled()));
                 publishOverlayInput();
             });
             rangeSpinner.valueProperty().addListener((ignored, before, after) -> {
@@ -236,7 +237,7 @@ public class DungeonControlPanelView extends VBox {
                 }
             });
             opacitySlider.valueProperty().addListener((ignored, before, after) -> {
-                updateOpacityLabel();
+                updateOpacityLabel(opacitySlider.getValue());
                 if (!syncing && after != null) {
                     publishOverlayInput();
                 }
@@ -264,29 +265,29 @@ public class DungeonControlPanelView extends VBox {
             java.util.Optional<List<Integer>> parsedLevels =
                     DungeonControlPanelContentModel.parseLevels(selectedLevelsField.getText());
             if (parsedLevels.isEmpty()) {
-                selectedLevelsField.setText(DungeonControlPanelContentModel.formatLevels(displayedSelectedLevels));
+                selectedLevelsField.setText(contentModel.normalizeSelectedLevelsDraft(
+                        selectedLevelsField.getText(),
+                        displayedSelectedLevels));
                 return;
             }
             displayedSelectedLevels = parsedLevels.orElseThrow();
-            selectedLevelsField.setText(DungeonControlPanelContentModel.formatLevels(displayedSelectedLevels));
+            selectedLevelsField.setText(contentModel.normalizeSelectedLevelsDraft(
+                    selectedLevelsField.getText(),
+                    displayedSelectedLevels));
             publishOverlayInput();
         }
 
-        private void updateEnabledState(DungeonControlPanelContentModel.Mode mode) {
-            DungeonControlPanelContentModel.Mode resolvedMode =
-                    mode == null ? DungeonControlPanelContentModel.Mode.OFF : mode;
-            boolean rangeVisible = resolvedMode.usesRange();
-            boolean selectedVisible = resolvedMode.usesSelectedLevels();
-            rangeRow.setManaged(rangeVisible);
-            rangeRow.setVisible(rangeVisible);
-            selectedRow.setManaged(selectedVisible);
-            selectedRow.setVisible(selectedVisible);
-            rangeSpinner.setDisable(globalDisabled || !rangeVisible);
-            selectedLevelsField.setDisable(globalDisabled || !selectedVisible);
+        private void applyVisibility(DungeonControlPanelContentModel.OverlayPanelState panelState) {
+            rangeRow.setManaged(panelState.rangeVisible());
+            rangeRow.setVisible(panelState.rangeVisible());
+            selectedRow.setManaged(panelState.selectedVisible());
+            selectedRow.setVisible(panelState.selectedVisible());
+            rangeSpinner.setDisable(panelState.rangeDisabled());
+            selectedLevelsField.setDisable(panelState.selectedLevelsDisabled());
         }
 
-        private void updateOpacityLabel() {
-            opacityLabel.setText(Math.round(opacitySlider.getValue()) + "%");
+        private void updateOpacityLabel(double opacityPercent) {
+            opacityLabel.setText(Math.round(opacityPercent) + "%");
         }
 
         private HBox row(Node... nodes) {

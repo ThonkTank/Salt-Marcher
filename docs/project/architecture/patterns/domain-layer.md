@@ -68,9 +68,8 @@ The closed architectural role family is:
 | `Port` | Inbound listener on foreign published state. |
 | `Repository` | Outbound trigger for foreign domain work and layered data access. |
 
-Legacy tactical DDD names such as `aggregate`, `entity`, `value`, `policy`,
-`factory`, `service`, `event`, and `specification` are rejected as domain
-topology roles. New domain topology uses only the closed role family above.
+No other topology role is legal. Any type or package shape outside the closed
+role family above is rejected.
 
 ## Core Principles
 
@@ -82,8 +81,8 @@ topology roles. New domain topology uses only the closed role family above.
 - each `UseCase` owns one work operation only and contains orchestration, not
   embedded business-policy logic
 - `Helper` code receives all required context through parameters and must not
-  look up current model state, repositories, ports, or published handles by
-  itself
+  own current context, repositories, ports, use cases, published handles, or
+  callback protocols by itself
 - `Constants` contains only static immutable domain-owned constants
 - `Model` owns mutable internal state; changing model state is what changes the
   outward `Published` view of that state
@@ -126,8 +125,11 @@ types -> own UseCase -> own Model -> own Published`
 - interprets inbound command only where domain decision context is missing on
   the view side
 - delegates to exactly one focused `UseCase`
+- may collaborate only with same-context `UseCase` ownership and same-context
+  non-`*Model` published command carriers
 - does not own business policy, model mutation details, publication ownership,
-  shell registration, runtime service lookup, or adapter construction
+  repositories, ports, helpers, shell registration, runtime service lookup,
+  callback protocols, or adapter construction
 
 ### `UseCase`
 
@@ -136,23 +138,31 @@ types -> own UseCase -> own Model -> own Published`
 - orchestrates reads, writes, repository calls, port-triggered follow-up work,
   and helper invocation
 - may construct, load, edit, and persist `Model`
+- may collaborate only with same-context `Model`, `UseCase`, `Helper`,
+  `Constants`, `Port`, `Repository`, and foreign root `ApplicationService`
+  boundaries
 - does not hide business-policy logic that belongs in `Helper` or subordinate
-  model roles
+  model roles, and it does not absorb published, root-boundary, callback, or
+  infrastructure concerns
 
 ### `Helper`
 
 - pure explicit work step such as a calculation, validation, derivation, or
   deterministic construction
 - receives every needed value as input
-- may depend on `Constants` and local pure support types only
+- may depend only on same-context `Model` input types, same-context
+  `Constants`, and passive platform types
 - must not inspect current `Model`, subscribe to `Published`, invoke
-  `Repository`, or talk to `Port`
+  `Repository`, talk to `Port`, invoke `UseCase`, or own callback/protocol
+  seams
 
 ### `Constants`
 
 - immutable shared domain constants only
 - no current-state access
-- no lifecycle, listeners, or infrastructure knowledge
+- depends only on same-context `Constants` and passive platform types
+- no lifecycle, listeners, callbacks, runtime composition, or infrastructure
+  knowledge
 
 ### `Model`
 
@@ -161,6 +171,10 @@ types -> own UseCase -> own Model -> own Published`
 - is created, read, and edited by `UseCase`
 - lives under `model/<family>/model/`, where a family MAY add deeper semantic
   subpackages for subordinate models of that same family
+- may depend only on same-context `Model`, same-context `Constants`, and
+  passive platform types
+- must not own repositories, ports, root boundaries, published handles,
+  callback protocols, or foreign domain seams
 - state change is the source that updates outward `Published`
 
 ### `published/`
@@ -181,7 +195,10 @@ types -> own UseCase -> own Model -> own Published`
 - domain-internal inbound listener on foreign `published/*Model`
 - listens through `current()` and `subscribe(...)`
 - converts foreign published change intake into same-context `UseCase` work
-- does not own foreign mutation triggers or data-source access
+- may depend only on foreign `published/**`, same-context `UseCase`,
+  same-context `Model`, same-context `Constants`, and passive platform types
+- does not own foreign mutation triggers, repositories, same-context
+  `Published`, callback relays, or data-source access
 
 ### `Repository`
 
@@ -190,7 +207,11 @@ types -> own UseCase -> own Model -> own Published`
 - may perform layered data access through outer adapters
 - returns only same-context internal domain/application types; never `src.data`
   types or foreign published carriers
-- does not own long-lived current state; that remains in `Model`
+- may depend only on foreign root `ApplicationService`, same-context `Model`,
+  same-context `Constants`, same-context repository-local types, and passive
+  platform types
+- does not own long-lived current state, published handles, port intake, or
+  callback/listener seams; that remains in `Model`
 
 ## Domain Topology
 

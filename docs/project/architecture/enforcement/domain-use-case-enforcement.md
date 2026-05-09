@@ -39,6 +39,7 @@ Unified focused bundle entrypoint:
 | `domain-usecase-no-backend-port-contract-files` | Enforced | every Java type under root `src/domain/<context>/application/` | domain-usecase bundle build-harness `DomainUseCaseTopologyRules` | `./gradlew checkDomainUseCaseEnforcement` | Backend contract files such as `*Repository`, `*Lookup`, `*Catalog`, or `*Search` do not live in root `application/`. |
 | `domain-usecase-no-same-context-published-dependencies` | Enforced | every top-level `application/**/*.java` compilation unit under `src/domain/<context>/application/` | domain-usecase bundle Error Prone `DomainApplicationNoSameContextPublishedDependency` | `./gradlew compileJava` and `./gradlew checkDomainUseCaseEnforcement` | Root internal orchestration files do not depend on their own same-context `published/**` carriers. Same-context command language stops at the root boundary, and feedback leaves through `published/*Model`. |
 | `domain-usecase-no-policy-helper-prefix-source-pattern` | Source-Pattern Enforced | every non-public helper method in root `application/*UseCase.java` | domain-usecase bundle PMD `DomainUseCasePolicyRule` | `./gradlew checkDomainUseCaseEnforcement` | Root use-case helper methods do not use the configured policy-heavy prefixes `score`, `rank`, `choose`, `balance`, or `enforce`. |
+| `domain-usecase-collaborator-surface-discipline` | Review-Owned | every `*UseCase.java` under `src/domain/**` | none | none | Use cases depend only on same-context `Model`, `UseCase`, `Helper`, `Constants`, `Port`, `Repository`, and foreign root `ApplicationService` boundaries. |
 
 ### Communication Contract
 
@@ -52,10 +53,9 @@ generic domain-layer communication and outer-dependency boundaries owned by
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
 | `domain-usecase-thin-orchestration-semantics` | Review-Owned | every `*UseCase.java` under `src/domain/**` | none | none | A mechanically legal use case still reads as exactly one work operation and orchestration step rather than a second tactical model layer or service dump. |
-| `domain-usecase-collaborator-surface-discipline` | Review-Owned | every `*UseCase.java` under `src/domain/**` | none | none | A legal use case still limits direct collaborators to same-context models, helpers, repositories, ports, constants, and allowed foreign root boundaries. |
 | `domain-usecase-no-hidden-business-policy` | Review-Owned | every `*UseCase.java` under `src/domain/**` | none | none | Real business policy has not been pushed into legal orchestration code simply because the current blockers do not catch it. |
 | `domain-usecase-no-hidden-carrier-bypass-into-model` | Review-Owned | every use-case handoff into same-context internal model work | none | none | No legal type shape is being used to smuggle same-context or foreign `published/**` carriers into private model code. |
-| `domain-usecase-helper-role-discipline` | Review-Owned | every helper or model-local collaborator used by `*UseCase.java` | none | none | Business policy has not been smuggled into helper-shaped collaborators just because root `application/` itself is now hard-cut to `*UseCase.java` only. |
+| `domain-usecase-helper-role-discipline` | Review-Owned | every helper or model-local collaborator used by `*UseCase.java` | none | none | Helper-shaped collaborators stay on explicit work steps instead of becoming hidden policy or context-lookup seams. |
 
 ## References
 

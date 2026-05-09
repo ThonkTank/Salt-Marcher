@@ -26,13 +26,13 @@ Unified focused bundle entrypoint:
 | --- | --- | --- | --- | --- | --- |
 | `domain-repository-direct-file-placement` | Enforced | every Java type below `src/domain/<context>/model/<family>/repository/` | domain-repository bundle build-harness `DomainRepositoryTopologyRules` | `./gradlew checkDomainRepositoryEnforcement` | Repository files stay as direct files under one model-family `repository/` bucket rather than being hidden in helper or adapter subpackages. |
 | `domain-repository-role-shape` | Enforced | every domain type whose simple name ends with `Repository` and every Java type below `src/domain/<context>/model/<family>/repository/` | domain-repository bundle build-harness `DomainRepositoryTopologyRules` | `./gradlew checkDomainRepositoryEnforcement` | Repository role files use the canonical `*Repository.java` form and may appear only in the canonical outbound bucket. |
-| `domain-repository-outbound-trigger-ownership` | Review-Owned | every repository under `src/domain/**` | none | none | A legal repository still owns outbound triggering of foreign domain work or layered data access instead of collapsing into a helper, listener, or passive carrier bucket. |
+| `domain-repository-outbound-trigger-ownership` | Review-Owned | every repository under `src/domain/**` | none | none | Repositories own outbound triggering of foreign domain work without collapsing into helpers, listeners, ports, or passive carriers. |
 
 ### Must Not Contain
 
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
-| `domain-repository-no-src-data-type-leaks` | Review-Owned | every repository under `src/domain/**` | none | none | Repositories do not expose `src.data/**` types or foreign published carriers through their signatures. |
+| `domain-repository-no-src-data-type-leaks` | Review-Owned | every repository under `src/domain/**` | none | none | Repositories do not expose `src.data/**` types or foreign published carriers through signatures or broader role concerns. |
 
 ### Communication Contract
 

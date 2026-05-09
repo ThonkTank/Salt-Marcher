@@ -1,1 +1,2 @@
 saltmarcher.quality.errorprone.DomainApplicationPublishedBoundaryChecker
+saltmarcher.quality.errorprone.DomainUseCaseRoleBoundaryChecker

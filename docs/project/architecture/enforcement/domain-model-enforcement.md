@@ -24,7 +24,7 @@ Unified focused bundle entrypoint:
 
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
-| `domain-model-dynamic-state-ownership` | Review-Owned | every model family under `src/domain/**` | none | none | Models own the dynamic internal work state of the context. |
+| `domain-model-dynamic-state-ownership` | Review-Owned | every internal model type under `src/domain/<context>/model/<family>/model/**` | none | none | Models stay on same-context internal state and state-local operations instead of absorbing helper, repository, port, published, root-boundary, or foreign-domain concerns. |
 | `domain-model-tree-placement` | Enforced | every internal model subtree under `src/domain/<context>/model/<family>/model/` | domain-model bundle build-harness `DomainModelTopologyRules` | `./gradlew checkDomainModelEnforcement` | Internal model types live under the dedicated `model/<family>/model/` subtree rather than being scattered across helper or orchestration buckets. |
 
 ### Must Not Contain
@@ -37,7 +37,7 @@ Unified focused bundle entrypoint:
 
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
-| `domain-model-published-derivation-ownership` | Review-Owned | every same-context published state path | none | none | Model change is the source that updates same-context `Published` state. |
+| `domain-model-published-derivation-ownership` | Review-Owned | every same-context published state path | none | none | Same-context feedback does not bypass Published ownership through publisher-shaped roots, direct published returns, or same-context published leaks into internal orchestration. |
 
 ## References
 

@@ -45,7 +45,7 @@ Unified focused bundle entrypoint:
 
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
-| `domain-applicationservice-constructor-composition-boundary` | Review-Owned | every public or protected root `ApplicationService` constructor | none | none | A legal root constructor still stays family-local and thin. It does not become a hidden runtime-composition seam, cross-context repository seam, or alternate adapter assembly root. |
+| `domain-applicationservice-constructor-composition-boundary` | Review-Owned | every root `*ApplicationService.java` under `src/domain/**` | none | none | Root ApplicationService code stays family-local and thin. It does not become a hidden runtime-composition seam, repository seam, helper seam, or alternate adapter assembly root. |
 | `domain-applicationservice-public-boundary-signature-purity` | Enforced | every public or protected root `ApplicationService` boundary surface | domain-application-service bundle Error Prone `DomainPublicBoundarySignaturePurity` | `./gradlew compileJava` and `./gradlew checkDomainApplicationServiceEnforcement` | Root public boundary surfaces do not communicate outer-layer types, same-context private model internals, foreign domain internals, or foreign `published/**` carriers through signatures, public fields, thrown types, supertypes, or type bounds. |
 | `domain-applicationservice-public-carrier-translation-boundary` | Enforced Elsewhere | every handoff from a root `ApplicationService` into same-context top-level `application/**` code or named domain modules | domain-usecase bundle Error Prone `DomainApplicationNoSameContextPublishedDependency` and domain-layer bundle Error Prone `DomainModuleNoPublishedCarrierDependency` | `./gradlew compileJava`, `./gradlew checkDomainUseCaseEnforcement`, and `./gradlew checkDomainLayerEnforcement` | Same-context `published/**` carriers stop at the root boundary. Root services translate them before control enters internal application or model work. |
 
@@ -53,8 +53,8 @@ Unified focused bundle entrypoint:
 
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
-| `domain-applicationservice-no-runtime-composition-ownership` | Review-Owned | every root `*ApplicationService.java` under `src/domain/**` | none | none | A mechanically legal root boundary still does not own shell registration, runtime service lookup, or any alternate runtime-composition seam. |
-| `domain-applicationservice-no-business-policy-ownership` | Review-Owned | every root `*ApplicationService.java` under `src/domain/**` | none | none | A mechanically legal root boundary still behaves as family-scoped intent interpretation and routing only; business policy stays below the root. |
+| `domain-applicationservice-no-runtime-composition-ownership` | Review-Owned | every root `*ApplicationService.java` under `src/domain/**` | none | none | A mechanically legal root boundary does not own shell registration, runtime service lookup, repositories, ports, callback protocols, or any alternate runtime-composition seam. |
+| `domain-applicationservice-no-business-policy-ownership` | Review-Owned | every root `*ApplicationService.java` under `src/domain/**` | none | none | Root boundaries behave as family-scoped intent interpretation and routing only; business policy stays below the root. |
 
 ## References
 

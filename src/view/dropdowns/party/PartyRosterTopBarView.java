@@ -327,12 +327,12 @@ public final class PartyRosterTopBarView extends VBox {
                 BiConsumer<PartyTopBarContributionModel.MemberModel, Integer> onXpAdjustmentRequested
         ) {
             ProgressMeterContentModel progressMeterContentModel = new ProgressMeterContentModel();
-            progressMeterContentModel.showMeter(
+            progressMeterContentModel.showMeter(new ProgressMeterContentModel.MeterDisplay(
                     member.levelProgressFraction(),
                     member.levelProgressText(),
                     "Level-Fortschritt " + member.levelProgressText(),
                     "progress-meter-fill-xp",
-                    "progress-meter-level");
+                    "progress-meter-level"));
             if (actionsDisabled) {
                 progressMeterContentModel.hidePopupActions();
             } else {

@@ -53,27 +53,31 @@ steady-state policy.
 
 `compileJava` does not run the dedicated topology or whole-program dead-code
 bundles. Passive `View` graph and FXML analysis enter local quality through
-`checkViewEnforcement`, whole-program compiled dead-code analysis enters
+`checkViewEnforcement`, the other focused View role bundles enter through
+`checkViewInputEventEnforcement`, `checkViewContributionEnforcement`,
+`checkViewBinderEnforcement`, `checkViewContributionModelEnforcement`,
+`checkViewContentModelEnforcement`, and
+`checkViewIntentHandlerEnforcement`, while whole-program compiled dead-code analysis enters
 through `checkNoDeadCode`,
 focused Domain Layer topology, dependency, and documentation proof enters
 through `checkDomainLayerEnforcement`,
-focused Domain ApplicationService API-shape, topology, signature-purity,
+focused Domain ApplicationService API-shape, topology, role-boundary, signature-purity,
 source-pattern policy, and documentation proof enters through
 `checkDomainApplicationServiceEnforcement`,
 focused Data ServiceContribution construction-purity, shell-seam,
 `register(...)` export-shape, source-pattern, and documentation proof enters
 through `checkDataServiceContributionEnforcement`,
-focused Domain Published carrier-shape, signature-purity, topology, and
+focused Domain Published carrier-shape, ownership-boundary, signature-purity, topology, and
 documentation proof enters through `checkDomainPublishedEnforcement`,
-focused Domain Port topology and documentation proof enters through
+focused Domain Port topology, inbound-boundary, and documentation proof enters through
 `checkDomainPortEnforcement`,
-focused Domain Repository topology and documentation proof enters through
+focused Domain Repository topology, outbound-boundary, and documentation proof enters through
 `checkDomainRepositoryEnforcement`,
-focused Domain Model topology and documentation proof enters through
+focused Domain Model topology, boundary, and documentation proof enters through
 `checkDomainModelEnforcement`,
-focused Domain Helper topology and documentation proof enters through
+focused Domain Helper topology, boundary, and documentation proof enters through
 `checkDomainHelperEnforcement`,
-focused Domain Constants topology and documentation proof enters through
+focused Domain Constants topology, boundary, and documentation proof enters through
 `checkDomainConstantsEnforcement`,
 focused styling-layer proof enters through `checkStylingLayerEnforcement`,
 focused passive-`View` direct-render styling placement enters through
@@ -85,6 +89,7 @@ focused `AppBootstrap` host-composition boundary proof enters through
 focused shell-layer topology and boundary analysis enters through
 `checkShellLayerEnforcement`,
 focused Domain UseCase topology, same-context `published/**` dependency,
+role-boundary,
 source-pattern policy, and bundle-local enforcement-documentation coverage
 enters through `checkDomainUseCaseEnforcement`,
 focused Data Model source-shape, schema-DDL-placement, model-domain
@@ -103,8 +108,20 @@ focused Data Mapper source-pattern and documentation proof enters through
 `checkDataMapperEnforcement`,
 focused Data Persistencecore dependency and documentation proof enters through
 `checkDataPersistencecoreEnforcement`,
-merged View compile-bound role enforcement enters through
+focused passive-`View` compile-bound enforcement enters through
 `checkViewEnforcement`,
+focused `ViewInputEvent` compile-bound enforcement enters through
+`checkViewInputEventEnforcement`,
+focused `Contribution` compile-bound enforcement enters through
+`checkViewContributionEnforcement`,
+focused `Binder` compile-bound enforcement enters through
+`checkViewBinderEnforcement`,
+focused `ContributionModel` compile-bound enforcement enters through
+`checkViewContributionModelEnforcement`,
+focused `ContentModel` compile-bound enforcement enters through
+`checkViewContentModelEnforcement`,
+focused `IntentHandler` compile-bound enforcement enters through
+`checkViewIntentHandlerEnforcement`,
 closed-world view-directory and role-form topology enters through
 `checkViewLayerEnforcement`.
 The compile/FXML/topology paths are wired into the central `check` aggregate
@@ -120,7 +137,7 @@ independent from the separate closed-world topology owner while ensuring
 | Platform | Status | Entrypoint | Current policy |
 | --- | --- | --- | --- |
 | PMD non-architecture smells | `Blocking Local Gate` | `./gradlew pmdMain`, `./gradlew pmdStrictMain` | Runs `tools/quality/config/pmd/complexity-ruleset.xml` on production Java sources. `pmdMain` is the central blocking gate; `pmdStrictMain` is the text-first direct entrypoint for the same ruleset. PMD owns non-architecture smell policy plus `UnusedAssignment`, including generic source-smell families such as `LawOfDemeter`, `GodClass`, `CouplingBetweenObjects`, `TooManyMethods`, `TooManyFields`, and `UselessOverridingMethod`; `compileJava` owns `UnusedLabel`, `UnusedMethod`, `UnusedNestedClass`, and `UnusedVariable`. |
-| Dead code reachability | `Blocking Local Gate` | `./gradlew checkNoDeadCode` | Runs the verification-core whole-program reachability analysis for compiled concrete production files, types, constructors, methods, and fields. Structural roots currently include the configured JavaFX launcher and preloader classes, exact view contribution root classes matching bootstrap discovery shape, exact data service contribution root classes matching service discovery shape, merged FXML controller resources, `META-INF/services` providers, and the explicit fallback rules in `tools/quality/config/deadcode/keep-rules.pro`. Non-constant runtime reflection is only supported through explicit keep rules. |
+| Dead code reachability | `Blocking Local Gate` | `./gradlew checkNoDeadCode` | Runs the verification-core whole-program reachability analysis for compiled production declarations: files, top-level types, secondary top-level types, nested and named local types, constructors, methods, and fields. Structural roots currently include the configured JavaFX launcher and preloader classes, exact concrete shell contribution roots matching `ShellViewDiscovery`, exact concrete data service contribution roots matching `ServiceContributionDiscovery`, merged FXML controller resources, `META-INF/services` providers, and the explicit fallback rules in `tools/quality/config/deadcode/keep-rules.pro`. Non-constant runtime reflection is only supported through explicit keep rules. |
 | SpotBugs plus FindSecBugs | `Blocking Local Gate` | `./gradlew spotbugsMain` | Runs bytecode bug and security-smell analysis with SpotBugs effort `MAX` and confidence `MEDIUM`. |
 | CPD | `Blocking Local Gate` | `./gradlew cpdMain` | Runs PMD CPD for Java with `minimumTokens = 100`, matching PMD's documented Java example value, and writes its report under the active worktree's normal `build/reports/cpd/` surface. |
 | Lizard | `Blocking Local Gate` | `./gradlew lizardMain` | Runs pinned `lizard==1.21.3` for Java with max cyclomatic complexity `15`, matching Lizard's default warning threshold, and writes its report under the active worktree's normal `build/reports/lizard/` surface. |
@@ -156,11 +173,13 @@ an additional aggregate dependency. `pmdTest` is disabled; PMD
 non-architecture smell policy applies to production source roots, not
 architecture test sources.
 
-Whole-program dead-code discovery for compiled concrete production files,
-types, constructors, methods, and fields is now mechanically enforced by
-`checkNoDeadCode`. Local declaration hygiene remains owned by `compileJava`,
-while public abstract declarations and interfaces without an in-repo concrete
-runtime path remain `Review-Owned`.
+Whole-program dead-code discovery for compiled production declarations is now
+mechanically enforced by `checkNoDeadCode`. That blocker covers files,
+top-level types, secondary top-level types, named nested and local types,
+constructors, methods, and fields. Local declaration hygiene remains owned by
+`compileJava`, while dynamic runtime entrypoints without a scanned structural
+root remain out of scope until they are made explicit through
+`tools/quality/config/deadcode/keep-rules.pro`.
 
 SpotBugs uses the official Gradle plugin with `findsecbugs-plugin` enabled,
 effort `MAX`, and confidence `MEDIUM`. `MAX` is the strongest analysis effort;
@@ -289,6 +308,12 @@ It includes:
   `checkDataMapperEnforcement`,
   `checkDataPersistencecoreEnforcement`,
   `checkViewEnforcement`,
+  `checkViewInputEventEnforcement`,
+  `checkViewContributionEnforcement`,
+  `checkViewBinderEnforcement`,
+  `checkViewContributionModelEnforcement`,
+  `checkViewContentModelEnforcement`,
+  `checkViewIntentHandlerEnforcement`,
   `checkViewLayerEnforcement`,
   `checkShellRuntimeContextEnforcement`, `pmdArchitectureMain`,
   and `:build-harness:architectureCheck`
@@ -309,7 +334,7 @@ By default, `production-handoff` now runs with Gradle `--continue` at the
 staged-handoff level so the canonical implementation-handoff route reports the
 broader current failure set in one run. The staged handoff still fails overall
 when any blocking dependency fails, but compile, topology, hygiene, and later
-view-architecture blockers no longer hide independent sibling failures behind
+focused view-role blockers no longer hide independent sibling failures behind
 the first failing stage. Callers may still pass `--continue` explicitly for
 clarity, but the canonical wrapper now adds that default itself.
 Additional Gradle investigation flags may be passed after `--`, but the
@@ -374,8 +399,13 @@ Focused investigation entrypoints are `compileJava`, `pmdMain`,
   `checkShellLayerEnforcement`,
   `checkShellRuntimeContextEnforcement`,
 `checkViewFxmlResources`, `checkViewEnforcement`,
-  `pmdViewContributionEnforcement`,
-  `checkDomainUseCaseEnforcement`,
+`checkViewInputEventEnforcement`,
+`checkViewContributionEnforcement`,
+`checkViewBinderEnforcement`,
+`checkViewContributionModelEnforcement`,
+`checkViewContentModelEnforcement`,
+`checkViewIntentHandlerEnforcement`,
+`checkDomainUseCaseEnforcement`,
   `checkDataModelEnforcement`,
   `checkDataGatewayEnforcement`,
   `checkDataRepositoryEnforcement`,
@@ -417,6 +447,12 @@ Architecture-focused entrypoints:
   `checkLayeringArchitectureEnforcement`,
   `checkLayeringIndirectionEnforcement`,
   `checkViewEnforcement`,
+  `checkViewInputEventEnforcement`,
+  `checkViewContributionEnforcement`,
+  `checkViewBinderEnforcement`,
+  `checkViewContributionModelEnforcement`,
+  `checkViewContentModelEnforcement`,
+  `checkViewIntentHandlerEnforcement`,
   `checkViewLayerEnforcement`,
   `checkShellRuntimeContextEnforcement`, `pmdArchitectureMain`, and
   `:build-harness:architectureCheck`.
@@ -552,10 +588,26 @@ Architecture-focused entrypoints:
   Aggregates the focused `AppShell` bundle through `compileJava` with the
   dedicated `ShellLifecycleHookOwnership` compiler check.
 - `./gradlew checkViewEnforcement --console=plain`
-  Aggregates the merged View bundle through `compileJava`,
-  `checkViewLayerEnforcement`, `checkViewFxmlResources`, and
-  `pmdViewContributionEnforcement`. This is the canonical public entrypoint
-  for compile-bound view-role enforcement.
+  Aggregates the focused passive-`View` bundle through `compileJava`,
+  `checkViewLayerEnforcement`, and `checkViewFxmlResources`.
+- `./gradlew checkViewInputEventEnforcement --console=plain`
+  Aggregates the focused `ViewInputEvent` bundle through `compileJava` and
+  `checkViewLayerEnforcement`.
+- `./gradlew checkViewContributionEnforcement --console=plain`
+  Aggregates the focused `Contribution` bundle through `compileJava` and
+  `checkViewLayerEnforcement`.
+- `./gradlew checkViewBinderEnforcement --console=plain`
+  Aggregates the focused `Binder` bundle through `compileJava` and
+  `checkViewLayerEnforcement`.
+- `./gradlew checkViewContributionModelEnforcement --console=plain`
+  Aggregates the focused `ContributionModel` bundle through `compileJava` and
+  `checkViewLayerEnforcement`.
+- `./gradlew checkViewContentModelEnforcement --console=plain`
+  Aggregates the focused `ContentModel` bundle through `compileJava` and
+  `checkViewLayerEnforcement`.
+- `./gradlew checkViewIntentHandlerEnforcement --console=plain`
+  Aggregates the focused `IntentHandler` bundle through `compileJava` and
+  `checkViewLayerEnforcement`.
 - `./gradlew checkViewLayerEnforcement --console=plain`
   Aggregates the closed-world View Layer bundle through the generic
   build-harness topology proof for allowed view directories, role forms, and
@@ -608,7 +660,8 @@ wrappers continue to own their own invocation defaults such as
 `--console=plain` and the default `--continue` policy for diagnostic surfaces.
 
 This does not make bytecode-dependent entrypoints source-only. `spotbugsMain`,
-`ckjmMain`, and `checkViewEnforcement` still require
+`ckjmMain`, `checkViewEnforcement`, and the other focused `checkView*Enforcement`
+tasks still require
 current compiled classes; if `compileJava` fails, those entrypoints may be
 skipped because their prerequisite failed rather than because another
 independent check failed.

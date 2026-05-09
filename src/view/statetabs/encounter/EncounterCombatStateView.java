@@ -182,12 +182,12 @@ public final class EncounterCombatStateView extends VBox {
                     ? Math.max(0.0, Math.min(1.0, (double) card.currentHp() / card.maxHp()))
                     : 0.0;
             ProgressMeterContentModel progressMeterContentModel = new ProgressMeterContentModel();
-            progressMeterContentModel.showMeter(
+            progressMeterContentModel.showMeter(new ProgressMeterContentModel.MeterDisplay(
                     fraction,
                     (fraction <= WOUNDED_THRESHOLD ? "! " : "") + card.currentHp() + " / " + card.maxHp(),
                     card.name() + " HP " + card.currentHp() + "/" + card.maxHp(),
                     hpFillStyle(fraction),
-                    "progress-meter-combat");
+                    "progress-meter-combat"));
             progressMeterContentModel.configurePopup(
                             "HP bearbeiten",
                             HP_POPUP_STEP,

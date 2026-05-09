@@ -91,21 +91,24 @@ public final class CreatureDetailsContentModel {
         private static DetailState toPresentation(CreatureDetail creature) {
             return new DetailState(
                     creature.name(),
-                    meta(creature),
-                    coreProperties(creature),
-                    abilities(creature),
-                    properties(creature),
-                    sections(creature));
+                    MetaFormatter.meta(creature),
+                    PropertyFormatter.coreProperties(creature),
+                    PropertyFormatter.abilities(creature),
+                    PropertyFormatter.properties(creature),
+                    ActionFormatter.sections(creature));
         }
+    }
+
+    private static final class MetaFormatter {
 
         private static String meta(CreatureDetail creature) {
             StringBuilder meta = new StringBuilder();
-            append(meta, creature.size(), " ");
-            append(meta, creature.creatureType(), " ");
+            TextSupport.append(meta, creature.size(), " ");
+            TextSupport.append(meta, creature.creatureType(), " ");
             if (!creature.subtypes().isEmpty()) {
                 meta.append(" (").append(String.join(", ", creature.subtypes())).append(")");
             }
-            if (present(creature.alignment())) {
+            if (TextSupport.present(creature.alignment())) {
                 if (!meta.isEmpty()) {
                     meta.append(", ");
                 }
@@ -113,15 +116,16 @@ public final class CreatureDetailsContentModel {
             }
             return meta.toString();
         }
+    }
+
+    private static final class PropertyFormatter {
 
         private static List<PropertyLine> coreProperties(CreatureDetail creature) {
             List<PropertyLine> lines = new ArrayList<>();
-            String armorClassNotes = creature.armorClassNotes();
-            String hitDiceExpression = creature.hitDiceExpression();
             lines.add(new PropertyLine("Armor Class", creature.armorClass()
-                    + (present(armorClassNotes) ? " (" + armorClassNotes + ")" : "")));
+                    + TextSupport.parenthesized(creature.armorClassNotes())));
             lines.add(new PropertyLine("Hit Points", creature.hitPoints()
-                    + (present(hitDiceExpression) ? " (" + hitDiceExpression + ")" : "")));
+                    + TextSupport.parenthesized(creature.hitDiceExpression())));
             lines.add(new PropertyLine("Speed", speed(creature)));
             return lines;
         }
@@ -136,16 +140,10 @@ public final class CreatureDetailsContentModel {
                     ability("CHA", creature.charisma()));
         }
 
-        private static PropertyLine ability(String label, int value) {
-            int modifier = Math.floorDiv(value - 10, 2);
-            String modifierText = modifier >= 0 ? "+" + modifier : String.valueOf(modifier);
-            return new PropertyLine(label, value + " (" + modifierText + ")");
-        }
-
         private static List<PropertyLine> properties(CreatureDetail creature) {
             List<PropertyLine> lines = new ArrayList<>();
-            addIfPresent(lines, "Saving Throws", formatDelimited(creature.savingThrows()));
-            addIfPresent(lines, "Skills", formatDelimited(creature.skills()));
+            addIfPresent(lines, "Saving Throws", TextSupport.formatDelimited(creature.savingThrows()));
+            addIfPresent(lines, "Skills", TextSupport.formatDelimited(creature.skills()));
             addIfPresent(lines, "Damage Vulnerabilities", creature.damageVulnerabilities());
             addIfPresent(lines, "Damage Resistances", creature.damageResistances());
             addIfPresent(lines, "Damage Immunities", creature.damageImmunities());
@@ -153,48 +151,31 @@ public final class CreatureDetailsContentModel {
             addIfPresent(lines, "Senses", senses(creature));
             addIfPresent(lines, "Languages", creature.languages());
             lines.add(new PropertyLine("Challenge", creature.challengeRating()
-                    + " (" + formatNumber(creature.xp()) + " XP)"));
+                    + " (" + TextSupport.formatNumber(creature.xp()) + " XP)"));
             if (creature.proficiencyBonus() > 0) {
                 lines.add(new PropertyLine("Proficiency Bonus", "+" + creature.proficiencyBonus()));
             }
             return lines;
         }
 
-        private static List<ActionGroup> sections(CreatureDetail creature) {
-            List<ActionGroup> sections = new ArrayList<>();
-            List<ActionLine> actions = creature.actions().stream()
-                    .map(DetailPresenter::actionLine)
-                    .toList();
-            if (!actions.isEmpty()) {
-                sections.add(new ActionGroup("Actions", "", actions));
-            }
-            return sections;
-        }
-
-        private static ActionLine actionLine(CreatureActionDetail action) {
-            return new ActionLine(action.name(), action.description());
+        private static PropertyLine ability(String label, int value) {
+            int modifier = Math.floorDiv(value - 10, 2);
+            String modifierText = modifier >= 0 ? "+" + modifier : String.valueOf(modifier);
+            return new PropertyLine(label, value + " (" + modifierText + ")");
         }
 
         private static String speed(CreatureDetail creature) {
             StringBuilder speed = new StringBuilder().append(creature.walkSpeed()).append(FEET_SUFFIX);
-            if (creature.flySpeed() > 0) {
-                speed.append(", fly ").append(creature.flySpeed()).append(FEET_SUFFIX);
-            }
-            if (creature.swimSpeed() > 0) {
-                speed.append(", swim ").append(creature.swimSpeed()).append(FEET_SUFFIX);
-            }
-            if (creature.climbSpeed() > 0) {
-                speed.append(", climb ").append(creature.climbSpeed()).append(FEET_SUFFIX);
-            }
-            if (creature.burrowSpeed() > 0) {
-                speed.append(", burrow ").append(creature.burrowSpeed()).append(FEET_SUFFIX);
-            }
+            appendSpeed(speed, "fly", creature.flySpeed());
+            appendSpeed(speed, "swim", creature.swimSpeed());
+            appendSpeed(speed, "climb", creature.climbSpeed());
+            appendSpeed(speed, "burrow", creature.burrowSpeed());
             return speed.toString();
         }
 
         private static @Nullable String senses(CreatureDetail creature) {
             StringBuilder text = new StringBuilder();
-            String formatted = reformatColonDelimited(creature.senses(), FEET_SUFFIX);
+            String formatted = TextSupport.reformatColonDelimited(creature.senses(), FEET_SUFFIX);
             if (formatted != null) {
                 text.append(formatted);
             }
@@ -207,12 +188,48 @@ public final class CreatureDetailsContentModel {
             return text.isEmpty() ? null : text.toString();
         }
 
+        private static void addIfPresent(
+                List<PropertyLine> lines,
+                String label,
+                @Nullable String value
+        ) {
+            if (TextSupport.present(value)) {
+                lines.add(new PropertyLine(label, value));
+            }
+        }
+
+        private static void appendSpeed(StringBuilder speed, String label, int value) {
+            if (value > 0) {
+                speed.append(", ").append(label).append(" ").append(value).append(FEET_SUFFIX);
+            }
+        }
+    }
+
+    private static final class ActionFormatter {
+
+        private static List<ActionGroup> sections(CreatureDetail creature) {
+            List<ActionLine> actions = creature.actions().stream()
+                    .map(ActionFormatter::actionLine)
+                    .toList();
+            if (actions.isEmpty()) {
+                return List.of();
+            }
+            return List.of(new ActionGroup("Actions", "", actions));
+        }
+
+        private static ActionLine actionLine(CreatureActionDetail action) {
+            return new ActionLine(action.name(), action.description());
+        }
+    }
+
+    private static final class TextSupport {
+
         private static @Nullable String formatDelimited(@Nullable String raw) {
             return reformatColonDelimited(raw, "");
         }
 
         private static @Nullable String reformatColonDelimited(@Nullable String raw, String valueSuffix) {
-            if (raw == null || raw.isBlank()) {
+            if (!present(raw)) {
                 return null;
             }
             StringBuilder text = new StringBuilder();
@@ -257,14 +274,8 @@ public final class CreatureDetailsContentModel {
             target.append(value);
         }
 
-        private static void addIfPresent(
-                List<PropertyLine> lines,
-                String label,
-                @Nullable String value
-        ) {
-            if (value != null && !value.isBlank()) {
-                lines.add(new PropertyLine(label, value));
-            }
+        private static String parenthesized(@Nullable String value) {
+            return present(value) ? " (" + value + ")" : "";
         }
 
         private static boolean present(@Nullable String value) {

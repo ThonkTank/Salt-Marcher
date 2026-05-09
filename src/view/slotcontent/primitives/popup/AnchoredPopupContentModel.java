@@ -67,7 +67,7 @@ public final class AnchoredPopupContentModel {
         popupState.set(popupState.get().asClosed());
     }
 
-    void popupHidden() {
+    public void popupHidden() {
         if (popupState.get().open()) {
             popupState.set(popupState.get().asClosed());
         }
@@ -108,5 +108,22 @@ public final class AnchoredPopupContentModel {
         private PopupState asClosed() {
             return new PopupState(false, placement, yOffset, popupWidth, focusRequestId, false);
         }
+
+        public double popupX(BoundsBounds bounds) {
+            return placement == Placement.TRAILING
+                    ? bounds.maxX() - popupWidth
+                    : bounds.minX();
+        }
+
+        public double popupY(BoundsBounds bounds) {
+            return bounds.maxY() + yOffset;
+        }
+    }
+
+    public record BoundsBounds(
+            double minX,
+            double maxX,
+            double maxY
+    ) {
     }
 }

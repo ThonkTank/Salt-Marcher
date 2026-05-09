@@ -25,7 +25,11 @@ public final class DialogSurfaceContentModel {
 
     public enum BodyPolicy {
         FIXED,
-        SCROLL
+        SCROLL;
+
+        boolean usesScrollHost() {
+            return this == SCROLL;
+        }
     }
 
     public record LayoutState(
@@ -40,6 +44,14 @@ public final class DialogSurfaceContentModel {
 
         static LayoutState initial() {
             return new LayoutState(BodyPolicy.FIXED, false, false);
+        }
+
+        boolean showHeader(boolean headerHasContent) {
+            return headerVisible && headerHasContent;
+        }
+
+        boolean showFooter(boolean footerHasContent) {
+            return footerVisible && footerHasContent;
         }
     }
 }

@@ -45,6 +45,16 @@ public final class DungeonControlPanelContentModel {
                 formatLevels(current.selectedLevels()));
     }
 
+    public OverlayPanelState currentOverlayPanelState() {
+        return OverlayPanelState.from(currentOverlaySettings(), overlayDisabled());
+    }
+
+    public String normalizeSelectedLevelsDraft(String raw, List<Integer> fallbackLevels) {
+        return parseLevels(raw)
+                .map(DungeonControlPanelContentModel::formatLevels)
+                .orElseGet(() -> formatLevels(fallbackLevels));
+    }
+
     public static String summaryText(OverlaySettings settings) {
         OverlaySettings resolved = settings == null ? OverlaySettings.defaults() : settings;
         return switch (resolved.mode()) {
@@ -113,6 +123,10 @@ public final class DungeonControlPanelContentModel {
         public boolean usesSelectedLevels() {
             return this == SELECTED;
         }
+
+        public static Mode safe(Mode mode) {
+            return mode == null ? OFF : mode;
+        }
     }
 
     public record OverlaySettings(
@@ -131,6 +145,42 @@ public final class DungeonControlPanelContentModel {
 
         public static OverlaySettings defaults() {
             return new OverlaySettings(Mode.OFF, 2, 0.35, List.of());
+        }
+    }
+
+    public record OverlayPanelState(
+            Mode mode,
+            int levelRange,
+            double opacityPercent,
+            String selectedLevelsText,
+            boolean rangeVisible,
+            boolean selectedVisible,
+            boolean controlsDisabled,
+            String triggerText
+    ) {
+
+        static OverlayPanelState from(OverlaySettings settings, boolean disabled) {
+            OverlaySettings safeSettings = settings == null ? OverlaySettings.defaults() : settings;
+            Mode safeMode = Mode.safe(safeSettings.mode());
+            boolean rangeVisible = safeMode.usesRange();
+            boolean selectedVisible = safeMode.usesSelectedLevels();
+            return new OverlayPanelState(
+                    safeMode,
+                    safeSettings.levelRange(),
+                    safeSettings.opacity() * 100.0,
+                    formatLevels(safeSettings.selectedLevels()),
+                    rangeVisible,
+                    selectedVisible,
+                    disabled,
+                    summaryText(safeSettings));
+        }
+
+        public boolean rangeDisabled() {
+            return controlsDisabled || !rangeVisible;
+        }
+
+        public boolean selectedLevelsDisabled() {
+            return controlsDisabled || !selectedVisible;
         }
     }
 }

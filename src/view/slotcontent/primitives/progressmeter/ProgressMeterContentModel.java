@@ -18,20 +18,15 @@ public final class ProgressMeterContentModel {
         return meterState.get();
     }
 
-    public void showMeter(
-            double fraction,
-            String text,
-            String accessibleText,
-            String fillStyleClass,
-            String sizeStyleClass
-    ) {
+    public void showMeter(MeterDisplay meterDisplay) {
+        MeterDisplay safeDisplay = meterDisplay == null ? MeterDisplay.initial() : meterDisplay;
         MeterState current = meterState.get();
         meterState.set(new MeterState(
-                normalizeFraction(fraction),
-                safe(text),
-                safe(accessibleText).isBlank() ? safe(text) : safe(accessibleText),
-                safe(fillStyleClass),
-                safe(sizeStyleClass),
+                normalizeFraction(safeDisplay.fraction()),
+                safeDisplay.text(),
+                safeDisplay.accessibleText(),
+                safeDisplay.fillStyleClass(),
+                safeDisplay.sizeStyleClass(),
                 current.tooltipText(),
                 current.initialAmount(),
                 current.amountDraft(),
@@ -86,6 +81,27 @@ public final class ProgressMeterContentModel {
     public void updateAmountDraft(String rawAmount) {
         MeterState current = meterState.get();
         meterState.set(current.withPopupState(current.popupOpen(), parse(rawAmount, current.amountDraft())));
+    }
+
+    public record MeterDisplay(
+            double fraction,
+            String text,
+            String accessibleText,
+            String fillStyleClass,
+            String sizeStyleClass
+    ) {
+
+        public MeterDisplay {
+            fraction = normalizeFraction(fraction);
+            text = safe(text);
+            accessibleText = safe(accessibleText).isBlank() ? text : safe(accessibleText);
+            fillStyleClass = safe(fillStyleClass);
+            sizeStyleClass = safe(sizeStyleClass);
+        }
+
+        public static MeterDisplay initial() {
+            return new MeterDisplay(0.0, "", "", "", "");
+        }
     }
 
     private static double normalizeFraction(double fraction) {
@@ -145,6 +161,26 @@ public final class ProgressMeterContentModel {
                     amountDraft,
                     popupOpen,
                     popupActions);
+        }
+
+        public boolean hasPopupActions() {
+            return !popupActions.isEmpty();
+        }
+
+        public boolean popupVisible() {
+            return popupOpen && hasPopupActions();
+        }
+
+        public boolean hasTooltip() {
+            return !tooltipText.isBlank();
+        }
+
+        public boolean hasFillStyle() {
+            return !fillStyleClass.isBlank();
+        }
+
+        public boolean hasSizeStyle() {
+            return !sizeStyleClass.isBlank();
         }
     }
 
