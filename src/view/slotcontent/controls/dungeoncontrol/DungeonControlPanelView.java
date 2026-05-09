@@ -252,10 +252,15 @@ public class DungeonControlPanelView extends VBox {
 
         private void publishOverlayInput() {
             publish(new DungeonControlPanelViewInputEvent(new DungeonControlPanelViewInputEvent.OverlayInput(
-                    modeSelector.getValue() == null ? "" : modeSelector.getValue().name(),
+                    currentModeName(),
                     rangeSpinner.getValue() == null ? 0 : rangeSpinner.getValue(),
                     opacitySlider.getValue() / 100.0,
                     selectedLevelsField.getText())));
+        }
+
+        private String currentModeName() {
+            DungeonControlPanelContentModel.Mode currentMode = FxAccess.comboValue(modeSelector);
+            return currentMode == null ? "" : currentMode.name();
         }
 
         private void commitSelectedLevels() {
@@ -311,6 +316,10 @@ public class DungeonControlPanelView extends VBox {
 
         private static <T> void setComboItems(ComboBox<T> comboBox, T[] values) {
             comboBox.getItems().setAll(values);
+        }
+
+        private static <T> T comboValue(ComboBox<T> comboBox) {
+            return comboBox.getValue();
         }
 
         private static <T> void setSpinnerValue(Spinner<T> spinner, T value) {

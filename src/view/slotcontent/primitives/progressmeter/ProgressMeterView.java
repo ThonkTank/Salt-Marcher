@@ -34,7 +34,8 @@ public final class ProgressMeterView extends StackPane {
     private String currentFillStyleClass = "";
     private String currentSizeStyleClass = "";
     private int amountFieldSyncDepth;
-    private Tooltip installedTooltip;
+    private Tooltip installedTooltip = new Tooltip();
+    private boolean tooltipInstalled;
 
     public ProgressMeterView() {
         getStyleClass().add("progress-meter");
@@ -46,7 +47,7 @@ public final class ProgressMeterView extends StackPane {
         FxAccess.addStyle(overlayText, "progress-meter-text");
         overlayText.setMouseTransparent(true);
 
-        getChildren().addAll(fillHost, overlayText);
+        FxAccess.addChildren(this, fillHost, overlayText);
         setAlignment(fillHost, Pos.CENTER_LEFT);
         setAlignment(overlayText, Pos.CENTER);
         configurePopupContent();
@@ -115,7 +116,7 @@ public final class ProgressMeterView extends StackPane {
             List<ProgressMeterContentModel.PopupActionModel> popupActions,
             int amount
     ) {
-        popupContent.getChildren().setAll(amountField, downButton, upButton);
+        FxAccess.setChildren(popupContent, amountField, downButton, upButton);
         Button defaultButton = null;
         for (ProgressMeterContentModel.PopupActionModel action : popupActions) {
             Button button = new Button(action.label());
@@ -141,24 +142,25 @@ public final class ProgressMeterView extends StackPane {
     }
 
     private void installTooltip(ProgressMeterContentModel.MeterState meterState) {
-        if (installedTooltip != null) {
+        if (tooltipInstalled) {
             Tooltip.uninstall(this, installedTooltip);
+            tooltipInstalled = false;
         }
         if (!meterState.hasTooltip()) {
-            installedTooltip = null;
             return;
         }
         installedTooltip = new Tooltip(meterState.tooltipText());
         Tooltip.install(this, installedTooltip);
+        tooltipInstalled = true;
     }
 
     private void updateFillStyleClass(ProgressMeterContentModel.MeterState meterState) {
         if (!safe(currentFillStyleClass).isBlank()) {
-            fill.getStyleClass().remove(currentFillStyleClass);
+            FxAccess.removeStyle(fill, currentFillStyleClass);
         }
         currentFillStyleClass = meterState.fillStyleClass();
         if (meterState.hasFillStyle()) {
-            fill.getStyleClass().add(currentFillStyleClass);
+            FxAccess.addStyle(fill, currentFillStyleClass);
         }
     }
 
@@ -213,6 +215,14 @@ public final class ProgressMeterView extends StackPane {
 
         private static void addChildren(Pane parent, Node... children) {
             parent.getChildren().addAll(children);
+        }
+
+        private static void removeStyle(Node node, String styleClass) {
+            node.getStyleClass().remove(styleClass);
+        }
+
+        private static void setChildren(Pane parent, Node... children) {
+            parent.getChildren().setAll(children);
         }
 
         private static void bindWidth(Region target, Region host, double normalizedFraction) {

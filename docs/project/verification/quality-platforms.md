@@ -299,6 +299,13 @@ Operationally, architecture checks enter local quality through:
   runs the focused `View Layer` enforcement bundle through the dedicated
   build-harness closed-world topology proof for allowed view directories,
   role forms, same-unit cardinality, and rename-or-move bypass blocking
+
+Internally, the focused View role tasks keep their public task split, but the
+technical owners are now only two shared source homes: build-harness under
+`tools/gradle/build-harness/.../architecture/view/**` for closed-world
+topology, and shared Error Prone under
+`tools/quality/incubator/quality-rules-errorprone/.../view/**` for
+compile-bound role invariants.
 - `checkDocumentationEnforcement`
   runs the focused Markdown-backed architecture and enforcement-documentation
   bundle through the dedicated documentation-enforcement build-harness path,

@@ -520,7 +520,7 @@ final class DungeonEditorMapEditorPopup {
         popup = new AnchoredPopupView(panel, () -> this.anchor, () -> draftField);
         popup.bind(popupContentModel);
         popup.onViewInputEvent(event -> {
-            if (event.interaction() == src.view.slotcontent.primitives.popup.AnchoredPopupViewInputEvent.Interaction.HIDDEN) {
+            if (event.interaction().isHidden()) {
                 handleHidden();
             }
         });
@@ -893,7 +893,7 @@ final class DungeonEditorToolPalettePopup {
         popup = new AnchoredPopupView(panel, () -> anchor, () -> primaryToolOption);
         popup.bind(popupContentModel);
         popup.onViewInputEvent(event -> {
-            if (event.interaction() == src.view.slotcontent.primitives.popup.AnchoredPopupViewInputEvent.Interaction.HIDDEN) {
+            if (event.interaction().isHidden()) {
                 handleHidden();
             }
         });

@@ -47,7 +47,7 @@ final class CatalogSearchableFilterView extends javafx.scene.control.Button {
         popup = new AnchoredPopupView(popupContent, () -> this);
         popup.bind(popupContentModel);
         popup.onViewInputEvent(event -> {
-            if (event.interaction() == src.view.slotcontent.primitives.popup.AnchoredPopupViewInputEvent.Interaction.HIDDEN) {
+            if (event.interaction().isHidden()) {
                 updateTriggerText();
                 if (onInteraction != null) {
                     onInteraction.run();

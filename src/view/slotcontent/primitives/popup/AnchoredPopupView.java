@@ -23,7 +23,6 @@ public final class AnchoredPopupView {
     private AnchoredPopupContentModel contentModel = new AnchoredPopupContentModel();
     private Consumer<AnchoredPopupViewInputEvent> viewInputEventHandler = ignored -> { };
     private javafx.beans.value.ChangeListener<AnchoredPopupContentModel.PopupState> popupStateListener;
-    private boolean syncingModel;
     private long appliedFocusRequestId;
 
     public AnchoredPopupView(Node content, Supplier<@Nullable Node> anchorSupplier) {
@@ -64,33 +63,30 @@ public final class AnchoredPopupView {
     }
 
     private void applyPopupState(AnchoredPopupContentModel.PopupState popupState) {
-        if (syncingModel) {
-            return;
-        }
         AnchoredPopupContentModel.PopupState safeState = popupState == null
                 ? AnchoredPopupContentModel.PopupState.closed()
                 : popupState;
         if (!safeState.open()) {
-            if (popup.isShowing()) {
-                popup.hide();
-            }
+            hidePopupIfShowing();
             return;
         }
         Node anchor = anchorSupplier.get();
         if (!canShow(anchor)) {
-            syncingModel = true;
-            try {
-                contentModel.popupHidden();
-            } finally {
-                syncingModel = false;
-            }
+            contentModel.popupHidden();
             return;
         }
-        focusReturn = anchor;
-        anchor.applyCss();
-        if (anchor instanceof Parent parent) {
-            parent.layout();
+        showPopup(anchor, safeState);
+    }
+
+    private void hidePopupIfShowing() {
+        if (popup.isShowing()) {
+            popup.hide();
         }
+    }
+
+    private void showPopup(Node anchor, AnchoredPopupContentModel.PopupState popupState) {
+        focusReturn = anchor;
+        prepareAnchor(anchor);
         Bounds bounds = anchor.localToScreen(anchor.getBoundsInLocal());
         if (bounds == null) {
             return;
@@ -99,27 +95,34 @@ public final class AnchoredPopupView {
                 bounds.getMinX(),
                 bounds.getMaxX(),
                 bounds.getMaxY());
-        popup.show(anchor, safeState.popupX(popupBounds), safeState.popupY(popupBounds));
-        if (safeState.focusAfterShown() && safeState.focusRequestId() != appliedFocusRequestId) {
-            appliedFocusRequestId = safeState.focusRequestId();
-            Node focusTarget = focusTargetSupplier.get();
-            if (focusTarget != null) {
-                Platform.runLater(focusTarget::requestFocus);
-            }
-        }
+        popup.show(anchor, popupState.popupX(popupBounds), popupState.popupY(popupBounds));
+        requestFocusAfterShown(popupState);
         viewInputEventHandler.accept(new AnchoredPopupViewInputEvent(AnchoredPopupViewInputEvent.Interaction.SHOWN));
+    }
+
+    private static void prepareAnchor(Node anchor) {
+        anchor.applyCss();
+        if (anchor instanceof Parent parent) {
+            parent.layout();
+        }
+    }
+
+    private void requestFocusAfterShown(AnchoredPopupContentModel.PopupState popupState) {
+        if (popupState.focusAfterShown() && popupState.focusRequestId() != appliedFocusRequestId) {
+            Node focusTarget = focusTargetSupplier.get();
+            if (focusTarget == null) {
+                return;
+            }
+            appliedFocusRequestId = popupState.focusRequestId();
+            Platform.runLater(focusTarget::requestFocus);
+        }
     }
 
     private void handleHidden() {
         if (focusReturn != null) {
             focusReturn.requestFocus();
         }
-        syncingModel = true;
-        try {
-            contentModel.popupHidden();
-        } finally {
-            syncingModel = false;
-        }
+        contentModel.popupHidden();
         viewInputEventHandler.accept(new AnchoredPopupViewInputEvent(AnchoredPopupViewInputEvent.Interaction.HIDDEN));
     }
 

@@ -66,7 +66,15 @@ public record MapCanvasViewInputEvent(
         DRAG,
         RELEASE,
         MOVE,
-        SCROLL
+        SCROLL;
+
+        public boolean isDrag() {
+            return this == DRAG;
+        }
+
+        public boolean isScroll() {
+            return this == SCROLL;
+        }
     }
 
     public enum CanvasPrimitive {

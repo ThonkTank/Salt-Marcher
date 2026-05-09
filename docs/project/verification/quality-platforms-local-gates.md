@@ -59,6 +59,9 @@ bundles. Passive `View` graph and FXML analysis enter local quality through
 `checkViewContentModelEnforcement`, and
 `checkViewIntentHandlerEnforcement`, while whole-program compiled dead-code analysis enters
 through `checkNoDeadCode`,
+and the technical owner split behind those public View tasks is now only the
+build-harness View topology core plus the shared Error Prone View core under
+`tools/quality/incubator/quality-rules-errorprone/**`,
 focused Domain Layer topology, dependency, and documentation proof enters
 through `checkDomainLayerEnforcement`,
 focused Domain ApplicationService API-shape, topology, role-boundary, signature-purity,

@@ -163,7 +163,15 @@ public final class MapCanvasContentModel {
 
     public enum ViewMode {
         GRID,
-        GRAPH
+        GRAPH;
+
+        public static ViewMode graph() {
+            return GRAPH;
+        }
+
+        public static ViewMode grid() {
+            return GRID;
+        }
     }
 
     public record SceneColor(

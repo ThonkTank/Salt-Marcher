@@ -85,12 +85,12 @@ final class DungeonTravelIntentHandler {
             if (event == null) {
                 return;
             }
-            if (event.interaction() == MapCanvasViewInputEvent.Interaction.DRAG
+            if (event.interaction().isDrag()
                     && event.buttons().middleButtonDown()) {
                 mapCanvasContentModel.panByPixels(event.dragDeltaX(), event.dragDeltaY());
                 return;
             }
-            if (event.interaction() == MapCanvasViewInputEvent.Interaction.SCROLL
+            if (event.interaction().isScroll()
                     && !event.modifiers().controlDown()) {
                 if (event.scrollDeltaY() > 0.0) {
                     mapCanvasContentModel.zoomAround(

@@ -183,15 +183,9 @@ fun standardEnforcementBundleDescriptors(): List<EnforcementBundleDescriptor> = 
     bundle("view", 1, listOf("checkViewEnforcement", "checkViewFxmlResources")) {
         focusedViewRoleRootTask("Run the focused passive View enforcement bundle through one root entrypoint.")
         errorProneCheckers(listOf(
-            "PassiveViewDependencyBoundaries",
-            "PassiveViewTypeShapeBoundary",
-            "PassiveViewLocalStateBoundary",
-            "PassiveViewProjectInteractionBoundary",
-            "PassiveViewDataShapingBoundary",
-            "PassiveViewProjectionConstructionBoundary",
-            "ViewPresentationDecisionLeak",
-            "ViewInputEventApi",
-            "PassiveViewCallbackSeamBoundary"
+            "PassiveViewSurfaceBoundary",
+            "PassiveViewInteractionBoundary",
+            "PassiveViewStateBoundary"
         ))
         customTask("checkViewFxmlResources", "viewFxmlResources")
     },
@@ -199,7 +193,7 @@ fun standardEnforcementBundleDescriptors(): List<EnforcementBundleDescriptor> = 
         focusedViewRoleRootTask("Run the focused ViewInputEvent enforcement bundle through one root entrypoint.")
         errorProneCheckers(listOf(
             "ViewInputEventBoundary",
-            "ViewInputEventRawSnapshotBoundary"
+            "ViewInputEventSnapshotBoundary"
         ))
     },
     bundle("viewContribution", 3, listOf("checkViewContributionEnforcement")) {

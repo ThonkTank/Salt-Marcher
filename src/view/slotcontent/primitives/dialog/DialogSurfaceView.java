@@ -1,6 +1,4 @@
 package src.view.slotcontent.primitives.dialog;
-
-import java.util.function.Consumer;
 import javafx.geometry.Insets;
 import javafx.scene.Node;
 import javafx.scene.control.ScrollPane;
@@ -93,10 +91,10 @@ public final class DialogSurfaceView extends VBox {
 
     private static void replace(Pane container, Node child) {
         if (child == null) {
-            container.getChildren().clear();
+            FxAccess.clearChildren(container);
             return;
         }
-        container.getChildren().setAll(child);
+        FxAccess.setChildren(container, child);
     }
 
     private static void setVisibleAndManaged(Node node, boolean visible) {

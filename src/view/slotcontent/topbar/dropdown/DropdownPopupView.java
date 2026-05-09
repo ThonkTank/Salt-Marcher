@@ -22,7 +22,7 @@ public final class DropdownPopupView extends HBox {
         anchoredPopupView = new AnchoredPopupView(popupContent, () -> triggerButton);
         anchoredPopupView.bind(anchoredPopupContentModel);
         anchoredPopupView.onViewInputEvent(event -> {
-            if (event.interaction() == src.view.slotcontent.primitives.popup.AnchoredPopupViewInputEvent.Interaction.HIDDEN) {
+            if (event.interaction().isHidden()) {
                 contentModel.popupHidden();
             }
         });

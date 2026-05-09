@@ -69,12 +69,12 @@ final class DungeonEditorIntentHandler {
             if (event == null) {
                 return null;
             }
-            if (event.interaction() == MapCanvasViewInputEvent.Interaction.DRAG
+            if (event.interaction().isDrag()
                     && event.buttons().middleButtonDown()) {
                 mapCanvasContentModel.panByPixels(event.dragDeltaX(), event.dragDeltaY());
                 return null;
             }
-            if (event.interaction() == MapCanvasViewInputEvent.Interaction.SCROLL) {
+            if (event.interaction().isScroll()) {
                 return handleScroll(mapCanvasContentModel, event);
             }
             if (event.buttons().middleButtonDown()) {
