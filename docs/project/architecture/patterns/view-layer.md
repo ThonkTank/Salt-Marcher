@@ -76,11 +76,12 @@ belong in that role.
   directly; it does not synthesize fallback `*ViewInputEvent` carriers for its
   own surface
 - `View`
-  passive JavaFX content named `*View`; renders observable model state,
-  captures user input, constructs its own same-stem `*ViewInputEvent`
-  snapshots directly from current widget/raw-event state, keeps no separate
-  semantic local state or decision logic, and emits only those fire-and-forget
-  snapshots
+  passive JavaFX content named `*View`; renders already prepared presentation
+  facts that arrive only through project-free inbound sink channels owned by
+  the `View` itself, captures user input, constructs its own same-stem
+  `*ViewInputEvent` snapshots directly from current widget/raw-event state,
+  keeps no separate semantic local state or decision logic, and emits only
+  those fire-and-forget snapshots
 - `ViewInputEvent`
   immutable, co-located technical full-snapshot carrier named
   `*ViewInputEvent`; each interactive passive `*View` owns exactly one
@@ -147,8 +148,9 @@ Rules:
   interpretation for those units stays in the same-root active
   `*IntentHandler`
 - a reusable `slotcontent/**` `*View` stays dumb: it renders flat observable
-  state from its own `*ContentModel` and emits exactly one same-stem
-  `*ViewInputEvent` full snapshot
+  state that its own `*ContentModel` already prepared and published into the
+  View-owned sink channels, and emits exactly one same-stem `*ViewInputEvent`
+  full snapshot
 - reusable `slotcontent/**` `*ContentModel`s own component-specific
   presentation state and component-specific presentation logic so the active-
   root `*ContributionModel` can orchestrate child components instead of
@@ -161,6 +163,9 @@ Rules:
   input-relevant facts into the owning `*ContributionModel`,
   `*ContentModel`, or same-context `published/*Model` readback path before
   introducing more helper structure inside the `View`
+- passive `View`s must not know projection-model classes directly; if a
+  prepared render fact is needed, the owning model or Binder must publish it
+  through a project-free sink channel on the `View`
 - non-role-bearing standalone files under `src/view/**` are forbidden;
   implementation details must be explicit roles or nested/private helper types
   inside a role file
@@ -185,8 +190,9 @@ ContentModel      -> read-side domain published carriers + JavaFX beans/collecti
 IntentHandler     -> same-root ContributionModel + same-root and reused slotcontent ViewInputEvents
                    + reused slotcontent ContentModels + root domain ApplicationService types
                    + same-surface local value/support types
-View              -> JavaFX UI APIs + observable ContributionModel or ContentModel surface
-                   + own ViewInputEvent type + reusable slotcontent base views/support types
+View              -> JavaFX UI APIs + own ViewInputEvent type
+                   + project-free prepared-state sink surfaces
+                   + same-surface local technical support only
 ViewInputEvent    -> JDK/JavaFX technical input/value types + same-surface local support only
 Model             -> no shell, view, JavaFX, or data implementation types
 Shell             -> shell contracts and generic hosting only
@@ -208,12 +214,9 @@ Additional rules:
 - if a child widget needs internal callbacks inside one top-level surface, that
   child stays same-surface support code rather than becoming a second top-level
   `*View` plus `*ViewInputEvent` route in the same active root
-- feature-specific `View` classes may extend reusable generic counterparts from
-  `src/view/slotcontent/**`
-- reusable generic `slotcontent/**` Views or components may extend
-  `src/view/slotcontent/primitives/**`
-- the inheritance direction is one-way only:
-  contribution-specific -> reusable `slotcontent/**` -> `slotcontent/primitives/**`
+- view-to-view reuse does not happen through direct passive-View inheritance or
+  direct passive-View acquaintance; reusable presentation facts travel through
+  Binder/model assembly and project-free View sink channels instead
 - reusable `slotcontent/**` units must not depend on contribution-specific
   Views or support types, and `slotcontent/primitives/**` must not depend on
   non-primitive reusable or contribution-specific components
@@ -265,8 +268,9 @@ Local presentation cycle:
    the concrete snapshot fields, reads any additional UI facts only from the
    same-root `ContributionModel` and reused child `ContentModel`s, and mutates
    only those projection models when the result is pure view-layer state
-5. passive Views react through bindings or listeners to the updated
-   `ContributionModel` or `ContentModel`
+5. the same-root `ContributionModel` or reused child `ContentModel` publishes
+   the updated prepared render facts through the installed project-free
+   inbound sink channels on the passive `View`
 
 Direct domain-write roundtrip:
 
@@ -283,9 +287,10 @@ Direct domain-write roundtrip:
    reused component state subscribe to that `published/*Model` readback and
    update only their listener-facing projection state
 6. the local projection model derives only the flat observable values needed
-   for rendering and
-   local intent interpretation
-7. passive Views react through bindings or listeners
+   for rendering and local intent interpretation
+7. the same-root `ContributionModel` and any child `ContentModel`s publish
+   those prepared render facts through the installed project-free inbound sink
+   channels on the passive `View`
 
 Domain read-side contract:
 

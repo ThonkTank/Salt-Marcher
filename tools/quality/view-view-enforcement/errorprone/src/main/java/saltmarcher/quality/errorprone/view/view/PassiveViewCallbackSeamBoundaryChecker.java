@@ -18,7 +18,7 @@ import javax.lang.model.element.Modifier;
 import saltmarcher.quality.errorprone.view.ViewSourceDescriptor;
 @BugPattern(
         name = "PassiveViewCallbackSeamBoundary",
-        summary = "Passive Views may not expose callback or result-bearing outward seams beyond onViewInputEvent(...).",
+        summary = "Passive Views may expose only onViewInputEvent(...) outward plus project-free prepared-state sink accessors.",
         severity = BugPattern.SeverityLevel.ERROR)
 public final class PassiveViewCallbackSeamBoundaryChecker extends BugChecker
         implements BugChecker.CompilationUnitTreeMatcher {
@@ -58,9 +58,9 @@ public final class PassiveViewCallbackSeamBoundaryChecker extends BugChecker
         }
         return buildDescription(topLevelClass)
                 .setMessage("Passive View '" + qualifiedViewName
-                        + "' exposes alternate callback or result-bearing outward seams "
+                        + "' exposes illegal callback, result, or imperative render seams "
                         + String.join(", ", violations)
-                        + ". Passive Views must stay callback-flat and use only onViewInputEvent(Consumer<SameStemViewInputEvent>) when interactive.")
+                        + ". Passive Views may expose only onViewInputEvent(Consumer<SameStemViewInputEvent>) outward and project-free prepared-state sink accessors inward.")
                 .build();
     }
 
@@ -73,10 +73,13 @@ public final class PassiveViewCallbackSeamBoundaryChecker extends BugChecker
         if (!isOutwardVisible(methodTree.getModifiers())) {
             return;
         }
+        if (methodTree.getReturnType() == null) {
+            return;
+        }
         if (isAllowedViewInputEventApi(methodTree, sourcePackageName, viewSimpleName)) {
             return;
         }
-        if (!containsProtocolParameter(methodTree, sourcePackageName) && !returnsProtocolType(methodTree)) {
+        if (isAllowedPreparedStateSinkAccessor(methodTree, sourcePackageName, viewSimpleName)) {
             return;
         }
         violations.add(methodTree.getName() + "(" + methodTree.getParameters().size() + ")");
@@ -90,30 +93,10 @@ public final class PassiveViewCallbackSeamBoundaryChecker extends BugChecker
         if (!isOutwardVisible(variableTree.getModifiers())) {
             return;
         }
-        if (!ViewArchitectureSupport.isCallbackOrResultProtocolType(ASTHelpers.getType(variableTree.getType()))
-                && !ViewArchitectureSupport.isConsumerOfSameRootViewInputEvent(
-                        ASTHelpers.getType(variableTree.getType()),
-                        sourcePackageName)) {
+        if (variableTree.getModifiers().getFlags().containsAll(Set.of(Modifier.STATIC, Modifier.FINAL))) {
             return;
         }
         violations.add(variableTree.getName() + " field");
-    }
-
-    private static boolean containsProtocolParameter(MethodTree methodTree, String sourcePackageName) {
-        for (VariableTree parameter : methodTree.getParameters()) {
-            if (ViewArchitectureSupport.isCallbackOrResultProtocolType(ASTHelpers.getType(parameter.getType()))
-                    || ViewArchitectureSupport.isConsumerOfSameRootViewInputEvent(
-                    ASTHelpers.getType(parameter.getType()),
-                    sourcePackageName)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private static boolean returnsProtocolType(MethodTree methodTree) {
-        return methodTree.getReturnType() != null
-                && ViewArchitectureSupport.isCallbackOrResultProtocolType(ASTHelpers.getType(methodTree.getReturnType()));
     }
 
     private static boolean isAllowedViewInputEventApi(
@@ -132,6 +115,48 @@ public final class PassiveViewCallbackSeamBoundaryChecker extends BugChecker
                 ASTHelpers.getType(parameter.getType()),
                 sourcePackageName,
                 viewSimpleName);
+    }
+
+    private static boolean isAllowedPreparedStateSinkAccessor(
+            MethodTree methodTree,
+            String sourcePackageName,
+            String viewSimpleName
+    ) {
+        if (!methodTree.getParameters().isEmpty()) {
+            return false;
+        }
+        return isPreparedStateSinkType(ASTHelpers.getType(methodTree.getReturnType()), sourcePackageName, viewSimpleName);
+    }
+
+    private static boolean isPreparedStateSinkType(
+            javax.lang.model.type.TypeMirror typeMirror,
+            String sourcePackageName,
+            String viewSimpleName
+    ) {
+        if (typeMirror == null) {
+            return false;
+        }
+        if (ViewArchitectureSupport.isConsumerOfSameStemViewInputEvent(typeMirror, sourcePackageName, viewSimpleName)
+                || ViewArchitectureSupport.isConsumerOfSameRootViewInputEvent(typeMirror, sourcePackageName)) {
+            return false;
+        }
+        Set<String> referencedTypes = ViewArchitectureSupport.collectTypeReferences(typeMirror);
+        if (referencedTypes.isEmpty()) {
+            return false;
+        }
+        if (!(ViewArchitectureSupport.isCallbackSurfaceType(typeMirror)
+                || referencedTypes.contains("java.util.function.Consumer")
+                || referencedTypes.contains("java.util.function.BiConsumer")
+                || referencedTypes.contains("java.util.function.IntConsumer")
+                || referencedTypes.contains("java.util.function.LongConsumer")
+                || referencedTypes.contains("java.util.function.DoubleConsumer"))) {
+            return false;
+        }
+        return referencedTypes.stream().allMatch(referencedType ->
+                !referencedType.startsWith("src.")
+                        && !referencedType.startsWith("shell.")
+                        && !referencedType.startsWith("bootstrap.")
+                        && !ViewArchitectureSupport.isForbiddenViewInfrastructureJdkType(referencedType));
     }
 
     private static boolean isOutwardVisible(ModifiersTree modifiersTree) {

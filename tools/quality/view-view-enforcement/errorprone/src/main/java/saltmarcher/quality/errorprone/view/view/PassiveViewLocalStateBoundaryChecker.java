@@ -47,9 +47,9 @@ public final class PassiveViewLocalStateBoundaryChecker extends BugChecker
         Tree diagnosticTree = firstViolationTree[0] == null ? topLevelClass : firstViolationTree[0];
         return buildDescription(diagnosticTree)
                 .setMessage("Passive View '" + qualifiedViewName
-                        + "' owns local semantic state through mutable fields "
+                        + "' owns local semantic state or extra project acquaintances through mutable fields "
                         + String.join(", ", violations)
-                        + ". Passive Views may keep only widget state, the same-stem ViewInputEvent callback seam, and narrow technical reentrancy guards. If these fields are input-relevant or render-preparation facts, move them into the co-located ContributionModel/ContentModel or upstream read-side projection instead of keeping helper-owned state bags in the View.")
+                        + ". Passive Views may keep only widget state, project-free prepared-state sink helpers, the same-stem ViewInputEvent callback seam, and narrow technical reentrancy guards. If these fields are input-relevant or render-preparation facts, move them out of the View into the owning model or Binder-owned publication path instead of keeping helper-owned state bags or project references in the View.")
                 .build();
     }
 
@@ -202,9 +202,11 @@ public final class PassiveViewLocalStateBoundaryChecker extends BugChecker
         }
         if (referencedType.startsWith("src.domain.")
                 || referencedType.startsWith("src.data.")
+                || referencedType.startsWith("shell.")
                 || ViewArchitectureSupport.isApplicationServiceReference(referencedType)
                 || ViewArchitectureSupport.isTargetPublishedEventReference(referencedType)
-                || ViewArchitectureSupport.isSameViewRootModelReference(sourcePackageName, referencedType)) {
+                || ViewArchitectureSupport.isSameViewRootModelReference(sourcePackageName, referencedType)
+                || ViewArchitectureSupport.parseViewType(referencedType) != null) {
             return true;
         }
         return referencedType.startsWith(qualifiedViewName + "$")

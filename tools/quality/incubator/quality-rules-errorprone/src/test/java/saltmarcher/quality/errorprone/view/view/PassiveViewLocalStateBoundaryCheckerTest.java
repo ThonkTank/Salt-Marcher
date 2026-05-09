@@ -45,12 +45,13 @@ public final class PassiveViewLocalStateBoundaryCheckerTest {
     }
 
     @Test
-    public void allowsTechnicalPrimitiveViewViaPathSignal() {
+    public void rejectsScalarSemanticState() {
         compilationHelper
                 .addSourceLines(
                         "src/view/slotcontent/primitives/mapcanvas/MapCanvasView.java",
                         "package src.view.slotcontent.primitives.mapcanvas;",
                         "final class MapCanvasView {",
+                        "  // BUG: Diagnostic contains: owns local semantic state or extra project acquaintances",
                         "  private double zoom = 1.0;",
                         "}")
                 .doTest();

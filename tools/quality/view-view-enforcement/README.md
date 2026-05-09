@@ -7,10 +7,10 @@ It owns the passive-`View` compile-bound checkers plus the shared FXML
 resource validation support used by the merged root task:
 
 - `errorprone/`
-  `PassiveViewDependencyBoundaries`, `PassiveViewModelReadApis`,
-  `PassiveViewModelMutationBoundary`, `PassiveViewProjectionConstructionBoundary`,
-  `ViewPresentationDecisionLeak`, `ViewInputEventApi`, and
-  `PassiveViewCallbackSeamBoundary`
+  `PassiveViewDependencyBoundaries`, `PassiveViewLocalStateBoundary`,
+  `PassiveViewProjectInteractionBoundary`,
+  `PassiveViewProjectionConstructionBoundary`, `ViewPresentationDecisionLeak`,
+  `ViewInputEventApi`, and `PassiveViewCallbackSeamBoundary`
 - `support/`
   passive-`View` FXML resource validation runner
 - `tools/gradle/build-logic/src/main/kotlin/saltmarcher/buildlogic/enforcement/StandardEnforcementBundles.kt`

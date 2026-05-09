@@ -13,32 +13,29 @@ public final class PassiveViewCallbackSeamBoundaryCheckerTest {
             getClass());
 
     @Test
-    public void allowsTechnicalPrimitiveConsumerOfSameUnitCarrier() {
+    public void allowsProjectFreePreparedStateSinkAccessor() {
         compilationHelper
                 .addSourceLines(
                         "src/view/slotcontent/primitives/foo/FooView.java",
                         "package src.view.slotcontent.primitives.foo;",
                         "import java.util.function.Consumer;",
                         "final class FooView {",
-                        "  void onPointer(Consumer<FooPointerEvent> handler) { }",
+                        "  Consumer<String> titleSink() {",
+                        "    return text -> { };",
+                        "  }",
                         "}")
-                .addSourceLines(
-                        "src/view/slotcontent/primitives/foo/FooPointerEvent.java",
-                        "package src.view.slotcontent.primitives.foo;",
-                        "record FooPointerEvent(String raw) { }")
                 .doTest();
     }
 
     @Test
-    public void rejectsGenericPrimitiveCallbackFamilyWithoutTechnicalCarrierRoot() {
+    public void rejectsImperativeRenderMethod() {
         compilationHelper
                 .addSourceLines(
                         "src/view/slotcontent/primitives/foo/FooView.java",
                         "package src.view.slotcontent.primitives.foo;",
-                        "import java.util.function.Consumer;",
                         "final class FooView {",
-                        "  // BUG: Diagnostic contains: non-technical callback or result seams",
-                        "  void onPointer(Consumer<String> handler) { }",
+                        "  // BUG: Diagnostic contains: illegal callback, result, or imperative render seams",
+                        "  void showText(String text) { }",
                         "}")
                 .doTest();
     }

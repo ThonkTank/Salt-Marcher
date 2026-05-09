@@ -5,12 +5,6 @@ import shell.api.ServiceRegistry;
 import src.data.sessionplanner.query.ApplicationSessionPlannerFactsQueryAdapter;
 import src.data.sessionplanner.repository.SessionPlannerPublishedStateRepositoryAdapter;
 import src.data.sessionplanner.repository.SqliteSessionPlanRepository;
-import src.domain.encounter.EncounterApplicationService;
-import src.domain.encounter.published.EncounterPlanBudgetModel;
-import src.domain.encounter.published.SavedEncounterPlanListModel;
-import src.domain.party.PartyApplicationService;
-import src.domain.party.published.ActivePartyModel;
-import src.domain.party.published.AdventuringDayCalculationModel;
 import src.domain.sessionplanner.SessionPlannerApplicationService;
 import src.domain.sessionplanner.published.SessionPlannerCurrentSessionModel;
 import src.domain.sessionplanner.published.SessionPlannerEncountersModel;
@@ -31,19 +25,19 @@ public final class SessionPlannerServiceContribution implements ServiceContribut
         AssemblyFactory assemblies = new AssemblyFactory(repository);
         builder.registerFactory(
                 SessionPlannerApplicationService.class,
-                services -> assemblies.resolve(services).applicationService);
+                services -> assemblies.applicationService(services));
         builder.registerFactory(
                 SessionPlannerCurrentSessionModel.class,
-                services -> assemblies.resolve(services).currentSessionModel);
+                services -> assemblies.currentSessionModel(services));
         builder.registerFactory(
                 SessionPlannerParticipantsModel.class,
-                services -> assemblies.resolve(services).participantsModel);
+                services -> assemblies.participantsModel(services));
         builder.registerFactory(
                 SessionPlannerEncountersModel.class,
-                services -> assemblies.resolve(services).encountersModel);
+                services -> assemblies.encountersModel(services));
         builder.registerFactory(
                 SessionPlannerStatePanelModel.class,
-                services -> assemblies.resolve(services).statePanelModel);
+                services -> assemblies.statePanelModel(services));
     }
 
     private static final class AssemblyFactory {
@@ -53,6 +47,26 @@ public final class SessionPlannerServiceContribution implements ServiceContribut
 
         private AssemblyFactory(SessionPlanRepository repository) {
             this.repository = repository;
+        }
+
+        private SessionPlannerApplicationService applicationService(ServiceRegistry services) {
+            return resolve(services).applicationService();
+        }
+
+        private SessionPlannerCurrentSessionModel currentSessionModel(ServiceRegistry services) {
+            return resolve(services).currentSessionModel();
+        }
+
+        private SessionPlannerParticipantsModel participantsModel(ServiceRegistry services) {
+            return resolve(services).participantsModel();
+        }
+
+        private SessionPlannerEncountersModel encountersModel(ServiceRegistry services) {
+            return resolve(services).encountersModel();
+        }
+
+        private SessionPlannerStatePanelModel statePanelModel(ServiceRegistry services) {
+            return resolve(services).statePanelModel();
         }
 
         private ResolvedAssembly resolve(ServiceRegistry services) {
@@ -66,26 +80,32 @@ public final class SessionPlannerServiceContribution implements ServiceContribut
     private static final class ResolvedAssembly {
 
         private final SessionPlannerApplicationService applicationService;
-        private final SessionPlannerCurrentSessionModel currentSessionModel;
-        private final SessionPlannerParticipantsModel participantsModel;
-        private final SessionPlannerEncountersModel encountersModel;
-        private final SessionPlannerStatePanelModel statePanelModel;
+        private final SessionPlannerPublishedStateRepositoryAdapter publishedState;
 
         private ResolvedAssembly(SessionPlanRepository repository, ServiceRegistry services) {
-            ApplicationSessionPlannerFactsQueryAdapter facts = new ApplicationSessionPlannerFactsQueryAdapter(
-                    services.require(PartyApplicationService.class),
-                    services.require(ActivePartyModel.class),
-                    services.require(AdventuringDayCalculationModel.class),
-                    services.require(EncounterApplicationService.class),
-                    services.require(SavedEncounterPlanListModel.class),
-                    services.require(EncounterPlanBudgetModel.class));
-            SessionPlannerPublishedStateRepositoryAdapter publishedState =
-                    new SessionPlannerPublishedStateRepositoryAdapter(repository, facts, facts);
-            this.applicationService = new SessionPlannerApplicationService(repository, facts, facts, publishedState);
-            this.currentSessionModel = publishedState.currentSessionModel;
-            this.participantsModel = publishedState.participantsModel;
-            this.encountersModel = publishedState.encountersModel;
-            this.statePanelModel = publishedState.statePanelModel;
+            ApplicationSessionPlannerFactsQueryAdapter facts = ApplicationSessionPlannerFactsQueryAdapter.create(services);
+            this.publishedState = new SessionPlannerPublishedStateRepositoryAdapter(repository, facts, facts);
+            this.applicationService = new SessionPlannerApplicationService(repository, facts, publishedState);
+        }
+
+        private SessionPlannerApplicationService applicationService() {
+            return applicationService;
+        }
+
+        private SessionPlannerCurrentSessionModel currentSessionModel() {
+            return publishedState.currentSessionModel();
+        }
+
+        private SessionPlannerParticipantsModel participantsModel() {
+            return publishedState.participantsModel();
+        }
+
+        private SessionPlannerEncountersModel encountersModel() {
+            return publishedState.encountersModel();
+        }
+
+        private SessionPlannerStatePanelModel statePanelModel() {
+            return publishedState.statePanelModel();
         }
     }
 }

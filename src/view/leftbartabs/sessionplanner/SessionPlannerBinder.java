@@ -7,20 +7,25 @@ import shell.api.ShellBinding;
 import shell.api.ShellRuntimeContext;
 import shell.api.ShellSlot;
 import src.domain.sessionplanner.SessionPlannerApplicationService;
-import src.domain.sessionplanner.published.ApplySessionPlannerCommand;
+import src.domain.sessionplanner.published.AddSessionLootPlaceholderCommand;
+import src.domain.sessionplanner.published.AddSessionParticipantCommand;
+import src.domain.sessionplanner.published.AttachSessionEncounterCommand;
+import src.domain.sessionplanner.published.ClearSessionRestGapCommand;
+import src.domain.sessionplanner.published.CreateSessionPlanCommand;
+import src.domain.sessionplanner.published.MoveSessionEncounterDownCommand;
+import src.domain.sessionplanner.published.MoveSessionEncounterUpCommand;
+import src.domain.sessionplanner.published.RemoveSessionEncounterCommand;
+import src.domain.sessionplanner.published.RemoveSessionLootPlaceholderCommand;
+import src.domain.sessionplanner.published.RemoveSessionParticipantCommand;
+import src.domain.sessionplanner.published.SelectSessionEncounterCommand;
 import src.domain.sessionplanner.published.SessionPlannerEncounterAllocationCommand;
-import src.domain.sessionplanner.published.SessionPlannerEncounterPlanRef;
-import src.domain.sessionplanner.published.SessionPlannerEncounterRef;
 import src.domain.sessionplanner.published.SessionPlannerCurrentSessionModel;
 import src.domain.sessionplanner.published.SessionPlannerEncountersModel;
-import src.domain.sessionplanner.published.SessionPlannerLootRef;
-import src.domain.sessionplanner.published.SessionPlannerParticipantRef;
-import src.domain.sessionplanner.published.SessionPlannerParticipantsModel;
-import src.domain.sessionplanner.published.SessionPlannerRestGapChange;
-import src.domain.sessionplanner.published.SessionPlannerRestGapRef;
 import src.domain.sessionplanner.published.SessionPlannerRestKind;
+import src.domain.sessionplanner.published.SessionPlannerParticipantsModel;
 import src.domain.sessionplanner.published.SessionPlannerStatePanelModel;
 import src.domain.sessionplanner.published.SetSessionEncounterDaysCommand;
+import src.domain.sessionplanner.published.SetSessionRestGapCommand;
 
 final class SessionPlannerBinder {
 
@@ -66,7 +71,7 @@ final class SessionPlannerBinder {
         contributionModel.applyParticipants(participantsModel.current());
         contributionModel.applyEncounters(encountersModel.current());
         contributionModel.applyStatePanel(statePanelModel.current());
-        return new Binding(planner, controlsView, mainView, stateView);
+        return new Binding(controlsView, mainView, stateView);
     }
 
     private static void bindRequests(
@@ -81,48 +86,69 @@ final class SessionPlannerBinder {
             SessionPlannerPublishedEvent event
     ) {
         if (planner != null && event != null) {
-            planner.apply(toCommand(event.mutation()));
+            applyMutation(planner, event.mutation());
         }
     }
 
-    private static ApplySessionPlannerCommand toCommand(SessionPlannerPublishedEvent.Mutation mutation) {
-        return switch (mutation) {
+    private static void applyMutation(
+            SessionPlannerApplicationService planner,
+            SessionPlannerPublishedEvent.Mutation mutation
+    ) {
+        switch (mutation) {
             case SessionPlannerControlsViewInputEvent.CreateSessionTrigger ignored ->
-                    ApplySessionPlannerCommand.createSession();
+                    planner.createSession(new CreateSessionPlanCommand());
             case SessionPlannerControlsViewInputEvent.AddParticipantInput addParticipant ->
-                    ApplySessionPlannerCommand.addParticipant(new SessionPlannerParticipantRef(addParticipant.participantToAddId()));
+                    planner.addParticipant(new AddSessionParticipantCommand(addParticipant.participantToAddId()));
             case SessionPlannerControlsViewInputEvent.RemoveParticipantInput removeParticipant ->
-                    ApplySessionPlannerCommand.removeParticipant(new SessionPlannerParticipantRef(removeParticipant.participantToRemoveId()));
+                    planner.removeParticipant(new RemoveSessionParticipantCommand(removeParticipant.participantToRemoveId()));
             case SessionPlannerPublishedEvent.SetEncounterDaysMutation encounterDays ->
-                    ApplySessionPlannerCommand.encounterDays(new SetSessionEncounterDaysCommand(encounterDays.encounterDays()));
+                    planner.setEncounterDays(new SetSessionEncounterDaysCommand(encounterDays.encounterDays()));
             case SessionPlannerControlsViewInputEvent.AttachPlanInput attachPlan ->
-                    ApplySessionPlannerCommand.attachEncounter(new SessionPlannerEncounterPlanRef(attachPlan.planIdToAttach()));
+                    planner.attachEncounter(new AttachSessionEncounterCommand(attachPlan.planIdToAttach()));
             case SessionPlannerTimelineMainViewInputEvent.RemoveEncounterInput removeEncounter ->
-                    ApplySessionPlannerCommand.removeEncounter(new SessionPlannerEncounterRef(removeEncounter.encounterTokenToRemove()));
+                    planner.removeEncounter(new RemoveSessionEncounterCommand(removeEncounter.encounterTokenToRemove()));
             case SessionPlannerTimelineMainViewInputEvent.MoveEncounterInput moveEncounter ->
-                    moveEncounter.movesDown()
-                            ? ApplySessionPlannerCommand.moveEncounterDown(new SessionPlannerEncounterRef(moveEncounter.encounterToken()))
-                            : ApplySessionPlannerCommand.moveEncounterUp(new SessionPlannerEncounterRef(moveEncounter.encounterToken()));
+                    applyMove(planner, moveEncounter);
             case SessionPlannerTimelineMainViewInputEvent.SelectEncounterInput selectEncounter ->
-                    ApplySessionPlannerCommand.selectEncounter(new SessionPlannerEncounterRef(selectEncounter.selectedEncounterToken()));
+                    planner.selectEncounter(new SelectSessionEncounterCommand(selectEncounter.selectedEncounterToken()));
             case SessionPlannerTimelineMainViewInputEvent.SetEncounterAllocationInput allocation ->
-                    ApplySessionPlannerCommand.allocation(new SessionPlannerEncounterAllocationCommand(
+                    planner.setEncounterAllocation(new SessionPlannerEncounterAllocationCommand(
                             allocation.encounterToken(),
                             allocation.targetAllocationPercentage()));
             case SessionPlannerTimelineMainViewInputEvent.RestGapInput restGap ->
-                    restGap.clearsRestGap()
-                            ? ApplySessionPlannerCommand.clearRestGap(new SessionPlannerRestGapRef(
-                                    restGap.leftEncounterId(),
-                                    restGap.rightEncounterId()))
-                            : ApplySessionPlannerCommand.restGap(new SessionPlannerRestGapChange(
-                                    restGap.leftEncounterId(),
-                                    restGap.rightEncounterId(),
-                                    toRestKind(restGap.restSelection())));
+                    applyRestGap(planner, restGap);
             case SessionPlannerLootMainViewInputEvent.AddLootPlaceholderTrigger ignored ->
-                    ApplySessionPlannerCommand.addLootPlaceholder();
+                    planner.addLootPlaceholder(new AddSessionLootPlaceholderCommand());
             case SessionPlannerLootMainViewInputEvent.RemoveLootPlaceholderInput removeLoot ->
-                    ApplySessionPlannerCommand.removeLoot(new SessionPlannerLootRef(removeLoot.lootToken()));
-        };
+                    planner.removeLootPlaceholder(new RemoveSessionLootPlaceholderCommand(removeLoot.lootToken()));
+        }
+    }
+
+    private static void applyMove(
+            SessionPlannerApplicationService planner,
+            SessionPlannerTimelineMainViewInputEvent.MoveEncounterInput moveEncounter
+    ) {
+        if (moveEncounter.movesDown()) {
+            planner.moveEncounterDown(new MoveSessionEncounterDownCommand(moveEncounter.encounterToken()));
+            return;
+        }
+        planner.moveEncounterUp(new MoveSessionEncounterUpCommand(moveEncounter.encounterToken()));
+    }
+
+    private static void applyRestGap(
+            SessionPlannerApplicationService planner,
+            SessionPlannerTimelineMainViewInputEvent.RestGapInput restGap
+    ) {
+        if (restGap.clearsRestGap()) {
+            planner.clearRestGap(new ClearSessionRestGapCommand(
+                    restGap.leftEncounterId(),
+                    restGap.rightEncounterId()));
+            return;
+        }
+        planner.setRestGap(new SetSessionRestGapCommand(
+                restGap.leftEncounterId(),
+                restGap.rightEncounterId(),
+                toRestKind(restGap.restSelection())));
     }
 
     private static SessionPlannerRestKind toRestKind(SessionPlannerTimelineMainViewInputEvent.RestSelection selection) {
@@ -134,7 +160,6 @@ final class SessionPlannerBinder {
     }
 
     private record Binding(
-            SessionPlannerApplicationService planner,
             Node controls,
             Node main,
             Node state
@@ -156,11 +181,6 @@ final class SessionPlannerBinder {
                     ShellSlot.COCKPIT_CONTROLS, controls,
                     ShellSlot.COCKPIT_MAIN, main,
                     ShellSlot.COCKPIT_STATE, state);
-        }
-
-        @Override
-        public void onActivate() {
-            planner.refreshSession();
         }
     }
 }

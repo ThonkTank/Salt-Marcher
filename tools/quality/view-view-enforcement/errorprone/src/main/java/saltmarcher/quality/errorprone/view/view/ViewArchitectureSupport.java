@@ -88,6 +88,17 @@ final class ViewArchitectureSupport {
                 referencedType);
     }
 
+    static boolean isOwnTopLevelOrNestedTypeReference(
+            String sourcePackageName,
+            String topLevelSimpleName,
+            String referencedType
+    ) {
+        return saltmarcher.quality.errorprone.view.ViewArchitectureSupport.isOwnTopLevelOrNestedTypeReference(
+                sourcePackageName,
+                topLevelSimpleName,
+                referencedType);
+    }
+
     static ViewTypeInfo parseViewType(String referencedType) {
         saltmarcher.quality.errorprone.view.ViewArchitectureSupport.ViewTypeInfo viewType =
                 saltmarcher.quality.errorprone.view.ViewArchitectureSupport.parseViewType(referencedType);

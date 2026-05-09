@@ -2,139 +2,66 @@ package src.data.sessionplanner.query;
 
 import java.util.List;
 import java.util.Objects;
+import shell.api.ServiceRegistry;
 import src.domain.encounter.EncounterApplicationService;
-import src.domain.encounter.published.EncounterPlanBudgetModel;
-import src.domain.encounter.published.EncounterPlanBudgetResult;
-import src.domain.encounter.published.EncounterPlanBudgetStatus;
 import src.domain.encounter.published.RefreshEncounterPlanBudgetCommand;
-import src.domain.encounter.published.SavedEncounterPlanListModel;
-import src.domain.encounter.published.SavedEncounterPlanListResult;
-import src.domain.encounter.published.SavedEncounterPlanSummary;
-import src.domain.encounter.published.SavedEncounterPlanStatus;
 import src.domain.party.PartyApplicationService;
-import src.domain.party.published.ActivePartyModel;
-import src.domain.party.published.ActivePartyResult;
-import src.domain.party.published.AdventuringDayCalculationModel;
-import src.domain.party.published.AdventuringDayCalculationResult;
-import src.domain.party.published.AdventuringDayPlanningSummary;
 import src.domain.party.published.CalculateAdventuringDayCommand;
-import src.domain.party.published.PartyMemberSummary;
-import src.domain.party.published.ReadStatus;
 import src.domain.sessionplanner.session.port.SessionEncounterFactsLookup;
 import src.domain.sessionplanner.session.port.SessionPartyFactsLookup;
 
-@SuppressWarnings("PMD.CouplingBetweenObjects")
 public final class ApplicationSessionPlannerFactsQueryAdapter
         implements SessionPartyFactsLookup, SessionEncounterFactsLookup {
 
     private final PartyApplicationService party;
-    private final ActivePartyModel activePartyModel;
+    private final SessionPlannerPartyFactsPublishedReadback partyReadback;
     private final EncounterApplicationService encounters;
-    private AdventuringDayCalculationResult currentAdventuringDayCalculation;
-    private SavedEncounterPlanListResult currentSavedPlans;
-    private EncounterPlanBudgetResult currentPlanBudget;
+    private final SessionPlannerEncounterFactsPublishedReadback encounterReadback;
 
     public ApplicationSessionPlannerFactsQueryAdapter(
             PartyApplicationService party,
-            ActivePartyModel activePartyModel,
-            AdventuringDayCalculationModel adventuringDayCalculationModel,
+            SessionPlannerPartyFactsPublishedReadback partyReadback,
             EncounterApplicationService encounters,
-            SavedEncounterPlanListModel savedPlansModel,
-            EncounterPlanBudgetModel planBudgetModel
+            SessionPlannerEncounterFactsPublishedReadback encounterReadback
     ) {
         this.party = Objects.requireNonNull(party, "party");
-        this.activePartyModel = Objects.requireNonNull(activePartyModel, "activePartyModel");
-        AdventuringDayCalculationModel calculationModel =
-                Objects.requireNonNull(adventuringDayCalculationModel, "adventuringDayCalculationModel");
+        this.partyReadback = Objects.requireNonNull(partyReadback, "partyReadback");
         this.encounters = Objects.requireNonNull(encounters, "encounters");
-        SavedEncounterPlanListModel savedPlans =
-                Objects.requireNonNull(savedPlansModel, "savedPlansModel");
-        EncounterPlanBudgetModel planBudget =
-                Objects.requireNonNull(planBudgetModel, "planBudgetModel");
-        this.currentAdventuringDayCalculation = calculationModel.current();
-        this.currentSavedPlans = savedPlans.current();
-        this.currentPlanBudget = planBudget.current();
-        calculationModel.subscribe(result -> currentAdventuringDayCalculation = result);
-        savedPlans.subscribe(result -> currentSavedPlans = result);
-        planBudget.subscribe(result -> currentPlanBudget = result);
+        this.encounterReadback = Objects.requireNonNull(encounterReadback, "encounterReadback");
+    }
+
+    public static ApplicationSessionPlannerFactsQueryAdapter create(ServiceRegistry services) {
+        ServiceRegistry registry = Objects.requireNonNull(services, "services");
+        return new ApplicationSessionPlannerFactsQueryAdapter(
+                registry.require(PartyApplicationService.class),
+                new SessionPlannerPartyFactsPublishedReadback(
+                        registry.require(src.domain.party.published.ActivePartyModel.class),
+                        registry.require(src.domain.party.published.AdventuringDayCalculationModel.class)),
+                registry.require(EncounterApplicationService.class),
+                new SessionPlannerEncounterFactsPublishedReadback(
+                        registry.require(src.domain.encounter.published.SavedEncounterPlanListModel.class),
+                        registry.require(src.domain.encounter.published.EncounterPlanBudgetModel.class)));
     }
 
     @Override
     public ActivePartyMembersFact loadActivePartyMembers() {
-        ActivePartyResult result = activePartyModel.current();
-        if (result.status() != ReadStatus.SUCCESS) {
-            return new ActivePartyMembersFact(false, List.of(), "Aktive Party konnte nicht geladen werden.");
-        }
-        return new ActivePartyMembersFact(
-                true,
-                result.members().stream().map(ApplicationSessionPlannerFactsQueryAdapter::toPartyMemberFact).toList(),
-                "");
+        return partyReadback.loadActivePartyMembers();
     }
 
     @Override
     public AdventuringDayFact calculateAdventuringDay(List<Integer> levels, int plannedEncounterXp) {
         party.calculateAdventuringDay(new CalculateAdventuringDayCommand(levels, plannedEncounterXp));
-        AdventuringDayCalculationResult result = currentAdventuringDayCalculation;
-        AdventuringDayPlanningSummary summary = result == null ? null : result.planningSummary();
-        if (result == null || result.status() != ReadStatus.SUCCESS || summary == null) {
-            return AdventuringDayFact.unavailable();
-        }
-        return new AdventuringDayFact(
-                true,
-                summary.totalBudgetXp(),
-                summary.firstShortRestXp(),
-                summary.secondShortRestXp(),
-                summary.recommendedShortRests(),
-                summary.recommendedLongRests());
+        return partyReadback.currentAdventuringDayFact();
     }
 
     @Override
     public EncounterPlanListFact listEncounterPlans() {
-        SavedEncounterPlanListResult result = currentSavedPlans;
-        if (result == null || result.status() != SavedEncounterPlanStatus.SUCCESS) {
-            return new EncounterPlanListFact(false, List.of(), result == null ? "" : result.message());
-        }
-        return new EncounterPlanListFact(
-                true,
-                result.plans().stream().map(ApplicationSessionPlannerFactsQueryAdapter::toSavedEncounterPlanFact).toList(),
-                "");
+        return encounterReadback.listEncounterPlans();
     }
 
     @Override
     public EncounterPlanFact loadEncounterPlan(long encounterPlanId) {
         encounters.refreshPlanBudget(new RefreshEncounterPlanBudgetCommand(encounterPlanId));
-        EncounterPlanBudgetResult result = currentPlanBudget;
-        if (result == null || result.status() != EncounterPlanBudgetStatus.SUCCESS || result.summary() == null) {
-            String message = result == null || result.message().isBlank()
-                    ? "Encounter-Plan konnte nicht geladen werden."
-                    : result.message();
-            return EncounterPlanFact.unavailable(encounterPlanId, message);
-        }
-        return new EncounterPlanFact(
-                true,
-                result.summary().planId(),
-                result.summary().name(),
-                result.summary().generatedLabel(),
-                result.summary().creatureCount(),
-                result.summary().totalBaseXp(),
-                result.summary().adjustedXp(),
-                result.summary().xpMultiplier(),
-                result.summary().difficultyLabel(),
-                "Adj. XP " + result.summary().adjustedXp() + " · " + result.summary().difficultyLabel());
+        return encounterReadback.currentEncounterPlan(encounterPlanId);
     }
-
-    private static PartyMemberProfile toPartyMemberFact(PartyMemberSummary member) {
-        return new PartyMemberProfile(
-                member == null || member.id() == null ? 0L : member.id(),
-                member == null ? "" : member.name(),
-                member == null ? 0 : member.level());
-    }
-
-    private static SavedEncounterPlanFact toSavedEncounterPlanFact(SavedEncounterPlanSummary plan) {
-        return new SavedEncounterPlanFact(
-                plan == null ? 0L : plan.planId(),
-                plan == null ? "" : plan.name(),
-                plan == null ? "" : plan.summaryText());
-    }
-
 }

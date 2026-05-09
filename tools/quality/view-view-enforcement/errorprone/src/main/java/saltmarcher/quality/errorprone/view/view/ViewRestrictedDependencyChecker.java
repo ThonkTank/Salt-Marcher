@@ -10,7 +10,7 @@ import java.util.Set;
 import saltmarcher.quality.errorprone.view.ViewSourceDescriptor;
 @BugPattern(
         name = "PassiveViewDependencyBoundaries",
-        summary = "Passive Views may depend only on their allowed model and passive view surfaces.",
+        summary = "Passive Views may depend only on JavaFX/JDK UI types, same-surface support, and their own same-stem ViewInputEvent.",
         severity = BugPattern.SeverityLevel.ERROR)
 public final class ViewRestrictedDependencyChecker extends BugChecker
         implements BugChecker.CompilationUnitTreeMatcher {
@@ -19,13 +19,14 @@ public final class ViewRestrictedDependencyChecker extends BugChecker
     public Description matchCompilationUnit(CompilationUnitTree tree, VisitorState state) {
         ViewSourceDescriptor source = ViewSourceDescriptor.describe(tree);
         String packageName = source.packageName();
+        String viewSimpleName = source.topLevelSimpleName();
         if (!source.isPassiveViewSource()) {
             return Description.NO_MATCH;
         }
 
         Set<String> forbiddenReferences = new LinkedHashSet<>();
         for (String referencedType : ViewArchitectureSupport.collectReferencedTypes(tree)) {
-            if (isForbiddenReference(referencedType, packageName)) {
+            if (isForbiddenReference(referencedType, packageName, viewSimpleName)) {
                 forbiddenReferences.add(referencedType);
             }
         }
@@ -40,7 +41,11 @@ public final class ViewRestrictedDependencyChecker extends BugChecker
                 .build();
     }
 
-    private static boolean isForbiddenReference(String referencedType, String sourcePackageName) {
+    private static boolean isForbiddenReference(
+            String referencedType,
+            String sourcePackageName,
+            String viewSimpleName
+    ) {
         if (ViewArchitectureSupport.isForbiddenViewInfrastructureJdkType(referencedType)) {
             return true;
         }
@@ -53,17 +58,18 @@ public final class ViewRestrictedDependencyChecker extends BugChecker
         if (viewType == null) {
             return false;
         }
+        if (ViewArchitectureSupport.isOwnTopLevelOrNestedTypeReference(
+                sourcePackageName,
+                viewSimpleName,
+                referencedType)) {
+            return false;
+        }
         if ("VIEW_INPUT_EVENT".equals(viewType.bucket())) {
-            return !ViewArchitectureSupport.isSameViewRootReference(sourcePackageName, referencedType);
+            return !ViewArchitectureSupport.isSameStemViewInputEventReference(
+                    sourcePackageName,
+                    viewSimpleName,
+                    referencedType);
         }
-        if ("PUBLISHED_EVENT".equals(viewType.bucket())) {
-            return true;
-        }
-        if ("MODEL".equals(viewType.bucket())) {
-            return !ViewArchitectureSupport.isSameViewRootModelReference(sourcePackageName, referencedType);
-        }
-        return !"VIEW".equals(viewType.bucket())
-                || !ViewArchitectureSupport.isSameViewRootOrReusablePassiveViewReference(
-                        sourcePackageName, referencedType);
+        return true;
     }
 }

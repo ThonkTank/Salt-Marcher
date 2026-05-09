@@ -150,8 +150,7 @@ fun standardEnforcementBundleDescriptors(): List<EnforcementBundleDescriptor> = 
         errorProneCheckers(listOf(
             "PassiveViewDependencyBoundaries",
             "PassiveViewLocalStateBoundary",
-            "PassiveViewModelReadApis",
-            "PassiveViewModelMutationBoundary",
+            "PassiveViewProjectInteractionBoundary",
             "PassiveViewProjectionConstructionBoundary",
             "ViewPresentationDecisionLeak",
             "ViewInputEventApi",
