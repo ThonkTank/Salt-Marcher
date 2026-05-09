@@ -14,7 +14,11 @@ This document owns only the role-local enforcement inventory, focused
 verification surface, and current mechanical coverage for the internal model
 tree.
 
-Unified focused bundle entrypoint:
+Canonical Domain blocker surface:
+
+- `./gradlew checkDomainEnforcement --rerun-tasks --console=plain`
+
+Historical compatibility alias:
 
 - `./gradlew checkDomainModelEnforcement --rerun-tasks --console=plain`
 
@@ -32,6 +36,7 @@ Unified focused bundle entrypoint:
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
 | `domain-model-no-outer-layer-dependencies` | Enforced Elsewhere | every model family under `src/domain/**` | domain-layer bundle ArchUnit `domainMustStayIndependentFromOuterLayers` and domain-layer bundle Error Prone `DomainForbiddenInfrastructureDependency` | `./gradlew compileJava`, `./gradlew checkArchitecture`, and `./gradlew checkDomainLayerEnforcement` | Internal model code does not depend on outer-layer types or concrete data adapters. |
+| `domain-model-no-published-carrier-dependencies` | Enforced Elsewhere | every internal model subtree under `src/domain/<context>/model/<family>/model/` | domain-layer bundle ArchUnit `domainInternalModelsMustNotDependOnPublishedTypes` | `./gradlew checkArchitecture`, `./gradlew checkDomainEnforcement`, and `./gradlew checkDomainModelEnforcement` | Internal model code does not depend on same-context or foreign `published/**` carriers directly. |
 
 ### Communication Contract
 

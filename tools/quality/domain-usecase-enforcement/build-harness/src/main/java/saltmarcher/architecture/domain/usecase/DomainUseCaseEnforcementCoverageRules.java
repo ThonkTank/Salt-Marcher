@@ -42,10 +42,21 @@ public final class DomainUseCaseEnforcementCoverageRules implements Architecture
                     List.of("domain-usecase bundle PMD", "DomainUseCasePolicyRule"),
                     List.of("./gradlew checkDomainUseCaseEnforcement")),
             row("domain-usecase-thin-orchestration-semantics", "Review-Owned"),
-            row("domain-usecase-collaborator-surface-discipline", "Review-Owned"),
+            row("domain-usecase-collaborator-surface-discipline",
+                    "Enforced Elsewhere",
+                    List.of("domain-layer bundle ArchUnit", "domainUseCasesMustStayOnApplicationOrModelRoles"),
+                    List.of("./gradlew checkArchitecture", "./gradlew checkDomainEnforcement", "./gradlew checkDomainUseCaseEnforcement")),
             row("domain-usecase-no-hidden-business-policy", "Review-Owned"),
-            row("domain-usecase-no-hidden-carrier-bypass-into-model", "Review-Owned"),
-            row("domain-usecase-helper-role-discipline", "Review-Owned"));
+            row("domain-usecase-no-hidden-carrier-bypass-into-model",
+                    "Enforced Elsewhere",
+                    List.of(
+                            "domain-layer bundle ArchUnit", "domainUseCasesMustStayOnApplicationOrModelRoles",
+                            "domain-usecase bundle Error Prone", "DomainApplicationNoSameContextPublishedDependency"),
+                    List.of("./gradlew compileJava", "./gradlew checkArchitecture", "./gradlew checkDomainEnforcement", "./gradlew checkDomainUseCaseEnforcement")),
+            row("domain-usecase-helper-role-discipline",
+                    "Enforced Elsewhere",
+                    List.of("domain-layer bundle ArchUnit", "domainUseCasesMustStayOnApplicationOrModelRoles"),
+                    List.of("./gradlew checkArchitecture", "./gradlew checkDomainEnforcement", "./gradlew checkDomainUseCaseEnforcement")));
 
     @Override
     public void check(ArchitectureContext context, ViolationSink violations) {

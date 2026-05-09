@@ -19,7 +19,11 @@ It answers three questions for use-case orchestration:
 - what the role MUST NOT contain
 - which direct communication boundaries the role itself MAY cross
 
-Unified focused bundle entrypoint:
+Canonical Domain blocker surface:
+
+- `./gradlew checkDomainEnforcement --rerun-tasks --console=plain`
+
+Historical compatibility alias:
 
 - `./gradlew checkDomainUseCaseEnforcement --rerun-tasks --console=plain`
 
@@ -52,10 +56,10 @@ generic domain-layer communication and outer-dependency boundaries owned by
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
 | `domain-usecase-thin-orchestration-semantics` | Review-Owned | every `*UseCase.java` under `src/domain/**` | none | none | A mechanically legal use case still reads as exactly one work operation and orchestration step rather than a second tactical model layer or service dump. |
-| `domain-usecase-collaborator-surface-discipline` | Review-Owned | every `*UseCase.java` under `src/domain/**` | none | none | A legal use case still limits direct collaborators to same-context models, helpers, repositories, ports, constants, and allowed foreign root boundaries. |
+| `domain-usecase-collaborator-surface-discipline` | Enforced Elsewhere | every `*UseCase.java` under `src/domain/**` | domain-layer bundle ArchUnit `domainUseCasesMustStayOnApplicationOrModelRoles` | `./gradlew checkArchitecture`, `./gradlew checkDomainEnforcement`, and `./gradlew checkDomainUseCaseEnforcement` | Use cases stay on same-context `application/**` and `model/**` collaborators instead of directly reaching root `ApplicationService`, `published/**`, foreign domain internals, or outer-layer seams. |
 | `domain-usecase-no-hidden-business-policy` | Review-Owned | every `*UseCase.java` under `src/domain/**` | none | none | Real business policy has not been pushed into legal orchestration code simply because the current blockers do not catch it. |
-| `domain-usecase-no-hidden-carrier-bypass-into-model` | Review-Owned | every use-case handoff into same-context internal model work | none | none | No legal type shape is being used to smuggle same-context or foreign `published/**` carriers into private model code. |
-| `domain-usecase-helper-role-discipline` | Review-Owned | every helper or model-local collaborator used by `*UseCase.java` | none | none | Business policy has not been smuggled into helper-shaped collaborators just because root `application/` itself is now hard-cut to `*UseCase.java` only. |
+| `domain-usecase-no-hidden-carrier-bypass-into-model` | Enforced Elsewhere | every use-case handoff into same-context internal model work | domain-layer bundle ArchUnit `domainUseCasesMustStayOnApplicationOrModelRoles`; domain-usecase bundle Error Prone `DomainApplicationNoSameContextPublishedDependency` | `./gradlew compileJava`, `./gradlew checkArchitecture`, `./gradlew checkDomainEnforcement`, and `./gradlew checkDomainUseCaseEnforcement` | Same-context and foreign `published/**` carriers do not cross from use-case code into internal model work through otherwise legal collaborator shapes. |
+| `domain-usecase-helper-role-discipline` | Enforced Elsewhere | every helper or model-local collaborator used by `*UseCase.java` | domain-layer bundle ArchUnit `domainUseCasesMustStayOnApplicationOrModelRoles` | `./gradlew checkArchitecture`, `./gradlew checkDomainEnforcement`, and `./gradlew checkDomainUseCaseEnforcement` | Use-case collaboration stays within same-context application/model roles, so helper-shaped or repository-shaped bypass buckets cannot be introduced outside the allowed model role families. |
 
 ## References
 

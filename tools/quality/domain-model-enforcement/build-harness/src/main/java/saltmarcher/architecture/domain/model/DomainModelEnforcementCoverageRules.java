@@ -25,6 +25,11 @@ public final class DomainModelEnforcementCoverageRules implements ArchitectureRu
                             "domain-layer bundle ArchUnit", "domainMustStayIndependentFromOuterLayers",
                             "domain-layer bundle Error Prone", "DomainForbiddenInfrastructureDependency"),
                     List.of("./gradlew compileJava", "./gradlew checkDomainLayerEnforcement")),
+            row(
+                    "domain-model-no-published-carrier-dependencies",
+                    "Enforced Elsewhere",
+                    List.of("domain-layer bundle ArchUnit", "domainInternalModelsMustNotDependOnPublishedTypes"),
+                    List.of("./gradlew checkArchitecture", "./gradlew checkDomainEnforcement", "./gradlew checkDomainModelEnforcement")),
             row("domain-model-published-derivation-ownership", "Review-Owned"));
 
     @Override

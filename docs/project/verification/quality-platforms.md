@@ -135,12 +135,7 @@ Operationally, architecture checks enter local quality through:
   ApplicationService` API-shape and signature-purity rules, the focused
   Data Model source-shape/signature-boundary rules, the focused
   `Domain Published` carrier-shape and signature-purity rules, the focused
-  `Domain Port` role-shape/boundary rules, the focused `Domain Factory`
-  role-shape/statelessness rules, the focused `Domain Value` role-shape/state
-  rule, the focused `Domain Service` role-shape/statelessness rules, the
-  focused `Domain Policy` role-shape/statelessness rules, the focused Domain
-  Event role-shape rule, the focused Domain Specification role-shape rule, and
-  legacy view-package bans
+  Domain Layer source-topology perimeter, and legacy view-package bans
 - `checkDomainEnforcement`
   is the canonical Domain blocker surface. It aggregates Domain Layer,
   Context, ApplicationService, UseCase, Published, Port, Repository, Model,
@@ -196,12 +191,9 @@ Operationally, architecture checks enter local quality through:
   for that truth. This surface is slated for replacement or removal in the
   gate migration wave.
 - `checkArchitecture`
-  aggregates the focused Domain Layer, Domain ApplicationService,
-  Data ServiceContribution,
-  styling-layer, `Shell Layer`, `Layering Architecture`, Domain UseCase,
+  aggregates the focused Domain, Data ServiceContribution,
+  styling-layer, `Shell Layer`, `Layering Architecture`,
   Data Model, Data Repository, Data Query, Data Mapper, Data Persistencecore,
-  `Domain Port`, `Domain Repository`, `Domain Model`, `Domain Helper`,
-  `Domain Constants`,
   `Contribution`, `Binder`, `ContributionModel`, `ContentModel`,
   `ViewInputEvent`, `IntentHandler`, and `ShellRuntimeContext` bundles,
   ArchUnit, PMD architecture rules, and the
@@ -209,14 +201,8 @@ Operationally, architecture checks enter local quality through:
 - `check`
   runs the architecture harness plus adjacent non-architecture quality gates.
   Its architecture-focused coverage comes from the explicit
-  `checkDomainLayerEnforcement`,
-  `checkDomainApplicationServiceEnforcement`,
+  `checkDomainEnforcement`,
   `checkDataServiceContributionEnforcement`,
-  `checkDomainPortEnforcement`,
-  `checkDomainRepositoryEnforcement`,
-  `checkDomainModelEnforcement`,
-  `checkDomainHelperEnforcement`,
-  `checkDomainConstantsEnforcement`,
   `checkDataModelEnforcement`,
   `checkDataGatewayEnforcement`,
   `checkDataRepositoryEnforcement`,

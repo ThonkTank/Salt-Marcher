@@ -20,7 +20,11 @@ It answers four questions for every published boundary carrier:
 - what the role MUST NOT contain
 - which signatures and communication surfaces the role itself MAY expose
 
-Unified focused bundle entrypoint:
+Canonical Domain blocker surface:
+
+- `./gradlew checkDomainEnforcement --rerun-tasks --console=plain`
+
+Historical compatibility alias:
 
 - `./gradlew checkDomainPublishedEnforcement --rerun-tasks --console=plain`
 

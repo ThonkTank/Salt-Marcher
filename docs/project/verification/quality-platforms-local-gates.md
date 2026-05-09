@@ -55,26 +55,14 @@ steady-state policy.
 bundles. Passive `View` graph and FXML analysis enter local quality through
 `checkViewEnforcement`, whole-program compiled dead-code analysis enters
 through `checkNoDeadCode`,
-focused Domain Layer topology, dependency, and documentation proof enters
-through `checkDomainLayerEnforcement`,
-focused Domain ApplicationService API-shape, topology, signature-purity,
-source-pattern policy, and documentation proof enters through
-`checkDomainApplicationServiceEnforcement`,
+focused Domain Layer, Context, ApplicationService, UseCase, Published, Port,
+Repository, Model, Helper, and Constants proof enters through the canonical
+Domain blocker surface `checkDomainEnforcement`; historical leaf
+`checkDomain*Enforcement` task names remain compatibility aliases to that same
+surface,
 focused Data ServiceContribution construction-purity, shell-seam,
 `register(...)` export-shape, source-pattern, and documentation proof enters
 through `checkDataServiceContributionEnforcement`,
-focused Domain Published carrier-shape, signature-purity, topology, and
-documentation proof enters through `checkDomainPublishedEnforcement`,
-focused Domain Port topology and documentation proof enters through
-`checkDomainPortEnforcement`,
-focused Domain Repository topology and documentation proof enters through
-`checkDomainRepositoryEnforcement`,
-focused Domain Model topology and documentation proof enters through
-`checkDomainModelEnforcement`,
-focused Domain Helper topology and documentation proof enters through
-`checkDomainHelperEnforcement`,
-focused Domain Constants topology and documentation proof enters through
-`checkDomainConstantsEnforcement`,
 focused styling-layer proof enters through `checkStylingLayerEnforcement`,
 focused passive-`View` direct-render styling placement enters through
 `checkStylingViewEnforcement`,
@@ -277,13 +265,8 @@ It includes:
 
 - Java compiler hygiene through `compileJava`
 - architecture-harness checks through `architectureTest`,
-  `checkDomainApplicationServiceEnforcement`,
+  `checkDomainEnforcement`,
   `checkDataServiceContributionEnforcement`,
-  `checkDomainPortEnforcement`,
-  `checkDomainRepositoryEnforcement`,
-  `checkDomainModelEnforcement`,
-  `checkDomainHelperEnforcement`,
-  `checkDomainConstantsEnforcement`,
   `checkStylingLayerEnforcement`,
   `checkBootstrapAppBootstrapEnforcement`,
   `checkShellLayerEnforcement`,
@@ -372,11 +355,7 @@ Focused investigation entrypoints are `compileJava`, `pmdMain`,
 `pmdDataServiceContributionEnforcement`,
 `checkDomainContextEnforcement`,
 `checkDomainPublishedEnforcement`,
-`checkDomainPortEnforcement`,
-`checkDomainRepositoryEnforcement`,
-`checkDomainModelEnforcement`,
-`checkDomainHelperEnforcement`,
-`checkDomainConstantsEnforcement`, `checkStylingLayerEnforcement`,
+`checkDomainEnforcement`, `checkStylingLayerEnforcement`,
   `checkStylingViewEnforcement`,
   `checkShellAppShellEnforcement`,
   `checkBootstrapAppBootstrapEnforcement`,
@@ -413,11 +392,7 @@ Architecture-focused entrypoints:
   Aggregates `architectureTest`, `checkDomainLayerEnforcement`,
   `checkDomainApplicationServiceEnforcement`,
   `checkDataServiceContributionEnforcement`,
-  `checkDomainPortEnforcement`,
-  `checkDomainRepositoryEnforcement`,
-  `checkDomainModelEnforcement`,
-  `checkDomainHelperEnforcement`,
-  `checkDomainConstantsEnforcement`,
+  `checkDomainEnforcement`,
   `checkDataModelEnforcement`,
   `checkDataGatewayEnforcement`,
   `checkDataRepositoryEnforcement`,
@@ -464,25 +439,25 @@ Architecture-focused entrypoints:
   `:build-harness:domainPublishedTopologyCheck`, and
   `:build-harness:domainPublishedDocumentationEnforcementCheck`.
 - `./gradlew checkDomainPortEnforcement --console=plain`
-  Aggregates the focused Domain Port bundle through
-  `:build-harness:domainPortTopologyCheck` and
-  `:build-harness:domainPortEnforcementDocumentationCheck`.
+  Historical alias to the canonical `checkDomainEnforcement` surface. The
+  role-local proof still comes from the merged Domain topology, ArchUnit, and
+  documentation owners.
 - `./gradlew checkDomainRepositoryEnforcement --console=plain`
-  Aggregates the focused Domain Repository bundle through
-  `:build-harness:domainRepositoryTopologyCheck` and
-  `:build-harness:domainRepositoryDocumentationEnforcementCheck`.
+  Historical alias to the canonical `checkDomainEnforcement` surface. The
+  role-local proof still comes from the merged Domain topology, ArchUnit, and
+  documentation owners.
 - `./gradlew checkDomainModelEnforcement --console=plain`
-  Aggregates the focused Domain Model bundle through
-  `:build-harness:domainModelTopologyCheck` and
-  `:build-harness:domainModelDocumentationEnforcementCheck`.
+  Historical alias to the canonical `checkDomainEnforcement` surface. The
+  role-local proof still comes from the merged Domain topology, ArchUnit, and
+  documentation owners.
 - `./gradlew checkDomainHelperEnforcement --console=plain`
-  Aggregates the focused Domain Helper bundle through
-  `:build-harness:domainHelperTopologyCheck` and
-  `:build-harness:domainHelperDocumentationEnforcementCheck`.
+  Historical alias to the canonical `checkDomainEnforcement` surface. The
+  role-local proof still comes from the merged Domain topology, ArchUnit, and
+  documentation owners.
 - `./gradlew checkDomainConstantsEnforcement --console=plain`
-  Aggregates the focused Domain Constants bundle through
-  `:build-harness:domainConstantsTopologyCheck` and
-  `:build-harness:domainConstantsDocumentationEnforcementCheck`.
+  Historical alias to the canonical `checkDomainEnforcement` surface. The
+  role-local proof still comes from the merged Domain topology, ArchUnit, and
+  documentation owners.
 - `./gradlew checkDomainUseCaseEnforcement --console=plain`
   Aggregates the focused Domain UseCase bundle through `compileJava`,
   `pmdDomainUseCaseEnforcement`,

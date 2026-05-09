@@ -92,10 +92,11 @@ public final class DomainLayerEnforcementCoverageRules implements ArchitectureRu
                             "domain-published-carrier-shape",
                             "domain-published-read-model-handle-shape",
                             "domain-port-role-shape",
-                            "domain-port-ownership-and-signature-boundary"),
+                            "domain-port-published-listener-boundary"),
                     List.of(
                             "./gradlew compileJava",
                             "./gradlew checkArchitecture",
+                            "./gradlew checkDomainEnforcement",
                             "./gradlew checkDomainApplicationServiceEnforcement",
                             "./gradlew checkDocumentationEnforcement")),
             row("domain-layer-no-outer-layer-or-infrastructure-dependencies",

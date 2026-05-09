@@ -14,7 +14,11 @@ This document owns only the role-local enforcement inventory, focused
 verification surface, and current mechanical coverage for helper placement and
 role shape.
 
-Unified focused bundle entrypoint:
+Canonical Domain blocker surface:
+
+- `./gradlew checkDomainEnforcement --rerun-tasks --console=plain`
+
+Historical compatibility alias:
 
 - `./gradlew checkDomainHelperEnforcement --rerun-tasks --console=plain`
 
@@ -32,13 +36,13 @@ Unified focused bundle entrypoint:
 
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
-| `domain-helper-no-current-context-access` | Review-Owned | every helper under `src/domain/**` | none | none | Helpers do not inspect current model state, subscribe to published state, invoke repositories, or react to ports. |
+| `domain-helper-no-current-context-access` | Enforced Elsewhere | every helper under `src/domain/**` | domain-layer bundle ArchUnit `domainHelpersMustOnlyDependOnConstants` | `./gradlew checkArchitecture`, `./gradlew checkDomainEnforcement`, and `./gradlew checkDomainHelperEnforcement` | Helpers do not depend on current model state, `published/**`, repositories, ports, or use cases directly. |
 
 ### Communication Contract
 
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
-| `domain-helper-constants-only-downward-dependency` | Review-Owned | every helper under `src/domain/**` | none | none | Helpers depend only on `Constants` and local pure support types in the downward direction. |
+| `domain-helper-constants-only-downward-dependency` | Enforced Elsewhere | every helper under `src/domain/**` | domain-layer bundle ArchUnit `domainHelpersMustOnlyDependOnConstants` | `./gradlew checkArchitecture`, `./gradlew checkDomainEnforcement`, and `./gradlew checkDomainHelperEnforcement` | Helpers depend only on same-family `Constants` plus passive JDK types in the downward direction. |
 
 ## References
 

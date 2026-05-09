@@ -23,8 +23,16 @@ public final class DomainHelperEnforcementCoverageRules implements ArchitectureR
                     List.of("domain-helper bundle build-harness", "DomainHelperTopologyRules"),
                     List.of("./gradlew checkDomainHelperEnforcement")),
             row("domain-helper-explicit-work-step", "Review-Owned"),
-            row("domain-helper-no-current-context-access", "Review-Owned"),
-            row("domain-helper-constants-only-downward-dependency", "Review-Owned"));
+            row(
+                    "domain-helper-no-current-context-access",
+                    "Enforced Elsewhere",
+                    List.of("domain-layer bundle ArchUnit", "domainHelpersMustOnlyDependOnConstants"),
+                    List.of("./gradlew checkArchitecture", "./gradlew checkDomainEnforcement", "./gradlew checkDomainHelperEnforcement")),
+            row(
+                    "domain-helper-constants-only-downward-dependency",
+                    "Enforced Elsewhere",
+                    List.of("domain-layer bundle ArchUnit", "domainHelpersMustOnlyDependOnConstants"),
+                    List.of("./gradlew checkArchitecture", "./gradlew checkDomainEnforcement", "./gradlew checkDomainHelperEnforcement")));
 
     @Override
     public void check(ArchitectureContext context, ViolationSink violations) {

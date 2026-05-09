@@ -19,7 +19,11 @@ It answers three questions for every root application boundary:
 - what the role MUST NOT contain
 - which direct communication seams the role itself MAY cross
 
-Unified focused bundle entrypoint:
+Canonical Domain blocker surface:
+
+- `./gradlew checkDomainEnforcement --rerun-tasks --console=plain`
+
+Historical compatibility alias:
 
 - `./gradlew checkDomainApplicationServiceEnforcement --rerun-tasks --console=plain`
 
@@ -45,7 +49,7 @@ Unified focused bundle entrypoint:
 
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
-| `domain-applicationservice-constructor-composition-boundary` | Review-Owned | every public or protected root `ApplicationService` constructor | none | none | A legal root constructor still stays family-local and thin. It does not become a hidden runtime-composition seam, cross-context repository seam, or alternate adapter assembly root. |
+| `domain-applicationservice-constructor-composition-boundary` | Enforced Elsewhere | every public or protected root `ApplicationService` constructor and same-root collaborator graph | domain-layer bundle ArchUnit `domainRootApplicationServicesMustStayOnApplicationOrPublishedSeams` | `./gradlew checkArchitecture`, `./gradlew checkDomainEnforcement`, and `./gradlew checkDomainApplicationServiceEnforcement` | Root application services stay on same-context `application/**` orchestration and same-context `published/**` boundary language rather than composing repositories, ports, foreign application services, or internal model roles directly at the root. |
 | `domain-applicationservice-public-boundary-signature-purity` | Enforced | every public or protected root `ApplicationService` boundary surface | domain-application-service bundle Error Prone `DomainPublicBoundarySignaturePurity` | `./gradlew compileJava` and `./gradlew checkDomainApplicationServiceEnforcement` | Root public boundary surfaces do not communicate outer-layer types, same-context private model internals, foreign domain internals, or foreign `published/**` carriers through signatures, public fields, thrown types, supertypes, or type bounds. |
 | `domain-applicationservice-public-carrier-translation-boundary` | Enforced Elsewhere | every handoff from a root `ApplicationService` into same-context top-level `application/**` code or named domain modules | domain-usecase bundle Error Prone `DomainApplicationNoSameContextPublishedDependency` and domain-layer bundle Error Prone `DomainModuleNoPublishedCarrierDependency` | `./gradlew compileJava`, `./gradlew checkDomainUseCaseEnforcement`, and `./gradlew checkDomainLayerEnforcement` | Same-context `published/**` carriers stop at the root boundary. Root services translate them before control enters internal application or model work. |
 
@@ -53,7 +57,7 @@ Unified focused bundle entrypoint:
 
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
-| `domain-applicationservice-no-runtime-composition-ownership` | Review-Owned | every root `*ApplicationService.java` under `src/domain/**` | none | none | A mechanically legal root boundary still does not own shell registration, runtime service lookup, or any alternate runtime-composition seam. |
+| `domain-applicationservice-no-runtime-composition-ownership` | Enforced Elsewhere | every root `*ApplicationService.java` under `src/domain/**` | domain-layer bundle ArchUnit `domainRootApplicationServicesMustStayOnApplicationOrPublishedSeams` | `./gradlew checkArchitecture`, `./gradlew checkDomainEnforcement`, and `./gradlew checkDomainApplicationServiceEnforcement` | Root application services stay off direct repository, port, foreign application-service, and internal model collaboration seams, so runtime composition does not collapse back into the root boundary. |
 | `domain-applicationservice-no-business-policy-ownership` | Review-Owned | every root `*ApplicationService.java` under `src/domain/**` | none | none | A mechanically legal root boundary still behaves as family-scoped intent interpretation and routing only; business policy stays below the root. |
 
 ## References

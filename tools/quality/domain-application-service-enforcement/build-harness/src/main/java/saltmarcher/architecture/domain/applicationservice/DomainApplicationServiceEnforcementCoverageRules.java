@@ -50,7 +50,10 @@ public final class DomainApplicationServiceEnforcementCoverageRules implements A
                     "Source-Pattern Enforced",
                     List.of("domain-application-service bundle PMD", "DomainApplicationServiceSourcePolicyRule"),
                     List.of("./gradlew pmdArchitectureMain", "./gradlew checkDomainApplicationServiceEnforcement")),
-            row("domain-applicationservice-constructor-composition-boundary", "Review-Owned"),
+            row("domain-applicationservice-constructor-composition-boundary",
+                    "Enforced Elsewhere",
+                    List.of("domain-layer bundle ArchUnit", "domainRootApplicationServicesMustStayOnApplicationOrPublishedSeams"),
+                    List.of("./gradlew checkArchitecture", "./gradlew checkDomainEnforcement", "./gradlew checkDomainApplicationServiceEnforcement")),
             row("domain-applicationservice-public-boundary-signature-purity",
                     "Enforced",
                     List.of("domain-application-service bundle Error Prone", "DomainPublicBoundarySignaturePurity"),
@@ -63,7 +66,10 @@ public final class DomainApplicationServiceEnforcementCoverageRules implements A
                             "domain-layer bundle Error Prone",
                             "DomainModuleNoPublishedCarrierDependency"),
                     List.of("./gradlew compileJava", "./gradlew checkDomainUseCaseEnforcement", "./gradlew checkDomainLayerEnforcement")),
-            row("domain-applicationservice-no-runtime-composition-ownership", "Review-Owned"),
+            row("domain-applicationservice-no-runtime-composition-ownership",
+                    "Enforced Elsewhere",
+                    List.of("domain-layer bundle ArchUnit", "domainRootApplicationServicesMustStayOnApplicationOrPublishedSeams"),
+                    List.of("./gradlew checkArchitecture", "./gradlew checkDomainEnforcement", "./gradlew checkDomainApplicationServiceEnforcement")),
             row("domain-applicationservice-no-business-policy-ownership", "Review-Owned"));
 
     @Override

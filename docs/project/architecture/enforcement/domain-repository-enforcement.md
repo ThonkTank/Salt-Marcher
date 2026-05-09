@@ -14,7 +14,11 @@ This document owns only the role-local enforcement inventory, focused
 verification surface, and current mechanical coverage for the target outbound
 repository role.
 
-Unified focused bundle entrypoint:
+Canonical Domain blocker surface:
+
+- `./gradlew checkDomainEnforcement --rerun-tasks --console=plain`
+
+Historical compatibility alias:
 
 - `./gradlew checkDomainRepositoryEnforcement --rerun-tasks --console=plain`
 
@@ -32,13 +36,13 @@ Unified focused bundle entrypoint:
 
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
-| `domain-repository-no-src-data-type-leaks` | Review-Owned | every repository under `src/domain/**` | none | none | Repositories do not expose `src.data/**` types or foreign published carriers through their signatures. |
+| `domain-repository-no-src-data-type-leaks` | Enforced Elsewhere | every repository under `src/domain/**` | domain-layer bundle ArchUnit `domainRepositoriesMustStayOffPublishedAndDataSignatures`; domain-layer bundle Error Prone `DomainForbiddenInfrastructureDependency` | `./gradlew compileJava`, `./gradlew checkArchitecture`, `./gradlew checkDomainEnforcement`, and `./gradlew checkDomainRepositoryEnforcement` | Repositories do not depend on `src.data/**` or any `published/**` carrier family as a collaboration or signature seam. |
 
 ### Communication Contract
 
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
-| `domain-repository-foreign-applicationservice-routing-only` | Review-Owned | every foreign-domain collaboration initiated from a repository | none | none | Repositories trigger foreign work only through allowed foreign family `ApplicationService` boundaries and receive continued foreign state through published listeners rather than foreign internals. |
+| `domain-repository-foreign-applicationservice-routing-only` | Enforced Elsewhere | every foreign-domain collaboration initiated from a repository | domain-layer bundle ArchUnit `domainRepositoriesMustStayOffPublishedAndDataSignatures` | `./gradlew checkArchitecture`, `./gradlew checkDomainEnforcement`, and `./gradlew checkDomainRepositoryEnforcement` | Repositories trigger foreign work only through foreign root `*ApplicationService` boundaries while same-context collaborators stay inside application/model roles. |
 
 ## References
 

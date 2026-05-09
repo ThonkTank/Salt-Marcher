@@ -22,8 +22,16 @@ public final class DomainPortEnforcementDocumentationRules implements Architectu
                     "Enforced",
                     List.of("domain-port bundle build-harness", "DomainPortTopologyRules"),
                     List.of("./gradlew checkDomainPortEnforcement")),
-            row("domain-port-no-foreign-mutation-or-data-seam", "Review-Owned"),
-            row("domain-port-published-listener-boundary", "Review-Owned"),
+            row(
+                    "domain-port-no-foreign-mutation-or-data-seam",
+                    "Enforced Elsewhere",
+                    List.of("domain-layer bundle ArchUnit", "domainPortsMustOnlyDependOnForeignPublishedModelsAndSameContextUseCases"),
+                    List.of("./gradlew checkArchitecture", "./gradlew checkDomainEnforcement", "./gradlew checkDomainPortEnforcement")),
+            row(
+                    "domain-port-published-listener-boundary",
+                    "Enforced Elsewhere",
+                    List.of("domain-layer bundle ArchUnit", "domainPortsMustOnlyDependOnForeignPublishedModelsAndSameContextUseCases"),
+                    List.of("./gradlew checkArchitecture", "./gradlew checkDomainEnforcement", "./gradlew checkDomainPortEnforcement")),
             row("domain-port-domain-language", "Review-Owned"));
 
     @Override

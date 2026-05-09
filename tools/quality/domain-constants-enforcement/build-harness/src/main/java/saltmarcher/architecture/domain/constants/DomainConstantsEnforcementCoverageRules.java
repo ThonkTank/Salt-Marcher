@@ -22,8 +22,16 @@ public final class DomainConstantsEnforcementCoverageRules implements Architectu
                     "Enforced",
                     List.of("domain-constants bundle build-harness", "DomainConstantsTopologyRules"),
                     List.of("./gradlew checkDomainConstantsEnforcement")),
-            row("domain-constants-immutable-only", "Review-Owned"),
-            row("domain-constants-no-runtime-or-state-ownership", "Review-Owned"));
+            row(
+                    "domain-constants-immutable-only",
+                    "Enforced Elsewhere",
+                    List.of("domain-layer bundle ArchUnit", "domainConstantsMustBeStaticImmutableHolders"),
+                    List.of("./gradlew checkArchitecture", "./gradlew checkDomainEnforcement", "./gradlew checkDomainConstantsEnforcement")),
+            row(
+                    "domain-constants-no-runtime-or-state-ownership",
+                    "Enforced Elsewhere",
+                    List.of("domain-layer bundle ArchUnit", "domainConstantsMustBeStaticImmutableHolders"),
+                    List.of("./gradlew checkArchitecture", "./gradlew checkDomainEnforcement", "./gradlew checkDomainConstantsEnforcement")));
 
     @Override
     public void check(ArchitectureContext context, ViolationSink violations) {

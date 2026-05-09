@@ -14,7 +14,11 @@ This document owns only the role-local enforcement inventory, focused
 verification surface, and current mechanical coverage for the target inbound
 listener role.
 
-Unified focused bundle entrypoint:
+Canonical Domain blocker surface:
+
+- `./gradlew checkDomainEnforcement --rerun-tasks --console=plain`
+
+Historical compatibility alias:
 
 - `./gradlew checkDomainPortEnforcement --rerun-tasks --console=plain`
 
@@ -35,13 +39,13 @@ Unified focused bundle entrypoint:
 
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
-| `domain-port-no-foreign-mutation-or-data-seam` | Review-Owned | every `*Port.java` under `src/domain/**` | none | none | A legal port still does not become a hidden foreign-mutation trigger, data-source seam, or adapter host. Foreign writes belong to `Repository`; `Port` remains intake-only. |
+| `domain-port-no-foreign-mutation-or-data-seam` | Enforced Elsewhere | every `*Port.java` under `src/domain/**` | domain-layer bundle ArchUnit `domainPortsMustOnlyDependOnForeignPublishedModelsAndSameContextUseCases` | `./gradlew checkArchitecture`, `./gradlew checkDomainEnforcement`, and `./gradlew checkDomainPortEnforcement` | Ports remain intake-only. They do not depend on repositories, root application services, same-context published state, or `src.data/**` seams. |
 
 ### Communication Contract
 
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
-| `domain-port-published-listener-boundary` | Review-Owned | every `Port` collaboration surface | none | none | A legal port still listens only to foreign `published/*Model` state through `current()` and `subscribe(...)`, then turns those updates into same-context `UseCase` work. |
+| `domain-port-published-listener-boundary` | Enforced Elsewhere | every `Port` collaboration surface | domain-layer bundle ArchUnit `domainPortsMustOnlyDependOnForeignPublishedModelsAndSameContextUseCases` | `./gradlew checkArchitecture`, `./gradlew checkDomainEnforcement`, and `./gradlew checkDomainPortEnforcement` | Ports listen only to foreign `published/*Model` state and trigger same-context model-local use cases rather than reaching foreign internals or same-context published reply channels. |
 
 ### Review-Owned
 

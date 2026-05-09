@@ -23,8 +23,18 @@ public final class DomainRepositoryEnforcementCoverageRules implements Architect
                     List.of("domain-repository bundle build-harness", "DomainRepositoryTopologyRules"),
                     List.of("./gradlew checkDomainRepositoryEnforcement")),
             row("domain-repository-outbound-trigger-ownership", "Review-Owned"),
-            row("domain-repository-no-src-data-type-leaks", "Review-Owned"),
-            row("domain-repository-foreign-applicationservice-routing-only", "Review-Owned"));
+            row(
+                    "domain-repository-no-src-data-type-leaks",
+                    "Enforced Elsewhere",
+                    List.of(
+                            "domain-layer bundle ArchUnit", "domainRepositoriesMustStayOffPublishedAndDataSignatures",
+                            "domain-layer bundle Error Prone", "DomainForbiddenInfrastructureDependency"),
+                    List.of("./gradlew compileJava", "./gradlew checkArchitecture", "./gradlew checkDomainEnforcement", "./gradlew checkDomainRepositoryEnforcement")),
+            row(
+                    "domain-repository-foreign-applicationservice-routing-only",
+                    "Enforced Elsewhere",
+                    List.of("domain-layer bundle ArchUnit", "domainRepositoriesMustStayOffPublishedAndDataSignatures"),
+                    List.of("./gradlew checkArchitecture", "./gradlew checkDomainEnforcement", "./gradlew checkDomainRepositoryEnforcement")));
 
     @Override
     public void check(ArchitectureContext context, ViolationSink violations) {

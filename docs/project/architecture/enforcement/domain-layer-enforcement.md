@@ -21,7 +21,11 @@ It answers three questions for `src/domain/**` as one layer:
 - which external communication seams the layer currently proves or still only
   reviews
 
-Unified focused bundle entrypoint:
+Canonical Domain blocker surface:
+
+- `./gradlew checkDomainEnforcement --rerun-tasks --console=plain`
+
+Historical compatibility alias:
 
 - `./gradlew checkDomainLayerEnforcement --rerun-tasks --console=plain`
 
@@ -52,7 +56,7 @@ Unified focused bundle entrypoint:
 
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
-| `domain-layer-public-boundary-families-only` | Enforced Elsewhere | every type or package under `src/domain/**` that acts as a layer-crossing public boundary or outbound seam | `domain-applicationservice-root-presence`; `domain-applicationservice-public-input-carriers`; `domain-applicationservice-command-no-direct-return`; `domain-published-direct-file-placement`; `domain-published-carrier-shape`; `domain-published-read-model-handle-shape`; `domain-repository-role-shape`; `domain-port-role-shape`; `domain-port-ownership-and-signature-boundary` | `./gradlew compileJava`, `./gradlew checkArchitecture`, `./gradlew checkDomainApplicationServiceEnforcement`, `./gradlew checkDocumentationEnforcement`, `./gradlew checkDomainPublishedEnforcement`, `./gradlew checkDomainRepositoryEnforcement`, and `./gradlew checkDomainPortEnforcement` | The layer blocks the root `*ApplicationService` family and `published/**` directly. Outbound repository file forms are now also closed to the canonical `repository/` bucket, while neighboring Port owners keep the internal listener seam explicit and non-public. |
+| `domain-layer-public-boundary-families-only` | Enforced Elsewhere | every type or package under `src/domain/**` that acts as a layer-crossing public boundary or outbound seam | `domain-applicationservice-root-presence`; `domain-applicationservice-public-input-carriers`; `domain-applicationservice-command-no-direct-return`; `domain-published-direct-file-placement`; `domain-published-carrier-shape`; `domain-published-read-model-handle-shape`; `domain-repository-role-shape`; `domain-port-role-shape`; `domain-port-published-listener-boundary` | `./gradlew compileJava`, `./gradlew checkArchitecture`, `./gradlew checkDomainEnforcement`, `./gradlew checkDomainApplicationServiceEnforcement`, `./gradlew checkDocumentationEnforcement`, `./gradlew checkDomainPublishedEnforcement`, `./gradlew checkDomainRepositoryEnforcement`, and `./gradlew checkDomainPortEnforcement` | The layer blocks the root `*ApplicationService` family and `published/**` directly. Outbound repository file forms are now also closed to the canonical `repository/` bucket, while neighboring Port owners keep the internal listener seam explicit and non-public. |
 | `domain-layer-no-outer-layer-or-infrastructure-dependencies` | Enforced | every type under `src/domain/**` | domain-layer bundle ArchUnit `domainMustStayIndependentFromOuterLayers` and domain-layer bundle Error Prone `DomainForbiddenInfrastructureDependency` | `./gradlew checkArchitecture`, `./gradlew compileJava`, and `./gradlew checkDomainLayerEnforcement` | Domain code does not depend on `bootstrap/**`, `shell/**`, `src/view/**`, `src/data/**`, JavaFX, SQL/JDBC, filesystem, network, JSON, transaction, persistence, or similar infrastructure surfaces. |
 | `domain-layer-foreign-context-access-only-through-public-boundaries` | Enforced | every dependency from one domain context to another | domain-layer bundle ArchUnit `domainFeaturesMustOnlyUseForeignFeatureApis` | `./gradlew checkArchitecture` and `./gradlew checkDomainLayerEnforcement` | Cross-context access reaches foreign domain contexts only through foreign root `*ApplicationService` boundaries or foreign `published/**` carriers. |
 | `domain-layer-internal-model-no-same-context-application-boundary-dependencies` | Enforced | every dependency from `src/domain/<context>/model/**` into the same-context root package or root `application/` | domain-layer bundle ArchUnit `domainInternalModelMustNotReachSameContextApplicationBoundary` | `./gradlew checkArchitecture` and `./gradlew checkDomainLayerEnforcement` | Internal model packages do not depend on their own root `ApplicationService` or root `application/` orchestration boundary. |
