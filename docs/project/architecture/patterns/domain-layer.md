@@ -68,9 +68,8 @@ The closed architectural role family is:
 | `Port` | Inbound listener on foreign published state. |
 | `Repository` | Outbound trigger for foreign domain work and layered data access. |
 
-Legacy tactical DDD names such as `aggregate`, `entity`, `value`, `policy`,
-`factory`, `service`, `event`, and `specification` are rejected as domain
-topology roles. New domain topology uses only the closed role family above.
+The domain topology is closed to the role family above. Any other role name,
+role suffix, or role directory form is unzulässig.
 
 ## Core Principles
 
@@ -173,8 +172,8 @@ types -> own UseCase -> own Model -> own Published`
   and `subscribe(...)` only
 - non-`*Model` published carriers stay passive and thinner than the internal
   working state behind them
-- forbidden: services, helpers, repositories, ports, gateways, factories, or
-  invariant-owning active objects
+- any other role or active object shape outside the allowed published carrier
+  families is unzulässig
 
 ### `Port`
 
@@ -223,10 +222,8 @@ Rules:
 - `model/<family>/model/` is the internal model subtree; it MAY contain direct
   model files or deeper semantic subpackages for subordinate models of the
   same family
-- nested subpackages inside `model/<family>/model/**` stay semantic; technical
-  buckets such as `published`, `application`, `usecase`, `helper`,
-  `constants`, `port`, `repository`, and rejected legacy role names are
-  illegal there
+- nested subpackages inside `model/<family>/model/**` stay semantic; any
+  role-owned or otherwise technical bucket there is illegal
 - `usecase/`, `helper/`, `constants/`, `port/`, and `repository/` are the
   only non-model subordinate role buckets under a model family
 - non-model role buckets stay direct-file only
@@ -237,9 +234,7 @@ Rules:
 - reserved role suffixes are path-owned: `*ApplicationService`, `*UseCase`,
   `*Helper`, `*Constants`, `*Port`, and `*Repository` may appear only in their
   canonical buckets
-- legacy suffixes such as `*BoundaryTranslator`, `*Projector`,
-  `*RuntimeAccess`, `*RuntimeAdapter`, `*Policy`, `*Service`, `*Factory`,
-  `*Aggregate`, `*Entity`, and `*Specification` are forbidden
+- any other role-indicating suffix or directory form is illegal
 
 ## Current Mechanical Drift
 
