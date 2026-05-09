@@ -64,7 +64,7 @@ public final class DomainForbiddenInfrastructureDependencyChecker extends BugChe
                 .setMessage("Domain package '" + packageName
                         + "' references outer-layer or infrastructure type(s): "
                         + String.join(", ", forbiddenReferences)
-                        + ". Domain code must stay inside the application core; use domain-owned outbound ports and adapters outside src/domain/**.")
+                        + ". Domain code must stay inside the application core; use domain-owned repositories and adapters outside src/domain/**.")
                 .build();
     }
 

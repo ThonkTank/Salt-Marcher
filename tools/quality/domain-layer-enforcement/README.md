@@ -21,9 +21,10 @@ It keeps the generic domain-layer proof owner-local and bundle-local:
 
 This bundle owns only generic domain-layer topology and dependency boundaries.
 Root `ApplicationService`, `application/*UseCase`, `published/**`, `port/`,
-and tactical role-owner checks stay in their neighboring owner bundles and
-documents. Undocumented legacy checks such as `domain-mapcore-removed` and the
-remaining generic cycle suite stay outside this bundle.
+`repository/`, `model/**`, `helper/`, and `constants/` role-owner checks stay
+in their neighboring owner bundles and documents. Undocumented legacy checks
+such as `domain-mapcore-removed` and the remaining generic cycle suite stay
+outside this bundle.
 
 Unified root entrypoint:
 

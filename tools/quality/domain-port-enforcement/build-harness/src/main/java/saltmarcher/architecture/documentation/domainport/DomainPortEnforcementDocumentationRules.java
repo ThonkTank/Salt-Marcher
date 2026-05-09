@@ -12,29 +12,18 @@ public final class DomainPortEnforcementDocumentationRules implements Architectu
             "docs/project/architecture/enforcement/domain-port-enforcement.md";
     private static final String COVERAGE_RULE = "domain-port-enforcement-coverage-complete";
     private static final List<MarkdownTableCoverageValidator.ExpectedRow> EXPECTED_ROWS = List.of(
-            row("domain-port-repository-write-orientation", "Review-Owned"),
-            row("domain-port-read-port-placement", "Review-Owned"),
-            row("domain-port-read-port-read-only-orientation", "Review-Owned"),
+            row(
+                    "domain-port-direct-file-placement",
+                    "Enforced",
+                    List.of("domain-port bundle build-harness", "DomainPortTopologyRules"),
+                    List.of("./gradlew checkDomainPortEnforcement")),
             row(
                     "domain-port-role-shape",
                     "Enforced",
-                    List.of("domain-port bundle Error Prone", "DomainPortRoleShape"),
-                    List.of("./gradlew compileJava", "./gradlew checkDomainPortEnforcement")),
-            row(
-                    "domain-port-repository-placement",
-                    "Enforced",
-                    List.of("domain-port bundle Error Prone", "DomainPortBoundary"),
-                    List.of("./gradlew compileJava", "./gradlew checkDomainPortEnforcement")),
-            row(
-                    "domain-port-no-implementations-inside-domain",
-                    "Enforced",
-                    List.of("domain-port bundle Error Prone", "DomainPortBoundary"),
-                    List.of("./gradlew compileJava", "./gradlew checkDomainPortEnforcement")),
-            row(
-                    "domain-port-ownership-and-signature-boundary",
-                    "Enforced",
-                    List.of("domain-port bundle Error Prone", "DomainPortBoundary"),
-                    List.of("./gradlew compileJava", "./gradlew checkDomainPortEnforcement")),
+                    List.of("domain-port bundle build-harness", "DomainPortTopologyRules"),
+                    List.of("./gradlew checkDomainPortEnforcement")),
+            row("domain-port-no-foreign-mutation-or-data-seam", "Review-Owned"),
+            row("domain-port-published-listener-boundary", "Review-Owned"),
             row("domain-port-domain-language", "Review-Owned"));
 
     @Override

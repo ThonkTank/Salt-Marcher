@@ -70,6 +70,7 @@ public final class ViewRoleDependencySupport {
         }
         if (referencedType.startsWith("src.domain.")) {
             return switch (sourceRole) {
+                case CONTRIBUTION -> true;
                 case BINDER -> !ViewArchitectureSupport.isAllowedViewModelDomainBoundary(referencedType);
                 case CONTRIBUTION_MODEL, CONTENT_MODEL ->
                         !ViewArchitectureSupport.isAllowedPresentationModelDomainBoundary(referencedType);

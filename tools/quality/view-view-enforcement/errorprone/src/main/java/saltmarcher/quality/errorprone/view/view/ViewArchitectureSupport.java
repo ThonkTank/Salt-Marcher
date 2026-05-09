@@ -132,8 +132,12 @@ final class ViewArchitectureSupport {
     }
 
     static boolean isTopLevelViewInputEventReference(String referencedType) {
-        return saltmarcher.quality.errorprone.view.ViewArchitectureSupport.isTopLevelViewInputEventReference(
-                referencedType);
+        ViewTypeInfo viewType = parseViewType(referencedType);
+        return viewType != null
+                && "VIEW_INPUT_EVENT".equals(viewType.bucket())
+                && referencedType != null
+                && referencedType.equals(topLevelQualifiedTypeNameOf(referencedType))
+                && topLevelQualifiedTypeNameOf(referencedType).endsWith("ViewInputEvent");
     }
 
     static boolean isTargetPublishedEventReference(String referencedType) {

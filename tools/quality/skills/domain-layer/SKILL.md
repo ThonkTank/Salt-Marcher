@@ -90,8 +90,7 @@ Before changing domain code:
 - follow the owner doc's target semantics first: `Port` is inbound published
   listening and `Repository` is outbound triggering or layered data access
 - check the role-local enforcement doc before claiming the current mechanics
-  already prove that target; some port checks still reflect legacy outbound
-  interface enforcement
+  already prove the deeper purity or communication semantics beyond topology
 
 ### Model Families And Role Packages
 

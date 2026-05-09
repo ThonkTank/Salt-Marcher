@@ -36,11 +36,8 @@ internal fun Project.configureQualityConventions() {
         if (!environment.focusedEnforcementBundleMode) {
             options.errorprone.error("DomainApplicationServiceApiShape")
             options.errorprone.error("DomainModuleFieldPurity")
-            options.errorprone.error("DomainPortBoundary")
-            options.errorprone.error("DomainPortRoleShape")
             options.errorprone.error("DomainPublicBoundarySignaturePurity")
             options.errorprone.error("DomainPublicConcreteTypeShape")
-            options.errorprone.error("DomainRoleShape")
             options.errorprone.error("ServiceRegistryRegistrationPlacement")
             options.errorprone.error("ViewContributionShellApiAllowlist")
             options.errorprone.error("ViewDetailsSlotBoundary")

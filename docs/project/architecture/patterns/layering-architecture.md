@@ -83,9 +83,8 @@ These roles MUST not exist only as relay or wrapper ceremony. If they exist,
 they must own real decision, translation, composition, validation, or
 construction work:
 
-- domain `service/`
-- domain `policy/`
-- domain `factory/`
+- root domain `*ApplicationService`
+- domain `application/*UseCase`
 - domain `model/**`
 - domain `repository/**`
 - domain `port/**`
@@ -96,7 +95,7 @@ Source-code dependencies point inward:
 
 1. `bootstrap -> shell`
 2. `view -> shell public contracts + documented domain public boundaries`
-3. `data -> domain public boundaries and domain-owned outbound ports`
+3. `data -> domain public boundaries and domain-owned repositories`
 4. `domain -> no outer layer`
 
 Additional rules:

@@ -57,11 +57,7 @@ public final class LayeringArchitectureEnforcementCoverageRules implements Archi
                     List.of("see neighboring owner docs and their listed entrypoints")),
             row("layering-no-non-applicationservice-public-backend-boundary-below-view", "Review-Owned"),
             row("layering-no-outer-format-object-leak-inward", "Review-Owned"),
-            row(
-                    "layering-no-substantive-domain-role-pass-through-wrapper",
-                    "Enforced Elsewhere",
-                    List.of("CeremonialIndirectionRule", "saltmarcher:NonThinRelayOnlyRole"),
-                    List.of("./gradlew checkDomainServiceEnforcement", "./gradlew checkLayeringIndirectionEnforcement")),
+            row("layering-no-substantive-domain-role-pass-through-wrapper", "Review-Owned"),
             row("layering-no-adjacent-layer-pass-through-wrapper-outside-explicit-thin-roles", "Review-Owned"),
             row(
                     "layering-source-code-dependencies-point-inward",
@@ -77,10 +73,10 @@ public final class LayeringArchitectureEnforcementCoverageRules implements Archi
                     List.of("./gradlew compileJava", "./gradlew checkViewArchitecture")),
             row("layering-no-third-presentation-state-mutation-route", "Review-Owned"),
             row(
-                    "layering-data-reaches-domain-only-through-public-boundaries-and-ports",
+                    "layering-data-reaches-domain-only-through-public-boundaries-and-repositories",
                     "Enforced Elsewhere",
-                    List.of("data-service-contribution-register-export-shape", "domain-applicationservice-constructor-composition-boundary"),
-                    List.of("./gradlew compileJava", "./gradlew checkDomainApplicationServiceEnforcement")),
+                    List.of("data-service-contribution-register-export-shape", "domain-repository-role-shape"),
+                    List.of("./gradlew compileJava", "./gradlew checkDomainRepositoryEnforcement")),
             row("layering-explicit-cross-layer-public-boundary-diagnostic", "Candidate"),
             row("layering-thin-role-relay-stack-diagnostic", "Candidate"),
             row("layering-thin-role-indirection-candidate-scan", "Candidate"),

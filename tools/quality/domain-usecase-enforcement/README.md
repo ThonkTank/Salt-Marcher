@@ -18,7 +18,7 @@ It keeps the full `application/*UseCase.java` proof route in one package:
   descriptor-based registration into the focused-enforcement Gradle path
 
 This bundle owns only the `application/*UseCase.java` role itself. Root
-`ApplicationService`, `published/`, outbound `port/`, and generic domain-layer
+`ApplicationService`, `published/`, `repository/`, `port/`, and generic domain-layer
 invariants stay in their neighboring owner bundles and documents.
 
 Unified root entrypoint:

@@ -65,20 +65,16 @@ focused Data ServiceContribution construction-purity, shell-seam,
 through `checkDataServiceContributionEnforcement`,
 focused Domain Published carrier-shape, signature-purity, topology, and
 documentation proof enters through `checkDomainPublishedEnforcement`,
-focused Domain Port role-shape, boundary, and documentation proof enters
-through `checkDomainPortEnforcement`,
-focused Domain Factory role, source-pattern policy, and documentation proof enters through
-`checkDomainFactoryEnforcement`,
-focused Domain Value role and documentation proof enters through
-`checkDomainValueEnforcement`,
-focused Domain Service role, source-pattern policy, and documentation proof enters through
-`checkDomainServiceEnforcement`,
-focused Domain Policy role, source-pattern policy, and documentation proof enters through
-`checkDomainPolicyEnforcement`,
-focused Domain Event role-shape and documentation proof enters through
-`checkDomainEventEnforcement`,
-focused Domain Specification role-shape proof enters through
-`checkDomainSpecificationEnforcement`,
+focused Domain Port topology and documentation proof enters through
+`checkDomainPortEnforcement`,
+focused Domain Repository topology and documentation proof enters through
+`checkDomainRepositoryEnforcement`,
+focused Domain Model topology and documentation proof enters through
+`checkDomainModelEnforcement`,
+focused Domain Helper topology and documentation proof enters through
+`checkDomainHelperEnforcement`,
+focused Domain Constants topology and documentation proof enters through
+`checkDomainConstantsEnforcement`,
 focused styling-layer proof enters through `checkStylingLayerEnforcement`,
 focused passive-`View` direct-render styling placement enters through
 `checkStylingViewEnforcement`,
@@ -283,7 +279,11 @@ It includes:
 - architecture-harness checks through `architectureTest`,
   `checkDomainApplicationServiceEnforcement`,
   `checkDataServiceContributionEnforcement`,
-  `checkDomainFactoryEnforcement`,
+  `checkDomainPortEnforcement`,
+  `checkDomainRepositoryEnforcement`,
+  `checkDomainModelEnforcement`,
+  `checkDomainHelperEnforcement`,
+  `checkDomainConstantsEnforcement`,
   `checkStylingLayerEnforcement`,
   `checkBootstrapAppBootstrapEnforcement`,
   `checkShellLayerEnforcement`,
@@ -373,12 +373,10 @@ Focused investigation entrypoints are `compileJava`, `pmdMain`,
 `checkDomainContextEnforcement`,
 `checkDomainPublishedEnforcement`,
 `checkDomainPortEnforcement`,
-`checkDomainFactoryEnforcement`,
-`checkDomainValueEnforcement`, `checkStylingLayerEnforcement`,
-`checkDomainServiceEnforcement`,
-`checkDomainPolicyEnforcement`,
-  `checkDomainEventEnforcement`,
-  `checkDomainSpecificationEnforcement`,
+`checkDomainRepositoryEnforcement`,
+`checkDomainModelEnforcement`,
+`checkDomainHelperEnforcement`,
+`checkDomainConstantsEnforcement`, `checkStylingLayerEnforcement`,
   `checkStylingViewEnforcement`,
   `checkShellAppShellEnforcement`,
   `checkBootstrapAppBootstrapEnforcement`,
@@ -416,10 +414,10 @@ Architecture-focused entrypoints:
   `checkDomainApplicationServiceEnforcement`,
   `checkDataServiceContributionEnforcement`,
   `checkDomainPortEnforcement`,
-  `checkDomainFactoryEnforcement`,
-  `checkDomainServiceEnforcement`,
-  `checkDomainPolicyEnforcement`,
-  `checkDomainEventEnforcement`,
+  `checkDomainRepositoryEnforcement`,
+  `checkDomainModelEnforcement`,
+  `checkDomainHelperEnforcement`,
+  `checkDomainConstantsEnforcement`,
   `checkDataModelEnforcement`,
   `checkDataGatewayEnforcement`,
   `checkDataRepositoryEnforcement`,
@@ -466,29 +464,25 @@ Architecture-focused entrypoints:
   `:build-harness:domainPublishedTopologyCheck`, and
   `:build-harness:domainPublishedDocumentationEnforcementCheck`.
 - `./gradlew checkDomainPortEnforcement --console=plain`
-  Aggregates the focused Domain Port bundle through `compileJava` and
+  Aggregates the focused Domain Port bundle through
+  `:build-harness:domainPortTopologyCheck` and
   `:build-harness:domainPortEnforcementDocumentationCheck`.
-- `./gradlew checkDomainValueEnforcement --console=plain`
-  Aggregates the focused `Domain Value` bundle through `compileJava` and
-  `:build-harness:domainValueEnforcementDocumentationCheck`.
-- `./gradlew checkDomainFactoryEnforcement --console=plain`
-  Aggregates the focused `Domain Factory` bundle through `compileJava`,
-  `pmdDomainFactoryEnforcement`, and
-  `:build-harness:domainFactoryEnforcementDocumentationCheck`.
-- `./gradlew checkDomainServiceEnforcement --console=plain`
-  Aggregates the focused `Domain Service` bundle through `compileJava`,
-  `pmdDomainServiceEnforcement`, and
-  `:build-harness:domainServiceEnforcementDocumentationCheck`.
-- `./gradlew checkDomainPolicyEnforcement --console=plain`
-  Aggregates the focused `Domain Policy` bundle through `compileJava`,
-  `pmdDomainPolicyEnforcement`, and
-  `:build-harness:domainPolicyEnforcementDocumentationCheck`.
-- `./gradlew checkDomainEventEnforcement --console=plain`
-  Aggregates the focused Domain Event bundle through `compileJava` and
-  `:build-harness:domainEventEnforcementDocumentationCheck`.
-- `./gradlew checkDomainSpecificationEnforcement --console=plain`
-  Aggregates the focused Domain Specification bundle through `compileJava`
-  with the dedicated `DomainSpecificationRoleShape` compiler check.
+- `./gradlew checkDomainRepositoryEnforcement --console=plain`
+  Aggregates the focused Domain Repository bundle through
+  `:build-harness:domainRepositoryTopologyCheck` and
+  `:build-harness:domainRepositoryDocumentationEnforcementCheck`.
+- `./gradlew checkDomainModelEnforcement --console=plain`
+  Aggregates the focused Domain Model bundle through
+  `:build-harness:domainModelTopologyCheck` and
+  `:build-harness:domainModelDocumentationEnforcementCheck`.
+- `./gradlew checkDomainHelperEnforcement --console=plain`
+  Aggregates the focused Domain Helper bundle through
+  `:build-harness:domainHelperTopologyCheck` and
+  `:build-harness:domainHelperDocumentationEnforcementCheck`.
+- `./gradlew checkDomainConstantsEnforcement --console=plain`
+  Aggregates the focused Domain Constants bundle through
+  `:build-harness:domainConstantsTopologyCheck` and
+  `:build-harness:domainConstantsDocumentationEnforcementCheck`.
 - `./gradlew checkDomainUseCaseEnforcement --console=plain`
   Aggregates the focused Domain UseCase bundle through `compileJava`,
   `pmdDomainUseCaseEnforcement`,

@@ -2,25 +2,17 @@ Status: Active
 Owner: SaltMarcher Team
 Last Reviewed: 2026-05-08
 Source of Truth: Role-local enforcement inventory and focused verification
-surface for the current `port/` blocker family in `src/domain/**`.
+surface for inbound `Port` listener ownership in `src/domain/**`.
 
 # Domain Port Enforcement
 
 ## Goal
 
-Architectural truth for the target `Port` role lives only in the
+Architectural truth for `Port` lives only in the
 [Domain Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/domain-layer.md:1).
-That target role is an inbound domain-internal listener on foreign published
-state.
-
-Current mechanical drift:
-
-- the active `checkDomainPortEnforcement` bundle still inventories and blocks
-  the legacy outbound `port/` interface family
-- the target placement is `src/domain/<context>/model/<family>/port/`
-- until production migration replaces that legacy shape, this document records
-  the live blocker surface literally instead of pretending the target port role
-  is already enforced
+This document owns only the role-local enforcement inventory, focused
+verification surface, and current mechanical coverage for the target inbound
+listener role.
 
 Unified focused bundle entrypoint:
 
@@ -32,28 +24,24 @@ Unified focused bundle entrypoint:
 
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
-| `domain-port-repository-write-orientation` | Review-Owned | every legacy outbound port whose name ends with `Repository` | none | none | A legacy `*Repository` port should remain genuinely write-oriented while the repository/port migration is still in progress. |
-| `domain-port-read-port-placement` | Review-Owned | every legacy outbound port whose name ends with `Lookup`, `Catalog`, or `Search` | none | none | Legacy `*Lookup`, `*Catalog`, and `*Search` types should remain read-oriented interface contracts only while they still live under the old outbound `port/` shape. |
-| `domain-port-read-port-read-only-orientation` | Review-Owned | every legacy outbound port whose name ends with `Lookup`, `Catalog`, or `Search` | none | none | Legacy read-port suffixes should remain read-only and must not quietly become mutation seams or generic helper contracts. |
-
 ### Must Contain
 
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
-| `domain-port-role-shape` | Enforced | every top-level type under `src/domain/<context>/<named-module>/port/` | domain-port bundle Error Prone `DomainPortRoleShape` | `./gradlew compileJava` and `./gradlew checkDomainPortEnforcement` | The current blocker still expects legacy outbound `port/` contracts to be interfaces whose names end with `Repository`, `Lookup`, `Catalog`, or `Search`. |
-| `domain-port-repository-placement` | Enforced | every type under `src/domain/**` whose simple name ends with `Repository` | domain-port bundle Error Prone `DomainPortBoundary` | `./gradlew compileJava` and `./gradlew checkDomainPortEnforcement` | The current blocker still expects domain `*Repository` contracts to live under a named module `port/` package as legacy outbound interfaces. |
+| `domain-port-direct-file-placement` | Enforced | every Java type below `src/domain/<context>/model/<family>/port/` | domain-port bundle build-harness `DomainPortTopologyRules` | `./gradlew checkDomainPortEnforcement` | Port files stay as direct files under one model-family `port/` bucket rather than growing helper subpackages or leaking back to context root. |
+| `domain-port-role-shape` | Enforced | every domain type whose simple name ends with `Port` and every Java type below `src/domain/<context>/model/<family>/port/` | domain-port bundle build-harness `DomainPortTopologyRules` | `./gradlew checkDomainPortEnforcement` | Port role files use the canonical `*Port.java` form and may appear only in the canonical inbound-listener bucket. |
 
 ### Must Not Contain
 
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
-| `domain-port-no-implementations-inside-domain` | Enforced | every type under `src/domain/**` that implements a legacy outbound port | domain-port bundle Error Prone `DomainPortBoundary` | `./gradlew compileJava` and `./gradlew checkDomainPortEnforcement` | Legacy outbound port implementations do not live inside `src/domain/**`. |
+| `domain-port-no-foreign-mutation-or-data-seam` | Review-Owned | every `*Port.java` under `src/domain/**` | none | none | A legal port still does not become a hidden foreign-mutation trigger, data-source seam, or adapter host. Foreign writes belong to `Repository`; `Port` remains intake-only. |
 
 ### Communication Contract
 
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
-| `domain-port-ownership-and-signature-boundary` | Enforced | every public or protected boundary surface on a legacy outbound domain port | domain-port bundle Error Prone `DomainPortBoundary` | `./gradlew compileJava` and `./gradlew checkDomainPortEnforcement` | The current blocker keeps legacy outbound port signatures free of outer-layer or infrastructure types while the target inbound-listener `Port` role is still migrating. |
+| `domain-port-published-listener-boundary` | Review-Owned | every `Port` collaboration surface | none | none | A legal port still listens only to foreign `published/*Model` state through `current()` and `subscribe(...)`, then turns those updates into same-context `UseCase` work. |
 
 ### Review-Owned
 
@@ -65,5 +53,5 @@ Unified focused bundle entrypoint:
 
 - [Domain Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/domain-layer.md:1)
 - [Domain Layer Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/domain-layer-enforcement.md:1)
+- [Domain Published Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/domain-published-enforcement.md:1)
 - [Domain Repository Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/domain-repository-enforcement.md:1)
-- [Data Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/data-layer.md:1)

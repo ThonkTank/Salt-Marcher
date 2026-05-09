@@ -1,8 +1,8 @@
-Status: Draft
+Status: Active
 Owner: SaltMarcher Team
 Last Reviewed: 2026-05-08
-Source of Truth: Role-local enforcement inventory and review criteria for
-`Constants` in `src/domain/**`.
+Source of Truth: Role-local enforcement inventory and focused verification
+surface for `Constants` in `src/domain/**`.
 
 # Domain Constants Enforcement
 
@@ -10,8 +10,13 @@ Source of Truth: Role-local enforcement inventory and review criteria for
 
 Architectural truth for `Constants` lives only in the
 [Domain Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/domain-layer.md:1).
-This document currently owns review criteria only. No dedicated focused
-constants bundle exists yet.
+This document owns only the role-local enforcement inventory, focused
+verification surface, and current mechanical coverage for constants placement
+and role shape.
+
+Unified focused bundle entrypoint:
+
+- `./gradlew checkDomainConstantsEnforcement --rerun-tasks --console=plain`
 
 ## Invariant Catalog
 
@@ -19,6 +24,8 @@ constants bundle exists yet.
 
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
+| `domain-constants-direct-file-placement` | Enforced | every Java type below `src/domain/<context>/model/<family>/constants/` | domain-constants bundle build-harness `DomainConstantsTopologyRules` | `./gradlew checkDomainConstantsEnforcement` | Constants files stay as direct files under one model-family `constants/` bucket rather than growing helper or adapter subpackages. |
+| `domain-constants-role-shape` | Enforced | every domain type whose simple name ends with `Constants` and every Java type below `src/domain/<context>/model/<family>/constants/` | domain-constants bundle build-harness `DomainConstantsTopologyRules` | `./gradlew checkDomainConstantsEnforcement` | Constants role files use the canonical `*Constants.java` form and may appear only in the canonical constants bucket. |
 | `domain-constants-immutable-only` | Review-Owned | every constants file under `src/domain/**` | none | none | Constants own immutable shared domain values only. |
 
 ### Must Not Contain

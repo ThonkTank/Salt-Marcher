@@ -159,15 +159,10 @@ Operationally, architecture checks enter local quality through:
   `register(...)` export-shape checks, the dedicated root PMD role-shape and
   source-mechanics rules, and the dedicated bundle-local
   enforcement-documentation coverage check through one direct root entrypoint
-- `checkDomainFactoryEnforcement`
-  runs the focused `Domain Factory` enforcement bundle by aggregating the
-  dedicated compiler-integrated `factory/` role-shape/statelessness checks
-  and the bundle-local documentation-coverage rule through one direct root
-  entrypoint
 - `checkDomainPortEnforcement`
   runs the focused Domain Port bundle by aggregating the dedicated
-  compiler-integrated `port/` role-shape and boundary checks plus the
-  bundle-local documentation-coverage rule through one direct root entrypoint
+  Port topology check and the bundle-local documentation-coverage rule through
+  one direct root entrypoint
 - `checkDomainContextEnforcement`
   runs the focused Domain Context bundle by aggregating the dedicated
   `DOMAIN.md` contract, context-map, and bundle-local coverage checks through
@@ -177,32 +172,22 @@ Operationally, architecture checks enter local quality through:
   compiler-integrated `published/**` carrier-shape/signature-purity checks,
   the dedicated Published topology check, and the bundle-local
   documentation-coverage rule through one direct root entrypoint
-- `checkDomainPortEnforcement`
-  runs the focused Domain Port bundle by aggregating the dedicated
-  compiler-integrated `port/` role-shape and boundary checks plus the
-  bundle-local documentation-coverage rule through one direct root entrypoint
-- `checkDomainValueEnforcement`
-  runs the focused `Domain Value` enforcement bundle by aggregating the
-  dedicated compiler-integrated `DomainValueShape` check and the bundle-local
-  documentation-coverage rule through one direct root entrypoint
-- `checkDomainServiceEnforcement`
-  runs the focused `Domain Service` enforcement bundle by aggregating the
-  dedicated compiler-integrated `service/` role-shape/statelessness checks and
-  the bundle-local documentation-coverage rule through one direct root
-  entrypoint
-- `checkDomainPolicyEnforcement`
-  runs the focused `Domain Policy` enforcement bundle by aggregating the
-  dedicated compiler-integrated `policy/` role-shape/statelessness checks and
-  the bundle-local documentation-coverage rule through one direct root
-  entrypoint
-- `checkDomainEventEnforcement`
-  runs the focused Domain Event bundle by aggregating the dedicated
-  compiler-integrated `event/` role-shape check and the bundle-local
-  documentation-coverage rule through one direct root entrypoint
-- `checkDomainSpecificationEnforcement`
-  runs the focused Domain Specification bundle by aggregating the dedicated
-  compiler-integrated `specification/` role-shape check through one direct
-  root entrypoint
+- `checkDomainRepositoryEnforcement`
+  runs the focused Domain Repository bundle by aggregating the dedicated
+  repository topology check and the bundle-local documentation-coverage rule
+  through one direct root entrypoint
+- `checkDomainModelEnforcement`
+  runs the focused Domain Model bundle by aggregating the dedicated model-tree
+  topology check and the bundle-local documentation-coverage rule through one
+  direct root entrypoint
+- `checkDomainHelperEnforcement`
+  runs the focused Domain Helper bundle by aggregating the dedicated helper
+  topology check and the bundle-local documentation-coverage rule through one
+  direct root entrypoint
+- `checkDomainConstantsEnforcement`
+  runs the focused Domain Constants bundle by aggregating the dedicated
+  constants topology check and the bundle-local documentation-coverage rule
+  through one direct root entrypoint
 - `checkStylingLayerEnforcement`
   runs the focused styling-layer bundle by aggregating centralized stylesheet
   ownership, centralized stylesheet placement, style-class selector
@@ -357,7 +342,8 @@ Operationally, architecture checks enter local quality through:
   Data ServiceContribution,
   styling-layer, `Shell Layer`, `Layering Architecture`, Domain UseCase,
   Data Model, Data Repository, Data Query, Data Mapper, Data Persistencecore,
-  `Domain Port`, `Domain Factory`, `Domain Service`, Domain Event,
+  `Domain Port`, `Domain Repository`, `Domain Model`, `Domain Helper`,
+  `Domain Constants`,
   `Contribution`, `Binder`, `ContributionModel`, `ContentModel`,
   `ViewInputEvent`, `IntentHandler`, and `ShellRuntimeContext` bundles,
   ArchUnit, PMD architecture rules, and the
@@ -369,9 +355,10 @@ Operationally, architecture checks enter local quality through:
   `checkDomainApplicationServiceEnforcement`,
   `checkDataServiceContributionEnforcement`,
   `checkDomainPortEnforcement`,
-  `checkDomainFactoryEnforcement`,
-  `checkDomainServiceEnforcement`,
-  `checkDomainEventEnforcement`,
+  `checkDomainRepositoryEnforcement`,
+  `checkDomainModelEnforcement`,
+  `checkDomainHelperEnforcement`,
+  `checkDomainConstantsEnforcement`,
   `checkDataModelEnforcement`,
   `checkDataGatewayEnforcement`,
   `checkDataRepositoryEnforcement`,

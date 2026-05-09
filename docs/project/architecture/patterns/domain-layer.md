@@ -257,8 +257,10 @@ suffix placement, but production migration still lags behind that target.
   renames and moves to build-harness scanning alone
 - `checkDomainUseCaseEnforcement` now hard-cuts root `application/` to direct
   `*UseCase.java` files only
-- current port checks still inventory legacy outbound `port/` interfaces until
-  the repository/port role migration reaches production code
+- focused `Port`, `Repository`, `Model`, `Helper`, and `Constants` bundles now
+  block the canonical target buckets and role file forms; deeper purity and
+  communication semantics remain review-owned where the neighboring owner docs
+  say so
 
 ## Context Roles
 

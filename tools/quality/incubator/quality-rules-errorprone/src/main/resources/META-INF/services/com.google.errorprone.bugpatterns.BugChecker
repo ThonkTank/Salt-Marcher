@@ -1,6 +1,5 @@
 saltmarcher.quality.errorprone.DomainModuleFieldPurityChecker
 saltmarcher.quality.errorprone.DomainPublicConcreteTypeShapeChecker
-saltmarcher.quality.errorprone.DomainRoleShapeChecker
 saltmarcher.quality.errorprone.view.view.ViewDetailsSlotBoundaryChecker
 saltmarcher.quality.errorprone.view.projectionmodel.ProjectionModelOwnershipNamingChecker
 saltmarcher.quality.errorprone.view.view.ViewReflectionBypassChecker

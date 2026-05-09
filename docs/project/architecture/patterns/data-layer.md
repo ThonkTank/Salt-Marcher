@@ -10,7 +10,7 @@ runtime composition placement, and data-layer topology for `src/data/**`.
 
 SaltMarcher uses `src/data/**` as the outer adapter zone for persistence,
 imports, files, remote systems, and other concrete sources behind domain-owned
-outbound ports. Data code adapts sources to the domain core; it does not own a
+repositories. Data code adapts sources to the domain core; it does not own a
 second business model, public backend layer, or policy language beside
 `src/domain/**`.
 
