@@ -150,6 +150,8 @@ internal fun Project.registerQualityConventionLifecycleTasks(
         )
         resourceRoots.from(layout.projectDirectory.dir("resources"))
         keepRulesFiles.from(layout.projectDirectory.file("tools/quality/config/deadcode/keep-rules.pro"))
+        mainClassName.set(environment.packagingMetadata.mainClassNameProvider)
+        preloaderClassName.set(environment.packagingMetadata.preloaderClassNameProvider)
         workingDirectory.set(layout.buildDirectory.dir("tmp/checkNoDeadCode"))
         reportFile.set(layout.buildDirectory.file("reports/deadcode/main.txt"))
         successMarker.set(layout.buildDirectory.file("verification-markers/checkNoDeadCode/success.marker"))

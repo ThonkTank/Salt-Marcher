@@ -55,10 +55,11 @@ decision is made.
 Unused-code false positives are handled by narrow, explicit structural roots
 or narrow local keep roots instead of weakening the blocking gates. Generated
 code is excluded through the shared Error Prone configuration, while
-whole-program reachability derives its live roots mechanically from JavaFX
-entry classes, view contribution discovery, service contribution discovery,
-FXML controller resources, `META-INF/services` providers, literal
-FXML resources, `META-INF/services` providers, and the explicit fallback rules
+whole-program reachability derives its live roots mechanically from the
+configured JavaFX launcher and preloader classes, exact view contribution root
+classes matching bootstrap discovery shape, exact data service contribution
+root classes matching service discovery shape, merged FXML controller
+resources, `META-INF/services` providers, and the explicit fallback rules
 under `tools/quality/config/deadcode/keep-rules.pro`. Any future framework- or
 reflection-driven exception must stay local, documented, and attributable
 rather than becoming a blanket disablement of the unused checks.
