@@ -6,8 +6,8 @@ import org.gradle.jvm.tasks.Jar
 import org.gradle.kotlin.dsl.named
 import org.gradle.kotlin.dsl.register
 import org.gradle.kotlin.dsl.the
+import saltmarcher.buildlogic.enforcement.EnforcementBundleDescriptor
 import saltmarcher.buildlogic.enforcement.EnforcementBundlesExtension
-import saltmarcher.buildlogic.enforcement.standardEnforcementBundleCatalog
 import saltmarcher.buildlogic.tasks.MergeBugCheckerServicesTask
 import saltmarcher.buildlogic.tasks.ValidateBugCheckerRegistriesTask
 
@@ -29,10 +29,10 @@ java {
     }
 }
 
-val repoRootDir = layout.projectDirectory.dir("../../../..").asFile
 val enforcementBundles = extensions.getByType(EnforcementBundlesExtension::class.java)
-val activeEnforcementBundleIds = enforcementBundles.activeEnforcementBundleIds.toSet()
-val enforcementBundleCatalog = standardEnforcementBundleCatalog()
+val repoRootDir = enforcementBundles.repoRootDir
+val enforcementBundleCatalog = enforcementBundles.catalog
+val activeDescriptors = enforcementBundles.activeDescriptors()
 
 fun repoVerificationFiles(relativeSuffix: String): List<File> {
     val qualityDir = repoRootDir.resolve("tools/quality")
@@ -52,11 +52,11 @@ val checkerToBundleId = enforcementBundleCatalog.descriptorsById.values
     .toMap()
 
 fun activeBundleOwnerDirs(): Map<String, String> {
-    if (activeEnforcementBundleIds.isEmpty()) {
+    if (activeDescriptors.isEmpty()) {
         return emptyMap()
     }
-    val activeCheckerNames = activeEnforcementBundleIds
-        .flatMap { bundleId -> enforcementBundleCatalog.descriptor(bundleId).errorProneCheckers }
+    val activeCheckerNames = activeDescriptors
+        .flatMap(EnforcementBundleDescriptor::errorProneCheckers)
         .toSet()
     if (activeCheckerNames.isEmpty()) {
         return emptyMap()
@@ -84,14 +84,14 @@ fun activeBundleOwnerDirs(): Map<String, String> {
 val effectiveErrorProneSourceDirs = repoVerificationFiles("/errorprone/src/main/java")
 val effectiveBugCheckerServices = repoVerificationFiles("/errorprone/src/main/resources/META-INF/services/com.google.errorprone.bugpatterns.BugChecker")
 val activeBundleDirs = activeBundleOwnerDirs()
-val validatedBugCheckerServices = if (activeEnforcementBundleIds.isEmpty()) {
+val validatedBugCheckerServices = if (activeDescriptors.isEmpty()) {
     effectiveBugCheckerServices
 } else {
     effectiveBugCheckerServices.filter { serviceFile ->
         activeBundleDirs.keys.any { ownerDir -> serviceFile.absolutePath.startsWith(ownerDir) }
     }
 }
-val activeErrorProneSourceDirs = if (activeEnforcementBundleIds.isEmpty()) {
+val activeErrorProneSourceDirs = if (activeDescriptors.isEmpty()) {
     effectiveErrorProneSourceDirs
 } else {
     effectiveErrorProneSourceDirs.filter { sourceDir ->

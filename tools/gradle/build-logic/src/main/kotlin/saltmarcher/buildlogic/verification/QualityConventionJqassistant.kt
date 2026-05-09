@@ -1,6 +1,5 @@
 package saltmarcher.buildlogic.verification
 
-import org.gradle.api.Task
 import org.gradle.api.tasks.Sync
 import org.gradle.api.tasks.TaskProvider
 import org.gradle.kotlin.dsl.register

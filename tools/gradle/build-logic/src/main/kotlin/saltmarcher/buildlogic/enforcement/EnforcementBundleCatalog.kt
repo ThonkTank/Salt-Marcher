@@ -1,6 +1,7 @@
 package saltmarcher.buildlogic.enforcement
 
 import java.io.File
+import java.util.ArrayDeque
 
 data class EnforcementRootTask(
     val description: String?,
@@ -91,6 +92,26 @@ data class EnforcementBundleCatalog(
 
     fun descriptor(bundleId: String): EnforcementBundleDescriptor = descriptorsById[bundleId]
         ?: error("Unknown enforcement bundle '$bundleId'.")
+
+    fun dependentBundleIds(bundleId: String): List<String> = descriptor(bundleId).rootTaskDependencies
+        .mapNotNull(taskToBundleId::get)
+        .filterNot(bundleId::equals)
+        .distinct()
+
+    fun expandedBundleIds(requestedBundleIds: Iterable<String>): List<String> {
+        val expanded = linkedSetOf<String>()
+        val pending = ArrayDeque(requestedBundleIds.toList())
+        while (pending.isNotEmpty()) {
+            val bundleId = pending.removeFirst()
+            if (!expanded.add(bundleId)) {
+                continue
+            }
+            dependentBundleIds(bundleId)
+                .filterNot(expanded::contains)
+                .forEach(pending::addLast)
+        }
+        return bundleIdsInOrder.filter(expanded::contains)
+    }
 }
 
 data class EnforcementBundleSelection(
@@ -118,7 +139,7 @@ fun standardEnforcementBundleCatalog(): EnforcementBundleCatalog = EnforcementBu
     standardEnforcementBundleDescriptors()
         .map(EnforcementBundleDescriptor::validated)
         .associateBy(EnforcementBundleDescriptor::bundleId)
-)
+).validatedCrossBundleDependencies()
 
 fun loadEnforcementBundlesExtension(rootDir: File): EnforcementBundlesExtension {
     val repoRootDir = System.getProperty("saltmarcher.repoRootDir")
@@ -217,6 +238,23 @@ private fun EnforcementBundleDescriptor.validated(): EnforcementBundleDescriptor
         "Enforcement bundle '$bundleId' must declare rootTask.* metadata."
     }
 
+    return this
+}
+
+private fun EnforcementBundleCatalog.validatedCrossBundleDependencies(): EnforcementBundleCatalog {
+    descriptorsById.values.forEach { descriptor ->
+        descriptor.rootTaskDependencies.forEach { dependencyTaskName ->
+            val dependencyBundleId = taskToBundleId[dependencyTaskName] ?: return@forEach
+            if (dependencyBundleId == descriptor.bundleId) {
+                return@forEach
+            }
+            val dependencyDescriptor = descriptor(dependencyBundleId)
+            require(dependencyTaskName == dependencyDescriptor.publicCheckTaskName()) {
+                "Enforcement bundle '${descriptor.bundleId}' must depend on the public check task of bundle " +
+                    "'$dependencyBundleId', but references '$dependencyTaskName'."
+            }
+        }
+    }
     return this
 }
 

@@ -103,23 +103,17 @@ focused Data Mapper source-pattern and documentation proof enters through
 `checkDataMapperEnforcement`,
 focused Data Persistencecore dependency and documentation proof enters through
 `checkDataPersistencecoreEnforcement`,
-focused `Contribution` entrypoint-shape and ArchUnit analysis enters through
-`checkViewContributionEnforcement`,
-focused Binder graph analysis enters through
-`checkViewBinderEnforcement`,
-focused `ContributionModel` graph analysis enters through
-`checkViewContributionModelEnforcement`, focused `ContentModel` graph and
-topology analysis enters through `checkViewContentModelEnforcement`, focused
-`InspectorEntry` graph and topology analysis enters through
-`checkViewInspectorEntryEnforcement`, and broader remaining view-topology
-analysis enters through `checkViewArchitecture`.
-The graph/FXML/topology paths are wired into the central `check` aggregate
+merged View compile-bound role enforcement enters through
+`checkViewEnforcement`,
+closed-world view-directory and role-form topology enters through
+`checkViewLayerEnforcement`.
+The compile/FXML/topology paths are wired into the central `check` aggregate
 through the named architecture aggregates. Passive-`View` direct-render
 styling placement stays compiler-backed through `compileJava` and also enters
 the central `check` aggregate explicitly through
 `checkStylingViewEnforcement`. This keeps focused compilation verification
-independent from graph analysis while ensuring `build` still runs the full
-architecture harness through `check`.
+independent from the separate closed-world topology owner while ensuring
+`build` still runs the full architecture harness through `check`.
 
 ### Complexity, Duplication, And Metrics
 
@@ -219,8 +213,8 @@ bundle, and the new broader role-aware hub or sprawl diagnostics stay with
 `checkLayeringSprawlCandidates`.
 
 Focused PMD, SpotBugs, CPD, Lizard, and CKJM entrypoints must stay independent
-of the jQAssistant view-topology blocker; they may be run together for quality
-investigation without pulling in the view-architecture graph analysis. The
+of the closed-world view-topology blocker; they may be run together for quality
+investigation without pulling in the separate view-layer topology aggregate. The
 dedicated `checkNoDeadCode` blocker is the only whole-program dead-code
 hygiene gate in the central quality path.
 
@@ -294,13 +288,10 @@ It includes:
   `checkDataQueryEnforcement`,
   `checkDataMapperEnforcement`,
   `checkDataPersistencecoreEnforcement`,
-  `checkViewContributionEnforcement`, `checkViewEnforcement`,
-  `checkViewBinderEnforcement`,
-  `checkViewContributionModelEnforcement`,
-  `checkViewInspectorEntryEnforcement`, `checkViewLayerEnforcement`,
-  `checkViewInputEventEnforcement`,
+  `checkViewEnforcement`,
+  `checkViewLayerEnforcement`,
   `checkShellRuntimeContextEnforcement`, `pmdArchitectureMain`,
-  `:build-harness:architectureCheck`, and `checkViewArchitecture`
+  and `:build-harness:architectureCheck`
 - repository and resource policy checks
 - PMD source-smell detection through `pmdMain`
 - SpotBugs plus FindSecBugs through `spotbugsMain`
@@ -382,8 +373,8 @@ Focused investigation entrypoints are `compileJava`, `pmdMain`,
   `checkBootstrapAppBootstrapEnforcement`,
   `checkShellLayerEnforcement`,
   `checkShellRuntimeContextEnforcement`,
-  `checkViewFxmlResources`, `checkViewEnforcement`,
-  `checkViewContributionEnforcement`, `pmdViewContributionEnforcement`,
+`checkViewFxmlResources`, `checkViewEnforcement`,
+  `pmdViewContributionEnforcement`,
   `checkDomainUseCaseEnforcement`,
   `checkDataModelEnforcement`,
   `checkDataGatewayEnforcement`,
@@ -391,12 +382,8 @@ Focused investigation entrypoints are `compileJava`, `pmdMain`,
   `checkDataQueryEnforcement`,
   `checkDataMapperEnforcement`,
   `checkDataPersistencecoreEnforcement`,
-  `checkViewBinderEnforcement`,
-`checkViewContributionModelEnforcement`,
-`checkViewContentModelEnforcement`,
-`checkViewInspectorEntryEnforcement`, `checkViewLayerEnforcement`,
-`checkViewInputEventEnforcement`,
-`checkViewIntentHandlerEnforcement`, `checkLayeringArchitectureEnforcement`,
+  `checkViewLayerEnforcement`,
+`checkLayeringArchitectureEnforcement`,
 `checkLayeringIndirectionEnforcement`,
 `checkLayeringIndirectionRelayCandidates`, `checkLayeringIndirectionCandidates`,
 `checkDocumentationEnforcement`, and `jqassistantEffectiveRules`, each run
@@ -429,13 +416,8 @@ Architecture-focused entrypoints:
   `checkDomainUseCaseEnforcement`,
   `checkLayeringArchitectureEnforcement`,
   `checkLayeringIndirectionEnforcement`,
-  `checkViewContributionEnforcement`,
-  `checkViewBinderEnforcement`,
-  `checkViewContributionModelEnforcement`,
-  `checkViewContentModelEnforcement`,
-  `checkViewInspectorEntryEnforcement`, `checkViewLayerEnforcement`,
-  `checkViewInputEventEnforcement`,
-  `checkViewIntentHandlerEnforcement`,
+  `checkViewEnforcement`,
+  `checkViewLayerEnforcement`,
   `checkShellRuntimeContextEnforcement`, `pmdArchitectureMain`, and
   `:build-harness:architectureCheck`.
 - `./gradlew checkDocumentationEnforcement --console=plain`
@@ -573,55 +555,16 @@ Architecture-focused entrypoints:
 - `./gradlew checkShellAppShellEnforcement --console=plain`
   Aggregates the focused `AppShell` bundle through `compileJava` with the
   dedicated `ShellLifecycleHookOwnership` compiler check.
-- `./gradlew checkViewBinderEnforcement --console=plain`
-  Aggregates the current `Binder` bundle through `compileJava`,
-  `viewBinderArchitectureTest`, and the dedicated Binder jQAssistant analysis.
 - `./gradlew checkViewEnforcement --console=plain`
-  Aggregates the current passive `View` bundle through `compileJava`, the
-  bundle-owned `viewSurfaceArchitectureTest`, `checkViewFxmlResources`, and
-  the dedicated passive-`View` jQAssistant analysis. This is the canonical
-  public entrypoint for passive-`View` enforcement.
-- `./gradlew checkViewContributionEnforcement --console=plain`
-  Aggregates the current `Contribution` bundle through `compileJava`,
-  `viewContributionArchitectureTest`, and
-  `pmdViewContributionEnforcement`.
-- `./gradlew checkViewContributionModelEnforcement --console=plain`
-  Aggregates the current `ContributionModel` bundle through `compileJava`,
-  `viewContributionModelArchitectureTest`, the dedicated
-  `ContributionModel` jQAssistant analysis, and
-  `:build-harness:viewContributionModelTopologyCheck`.
-- `./gradlew checkViewContentModelEnforcement --console=plain`
-  Aggregates the current `ContentModel` bundle through `compileJava`,
-  `viewContentModelArchitectureTest`, the dedicated `ContentModel`
-  jQAssistant analysis, and `:build-harness:viewContentModelTopologyCheck`.
-- `./gradlew checkViewInspectorEntryEnforcement --console=plain`
-  Aggregates the current `InspectorEntry` bundle through `compileJava`,
-  the dedicated InspectorEntry jQAssistant analysis, and
-  `:build-harness:viewInspectorEntryTopologyCheck`.
-- `./gradlew checkViewArchitecture --console=plain`
-  Runs the explicit jQAssistant view-topology analysis for the remaining
-  non-passive `View`, non-Binder, and non-InspectorEntry cockpit structure
-  and also executes the focused `ContributionModel` and `ContentModel`
-  jQAssistant bundles plus the report-only legacy
-  `checkViewRefactorCandidates` diagnostic surface.
+  Aggregates the merged View bundle through `compileJava`,
+  `checkViewLayerEnforcement`, `checkViewFxmlResources`, and
+  `pmdViewContributionEnforcement`. This is the canonical public entrypoint
+  for compile-bound view-role enforcement.
 - `./gradlew checkViewLayerEnforcement --console=plain`
-  Aggregates the current `View Layer` bundle through
-  `viewLayerArchitectureTest` and `:build-harness:viewLayerTopologyCheck`.
-- `./gradlew checkViewRefactorCandidates --console=plain`
-  Runs the report-only legacy View Layer refactor PMD scan from the superseded
-  technical-primitive architecture. This surface does not change the Gradle
-  exit code, but it is still attached to `checkViewArchitecture`, staged
-  `view-topology`, `check`, `build`, and staged `production-handoff` until the
-  reusable-slotcontent gate migration replaces or removes it. The canonical
-  view-layer target remains the
-  [View Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/view-layer.md:1).
-- `./gradlew checkViewInputEventEnforcement --console=plain`
-  Aggregates the current `ViewInputEvent` bundle through `compileJava`,
-  `viewInputEventArchitectureTest`, and `:build-harness:viewInputEventTopologyCheck`.
-- `./gradlew checkViewIntentHandlerEnforcement --console=plain`
-  Aggregates the current `IntentHandler` bundle through `compileJava`,
-  `viewIntentHandlerArchitectureTest`, and
-  `:build-harness:viewIntentHandlerTopologyCheck`.
+  Aggregates the closed-world View Layer bundle through the generic
+  build-harness topology proof for allowed view directories, role forms, and
+  same-unit cardinality. This is the canonical public entrypoint for view
+  topology blocking.
 
 The Gradle convention implementation must keep these public entrypoints stable
 while organizing internal wiring by policy area: invocation behavior, compiler
@@ -669,7 +612,7 @@ wrappers continue to own their own invocation defaults such as
 `--console=plain` and the default `--continue` policy for diagnostic surfaces.
 
 This does not make bytecode-dependent entrypoints source-only. `spotbugsMain`,
-`ckjmMain`, `checkViewEnforcement`, and `checkViewArchitecture` still require
+`ckjmMain`, and `checkViewEnforcement` still require
 current compiled classes; if `compileJava` fails, those entrypoints may be
 skipped because their prerequisite failed rather than because another
 independent check failed.

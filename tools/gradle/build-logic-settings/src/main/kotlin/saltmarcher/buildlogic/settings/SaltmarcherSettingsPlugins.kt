@@ -29,8 +29,7 @@ class SaltmarcherRootSettingsPlugin : Plugin<Settings> {
             requestedTaskNames.none { taskName -> taskName in broadBuildTaskNames } &&
             requestedTaskNames.all { taskName -> taskName in taskToBundleId.keys }
         val activeEnforcementBundleIds = if (focusedEnforcementBundleMode) {
-            bundleCatalog.bundleIdsInOrder
-                .filter { bundleId -> bundleId in requestedBundleIds }
+            bundleCatalog.expandedBundleIds(requestedBundleIds)
         } else {
             bundleCatalog.bundleIdsInOrder
         }

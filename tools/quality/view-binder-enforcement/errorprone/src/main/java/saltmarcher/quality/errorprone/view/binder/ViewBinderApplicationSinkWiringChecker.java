@@ -40,7 +40,7 @@ public final class ViewBinderApplicationSinkWiringChecker extends BugChecker
                 if (ownerViewType == null || !"HANDLER".equals(ownerViewType.bucket())) {
                     return super.visitMethodInvocation(methodInvocationTree, unused);
                 }
-                if ("onPublishedEventRequested".contentEquals(symbol.getSimpleName())) {
+                if (isLegacyPublishedEventSink(symbol)) {
                     violations.add(symbol.getSimpleName() + " -> " + ownerType);
                 }
                 return super.visitMethodInvocation(methodInvocationTree, unused);
@@ -56,5 +56,15 @@ public final class ViewBinderApplicationSinkWiringChecker extends BugChecker
                         + String.join(", ", violations)
                         + ". Domain writes must leave directly from the IntentHandler through the matching root *ApplicationService.")
                 .build();
+    }
+
+    private static boolean isLegacyPublishedEventSink(Symbol.MethodSymbol symbol) {
+        if ("onPublishedEventRequested".contentEquals(symbol.getSimpleName())) {
+            return true;
+        }
+        return symbol.getParameters().stream()
+                .map(parameter -> parameter.type == null ? "" : parameter.type.toString())
+                .map(ViewArchitectureSupport::topLevelQualifiedTypeNameOf)
+                .anyMatch(ViewArchitectureSupport::isTargetPublishedEventReference);
     }
 }

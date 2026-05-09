@@ -90,14 +90,12 @@ reconstructing the surface model themselves.
 Each focused enforcement package under `tools/quality/*-enforcement/` owns one
 root public `check*Enforcement` lifecycle task through descriptor-owned bundle
 metadata. Standard bundles are registered centrally by the verification core
-from that metadata; they MAY also expose additional public report-only sibling
-tasks when the same owner needs a non-blocking diagnostic surface beside the
-root blocker. The verification core may attach selected report-only sibling
-surfaces to staged lifecycle paths such as `view-topology` or
-`production-handoff` when that diagnostic is part of the canonical handoff
-guidance and still remains non-blocking. Bundles with small local extras such
-as stylesheet or FXML checks still register through the same standard
-verification-core path instead of through dedicated root plugins.
+from that metadata. Bundles with small local extras such as stylesheet or
+FXML checks still register through the same standard verification-core path
+instead of through dedicated root plugins. The staged `view-topology` surface
+is intentionally routed to the dedicated closed-world
+`checkViewLayerEnforcement` bundle owner rather than to a second
+view-specific graph-analysis owner.
 
 Bundle owners MAY know their private ArchUnit, Error Prone, PMD,
 jQAssistant, or build-harness tasks. They MUST NOT depend on shell wrappers.

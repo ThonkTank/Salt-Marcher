@@ -250,56 +250,19 @@ Operationally, architecture checks enter local quality through:
   enforcement-documentation coverage check through one direct root entrypoint
 - `architectureTest`
   runs the remaining generic ArchUnit dependency and cycle checks outside the
-  focused `AppBootstrap`, Domain Layer, `Shell Layer`, passive-`View`,
-  `Contribution`, `Binder`, `ContributionModel`, `ContentModel`,
-  `IntentHandler`, and `View Layer` bundle suites
+  focused `AppBootstrap`, Domain Layer, `Shell Layer`, `View Layer`, and the
+  other focused enforcement bundles that still keep dedicated ArchUnit suites
 - `checkViewEnforcement`
-  runs the focused passive `View` enforcement bundle by aggregating the
-  current compiler-integrated passive-`View` checks, the dedicated passive
-  `View` ArchUnit suite from the bundle-owned ArchUnit source set, the
-  dedicated passive-`View` jQAssistant bundle, and the dedicated FXML resource
-  boundary check through one direct root entrypoint
-- `checkViewContributionEnforcement`
-  runs the focused `Contribution` enforcement bundle by aggregating the
-  dedicated compiler-integrated dependency check, the dedicated ArchUnit
-  suite, and the dedicated PMD entrypoint-shape rule through one direct root
-  entrypoint
-- `checkViewContributionModelEnforcement`
-  runs the focused `ContributionModel` enforcement bundle by aggregating the
-  dedicated compiler-integrated checks, the dedicated ArchUnit suite, the
-  dedicated jQAssistant bundle, and the dedicated build-harness topology check
-  through one direct root entrypoint
-- `checkViewContentModelEnforcement`
-  runs the focused `ContentModel` enforcement bundle by aggregating the
-  dedicated compiler-integrated checks, the dedicated ArchUnit suite, the
-  dedicated jQAssistant bundle, and the dedicated build-harness topology check
-  through one direct root entrypoint
-- `checkViewBinderEnforcement`
-  runs the focused `Binder` enforcement bundle by aggregating the dedicated
-  compiler-integrated checks, the dedicated ArchUnit suite, and the dedicated
-  Binder jQAssistant bundle through one direct root entrypoint
-- `checkViewInspectorEntryEnforcement`
-  runs the focused `InspectorEntry` enforcement bundle by aggregating the
-  current compiler-integrated InspectorEntry checks, the dedicated
-  InspectorEntry jQAssistant bundle, and the dedicated build-harness topology
-  check through one direct root entrypoint
-- `checkViewArchitecture`
-  runs explicit jQAssistant view-topology analysis for active roots,
-  contribution-side structure, and the remaining reusable slotcontent
-  topology outside the dedicated `Binder`, `ContentModel`, and
-  `InspectorEntry` bundles
+  runs the merged View enforcement bundle by aggregating the compiler-integrated
+  passive-`View`, `Contribution`, `Binder`, `ContributionModel`,
+  `ContentModel`, `ViewInputEvent`, and `IntentHandler` checks, the focused
+  FXML resource boundary check, the focused `Contribution` PMD entrypoint
+  rule, and the transitive closed-world `checkViewLayerEnforcement` topology
+  proof through one direct root entrypoint
 - `checkViewLayerEnforcement`
-  runs the focused `View Layer` enforcement bundle by aggregating the
-  dedicated slotcontent `ContentModel` ArchUnit proof and the dedicated
-  build-harness topology check through one direct root entrypoint
-- `checkViewInputEventEnforcement`
-  runs the focused `ViewInputEvent` enforcement bundle by aggregating the
-  current compiler-integrated checks, the dedicated ArchUnit suite, and the
-  dedicated build-harness topology check through one direct root entrypoint
-- `checkViewIntentHandlerEnforcement`
-  runs the focused `IntentHandler` enforcement bundle by aggregating the
-  current compiler-integrated checks, the dedicated ArchUnit suite, and the
-  dedicated build-harness topology check through one direct root entrypoint
+  runs the focused `View Layer` enforcement bundle through the dedicated
+  build-harness closed-world topology proof for allowed view directories,
+  role forms, same-unit cardinality, and rename-or-move bypass blocking
 - `checkDocumentationEnforcement`
   runs the focused Markdown-backed architecture and enforcement-documentation
   bundle through the dedicated documentation-enforcement build-harness path,
@@ -324,15 +287,6 @@ Operationally, architecture checks enter local quality through:
   jQAssistant role-hub, cross-feature, and public-boundary breadth
   diagnostics and stays intentionally outside `checkArchitecture`, `check`,
   and `build`
-- `checkViewRefactorCandidates`
-  runs the report-only legacy View Layer refactor diagnostics from the older
-  technical-primitive architecture and now enters `checkViewArchitecture`,
-  staged `view-topology`, `check`, `build`, and staged `production-handoff`
-  transitively without changing blocker semantics. It is no longer the
-  authoritative reusable-slotcontent target direction; see the
-  [View Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/view-layer.md:1)
-  for that truth. This surface is slated for replacement or removal in the
-  gate migration wave.
 - `checkDataQueryPublishedCarrierCandidates`
   runs the report-only Data Query build-harness shared-carrier partial-use
   diagnostics and stays intentionally outside `checkArchitecture`, `check`,
@@ -344,8 +298,7 @@ Operationally, architecture checks enter local quality through:
   Data Model, Data Repository, Data Query, Data Mapper, Data Persistencecore,
   `Domain Port`, `Domain Repository`, `Domain Model`, `Domain Helper`,
   `Domain Constants`,
-  `Contribution`, `Binder`, `ContributionModel`, `ContentModel`,
-  `ViewInputEvent`, `IntentHandler`, and `ShellRuntimeContext` bundles,
+  merged `View`, `View Layer`, and `ShellRuntimeContext` bundles,
   ArchUnit, PMD architecture rules, and the
   non-documentation build-harness path
 - `check`
@@ -371,13 +324,9 @@ Operationally, architecture checks enter local quality through:
   `checkLayeringArchitectureEnforcement`,
   `checkLayeringIndirectionEnforcement`,
   `checkDomainUseCaseEnforcement`,
-  `checkViewEnforcement`, `checkViewContributionEnforcement`,
-  `checkViewBinderEnforcement`,
-  `checkViewContributionModelEnforcement`,
-  `checkViewContentModelEnforcement`,
-  `checkViewInspectorEntryEnforcement`, `checkViewLayerEnforcement`,
-  `checkViewInputEventEnforcement`,
-  `checkShellRuntimeContextEnforcement`, and `checkViewArchitecture`
+  `checkViewEnforcement`,
+  `checkViewLayerEnforcement`,
+  `checkShellRuntimeContextEnforcement`
   dependencies. The dedicated
   `checkDocumentationEnforcement` path is intentionally excluded.
 

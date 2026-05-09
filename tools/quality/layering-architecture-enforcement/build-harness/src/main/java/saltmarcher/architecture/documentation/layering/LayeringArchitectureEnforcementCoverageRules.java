@@ -47,7 +47,7 @@ public final class LayeringArchitectureEnforcementCoverageRules implements Archi
                     "layering-no-direct-view-data-dependency",
                     "Enforced Elsewhere",
                     List.of("PassiveViewDependencyBoundaries", "ViewBinderDependencyBoundary"),
-                    List.of("./gradlew compileJava", "./gradlew checkViewArchitecture")),
+                    List.of("./gradlew compileJava", "./gradlew checkViewEnforcement")),
             row(
                     "layering-no-direct-view-domain-connection-outside-documented-seams",
                     "Enforced Elsewhere",
@@ -70,7 +70,7 @@ public final class LayeringArchitectureEnforcementCoverageRules implements Archi
                     "layering-view-domain-write-and-readback-seams-only",
                     "Enforced Elsewhere",
                     List.of("view-binder-no-legacy-intenthandler-write-sink-injection", "view-contentmodel-read-side-only-direct-boundary"),
-                    List.of("./gradlew compileJava", "./gradlew checkViewArchitecture")),
+                    List.of("./gradlew compileJava", "./gradlew checkViewEnforcement")),
             row("layering-no-third-presentation-state-mutation-route", "Review-Owned"),
             row(
                     "layering-data-reaches-domain-only-through-public-boundaries-and-repositories",

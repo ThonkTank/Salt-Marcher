@@ -101,6 +101,9 @@ public final class ViewInputEventBoundaryChecker extends BugChecker
         if (hasForbiddenNestedDiscriminatorEnum(tree)) {
             forbiddenReferences.add("nested ViewInputEvent discriminator enum");
         }
+        if (hasPublishedEventProtocolCoupling(tree)) {
+            forbiddenReferences.add("ViewInputEvent PublishedEvent protocol coupling");
+        }
         violations.addAll(forbiddenReferences);
     }
 
@@ -201,6 +204,18 @@ public final class ViewInputEventBoundaryChecker extends BugChecker
             }
         }
         return false;
+    }
+
+    private static boolean hasPublishedEventProtocolCoupling(CompilationUnitTree tree) {
+        ClassTree topLevelClass = topLevelClass(tree);
+        if (topLevelClass == null) {
+            return false;
+        }
+        Set<String> referencedTypes = new LinkedHashSet<>();
+        ViewArchitectureSupport.collectReferencedTypes(topLevelClass, referencedTypes);
+        return referencedTypes.stream()
+                .map(ViewArchitectureSupport::topLevelQualifiedTypeNameOf)
+                .anyMatch(ViewArchitectureSupport::isTargetPublishedEventReference);
     }
 
     private static boolean isAllowedTopLevelCarrierProducer(
