@@ -57,6 +57,7 @@ internal data class QualityConventionToolConfigurations(
     val cpdCli: NamedDomainObjectProvider<Configuration>,
     val pmdCli: NamedDomainObjectProvider<Configuration>,
     val ckjmToolClasspath: NamedDomainObjectProvider<Configuration>,
+    val proguardToolClasspath: NamedDomainObjectProvider<Configuration>,
     val jqassistantDistribution: NamedDomainObjectProvider<Configuration>
 )
 
@@ -87,8 +88,7 @@ internal fun Project.createQualityConventionEnvironment(
     val mainJavaClassesDir = tasks.named<JavaCompile>("compileJava").flatMap(JavaCompile::getDestinationDirectory)
     val commonFocusedArchunitSupportIncludes = listOf(
         "architecture/AnalyzeMainClasses.java",
-        "architecture/MainSourceLocationProvider.java",
-        "architecture/view/ViewRolePredicates.java"
+        "architecture/MainSourceLocationProvider.java"
     )
     val installedAppDirectory = layout.dir(
         launcherNameProvider.map { launcherName ->
@@ -141,6 +141,7 @@ internal fun Project.registerQualityConventionToolConfigurations(): QualityConve
         cpdCli = registerToolConfiguration("cpdCli"),
         pmdCli = registerToolConfiguration("pmdCli"),
         ckjmToolClasspath = registerToolConfiguration("ckjmToolClasspath"),
+        proguardToolClasspath = registerToolConfiguration("proguardToolClasspath"),
         jqassistantDistribution = registerToolConfiguration("jqassistantDistribution")
     )
 }
@@ -161,6 +162,7 @@ internal fun Project.registerQualityConventionDependencies(
         add(toolConfigurations.ckjmToolClasspath.name, "org.apache.bcel:bcel:6.11.0")
         add(toolConfigurations.ckjmToolClasspath.name, "org.apache.ant:ant:1.10.15")
         add(toolConfigurations.ckjmToolClasspath.name, "org.apache.commons:commons-math3:3.6.1")
+        add(toolConfigurations.proguardToolClasspath.name, "net.sf.proguard:proguard-base:6.0.3")
         add(
             toolConfigurations.jqassistantDistribution.name,
             "com.buschmais.jqassistant.cli:jqassistant-commandline-neo4jv5:${environment.jqassistantVersion}:distribution@zip"

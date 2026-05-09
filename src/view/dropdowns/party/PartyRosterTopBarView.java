@@ -123,12 +123,10 @@ public final class PartyRosterTopBarView extends VBox {
                     false,
                     false,
                     0L,
-                    "",
                     0,
                     false,
                     false,
-                    false,
-                    PartyRosterTopBarViewInputEvent.EditorSeed.empty()));
+                    false));
         }
 
         private void editRequested(PartyTopBarContributionModel.MemberModel member) {
@@ -137,18 +135,10 @@ public final class PartyRosterTopBarView extends VBox {
                     true,
                     false,
                     member.id() == null ? 0L : member.id(),
-                    member.name(),
                     0,
                     false,
                     false,
-                    false,
-                    new PartyRosterTopBarViewInputEvent.EditorSeed(
-                            member.id() == null ? 0L : member.id(),
-                            member.name(),
-                            member.playerName(),
-                            Integer.toString(member.level()),
-                            Integer.toString(member.passivePerception()),
-                            Integer.toString(member.armorClass()))));
+                    false));
         }
 
         private void addRequested(PartyTopBarContributionModel.MemberModel member) {
@@ -157,12 +147,10 @@ public final class PartyRosterTopBarView extends VBox {
                     false,
                     true,
                     member.id() == null ? 0L : member.id(),
-                    member.name(),
                     0,
                     false,
                     false,
-                    false,
-                    PartyRosterTopBarViewInputEvent.EditorSeed.empty()));
+                    false));
         }
 
         private void removeRequested(PartyTopBarContributionModel.MemberModel member) {
@@ -171,12 +159,10 @@ public final class PartyRosterTopBarView extends VBox {
                     false,
                     false,
                     member.id() == null ? 0L : member.id(),
-                    member.name(),
                     0,
                     true,
                     false,
-                    false,
-                    PartyRosterTopBarViewInputEvent.EditorSeed.empty()));
+                    false));
         }
 
         private void xpAdjustmentRequested(PartyTopBarContributionModel.MemberModel member, int xpDelta) {
@@ -185,12 +171,10 @@ public final class PartyRosterTopBarView extends VBox {
                     false,
                     false,
                     member.id() == null ? 0L : member.id(),
-                    member.name(),
                     xpDelta,
                     false,
                     false,
-                    false,
-                    PartyRosterTopBarViewInputEvent.EditorSeed.empty()));
+                    false));
         }
 
         private void shortRestRequested() {
@@ -199,12 +183,10 @@ public final class PartyRosterTopBarView extends VBox {
                     false,
                     false,
                     0L,
-                    "",
                     0,
                     false,
                     true,
-                    false,
-                    PartyRosterTopBarViewInputEvent.EditorSeed.empty()));
+                    false));
         }
 
         private void longRestRequested() {
@@ -213,12 +195,10 @@ public final class PartyRosterTopBarView extends VBox {
                     false,
                     false,
                     0L,
-                    "",
                     0,
                     false,
                     false,
-                    true,
-                    PartyRosterTopBarViewInputEvent.EditorSeed.empty()));
+                    true));
         }
 
         private void publish(PartyRosterTopBarViewInputEvent event) {

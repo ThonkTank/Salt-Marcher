@@ -47,22 +47,21 @@ final class PartyTopBarIntentHandler {
             return;
         }
         if (event.editEditorRequested()) {
-            PartyRosterTopBarViewInputEvent.EditorSeed seed = event.editorSeed() == null
-                    ? PartyRosterTopBarViewInputEvent.EditorSeed.empty()
-                    : event.editorSeed();
-            presentationModel.openEditEditor(seed);
+            if (!presentationModel.openEditEditor(event.memberId())) {
+                presentationModel.rejectMutation(CHARACTER_NOT_FOUND);
+            }
             return;
         }
         if (event.addExistingRequested()) {
-            addExisting(event.memberId(), event.memberName());
+            addExisting(event.memberId());
             return;
         }
         if (event.removeRequested()) {
-            removeFromParty(event.memberId(), event.memberName());
+            removeFromParty(event.memberId());
             return;
         }
         if (event.xpDelta() != 0) {
-            adjustXp(event.memberId(), event.memberName(), event.xpDelta());
+            adjustXp(event.memberId(), event.xpDelta());
             return;
         }
         if (event.shortRestRequested()) {
@@ -82,13 +81,15 @@ final class PartyTopBarIntentHandler {
         if (event == null) {
             return;
         }
+        presentationModel.syncEditorDraft(event.draft());
         if (event.cancelRequested()) {
             presentationModel.cancelEditor();
             return;
         }
         if (event.submitRequested()) {
-            if (event.editingExisting()) {
-                updateCharacter(event.draft());
+            PartyTopBarContributionModel.EditorPanelModel editorPanel = presentationModel.currentEditorPanel();
+            if (editorPanel.editingExisting()) {
+                updateCharacter(editorPanel.memberId(), event.draft());
             } else {
                 createCharacter(event.draft());
             }
@@ -103,15 +104,17 @@ final class PartyTopBarIntentHandler {
             return;
         }
         if (event.deleteConfirmed()) {
-            deleteCharacter(event.memberId(), event.memberName());
+            PartyTopBarContributionModel.EditorPanelModel editorPanel = presentationModel.currentEditorPanel();
+            deleteCharacter(editorPanel.memberId(), editorPanel.memberName());
         }
     }
 
-    private void addExisting(long memberId, String memberName) {
+    private void addExisting(long memberId) {
         if (!validId(memberId)) {
             presentationModel.rejectMutation(CHARACTER_NOT_FOUND);
             return;
         }
+        String memberName = presentationModel.memberName(memberId);
         String successMessage = displayName(memberName) + " wurde zur aktiven Party hinzugefügt.";
         if (!presentationModel.beginMutation(successMessage)) {
             return;
@@ -122,11 +125,12 @@ final class PartyTopBarIntentHandler {
                 successMessage));
     }
 
-    private void removeFromParty(long memberId, String memberName) {
+    private void removeFromParty(long memberId) {
         if (!validId(memberId)) {
             presentationModel.rejectMutation(CHARACTER_NOT_FOUND);
             return;
         }
+        String memberName = presentationModel.memberName(memberId);
         String successMessage = displayName(memberName) + " wurde aus der aktiven Party entfernt.";
         if (!presentationModel.beginMutation(successMessage)) {
             return;
@@ -149,7 +153,7 @@ final class PartyTopBarIntentHandler {
         publishedEventListener.accept(PartyTopBarPublishedEvent.deleteCharacter(memberId, successMessage));
     }
 
-    private void adjustXp(long memberId, String memberName, int xpDelta) {
+    private void adjustXp(long memberId, int xpDelta) {
         if (xpDelta == 0) {
             presentationModel.rejectMutation("XP-Korrektur darf nicht 0 sein.");
             return;
@@ -158,6 +162,7 @@ final class PartyTopBarIntentHandler {
             presentationModel.rejectMutation(CHARACTER_NOT_FOUND);
             return;
         }
+        String memberName = presentationModel.memberName(memberId);
         int amount = Math.abs(xpDelta);
         String successMessage = xpDelta > 0
                 ? displayName(memberName) + " erhielt " + amount + " XP."
@@ -195,8 +200,8 @@ final class PartyTopBarIntentHandler {
                 successMessage));
     }
 
-    private void updateCharacter(PartyEditorTopBarViewInputEvent.EditorDraft draft) {
-        if (draft == null || !validId(draft.id())) {
+    private void updateCharacter(long memberId, PartyEditorTopBarViewInputEvent.EditorDraft draft) {
+        if (!validId(memberId)) {
             presentationModel.rejectMutation("Charakter konnte nicht gefunden werden.");
             return;
         }
@@ -211,7 +216,7 @@ final class PartyTopBarIntentHandler {
             return;
         }
         publishedEventListener.accept(PartyTopBarPublishedEvent.updateCharacter(
-                draft.id(),
+                memberId,
                 name,
                 parsedDraft.playerName(),
                 parsedDraft.level(),

@@ -14,8 +14,8 @@ It keeps the generic `src/data/**` layer proof owner-pure and bundle-local:
   `DataLayerDocumentationEnforcementCheckMain`
 - `errorprone/`
   `ServiceRegistryRegistrationPlacementChecker`
-- `bundle.properties`
-  descriptor-based registration into the focused-enforcement Gradle path
+- `tools/gradle/build-logic/src/main/kotlin/saltmarcher/buildlogic/enforcement/StandardEnforcementBundles.kt`
+  typed bundle registry entry for the bundle's public task names and host wiring
 
 This bundle owns only the generic data-layer topology and cross-feature
 dependency boundaries in `src/data/**`. ServiceContribution export shape,

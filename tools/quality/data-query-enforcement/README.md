@@ -20,8 +20,8 @@ It keeps the full query-role proof route in one package:
   `DataQueryNoSourceMechanicsRule`,
   `DataQueryReadOnlySourceShapeRule`,
   and the dedicated bundle-local PMD ruleset
-- `bundle.properties`
-  descriptor-based registration into the focused-enforcement Gradle path
+- `tools/gradle/build-logic/src/main/kotlin/saltmarcher/buildlogic/enforcement/StandardEnforcementBundles.kt`
+  typed bundle registry entry for the bundle's public task names and host wiring
 
 This bundle owns only the tactical `query/` read-port adapter role itself.
 Feature-root topology, repository write semantics, gateway source-adapter

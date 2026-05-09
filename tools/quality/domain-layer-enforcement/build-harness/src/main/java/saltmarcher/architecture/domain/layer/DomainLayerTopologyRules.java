@@ -4,44 +4,14 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Stream;
 import saltmarcher.architecture.ArchitectureContext;
 import saltmarcher.architecture.ArchitectureRule;
 import saltmarcher.architecture.SourceFile;
 import saltmarcher.architecture.ViolationSink;
-import saltmarcher.architecture.system.SourceLayoutRules;
+import saltmarcher.architecture.domain.DomainRoleTopologySupport;
 
 public final class DomainLayerTopologyRules implements ArchitectureRule {
-
-    private static final Set<String> ROOT_TECHNICAL_BUCKETS = Set.of("published", "application", "model");
-    private static final Set<String> FORBIDDEN_MODEL_SUBTREE_TECHNICAL_BUCKETS = Set.of(
-            "aggregate",
-            "application",
-            "constants",
-            "entity",
-            "event",
-            "factory",
-            "helper",
-            "policy",
-            "port",
-            "published",
-            "repository",
-            "service",
-            "specification",
-            "usecase",
-            "value");
-    private static final Set<String> LEGACY_ROLE_SUFFIXES = Set.of(
-            "Aggregate.java",
-            "BoundaryTranslator.java",
-            "Entity.java",
-            "Factory.java",
-            "Policy.java",
-            "Projector.java",
-            "RuntimeAccess.java",
-            "RuntimeAdapter.java",
-            "Service.java",
-            "Specification.java");
 
     @Override
     public void check(ArchitectureContext context, ViolationSink violations) {
@@ -84,12 +54,12 @@ public final class DomainLayerTopologyRules implements ArchitectureRule {
 
     private void validateDomainSourceLayout(SourceFile sourceFile, ViolationSink violations) {
         List<String> segments = sourceFile.relativeSegments();
-        if (!isDomainSource(segments)) {
+        if (!DomainRoleTopologySupport.isDomainSource(segments)) {
             return;
         }
 
-        if (segments.size() == 4) {
-            if (!sourceFile.fileName().endsWith("ApplicationService.java")) {
+        if (DomainRoleTopologySupport.isDomainRootFile(segments)) {
+            if (!DomainRoleTopologySupport.isDomainRootApplicationService(sourceFile)) {
                 violations.add(sourceFile.relativePath(), "domain-layer-root-direct-file-role-allowlist",
                         "Direct root domain files under src/domain/<context>/ must be *ApplicationService.java only.");
             }
@@ -100,12 +70,14 @@ public final class DomainLayerTopologyRules implements ArchitectureRule {
             return;
         }
 
-        if ("model".equals(segments.get(3))) {
+        if (DomainRoleTopologySupport.isModelRootSource(segments)) {
             validateModelFamilyFileLayout(sourceFile, violations);
             return;
         }
 
-        if (!ROOT_TECHNICAL_BUCKETS.contains(segments.get(3))) {
+        if (DomainRoleTopologySupport.domainBucket(segments)
+                .filter(DomainRoleTopologySupport::isRootTechnicalBucket)
+                .isEmpty()) {
             violations.add(sourceFile.relativePath(), "domain-layer-forbidden-top-level-domain-buckets",
                     "Domain Java sources may live only under direct root ApplicationService files, published/, application/, or model/.");
         }
@@ -120,7 +92,7 @@ public final class DomainLayerTopologyRules implements ArchitectureRule {
         }
 
         String family = segments.get(4);
-        if (!family.matches("[a-z][a-z0-9_]*")) {
+        if (!DomainRoleTopologySupport.isValidModelFamilyName(family)) {
             violations.add(sourceFile.relativePath(), "domain-layer-model-root-family-directories-only",
                     "Model family directories must be lower-case names matching [a-z][a-z0-9_]*.");
             return;
@@ -133,7 +105,7 @@ public final class DomainLayerTopologyRules implements ArchitectureRule {
         }
 
         String role = segments.get(5);
-        if (!SourceLayoutRules.isAllowedTargetDomainRolePackage(role)) {
+        if (!DomainRoleTopologySupport.isAllowedTargetDomainRolePackage(role)) {
             violations.add(sourceFile.relativePath(), "domain-layer-model-role-package-name-allowlist",
                     "Model-family role packages must be one of: model, usecase, helper, constants, port, repository.");
             return;
@@ -154,7 +126,7 @@ public final class DomainLayerTopologyRules implements ArchitectureRule {
         List<String> segments = sourceFile.relativeSegments();
         for (int index = 6; index < segments.size() - 1; index++) {
             String segment = segments.get(index);
-            if (FORBIDDEN_MODEL_SUBTREE_TECHNICAL_BUCKETS.contains(segment)) {
+            if (DomainRoleTopologySupport.isForbiddenModelSubtreeTechnicalBucket(segment)) {
                 violations.add(sourceFile.relativePath(), "domain-layer-model-subtree-no-technical-buckets",
                         "Nested technical buckets are forbidden inside src/domain/<context>/model/<family>/model/**. Use only semantic subpackages for subordinate models.");
                 return;
@@ -163,69 +135,66 @@ public final class DomainLayerTopologyRules implements ArchitectureRule {
     }
 
     private void validateReservedRoleSuffixPlacement(SourceFile sourceFile, ViolationSink violations) {
-        if (!isDomainSource(sourceFile.relativeSegments())) {
+        if (!DomainRoleTopologySupport.isDomainSource(sourceFile.relativeSegments())) {
             return;
         }
 
         String fileName = sourceFile.fileName();
         List<String> segments = sourceFile.relativeSegments();
-        if (fileName.endsWith("ApplicationService.java") && segments.size() != 4) {
+        if (DomainRoleTopologySupport.hasRoleSuffix(fileName, "ApplicationService")
+                && !DomainRoleTopologySupport.isDomainRootApplicationService(segments, fileName)) {
             violations.add(sourceFile.relativePath(), "domain-layer-reserved-role-suffix-perimeter",
                     "Reserved role suffix ApplicationService may appear only as a direct root file under src/domain/<context>/.");
             return;
         }
-        if (fileName.endsWith("UseCase.java")
-                && !(isRootApplicationUseCase(segments) || isModelRoleDirectFile(segments, "usecase"))) {
+        if (DomainRoleTopologySupport.hasRoleSuffix(fileName, "UseCase")
+                && !(DomainRoleTopologySupport.isRootApplicationUseCase(segments)
+                || DomainRoleTopologySupport.isModelRoleDirectFile(segments, "usecase"))) {
             violations.add(sourceFile.relativePath(), "domain-layer-reserved-role-suffix-perimeter",
                     "Reserved role suffix UseCase may appear only under src/domain/<context>/application/ or src/domain/<context>/model/<family>/usecase/.");
             return;
         }
-        if (fileName.endsWith("Helper.java") && !isModelRoleDirectFile(segments, "helper")) {
+        if (DomainRoleTopologySupport.hasRoleSuffix(fileName, "Helper")
+                && !DomainRoleTopologySupport.isModelRoleDirectFile(segments, "helper")) {
             violations.add(sourceFile.relativePath(), "domain-layer-reserved-role-suffix-perimeter",
                     "Reserved role suffix Helper may appear only under src/domain/<context>/model/<family>/helper/.");
             return;
         }
-        if (fileName.endsWith("Constants.java") && !isModelRoleDirectFile(segments, "constants")) {
+        if (DomainRoleTopologySupport.hasRoleSuffix(fileName, "Constants")
+                && !DomainRoleTopologySupport.isModelRoleDirectFile(segments, "constants")) {
             violations.add(sourceFile.relativePath(), "domain-layer-reserved-role-suffix-perimeter",
                     "Reserved role suffix Constants may appear only under src/domain/<context>/model/<family>/constants/.");
             return;
         }
-        if (fileName.endsWith("Port.java") && !isModelRoleDirectFile(segments, "port")) {
+        if (DomainRoleTopologySupport.hasRoleSuffix(fileName, "Port")
+                && !DomainRoleTopologySupport.isModelRoleDirectFile(segments, "port")) {
             violations.add(sourceFile.relativePath(), "domain-layer-reserved-role-suffix-perimeter",
                     "Reserved role suffix Port may appear only under src/domain/<context>/model/<family>/port/.");
             return;
         }
-        if (fileName.endsWith("Repository.java") && !isModelRoleDirectFile(segments, "repository")) {
+        if (DomainRoleTopologySupport.hasRoleSuffix(fileName, "Repository")
+                && !DomainRoleTopologySupport.isModelRoleDirectFile(segments, "repository")) {
             violations.add(sourceFile.relativePath(), "domain-layer-reserved-role-suffix-perimeter",
                     "Reserved role suffix Repository may appear only under src/domain/<context>/model/<family>/repository/.");
         }
     }
 
     private void validateLegacyRoleSuffixRejection(SourceFile sourceFile, ViolationSink violations) {
-        if (!isDomainSource(sourceFile.relativeSegments())) {
+        if (!DomainRoleTopologySupport.isDomainSource(sourceFile.relativeSegments())) {
             return;
         }
         String fileName = sourceFile.fileName();
-        if (fileName.endsWith("ApplicationService.java")) {
+        if (DomainRoleTopologySupport.hasRoleSuffix(fileName, "ApplicationService")) {
             return;
         }
-        for (String suffix : LEGACY_ROLE_SUFFIXES) {
-            if (fileName.endsWith(suffix)) {
-                violations.add(sourceFile.relativePath(), "domain-layer-legacy-role-suffix-rejection",
-                        "Legacy domain role and helper suffixes such as *BoundaryTranslator, *Projector, *RuntimeAccess, *RuntimeAdapter, *Policy, *Service, *Factory, *Aggregate, *Entity, and *Specification are forbidden.");
-                return;
-            }
+        if (DomainRoleTopologySupport.hasLegacyRoleSuffix(fileName)) {
+            violations.add(sourceFile.relativePath(), "domain-layer-legacy-role-suffix-rejection",
+                    "Legacy domain role and helper suffixes such as *BoundaryTranslator, *Projector, *RuntimeAccess, *RuntimeAdapter, *Policy, *Service, *Factory, *Aggregate, *Entity, and *Specification are forbidden.");
         }
-    }
-
-    private static boolean isDomainSource(List<String> segments) {
-        return segments.size() >= 4
-                && "src".equals(segments.get(0))
-                && "domain".equals(segments.get(1));
     }
 
     private static void validateDomainBucket(String source, String bucket, ViolationSink violations) {
-        if (ROOT_TECHNICAL_BUCKETS.contains(bucket)) {
+        if (DomainRoleTopologySupport.isRootTechnicalBucket(bucket)) {
             return;
         }
         if ("api".equals(bucket)) {
@@ -235,15 +204,5 @@ public final class DomainLayerTopologyRules implements ArchitectureRule {
         }
         violations.add(source, "domain-layer-forbidden-top-level-domain-buckets",
                 "Only published/, application/, and model/ are allowed as direct child buckets under src/domain/<context>/.");
-    }
-
-    private static boolean isRootApplicationUseCase(List<String> segments) {
-        return segments.size() == 5 && "application".equals(segments.get(3));
-    }
-
-    private static boolean isModelRoleDirectFile(List<String> segments, String role) {
-        return segments.size() == 7
-                && "model".equals(segments.get(3))
-                && role.equals(segments.get(5));
     }
 }

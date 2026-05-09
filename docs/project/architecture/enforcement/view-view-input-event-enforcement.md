@@ -34,14 +34,15 @@ Where current gates still encode the older reusable-local-`*IntentHandler`
 model, the rows below call that out only as drift relative to the View Layer
 Standard.
 
-Unified focused bundle entrypoint:
+Merged focused bundle entrypoint:
 
-- `./gradlew checkViewInputEventEnforcement --rerun-tasks --console=plain`
-  runs the currently active ViewInputEvent-focused Error Prone, ArchUnit, and
-  build-harness checks through one root task. Canonical blocking behavior
-  remains at `./gradlew compileJava` and
-  `./gradlew checkViewInputEventEnforcement` as listed below; the broader
-  `./gradlew checkArchitecture` path consumes this focused bundle unchanged.
+- `./gradlew checkViewEnforcement --rerun-tasks --console=plain`
+  runs the merged View compile-bound bundle, including the `ViewInputEvent`
+  checks. Carrier-existence and same-stem topology enters transitively
+  through `./gradlew checkViewLayerEnforcement`. Canonical compile-side
+  blocking behavior remains at `./gradlew compileJava`; aggregate blocking
+  behavior enters `./gradlew checkArchitecture` and `./gradlew check`
+  through the merged View bundle.
 
 ## Invariant Catalog
 
@@ -49,9 +50,8 @@ Unified focused bundle entrypoint:
 
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
-| `view-viewinputevent-local-intenthandler-required` | Enforced | every `*ViewInputEvent.java` under `src/view/**` and every passive `*View.java` under `src/view/**` that exposes `onViewInputEvent(...)` | build-harness `ViewInputEventTopologyRules`, ArchUnit `viewInputEventsMustBelongToInteractiveSameStemViews`, and ArchUnit `interactiveViewsMustOwnSameStemViewInputEventsAndIntentHandlers` | `./gradlew checkViewInputEventEnforcement` | The current gate family still requires a local `*IntentHandler` beside every interactive `*ViewInputEvent` route. That matches active-root units, but it is legacy drift for reusable `slotcontent/**`, where target interpretation belongs in the same-root active `*IntentHandler`. |
-| `view-viewinputevent-same-stem-local-belonging` | Enforced | every `*ViewInputEvent.java` under `src/view/**` and every passive `*View.java` under `src/view/**` that exposes `onViewInputEvent(...)` | build-harness `ViewInputEventTopologyRules`, ArchUnit `interactiveViewsMustOwnSameStemViewInputEventsAndIntentHandlers`, and ArchUnit `viewInputEventsMustBelongToInteractiveSameStemViews` | `./gradlew checkViewInputEventEnforcement` | Each carrier belongs only to its own same-stem local interactive `View` surface; orphan same-root `*ViewInputEvent` files without a matching passive same-stem `*View` are rejected, and interactive passive `View` seams that point at an aggregate or foreign carrier are rejected too. |
-| `view-viewinputevent-local-intenthandler-consume-overload` | Enforced | every `*ViewInputEvent.java` under `src/view/**` | ArchUnit `viewInputEventsMustOwnMatchingIntentHandlerConsumeOverload` | `./gradlew checkViewInputEventEnforcement` | The current gate family still requires a co-located `IntentHandler.consume(SameStemViewInputEvent)` overload. That is current mechanical behavior, not target truth for reusable `slotcontent/**`, where the active-root handler should own those consume entrypoints. |
+| `view-viewinputevent-local-intenthandler-required` | Enforced | every same-root interactive `*View` plus same-stem `*ViewInputEvent` unit inside an active root | build-harness `ViewLayerTopologyRules` | `./gradlew checkViewLayerEnforcement` and `./gradlew checkViewEnforcement` | Every interactive same-root active-root `*View` owns exactly one same-stem local `*ViewInputEvent.java`, and that interactive local unit also owns a local `*IntentHandler.java`. |
+| `view-viewinputevent-same-stem-local-belonging` | Enforced | every `*ViewInputEvent.java` under `src/view/**` and every passive `*View.java` under `src/view/**` that exposes `onViewInputEvent(...)` | build-harness `ViewLayerTopologyRules`; Error Prone `ViewInputEventApi` | `./gradlew checkViewLayerEnforcement`, `./gradlew compileJava`, and `./gradlew checkViewEnforcement` | Each carrier belongs only to its own same-stem interactive `View` surface; orphan `*ViewInputEvent` files without a matching passive same-stem `*View` are rejected, and interactive passive `View` seams that point at an aggregate or foreign carrier are rejected too. |
 | `view-viewinputevent-reusable-slotcontent-root-interpretation-owner` | Candidate | every reusable `slotcontent/**` `*ViewInputEvent.java` under `src/view/**` | none | none | A reusable `slotcontent/**` `*ViewInputEvent` is interpreted only by the same-root active `*IntentHandler` that wires the reused View into its contribution, not by a reusable local handler role. |
 
 ### Must Contain
@@ -71,16 +71,17 @@ Unified focused bundle entrypoint:
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
 | `view-viewinputevent-no-foreign-view-role-references` | Enforced | every `*ViewInputEvent.java` under `src/view/**` | Error Prone `ViewInputEventBoundary` | `./gradlew compileJava` | A `*ViewInputEvent` does not reference foreign `src/view/**` role families such as `*View`, `*Binder`, `*ContributionModel`, `*ContentModel`, `*IntentHandler`, `*PublishedEvent`, legacy view-role buckets, or support files outside the carrier's own type boundary. |
-| `view-viewinputevent-no-outer-layer-dependencies` | Enforced | every `*ViewInputEvent.java` under `src/view/**` | Error Prone `ViewInputEventBoundary` and ArchUnit `viewInputEventsMustStayShellDomainDataAndServiceFree` | `./gradlew compileJava` and `./gradlew checkViewInputEventEnforcement` | A `*ViewInputEvent` does not depend on `shell/**`, `bootstrap/**`, `src/domain/**`, `src/data/**`, or root `*ApplicationService` boundaries. |
+| `view-viewinputevent-no-outer-layer-dependencies` | Enforced | every `*ViewInputEvent.java` under `src/view/**` | Error Prone `ViewInputEventBoundary` | `./gradlew compileJava` and `./gradlew checkViewEnforcement` | A `*ViewInputEvent` does not depend on `shell/**`, `bootstrap/**`, `src/domain/**`, `src/data/**`, or root `*ApplicationService` boundaries. |
 | `view-viewinputevent-no-nonview-top-level-production` | Enforced | every top-level `*ViewInputEvent` construction or top-level static `*ViewInputEvent` API call in `src/view/**` | Error Prone `ViewInputEventBoundary` | `./gradlew compileJava` | Top-level `*ViewInputEvent` carriers are constructed only by their same-stem passive `View`; Binder, `IntentHandler`, model, contribution, and foreign `View` code do not synthesize or factory-call those carriers. |
-| `view-viewinputevent-no-pre-intenthandler-semantic-snapshot-reconstruction` | Enforced | every top-level same-stem `*ViewInputEvent` construction in a passive `*View.java` | Error Prone `ViewInputEventRawSnapshotBoundary` | `./gradlew compileJava` and `./gradlew checkViewInputEventEnforcement` | The same-stem passive `View` constructs its top-level `*ViewInputEvent` directly from current raw widget or raw event state rather than through same-view semantic helper methods, same-view sentinel constants, or hidden model/published/domain/data dependencies. |
-| `view-viewinputevent-no-dead-snapshot-components` | Enforced | every record-shaped `*ViewInputEvent.java` with a co-located `IntentHandler.consume(...)` overload | ArchUnit `viewInputEventsMustNotDeclareDeadSnapshotComponents` | `./gradlew checkViewInputEventEnforcement` | Every top-level `*ViewInputEvent` record component is read somewhere by the currently required co-located `IntentHandler.consume(...)` entrypoint instead of remaining dead carrier baggage. |
+| `view-viewinputevent-no-pre-intenthandler-semantic-snapshot-reconstruction` | Enforced | every top-level same-stem `*ViewInputEvent` construction in a passive `*View.java` | Error Prone `ViewInputEventRawSnapshotBoundary` | `./gradlew compileJava` and `./gradlew checkViewEnforcement` | The same-stem passive `View` constructs its top-level `*ViewInputEvent` directly from current raw widget or raw event state rather than through same-view semantic helper methods, same-view sentinel constants, or hidden model/published/domain/data dependencies. |
 
 ### Review-Owned Carrier Semantics
 
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
 | `view-viewinputevent-fire-and-forget-full-snapshot-semantics` | Review-Owned | every `*ViewInputEvent.java` under `src/view/**` | none | none | The carrier is authored as one fire-and-forget full snapshot for its own surface, not as a presenter-style command, ad-hoc partial delta bag, or acknowledgement protocol. |
+| `view-viewinputevent-local-intenthandler-consume-overload-minimality` | Review-Owned | every same-root or reused-child `*ViewInputEvent` family interpreted by an active-root `*IntentHandler` | none | none | The active-root `IntentHandler` still exposes only the minimum focused `consume(...)` entrypoints it truly interprets instead of accreting technically legal but semantically redundant overloads. |
+| `view-viewinputevent-no-dead-snapshot-components` | Review-Owned | every record-shaped `*ViewInputEvent.java` under `src/view/**` | none | none | A mechanically legal snapshot still avoids dead components even though the old co-located handler-consume proof was removed with the dedicated ViewInputEvent ArchUnit bundle. |
 
 ## Candidate
 

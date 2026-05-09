@@ -22,15 +22,15 @@ public final class PartyEditorTopBarView extends VBox {
     private static final String ARMOR_CLASS_PROMPT = "AC";
 
     private final Label titleLabel = new PanelTitleLabel();
-    private final EditorFields fields = new EditorFields(this::submit, this::updateSubmitDisabled);
+    private final EditorFields fields = new EditorFields(this::submit, this::onDraftChanged);
     private final DeleteButton revealDeleteButton = new DeleteButton(() -> publish(false, false, true, false, false));
     private final DeleteSection deleteSection = new DeleteSection(
             () -> publish(false, false, false, true, false),
             () -> publish(false, false, false, false, true));
     private final Button cancelButton = new Button("Abbrechen");
     private final Button submitButton = new Button("Speichern");
-    private PartyTopBarContributionModel.EditorPanelModel content = PartyTopBarContributionModel.EditorPanelModel.hidden();
     private Consumer<PartyEditorTopBarViewInputEvent> viewInputEventHandler = ignored -> { };
+    private boolean syncingFromModel;
 
     public PartyEditorTopBarView() {
         getStyleClass().addAll("dropdown-window", "dropdown-form", "party-editor-inline");
@@ -42,24 +42,33 @@ public final class PartyEditorTopBarView extends VBox {
         VBox body = new VBox(10, new FormGrid(fields), revealDeleteButton, deleteSection, new ActionRow(cancelButton, submitButton));
         getChildren().addAll(titleLabel, body);
         setFillWidth(true);
-        showEditor(PartyTopBarContributionModel.EditorPanelModel.hidden());
+        setVisible(false);
+        setManaged(false);
+        revealDeleteButton.showWhen(false);
+        deleteSection.showConfirmation("", false);
+        updateSubmitDisabled();
     }
 
     public void showEditor(PartyTopBarContributionModel.EditorPanelModel content) {
-        PartyTopBarContributionModel.EditorPanelModel safeContent = content == null
-                ? PartyTopBarContributionModel.EditorPanelModel.hidden()
-                : content;
-        this.content = safeContent;
-        setVisible(safeContent.visible());
-        setManaged(safeContent.visible());
-        if (!safeContent.visible()) {
+        if (content == null || !content.visible()) {
+            setVisible(false);
+            setManaged(false);
+            revealDeleteButton.showWhen(false);
+            deleteSection.showConfirmation("", false);
             return;
         }
-        titleLabel.setText(safeContent.editingExisting() ? "Charakter bearbeiten" : "Neuer Charakter");
-        submitButton.setText(safeContent.editingExisting() ? "Speichern" : "Erstellen");
-        revealDeleteButton.showWhen(safeContent.editingExisting());
-        deleteSection.showConfirmation(safeContent.memberName(), safeContent.deleteConfirmationVisible());
-        fields.populate(safeContent);
+        setVisible(true);
+        setManaged(true);
+        titleLabel.setText(content.editingExisting() ? "Charakter bearbeiten" : "Neuer Charakter");
+        submitButton.setText(content.editingExisting() ? "Speichern" : "Erstellen");
+        revealDeleteButton.showWhen(content.editingExisting());
+        syncingFromModel = true;
+        try {
+            fields.populate(content);
+        } finally {
+            syncingFromModel = false;
+        }
+        deleteSection.showConfirmation(safe(fields.nameField.getText()).trim(), content.deleteConfirmationVisible());
         updateSubmitDisabled();
     }
 
@@ -84,14 +93,24 @@ public final class PartyEditorTopBarView extends VBox {
                 deleteConfirmationRequested,
                 deleteConfirmationCancelled,
                 deleteConfirmed,
-                content.editingExisting(),
-                content.memberId(),
-                content.memberName(),
-                fields.draftFor(content.memberId())));
+                new PartyEditorTopBarViewInputEvent.EditorDraft(
+                        fields.nameField.getText(),
+                        fields.playerNameField.getText(),
+                        fields.levelField.getText(),
+                        fields.passivePerceptionField.getText(),
+                        fields.armorClassField.getText())));
     }
 
     private void updateSubmitDisabled() {
         submitButton.setDisable(fields.nameBlank());
+    }
+
+    private void onDraftChanged() {
+        updateSubmitDisabled();
+        deleteSection.showConfirmation(safe(fields.nameField.getText()).trim(), deleteSection.isVisible());
+        if (!syncingFromModel) {
+            publish(false, false, false, false, false);
+        }
     }
 
     private static String safe(String value) {
@@ -194,23 +213,17 @@ public final class PartyEditorTopBarView extends VBox {
         private final TextField passivePerceptionField = new IntegerField(PASSIVE_PERCEPTION_PROMPT);
         private final TextField armorClassField = new IntegerField(ARMOR_CLASS_PROMPT);
 
-        private EditorFields(Runnable onSubmit, Runnable onNameChanged) {
+        private EditorFields(Runnable onSubmit, Runnable onDraftChanged) {
             bindSubmit(nameField, onSubmit);
             bindSubmit(playerNameField, onSubmit);
             bindSubmit(levelField, onSubmit);
             bindSubmit(passivePerceptionField, onSubmit);
             bindSubmit(armorClassField, onSubmit);
-            nameField.textProperty().addListener((ignored, before, after) -> onNameChanged.run());
-        }
-
-        private PartyEditorTopBarViewInputEvent.EditorDraft draftFor(long memberId) {
-            return new PartyEditorTopBarViewInputEvent.EditorDraft(
-                    memberId,
-                    safe(nameField.getText()).trim(),
-                    safe(playerNameField.getText()).trim(),
-                    safe(levelField.getText()).trim(),
-                    safe(passivePerceptionField.getText()).trim(),
-                    safe(armorClassField.getText()).trim());
+            nameField.textProperty().addListener((ignored, before, after) -> onDraftChanged.run());
+            playerNameField.textProperty().addListener((ignored, before, after) -> onDraftChanged.run());
+            levelField.textProperty().addListener((ignored, before, after) -> onDraftChanged.run());
+            passivePerceptionField.textProperty().addListener((ignored, before, after) -> onDraftChanged.run());
+            armorClassField.textProperty().addListener((ignored, before, after) -> onDraftChanged.run());
         }
 
         private boolean nameBlank() {

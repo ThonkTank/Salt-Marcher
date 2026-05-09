@@ -66,6 +66,7 @@ internal fun Project.configureVerificationCore() {
         }
 
         val aggregateDependencies = mutableListOf<Any>()
+        aggregateDependencies.addAll(descriptor.rootTaskDependencies)
 
         if (checkerNames.isNotEmpty()) {
             val compileTask = selectedCompileJava
@@ -229,8 +230,8 @@ internal fun Project.configureVerificationCore() {
 
     val viewTopology = registerSurfaceTask(
         "view-topology",
-        "Run the public staged passive-view topology verification surface.",
-        verificationHarness.checkViewArchitecture
+        "Run the public staged closed-world view-layer topology verification surface.",
+        "checkViewLayerEnforcement"
     )
 
     val docs = registerSurfaceTask(

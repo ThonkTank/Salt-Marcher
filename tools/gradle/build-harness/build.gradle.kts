@@ -76,7 +76,7 @@ fun buildHarnessInputs(taskName: String) = when {
             "docs/**",
             "src/**/DOMAIN.md",
             "tools/quality/**/*.md",
-            "tools/quality/**/bundle.properties"
+            "tools/gradle/build-logic/src/main/kotlin/saltmarcher/buildlogic/enforcement/**"
         )
     )
     else -> repoInputTree(
@@ -85,7 +85,7 @@ fun buildHarnessInputs(taskName: String) = when {
             "bootstrap/**",
             "shell/**",
             "src/**",
-            "tools/quality/**/bundle.properties"
+            "tools/gradle/build-logic/src/main/kotlin/saltmarcher/buildlogic/enforcement/**"
         )
     )
 }

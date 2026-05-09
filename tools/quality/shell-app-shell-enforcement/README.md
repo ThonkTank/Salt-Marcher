@@ -7,8 +7,8 @@ It keeps the proof surface strict and owner-local:
 
 - `errorprone/`
   `ShellLifecycleHookOwnership`
-- `bundle.properties`
-  descriptor-based registration into the focused-enforcement Gradle path
+- `tools/gradle/build-logic/src/main/kotlin/saltmarcher/buildlogic/enforcement/StandardEnforcementBundles.kt`
+  typed bundle registry entry for the bundle's public task names and host wiring
 
 This bundle currently proves only shell-owned lifecycle-hook invocation.
 The remaining `AppShell` hosting, registration, and layout semantics stay

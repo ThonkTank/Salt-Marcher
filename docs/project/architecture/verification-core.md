@@ -154,16 +154,16 @@ state from alternative checkout-relative guessing when the propagated repo root
 is available. Project-build plugin code likewise MUST NOT re-derive focused
 bundle selection from `StartParameter` task names once the settings-owned
 selection facts were published.
-Included builds own their technical registration from descriptor metadata and
-direct repo scans such as build-harness rule classes, Error Prone checker
+Included builds own their technical registration from typed registry metadata
+and direct repo scans such as build-harness rule classes, Error Prone checker
 lists, ArchUnit task shapes, PMD task shapes, jQAssistant task shapes, and
 generic custom-task kinds. A jQAssistant task shape may declare one local rule
 directory or multiple rule directories; the verification core materializes one
-effective rules root from that descriptor metadata instead of forcing bundles
+effective rules root from that registry metadata instead of forcing bundles
 to duplicate shared taxonomy files. Harness wiring MUST NOT rely on parallel
 families of tiny launcher mains or `*-host.gradle.kts` scripts as a second
 source of truth for the same metadata, and it MUST NOT regenerate a second
-snapshot copy of the same descriptor metadata just to make same-worktree
+snapshot copy of the same registry metadata just to make same-worktree
 parallelism safe.
 Shared verification task registration inside `tools/gradle/build-logic` should
 flow through typed plugin or extension APIs rather than through untyped
@@ -171,7 +171,7 @@ flow through typed plugin or extension APIs rather than through untyped
 Public verification aggregates and focused bundles should attach to root
 lifecycle tasks through typed registry providers rather than by matching task
 names at configuration time.
-The remaining root-owned build-harness optional rules are now descriptor-driven
+The remaining root-owned build-harness optional rules are now registry-driven
 as well: bundles contribute root `architectureCheck` and
 `documentationEnforcementCheck` rule classes through explicit
 `buildHarnessArchitectureRuleClasses` and

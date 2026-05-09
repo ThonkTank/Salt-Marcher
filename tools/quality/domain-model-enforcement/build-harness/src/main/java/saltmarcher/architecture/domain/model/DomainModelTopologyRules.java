@@ -5,6 +5,7 @@ import saltmarcher.architecture.ArchitectureContext;
 import saltmarcher.architecture.ArchitectureRule;
 import saltmarcher.architecture.SourceFile;
 import saltmarcher.architecture.ViolationSink;
+import saltmarcher.architecture.domain.DomainRoleTopologySupport;
 
 public final class DomainModelTopologyRules implements ArchitectureRule {
 
@@ -20,20 +21,12 @@ public final class DomainModelTopologyRules implements ArchitectureRule {
     }
 
     private static boolean isDomainModelSource(List<String> segments) {
-        return segments.size() >= 7
-                && "src".equals(segments.get(0))
-                && "domain".equals(segments.get(1))
-                && "model".equals(segments.get(3))
-                && "model".equals(segments.get(5));
+        return DomainRoleTopologySupport.isModelRoleSource(segments, "model");
     }
 
     private static void validateTreePlacement(SourceFile sourceFile, ViolationSink violations) {
-        List<String> segments = sourceFile.relativeSegments();
-        if (segments.size() < 7) {
-            return;
-        }
-        String family = segments.get(4);
-        if (!family.matches("[a-z][a-z0-9_]*")) {
+        String family = DomainRoleTopologySupport.modelFamily(sourceFile.relativeSegments()).orElse("");
+        if (!DomainRoleTopologySupport.isValidModelFamilyName(family)) {
             violations.add(sourceFile.relativePath(), "domain-model-tree-placement",
                     "Internal model types must live under src/domain/<context>/model/<family>/model/ with a lower-case family name.");
         }

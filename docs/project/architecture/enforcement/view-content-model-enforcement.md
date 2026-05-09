@@ -28,16 +28,15 @@ lookup, or `IntentHandler` / `*ViewInputEvent` / legacy `*PublishedEvent`
 protocol rules. Those stay in the neighboring role-enforcement documents and
 in the view-layer and layering standards.
 
-Only supported focused bundle entrypoint:
+Merged focused bundle entrypoint:
 
-- `./gradlew checkViewContentModelEnforcement --rerun-tasks --console=plain`
-  runs the currently active ContentModel-focused Error Prone, ArchUnit,
-  jQAssistant, and build-harness checks through one root task. Direct helper
-  tasks for those engines are bundle-internal and are not a supported focused
-  invocation surface. Canonical blocking behavior remains at
-  `./gradlew compileJava`,
-  `./gradlew checkArchitecture`, and `./gradlew checkViewArchitecture` as
-  listed below.
+- `./gradlew checkViewEnforcement --rerun-tasks --console=plain`
+  runs the merged View compile-bound bundle, including the reusable
+  `ContentModel` checks. Reusable-unit role-shape topology enters transitively
+  through `./gradlew checkViewLayerEnforcement`. Canonical compile-side
+  blocking behavior remains at `./gradlew compileJava`; aggregate blocking
+  behavior enters `./gradlew checkArchitecture` and `./gradlew check`
+  through the merged View bundle.
 
 ## Invariant Catalog
 
@@ -45,7 +44,7 @@ Only supported focused bundle entrypoint:
 
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
-| `view-contentmodel-reusable-role-shape` | Enforced | every reusable projection-model role file in `src/view/slotcontent/**` | build-harness `ViewContentModelTopologyRules` | `./gradlew checkArchitecture` | A reusable `slotcontent/**` projection-model role uses the reusable role shape `*ContentModel.java` rather than active-root `*ContributionModel.java` or legacy `*ViewModel.java`, `*PresentationModel.java`, or `*Projector.java` files. |
+| `view-contentmodel-reusable-role-shape` | Enforced | every reusable projection-model role file in `src/view/slotcontent/**` | build-harness `ViewLayerTopologyRules` | `./gradlew checkViewLayerEnforcement` and `./gradlew checkViewEnforcement` | A reusable `slotcontent/**` projection-model role uses the reusable role shape `*ContentModel.java` rather than active-root `*ContributionModel.java` or legacy `*ViewModel.java`, `*PresentationModel.java`, or `*Projector.java` files. |
 
 The target reusable-slotcontent architecture uses exactly one `*ContentModel`
 per reusable unit. That `ContentModel` owns component-specific presentation
@@ -75,10 +74,10 @@ with reusable local `*IntentHandler`s in the target architecture.
 
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
-| `view-contentmodel-read-side-and-local-support-direct-boundary-only` | Enforced | every reusable `*ContentModel.java` under `src/view/**` | Error Prone `ViewContentModelDependencyBoundary`, ArchUnit `contentModelsMustStayShellDataAndServiceFree`, ArchUnit `contentModelsMustNotDependOnApplicationServices`, and jQAssistant `saltmarcher:ViewContentModelDependencies` | `./gradlew compileJava`, `./gradlew checkArchitecture`, and `./gradlew checkViewArchitecture` | A `ContentModel` communicates directly only with read-side domain `published/**` carriers, JavaFX beans or collections, and allowed same-surface local value/support types. In target architecture that includes owning the listener-side reaction for any component-local `published/*Model` readback it projects. |
-| `view-contentmodel-no-shell-data-bootstrap-or-applicationservice-communication` | Enforced | every reusable `*ContentModel.java` under `src/view/**` | Error Prone `ViewContentModelDependencyBoundary`, ArchUnit `contentModelsMustStayShellDataAndServiceFree`, ArchUnit `contentModelsMustNotDependOnApplicationServices`, and jQAssistant `saltmarcher:ViewContentModelDependencies` | `./gradlew compileJava`, `./gradlew checkArchitecture`, and `./gradlew checkViewArchitecture` | A `ContentModel` does not communicate directly with `shell/**`, `bootstrap/**`, `src/data/**`, or root `*ApplicationService` boundaries. |
-| `view-contentmodel-no-domain-internal-or-write-side-communication` | Enforced | every reusable `*ContentModel.java` under `src/view/**` | Error Prone `ViewContentModelDependencyBoundary` and jQAssistant `saltmarcher:ViewContentModelDependencies` | `./gradlew compileJava` and `./gradlew checkViewArchitecture` | A `ContentModel` does not communicate directly with domain internals or with write-side `published/**` carrier families such as `*Command`, `*Query`, `*Operation`, or `*Edit`. Domain reach stays read-side only. |
-| `view-contentmodel-no-foreign-view-role-or-foreign-unit-communication` | Enforced | every reusable `*ContentModel.java` under `src/view/**` | Error Prone `ViewContentModelDependencyBoundary` and jQAssistant `saltmarcher:ViewContentModelDependencies` | `./gradlew compileJava` and `./gradlew checkViewArchitecture` | A `ContentModel` does not communicate directly with `*Contribution`, `*Binder`, `*IntentHandler`, `*View`, `*ViewInputEvent`, `*PublishedEvent`, `*InspectorEntry`, or foreign view-unit role families. |
+| `view-contentmodel-read-side-and-local-support-direct-boundary-only` | Enforced | every reusable `*ContentModel.java` under `src/view/**` | Error Prone `ViewContentModelDependencyBoundary` | `./gradlew compileJava` and `./gradlew checkViewEnforcement` | A `ContentModel` communicates directly only with read-side domain `published/**` carriers, JavaFX beans or collections, and allowed same-surface local value/support types. In target architecture that includes owning the listener-side reaction for any component-local `published/*Model` readback it projects. |
+| `view-contentmodel-no-shell-data-bootstrap-or-applicationservice-communication` | Enforced | every reusable `*ContentModel.java` under `src/view/**` | Error Prone `ViewContentModelDependencyBoundary` | `./gradlew compileJava` and `./gradlew checkViewEnforcement` | A `ContentModel` does not communicate directly with `shell/**`, `bootstrap/**`, `src/data/**`, or root `*ApplicationService` boundaries. |
+| `view-contentmodel-no-domain-internal-or-write-side-communication` | Enforced | every reusable `*ContentModel.java` under `src/view/**` | Error Prone `ViewContentModelDependencyBoundary` | `./gradlew compileJava` and `./gradlew checkViewEnforcement` | A `ContentModel` does not communicate directly with domain internals or with write-side `published/**` carrier families such as `*Command`, `*Query`, `*Operation`, or `*Edit`. Domain reach stays read-side only. |
+| `view-contentmodel-no-foreign-view-role-or-foreign-unit-communication` | Enforced | every reusable `*ContentModel.java` under `src/view/**` | Error Prone `ViewContentModelDependencyBoundary` | `./gradlew compileJava` and `./gradlew checkViewEnforcement` | A `ContentModel` does not communicate directly with `*Contribution`, `*Binder`, `*IntentHandler`, `*View`, `*ViewInputEvent`, `*PublishedEvent`, `*InspectorEntry`, or foreign view-unit role families. |
 | `view-contentmodel-dungeonmap-runtime-context-projection-only` | Enforced | `src/view/slotcontent/main/dungeonmap/DungeonMapContentModel.java` | Error Prone `DungeonMapContentModelProjectionBoundary` | `./gradlew compileJava` | `DungeonMapContentModel` consumes only the runtime-context map projection carriers (`DungeonEditorMapProjectionSnapshot` and `TravelDungeonMapProjectionSnapshot`) rather than raw dungeon editor or travel map surface families such as `DungeonEditorSurface`, `DungeonEditorMapSnapshot`, `DungeonEditorPreview`, `TravelDungeonSurface`, or `TravelDungeonMapSnapshot`. |
 | `view-contentmodel-no-separate-presentation-event-or-callback-protocol` | Review-Owned | every reusable `*ContentModel.java` under `src/view/**` | none | none | A `ContentModel` exposes observable state only. It does not grow separate presentation-event, callback, acknowledgement, or presenter-style communication APIs. |
 

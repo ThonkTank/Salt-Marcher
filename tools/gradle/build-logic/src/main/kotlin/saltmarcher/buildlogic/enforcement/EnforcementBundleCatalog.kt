@@ -1,7 +1,6 @@
 package saltmarcher.buildlogic.enforcement
 
 import java.io.File
-import java.util.Properties
 
 data class EnforcementRootTask(
     val description: String?,
@@ -49,6 +48,7 @@ data class EnforcementBundleDescriptor(
     val order: Int,
     val taskNames: List<String>,
     val rootTask: EnforcementRootTask?,
+    val rootTaskDependencies: List<String>,
     val buildHarnessArchitectureRuleClasses: List<String>,
     val buildHarnessDocumentationRuleClasses: List<String>,
     val buildHarnessTaskMainClasses: Map<String, String>,
@@ -63,7 +63,8 @@ data class EnforcementBundleDescriptor(
 ) {
     fun publicCheckTaskName(): String = publicCheckTaskName(taskNames, bundleId)
 
-    fun requiresFocusedCompile(): Boolean = errorProneCheckers.isNotEmpty() || archunit != null || jqassistantTasks.isNotEmpty()
+    fun requiresFocusedCompile(): Boolean =
+        errorProneCheckers.isNotEmpty() || archunit != null || jqassistantTasks.isNotEmpty()
 
     fun buildHarnessTaskRuleClasses(taskName: String): List<String> = buildHarnessTaskRuleClasses[taskName]
         ?: when {
@@ -113,37 +114,37 @@ open class EnforcementBundlesExtension(
     fun activeDescriptors(): List<EnforcementBundleDescriptor> = activeEnforcementBundleIds.map(::descriptor)
 }
 
+fun standardEnforcementBundleCatalog(): EnforcementBundleCatalog = EnforcementBundleCatalog(
+    standardEnforcementBundleDescriptors()
+        .map(EnforcementBundleDescriptor::validated)
+        .associateBy(EnforcementBundleDescriptor::bundleId)
+)
+
 fun loadEnforcementBundlesExtension(rootDir: File): EnforcementBundlesExtension {
     val repoRootDir = System.getProperty("saltmarcher.repoRootDir")
         ?.trim()
         ?.takeIf(String::isNotEmpty)
         ?.let(::File)
         ?: rootDir
-    val propagatedFocusedEnforcementBundleMode = System.getProperty("saltmarcher.focusedEnforcementBundleMode")
+    val focusedEnforcementBundleMode = System.getProperty("saltmarcher.focusedEnforcementBundleMode")
         ?.trim()
         ?.takeIf(String::isNotEmpty)
         ?.toBoolean()
-    val propagatedActiveEnforcementBundleIds = System.getProperty("saltmarcher.activeEnforcementBundleIds")
+        ?: false
+    val propagatedActiveBundleIds = System.getProperty("saltmarcher.activeEnforcementBundleIds")
         ?.split(',')
         ?.map(String::trim)
         ?.filter(String::isNotEmpty)
         ?.takeIf(List<String>::isNotEmpty)
-    require(propagatedFocusedEnforcementBundleMode != true || propagatedActiveEnforcementBundleIds != null) {
+
+    require(!focusedEnforcementBundleMode || propagatedActiveBundleIds != null) {
         "Focused enforcement bundle mode requires propagated active bundle ids from the settings plugin."
     }
-    val focusedEnforcementBundleMode = propagatedFocusedEnforcementBundleMode ?: false
-    val focusedBundleIds = propagatedActiveEnforcementBundleIds?.toSet()
-    val catalog = EnforcementBundleCatalog(
-        loadEnforcementBundleDescriptors(
-            repoRootDir,
-            focusedBundleIds.takeIf { focusedEnforcementBundleMode }
-        )
-    )
-    val activeEnforcementBundleIds = if (propagatedActiveEnforcementBundleIds != null) {
-        catalog.bundleIdsInOrder.filter { bundleId -> bundleId in propagatedActiveEnforcementBundleIds }
-    } else {
-        catalog.bundleIdsInOrder
-    }
+
+    val catalog = standardEnforcementBundleCatalog()
+    val activeEnforcementBundleIds = propagatedActiveBundleIds
+        ?.let { requestedIds -> catalog.bundleIdsInOrder.filter { bundleId -> bundleId in requestedIds } }
+        ?: catalog.bundleIdsInOrder
 
     return EnforcementBundlesExtension(
         repoRootDir = repoRootDir,
@@ -153,48 +154,6 @@ fun loadEnforcementBundlesExtension(rootDir: File): EnforcementBundlesExtension 
             activeEnforcementBundleIds = activeEnforcementBundleIds
         )
     )
-}
-
-private fun loadEnforcementBundleDescriptors(
-    repoRootDir: File,
-    focusedBundleIds: Set<String>?
-): Map<String, EnforcementBundleDescriptor> {
-    val qualityDir = File(repoRootDir, "tools/quality")
-    if (!qualityDir.isDirectory) {
-        return emptyMap()
-    }
-    return qualityDir.walkTopDown()
-        .filter { file -> file.isFile && file.name == "bundle.properties" }
-        .mapNotNull { descriptorFile ->
-            val properties = loadProperties(descriptorFile)
-            if (!properties.boolean("descriptorOwned")) {
-                null
-            } else {
-                val bundleId = properties.requiredTrimmed("bundleId")
-                if (focusedBundleIds != null && bundleId !in focusedBundleIds) {
-                    null
-                } else {
-                    EnforcementBundleDescriptor(
-                        bundleId = bundleId,
-                        order = properties.requiredTrimmed("order").toInt(),
-                    taskNames = properties.list("taskNames"),
-                    rootTask = properties.readRootTask(""),
-                    buildHarnessArchitectureRuleClasses = properties.list("buildHarnessArchitectureRuleClasses"),
-                    buildHarnessDocumentationRuleClasses = properties.list("buildHarnessDocumentationRuleClasses"),
-                    buildHarnessTaskMainClasses = properties.mapEntries("buildHarnessTask.", ".mainClass"),
-                    buildHarnessTaskRuleClasses = properties.mapListEntries("buildHarnessTask.", ".ruleClasses"),
-                    errorProneCheckers = properties.list("errorProneCheckers"),
-                    archunit = properties.readArchunitTask("", repoRootDir, descriptorFile),
-                    jqassistantTasks = properties.readJqassistantTasks("", repoRootDir, descriptorFile, properties.list("taskNames")),
-                    pmdTasks = properties.readPmdTasks("", repoRootDir, descriptorFile, properties.list("taskNames")),
-                    customTasks = properties.readCustomTasks(descriptorFile, properties.list("taskNames")),
-                    verificationSourceRoots = properties.list("verificationSourceRoots"),
-                    verificationSourceIncludes = properties.list("verificationSourceIncludes")
-                    ).validated()
-                }
-            }
-        }
-        .associateBy(EnforcementBundleDescriptor::bundleId)
 }
 
 private fun EnforcementBundleDescriptor.validated(): EnforcementBundleDescriptor {
@@ -207,13 +166,14 @@ private fun EnforcementBundleDescriptor.validated(): EnforcementBundleDescriptor
         val declaredTaskNames = buildHarnessTaskMainClasses.keys + buildHarnessTaskRuleClasses.keys
         val missingTaskNames = declaredTaskNames - taskNames.toSet()
         require(missingTaskNames.isEmpty()) {
-            "Enforcement bundle '$bundleId' declares buildHarness tasks that are missing from taskNames: ${missingTaskNames.joinToString()}."
+            "Enforcement bundle '$bundleId' declares build-harness tasks that are missing from taskNames: ${missingTaskNames.joinToString()}."
         }
         val overlappingTaskNames = buildHarnessTaskMainClasses.keys.intersect(buildHarnessTaskRuleClasses.keys)
         require(overlappingTaskNames.isEmpty()) {
             "Enforcement bundle '$bundleId' must not declare both buildHarnessTask.*.mainClass and buildHarnessTask.*.ruleClasses for the same task: ${overlappingTaskNames.joinToString()}."
         }
     }
+
     if (pmdTasks.isNotEmpty()) {
         val missingTaskNames = pmdTasks.map(EnforcementPmdTask::taskName) - taskNames.toSet()
         require(missingTaskNames.isEmpty()) {
@@ -237,6 +197,13 @@ private fun EnforcementBundleDescriptor.validated(): EnforcementBundleDescriptor
         }
     }
 
+    val undeclaredRootDependencies = rootTaskDependencies.filter { taskName ->
+        !taskNames.contains(taskName) && !taskName.startsWith("check")
+    }
+    require(undeclaredRootDependencies.isEmpty()) {
+        "Enforcement bundle '$bundleId' declares non-check root task dependencies that are missing from taskNames: ${undeclaredRootDependencies.joinToString()}."
+    }
+
     if (requiresFocusedCompile()) {
         require(verificationSourceRoots.isNotEmpty()) {
             "Enforcement bundle '$bundleId' must declare verificationSourceRoots for compile-backed verification."
@@ -253,371 +220,6 @@ private fun EnforcementBundleDescriptor.validated(): EnforcementBundleDescriptor
     return this
 }
 
-private fun Properties.readRootTask(propertyPrefix: String): EnforcementRootTask? {
-    val description = optionalTrimmed("${propertyPrefix}rootTask.description")
-    val attachToCheck = containsKey("${propertyPrefix}rootTask.attachToCheck")
-    val attachToCheckArchitecture = containsKey("${propertyPrefix}rootTask.attachToCheckArchitecture")
-    if (description == null && !attachToCheck && !attachToCheckArchitecture) {
-        return null
-    }
-    return EnforcementRootTask(
-        description = description,
-        attachToCheck = boolean("${propertyPrefix}rootTask.attachToCheck"),
-        attachToCheckArchitecture = boolean("${propertyPrefix}rootTask.attachToCheckArchitecture")
-    )
-}
-
-private fun Properties.readArchunitTask(
-    propertyPrefix: String,
-    repoRootDir: File,
-    descriptorFile: File
-): EnforcementArchunitTask? {
-    val taskName = optionalTrimmed("${propertyPrefix}archunit.taskName")
-    val description = optionalTrimmed("${propertyPrefix}archunit.description")
-    val sourceDirs = list("${propertyPrefix}archunit.sourceDirs")
-    val sourceIncludes = list("${propertyPrefix}archunit.sourceIncludes")
-    val includePatterns = list("${propertyPrefix}archunit.includePatterns")
-    val useSharedTestSupport = boolean("${propertyPrefix}archunit.useSharedTestSupport")
-    if (taskName == null && description == null && sourceDirs.isEmpty() && sourceIncludes.isEmpty() && includePatterns.isEmpty() && !useSharedTestSupport) {
-        return null
-    }
-    require(taskName != null && description != null) {
-        "Enforcement bundle descriptor '$descriptorFile' must declare archunit.taskName and archunit.description together."
-    }
-    require(sourceDirs.isNotEmpty()) {
-        "Enforcement bundle descriptor '$descriptorFile' must declare archunit.sourceDirs when archunit.taskName is present."
-    }
-    return EnforcementArchunitTask(
-        taskName = taskName,
-        description = description,
-        sourceDirs = sourceDirs.map { rawPath -> resolveDescriptorPath(repoRootDir, descriptorFile, rawPath) },
-        sourceIncludes = sourceIncludes,
-        includePatterns = includePatterns,
-        useSharedTestSupport = useSharedTestSupport
-    )
-}
-
-private fun Properties.readJqassistantTasks(
-    propertyPrefix: String,
-    repoRootDir: File,
-    descriptorFile: File,
-    taskNames: List<String>
-): List<EnforcementJqassistantTask> {
-    val namedTaskNames = jqassistantTaskNames(propertyPrefix)
-    val undeclaredTaskNames = namedTaskNames - taskNames.toSet()
-    require(undeclaredTaskNames.isEmpty()) {
-        "Enforcement bundle descriptor '$descriptorFile' declares jQAssistant tasks outside taskNames: ${undeclaredTaskNames.joinToString()}."
-    }
-    val namedTasks = taskNames
-        .filter { taskName -> taskName in namedTaskNames }
-        .map { taskName -> readNamedJqassistantTask(propertyPrefix, repoRootDir, descriptorFile, taskName) }
-    val duplicateNamedTaskNames = namedTasks.groupBy(EnforcementJqassistantTask::taskName)
-        .filterValues { candidates -> candidates.size > 1 }
-        .keys
-    require(duplicateNamedTaskNames.isEmpty()) {
-        "Enforcement bundle descriptor '$descriptorFile' declares duplicate jQAssistant tasks: ${duplicateNamedTaskNames.joinToString()}."
-    }
-
-    val legacyTask = readLegacyJqassistantTask(propertyPrefix, repoRootDir, descriptorFile, taskNames)
-    if (legacyTask != null && namedTaskNames.contains(legacyTask.taskName)) {
-        error(
-            "Enforcement bundle descriptor '$descriptorFile' declares both legacy jqassistant.* metadata " +
-                "and jqassistantTask.${legacyTask.taskName}.* metadata for the same public task."
-        )
-    }
-    return buildList {
-        legacyTask?.let(::add)
-        addAll(namedTasks)
-    }
-}
-
-private fun Properties.readLegacyJqassistantTask(
-    propertyPrefix: String,
-    repoRootDir: File,
-    descriptorFile: File,
-    taskNames: List<String>
-): EnforcementJqassistantTask? {
-    val scanTaskName = optionalTrimmed("${propertyPrefix}jqassistant.scanTaskName")
-    val analyzeTaskName = optionalTrimmed("${propertyPrefix}jqassistant.analyzeTaskName")
-    val scanDescription = optionalTrimmed("${propertyPrefix}jqassistant.scanDescription")
-    val analyzeDescription = optionalTrimmed("${propertyPrefix}jqassistant.analyzeDescription")
-    val configPath = optionalTrimmed("${propertyPrefix}jqassistant.config")
-    val rulesDirPath = optionalTrimmed("${propertyPrefix}jqassistant.rulesDir")
-    val reportsDirPath = optionalTrimmed("${propertyPrefix}jqassistant.reportsDir")
-    if (
-        scanTaskName == null &&
-        analyzeTaskName == null &&
-        scanDescription == null &&
-        analyzeDescription == null &&
-        configPath == null &&
-        rulesDirPath == null &&
-        reportsDirPath == null
-    ) {
-        return null
-    }
-    require(
-        scanTaskName != null &&
-            analyzeTaskName != null &&
-            scanDescription != null &&
-            analyzeDescription != null &&
-            configPath != null &&
-            rulesDirPath != null &&
-            reportsDirPath != null
-    ) {
-        "Enforcement bundle descriptor '$descriptorFile' must fully declare jqassistant.* metadata."
-    }
-    return EnforcementJqassistantTask(
-        taskName = publicCheckTaskName(taskNames, descriptorFile.path),
-        scanTaskName = scanTaskName,
-        analyzeTaskName = analyzeTaskName,
-        scanDescription = scanDescription,
-        analyzeDescription = analyzeDescription,
-        ruleGroups = loadJqassistantRuleGroups(resolveDescriptorPath(repoRootDir, descriptorFile, configPath)),
-        rulesDirPaths = listOf(resolveDescriptorPath(repoRootDir, descriptorFile, rulesDirPath)),
-        reportsDirPath = reportsDirPath
-    )
-}
-
-private fun Properties.readNamedJqassistantTask(
-    propertyPrefix: String,
-    repoRootDir: File,
-    descriptorFile: File,
-    taskName: String
-): EnforcementJqassistantTask {
-    val propertyBase = "${propertyPrefix}jqassistantTask.$taskName"
-    val scanTaskName = optionalTrimmed("$propertyBase.scanTaskName")
-    val analyzeTaskName = optionalTrimmed("$propertyBase.analyzeTaskName")
-    val scanDescription = optionalTrimmed("$propertyBase.scanDescription")
-    val analyzeDescription = optionalTrimmed("$propertyBase.analyzeDescription")
-    val rulesDirPaths = readJqassistantRulesDirPaths(propertyBase, repoRootDir, descriptorFile)
-    val reportsDirPath = optionalTrimmed("$propertyBase.reportsDir")
-    val ruleGroups = list("$propertyBase.groups")
-    require(
-        scanTaskName != null &&
-            analyzeTaskName != null &&
-            scanDescription != null &&
-            analyzeDescription != null &&
-            rulesDirPaths.isNotEmpty() &&
-            reportsDirPath != null &&
-            ruleGroups.isNotEmpty()
-    ) {
-        "Enforcement bundle descriptor '$descriptorFile' must fully declare $propertyBase.* metadata."
-    }
-    return EnforcementJqassistantTask(
-        taskName = taskName,
-        scanTaskName = scanTaskName,
-        analyzeTaskName = analyzeTaskName,
-        scanDescription = scanDescription,
-        analyzeDescription = analyzeDescription,
-        ruleGroups = ruleGroups,
-        rulesDirPaths = rulesDirPaths,
-        reportsDirPath = reportsDirPath
-    )
-}
-
-private fun Properties.readJqassistantRulesDirPaths(
-    propertyBase: String,
-    repoRootDir: File,
-    descriptorFile: File
-): List<String> {
-    val singularRulesDirPath = optionalTrimmed("$propertyBase.rulesDir")
-    val pluralRulesDirPaths = list("$propertyBase.rulesDirs")
-    require(singularRulesDirPath == null || pluralRulesDirPaths.isEmpty()) {
-        "Enforcement bundle descriptor '$descriptorFile' must not declare both $propertyBase.rulesDir and $propertyBase.rulesDirs."
-    }
-    return when {
-        pluralRulesDirPaths.isNotEmpty() -> pluralRulesDirPaths.map { rawPath ->
-            resolveDescriptorPath(repoRootDir, descriptorFile, rawPath)
-        }
-        singularRulesDirPath != null -> listOf(resolveDescriptorPath(repoRootDir, descriptorFile, singularRulesDirPath))
-        else -> emptyList()
-    }
-}
-
-private fun Properties.jqassistantTaskNames(propertyPrefix: String): Set<String> {
-    val prefix = "${propertyPrefix}jqassistantTask."
-    return stringPropertyNames()
-        .filter { propertyName -> propertyName.startsWith(prefix) }
-        .map { propertyName -> propertyName.removePrefix(prefix).substringBefore('.') }
-        .filter(String::isNotBlank)
-        .toSet()
-}
-
-private fun Properties.readPmdTasks(
-    propertyPrefix: String,
-    repoRootDir: File,
-    descriptorFile: File,
-    taskNames: List<String>
-): List<EnforcementPmdTask> {
-    val declaredTaskNames = pmdTaskNames(propertyPrefix)
-    val undeclaredTaskNames = declaredTaskNames - taskNames.toSet()
-    require(undeclaredTaskNames.isEmpty()) {
-        "Enforcement bundle descriptor '$descriptorFile' declares PMD tasks outside taskNames: ${undeclaredTaskNames.joinToString()}."
-    }
-    val tasks = taskNames
-        .filter { taskName -> taskName in declaredTaskNames }
-        .map { taskName -> readNamedPmdTask(propertyPrefix, repoRootDir, descriptorFile, taskName) }
-    val duplicateTaskNames = tasks.groupBy(EnforcementPmdTask::taskName)
-        .filterValues { candidates -> candidates.size > 1 }
-        .keys
-    require(duplicateTaskNames.isEmpty()) {
-        "Enforcement bundle descriptor '$descriptorFile' declares duplicate PMD tasks: ${duplicateTaskNames.joinToString()}."
-    }
-    return tasks
-}
-
-private fun Properties.readCustomTasks(
-    descriptorFile: File,
-    taskNames: List<String>
-): List<EnforcementCustomTask> {
-    val declaredTaskNames = customTaskNames()
-    val undeclaredTaskNames = declaredTaskNames - taskNames.toSet()
-    require(undeclaredTaskNames.isEmpty()) {
-        "Enforcement bundle descriptor '$descriptorFile' declares custom tasks outside taskNames: ${undeclaredTaskNames.joinToString()}."
-    }
-    return taskNames
-        .filter { taskName -> taskName in declaredTaskNames }
-        .map { taskName ->
-            EnforcementCustomTask(
-                taskName = taskName,
-                kind = requiredTrimmed("customTask.$taskName.kind")
-            )
-        }
-}
-
-private fun Properties.readNamedPmdTask(
-    propertyPrefix: String,
-    repoRootDir: File,
-    descriptorFile: File,
-    taskName: String
-): EnforcementPmdTask {
-    val propertyBase = "${propertyPrefix}pmdTask.$taskName"
-    val description = optionalTrimmed("$propertyBase.description")
-    val rulesetPath = optionalTrimmed("$propertyBase.ruleset")
-    require(description != null && rulesetPath != null) {
-        "Enforcement bundle descriptor '$descriptorFile' must fully declare $propertyBase.description and $propertyBase.ruleset."
-    }
-    return EnforcementPmdTask(
-        taskName = taskName,
-        description = description,
-        rulesetPath = resolveDescriptorPath(repoRootDir, descriptorFile, rulesetPath),
-        sourceRoots = list("$propertyBase.sourceRoots"),
-        sourceIncludes = list("$propertyBase.sourceIncludes"),
-        ignoreFailures = boolean("$propertyBase.ignoreFailures"),
-        consoleOutput = boolean("$propertyBase.consoleOutput")
-    )
-}
-
-private fun resolveDescriptorPath(repoRootDir: File, descriptorFile: File, rawPath: String): String {
-    val trimmedPath = rawPath.trim()
-    if (trimmedPath.isEmpty()) {
-        error("Encountered an empty descriptor path in ${descriptorFile.path}.")
-    }
-    val rawFile = File(trimmedPath)
-    val strippedLegacyPrefix = trimmedPath.removePrefix("../../")
-    val candidatePaths = buildList {
-        if (rawFile.isAbsolute) {
-            add(rawFile)
-        }
-        add(repoRootDir.resolve(trimmedPath))
-        add(descriptorFile.parentFile.resolve(trimmedPath))
-        if (trimmedPath.startsWith("../../")) {
-            add(repoRootDir.resolve("tools/$strippedLegacyPrefix"))
-            add(repoRootDir.resolve("tools/quality/$strippedLegacyPrefix"))
-        }
-    }.distinctBy { file -> file.path }
-    return candidatePaths.firstOrNull(File::exists)?.canonicalPath
-        ?: error(
-            "Could not resolve descriptor path '$trimmedPath' from ${descriptorFile.path}. " +
-                "Tried: ${candidatePaths.joinToString { it.path }}"
-        )
-}
-
-private fun loadProperties(file: File): Properties = Properties().apply {
-    file.inputStream().use(::load)
-}
-
-private fun Properties.requiredTrimmed(name: String): String = getProperty(name)
-    ?.trim()
-    ?.takeIf(String::isNotEmpty)
-    ?: error("Missing required enforcement bundle property '$name'.")
-
-private fun Properties.optionalTrimmed(name: String): String? = getProperty(name)
-    ?.trim()
-    ?.takeIf(String::isNotEmpty)
-
-private fun Properties.list(name: String): List<String> = getProperty(name)
-    ?.split(',')
-    ?.map(String::trim)
-    ?.filter(String::isNotEmpty)
-    ?: emptyList()
-
-private fun publicCheckTaskName(taskNames: List<String>, owner: String): String = taskNames.firstOrNull { taskName ->
-    taskName.startsWith("check")
-} ?: error("Missing public check task for enforcement bundle '$owner'.")
-
-private fun loadJqassistantRuleGroups(configPath: String): List<String> {
-    val groups = mutableListOf<String>()
-    var insideGroups = false
-    File(configPath).forEachLine { rawLine ->
-        val line = rawLine.trim()
-        when {
-            line == "groups:" -> insideGroups = true
-            insideGroups && line.startsWith("- ") -> groups += line.removePrefix("- ").trim()
-            insideGroups && line.isNotEmpty() && !line.startsWith("#") -> insideGroups = false
-        }
-    }
-    require(groups.isNotEmpty()) {
-        "jQAssistant config '$configPath' must declare at least one analyze group."
-    }
-    return groups
-}
-
-private fun Properties.boolean(name: String): Boolean = getProperty(name)
-    ?.trim()
-    ?.equals("true", ignoreCase = true)
-    ?: false
-
-private fun Properties.pmdTaskNames(propertyPrefix: String): List<String> {
-    val prefix = "${propertyPrefix}pmdTask."
-    return stringPropertyNames()
-        .asSequence()
-        .filter { propertyName -> propertyName.startsWith(prefix) }
-        .map { propertyName ->
-            propertyName.removePrefix(prefix).substringBefore('.')
-        }
-        .filter(String::isNotEmpty)
-        .distinct()
-        .sorted()
-        .toList()
-}
-
-private fun Properties.customTaskNames(): List<String> {
-    val prefix = "customTask."
-    return stringPropertyNames()
-        .asSequence()
-        .filter { propertyName -> propertyName.startsWith(prefix) && propertyName.endsWith(".kind") }
-        .map { propertyName -> propertyName.removePrefix(prefix).substringBefore('.') }
-        .filter(String::isNotEmpty)
-        .distinct()
-        .sorted()
-        .toList()
-}
-
-private fun Properties.mapEntries(namePrefix: String, nameSuffix: String): Map<String, String> = stringPropertyNames()
-    .asSequence()
-    .filter { propertyName -> propertyName.startsWith(namePrefix) && propertyName.endsWith(nameSuffix) }
-    .sorted()
-    .associate { propertyName ->
-        val name = propertyName.removePrefix(namePrefix).removeSuffix(nameSuffix)
-        name to requiredTrimmed(propertyName)
-    }
-
-private fun Properties.mapListEntries(namePrefix: String, nameSuffix: String): Map<String, List<String>> = stringPropertyNames()
-    .asSequence()
-    .filter { propertyName -> propertyName.startsWith(namePrefix) && propertyName.endsWith(nameSuffix) }
-    .sorted()
-    .associate { propertyName ->
-        val name = propertyName.removePrefix(namePrefix).removeSuffix(nameSuffix)
-        name to list(propertyName)
-    }
+fun publicCheckTaskName(taskNames: List<String>, owner: String): String = taskNames
+    .firstOrNull { taskName -> taskName.startsWith("check") }
+    ?: error("Missing public check task for enforcement bundle '$owner'.")

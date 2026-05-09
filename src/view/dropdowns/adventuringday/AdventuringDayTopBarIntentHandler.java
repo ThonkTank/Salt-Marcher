@@ -34,8 +34,13 @@ final class AdventuringDayTopBarIntentHandler {
         if (event.popupOpening()) {
             return;
         }
-        presentationModel.beginCalculation(event.totalGroupXp());
-        publishedEventListener.accept(
-                AdventuringDayTopBarPublishedEvent.calculate(event.levels(), event.totalGroupXp()));
+        AdventuringDayTopBarContributionModel.CalculationRequest request = presentationModel.applyViewInput(event);
+        if (request == null) {
+            return;
+        }
+        storePendingTotalGroupXp(request.totalGroupXp());
+        publishedEventListener.accept(AdventuringDayTopBarPublishedEvent.calculate(
+                request.levels(),
+                request.totalGroupXp()));
     }
 }

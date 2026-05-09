@@ -58,8 +58,8 @@ code is excluded through the shared Error Prone configuration, while
 whole-program reachability derives its live roots mechanically from JavaFX
 entry classes, view contribution discovery, service contribution discovery,
 FXML controller resources, `META-INF/services` providers, literal
-`Class.forName("...")` references, and the explicit fallback catalog under
-`tools/quality/config/deadcode/keep-roots.txt`. Any future framework- or
+FXML resources, `META-INF/services` providers, and the explicit fallback rules
+under `tools/quality/config/deadcode/keep-rules.pro`. Any future framework- or
 reflection-driven exception must stay local, documented, and attributable
 rather than becoming a blanket disablement of the unused checks.
 

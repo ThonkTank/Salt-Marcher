@@ -9,11 +9,8 @@ It keeps the full styling-layer proof route in one package:
   `ViewProgrammaticStyling`
 - `pmd/`
   `StylingInlineSetStyleBackchannelRule` and the bundle-local ruleset
-- `bundle.properties`
-  canonical registration source for the bundle's public task name and host
-  script/source-set wiring
-  PMD, and
-  aggregate-task wiring
+- `tools/gradle/build-logic/src/main/kotlin/saltmarcher/buildlogic/enforcement/StandardEnforcementBundles.kt`
+  typed bundle registry entry for the bundle's public task names and host wiring
 
 The bundle keeps the canonical stylesheet owner proof local through
 `checkStylingCentralStylesheetOwner`. Desktop packaging remains the owner of

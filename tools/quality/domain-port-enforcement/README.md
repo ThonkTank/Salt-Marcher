@@ -8,8 +8,8 @@ It keeps the inbound `Port` proof surface strict and owner-pure:
 - `build-harness/`
   `DomainPortTopologyRules` and
   `DomainPortEnforcementDocumentationRules`
-- `bundle.properties`
-  descriptor-based registration into the focused-enforcement Gradle path
+- `tools/gradle/build-logic/src/main/kotlin/saltmarcher/buildlogic/enforcement/StandardEnforcementBundles.kt`
+  typed bundle registry entry for the bundle's public task names and host wiring
 
 This bundle owns only the inbound domain-internal `Port` role itself.
 Generic domain-layer topology, published boundary contracts, and repository

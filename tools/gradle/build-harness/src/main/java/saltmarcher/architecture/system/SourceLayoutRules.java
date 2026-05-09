@@ -1,33 +1,14 @@
 package saltmarcher.architecture.system;
 
 import java.util.List;
-import java.util.Set;
 import saltmarcher.architecture.ArchitectureContext;
 import saltmarcher.architecture.ArchitectureRule;
 import saltmarcher.architecture.SourceFile;
 import saltmarcher.architecture.ViolationSink;
+import saltmarcher.architecture.domain.DomainRoleTopologySupport;
 import saltmarcher.architecture.view.ViewTopologyCatalog;
 
 public final class SourceLayoutRules implements ArchitectureRule {
-
-    private static final Set<String> DOMAIN_TARGET_ROLE_PACKAGES =
-            Set.of(
-                    "model",
-                    "constants",
-                    "helper",
-                    "port",
-                    "repository",
-                    "usecase");
-    private static final Set<String> DOMAIN_LEGACY_ROLE_PACKAGES =
-            Set.of(
-                    "aggregate",
-                    "entity",
-                    "value",
-                    "policy",
-                    "factory",
-                    "service",
-                    "event",
-                    "specification");
     @Override
     public void check(ArchitectureContext context, ViolationSink violations) {
         for (SourceFile sourceFile : context.sourceFiles(violations)) {
@@ -138,14 +119,14 @@ public final class SourceLayoutRules implements ArchitectureRule {
     }
 
     public static boolean isAllowedDomainRolePackage(String role) {
-        return isAllowedTargetDomainRolePackage(role) || isLegacyDomainRolePackage(role);
+        return DomainRoleTopologySupport.isAllowedDomainRolePackage(role);
     }
 
     public static boolean isAllowedTargetDomainRolePackage(String role) {
-        return DOMAIN_TARGET_ROLE_PACKAGES.contains(role);
+        return DomainRoleTopologySupport.isAllowedTargetDomainRolePackage(role);
     }
 
     public static boolean isLegacyDomainRolePackage(String role) {
-        return DOMAIN_LEGACY_ROLE_PACKAGES.contains(role);
+        return DomainRoleTopologySupport.isLegacyDomainRolePackage(role);
     }
 }

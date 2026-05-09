@@ -2,6 +2,7 @@ package saltmarcher.buildlogic.verification
 
 import org.gradle.api.Project
 import org.gradle.api.Task
+import java.io.File
 import org.gradle.api.plugins.quality.Pmd
 import org.gradle.api.tasks.Delete
 import org.gradle.api.tasks.TaskProvider
@@ -28,8 +29,7 @@ internal data class QualityConventionLifecycleTasks(
 
 internal fun Project.registerQualityConventionLifecycleTasks(
     environment: QualityConventionEnvironment,
-    toolConfigurations: QualityConventionToolConfigurations,
-    checkViewArchitecture: TaskProvider<out Task>
+    toolConfigurations: QualityConventionToolConfigurations
 ): QualityConventionLifecycleTasks {
     val verificationLayout = environment.verificationLayout
     val resetMainJavaClassesOutput = tasks.register<Delete>("resetMainJavaClassesOutput") {
@@ -140,22 +140,19 @@ internal fun Project.registerQualityConventionLifecycleTasks(
         group = LifecycleBasePlugin.VERIFICATION_GROUP
         description = "Fail if production code contains unreachable files, types, methods, constructors, or fields."
         dependsOn(tasks.named("classes"))
+        toolClasspath.from(toolConfigurations.proguardToolClasspath)
         compiledClassesDirectory.set(verificationLayout.mainJavaClassesDir)
-        sourceRoots.from(
-            layout.projectDirectory.dir("bootstrap"),
-            layout.projectDirectory.dir("shell"),
-            layout.projectDirectory.dir("src")
+        runtimeClasspath.from(configurations.named("runtimeClasspath"))
+        javaHomeJmodsDirectory.set(
+            layout.dir(
+                providers.provider { File(System.getProperty("java.home"), "jmods") }
+            )
         )
         resourceRoots.from(layout.projectDirectory.dir("resources"))
-        keepRootsFiles.from(layout.projectDirectory.file("tools/quality/config/deadcode/keep-roots.txt"))
+        keepRulesFiles.from(layout.projectDirectory.file("tools/quality/config/deadcode/keep-rules.pro"))
+        workingDirectory.set(layout.buildDirectory.dir("tmp/checkNoDeadCode"))
         reportFile.set(layout.buildDirectory.file("reports/deadcode/main.txt"))
         successMarker.set(layout.buildDirectory.file("verification-markers/checkNoDeadCode/success.marker"))
-    }
-
-    tasks.register("checkNoPublicDeadCode") {
-        group = LifecycleBasePlugin.VERIFICATION_GROUP
-        description = "Deprecated compatibility alias for checkNoDeadCode."
-        dependsOn(checkNoDeadCode)
     }
 
     val checkQualityHygiene = tasks.register("checkQualityHygiene") {
@@ -181,7 +178,6 @@ internal fun Project.registerQualityConventionLifecycleTasks(
     val check = tasks.named("check") {
         dependsOn(productionBuild)
         dependsOn(checkArchitecture)
-        dependsOn(checkViewArchitecture)
         dependsOn(checkQualityHygiene)
         dependsOn(ckjmMain)
     }

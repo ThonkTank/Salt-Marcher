@@ -66,7 +66,7 @@ public final class DomainPublishedEnforcementCoverageRules implements Architectu
                             "./gradlew compileJava",
                             "./gradlew checkDomainApplicationServiceEnforcement",
                             "./gradlew checkDomainUseCaseEnforcement",
-                            "./gradlew checkViewBinderEnforcement")),
+                            "./gradlew checkViewEnforcement")),
             row("domain-published-ubiquitous-language-stability", "Review-Owned"));
 
     @Override

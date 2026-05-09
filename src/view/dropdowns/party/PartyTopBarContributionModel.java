@@ -68,17 +68,19 @@ public final class PartyTopBarContributionModel {
         panel.set(safePanel().withEditor(EditorPanelModel.createDraft()));
     }
 
-    public void openEditEditor(PartyRosterTopBarViewInputEvent.EditorSeed seed) {
-        PartyRosterTopBarViewInputEvent.EditorSeed safeSeed = seed == null
-                ? PartyRosterTopBarViewInputEvent.EditorSeed.empty()
-                : seed;
+    public boolean openEditEditor(long memberId) {
+        @Nullable MemberModel member = findMember(memberId);
+        if (member == null) {
+            return false;
+        }
         panel.set(safePanel().withEditor(EditorPanelModel.editDraft(
-                safeSeed.memberId(),
-                safeSeed.memberName(),
-                safeSeed.playerName(),
-                safeSeed.rawLevel(),
-                safeSeed.rawPassivePerception(),
-                safeSeed.rawArmorClass())));
+                memberId,
+                member.name(),
+                member.playerName(),
+                Integer.toString(member.level()),
+                Integer.toString(member.passivePerception()),
+                Integer.toString(member.armorClass()))));
+        return true;
     }
 
     public void cancelEditor() {
@@ -93,13 +95,38 @@ public final class PartyTopBarContributionModel {
         panel.set(safePanel().withEditor(safePanel().editorPanel().withDeleteConfirmationVisible(false)));
     }
 
+    public void syncEditorDraft(PartyEditorTopBarViewInputEvent.EditorDraft draft) {
+        if (draft == null) {
+            return;
+        }
+        EditorPanelModel editorPanel = safePanel().editorPanel();
+        if (!editorPanel.visible()) {
+            return;
+        }
+        panel.set(safePanel().withEditor(editorPanel.withDraft(
+                draft.name(),
+                draft.playerName(),
+                draft.rawLevel(),
+                draft.rawPassivePerception(),
+                draft.rawArmorClass())));
+    }
+
+    public EditorPanelModel currentEditorPanel() {
+        return safePanel().editorPanel();
+    }
+
+    public String memberName(long memberId) {
+        @Nullable MemberModel member = findMember(memberId);
+        return member == null ? "" : member.name();
+    }
+
     void applyLoadResult(PanelData data) {
         PartySnapshotResult snapshotResult = data == null ? null : data.snapshotResult();
         if (snapshotResult == null || snapshotResult.status() != ReadStatus.SUCCESS) {
-            applyStorageError();
+            applyStorageError(safePanel().editorPanel());
             return;
         }
-        applySnapshot(snapshotResult.snapshot(), data.dayResult(), "", false);
+        applySnapshot(snapshotResult.snapshot(), data.dayResult(), "", false, safePanel().editorPanel());
     }
 
     void applyMutationResult(MutationAndLoadResult result) {
@@ -115,18 +142,18 @@ public final class PartyTopBarContributionModel {
         PanelData data = result.panelData();
         if (data == null) {
             String message = "Party konnte nach der Änderung nicht neu geladen werden.";
-            applyStorageError();
+            applyStorageError(safePanel().editorPanel());
             showStatus(message, true);
             return;
         }
         PartySnapshotResult snapshotResult = data.snapshotResult();
         if (snapshotResult == null || snapshotResult.status() != ReadStatus.SUCCESS) {
             String message = "Party konnte nach der Änderung nicht neu geladen werden.";
-            applyStorageError();
+            applyStorageError(safePanel().editorPanel());
             showStatus(message, true);
             return;
         }
-        applySnapshot(snapshotResult.snapshot(), data.dayResult(), result.successMessage(), false);
+        applySnapshot(snapshotResult.snapshot(), data.dayResult(), result.successMessage(), false, EditorPanelModel.hidden());
     }
 
     void applyMutationFailure() {
@@ -139,7 +166,8 @@ public final class PartyTopBarContributionModel {
             @Nullable PartySnapshot snapshot,
             @Nullable AdventuringDayResult dayResult,
             String statusMessage,
-            boolean statusError
+            boolean statusError,
+            EditorPanelModel editorPanel
     ) {
         PartySnapshot safeSnapshot = snapshot == null ? emptySnapshot() : snapshot;
         @Nullable AdventuringDaySummary daySummary = dayResult == null || dayResult.status() != ReadStatus.SUCCESS
@@ -169,10 +197,10 @@ public final class PartyTopBarContributionModel {
                 statusError,
                 activeMembers.isEmpty(),
                 false,
-                EditorPanelModel.hidden()));
+                editorPanel));
     }
 
-    void applyStorageError() {
+    void applyStorageError(EditorPanelModel editorPanel) {
         mutationInFlight = false;
         triggerText.set("Keine _Party ▼");
         panel.set(new PanelModel(
@@ -187,7 +215,7 @@ public final class PartyTopBarContributionModel {
                 true,
                 true,
                 true,
-                EditorPanelModel.hidden()));
+                editorPanel));
     }
 
     private void showStatus(String message, boolean error) {
@@ -197,6 +225,23 @@ public final class PartyTopBarContributionModel {
     private PanelModel safePanel() {
         PanelModel current = panel.get();
         return current == null ? PanelModel.loadingModel() : current;
+    }
+
+    private @Nullable MemberModel findMember(long memberId) {
+        if (memberId <= 0L) {
+            return null;
+        }
+        for (MemberModel member : safePanel().activeMembers()) {
+            if (member.id() != null && member.id() == memberId) {
+                return member;
+            }
+        }
+        for (MemberModel member : safePanel().reserveMembers()) {
+            if (member.id() != null && member.id() == memberId) {
+                return member;
+            }
+        }
+        return null;
     }
 
     private static String mutationMessage(@Nullable MutationStatus status) {
@@ -408,6 +453,25 @@ public final class PartyTopBarContributionModel {
                     this.rawPassivePerception,
                     this.rawArmorClass,
                     visible);
+        }
+
+        EditorPanelModel withDraft(
+                String memberName,
+                String playerName,
+                String rawLevel,
+                String rawPassivePerception,
+                String rawArmorClass
+        ) {
+            return new EditorPanelModel(
+                    this.visible,
+                    this.editingExisting,
+                    this.memberId,
+                    memberName,
+                    playerName,
+                    rawLevel,
+                    rawPassivePerception,
+                    rawArmorClass,
+                    this.deleteConfirmationVisible);
         }
     }
 

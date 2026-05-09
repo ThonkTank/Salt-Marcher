@@ -39,15 +39,13 @@ The rows below describe the current passive-View blocker surface directly.
 
 | Invariant ID | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- |
-| `view-view-name-shape` | every passive `*View.java` under `src/view/**` | jQAssistant `saltmarcher:PassiveViewName` | `./gradlew checkViewEnforcement` | Passive `View` files use the documented area-specific naming shape: `leftbartabs` use `*ControlsView`, `*MainView`, or `*StateView`; `dropdowns` use `*TopBarView`; `statetabs` use `*StateView`; reusable `slotcontent/**` including `slotcontent/primitives/**` use `*View`. |
-| `view-view-one-top-level-fragment` | every passive `*View.java` under `src/view/**` | jQAssistant `saltmarcher:PassiveViewOneTopLevelTypePerFile` | `./gradlew checkViewEnforcement` | Each passive `View` file defines exactly one top-level passive `View` type rather than several peer fragments in one source file. |
 | `view-view-fxml-controller-shape` | only when a passive `View` is FXML-backed | Gradle `checkViewFxmlResources` | `./gradlew checkViewEnforcement` | FXML resources live under the documented `resources/view/**` roots, use `fx:controller` only on the root element, forbid inline scripts and script-style event handlers, and point to the matching passive `View` class in the matching package and resource path. |
 
 ### Must Not Contain
 
 | Invariant ID | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- |
-| `view-view-dependency-boundary` | every passive `*View.java` under `src/view/**` | Error Prone `PassiveViewDependencyBoundaries`, ArchUnit `passiveViewsMustNotReachShellDomainDataOrBootstrap`, and jQAssistant `saltmarcher:PassiveViewAllowedDependencies` | `./gradlew checkViewEnforcement` | A passive `View` references only JavaFX UI APIs, its co-located observable `ContributionModel` or `ContentModel`, same-root same-unit `*ViewInputEvent` types, and the documented passive reusable view seam. Foreign support carriers, local `*PublishedEvent` families, domain/data types, and backend seams are blocked. |
+| `view-view-dependency-boundary` | every passive `*View.java` under `src/view/**` | Error Prone `PassiveViewDependencyBoundaries` | `./gradlew checkViewEnforcement` | A passive `View` references only JavaFX UI APIs, its co-located observable `ContributionModel` or `ContentModel`, same-root same-unit `*ViewInputEvent` types, and the documented passive reusable view seam. Foreign support carriers, local `*PublishedEvent` families, domain/data types, and backend seams are blocked. |
 | `view-view-no-local-semantic-state` | every passive `*View.java` under `src/view/**` | Error Prone `PassiveViewLocalStateBoundary` | `./gradlew checkViewEnforcement` | Passive `View` code does not hide mutable semantic state bags inside the `View`; reusable primitive Views are held to the same dumb-view rule as every other passive `View`. |
 | `view-view-model-read-api` | every passive `*View.java` that invokes methods on a co-located model | Error Prone `PassiveViewModelReadApis` | `./gradlew checkViewEnforcement` | Passive `View` code reads its co-located `ContributionModel` or `ContentModel` only through JavaFX observable or binding surfaces instead of imperative non-observable read APIs. |
 | `view-view-no-model-mutation` | every passive `*View.java` that reaches its co-located model through JavaFX writable surfaces | Error Prone `PassiveViewModelMutationBoundary` | `./gradlew checkViewEnforcement` | Passive `View` code does not mutate its co-located `ContributionModel` or `ContentModel` through writable properties, writable values, or observable collections, maps, or sets returned by model accessors. |
@@ -59,12 +57,20 @@ The rows below describe the current passive-View blocker surface directly.
 | Invariant ID | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- |
 | `view-view-input-api` | every passive `View` that participates in the same-stem `*ViewInputEvent` protocol | Error Prone `ViewInputEventApi` | `./gradlew checkViewEnforcement` | An interactive passive `View` exposes exactly one outward input seam, `onViewInputEvent(Consumer<SameStemViewInputEvent>)`, does not misshape that seam, and does not subscribe to another top-level passive `View`'s `onViewInputEvent(...)` route. |
-| `view-view-callback-seam-boundary` | every passive `*View.java` under `src/view/**` | Error Prone `PassiveViewCallbackSeamBoundary` and ArchUnit `passiveViewsWithoutLocalIntentHandlersOrViewInputEventsMustNotExposeCallbackSeams` | `./gradlew checkViewEnforcement` | Passive `View`s expose no alternate callback or result seams beside the single `onViewInputEvent(...)` route; reusable primitive Views are enforced by the same boundary as every other passive `View`. |
+| `view-view-callback-seam-boundary` | every passive `*View.java` under `src/view/**` | Error Prone `PassiveViewCallbackSeamBoundary` | `./gradlew checkViewEnforcement` | Passive `View`s expose no alternate callback or result seams beside the single `onViewInputEvent(...)` route; reusable primitive Views are enforced by the same boundary as every other passive `View`. |
 
 ## Review-Owned
 
 - whether a mechanically legal passive `View` is still too broad and should be
   split into clearer surfaces
+- `view-view-name-shape`
+  passive `View` files still follow the documented area-specific naming shape:
+  `leftbartabs` use `*ControlsView`, `*MainView`, or `*StateView`;
+  `dropdowns` use `*TopBarView`; `statetabs` use `*StateView`; reusable
+  `slotcontent/**` including `slotcontent/primitives/**` use `*View`.
+- `view-view-one-top-level-fragment`
+  each passive `View` file still defines exactly one top-level passive `View`
+  type rather than several peer fragments in one source file.
 - `view-view-reusable-slotcontent-three-role-shape`
   every reusable `slotcontent/**` passive `View` belongs to a unit that owns
   exactly one same-stem `*ViewInputEvent` and exactly one same-unit

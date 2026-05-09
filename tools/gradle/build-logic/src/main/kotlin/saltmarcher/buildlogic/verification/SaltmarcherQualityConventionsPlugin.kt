@@ -50,8 +50,7 @@ internal fun Project.configureQualityConventions() {
     val jqassistantTasks = registerQualityConventionJqassistantTasks(environment, toolConfigurations)
     val lifecycleTasks = registerQualityConventionLifecycleTasks(
         environment = environment,
-        toolConfigurations = toolConfigurations,
-        checkViewArchitecture = jqassistantTasks.checkViewArchitecture
+        toolConfigurations = toolConfigurations
     )
     registerQualityConventionHarness(
         environment = environment,

@@ -1,11 +1,7 @@
 package src.view.dropdowns.adventuringday;
 
-import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.TreeMap;
 import java.util.function.Consumer;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -46,7 +42,9 @@ public final class AdventuringDayTopBarView extends HBox {
 
     private final DropdownPopupContentModel popupContentModel;
     private final DropdownPopupView popupView;
-    private final CalculatorPane calculatorPane = new CalculatorPane(this::publishCalculationSubmit);
+    private final CalculatorPane calculatorPane = new CalculatorPane(
+            (useActivePartyRequested, addRowRequested, clearRequested) ->
+                    publish(false, useActivePartyRequested, addRowRequested, clearRequested));
     private Consumer<AdventuringDayTopBarViewInputEvent> viewInputEventHandler = ignored -> { };
 
     AdventuringDayTopBarView(DropdownPopupContentModel popupContentModel) {
@@ -57,25 +55,23 @@ public final class AdventuringDayTopBarView extends HBox {
         popupView.bind(this.popupContentModel);
         popupView.onViewInputEvent(event -> {
             if (event.popupOpening()) {
-                publish(new AdventuringDayTopBarViewInputEvent(true, List.of(), 0));
+                publish(true, false, false, false);
             }
         });
         getChildren().add(popupView);
     }
 
     void showPanel(AdventuringDayTopBarContributionModel.PanelModel panelModel) {
-        AdventuringDayTopBarContributionModel.PanelModel safePanelModel = panelModel == null
-                ? AdventuringDayTopBarContributionModel.PanelModel.loadingModel()
-                : panelModel;
-        if (safePanelModel.error()) {
-            calculatorPane.markActivePartyRefreshFailed();
-            return;
-        }
-        calculatorPane.setActivePartySnapshot(safePanelModel.activePartyLevels());
-    }
-
-    void showCalculation(CalculationContent calculation) {
-        calculatorPane.showCalculation(calculation);
+        calculatorPane.show(panelModel == null
+                ? new AdventuringDayTopBarContributionModel.PanelModel(
+                        List.of(),
+                        false,
+                        "",
+                        "Aktive Party",
+                        true,
+                        true,
+                        AdventuringDayTopBarContributionModel.CalculationPresentation.empty(false, 0))
+                : panelModel);
     }
 
     void onViewInputEvent(Consumer<AdventuringDayTopBarViewInputEvent> handler) {
@@ -113,12 +109,23 @@ public final class AdventuringDayTopBarView extends HBox {
         return dialog;
     }
 
-    private void publishCalculationSubmit(List<Integer> levels, int totalGroupXp) {
-        publish(new AdventuringDayTopBarViewInputEvent(false, levels, totalGroupXp));
-    }
-
-    private void publish(AdventuringDayTopBarViewInputEvent event) {
-        viewInputEventHandler.accept(event);
+    private void publish(
+            boolean popupOpening,
+            boolean useActivePartyRequested,
+            boolean addRowRequested,
+            boolean clearRequested
+    ) {
+        List<AdventuringDayTopBarViewInputEvent.RowInput> rows = calculatorPane.snapshotRows();
+        boolean progressModeSelected = calculatorPane.progressModeSelected();
+        String totalGroupXpText = calculatorPane.totalGroupXpText();
+        viewInputEventHandler.accept(new AdventuringDayTopBarViewInputEvent(
+                popupOpening,
+                useActivePartyRequested,
+                addRowRequested,
+                clearRequested,
+                progressModeSelected,
+                totalGroupXpText,
+                rows));
     }
 
     @SuppressWarnings(PMD_LOD)
@@ -186,64 +193,6 @@ public final class AdventuringDayTopBarView extends HBox {
         return values;
     }
 
-    private static List<Integer> sanitizeLevels(List<Integer> levels) {
-        if (levels == null || levels.isEmpty()) {
-            return List.of();
-        }
-        List<Integer> normalized = new ArrayList<>();
-        for (Integer level : levels) {
-            if (level != null) {
-                normalized.add(Math.max(1, Math.min(20, level)));
-            }
-        }
-        return List.copyOf(normalized);
-    }
-
-    record CalculationContent(
-            List<String> budgetSummaryLines,
-            List<String> budgetTimelineLines,
-            List<String> progressSummaryLines,
-            List<String> progressTimelineLines
-    ) {
-
-        CalculationContent {
-            budgetSummaryLines = copy(budgetSummaryLines);
-            budgetTimelineLines = copy(budgetTimelineLines);
-            progressSummaryLines = copy(progressSummaryLines);
-            progressTimelineLines = copy(progressTimelineLines);
-        }
-
-        static CalculationContent empty(int totalGroupXp) {
-            return new CalculationContent(
-                    List.of(
-                            "Tag gesamt: 0 XP",
-                            "Pro Drittel: ca. 0 XP",
-                            "Short Rest 1: nach 0 XP",
-                            "Short Rest 2: nach 0 XP"),
-                    List.of(
-                            "Short Rest 1: 0 XP",
-                            "Short Rest 2: 0 XP",
-                            "Long Rest: 0 XP"),
-                    List.of(
-                            TOTAL_GROUP_XP_LABEL + ": " + formatInt(totalGroupXp) + " XP",
-                            "XP pro Charakter: 0",
-                            "Adventuring Days: 0 (0 voll)",
-                            "Short Rests: 0",
-                            "Long Rests: 0",
-                            "Level-ups: keine"),
-                    List.of());
-        }
-
-        private static List<String> copy(List<String> lines) {
-            return lines == null ? List.of() : List.copyOf(lines);
-        }
-
-        private static String formatInt(int value) {
-            NumberFormat format = NumberFormat.getIntegerInstance(Locale.GERMANY);
-            return format.format(Math.max(0, value));
-        }
-    }
-
     private static final class CalculatorPane extends VBox {
 
         private final Label partySummaryLabel = new Label();
@@ -254,24 +203,14 @@ public final class AdventuringDayTopBarView extends HBox {
         private final ToggleButton progressModeButton = new ToggleButton("XP -> Tage");
         private final TextField totalGroupXpField = createIntegerField();
         private final HBox progressInputRow;
-        private final PartyRowsPane partyRowsPane = new PartyRowsPane(() -> {
-            sourceMode = PartySourceMode.CUSTOM;
-            refreshSummary();
-            syncActionState();
-        });
+        private final PartyRowsPane partyRowsPane = new PartyRowsPane(this::publishSnapshot);
         private final SummaryPane summaryPane = new SummaryPane();
-        private final CalculationRequestListener calculationRequestListener;
+        private final PanelEventPublisher eventPublisher;
+        private boolean syncingFromModel;
 
-        private CalculationContent calculationContent = CalculationContent.empty(0);
-        private List<Integer> activePartyLevels = List.of();
-        private PartySourceMode sourceMode = PartySourceMode.ACTIVE_PARTY;
-        private boolean activePartyChangedSinceCustomEdit;
-        private boolean activePartyRefreshFailed;
-        private boolean suppressPublishedEvents;
-
-        private CalculatorPane(CalculationRequestListener calculationRequestListener) {
-            this.calculationRequestListener = calculationRequestListener == null ? (levels, totalGroupXp) -> { }
-                    : calculationRequestListener;
+        private CalculatorPane(PanelEventPublisher eventPublisher) {
+            this.eventPublisher = eventPublisher == null ? (useActivePartyRequested, addRowRequested, clearRequested) -> { }
+                    : eventPublisher;
             setSpacing(8);
             setPadding(new Insets(8, 0, 0, 0));
             addStyleClass(partySummaryLabel, STYLE_TEXT_SECONDARY);
@@ -291,32 +230,17 @@ public final class AdventuringDayTopBarView extends HBox {
 
             totalGroupXpField.setPromptText(TOTAL_GROUP_XP_LABEL);
             totalGroupXpField.setPrefColumnCount(10);
-            totalGroupXpField.textProperty().addListener((ignored, before, after) -> refreshSummary());
+            totalGroupXpField.textProperty().addListener((ignored, before, after) -> publishSnapshot());
             Label totalGroupXpHint = new Label(TOTAL_GROUP_XP_HINT);
             addStyleClass(totalGroupXpHint, STYLE_TEXT_MUTED);
             progressInputRow = new HBox(8, totalGroupXpHint, totalGroupXpField);
             progressInputRow.setAlignment(Pos.CENTER_LEFT);
 
-            useActivePartyButton.setOnAction(event -> {
-                sourceMode = PartySourceMode.ACTIVE_PARTY;
-                activePartyChangedSinceCustomEdit = false;
-                partyRowsPane.setLevels(activePartyLevels);
-                refreshSummary();
-                syncActionState();
-            });
-            addRowButton.setOnAction(event -> {
-                sourceMode = PartySourceMode.CUSTOM;
-                partyRowsPane.addDefaultRow();
-            });
-            clearButton.setOnAction(event -> {
-                sourceMode = PartySourceMode.CUSTOM;
-                partyRowsPane.setLevels(List.of());
-                refreshSummary();
-                syncActionState();
-            });
+            useActivePartyButton.setOnAction(event -> eventPublisher.publish(true, false, false));
+            addRowButton.setOnAction(event -> eventPublisher.publish(false, true, false));
+            clearButton.setOnAction(event -> eventPublisher.publish(false, false, true));
             modeGroup.selectedToggleProperty().addListener((ignored, before, after) -> {
-                syncProgressModeVisibility();
-                refreshSummary();
+                publishSnapshot();
             });
 
             getChildren().addAll(
@@ -326,91 +250,58 @@ public final class AdventuringDayTopBarView extends HBox {
                     progressInputRow,
                     partyRowsPane,
                     summaryPane);
-            syncProgressModeVisibility();
-            refreshSummary();
-            syncActionState();
         }
 
-        private void showCalculation(CalculationContent content) {
-            calculationContent = content == null ? CalculationContent.empty(parseNonNegativeInt(totalGroupXpField)) : content;
-            suppressPublishedEvents = true;
+        private void show(AdventuringDayTopBarContributionModel.PanelModel panelModel) {
+            AdventuringDayTopBarContributionModel.PanelModel safePanelModel = panelModel == null
+                    ? new AdventuringDayTopBarContributionModel.PanelModel(
+                    List.of(),
+                    false,
+                    "",
+                    "Aktive Party",
+                    true,
+                    true,
+                    AdventuringDayTopBarContributionModel.CalculationPresentation.empty(false, 0))
+                    : panelModel;
+            syncingFromModel = true;
             try {
-                refreshSummary();
+                partySummaryLabel.setText(safePanelModel.partySummaryText());
+                budgetModeButton.setSelected(!safePanelModel.progressModeSelected());
+                progressModeButton.setSelected(safePanelModel.progressModeSelected());
+                progressInputRow.setVisible(safePanelModel.progressModeSelected());
+                progressInputRow.setManaged(safePanelModel.progressModeSelected());
+                totalGroupXpField.setText(safePanelModel.totalGroupXpText());
+                useActivePartyButton.setDisable(safePanelModel.useActivePartyButtonDisabled());
+                clearButton.setDisable(safePanelModel.clearButtonDisabled());
+                partyRowsPane.showRows(safePanelModel.rows());
+                summaryPane.show(safePanelModel.calculation());
             } finally {
-                suppressPublishedEvents = false;
+                syncingFromModel = false;
             }
         }
 
-        private void setActivePartySnapshot(List<Integer> levels) {
-            List<Integer> sanitizedLevels = sanitizeLevels(levels);
-            boolean changed = !sanitizedLevels.equals(activePartyLevels);
-            activePartyRefreshFailed = false;
-            activePartyLevels = sanitizedLevels;
-            if (sourceMode == PartySourceMode.ACTIVE_PARTY) {
-                activePartyChangedSinceCustomEdit = false;
-                partyRowsPane.setLevels(activePartyLevels);
-                refreshSummary();
-                syncActionState();
-                return;
+        private boolean progressModeSelected() {
+            return progressModeButton.isSelected();
+        }
+
+        private String totalGroupXpText() {
+            return totalGroupXpField.getText();
+        }
+
+        private List<AdventuringDayTopBarViewInputEvent.RowInput> snapshotRows() {
+            return partyRowsPane.snapshotRows();
+        }
+
+        private void publishSnapshot() {
+            if (!syncingFromModel) {
+                eventPublisher.publish(false, false, false);
             }
-            activePartyChangedSinceCustomEdit = activePartyChangedSinceCustomEdit || changed;
-            refreshSummary();
-            syncActionState();
         }
+    }
 
-        private void markActivePartyRefreshFailed() {
-            activePartyRefreshFailed = true;
-            refreshSummary();
-            syncActionState();
-        }
-
-        private void refreshSummary() {
-            List<Integer> levels = partyRowsPane.levels();
-            String sourceLabel = sourceMode == PartySourceMode.CUSTOM ? "Eigene Gruppe" : "Aktive Party";
-            if (sourceMode == PartySourceMode.ACTIVE_PARTY && activePartyRefreshFailed) {
-                sourceLabel += activePartyLevels.isEmpty() ? " · Laden fehlgeschlagen" : " · Letzter Stand";
-            } else if (sourceMode == PartySourceMode.CUSTOM && activePartyChangedSinceCustomEdit) {
-                sourceLabel += " · Aktive Party geändert";
-            }
-            if (levels.isEmpty()) {
-                partySummaryLabel.setText(sourceLabel);
-                summaryPane.showEmptyState(progressModeButton.isSelected());
-                syncActionState();
-                return;
-            }
-            partySummaryLabel.setText(sourceLabel + ": " + levels.size() + " Charaktere");
-            requestCalculation(levels, parseNonNegativeInt(totalGroupXpField));
-            if (progressModeButton.isSelected()) {
-                summaryPane.showProgress(calculationContent);
-            } else {
-                summaryPane.showBudget(calculationContent);
-            }
-            syncActionState();
-        }
-
-        private void requestCalculation(List<Integer> levels, int totalGroupXp) {
-            if (suppressPublishedEvents) {
-                return;
-            }
-            calculationContent = CalculationContent.empty(totalGroupXp);
-            calculationRequestListener.onCalculationRequested(List.copyOf(levels), totalGroupXp);
-        }
-
-        private void syncActionState() {
-            useActivePartyButton.setDisable(activePartyLevels.isEmpty());
-            clearButton.setDisable(partyRowsPane.isEmpty());
-        }
-
-        private void syncProgressModeVisibility() {
-            boolean progressMode = progressModeButton.isSelected();
-            progressInputRow.setVisible(progressMode);
-            progressInputRow.setManaged(progressMode);
-        }
-
-        private enum PartySourceMode {
-            ACTIVE_PARTY,
-            CUSTOM
-        }
+    @FunctionalInterface
+    private interface PanelEventPublisher {
+        void publish(boolean useActivePartyRequested, boolean addRowRequested, boolean clearRequested);
     }
 
     private static final class SummaryPane extends VBox {
@@ -434,18 +325,11 @@ public final class AdventuringDayTopBarView extends HBox {
             getChildren().addAll(summaryBox, timelineScrollPane);
         }
 
-        private void showEmptyState(boolean progressMode) {
-            render(List.of(progressMode ? TOTAL_GROUP_XP_LABEL + ": 0 XP" : "Tag gesamt: 0 XP"), List.of());
-        }
-
-        private void showBudget(CalculationContent content) {
-            CalculationContent safeContent = content == null ? CalculationContent.empty(0) : content;
-            render(safeContent.budgetSummaryLines(), safeContent.budgetTimelineLines());
-        }
-
-        private void showProgress(CalculationContent content) {
-            CalculationContent safeContent = content == null ? CalculationContent.empty(0) : content;
-            render(safeContent.progressSummaryLines(), safeContent.progressTimelineLines());
+        private void show(AdventuringDayTopBarContributionModel.CalculationPresentation calculationPresentation) {
+            AdventuringDayTopBarContributionModel.CalculationPresentation safePresentation = calculationPresentation == null
+                    ? AdventuringDayTopBarContributionModel.CalculationPresentation.empty(false, 0)
+                    : calculationPresentation;
+            render(safePresentation.summaryLines(), safePresentation.timelineLines());
         }
 
         private void render(List<String> summaryLines, List<String> timelineLines) {
@@ -484,7 +368,7 @@ public final class AdventuringDayTopBarView extends HBox {
         private final Label emptyLabel = new Label("Keine Charaktere.");
         private final Runnable onRowsChanged;
         private final List<RowControls> rows = new ArrayList<>();
-        private boolean rebuilding;
+        private boolean syncingRows;
 
         private PartyRowsPane(Runnable onRowsChanged) {
             this.onRowsChanged = onRowsChanged == null ? () -> { } : onRowsChanged;
@@ -493,39 +377,19 @@ public final class AdventuringDayTopBarView extends HBox {
             getChildren().addAll(buildHeader(), rowsBox);
         }
 
-        private void setLevels(List<Integer> levels) {
-            rebuilding = true;
+        private void showRows(List<AdventuringDayTopBarContributionModel.RowModel> rowModels) {
+            syncingRows = true;
             rows.clear();
             setChildren(rowsBox);
-            Map<Integer, Integer> countsByLevel = new TreeMap<>();
-            for (Integer level : sanitizeLevels(levels)) {
-                countsByLevel.merge(level, 1, Integer::sum);
-            }
-            for (Map.Entry<Integer, Integer> entry : countsByLevel.entrySet()) {
-                addRowInternal(entry.getKey(), entry.getValue());
-            }
-            rebuilding = false;
-            updateEmptyState();
-        }
-
-        private void addDefaultRow() {
-            addRowInternal(1, 1);
-            updateEmptyState();
-            onRowsChanged.run();
-        }
-
-        private boolean isEmpty() {
-            return rows.isEmpty();
-        }
-
-        private List<Integer> levels() {
-            List<Integer> levels = new ArrayList<>();
-            for (RowControls row : rows) {
-                for (int index = 0; index < row.count(); index++) {
-                    levels.add(row.level());
+            if (rowModels != null) {
+                for (AdventuringDayTopBarContributionModel.RowModel rowModel : rowModels) {
+                    if (rowModel != null) {
+                        addRowInternal(rowModel.level(), rowModel.countText());
+                    }
                 }
             }
-            return levels;
+            syncingRows = false;
+            updateEmptyState();
         }
 
         private HBox buildHeader() {
@@ -542,8 +406,21 @@ public final class AdventuringDayTopBarView extends HBox {
             return header;
         }
 
-        private void addRowInternal(int level, int count) {
-            RowControls row = new RowControls(level, count);
+        private List<AdventuringDayTopBarViewInputEvent.RowInput> snapshotRows() {
+            if (rows.isEmpty()) {
+                return List.of();
+            }
+            List<AdventuringDayTopBarViewInputEvent.RowInput> snapshots = new ArrayList<>();
+            for (RowControls row : rows) {
+                snapshots.add(new AdventuringDayTopBarViewInputEvent.RowInput(
+                        row.levelCombo.getValue(),
+                        row.countField.getText()));
+            }
+            return List.copyOf(snapshots);
+        }
+
+        private void addRowInternal(int level, String countText) {
+            RowControls row = new RowControls(level, countText);
             rows.add(row);
             addChild(rowsBox, row.root());
         }
@@ -564,7 +441,7 @@ public final class AdventuringDayTopBarView extends HBox {
         }
 
         private void fireRowsChanged() {
-            if (!rebuilding) {
+            if (!syncingRows) {
                 onRowsChanged.run();
             }
         }
@@ -576,13 +453,13 @@ public final class AdventuringDayTopBarView extends HBox {
             private final TextField countField = createIntegerField();
             private final Button removeButton = new Button("Entfernen");
 
-            private RowControls(int level, int count) {
+            private RowControls(int level, String countText) {
                 addComboItems(levelCombo, levelOptions());
                 levelCombo.setValue(Math.max(1, Math.min(20, level)));
                 levelCombo.setMinWidth(78);
                 levelCombo.valueProperty().addListener((ignored, before, after) -> fireRowsChanged());
 
-                countField.setText(Integer.toString(Math.max(1, count)));
+                countField.setText(countText == null ? "" : countText);
                 countField.setPromptText("1");
                 countField.setPrefColumnCount(4);
                 countField.textProperty().addListener((ignored, before, after) -> fireRowsChanged());
@@ -606,34 +483,12 @@ public final class AdventuringDayTopBarView extends HBox {
                 return root;
             }
 
-            private int level() {
-                Integer value = levelCombo.getValue();
-                return value == null ? 1 : value;
-            }
-
-            private int count() {
-                String raw = countField.getText();
-                if (raw == null || raw.isBlank()) {
-                    return 0;
-                }
-                try {
-                    return Math.max(0, Integer.parseInt(raw));
-                } catch (NumberFormatException exception) {
-                    return 0;
-                }
-            }
-
             private void normalizeCountField() {
-                int value = count();
+                int value = parseNonNegativeInt(countField);
                 countField.setText(Integer.toString(value <= 0 ? 1 : value));
                 fireRowsChanged();
             }
         }
 
-    }
-
-    @FunctionalInterface
-    private interface CalculationRequestListener {
-        void onCalculationRequested(List<Integer> levels, int totalGroupXp);
     }
 }

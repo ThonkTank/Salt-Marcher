@@ -12,9 +12,8 @@ It keeps the proof surface owner-pure:
 - `jqassistant/`
   candidate-grade role-hub, cross-feature, and public-boundary breadth
   analysis
-- `bundle.properties`
-  descriptor-based registration into the focused-enforcement Gradle path for
-  the public report-only jQAssistant entrypoint
+- `tools/gradle/build-logic/src/main/kotlin/saltmarcher/buildlogic/enforcement/StandardEnforcementBundles.kt`
+  typed bundle registry entry for the bundle's public task names and host wiring
 
 This bundle owns only the missing role-aware graph-level sprawl signals. It
 does not replace existing cycle blockers, PMD non-architecture smells,

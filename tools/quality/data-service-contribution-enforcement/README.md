@@ -17,8 +17,8 @@ owner-pure and bundle-local:
 - `build-harness/`
   `DataServiceContributionEnforcementCoverageRules` and
   `DataServiceContributionDocumentationEnforcementCheckMain`
-- `bundle.properties`
-  descriptor-based registration into the focused-enforcement Gradle path
+- `tools/gradle/build-logic/src/main/kotlin/saltmarcher/buildlogic/enforcement/StandardEnforcementBundles.kt`
+  typed bundle registry entry for the bundle's public task names and host wiring
 
 This bundle owns only the data `*ServiceContribution` role itself: discovery
 entrypoint shape, stateless public surface, source-mechanics bans,

@@ -18,6 +18,9 @@ version = providers.systemProperty("saltmarcher.toolingPluginVersion")
 
 kotlin {
     jvmToolchain(21)
+    sourceSets.named("main") {
+        kotlin.srcDir("../build-logic/src/main/kotlin/saltmarcher/buildlogic/enforcement")
+    }
 }
 
 gradlePlugin {

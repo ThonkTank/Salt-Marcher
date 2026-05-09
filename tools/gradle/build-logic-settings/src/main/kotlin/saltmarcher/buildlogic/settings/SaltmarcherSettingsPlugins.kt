@@ -4,6 +4,7 @@ import java.io.File
 import java.util.Properties
 import org.gradle.api.Plugin
 import org.gradle.api.initialization.Settings
+import saltmarcher.buildlogic.enforcement.standardEnforcementBundleCatalog
 
 class SaltmarcherRootSettingsPlugin : Plugin<Settings> {
     override fun apply(settings: Settings) {
@@ -16,28 +17,22 @@ class SaltmarcherRootSettingsPlugin : Plugin<Settings> {
         System.setProperty("saltmarcher.repoRootDir", repoRootDir.absolutePath)
 
         val verificationSurfaceCatalog = loadProperties(File(repoRootDir, "tools/gradle/verification-surface-catalog.properties"))
-        val bundleCatalog = loadBundleCatalog(repoRootDir)
+        val bundleCatalog = standardEnforcementBundleCatalog()
         val requestedTaskNames = settings.gradle.startParameter.taskNames
             .map { taskName -> taskName.substringAfterLast(":") }
             .toSet()
         val broadBuildTaskNames = verificationSurfaceCatalog.list("broadBuildTaskNames").toSet()
-        val taskToBundleId = bundleCatalog.values
-            .flatMap { descriptor -> descriptor.taskNames.map { taskName -> taskName to descriptor.bundleId } }
-            .toMap()
+        val taskToBundleId = bundleCatalog.taskToBundleId
         val requestedBundleIds = requestedTaskNames.mapNotNull(taskToBundleId::get).distinct()
         val focusedEnforcementBundleMode = requestedTaskNames.isNotEmpty() &&
             requestedBundleIds.isNotEmpty() &&
             requestedTaskNames.none { taskName -> taskName in broadBuildTaskNames } &&
             requestedTaskNames.all { taskName -> taskName in taskToBundleId.keys }
         val activeEnforcementBundleIds = if (focusedEnforcementBundleMode) {
-            bundleCatalog.values
-                .sortedBy(MinimalEnforcementBundleDescriptor::order)
-                .map(MinimalEnforcementBundleDescriptor::bundleId)
+            bundleCatalog.bundleIdsInOrder
                 .filter { bundleId -> bundleId in requestedBundleIds }
         } else {
-            bundleCatalog.values
-                .sortedBy(MinimalEnforcementBundleDescriptor::order)
-                .map(MinimalEnforcementBundleDescriptor::bundleId)
+            bundleCatalog.bundleIdsInOrder
         }
 
         System.setProperty("saltmarcher.focusedEnforcementBundleMode", focusedEnforcementBundleMode.toString())
@@ -48,12 +43,6 @@ class SaltmarcherRootSettingsPlugin : Plugin<Settings> {
         includeSaltmarcherBuild(settings, "tools/quality/incubator/quality-rules-errorprone")
     }
 }
-
-private data class MinimalEnforcementBundleDescriptor(
-    val bundleId: String,
-    val order: Int,
-    val taskNames: List<String>
-)
 
 private fun includeSaltmarcherBuild(settings: Settings, relativePath: String) = settings.includeBuild(relativePath)
 
@@ -69,42 +58,8 @@ private fun loadProperties(file: File): Properties = Properties().apply {
     file.inputStream().use(::load)
 }
 
-private fun Properties.requiredTrimmed(name: String): String = getProperty(name)
-    ?.trim()
-    ?.takeIf(String::isNotEmpty)
-    ?: error("Missing required enforcement bundle property '$name'.")
-
 private fun Properties.list(name: String): List<String> = getProperty(name)
     ?.split(',')
     ?.map(String::trim)
     ?.filter(String::isNotEmpty)
     ?: emptyList()
-
-private fun Properties.boolean(name: String): Boolean = getProperty(name)
-    ?.trim()
-    ?.equals("true", ignoreCase = true)
-    ?: false
-
-private fun loadBundleCatalog(
-    repoRootDir: File
-): Map<String, MinimalEnforcementBundleDescriptor> {
-    val qualityDir = File(repoRootDir, "tools/quality")
-    if (!qualityDir.isDirectory) {
-        return emptyMap()
-    }
-    return qualityDir.walkTopDown()
-        .filter { file -> file.isFile && file.name == "bundle.properties" }
-        .mapNotNull { descriptorFile ->
-            val properties = loadProperties(descriptorFile)
-            if (!properties.boolean("descriptorOwned")) {
-                null
-            } else {
-                MinimalEnforcementBundleDescriptor(
-                    bundleId = properties.requiredTrimmed("bundleId"),
-                    order = properties.requiredTrimmed("order").toInt(),
-                    taskNames = properties.list("taskNames")
-                )
-            }
-        }
-        .associateBy(MinimalEnforcementBundleDescriptor::bundleId)
-}

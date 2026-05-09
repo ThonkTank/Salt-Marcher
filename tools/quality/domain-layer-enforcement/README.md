@@ -16,8 +16,8 @@ It keeps the generic domain-layer proof owner-local and bundle-local:
   `DomainForbiddenInfrastructureDependency`,
   `DomainModuleNoPublishedCarrierDependency`,
   `DomainSourceTopologyPerimeter`
-- `bundle.properties`
-  descriptor-based registration into the focused-enforcement Gradle path
+- `tools/gradle/build-logic/src/main/kotlin/saltmarcher/buildlogic/enforcement/StandardEnforcementBundles.kt`
+  typed bundle registry entry for the bundle's public task names and host wiring
 
 This bundle owns only generic domain-layer topology and dependency boundaries.
 Root `ApplicationService`, `application/*UseCase`, `published/**`, `port/`,

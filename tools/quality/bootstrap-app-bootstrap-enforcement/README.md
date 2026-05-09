@@ -7,8 +7,8 @@ It keeps the proof surface strict and role-local:
 
 - `archunit/`
   `architecture.bootstrap.appbootstrap.AppBootstrapArchitectureTest`
-- `bundle.properties`
-  descriptor-based registration into the focused-enforcement Gradle path
+- `tools/gradle/build-logic/src/main/kotlin/saltmarcher/buildlogic/enforcement/StandardEnforcementBundles.kt`
+  typed bundle registry entry for the bundle's public task names and host wiring
 
 This bundle proves only the `AppBootstrap`-local shell-host composition
 boundary. Generic bootstrap discovery-root and startup-metadata proofs stay in

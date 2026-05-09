@@ -127,10 +127,6 @@ public final class SaltMarcherSourceFacts {
         return viewUnitKind != ViewUnitKind.NONE && viewRole == ViewRole.VIEW_INPUT_EVENT;
     }
 
-    public boolean isViewInspectorEntrySource() {
-        return viewUnitKind == ViewUnitKind.REUSABLE_SLOTCONTENT && viewRole == ViewRole.INSPECTOR_ENTRY;
-    }
-
     public boolean isViewModelSource() {
         return viewUnitKind != ViewUnitKind.NONE
                 && (viewRole == ViewRole.LEGACY_VIEW_MODEL

@@ -9,8 +9,8 @@ It keeps the bootstrap-layer proof surface bundle-local:
   `BootstrapLayerTopologyRules` and `BootstrapLayerTopologyCheckMain`
 - `archunit/`
   `architecture.bootstrap.layer.BootstrapLayerArchitectureTest`
-- `bundle.properties`
-  descriptor-based registration into the focused-enforcement Gradle path
+- `tools/gradle/build-logic/src/main/kotlin/saltmarcher/buildlogic/enforcement/StandardEnforcementBundles.kt`
+  typed bundle registry entry for the bundle's public task names and host wiring
 
 This bundle proves only bootstrap-layer discovery-root scope, bootstrap-consumed
 generic registration contracts, startup default-landing checks, and bootstrap's

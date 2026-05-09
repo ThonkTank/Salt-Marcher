@@ -16,8 +16,8 @@ It keeps the `src/data/**/model/` proof route owner-pure and bundle-local:
   `DataModelSourceShapeChecker`
 - `pmd/`
   `DataModelSchemaDdlPlacementRule`
-- `bundle.properties`
-  descriptor-based registration into the focused-enforcement Gradle path
+- `tools/gradle/build-logic/src/main/kotlin/saltmarcher/buildlogic/enforcement/StandardEnforcementBundles.kt`
+  typed bundle registry entry for the bundle's public task names and host wiring
 
 This bundle owns only the data `model/` role itself: source-model shape,
 public-signature boundaries, schema ownership, schema DDL placement, and

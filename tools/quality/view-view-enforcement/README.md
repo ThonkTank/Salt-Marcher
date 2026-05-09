@@ -1,27 +1,21 @@
-# View Enforcement Bundle
+# Passive View Enforcement Slice
 
-This bundle co-locates all currently active SaltMarcher checks that back
-`docs/project/architecture/enforcement/view-view-enforcement.md`.
+This directory now hosts only the passive-`View` subset of the merged
+`checkViewEnforcement` bundle.
 
-It keeps the existing checker identities unchanged while making this directory
-the canonical home for passive `*View` host wiring:
+It owns the passive-`View` compile-bound checkers plus the shared FXML
+resource validation support used by the merged root task:
 
 - `errorprone/`
   `PassiveViewDependencyBoundaries`, `PassiveViewModelReadApis`,
-  `PassiveViewModelMutationBoundary`, `ViewPresentationDecisionLeak`,
-  `ViewInputEventApi`, `PassiveViewCallbackSeamBoundary`,
-  `ViewSourceTopologyPerimeter`
-- `archunit/`
-  bundle-local `architecture.view.view.ViewSurfaceArchitectureTest`
-- `jqassistant/`
-  `saltmarcher:view-view-enforcement`
-- `bundle.properties`
-  canonical registration source for this bundle's public task names and host
-  script/source-set wiring
+  `PassiveViewModelMutationBoundary`, `PassiveViewProjectionConstructionBoundary`,
+  `ViewPresentationDecisionLeak`, `ViewInputEventApi`, and
+  `PassiveViewCallbackSeamBoundary`
 - `support/`
   passive-`View` FXML resource validation runner
-  jQAssistant, and aggregate task wiring
+- `tools/gradle/build-logic/src/main/kotlin/saltmarcher/buildlogic/enforcement/StandardEnforcementBundles.kt`
+  merged View bundle registry entry and root task wiring
 
-Unified root entrypoint:
+Public bundle entrypoint:
 
 - `./gradlew checkViewEnforcement --rerun-tasks --console=plain`

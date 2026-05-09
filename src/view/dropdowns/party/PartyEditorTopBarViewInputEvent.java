@@ -6,19 +6,14 @@ public record PartyEditorTopBarViewInputEvent(
         boolean deleteConfirmationRequested,
         boolean deleteConfirmationCancelled,
         boolean deleteConfirmed,
-        boolean editingExisting,
-        long memberId,
-        String memberName,
         EditorDraft draft
 ) {
 
     public PartyEditorTopBarViewInputEvent {
-        memberName = memberName == null ? "" : memberName;
         draft = draft == null ? EditorDraft.empty() : draft;
     }
 
     public record EditorDraft(
-            long id,
             String name,
             String playerName,
             String rawLevel,
@@ -35,7 +30,7 @@ public record PartyEditorTopBarViewInputEvent(
         }
 
         static EditorDraft empty() {
-            return new EditorDraft(0L, "", "", "", "", "");
+            return new EditorDraft("", "", "", "", "");
         }
     }
 }

@@ -8,8 +8,7 @@ import org.gradle.language.base.plugins.LifecycleBasePlugin
 
 internal data class QualityConventionJqassistantTasks(
     val installJqassistant: TaskProvider<Sync>,
-    val registrar: JqassistantTaskRegistrar,
-    val checkViewArchitecture: TaskProvider<out Task>
+    val registrar: JqassistantTaskRegistrar
 )
 
 internal fun org.gradle.api.Project.registerQualityConventionHarness(
@@ -31,7 +30,6 @@ internal fun org.gradle.api.Project.registerQualityConventionHarness(
         productionBuild = lifecycleTasks.productionBuild,
         checkQualityHygiene = lifecycleTasks.checkQualityHygiene,
         checkArchitecture = lifecycleTasks.checkArchitecture,
-        checkViewArchitecture = jqassistantTasks.checkViewArchitecture,
         ckjmMain = lifecycleTasks.ckjmMain,
         check = lifecycleTasks.check
     )
@@ -68,19 +66,6 @@ internal fun org.gradle.api.Project.registerQualityConventionJqassistantTasks(
         jvmOpens = jqassistantJvmOpens,
         installJqassistant = installJqassistant
     )
-    val taskPair = registrar.registerTaskPair(
-        scanTaskName = "jqassistantScanViewArchitecture",
-        analyzeTaskName = "jqassistantAnalyzeViewArchitecture",
-        scanDescription = "Scan SaltMarcher bytecode and source topology for view-architecture analysis.",
-        analyzeDescription = "Analyze SaltMarcher passive-view topology constraints with jQAssistant.",
-        ruleGroups = loadJqassistantRuleGroups(project.file("tools/quality/jqassistant/config.yml")),
-        rulesDirPaths = listOf("tools/quality/jqassistant/rules"),
-        mainClassesDirectory = verificationLayout.mainJavaClassesDir,
-        sourceRoots = verificationLayout.sourceJavaRoots,
-        storeDirectory = layout.buildDirectory.dir("tools/jqassistant/check-view-architecture-store"),
-        reportsDirectory = layout.buildDirectory.dir("reports/jqassistant"),
-        dependsOnTasks = listOf(tasks.named("classes"))
-    )
     registrar.registerCommandTask(
         taskName = "jqassistantEffectiveRules",
         description = "Print the effective SaltMarcher passive-view topology rules.",
@@ -101,14 +86,8 @@ internal fun org.gradle.api.Project.registerQualityConventionJqassistantTasks(
         sourceRoots = verificationLayout.sourceJavaRoots,
         dependsOnTasks = listOf(tasks.named("classes"))
     )
-    val checkViewArchitecture = tasks.register("checkViewArchitecture") {
-        group = LifecycleBasePlugin.VERIFICATION_GROUP
-        description = "Run the canonical SaltMarcher cockpit view-architecture topology blocker via jQAssistant."
-        dependsOn(taskPair.analyzeTask)
-    }
     return QualityConventionJqassistantTasks(
         installJqassistant = installJqassistant,
-        registrar = registrar,
-        checkViewArchitecture = checkViewArchitecture
+        registrar = registrar
     )
 }

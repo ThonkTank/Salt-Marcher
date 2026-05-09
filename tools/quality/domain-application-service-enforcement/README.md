@@ -16,8 +16,8 @@ It keeps the full root `*ApplicationService.java` proof route in one package:
   `DomainPublicBoundarySignaturePurity`
 - `pmd/`
   `DomainApplicationServiceSourcePolicyRule` and the bundle-local ruleset
-- `bundle.properties`
-  descriptor-based registration into the focused-enforcement Gradle path
+- `tools/gradle/build-logic/src/main/kotlin/saltmarcher/buildlogic/enforcement/StandardEnforcementBundles.kt`
+  typed bundle registry entry for the bundle's public task names and host wiring
 
 This bundle owns only the root `ApplicationService` role itself. Generic
 named-module boundaries, same-context `application/*UseCase` topology,

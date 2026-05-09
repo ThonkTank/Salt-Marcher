@@ -72,6 +72,7 @@ public final class DomainSourceTopologyPerimeterChecker extends BugChecker
 
         List<String> segments = List.of(sourcePath.split("/"));
         validateClosedDomainTopology(segments, sourceFileName, violations);
+        validateReservedRoleSuffixPlacement(segments, sourceFileName, violations);
         validateLegacyRoleSuffixRejection(sourceFileName, violations);
 
         if (topLevelClass != null) {
@@ -165,7 +166,6 @@ public final class DomainSourceTopologyPerimeterChecker extends BugChecker
                     return;
                 }
             }
-            validateReservedRoleSuffix(role, sourceFileName, violations);
             return;
         }
 
@@ -200,23 +200,49 @@ public final class DomainSourceTopologyPerimeterChecker extends BugChecker
         }
     }
 
-    private static void validateReservedRoleSuffix(String role, String sourceFileName, Set<String> violations) {
+    private static void validateReservedRoleSuffixPlacement(
+            List<String> segments,
+            String sourceFileName,
+            Set<String> violations) {
         if (sourceFileName.endsWith("ApplicationService.java")) {
-            violations.add("reserved role suffix ApplicationService may appear only as a direct root file under src/domain/<context>/");
+            if (segments.size() != 4) {
+                violations.add("reserved role suffix ApplicationService may appear only as a direct root file under src/domain/<context>/");
+            }
         } else if (sourceFileName.endsWith("UseCase.java")) {
-            violations.add("reserved role suffix UseCase may appear only under application/ or model/<family>/usecase/");
+            if (!isRootApplicationUseCase(segments) && !isModelRoleDirectFile(segments, "usecase")) {
+                violations.add("reserved role suffix UseCase may appear only under application/ or model/<family>/usecase/");
+            }
         } else if (sourceFileName.endsWith("Helper.java")) {
-            violations.add("reserved role suffix Helper may appear only under model/<family>/helper/");
+            if (!isModelRoleDirectFile(segments, "helper")) {
+                violations.add("reserved role suffix Helper may appear only under model/<family>/helper/");
+            }
         } else if (sourceFileName.endsWith("Constants.java")) {
-            violations.add("reserved role suffix Constants may appear only under model/<family>/constants/");
+            if (!isModelRoleDirectFile(segments, "constants")) {
+                violations.add("reserved role suffix Constants may appear only under model/<family>/constants/");
+            }
         } else if (sourceFileName.endsWith("Port.java")) {
-            violations.add("reserved role suffix Port may appear only under model/<family>/port/");
+            if (!isModelRoleDirectFile(segments, "port")) {
+                violations.add("reserved role suffix Port may appear only under model/<family>/port/");
+            }
         } else if (sourceFileName.endsWith("Repository.java")) {
-            violations.add("reserved role suffix Repository may appear only under model/<family>/repository/");
+            if (!isModelRoleDirectFile(segments, "repository")) {
+                violations.add("reserved role suffix Repository may appear only under model/<family>/repository/");
+            }
         }
     }
 
+    private static boolean isRootApplicationUseCase(List<String> segments) {
+        return segments.size() == 5 && "application".equals(segments.get(3));
+    }
+
+    private static boolean isModelRoleDirectFile(List<String> segments, String role) {
+        return segments.size() == 7 && "model".equals(segments.get(3)) && role.equals(segments.get(5));
+    }
+
     private static void validateLegacyRoleSuffixRejection(String sourceFileName, Set<String> violations) {
+        if (sourceFileName.endsWith("ApplicationService.java")) {
+            return;
+        }
         for (String legacySuffix : LEGACY_ROLE_SUFFIXES) {
             if (sourceFileName.endsWith(legacySuffix)) {
                 violations.add("legacy role/helper suffixes such as *BoundaryTranslator, *Projector, *RuntimeAccess, *RuntimeAdapter, *Policy, *Service, *Factory, *Aggregate, *Entity, and *Specification are forbidden");

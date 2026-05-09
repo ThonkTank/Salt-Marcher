@@ -14,8 +14,8 @@ It keeps the full `application/*UseCase.java` proof route in one package:
   `DomainApplicationPublishedBoundaryChecker`
 - `pmd/`
   `DomainUseCasePolicyRule` and the bundle-local ruleset
-- `bundle.properties`
-  descriptor-based registration into the focused-enforcement Gradle path
+- `tools/gradle/build-logic/src/main/kotlin/saltmarcher/buildlogic/enforcement/StandardEnforcementBundles.kt`
+  typed bundle registry entry for the bundle's public task names and host wiring
 
 This bundle owns only the `application/*UseCase.java` role itself. Root
 `ApplicationService`, `published/`, `repository/`, `port/`, and generic domain-layer

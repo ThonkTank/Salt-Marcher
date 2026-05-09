@@ -9,17 +9,14 @@ reusable-slotcontent three-role topology proof.
 
 It owns:
 
-- `bundle.properties`
-  descriptor-owned bundle id, order, task names, and host wiring
+- `tools/gradle/build-logic/src/main/kotlin/saltmarcher/buildlogic/enforcement/StandardEnforcementBundles.kt`
+  typed bundle registry entry for the bundle's public task names and host wiring
 - `build-harness/`
-  `ViewLayerTopologyRules` and `ViewLayerTopologyCheckMain`
-- `archunit/`
-  `architecture.view.viewlayer.ViewLayerArchitectureTest`
+  `ViewTopologyPerimeterRules` and `ViewLayerTopologyRules`
 
 Unified root entrypoint:
 
 - `./gradlew checkViewLayerEnforcement --rerun-tasks --console=plain`
 
-Shared baseline ArchUnit/build-harness infrastructure remains intentionally
-outside this directory; view-layer-specific rule ownership and bundle metadata
-now live here.
+`checkViewEnforcement` consumes this closed-world topology proof transitively
+before the merged compile-bound view role checks run.

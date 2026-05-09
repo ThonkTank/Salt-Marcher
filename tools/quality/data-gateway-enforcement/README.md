@@ -12,8 +12,8 @@ It keeps the `src/data/**/gateway/**` proof route owner-pure and bundle-local:
   `DataGatewayEnforcementDocumentationCheckMain`
 - `errorprone/`
   `DataGatewayReturnTypeBoundaryChecker`
-- `bundle.properties`
-  descriptor-based registration into the focused-enforcement Gradle path
+- `tools/gradle/build-logic/src/main/kotlin/saltmarcher/buildlogic/enforcement/StandardEnforcementBundles.kt`
+  typed bundle registry entry for the bundle's public task names and host wiring
 
 This bundle owns only the internal `gateway/` source-adapter role itself:
 public/protected signature boundaries, domain independence, and the gateway

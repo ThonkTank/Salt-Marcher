@@ -12,9 +12,8 @@ It keeps the proof surface owner-pure:
 - `jqassistant/`
   a blocker-grade substantive relay-wrapper and relay-chain analysis plus the
   report-only thin relay-stack diagnostic
-- `bundle.properties`
-  descriptor-based registration into the focused-enforcement Gradle path for
-  both public jQAssistant entrypoints
+- `tools/gradle/build-logic/src/main/kotlin/saltmarcher/buildlogic/enforcement/StandardEnforcementBundles.kt`
+  typed bundle registry entry for the bundle's public task names and host wiring
 
 This bundle proves the compiled-code blockers that the older single-class PMD
 source-pattern checks could miss when a wrapper spreads the same relay across

@@ -9,8 +9,8 @@ It keeps the full context-contract proof route in one package:
   `DomainContextDocumentationRules`,
   `DomainContextEnforcementCoverageRules`, and
   `DomainContextEnforcementDocumentationCheckMain`
-- `bundle.properties`
-  descriptor-based registration into the focused-enforcement Gradle path
+- `tools/gradle/build-logic/src/main/kotlin/saltmarcher/buildlogic/enforcement/StandardEnforcementBundles.kt`
+  typed bundle registry entry for the bundle's public task names and host wiring
 
 This bundle owns only the canonical domain-context contracts in
 `src/domain/**/DOMAIN.md`, the `## Context Roles` and `## Context

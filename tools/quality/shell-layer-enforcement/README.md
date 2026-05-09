@@ -9,8 +9,8 @@ It keeps the proof surface strict and owner-local:
   `ShellLayerTopologyRules` and `ShellLayerTopologyCheckMain`
 - `archunit/`
   `architecture.shell.layer.ShellLayerArchitectureTest`
-- `bundle.properties`
-  descriptor-based registration into the focused-enforcement Gradle path
+- `tools/gradle/build-logic/src/main/kotlin/saltmarcher/buildlogic/enforcement/StandardEnforcementBundles.kt`
+  typed bundle registry entry for the bundle's public task names and host wiring
 
 This bundle proves only shell-layer topology, shell API surface membership,
 and shell-layer dependency/privacy boundaries for shell-owned code and

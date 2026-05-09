@@ -14,7 +14,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import saltmarcher.architecture.system.SourceLayoutRules;
+import saltmarcher.architecture.domain.DomainRoleTopologySupport;
 
 public final class ArchitectureContext {
 
@@ -88,7 +88,7 @@ public final class ArchitectureContext {
                             && featureName.equals(segments.get(2))
                             && segments.size() == 6
                             && !Set.of("published", "application").contains(segments.get(3))
-                            && SourceLayoutRules.isAllowedDomainRolePackage(segments.get(4)));
+                            && DomainRoleTopologySupport.isAllowedDomainRolePackage(segments.get(4)));
         } catch (IOException ignored) {
             return false;
         }
