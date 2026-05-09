@@ -6,14 +6,14 @@ import java.util.Objects;
 import java.util.function.Consumer;
 import src.domain.dungeon.DungeonApplicationService;
 import src.domain.travel.application.ApplyTravelDungeonSessionUseCase;
-import src.domain.travel.application.TravelDungeonRuntimeAccess;
-import src.domain.travel.application.TravelDungeonSnapshotProjector;
+import src.domain.travel.model.session.repository.TravelDungeonSessionRepository;
+import src.domain.travel.model.session.helper.TravelDungeonSnapshotHelper;
 import src.domain.travel.published.ApplyTravelDungeonSessionCommand;
 import src.domain.travel.published.LoadTravelDungeonQuery;
 import src.domain.travel.published.TravelDungeonModel;
 import src.domain.travel.published.TravelDungeonSnapshot;
 import src.domain.travel.published.TravelOverlaySettings;
-import src.domain.travel.session.port.TravelPartyStateRepository;
+import src.domain.travel.model.session.repository.TravelPartyStateRepository;
 
 /**
  * Public backend facade for runtime travel composition.
@@ -32,7 +32,7 @@ public final class TravelApplicationService {
             src.domain.dungeon.published.DungeonTravelModel dungeonTravelReadModel
     ) {
         this.applyTravelDungeonSessionUseCase = new ApplyTravelDungeonSessionUseCase(
-                new TravelDungeonRuntimeAccess(
+                new TravelDungeonSessionRepository(
                         partyStateRepository,
                         dungeonApplicationService,
                         Objects.requireNonNull(dungeonTravelReadModel, "dungeonTravelReadModel")));
@@ -72,7 +72,7 @@ public final class TravelApplicationService {
     }
 
     private TravelDungeonSnapshot currentDungeonTravelSnapshot() {
-        return TravelDungeonSnapshotProjector.toPublishedSnapshot(applyTravelDungeonSessionUseCase.snapshot());
+        return TravelDungeonSnapshotHelper.toPublishedSnapshot(applyTravelDungeonSessionUseCase.snapshot());
     }
 
     private Runnable subscribeDungeonTravelListener(Consumer<TravelDungeonSnapshot> listener) {

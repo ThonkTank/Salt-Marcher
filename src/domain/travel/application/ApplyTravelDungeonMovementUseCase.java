@@ -5,7 +5,7 @@ import org.jspecify.annotations.Nullable;
 final class ApplyTravelDungeonMovementUseCase {
 
     ApplyTravelDungeonSessionUseCase.SurfaceData move(
-            ApplyTravelDungeonSessionUseCase.RuntimeAccess runtimeAccess,
+            ApplyTravelDungeonSessionUseCase.SessionRepository runtimeAccess,
             ApplyTravelDungeonSessionUseCase.@Nullable PositionData requestedTravelPosition,
             String actionId
     ) {

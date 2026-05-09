@@ -23,7 +23,7 @@ import src.domain.encounter.reference.port.EncounterTableCandidateLookup;
 import src.domain.encounter.reference.value.EncounterCreatureCandidateCriteria;
 import src.domain.encounter.reference.value.EncounterCreatureReference;
 import src.domain.encounter.reference.value.EncounterTableCandidateCriteria;
-import src.domain.encounter.session.port.EncounterPartyFactsRepository;
+import src.domain.encounter.model.session.repository.EncounterPartyFactsRepository;
 
 // PMD suppression is local: encounter generation intentionally centralizes domain adapters here; see src/domain/encounter/DOMAIN.md.
 @SuppressWarnings("PMD.CouplingBetweenObjects")

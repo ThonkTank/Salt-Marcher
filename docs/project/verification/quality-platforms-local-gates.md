@@ -380,13 +380,13 @@ Focused investigation entrypoints are `compileJava`, `pmdMain`,
   `checkDataGatewayEnforcement`,
   `checkDataRepositoryEnforcement`,
   `checkDataQueryEnforcement`,
-  `checkDataMapperEnforcement`,
-  `checkDataPersistencecoreEnforcement`,
+`checkDataMapperEnforcement`,
+`checkDataPersistencecoreEnforcement`,
 `checkViewLayerEnforcement`,
 `checkLayeringArchitectureEnforcement`,
 `checkLayeringIndirectionEnforcement`,
 `checkLayeringIndirectionRelayCandidates`,
-`checkDocumentationEnforcement`, and `jqassistantEffectiveRules`, each run
+and `checkDocumentationEnforcement`, each run
 through
 `./gradlew <task> --console=plain`.
 

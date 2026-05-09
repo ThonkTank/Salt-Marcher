@@ -65,26 +65,6 @@ internal fun org.gradle.api.Project.registerQualityConventionJqassistantTasks(
         jvmOpens = jqassistantJvmOpens,
         installJqassistant = installJqassistant
     )
-    registrar.registerCommandTask(
-        taskName = "jqassistantEffectiveRules",
-        description = "Print the effective SaltMarcher passive-view topology rules.",
-        commandName = "effective-rules",
-        sourceConfigPath = "tools/quality/jqassistant/config.yml",
-        rulesDirPaths = listOf("tools/quality/jqassistant/rules"),
-        mainClassesDirectory = verificationLayout.mainJavaClassesDir,
-        sourceRoots = verificationLayout.sourceJavaRoots,
-        dependsOnTasks = emptyList()
-    )
-    registrar.registerCommandTask(
-        taskName = "jqassistantServer",
-        description = "Start the local jQAssistant Neo4j server for passive-view topology rule development.",
-        commandName = "server",
-        sourceConfigPath = "tools/quality/jqassistant/config.yml",
-        rulesDirPaths = listOf("tools/quality/jqassistant/rules"),
-        mainClassesDirectory = verificationLayout.mainJavaClassesDir,
-        sourceRoots = verificationLayout.sourceJavaRoots,
-        dependsOnTasks = listOf(tasks.named("classes"))
-    )
     return QualityConventionJqassistantTasks(
         installJqassistant = installJqassistant,
         registrar = registrar

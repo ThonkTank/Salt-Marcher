@@ -5,7 +5,7 @@ import org.jspecify.annotations.Nullable;
 final class LoadTravelDungeonSessionSurfaceUseCase {
 
     ApplyTravelDungeonSessionUseCase.SurfaceData load(
-            ApplyTravelDungeonSessionUseCase.RuntimeAccess runtimeAccess,
+            ApplyTravelDungeonSessionUseCase.SessionRepository runtimeAccess,
             ApplyTravelDungeonSessionUseCase.@Nullable PositionData requestedTravelPosition
     ) {
         ApplyTravelDungeonSessionUseCase.ActiveTravelStateData activeTravel = runtimeAccess.loadActiveTravelState();

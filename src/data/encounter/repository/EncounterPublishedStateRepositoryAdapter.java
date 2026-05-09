@@ -19,7 +19,7 @@ import src.domain.encounter.published.SavedEncounterPlanListModel;
 import src.domain.encounter.published.SavedEncounterPlanListResult;
 import src.domain.encounter.published.SavedEncounterPlanStatus;
 import src.domain.encounter.runtime.port.EncounterPlanPublishedStateRepository;
-import src.domain.encounter.runtime.port.EncounterSessionPublishedStateRepository;
+import src.domain.encounter.model.session.repository.EncounterSessionPublishedStateRepository;
 
 public final class EncounterPublishedStateRepositoryAdapter
         implements EncounterSessionPublishedStateRepository<

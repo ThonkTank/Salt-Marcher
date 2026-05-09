@@ -9,6 +9,7 @@ private class EnforcementBundleBuilder(
     private val rootTaskDependencies = linkedSetOf<String>()
     private val buildHarnessArchitectureRuleClasses = linkedSetOf<String>()
     private val buildHarnessDocumentationRuleClasses = linkedSetOf<String>()
+    private val buildHarnessDocumentationCoverageSpecIds = linkedSetOf<String>()
     private val buildHarnessTaskMainClasses = linkedMapOf<String, String>()
     private val buildHarnessTaskRuleClasses = linkedMapOf<String, List<String>>()
     private val errorProneCheckers = linkedSetOf<String>()
@@ -108,6 +109,10 @@ private class EnforcementBundleBuilder(
         buildHarnessDocumentationRuleClasses += ruleClasses
     }
 
+    fun buildHarnessDocumentationCoverageSpecs(specIds: List<String>) {
+        buildHarnessDocumentationCoverageSpecIds += specIds
+    }
+
     fun buildHarnessMain(taskName: String, mainClass: String) {
         buildHarnessTaskMainClasses[taskName] = mainClass
     }
@@ -124,6 +129,7 @@ private class EnforcementBundleBuilder(
         rootTaskDependencies = rootTaskDependencies.toList(),
         buildHarnessArchitectureRuleClasses = buildHarnessArchitectureRuleClasses.toList(),
         buildHarnessDocumentationRuleClasses = buildHarnessDocumentationRuleClasses.toList(),
+        buildHarnessDocumentationCoverageSpecIds = buildHarnessDocumentationCoverageSpecIds.toList(),
         buildHarnessTaskMainClasses = buildHarnessTaskMainClasses.toMap(),
         buildHarnessTaskRuleClasses = buildHarnessTaskRuleClasses.toMap(),
         errorProneCheckers = errorProneCheckers.toList(),
@@ -143,10 +149,39 @@ private fun bundle(
     configure: EnforcementBundleBuilder.() -> Unit
 ): EnforcementBundleDescriptor = EnforcementBundleBuilder(bundleId, order, taskNames).apply(configure).build()
 
+private val viewVerificationSourceRoots = listOf("bootstrap", "shell", "src")
+private val viewVerificationSourceIncludes = listOf(
+    "api/**/*.java",
+    "view/**/*.java",
+    "domain/**/*ApplicationService.java",
+    "domain/**/application/**/*.java",
+    "domain/**/aggregate/**/*.java",
+    "domain/**/context/**/*.java",
+    "domain/**/entity/**/*.java",
+    "domain/**/event/**/*.java",
+    "domain/**/factory/**/*.java",
+    "domain/**/policy/**/*.java",
+    "domain/**/port/**/*.java",
+    "domain/**/published/**/*.java",
+    "domain/**/service/**/*.java",
+    "domain/**/specification/**/*.java",
+    "domain/**/value/**/*.java"
+)
+
+private fun EnforcementBundleBuilder.focusedViewRoleRootTask(description: String) {
+    rootTask(description, true, true)
+    rootTaskDependencies(listOf("checkViewLayerEnforcement"))
+    verificationSources(viewVerificationSourceRoots, viewVerificationSourceIncludes)
+}
+
 fun standardEnforcementBundleDescriptors(): List<EnforcementBundleDescriptor> = listOf(
-    bundle("view", 0, listOf("checkViewEnforcement", "checkViewFxmlResources", "pmdViewContributionEnforcement")) {
-        rootTask("Run the merged View enforcement bundle through one root entrypoint.", true, true)
-        rootTaskDependencies(listOf("checkViewLayerEnforcement"))
+    bundle("viewLayer", 0, listOf("checkViewLayerEnforcement")) {
+        rootTask("Run the closed-world View Layer topology bundle through one root entrypoint.", false, true)
+        verificationSources(listOf("shell", "src"), listOf("api/**/*.java", "view/**/*.java", "domain/**/published/**/*.java"))
+        buildHarnessRules("checkViewLayerEnforcement", listOf("saltmarcher.architecture.view.ViewTopologyPerimeterRules", "saltmarcher.architecture.view.layer.ViewLayerTopologyRules"))
+    },
+    bundle("view", 1, listOf("checkViewEnforcement", "checkViewFxmlResources")) {
+        focusedViewRoleRootTask("Run the focused passive View enforcement bundle through one root entrypoint.")
         errorProneCheckers(listOf(
             "PassiveViewDependencyBoundaries",
             "PassiveViewTypeShapeBoundary",
@@ -156,50 +191,58 @@ fun standardEnforcementBundleDescriptors(): List<EnforcementBundleDescriptor> = 
             "PassiveViewProjectionConstructionBoundary",
             "ViewPresentationDecisionLeak",
             "ViewInputEventApi",
-            "PassiveViewCallbackSeamBoundary",
+            "PassiveViewCallbackSeamBoundary"
+        ))
+        customTask("checkViewFxmlResources", "viewFxmlResources")
+    },
+    bundle("viewInputEvent", 2, listOf("checkViewInputEventEnforcement")) {
+        focusedViewRoleRootTask("Run the focused ViewInputEvent enforcement bundle through one root entrypoint.")
+        errorProneCheckers(listOf(
+            "ViewInputEventBoundary",
+            "ViewInputEventRawSnapshotBoundary"
+        ))
+    },
+    bundle("viewContribution", 3, listOf("checkViewContributionEnforcement")) {
+        focusedViewRoleRootTask("Run the focused View Contribution enforcement bundle through one root entrypoint.")
+        errorProneCheckers(listOf(
+            "ViewContributionEntrypointShape",
             "ViewContributionDependencyBoundary",
-            "ViewContributionShellApiAllowlist",
+            "ViewContributionShellApiAllowlist"
+        ))
+    },
+    bundle("viewBinder", 4, listOf("checkViewBinderEnforcement")) {
+        focusedViewRoleRootTask("Run the focused View Binder enforcement bundle through one root entrypoint.")
+        errorProneCheckers(listOf(
             "ViewBinderDependencyBoundary",
             "ViewBinderViewInputEventWiring",
             "ViewBinderApplicationSinkWiring",
             "ViewBinderApplicationServiceReadback",
-            "ViewBinderProjectionModelRequestProtocol",
+            "ViewBinderProjectionModelRequestProtocol"
+        ))
+    },
+    bundle("viewContributionModel", 5, listOf("checkViewContributionModelEnforcement")) {
+        focusedViewRoleRootTask("Run the focused View ContributionModel enforcement bundle through one root entrypoint.")
+        errorProneCheckers(listOf(
             "ViewContributionModelDependencyBoundary",
             "ViewContributionModelFlatSurface",
-            "ViewContributionModelRequestProtocol",
+            "ViewContributionModelRequestProtocol"
+        ))
+    },
+    bundle("viewContentModel", 6, listOf("checkViewContentModelEnforcement")) {
+        focusedViewRoleRootTask("Run the focused View ContentModel enforcement bundle through one root entrypoint.")
+        errorProneCheckers(listOf(
             "ViewContentModelDependencyBoundary",
             "ViewContentModelFlatSurface",
             "DungeonMapContentModelProjectionBoundary",
-            "ViewContentModelPublishedTranslationBoundary",
-            "ViewInputEventBoundary",
-            "ViewInputEventRawSnapshotBoundary",
+            "ViewContentModelPublishedTranslationBoundary"
+        ))
+    },
+    bundle("viewIntentHandler", 7, listOf("checkViewIntentHandlerEnforcement")) {
+        focusedViewRoleRootTask("Run the focused View IntentHandler enforcement bundle through one root entrypoint.")
+        errorProneCheckers(listOf(
             "ViewIntentHandlerDependencyBoundary",
             "ViewIntentHandlerViewInputEvent"
         ))
-        verificationSources(listOf("bootstrap", "shell", "src"), listOf(
-            "api/**/*.java",
-            "view/**/*.java",
-            "domain/**/*ApplicationService.java",
-            "domain/**/application/**/*.java",
-            "domain/**/aggregate/**/*.java",
-            "domain/**/context/**/*.java",
-            "domain/**/entity/**/*.java",
-            "domain/**/event/**/*.java",
-            "domain/**/factory/**/*.java",
-            "domain/**/policy/**/*.java",
-            "domain/**/port/**/*.java",
-            "domain/**/published/**/*.java",
-            "domain/**/service/**/*.java",
-            "domain/**/specification/**/*.java",
-            "domain/**/value/**/*.java"
-        ))
-        pmdTask("pmdViewContributionEnforcement", "Run the contribution entrypoint shape checks through the merged View enforcement bundle.", "tools/quality/view-contribution-enforcement/pmd/ruleset.xml", listOf("bootstrap", "shell", "src"), listOf("**/*.java"), false, false)
-        customTask("checkViewFxmlResources", "viewFxmlResources")
-    },
-    bundle("viewLayer", 5, listOf("checkViewLayerEnforcement")) {
-        rootTask("Run the closed-world View Layer topology bundle through one root entrypoint.", false, true)
-        verificationSources(listOf("shell", "src"), listOf("api/**/*.java", "view/**/*.java", "domain/**/published/**/*.java"))
-        buildHarnessRules("checkViewLayerEnforcement", listOf("saltmarcher.architecture.view.ViewTopologyPerimeterRules", "saltmarcher.architecture.view.layer.ViewLayerTopologyRules"))
     },
     bundle("stylingLayer", 8, listOf("checkStylingLayerEnforcement", "pmdStylingLayerEnforcement", "checkCentralizedStylesheets", "checkStylingCentralStylesheetOwner", "checkDefinedStyleClassSelectors")) {
         rootTask("Run the centralized styling-layer enforcement bundle through one root entrypoint.", true, true)
@@ -226,7 +269,7 @@ fun standardEnforcementBundleDescriptors(): List<EnforcementBundleDescriptor> = 
     },
     bundle("layeringArchitecture", 11, listOf("checkLayeringArchitectureEnforcement", "layeringArchitectureTopologyCheck", "layeringArchitectureDocumentationEnforcementCheck")) {
         rootTask("Run the dedicated Layering Architecture enforcement bundle through one root entrypoint.", true, true)
-        buildHarnessDocumentationRules(listOf("saltmarcher.architecture.documentation.layering.LayeringArchitectureEnforcementCoverageRules"))
+        buildHarnessDocumentationCoverageSpecs(listOf("layeringArchitecture"))
     },
     bundle("shellAppShell", 11, listOf("checkShellAppShellEnforcement")) {
         rootTask("Run the dedicated AppShell lifecycle-hook ownership bundle through one root entrypoint.", false, false)
@@ -241,7 +284,8 @@ fun standardEnforcementBundleDescriptors(): List<EnforcementBundleDescriptor> = 
     },
     bundle("domainContext", 12, listOf("checkDomainContextEnforcement", "domainContextEnforcementDocumentationCheck")) {
         rootTask("Run the dedicated Domain Context enforcement bundle through one root entrypoint.", false, false)
-        buildHarnessDocumentationRules(listOf("saltmarcher.architecture.documentation.domaincontext.DomainContextDocumentationRules", "saltmarcher.architecture.documentation.domaincontext.DomainContextEnforcementCoverageRules"))
+        buildHarnessDocumentationRules(listOf("saltmarcher.architecture.documentation.domaincontext.DomainContextDocumentationRules"))
+        buildHarnessDocumentationCoverageSpecs(listOf("domainContext"))
     },
     bundle("domainLayer", 12, listOf("checkDomainLayerEnforcement", "domainLayerArchitectureTest", "domainLayerTopologyCheck", "domainLayerDocumentationEnforcementCheck")) {
         rootTask("Run the dedicated Domain Layer enforcement bundle through one root entrypoint.", true, true)
@@ -249,7 +293,7 @@ fun standardEnforcementBundleDescriptors(): List<EnforcementBundleDescriptor> = 
         verificationSources(listOf("src"), listOf("domain/**/*.java"))
         archunit("domainLayerArchitectureTest", "Run only the Domain Layer-focused architecture test suite.", listOf("tools/quality/domain-layer-enforcement/archunit/src/test/java"), listOf("architecture/domain/layer/**"), listOf("architecture/domain/layer/**"), true)
         buildHarnessArchitectureRules(listOf("saltmarcher.architecture.domain.layer.DomainLayerTopologyRules"))
-        buildHarnessDocumentationRules(listOf("saltmarcher.architecture.domain.layer.DomainLayerEnforcementCoverageRules"))
+        buildHarnessDocumentationCoverageSpecs(listOf("domainLayer"))
     },
     bundle("layeringIndirection", 12, listOf("checkLayeringIndirectionEnforcement", "jqassistantScanLayeringIndirectionEnforcement", "jqassistantAnalyzeLayeringIndirectionEnforcement", "checkLayeringIndirectionRelayCandidates", "jqassistantScanLayeringIndirectionRelayCandidates", "jqassistantAnalyzeLayeringIndirectionRelayCandidates")) {
         rootTask("Run the focused Layering Indirection blocker bundle through one root entrypoint.", false, true)
@@ -267,7 +311,7 @@ fun standardEnforcementBundleDescriptors(): List<EnforcementBundleDescriptor> = 
         errorProneCheckers(listOf("DomainApplicationNoSameContextPublishedDependency"))
         verificationSources(listOf("src"), listOf("domain/**/application/**/*.java"))
         pmdTask("pmdDomainUseCaseEnforcement", "Run the dedicated Domain UseCase PMD enforcement bundle.", "tools/quality/domain-usecase-enforcement/pmd/ruleset.xml", emptyList(), listOf("domain/**/application/**/*.java"), false, false)
-        buildHarnessDocumentationRules(listOf("saltmarcher.architecture.domain.usecase.DomainUseCaseEnforcementCoverageRules"))
+        buildHarnessDocumentationCoverageSpecs(listOf("domainUseCase"))
     },
     bundle("layeringSprawl", 13, listOf("checkLayeringSprawlCandidates", "jqassistantScanLayeringSprawlCandidates", "jqassistantAnalyzeLayeringSprawlCandidates")) {
         rootTask("Run the focused Layering Sprawl diagnostics through one report-only root entrypoint.", false, false)
@@ -280,19 +324,20 @@ fun standardEnforcementBundleDescriptors(): List<EnforcementBundleDescriptor> = 
         verificationSources(listOf("src"), listOf("domain/**/*ApplicationService.java"))
         pmdTask("pmdDomainApplicationServiceEnforcement", "Run the dedicated Domain ApplicationService PMD enforcement bundle.", "tools/quality/domain-application-service-enforcement/pmd/ruleset.xml", emptyList(), listOf("domain/**/*ApplicationService.java"), false, false)
         buildHarnessArchitectureRules(listOf("saltmarcher.architecture.domain.applicationservice.DomainApplicationServiceTopologyRules"))
-        buildHarnessDocumentationRules(listOf("saltmarcher.architecture.domain.applicationservice.DomainApplicationServiceDocumentationRules", "saltmarcher.architecture.domain.applicationservice.DomainApplicationServiceEnforcementCoverageRules"))
+        buildHarnessDocumentationRules(listOf("saltmarcher.architecture.domain.applicationservice.DomainApplicationServiceDocumentationRules"))
+        buildHarnessDocumentationCoverageSpecs(listOf("domainApplicationService"))
     },
     bundle("domainPublished", 14, listOf("checkDomainPublishedEnforcement", "domainPublishedTopologyCheck", "domainPublishedDocumentationEnforcementCheck")) {
         rootTask("Run the dedicated Domain Published enforcement bundle through one root entrypoint.", false, false)
         errorProneCheckers(listOf("DomainPublishedCarrierShape", "DomainPublishedBoundarySignaturePurity", "DomainPublishedReadModelShape"))
         verificationSources(listOf("src"), listOf("domain/**/published/**/*.java", "domain/**/aggregate/**/*.java", "domain/**/context/**/*.java", "domain/**/entity/**/*.java", "domain/**/event/**/*.java", "domain/**/factory/**/*.java", "domain/**/policy/**/*.java", "domain/**/port/**/*.java", "domain/**/service/**/*.java", "domain/**/specification/**/*.java", "domain/**/value/**/*.java"))
         buildHarnessArchitectureRules(listOf("saltmarcher.architecture.domain.published.DomainPublishedTopologyRules"))
-        buildHarnessDocumentationRules(listOf("saltmarcher.architecture.domain.published.DomainPublishedEnforcementCoverageRules"))
+        buildHarnessDocumentationCoverageSpecs(listOf("domainPublished"))
     },
     bundle("domainPort", 15, listOf("checkDomainPortEnforcement", "domainPortTopologyCheck", "domainPortEnforcementDocumentationCheck")) {
         rootTask("Run the focused Domain Port enforcement bundle through one root entrypoint.", true, true)
         buildHarnessArchitectureRules(listOf("saltmarcher.architecture.domain.port.DomainPortTopologyRules"))
-        buildHarnessDocumentationRules(listOf("saltmarcher.architecture.documentation.domainport.DomainPortEnforcementDocumentationRules"))
+        buildHarnessDocumentationCoverageSpecs(listOf("domainPort"))
     },
     bundle("dataLayer", 16, listOf("checkDataLayerEnforcement", "dataLayerArchitectureTest", "dataLayerTopologyCheck", "dataLayerDocumentationEnforcementCheck")) {
         rootTask("Run the dedicated Data Layer enforcement bundle through one root entrypoint.", true, true)
@@ -300,12 +345,12 @@ fun standardEnforcementBundleDescriptors(): List<EnforcementBundleDescriptor> = 
         verificationSources(listOf("src"), listOf("data/**/gateway/**/*.java", "data/**/mapper/**/*.java", "data/**/model/**/*.java", "data/**/query/**/*.java", "data/**/repository/**/*.java", "data/**/persistencecore/**/*.java", "domain/**/aggregate/**/*.java", "domain/**/context/**/*.java", "domain/**/entity/**/*.java", "domain/**/event/**/*.java", "domain/**/factory/**/*.java", "domain/**/policy/**/*.java", "domain/**/port/**/*.java", "domain/**/published/**/*.java", "domain/**/service/**/*.java", "domain/**/specification/**/*.java", "domain/**/value/**/*.java"))
         archunit("dataLayerArchitectureTest", "Run only the Data Layer-focused architecture test suite.", listOf("tools/quality/data-layer-enforcement/archunit/src/test/java"), listOf("architecture/data/layer/**"), listOf("architecture/data/layer/**"), true)
         buildHarnessArchitectureRules(listOf("saltmarcher.architecture.data.layer.DataLayerTopologyRules"))
-        buildHarnessDocumentationRules(listOf("saltmarcher.architecture.data.layer.DataLayerEnforcementCoverageRules"))
+        buildHarnessDocumentationCoverageSpecs(listOf("dataLayer"))
     },
     bundle("domainModel", 16, listOf("checkDomainModelEnforcement", "domainModelTopologyCheck", "domainModelDocumentationEnforcementCheck")) {
         rootTask("Run the dedicated Domain Model enforcement bundle through one root entrypoint.", false, true)
         buildHarnessArchitectureRules(listOf("saltmarcher.architecture.domain.model.DomainModelTopologyRules"))
-        buildHarnessDocumentationRules(listOf("saltmarcher.architecture.domain.model.DomainModelEnforcementCoverageRules"))
+        buildHarnessDocumentationCoverageSpecs(listOf("domainModel"))
     },
     bundle("dataModel", 17, listOf("checkDataModelEnforcement", "dataModelArchitectureTest", "dataModelTopologyCheck", "dataModelDocumentationEnforcementCheck", "pmdDataModelEnforcement")) {
         rootTask("Run the dedicated Data Model enforcement bundle through one root entrypoint.", true, true)
@@ -314,30 +359,31 @@ fun standardEnforcementBundleDescriptors(): List<EnforcementBundleDescriptor> = 
         archunit("dataModelArchitectureTest", "Run only the Data Model-focused architecture test suite.", listOf("tools/quality/data-model-enforcement/archunit/src/test/java"), listOf("architecture/data/model/**"), listOf("architecture/data/model/**"), true)
         pmdTask("pmdDataModelEnforcement", "Run the dedicated Data Model PMD enforcement bundle.", "tools/quality/data-model-enforcement/pmd/ruleset.xml", emptyList(), listOf("data/**/model/**/*.java"), false, false)
         buildHarnessArchitectureRules(listOf("saltmarcher.architecture.data.model.DataModelTopologyRules"))
-        buildHarnessDocumentationRules(listOf("saltmarcher.architecture.data.model.DataModelEnforcementCoverageRules"))
+        buildHarnessDocumentationCoverageSpecs(listOf("dataModel"))
     },
     bundle("domainHelper", 17, listOf("checkDomainHelperEnforcement", "domainHelperTopologyCheck", "domainHelperDocumentationEnforcementCheck")) {
         rootTask("Run the dedicated Domain Helper enforcement bundle through one root entrypoint.", false, true)
         buildHarnessArchitectureRules(listOf("saltmarcher.architecture.domain.helper.DomainHelperTopologyRules"))
-        buildHarnessDocumentationRules(listOf("saltmarcher.architecture.domain.helper.DomainHelperEnforcementCoverageRules"))
+        buildHarnessDocumentationCoverageSpecs(listOf("domainHelper"))
     },
     bundle("dataGateway", 18, listOf("checkDataGatewayEnforcement", "dataGatewayArchitectureTest", "dataGatewayEnforcementDocumentationCheck")) {
         rootTask("Run the dedicated Data Gateway enforcement bundle through one root entrypoint.", true, true)
         errorProneCheckers(listOf("DataGatewayReturnTypeBoundary"))
         verificationSources(listOf("src"), listOf("data/**/gateway/**/*.java", "data/**/model/**/*.java", "data/**/persistencecore/**/*.java"))
         archunit("dataGatewayArchitectureTest", "Run only the Data Gateway-focused architecture test suite.", listOf("tools/quality/data-gateway-enforcement/archunit/src/test/java"), listOf("architecture/data/gateway/**"), listOf("architecture/data/gateway/**"), true)
+        buildHarnessDocumentationCoverageSpecs(listOf("dataGateway"))
     },
     bundle("dataMapper", 18, listOf("checkDataMapperEnforcement", "dataMapperEnforcementDocumentationCheck", "pmdDataMapperEnforcement")) {
         rootTask("Run the dedicated Data Mapper enforcement bundle through one root entrypoint.", true, true)
         verificationSources(listOf("src"), listOf("data/**/mapper/**/*.java"))
         pmdTask("pmdDataMapperEnforcement", "Run the dedicated Data Mapper PMD enforcement bundle.", "tools/quality/data-mapper-enforcement/pmd/ruleset.xml", emptyList(), listOf("data/**/mapper/**/*.java"), false, false)
-        buildHarnessDocumentationRules(listOf("saltmarcher.architecture.documentation.datamapper.DataMapperEnforcementDocumentationRules"))
+        buildHarnessDocumentationCoverageSpecs(listOf("dataMapper"))
     },
     bundle("dataPersistencecore", 18, listOf("checkDataPersistencecoreEnforcement", "dataPersistencecoreArchitectureTest", "dataPersistencecoreDocumentationEnforcementCheck")) {
         rootTask("Run the dedicated Data Persistencecore enforcement bundle through one root entrypoint.", true, true)
         verificationSources(listOf("src"), listOf("data/**/persistencecore/**/*.java"))
         archunit("dataPersistencecoreArchitectureTest", "Run only the Data Persistencecore-focused architecture test suite.", listOf("tools/quality/data-persistencecore-enforcement/archunit/src/test/java"), listOf("architecture/data/persistencecore/**"), listOf("architecture/data/persistencecore/**"), true)
-        buildHarnessDocumentationRules(listOf("saltmarcher.architecture.data.persistencecore.DataPersistencecoreEnforcementCoverageRules"))
+        buildHarnessDocumentationCoverageSpecs(listOf("dataPersistencecore"))
     },
     bundle("dataQuery", 18, listOf("checkDataQueryEnforcement", "dataQueryTopologyCheck", "dataQueryEnforcementDocumentationCheck", "pmdDataQueryEnforcement", "checkDataQueryPublishedCarrierCandidates")) {
         rootTask("Run the dedicated Data Query enforcement bundle through one root entrypoint.", true, true)
@@ -345,7 +391,7 @@ fun standardEnforcementBundleDescriptors(): List<EnforcementBundleDescriptor> = 
         verificationSources(listOf("src"), listOf("data/**/query/**/*.java", "data/**/gateway/**/*.java", "data/**/mapper/**/*.java", "data/**/model/**/*.java", "data/**/persistencecore/**/*.java", "domain/**/*ApplicationService.java", "domain/**/application/**/*.java", "domain/**/aggregate/**/*.java", "domain/**/context/**/*.java", "domain/**/entity/**/*.java", "domain/**/event/**/*.java", "domain/**/factory/**/*.java", "domain/**/policy/**/*.java", "domain/**/port/**/*.java", "domain/**/published/**/*.java", "domain/**/service/**/*.java", "domain/**/specification/**/*.java", "domain/**/value/**/*.java"))
         pmdTask("pmdDataQueryEnforcement", "Run the dedicated Data Query PMD enforcement bundle.", "tools/quality/data-query-enforcement/pmd/ruleset.xml", emptyList(), listOf("data/**/query/**/*.java"), false, false)
         buildHarnessArchitectureRules(listOf("saltmarcher.architecture.data.query.DataQueryForeignPublishedPayloadSurfaceRules"))
-        buildHarnessDocumentationRules(listOf("saltmarcher.architecture.documentation.dataquery.DataQueryEnforcementDocumentationRules"))
+        buildHarnessDocumentationCoverageSpecs(listOf("dataQuery"))
         buildHarnessMain("checkDataQueryPublishedCarrierCandidates", "saltmarcher.architecture.data.query.DataQueryPublishedCarrierCandidatesCheckMain")
     },
     bundle("dataRepository", 18, listOf("checkDataRepositoryEnforcement", "dataRepositoryEnforcementDocumentationCheck", "pmdDataRepositoryEnforcement")) {
@@ -353,23 +399,23 @@ fun standardEnforcementBundleDescriptors(): List<EnforcementBundleDescriptor> = 
         errorProneCheckers(listOf("DataRepositoryRoleContract", "DataRepositoryPublicSignatureBoundary", "DataRepositoryGatewayCollaboratorBoundary"))
         verificationSources(listOf("src"), listOf("data/**/repository/**/*.java", "data/**/gateway/**/*.java", "data/**/mapper/**/*.java", "data/**/model/**/*.java", "data/**/persistencecore/**/*.java", "domain/**/aggregate/**/*.java", "domain/**/context/**/*.java", "domain/**/entity/**/*.java", "domain/**/event/**/*.java", "domain/**/factory/**/*.java", "domain/**/policy/**/*.java", "domain/**/port/**/*.java", "domain/**/published/**/*.java", "domain/**/service/**/*.java", "domain/**/specification/**/*.java", "domain/**/value/**/*.java"))
         pmdTask("pmdDataRepositoryEnforcement", "Run the dedicated Data Repository PMD enforcement bundle.", "tools/quality/data-repository-enforcement/pmd/ruleset.xml", listOf("src"), listOf("data/**/repository/**/*.java"), false, false)
-        buildHarnessDocumentationRules(listOf("saltmarcher.architecture.documentation.datarepository.DataRepositoryEnforcementDocumentationRules"))
+        buildHarnessDocumentationCoverageSpecs(listOf("dataRepository"))
     },
     bundle("dataServiceContribution", 18, listOf("checkDataServiceContributionEnforcement", "dataServiceContributionDocumentationEnforcementCheck", "pmdDataServiceContributionEnforcement")) {
         rootTask("Run the dedicated Data ServiceContribution enforcement bundle through one root entrypoint.", true, true)
         errorProneCheckers(listOf("DataServiceContributionConstructionPurity", "DataServiceContributionShellApiAllowlist", "DataServiceContributionRegisterExportShape"))
         verificationSources(listOf("shell", "src"), listOf("api/**/*.java", "data/**/*ServiceContribution.java", "data/**/repository/**/*.java", "data/**/query/**/*.java", "data/**/gateway/**/*.java", "data/**/mapper/**/*.java", "data/**/model/**/*.java", "data/**/persistencecore/**/*.java", "domain/**/*ApplicationService.java", "domain/**/application/**/*.java", "domain/**/aggregate/**/*.java", "domain/**/context/**/*.java", "domain/**/entity/**/*.java", "domain/**/event/**/*.java", "domain/**/factory/**/*.java", "domain/**/policy/**/*.java", "domain/**/port/**/*.java", "domain/**/published/**/*.java", "domain/**/service/**/*.java", "domain/**/specification/**/*.java", "domain/**/value/**/*.java"))
         pmdTask("pmdDataServiceContributionEnforcement", "Run the dedicated Data ServiceContribution PMD enforcement bundle.", "tools/quality/data-service-contribution-enforcement/pmd/ruleset.xml", emptyList(), listOf("data/**/*ServiceContribution.java"), false, false)
-        buildHarnessDocumentationRules(listOf("saltmarcher.architecture.documentation.dataservicecontribution.DataServiceContributionEnforcementCoverageRules"))
+        buildHarnessDocumentationCoverageSpecs(listOf("dataServiceContribution"))
     },
     bundle("domainConstants", 18, listOf("checkDomainConstantsEnforcement", "domainConstantsTopologyCheck", "domainConstantsDocumentationEnforcementCheck")) {
         rootTask("Run the dedicated Domain Constants enforcement bundle through one root entrypoint.", false, true)
         buildHarnessArchitectureRules(listOf("saltmarcher.architecture.domain.constants.DomainConstantsTopologyRules"))
-        buildHarnessDocumentationRules(listOf("saltmarcher.architecture.domain.constants.DomainConstantsEnforcementCoverageRules"))
+        buildHarnessDocumentationCoverageSpecs(listOf("domainConstants"))
     },
     bundle("domainRepository", 19, listOf("checkDomainRepositoryEnforcement", "domainRepositoryTopologyCheck", "domainRepositoryDocumentationEnforcementCheck")) {
         rootTask("Run the dedicated Domain Repository enforcement bundle through one root entrypoint.", false, true)
         buildHarnessArchitectureRules(listOf("saltmarcher.architecture.domain.repository.DomainRepositoryTopologyRules"))
-        buildHarnessDocumentationRules(listOf("saltmarcher.architecture.domain.repository.DomainRepositoryEnforcementCoverageRules"))
+        buildHarnessDocumentationCoverageSpecs(listOf("domainRepository"))
     }
 )

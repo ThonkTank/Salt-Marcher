@@ -24,33 +24,22 @@ val repoRootDir = System.getProperty("saltmarcher.repoRootDir")
 val enforcementBundles = extensions.getByType(EnforcementBundlesExtension::class.java)
 val focusedEnforcementBundleMode = enforcementBundles.focusedEnforcementBundleMode
 val activeEnforcementBundleIds = enforcementBundles.activeEnforcementBundleIds
+val allEnforcementBundleIds = enforcementBundles.catalog.bundleIdsInOrder
 
 val sourceSets = the<SourceSetContainer>()
 
-fun repoVerificationJavaDirs(relativePath: String): List<String> {
-    val root = repoRootDir.resolve("tools/quality")
-    if (!root.isDirectory) {
-        return emptyList()
-    }
-    return root.walkTopDown()
-        .filter { file -> file.isDirectory && file.relativeTo(repoRootDir).path.replace(File.separatorChar, '/') == relativePath }
-        .map(File::getAbsolutePath)
-        .toList()
-}
+fun camelToKebab(value: String): String = value
+    .replace(Regex("([a-z0-9])([A-Z])"), "$1-$2")
+    .lowercase()
+
+fun bundleBuildHarnessJavaDir(bundleId: String): String =
+    repoRootDir.resolve("tools/quality/${camelToKebab(bundleId)}-enforcement/build-harness/src/main/java").absolutePath
 
 sourceSets.named("main") {
     java.setSrcDirs(
         listOf(layout.projectDirectory.dir("src/main/java").asFile.absolutePath) +
-            repoVerificationJavaDirs("tools/quality/documentation-enforcement/build-harness/src/main/java") +
-            repoRootDir.resolve("tools/quality")
-                .walkTopDown()
-                .filter { file ->
-                    file.isDirectory &&
-                        file.relativeTo(repoRootDir).path.replace(File.separatorChar, '/').endsWith("/build-harness/src/main/java") &&
-                        file.relativeTo(repoRootDir).path.replace(File.separatorChar, '/') != "tools/quality/documentation-enforcement/build-harness/src/main/java"
-                }
-                .map(File::getAbsolutePath)
-                .toList()
+            repoRootDir.resolve("tools/quality/documentation-enforcement/build-harness/src/main/java").absolutePath +
+            allEnforcementBundleIds.map(::bundleBuildHarnessJavaDir)
     )
     resources.setSrcDirs(emptyList<String>())
 }
@@ -98,14 +87,36 @@ fun activeBuildHarnessDocumentationRuleClasses() = activeEnforcementBundleIds
     .flatMap { bundleId -> enforcementBundles.descriptor(bundleId).buildHarnessDocumentationRuleClasses }
     .distinct()
 
+fun activeBuildHarnessDocumentationCoverageSpecIds() = activeEnforcementBundleIds
+    .flatMap { bundleId -> enforcementBundles.descriptor(bundleId).buildHarnessDocumentationCoverageSpecIds }
+    .distinct()
+
 fun descriptorBuildHarnessRuleClasses(bundleId: String, taskName: String): List<String> =
     enforcementBundles.descriptor(bundleId).buildHarnessTaskRuleClasses(taskName)
+
+fun descriptorBuildHarnessDocumentationCoverageSpecIds(bundleId: String, taskName: String): List<String> =
+    enforcementBundles.descriptor(bundleId).buildHarnessTaskDocumentationCoverageSpecIds(taskName)
+
+fun documentationVerificationArgs(
+    ruleClasses: List<String>,
+    coverageSpecIds: List<String>
+): List<String> = buildList {
+    ruleClasses.forEach { ruleClass ->
+        add("--rule-class")
+        add(ruleClass)
+    }
+    coverageSpecIds.forEach { specId ->
+        add("--coverage-spec")
+        add(specId)
+    }
+}
 
 fun registerBuildHarnessTask(
     taskName: String,
     bundleLabel: String,
     mainClassName: String?,
-    ruleClasses: List<String>
+    ruleClasses: List<String>,
+    documentationCoverageSpecIds: List<String>
 ) {
     val isDocumentationTask = taskName.endsWith("DocumentationEnforcementCheck")
     val description = when {
@@ -120,10 +131,16 @@ fun registerBuildHarnessTask(
         dependsOn(tasks.named(mainSourceSet.classesTaskName))
         runtimeClasspath.from(mainSourceSet.output)
         runtimeClasspath.from(mainSourceSet.runtimeClasspath)
-        verificationMainClass.set(mainClassName ?: "saltmarcher.architecture.ArchitectureCheckMain")
+        verificationMainClass.set(
+            when {
+                isDocumentationTask -> "saltmarcher.architecture.documentation.DocumentationCheckMain"
+                else -> mainClassName ?: "saltmarcher.architecture.ArchitectureCheckMain"
+            }
+        )
         repoRootPath.set(repoRootDir.absolutePath)
-        if (ruleClasses.isNotEmpty()) {
-            verificationArgs.set(listOf("--only-rules") + ruleClasses)
+        when {
+            isDocumentationTask -> verificationArgs.set(documentationVerificationArgs(ruleClasses, documentationCoverageSpecIds))
+            ruleClasses.isNotEmpty() -> verificationArgs.set(listOf("--only-rules") + ruleClasses)
         }
         verificationInputs.from(buildHarnessInputs(taskName))
         successMarker.set(layout.buildDirectory.file("verification-markers/$taskName/success.marker"))
@@ -139,17 +156,22 @@ activeEnforcementBundleIds.forEach { bundleId ->
                 taskName,
                 bundleLabel,
                 descriptor.buildHarnessTaskMainClasses[taskName],
-                descriptorBuildHarnessRuleClasses(bundleId, taskName)
+                descriptorBuildHarnessRuleClasses(bundleId, taskName),
+                descriptorBuildHarnessDocumentationCoverageSpecIds(bundleId, taskName)
             )
         }
 }
 
 if (!focusedEnforcementBundleMode) {
+    val documentationRootRuleClasses = listOf(
+        "saltmarcher.architecture.documentation.domain.DomainDocumentationRules"
+    )
     registerBuildHarnessTask(
         "documentationEnforcementCheck",
         "documentation",
         null,
-        activeBuildHarnessDocumentationRuleClasses()
+        documentationRootRuleClasses + activeBuildHarnessDocumentationRuleClasses(),
+        activeBuildHarnessDocumentationCoverageSpecIds()
     )
 }
 

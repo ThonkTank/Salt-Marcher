@@ -2,7 +2,7 @@ package src.domain.encounter.application;
 
 import java.util.Objects;
 import src.domain.encounter.generation.policy.EncounterDifficultyMath;
-import src.domain.encounter.session.port.EncounterPartyFactsRepository;
+import src.domain.encounter.model.session.repository.EncounterPartyFactsRepository;
 
 public final class LoadEncounterBudgetUseCase {
 

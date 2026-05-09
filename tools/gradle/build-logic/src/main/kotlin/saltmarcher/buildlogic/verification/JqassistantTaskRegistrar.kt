@@ -1,6 +1,5 @@
 package saltmarcher.buildlogic.verification
 
-import java.io.File
 import org.gradle.api.Project
 import org.gradle.api.file.Directory
 import org.gradle.api.file.FileCollection
@@ -11,7 +10,6 @@ import org.gradle.api.tasks.compile.JavaCompile
 import org.gradle.kotlin.dsl.register
 import org.gradle.language.base.plugins.LifecycleBasePlugin
 import saltmarcher.buildlogic.tasks.hygiene.JqassistantAnalyzeTask
-import saltmarcher.buildlogic.tasks.hygiene.JqassistantCommandTask
 import saltmarcher.buildlogic.tasks.hygiene.JqassistantScanTask
 
 data class JqassistantTaskPair(
@@ -69,49 +67,4 @@ internal class JqassistantTaskRegistrar(
         }
         return JqassistantTaskPair(scanTask, analyzeTask)
     }
-
-    fun registerCommandTask(
-        taskName: String,
-        description: String,
-        commandName: String,
-        sourceConfigPath: String,
-        rulesDirPaths: List<String>,
-        mainClassesDirectory: Provider<Directory>,
-        sourceRoots: FileCollection,
-        dependsOnTasks: List<Any>
-    ): TaskProvider<JqassistantCommandTask> {
-        val jqassistantRulesDirectories = rulesDirPaths.map(project::file)
-        val jqassistantRuleGroups = loadJqassistantRuleGroups(project.file(sourceConfigPath))
-        return project.tasks.register<JqassistantCommandTask>(taskName) {
-            group = LifecycleBasePlugin.VERIFICATION_GROUP
-            this.description = description
-            dependsOn(installJqassistant)
-            dependsOn(dependsOnTasks)
-            cliFile.set(this@JqassistantTaskRegistrar.cliFile)
-            rulesDirectories.from(jqassistantRulesDirectories)
-            this.mainClassesDirectory.set(mainClassesDirectory)
-            this.sourceRoots.from(sourceRoots)
-            this.jvmOpens.set(this@JqassistantTaskRegistrar.jvmOpens)
-            this.ruleGroups.set(jqassistantRuleGroups)
-            projectRoot.set(project.layout.projectDirectory)
-            this.commandName.set(commandName)
-        }
-    }
-}
-
-internal fun loadJqassistantRuleGroups(configFile: File): List<String> {
-    val groups = mutableListOf<String>()
-    var insideGroups = false
-    configFile.forEachLine { rawLine ->
-        val line = rawLine.trim()
-        when {
-            line == "groups:" -> insideGroups = true
-            insideGroups && line.startsWith("- ") -> groups += line.removePrefix("- ").trim()
-            insideGroups && line.isNotEmpty() && !line.startsWith("#") -> insideGroups = false
-        }
-    }
-    require(groups.isNotEmpty()) {
-        "jQAssistant config '$configFile' must declare at least one analyze group."
-    }
-    return groups
 }

@@ -10,7 +10,7 @@ import src.domain.encounter.plan.aggregate.EncounterPlan;
 import src.domain.encounter.plan.port.EncounterPlanRepository;
 import src.domain.encounter.plan.value.EncounterPlanCreature;
 import src.domain.encounter.reference.port.EncounterCreatureLookup;
-import src.domain.encounter.session.port.EncounterPartyFactsRepository;
+import src.domain.encounter.model.session.repository.EncounterPartyFactsRepository;
 
 public final class LoadEncounterPlanBudgetUseCase {
 

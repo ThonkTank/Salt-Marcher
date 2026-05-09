@@ -6,7 +6,7 @@ import org.jspecify.annotations.Nullable;
 
 public final class ApplyTravelDungeonSessionUseCase {
 
-    public interface RuntimeAccess {
+    public interface SessionRepository {
 
         ActiveTravelStateData loadActiveTravelState();
 
@@ -19,7 +19,7 @@ public final class ApplyTravelDungeonSessionUseCase {
         boolean saveOverworldPosition(OverworldTargetData target, List<Long> characterIds);
     }
 
-    private final RuntimeAccess runtimeAccess;
+    private final SessionRepository runtimeAccess;
     private final LoadTravelDungeonSessionSurfaceUseCase loadTravelDungeonSessionSurfaceUseCase;
     private final ApplyTravelDungeonMovementUseCase applyTravelDungeonMovementUseCase;
     private final StabilizeTravelDungeonProjectionUseCase stabilizeTravelDungeonProjectionUseCase;
@@ -29,7 +29,7 @@ public final class ApplyTravelDungeonSessionUseCase {
     private @Nullable PositionData requestedPosition;
     private @Nullable SurfaceData currentSurface;
 
-    public ApplyTravelDungeonSessionUseCase(RuntimeAccess runtimeAccess) {
+    public ApplyTravelDungeonSessionUseCase(SessionRepository runtimeAccess) {
         this.runtimeAccess = runtimeAccess;
         loadTravelDungeonSessionSurfaceUseCase = new LoadTravelDungeonSessionSurfaceUseCase();
         applyTravelDungeonMovementUseCase = new ApplyTravelDungeonMovementUseCase();

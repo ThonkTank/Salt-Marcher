@@ -21,7 +21,7 @@ import src.domain.party.published.PartyTravelPositionsResult;
 import src.domain.party.published.PartyTravelTile;
 import src.domain.party.published.ReadStatus;
 import src.domain.travel.application.ApplyTravelDungeonSessionUseCase;
-import src.domain.travel.session.port.TravelPartyStateRepository;
+import src.domain.travel.model.session.repository.TravelPartyStateRepository;
 
 public final class ApplicationTravelPartyStateRepository implements TravelPartyStateRepository {
 

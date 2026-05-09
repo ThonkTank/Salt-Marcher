@@ -192,28 +192,6 @@ internal open class VerificationHarnessExtension(
         )
     }
 
-    fun registerFocusedJqassistantTaskPair(
-        bundleId: String,
-        scanTaskName: String,
-        analyzeTaskName: String,
-        scanDescription: String,
-        analyzeDescription: String,
-        sourceConfigPath: String,
-        rulesDirPaths: List<String>,
-        reportsDirectoryPath: String,
-        selectedCompileJava: TaskProvider<JavaCompile>
-    ): JqassistantTaskPair = registerFocusedJqassistantTaskPair(
-        bundleId = bundleId,
-        scanTaskName = scanTaskName,
-        analyzeTaskName = analyzeTaskName,
-        scanDescription = scanDescription,
-        analyzeDescription = analyzeDescription,
-        ruleGroups = loadJqassistantRuleGroups(project.file(sourceConfigPath)),
-        rulesDirPaths = rulesDirPaths,
-        reportsDirectoryPath = reportsDirectoryPath,
-        selectedCompileJava = selectedCompileJava
-    )
-
     fun registerCustomVerificationTask(
         bundleId: String,
         taskName: String,

@@ -15,6 +15,7 @@ import com.sun.tools.javac.code.Type;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import javax.lang.model.element.Modifier;
+import saltmarcher.quality.errorprone.view.ViewArchitectureSupport;
 
 @BugPattern(
         name = "PassiveViewProjectionConstructionBoundary",

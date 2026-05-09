@@ -1,0 +1,24 @@
+package src.domain.encounter.model.session.model;
+
+import static src.domain.encounter.model.session.model.EncounterSessionValues.*;
+
+import java.util.List;
+
+public record EncounterSessionSnapshotData(
+        int mode,
+        String status,
+        BuilderStateData builderState,
+        List<InitiativeEntryData> initiativeEntries,
+        CombatProjectionData combatProjection,
+        List<PartyMemberData> missingCombatPartyMembers,
+        ResultStateData resultState
+) {
+    public EncounterSessionSnapshotData {
+        status = status == null ? "" : status;
+        builderState = builderState == null ? emptyBuilderState() : builderState;
+        initiativeEntries = initiativeEntries == null ? List.of() : List.copyOf(initiativeEntries);
+        combatProjection = combatProjection == null ? CombatProjectionData.empty() : combatProjection;
+        missingCombatPartyMembers = missingCombatPartyMembers == null ? List.of() : List.copyOf(missingCombatPartyMembers);
+        resultState = resultState == null ? ResultStateData.empty() : resultState;
+    }
+}

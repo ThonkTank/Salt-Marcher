@@ -4,8 +4,8 @@ import java.util.List;
 import java.util.Optional;
 import org.jspecify.annotations.Nullable;
 import src.domain.encounter.published.ApplyEncounterStateCommand;
-import src.domain.encounter.session.value.EncounterSessionCommand;
-import src.domain.encounter.session.value.EncounterSessionValues.InitiativeInput;
+import src.domain.encounter.model.session.model.EncounterSessionCommand;
+import src.domain.encounter.model.session.model.EncounterSessionValues.InitiativeInput;
 
 public final class EncounterStateBoundaryTranslator {
 

@@ -26,5 +26,3 @@ jqassistant:
         junit.report.directory: build/reports/jqassistant/junit
         junit.report.failureSeverity: BLOCKER
         junit.report.errorSeverity: BLOCKER
-    groups:
-      - saltmarcher:view-architecture

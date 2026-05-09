@@ -1,10 +1,12 @@
 package saltmarcher.quality.errorprone.view;
 
 import com.google.errorprone.util.ASTHelpers;
+import com.sun.source.tree.ClassTree;
 import com.sun.source.tree.CompilationUnitTree;
 import com.sun.source.tree.MemberSelectTree;
 import com.sun.source.tree.Tree;
 import com.sun.source.util.TreePathScanner;
+import com.sun.source.util.TreeScanner;
 import com.sun.tools.javac.code.Symbol;
 import java.util.LinkedHashSet;
 import java.util.Set;
@@ -114,6 +116,26 @@ public final class ViewArchitectureSupport {
             return sourceFileName.substring(0, sourceFileName.length() - ".java".length());
         }
         return sourceFileName;
+    }
+
+    public static String qualifiedTopLevelTypeName(CompilationUnitTree tree) {
+        String packageName = packageName(tree);
+        String simpleName = topLevelSimpleName(tree);
+        return packageName.isBlank() ? simpleName : packageName + "." + simpleName;
+    }
+
+    public static ClassTree topLevelClass(CompilationUnitTree tree) {
+        ClassTree[] result = {null};
+        new TreeScanner<Void, Void>() {
+            @Override
+            public Void visitClass(ClassTree classTree, Void unused) {
+                if (result[0] == null) {
+                    result[0] = classTree;
+                }
+                return null;
+            }
+        }.scan(tree, null);
+        return result[0];
     }
 
     private static String sourceFileName(CompilationUnitTree tree) {
@@ -762,6 +784,12 @@ public final class ViewArchitectureSupport {
                 return null;
             }
         }, null);
+    }
+
+    public static Set<String> collectTypeReferences(TypeMirror typeMirror) {
+        Set<String> referencedTypes = new LinkedHashSet<>();
+        collectTypeReferences(typeMirror, referencedTypes);
+        return referencedTypes;
     }
 
     public record ViewTypeInfo(String component, String bucket) {

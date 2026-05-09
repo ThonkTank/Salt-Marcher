@@ -8,7 +8,7 @@ import src.domain.encounter.application.EncounterBudgetBoundaryTranslator;
 import src.domain.encounter.application.EncounterBuilderInputsBoundaryTranslator;
 import src.domain.encounter.application.EncounterGenerationUseCase;
 import src.domain.encounter.application.EncounterPlanBoundaryTranslator;
-import src.domain.encounter.application.EncounterSessionRuntimeAdapter;
+import src.domain.encounter.model.session.repository.EncounterSessionRepository;
 import src.domain.encounter.application.EncounterStateSnapshotProjector;
 import src.domain.encounter.application.ListSavedEncounterPlansUseCase;
 import src.domain.encounter.application.LoadEncounterBudgetUseCase;
@@ -24,10 +24,10 @@ import src.domain.encounter.published.UpdateEncounterBuilderInputsCommand;
 import src.domain.encounter.reference.port.EncounterCreatureLookup;
 import src.domain.encounter.reference.port.EncounterTableCandidateLookup;
 import src.domain.encounter.runtime.port.EncounterPlanPublishedStateRepository;
-import src.domain.encounter.runtime.port.EncounterSessionPublishedStateRepository;
-import src.domain.encounter.session.entity.EncounterSession;
-import src.domain.encounter.session.port.EncounterPartyFactsRepository;
-import src.domain.encounter.session.value.EncounterSessionCommand;
+import src.domain.encounter.model.session.repository.EncounterSessionPublishedStateRepository;
+import src.domain.encounter.model.session.model.EncounterSession;
+import src.domain.encounter.model.session.repository.EncounterPartyFactsRepository;
+import src.domain.encounter.model.session.model.EncounterSessionCommand;
 
 /**
  * Public encounter facade that owns command publication and same-context model
@@ -165,7 +165,7 @@ public final class EncounterApplicationService {
                 return null;
             }
             EncounterGenerationUseCase generator = new EncounterGenerationUseCase(party, creatures, encounterTables);
-            return new ApplyEncounterSessionUseCase(new EncounterSessionRuntimeAdapter(
+            return new ApplyEncounterSessionUseCase(new EncounterSessionRepository(
                     party,
                     creatures,
                     generator,

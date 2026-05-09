@@ -1,15 +1,15 @@
 package src.domain.encounter.application;
 
 import java.util.Objects;
-import src.domain.encounter.session.entity.EncounterSession;
-import src.domain.encounter.session.value.EncounterSessionCommand;
+import src.domain.encounter.model.session.model.EncounterSession;
+import src.domain.encounter.model.session.model.EncounterSessionCommand;
 
 public final class ApplyEncounterSessionUseCase {
 
-    private final EncounterSession.RuntimeAccess runtimeAccess;
+    private final EncounterSession.SessionRepository runtimeAccess;
     private final EncounterSession session = new EncounterSession();
 
-    public ApplyEncounterSessionUseCase(EncounterSession.RuntimeAccess runtimeAccess) {
+    public ApplyEncounterSessionUseCase(EncounterSession.SessionRepository runtimeAccess) {
         this.runtimeAccess = Objects.requireNonNull(runtimeAccess, "runtimeAccess");
         session.apply(EncounterSessionCommand.refresh(), runtimeAccess);
     }

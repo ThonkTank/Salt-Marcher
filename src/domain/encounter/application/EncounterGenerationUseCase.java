@@ -6,7 +6,7 @@ import org.jspecify.annotations.Nullable;
 import src.domain.encounter.generation.value.EncounterGenerationRequest;
 import src.domain.encounter.reference.port.EncounterCreatureLookup;
 import src.domain.encounter.reference.port.EncounterTableCandidateLookup;
-import src.domain.encounter.session.port.EncounterPartyFactsRepository;
+import src.domain.encounter.model.session.repository.EncounterPartyFactsRepository;
 
 public final class EncounterGenerationUseCase {
 

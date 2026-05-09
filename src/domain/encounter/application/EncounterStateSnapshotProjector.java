@@ -2,14 +2,14 @@ package src.domain.encounter.application;
 
 import src.domain.encounter.published.EncounterBuilderInputs;
 import src.domain.encounter.published.EncounterStateSnapshot;
-import src.domain.encounter.session.entity.EncounterSession;
-import src.domain.encounter.session.value.EncounterSessionSnapshotData;
-import src.domain.encounter.session.value.EncounterSessionValues;
-import src.domain.encounter.session.value.EncounterSessionValues.BuilderStateData;
-import src.domain.encounter.session.value.EncounterSessionValues.CombatProjectionData;
-import src.domain.encounter.session.value.EncounterSessionValues.Mode;
-import src.domain.encounter.session.value.EncounterSessionValues.PartyMemberData;
-import src.domain.encounter.session.value.EncounterSessionValues.ResultStateData;
+import src.domain.encounter.model.session.model.EncounterSession;
+import src.domain.encounter.model.session.model.EncounterSessionSnapshotData;
+import src.domain.encounter.model.session.model.EncounterSessionValues;
+import src.domain.encounter.model.session.model.EncounterSessionValues.BuilderStateData;
+import src.domain.encounter.model.session.model.EncounterSessionValues.CombatProjectionData;
+import src.domain.encounter.model.session.model.EncounterSessionValues.Mode;
+import src.domain.encounter.model.session.model.EncounterSessionValues.PartyMemberData;
+import src.domain.encounter.model.session.model.EncounterSessionValues.ResultStateData;
 
 public final class EncounterStateSnapshotProjector {
 

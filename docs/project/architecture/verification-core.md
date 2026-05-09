@@ -76,7 +76,7 @@ Mechanically enforced public lifecycle surfaces are:
 Beyond the staged lifecycle names, the verification core also owns direct
 root lifecycle tasks that feed those aggregates. These root-owned tasks include
 shared hygiene gates such as `checkNoDeadCode`; they are verification
-core surfaces, not descriptor-owned enforcement bundles. Staged surfaces may
+core surfaces, not focused enforcement bundles. Staged surfaces may
 also depend on explicitly selected report-only sibling diagnostics when the
 standard handoff path should print guidance without changing pass/fail
 semantics.
@@ -88,9 +88,9 @@ reconstructing the surface model themselves.
 ### 3. Bundle Owners
 
 Each focused enforcement package under `tools/quality/*-enforcement/` owns one
-root public `check*Enforcement` lifecycle task through descriptor-owned bundle
-metadata. Standard bundles are registered centrally by the verification core
-from that metadata. Bundles with small local extras such as stylesheet or
+root public `check*Enforcement` lifecycle task through the central typed
+enforcement-spec registry. Standard bundles are registered centrally by the
+verification core from that registry. Bundles with small local extras such as stylesheet or
 FXML checks still register through the same standard verification-core path
 instead of through dedicated root plugins. The staged `view-topology` surface
 is intentionally routed to the dedicated closed-world
@@ -99,19 +99,20 @@ view-specific graph-analysis owner.
 
 Bundle owners MAY know their private ArchUnit, Error Prone, PMD,
 jQAssistant, or build-harness tasks. They MUST NOT depend on shell wrappers.
-They communicate with the verification core only through stable descriptor
+They communicate with the verification core only through stable typed registry
 metadata, their one root public lifecycle task, and any explicitly declared
 report-only sibling surfaces.
 
 Root-owned hygiene gates that are not bundle-specific MUST stay registered in
 the verification core itself. They MUST NOT be back-ported into fake
-descriptor-owned bundles just to reuse the bundle catalog.
+focused bundles just to reuse the bundle registry.
 
 ### 4. Rule Implementation
 
 Private rule implementation lives in build-harness, PMD rules, Error Prone
-rules, ArchUnit suites, jQAssistant rules, typed Gradle tasks, and
-bundle-local documentation checks.
+rules, ArchUnit suites, jQAssistant rules, typed Gradle tasks, and the generic
+documentation-coverage catalog plus the small set of remaining custom
+documentation rules.
 
 Rule engines MUST remain ignorant of staged surfaces, shell wrappers,
 production-handoff flows, and runtime UX concerns.
@@ -122,8 +123,8 @@ Allowed dependency direction is strictly inward:
 
 - runtime wrappers -> public verification surface names only
 - verification core -> root lifecycle tasks, included-build entrypoints, and
-  bundle descriptors
-- bundle owners -> private rule tasks and bundle-local proof wiring
+  enforcement specs
+- bundle owners -> private rule tasks and typed proof wiring
 - rule implementation -> concrete source files, compiled classes, documentation
   inventories, and engine-local support code
 
@@ -153,9 +154,10 @@ is available. Project-build plugin code likewise MUST NOT re-derive focused
 bundle selection from `StartParameter` task names once the settings-owned
 selection facts were published.
 Included builds own their technical registration from typed registry metadata
-and direct repo scans such as build-harness rule classes, Error Prone checker
-lists, ArchUnit task shapes, PMD task shapes, jQAssistant task shapes, and
-generic custom-task kinds. A jQAssistant task shape may declare one local rule
+and explicit static source roots such as build-harness rule classes, Error
+Prone checker lists, ArchUnit task shapes, PMD task shapes, jQAssistant task
+shapes, and generic documentation-coverage spec ids or custom-task kinds. A
+jQAssistant task shape may declare one local rule
 directory or multiple rule directories; the verification core materializes one
 effective rules root from that registry metadata instead of forcing bundles
 to duplicate shared taxonomy files. Harness wiring MUST NOT rely on parallel
@@ -171,14 +173,17 @@ lifecycle tasks through typed registry providers rather than by matching task
 names at configuration time.
 The remaining root-owned build-harness optional rules are now registry-driven
 as well: bundles contribute root `architectureCheck` and
-`documentationEnforcementCheck` rule classes through explicit
-`buildHarnessArchitectureRuleClasses` and
-`buildHarnessDocumentationRuleClasses` metadata instead of hidden
-`ServiceLoader` resources or hardcoded optional-class tables in the owning
-checkers. Focused build-harness tasks should execute through the generic
-`ArchitectureCheckMain` path with task-local rule-class lists instead of one
-bundle-specific Java launcher per focused task. `build-harness:processResources`
-is therefore expected to stay `NO-SOURCE` in steady-state wrapper runs.
+`documentationEnforcementCheck` rule classes and documentation-coverage spec
+ids through explicit `buildHarnessArchitectureRuleClasses`,
+`buildHarnessDocumentationRuleClasses`, and
+`buildHarnessDocumentationCoverageSpecIds` metadata instead of hidden
+`ServiceLoader` resources, bundle README inventories, or hardcoded
+optional-class tables in the owning checkers. Focused build-harness tasks
+should execute through the generic `ArchitectureCheckMain` or
+`DocumentationCheckMain` paths with task-local rule-class lists or coverage
+spec ids instead of one bundle-specific Java launcher per focused task.
+`build-harness:processResources` is therefore expected to stay `NO-SOURCE` in
+steady-state wrapper runs.
 Focused verification tasks with stable declared inputs and outputs SHOULD use
 normal Gradle up-to-date and build-cache behavior instead of forcing fresh
 execution every run. Successful unchanged verification results may be reused;
