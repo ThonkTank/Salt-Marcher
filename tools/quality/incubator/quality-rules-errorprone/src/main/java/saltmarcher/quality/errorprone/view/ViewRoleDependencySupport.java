@@ -125,7 +125,7 @@ public final class ViewRoleDependencySupport {
             ViewSourceDescriptor source,
             ViewSourceDescriptor referencedSource
     ) {
-        if (!isProjectionModelRole(referencedSource.role())) {
+        if (!referencedSource.role().isProjectionModel()) {
             return true;
         }
         if (isSameRoot(source, referencedSource)) {
@@ -147,7 +147,7 @@ public final class ViewRoleDependencySupport {
                             referencedType);
             case PUBLISHED_EVENT -> true;
             default ->
-                    !isProjectionModelRole(referencedSource.role())
+                    !referencedSource.role().isProjectionModel()
                             || !ViewArchitectureSupport.isSameViewRootOrReusableSlotcontentModelReference(
                             source.packageName(),
                             referencedType);
@@ -159,13 +159,7 @@ public final class ViewRoleDependencySupport {
     }
 
     private static boolean isReusableProjectionModelReference(ViewSourceDescriptor referencedSource) {
-        return referencedSource.isSlotcontentSource() && isProjectionModelRole(referencedSource.role());
-    }
-
-    private static boolean isProjectionModelRole(ViewRole role) {
-        return role == ViewRole.LEGACY_VIEW_MODEL
-                || role == ViewRole.CONTRIBUTION_MODEL
-                || role == ViewRole.CONTENT_MODEL;
+        return referencedSource.isSlotcontentSource() && referencedSource.role().isProjectionModel();
     }
 
     private static String sourceText(CompilationUnitTree tree, VisitorState state) {

@@ -50,4 +50,10 @@ public enum ViewRole {
         }
         return UNKNOWN;
     }
+
+    public boolean isProjectionModel() {
+        return this == LEGACY_VIEW_MODEL
+                || this == CONTRIBUTION_MODEL
+                || this == CONTENT_MODEL;
+    }
 }

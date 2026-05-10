@@ -186,7 +186,7 @@ public final class ViewArchitectureSupport {
     }
 
     public static boolean isTargetViewModelReference(String referencedType) {
-        return isProjectionModelRole(referencedViewSource(referencedType).role());
+        return referencedViewSource(referencedType).role().isProjectionModel();
     }
 
     public static boolean isTargetPanelViewReference(String referencedType) {
@@ -256,7 +256,7 @@ public final class ViewArchitectureSupport {
 
     public static boolean isSlotcontentModelReference(String referencedType) {
         ViewSourceDescriptor source = referencedViewSource(referencedType);
-        return source.isSlotcontentSource() && isProjectionModelRole(source.role());
+        return source.isSlotcontentSource() && source.role().isProjectionModel();
     }
 
     public static boolean isDetailEntryReference(String referencedType) {
@@ -265,7 +265,7 @@ public final class ViewArchitectureSupport {
                 && "details".equals(source.group())
                 && (source.role() == ViewRole.VIEW
                 || source.role() == ViewRole.INSPECTOR_ENTRY
-                || isProjectionModelRole(source.role()));
+                || source.role().isProjectionModel());
     }
 
     public static boolean isSameViewRootOrReusablePassiveViewReference(String sourcePackageName, String referencedType) {
@@ -546,10 +546,6 @@ public final class ViewArchitectureSupport {
 
     private static ViewSourceDescriptor referencedViewSource(String referencedType) {
         return ViewSourceDescriptor.describeQualifiedType(topLevelQualifiedTypeNameOf(referencedType));
-    }
-
-    private static boolean isProjectionModelRole(ViewRole role) {
-        return role == ViewRole.LEGACY_VIEW_MODEL || role == ViewRole.CONTRIBUTION_MODEL || role == ViewRole.CONTENT_MODEL;
     }
 
     private static boolean isDomainWriteCarrier(String referencedType) {
