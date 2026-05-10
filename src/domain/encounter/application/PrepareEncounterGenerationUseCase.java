@@ -13,7 +13,6 @@ import src.domain.encounter.generation.policy.EncounterCandidateProfiles;
 import src.domain.encounter.generation.policy.EncounterDifficultyMath;
 import src.domain.encounter.generation.policy.EncounterDifficultyTargets;
 import src.domain.encounter.generation.value.EncounterCandidateProfile;
-import src.domain.encounter.generation.value.EncounterCreatureFacts;
 import src.domain.encounter.generation.value.EncounterDraft;
 import src.domain.encounter.generation.value.EncounterGenerationAttempt;
 import src.domain.encounter.generation.value.EncounterGenerationRequest;
@@ -21,7 +20,6 @@ import src.domain.encounter.plan.value.EncounterPlanCreature;
 import src.domain.encounter.reference.port.EncounterCreatureLookup;
 import src.domain.encounter.reference.port.EncounterTableCandidateLookup;
 import src.domain.encounter.reference.value.EncounterCreatureCandidateCriteria;
-import src.domain.encounter.reference.value.EncounterCreatureReference;
 import src.domain.encounter.reference.value.EncounterTableCandidateCriteria;
 import src.domain.encounter.model.session.repository.EncounterPartyFactsRepository;
 
@@ -222,36 +220,9 @@ final class PrepareEncounterGenerationUseCase {
         Map<Long, EncounterCandidateProfile> profiles = new LinkedHashMap<>();
         for (Long creatureId : lockedQuantities.keySet()) {
             creatures.loadCreature(creatureId)
-                    .ifPresent(reference -> profiles.put(creatureId, EncounterCandidateProfiles.fromFacts(toFacts(reference))));
+                    .ifPresent(reference -> profiles.put(creatureId, EncounterCandidateProfiles.fromFacts(reference.toFacts())));
         }
         return profiles;
-    }
-
-    static EncounterCreatureFacts toFacts(EncounterCreatureReference detail) {
-        return new EncounterCreatureFacts(
-                detail.id(),
-                detail.name(),
-                detail.creatureType(),
-                detail.challengeRating(),
-                detail.xp(),
-                detail.hitPoints(),
-                detail.hitDiceCount(),
-                detail.hitDiceSides(),
-                detail.hitDiceModifier(),
-                detail.armorClass(),
-                detail.initiativeBonus(),
-                detail.legendaryActionCount(),
-                detail.flySpeed(),
-                detail.swimSpeed(),
-                detail.climbSpeed(),
-                detail.burrowSpeed(),
-                detail.damageResistances(),
-                detail.damageImmunities(),
-                detail.conditionImmunities(),
-                detail.passivePerception(),
-                detail.actionTypes().stream()
-                        .map(EncounterCreatureFacts.ActionFacts::new)
-                        .toList());
     }
 
     private record PartyLoadResult(

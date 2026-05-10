@@ -22,7 +22,7 @@ private val cssSelectorPattern = Regex("""\.([A-Za-z][A-Za-z0-9\-_]*)\b""")
 private val stringLiteralPattern = Regex(""""([^"\\\\]*(?:\\\\.[^"\\\\]*)*)"""")
 private val styleClassNamePattern = Regex("""[A-Za-z][A-Za-z0-9\-_]*""")
 private val methodDeclarationPattern = Regex(
-    """(?s)(?:public|protected|private|static|final|abstract|synchronized|native|default|strictfp|\s)+[A-Za-z0-9_<>, ?.@\[\]]+\s+([A-Za-z_][A-Za-z0-9_]*)\s*\((.*?)\)\s*\{"""
+    """(?m)^(?![ \t]*(?:if|for|while|switch|catch|try|do|else)\b)[ \t]*(?:(?:public|protected|private)[ \t]+)?(?:(?:static|final|abstract|synchronized|native|default|strictfp)[ \t]+)*(?:[A-Za-z0-9_<>, ?.@\[\]]+[ \t]+)?([A-Za-z_][A-Za-z0-9_]*)\s*\(([^)]*)\)\s*\{"""
 )
 private val methodCallPattern = Regex("""(?<![\w$])([A-Za-z_][A-Za-z0-9_]*)\s*\(""")
 private const val styleClassMarker = "getStyleClass()"
@@ -158,8 +158,8 @@ abstract class CheckDefinedStyleClassSelectorsTask : DefaultTask() {
         val sourceTexts = javaSourceFiles.files.asSequence()
             .filter { it.isFile && it.extension == "java" }
             .associateWith(File::readText)
-        val helperMethods = resolveStyleClassHelperMethods(sourceTexts.values)
         sourceTexts.forEach { (file, sourceText) ->
+            val helperMethods = resolveStyleClassHelperMethods(sourceText)
             val usage = extractStyleClassLiterals(sourceText, helperMethods)
             val missing = usage.selectors.filterNot(definedSelectors::contains)
             val relativePath = file.invariantSeparatorsPath
@@ -294,8 +294,8 @@ private fun collectStyleArgument(
     literalSelectors.forEach(selectors::add)
 }
 
-private fun resolveStyleClassHelperMethods(sourceTexts: Iterable<String>): Map<MethodKey, Set<Int>> {
-    val methods = sourceTexts.flatMap(::parseMethodDefinitions)
+private fun resolveStyleClassHelperMethods(sourceText: String): Map<MethodKey, Set<Int>> {
+    val methods = parseMethodDefinitions(sourceText)
     val styleParameterIndexesByMethod = linkedMapOf<MethodKey, MutableSet<Int>>()
 
     methods.forEach { method ->

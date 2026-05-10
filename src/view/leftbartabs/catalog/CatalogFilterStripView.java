@@ -12,7 +12,7 @@ import org.jspecify.annotations.Nullable;
 
 final class CatalogFilterStripView extends VBox {
 
-    private static final String CLEAR_LABEL = "Lee\u0072en";
+    private static final String CLEAR_LABEL = "Leeren";
     private static final String SEARCH_KEY = "search";
     private static final String CHALLENGE_RATING_KEY = "cr";
     private static final String SIZE_PREFIX = "size:";

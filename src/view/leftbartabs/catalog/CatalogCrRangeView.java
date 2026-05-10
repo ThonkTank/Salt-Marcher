@@ -8,7 +8,7 @@ import javafx.scene.layout.HBox;
 
 final class CatalogCrRangeView extends HBox {
 
-    private static final String CHALLENGE_RATING_LABEL = "\u0043R";
+    private static final String CHALLENGE_RATING_LABEL = "CR";
     private static final String DEFAULT_MINIMUM = "0";
     private static final String DEFAULT_MAXIMUM = "30";
 

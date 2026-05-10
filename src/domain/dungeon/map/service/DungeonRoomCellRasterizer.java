@@ -3,7 +3,6 @@ package src.domain.dungeon.map.service;
 import src.domain.dungeon.map.value.DungeonCell;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -40,7 +39,7 @@ final class DungeonRoomCellRasterizer {
             return List.of();
         }
         List<DungeonCell> vertices = new ArrayList<>();
-        for (DungeonCell cell : sortedCells(cells)) {
+        for (DungeonCell cell : DungeonRoomCellProjector.sortedCells(cells)) {
             int q = cell.q() - center.q();
             int r = cell.r() - center.r();
             vertices.add(new DungeonCell(q, r, cell.level()));
@@ -98,21 +97,5 @@ final class DungeonRoomCellRasterizer {
             previous = current;
         }
         return inside;
-    }
-
-    private static List<DungeonCell> sortedCells(Iterable<DungeonCell> cells) {
-        List<DungeonCell> result = new ArrayList<>();
-        for (DungeonCell cell : cells == null ? List.<DungeonCell>of() : cells) {
-            if (cell != null) {
-                result.add(cell);
-            }
-        }
-        return result.stream()
-                .distinct()
-                .sorted(Comparator
-                        .comparingInt(DungeonCell::level)
-                        .thenComparingInt(DungeonCell::r)
-                        .thenComparingInt(DungeonCell::q))
-                .toList();
     }
 }

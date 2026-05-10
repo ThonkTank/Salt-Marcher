@@ -29,7 +29,7 @@ final class AssembleEncounterResultUseCase {
             List<EncounterGenerationUseCase.GeneratedCreature> creatures = new ArrayList<>();
             for (EncounterDraftEntry entry : draft.entries()) {
                 EncounterCreatureReference detail = detailCache.computeIfAbsent(entry.creatureId(), this::loadCreatureDetailOrNull);
-                EncounterCreatureFacts facts = detail == null ? entry.facts() : PrepareEncounterGenerationUseCase.toFacts(detail);
+                EncounterCreatureFacts facts = detail == null ? entry.facts() : detail.toFacts();
                 EncounterRoleClassifier.Classification classification = EncounterRoleClassifier.classify(facts);
                 creatures.add(new EncounterGenerationUseCase.GeneratedCreature(
                         entry.creatureId(),
