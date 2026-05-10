@@ -24,32 +24,11 @@ public final class ViewTopologyCatalog {
     }
 
     public static ViewSourceDescriptor describe(SourceFile sourceFile) {
-        if (!isViewSource(sourceFile)) {
-            return new ViewSourceDescriptor(sourceFile, null, ViewRole.UNKNOWN, false);
-        }
         ViewRole role = ViewRole.fromFileName(sourceFile.fileName());
-        List<String> segments = sourceFile.relativeSegments();
-        if (segments.size() == 5 && ACTIVE_AREAS.contains(segments.get(2))) {
-            return new ViewSourceDescriptor(
-                    sourceFile,
-                    new ViewUnitDescriptor(ViewUnitKind.ACTIVE_ROOT, segments.get(2), null, segments.get(3)),
-                    role,
-                    true);
+        if (!isViewSource(sourceFile)) {
+            return new ViewSourceDescriptor(sourceFile, null, role);
         }
-        if (segments.size() == 6
-                && "slotcontent".equals(segments.get(2))
-                && SLOTCONTENT_SLOTS.contains(segments.get(3))) {
-            return new ViewSourceDescriptor(
-                    sourceFile,
-                    new ViewUnitDescriptor(
-                            ViewUnitKind.REUSABLE_SLOTCONTENT,
-                            "slotcontent",
-                            segments.get(3),
-                            segments.get(4)),
-                    role,
-                    true);
-        }
-        return new ViewSourceDescriptor(sourceFile, null, role, false);
+        return new ViewSourceDescriptor(sourceFile, describeUnit(sourceFile.relativeSegments()), role);
     }
 
     public static List<ViewSourceDescriptor> describeViewSources(List<SourceFile> sourceFiles) {
@@ -72,5 +51,17 @@ public final class ViewTopologyCatalog {
             sourcesByUnit.computeIfAbsent(descriptor.unit(), ignored -> new ArrayList<>()).add(descriptor);
         }
         return sourcesByUnit;
+    }
+
+    private static ViewUnitDescriptor describeUnit(List<String> segments) {
+        if (segments.size() == 5 && ACTIVE_AREAS.contains(segments.get(2))) {
+            return new ViewUnitDescriptor(ViewUnitKind.ACTIVE_ROOT, segments.get(2), segments.get(3));
+        }
+        if (segments.size() == 6
+                && "slotcontent".equals(segments.get(2))
+                && SLOTCONTENT_SLOTS.contains(segments.get(3))) {
+            return new ViewUnitDescriptor(ViewUnitKind.REUSABLE_SLOTCONTENT, segments.get(3), segments.get(4));
+        }
+        return null;
     }
 }

@@ -2,16 +2,15 @@ package saltmarcher.architecture.view;
 
 public record ViewUnitDescriptor(
         ViewUnitKind kind,
-        String area,
-        String slot,
+        String group,
         String entry
 ) implements Comparable<ViewUnitDescriptor> {
 
     public String source() {
         if (kind == ViewUnitKind.ACTIVE_ROOT) {
-            return "src/view/" + area + "/" + entry;
+            return "src/view/" + group + "/" + entry;
         }
-        return "src/view/slotcontent/" + slot + "/" + entry;
+        return "src/view/slotcontent/" + group + "/" + entry;
     }
 
     @Override
@@ -20,21 +19,9 @@ public record ViewUnitDescriptor(
         if (kindComparison != 0) {
             return kindComparison;
         }
-        int areaComparison = area.compareTo(other.area);
-        if (areaComparison != 0) {
-            return areaComparison;
-        }
-        if (slot == null && other.slot != null) {
-            return -1;
-        }
-        if (slot != null && other.slot == null) {
-            return 1;
-        }
-        if (slot != null) {
-            int slotComparison = slot.compareTo(other.slot);
-            if (slotComparison != 0) {
-                return slotComparison;
-            }
+        int groupComparison = group.compareTo(other.group);
+        if (groupComparison != 0) {
+            return groupComparison;
         }
         return entry.compareTo(other.entry);
     }

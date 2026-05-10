@@ -5,20 +5,19 @@ import saltmarcher.architecture.SourceFile;
 public record ViewSourceDescriptor(
         SourceFile sourceFile,
         ViewUnitDescriptor unit,
-        ViewRole role,
-        boolean recognizedDirectory
+        ViewRole role
 ) {
 
     public boolean isRecognizedViewSource() {
-        return recognizedDirectory && unit != null;
+        return unit != null;
     }
 
     public boolean isActiveRootSource() {
-        return unit != null && unit.kind() == ViewUnitKind.ACTIVE_ROOT;
+        return isRecognizedViewSource() && unit.kind() == ViewUnitKind.ACTIVE_ROOT;
     }
 
     public boolean isSlotcontentSource() {
-        return unit != null && unit.kind() == ViewUnitKind.REUSABLE_SLOTCONTENT;
+        return isRecognizedViewSource() && unit.kind() == ViewUnitKind.REUSABLE_SLOTCONTENT;
     }
 
     public String source() {
