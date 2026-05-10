@@ -2,10 +2,10 @@ package src.domain.party.application;
 
 import java.util.List;
 import org.jspecify.annotations.Nullable;
-import src.domain.party.roster.aggregate.PartyRoster;
-import src.domain.party.roster.port.PartyRosterRepository;
-import src.domain.party.roster.value.PartyMutationStatus;
-import src.domain.party.roster.value.PartyTravelLocation;
+import src.domain.party.model.roster.model.PartyMutationStatus;
+import src.domain.party.model.roster.model.PartyRoster;
+import src.domain.party.model.roster.model.PartyTravelLocation;
+import src.domain.party.model.roster.repository.PartyRosterRepository;
 
 public final class MovePartyCharactersUseCase {
 

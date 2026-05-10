@@ -9,6 +9,7 @@ import com.sun.source.tree.ClassTree;
 import com.sun.source.tree.CompilationUnitTree;
 import com.sun.source.tree.IfTree;
 import com.sun.source.tree.MethodInvocationTree;
+import com.sun.source.tree.MethodTree;
 import com.sun.source.tree.SwitchExpressionTree;
 import com.sun.source.tree.SwitchTree;
 import com.sun.source.tree.Tree;
@@ -21,6 +22,7 @@ import java.util.Set;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.type.TypeMirror;
 import saltmarcher.quality.errorprone.view.ViewArchitectureSupport;
+import saltmarcher.quality.errorprone.view.ViewExpressionProvenanceSupport;
 import saltmarcher.quality.errorprone.view.ViewSourceDescriptor;
 
 @BugPattern(
@@ -128,36 +130,51 @@ public final class PassiveViewStateBoundaryChecker extends BugChecker
             Set<String> violations,
             Tree[] firstViolationTree
     ) {
-        new TreeScanner<Void, Void>() {
+        ViewExpressionProvenanceSupport provenanceSupport = ViewExpressionProvenanceSupport.create(tree);
+        new TreePathScanner<Void, Symbol.MethodSymbol>() {
             @Override
-            public Void visitIf(IfTree ifTree, Void unused) {
-                if (referencesModelDerivedState(ifTree.getCondition(), sourcePackageName)
+            public Void visitMethod(MethodTree methodTree, Symbol.MethodSymbol unused) {
+                return super.visitMethod(methodTree, ASTHelpers.getSymbol(methodTree));
+            }
+
+            @Override
+            public Void visitIf(IfTree ifTree, Symbol.MethodSymbol currentMethod) {
+                if (provenanceSupport.definitelyReferencesSameViewModel(
+                        ifTree.getCondition(),
+                        currentMethod,
+                        sourcePackageName)
                         && (containsPresentationMutation(ifTree.getThenStatement())
                         || containsPresentationMutation(ifTree.getElseStatement()))) {
                     violations.add("presentation decision if-branch");
                     recordViolationTree(ifTree, firstViolationTree);
                 }
-                return super.visitIf(ifTree, unused);
+                return super.visitIf(ifTree, currentMethod);
             }
 
             @Override
-            public Void visitSwitch(SwitchTree switchTree, Void unused) {
-                if (referencesModelDerivedState(switchTree.getExpression(), sourcePackageName)
+            public Void visitSwitch(SwitchTree switchTree, Symbol.MethodSymbol currentMethod) {
+                if (provenanceSupport.definitelyReferencesSameViewModel(
+                        switchTree.getExpression(),
+                        currentMethod,
+                        sourcePackageName)
                         && containsPresentationMutation(switchTree)) {
                     violations.add("presentation decision switch");
                     recordViolationTree(switchTree, firstViolationTree);
                 }
-                return super.visitSwitch(switchTree, unused);
+                return super.visitSwitch(switchTree, currentMethod);
             }
 
             @Override
-            public Void visitSwitchExpression(SwitchExpressionTree switchExpressionTree, Void unused) {
-                if (referencesModelDerivedState(switchExpressionTree.getExpression(), sourcePackageName)
+            public Void visitSwitchExpression(SwitchExpressionTree switchExpressionTree, Symbol.MethodSymbol currentMethod) {
+                if (provenanceSupport.definitelyReferencesSameViewModel(
+                        switchExpressionTree.getExpression(),
+                        currentMethod,
+                        sourcePackageName)
                         && containsPresentationMutation(switchExpressionTree)) {
                     violations.add("presentation decision switch expression");
                     recordViolationTree(switchExpressionTree, firstViolationTree);
                 }
-                return super.visitSwitchExpression(switchExpressionTree, unused);
+                return super.visitSwitchExpression(switchExpressionTree, currentMethod);
             }
         }.scan(tree, null);
     }
@@ -276,24 +293,6 @@ public final class PassiveViewStateBoundaryChecker extends BugChecker
             return true;
         }
         return "javafx.collections.FXCollections".equals(ownerType) && methodName.startsWith("observable");
-    }
-
-    private static boolean referencesModelDerivedState(Tree tree, String sourcePackageName) {
-        if (tree == null) {
-            return false;
-        }
-        Set<String> referencedTypes = new LinkedHashSet<>();
-        new TreeScanner<Void, Void>() {
-            @Override
-            public Void scan(Tree currentTree, Void unused) {
-                if (currentTree != null) {
-                    ViewArchitectureSupport.collectReferencedTypes(currentTree, referencedTypes);
-                }
-                return super.scan(currentTree, unused);
-            }
-        }.scan(tree, null);
-        return referencedTypes.stream().anyMatch(referencedType ->
-                ViewArchitectureSupport.isSameViewRootModelReference(sourcePackageName, referencedType));
     }
 
     private static boolean containsPresentationMutation(Tree tree) {

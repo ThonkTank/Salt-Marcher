@@ -12,7 +12,7 @@ import src.domain.party.published.AdventuringDaySummaryModel;
 import src.domain.party.published.PartyMutationModel;
 import src.domain.party.published.PartySnapshotModel;
 import src.domain.party.published.PartyTravelPositionsModel;
-import src.domain.party.roster.port.PartyRosterRepository;
+import src.domain.party.model.roster.repository.PartyRosterRepository;
 
 /**
  * Root service entrypoint for the party feature.

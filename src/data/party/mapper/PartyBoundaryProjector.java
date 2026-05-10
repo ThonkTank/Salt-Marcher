@@ -40,11 +40,13 @@ import src.domain.party.published.ReadStatus;
 import src.domain.party.published.RestCadenceUrgency;
 import src.domain.party.published.RestCadenceStatus;
 import src.domain.party.published.RestMilestone;
-import src.domain.party.roster.entity.PartyCharacter;
-import src.domain.party.roster.policy.PartyLevelProgressionPolicy;
-import src.domain.party.roster.value.PartyMembership;
-import src.domain.party.roster.value.PartyMutationStatus;
-import src.domain.party.roster.value.PartyTravelLocation;
+import src.domain.party.model.roster.helper.PartyLevelProgressionHelper;
+import src.domain.party.model.roster.model.PartyCharacter;
+import src.domain.party.model.roster.model.PartyDungeonTravelLocation;
+import src.domain.party.model.roster.model.PartyMembership;
+import src.domain.party.model.roster.model.PartyMutationStatus;
+import src.domain.party.model.roster.model.PartyOverworldTravelLocation;
+import src.domain.party.model.roster.model.PartyTravelLocation;
 
 @SuppressWarnings({
         "PMD.ExcessiveImports",
@@ -189,10 +191,10 @@ public final class PartyBoundaryProjector {
                 character.identity().playerName(),
                 character.progress().level(),
                 character.progress().currentXp(),
-                PartyLevelProgressionPolicy.minimumXpForLevel(character.progress().level()),
-                PartyLevelProgressionPolicy.nextLevelXp(character.progress().level()),
-                PartyLevelProgressionPolicy.xpToNextLevel(character.progress().level(), character.progress().currentXp()),
-                PartyLevelProgressionPolicy.readyToLevel(character.progress().level(), character.progress().currentXp()),
+                PartyLevelProgressionHelper.minimumXpForLevel(character.progress().level()),
+                PartyLevelProgressionHelper.nextLevelXp(character.progress().level()),
+                PartyLevelProgressionHelper.xpToNextLevel(character.progress().level(), character.progress().currentXp()),
+                PartyLevelProgressionHelper.readyToLevel(character.progress().level(), character.progress().currentXp()),
                 character.combat().passivePerception(),
                 character.combat().armorClass(),
                 character.progress().xpSinceShortRest(),
@@ -209,7 +211,7 @@ public final class PartyBoundaryProjector {
     }
 
     private static @Nullable PartyTravelLocationSnapshot mapTravelLocation(@Nullable PartyTravelLocation location) {
-        if (location instanceof src.domain.party.roster.value.PartyDungeonTravelLocation dungeon) {
+        if (location instanceof PartyDungeonTravelLocation dungeon) {
             return new PartyDungeonTravelLocationSnapshot(
                     dungeon.mapId(),
                     toPublishedDungeonLocationKind(dungeon.locationKind()),
@@ -217,7 +219,7 @@ public final class PartyBoundaryProjector {
                     new PartyTravelTile(dungeon.tile().q(), dungeon.tile().r(), dungeon.tile().level()),
                     toPublishedHeading(dungeon.heading()));
         }
-        if (location instanceof src.domain.party.roster.value.PartyOverworldTravelLocation overworld) {
+        if (location instanceof PartyOverworldTravelLocation overworld) {
             return new PartyOverworldTravelLocationSnapshot(overworld.mapId(), overworld.tileId());
         }
         return null;
@@ -304,13 +306,13 @@ public final class PartyBoundaryProjector {
     }
 
     private static PartyDungeonTravelLocationKind toPublishedDungeonLocationKind(
-            src.domain.party.roster.value.PartyDungeonTravelLocationKind locationKind
+            src.domain.party.model.roster.model.PartyDungeonTravelLocationKind locationKind
     ) {
         return PartyDungeonTravelLocationKind.valueOf(locationKind.name());
     }
 
     private static PartyTravelHeading toPublishedHeading(
-            src.domain.party.roster.value.PartyTravelHeading heading
+            src.domain.party.model.roster.model.PartyTravelHeading heading
     ) {
         return PartyTravelHeading.valueOf(heading.name());
     }

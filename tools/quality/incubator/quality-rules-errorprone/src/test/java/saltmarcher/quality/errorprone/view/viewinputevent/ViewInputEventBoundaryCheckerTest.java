@@ -89,6 +89,23 @@ public final class ViewInputEventBoundaryCheckerTest {
     }
 
     @Test
+    public void rejectsNestedDiscriminatorEnum() {
+        newHelper()
+                .addSourceLines(
+                        "src/view/slotcontent/primitives/foo/FooViewInputEvent.java",
+                        "package src.view.slotcontent.primitives.foo;",
+                        "// BUG: Diagnostic matches: discriminator-enum",
+                        "record FooViewInputEvent(String text) {",
+                        "  enum Action { CLICK }",
+                        "}")
+                .expectErrorMessage("discriminator-enum", containsAll(
+                        "nested ViewInputEvent discriminator enum",
+                        "ViewInputEvent carriers must stay immutable"))
+                .expectResult(Main.Result.ERROR)
+                .doTest();
+    }
+
+    @Test
     public void rejectsApplicationServiceCarrierPayloadFromClasspath() {
         newHelper()
                 .withClasspath(src.domain.catalog.CatalogApplicationService.class)
@@ -99,6 +116,26 @@ public final class ViewInputEventBoundaryCheckerTest {
                         "record FooViewInputEvent(src.domain.catalog.CatalogApplicationService service) { }")
                 .expectErrorMessage("application-service-payload", containsAll(
                         "src.domain.catalog.CatalogApplicationService",
+                        "ViewInputEvent carriers must stay immutable"))
+                .expectResult(Main.Result.ERROR)
+                .doTest();
+    }
+
+    @Test
+    public void rejectsNonRecordCarrierShapeAlongsideHelperMethod() {
+        newHelper()
+                .addSourceLines(
+                        "src/view/slotcontent/primitives/foo/FooViewInputEvent.java",
+                        "package src.view.slotcontent.primitives.foo;",
+                        "// BUG: Diagnostic matches: non-record-with-helper",
+                        "final class FooViewInputEvent {",
+                        "  String normalized() {",
+                        "    return \"x\";",
+                        "  }",
+                        "}")
+                .expectErrorMessage("non-record-with-helper", containsAll(
+                        "non-record ViewInputEvent shape",
+                        "top-level ViewInputEvent helper method",
                         "ViewInputEvent carriers must stay immutable"))
                 .expectResult(Main.Result.ERROR)
                 .doTest();

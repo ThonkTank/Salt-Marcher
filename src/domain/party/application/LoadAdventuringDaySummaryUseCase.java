@@ -1,8 +1,8 @@
 package src.domain.party.application;
 
-import src.domain.party.roster.entity.PartyCharacter;
-import src.domain.party.roster.port.PartyRosterRepository;
-import src.domain.party.roster.policy.PartyAdventuringDayBudgetPolicy;
+import src.domain.party.model.roster.helper.PartyAdventuringDayBudgetHelper;
+import src.domain.party.model.roster.model.PartyCharacter;
+import src.domain.party.model.roster.repository.PartyRosterRepository;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -87,10 +87,10 @@ public final class LoadAdventuringDaySummaryUseCase {
 
     private CharacterRestCadence restCadenceFor(PartyCharacter character) {
         int level = character.progress().level();
-        int totalBudget = PartyAdventuringDayBudgetPolicy.perCharacter(level);
+        int totalBudget = PartyAdventuringDayBudgetHelper.perCharacter(level);
         int targetXp = switch (character.progress().shortRestsTakenSinceLongRest()) {
-            case 0 -> PartyAdventuringDayBudgetPolicy.afterFirstShortRest(level);
-            case 1 -> PartyAdventuringDayBudgetPolicy.afterSecondShortRest(level);
+            case 0 -> PartyAdventuringDayBudgetHelper.afterFirstShortRest(level);
+            case 1 -> PartyAdventuringDayBudgetHelper.afterSecondShortRest(level);
             default -> totalBudget;
         };
         RestMilestone nextMilestone = switch (character.progress().shortRestsTakenSinceLongRest()) {
@@ -111,8 +111,8 @@ public final class LoadAdventuringDaySummaryUseCase {
             return RestCadenceUrgency.OVERDUE;
         }
         int segmentSize = milestone == RestMilestone.LONG_REST
-                ? PartyAdventuringDayBudgetPolicy.finalSegment(level)
-                : PartyAdventuringDayBudgetPolicy.perThird(level);
+                ? PartyAdventuringDayBudgetHelper.finalSegment(level)
+                : PartyAdventuringDayBudgetHelper.perThird(level);
         int soonThreshold = Math.max(1, (int) Math.round(segmentSize * 0.25));
         return xpDelta <= soonThreshold ? RestCadenceUrgency.SOON : RestCadenceUrgency.NORMAL;
     }

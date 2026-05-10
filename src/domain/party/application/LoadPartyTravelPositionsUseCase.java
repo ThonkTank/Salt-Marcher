@@ -4,9 +4,9 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import org.jspecify.annotations.Nullable;
-import src.domain.party.roster.entity.PartyCharacter;
-import src.domain.party.roster.port.PartyRosterRepository;
-import src.domain.party.roster.value.PartyTravelLocation;
+import src.domain.party.model.roster.model.PartyCharacter;
+import src.domain.party.model.roster.model.PartyTravelLocation;
+import src.domain.party.model.roster.repository.PartyRosterRepository;
 
 public final class LoadPartyTravelPositionsUseCase {
 

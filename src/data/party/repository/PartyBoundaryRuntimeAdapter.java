@@ -25,10 +25,10 @@ import src.domain.party.published.PartySnapshotModel;
 import src.domain.party.published.PartySnapshotResult;
 import src.domain.party.published.PartyTravelPositionsModel;
 import src.domain.party.published.PartyTravelPositionsResult;
-import src.domain.party.roster.aggregate.PartyRoster;
-import src.domain.party.roster.port.PartyRosterRepository;
-import src.domain.party.roster.port.PartyRuntimeRepository;
-import src.domain.party.roster.value.PartyMutationStatus;
+import src.domain.party.model.roster.model.PartyMutationStatus;
+import src.domain.party.model.roster.model.PartyRoster;
+import src.domain.party.model.roster.repository.PartyRosterRepository;
+import src.domain.party.model.roster.repository.PartyRuntimeRepository;
 
 @SuppressWarnings({
         "PMD.CouplingBetweenObjects",

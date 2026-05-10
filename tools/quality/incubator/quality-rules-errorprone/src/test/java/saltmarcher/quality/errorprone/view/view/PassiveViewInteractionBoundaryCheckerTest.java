@@ -89,6 +89,24 @@ public final class PassiveViewInteractionBoundaryCheckerTest {
     }
 
     @Test
+    public void rejectsForbiddenReferenceFromClasspathApplicationService() {
+        newHelper()
+                .withClasspath(src.domain.catalog.CatalogApplicationService.class)
+                .addSourceLines(
+                        "src/view/slotcontent/primitives/foo/FooView.java",
+                        "// BUG: Diagnostic matches: classpath-reference",
+                        "package src.view.slotcontent.primitives.foo;",
+                        "final class FooView {",
+                        "  private final src.domain.catalog.CatalogApplicationService service = null;",
+                        "}")
+                .expectErrorMessage("classpath-reference", containsAll(
+                        "forbidden reference src.domain.catalog.CatalogApplicationService",
+                        "crosses the passive-View interaction boundary"))
+                .expectResult(Main.Result.ERROR)
+                .doTest();
+    }
+
+    @Test
     public void allowsSameStemViewInputEventConstruction() {
         newHelper()
                 .addSourceLines(

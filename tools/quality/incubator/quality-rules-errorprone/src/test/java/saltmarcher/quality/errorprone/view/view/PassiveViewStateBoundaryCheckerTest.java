@@ -200,6 +200,84 @@ public final class PassiveViewStateBoundaryCheckerTest {
     }
 
     @Test
+    public void rejectsModelDerivedBooleanAliasDecision() {
+        newHelper()
+                .addSourceLines(
+                        "src/view/leftbartabs/catalog/CatalogControlsView.java",
+                        "package src.view.leftbartabs.catalog;",
+                        "import javafx.scene.control.Label;",
+                        "final class CatalogControlsView {",
+                        "  private final Label title = new Label();",
+                        "  void render(CatalogContributionModel model) {",
+                        "    boolean hideTitle = model.shouldHideTitle();",
+                        "    // BUG: Diagnostic matches: alias-decision",
+                        "    if (hideTitle) {",
+                        "      title.setVisible(false);",
+                        "    }",
+                        "  }",
+                        "}")
+                .addSourceLines(
+                        "src/view/leftbartabs/catalog/CatalogContributionModel.java",
+                        "package src.view.leftbartabs.catalog;",
+                        "final class CatalogContributionModel {",
+                        "  boolean shouldHideTitle() {",
+                        "    return true;",
+                        "  }",
+                        "}")
+                .addSourceLines(
+                        "javafx/scene/control/Label.java",
+                        "package javafx.scene.control;",
+                        "public class Label {",
+                        "  public void setVisible(boolean value) { }",
+                        "}")
+                .expectErrorMessage("alias-decision", containsAll(
+                        "presentation decision if-branch",
+                        "model-derived presentation decisions belong outside the View"))
+                .expectResult(Main.Result.ERROR)
+                .doTest();
+    }
+
+    @Test
+    public void rejectsPrivateHelperModelDerivedDecision() {
+        newHelper()
+                .addSourceLines(
+                        "src/view/leftbartabs/catalog/CatalogControlsView.java",
+                        "package src.view.leftbartabs.catalog;",
+                        "import javafx.scene.control.Label;",
+                        "final class CatalogControlsView {",
+                        "  private final Label title = new Label();",
+                        "  void render(CatalogContributionModel model) {",
+                        "    // BUG: Diagnostic matches: helper-decision",
+                        "    if (shouldHideTitle(model)) {",
+                        "      title.setVisible(false);",
+                        "    }",
+                        "  }",
+                        "  private boolean shouldHideTitle(CatalogContributionModel model) {",
+                        "    return model.shouldHideTitle();",
+                        "  }",
+                        "}")
+                .addSourceLines(
+                        "src/view/leftbartabs/catalog/CatalogContributionModel.java",
+                        "package src.view.leftbartabs.catalog;",
+                        "final class CatalogContributionModel {",
+                        "  boolean shouldHideTitle() {",
+                        "    return true;",
+                        "  }",
+                        "}")
+                .addSourceLines(
+                        "javafx/scene/control/Label.java",
+                        "package javafx.scene.control;",
+                        "public class Label {",
+                        "  public void setVisible(boolean value) { }",
+                        "}")
+                .expectErrorMessage("helper-decision", containsAll(
+                        "presentation decision if-branch",
+                        "model-derived presentation decisions belong outside the View"))
+                .expectResult(Main.Result.ERROR)
+                .doTest();
+    }
+
+    @Test
     public void ignoresStateViolationsWhenCheckIsDisabled() {
         newHelper()
                 .setArgs("-Xep:PassiveViewStateBoundary:OFF")

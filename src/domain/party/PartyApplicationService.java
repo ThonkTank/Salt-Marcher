@@ -7,7 +7,7 @@ import src.domain.party.application.AwardPartyXpUseCase;
 import src.domain.party.application.CreateCharacterUseCase;
 import src.domain.party.application.DeleteCharacterUseCase;
 import src.domain.party.application.MovePartyCharactersUseCase;
-import src.domain.party.application.PartyRuntimeAccess;
+import src.domain.party.application.PartyRuntimeFeedbackUseCase;
 import src.domain.party.application.PerformPartyRestUseCase;
 import src.domain.party.application.SetPartyMembershipUseCase;
 import src.domain.party.application.UpdateCharacterUseCase;
@@ -20,14 +20,23 @@ import src.domain.party.published.MovePartyCharactersCommand;
 import src.domain.party.published.PerformPartyRestCommand;
 import src.domain.party.published.SetPartyMembershipCommand;
 import src.domain.party.published.UpdateCharacterCommand;
-import src.domain.party.roster.port.PartyRosterRepository;
+import src.domain.party.model.roster.model.PartyCharacterDraft;
+import src.domain.party.model.roster.model.PartyDungeonTravelLocation;
+import src.domain.party.model.roster.model.PartyDungeonTravelLocationKind;
+import src.domain.party.model.roster.model.PartyMembership;
+import src.domain.party.model.roster.model.PartyOverworldTravelLocation;
+import src.domain.party.model.roster.model.PartyRestType;
+import src.domain.party.model.roster.model.PartyTravelHeading;
+import src.domain.party.model.roster.model.PartyTravelLocation;
+import src.domain.party.model.roster.model.PartyTravelTile;
+import src.domain.party.model.roster.repository.PartyRosterRepository;
 
 /**
  * Public backend facade for party management.
  */
 public final class PartyApplicationService {
 
-    private final PartyRuntimeAccess runtimeAccess;
+    private final PartyRuntimeFeedbackUseCase runtimeAccess;
     private final CreateCharacterUseCase createCharacterUseCase;
     private final UpdateCharacterUseCase updateCharacterUseCase;
     private final DeleteCharacterUseCase deleteCharacterUseCase;
@@ -39,7 +48,7 @@ public final class PartyApplicationService {
 
     public PartyApplicationService(PartyRosterRepository rosterRepository) {
         PartyRosterRepository repository = Objects.requireNonNull(rosterRepository, "rosterRepository");
-        this.runtimeAccess = PartyRuntimeAccess.fromRepository(repository);
+        this.runtimeAccess = PartyRuntimeFeedbackUseCase.fromRepository(repository);
         this.createCharacterUseCase = new CreateCharacterUseCase(repository);
         this.updateCharacterUseCase = new UpdateCharacterUseCase(repository);
         this.deleteCharacterUseCase = new DeleteCharacterUseCase(repository);
@@ -104,22 +113,22 @@ public final class PartyApplicationService {
 
     private static final class BoundaryValues {
 
-        private static src.domain.party.roster.value.PartyMembership membership(
+        private static PartyMembership membership(
                 src.domain.party.published.MembershipState membershipState
         ) {
             src.domain.party.published.MembershipState effective = membershipState == null
                     ? src.domain.party.published.MembershipState.valueOf("RESERVE")
                     : membershipState;
-            return src.domain.party.roster.value.PartyMembership.valueOf(effective.name());
+            return PartyMembership.valueOf(effective.name());
         }
 
-        private static src.domain.party.roster.value.PartyCharacterDraft draft(
+        private static PartyCharacterDraft draft(
                 src.domain.party.published.CharacterDraft draft
         ) {
             if (draft == null) {
-                return new src.domain.party.roster.value.PartyCharacterDraft("", "", 0, 0, 0);
+                return new PartyCharacterDraft("", "", 0, 0, 0);
             }
-            return new src.domain.party.roster.value.PartyCharacterDraft(
+            return new PartyCharacterDraft(
                     draft.name(),
                     draft.playerName(),
                     draft.level(),
@@ -135,20 +144,20 @@ public final class PartyApplicationService {
             return levels == null ? List.of() : List.copyOf(levels);
         }
 
-        private static src.domain.party.roster.value.PartyRestType restType(
+        private static PartyRestType restType(
                 src.domain.party.published.RestType restType
         ) {
             src.domain.party.published.RestType effective = restType == null
                     ? src.domain.party.published.RestType.valueOf("SHORT_REST")
                     : restType;
-            return src.domain.party.roster.value.PartyRestType.valueOf(effective.name());
+            return PartyRestType.valueOf(effective.name());
         }
 
-        private static src.domain.party.roster.value.PartyTravelLocation travelLocation(
+        private static PartyTravelLocation travelLocation(
                 src.domain.party.published.PartyTravelLocationSnapshot location
         ) {
             if (location instanceof src.domain.party.published.PartyDungeonTravelLocationSnapshot dungeon) {
-                return new src.domain.party.roster.value.PartyDungeonTravelLocation(
+                return new PartyDungeonTravelLocation(
                         dungeon.mapId(),
                         toInternalDungeonLocationKind(dungeon.locationKind()),
                         dungeon.ownerId(),
@@ -156,41 +165,41 @@ public final class PartyApplicationService {
                         toInternalHeading(dungeon.heading()));
             }
             if (location instanceof src.domain.party.published.PartyOverworldTravelLocationSnapshot overworld) {
-                return new src.domain.party.roster.value.PartyOverworldTravelLocation(
+                return new PartyOverworldTravelLocation(
                         overworld.mapId(),
                         overworld.tileId());
             }
             return null;
         }
 
-        private static src.domain.party.roster.value.PartyDungeonTravelLocationKind toInternalDungeonLocationKind(
+        private static PartyDungeonTravelLocationKind toInternalDungeonLocationKind(
                 src.domain.party.published.PartyDungeonTravelLocationKind locationKind
         ) {
             src.domain.party.published.PartyDungeonTravelLocationKind effective = locationKind == null
                     ? src.domain.party.published.PartyDungeonTravelLocationKind.valueOf("TILE")
                     : locationKind;
-            return src.domain.party.roster.value.PartyDungeonTravelLocationKind.valueOf(effective.name());
+            return PartyDungeonTravelLocationKind.valueOf(effective.name());
         }
 
-        private static src.domain.party.roster.value.PartyTravelTile toInternalTile(
+        private static PartyTravelTile toInternalTile(
                 src.domain.party.published.PartyTravelTile tile
         ) {
             src.domain.party.published.PartyTravelTile safeTile = tile == null
                     ? new src.domain.party.published.PartyTravelTile(0, 0, 0)
                     : tile;
-            return new src.domain.party.roster.value.PartyTravelTile(
+            return new PartyTravelTile(
                     safeTile.q(),
                     safeTile.r(),
                     safeTile.level());
         }
 
-        private static src.domain.party.roster.value.PartyTravelHeading toInternalHeading(
+        private static PartyTravelHeading toInternalHeading(
                 src.domain.party.published.PartyTravelHeading heading
         ) {
             src.domain.party.published.PartyTravelHeading effective = heading == null
                     ? src.domain.party.published.PartyTravelHeading.defaultHeading()
                     : heading;
-            return src.domain.party.roster.value.PartyTravelHeading.valueOf(effective.name());
+            return PartyTravelHeading.valueOf(effective.name());
         }
     }
 }

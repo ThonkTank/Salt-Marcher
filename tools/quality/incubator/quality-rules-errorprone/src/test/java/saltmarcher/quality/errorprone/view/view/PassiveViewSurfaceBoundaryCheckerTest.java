@@ -31,6 +31,26 @@ public final class PassiveViewSurfaceBoundaryCheckerTest {
     }
 
     @Test
+    public void rejectsProjectViewInterface() {
+        newHelper()
+                .addSourceLines(
+                        "src/view/leftbartabs/foo/FooControlsView.java",
+                        "package src.view.leftbartabs.foo;",
+                        "import src.view.slotcontent.primitives.bar.BarViewContract;",
+                        "// BUG: Diagnostic matches: interface-shape",
+                        "final class FooControlsView implements BarViewContract { }")
+                .addSourceLines(
+                        "src/view/slotcontent/primitives/bar/BarViewContract.java",
+                        "package src.view.slotcontent.primitives.bar;",
+                        "public interface BarViewContract { }")
+                .expectErrorMessage("interface-shape", containsAll(
+                        "Passive View 'src.view.leftbartabs.foo.FooControlsView'",
+                        "project interface BarViewContract"))
+                .expectResult(Main.Result.ERROR)
+                .doTest();
+    }
+
+    @Test
     public void rejectsConstructorInjectedCallbackProtocol() {
         newHelper()
                 .addSourceLines(
@@ -67,6 +87,25 @@ public final class PassiveViewSurfaceBoundaryCheckerTest {
                 .expectErrorMessage("utility-shape", containsAll(
                         "static utility shape",
                         "Passive View 'src.view.slotcontent.primitives.foo.FooView'"))
+                .expectResult(Main.Result.ERROR)
+                .doTest();
+    }
+
+    @Test
+    public void rejectsImperativeRenderMethodAlongsideOutwardField() {
+        newHelper()
+                .addSourceLines(
+                        "src/view/slotcontent/primitives/foo/FooView.java",
+                        "package src.view.slotcontent.primitives.foo;",
+                        "// BUG: Diagnostic matches: outward-method-with-field",
+                        "final class FooView {",
+                        "  public String title;",
+                        "  void showText(String text) { }",
+                        "}")
+                .expectErrorMessage("outward-method-with-field", containsAll(
+                        "title field",
+                        "showText(1)",
+                        "project-free prepared-state sink accessors"))
                 .expectResult(Main.Result.ERROR)
                 .doTest();
     }

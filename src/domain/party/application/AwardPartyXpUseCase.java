@@ -1,8 +1,8 @@
 package src.domain.party.application;
 
 import java.util.List;
-import src.domain.party.roster.port.PartyRosterRepository;
-import src.domain.party.roster.value.PartyMutationStatus;
+import src.domain.party.model.roster.model.PartyMutationStatus;
+import src.domain.party.model.roster.repository.PartyRosterRepository;
 
 public final class AwardPartyXpUseCase {
 

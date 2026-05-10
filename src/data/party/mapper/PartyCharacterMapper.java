@@ -2,18 +2,18 @@ package src.data.party.mapper;
 
 import org.jspecify.annotations.Nullable;
 import src.data.party.model.PartyCharacterRecord;
-import src.domain.party.roster.entity.PartyCharacter;
-import src.domain.party.roster.value.PartyCharacterTravelState;
-import src.domain.party.roster.value.PartyCharacterCombatProfile;
-import src.domain.party.roster.value.PartyDungeonTravelLocation;
-import src.domain.party.roster.value.PartyDungeonTravelLocationKind;
-import src.domain.party.roster.value.PartyCharacterIdentity;
-import src.domain.party.roster.value.PartyCharacterProgress;
-import src.domain.party.roster.value.PartyMembership;
-import src.domain.party.roster.value.PartyOverworldTravelLocation;
-import src.domain.party.roster.value.PartyTravelHeading;
-import src.domain.party.roster.value.PartyTravelLocation;
-import src.domain.party.roster.value.PartyTravelTile;
+import src.domain.party.model.roster.model.PartyCharacter;
+import src.domain.party.model.roster.model.PartyCharacterCombatProfile;
+import src.domain.party.model.roster.model.PartyCharacterIdentity;
+import src.domain.party.model.roster.model.PartyCharacterProgress;
+import src.domain.party.model.roster.model.PartyCharacterTravelState;
+import src.domain.party.model.roster.model.PartyDungeonTravelLocation;
+import src.domain.party.model.roster.model.PartyDungeonTravelLocationKind;
+import src.domain.party.model.roster.model.PartyMembership;
+import src.domain.party.model.roster.model.PartyOverworldTravelLocation;
+import src.domain.party.model.roster.model.PartyTravelHeading;
+import src.domain.party.model.roster.model.PartyTravelLocation;
+import src.domain.party.model.roster.model.PartyTravelTile;
 
 final class PartyCharacterMapper {
 

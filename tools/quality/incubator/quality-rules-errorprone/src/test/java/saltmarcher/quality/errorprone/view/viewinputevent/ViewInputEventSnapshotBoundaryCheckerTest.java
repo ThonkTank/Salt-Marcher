@@ -177,6 +177,94 @@ public final class ViewInputEventSnapshotBoundaryCheckerTest {
     }
 
     @Test
+    public void rejectsSameViewHelperAlias() {
+        newHelper()
+                .addSourceLines(
+                        "src/view/leftbartabs/catalog/CatalogControlsView.java",
+                        "package src.view.leftbartabs.catalog;",
+                        "import java.util.function.Consumer;",
+                        "final class CatalogControlsView {",
+                        "  private Consumer<CatalogControlsViewInputEvent> handler = event -> { };",
+                        "  void publish() {",
+                        "    // BUG: Diagnostic matches: helper-alias",
+                        "    String difficulty = mappedDifficulty();",
+                        "    handler.accept(new CatalogControlsViewInputEvent(difficulty));",
+                        "  }",
+                        "  private String mappedDifficulty() {",
+                        "    return \"hard\";",
+                        "  }",
+                        "}")
+                .addSourceLines(
+                        "src/view/leftbartabs/catalog/CatalogControlsViewInputEvent.java",
+                        "package src.view.leftbartabs.catalog;",
+                        "record CatalogControlsViewInputEvent(String difficulty) { }")
+                .expectErrorMessage("helper-alias", containsAll(
+                        "same-view helper src.view.leftbartabs.catalog.CatalogControlsView.mappedDifficulty()",
+                        "non-raw semantic reconstruction"))
+                .expectResult(Main.Result.ERROR)
+                .doTest();
+    }
+
+    @Test
+    public void rejectsModelBackedAliasSnapshotArgument() {
+        newHelper()
+                .addSourceLines(
+                        "src/view/leftbartabs/catalog/CatalogControlsView.java",
+                        "package src.view.leftbartabs.catalog;",
+                        "import java.util.function.Consumer;",
+                        "final class CatalogControlsView {",
+                        "  private Consumer<CatalogControlsViewInputEvent> handler = event -> { };",
+                        "  private final CatalogContributionModel model = new CatalogContributionModel();",
+                        "  void publish() {",
+                        "    // BUG: Diagnostic matches: model-alias",
+                        "    String difficulty = model.selectedDifficulty();",
+                        "    handler.accept(new CatalogControlsViewInputEvent(difficulty));",
+                        "  }",
+                        "}")
+                .addSourceLines(
+                        "src/view/leftbartabs/catalog/CatalogControlsViewInputEvent.java",
+                        "package src.view.leftbartabs.catalog;",
+                        "record CatalogControlsViewInputEvent(String difficulty) { }")
+                .addSourceLines(
+                        "src/view/leftbartabs/catalog/CatalogContributionModel.java",
+                        "package src.view.leftbartabs.catalog;",
+                        "final class CatalogContributionModel {",
+                        "  String selectedDifficulty() {",
+                        "    return \"hard\";",
+                        "  }",
+                        "}")
+                .expectErrorMessage("model-alias", containsAll(
+                        "forbidden snapshot dependency src.view.leftbartabs.catalog.CatalogContributionModel",
+                        "Build the carrier directly from current widget or raw event state"))
+                .expectResult(Main.Result.ERROR)
+                .doTest();
+    }
+
+    @Test
+    public void allowsRawWidgetAccessorAliasFromClasspath() {
+        newHelper()
+                .withClasspath(javafx.scene.control.RuntimeLabel.class)
+                .addSourceLines(
+                        "src/view/leftbartabs/catalog/CatalogControlsView.java",
+                        "package src.view.leftbartabs.catalog;",
+                        "import java.util.function.Consumer;",
+                        "import javafx.scene.control.RuntimeLabel;",
+                        "final class CatalogControlsView {",
+                        "  private final RuntimeLabel difficultyField = new RuntimeLabel();",
+                        "  private Consumer<CatalogControlsViewInputEvent> handler = event -> { };",
+                        "  void publish() {",
+                        "    String difficulty = difficultyField.getText();",
+                        "    handler.accept(new CatalogControlsViewInputEvent(difficulty));",
+                        "  }",
+                        "}")
+                .addSourceLines(
+                        "src/view/leftbartabs/catalog/CatalogControlsViewInputEvent.java",
+                        "package src.view.leftbartabs.catalog;",
+                        "record CatalogControlsViewInputEvent(String difficulty) { }")
+                .doTest();
+    }
+
+    @Test
     public void rejectsSameViewSentinelArgument() {
         newHelper()
                 .addSourceLines(
