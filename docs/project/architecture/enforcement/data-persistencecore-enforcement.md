@@ -29,7 +29,7 @@ Unified focused bundle entrypoint:
 - `./gradlew checkDataEnforcement --rerun-tasks --console=plain`
   runs the currently active Data Persistencecore-focused ArchUnit and
   documentation-coverage checks through one root task. Canonical dependency
-  blocking remains at `./gradlew checkArchitecture`; the focused bundle proof
+  blocking remains at `./gradlew checkDataEnforcement`; the focused bundle proof
   route adds the owner-local documentation check without pulling unrelated
   data-layer, data-role, or cross-layer bundles.
 
@@ -46,8 +46,8 @@ Unified focused bundle entrypoint:
 
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
-| `data-persistencecore-no-feature-specific-data-dependencies` | Enforced | every dependency from `src/data/persistencecore/**` into `src/data/<feature>/**` | data-persistencecore bundle ArchUnit `persistencecoreMustStayIndependentFromFeatureSpecificDataPackages` | `./gradlew checkArchitecture` and `./gradlew checkDataEnforcement` | `persistencecore/` does not depend on feature-specific data packages. |
-| `data-persistencecore-no-domain-dependencies` | Enforced | every dependency from `src/data/persistencecore/**` into `src/domain/**` | data-persistencecore bundle ArchUnit `persistencecoreMustNotDependOnDomainTypes` | `./gradlew checkArchitecture` and `./gradlew checkDataEnforcement` | `persistencecore/` does not depend on domain types. |
+| `data-persistencecore-no-feature-specific-data-dependencies` | Enforced | every dependency from `src/data/persistencecore/**` into `src/data/<feature>/**` | data-persistencecore bundle ArchUnit `persistencecoreMustStayIndependentFromFeatureSpecificDataPackages` | `./gradlew checkDataEnforcement` | `persistencecore/` does not depend on feature-specific data packages. |
+| `data-persistencecore-no-domain-dependencies` | Enforced | every dependency from `src/data/persistencecore/**` into `src/domain/**` | data-persistencecore bundle ArchUnit `persistencecoreMustNotDependOnDomainTypes` | `./gradlew checkDataEnforcement` | `persistencecore/` does not depend on domain types. |
 
 ### Communication Contract
 

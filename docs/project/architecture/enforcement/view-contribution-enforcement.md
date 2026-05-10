@@ -33,7 +33,7 @@ Unified focused bundle entrypoint:
 - `./gradlew checkViewEnforcement --rerun-tasks --console=plain`
   runs the focused active-root Contribution bundle. Canonical compile-side
   blocking behavior remains at `./gradlew compileJava`; aggregate blocking
-  behavior enters `./gradlew checkArchitecture` and `./gradlew check`
+  behavior enters `./gradlew checkViewEnforcement` and `./gradlew check`
   through this focused role task.
 
 ## Invariant Catalog

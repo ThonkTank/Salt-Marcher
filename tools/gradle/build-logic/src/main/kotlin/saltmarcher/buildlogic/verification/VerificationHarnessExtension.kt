@@ -31,12 +31,7 @@ internal open class VerificationHarnessExtension(
     private val sourceRoots: FileCollection,
     private val sourceJavaRoots: FileCollection,
     private val commonFocusedArchunitSupportIncludes: List<String>,
-    private val configureCommonErrorProneOptions: JavaCompile.() -> Unit,
-    val productionBuild: TaskProvider<out Task>,
-    val checkQualityHygiene: TaskProvider<out Task>,
-    val checkArchitecture: TaskProvider<out Task>,
-    val ckjmMain: TaskProvider<out Task>,
-    val check: TaskProvider<out Task>
+    private val configureCommonErrorProneOptions: JavaCompile.() -> Unit
 ) {
     private fun compileJavaTaskName(sourceSetName: String): String =
         "compile${sourceSetName.replaceFirstChar(Char::uppercaseChar)}Java"

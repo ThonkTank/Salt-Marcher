@@ -1,30 +1,20 @@
 package src.view.dropdowns.adventuringday;
 
 import java.util.Objects;
-import java.util.function.Consumer;
+import src.domain.party.PartyApplicationService;
+import src.domain.party.published.CalculateAdventuringDayCommand;
 
 final class AdventuringDayTopBarIntentHandler {
 
     private final AdventuringDayTopBarContributionModel presentationModel;
-    private Consumer<AdventuringDayTopBarPublishedEvent> publishedEventListener = ignored -> {};
-    private int pendingTotalGroupXp;
+    private final PartyApplicationService party;
 
-    AdventuringDayTopBarIntentHandler(AdventuringDayTopBarContributionModel presentationModel) {
+    AdventuringDayTopBarIntentHandler(
+            AdventuringDayTopBarContributionModel presentationModel,
+            PartyApplicationService party
+    ) {
         this.presentationModel = Objects.requireNonNull(presentationModel, "presentationModel");
-    }
-
-    void onPublishedEventRequested(Consumer<AdventuringDayTopBarPublishedEvent> listener) {
-        publishedEventListener = listener == null ? ignored -> {} : listener;
-    }
-
-    void storePendingTotalGroupXp(int totalGroupXp) {
-        pendingTotalGroupXp = Math.max(0, totalGroupXp);
-    }
-
-    int drainPendingTotalGroupXp() {
-        int totalGroupXp = pendingTotalGroupXp;
-        pendingTotalGroupXp = 0;
-        return totalGroupXp;
+        this.party = Objects.requireNonNull(party, "party");
     }
 
     void consume(AdventuringDayTopBarViewInputEvent event) {
@@ -38,8 +28,7 @@ final class AdventuringDayTopBarIntentHandler {
         if (request == null) {
             return;
         }
-        storePendingTotalGroupXp(request.totalGroupXp());
-        publishedEventListener.accept(AdventuringDayTopBarPublishedEvent.calculate(
+        party.calculateAdventuringDay(new CalculateAdventuringDayCommand(
                 request.levels(),
                 request.totalGroupXp()));
     }

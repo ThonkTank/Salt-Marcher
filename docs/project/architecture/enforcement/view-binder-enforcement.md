@@ -36,7 +36,7 @@ Merged focused bundle entrypoint:
 - `./gradlew checkViewEnforcement --rerun-tasks --console=plain`
   runs the focused Binder bundle. Canonical compile-side blocking behavior
   remains at `./gradlew compileJava`; aggregate blocking behavior enters
-  `./gradlew checkArchitecture` and `./gradlew check` through this focused
+  `./gradlew checkViewEnforcement` and `./gradlew check` through this focused
   role task.
 
 ## Invariant Catalog

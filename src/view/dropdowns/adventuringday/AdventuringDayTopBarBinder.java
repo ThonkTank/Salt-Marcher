@@ -1,6 +1,5 @@
 package src.view.dropdowns.adventuringday;
 
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import javafx.scene.Node;
@@ -10,12 +9,9 @@ import shell.api.ShellSlot;
 import src.domain.party.PartyApplicationService;
 import src.domain.party.published.AdventuringDayCalculationModel;
 import src.domain.party.published.AdventuringDaySummaryModel;
-import src.domain.party.published.CalculateAdventuringDayCommand;
 import src.view.slotcontent.topbar.dropdown.DropdownPopupContentModel;
 
 final class AdventuringDayTopBarBinder {
-
-    private static final String XP_SUFFIX = " XP";
 
     private final ShellRuntimeContext runtimeContext;
 
@@ -29,10 +25,9 @@ final class AdventuringDayTopBarBinder {
         AdventuringDayCalculationModel calculationModel =
                 runtimeContext.services().require(AdventuringDayCalculationModel.class);
         AdventuringDayTopBarContributionModel presentationModel = new AdventuringDayTopBarContributionModel();
-        AdventuringDayTopBarIntentHandler intentHandler = new AdventuringDayTopBarIntentHandler(presentationModel);
+        AdventuringDayTopBarIntentHandler intentHandler = new AdventuringDayTopBarIntentHandler(presentationModel, party);
         DropdownPopupContentModel popupContentModel = new DropdownPopupContentModel();
         AdventuringDayTopBarView view = new AdventuringDayTopBarView(popupContentModel);
-        bindRequests(party, intentHandler);
         applyPopupPresentation(popupContentModel, presentationModel.triggerTextProperty().get());
         view.onViewInputEvent(intentHandler::consume);
         view.showPanel(presentationModel.panelProperty().get());
@@ -40,25 +35,9 @@ final class AdventuringDayTopBarBinder {
                 applyPopupPresentation(popupContentModel, after));
         presentationModel.panelProperty().addListener((ignored, before, after) -> view.showPanel(after));
         summaryModel.subscribe(presentationModel::applySummaryResult);
-        calculationModel.subscribe(result -> presentationModel.applyCalculationResult(
-                intentHandler.drainPendingTotalGroupXp(),
-                result));
+        calculationModel.subscribe(presentationModel::applyCalculationResult);
         presentationModel.applySummaryResult(summaryModel.current());
         return new Binding(view);
-    }
-
-    private static void bindRequests(
-            PartyApplicationService party,
-            AdventuringDayTopBarIntentHandler intentHandler
-    ) {
-        intentHandler.onPublishedEventRequested(event -> {
-            if (event == null) {
-                return;
-            }
-            party.calculateAdventuringDay(new CalculateAdventuringDayCommand(
-                    List.copyOf(event.levels()),
-                    event.totalGroupXp()));
-        });
     }
 
     private static void applyPopupPresentation(

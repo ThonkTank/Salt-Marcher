@@ -29,8 +29,8 @@ Unified focused bundle entrypoint:
 - `./gradlew checkDataEnforcement --rerun-tasks --console=plain`
   runs the currently active Data Query-focused Error Prone and build-harness
   topology, and documentation-coverage checks through one root task.
-  Canonical compile-side and architecture-aggregate blocking behavior remains
-  at `./gradlew compileJava` and `./gradlew checkArchitecture`; the focused
+  Canonical compile-side and focused-surface blocking behavior remains
+  at `./gradlew compileJava` and `./gradlew checkDataEnforcement`; the focused
   bundle proof route keeps the query-role checks colocated without pulling the
   broader architecture bundles.
 
@@ -64,7 +64,7 @@ Unified focused bundle entrypoint:
 | `data-query-public-port-surface-only` | Enforced | every public concrete query adapter under `src/data/**/query/` | data-query bundle Error Prone `DataQueryRoleContract` | `./gradlew compileJava` and `./gradlew checkDataEnforcement` | Public/protected query adapter methods, including inherited public/protected superclass methods, are limited to the matching own-feature read-only domain port contracts. |
 | `data-query-public-signature-boundary` | Enforced | every public/protected query adapter API | data-query bundle Error Prone `DataQueryPublicSignatureBoundary` | `./gradlew compileJava` and `./gradlew checkDataEnforcement` | Public/protected query adapter signatures, including inherited public/protected superclass methods, do not leak source-local `model/`, `gateway/`, or `persistencecore` types. |
 | `data-query-no-foreign-published-reply-channel-roundtrip` | Enforced | every query-adapter path that reaches a foreign domain context | data-query bundle Error Prone `DataQueryForeignPublishedReplyChannelRoundTrip` | `./gradlew compileJava` and `./gradlew checkDataEnforcement` | Query adapters do not use a foreign root `ApplicationService` command plus later same-path foreign `published/*Model.current()` polling as a synchronous reply channel. The blocker is path-sensitive inside one method and same-file inlineable helpers. Cross-context communication stays one-way: command into the foreign context, feedback out only through durable published state changes. |
-| `data-query-no-overbroad-foreign-published-payload-surface` | Enforced | every foreign published passive payload carrier that is consumed by query adapters | data-query bundle build-harness `DataQueryForeignPublishedPayloadSurfaceRules` | `./gradlew checkArchitecture` and `./gradlew checkDataEnforcement` | Foreign published passive payload carriers consumed by query adapters do not export accessor surface that no foreign query consumer uses. Shared cross-context payloads stay minimal instead of relaying broader internal-shaped carrier facts. |
+| `data-query-no-overbroad-foreign-published-payload-surface` | Enforced | every foreign published passive payload carrier that is consumed by query adapters | data-query bundle build-harness `DataQueryForeignPublishedPayloadSurfaceRules` | `./gradlew checkDataEnforcement` | Foreign published passive payload carriers consumed by query adapters do not export accessor surface that no foreign query consumer uses. Shared cross-context payloads stay minimal instead of relaying broader internal-shaped carrier facts. |
 | `data-query-gateway-collaborator-boundary` | Enforced | every query adapter dependency into its own feature gateway code | data-query bundle Error Prone `DataQueryGatewayCollaboratorBoundary` | `./gradlew compileJava` and `./gradlew checkDataEnforcement` | Query adapters depend on own-feature source-adapter facade types ending in `Gateway`, not internal source-mechanics collaborators under `gateway/`. |
 
 ## Candidate

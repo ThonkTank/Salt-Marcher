@@ -37,6 +37,7 @@ public final class PartyTopBarContributionModel {
             new ReadOnlyObjectWrapper<>(PanelModel.loadingModel());
 
     private boolean mutationInFlight;
+    private String pendingSuccessMessage = "";
 
     public ReadOnlyStringProperty triggerTextProperty() {
         return triggerText.getReadOnlyProperty();
@@ -56,6 +57,7 @@ public final class PartyTopBarContributionModel {
             return false;
         }
         mutationInFlight = true;
+        pendingSuccessMessage = safe(successMessage);
         panel.set(safePanel().withPending("Speichere..."));
         return true;
     }
@@ -131,6 +133,8 @@ public final class PartyTopBarContributionModel {
 
     void applyMutationResult(MutationAndLoadResult result) {
         mutationInFlight = false;
+        String successMessage = pendingSuccessMessage;
+        pendingSuccessMessage = "";
         MutationStatus status = result == null || result.mutationResult() == null
                 ? MutationStatus.STORAGE_ERROR
                 : result.mutationResult().status();
@@ -153,11 +157,12 @@ public final class PartyTopBarContributionModel {
             showStatus(message, true);
             return;
         }
-        applySnapshot(snapshotResult.snapshot(), data.dayResult(), result.successMessage(), false, EditorPanelModel.hidden());
+        applySnapshot(snapshotResult.snapshot(), data.dayResult(), successMessage, false, EditorPanelModel.hidden());
     }
 
     void applyMutationFailure() {
         mutationInFlight = false;
+        pendingSuccessMessage = "";
         String message = "Party-Aktion konnte nicht gespeichert werden.";
         showStatus(message, true);
     }
@@ -202,6 +207,7 @@ public final class PartyTopBarContributionModel {
 
     void applyStorageError(EditorPanelModel editorPanel) {
         mutationInFlight = false;
+        pendingSuccessMessage = "";
         triggerText.set("Keine _Party ▼");
         panel.set(new PanelModel(
                 false,
@@ -517,13 +523,8 @@ public final class PartyTopBarContributionModel {
 
     record MutationAndLoadResult(
             @Nullable MutationResult mutationResult,
-            @Nullable PanelData panelData,
-            String successMessage
+            @Nullable PanelData panelData
     ) {
-
-        MutationAndLoadResult {
-            successMessage = safe(successMessage);
-        }
     }
 
     private record LevelProgressDisplay(String nextLevelLabel, String text, double fraction) {

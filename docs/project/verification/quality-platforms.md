@@ -142,29 +142,34 @@ surface set:
   runs the canonical Styling enforcement surface.
 - `checkLayeringEnforcement`
   runs the canonical Layering enforcement surface.
-- `checkArchitecture`
-  aggregates the non-documentation architecture blocker path.
 - `checkDocumentationEnforcement`
   runs the dedicated Markdown-backed architecture and enforcement-document
-  coverage path and stays intentionally outside `checkArchitecture`.
+  coverage path and stays intentionally outside `check` and `build`.
+- `production-handoff`
+  runs the canonical broad production-code handoff route.
 
 The public API stops there. Role-specific or bundle-specific enforcement tasks
 are no longer part of the public verification contract. They may still exist as
 technical implementation tasks behind those layer surfaces, but they are not
 documented public entrypoints and must not be used as the canonical routing
-surface in owner docs.
+surface in owner docs. `production-handoff` is the only public broad
+implementation-handoff aggregate above the focused layer and documentation
+surfaces.
 
-`checkArchitecture` is the public aggregate for non-documentation architecture
-verification. It combines:
+`production-handoff` is the public aggregate for production-code verification.
+It combines:
 
-- compile-blocking Error Prone architecture rules through `compileJava`
+- assemble and `test`
+- the quality-hygiene blocker path through PMD, SpotBugs, CPD, Lizard,
+  compiled-artifact hygiene, and whole-program dead-code reachability
 - the canonical layer surfaces
 - generic ArchUnit coverage such as `architectureTest`
 - the non-documentation build-harness aggregate `:build-harness:architectureCheck`
 
 `check` remains the central local build-health aggregate. Its architecture
-coverage comes through `checkArchitecture` plus the explicitly attached layer
-surfaces. `checkDocumentationEnforcement` remains intentionally separate so
+coverage comes through the explicitly attached layer surfaces plus
+`architectureTest` and `:build-harness:architectureCheck`.
+`checkDocumentationEnforcement` remains intentionally separate so
 documentation-only work has a smaller proof route.
 
 Default local proof routing by change type lives in
@@ -179,9 +184,9 @@ documentation-only or check-only work.
 
 Public verification-surface ownership is architecture-owned by
 [Verification Core Architecture](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/verification-core.md:1):
-runtime wrappers forward canonical surface names, the verification core owns
-the public Gradle lifecycle tasks, and private bundles or rule engines stay
-behind those surfaces.
+runtime wrappers forward the canonical public entrypoints, the verification
+core owns the public Gradle lifecycle tasks, and private bundles or rule
+engines stay behind those surfaces.
 
 Wrapper-based local entrypoints keep their public names, but parallel local
 safety now comes from the worktree workflow described in

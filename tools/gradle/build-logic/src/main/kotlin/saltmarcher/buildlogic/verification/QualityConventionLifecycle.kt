@@ -1,16 +1,15 @@
 package saltmarcher.buildlogic.verification
 
 import org.gradle.api.Project
-import org.gradle.api.Task
 import java.io.File
 import org.gradle.api.plugins.quality.Pmd
 import org.gradle.api.tasks.Delete
-import org.gradle.api.tasks.TaskProvider
 import org.gradle.api.tasks.compile.JavaCompile
 import org.gradle.kotlin.dsl.named
 import org.gradle.kotlin.dsl.register
 import org.gradle.kotlin.dsl.withType
 import org.gradle.language.base.plugins.LifecycleBasePlugin
+import saltmarcher.buildlogic.enforcement.standardVerificationSurfaceCatalog
 import saltmarcher.buildlogic.tasks.CheckNoCompiledArtifactsTask
 import saltmarcher.buildlogic.tasks.hygiene.CkjmReportTask
 import saltmarcher.buildlogic.tasks.hygiene.CheckNoDeadCodeTask
@@ -19,19 +18,14 @@ import saltmarcher.buildlogic.tasks.hygiene.LizardCheckTask
 import saltmarcher.buildlogic.tasks.hygiene.PmdSourceCheckTask
 import saltmarcher.buildlogic.tasks.hygiene.SetupLizardTask
 
-internal data class QualityConventionLifecycleTasks(
-    val productionBuild: TaskProvider<out Task>,
-    val checkQualityHygiene: TaskProvider<out Task>,
-    val checkArchitecture: TaskProvider<out Task>,
-    val ckjmMain: TaskProvider<out Task>,
-    val check: TaskProvider<out Task>
-)
-
 internal fun Project.registerQualityConventionLifecycleTasks(
     environment: QualityConventionEnvironment,
     toolConfigurations: QualityConventionToolConfigurations
-): QualityConventionLifecycleTasks {
+){
     val verificationLayout = environment.verificationLayout
+    val publicVerificationSurfaceNames = standardVerificationSurfaceCatalog(environment.enforcementBundles.catalog)
+        .surfacesInOrder
+        .map { surface -> surface.publicTaskName }
     val resetMainJavaClassesOutput = tasks.register<Delete>("resetMainJavaClassesOutput") {
         description = "Remove compiled main classes before recompilation so deleted sources cannot survive as stale bytecode."
         delete(verificationLayout.mainJavaClassesDir)
@@ -121,13 +115,6 @@ internal fun Project.registerQualityConventionLifecycleTasks(
         summaryFile.set(ckjmSummaryFile)
     }
 
-    val productionBuild = tasks.register("productionBuild") {
-        group = LifecycleBasePlugin.VERIFICATION_GROUP
-        description = "Run the staged production build surface without the broader repository quality aggregates."
-        dependsOn("assemble")
-        dependsOn("test")
-    }
-
     val checkNoCompiledArtifactsInSource = tasks.register<CheckNoCompiledArtifactsTask>("checkNoCompiledArtifactsInSource") {
         group = LifecycleBasePlugin.VERIFICATION_GROUP
         description = "Fail if compiled .class artifacts are present in bootstrap/, shell/ or src/."
@@ -157,9 +144,12 @@ internal fun Project.registerQualityConventionLifecycleTasks(
         successMarker.set(layout.buildDirectory.file("verification-markers/checkNoDeadCode/success.marker"))
     }
 
-    val checkQualityHygiene = tasks.register("checkQualityHygiene") {
-        group = LifecycleBasePlugin.VERIFICATION_GROUP
-        description = "Run the staged non-architecture hygiene gates without the architecture or view-topology aggregates."
+    val check = tasks.named("check") {
+        dependsOn("assemble")
+        dependsOn("test")
+        dependsOn("architectureTest")
+        dependsOn(gradle.includedBuild("build-harness").task(":architectureCheck"))
+        publicVerificationSurfaceNames.forEach(::dependsOn)
         dependsOn(tasks.named("pmdMain"))
         dependsOn(tasks.named("spotbugsMain"))
         dependsOn(cpdMain)
@@ -167,19 +157,6 @@ internal fun Project.registerQualityConventionLifecycleTasks(
         dependsOn(checkNoCompiledArtifactsInSource)
         dependsOn(checkNoDeadCode)
         dependsOn(pmdStrictMain)
-    }
-
-    val checkArchitecture = tasks.register("checkArchitecture") {
-        group = LifecycleBasePlugin.VERIFICATION_GROUP
-        description = "Runs non-documentation architecture checks from ArchUnit, Error Prone, and the external build harness."
-        dependsOn("architectureTest")
-        dependsOn(gradle.includedBuild("build-harness").task(":architectureCheck"))
-    }
-
-    val check = tasks.named("check") {
-        dependsOn(productionBuild)
-        dependsOn(checkArchitecture)
-        dependsOn(checkQualityHygiene)
         dependsOn(ckjmMain)
     }
 
@@ -190,11 +167,4 @@ internal fun Project.registerQualityConventionLifecycleTasks(
         }
     }
 
-    return QualityConventionLifecycleTasks(
-        productionBuild = productionBuild,
-        checkQualityHygiene = checkQualityHygiene,
-        checkArchitecture = checkArchitecture,
-        ckjmMain = ckjmMain,
-        check = check
-    )
 }

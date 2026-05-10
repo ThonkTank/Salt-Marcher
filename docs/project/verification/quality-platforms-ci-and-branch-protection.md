@@ -17,15 +17,12 @@ operating model beneath the umbrella
 
 The workflow lives in
 [.github/workflows/quality-platforms.yml](/home/aaron/Schreibtisch/projects/SaltMarcher/.github/workflows/quality-platforms.yml:1)
-and defines seven jobs.
+and defines four jobs.
 
 | Job | Status | Current policy |
 | --- | --- | --- |
-| `quality-platforms / production-build` | `Required CI Gate` | Runs `tools/gradle/run-staged-verification.sh production-build`; this is the staged CI surface for assembling production code and running `test` without the broader hygiene or architecture aggregates. |
-| `quality-platforms / quality-hygiene` | `Required CI Gate` | Runs `tools/gradle/run-staged-verification.sh quality-hygiene`; this is the staged CI surface for PMD, SpotBugs, CPD, Lizard, and compiled-artifact hygiene without the architecture or view-topology aggregates. |
-| `quality-platforms / architecture` | `Required CI Gate` | Runs `tools/gradle/run-staged-verification.sh architecture`; this is the staged CI surface for non-view architecture aggregates. |
-| `quality-platforms / view-topology` | `Required CI Gate` | Runs `tools/gradle/run-staged-verification.sh view-topology`; this is the staged CI surface for the closed-world `checkViewEnforcement` topology blocker. |
-| `quality-platforms / ckjm-report` | `Required CI Report` | Runs `tools/gradle/run-staged-verification.sh metrics-report` and uploads the CKJM report from `build/reports/ckjm/`. CKJM hotspot regressions stay report-only and surface in the uploaded summary. |
+| `quality-platforms / production-handoff` | `Required CI Gate` | Runs `tools/gradle/run-staged-verification.sh production-handoff`; this is the single public CI handoff surface for assemble, `test`, quality hygiene, canonical layer enforcement, and generic architecture internals. |
+| `quality-platforms / ckjm-report` | `Required CI Report` | Runs `tools/gradle/run-observable-gradle.sh ckjmMain` and uploads the CKJM report from `build/reports/ckjm/`. CKJM hotspot regressions stay report-only and surface in the uploaded summary. |
 | `quality-platforms / sonarcloud` | `Required CI Gate` | Runs Gradle `sonar` with `sonar.qualitygate.wait=true`. |
 | `quality-platforms / codescene` | `Required CI Gate` | Runs `python3 tools/quality/scripts/codescene_delta.py`; fails on returned CodeScene `quality-gates`. |
 
@@ -104,10 +101,7 @@ place:
   enabled, require the same quality-platform jobs on `merge_group` that are
   required on `pull_request`.
 - Keep required reviews optional unless the team later decides otherwise.
-- Require `quality-platforms / production-build`.
-- Require `quality-platforms / quality-hygiene`.
-- Require `quality-platforms / architecture`.
-- Require `quality-platforms / view-topology`.
+- Require `quality-platforms / production-handoff`.
 - Require `quality-platforms / sonarcloud`.
 - Require `quality-platforms / codescene`.
 - Keep `quality-platforms / ckjm-report` visible for uploaded metrics; do not

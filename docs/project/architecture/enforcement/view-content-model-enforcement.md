@@ -34,7 +34,7 @@ Merged focused bundle entrypoint:
   runs the focused reusable `ContentModel` bundle. Reusable-unit role-shape
   topology enters transitively through `./gradlew checkViewEnforcement`.
   Canonical compile-side blocking behavior remains at `./gradlew compileJava`;
-  aggregate blocking behavior enters `./gradlew checkArchitecture` and
+  aggregate blocking behavior enters `./gradlew checkViewEnforcement` and
   `./gradlew check` through this focused role task.
 
 ## Invariant Catalog

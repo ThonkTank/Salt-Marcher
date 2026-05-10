@@ -170,10 +170,10 @@ ArchUnit suites, and whole-program dead-code reachability stays with
 retired from the public blocker path.
 
 Focused PMD, SpotBugs, CPD, Lizard, and CKJM entrypoints must stay independent
-of the closed-world view-topology blocker; they may be run together for quality
-investigation without pulling in the separate view-layer topology aggregate. The
-dedicated `checkNoDeadCode` blocker is the only whole-program dead-code
-hygiene gate in the central quality path.
+of the closed-world View topology owner behind `checkViewEnforcement`; they may
+be run together for quality investigation without pulling in the separate
+view-layer enforcement surface. The dedicated `checkNoDeadCode` blocker is the
+only whole-program dead-code hygiene gate in the central quality path.
 
 Checkstyle metrics and Semgrep are deferred unless current tooling cannot
 express a concrete rule.
@@ -227,10 +227,12 @@ layer.
 `check` includes:
 
 - Java compiler hygiene through `compileJava`
-- the public architecture aggregates `checkArchitecture`,
-  `checkViewEnforcement`, `checkDomainEnforcement`, `checkDataEnforcement`,
+- the public architecture layer surfaces `checkViewEnforcement`,
+  `checkDomainEnforcement`, `checkDataEnforcement`,
   `checkShellEnforcement`, `checkBootstrapEnforcement`,
   `checkStylingEnforcement`, and `checkLayeringEnforcement`
+- generic architecture internals through `architectureTest` and
+  `:build-harness:architectureCheck`
 - repository and resource policy checks
 - PMD source-smell detection through `pmdMain`
 - SpotBugs plus FindSecBugs through `spotbugsMain`
@@ -242,8 +244,9 @@ layer.
 implementation-handoff route required by `AGENTS.md` for production-code
 changes. The wrapper is runtime-only: it forwards the canonical surface name to
 one same-named Gradle lifecycle task, and the verification core expands
-`production-handoff` to the production-build, quality-hygiene, architecture,
-and view-topology dependencies inside Gradle.
+`production-handoff` directly to assemble, `test`, the quality-hygiene tool
+owners, the canonical layer surfaces, `architectureTest`, and
+`:build-harness:architectureCheck` inside Gradle.
 By default, `production-handoff` now runs with Gradle `--continue` at the
 staged-handoff level so the canonical implementation-handoff route reports the
 broader current failure set in one run. The staged handoff still fails overall
@@ -276,9 +279,9 @@ not automatically become the full-build path.
 `Blocking Local Gate` for Markdown-backed architecture and enforcement
 documentation checks. It is intentionally outside `check` and `build` so
 documentation-only changes use a narrower proof route by default without
-pulling the full application build and install path. The matching staged
-surface is `docs`, and the runtime wrapper forwards that surface name without
-owning the documentation task mapping itself.
+pulling the full application build and install path. There is no second public
+wrapper surface for this gate; the direct Gradle task is the canonical routing
+path.
 
 A completed implementation pass is incomplete until the required
 production-code full build, check-only package/layer rerun, or
@@ -290,7 +293,7 @@ Focused investigation entrypoints are `compileJava`, `pmdMain`,
 `checkCentralizedStylesheets`, `checkDefinedStyleClassSelectors`,
 `checkStylingCentralStylesheetOwner`, `checkNoCompiledArtifactsInSource`,
 `checkDesktopPackagingInputs`, `checkDesktopAppImageLayout`,
-`checkViewFxmlResources`, `checkArchitecture`, `checkViewEnforcement`,
+`checkViewFxmlResources`, `checkViewEnforcement`,
 `checkDomainEnforcement`, `checkDataEnforcement`, `checkShellEnforcement`,
 `checkBootstrapEnforcement`, `checkStylingEnforcement`,
 `checkLayeringEnforcement`, and `checkDocumentationEnforcement`, each run
@@ -300,12 +303,12 @@ through `./gradlew <task> --console=plain`.
 focused direct entrypoints. `pmdStrictMain` remains the focused text-first PMD
 entrypoint for the same blocking ruleset.
 
-Architecture-focused public entrypoints are:
+Architecture-focused and handoff public entrypoints are:
 
-- `./gradlew checkArchitecture --console=plain`
-  Aggregates the non-documentation architecture blocker path through
-  `architectureTest`, the public layer surfaces, and
-  `:build-harness:architectureCheck`.
+- `tools/gradle/run-staged-verification.sh production-handoff`
+  Aggregates the public production-code handoff route through assemble,
+  `test`, the quality-hygiene tool owners, the canonical layer surfaces,
+  `architectureTest`, and `:build-harness:architectureCheck`.
 - `./gradlew checkDocumentationEnforcement --console=plain`
   Aggregates the focused Markdown-backed architecture and enforcement-document
   coverage path through `:build-harness:documentationEnforcementCheck`.

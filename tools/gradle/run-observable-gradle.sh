@@ -5,14 +5,7 @@ readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 readonly HEARTBEAT_SECONDS=30
 declare -a DIAGNOSTIC_CONTINUE_TASK_NAMES=(
-  checkQualityHygiene
-  checkArchitecture
   checkNoDeadCode
-  quality-hygiene
-  architecture
-  view-topology
-  docs
-  metrics-report
   production-handoff
   checkDocumentationEnforcement
   checkViewEnforcement

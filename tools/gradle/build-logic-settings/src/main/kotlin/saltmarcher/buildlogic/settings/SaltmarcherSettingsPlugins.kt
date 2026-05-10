@@ -56,28 +56,19 @@ private fun includeSaltmarcherBuild(settings: Settings, relativePath: String) = 
 
 private fun standardBroadBuildTaskNames(): Set<String> = setOf(
     "assemble",
-    "architecture",
     "architectureTest",
     "build",
     "check",
-    "checkArchitecture",
     "checkNoDeadCode",
     "classes",
     "compileJava",
     "desktop-install",
-    "docs",
     "installDesktopApp",
     "installDist",
     "jar",
-    "metrics-report",
-    "production-build",
     "production-handoff",
-    "productionBuild",
-    "quality-hygiene",
-    "checkQualityHygiene",
     "run",
-    "test",
-    "view-topology"
+    "test"
 )
 
 private fun findRepositoryRoot(startDirectory: File): File {

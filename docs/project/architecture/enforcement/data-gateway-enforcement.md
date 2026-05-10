@@ -46,7 +46,7 @@ Unified focused bundle entrypoint:
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
 | `data-gateway-no-generic-infrastructure-business-policy-or-runtime-composition` | Review-Owned | every gateway facade or helper under `src/data/**/gateway/local/**` or `src/data/**/gateway/remote/**` | none | none | `gateway/` code does not become generic shared infrastructure, business policy, or runtime composition code; those responsibilities stay in `persistencecore/`, the domain layer, or the data-root `*ServiceContribution`. |
-| `data-gateway-domain-independence` | Enforced | every dependency from `src/data/**/gateway/**` into domain packages | data-gateway bundle ArchUnit `DataGatewayArchitectureTest` | `./gradlew checkArchitecture` and `./gradlew checkDataEnforcement` | Source adapters under `gateway/` do not depend on `src/domain/**` types. |
+| `data-gateway-domain-independence` | Enforced | every dependency from `src/data/**/gateway/**` into domain packages | data-gateway bundle ArchUnit `DataGatewayArchitectureTest` | `./gradlew checkDataEnforcement` | Source adapters under `gateway/` do not depend on `src/domain/**` types. |
 
 ### Communication Contract
 

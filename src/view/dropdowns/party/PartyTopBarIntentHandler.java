@@ -1,7 +1,18 @@
 package src.view.dropdowns.party;
 
 import java.util.Objects;
-import java.util.function.Consumer;
+import src.domain.encounter.EncounterApplicationService;
+import src.domain.encounter.published.ApplyEncounterStateCommand;
+import src.domain.party.PartyApplicationService;
+import src.domain.party.published.AdjustPartyXpCommand;
+import src.domain.party.published.CharacterDraft;
+import src.domain.party.published.CreateCharacterCommand;
+import src.domain.party.published.DeleteCharacterCommand;
+import src.domain.party.published.MembershipState;
+import src.domain.party.published.PerformPartyRestCommand;
+import src.domain.party.published.RestType;
+import src.domain.party.published.SetPartyMembershipCommand;
+import src.domain.party.published.UpdateCharacterCommand;
 
 @SuppressWarnings({
         "PMD.GodClass",
@@ -12,25 +23,17 @@ final class PartyTopBarIntentHandler {
     private static final String CHARACTER_NOT_FOUND = "Charakter konnte nicht gefunden werden.";
 
     private final PartyTopBarContributionModel presentationModel;
-    private Consumer<PartyTopBarPublishedEvent> publishedEventListener = ignored -> {};
-    private String pendingSuccessMessage = "";
+    private final PartyApplicationService party;
+    private final EncounterApplicationService encounters;
 
-    PartyTopBarIntentHandler(PartyTopBarContributionModel presentationModel) {
+    PartyTopBarIntentHandler(
+            PartyTopBarContributionModel presentationModel,
+            PartyApplicationService party,
+            EncounterApplicationService encounters
+    ) {
         this.presentationModel = Objects.requireNonNull(presentationModel, "presentationModel");
-    }
-
-    void onPublishedEventRequested(Consumer<PartyTopBarPublishedEvent> listener) {
-        publishedEventListener = listener == null ? ignored -> {} : listener;
-    }
-
-    void storePendingSuccessMessage(String successMessage) {
-        pendingSuccessMessage = successMessage == null ? "" : successMessage;
-    }
-
-    String drainPendingSuccessMessage() {
-        String message = pendingSuccessMessage;
-        pendingSuccessMessage = "";
-        return message;
+        this.party = Objects.requireNonNull(party, "party");
+        this.encounters = Objects.requireNonNull(encounters, "encounters");
     }
 
     void consume(PartyTopBarViewInputEvent event) {
@@ -66,13 +69,13 @@ final class PartyTopBarIntentHandler {
         }
         if (event.shortRestRequested()) {
             performRest(
-                    PartyTopBarPublishedEvent.RestAction.SHORT_REST,
+                    RestType.SHORT_REST,
                     "Short Rest wurde für die aktive Party ausgeführt.");
             return;
         }
         if (event.longRestRequested()) {
             performRest(
-                    PartyTopBarPublishedEvent.RestAction.LONG_REST,
+                    RestType.LONG_REST,
                     "Long Rest wurde für die aktive Party ausgeführt.");
         }
     }
@@ -119,10 +122,8 @@ final class PartyTopBarIntentHandler {
         if (!presentationModel.beginMutation(successMessage)) {
             return;
         }
-        publishedEventListener.accept(PartyTopBarPublishedEvent.setMembership(
-                memberId,
-                PartyTopBarPublishedEvent.MembershipTarget.ACTIVE,
-                successMessage));
+        party.setMembership(new SetPartyMembershipCommand(memberId, MembershipState.ACTIVE));
+        refreshEncounterSession();
     }
 
     private void removeFromParty(long memberId) {
@@ -135,10 +136,8 @@ final class PartyTopBarIntentHandler {
         if (!presentationModel.beginMutation(successMessage)) {
             return;
         }
-        publishedEventListener.accept(PartyTopBarPublishedEvent.setMembership(
-                memberId,
-                PartyTopBarPublishedEvent.MembershipTarget.RESERVE,
-                successMessage));
+        party.setMembership(new SetPartyMembershipCommand(memberId, MembershipState.RESERVE));
+        refreshEncounterSession();
     }
 
     private void deleteCharacter(long memberId, String memberName) {
@@ -150,7 +149,8 @@ final class PartyTopBarIntentHandler {
         if (!presentationModel.beginMutation(successMessage)) {
             return;
         }
-        publishedEventListener.accept(PartyTopBarPublishedEvent.deleteCharacter(memberId, successMessage));
+        party.deleteCharacter(new DeleteCharacterCommand(memberId));
+        refreshEncounterSession();
     }
 
     private void adjustXp(long memberId, int xpDelta) {
@@ -170,14 +170,16 @@ final class PartyTopBarIntentHandler {
         if (!presentationModel.beginMutation(successMessage)) {
             return;
         }
-        publishedEventListener.accept(PartyTopBarPublishedEvent.adjustXp(memberId, xpDelta, successMessage));
+        party.adjustXp(new AdjustPartyXpCommand(java.util.List.of(memberId), xpDelta));
+        refreshEncounterSession();
     }
 
-    private void performRest(PartyTopBarPublishedEvent.RestAction restAction, String successMessage) {
+    private void performRest(RestType restType, String successMessage) {
         if (!presentationModel.beginMutation(successMessage)) {
             return;
         }
-        publishedEventListener.accept(PartyTopBarPublishedEvent.performRest(restAction, successMessage));
+        party.performRest(new PerformPartyRestCommand(restType));
+        refreshEncounterSession();
     }
 
     private void createCharacter(PartyEditorTopBarViewInputEvent.EditorDraft draft) {
@@ -191,13 +193,15 @@ final class PartyTopBarIntentHandler {
         if (!presentationModel.beginMutation(successMessage)) {
             return;
         }
-        publishedEventListener.accept(PartyTopBarPublishedEvent.createCharacter(
-                name,
-                parsedDraft.playerName(),
-                parsedDraft.level(),
-                parsedDraft.passivePerception(),
-                parsedDraft.armorClass(),
-                successMessage));
+        party.createCharacter(new CreateCharacterCommand(
+                new CharacterDraft(
+                        name,
+                        parsedDraft.playerName(),
+                        parsedDraft.level(),
+                        parsedDraft.passivePerception(),
+                        parsedDraft.armorClass()),
+                MembershipState.ACTIVE));
+        refreshEncounterSession();
     }
 
     private void updateCharacter(long memberId, PartyEditorTopBarViewInputEvent.EditorDraft draft) {
@@ -215,14 +219,30 @@ final class PartyTopBarIntentHandler {
         if (!presentationModel.beginMutation(successMessage)) {
             return;
         }
-        publishedEventListener.accept(PartyTopBarPublishedEvent.updateCharacter(
+        party.updateCharacter(new UpdateCharacterCommand(
                 memberId,
-                name,
-                parsedDraft.playerName(),
-                parsedDraft.level(),
-                parsedDraft.passivePerception(),
-                parsedDraft.armorClass(),
-                successMessage));
+                new CharacterDraft(
+                        name,
+                        parsedDraft.playerName(),
+                        parsedDraft.level(),
+                        parsedDraft.passivePerception(),
+                        parsedDraft.armorClass())));
+        refreshEncounterSession();
+    }
+
+    private void refreshEncounterSession() {
+        encounters.applyState(new ApplyEncounterStateCommand(
+                ApplyEncounterStateCommand.Action.REFRESH,
+                0L,
+                0L,
+                0,
+                0L,
+                java.util.List.of(),
+                "",
+                0,
+                0L,
+                0,
+                false));
     }
 
     private static ParsedDraft parseDraft(PartyEditorTopBarViewInputEvent.EditorDraft draft) {

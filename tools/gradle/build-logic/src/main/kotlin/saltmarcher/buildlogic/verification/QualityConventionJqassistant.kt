@@ -1,8 +1,7 @@
 package saltmarcher.buildlogic.verification
 
 internal fun org.gradle.api.Project.registerQualityConventionHarness(
-    environment: QualityConventionEnvironment,
-    lifecycleTasks: QualityConventionLifecycleTasks
+    environment: QualityConventionEnvironment
 ): VerificationHarnessExtension {
     val verificationLayout = environment.verificationLayout
     val harness = VerificationHarnessExtension(
@@ -13,12 +12,7 @@ internal fun org.gradle.api.Project.registerQualityConventionHarness(
         sourceRoots = verificationLayout.sourceRoots,
         sourceJavaRoots = verificationLayout.sourceJavaRoots,
         commonFocusedArchunitSupportIncludes = verificationLayout.commonFocusedArchunitSupportIncludes,
-        configureCommonErrorProneOptions = { applyCommonErrorProneOptions(this) },
-        productionBuild = lifecycleTasks.productionBuild,
-        checkQualityHygiene = lifecycleTasks.checkQualityHygiene,
-        checkArchitecture = lifecycleTasks.checkArchitecture,
-        ckjmMain = lifecycleTasks.ckjmMain,
-        check = lifecycleTasks.check
+        configureCommonErrorProneOptions = { applyCommonErrorProneOptions(this) }
     )
     extensions.add(VerificationHarnessExtension::class.java, "saltmarcherVerificationHarness", harness)
     return harness

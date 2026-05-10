@@ -2,9 +2,7 @@ package saltmarcher.buildlogic.verification
 
 import org.gradle.api.Plugin
 import org.gradle.api.Project
-import org.gradle.api.Task
 import org.gradle.api.plugins.ExtensionAware
-import org.gradle.api.tasks.TaskProvider
 import org.gradle.api.tasks.compile.JavaCompile
 import org.gradle.kotlin.dsl.getByType
 import org.gradle.kotlin.dsl.named
@@ -28,6 +26,8 @@ internal fun Project.configureVerificationCore() {
     val focusedEnforcementBundleMode = enforcementBundles.focusedEnforcementBundleMode
     val verificationHarness = extensions.getByType<VerificationHarnessExtension>()
     val verificationSurfaceCatalog = standardVerificationSurfaceCatalog(enforcementBundles.catalog)
+    val publicVerificationSurfaceNames = verificationSurfaceCatalog.surfacesInOrder
+        .map { surface -> surface.publicTaskName }
 
     fun descriptor(bundleId: String): EnforcementBundleDescriptor = enforcementBundles.descriptor(bundleId)
 
@@ -136,65 +136,27 @@ internal fun Project.configureVerificationCore() {
         dependsOn(gradle.includedBuild("build-harness").task(":documentationEnforcementCheck"))
     }
 
-    fun registerSurfaceTask(
-        surfaceName: String,
-        surfaceDescription: String,
-        dependency: Any
-    ) = tasks.register(surfaceName) {
+    tasks.register("desktop-install") {
         group = LifecycleBasePlugin.VERIFICATION_GROUP
-        description = surfaceDescription
-        dependsOn(dependency)
+        description = "Run the convenience desktop installation path after a green local handoff."
+        dependsOn("installDesktopApp")
     }
 
-    val productionBuild = registerSurfaceTask(
-        "production-build",
-        "Run the public staged production-build verification surface.",
-        verificationHarness.productionBuild
-    )
-
-    val qualityHygiene = registerSurfaceTask(
-        "quality-hygiene",
-        "Run the public staged non-architecture hygiene verification surface.",
-        verificationHarness.checkQualityHygiene
-    )
-
-    val architecture = registerSurfaceTask(
-        "architecture",
-        "Run the public staged non-view architecture verification surface.",
-        verificationHarness.checkArchitecture
-    )
-
-    val viewTopology = registerSurfaceTask(
-        "view-topology",
-        "Run the public staged closed-world view-layer topology verification surface.",
-        descriptor("viewLayer").entryTaskName
-    )
-
-    val docs = registerSurfaceTask(
-        "docs",
-        "Run the public staged documentation verification surface.",
-        checkDocumentationEnforcement
-    )
-
-    val metricsReport = registerSurfaceTask(
-        "metrics-report",
-        "Run the public staged CKJM report surface.",
-        verificationHarness.ckjmMain
-    )
-
-    val desktopInstall = registerSurfaceTask(
-        "desktop-install",
-        "Run the public staged desktop installation surface.",
-        "installDesktopApp"
-    )
-
-    val productionHandoff = tasks.register("production-handoff") {
+    tasks.register("production-handoff") {
         group = LifecycleBasePlugin.VERIFICATION_GROUP
-        description = "Run the public staged production handoff surface."
-        dependsOn(productionBuild)
-        dependsOn(qualityHygiene)
-        dependsOn(architecture)
-        dependsOn(viewTopology)
+        description = "Run the public production handoff surface through the small verification API and internal quality owners."
+        dependsOn("assemble")
+        dependsOn("test")
+        dependsOn("architectureTest")
+        dependsOn(gradle.includedBuild("build-harness").task(":architectureCheck"))
+        dependsOn("pmdMain")
+        dependsOn("spotbugsMain")
+        dependsOn("cpdMain")
+        dependsOn("lizardMain")
+        dependsOn("checkNoCompiledArtifactsInSource")
+        dependsOn("checkNoDeadCode")
+        dependsOn("pmdStrictMain")
+        publicVerificationSurfaceNames.forEach(::dependsOn)
     }
 
 }

@@ -43,13 +43,12 @@ internal fun Project.configureQualityConventions() {
         }
     }
 
-    val lifecycleTasks = registerQualityConventionLifecycleTasks(
+    registerQualityConventionLifecycleTasks(
         environment = environment,
         toolConfigurations = toolConfigurations
     )
     registerQualityConventionHarness(
-        environment = environment,
-        lifecycleTasks = lifecycleTasks
+        environment = environment
     )
     registerQualityConventionPackagingTasks(environment)
 }

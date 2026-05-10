@@ -32,6 +32,7 @@ final class AdventuringDayTopBarContributionModel {
     private boolean activePartyChangedSinceCustomEdit;
     private boolean activePartyRefreshFailed;
     private CalculationModel calculation = CalculationModel.empty(0);
+    private int pendingCalculationTotalGroupXp;
 
     AdventuringDayTopBarContributionModel() {
         rebuildPanel();
@@ -76,6 +77,7 @@ final class AdventuringDayTopBarContributionModel {
         if (levels.isEmpty()) {
             return null;
         }
+        pendingCalculationTotalGroupXp = totalGroupXp;
         return new CalculationRequest(levels, totalGroupXp);
     }
 
@@ -89,7 +91,9 @@ final class AdventuringDayTopBarContributionModel {
         applySummary(result.summary());
     }
 
-    void applyCalculationResult(int totalGroupXp, @Nullable AdventuringDayCalculationResult result) {
+    void applyCalculationResult(@Nullable AdventuringDayCalculationResult result) {
+        int totalGroupXp = pendingCalculationTotalGroupXp;
+        pendingCalculationTotalGroupXp = 0;
         if (result == null || result.status() != ReadStatus.SUCCESS || result.calculation() == null) {
             calculation = CalculationModel.empty(totalGroupXp);
             rebuildPanel();

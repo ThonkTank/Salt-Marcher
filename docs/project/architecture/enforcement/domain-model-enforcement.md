@@ -31,7 +31,7 @@ Unified focused bundle entrypoint:
 
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
-| `domain-model-no-outer-layer-dependencies` | Enforced Elsewhere | every model family under `src/domain/**` | domain-layer bundle ArchUnit `domainMustStayIndependentFromOuterLayers` and domain-layer bundle Error Prone `DomainForbiddenInfrastructureDependency` | `./gradlew compileJava`, `./gradlew checkArchitecture`, and `./gradlew checkDomainEnforcement` | Internal model code does not depend on outer-layer types or concrete data adapters. |
+| `domain-model-no-outer-layer-dependencies` | Enforced Elsewhere | every model family under `src/domain/**` | domain-layer bundle ArchUnit `domainMustStayIndependentFromOuterLayers` and domain-layer bundle Error Prone `DomainForbiddenInfrastructureDependency` | `./gradlew compileJava` and `./gradlew checkDomainEnforcement` | Internal model code does not depend on outer-layer types or concrete data adapters. |
 
 ### Communication Contract
 

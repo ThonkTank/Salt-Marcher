@@ -16,7 +16,7 @@ permissions:
   pull-requests: read
 
 jobs:
-  production-build:
+  production-handoff:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -27,46 +27,7 @@ jobs:
           distribution: temurin
           java-version: "21"
       - uses: gradle/actions/setup-gradle@v4
-      - run: tools/gradle/run-staged-verification.sh production-build
-
-  quality-hygiene:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: "21"
-      - uses: gradle/actions/setup-gradle@v4
-      - run: tools/gradle/run-staged-verification.sh quality-hygiene
-
-  architecture:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: "21"
-      - uses: gradle/actions/setup-gradle@v4
-      - run: tools/gradle/run-staged-verification.sh architecture
-
-  view-topology:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: "21"
-      - uses: gradle/actions/setup-gradle@v4
-      - run: tools/gradle/run-staged-verification.sh view-topology
+      - run: tools/gradle/run-staged-verification.sh production-handoff
 
   ckjm-report:
     runs-on: ubuntu-latest
@@ -79,7 +40,7 @@ jobs:
           distribution: temurin
           java-version: "21"
       - uses: gradle/actions/setup-gradle@v4
-      - run: tools/gradle/run-staged-verification.sh metrics-report
+      - run: tools/gradle/run-observable-gradle.sh ckjmMain
       - if: always()
         uses: actions/upload-artifact@v4
         with:

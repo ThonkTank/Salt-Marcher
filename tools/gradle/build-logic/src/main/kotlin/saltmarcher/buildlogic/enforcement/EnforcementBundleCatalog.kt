@@ -50,12 +50,7 @@ data class EnforcementBundleDescriptor(
     val verificationSourceRoots: List<String>,
     val verificationSourceIncludes: List<String>
 ) {
-    fun ownedTaskNames(): List<String> = buildList {
-        add(entryTaskName)
-        archunit?.let { add(it.taskName) }
-        addAll(buildHarnessTasks.map(BuildHarnessTaskSpec::taskName))
-        addAll(utilityTasks.map(EnforcementUtilityTaskSpec::taskName))
-    }.distinct()
+    fun focusedSelectorTaskNames(): List<String> = listOf(entryTaskName)
 
     fun requiresFocusedCompile(): Boolean =
         errorProneCheckers.isNotEmpty() || archunit != null
@@ -73,7 +68,7 @@ data class EnforcementBundleCatalog(
         .map(EnforcementBundleDescriptor::bundleId)
 
     val taskToBundleId: Map<String, String> = descriptorsById.values
-        .flatMap { descriptor -> descriptor.ownedTaskNames().map { taskName -> taskName to descriptor.bundleId } }
+        .flatMap { descriptor -> descriptor.focusedSelectorTaskNames().map { taskName -> taskName to descriptor.bundleId } }
         .toMap()
 
     fun descriptor(bundleId: String): EnforcementBundleDescriptor = descriptorsById[bundleId]
