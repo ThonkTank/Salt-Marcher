@@ -1,7 +1,7 @@
-package src.domain.party.roster.port;
+package src.domain.party.model.roster.repository;
 
 import java.util.List;
-import src.domain.party.roster.value.PartyMutationStatus;
+import src.domain.party.model.roster.model.PartyMutationStatus;
 
 public interface PartyRuntimeRepository {
 

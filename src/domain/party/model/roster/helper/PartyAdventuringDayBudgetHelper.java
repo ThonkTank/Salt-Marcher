@@ -1,6 +1,6 @@
-package src.domain.party.roster.policy;
+package src.domain.party.model.roster.helper;
 
-public final class PartyAdventuringDayBudgetPolicy {
+public final class PartyAdventuringDayBudgetHelper {
 
     private static final int[] ADVENTURING_DAY_BUDGETS = {
             0,
@@ -26,11 +26,11 @@ public final class PartyAdventuringDayBudgetPolicy {
             40_000
     };
 
-    private PartyAdventuringDayBudgetPolicy() {
+    private PartyAdventuringDayBudgetHelper() {
     }
 
     public static int perCharacter(int level) {
-        return ADVENTURING_DAY_BUDGETS[PartyLevelProgressionPolicy.clampLevel(level)];
+        return ADVENTURING_DAY_BUDGETS[PartyLevelProgressionHelper.clampLevel(level)];
     }
 
     public static int perThird(int level) {

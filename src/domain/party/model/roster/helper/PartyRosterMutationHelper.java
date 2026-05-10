@@ -1,13 +1,13 @@
-package src.domain.party.roster.policy;
+package src.domain.party.model.roster.helper;
 
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.UnaryOperator;
-import src.domain.party.roster.entity.PartyCharacter;
+import src.domain.party.model.roster.model.PartyCharacter;
 
-public final class PartyRosterMutationPolicy {
+public final class PartyRosterMutationHelper {
 
     public List<PartyCharacter> replace(List<PartyCharacter> characters, long id, UnaryOperator<PartyCharacter> updater) {
         List<PartyCharacter> nextCharacters = new ArrayList<>(characters);

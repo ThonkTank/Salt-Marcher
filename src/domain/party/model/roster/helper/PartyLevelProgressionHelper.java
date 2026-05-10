@@ -1,6 +1,6 @@
-package src.domain.party.roster.policy;
+package src.domain.party.model.roster.helper;
 
-public final class PartyLevelProgressionPolicy {
+public final class PartyLevelProgressionHelper {
 
     private static final int[] XP_THRESHOLDS = {
             0,
@@ -28,7 +28,7 @@ public final class PartyLevelProgressionPolicy {
 
     private static final int MAX_LEVEL = 20;
 
-    private PartyLevelProgressionPolicy() {
+    private PartyLevelProgressionHelper() {
     }
 
     public static int minimumXpForLevel(int level) {

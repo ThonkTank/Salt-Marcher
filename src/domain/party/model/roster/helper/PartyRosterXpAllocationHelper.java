@@ -1,12 +1,12 @@
-package src.domain.party.roster.policy;
+package src.domain.party.model.roster.helper;
 
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
-import src.domain.party.roster.entity.PartyCharacter;
+import src.domain.party.model.roster.model.PartyCharacter;
 
-public final class PartyRosterXpAllocationPolicy {
+public final class PartyRosterXpAllocationHelper {
 
     public Result apply(List<PartyCharacter> characters, List<Long> ids, int xpDelta) {
         Set<Long> requestedIds = sanitizeRequestedIds(ids, xpDelta);

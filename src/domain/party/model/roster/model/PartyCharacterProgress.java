@@ -1,6 +1,6 @@
-package src.domain.party.roster.value;
+package src.domain.party.model.roster.model;
 
-import src.domain.party.roster.policy.PartyLevelProgressionPolicy;
+import src.domain.party.model.roster.helper.PartyLevelProgressionHelper;
 
 public record PartyCharacterProgress(
         int level,
@@ -10,7 +10,7 @@ public record PartyCharacterProgress(
         int shortRestsTakenSinceLongRest
 ) {
     public PartyCharacterProgress {
-        level = PartyLevelProgressionPolicy.clampLevel(level);
+        level = PartyLevelProgressionHelper.clampLevel(level);
         currentXp = Math.max(0, currentXp);
         xpSinceLongRest = Math.max(0, xpSinceLongRest);
         xpSinceShortRest = Math.max(0, xpSinceShortRest);
@@ -20,7 +20,7 @@ public record PartyCharacterProgress(
     public PartyCharacterProgress withLevel(int nextLevel) {
         return new PartyCharacterProgress(
                 nextLevel,
-                PartyLevelProgressionPolicy.normalizeCurrentXpForLevel(nextLevel, currentXp),
+                PartyLevelProgressionHelper.normalizeCurrentXpForLevel(nextLevel, currentXp),
                 xpSinceLongRest,
                 xpSinceShortRest,
                 shortRestsTakenSinceLongRest);
@@ -32,7 +32,7 @@ public record PartyCharacterProgress(
     }
 
     public PartyCharacterProgress adjustXp(int xpDelta) {
-        int minimumXp = PartyLevelProgressionPolicy.minimumXpForLevel(level);
+        int minimumXp = PartyLevelProgressionHelper.minimumXpForLevel(level);
         int lowerBound = xpDelta < 0 ? Math.min(currentXp, minimumXp) : 0;
         int nextCurrentXp = Math.max(lowerBound, currentXp + xpDelta);
         int appliedDelta = nextCurrentXp - currentXp;

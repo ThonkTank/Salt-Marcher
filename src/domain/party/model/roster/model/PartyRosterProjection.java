@@ -1,9 +1,7 @@
-package src.domain.party.roster.value;
+package src.domain.party.model.roster.model;
 
 import java.util.Comparator;
 import java.util.List;
-import src.domain.party.roster.entity.PartyCharacter;
-
 public record PartyRosterProjection(
         List<PartyCharacter> activeMembers,
         List<PartyCharacter> reserveMembers,

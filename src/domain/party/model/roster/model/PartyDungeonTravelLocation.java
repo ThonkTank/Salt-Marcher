@@ -1,4 +1,4 @@
-package src.domain.party.roster.value;
+package src.domain.party.model.roster.model;
 
 public record PartyDungeonTravelLocation(
         long mapId,

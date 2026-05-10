@@ -1,6 +1,6 @@
-package src.domain.party.roster.port;
+package src.domain.party.model.roster.repository;
 
-import src.domain.party.roster.aggregate.PartyRoster;
+import src.domain.party.model.roster.model.PartyRoster;
 
 public interface PartyRosterRepository {
 

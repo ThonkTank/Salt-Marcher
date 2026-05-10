@@ -1,30 +1,20 @@
-package src.domain.party.roster.aggregate;
+package src.domain.party.model.roster.model;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import src.domain.party.roster.entity.PartyCharacter;
-import src.domain.party.roster.policy.PartyCharacterDraftValidationPolicy;
-import src.domain.party.roster.policy.PartyLevelProgressionPolicy;
-import src.domain.party.roster.policy.PartyRosterMutationPolicy;
-import src.domain.party.roster.policy.PartyRosterXpAllocationPolicy;
-import src.domain.party.roster.value.PartyCharacterCombatProfile;
-import src.domain.party.roster.value.PartyCharacterDraft;
-import src.domain.party.roster.value.PartyCharacterIdentity;
-import src.domain.party.roster.value.PartyCharacterProgress;
-import src.domain.party.roster.value.PartyMembership;
-import src.domain.party.roster.value.PartyMutationStatus;
-import src.domain.party.roster.value.PartyRestType;
-import src.domain.party.roster.value.PartyRosterProjection;
-import src.domain.party.roster.value.PartyTravelLocation;
+import src.domain.party.model.roster.helper.PartyCharacterDraftValidationHelper;
+import src.domain.party.model.roster.helper.PartyLevelProgressionHelper;
+import src.domain.party.model.roster.helper.PartyRosterMutationHelper;
+import src.domain.party.model.roster.helper.PartyRosterXpAllocationHelper;
 
 public final class PartyRoster {
 
     private final long nextCharacterId;
     private final List<PartyCharacter> characters;
-    private final PartyCharacterDraftValidationPolicy draftValidator = new PartyCharacterDraftValidationPolicy();
-    private final PartyRosterMutationPolicy mutations = new PartyRosterMutationPolicy();
-    private final PartyRosterXpAllocationPolicy xpAllocator = new PartyRosterXpAllocationPolicy();
+    private final PartyCharacterDraftValidationHelper draftValidator = new PartyCharacterDraftValidationHelper();
+    private final PartyRosterMutationHelper mutations = new PartyRosterMutationHelper();
+    private final PartyRosterXpAllocationHelper xpAllocator = new PartyRosterXpAllocationHelper();
 
     public PartyRoster(long nextCharacterId, List<PartyCharacter> characters) {
         this.nextCharacterId = Math.max(1L, nextCharacterId);
@@ -57,7 +47,7 @@ public final class PartyRoster {
                 new PartyCharacterIdentity(draft.name(), draft.playerName()),
                 new PartyCharacterProgress(
                         draft.level(),
-                        PartyLevelProgressionPolicy.minimumXpForLevel(draft.level()),
+                        PartyLevelProgressionHelper.minimumXpForLevel(draft.level()),
                         0,
                         0,
                         0),
@@ -101,7 +91,7 @@ public final class PartyRoster {
     }
 
     public MutationResult adjustXp(List<Long> ids, int xpDelta) {
-        PartyRosterXpAllocationPolicy.Result adjustmentResult = xpAllocator.apply(characters, ids, xpDelta);
+        PartyRosterXpAllocationHelper.Result adjustmentResult = xpAllocator.apply(characters, ids, xpDelta);
         if (!adjustmentResult.validRequest()) {
             return new MutationResult(PartyMutationStatus.INVALID_INPUT, this);
         }

@@ -1,8 +1,8 @@
-package src.domain.party.roster.policy;
+package src.domain.party.model.roster.helper;
 
-import src.domain.party.roster.value.PartyCharacterDraft;
+import src.domain.party.model.roster.model.PartyCharacterDraft;
 
-public final class PartyCharacterDraftValidationPolicy {
+public final class PartyCharacterDraftValidationHelper {
 
     public boolean isValid(PartyCharacterDraft draft) {
         return draft != null

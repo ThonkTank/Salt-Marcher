@@ -1,15 +1,6 @@
-package src.domain.party.roster.entity;
+package src.domain.party.model.roster.model;
 
 import java.util.Objects;
-import src.domain.party.roster.value.PartyCharacterTravelState;
-import src.domain.party.roster.value.PartyCharacterCombatProfile;
-import src.domain.party.roster.value.PartyCharacterDraft;
-import src.domain.party.roster.value.PartyCharacterIdentity;
-import src.domain.party.roster.value.PartyCharacterProgress;
-import src.domain.party.roster.value.PartyMembership;
-import src.domain.party.roster.value.PartyRestType;
-import src.domain.party.roster.value.PartyTravelLocation;
-
 public final class PartyCharacter {
 
     private final long id;
