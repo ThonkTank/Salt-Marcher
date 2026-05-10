@@ -60,7 +60,7 @@ public final class ViewRoleDependencySupport {
         }
         if (referencedType.startsWith("shell.")) {
             return switch (sourceRole) {
-                case CONTRIBUTION -> !ViewRolePolicy.isAllowedContributionShellType(referencedType);
+                case CONTRIBUTION -> !ViewArchitectureSupport.isAllowedContributionShellType(referencedType);
                 case BINDER -> !ViewArchitectureSupport.isAllowedBinderShellType(referencedType);
                 case CONTRIBUTION_MODEL, CONTENT_MODEL, INTENT_HANDLER -> true;
             };

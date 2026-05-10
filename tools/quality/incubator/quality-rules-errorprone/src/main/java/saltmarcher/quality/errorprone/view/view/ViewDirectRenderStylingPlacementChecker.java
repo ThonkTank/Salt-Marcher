@@ -21,16 +21,16 @@ public final class ViewDirectRenderStylingPlacementChecker extends BugChecker
 
     @Override
     public Description matchCompilationUnit(CompilationUnitTree tree, VisitorState state) {
-        if (!ViewDirectRenderStylingSupport.isPassiveViewSource(tree)) {
+        if (!ViewProgrammaticStylingSupport.isPassiveViewSource(tree)) {
             return Description.NO_MATCH;
         }
 
-        Set<String> violations = ViewDirectRenderStylingSupport.collectViolations(tree);
+        Set<String> violations = ViewProgrammaticStylingSupport.collectViolations(tree);
         if (violations.isEmpty()) {
             return Description.NO_MATCH;
         }
 
-        String qualifiedTypeName = ViewDirectRenderStylingSupport.qualifiedTopLevelTypeName(tree);
+        String qualifiedTypeName = ViewProgrammaticStylingSupport.qualifiedTopLevelTypeName(tree);
         if (DIRECT_RENDER_EXCEPTION_TYPES.contains(qualifiedTypeName)) {
             return Description.NO_MATCH;
         }

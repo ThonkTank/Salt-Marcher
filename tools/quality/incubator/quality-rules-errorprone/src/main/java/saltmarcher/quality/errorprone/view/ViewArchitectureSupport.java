@@ -10,7 +10,6 @@ import com.sun.source.util.TreeScanner;
 import com.sun.tools.javac.code.Symbol;
 import java.util.LinkedHashSet;
 import java.util.Set;
-import java.util.regex.Pattern;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
@@ -32,13 +31,6 @@ import javax.lang.model.util.SimpleTypeVisitor14;
 
 public final class ViewArchitectureSupport {
 
-    public static final Pattern VIEW_CONTRIBUTION_PACKAGE = Pattern.compile("^src\\.view\\.(leftbartabs|statetabs|dropdowns)\\.[^.]+$");
-    public static final Pattern VIEW_MODEL_PACKAGE = Pattern.compile("^src\\.view\\.(leftbartabs|statetabs|dropdowns)\\.[^.]+$|^src\\.view\\.slotcontent\\.(controls|main|state|details|topbar|primitives)\\.[^.]+$");
-    public static final Pattern VIEW_PANEL_PACKAGE = Pattern.compile("^src\\.view\\.slotcontent\\.(controls|main|state|details|topbar|primitives)\\.[^.]+$");
-    public static final Pattern VIEW_SLOT_PACKAGE = Pattern.compile("^src\\.view\\.(leftbartabs|statetabs|dropdowns)\\.[^.]+$");
-    public static final Pattern LEGACY_VIEW_PACKAGE = Pattern.compile("^src\\.view\\.(?!(leftbartabs|statetabs|dropdowns|slotcontent)(\\.|$)).+");
-    public static final Pattern DATA_ROOT_PACKAGE = Pattern.compile("^src\\.data\\.([^.]+)$");
-
     private static final Set<String> BINDER_ALLOWED_SHELL_TYPES = Set.of(
             "shell.api.ContributionKey",
             "shell.api.InspectorEntrySpec",
@@ -51,6 +43,20 @@ public final class ViewArchitectureSupport {
             "shell.api.ShellStateTabSpec",
             "shell.api.ServiceRegistry",
             "shell.api.ShellSlot",
+            "shell.api.ShellLeftBarTabMode",
+            "shell.api.ShellLeftBarTabSpec",
+            "shell.api.ShellTopBarSpec");
+    private static final Set<String> CONTRIBUTION_ALLOWED_SHELL_TYPES = Set.of(
+            "shell.api.ContributionKey",
+            "shell.api.InspectorEntrySpec",
+            "shell.api.InspectorSink",
+            "shell.api.NavigationGraphicResource",
+            "shell.api.NavigationGroupSpec",
+            "shell.api.ShellBinding",
+            "shell.api.ShellContribution",
+            "shell.api.ShellContributionSpec",
+            "shell.api.ShellRuntimeContext",
+            "shell.api.ShellStateTabSpec",
             "shell.api.ShellLeftBarTabMode",
             "shell.api.ShellLeftBarTabSpec",
             "shell.api.ShellTopBarSpec");
@@ -74,8 +80,8 @@ public final class ViewArchitectureSupport {
     }
 
     public static boolean isBinderSource(CompilationUnitTree tree) {
-        return VIEW_CONTRIBUTION_PACKAGE.matcher(packageName(tree)).matches()
-                && sourceFileName(tree).endsWith("Binder.java");
+        ViewSourceDescriptor source = ViewSourceDescriptor.describe(tree);
+        return source.isActiveRootSource() && source.role() == ViewRole.BINDER;
     }
 
     public static boolean isViewModelSource(CompilationUnitTree tree) {
@@ -334,7 +340,7 @@ public final class ViewArchitectureSupport {
         if (!source.packageName().startsWith("src.view.")) {
             return null;
         }
-        String component = source.isSlotcontentSource() ? source.slot() : source.area();
+        String component = source.group();
         String bucket = switch (source.role()) {
             case CONTRIBUTION -> "CONTRIBUTION";
             case BINDER -> "BINDER";
@@ -659,6 +665,10 @@ public final class ViewArchitectureSupport {
 
     public static boolean isAllowedBinderShellType(String referencedType) {
         return isAllowedShellType(referencedType, BINDER_ALLOWED_SHELL_TYPES);
+    }
+
+    public static boolean isAllowedContributionShellType(String referencedType) {
+        return isAllowedShellType(referencedType, CONTRIBUTION_ALLOWED_SHELL_TYPES);
     }
 
     public static boolean isAllowedDataRootShellType(String referencedType) {

@@ -173,7 +173,7 @@ public final class ViewContributionEntrypointShapeChecker extends BugChecker
     }
 
     private static ContributionSpecKind expectedContributionSpecKind(ViewSourceDescriptor source) {
-        return switch (source.area()) {
+        return switch (source.group()) {
             case "leftbartabs" -> ContributionSpecKind.LEFT_BAR_TAB;
             case "dropdowns" -> ContributionSpecKind.TOP_BAR;
             case "statetabs" -> ContributionSpecKind.STATE_TAB;

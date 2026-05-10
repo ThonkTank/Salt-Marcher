@@ -5,15 +5,11 @@ import java.util.Set;
 
 public record ViewSourceDescriptor(
         String packageName,
-        String sourceFileName,
         String topLevelSimpleName,
         String qualifiedTopLevelTypeName,
         ViewUnitKind unitKind,
-        String area,
-        String slot,
-        String entry,
-        ViewRole role,
-        boolean recognizedDirectory
+        String group,
+        ViewRole role
 ) {
 
     private static final Set<String> ACTIVE_AREAS = Set.of("leftbartabs", "statetabs", "dropdowns");
@@ -22,28 +18,26 @@ public record ViewSourceDescriptor(
 
     public static ViewSourceDescriptor describe(CompilationUnitTree tree) {
         String packageName = ViewArchitectureSupport.packageName(tree);
-        String sourceFileName = sourceFileName(tree);
-        String qualifiedTopLevelTypeName = packageName.isBlank() ? topLevelSimpleName(sourceFileName) : packageName + "." + topLevelSimpleName(sourceFileName);
-        return describeQualifiedTypeName(packageName, sourceFileName, qualifiedTopLevelTypeName);
+        String topLevelSimpleName = topLevelSimpleName(tree);
+        String qualifiedTopLevelTypeName = packageName.isBlank()
+                ? topLevelSimpleName
+                : packageName + "." + topLevelSimpleName;
+        return describeQualifiedTypeName(packageName, topLevelSimpleName, qualifiedTopLevelTypeName);
     }
 
     public static ViewSourceDescriptor describeQualifiedType(String qualifiedTypeName) {
         if (qualifiedTypeName == null || qualifiedTypeName.isBlank()) {
-            return new ViewSourceDescriptor("", "", "", "", null, null, null, null, ViewRole.UNKNOWN, false);
+            return new ViewSourceDescriptor("", "", "", null, null, ViewRole.UNKNOWN);
         }
         String topLevelTypeName = qualifiedTypeName.replaceFirst("\\$.*$", "");
         int separator = topLevelTypeName.lastIndexOf('.');
         String packageName = separator < 0 ? "" : topLevelTypeName.substring(0, separator);
         String topLevelSimpleName = separator < 0 ? topLevelTypeName : topLevelTypeName.substring(separator + 1);
-        return describeQualifiedTypeName(packageName, topLevelSimpleName + ".java", topLevelTypeName);
-    }
-
-    public boolean isViewSource() {
-        return packageName.startsWith("src.view.");
+        return describeQualifiedTypeName(packageName, topLevelSimpleName, topLevelTypeName);
     }
 
     public boolean isRecognizedViewSource() {
-        return recognizedDirectory && unitKind != null;
+        return unitKind != null;
     }
 
     public boolean isActiveRootSource() {
@@ -58,85 +52,60 @@ public record ViewSourceDescriptor(
         return isRecognizedViewSource() && role == ViewRole.VIEW;
     }
 
-    public boolean isPrimitiveReusableViewSource() {
-        return isSlotcontentSource() && "primitives".equals(slot) && role == ViewRole.VIEW;
-    }
-
-    private static String sourceFileName(CompilationUnitTree tree) {
+    private static String topLevelSimpleName(CompilationUnitTree tree) {
         if (tree.getSourceFile() == null) {
             return "";
         }
         String name = tree.getSourceFile().getName().replace('\\', '/');
         int separator = name.lastIndexOf('/');
-        return separator < 0 ? name : name.substring(separator + 1);
-    }
-
-    private static String topLevelSimpleName(String sourceFileName) {
-        if (sourceFileName.endsWith(".java")) {
-            return sourceFileName.substring(0, sourceFileName.length() - ".java".length());
-        }
-        return sourceFileName;
+        String sourceFileName = separator < 0 ? name : name.substring(separator + 1);
+        return sourceFileName.endsWith(".java")
+                ? sourceFileName.substring(0, sourceFileName.length() - ".java".length())
+                : sourceFileName;
     }
 
     private static ViewSourceDescriptor describeQualifiedTypeName(
             String packageName,
-            String sourceFileName,
+            String topLevelSimpleName,
             String qualifiedTopLevelTypeName
     ) {
-        String topLevelSimpleName = topLevelSimpleName(sourceFileName);
-        ViewRole role = ViewRole.fromFileName(sourceFileName);
+        ViewRole role = ViewRole.fromFileName(topLevelSimpleName + ".java");
         if (!packageName.startsWith("src.view.")) {
             return new ViewSourceDescriptor(
                     packageName,
-                    sourceFileName,
                     topLevelSimpleName,
                     qualifiedTopLevelTypeName,
                     null,
                     null,
-                    null,
-                    null,
-                    role,
-                    false);
+                    role);
         }
         String[] segments = packageName.split("\\.");
         if (segments.length == 4 && ACTIVE_AREAS.contains(segments[2])) {
             return new ViewSourceDescriptor(
                     packageName,
-                    sourceFileName,
                     topLevelSimpleName,
                     qualifiedTopLevelTypeName,
                     ViewUnitKind.ACTIVE_ROOT,
                     segments[2],
-                    null,
-                    segments[3],
-                    role,
-                    true);
+                    role);
         }
         if (segments.length == 5
                 && "slotcontent".equals(segments[2])
                 && SLOTCONTENT_SLOTS.contains(segments[3])) {
             return new ViewSourceDescriptor(
                     packageName,
-                    sourceFileName,
                     topLevelSimpleName,
                     qualifiedTopLevelTypeName,
                     ViewUnitKind.REUSABLE_SLOTCONTENT,
-                    "slotcontent",
                     segments[3],
-                    segments[4],
-                    role,
-                    true);
+                    role);
         }
         return new ViewSourceDescriptor(
                 packageName,
-                sourceFileName,
                 topLevelSimpleName,
                 qualifiedTopLevelTypeName,
                 null,
                 null,
-                null,
-                null,
-                role,
-                false);
+                role);
     }
 }

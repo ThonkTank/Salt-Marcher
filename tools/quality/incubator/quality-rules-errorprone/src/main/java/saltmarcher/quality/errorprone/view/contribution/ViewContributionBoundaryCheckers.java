@@ -15,7 +15,6 @@ import java.util.Set;
 import saltmarcher.quality.errorprone.view.ViewArchitectureSupport;
 import saltmarcher.quality.errorprone.view.ViewRole;
 import saltmarcher.quality.errorprone.view.ViewRoleDependencySupport;
-import saltmarcher.quality.errorprone.view.ViewRolePolicy;
 import saltmarcher.quality.errorprone.view.ViewSourceDescriptor;
 
 public final class ViewContributionBoundaryCheckers {
@@ -110,7 +109,7 @@ public final class ViewContributionBoundaryCheckers {
                 continue;
             }
             if (referencedType.startsWith("shell.api.")
-                    && !ViewRolePolicy.isAllowedContributionShellType(referencedType)) {
+                    && !ViewArchitectureSupport.isAllowedContributionShellType(referencedType)) {
                 forbiddenReferences.add(referencedType);
             }
         }
