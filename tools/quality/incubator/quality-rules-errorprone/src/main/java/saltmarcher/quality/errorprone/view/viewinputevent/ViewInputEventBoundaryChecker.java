@@ -81,11 +81,10 @@ public final class ViewInputEventBoundaryChecker extends BugChecker
                 recordViolationTree(topLevelClass, firstViolationTree);
                 continue;
             }
-            ViewArchitectureSupport.ViewTypeInfo viewType = ViewArchitectureSupport.parseViewType(referencedType);
-            if (viewType == null) {
+            if (!ViewArchitectureSupport.isRecognizedViewReference(referencedType)) {
                 continue;
             }
-            if (!"VIEW_INPUT_EVENT".equals(viewType.bucket())
+            if (!ViewArchitectureSupport.isTargetViewInputEventReference(referencedType)
                     || !ViewArchitectureSupport.isOwnTopLevelOrNestedTypeReference(
                     sourcePackageName,
                     topLevelSimpleName,

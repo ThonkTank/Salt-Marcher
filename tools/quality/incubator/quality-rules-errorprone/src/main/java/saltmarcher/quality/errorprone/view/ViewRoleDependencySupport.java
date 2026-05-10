@@ -10,36 +10,22 @@ public final class ViewRoleDependencySupport {
     private ViewRoleDependencySupport() {
     }
 
-    public enum SourceRole {
-        CONTRIBUTION,
-        BINDER,
-        CONTRIBUTION_MODEL,
-        CONTENT_MODEL,
-        INTENT_HANDLER
-    }
-
     public static Set<String> collectForbiddenReferences(
             CompilationUnitTree tree,
             VisitorState state,
-            SourceRole sourceRole
+            ViewSourceDescriptor source
     ) {
-        String sourcePackageName = ViewArchitectureSupport.packageName(tree);
         String sourceText = sourceText(tree, state);
         Set<String> forbiddenReferences = new LinkedHashSet<>();
         for (String referencedType : ViewArchitectureSupport.collectReferencedTypes(tree)) {
-            if (isForbidden(referencedType, sourceRole, sourcePackageName, sourceText)) {
+            if (isForbidden(referencedType, source, sourceText)) {
                 forbiddenReferences.add(referencedType);
             }
         }
         return forbiddenReferences;
     }
 
-    private static boolean isForbidden(
-            String referencedType,
-            SourceRole sourceRole,
-            String sourcePackageName,
-            String sourceText
-    ) {
+    private static boolean isForbidden(String referencedType, ViewSourceDescriptor source, String sourceText) {
         if (referencedType == null || referencedType.isBlank()) {
             return false;
         }
@@ -52,127 +38,134 @@ public final class ViewRoleDependencySupport {
             return true;
         }
         if (referencedType.startsWith("javafx.")) {
-            return switch (sourceRole) {
+            return switch (source.role()) {
                 case CONTRIBUTION, INTENT_HANDLER -> true;
                 case BINDER -> !ViewArchitectureSupport.isAllowedModelJavafxType(referencedType);
-                case CONTRIBUTION_MODEL, CONTENT_MODEL -> !ViewArchitectureSupport.isAllowedViewModelJavafxType(referencedType);
+                case CONTRIBUTION_MODEL, CONTENT_MODEL, LEGACY_VIEW_MODEL ->
+                        !ViewArchitectureSupport.isAllowedViewModelJavafxType(referencedType);
+                default -> false;
             };
         }
         if (referencedType.startsWith("shell.")) {
-            return switch (sourceRole) {
+            return switch (source.role()) {
                 case CONTRIBUTION -> !ViewArchitectureSupport.isAllowedContributionShellType(referencedType);
                 case BINDER -> !ViewArchitectureSupport.isAllowedBinderShellType(referencedType);
-                case CONTRIBUTION_MODEL, CONTENT_MODEL, INTENT_HANDLER -> true;
+                case CONTRIBUTION_MODEL, CONTENT_MODEL, LEGACY_VIEW_MODEL, INTENT_HANDLER -> true;
+                default -> false;
             };
         }
         if (referencedType.startsWith("src.data.")) {
             return true;
         }
         if (referencedType.startsWith("src.domain.")) {
-            return switch (sourceRole) {
+            return switch (source.role()) {
                 case CONTRIBUTION -> true;
                 case BINDER -> !ViewArchitectureSupport.isAllowedViewModelDomainBoundary(referencedType);
-                case CONTRIBUTION_MODEL, CONTENT_MODEL ->
+                case CONTRIBUTION_MODEL, CONTENT_MODEL, LEGACY_VIEW_MODEL ->
                         !ViewArchitectureSupport.isAllowedPresentationModelDomainBoundary(referencedType);
-                case INTENT_HANDLER -> !ViewArchitectureSupport.isAllowedIntentHandlerDomainBoundary(
-                        sourcePackageName,
-                        referencedType);
+                case INTENT_HANDLER ->
+                        !ViewArchitectureSupport.isAllowedIntentHandlerDomainBoundary(source.packageName(), referencedType);
+                default -> false;
             };
         }
 
-        ViewArchitectureSupport.ViewTypeInfo viewType = ViewArchitectureSupport.parseViewType(referencedType);
-        if (viewType == null) {
+        ViewSourceDescriptor referencedSource = ViewSourceDescriptor.describeQualifiedType(
+                ViewArchitectureSupport.topLevelQualifiedTypeNameOf(referencedType));
+        if (!referencedSource.isRecognizedViewSource()) {
             return false;
         }
 
-        return switch (sourceRole) {
-            case CONTRIBUTION -> isForbiddenForContribution(sourcePackageName, referencedType, viewType);
-            case BINDER -> isForbiddenForBinder(sourcePackageName, referencedType, viewType);
-            case CONTRIBUTION_MODEL, CONTENT_MODEL ->
-                    isForbiddenForProjectionModel(sourcePackageName, referencedType, viewType);
-            case INTENT_HANDLER -> isForbiddenForIntentHandler(sourcePackageName, referencedType, viewType);
+        return switch (source.role()) {
+            case CONTRIBUTION -> isForbiddenForContribution(source, referencedSource);
+            case BINDER -> isForbiddenForBinder(source, referencedSource, referencedType);
+            case CONTRIBUTION_MODEL, CONTENT_MODEL, LEGACY_VIEW_MODEL ->
+                    isForbiddenForProjectionModel(source, referencedSource);
+            case INTENT_HANDLER -> isForbiddenForIntentHandler(source, referencedSource, referencedType);
+            default -> false;
         };
     }
 
     private static boolean isForbiddenForContribution(
-            String sourcePackageName,
-            String referencedType,
-            ViewArchitectureSupport.ViewTypeInfo viewType
+            ViewSourceDescriptor source,
+            ViewSourceDescriptor referencedSource
     ) {
-        if ("CONTRIBUTION".equals(viewType.bucket())
-                && ViewArchitectureSupport.isSameViewRootReference(sourcePackageName, referencedType)) {
+        if (referencedSource.role() == ViewRole.CONTRIBUTION && isSameRoot(source, referencedSource)) {
             return false;
         }
-        return !"BINDER".equals(viewType.bucket())
-                || !ViewArchitectureSupport.isSameViewRootReference(sourcePackageName, referencedType);
+        return referencedSource.role() != ViewRole.BINDER || !isSameRoot(source, referencedSource);
     }
 
     private static boolean isForbiddenForBinder(
-            String sourcePackageName,
-            String referencedType,
-            ViewArchitectureSupport.ViewTypeInfo viewType
+            ViewSourceDescriptor source,
+            ViewSourceDescriptor referencedSource,
+            String referencedType
     ) {
-        if (ViewArchitectureSupport.isDetailEntryReference(referencedType)
-                || ViewArchitectureSupport.isSlotcontentModelReference(referencedType)) {
+        if (ViewArchitectureSupport.isDetailEntryReference(referencedType) || isReusableProjectionModelReference(referencedSource)) {
             return false;
         }
-        if ("VIEW_INPUT_EVENT".equals(viewType.bucket())) {
-            return !ViewArchitectureSupport.isSameViewRootOrReusableSlotcontentViewInputEventReference(
-                    sourcePackageName,
-                    referencedType);
-        }
-        if ("PUBLISHED_EVENT".equals(viewType.bucket())) {
-            return true;
-        }
-        if (Set.of("CONTRIBUTION", "BINDER", "MODEL", "HANDLER").contains(viewType.bucket())) {
-            return !ViewArchitectureSupport.isSameViewRootReference(sourcePackageName, referencedType);
-        }
-        if ("VIEW".equals(viewType.bucket())) {
-            return !ViewArchitectureSupport.isSameViewRootOrReusablePassiveViewReference(
-                    sourcePackageName,
-                    referencedType);
-        }
-        return true;
+        return switch (referencedSource.role()) {
+            case VIEW_INPUT_EVENT ->
+                    !(isSameRoot(source, referencedSource)
+                            || ViewArchitectureSupport.isSameViewRootOrReusableSlotcontentViewInputEventReference(
+                            source.packageName(),
+                            referencedType));
+            case PUBLISHED_EVENT -> true;
+            case CONTRIBUTION, BINDER, CONTRIBUTION_MODEL, CONTENT_MODEL, LEGACY_VIEW_MODEL, INTENT_HANDLER ->
+                    !isSameRoot(source, referencedSource);
+            case VIEW ->
+                    !(isSameRoot(source, referencedSource)
+                            || ViewArchitectureSupport.isSameViewRootOrReusablePassiveViewReference(
+                            source.packageName(),
+                            referencedType));
+            default -> true;
+        };
     }
 
     private static boolean isForbiddenForProjectionModel(
-            String sourcePackageName,
-            String referencedType,
-            ViewArchitectureSupport.ViewTypeInfo viewType
+            ViewSourceDescriptor source,
+            ViewSourceDescriptor referencedSource
     ) {
-        if (!"MODEL".equals(viewType.bucket())) {
+        if (!isProjectionModelRole(referencedSource.role())) {
             return true;
         }
-        if (ViewArchitectureSupport.isSameViewRootReference(sourcePackageName, referencedType)) {
+        if (isSameRoot(source, referencedSource)) {
             return false;
         }
-        if (!sourcePackageName.startsWith("src.view.slotcontent.")
-                && ViewArchitectureSupport.isSlotcontentModelReference(referencedType)) {
-            return false;
-        }
-        return true;
+        return source.isSlotcontentSource() || !isReusableProjectionModelReference(referencedSource);
     }
 
     private static boolean isForbiddenForIntentHandler(
-            String sourcePackageName,
-            String referencedType,
-            ViewArchitectureSupport.ViewTypeInfo viewType
+            ViewSourceDescriptor source,
+            ViewSourceDescriptor referencedSource,
+            String referencedType
     ) {
-        if ("HANDLER".equals(viewType.bucket())) {
-            return !ViewArchitectureSupport.isSameViewRootReference(sourcePackageName, referencedType);
-        }
-        if ("VIEW_INPUT_EVENT".equals(viewType.bucket())) {
-            return !ViewArchitectureSupport.isSameViewRootOrReusableSlotcontentViewInputEventReference(
-                    sourcePackageName,
-                    referencedType);
-        }
-        if ("PUBLISHED_EVENT".equals(viewType.bucket())) {
-            return true;
-        }
-        return !"MODEL".equals(viewType.bucket())
-                || !ViewArchitectureSupport.isSameViewRootOrReusableSlotcontentModelReference(
-                        sourcePackageName,
-                        referencedType);
+        return switch (referencedSource.role()) {
+            case INTENT_HANDLER -> !isSameRoot(source, referencedSource);
+            case VIEW_INPUT_EVENT ->
+                    !ViewArchitectureSupport.isSameViewRootOrReusableSlotcontentViewInputEventReference(
+                            source.packageName(),
+                            referencedType);
+            case PUBLISHED_EVENT -> true;
+            default ->
+                    !isProjectionModelRole(referencedSource.role())
+                            || !ViewArchitectureSupport.isSameViewRootOrReusableSlotcontentModelReference(
+                            source.packageName(),
+                            referencedType);
+        };
+    }
+
+    private static boolean isSameRoot(ViewSourceDescriptor source, ViewSourceDescriptor referencedSource) {
+        return source.packageName().equals(referencedSource.packageName());
+    }
+
+    private static boolean isReusableProjectionModelReference(ViewSourceDescriptor referencedSource) {
+        return referencedSource.isSlotcontentSource() && isProjectionModelRole(referencedSource.role());
+    }
+
+    private static boolean isProjectionModelRole(ViewRole role) {
+        return role == ViewRole.LEGACY_VIEW_MODEL
+                || role == ViewRole.CONTRIBUTION_MODEL
+                || role == ViewRole.CONTENT_MODEL;
     }
 
     private static String sourceText(CompilationUnitTree tree, VisitorState state) {

@@ -166,8 +166,7 @@ public final class PassiveViewSurfaceBoundaryChecker extends BugChecker
                     return super.visitMethodInvocation(methodInvocationTree, unused);
                 }
                 String ownerType = ViewArchitectureSupport.getQualifiedOwnerTypeName(symbol);
-                ViewArchitectureSupport.ViewTypeInfo ownerInfo = ViewArchitectureSupport.parseViewType(ownerType);
-                if (ownerInfo != null && "VIEW".equals(ownerInfo.bucket())) {
+                if (ViewArchitectureSupport.isTargetPanelViewReference(ownerType)) {
                     violations.add("direct view-to-view input forwarding via " + ownerType + ".onViewInputEvent");
                 }
                 return super.visitMethodInvocation(methodInvocationTree, unused);

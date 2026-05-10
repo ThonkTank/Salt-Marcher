@@ -64,10 +64,7 @@ public final class ViewIntentHandlerBoundaryCheckers {
                 return Description.NO_MATCH;
             }
 
-            Set<String> forbiddenReferences = ViewRoleDependencySupport.collectForbiddenReferences(
-                    tree,
-                    state,
-                    ViewRoleDependencySupport.SourceRole.INTENT_HANDLER);
+            Set<String> forbiddenReferences = ViewRoleDependencySupport.collectForbiddenReferences(tree, state, source);
             forbiddenReferences.addAll(collectLegacyPublishedEventProtocols(tree));
             if (forbiddenReferences.isEmpty()) {
                 return Description.NO_MATCH;

@@ -283,7 +283,7 @@ public final class PassiveViewStateBoundaryChecker extends BugChecker
                 || ViewArchitectureSupport.isApplicationServiceReference(referencedType)
                 || ViewArchitectureSupport.isTargetPublishedEventReference(referencedType)
                 || ViewArchitectureSupport.isSameViewRootModelReference(sourcePackageName, referencedType)
-                || ViewArchitectureSupport.parseViewType(referencedType) != null) {
+                || ViewArchitectureSupport.isRecognizedViewReference(referencedType)) {
             return true;
         }
         return referencedType.startsWith(qualifiedViewName + "$")

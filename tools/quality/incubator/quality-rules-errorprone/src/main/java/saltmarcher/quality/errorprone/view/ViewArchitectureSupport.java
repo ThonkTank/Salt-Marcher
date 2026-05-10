@@ -10,6 +10,7 @@ import com.sun.source.util.TreeScanner;
 import com.sun.tools.javac.code.Symbol;
 import java.util.LinkedHashSet;
 import java.util.Set;
+import java.util.function.Predicate;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
@@ -39,12 +40,12 @@ public final class ViewArchitectureSupport {
             "shell.api.NavigationGroupSpec",
             "shell.api.ShellBinding",
             "shell.api.ShellContributionSpec",
-            "shell.api.ShellRuntimeContext",
-            "shell.api.ShellStateTabSpec",
-            "shell.api.ServiceRegistry",
-            "shell.api.ShellSlot",
             "shell.api.ShellLeftBarTabMode",
             "shell.api.ShellLeftBarTabSpec",
+            "shell.api.ShellRuntimeContext",
+            "shell.api.ShellSlot",
+            "shell.api.ShellStateTabSpec",
+            "shell.api.ServiceRegistry",
             "shell.api.ShellTopBarSpec");
     private static final Set<String> CONTRIBUTION_ALLOWED_SHELL_TYPES = Set.of(
             "shell.api.ContributionKey",
@@ -55,14 +56,11 @@ public final class ViewArchitectureSupport {
             "shell.api.ShellBinding",
             "shell.api.ShellContribution",
             "shell.api.ShellContributionSpec",
-            "shell.api.ShellRuntimeContext",
-            "shell.api.ShellStateTabSpec",
             "shell.api.ShellLeftBarTabMode",
             "shell.api.ShellLeftBarTabSpec",
+            "shell.api.ShellRuntimeContext",
+            "shell.api.ShellStateTabSpec",
             "shell.api.ShellTopBarSpec");
-    private static final Set<String> DATA_ROOT_ALLOWED_SHELL_TYPES = Set.of(
-            "shell.api.ServiceContribution",
-            "shell.api.ServiceRegistry");
     private static final Set<String> FORBIDDEN_VIEW_JDK_INFRASTRUCTURE_TYPES = Set.of(
             "java.lang.ClassLoader",
             "java.lang.Process",
@@ -72,6 +70,7 @@ public final class ViewArchitectureSupport {
             "java.lang.ThreadGroup",
             "java.util.Timer",
             "java.util.TimerTask");
+
     private ViewArchitectureSupport() {
     }
 
@@ -86,15 +85,7 @@ public final class ViewArchitectureSupport {
 
     public static boolean isViewModelSource(CompilationUnitTree tree) {
         ViewSourceDescriptor source = ViewSourceDescriptor.describe(tree);
-        return source.isRecognizedViewSource()
-                && (source.role() == ViewRole.LEGACY_VIEW_MODEL
-                || source.role() == ViewRole.CONTRIBUTION_MODEL
-                || source.role() == ViewRole.CONTENT_MODEL);
-    }
-
-    public static boolean isIntentHandlerSource(CompilationUnitTree tree) {
-        ViewSourceDescriptor source = ViewSourceDescriptor.describe(tree);
-        return source.isRecognizedViewSource() && source.role() == ViewRole.INTENT_HANDLER;
+        return source.isRecognizedViewSource() && isProjectionModelRole(source.role());
     }
 
     public static boolean isViewInputEventSource(CompilationUnitTree tree) {
@@ -102,18 +93,8 @@ public final class ViewArchitectureSupport {
         return source.isRecognizedViewSource() && source.role() == ViewRole.VIEW_INPUT_EVENT;
     }
 
-    public static boolean isPublishedEventSource(CompilationUnitTree tree) {
-        ViewSourceDescriptor source = ViewSourceDescriptor.describe(tree);
-        return source.isRecognizedViewSource() && source.role() == ViewRole.PUBLISHED_EVENT;
-    }
-
     public static boolean isPanelViewSource(CompilationUnitTree tree) {
         return ViewSourceDescriptor.describe(tree).isPassiveViewSource();
-    }
-
-    public static boolean isFeatureSpecificPanelViewSource(CompilationUnitTree tree) {
-        ViewSourceDescriptor source = ViewSourceDescriptor.describe(tree);
-        return source.isActiveRootSource() && source.role() == ViewRole.VIEW;
     }
 
     public static String topLevelSimpleName(CompilationUnitTree tree) {
@@ -122,12 +103,6 @@ public final class ViewArchitectureSupport {
             return sourceFileName.substring(0, sourceFileName.length() - ".java".length());
         }
         return sourceFileName;
-    }
-
-    public static String qualifiedTopLevelTypeName(CompilationUnitTree tree) {
-        String packageName = packageName(tree);
-        String simpleName = topLevelSimpleName(tree);
-        return packageName.isBlank() ? simpleName : packageName + "." + simpleName;
     }
 
     public static ClassTree topLevelClass(CompilationUnitTree tree) {
@@ -142,15 +117,6 @@ public final class ViewArchitectureSupport {
             }
         }.scan(tree, null);
         return result[0];
-    }
-
-    private static String sourceFileName(CompilationUnitTree tree) {
-        if (tree.getSourceFile() == null) {
-            return "";
-        }
-        String name = tree.getSourceFile().getName().replace('\\', '/');
-        int separator = name.lastIndexOf('/');
-        return separator < 0 ? name : name.substring(separator + 1);
     }
 
     public static Set<String> collectReferencedTypes(CompilationUnitTree tree) {
@@ -182,12 +148,6 @@ public final class ViewArchitectureSupport {
         collectTypeReferences(ASTHelpers.getType(tree), referencedTypes);
     }
 
-    public static void addReference(String qualifiedName, Set<String> referencedTypes) {
-        if (qualifiedName != null && !qualifiedName.isBlank()) {
-            referencedTypes.add(qualifiedName);
-        }
-    }
-
     public static String getQualifiedTypeName(Symbol symbol) {
         if (symbol instanceof Symbol.ClassSymbol classSymbol) {
             return classSymbol.getQualifiedName().toString();
@@ -209,7 +169,7 @@ public final class ViewArchitectureSupport {
     }
 
     public static boolean isAllowedViewModelDomainBoundary(String referencedType) {
-        return isDomainApplicationServiceRoot(referencedType)
+        return isApplicationServiceReference(referencedType)
                 || referencedType.matches("^src\\.domain\\.[^.]+\\.published\\..+");
     }
 
@@ -223,19 +183,9 @@ public final class ViewArchitectureSupport {
         return isApplicationServiceReference(referencedType);
     }
 
-    private static boolean isDomainApplicationServiceRoot(String referencedType) {
-        return referencedType.matches("^src\\.domain\\.[^.]+\\.[^.]+ApplicationService((\\$|\\.).*)?$");
-    }
-
     public static boolean isApplicationServiceReference(String referencedType) {
-        return referencedType != null && isDomainApplicationServiceRoot(referencedType);
-    }
-
-    public static boolean isAllowedPublishedEventJdkType(String referencedType) {
-        if (referencedType == null || !referencedType.startsWith("java.")) {
-            return false;
-        }
-        return !isForbiddenViewInfrastructureJdkType(referencedType);
+        return referencedType != null
+                && referencedType.matches("^src\\.domain\\.[^.]+\\.[^.]+ApplicationService((\\$|\\.).*)?$");
     }
 
     public static boolean isAllowedViewModelJavafxType(String referencedType) {
@@ -245,7 +195,7 @@ public final class ViewArchitectureSupport {
 
     public static boolean isAllowedModelJavafxType(String referencedType) {
         return isAllowedViewModelJavafxType(referencedType)
-                || referencedType.equals("javafx.scene.Node");
+                || "javafx.scene.Node".equals(referencedType);
     }
 
     public static boolean isForbiddenViewInfrastructureJdkType(String referencedType) {
@@ -264,45 +214,28 @@ public final class ViewArchitectureSupport {
                         .anyMatch(forbiddenType -> referencedType.startsWith(forbiddenType + "$"));
     }
 
-    public static boolean isTargetViewModelReference(String referencedType) {
-        ViewTypeInfo viewType = parseViewType(referencedType);
-        return viewType != null && "MODEL".equals(viewType.bucket());
+    public static boolean isRecognizedViewReference(String referencedType) {
+        return referencedViewSource(referencedType).isRecognizedViewSource();
     }
 
-    public static boolean isTopLevelViewModelReference(String referencedType) {
-        if (!isTargetViewModelReference(referencedType)) {
-            return false;
-        }
-        String packageName = packageNameOf(referencedType);
-        if (packageName.isBlank() || !referencedType.startsWith(packageName + ".")) {
-            return false;
-        }
-        String remainder = referencedType.substring(packageName.length() + 1).replaceFirst("\\$.*$", "");
-        return !remainder.contains(".");
+    public static boolean isTargetViewModelReference(String referencedType) {
+        return isProjectionModelRole(referencedViewSource(referencedType).role());
     }
 
     public static boolean isTargetPanelViewReference(String referencedType) {
-        ViewTypeInfo viewType = parseViewType(referencedType);
-        return viewType != null && "VIEW".equals(viewType.bucket());
+        return referencedViewSource(referencedType).role() == ViewRole.VIEW;
     }
 
     public static boolean isTargetViewInputEventReference(String referencedType) {
-        ViewTypeInfo viewType = parseViewType(referencedType);
-        return viewType != null && "VIEW_INPUT_EVENT".equals(viewType.bucket());
+        return referencedViewSource(referencedType).role() == ViewRole.VIEW_INPUT_EVENT;
     }
 
     public static boolean isTargetPublishedEventReference(String referencedType) {
-        ViewTypeInfo viewType = parseViewType(referencedType);
-        return viewType != null && "PUBLISHED_EVENT".equals(viewType.bucket());
+        return referencedViewSource(referencedType).role() == ViewRole.PUBLISHED_EVENT;
     }
 
-    public static boolean isTopLevelPublishedEventReference(String referencedType) {
-        if (!isTargetPublishedEventReference(referencedType)) {
-            return false;
-        }
-        return referencedType != null
-                && !referencedType.contains("$")
-                && topLevelQualifiedTypeNameOf(referencedType).endsWith("PublishedEvent");
+    public static boolean isIntentHandlerReference(String referencedType) {
+        return referencedViewSource(referencedType).role() == ViewRole.INTENT_HANDLER;
     }
 
     public static boolean isSameStemViewInputEventReference(
@@ -310,10 +243,10 @@ public final class ViewArchitectureSupport {
             String viewSimpleName,
             String referencedType
     ) {
-        return isOwnTopLevelOrNestedTypeReference(
-                sourcePackageName,
-                expectedViewInputEventSimpleName(viewSimpleName),
-                referencedType);
+        if (viewSimpleName == null || viewSimpleName.isBlank()) {
+            return false;
+        }
+        return isOwnTopLevelOrNestedTypeReference(sourcePackageName, viewSimpleName + "InputEvent", referencedType);
     }
 
     public static boolean isOwnTopLevelOrNestedTypeReference(
@@ -328,44 +261,8 @@ public final class ViewArchitectureSupport {
                 || referencedType.startsWith(qualifiedTopLevelType + "."));
     }
 
-    public static String expectedViewInputEventSimpleName(String viewSimpleName) {
-        if (viewSimpleName == null || viewSimpleName.isBlank()) {
-            return "";
-        }
-        return viewSimpleName + "InputEvent";
-    }
-
-    public static ViewTypeInfo parseViewType(String referencedType) {
-        ViewSourceDescriptor source = ViewSourceDescriptor.describeQualifiedType(topLevelQualifiedTypeNameOf(referencedType));
-        if (!source.packageName().startsWith("src.view.")) {
-            return null;
-        }
-        String component = source.group();
-        String bucket = switch (source.role()) {
-            case CONTRIBUTION -> "CONTRIBUTION";
-            case BINDER -> "BINDER";
-            case CONTRIBUTION_MODEL, CONTENT_MODEL, LEGACY_VIEW_MODEL -> "MODEL";
-            case INTENT_HANDLER -> "HANDLER";
-            case VIEW_INPUT_EVENT -> "VIEW_INPUT_EVENT";
-            case PUBLISHED_EVENT -> "PUBLISHED_EVENT";
-            case INSPECTOR_ENTRY -> "INSPECTOR_ENTRY";
-            case VIEW -> "VIEW";
-            case PROJECTOR, UNKNOWN -> "LEGACY";
-        };
-        return new ViewTypeInfo(component == null ? "VIEW_ROOT" : component, bucket);
-    }
-
-    public static boolean isLegacyViewReference(String referencedType) {
-        ViewTypeInfo viewType = parseViewType(referencedType);
-        return viewType != null && "LEGACY".equals(viewType.bucket());
-    }
-
     public static boolean isSameViewRootReference(String sourcePackageName, String referencedType) {
         return packageNameOf(referencedType).equals(sourcePackageName);
-    }
-
-    public static String packageNameOfReferencedType(String referencedType) {
-        return packageNameOf(referencedType);
     }
 
     public static String topLevelQualifiedTypeNameOf(String referencedType) {
@@ -390,62 +287,23 @@ public final class ViewArchitectureSupport {
         return packageNameOf(leftReferencedType).equals(packageNameOf(rightReferencedType));
     }
 
-    public static boolean isReusablePassiveViewReference(String referencedType) {
-        ViewTypeInfo viewType = parseViewType(referencedType);
-        return viewType != null
-                && (Set.of("controls", "main", "state", "details", "topbar").contains(viewType.component())
-                || "primitives".equals(viewType.component()))
-                && "VIEW".equals(viewType.bucket());
-    }
-
-    public static boolean isSlotcontentInspectorEntryReference(String referencedType) {
-        ViewTypeInfo viewType = parseViewType(referencedType);
-        return viewType != null
-                && Set.of("controls", "main", "state", "details", "topbar").contains(viewType.component())
-                && "INSPECTOR_ENTRY".equals(viewType.bucket());
-    }
-
     public static boolean isSlotcontentModelReference(String referencedType) {
-        ViewTypeInfo viewType = parseViewType(referencedType);
-        return viewType != null
-                && Set.of("controls", "main", "state", "details", "topbar", "primitives").contains(viewType.component())
-                && "MODEL".equals(viewType.bucket());
-    }
-
-    public static boolean isReusableSlotcontentViewInputEventReference(String referencedType) {
-        ViewTypeInfo viewType = parseViewType(referencedType);
-        return viewType != null
-                && Set.of("controls", "main", "state", "details", "topbar", "primitives").contains(viewType.component())
-                && "VIEW_INPUT_EVENT".equals(viewType.bucket());
-    }
-
-    public static boolean isSupportValueReference(String referencedType) {
-        return false;
-    }
-
-    public static boolean isDetailEntryViewReference(String referencedType) {
-        ViewTypeInfo viewType = parseViewType(referencedType);
-        return viewType != null
-                && "details".equals(viewType.component())
-                && "VIEW".equals(viewType.bucket());
-    }
-
-    public static boolean isDetailEntryViewModelReference(String referencedType) {
-        ViewTypeInfo viewType = parseViewType(referencedType);
-        return viewType != null
-                && "details".equals(viewType.component())
-                && "MODEL".equals(viewType.bucket());
+        ViewSourceDescriptor source = referencedViewSource(referencedType);
+        return source.isSlotcontentSource() && isProjectionModelRole(source.role());
     }
 
     public static boolean isDetailEntryReference(String referencedType) {
-        return isDetailEntryViewReference(referencedType)
-                || isDetailEntryViewModelReference(referencedType)
-                || isSlotcontentInspectorEntryReference(referencedType);
+        ViewSourceDescriptor source = referencedViewSource(referencedType);
+        return source.isSlotcontentSource()
+                && "details".equals(source.group())
+                && (source.role() == ViewRole.VIEW
+                || source.role() == ViewRole.INSPECTOR_ENTRY
+                || isProjectionModelRole(source.role()));
     }
 
     public static boolean isSameViewRootOrReusablePassiveViewReference(String sourcePackageName, String referencedType) {
         return isSameViewRootReference(sourcePackageName, referencedType)
-                || isReusablePassiveViewReference(referencedType);
+                || isReusableSlotcontentReference(referencedType, ViewRole.VIEW);
     }
 
     public static boolean isSameViewRootOrReusableSlotcontentViewInputEventReference(
@@ -453,7 +311,7 @@ public final class ViewArchitectureSupport {
             String referencedType
     ) {
         return isSameViewRootReference(sourcePackageName, referencedType)
-                || isReusableSlotcontentViewInputEventReference(referencedType);
+                || isReusableSlotcontentReference(referencedType, ViewRole.VIEW_INPUT_EVENT);
     }
 
     public static boolean isSameViewRootOrReusableSlotcontentModelReference(
@@ -465,21 +323,18 @@ public final class ViewArchitectureSupport {
     }
 
     public static boolean isSameViewRootModelReference(String sourcePackageName, String referencedType) {
-        ViewTypeInfo viewType = parseViewType(referencedType);
-        return viewType != null
-                && "MODEL".equals(viewType.bucket())
-                && isSameViewRootReference(sourcePackageName, referencedType);
+        return isTargetViewModelReference(referencedType) && isSameViewRootReference(sourcePackageName, referencedType);
     }
 
-    public static boolean isSameViewRootHandlerReference(String sourcePackageName, String referencedType) {
-        ViewTypeInfo viewType = parseViewType(referencedType);
-        return viewType != null
-                && "HANDLER".equals(viewType.bucket())
+    public static boolean isSameViewRootIntentHandlerReference(String sourcePackageName, String referencedType) {
+        return isIntentHandlerReference(referencedType)
                 && isSameViewRootReference(sourcePackageName, referencedType);
     }
 
     public static boolean isConsumerOfSameRootViewInputEvent(TypeMirror typeMirror, String sourcePackageName) {
-        return isConsumerOfSameRootCarrier(typeMirror, sourcePackageName, true);
+        return consumerTypeMatches(typeMirror, referencedType ->
+                isTargetViewInputEventReference(referencedType)
+                        && isSameViewRootReference(sourcePackageName, referencedType));
     }
 
     public static boolean isConsumerOfSameStemViewInputEvent(
@@ -487,65 +342,8 @@ public final class ViewArchitectureSupport {
             String sourcePackageName,
             String viewSimpleName
     ) {
-        if (!(typeMirror instanceof DeclaredType declaredType)) {
-            return false;
-        }
-        Element element = declaredType.asElement();
-        if (!(element instanceof TypeElement typeElement)
-                || !"java.util.function.Consumer".contentEquals(typeElement.getQualifiedName())) {
-            return false;
-        }
-        if (declaredType.getTypeArguments().size() != 1) {
-            return false;
-        }
-        Set<String> referencedTypes = new LinkedHashSet<>();
-        collectTypeReferences(declaredType.getTypeArguments().get(0), referencedTypes);
-        return referencedTypes.stream()
-                .anyMatch(referencedType -> isSameStemViewInputEventReference(
-                        sourcePackageName,
-                        viewSimpleName,
-                        referencedType));
-    }
-
-    public static boolean isConsumerOfSameRootPublishedEvent(TypeMirror typeMirror, String sourcePackageName) {
-        return isConsumerOfSameRootCarrier(typeMirror, sourcePackageName, false);
-    }
-
-    public static boolean isFunctionalInterface(TypeMirror typeMirror) {
-        if (typeMirror == null || !(typeMirror instanceof DeclaredType declaredType)) {
-            return false;
-        }
-        Element element = declaredType.asElement();
-        if (!(element instanceof TypeElement typeElement) || !typeElement.getKind().isInterface()) {
-            return false;
-        }
-        int abstractMethodCount = 0;
-        for (ExecutableElement method : ElementFilter.methodsIn(typeElement.getEnclosedElements())) {
-            Set<Modifier> modifiers = method.getModifiers();
-            if (modifiers.contains(Modifier.DEFAULT) || modifiers.contains(Modifier.STATIC)) {
-                continue;
-            }
-            if (isJavaLangObjectMethod(method)) {
-                continue;
-            }
-            abstractMethodCount++;
-            if (abstractMethodCount > 1) {
-                return false;
-            }
-        }
-        return abstractMethodCount == 1;
-    }
-
-    public static boolean isCallbackSurfaceType(TypeMirror typeMirror) {
-        if (typeMirror == null) {
-            return false;
-        }
-        if (isFunctionalInterface(typeMirror)) {
-            return true;
-        }
-        Set<String> referencedTypes = new LinkedHashSet<>();
-        collectTypeReferences(typeMirror, referencedTypes);
-        return referencedTypes.stream().anyMatch(ViewArchitectureSupport::isKnownCallbackSurfaceType);
+        return consumerTypeMatches(typeMirror, referencedType ->
+                isSameStemViewInputEventReference(sourcePackageName, viewSimpleName, referencedType));
     }
 
     public static boolean isCallbackOrResultProtocolType(TypeMirror typeMirror) {
@@ -555,112 +353,8 @@ public final class ViewArchitectureSupport {
         if (isCallbackSurfaceType(typeMirror)) {
             return true;
         }
-        Set<String> referencedTypes = new LinkedHashSet<>();
-        collectTypeReferences(typeMirror, referencedTypes);
+        Set<String> referencedTypes = collectTypeReferences(typeMirror);
         return referencedTypes.stream().anyMatch(ViewArchitectureSupport::isKnownAsyncProtocolType);
-    }
-
-    public static boolean isObservableReadSurfaceType(TypeMirror typeMirror) {
-        if (typeMirror == null) {
-            return false;
-        }
-        String qualifiedName = typeMirror.toString();
-        return qualifiedName.startsWith("javafx.beans.property.")
-                || qualifiedName.startsWith("javafx.beans.value.")
-                || qualifiedName.startsWith("javafx.beans.binding.")
-                || qualifiedName.startsWith("javafx.collections.ObservableList")
-                || qualifiedName.startsWith("javafx.collections.ObservableMap")
-                || qualifiedName.startsWith("javafx.collections.ObservableSet");
-    }
-
-    public static boolean isObservableMutableSurfaceType(TypeMirror typeMirror) {
-        if (typeMirror == null) {
-            return false;
-        }
-        String qualifiedName = typeMirror.toString();
-        return qualifiedName.startsWith("javafx.beans.property.")
-                || qualifiedName.equals("javafx.beans.value.WritableValue")
-                || qualifiedName.startsWith("javafx.beans.value.WritableValue<")
-                || qualifiedName.startsWith("javafx.collections.ObservableList")
-                || qualifiedName.startsWith("javafx.collections.ObservableMap")
-                || qualifiedName.startsWith("javafx.collections.ObservableSet");
-    }
-
-    private static boolean isKnownCallbackSurfaceType(String referencedType) {
-        if (referencedType == null || referencedType.isBlank()) {
-            return false;
-        }
-        return referencedType.startsWith("javafx.event.")
-                || referencedType.equals("javafx.beans.InvalidationListener")
-                || referencedType.equals("javafx.beans.value.ChangeListener")
-                || referencedType.equals("javafx.collections.ListChangeListener")
-                || referencedType.equals("javafx.collections.MapChangeListener")
-                || referencedType.equals("javafx.collections.SetChangeListener")
-                || referencedType.equals("javafx.collections.WeakListChangeListener")
-                || referencedType.equals("javafx.collections.WeakMapChangeListener")
-                || referencedType.equals("javafx.collections.WeakSetChangeListener")
-                || referencedType.equals("javafx.beans.WeakInvalidationListener")
-                || referencedType.equals("javafx.beans.value.WeakChangeListener");
-    }
-
-    private static boolean isKnownAsyncProtocolType(String referencedType) {
-        if (referencedType == null || referencedType.isBlank()) {
-            return false;
-        }
-        return referencedType.equals("java.util.concurrent.Future")
-                || referencedType.equals("java.util.concurrent.CompletableFuture")
-                || referencedType.equals("java.util.concurrent.CompletionStage");
-    }
-
-    private static boolean isJavaLangObjectMethod(ExecutableElement method) {
-        Element enclosingElement = method.getEnclosingElement();
-        if (!(enclosingElement instanceof TypeElement typeElement)) {
-            return false;
-        }
-        return "java.lang.Object".contentEquals(typeElement.getQualifiedName());
-    }
-
-    private static boolean isConsumerOfSameRootCarrier(
-            TypeMirror typeMirror,
-            String sourcePackageName,
-            boolean viewInputEvent
-    ) {
-        if (!(typeMirror instanceof DeclaredType declaredType)) {
-            return false;
-        }
-        Element element = declaredType.asElement();
-        if (!(element instanceof TypeElement typeElement)
-                || !"java.util.function.Consumer".contentEquals(typeElement.getQualifiedName())) {
-            return false;
-        }
-        if (declaredType.getTypeArguments().size() != 1) {
-            return false;
-        }
-        Set<String> referencedTypes = new LinkedHashSet<>();
-        collectTypeReferences(declaredType.getTypeArguments().get(0), referencedTypes);
-        return referencedTypes.stream()
-                .filter(viewInputEvent
-                        ? ViewArchitectureSupport::isTargetViewInputEventReference
-                        : ViewArchitectureSupport::isTargetPublishedEventReference)
-                .anyMatch(referencedType -> isSameViewRootReference(sourcePackageName, referencedType));
-    }
-
-    private static String packageNameOf(String referencedType) {
-        if (referencedType == null || referencedType.isBlank()) {
-            return "";
-        }
-        String topLevelType = topLevelQualifiedTypeNameOf(referencedType);
-        if (topLevelType.startsWith("src.view.")) {
-            String[] segments = topLevelType.split("\\.");
-            if (segments.length >= 6 && "slotcontent".equals(segments[2])) {
-                return String.join(".", segments[0], segments[1], segments[2], segments[3], segments[4]);
-            }
-            if (segments.length >= 4 && Set.of("leftbartabs", "statetabs", "dropdowns").contains(segments[2])) {
-                return String.join(".", segments[0], segments[1], segments[2], segments[3]);
-            }
-        }
-        int separator = topLevelType.lastIndexOf('.');
-        return separator < 0 ? "" : topLevelType.substring(0, separator);
     }
 
     public static boolean isAllowedBinderShellType(String referencedType) {
@@ -669,28 +363,6 @@ public final class ViewArchitectureSupport {
 
     public static boolean isAllowedContributionShellType(String referencedType) {
         return isAllowedShellType(referencedType, CONTRIBUTION_ALLOWED_SHELL_TYPES);
-    }
-
-    public static boolean isAllowedDataRootShellType(String referencedType) {
-        return isAllowedShellType(referencedType, DATA_ROOT_ALLOWED_SHELL_TYPES);
-    }
-
-    private static boolean isDomainWriteCarrier(String referencedType) {
-        return referencedType.matches("^src\\.domain\\.[^.]+\\.published\\..*(Command|Query|Operation|Edit)(\\$.*)?$");
-    }
-
-    private static boolean isAllowedShellType(String referencedType, Set<String> allowedTypes) {
-        if (referencedType == null || !referencedType.startsWith("shell.")) {
-            return true;
-        }
-        for (String allowedType : allowedTypes) {
-            if (referencedType.equals(allowedType)
-                    || referencedType.startsWith(allowedType + "$")
-                    || referencedType.startsWith(allowedType + ".")) {
-                return true;
-            }
-        }
-        return false;
     }
 
     public static void collectTypeReferences(TypeMirror typeMirror, Set<String> referencedTypes) {
@@ -802,6 +474,149 @@ public final class ViewArchitectureSupport {
         return referencedTypes;
     }
 
-    public record ViewTypeInfo(String component, String bucket) {
+    private static String sourceFileName(CompilationUnitTree tree) {
+        if (tree.getSourceFile() == null) {
+            return "";
+        }
+        String name = tree.getSourceFile().getName().replace('\\', '/');
+        int separator = name.lastIndexOf('/');
+        return separator < 0 ? name : name.substring(separator + 1);
+    }
+
+    private static void addReference(String qualifiedName, Set<String> referencedTypes) {
+        if (qualifiedName != null && !qualifiedName.isBlank()) {
+            referencedTypes.add(qualifiedName);
+        }
+    }
+
+    private static boolean isFunctionalInterface(TypeMirror typeMirror) {
+        if (!(typeMirror instanceof DeclaredType declaredType)) {
+            return false;
+        }
+        Element element = declaredType.asElement();
+        if (!(element instanceof TypeElement typeElement) || !typeElement.getKind().isInterface()) {
+            return false;
+        }
+        int abstractMethodCount = 0;
+        for (ExecutableElement method : ElementFilter.methodsIn(typeElement.getEnclosedElements())) {
+            Set<Modifier> modifiers = method.getModifiers();
+            if (modifiers.contains(Modifier.DEFAULT) || modifiers.contains(Modifier.STATIC)) {
+                continue;
+            }
+            if (isJavaLangObjectMethod(method)) {
+                continue;
+            }
+            abstractMethodCount++;
+            if (abstractMethodCount > 1) {
+                return false;
+            }
+        }
+        return abstractMethodCount == 1;
+    }
+
+    private static boolean isCallbackSurfaceType(TypeMirror typeMirror) {
+        if (typeMirror == null) {
+            return false;
+        }
+        if (isFunctionalInterface(typeMirror)) {
+            return true;
+        }
+        Set<String> referencedTypes = collectTypeReferences(typeMirror);
+        return referencedTypes.stream().anyMatch(ViewArchitectureSupport::isKnownCallbackSurfaceType);
+    }
+
+    private static boolean isKnownCallbackSurfaceType(String referencedType) {
+        if (referencedType == null || referencedType.isBlank()) {
+            return false;
+        }
+        return referencedType.startsWith("javafx.event.")
+                || referencedType.equals("javafx.beans.InvalidationListener")
+                || referencedType.equals("javafx.beans.WeakInvalidationListener")
+                || referencedType.equals("javafx.beans.value.ChangeListener")
+                || referencedType.equals("javafx.beans.value.WeakChangeListener")
+                || referencedType.equals("javafx.collections.ListChangeListener")
+                || referencedType.equals("javafx.collections.MapChangeListener")
+                || referencedType.equals("javafx.collections.SetChangeListener")
+                || referencedType.equals("javafx.collections.WeakListChangeListener")
+                || referencedType.equals("javafx.collections.WeakMapChangeListener")
+                || referencedType.equals("javafx.collections.WeakSetChangeListener");
+    }
+
+    private static boolean isKnownAsyncProtocolType(String referencedType) {
+        if (referencedType == null || referencedType.isBlank()) {
+            return false;
+        }
+        return referencedType.equals("java.util.concurrent.Future")
+                || referencedType.equals("java.util.concurrent.CompletableFuture")
+                || referencedType.equals("java.util.concurrent.CompletionStage");
+    }
+
+    private static boolean isJavaLangObjectMethod(ExecutableElement method) {
+        Element enclosingElement = method.getEnclosingElement();
+        if (!(enclosingElement instanceof TypeElement typeElement)) {
+            return false;
+        }
+        return "java.lang.Object".contentEquals(typeElement.getQualifiedName());
+    }
+
+    private static boolean consumerTypeMatches(TypeMirror typeMirror, Predicate<String> predicate) {
+        if (!(typeMirror instanceof DeclaredType declaredType)) {
+            return false;
+        }
+        Element element = declaredType.asElement();
+        if (!(element instanceof TypeElement typeElement)
+                || !"java.util.function.Consumer".contentEquals(typeElement.getQualifiedName())
+                || declaredType.getTypeArguments().size() != 1) {
+            return false;
+        }
+        Set<String> referencedTypes = new LinkedHashSet<>();
+        collectTypeReferences(declaredType.getTypeArguments().get(0), referencedTypes);
+        return referencedTypes.stream().anyMatch(predicate);
+    }
+
+    private static String packageNameOf(String referencedType) {
+        if (referencedType == null || referencedType.isBlank()) {
+            return "";
+        }
+        ViewSourceDescriptor source = referencedViewSource(referencedType);
+        if (source.isRecognizedViewSource()) {
+            return source.packageName();
+        }
+        String topLevelType = topLevelQualifiedTypeNameOf(referencedType);
+        int separator = topLevelType.lastIndexOf('.');
+        return separator < 0 ? "" : topLevelType.substring(0, separator);
+    }
+
+    private static boolean isReusableSlotcontentReference(String referencedType, ViewRole role) {
+        ViewSourceDescriptor source = referencedViewSource(referencedType);
+        return source.isSlotcontentSource() && source.role() == role;
+    }
+
+    private static ViewSourceDescriptor referencedViewSource(String referencedType) {
+        return ViewSourceDescriptor.describeQualifiedType(topLevelQualifiedTypeNameOf(referencedType));
+    }
+
+    private static boolean isProjectionModelRole(ViewRole role) {
+        return role == ViewRole.LEGACY_VIEW_MODEL
+                || role == ViewRole.CONTRIBUTION_MODEL
+                || role == ViewRole.CONTENT_MODEL;
+    }
+
+    private static boolean isDomainWriteCarrier(String referencedType) {
+        return referencedType.matches("^src\\.domain\\.[^.]+\\.published\\..*(Command|Query|Operation|Edit)(\\$.*)?$");
+    }
+
+    private static boolean isAllowedShellType(String referencedType, Set<String> allowedTypes) {
+        if (referencedType == null || !referencedType.startsWith("shell.")) {
+            return true;
+        }
+        for (String allowedType : allowedTypes) {
+            if (referencedType.equals(allowedType)
+                    || referencedType.startsWith(allowedType + "$")
+                    || referencedType.startsWith(allowedType + ".")) {
+                return true;
+            }
+        }
+        return false;
     }
 }

@@ -36,8 +36,7 @@ public final class ViewBinderApplicationSinkWiringChecker extends BugChecker
                     return super.visitMethodInvocation(methodInvocationTree, unused);
                 }
                 String ownerType = ViewArchitectureSupport.getQualifiedOwnerTypeName(symbol);
-                ViewArchitectureSupport.ViewTypeInfo ownerViewType = ViewArchitectureSupport.parseViewType(ownerType);
-                if (ownerViewType == null || !"HANDLER".equals(ownerViewType.bucket())) {
+                if (!ViewArchitectureSupport.isIntentHandlerReference(ownerType)) {
                     return super.visitMethodInvocation(methodInvocationTree, unused);
                 }
                 if (isLegacyPublishedEventSink(symbol)) {

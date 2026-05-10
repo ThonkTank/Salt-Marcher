@@ -7,69 +7,28 @@ import com.google.errorprone.matchers.Description;
 import com.sun.source.tree.ClassTree;
 import com.sun.source.tree.CompilationUnitTree;
 import com.sun.source.tree.Tree;
-import com.sun.source.util.TreeScanner;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import saltmarcher.quality.errorprone.view.ViewArchitectureSupport;
+import saltmarcher.quality.errorprone.view.ViewRole;
 import saltmarcher.quality.errorprone.view.ViewRoleDependencySupport;
+import saltmarcher.quality.errorprone.view.ViewSourceDescriptor;
 
 public final class ViewProjectionModelBoundaryCheckers {
 
     private ViewProjectionModelBoundaryCheckers() {
     }
 
-    private abstract static class ProjectionModelDependencyBoundaryChecker extends BugChecker
-            implements BugChecker.CompilationUnitTreeMatcher {
-
-        abstract String requiredSuffix();
-
-        abstract ViewRoleDependencySupport.SourceRole sourceRole();
-
-        abstract String roleLabel();
-
-        @Override
-        public final Description matchCompilationUnit(CompilationUnitTree tree, VisitorState state) {
-            return projectionModelDependencyViolation(
-                    tree,
-                    state,
-                    requiredSuffix(),
-                    sourceRole(),
-                    roleLabel(),
-                    this);
-        }
-    }
-
-    private abstract static class ProjectionModelFlatSurfaceChecker extends BugChecker
-            implements BugChecker.CompilationUnitTreeMatcher {
-
-        abstract String requiredSuffix();
-
-        @Override
-        public final Description matchCompilationUnit(CompilationUnitTree tree, VisitorState state) {
-            return flatSurfaceViolation(tree, requiredSuffix(), this);
-        }
-    }
-
     @BugPattern(
             name = "ViewContributionModelDependencyBoundary",
             summary = "ContributionModels may depend only on read-side published carriers, bindable JavaFX state types, and allowed child model surfaces.",
             severity = BugPattern.SeverityLevel.ERROR)
-    public static final class ViewContributionModelDependencyBoundaryChecker
-            extends ProjectionModelDependencyBoundaryChecker {
+    public static final class ViewContributionModelDependencyBoundaryChecker extends BugChecker
+            implements BugChecker.CompilationUnitTreeMatcher {
 
         @Override
-        String requiredSuffix() {
-            return "ContributionModel";
-        }
-
-        @Override
-        ViewRoleDependencySupport.SourceRole sourceRole() {
-            return ViewRoleDependencySupport.SourceRole.CONTRIBUTION_MODEL;
-        }
-
-        @Override
-        String roleLabel() {
-            return "ContributionModel";
+        public Description matchCompilationUnit(CompilationUnitTree tree, VisitorState state) {
+            return projectionModelDependencyViolation(tree, state, ViewRole.CONTRIBUTION_MODEL, "ContributionModel", this);
         }
     }
 
@@ -77,22 +36,12 @@ public final class ViewProjectionModelBoundaryCheckers {
             name = "ViewContentModelDependencyBoundary",
             summary = "ContentModels may depend only on read-side published carriers, bindable JavaFX state types, and allowed local support surfaces.",
             severity = BugPattern.SeverityLevel.ERROR)
-    public static final class ViewContentModelDependencyBoundaryChecker
-            extends ProjectionModelDependencyBoundaryChecker {
+    public static final class ViewContentModelDependencyBoundaryChecker extends BugChecker
+            implements BugChecker.CompilationUnitTreeMatcher {
 
         @Override
-        String requiredSuffix() {
-            return "ContentModel";
-        }
-
-        @Override
-        ViewRoleDependencySupport.SourceRole sourceRole() {
-            return ViewRoleDependencySupport.SourceRole.CONTENT_MODEL;
-        }
-
-        @Override
-        String roleLabel() {
-            return "ContentModel";
+        public Description matchCompilationUnit(CompilationUnitTree tree, VisitorState state) {
+            return projectionModelDependencyViolation(tree, state, ViewRole.CONTENT_MODEL, "ContentModel", this);
         }
     }
 
@@ -100,12 +49,12 @@ public final class ViewProjectionModelBoundaryCheckers {
             name = "ViewContributionModelFlatSurface",
             summary = "ContributionModels must not declare nested input, request, command, query, operation, or edit carrier types.",
             severity = BugPattern.SeverityLevel.ERROR)
-    public static final class ViewContributionModelFlatSurfaceChecker
-            extends ProjectionModelFlatSurfaceChecker {
+    public static final class ViewContributionModelFlatSurfaceChecker extends BugChecker
+            implements BugChecker.CompilationUnitTreeMatcher {
 
         @Override
-        String requiredSuffix() {
-            return "ContributionModel";
+        public Description matchCompilationUnit(CompilationUnitTree tree, VisitorState state) {
+            return flatSurfaceViolation(tree, ViewRole.CONTRIBUTION_MODEL, this);
         }
     }
 
@@ -113,38 +62,33 @@ public final class ViewProjectionModelBoundaryCheckers {
             name = "ViewContentModelFlatSurface",
             summary = "ContentModels must not declare nested input, request, command, query, operation, or edit carrier types.",
             severity = BugPattern.SeverityLevel.ERROR)
-    public static final class ViewContentModelFlatSurfaceChecker
-            extends ProjectionModelFlatSurfaceChecker {
+    public static final class ViewContentModelFlatSurfaceChecker extends BugChecker
+            implements BugChecker.CompilationUnitTreeMatcher {
 
         @Override
-        String requiredSuffix() {
-            return "ContentModel";
+        public Description matchCompilationUnit(CompilationUnitTree tree, VisitorState state) {
+            return flatSurfaceViolation(tree, ViewRole.CONTENT_MODEL, this);
         }
     }
 
     private static Description projectionModelDependencyViolation(
             CompilationUnitTree tree,
             VisitorState state,
-            String requiredSuffix,
-            ViewRoleDependencySupport.SourceRole role,
+            ViewRole role,
             String roleLabel,
             BugChecker checker
     ) {
-        if (!ViewArchitectureSupport.isViewModelSource(tree)
-                || !ViewArchitectureSupport.topLevelSimpleName(tree).endsWith(requiredSuffix)) {
+        ViewSourceDescriptor source = ViewSourceDescriptor.describe(tree);
+        if (!source.isRecognizedViewSource() || source.role() != role) {
             return Description.NO_MATCH;
         }
-
-        String packageName = ViewArchitectureSupport.packageName(tree);
-        Set<String> forbiddenReferences = ViewRoleDependencySupport.collectForbiddenReferences(
-                tree,
-                state,
-                role);
+        Set<String> forbiddenReferences = ViewRoleDependencySupport.collectForbiddenReferences(tree, state, source);
         if (forbiddenReferences.isEmpty()) {
             return Description.NO_MATCH;
         }
-        return checker.buildDescription(tree)
-                .setMessage(roleLabel + " package '" + packageName
+        ClassTree topLevelClass = ViewArchitectureSupport.topLevelClass(tree);
+        return checker.buildDescription(topLevelClass == null ? tree : topLevelClass)
+                .setMessage(roleLabel + " package '" + source.packageName()
                         + "' violates " + roleLabel + " dependency boundaries via references: "
                         + String.join(", ", forbiddenReferences))
                 .build();
@@ -152,18 +96,15 @@ public final class ViewProjectionModelBoundaryCheckers {
 
     private static Description flatSurfaceViolation(
             CompilationUnitTree tree,
-            String requiredSuffix,
+            ViewRole role,
             BugChecker checker
     ) {
-        if (!ViewArchitectureSupport.isViewModelSource(tree)) {
-            return Description.NO_MATCH;
-        }
-        String topLevelSimpleName = ViewArchitectureSupport.topLevelSimpleName(tree);
-        if (!topLevelSimpleName.endsWith(requiredSuffix)) {
+        ViewSourceDescriptor source = ViewSourceDescriptor.describe(tree);
+        if (!source.isRecognizedViewSource() || source.role() != role) {
             return Description.NO_MATCH;
         }
 
-        ClassTree topLevelClass = topLevelClass(tree);
+        ClassTree topLevelClass = ViewArchitectureSupport.topLevelClass(tree);
         if (topLevelClass == null) {
             return Description.NO_MATCH;
         }
@@ -174,12 +115,11 @@ public final class ViewProjectionModelBoundaryCheckers {
                 violations.add(nestedClass.getSimpleName().toString());
             }
         }
-
         if (violations.isEmpty()) {
             return Description.NO_MATCH;
         }
         return checker.buildDescription(topLevelClass)
-                .setMessage(topLevelSimpleName
+                .setMessage(source.topLevelSimpleName()
                         + " must expose a flat published-value surface and must not declare nested carrier types: "
                         + String.join(", ", violations))
                 .build();
@@ -197,19 +137,5 @@ public final class ViewProjectionModelBoundaryCheckers {
                 || simpleName.endsWith("Query")
                 || simpleName.endsWith("Operation")
                 || simpleName.endsWith("Edit");
-    }
-
-    private static ClassTree topLevelClass(CompilationUnitTree tree) {
-        ClassTree[] result = {null};
-        new TreeScanner<Void, Void>() {
-            @Override
-            public Void visitClass(ClassTree classTree, Void unused) {
-                if (result[0] == null) {
-                    result[0] = classTree;
-                }
-                return null;
-            }
-        }.scan(tree, null);
-        return result[0];
     }
 }

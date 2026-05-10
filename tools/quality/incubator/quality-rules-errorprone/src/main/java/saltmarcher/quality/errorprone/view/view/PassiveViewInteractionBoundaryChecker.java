@@ -151,17 +151,13 @@ public final class PassiveViewInteractionBoundaryChecker extends BugChecker
                 referencedType)) {
             return false;
         }
-        ViewArchitectureSupport.ViewTypeInfo viewType = ViewArchitectureSupport.parseViewType(referencedType);
-        if (viewType == null) {
-            return referencedType.startsWith("src.view.");
-        }
-        if ("VIEW_INPUT_EVENT".equals(viewType.bucket())) {
+        if (ViewArchitectureSupport.isTargetViewInputEventReference(referencedType)) {
             return !ViewArchitectureSupport.isSameStemViewInputEventReference(
                     sourcePackageName,
                     viewSimpleName,
                     referencedType);
         }
-        return true;
+        return referencedType.startsWith("src.view.");
     }
 
     private static boolean isForbiddenProjectOwner(
@@ -183,10 +179,7 @@ public final class PassiveViewInteractionBoundaryChecker extends BugChecker
                 || ownerType.startsWith("src.data.")) {
             return true;
         }
-        if (ownerType.startsWith("src.view.") && ViewArchitectureSupport.parseViewType(ownerType) == null) {
-            return true;
-        }
-        return ViewArchitectureSupport.parseViewType(ownerType) != null;
+        return ownerType.startsWith("src.view.");
     }
 
     private static boolean isForbiddenConstructedType(

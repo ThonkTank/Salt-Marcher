@@ -8,6 +8,7 @@ import com.sun.source.tree.CompilationUnitTree;
 import java.util.Set;
 import saltmarcher.quality.errorprone.view.ViewArchitectureSupport;
 import saltmarcher.quality.errorprone.view.ViewRoleDependencySupport;
+import saltmarcher.quality.errorprone.view.ViewSourceDescriptor;
 
 @BugPattern(
         name = "ViewBinderDependencyBoundary",
@@ -18,20 +19,17 @@ public final class ViewBinderDependencyBoundaryChecker extends BugChecker
 
     @Override
     public Description matchCompilationUnit(CompilationUnitTree tree, VisitorState state) {
-        if (!ViewArchitectureSupport.isBinderSource(tree)) {
+        ViewSourceDescriptor source = ViewSourceDescriptor.describe(tree);
+        if (!source.isActiveRootSource() || source.role() != saltmarcher.quality.errorprone.view.ViewRole.BINDER) {
             return Description.NO_MATCH;
         }
 
-        String packageName = ViewArchitectureSupport.packageName(tree);
-        Set<String> forbiddenReferences = ViewRoleDependencySupport.collectForbiddenReferences(
-                tree,
-                state,
-                ViewRoleDependencySupport.SourceRole.BINDER);
+        Set<String> forbiddenReferences = ViewRoleDependencySupport.collectForbiddenReferences(tree, state, source);
         if (forbiddenReferences.isEmpty()) {
             return Description.NO_MATCH;
         }
         return buildDescription(tree)
-                .setMessage("Binder package '" + packageName
+                .setMessage("Binder package '" + source.packageName()
                         + "' violates Binder dependency boundaries via references: "
                         + String.join(", ", forbiddenReferences))
                 .build();

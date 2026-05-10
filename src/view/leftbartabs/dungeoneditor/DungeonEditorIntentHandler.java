@@ -5,6 +5,10 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
 import org.jspecify.annotations.Nullable;
+import src.domain.dungeoneditor.DungeonEditorApplicationService;
+import src.domain.dungeoneditor.session.value.DungeonEditorSessionCommand;
+import src.domain.dungeoneditor.session.value.DungeonEditorSessionValues;
+import src.domain.dungeoneditor.workspace.value.DungeonEditorWorkspaceValues;
 import src.view.slotcontent.main.dungeonmap.DungeonMapViewInputEvent;
 import src.view.slotcontent.primitives.mapcanvas.MapCanvasContentModel;
 import src.view.slotcontent.primitives.mapcanvas.MapCanvasViewInputEvent;
@@ -18,51 +22,48 @@ final class DungeonEditorIntentHandler {
 
     private final DungeonEditorContributionModel presentationModel;
     private final MapCanvasContentModel mapCanvasContentModel;
-    private Consumer<DungeonEditorPublishedEvent> publishedEventListener = ignored -> {};
+    private final DungeonEditorApplicationService editor;
 
     DungeonEditorIntentHandler(
             DungeonEditorContributionModel presentationModel,
-            MapCanvasContentModel mapCanvasContentModel
+            MapCanvasContentModel mapCanvasContentModel,
+            DungeonEditorApplicationService editor
     ) {
         this.presentationModel = Objects.requireNonNull(presentationModel, "presentationModel");
         this.mapCanvasContentModel = Objects.requireNonNull(mapCanvasContentModel, "mapCanvasContentModel");
-    }
-
-    void onPublishedEventRequested(Consumer<DungeonEditorPublishedEvent> listener) {
-        publishedEventListener = listener == null ? ignored -> {} : listener;
+        this.editor = Objects.requireNonNull(editor, "editor");
     }
 
     void consume(DungeonMapViewInputEvent event) {
         if (event == null) {
             return;
         }
-        publish(MainViewSupport.toPublishedEvent(mapCanvasContentModel, event.canvasEvent()));
+        apply(MainViewSupport.toCommand(mapCanvasContentModel, event.canvasEvent()));
     }
 
     void consume(DungeonEditorControlsViewInputEvent event) {
         if (event == null) {
             return;
         }
-        ControlsSupport.consume(presentationModel, this::publish, event);
+        ControlsSupport.consume(presentationModel, this::apply, event);
     }
 
     void consume(DungeonEditorStateViewInputEvent event) {
         if (event == null) {
             return;
         }
-        publish(StateSaveSupport.toSaveEvent(presentationModel, event));
+        apply(StateSaveSupport.toSaveCommand(presentationModel, event));
     }
 
-    private void publish(@Nullable DungeonEditorPublishedEvent event) {
-        if (event == null) {
-            return;
+    private void apply(@Nullable DungeonEditorSessionCommand command) {
+        if (command != null) {
+            editor.applyEditorSession(command);
         }
-        publishedEventListener.accept(event);
     }
 
     private static final class MainViewSupport {
 
-        private static @Nullable DungeonEditorPublishedEvent toPublishedEvent(
+        private static @Nullable DungeonEditorSessionCommand toCommand(
                 MapCanvasContentModel mapCanvasContentModel,
                 MapCanvasViewInputEvent event
         ) {
@@ -80,7 +81,7 @@ final class DungeonEditorIntentHandler {
             if (event.buttons().middleButtonDown()) {
                 return null;
             }
-            return DungeonEditorPublishedEvent.interpretMainView(new DungeonEditorPublishedEvent.MainViewInput(
+            return mainViewCommand(new DungeonEditorSessionCommand.MainViewInput(
                     toMainViewSource(event.interaction()),
                     event.position().canvasX(),
                     event.position().canvasY(),
@@ -90,7 +91,7 @@ final class DungeonEditorIntentHandler {
                     0));
         }
 
-        private static @Nullable DungeonEditorPublishedEvent handleScroll(
+        private static @Nullable DungeonEditorSessionCommand handleScroll(
                 MapCanvasContentModel mapCanvasContentModel,
                 MapCanvasViewInputEvent event
         ) {
@@ -112,8 +113,8 @@ final class DungeonEditorIntentHandler {
             if (levelDelta == 0) {
                 return null;
             }
-            return DungeonEditorPublishedEvent.interpretMainView(new DungeonEditorPublishedEvent.MainViewInput(
-                    DungeonEditorPublishedEvent.MainViewInput.Source.LEVEL_SCROLLED,
+            return mainViewCommand(new DungeonEditorSessionCommand.MainViewInput(
+                    DungeonEditorSessionCommand.MainViewInputSource.LEVEL_SCROLLED,
                     event.position().canvasX(),
                     event.position().canvasY(),
                     event.buttons().primaryButtonDown(),
@@ -136,18 +137,18 @@ final class DungeonEditorIntentHandler {
             return 0;
         }
 
-        private static DungeonEditorPublishedEvent.MainViewInput.Source toMainViewSource(
+        private static DungeonEditorSessionCommand.MainViewInputSource toMainViewSource(
                 MapCanvasViewInputEvent.Interaction interaction
         ) {
             MapCanvasViewInputEvent.Interaction safeInteraction = interaction == null
                     ? MapCanvasViewInputEvent.Interaction.MOVE
                     : interaction;
             return switch (safeInteraction) {
-                case PRESS -> DungeonEditorPublishedEvent.MainViewInput.Source.POINTER_PRESSED;
-                case DRAG -> DungeonEditorPublishedEvent.MainViewInput.Source.POINTER_DRAGGED;
-                case RELEASE -> DungeonEditorPublishedEvent.MainViewInput.Source.POINTER_RELEASED;
-                case MOVE -> DungeonEditorPublishedEvent.MainViewInput.Source.POINTER_MOVED;
-                case SCROLL -> DungeonEditorPublishedEvent.MainViewInput.Source.LEVEL_SCROLLED;
+                case PRESS -> DungeonEditorSessionCommand.MainViewInputSource.POINTER_PRESSED;
+                case DRAG -> DungeonEditorSessionCommand.MainViewInputSource.POINTER_DRAGGED;
+                case RELEASE -> DungeonEditorSessionCommand.MainViewInputSource.POINTER_RELEASED;
+                case MOVE -> DungeonEditorSessionCommand.MainViewInputSource.POINTER_MOVED;
+                case SCROLL -> DungeonEditorSessionCommand.MainViewInputSource.LEVEL_SCROLLED;
             };
         }
     }
@@ -156,7 +157,7 @@ final class DungeonEditorIntentHandler {
 
         private static void consume(
                 DungeonEditorContributionModel presentationModel,
-                Consumer<DungeonEditorPublishedEvent> publisher,
+                Consumer<DungeonEditorSessionCommand> publisher,
                 DungeonEditorControlsViewInputEvent event
         ) {
             if (event.mapSelection() != null) {
@@ -176,7 +177,7 @@ final class DungeonEditorIntentHandler {
                 return;
             }
             if (event.projectionLevelShift() != 0) {
-                publisher.accept(DungeonEditorPublishedEvent.shiftProjectionLevel(event.projectionLevelShift()));
+                publisher.accept(shiftProjectionLevelCommand(event.projectionLevelShift()));
                 return;
             }
             if (event.overlay() != null) {
@@ -186,20 +187,23 @@ final class DungeonEditorIntentHandler {
 
         private static void handleMapSelection(
                 DungeonEditorContributionModel presentationModel,
-                Consumer<DungeonEditorPublishedEvent> publisher,
+                Consumer<DungeonEditorSessionCommand> publisher,
                 DungeonEditorControlsViewInputEvent.MapSelectionInput mapSelection
         ) {
             long selectedMapIdValue = mapSelection.selectedMapIdValue();
             DungeonEditorContributionModel.InteractionState interactionState = presentationModel.currentInteractionState();
             if (selectedMapIdValue > NO_MAP_ID
                     && selectedMapIdValue != interactionState.currentSelectedMapIdValue()) {
-                publisher.accept(DungeonEditorPublishedEvent.selectMap(selectedMapIdValue));
+                publisher.accept(mapCommand(
+                        DungeonEditorSessionCommand.Action.SELECT_MAP,
+                        new DungeonEditorWorkspaceValues.MapId(selectedMapIdValue),
+                        ""));
             }
         }
 
         private static void handleMapEditor(
                 DungeonEditorContributionModel presentationModel,
-                Consumer<DungeonEditorPublishedEvent> publisher,
+                Consumer<DungeonEditorSessionCommand> publisher,
                 DungeonEditorControlsViewInputEvent.MapEditorInput mapEditor
         ) {
             presentationModel.applyLocalMutation(new DungeonEditorContributionModel.UpdateMapEditorDraftMutation(mapEditor.draftName()));
@@ -235,7 +239,7 @@ final class DungeonEditorIntentHandler {
 
         private static void handleMapEditorSubmit(
                 DungeonEditorContributionModel presentationModel,
-                Consumer<DungeonEditorPublishedEvent> publisher
+                Consumer<DungeonEditorSessionCommand> publisher
         ) {
             DungeonEditorContributionModel.MapEditorUiState mapEditorUiState =
                     presentationModel.currentInteractionState().currentMapEditorUiState();
@@ -247,21 +251,24 @@ final class DungeonEditorIntentHandler {
             }
             if (mapEditorUiState.isCreateMode()) {
                 presentationModel.applyLocalMutation(new DungeonEditorContributionModel.CloseMapEditorMutation());
-                publisher.accept(DungeonEditorPublishedEvent.createMap(draftName));
+                publisher.accept(mapCommand(DungeonEditorSessionCommand.Action.CREATE_MAP, null, draftName));
                 return;
             }
             if (mapEditorUiState.isRenameMode()) {
                 long mapIdValue = mapEditorUiState.mapIdValue();
                 if (mapIdValue > NO_MAP_ID) {
                     presentationModel.applyLocalMutation(new DungeonEditorContributionModel.CloseMapEditorMutation());
-                    publisher.accept(DungeonEditorPublishedEvent.renameMap(mapIdValue, draftName));
+                    publisher.accept(mapCommand(
+                            DungeonEditorSessionCommand.Action.RENAME_MAP,
+                            new DungeonEditorWorkspaceValues.MapId(mapIdValue),
+                            draftName));
                 }
             }
         }
 
         private static void handleMapDelete(
                 DungeonEditorContributionModel presentationModel,
-                Consumer<DungeonEditorPublishedEvent> publisher
+                Consumer<DungeonEditorSessionCommand> publisher
         ) {
             DungeonEditorContributionModel.MapEditorUiState mapEditorUiState =
                     presentationModel.currentInteractionState().currentMapEditorUiState();
@@ -271,13 +278,16 @@ final class DungeonEditorIntentHandler {
             long mapIdValue = mapEditorUiState.mapIdValue();
             if (mapIdValue > NO_MAP_ID) {
                 presentationModel.applyLocalMutation(new DungeonEditorContributionModel.CloseMapEditorMutation());
-                publisher.accept(DungeonEditorPublishedEvent.deleteMap(mapIdValue));
+                publisher.accept(mapCommand(
+                        DungeonEditorSessionCommand.Action.DELETE_MAP,
+                        new DungeonEditorWorkspaceValues.MapId(mapIdValue),
+                        ""));
             }
         }
 
         private static void handleViewMode(
                 DungeonEditorContributionModel presentationModel,
-                Consumer<DungeonEditorPublishedEvent> publisher,
+                Consumer<DungeonEditorSessionCommand> publisher,
                 @Nullable String viewModeKey
         ) {
             if (viewModeKey == null || viewModeKey.isBlank()) {
@@ -287,19 +297,19 @@ final class DungeonEditorIntentHandler {
             String selectedViewMode = presentationModel.currentInteractionState().currentViewModeKey();
             if (DungeonEditorContributionModel.ToolCatalog.GRAPH_VIEW_LABEL.equals(normalizedViewModeKey)) {
                 if (!DungeonEditorContributionModel.ToolCatalog.GRAPH_VIEW_LABEL.equals(selectedViewMode)) {
-                    publisher.accept(DungeonEditorPublishedEvent.setViewMode(
-                            DungeonEditorContributionModel.ToolCatalog.toPublishedViewMode(normalizedViewModeKey)));
+                    publisher.accept(viewModeCommand(
+                            DungeonEditorContributionModel.ToolCatalog.toSessionViewMode(normalizedViewModeKey)));
                 }
                 return;
             }
             if (!DungeonEditorContributionModel.ToolCatalog.GRID_VIEW_LABEL.equals(selectedViewMode)) {
-                publisher.accept(DungeonEditorPublishedEvent.setViewMode(DungeonEditorPublishedEvent.ViewMode.GRID));
+                publisher.accept(viewModeCommand(DungeonEditorSessionValues.ViewMode.GRID));
             }
         }
 
         private static void handleToolInput(
                 DungeonEditorContributionModel presentationModel,
-                Consumer<DungeonEditorPublishedEvent> publisher,
+                Consumer<DungeonEditorSessionCommand> publisher,
                 DungeonEditorControlsViewInputEvent.ToolInput toolInput
         ) {
             if (toolInput.dismissRequested()) {
@@ -316,14 +326,14 @@ final class DungeonEditorIntentHandler {
             if (toolInput.selectedToolLabel() != null
                     && !toolInput.selectedToolLabel().isBlank()
                     && !interactionState.currentSelectedToolLabel().equals(toolInput.selectedToolLabel())) {
-                publisher.accept(DungeonEditorPublishedEvent.setTool(
-                        DungeonEditorContributionModel.ToolCatalog.toPublishedTool(toolInput.selectedToolLabel())));
+                publisher.accept(toolCommand(
+                        DungeonEditorContributionModel.ToolCatalog.toSessionTool(toolInput.selectedToolLabel())));
             }
         }
 
         private static void handleOverlayInput(
                 DungeonEditorContributionModel presentationModel,
-                Consumer<DungeonEditorPublishedEvent> publisher,
+                Consumer<DungeonEditorSessionCommand> publisher,
                 DungeonEditorControlsViewInputEvent.OverlayInput overlayInput
         ) {
             DungeonEditorContributionModel.OverlayProjection currentOverlay =
@@ -335,26 +345,17 @@ final class DungeonEditorIntentHandler {
                     && parseLevels(currentOverlay.selectedLevelsText()).equals(selectedLevels)) {
                 return;
             }
-            publisher.accept(new DungeonEditorPublishedEvent(
-                    DungeonEditorPublishedEvent.Kind.SET_OVERLAY,
-                    0L,
-                    "",
-                    DungeonEditorPublishedEvent.ViewMode.GRID,
-                    DungeonEditorPublishedEvent.Tool.SELECT,
-                    0,
-                    new DungeonEditorPublishedEvent.OverlaySettings(
+            publisher.accept(overlayCommand(new DungeonEditorSessionValues.OverlaySettings(
                             overlayInput.modeKey(),
                             overlayInput.levelRange(),
                             overlayInput.opacity(),
-                            selectedLevels),
-                    DungeonEditorPublishedEvent.MainViewInput.empty(),
-                    DungeonEditorPublishedEvent.RoomNarrationInput.empty()));
+                            selectedLevels)));
         }
     }
 
     private static final class StateSaveSupport {
 
-        private static @Nullable DungeonEditorPublishedEvent toSaveEvent(
+        private static @Nullable DungeonEditorSessionCommand toSaveCommand(
                 DungeonEditorContributionModel presentationModel,
                 DungeonEditorStateViewInputEvent event
         ) {
@@ -363,7 +364,7 @@ final class DungeonEditorIntentHandler {
             if (card == null) {
                 return null;
             }
-            return DungeonEditorPublishedEvent.saveRoomNarration(new DungeonEditorPublishedEvent.RoomNarrationInput(
+            return roomNarrationCommand(new DungeonEditorSessionCommand.RoomNarrationInput(
                     card.roomId(),
                     event.visualDescription(),
                     mergeExitNarrations(card.exits(), event.exitDescriptions())));
@@ -385,31 +386,31 @@ final class DungeonEditorIntentHandler {
             return null;
         }
 
-        private static List<DungeonEditorPublishedEvent.RoomExitNarration> mergeExitNarrations(
+        private static List<DungeonEditorWorkspaceValues.RoomExitNarration> mergeExitNarrations(
                 List<DungeonEditorContributionModel.RoomExitNarrationProjection> exits,
                 List<String> exitDescriptions
         ) {
-            List<DungeonEditorPublishedEvent.RoomExitNarration> merged = new ArrayList<>();
+            List<DungeonEditorWorkspaceValues.RoomExitNarration> merged = new ArrayList<>();
             List<DungeonEditorContributionModel.RoomExitNarrationProjection> safeExits = exits == null ? List.of() : exits;
             List<String> safeDescriptions = exitDescriptions == null ? List.of() : exitDescriptions;
             for (int index = 0; index < safeExits.size(); index++) {
                 DungeonEditorContributionModel.RoomExitNarrationProjection exit = safeExits.get(index);
                 String description = index < safeDescriptions.size() ? safeDescriptions.get(index) : exit.description();
-                merged.add(toPublishedExit(exit, description));
+                merged.add(toRoomExit(exit, description));
             }
             return List.copyOf(merged);
         }
 
-        private static DungeonEditorPublishedEvent.RoomExitNarration toPublishedExit(
+        private static DungeonEditorWorkspaceValues.RoomExitNarration toRoomExit(
                 DungeonEditorContributionModel.RoomExitNarrationProjection exit,
                 @Nullable String description
         ) {
             DungeonEditorContributionModel.RoomExitNarrationProjection safeExit = exit == null
                     ? new DungeonEditorContributionModel.RoomExitNarrationProjection("", 0, 0, 0, "", "")
                     : exit;
-            return new DungeonEditorPublishedEvent.RoomExitNarration(
+            return new DungeonEditorWorkspaceValues.RoomExitNarration(
                     safeExit.label(),
-                    new DungeonEditorPublishedEvent.CellRef(safeExit.q(), safeExit.r(), safeExit.level()),
+                    new DungeonEditorWorkspaceValues.Cell(safeExit.q(), safeExit.r(), safeExit.level()),
                     safeExit.direction(),
                     description == null ? safeExit.description() : description);
         }
@@ -430,5 +431,104 @@ final class DungeonEditorIntentHandler {
         } catch (NumberFormatException exception) {
             return List.of();
         }
+    }
+
+    private static DungeonEditorSessionCommand mainViewCommand(DungeonEditorSessionCommand.MainViewInput mainViewInput) {
+        return new DungeonEditorSessionCommand(
+                DungeonEditorSessionCommand.Action.INTERPRET_MAIN_VIEW,
+                null,
+                "",
+                DungeonEditorSessionValues.ViewMode.defaultMode(),
+                DungeonEditorSessionValues.Tool.defaultTool(),
+                0,
+                DungeonEditorSessionValues.OverlaySettings.defaults(),
+                mainViewInput,
+                DungeonEditorSessionCommand.RoomNarrationInput.empty());
+    }
+
+    private static DungeonEditorSessionCommand mapCommand(
+            DungeonEditorSessionCommand.Action action,
+            DungeonEditorWorkspaceValues.MapId mapId,
+            String mapName
+    ) {
+        return new DungeonEditorSessionCommand(
+                action,
+                mapId,
+                mapName,
+                DungeonEditorSessionValues.ViewMode.defaultMode(),
+                DungeonEditorSessionValues.Tool.defaultTool(),
+                0,
+                DungeonEditorSessionValues.OverlaySettings.defaults(),
+                DungeonEditorSessionCommand.MainViewInput.empty(),
+                DungeonEditorSessionCommand.RoomNarrationInput.empty());
+    }
+
+    private static DungeonEditorSessionCommand viewModeCommand(DungeonEditorSessionValues.ViewMode viewMode) {
+        return new DungeonEditorSessionCommand(
+                DungeonEditorSessionCommand.Action.SET_VIEW_MODE,
+                null,
+                "",
+                viewMode,
+                DungeonEditorSessionValues.Tool.defaultTool(),
+                0,
+                DungeonEditorSessionValues.OverlaySettings.defaults(),
+                DungeonEditorSessionCommand.MainViewInput.empty(),
+                DungeonEditorSessionCommand.RoomNarrationInput.empty());
+    }
+
+    private static DungeonEditorSessionCommand toolCommand(DungeonEditorSessionValues.Tool tool) {
+        return new DungeonEditorSessionCommand(
+                DungeonEditorSessionCommand.Action.SET_TOOL,
+                null,
+                "",
+                DungeonEditorSessionValues.ViewMode.defaultMode(),
+                tool,
+                0,
+                DungeonEditorSessionValues.OverlaySettings.defaults(),
+                DungeonEditorSessionCommand.MainViewInput.empty(),
+                DungeonEditorSessionCommand.RoomNarrationInput.empty());
+    }
+
+    private static DungeonEditorSessionCommand shiftProjectionLevelCommand(int projectionLevelDelta) {
+        return new DungeonEditorSessionCommand(
+                DungeonEditorSessionCommand.Action.SHIFT_PROJECTION_LEVEL,
+                null,
+                "",
+                DungeonEditorSessionValues.ViewMode.defaultMode(),
+                DungeonEditorSessionValues.Tool.defaultTool(),
+                projectionLevelDelta,
+                DungeonEditorSessionValues.OverlaySettings.defaults(),
+                DungeonEditorSessionCommand.MainViewInput.empty(),
+                DungeonEditorSessionCommand.RoomNarrationInput.empty());
+    }
+
+    private static DungeonEditorSessionCommand overlayCommand(
+            DungeonEditorSessionValues.OverlaySettings overlaySettings
+    ) {
+        return new DungeonEditorSessionCommand(
+                DungeonEditorSessionCommand.Action.SET_OVERLAY,
+                null,
+                "",
+                DungeonEditorSessionValues.ViewMode.defaultMode(),
+                DungeonEditorSessionValues.Tool.defaultTool(),
+                0,
+                overlaySettings,
+                DungeonEditorSessionCommand.MainViewInput.empty(),
+                DungeonEditorSessionCommand.RoomNarrationInput.empty());
+    }
+
+    private static DungeonEditorSessionCommand roomNarrationCommand(
+            DungeonEditorSessionCommand.RoomNarrationInput roomNarration
+    ) {
+        return new DungeonEditorSessionCommand(
+                DungeonEditorSessionCommand.Action.SAVE_ROOM_NARRATION,
+                null,
+                "",
+                DungeonEditorSessionValues.ViewMode.defaultMode(),
+                DungeonEditorSessionValues.Tool.defaultTool(),
+                0,
+                DungeonEditorSessionValues.OverlaySettings.defaults(),
+                DungeonEditorSessionCommand.MainViewInput.empty(),
+                roomNarration);
     }
 }

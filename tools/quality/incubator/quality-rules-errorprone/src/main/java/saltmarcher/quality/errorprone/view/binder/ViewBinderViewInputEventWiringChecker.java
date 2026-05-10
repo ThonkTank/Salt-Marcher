@@ -93,8 +93,7 @@ public final class ViewBinderViewInputEventWiringChecker extends BugChecker
                 ViewArchitectureSupport.collectReferencedTypes(currentTree, referencedTypes);
                 if (referencedTypes.stream().anyMatch(referencedType ->
                         ViewArchitectureSupport.isSameViewUnitReference(ownerType, referencedType)
-                                && ViewArchitectureSupport.parseViewType(referencedType) != null
-                                && "HANDLER".equals(ViewArchitectureSupport.parseViewType(referencedType).bucket()))) {
+                                && ViewArchitectureSupport.isIntentHandlerReference(referencedType))) {
                     found[0] = true;
                     return null;
                 }
@@ -122,8 +121,6 @@ public final class ViewBinderViewInputEventWiringChecker extends BugChecker
         }
         String handlerOwnerType = ViewArchitectureSupport.getQualifiedOwnerTypeName(methodSymbol);
         return "consume".contentEquals(methodSymbol.getSimpleName())
-                && ViewArchitectureSupport.isSameViewRootReference(binderPackageName, handlerOwnerType)
-                && ViewArchitectureSupport.parseViewType(handlerOwnerType) != null
-                && "HANDLER".equals(ViewArchitectureSupport.parseViewType(handlerOwnerType).bucket());
+                && ViewArchitectureSupport.isSameViewRootIntentHandlerReference(binderPackageName, handlerOwnerType);
     }
 }

@@ -22,6 +22,7 @@ import src.domain.dungeoneditor.published.DungeonEditorSnapshot;
 import src.domain.dungeoneditor.published.DungeonEditorSurface;
 import src.domain.dungeoneditor.published.DungeonEditorTool;
 import src.domain.dungeoneditor.published.DungeonEditorViewMode;
+import src.domain.dungeoneditor.session.value.DungeonEditorSessionValues;
 
 public final class DungeonEditorContributionModel {
 
@@ -913,8 +914,8 @@ public final class DungeonEditorContributionModel {
         static final String ROOM_PAINT_LABEL = "Raum malen";
         static final String ROOM_DELETE_LABEL = "Raum löschen";
         private static final Map<DungeonEditorTool, String> TOOL_LABELS = createToolLabels();
-        private static final Map<String, DungeonEditorPublishedEvent.Tool> PUBLISHED_TOOLS_BY_LABEL =
-                createPublishedToolsByLabel();
+        private static final Map<String, DungeonEditorSessionValues.Tool> SESSION_TOOLS_BY_LABEL =
+                createSessionToolsByLabel();
         private static final Map<ToolFamily, ToolPalette> PALETTES = createPalettes();
 
         static String labelOf(@Nullable DungeonEditorTool tool) {
@@ -929,14 +930,14 @@ public final class DungeonEditorContributionModel {
             return GRAPH_VIEW_LABEL.equals(viewModeKey) ? GRAPH_VIEW_LABEL : GRID_VIEW_LABEL;
         }
 
-        static DungeonEditorPublishedEvent.ViewMode toPublishedViewMode(@Nullable String viewModeKey) {
+        static DungeonEditorSessionValues.ViewMode toSessionViewMode(@Nullable String viewModeKey) {
             return GRAPH_VIEW_LABEL.equals(viewModeKey)
-                    ? DungeonEditorPublishedEvent.ViewMode.GRAPH
-                    : DungeonEditorPublishedEvent.ViewMode.GRID;
+                    ? DungeonEditorSessionValues.ViewMode.GRAPH
+                    : DungeonEditorSessionValues.ViewMode.GRID;
         }
 
-        static DungeonEditorPublishedEvent.Tool toPublishedTool(@Nullable String selectedToolLabel) {
-            return PUBLISHED_TOOLS_BY_LABEL.getOrDefault(selectedToolLabel, DungeonEditorPublishedEvent.Tool.SELECT);
+        static DungeonEditorSessionValues.Tool toSessionTool(@Nullable String selectedToolLabel) {
+            return SESSION_TOOLS_BY_LABEL.getOrDefault(selectedToolLabel, DungeonEditorSessionValues.Tool.SELECT);
         }
 
         static ToolPalette paletteFor(@Nullable ToolFamily family) {
@@ -961,21 +962,21 @@ public final class DungeonEditorContributionModel {
             return Map.copyOf(toolLabels);
         }
 
-        private static Map<String, DungeonEditorPublishedEvent.Tool> createPublishedToolsByLabel() {
-            Map<String, DungeonEditorPublishedEvent.Tool> toolsByLabel = new HashMap<>();
-            toolsByLabel.put(DEFAULT_TOOL_LABEL, DungeonEditorPublishedEvent.Tool.SELECT);
-            toolsByLabel.put(ROOM_PAINT_LABEL, DungeonEditorPublishedEvent.Tool.ROOM_PAINT);
-            toolsByLabel.put(ROOM_DELETE_LABEL, DungeonEditorPublishedEvent.Tool.ROOM_DELETE);
-            toolsByLabel.put("Wand setzen", DungeonEditorPublishedEvent.Tool.WALL_CREATE);
-            toolsByLabel.put("Wand löschen", DungeonEditorPublishedEvent.Tool.WALL_DELETE);
-            toolsByLabel.put("Tür setzen", DungeonEditorPublishedEvent.Tool.DOOR_CREATE);
-            toolsByLabel.put("Tür löschen", DungeonEditorPublishedEvent.Tool.DOOR_DELETE);
-            toolsByLabel.put("Korridor erstellen", DungeonEditorPublishedEvent.Tool.CORRIDOR_CREATE);
-            toolsByLabel.put("Korridor löschen", DungeonEditorPublishedEvent.Tool.CORRIDOR_DELETE);
-            toolsByLabel.put("Treppe erstellen", DungeonEditorPublishedEvent.Tool.STAIR_CREATE);
-            toolsByLabel.put("Treppe löschen", DungeonEditorPublishedEvent.Tool.STAIR_DELETE);
-            toolsByLabel.put("Übergang erstellen", DungeonEditorPublishedEvent.Tool.TRANSITION_CREATE);
-            toolsByLabel.put("Übergang löschen", DungeonEditorPublishedEvent.Tool.TRANSITION_DELETE);
+        private static Map<String, DungeonEditorSessionValues.Tool> createSessionToolsByLabel() {
+            Map<String, DungeonEditorSessionValues.Tool> toolsByLabel = new HashMap<>();
+            toolsByLabel.put(DEFAULT_TOOL_LABEL, DungeonEditorSessionValues.Tool.SELECT);
+            toolsByLabel.put(ROOM_PAINT_LABEL, DungeonEditorSessionValues.Tool.ROOM_PAINT);
+            toolsByLabel.put(ROOM_DELETE_LABEL, DungeonEditorSessionValues.Tool.ROOM_DELETE);
+            toolsByLabel.put("Wand setzen", DungeonEditorSessionValues.Tool.WALL_CREATE);
+            toolsByLabel.put("Wand löschen", DungeonEditorSessionValues.Tool.WALL_DELETE);
+            toolsByLabel.put("Tür setzen", DungeonEditorSessionValues.Tool.DOOR_CREATE);
+            toolsByLabel.put("Tür löschen", DungeonEditorSessionValues.Tool.DOOR_DELETE);
+            toolsByLabel.put("Korridor erstellen", DungeonEditorSessionValues.Tool.CORRIDOR_CREATE);
+            toolsByLabel.put("Korridor löschen", DungeonEditorSessionValues.Tool.CORRIDOR_DELETE);
+            toolsByLabel.put("Treppe erstellen", DungeonEditorSessionValues.Tool.STAIR_CREATE);
+            toolsByLabel.put("Treppe löschen", DungeonEditorSessionValues.Tool.STAIR_DELETE);
+            toolsByLabel.put("Übergang erstellen", DungeonEditorSessionValues.Tool.TRANSITION_CREATE);
+            toolsByLabel.put("Übergang löschen", DungeonEditorSessionValues.Tool.TRANSITION_DELETE);
             return Map.copyOf(toolsByLabel);
         }
 

@@ -59,10 +59,7 @@ public final class ViewContributionBoundaryCheckers {
                 return Description.NO_MATCH;
             }
 
-            Set<String> forbiddenReferences = ViewRoleDependencySupport.collectForbiddenReferences(
-                    tree,
-                    state,
-                    ViewRoleDependencySupport.SourceRole.CONTRIBUTION);
+            Set<String> forbiddenReferences = ViewRoleDependencySupport.collectForbiddenReferences(tree, state, source);
             if (forbiddenReferences.isEmpty()) {
                 return Description.NO_MATCH;
             }
