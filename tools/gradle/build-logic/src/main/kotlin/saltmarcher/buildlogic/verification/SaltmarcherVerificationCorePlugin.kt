@@ -49,7 +49,7 @@ internal fun Project.configureVerificationCore() {
 
     fun registerStandardBundle(bundleId: String) {
         val descriptor = descriptor(bundleId)
-        val rootTaskName = descriptor.entryTaskName
+        val selectorTaskName = descriptor.selectorTaskName
         val checkerNames = descriptor.errorProneCheckers
         val bundleDisplayName = defaultBundleDisplayName(bundleId)
 
@@ -70,7 +70,7 @@ internal fun Project.configureVerificationCore() {
         val aggregateDependencies = mutableListOf<Any>()
         aggregateDependencies.addAll(
             descriptor.dependentBundleIds.map { dependencyBundleId ->
-                tasks.named(descriptor(dependencyBundleId).entryTaskName)
+                tasks.named(descriptor(dependencyBundleId).selectorTaskName)
             }
         )
 
@@ -107,9 +107,9 @@ internal fun Project.configureVerificationCore() {
             }
         )
 
-        tasks.register(rootTaskName) {
-            description = descriptor.entryTaskDescription.ifBlank {
-                "Internal entry task for the $bundleDisplayName enforcement bundle."
+        tasks.register(selectorTaskName) {
+            description = descriptor.selectorTaskDescription.ifBlank {
+                "Internal selector for the $bundleDisplayName enforcement bundle."
             }
             aggregateDependencies.forEach(::dependsOn)
         }
@@ -125,7 +125,7 @@ internal fun Project.configureVerificationCore() {
             description = surface.description
             activeSurfaceBundleIds
                 .map(::descriptor)
-                .map(EnforcementBundleDescriptor::entryTaskName)
+                .map(EnforcementBundleDescriptor::selectorTaskName)
                 .forEach(::dependsOn)
         }
     }

@@ -22,12 +22,12 @@ class SaltmarcherRootSettingsPlugin : Plugin<Settings> {
             .map { taskName -> taskName.substringAfterLast(":") }
             .toSet()
         val broadBuildTaskNames = standardBroadBuildTaskNames()
-        val taskToBundleId = bundleCatalog.taskToBundleId
+        val internalSelectorTaskToBundleId = bundleCatalog.selectorTaskToBundleId
         val publicSurfaceTaskNames = publicVerificationSurfaceCatalog.taskToBundleIds.keys
         val requestedBundleIds = requestedTaskNames
             .flatMap { taskName ->
                 publicVerificationSurfaceCatalog.taskToBundleIds[taskName]
-                    ?: taskToBundleId[taskName]?.let(::listOf)
+                    ?: internalSelectorTaskToBundleId[taskName]?.let(::listOf)
                     ?: emptyList()
             }
             .distinct()
@@ -35,7 +35,7 @@ class SaltmarcherRootSettingsPlugin : Plugin<Settings> {
             requestedBundleIds.isNotEmpty() &&
             requestedTaskNames.none { taskName -> taskName in broadBuildTaskNames } &&
             requestedTaskNames.all { taskName ->
-                taskName in taskToBundleId.keys || taskName in publicSurfaceTaskNames
+                taskName in internalSelectorTaskToBundleId.keys || taskName in publicSurfaceTaskNames
             }
         val activeEnforcementBundleIds = if (focusedEnforcementBundleMode) {
             bundleCatalog.expandedBundleIds(requestedBundleIds)

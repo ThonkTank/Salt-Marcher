@@ -109,6 +109,25 @@ public final class PassiveViewInteractionBoundaryCheckerTest {
     }
 
     @Test
+    public void allowsOwnNestedTypeInteraction() {
+        newHelper()
+                .addSourceLines(
+                        "src/view/slotcontent/primitives/foo/FooView.java",
+                        "package src.view.slotcontent.primitives.foo;",
+                        "final class FooView {",
+                        "  void render() {",
+                        "    LocalSelection.renderText();",
+                        "  }",
+                        "  private static final class LocalSelection {",
+                        "    static String renderText() {",
+                        "      return \"x\";",
+                        "    }",
+                        "  }",
+                        "}")
+                .doTest();
+    }
+
+    @Test
     public void rejectsStaticFactoryOnProjectionModelOwner() {
         newHelper()
                 .addSourceLines(

@@ -87,6 +87,23 @@ public final class PassiveViewSurfaceBoundaryCheckerTest {
     }
 
     @Test
+    public void allowsPreparedStateSinkAccessorFromClasspathWidgetType() {
+        newHelper()
+                .withClasspath(javafx.scene.control.RuntimeLabel.class)
+                .addSourceLines(
+                        "src/view/slotcontent/primitives/foo/FooView.java",
+                        "package src.view.slotcontent.primitives.foo;",
+                        "import java.util.function.Consumer;",
+                        "import javafx.scene.control.RuntimeLabel;",
+                        "final class FooView {",
+                        "  Consumer<RuntimeLabel> labelSink() {",
+                        "    return label -> label.setText(\"x\");",
+                        "  }",
+                        "}")
+                .doTest();
+    }
+
+    @Test
     public void rejectsOutwardMutableField() {
         newHelper()
                 .addSourceLines(

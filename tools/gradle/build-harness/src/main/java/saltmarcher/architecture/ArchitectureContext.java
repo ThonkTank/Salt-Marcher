@@ -82,16 +82,20 @@ public final class ArchitectureContext {
                     .filter(Files::isRegularFile)
                     .filter(path -> path.getFileName().toString().equals(simpleTypeName + ".java"))
                     .map(this::relativeSegments)
-                    .anyMatch(segments -> segments.size() >= 5
-                            && "src".equals(segments.get(0))
-                            && "domain".equals(segments.get(1))
-                            && featureName.equals(segments.get(2))
-                            && segments.size() == 6
-                            && !Set.of("published", "application").contains(segments.get(3))
-                            && DomainRoleTopologySupport.isAllowedDomainRolePackage(segments.get(4)));
+                    .anyMatch(segments -> isLegacyDomainNamedModuleType(featureName, segments)
+                            || DomainRoleTopologySupport.isModelRoleSource(segments, "model"));
         } catch (IOException ignored) {
             return false;
         }
+    }
+
+    private static boolean isLegacyDomainNamedModuleType(String featureName, List<String> segments) {
+        return segments.size() == 6
+                && "src".equals(segments.get(0))
+                && "domain".equals(segments.get(1))
+                && featureName.equals(segments.get(2))
+                && !Set.of("published", "application").contains(segments.get(3))
+                && DomainRoleTopologySupport.isAllowedDomainRolePackage(segments.get(4));
     }
 
     public String domainContextName(String featureName) {

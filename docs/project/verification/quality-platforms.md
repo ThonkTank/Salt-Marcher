@@ -155,7 +155,8 @@ The public API stops there. Role-specific or bundle-specific enforcement tasks
 are no longer part of the public verification contract. They may still exist as
 technical implementation tasks behind those layer surfaces, but they are not
 documented public entrypoints and must not be used as the canonical routing
-surface in owner docs. `production-handoff` is the only public broad
+surface in owner docs. Internal `verify*Bundle` selector tasks are allowed as
+typed harness seams, but they remain explicitly non-public. `production-handoff` is the only public broad
 implementation-handoff aggregate above `checkArchitecture` and the
 documentation surface.
 

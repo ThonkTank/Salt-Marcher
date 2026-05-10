@@ -123,6 +123,29 @@ public final class ViewInputEventSnapshotBoundaryCheckerTest {
     }
 
     @Test
+    public void allowsRawWidgetAccessorSnapshotFromClasspath() {
+        newHelper()
+                .withClasspath(javafx.scene.control.RuntimeLabel.class)
+                .addSourceLines(
+                        "src/view/leftbartabs/catalog/CatalogControlsView.java",
+                        "package src.view.leftbartabs.catalog;",
+                        "import java.util.function.Consumer;",
+                        "import javafx.scene.control.RuntimeLabel;",
+                        "final class CatalogControlsView {",
+                        "  private final RuntimeLabel difficultyField = new RuntimeLabel();",
+                        "  private Consumer<CatalogControlsViewInputEvent> handler = event -> { };",
+                        "  void publish() {",
+                        "    handler.accept(new CatalogControlsViewInputEvent(difficultyField.getText()));",
+                        "  }",
+                        "}")
+                .addSourceLines(
+                        "src/view/leftbartabs/catalog/CatalogControlsViewInputEvent.java",
+                        "package src.view.leftbartabs.catalog;",
+                        "record CatalogControlsViewInputEvent(String difficulty) { }")
+                .doTest();
+    }
+
+    @Test
     public void rejectsNestedProjectionConstructionInsideSnapshot() {
         newHelper()
                 .addSourceLines(

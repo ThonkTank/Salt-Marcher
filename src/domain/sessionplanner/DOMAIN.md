@@ -105,7 +105,7 @@ Core invariants:
 Current state:
 
 - the current implementation now keeps one current persisted session through a
-  planner-owned repository port plus current-session access seam
+  planner-owned repository port plus canonical load/save session use cases
 - reopening the planner after reload or application restart preserves
   participant refs, encounter order, allocations, selection, rests, and
   placeholders for that current session only

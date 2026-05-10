@@ -37,8 +37,8 @@ data class BuildHarnessTaskSpec(
 data class EnforcementBundleDescriptor(
     val bundleId: String,
     val order: Int,
-    val entryTaskName: String,
-    val entryTaskDescription: String,
+    val selectorTaskName: String,
+    val selectorTaskDescription: String,
     val dependentBundleIds: List<String>,
     val buildHarnessArchitectureRuleClasses: List<String>,
     val buildHarnessDocumentationRuleClasses: List<String>,
@@ -50,7 +50,7 @@ data class EnforcementBundleDescriptor(
     val verificationSourceRoots: List<String>,
     val verificationSourceIncludes: List<String>
 ) {
-    fun focusedSelectorTaskNames(): List<String> = listOf(entryTaskName)
+    fun internalSelectorTaskNames(): List<String> = listOf(selectorTaskName)
 
     fun requiresFocusedCompile(): Boolean =
         errorProneCheckers.isNotEmpty() || archunit != null
@@ -67,8 +67,8 @@ data class EnforcementBundleCatalog(
         .sortedBy(EnforcementBundleDescriptor::order)
         .map(EnforcementBundleDescriptor::bundleId)
 
-    val taskToBundleId: Map<String, String> = descriptorsById.values
-        .flatMap { descriptor -> descriptor.focusedSelectorTaskNames().map { taskName -> taskName to descriptor.bundleId } }
+    val selectorTaskToBundleId: Map<String, String> = descriptorsById.values
+        .flatMap { descriptor -> descriptor.internalSelectorTaskNames().map { taskName -> taskName to descriptor.bundleId } }
         .toMap()
 
     fun descriptor(bundleId: String): EnforcementBundleDescriptor = descriptorsById[bundleId]
@@ -158,11 +158,11 @@ fun loadEnforcementBundlesExtension(rootDir: File): EnforcementBundlesExtension 
 }
 
 private fun EnforcementBundleDescriptor.validated(): EnforcementBundleDescriptor {
-    require(entryTaskName.isNotBlank()) {
-        "Enforcement bundle '$bundleId' must declare entryTaskName."
+    require(selectorTaskName.isNotBlank()) {
+        "Enforcement bundle '$bundleId' must declare selectorTaskName."
     }
-    require(entryTaskDescription.isNotBlank()) {
-        "Enforcement bundle '$bundleId' must declare entryTaskDescription."
+    require(selectorTaskDescription.isNotBlank()) {
+        "Enforcement bundle '$bundleId' must declare selectorTaskDescription."
     }
     buildHarnessTasks.forEach { task ->
         require(task.taskName.isNotBlank()) {

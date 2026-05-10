@@ -124,6 +124,45 @@ public final class PassiveViewStateBoundaryCheckerTest {
     }
 
     @Test
+    public void rejectsModelDerivedSwitchExpressionDecision() {
+        newHelper()
+                .withClasspath(javafx.scene.control.RuntimeLabel.class)
+                .addSourceLines(
+                        "src/view/leftbartabs/catalog/CatalogControlsView.java",
+                        "package src.view.leftbartabs.catalog;",
+                        "import javafx.scene.control.RuntimeLabel;",
+                        "final class CatalogControlsView {",
+                        "  private final RuntimeLabel title = new RuntimeLabel();",
+                        "  boolean render(CatalogContributionModel model) {",
+                        "    // BUG: Diagnostic matches: switch-expression-decision",
+                        "    return switch (model.mode()) {",
+                        "      case \"compact\" -> {",
+                        "        title.setVisible(false);",
+                        "        yield true;",
+                        "      }",
+                        "      default -> {",
+                        "        title.setVisible(true);",
+                        "        yield false;",
+                        "      }",
+                        "    };",
+                        "  }",
+                        "}")
+                .addSourceLines(
+                        "src/view/leftbartabs/catalog/CatalogContributionModel.java",
+                        "package src.view.leftbartabs.catalog;",
+                        "final class CatalogContributionModel {",
+                        "  String mode() {",
+                        "    return \"compact\";",
+                        "  }",
+                        "}")
+                .expectErrorMessage("switch-expression-decision", containsAll(
+                        "presentation decision switch expression",
+                        "model-derived presentation decisions belong outside the View"))
+                .expectResult(Main.Result.ERROR)
+                .doTest();
+    }
+
+    @Test
     public void rejectsModelDerivedPresentationDecision() {
         newHelper()
                 .addSourceLines(

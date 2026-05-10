@@ -104,8 +104,8 @@ third shared core, or bundle-specific root-launcher families.
 Bundle owners MAY know their private ArchUnit, Error Prone, or build-harness
 tasks. They MUST NOT depend on shell wrappers.
 They communicate with the verification core only through stable typed registry
-metadata, their bundle-local lifecycle tasks, and any explicitly declared
-report-only sibling surfaces.
+metadata, their internal bundle-selector tasks, their bundle-local lifecycle
+tasks, and any explicitly declared report-only sibling surfaces.
 
 Root-owned hygiene gates that are not bundle-specific MUST stay registered in
 the verification core itself. They MUST NOT be back-ported into fake
@@ -146,9 +146,10 @@ Forbidden shortcuts:
 Focused verification selection is computed from the requested public task set
 during root settings evaluation by the `saltmarcher.settings` plugin from
 `tools/gradle/build-logic-settings`. Canonical layer surfaces expand to their
-owning bundle ids there, and direct bundle-task requests are still translated
-to the same bundle-id set. The build publishes only three focused-selection
-facts to the included builds:
+owning bundle ids there, and direct internal bundle-selector task requests are
+still translated to the same bundle-id set. Those selector tasks stay
+technical implementation seams, not a second public verification API. The
+build publishes only three focused-selection facts to the included builds:
 
 - `saltmarcher.repoRootDir`
 - `saltmarcher.focusedEnforcementBundleMode`

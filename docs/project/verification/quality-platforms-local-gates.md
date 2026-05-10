@@ -332,6 +332,10 @@ Architecture-focused and handoff public entrypoints are:
   Aggregates the canonical Layering enforcement surface through the blocker
   Layering Architecture bundle.
 
+Internal `verify*Bundle` selector tasks may still exist for typed harness
+selection and internal ownership routing, but they are not public proof
+entrypoints and must not replace the canonical layer-surface commands above.
+
 The Gradle convention implementation must keep these public entrypoints stable
 while organizing internal wiring by policy area: invocation behavior, compiler
 gates, graph analysis, quality reports, repository/resource policy, and the

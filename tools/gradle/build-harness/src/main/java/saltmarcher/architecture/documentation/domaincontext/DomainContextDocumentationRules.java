@@ -290,7 +290,7 @@ public final class DomainContextDocumentationRules implements ArchitectureRule {
         }
         if (aggregateRoots.isEmpty()) {
             violations.add(documentPath, "domain-context-aggregate-root-marker-shape",
-                    "Aggregate-owning domain roles must declare 'Aggregate Root: <TypeName>' for an existing module role type.");
+                    "Aggregate-owning domain roles must declare 'Aggregate Root: <TypeName>' for an existing owned model type.");
             return;
         }
 
@@ -299,7 +299,9 @@ public final class DomainContextDocumentationRules implements ArchitectureRule {
                 violations.add(documentPath, "domain-context-aggregate-root-marker-shape",
                         "Declared aggregate root '" + aggregateRoot
                                 + "' must exist as a Java type under src/domain/" + featureName
-                                + "/<named-domain-module>/<role>/, not under published/, application/, or the feature root.");
+                                + "/model/<family>/model/** or, while legacy topology remains, under src/domain/"
+                                + featureName
+                                + "/<named-domain-module>/<role>/. It must not live under published/, application/, or the feature root.");
             }
         }
     }

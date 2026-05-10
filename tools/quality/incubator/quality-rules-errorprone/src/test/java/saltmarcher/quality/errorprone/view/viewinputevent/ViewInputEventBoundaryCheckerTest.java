@@ -89,6 +89,22 @@ public final class ViewInputEventBoundaryCheckerTest {
     }
 
     @Test
+    public void rejectsApplicationServiceCarrierPayloadFromClasspath() {
+        newHelper()
+                .withClasspath(src.domain.catalog.CatalogApplicationService.class)
+                .addSourceLines(
+                        "src/view/slotcontent/primitives/foo/FooViewInputEvent.java",
+                        "package src.view.slotcontent.primitives.foo;",
+                        "// BUG: Diagnostic matches: application-service-payload",
+                        "record FooViewInputEvent(src.domain.catalog.CatalogApplicationService service) { }")
+                .expectErrorMessage("application-service-payload", containsAll(
+                        "src.domain.catalog.CatalogApplicationService",
+                        "ViewInputEvent carriers must stay immutable"))
+                .expectResult(Main.Result.ERROR)
+                .doTest();
+    }
+
+    @Test
     public void rejectsConstructionOutsideSameStemView() {
         newHelper()
                 .addSourceLines(
@@ -108,6 +124,24 @@ public final class ViewInputEventBoundaryCheckerTest {
                         "constructs src.view.slotcontent.primitives.foo.FooViewInputEvent outside same-stem View",
                         "ViewInputEvent carriers must stay immutable"))
                 .expectResult(Main.Result.ERROR)
+                .doTest();
+    }
+
+    @Test
+    public void allowsSameStemPassiveViewProducer() {
+        newHelper()
+                .addSourceLines(
+                        "src/view/slotcontent/primitives/foo/FooView.java",
+                        "package src.view.slotcontent.primitives.foo;",
+                        "final class FooView {",
+                        "  FooViewInputEvent publish(String text) {",
+                        "    return new FooViewInputEvent(text);",
+                        "  }",
+                        "}")
+                .addSourceLines(
+                        "src/view/slotcontent/primitives/foo/FooViewInputEvent.java",
+                        "package src.view.slotcontent.primitives.foo;",
+                        "record FooViewInputEvent(String text) { }")
                 .doTest();
     }
 
