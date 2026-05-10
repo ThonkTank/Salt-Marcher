@@ -3,63 +3,66 @@ package saltmarcher.buildlogic.enforcement
 import java.io.File
 import java.util.ArrayDeque
 
-data class EnforcementRootTask(
-    val description: String?,
-    val attachToCheck: Boolean,
-    val attachToCheckArchitecture: Boolean
-)
-
 data class EnforcementArchunitTask(
     val taskName: String,
     val description: String,
-    val sourceDirs: List<String>,
     val sourceIncludes: List<String>,
-    val includePatterns: List<String>,
-    val useSharedTestSupport: Boolean
+    val includePatterns: List<String>
 )
 
-data class EnforcementCustomTask(
+enum class EnforcementUtilityTaskKind {
+    VIEW_FXML_RESOURCES,
+    CENTRALIZED_STYLESHEETS,
+    STYLING_CENTRAL_STYLESHEET_OWNER,
+    DEFINED_STYLE_CLASS_SELECTORS
+}
+
+data class EnforcementUtilityTaskSpec(
     val taskName: String,
-    val kind: String
+    val kind: EnforcementUtilityTaskKind
+)
+
+enum class BuildHarnessTaskKind {
+    TOPOLOGY,
+    DOCUMENTATION
+}
+
+data class BuildHarnessTaskSpec(
+    val taskName: String,
+    val kind: BuildHarnessTaskKind,
+    val ruleClasses: List<String> = emptyList(),
+    val coverageSpecIds: List<String> = emptyList()
 )
 
 data class EnforcementBundleDescriptor(
     val bundleId: String,
     val order: Int,
-    val taskNames: List<String>,
-    val rootTask: EnforcementRootTask?,
-    val rootTaskDependencies: List<String>,
+    val entryTaskName: String,
+    val entryTaskDescription: String,
+    val dependentBundleIds: List<String>,
     val buildHarnessArchitectureRuleClasses: List<String>,
     val buildHarnessDocumentationRuleClasses: List<String>,
     val buildHarnessDocumentationCoverageSpecIds: List<String>,
-    val buildHarnessTaskMainClasses: Map<String, String>,
-    val buildHarnessTaskRuleClasses: Map<String, List<String>>,
+    val buildHarnessTasks: List<BuildHarnessTaskSpec>,
     val errorProneCheckers: List<String>,
     val archunit: EnforcementArchunitTask?,
-    val customTasks: List<EnforcementCustomTask>,
+    val utilityTasks: List<EnforcementUtilityTaskSpec>,
     val verificationSourceRoots: List<String>,
     val verificationSourceIncludes: List<String>
 ) {
-    fun publicCheckTaskName(): String = publicCheckTaskName(taskNames, bundleId)
+    fun ownedTaskNames(): List<String> = buildList {
+        add(entryTaskName)
+        archunit?.let { add(it.taskName) }
+        addAll(buildHarnessTasks.map(BuildHarnessTaskSpec::taskName))
+        addAll(utilityTasks.map(EnforcementUtilityTaskSpec::taskName))
+    }.distinct()
 
     fun requiresFocusedCompile(): Boolean =
         errorProneCheckers.isNotEmpty() || archunit != null
 
-    fun buildHarnessTaskRuleClasses(taskName: String): List<String> = buildHarnessTaskRuleClasses[taskName]
-        ?: when {
-            taskName.endsWith("DocumentationEnforcementCheck") -> buildHarnessDocumentationRuleClasses
-            taskName.endsWith("TopologyCheck") -> buildHarnessArchitectureRuleClasses
-            else -> emptyList()
-        }
-
-    fun buildHarnessTaskDocumentationCoverageSpecIds(taskName: String): List<String> =
-        if (taskName.endsWith("DocumentationEnforcementCheck")) buildHarnessDocumentationCoverageSpecIds else emptyList()
-
-    fun buildHarnessTaskNames(): List<String> = taskNames.filter { taskName ->
-        buildHarnessTaskMainClasses.containsKey(taskName) ||
-            buildHarnessTaskRuleClasses(taskName).isNotEmpty() ||
-            buildHarnessTaskDocumentationCoverageSpecIds(taskName).isNotEmpty()
-    }
+    fun buildHarnessTask(taskName: String): BuildHarnessTaskSpec = buildHarnessTasks
+        .firstOrNull { task -> task.taskName == taskName }
+        ?: error("Unknown build-harness task '$taskName' for enforcement bundle '$bundleId'.")
 }
 
 data class EnforcementBundleCatalog(
@@ -70,14 +73,13 @@ data class EnforcementBundleCatalog(
         .map(EnforcementBundleDescriptor::bundleId)
 
     val taskToBundleId: Map<String, String> = descriptorsById.values
-        .flatMap { descriptor -> descriptor.taskNames.map { taskName -> taskName to descriptor.bundleId } }
+        .flatMap { descriptor -> descriptor.ownedTaskNames().map { taskName -> taskName to descriptor.bundleId } }
         .toMap()
 
     fun descriptor(bundleId: String): EnforcementBundleDescriptor = descriptorsById[bundleId]
         ?: error("Unknown enforcement bundle '$bundleId'.")
 
-    fun dependentBundleIds(bundleId: String): List<String> = descriptor(bundleId).rootTaskDependencies
-        .mapNotNull(taskToBundleId::get)
+    fun dependentBundleIds(bundleId: String): List<String> = descriptor(bundleId).dependentBundleIds
         .filterNot(bundleId::equals)
         .distinct()
 
@@ -161,31 +163,30 @@ fun loadEnforcementBundlesExtension(rootDir: File): EnforcementBundlesExtension 
 }
 
 private fun EnforcementBundleDescriptor.validated(): EnforcementBundleDescriptor {
-    require(taskNames.isNotEmpty()) {
-        "Enforcement bundle '$bundleId' must declare taskNames."
+    require(entryTaskName.isNotBlank()) {
+        "Enforcement bundle '$bundleId' must declare entryTaskName."
     }
-    publicCheckTaskName()
-
-    if (buildHarnessTaskRuleClasses.isNotEmpty()) {
-        val declaredTaskNames = buildHarnessTaskRuleClasses.keys
-        val missingTaskNames = declaredTaskNames - taskNames.toSet()
-        require(missingTaskNames.isEmpty()) {
-            "Enforcement bundle '$bundleId' declares build-harness tasks that are missing from taskNames: ${missingTaskNames.joinToString()}."
+    require(entryTaskDescription.isNotBlank()) {
+        "Enforcement bundle '$bundleId' must declare entryTaskDescription."
+    }
+    buildHarnessTasks.forEach { task ->
+        require(task.taskName.isNotBlank()) {
+            "Enforcement bundle '$bundleId' declares a build-harness task with a blank taskName."
+        }
+        when (task.kind) {
+            BuildHarnessTaskKind.TOPOLOGY -> require(task.ruleClasses.isNotEmpty()) {
+                "Enforcement bundle '$bundleId' topology task '${task.taskName}' must declare ruleClasses."
+            }
+            BuildHarnessTaskKind.DOCUMENTATION -> require(task.ruleClasses.isNotEmpty() || task.coverageSpecIds.isNotEmpty()) {
+                "Enforcement bundle '$bundleId' documentation task '${task.taskName}' must declare ruleClasses or coverageSpecIds."
+            }
         }
     }
 
-    if (customTasks.isNotEmpty()) {
-        val missingTaskNames = customTasks.map(EnforcementCustomTask::taskName) - taskNames.toSet()
-        require(missingTaskNames.isEmpty()) {
-            "Enforcement bundle '$bundleId' declares custom verification tasks that are missing from taskNames: ${missingTaskNames.joinToString()}."
+    utilityTasks.forEach { task ->
+        require(task.taskName.isNotBlank()) {
+            "Enforcement bundle '$bundleId' declares a utility task with a blank taskName."
         }
-    }
-
-    val undeclaredRootDependencies = rootTaskDependencies.filter { taskName ->
-        !taskNames.contains(taskName) && !taskName.startsWith("check")
-    }
-    require(undeclaredRootDependencies.isEmpty()) {
-        "Enforcement bundle '$bundleId' declares non-check root task dependencies that are missing from taskNames: ${undeclaredRootDependencies.joinToString()}."
     }
 
     if (requiresFocusedCompile()) {
@@ -197,30 +198,16 @@ private fun EnforcementBundleDescriptor.validated(): EnforcementBundleDescriptor
         }
     }
 
-    require(rootTask != null) {
-        "Enforcement bundle '$bundleId' must declare rootTask.* metadata."
-    }
-
     return this
 }
 
 private fun EnforcementBundleCatalog.validatedCrossBundleDependencies(): EnforcementBundleCatalog {
     descriptorsById.values.forEach { descriptor ->
-        descriptor.rootTaskDependencies.forEach { dependencyTaskName ->
-            val dependencyBundleId = taskToBundleId[dependencyTaskName] ?: return@forEach
-            if (dependencyBundleId == descriptor.bundleId) {
-                return@forEach
-            }
-            val dependencyDescriptor = descriptor(dependencyBundleId)
-            require(dependencyTaskName == dependencyDescriptor.publicCheckTaskName()) {
-                "Enforcement bundle '${descriptor.bundleId}' must depend on the public check task of bundle " +
-                    "'$dependencyBundleId', but references '$dependencyTaskName'."
+        descriptor.dependentBundleIds.forEach { dependencyBundleId ->
+            require(descriptorsById.containsKey(dependencyBundleId)) {
+                "Enforcement bundle '${descriptor.bundleId}' references unknown dependent bundle '$dependencyBundleId'."
             }
         }
     }
     return this
 }
-
-fun publicCheckTaskName(taskNames: List<String>, owner: String): String = taskNames
-    .firstOrNull { taskName -> taskName.startsWith("check") }
-    ?: error("Missing public check task for enforcement bundle '$owner'.")

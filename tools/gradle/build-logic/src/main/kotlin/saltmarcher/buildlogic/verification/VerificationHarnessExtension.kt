@@ -15,6 +15,7 @@ import org.gradle.api.tasks.testing.Test
 import org.gradle.kotlin.dsl.named
 import org.gradle.kotlin.dsl.register
 import org.gradle.language.base.plugins.LifecycleBasePlugin
+import saltmarcher.buildlogic.enforcement.EnforcementUtilityTaskKind
 import saltmarcher.buildlogic.enforcement.EnforcementBundlesExtension
 import saltmarcher.buildlogic.tasks.CheckCentralizedStylesheetsTask
 import saltmarcher.buildlogic.tasks.CheckDefinedStyleClassSelectorsTask
@@ -81,24 +82,14 @@ internal open class VerificationHarnessExtension(
         taskName: String,
         taskDescription: String,
         selectedCompileJava: TaskProvider<JavaCompile>,
-        archunitSourceDirs: List<String>,
         archunitIncludes: List<String>,
-        includePatterns: List<String>,
-        useSharedTestSupport: Boolean
+        includePatterns: List<String>
     ): TaskProvider<Test> {
         val sourceSetName = "${bundleId.replaceFirstChar(Char::lowercaseChar)}EnforcementArchunit"
         val mainClassesDirectory = selectedCompileJava.flatMap { task -> task.destinationDirectory }
         val archunitSourceSet = sourceSets.register(sourceSetName) {
-            val sourceDirectories = buildList {
-                addAll(archunitSourceDirs)
-                if (useSharedTestSupport) {
-                    add("test")
-                }
-            }
-            java.setSrcDirs(sourceDirectories)
-            if (useSharedTestSupport) {
-                commonFocusedArchunitSupportIncludes.forEach(java::include)
-            }
+            java.setSrcDirs(listOf("src/test/java"))
+            commonFocusedArchunitSupportIncludes.forEach(java::include)
             archunitIncludes.forEach(java::include)
             resources.setSrcDirs(emptyList<String>())
             compileClasspath += project.files(project.configurations.named("testCompileClasspath"))
@@ -126,12 +117,11 @@ internal open class VerificationHarnessExtension(
         }
     }
 
-    fun registerCustomVerificationTask(
-        bundleId: String,
+    fun registerUtilityVerificationTask(
         taskName: String,
-        kind: String
+        kind: EnforcementUtilityTaskKind
     ): TaskProvider<out Task> = when (kind) {
-        "viewFxmlResources" -> project.tasks.register<CheckViewFxmlResourcesTask>(taskName) {
+        EnforcementUtilityTaskKind.VIEW_FXML_RESOURCES -> project.tasks.register<CheckViewFxmlResourcesTask>(taskName) {
             group = LifecycleBasePlugin.VERIFICATION_GROUP
             description = "Validate declarative passive-view FXML resource placement and controller ownership."
             projectRoot.set(project.layout.projectDirectory)
@@ -147,7 +137,7 @@ internal open class VerificationHarnessExtension(
             )
             successMarker.set(project.layout.buildDirectory.file("verification-markers/$taskName/success.marker"))
         }
-        "centralizedStylesheets" -> project.tasks.register<CheckCentralizedStylesheetsTask>(taskName) {
+        EnforcementUtilityTaskKind.CENTRALIZED_STYLESHEETS -> project.tasks.register<CheckCentralizedStylesheetsTask>(taskName) {
             group = LifecycleBasePlugin.VERIFICATION_GROUP
             description = "Fail if stylesheet files exist outside the central resources/salt-marcher.css file."
             stylesheetFiles.from(
@@ -160,7 +150,7 @@ internal open class VerificationHarnessExtension(
             canonicalStylesheetFile.set(project.layout.projectDirectory.file("resources/salt-marcher.css"))
             successMarker.set(project.layout.buildDirectory.file("verification-markers/$taskName/success.marker"))
         }
-        "stylingCentralStylesheetOwner" -> project.tasks.register<CheckStylingCentralStylesheetOwnerTask>(taskName) {
+        EnforcementUtilityTaskKind.STYLING_CENTRAL_STYLESHEET_OWNER -> project.tasks.register<CheckStylingCentralStylesheetOwnerTask>(taskName) {
             group = LifecycleBasePlugin.VERIFICATION_GROUP
             description = "Fail if SaltMarcher styling stops using the canonical resources/salt-marcher.css owner."
             configuredStylesheetPath.set(project.providers.gradleProperty("saltMarcherStylesheet").orElse("resources/salt-marcher.css"))
@@ -168,7 +158,7 @@ internal open class VerificationHarnessExtension(
             canonicalStylesheetFile.set(project.layout.projectDirectory.file("resources/salt-marcher.css"))
             successMarker.set(project.layout.buildDirectory.file("verification-markers/$taskName/success.marker"))
         }
-        "definedStyleClassSelectors" -> project.tasks.register<CheckDefinedStyleClassSelectorsTask>(taskName) {
+        EnforcementUtilityTaskKind.DEFINED_STYLE_CLASS_SELECTORS -> project.tasks.register<CheckDefinedStyleClassSelectorsTask>(taskName) {
             group = LifecycleBasePlugin.VERIFICATION_GROUP
             description = "Fail if Java-authored style classes are missing from resources/salt-marcher.css selectors."
             stylesheetFiles.from(
@@ -185,6 +175,5 @@ internal open class VerificationHarnessExtension(
             )
             successMarker.set(project.layout.buildDirectory.file("verification-markers/$taskName/success.marker"))
         }
-        else -> error("Unsupported custom verification task kind '$kind' for enforcement bundle '$bundleId'.")
     }
 }

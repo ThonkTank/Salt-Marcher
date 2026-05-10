@@ -4,7 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
-import src.domain.dungeon.DungeonApplicationService;
+import src.domain.dungeon.DungeonAuthoredApplicationService;
+import src.domain.dungeon.DungeonCatalogApplicationService;
 import src.domain.dungeon.published.DungeonAuthoredMutationModel;
 import src.domain.dungeon.published.DungeonAuthoredReadModel;
 import src.domain.dungeon.published.DungeonMapCatalogModel;
@@ -26,27 +27,31 @@ public final class DungeonEditorApplicationService {
             this::subscribeEditorListener);
 
     public DungeonEditorApplicationService(
-            DungeonApplicationService dungeonApplicationService,
+            DungeonCatalogApplicationService dungeonCatalogApplicationService,
+            DungeonAuthoredApplicationService dungeonAuthoredApplicationService,
             DungeonMapCatalogModel dungeonMapCatalogModel,
             DungeonAuthoredMutationModel dungeonAuthoredMutationModel,
             DungeonAuthoredReadModel dungeonAuthoredReadModel
     ) {
-        DungeonApplicationService dungeon = Objects.requireNonNull(dungeonApplicationService, "dungeonApplicationService");
+        DungeonCatalogApplicationService catalogService =
+                Objects.requireNonNull(dungeonCatalogApplicationService, "dungeonCatalogApplicationService");
+        DungeonAuthoredApplicationService authoredService =
+                Objects.requireNonNull(dungeonAuthoredApplicationService, "dungeonAuthoredApplicationService");
         DungeonMapCatalogModel catalogModel = Objects.requireNonNull(dungeonMapCatalogModel, "dungeonMapCatalogModel");
         DungeonAuthoredMutationModel mutationModel =
                 Objects.requireNonNull(dungeonAuthoredMutationModel, "dungeonAuthoredMutationModel");
         DungeonAuthoredReadModel readModel = Objects.requireNonNull(dungeonAuthoredReadModel, "dungeonAuthoredReadModel");
         this.applyDungeonEditorSessionUseCase = new ApplyDungeonEditorSessionUseCase(
                 command -> {
-                    dungeon.catalog(command);
+                    catalogService.catalog(command);
                     return catalogModel.current();
                 },
                 command -> {
-                    dungeon.mutateAuthored(command);
+                    authoredService.mutateAuthored(command);
                     return mutationModel.current();
                 },
                 command -> {
-                    dungeon.refreshAuthored(command);
+                    authoredService.refreshAuthored(command);
                     return readModel.current();
                 });
     }

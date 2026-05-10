@@ -45,24 +45,21 @@ bootstrap stylesheet-loading seam, and generic active-code communication rules
 for ordinary node styling. The view-specific document owns the passive-`View`
 direct-render exception and its remaining non-CSS semantics.
 
-The current blocking proof surfaces are `checkStylingLayerEnforcement`,
+The current blocking proof surfaces are `checkStylingEnforcement`,
 `checkStylingCentralStylesheetOwner`, `checkCentralizedStylesheets`,
 `checkDefinedStyleClassSelectors`, `checkDesktopPackagingInputs`,
-`compileJava`, `checkStylingViewEnforcement`, and `check`.
-`checkStylingLayerEnforcement` is the canonical layer-wide bundle entrypoint.
-It aggregates the canonical stylesheet-owner, stylesheet-file,
-selector-resolution, and broad `ViewProgrammaticStyling` compile surfaces for
-the styling layer itself. The `setStyle(...)` backchannel rule is currently
-review-owned rather than mechanically blocked.
-`checkStylingViewEnforcement` is the canonical
-passive-`View` styling bundle entrypoint and also participates explicitly in
-the root `check` aggregate. Its bundle-local `ViewDirectRenderStylingPlacement`
-compiler rule, which also blocks `compileJava`, proves only that local JavaFX
-styling values appear in passive `View` code solely inside the documented
-direct-render exception. The remaining passive-`View`
-direct-render-value derivation and "no local visual system" semantics remain
-review-owned until the repository adopts a dedicated central-token or
-equivalent non-CSS proof surface.
+`compileJava`, and `check`.
+`checkStylingEnforcement` is the canonical public styling entrypoint. It
+aggregates the centralized stylesheet-owner, stylesheet-file,
+selector-resolution, broad `ViewProgrammaticStyling` compile surfaces, and the
+passive-`View` direct-render styling placement proof. The `setStyle(...)`
+backchannel rule is currently review-owned rather than mechanically blocked.
+Its direct-render `ViewDirectRenderStylingPlacement` compiler rule, which also
+blocks `compileJava`, proves only that local JavaFX styling values appear in
+passive `View` code solely inside the documented direct-render exception. The
+remaining passive-`View` direct-render-value derivation and "no local visual
+system" semantics remain review-owned until the repository adopts a dedicated
+central-token or equivalent non-CSS proof surface.
 
 ## References
 

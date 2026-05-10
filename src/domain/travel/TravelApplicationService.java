@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
-import src.domain.dungeon.DungeonApplicationService;
+import src.domain.dungeon.DungeonTravelApplicationService;
 import src.domain.travel.application.ApplyTravelDungeonSessionUseCase;
 import src.domain.travel.model.session.repository.TravelDungeonSessionRepository;
 import src.domain.travel.model.session.helper.TravelDungeonSnapshotHelper;
@@ -28,13 +28,13 @@ public final class TravelApplicationService {
 
     public TravelApplicationService(
             TravelPartyStateRepository partyStateRepository,
-            DungeonApplicationService dungeonApplicationService,
+            DungeonTravelApplicationService dungeonTravelApplicationService,
             src.domain.dungeon.published.DungeonTravelModel dungeonTravelReadModel
     ) {
         this.applyTravelDungeonSessionUseCase = new ApplyTravelDungeonSessionUseCase(
                 new TravelDungeonSessionRepository(
                         partyStateRepository,
-                        dungeonApplicationService,
+                        dungeonTravelApplicationService,
                         Objects.requireNonNull(dungeonTravelReadModel, "dungeonTravelReadModel")));
     }
 

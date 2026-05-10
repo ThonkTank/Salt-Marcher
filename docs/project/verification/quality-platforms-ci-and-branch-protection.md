@@ -24,7 +24,7 @@ and defines seven jobs.
 | `quality-platforms / production-build` | `Required CI Gate` | Runs `tools/gradle/run-staged-verification.sh production-build`; this is the staged CI surface for assembling production code and running `test` without the broader hygiene or architecture aggregates. |
 | `quality-platforms / quality-hygiene` | `Required CI Gate` | Runs `tools/gradle/run-staged-verification.sh quality-hygiene`; this is the staged CI surface for PMD, SpotBugs, CPD, Lizard, and compiled-artifact hygiene without the architecture or view-topology aggregates. |
 | `quality-platforms / architecture` | `Required CI Gate` | Runs `tools/gradle/run-staged-verification.sh architecture`; this is the staged CI surface for non-view architecture aggregates. |
-| `quality-platforms / view-topology` | `Required CI Gate` | Runs `tools/gradle/run-staged-verification.sh view-topology`; this is the staged CI surface for the closed-world `checkViewLayerEnforcement` topology blocker. |
+| `quality-platforms / view-topology` | `Required CI Gate` | Runs `tools/gradle/run-staged-verification.sh view-topology`; this is the staged CI surface for the closed-world `checkViewEnforcement` topology blocker. |
 | `quality-platforms / ckjm-report` | `Required CI Report` | Runs `tools/gradle/run-staged-verification.sh metrics-report` and uploads the CKJM report from `build/reports/ckjm/`. CKJM hotspot regressions stay report-only and surface in the uploaded summary. |
 | `quality-platforms / sonarcloud` | `Required CI Gate` | Runs Gradle `sonar` with `sonar.qualitygate.wait=true`. |
 | `quality-platforms / codescene` | `Required CI Gate` | Runs `python3 tools/quality/scripts/codescene_delta.py`; fails on returned CodeScene `quality-gates`. |

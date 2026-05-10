@@ -26,7 +26,7 @@ documents.
 
 Unified focused bundle entrypoint:
 
-- `./gradlew checkDataGatewayEnforcement --rerun-tasks --console=plain`
+- `./gradlew checkDataEnforcement --rerun-tasks --console=plain`
   runs the currently active Data Gateway-focused Error Prone, ArchUnit, and
   enforcement-documentation coverage checks through one root task. Canonical
   compile-side blocking behavior remains at `./gradlew compileJava`; the
@@ -46,13 +46,13 @@ Unified focused bundle entrypoint:
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
 | `data-gateway-no-generic-infrastructure-business-policy-or-runtime-composition` | Review-Owned | every gateway facade or helper under `src/data/**/gateway/local/**` or `src/data/**/gateway/remote/**` | none | none | `gateway/` code does not become generic shared infrastructure, business policy, or runtime composition code; those responsibilities stay in `persistencecore/`, the domain layer, or the data-root `*ServiceContribution`. |
-| `data-gateway-domain-independence` | Enforced | every dependency from `src/data/**/gateway/**` into domain packages | data-gateway bundle ArchUnit `DataGatewayArchitectureTest` | `./gradlew checkArchitecture` and `./gradlew checkDataGatewayEnforcement` | Source adapters under `gateway/` do not depend on `src/domain/**` types. |
+| `data-gateway-domain-independence` | Enforced | every dependency from `src/data/**/gateway/**` into domain packages | data-gateway bundle ArchUnit `DataGatewayArchitectureTest` | `./gradlew checkArchitecture` and `./gradlew checkDataEnforcement` | Source adapters under `gateway/` do not depend on `src/domain/**` types. |
 
 ### Communication Contract
 
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
-| `data-gateway-public-signature-boundary` | Enforced | every public/protected gateway type or member signature | data-gateway bundle Error Prone `DataGatewayReturnTypeBoundary` | `./gradlew compileJava` and `./gradlew checkDataGatewayEnforcement` | Public/protected gateway classes and members expose only same-feature source-model types or `java.lang`/`java.util` value and container types across `extends`/`implements`, type bounds, record components, public/protected fields, constructors, methods, and throws clauses. |
+| `data-gateway-public-signature-boundary` | Enforced | every public/protected gateway type or member signature | data-gateway bundle Error Prone `DataGatewayReturnTypeBoundary` | `./gradlew compileJava` and `./gradlew checkDataEnforcement` | Public/protected gateway classes and members expose only same-feature source-model types or `java.lang`/`java.util` value and container types across `extends`/`implements`, type bounds, record components, public/protected fields, constructors, methods, and throws clauses. |
 | `data-gateway-internal-data-collaborator-boundary` | Review-Owned | every direct gateway facade seam or gateway-local helper seam under `src/data/**/gateway/local/**` or `src/data/**/gateway/remote/**` | none | none | Gateway seams communicate only as same-feature internal data collaboration points for repository/query adapters or gateway-local helpers; they do not define domain port contracts, shell/runtime seams, or an independent public backend boundary. |
 
 ## References

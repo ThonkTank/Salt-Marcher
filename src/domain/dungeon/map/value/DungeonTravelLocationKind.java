@@ -1,9 +1,12 @@
 package src.domain.dungeon.map.value;
 
 public final class DungeonTravelLocationKind {
+    private static final String STAIR_EXIT_NAME = "STAIR_EXIT";
+    private static final String TRANSITION_NAME = "TRANSITION";
+
     public static final DungeonTravelLocationKind TILE = new DungeonTravelLocationKind("TILE");
-    public static final DungeonTravelLocationKind STAIR_EXIT = new DungeonTravelLocationKind("STAIR_EXIT");
-    public static final DungeonTravelLocationKind TRANSITION = new DungeonTravelLocationKind("TRANSITION");
+    public static final DungeonTravelLocationKind STAIR_EXIT = new DungeonTravelLocationKind(STAIR_EXIT_NAME);
+    public static final DungeonTravelLocationKind TRANSITION = new DungeonTravelLocationKind(TRANSITION_NAME);
 
     private final String name;
 
@@ -12,10 +15,10 @@ public final class DungeonTravelLocationKind {
     }
 
     public static DungeonTravelLocationKind valueOf(String name) {
-        if ("STAIR_EXIT".equals(name)) {
+        if (STAIR_EXIT_NAME.equals(name)) {
             return STAIR_EXIT;
         }
-        return "TRANSITION".equals(name) ? TRANSITION : TILE;
+        return TRANSITION_NAME.equals(name) ? TRANSITION : TILE;
     }
 
     public String name() {

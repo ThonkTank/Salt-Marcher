@@ -267,21 +267,21 @@ Rules:
 The active blockers now prove the target root/model topology and reserved role
 suffix placement, but production migration still lags behind that target.
 
-- `checkDomainApplicationServiceEnforcement` now allows one or more direct root
+- `checkDomainEnforcement` now allows one or more direct root
   `*ApplicationService` files and validates `DOMAIN.md`-declared root services
-- `checkDomainLayerEnforcement` now hard-cuts root buckets, direct root
+- `checkDomainEnforcement` now hard-cuts root buckets, direct root
   `*ApplicationService` file ownership, model-family role buckets, model
   subtree technical-bucket rejection, direct-file placement, and reserved role
   suffix ownership
 - `compileJava` now blocks path/package/file-shape drift for domain sources
   through a dedicated closed-topology perimeter checker instead of leaving role
   renames and moves to build-harness scanning alone
-- `checkDomainUseCaseEnforcement` now hard-cuts root `application/` to direct
+- `checkDomainEnforcement` now hard-cuts root `application/` to direct
   `*UseCase.java` files only
-- focused `Port`, `Repository`, `Model`, `Helper`, and `Constants` bundles now
-  block the canonical target buckets and role file forms; deeper purity and
-  communication semantics remain review-owned where the neighboring owner docs
-  say so
+- the canonical Domain surface now also carries the `Port`, `Repository`,
+  `Model`, `Helper`, and `Constants` role blockers for bucket placement and
+  role file forms; deeper purity and communication semantics remain
+  review-owned where the neighboring owner docs say so
 
 ## Context Roles
 

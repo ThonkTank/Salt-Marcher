@@ -31,7 +31,7 @@ layering enforcement documents.
 
 Unified focused bundle entrypoint:
 
-- `./gradlew checkBootstrapAppBootstrapEnforcement --rerun-tasks --console=plain`
+- `./gradlew checkBootstrapEnforcement --rerun-tasks --console=plain`
   runs the dedicated `AppBootstrap` ArchUnit proof route through one root
   task. Canonical aggregate blocking behavior remains at
   `./gradlew checkArchitecture` and `./gradlew check`.
@@ -75,7 +75,7 @@ Unified focused bundle entrypoint:
 
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
-| `bootstrap-appbootstrap-shell-host-appshell-composition-surface-only` | Enforced | every direct dependency from `AppBootstrap` into `shell.host/**` and every direct `AppShell` call site in `bootstrap/AppBootstrap.java` | bootstrap-app-bootstrap bundle ArchUnit `AppBootstrapArchitectureTest` (`bootstrapMustOnlyUseAppShellFromShellHost`) | `./gradlew checkBootstrapAppBootstrapEnforcement` and `./gradlew checkArchitecture` | `AppBootstrap` communicates with shell host only through the documented `AppShell` composition surface it actually needs: construction from `ServiceRegistry`, `runtimeContext()`, `registerLeftBarTab(...)`, `registerTopBar(...)`, `registerStateTab(...)`, and `navigateTo(...)`. It does not reach host panes, layout internals, or shell lifecycle hooks directly. |
+| `bootstrap-appbootstrap-shell-host-appshell-composition-surface-only` | Enforced | every direct dependency from `AppBootstrap` into `shell.host/**` and every direct `AppShell` call site in `bootstrap/AppBootstrap.java` | bootstrap-app-bootstrap bundle ArchUnit `AppBootstrapArchitectureTest` (`bootstrapMustOnlyUseAppShellFromShellHost`) | `./gradlew checkBootstrapEnforcement` and `./gradlew checkArchitecture` | `AppBootstrap` communicates with shell host only through the documented `AppShell` composition surface it actually needs: construction from `ServiceRegistry`, `runtimeContext()`, `registerLeftBarTab(...)`, `registerTopBar(...)`, `registerStateTab(...)`, and `navigateTo(...)`. It does not reach host panes, layout internals, or shell lifecycle hooks directly. |
 | `bootstrap-appbootstrap-shell-public-registration-vocabulary-only` | Review-Owned | every direct dependency from `AppBootstrap` into `shell.api/**` | none | none | `AppBootstrap` communicates with shell public contracts only through the documented startup-composition and registration vocabulary for the role: `ServiceContribution`, `ServiceRegistry`, `ShellContribution`, `ShellRuntimeContext`, `ShellBinding`, `ShellContributionSpec`, and the supported shell spec families. |
 | `bootstrap-appbootstrap-data-runtime-registration-seam-only` | Review-Owned | every direct runtime-composition seam from `AppBootstrap` into discovered data roots | none | none | `AppBootstrap` communicates with data feature exports only through `ServiceContribution` discovery and `ServiceRegistry.Builder` registration. It does not call feature-local repositories, gateways, queries, mappers, or application services directly. |
 | `bootstrap-appbootstrap-view-runtime-registration-seam-only` | Review-Owned | every direct runtime-composition seam from `AppBootstrap` into discovered view roots | none | none | `AppBootstrap` communicates with discovered view roots only through `ShellContribution`, `ShellRuntimeContext`, `registrationSpec()`, `ShellBinding`, `ShellContributionSpec`, and the matching `AppShell.register*` surface. It does not invent a second view-registration or startup-control protocol. |

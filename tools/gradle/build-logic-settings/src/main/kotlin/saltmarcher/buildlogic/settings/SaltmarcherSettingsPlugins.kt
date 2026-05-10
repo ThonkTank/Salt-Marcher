@@ -1,7 +1,6 @@
 package saltmarcher.buildlogic.settings
 
 import java.io.File
-import java.util.Properties
 import org.gradle.api.Plugin
 import org.gradle.api.initialization.Settings
 import saltmarcher.buildlogic.enforcement.standardEnforcementBundleCatalog
@@ -17,13 +16,12 @@ class SaltmarcherRootSettingsPlugin : Plugin<Settings> {
             ?: findRepositoryRoot(settings.settingsDir)
         System.setProperty("saltmarcher.repoRootDir", repoRootDir.absolutePath)
 
-        val verificationSurfaceCatalog = loadProperties(File(repoRootDir, "tools/gradle/verification-surface-catalog.properties"))
         val bundleCatalog = standardEnforcementBundleCatalog()
         val publicVerificationSurfaceCatalog = standardVerificationSurfaceCatalog(bundleCatalog)
         val requestedTaskNames = settings.gradle.startParameter.taskNames
             .map { taskName -> taskName.substringAfterLast(":") }
             .toSet()
-        val broadBuildTaskNames = verificationSurfaceCatalog.list("broadBuildTaskNames").toSet()
+        val broadBuildTaskNames = standardBroadBuildTaskNames()
         val taskToBundleId = bundleCatalog.taskToBundleId
         val publicSurfaceTaskNames = publicVerificationSurfaceCatalog.taskToBundleIds.keys
         val requestedBundleIds = requestedTaskNames
@@ -56,6 +54,32 @@ class SaltmarcherRootSettingsPlugin : Plugin<Settings> {
 
 private fun includeSaltmarcherBuild(settings: Settings, relativePath: String) = settings.includeBuild(relativePath)
 
+private fun standardBroadBuildTaskNames(): Set<String> = setOf(
+    "assemble",
+    "architecture",
+    "architectureTest",
+    "build",
+    "check",
+    "checkArchitecture",
+    "checkNoDeadCode",
+    "classes",
+    "compileJava",
+    "desktop-install",
+    "docs",
+    "installDesktopApp",
+    "installDist",
+    "jar",
+    "metrics-report",
+    "production-build",
+    "production-handoff",
+    "productionBuild",
+    "quality-hygiene",
+    "checkQualityHygiene",
+    "run",
+    "test",
+    "view-topology"
+)
+
 private fun findRepositoryRoot(startDirectory: File): File {
     return generateSequence(startDirectory.canonicalFile) { directory -> directory.parentFile }
         .firstOrNull { directory ->
@@ -63,13 +87,3 @@ private fun findRepositoryRoot(startDirectory: File): File {
         }
         ?: startDirectory.canonicalFile
 }
-
-private fun loadProperties(file: File): Properties = Properties().apply {
-    file.inputStream().use(::load)
-}
-
-private fun Properties.list(name: String): List<String> = getProperty(name)
-    ?.split(',')
-    ?.map(String::trim)
-    ?.filter(String::isNotEmpty)
-    ?: emptyList()

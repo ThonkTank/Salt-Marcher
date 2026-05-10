@@ -37,13 +37,16 @@ Published dungeon carriers must not own:
 
 ## Application Boundary
 
-Application Service: DungeonApplicationService
+Application Service: DungeonAuthoredApplicationService
+Application Service: DungeonCatalogApplicationService
+Application Service: DungeonTravelApplicationService
 
 `application/` coordinates authored dungeon load, mutate, save, search, and
-raw travel-surface queries through the domain-owned ports. The root application
-service maps authored dungeon truth and derived results into `published/`
-carriers without moving runtime editor-session policy, render ownership, or
-party-aware runtime travel session state into the dungeon model.
+raw travel-surface queries through the domain-owned ports. The root
+application-service family maps authored dungeon truth and derived results
+into `published/` carriers without moving runtime editor-session policy,
+render ownership, or party-aware runtime travel session state into the
+dungeon model.
 
 ## Aggregate Model
 

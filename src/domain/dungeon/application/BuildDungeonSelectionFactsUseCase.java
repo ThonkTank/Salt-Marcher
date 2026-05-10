@@ -26,64 +26,11 @@ final class BuildDungeonSelectionFactsUseCase {
             DungeonDerivedState derived,
             DungeonTopologyRef topologyRef
     ) {
-        if (!present(topologyRef)) {
-            return fallbackSelection();
+        if (!SelectionFacts.present(topologyRef)) {
+            return SelectionFacts.fallbackSelection();
         }
-        for (DungeonAreaFacts area : derived.map().areas()) {
-            if (topologyRef.equals(area.topologyRef())) {
-                return new LoadDungeonSnapshotUseCase.InspectorSnapshotData(
-                        area.label(),
-                        AUTHORISED_AREA,
-                        List.of(
-                                refFact(topologyRef),
-                                factLine(FACT_KIND, area.kind()),
-                                factLine("cells", area.cells().size())));
-            }
-        }
-        for (DungeonBoundaryFacts boundary : derived.map().boundaries()) {
-            if (topologyRef.equals(boundary.topologyRef())) {
-                return new LoadDungeonSnapshotUseCase.InspectorSnapshotData(
-                        boundary.label(),
-                        AUTHORISED_BOUNDARY,
-                        List.of(
-                                refFact(topologyRef),
-                                factLine(FACT_KIND, boundary.kind())));
-            }
-        }
-        for (DungeonFeatureFacts feature : derived.map().features()) {
-            if (topologyRef.equals(feature.topologyRef())) {
-                List<String> facts = new ArrayList<>();
-                facts.add(refFact(topologyRef));
-                facts.add(factLine(FACT_KIND, feature.kind()));
-                appendFactIfPresent(facts, "target", feature.destinationLabel());
-                return new LoadDungeonSnapshotUseCase.InspectorSnapshotData(
-                        feature.label(),
-                        feature.description(),
-                        facts);
-            }
-        }
-        for (DungeonAggregate aggregate : derived.aggregates()) {
-            if (matchesAggregate(topologyRef, aggregate)) {
-                return new LoadDungeonSnapshotUseCase.InspectorSnapshotData(
-                        aggregate.label(),
-                        AGGREGATE_OWNER,
-                        List.of(
-                                factLine("id", aggregate.id()),
-                                factLine(FACT_KIND, topologyRef.kind()),
-                                factLine("label", aggregate.label())));
-            }
-        }
-        for (DungeonPrimitive primitive : derived.primitives()) {
-            if (primitive.id() == topologyRef.id()) {
-                return new LoadDungeonSnapshotUseCase.InspectorSnapshotData(
-                        "Primitive " + topologyRef.id(),
-                        PRIMITIVE_BOUNDARY,
-                        List.of(
-                                factLine("id", primitive.id()),
-                                factLine(FACT_KIND, topologyRef.kind())));
-            }
-        }
-        return fallbackSelection();
+        LoadDungeonSnapshotUseCase.InspectorSnapshotData selection = SelectionResolver.resolve(derived, topologyRef);
+        return selection == null ? SelectionFacts.fallbackSelection() : selection;
     }
 
     boolean isFallbackSelection(LoadDungeonSnapshotUseCase.InspectorSnapshotData snapshot) {
@@ -93,33 +40,152 @@ final class BuildDungeonSelectionFactsUseCase {
                 && snapshot.facts().equals(List.of(SELECTION_NONE));
     }
 
-    private static boolean matchesAggregate(DungeonTopologyRef topologyRef, DungeonAggregate aggregate) {
-        return aggregate.id() == topologyRef.id()
-                && DungeonTopologyElementKind.fromAreaType(aggregate.kind()) == topologyRef.kind();
-    }
+    private static final class SelectionResolver {
 
-    private static boolean present(DungeonTopologyRef topologyRef) {
-        return topologyRef != null && topologyRef.present();
-    }
+        private static LoadDungeonSnapshotUseCase.InspectorSnapshotData resolve(
+                DungeonDerivedState derived,
+                DungeonTopologyRef topologyRef
+        ) {
+            LoadDungeonSnapshotUseCase.InspectorSnapshotData selection =
+                    areaSelection(derived.map().areas(), topologyRef);
+            if (selection != null) {
+                return selection;
+            }
+            selection = boundarySelection(derived.map().boundaries(), topologyRef);
+            if (selection != null) {
+                return selection;
+            }
+            selection = featureSelection(derived.map().features(), topologyRef);
+            if (selection != null) {
+                return selection;
+            }
+            selection = aggregateSelection(derived.aggregates(), topologyRef);
+            if (selection != null) {
+                return selection;
+            }
+            return primitiveSelection(derived.primitives(), topologyRef);
+        }
 
-    private static LoadDungeonSnapshotUseCase.InspectorSnapshotData fallbackSelection() {
-        return new LoadDungeonSnapshotUseCase.InspectorSnapshotData(
-                DUNGEON_TITLE,
-                NO_SELECTION_DETAILS,
-                List.of(SELECTION_NONE));
-    }
+        private static LoadDungeonSnapshotUseCase.InspectorSnapshotData areaSelection(
+                List<DungeonAreaFacts> areas,
+                DungeonTopologyRef topologyRef
+        ) {
+            for (DungeonAreaFacts area : areas) {
+                if (topologyRef.equals(area.topologyRef())) {
+                    return new LoadDungeonSnapshotUseCase.InspectorSnapshotData(
+                            area.label(),
+                            AUTHORISED_AREA,
+                            List.of(
+                                    SelectionFacts.refFact(topologyRef),
+                                    SelectionFacts.factLine(FACT_KIND, area.kind()),
+                                    SelectionFacts.factLine("cells", area.cells().size())));
+                }
+            }
+            return null;
+        }
 
-    private static String refFact(DungeonTopologyRef topologyRef) {
-        return factLine("ref", topologyRef.kind() + " " + topologyRef.id());
-    }
+        private static LoadDungeonSnapshotUseCase.InspectorSnapshotData boundarySelection(
+                List<DungeonBoundaryFacts> boundaries,
+                DungeonTopologyRef topologyRef
+        ) {
+            for (DungeonBoundaryFacts boundary : boundaries) {
+                if (topologyRef.equals(boundary.topologyRef())) {
+                    return new LoadDungeonSnapshotUseCase.InspectorSnapshotData(
+                            boundary.label(),
+                            AUTHORISED_BOUNDARY,
+                            List.of(
+                                    SelectionFacts.refFact(topologyRef),
+                                    SelectionFacts.factLine(FACT_KIND, boundary.kind())));
+                }
+            }
+            return null;
+        }
 
-    private static void appendFactIfPresent(List<String> facts, String key, String value) {
-        if (value != null && !value.isBlank()) {
-            facts.add(factLine(key, value));
+        private static LoadDungeonSnapshotUseCase.InspectorSnapshotData featureSelection(
+                List<DungeonFeatureFacts> features,
+                DungeonTopologyRef topologyRef
+        ) {
+            for (DungeonFeatureFacts feature : features) {
+                if (topologyRef.equals(feature.topologyRef())) {
+                    List<String> facts = new ArrayList<>();
+                    facts.add(SelectionFacts.refFact(topologyRef));
+                    facts.add(SelectionFacts.factLine(FACT_KIND, feature.kind()));
+                    SelectionFacts.appendFactIfPresent(facts, "target", feature.destinationLabel());
+                    return new LoadDungeonSnapshotUseCase.InspectorSnapshotData(
+                            feature.label(),
+                            feature.description(),
+                            facts);
+                }
+            }
+            return null;
+        }
+
+        private static LoadDungeonSnapshotUseCase.InspectorSnapshotData aggregateSelection(
+                List<DungeonAggregate> aggregates,
+                DungeonTopologyRef topologyRef
+        ) {
+            for (DungeonAggregate aggregate : aggregates) {
+                if (matchesAggregate(topologyRef, aggregate)) {
+                    return new LoadDungeonSnapshotUseCase.InspectorSnapshotData(
+                            aggregate.label(),
+                            AGGREGATE_OWNER,
+                            List.of(
+                                    SelectionFacts.factLine("id", aggregate.id()),
+                                    SelectionFacts.factLine(FACT_KIND, topologyRef.kind()),
+                                    SelectionFacts.factLine("label", aggregate.label())));
+                }
+            }
+            return null;
+        }
+
+        private static LoadDungeonSnapshotUseCase.InspectorSnapshotData primitiveSelection(
+                List<DungeonPrimitive> primitives,
+                DungeonTopologyRef topologyRef
+        ) {
+            for (DungeonPrimitive primitive : primitives) {
+                if (primitive.id() == topologyRef.id()) {
+                    return new LoadDungeonSnapshotUseCase.InspectorSnapshotData(
+                            "Primitive " + topologyRef.id(),
+                            PRIMITIVE_BOUNDARY,
+                            List.of(
+                                    SelectionFacts.factLine("id", primitive.id()),
+                                    SelectionFacts.factLine(FACT_KIND, topologyRef.kind())));
+                }
+            }
+            return null;
+        }
+
+        private static boolean matchesAggregate(DungeonTopologyRef topologyRef, DungeonAggregate aggregate) {
+            return aggregate.id() == topologyRef.id()
+                    && DungeonTopologyElementKind.fromAreaType(aggregate.kind()) == topologyRef.kind();
         }
     }
 
-    private static String factLine(String key, Object value) {
-        return key + ": " + value;
+    private static final class SelectionFacts {
+
+        private static boolean present(DungeonTopologyRef topologyRef) {
+            return topologyRef != null && topologyRef.present();
+        }
+
+        private static LoadDungeonSnapshotUseCase.InspectorSnapshotData fallbackSelection() {
+            return new LoadDungeonSnapshotUseCase.InspectorSnapshotData(
+                    DUNGEON_TITLE,
+                    NO_SELECTION_DETAILS,
+                    List.of(SELECTION_NONE));
+        }
+
+        private static String refFact(DungeonTopologyRef topologyRef) {
+            return factLine("ref", topologyRef.kind() + " " + topologyRef.id());
+        }
+
+        private static void appendFactIfPresent(List<String> facts, String key, String value) {
+            if (value != null && !value.isBlank()) {
+                facts.add(factLine(key, value));
+            }
+        }
+
+        private static String factLine(String key, Object value) {
+            return key + ": " + value;
+        }
     }
 }

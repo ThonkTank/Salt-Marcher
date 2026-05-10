@@ -1,5 +1,6 @@
 package src.domain.dungeon.map.value;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -25,7 +26,7 @@ public record DungeonRelationGraph(
     }
 
     public List<String> summaries() {
-        java.util.ArrayList<String> result = new java.util.ArrayList<>();
+        List<String> result = new ArrayList<>();
         connections.stream()
                 .map(connection -> "corridor " + connection.corridorId() + " -> room " + connection.roomId()
                         + " (" + connection.direction() + ")")

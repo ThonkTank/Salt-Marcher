@@ -23,7 +23,7 @@ public final class DungeonTravelHeading {
             return defaultHeading();
         }
         try {
-            return DungeonTravelHeading.valueOf(value.trim().toUpperCase(Locale.ROOT));
+            return valueOf(value.trim().toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException ignored) {
             return defaultHeading();
         }

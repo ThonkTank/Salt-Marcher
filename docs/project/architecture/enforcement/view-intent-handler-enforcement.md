@@ -33,9 +33,9 @@ same-stem carriers but does not own or synthesize them.
 
 Merged focused bundle entrypoint:
 
-- `./gradlew checkViewIntentHandlerEnforcement --rerun-tasks --console=plain`
+- `./gradlew checkViewEnforcement --rerun-tasks --console=plain`
   runs the focused active-root `IntentHandler` bundle. IntentHandler-existence
-  topology enters transitively through `./gradlew checkViewLayerEnforcement`.
+  topology enters transitively through `./gradlew checkViewEnforcement`.
   Canonical compile-side blocking behavior remains at `./gradlew compileJava`;
   aggregate blocking behavior enters `./gradlew checkArchitecture` and
   `./gradlew check` through this focused role task.
@@ -46,8 +46,8 @@ Merged focused bundle entrypoint:
 
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
-| `view-intenthandler-active-root-count` | Enforced | every active root under `src/view/leftbartabs/**`, `src/view/statetabs/**`, and `src/view/dropdowns/**` | build-harness `ViewLayerTopologyRules` | `./gradlew checkViewLayerEnforcement` and `./gradlew checkViewIntentHandlerEnforcement` | Each active root may define at most one local `*IntentHandler.java`. |
-| `view-intenthandler-slotcontent-count` | Enforced | every reusable `slotcontent/**` unit under `src/view/**` | build-harness `ViewLayerTopologyRules` | `./gradlew checkViewLayerEnforcement` and `./gradlew checkViewIntentHandlerEnforcement` | Reusable `slotcontent/**` units define no local `*IntentHandler.java`; input interpretation stays in the same-root contribution `IntentHandler`. |
+| `view-intenthandler-active-root-count` | Enforced | every active root under `src/view/leftbartabs/**`, `src/view/statetabs/**`, and `src/view/dropdowns/**` | build-harness `ViewLayerTopologyRules` | `./gradlew checkViewEnforcement` and `./gradlew checkViewEnforcement` | Each active root may define at most one local `*IntentHandler.java`. |
+| `view-intenthandler-slotcontent-count` | Enforced | every reusable `slotcontent/**` unit under `src/view/**` | build-harness `ViewLayerTopologyRules` | `./gradlew checkViewEnforcement` and `./gradlew checkViewEnforcement` | Reusable `slotcontent/**` units define no local `*IntentHandler.java`; input interpretation stays in the same-root contribution `IntentHandler`. |
 | `view-intenthandler-local-input-interpretation-necessity` | Review-Owned | every active root that defines a `*IntentHandler` | none | none | An active-root `*IntentHandler` exists only when the contribution really owns input interpretation. Reusable `slotcontent/**` units stay without a handler instead of parking non-essential orchestration behind a legal role file. |
 
 ### May Contain
@@ -56,7 +56,7 @@ Merged focused bundle entrypoint:
 | --- | --- | --- | --- | --- | --- |
 | `view-intenthandler-projectionmodel-dependency-surface` | Enforced | every `*IntentHandler.java` under `src/view/**` | Error Prone `ViewIntentHandlerDependencyBoundary` | `./gradlew compileJava` | An active-root `IntentHandler` may read only its same-root `*ContributionModel` and reused child `slotcontent/**` `*ContentModel` surfaces when it needs local UI facts for interpretation. |
 | `view-intenthandler-viewinputevent-dependency-surface` | Enforced | every `*IntentHandler.java` under `src/view/**` | Error Prone `ViewIntentHandlerDependencyBoundary` and Error Prone `ViewIntentHandlerViewInputEvent` | `./gradlew compileJava` | An active-root `IntentHandler` may consume only same-root or reused child `slotcontent/**` `*ViewInputEvent` families, and those carriers remain the only top-level input protocol it interprets. |
-| `view-intenthandler-root-applicationservice-boundary-surface` | Enforced | every `*IntentHandler.java` under `src/view/**` that crosses the domain-write boundary | Error Prone `ViewIntentHandlerDependencyBoundary` | `./gradlew compileJava` and `./gradlew checkViewIntentHandlerEnforcement` | Domain-write work may leave an active-root `IntentHandler` only through a direct dependency on the matching root `*ApplicationService`. |
+| `view-intenthandler-root-applicationservice-boundary-surface` | Enforced | every `*IntentHandler.java` under `src/view/**` that crosses the domain-write boundary | Error Prone `ViewIntentHandlerDependencyBoundary` | `./gradlew compileJava` and `./gradlew checkViewEnforcement` | Domain-write work may leave an active-root `IntentHandler` only through a direct dependency on the matching root `*ApplicationService`. |
 | `view-intenthandler-same-surface-local-support-only` | Review-Owned | every `*IntentHandler.java` under `src/view/**` | none | none | Beyond the allowed model and carrier families above, helper state and helper types stay local to the same handler surface instead of becoming hidden foreign-role or cross-unit coordination channels. |
 
 ### Must Contain
@@ -68,10 +68,10 @@ communication seam obligations documented below.
 
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
-| `view-intenthandler-no-shell-data-bootstrap-or-javafx-dependencies` | Enforced | every `*IntentHandler.java` under `src/view/**` | Error Prone `ViewIntentHandlerDependencyBoundary` | `./gradlew compileJava` and `./gradlew checkViewIntentHandlerEnforcement` | An `IntentHandler` does not depend on `shell/**`, `bootstrap/**`, `src/data/**`, or `javafx/**`. |
-| `view-intenthandler-no-non-applicationservice-domain-dependencies` | Enforced | every `*IntentHandler.java` under `src/view/**` | Error Prone `ViewIntentHandlerDependencyBoundary` | `./gradlew compileJava` and `./gradlew checkViewIntentHandlerEnforcement` | An `IntentHandler` does not depend on domain internals outside the matching root `*ApplicationService`. |
+| `view-intenthandler-no-shell-data-bootstrap-or-javafx-dependencies` | Enforced | every `*IntentHandler.java` under `src/view/**` | Error Prone `ViewIntentHandlerDependencyBoundary` | `./gradlew compileJava` and `./gradlew checkViewEnforcement` | An `IntentHandler` does not depend on `shell/**`, `bootstrap/**`, `src/data/**`, or `javafx/**`. |
+| `view-intenthandler-no-non-applicationservice-domain-dependencies` | Enforced | every `*IntentHandler.java` under `src/view/**` | Error Prone `ViewIntentHandlerDependencyBoundary` | `./gradlew compileJava` and `./gradlew checkViewEnforcement` | An `IntentHandler` does not depend on domain internals outside the matching root `*ApplicationService`. |
 | `view-intenthandler-no-foreign-or-forbidden-view-role-dependencies` | Enforced | every `*IntentHandler.java` under `src/view/**` | Error Prone `ViewIntentHandlerDependencyBoundary` | `./gradlew compileJava` | An active-root handler depends only on same-root `*ContributionModel`, same-root or reused child `*ViewInputEvent`, reused child `*ContentModel`, direct root `*ApplicationService`, and same-surface local support types. `*PublishedEvent` and other foreign view-role families are forbidden. |
-| `view-intenthandler-no-publishedevent-write-protocol` | Enforced | every `*IntentHandler.java` under `src/view/**` | Error Prone `ViewIntentHandlerDependencyBoundary` | `./gradlew compileJava` and `./gradlew checkViewIntentHandlerEnforcement` | An `IntentHandler` does not define outward `*PublishedEvent` write seams such as `onPublishedEventRequested(...)`, `Consumer<...PublishedEvent>` sink fields, or comparable published-event callback protocols. |
+| `view-intenthandler-no-publishedevent-write-protocol` | Enforced | every `*IntentHandler.java` under `src/view/**` | Error Prone `ViewIntentHandlerDependencyBoundary` | `./gradlew compileJava` and `./gradlew checkViewEnforcement` | An `IntentHandler` does not define outward `*PublishedEvent` write seams such as `onPublishedEventRequested(...)`, `Consumer<...PublishedEvent>` sink fields, or comparable published-event callback protocols. |
 
 ### Communication Contract
 

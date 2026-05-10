@@ -16,7 +16,7 @@ role shape.
 
 Unified focused bundle entrypoint:
 
-- `./gradlew checkDomainHelperEnforcement --rerun-tasks --console=plain`
+- `./gradlew checkDomainEnforcement --rerun-tasks --console=plain`
 
 ## Invariant Catalog
 
@@ -24,8 +24,8 @@ Unified focused bundle entrypoint:
 
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
-| `domain-helper-direct-file-placement` | Enforced | every Java type below `src/domain/<context>/model/<family>/helper/` | domain-helper bundle build-harness `DomainHelperTopologyRules` | `./gradlew checkDomainHelperEnforcement` | Helper files stay as direct files under one model-family `helper/` bucket rather than growing secondary technical subpackages. |
-| `domain-helper-role-shape` | Enforced | every domain type whose simple name ends with `Helper` and every Java type below `src/domain/<context>/model/<family>/helper/` | domain-helper bundle build-harness `DomainHelperTopologyRules` | `./gradlew checkDomainHelperEnforcement` | Helper role files use the canonical `*Helper.java` form and may appear only in the canonical helper bucket. |
+| `domain-helper-direct-file-placement` | Enforced | every Java type below `src/domain/<context>/model/<family>/helper/` | domain-helper bundle build-harness `DomainHelperTopologyRules` | `./gradlew checkDomainEnforcement` | Helper files stay as direct files under one model-family `helper/` bucket rather than growing secondary technical subpackages. |
+| `domain-helper-role-shape` | Enforced | every domain type whose simple name ends with `Helper` and every Java type below `src/domain/<context>/model/<family>/helper/` | domain-helper bundle build-harness `DomainHelperTopologyRules` | `./gradlew checkDomainEnforcement` | Helper role files use the canonical `*Helper.java` form and may appear only in the canonical helper bucket. |
 | `domain-helper-explicit-work-step` | Review-Owned | every helper under `src/domain/**` | none | none | Helper code stays on explicit deterministic work-step inputs instead of absorbing repository, port, use-case, published, or root-boundary concerns. |
 
 ### Must Not Contain

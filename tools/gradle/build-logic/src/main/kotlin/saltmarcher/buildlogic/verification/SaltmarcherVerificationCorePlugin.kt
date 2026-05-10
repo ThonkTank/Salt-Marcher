@@ -49,7 +49,7 @@ internal fun Project.configureVerificationCore() {
 
     fun registerStandardBundle(bundleId: String) {
         val descriptor = descriptor(bundleId)
-        val rootTaskName = descriptor.publicCheckTaskName()
+        val rootTaskName = descriptor.entryTaskName
         val checkerNames = descriptor.errorProneCheckers
         val bundleDisplayName = defaultBundleDisplayName(bundleId)
 
@@ -68,7 +68,11 @@ internal fun Project.configureVerificationCore() {
         }
 
         val aggregateDependencies = mutableListOf<Any>()
-        aggregateDependencies.addAll(descriptor.rootTaskDependencies)
+        aggregateDependencies.addAll(
+            descriptor.dependentBundleIds.map { dependencyBundleId ->
+                tasks.named(descriptor(dependencyBundleId).entryTaskName)
+            }
+        )
 
         if (checkerNames.isNotEmpty()) {
             val compileTask = selectedCompileJava
@@ -84,47 +88,31 @@ internal fun Project.configureVerificationCore() {
                 archunit.taskName,
                 archunit.description,
                 compileTask,
-                archunit.sourceDirs,
                 archunit.sourceIncludes,
-                archunit.includePatterns,
-                archunit.useSharedTestSupport
+                archunit.includePatterns
             )
             aggregateDependencies += archunitTask
         }
 
-        descriptor.customTasks.forEach { customTask ->
-            aggregateDependencies += verificationHarness.registerCustomVerificationTask(
-                bundleId,
-                customTask.taskName,
-                customTask.kind
+        descriptor.utilityTasks.forEach { utilityTask ->
+            aggregateDependencies += verificationHarness.registerUtilityVerificationTask(
+                utilityTask.taskName,
+                utilityTask.kind
             )
         }
 
-        val buildHarnessTasks = descriptor.buildHarnessTaskNames()
-            .associateWith { taskName -> gradle.includedBuild("build-harness").task(":$taskName") }
-
-        buildHarnessTasks
-            .filterKeys { taskName -> taskName.startsWith("check") && taskName != rootTaskName }
-            .forEach { (taskName, taskDependency) ->
-                tasks.register(taskName) {
-                    group = LifecycleBasePlugin.VERIFICATION_GROUP
-                    description = "Run the focused $bundleDisplayName verification surface '$taskName'."
-                    dependsOn(taskDependency)
-                }
+        aggregateDependencies.addAll(
+            descriptor.buildHarnessTasks.map { task ->
+                gradle.includedBuild("build-harness").task(":${task.taskName}")
             }
+        )
 
-        val aggregateBuildHarnessTasks = buildHarnessTasks
-            .filterKeys { taskName -> !taskName.startsWith("check") || taskName == rootTaskName }
-            .values
-        aggregateDependencies.addAll(aggregateBuildHarnessTasks)
-
-        val rootTaskProvider: TaskProvider<out Task> = tasks.register(rootTaskName) {
-            group = LifecycleBasePlugin.VERIFICATION_GROUP
-            description = descriptor.rootTask?.description
-                ?: "Run the focused $bundleDisplayName enforcement bundle through one root entrypoint."
+        tasks.register(rootTaskName) {
+            description = descriptor.entryTaskDescription.ifBlank {
+                "Internal entry task for the $bundleDisplayName enforcement bundle."
+            }
             aggregateDependencies.forEach(::dependsOn)
         }
-
     }
 
     activeEnforcementBundleIds
@@ -137,7 +125,7 @@ internal fun Project.configureVerificationCore() {
             description = surface.description
             activeSurfaceBundleIds
                 .map(::descriptor)
-                .map(EnforcementBundleDescriptor::publicCheckTaskName)
+                .map(EnforcementBundleDescriptor::entryTaskName)
                 .forEach(::dependsOn)
         }
     }
@@ -179,7 +167,7 @@ internal fun Project.configureVerificationCore() {
     val viewTopology = registerSurfaceTask(
         "view-topology",
         "Run the public staged closed-world view-layer topology verification surface.",
-        "checkViewLayerEnforcement"
+        descriptor("viewLayer").entryTaskName
     )
 
     val docs = registerSurfaceTask(

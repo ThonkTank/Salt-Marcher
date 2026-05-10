@@ -2,8 +2,8 @@ Status: Draft
 Owner: SaltMarcher Team
 Last Reviewed: 2026-05-06
 Source of Truth: Authored dungeon map boundary language between
-`DungeonApplicationService` and downstream runtime-workspace contexts for map
-read, preview, apply, inspector, travel, and catalog work.
+the authored dungeon root-boundary family and downstream runtime-workspace
+contexts for map read, preview, apply, inspector, travel, and catalog work.
 
 # Dungeon Map Surface Contract
 
@@ -16,7 +16,7 @@ the generic maps feature.
 
 Owners:
 
-- provider: `DungeonApplicationService`
+ - provider: `DungeonAuthoredApplicationService`, `DungeonCatalogApplicationService`, and `DungeonTravelApplicationService`
 - consumers: `DungeonEditorApplicationService`, `TravelApplicationService`,
   and any future runtime-workspace context that needs authored dungeon map
   facts

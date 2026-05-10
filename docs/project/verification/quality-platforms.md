@@ -123,106 +123,49 @@ This standard describes how quality platforms are operated. The architecture
 enforcement documents define which engine owns which class of architecture
 rule.
 
-Operationally, architecture checks enter local quality through:
+Operationally, architecture checks enter local quality through a small public
+surface set:
 
 - `compileJava`
-  runs Error Prone architecture checks, including compiler-precise
-  `ContributionModel`/`ContentModel`, `IntentHandler`, Binder, passive-View
-  dependency rules, shell API use, `AppShell`
-  lifecycle-hook ownership, passive panel restrictions, the broad
-  styling-layer programmatic-style-value ban, passive-`View` direct-render
-  styling placement, the focused Domain Layer infrastructure-dependency and
-  named-module-to-`published/**` dependency rules, the focused `Domain
-  ApplicationService` API-shape, role-boundary, and signature-purity rules, the focused
-  Data Model source-shape/signature-boundary rules, the focused
-  `Domain Published` carrier-shape, ownership-boundary, and signature-purity rules, the focused
-  `Domain Port` role-shape/boundary rules, the focused `Domain Factory`
-  role-shape/statelessness rules, the focused `Domain Value` role-shape/state
-  rule, the focused `Domain Service` role-shape/statelessness rules, the
-  focused `Domain Policy` role-shape/statelessness rules, the focused Domain
-  Event role-shape rule, the focused Domain Specification role-shape rule, and
-  legacy view-package bans
+  runs compiler-integrated Error Prone architecture checks.
 - `checkViewEnforcement`
-  runs the canonical View surface by aggregating the closed-world View Layer
-  topology proof plus the passive `View`, `ViewInputEvent`, `Contribution`,
-  `Binder`, `ContributionModel`, `ContentModel`, and `IntentHandler` bundles
+  runs the canonical View enforcement surface.
 - `checkDomainEnforcement`
-  runs the canonical Domain surface by aggregating the Domain Context, Layer,
-  UseCase, ApplicationService, Published, Port, Model, Helper, Constants, and
-  Repository bundles
+  runs the canonical Domain enforcement surface.
 - `checkDataEnforcement`
-  runs the canonical Data surface by aggregating the Data Layer, Model,
-  Gateway, Mapper, Persistencecore, Query, Repository, and
-  ServiceContribution bundles
+  runs the canonical Data enforcement surface.
 - `checkShellEnforcement`
-  runs the canonical Shell surface by aggregating the `ShellRuntimeContext`,
-  `AppShell`, and Shell Layer bundles
+  runs the canonical Shell enforcement surface.
 - `checkBootstrapEnforcement`
-  runs the canonical Bootstrap surface by aggregating the `AppBootstrap` and
-  Bootstrap Layer bundles
+  runs the canonical Bootstrap enforcement surface.
 - `checkStylingEnforcement`
-  runs the canonical Styling surface by aggregating the styling-layer and
-  passive-`View` direct-render styling bundles
+  runs the canonical Styling enforcement surface.
 - `checkLayeringEnforcement`
-  runs the canonical Layering surface through the blocker-owned Layering
-  Architecture bundle
-- `architectureTest`
-  runs the remaining generic ArchUnit dependency and cycle checks outside the
-  focused `AppBootstrap`, Domain Layer, `Shell Layer`, `View Layer`, and the
-  other focused enforcement bundles that still keep dedicated ArchUnit suites
-- `checkDocumentationEnforcement`
-  runs the focused Markdown-backed architecture and enforcement-documentation
-  bundle through the dedicated documentation-enforcement build-harness path,
-  including active bundle-local Markdown rules such as `Domain Context`, and
-  stays intentionally outside `checkArchitecture`, `check`, and `build`
-- `checkLayeringArchitectureEnforcement`
-  runs the focused `Layering Architecture` enforcement bundle through the
-  dedicated build-harness topology, passive-carrier mirror, and
-  documentation-coverage checks for repository-wide layer roots and
-  included-build taxonomy
+  runs the canonical Layering enforcement surface.
 - `checkArchitecture`
-  aggregates the focused Domain Layer, Domain ApplicationService,
-  Data ServiceContribution, styling-layer, `Shell Layer`,
-  `Layering Architecture`, Domain UseCase, Data Model, Data Repository,
-  Data Query, Data Mapper, Data Persistencecore,
-  `Domain Port`, `Domain Repository`, `Domain Model`, `Domain Helper`,
-  `Domain Constants`,
-  focused `View`, `ViewInputEvent`, `View Contribution`, `View Binder`,
-  `View ContributionModel`, `View ContentModel`, `View IntentHandler`,
-  and `View Layer` bundles, ArchUnit, compile-blocking Error Prone rules, and
-  the non-documentation build-harness path
-- `check`
-  runs the architecture harness plus adjacent non-architecture quality gates.
-  Its architecture-focused coverage comes from the explicit
-  `checkDomainLayerEnforcement`,
-  `checkDomainApplicationServiceEnforcement`,
-  `checkDataServiceContributionEnforcement`,
-  `checkDomainPortEnforcement`,
-  `checkDomainRepositoryEnforcement`,
-  `checkDomainModelEnforcement`,
-  `checkDomainHelperEnforcement`,
-  `checkDomainConstantsEnforcement`,
-  `checkDataModelEnforcement`,
-  `checkDataGatewayEnforcement`,
-  `checkDataRepositoryEnforcement`,
-  `checkDataQueryEnforcement`,
-  `checkDataMapperEnforcement`,
-  `checkDataPersistencecoreEnforcement`,
-  `checkStylingLayerEnforcement`,
-  `checkBootstrapAppBootstrapEnforcement`,
-  `checkShellLayerEnforcement`,
-  `checkLayeringArchitectureEnforcement`,
-  `checkDomainUseCaseEnforcement`,
-  `checkViewEnforcement`,
-  `checkViewInputEventEnforcement`,
-  `checkViewContributionEnforcement`,
-  `checkViewBinderEnforcement`,
-  `checkViewContributionModelEnforcement`,
-  `checkViewContentModelEnforcement`,
-  `checkViewIntentHandlerEnforcement`,
-  `checkViewLayerEnforcement`
-  dependencies. The dedicated
-  `checkDocumentationEnforcement` path is intentionally excluded.
+  aggregates the non-documentation architecture blocker path.
+- `checkDocumentationEnforcement`
+  runs the dedicated Markdown-backed architecture and enforcement-document
+  coverage path and stays intentionally outside `checkArchitecture`.
+
+The public API stops there. Role-specific or bundle-specific enforcement tasks
+are no longer part of the public verification contract. They may still exist as
+technical implementation tasks behind those layer surfaces, but they are not
+documented public entrypoints and must not be used as the canonical routing
+surface in owner docs.
+
+`checkArchitecture` is the public aggregate for non-documentation architecture
+verification. It combines:
+
+- compile-blocking Error Prone architecture rules through `compileJava`
+- the canonical layer surfaces
+- generic ArchUnit coverage such as `architectureTest`
+- the non-documentation build-harness aggregate `:build-harness:architectureCheck`
+
+`check` remains the central local build-health aggregate. Its architecture
+coverage comes through `checkArchitecture` plus the explicitly attached layer
+surfaces. `checkDocumentationEnforcement` remains intentionally separate so
+documentation-only work has a smaller proof route.
 
 Default local proof routing by change type lives in
 `docs/project/verification/quality-platforms-local-gates.md` and `AGENTS.md`:
@@ -230,15 +173,15 @@ production-code changes use
 `tools/gradle/run-staged-verification.sh production-handoff`,
 documentation-only changes use
 `./gradlew checkDocumentationEnforcement --console=plain`, and check-only
-changes use the corresponding focused package or bundle entrypoints. The
+changes use the corresponding focused package or layer-surface entrypoints. The
 existence of a broader aggregate does not make it the default proof route for
 documentation-only or check-only work.
 
 Public verification-surface ownership is architecture-owned by
 [Verification Core Architecture](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/verification-core.md:1):
-runtime wrappers forward canonical surface names, the verification core owns the
-public Gradle lifecycle tasks, focused bundles own `check*Enforcement`, and
-private rule engines remain behind those surfaces.
+runtime wrappers forward canonical surface names, the verification core owns
+the public Gradle lifecycle tasks, and private bundles or rule engines stay
+behind those surfaces.
 
 Wrapper-based local entrypoints keep their public names, but parallel local
 safety now comes from the worktree workflow described in

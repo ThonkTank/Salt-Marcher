@@ -1,0 +1,60 @@
+package src.domain.dungeon;
+
+import java.util.Objects;
+import src.domain.dungeon.application.BuildDungeonDerivedStateUseCase;
+import src.domain.dungeon.application.LoadDungeonMapUseCase;
+import src.domain.dungeon.application.LoadDungeonTravelSurfaceUseCase;
+import src.domain.dungeon.application.MoveDungeonTravelActionUseCase;
+import src.domain.dungeon.application.PublishDungeonTravelResultUseCase;
+import src.domain.dungeon.application.TranslateDungeonTravelInputUseCase;
+import src.domain.dungeon.map.port.DungeonMapRepository;
+import src.domain.dungeon.map.port.DungeonMapSearch;
+import src.domain.dungeon.published.DungeonTravelCommand;
+import src.domain.dungeon.published.DungeonTravelResponse;
+
+/**
+ * Public authored-dungeon backend boundary for raw travel surface work.
+ */
+public final class DungeonTravelApplicationService {
+
+    private final DungeonPublishedStatePublisher publishedStatePublisher;
+    private final LoadDungeonTravelSurfaceUseCase loadDungeonTravelSurfaceUseCase;
+    private final MoveDungeonTravelActionUseCase moveDungeonTravelActionUseCase;
+    private final PublishDungeonTravelResultUseCase publishResultUseCase = new PublishDungeonTravelResultUseCase();
+    private final TranslateDungeonTravelInputUseCase translateInputUseCase = new TranslateDungeonTravelInputUseCase();
+
+    public DungeonTravelApplicationService(
+            DungeonMapRepository mapRepository,
+            DungeonMapSearch mapSearch,
+            DungeonPublishedStatePublisher publishedStatePublisher
+    ) {
+        DungeonMapRepository repository = Objects.requireNonNull(mapRepository, "mapRepository");
+        DungeonMapSearch search = Objects.requireNonNull(mapSearch, "mapSearch");
+        this.publishedStatePublisher = Objects.requireNonNull(publishedStatePublisher, "publishedStatePublisher");
+        BuildDungeonDerivedStateUseCase derive = new BuildDungeonDerivedStateUseCase();
+        LoadDungeonMapUseCase loadDungeonMapUseCase = new LoadDungeonMapUseCase(repository, search);
+        this.loadDungeonTravelSurfaceUseCase = new LoadDungeonTravelSurfaceUseCase(loadDungeonMapUseCase, derive);
+        this.moveDungeonTravelActionUseCase = new MoveDungeonTravelActionUseCase(
+                loadDungeonMapUseCase,
+                repository::findById,
+                derive::execute);
+    }
+
+    public void travel(DungeonTravelCommand command) {
+        DungeonTravelResponse response = travelResponse(Objects.requireNonNull(command, "command"));
+        publishedStatePublisher.publishTravel(response);
+    }
+
+    private DungeonTravelResponse travelResponse(DungeonTravelCommand command) {
+        if (command instanceof DungeonTravelCommand.LoadSurface loadSurface) {
+            return new DungeonTravelResponse.Surface(publishResultUseCase.travelSurface(
+                    loadDungeonTravelSurfaceUseCase.execute(new LoadDungeonTravelSurfaceUseCase.Input(
+                            translateInputUseCase.domainTravelPosition(loadSurface.position())))));
+        }
+        DungeonTravelCommand.MoveAction moveAction = (DungeonTravelCommand.MoveAction) command;
+        return new DungeonTravelResponse.Move(publishResultUseCase.travelMoveResult(
+                moveDungeonTravelActionUseCase.execute(new MoveDungeonTravelActionUseCase.Input(
+                        translateInputUseCase.domainTravelPosition(moveAction.position()),
+                        moveAction.actionId()))));
+    }
+}

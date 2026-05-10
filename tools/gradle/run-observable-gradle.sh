@@ -4,10 +4,42 @@ set -euo pipefail
 readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 readonly HEARTBEAT_SECONDS=30
-readonly VERIFICATION_SURFACE_CATALOG_FILE="$REPO_ROOT/tools/gradle/verification-surface-catalog.properties"
-
-declare -a DIAGNOSTIC_CONTINUE_TASK_NAMES=()
-declare -a DIAGNOSTIC_CONTINUE_TASK_PATTERNS=()
+declare -a DIAGNOSTIC_CONTINUE_TASK_NAMES=(
+  checkQualityHygiene
+  checkArchitecture
+  checkNoDeadCode
+  quality-hygiene
+  architecture
+  view-topology
+  docs
+  metrics-report
+  production-handoff
+  checkDocumentationEnforcement
+  checkViewEnforcement
+  checkDomainEnforcement
+  checkDataEnforcement
+  checkShellEnforcement
+  checkBootstrapEnforcement
+  checkStylingEnforcement
+  checkLayeringEnforcement
+  pmdMain
+  pmdStrictMain
+  spotbugsMain
+  ckjmMain
+  cpdMain
+  lizardMain
+  checkCentralizedStylesheets
+  checkDefinedStyleClassSelectors
+  checkStylingCentralStylesheetOwner
+  checkNoCompiledArtifactsInSource
+  checkDesktopPackagingInputs
+)
+declare -a DIAGNOSTIC_CONTINUE_TASK_PATTERNS=(
+  'check*Enforcement'
+  '*ArchitectureTest'
+  '*TopologyCheck'
+  'pmd*Enforcement'
+)
 
 usage() {
     cat <<'EOF'
@@ -15,8 +47,8 @@ Usage:
   tools/gradle/run-observable-gradle.sh <gradle-task> [<gradle-task> ...] [-- <extra-gradle-args>]
 
 Examples:
-  tools/gradle/run-observable-gradle.sh checkDataRepositoryEnforcement
-  tools/gradle/run-observable-gradle.sh checkDataRepositoryEnforcement checkDataQueryEnforcement -- --rerun-tasks
+  tools/gradle/run-observable-gradle.sh checkDataEnforcement
+  tools/gradle/run-observable-gradle.sh checkDomainEnforcement checkDataEnforcement -- --rerun-tasks
 
 Reserved wrapper-owned args are ignored when passed through <extra-gradle-args>:
   --console, --project-dir
@@ -83,19 +115,6 @@ contains_continue_flag() {
         fi
     done
     return 1
-}
-
-load_diagnostic_continue_catalog() {
-    local names patterns
-    names="$(sed -n 's/^diagnosticContinueTaskNames=//p' "$VERIFICATION_SURFACE_CATALOG_FILE" | head -n 1)"
-    patterns="$(sed -n 's/^diagnosticContinueTaskPatterns=//p' "$VERIFICATION_SURFACE_CATALOG_FILE" | head -n 1)"
-
-    if [[ -n "$names" ]]; then
-        IFS=',' read -r -a DIAGNOSTIC_CONTINUE_TASK_NAMES <<< "$names"
-    fi
-    if [[ -n "$patterns" ]]; then
-        IFS=',' read -r -a DIAGNOSTIC_CONTINUE_TASK_PATTERNS <<< "$patterns"
-    fi
 }
 
 is_diagnostic_continue_task() {
@@ -189,8 +208,6 @@ if [[ ${#tasks[@]} -eq 0 ]]; then
     usage >&2
     exit 64
 fi
-
-load_diagnostic_continue_catalog
 
 if [[ ${#extra_args[@]} -gt 0 ]]; then
     sanitize_extra_args "${extra_args[@]}"

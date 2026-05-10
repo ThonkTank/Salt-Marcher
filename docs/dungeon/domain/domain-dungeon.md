@@ -105,6 +105,12 @@ Application services coordinate load, mutate, save, search, and raw travel
 surface queries through these ports. Party-aware runtime travel-session
 composition belongs to the separate `travel` context, not to `dungeon`.
 
+Active root boundaries:
+
+- `DungeonAuthoredApplicationService`
+- `DungeonCatalogApplicationService`
+- `DungeonTravelApplicationService`
+
 ## Invariants
 
 - authored dungeon truth has one aggregate owner per map

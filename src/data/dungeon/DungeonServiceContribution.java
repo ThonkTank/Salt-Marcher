@@ -5,7 +5,9 @@ import shell.api.ServiceRegistry;
 import src.data.dungeon.query.SqliteDungeonMapSearch;
 import src.data.dungeon.repository.DungeonPublishedStateRepositoryAdapter;
 import src.data.dungeon.repository.SqliteDungeonMapRepository;
-import src.domain.dungeon.DungeonApplicationService;
+import src.domain.dungeon.DungeonAuthoredApplicationService;
+import src.domain.dungeon.DungeonCatalogApplicationService;
+import src.domain.dungeon.DungeonTravelApplicationService;
 import src.domain.dungeon.published.DungeonAuthoredMutationModel;
 import src.domain.dungeon.published.DungeonAuthoredReadModel;
 import src.domain.dungeon.published.DungeonMapCatalogModel;
@@ -23,8 +25,14 @@ public final class DungeonServiceContribution implements ServiceContribution {
         SqliteDungeonMapSearch search = new SqliteDungeonMapSearch();
         DungeonPublishedStateRepositoryAdapter publishedState = new DungeonPublishedStateRepositoryAdapter();
         services.registerFactory(
-                DungeonApplicationService.class,
-                registry -> new DungeonApplicationService(repository, search, publishedState));
+                DungeonAuthoredApplicationService.class,
+                registry -> new DungeonAuthoredApplicationService(repository, search, publishedState));
+        services.registerFactory(
+                DungeonCatalogApplicationService.class,
+                registry -> new DungeonCatalogApplicationService(repository, search, publishedState));
+        services.registerFactory(
+                DungeonTravelApplicationService.class,
+                registry -> new DungeonTravelApplicationService(repository, search, publishedState));
         services.register(DungeonAuthoredReadModel.class, publishedState.authoredReadModel);
         services.register(DungeonAuthoredMutationModel.class, publishedState.authoredMutationModel);
         services.register(DungeonMapCatalogModel.class, publishedState.mapCatalogModel);

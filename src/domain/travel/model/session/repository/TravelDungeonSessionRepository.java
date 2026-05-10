@@ -3,7 +3,7 @@ package src.domain.travel.model.session.repository;
 import java.util.List;
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
-import src.domain.dungeon.DungeonApplicationService;
+import src.domain.dungeon.DungeonTravelApplicationService;
 import src.domain.dungeon.published.DungeonTravelCommand;
 import src.domain.dungeon.published.DungeonTravelMoveResult;
 import src.domain.dungeon.published.DungeonTravelModel;
@@ -15,16 +15,17 @@ import src.domain.travel.model.session.helper.TravelDungeonSurfaceHelper;
 public final class TravelDungeonSessionRepository implements ApplyTravelDungeonSessionUseCase.SessionRepository {
 
     private final TravelPartyStateRepository partyStateRepository;
-    private final DungeonApplicationService dungeonApplicationService;
+    private final DungeonTravelApplicationService dungeonTravelApplicationService;
     private final DungeonTravelModel dungeonTravelModel;
 
     public TravelDungeonSessionRepository(
             TravelPartyStateRepository partyStateRepository,
-            DungeonApplicationService dungeonApplicationService,
+            DungeonTravelApplicationService dungeonTravelApplicationService,
             DungeonTravelModel dungeonTravelModel
     ) {
         this.partyStateRepository = Objects.requireNonNull(partyStateRepository, "partyStateRepository");
-        this.dungeonApplicationService = Objects.requireNonNull(dungeonApplicationService, "dungeonApplicationService");
+        this.dungeonTravelApplicationService =
+                Objects.requireNonNull(dungeonTravelApplicationService, "dungeonTravelApplicationService");
         this.dungeonTravelModel = Objects.requireNonNull(dungeonTravelModel, "dungeonTravelModel");
     }
 
@@ -37,7 +38,7 @@ public final class TravelDungeonSessionRepository implements ApplyTravelDungeonS
     public ApplyTravelDungeonSessionUseCase.SurfaceData loadDungeonSurface(
             ApplyTravelDungeonSessionUseCase.@Nullable PositionData position
     ) {
-        dungeonApplicationService.travel(new DungeonTravelCommand.LoadSurface(
+        dungeonTravelApplicationService.travel(new DungeonTravelCommand.LoadSurface(
                 TravelDungeonSurfaceHelper.toDungeonPosition(position)));
         return TravelDungeonSurfaceHelper.toInternalSurface(surfaceResponse(dungeonTravelModel.current()));
     }
@@ -47,7 +48,7 @@ public final class TravelDungeonSessionRepository implements ApplyTravelDungeonS
             ApplyTravelDungeonSessionUseCase.@Nullable PositionData position,
             String actionId
     ) {
-        dungeonApplicationService.travel(new DungeonTravelCommand.MoveAction(
+        dungeonTravelApplicationService.travel(new DungeonTravelCommand.MoveAction(
                 TravelDungeonSurfaceHelper.toDungeonPosition(position),
                 actionId));
         return TravelDungeonSurfaceHelper.toInternalMoveResult(moveResponse(dungeonTravelModel.current()));

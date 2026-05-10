@@ -16,7 +16,7 @@ listener role.
 
 Unified focused bundle entrypoint:
 
-- `./gradlew checkDomainPortEnforcement --rerun-tasks --console=plain`
+- `./gradlew checkDomainEnforcement --rerun-tasks --console=plain`
 
 ## Invariant Catalog
 
@@ -28,21 +28,20 @@ Unified focused bundle entrypoint:
 
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
-| `domain-port-direct-file-placement` | Enforced | every Java type below `src/domain/<context>/model/<family>/port/` | domain-port bundle build-harness `DomainPortTopologyRules` | `./gradlew checkDomainPortEnforcement` | Port files stay as direct files under one model-family `port/` bucket rather than growing helper subpackages or leaking back to context root. |
-| `domain-port-role-shape` | Enforced | every domain type whose simple name ends with `Port` and every Java type below `src/domain/<context>/model/<family>/port/` | domain-port bundle build-harness `DomainPortTopologyRules` | `./gradlew checkDomainPortEnforcement` | Port role files use the canonical `*Port.java` form and may appear only in the canonical inbound-listener bucket. |
-| `domain-port-ownership-and-signature-boundary` | Enforced | every `*Port.java` under `src/domain/**` | domain-port bundle Error Prone `DomainPortRoleBoundary` and domain-layer bundle ArchUnit `domainPortsMustOnlyDependOnForeignPublishedAndSameContextFollowUpRoles` | `./gradlew compileJava`, `./gradlew checkArchitecture`, and `./gradlew checkDomainPortEnforcement` | Ports stay inbound listener seams over foreign `published/**` plus same-context `UseCase`/`Model`/`Constants` follow-up work only. |
+| `domain-port-direct-file-placement` | Enforced | every Java type below `src/domain/<context>/model/<family>/port/` | domain-port bundle build-harness `DomainPortTopologyRules` | `./gradlew checkDomainEnforcement` | Port files stay as direct files under one model-family `port/` bucket rather than growing helper subpackages or leaking back to context root. |
+| `domain-port-role-shape` | Enforced | every domain type whose simple name ends with `Port` and every Java type below `src/domain/<context>/model/<family>/port/` | domain-port bundle build-harness `DomainPortTopologyRules` | `./gradlew checkDomainEnforcement` | Port role files use the canonical `*Port.java` form and may appear only in the canonical inbound-listener bucket. |
 
 ### Must Not Contain
 
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
-| `domain-port-no-foreign-mutation-or-data-seam` | Enforced | every `*Port.java` under `src/domain/**` | domain-port bundle Error Prone `DomainPortRoleBoundary` | `./gradlew compileJava` and `./gradlew checkDomainPortEnforcement` | A legal port does not become a hidden foreign-mutation trigger, data-source seam, or adapter host. Foreign writes belong to `Repository`; `Port` remains intake-only. |
+| `domain-port-no-foreign-mutation-or-data-seam` | Review-Owned | every `*Port.java` under `src/domain/**` | none | none | A legal port does not become a hidden foreign-mutation trigger, data-source seam, or adapter host. Foreign writes belong to `Repository`; `Port` remains intake-only. |
 
 ### Communication Contract
 
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
-| `domain-port-published-listener-boundary` | Enforced | every `Port` collaboration surface | domain-port bundle Error Prone `DomainPortRoleBoundary` and domain-layer bundle ArchUnit `domainPortsMustOnlyDependOnForeignPublishedAndSameContextFollowUpRoles` | `./gradlew compileJava`, `./gradlew checkArchitecture`, and `./gradlew checkDomainPortEnforcement` | Ports listen only to foreign `published/**` state and turn those updates into same-context `UseCase` work. |
+| `domain-port-published-listener-boundary` | Review-Owned | every `Port` collaboration surface | none | none | Ports listen only to foreign `published/**` state and turn those updates into same-context `UseCase` work. |
 
 ### Review-Owned
 

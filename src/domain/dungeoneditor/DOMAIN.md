@@ -35,9 +35,9 @@ Application Service: DungeonEditorApplicationService
 
 `DungeonEditorApplicationService` is the only callable dungeon-editor backend
 boundary. It coordinates transient editor-session state through the foreign
-`DungeonApplicationService` boundary from `dungeon`. Binder and view code
-consume the runtime editor session through this boundary only; they do not own
-the session.
+`DungeonAuthoredApplicationService` and `DungeonCatalogApplicationService`
+boundaries from `dungeon`. Binder and view code consume the runtime editor
+session through this boundary only; they do not own the session.
 
 ## Commands And Invariants
 

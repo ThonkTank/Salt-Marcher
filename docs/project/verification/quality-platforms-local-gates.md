@@ -58,8 +58,9 @@ Styling, and Layering entrypoints are `checkDomainEnforcement`,
 `checkDataEnforcement`, `checkShellEnforcement`,
 `checkBootstrapEnforcement`, `checkStylingEnforcement`, and
 `checkLayeringEnforcement`. Whole-program compiled dead-code analysis enters
-through `checkNoDeadCode`. The detailed role-local bundle tasks still exist as
-technical implementation surfaces beneath those layer entrypoints, and the
+through `checkNoDeadCode`. Internal bundle tasks may still exist as technical
+implementation surfaces beneath those layer entrypoints, but they are not part
+of the public verification API. The
 technical owner split behind the public View route is now only the
 build-harness View topology core plus the shared Error Prone View core under
 `tools/quality/incubator/quality-rules-errorprone/**`.
@@ -67,7 +68,7 @@ The compile/FXML/topology paths are wired into the central `check` aggregate
 through the named architecture aggregates. Passive-`View` direct-render
 styling placement stays compiler-backed through `compileJava` and also enters
 the central `check` aggregate explicitly through
-`checkStylingViewEnforcement`. This keeps focused compilation verification
+`checkStylingEnforcement`. This keeps focused compilation verification
 independent from the separate closed-world topology owner while ensuring
 `build` still runs the full architecture harness through `check`.
 
@@ -204,11 +205,11 @@ the
 and
 [View Styling Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/styling-view-enforcement.md:1).
 The canonical styling-layer bundle proof route is
-`./gradlew checkStylingLayerEnforcement`; it aggregates the stylesheet,
+`./gradlew checkStylingEnforcement`; it aggregates the stylesheet,
 selector, bundle-local stylesheet-owner, PMD inline-style, and compile-side
 programmatic-styling checks for the layer itself.
 The dedicated passive-`View` direct-render placement proof route is
-`./gradlew checkStylingViewEnforcement`; centralized stylesheet ownership and
+`./gradlew checkStylingEnforcement`; centralized stylesheet ownership and
 selector vocabulary remain available through the separate layer-wide direct
 tasks listed above.
 
@@ -223,36 +224,13 @@ Gradle `--continue` for diagnostic entrypoints so the build reports the full
 current failure set without moving that policy into the convention-plugin
 layer.
 
-It includes:
+`check` includes:
 
 - Java compiler hygiene through `compileJava`
-- architecture-harness checks through `architectureTest`,
-  `checkDomainApplicationServiceEnforcement`,
-  `checkDataServiceContributionEnforcement`,
-  `checkDomainPortEnforcement`,
-  `checkDomainRepositoryEnforcement`,
-  `checkDomainModelEnforcement`,
-  `checkDomainHelperEnforcement`,
-  `checkDomainConstantsEnforcement`,
-  `checkStylingLayerEnforcement`,
-  `checkBootstrapAppBootstrapEnforcement`,
-  `checkShellLayerEnforcement`,
-  `checkDomainUseCaseEnforcement`,
-  `checkDataModelEnforcement`,
-  `checkDataGatewayEnforcement`,
-  `checkDataRepositoryEnforcement`,
-  `checkDataQueryEnforcement`,
-  `checkDataMapperEnforcement`,
-  `checkDataPersistencecoreEnforcement`,
-  `checkViewEnforcement`,
-  `checkViewInputEventEnforcement`,
-  `checkViewContributionEnforcement`,
-  `checkViewBinderEnforcement`,
-  `checkViewContributionModelEnforcement`,
-  `checkViewContentModelEnforcement`,
-  `checkViewIntentHandlerEnforcement`,
-  `checkViewLayerEnforcement`,
-  and `:build-harness:architectureCheck`
+- the public architecture aggregates `checkArchitecture`,
+  `checkViewEnforcement`, `checkDomainEnforcement`, `checkDataEnforcement`,
+  `checkShellEnforcement`, `checkBootstrapEnforcement`,
+  `checkStylingEnforcement`, and `checkLayeringEnforcement`
 - repository and resource policy checks
 - PMD source-smell detection through `pmdMain`
 - SpotBugs plus FindSecBugs through `spotbugsMain`
@@ -269,10 +247,9 @@ and view-topology dependencies inside Gradle.
 By default, `production-handoff` now runs with Gradle `--continue` at the
 staged-handoff level so the canonical implementation-handoff route reports the
 broader current failure set in one run. The staged handoff still fails overall
-when any blocking dependency fails, but compile, topology, hygiene, and later
-focused view-role blockers no longer hide independent sibling failures behind
-the first failing stage. Callers may still pass `--continue` explicitly for
-clarity, but the canonical wrapper now adds that default itself.
+when any blocking dependency fails. Callers may still pass `--continue`
+explicitly for clarity, but the canonical wrapper now adds that default
+itself.
 Additional Gradle investigation flags may be passed after `--`, but the
 runtime wrapper keeps ownership of its own invocation defaults such as
 `--console=plain`. If callers pass wrapper-owned runtime flags again through
@@ -284,21 +261,16 @@ with an explicit runtime diagnostic instead of surfacing a late internal
 Gradle startup error.
 
 For check-only implementation work limited to one or more concrete enforcement
-bundles or shared verification packages under `tools/quality/**`,
-`tools/gradle/build-harness/**`,
+packages under `tools/quality/**`, `tools/gradle/build-harness/**`,
 `tools/quality/rules/quality-rules/**`,
 `tools/quality/incubator/quality-rules-errorprone/**`, or verification-only
-wiring such as `build.gradle.kts`,
-`settings.gradle.kts`, `tools/gradle/build-harness/**`,
-`tools/quality/incubator/quality-rules-errorprone/**`,
-`tools/quality/rules/quality-rules/**`, or
-`tools/gradle/build-logic/**`, or
-`tools/gradle/build-logic-settings/**`, the required handoff proof is
-the corresponding focused package or bundle task or tasks instead of the full
-build. When the pass touches shared verification wiring but still stays
-check-only, rerun the focused entrypoints for the actually affected packages;
-broader package waves are explicit and do not automatically become the
-full-build path.
+wiring such as `build.gradle.kts`, `settings.gradle.kts`,
+`tools/gradle/build-logic/**`, or `tools/gradle/build-logic-settings/**`, the
+required handoff proof is the corresponding focused package task or canonical
+layer surface instead of the full build. When the pass touches shared
+verification wiring but still stays check-only, rerun the focused entrypoints
+for the actually affected packages; broader package waves are explicit and do
+not automatically become the full-build path.
 
 `./gradlew checkDocumentationEnforcement --console=plain` is a focused
 `Blocking Local Gate` for Markdown-backed architecture and enforcement
@@ -309,179 +281,39 @@ surface is `docs`, and the runtime wrapper forwards that surface name without
 owning the documentation task mapping itself.
 
 A completed implementation pass is incomplete until the required
-production-code full build, check-only package/bundle rerun, or
+production-code full build, check-only package/layer rerun, or
 documentation-enforcement rerun has completed, or a concrete blocker has been
 reported.
 
 Focused investigation entrypoints are `compileJava`, `pmdMain`,
-`pmdStrictMain`, `spotbugsMain`, `cpdMain`,
-`lizardMain`, `ckjmMain`, `checkCentralizedStylesheets`,
-`checkDefinedStyleClassSelectors`, `checkNoCompiledArtifactsInSource`,
+`pmdStrictMain`, `spotbugsMain`, `cpdMain`, `lizardMain`, `ckjmMain`,
+`checkCentralizedStylesheets`, `checkDefinedStyleClassSelectors`,
+`checkStylingCentralStylesheetOwner`, `checkNoCompiledArtifactsInSource`,
 `checkDesktopPackagingInputs`, `checkDesktopAppImageLayout`,
-`checkDomainLayerEnforcement`,
-`checkDomainApplicationServiceEnforcement`,
-`checkDataServiceContributionEnforcement`,
-`checkDomainContextEnforcement`,
-`checkDomainPublishedEnforcement`,
-`checkDomainPortEnforcement`,
-`checkDomainRepositoryEnforcement`,
-`checkDomainModelEnforcement`,
-`checkDomainHelperEnforcement`,
-`checkDomainConstantsEnforcement`, `checkStylingLayerEnforcement`,
-  `checkStylingViewEnforcement`,
-  `checkShellAppShellEnforcement`,
-  `checkBootstrapAppBootstrapEnforcement`,
-  `checkShellLayerEnforcement`,
-`checkViewFxmlResources`, `checkViewEnforcement`,
-`checkViewInputEventEnforcement`,
-`checkViewContributionEnforcement`,
-`checkViewBinderEnforcement`,
-`checkViewContributionModelEnforcement`,
-`checkViewContentModelEnforcement`,
-`checkViewIntentHandlerEnforcement`,
-`checkDomainUseCaseEnforcement`,
-  `checkDataModelEnforcement`,
-  `checkDataGatewayEnforcement`,
-  `checkDataRepositoryEnforcement`,
-  `checkDataQueryEnforcement`,
-`checkDataMapperEnforcement`,
-`checkDataPersistencecoreEnforcement`,
-`checkViewLayerEnforcement`,
-`checkLayeringArchitectureEnforcement`,
-and `checkDocumentationEnforcement`, each run
-through
-`./gradlew <task> --console=plain`.
+`checkViewFxmlResources`, `checkArchitecture`, `checkViewEnforcement`,
+`checkDomainEnforcement`, `checkDataEnforcement`, `checkShellEnforcement`,
+`checkBootstrapEnforcement`, `checkStylingEnforcement`,
+`checkLayeringEnforcement`, and `checkDocumentationEnforcement`, each run
+through `./gradlew <task> --console=plain`.
 
 `pmdMain` and `spotbugsMain` are central blocking gates and may also be run as
 focused direct entrypoints. `pmdStrictMain` remains the focused text-first PMD
 entrypoint for the same blocking ruleset.
 
-Architecture-focused entrypoints:
+Architecture-focused public entrypoints are:
 
 - `./gradlew checkArchitecture --console=plain`
-  Aggregates `architectureTest`, `checkDomainLayerEnforcement`,
-  `checkDomainApplicationServiceEnforcement`,
-  `checkDataServiceContributionEnforcement`,
-  `checkDomainPortEnforcement`,
-  `checkDomainRepositoryEnforcement`,
-  `checkDomainModelEnforcement`,
-  `checkDomainHelperEnforcement`,
-  `checkDomainConstantsEnforcement`,
-  `checkDataModelEnforcement`,
-  `checkDataGatewayEnforcement`,
-  `checkDataRepositoryEnforcement`,
-  `checkDataQueryEnforcement`,
-  `checkDataMapperEnforcement`,
-  `checkDataPersistencecoreEnforcement`,
-  `checkStylingLayerEnforcement`,
-  `checkShellLayerEnforcement`,
-  `checkDomainUseCaseEnforcement`,
-  `checkLayeringArchitectureEnforcement`,
-  `checkViewEnforcement`,
-  `checkViewInputEventEnforcement`,
-  `checkViewContributionEnforcement`,
-  `checkViewBinderEnforcement`,
-  `checkViewContributionModelEnforcement`,
-  `checkViewContentModelEnforcement`,
-  `checkViewIntentHandlerEnforcement`,
-  `checkViewLayerEnforcement`, and
+  Aggregates the non-documentation architecture blocker path through
+  `architectureTest`, the public layer surfaces, and
   `:build-harness:architectureCheck`.
 - `./gradlew checkDocumentationEnforcement --console=plain`
   Aggregates the focused Markdown-backed architecture and enforcement-document
-  bundle through `:build-harness:documentationEnforcementCheck`, including
-  active bundle-local Markdown rules such as `Domain Context`.
-- `./gradlew checkDomainContextEnforcement --console=plain`
-  Aggregates the focused Domain Context bundle through
-  `:build-harness:domainContextEnforcementDocumentationCheck`.
-- `./gradlew checkDomainApplicationServiceEnforcement --console=plain`
-  Aggregates the focused Domain ApplicationService bundle through
-  `compileJava`,
-  `:build-harness:domainApplicationServiceTopologyCheck`, and
-  `:build-harness:domainApplicationServiceDocumentationEnforcementCheck`.
-- `./gradlew checkDataServiceContributionEnforcement --console=plain`
-  Aggregates the focused Data ServiceContribution bundle through
-  `compileJava` and
-  `:build-harness:dataServiceContributionDocumentationEnforcementCheck`.
-- `./gradlew checkDomainLayerEnforcement --console=plain`
-  Aggregates the focused Domain Layer bundle through `compileJava`,
-  `domainLayerArchitectureTest`,
-  `:build-harness:domainLayerTopologyCheck`, and
-  `:build-harness:domainLayerDocumentationEnforcementCheck`.
-- `./gradlew checkDomainPublishedEnforcement --console=plain`
-  Aggregates the focused Domain Published bundle through `compileJava`,
-  `:build-harness:domainPublishedTopologyCheck`, and
-  `:build-harness:domainPublishedDocumentationEnforcementCheck`.
-- `./gradlew checkDomainPortEnforcement --console=plain`
-  Aggregates the focused Domain Port bundle through
-  `:build-harness:domainPortTopologyCheck` and
-  `:build-harness:domainPortEnforcementDocumentationCheck`.
-- `./gradlew checkDomainRepositoryEnforcement --console=plain`
-  Aggregates the focused Domain Repository bundle through
-  `:build-harness:domainRepositoryTopologyCheck` and
-  `:build-harness:domainRepositoryDocumentationEnforcementCheck`.
-- `./gradlew checkDomainModelEnforcement --console=plain`
-  Aggregates the focused Domain Model bundle through
-  `:build-harness:domainModelTopologyCheck` and
-  `:build-harness:domainModelDocumentationEnforcementCheck`.
-- `./gradlew checkDomainHelperEnforcement --console=plain`
-  Aggregates the focused Domain Helper bundle through
-  `:build-harness:domainHelperTopologyCheck` and
-  `:build-harness:domainHelperDocumentationEnforcementCheck`.
-- `./gradlew checkDomainConstantsEnforcement --console=plain`
-  Aggregates the focused Domain Constants bundle through
-  `:build-harness:domainConstantsTopologyCheck` and
-  `:build-harness:domainConstantsDocumentationEnforcementCheck`.
-- `./gradlew checkDomainUseCaseEnforcement --console=plain`
-  Aggregates the focused Domain UseCase bundle through `compileJava`,
-  `:build-harness:domainUseCaseTopologyCheck`, and
-  `:build-harness:domainUseCaseDocumentationEnforcementCheck`.
-- `./gradlew checkDataModelEnforcement --console=plain`
-  Aggregates the focused Data Model bundle through `compileJava`,
-  `dataModelArchitectureTest`,
-  `:build-harness:dataModelTopologyCheck`, and
-  `:build-harness:dataModelDocumentationEnforcementCheck`.
-- `./gradlew checkDataGatewayEnforcement --console=plain`
-  Aggregates the focused Data Gateway bundle through `compileJava`,
-  `dataGatewayArchitectureTest`, and
-  `:build-harness:dataGatewayEnforcementDocumentationCheck`.
-- `./gradlew checkDataRepositoryEnforcement --console=plain`
-  Aggregates the focused Data Repository bundle through `compileJava`,
-  and
-  `:build-harness:dataRepositoryEnforcementDocumentationCheck`.
-- `./gradlew checkDataQueryEnforcement --console=plain`
-  Aggregates the focused Data Query bundle through `compileJava`,
-  `:build-harness:dataQueryTopologyCheck`, and
-  `:build-harness:dataQueryEnforcementDocumentationCheck`. The compile-side
-  blocker now includes `DataQueryForeignPublishedReplyChannelRoundTrip`, which
-  reports the foreign published reply-channel roundtrip anti-pattern together
-  with the correct one-way published-state target pattern. The same focused
-  bundle now also includes the build-harness blocker
-  `DataQueryForeignPublishedPayloadSurfaceRules`, which fails when foreign
-  published passive payload carriers consumed by query adapters export unused
-  accessor surface.
-- `./gradlew checkDataPersistencecoreEnforcement --console=plain`
-  Aggregates the focused Data Persistencecore bundle through
-  `dataPersistencecoreArchitectureTest` and
-  `:build-harness:dataPersistencecoreDocumentationEnforcementCheck`.
-- `./gradlew checkLayeringArchitectureEnforcement --console=plain`
-  Aggregates the dedicated `Layering Architecture` bundle through
-  `:build-harness:layeringArchitectureTopologyCheck` and
-  `:build-harness:layeringArchitectureDocumentationEnforcementCheck`.
-- `./gradlew checkStylingLayerEnforcement --console=plain`
-  Aggregates the styling-layer bundle through `compileJava`,
-  `checkCentralizedStylesheets`, `checkDefinedStyleClassSelectors`, and
-  `checkDesktopPackagingInputs`.
-- `./gradlew checkBootstrapAppBootstrapEnforcement --console=plain`
-  Aggregates the focused `AppBootstrap` bundle through the dedicated
-  `bootstrapAppBootstrapArchitectureTest` ArchUnit suite.
-- `./gradlew checkShellLayerEnforcement --console=plain`
-  Aggregates the dedicated `Shell Layer` bundle through
-  `shellLayerArchitectureTest` and `:build-harness:shellLayerTopologyCheck`.
-- `./gradlew checkStylingViewEnforcement --console=plain`
-  Aggregates the passive-`View` direct-render styling bundle through
-  `compileJava` with the dedicated `ViewDirectRenderStylingPlacement`
-  compiler check and is also wired explicitly into the root `check`
-  aggregate.
+  coverage path through `:build-harness:documentationEnforcementCheck`.
+- `./gradlew checkViewEnforcement --console=plain`
+  Aggregates the canonical View enforcement surface through the closed-world
+  View Layer topology proof plus the passive `View`, `ViewInputEvent`,
+  `Contribution`, `Binder`, `ContributionModel`, `ContentModel`, and
+  `IntentHandler` bundles.
 - `./gradlew checkDomainEnforcement --console=plain`
   Aggregates the canonical Domain enforcement surface through the Domain
   Context, Layer, UseCase, ApplicationService, Published, Port, Model,
@@ -501,38 +333,7 @@ Architecture-focused entrypoints:
   styling-layer and passive-`View` direct-render styling bundles.
 - `./gradlew checkLayeringEnforcement --console=plain`
   Aggregates the canonical Layering enforcement surface through the blocker
-  Layering Architecture and Layering Indirection bundles.
-- `./gradlew checkShellAppShellEnforcement --console=plain`
-  Aggregates the focused `AppShell` bundle through `compileJava` with the
-  dedicated `ShellLifecycleHookOwnership` compiler check.
-- `./gradlew checkViewEnforcement --console=plain`
-  Aggregates the canonical View enforcement surface through the closed-world
-  View Layer topology proof plus the passive `View`, `ViewInputEvent`,
-  `Contribution`, `Binder`, `ContributionModel`, `ContentModel`, and
-  `IntentHandler` bundles.
-- `./gradlew checkViewInputEventEnforcement --console=plain`
-  Aggregates the focused `ViewInputEvent` bundle through `compileJava` and
-  `checkViewLayerEnforcement`.
-- `./gradlew checkViewContributionEnforcement --console=plain`
-  Aggregates the focused `Contribution` bundle through `compileJava` and
-  `checkViewLayerEnforcement`.
-- `./gradlew checkViewBinderEnforcement --console=plain`
-  Aggregates the focused `Binder` bundle through `compileJava` and
-  `checkViewLayerEnforcement`.
-- `./gradlew checkViewContributionModelEnforcement --console=plain`
-  Aggregates the focused `ContributionModel` bundle through `compileJava` and
-  `checkViewLayerEnforcement`.
-- `./gradlew checkViewContentModelEnforcement --console=plain`
-  Aggregates the focused `ContentModel` bundle through `compileJava` and
-  `checkViewLayerEnforcement`.
-- `./gradlew checkViewIntentHandlerEnforcement --console=plain`
-  Aggregates the focused `IntentHandler` bundle through `compileJava` and
-  `checkViewLayerEnforcement`.
-- `./gradlew checkViewLayerEnforcement --console=plain`
-  Aggregates the closed-world View Layer bundle through the generic
-  build-harness topology proof for allowed view directories, role forms, and
-  same-unit cardinality. This is the canonical public entrypoint for view
-  topology blocking.
+  Layering Architecture bundle.
 
 The Gradle convention implementation must keep these public entrypoints stable
 while organizing internal wiring by policy area: invocation behavior, compiler
@@ -563,7 +364,7 @@ mirrors, wrapper-published plugin repositories, generated descriptor snapshots,
 or wrapper-owned retained-failure export surfaces.
 
 The verification core still computes focused bundle selection during settings
-evaluation and still registers the same public `check*Enforcement`,
+evaluation and still registers the same public layer surfaces,
 `checkDocumentationEnforcement`, and staged lifecycle tasks. The difference is
 that the included builds and bundle descriptors are resolved directly from the
 active worktree layout.
@@ -580,11 +381,10 @@ wrappers continue to own their own invocation defaults such as
 `--console=plain` and the default `--continue` policy for diagnostic surfaces.
 
 This does not make bytecode-dependent entrypoints source-only. `spotbugsMain`,
-`ckjmMain`, `checkViewEnforcement`, and the other focused `checkView*Enforcement`
-tasks still require
-current compiled classes; if `compileJava` fails, those entrypoints may be
-skipped because their prerequisite failed rather than because another
-independent check failed.
+`ckjmMain`, and the public layer surfaces still require current compiled
+classes; if `compileJava` fails, those entrypoints may be skipped because
+their prerequisite failed rather than because another independent check
+failed.
 
 Local blocking Gradle gates may still finish `UP-TO-DATE` or `FROM-CACHE` when
 their declared inputs and outputs are unchanged. That reuse now comes from

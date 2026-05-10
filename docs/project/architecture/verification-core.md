@@ -90,15 +90,16 @@ reconstructing the surface model themselves.
 
 ### 3. Bundle Owners
 
-Each focused enforcement package under `tools/quality/*-enforcement/` owns one
-typed bundle descriptor, not one canonical public entrypoint. Standard bundles
-are registered centrally by the verification core from that registry, and the
-verification core then groups them behind the small layer-surface set. Bundles
-with small local extras such as stylesheet or FXML checks still register
-through the same standard verification-core path instead of through dedicated
-root plugins. The staged `view-topology` surface is intentionally routed to
-the dedicated closed-world `checkViewLayerEnforcement` bundle owner rather
-than to a second view-specific graph-analysis owner.
+Each focused enforcement owner contributes one typed bundle descriptor to the
+central registry, not one physical `tools/quality/*-enforcement/` package and
+not one canonical public entrypoint. Standard bundles are registered centrally
+by the verification core from that registry, and the verification core then
+groups them behind the small layer-surface set. Bundles with small local
+extras such as stylesheet or FXML checks still register through the same
+standard verification-core path instead of through dedicated root plugins. The
+staged `view-topology` surface is intentionally routed to the dedicated
+closed-world View topology bundle owner rather than to a second view-specific
+graph-analysis owner.
 
 Bundle owners MAY know their private ArchUnit, Error Prone, or build-harness
 tasks. They MUST NOT depend on shell wrappers.
@@ -158,17 +159,20 @@ is available. Project-build plugin code likewise MUST NOT re-derive focused
 surface or bundle selection from `StartParameter` task names once the
 settings-owned selection facts were published.
 Included builds own their technical registration from typed registry metadata
-and explicit static source roots such as build-harness rule classes, Error
-Prone checker lists, ArchUnit task shapes, and generic
+and explicit engine-owned hosts such as build-harness rule classes, Error
+Prone checker lists, ArchUnit include patterns, and generic
 documentation-coverage spec ids or custom-task kinds. Harness wiring MUST NOT
-rely on parallel families of tiny launcher mains or `*-host.gradle.kts`
-scripts as a second source of truth for the same metadata.
+rely on bundle-derived filesystem scans, parallel families of tiny launcher
+mains, or `*-host.gradle.kts` scripts as a second source of truth for the same
+metadata.
 Shared verification task registration inside `tools/gradle/build-logic` should
 flow through typed plugin or extension APIs rather than through untyped
 `extra[...]` function exports between precompiled script plugins.
 Public verification aggregates and canonical layer surfaces should register
 through typed registry providers rather than by matching task names at
-configuration time.
+configuration time. Bundle-owned verification tasks remain implementation
+details behind those surfaces unless a task is explicitly documented here or in
+`quality-platforms-local-gates.md` as a public focused utility gate.
 The remaining root-owned build-harness optional rules are now registry-driven
 as well: bundles contribute root `architectureCheck` and
 `documentationEnforcementCheck` rule classes and documentation-coverage spec
