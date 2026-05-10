@@ -5,6 +5,7 @@ import com.google.errorprone.VisitorState;
 import com.google.errorprone.bugpatterns.BugChecker;
 import com.google.errorprone.matchers.Description;
 import com.google.errorprone.util.ASTHelpers;
+import com.sun.source.tree.ClassTree;
 import com.sun.source.tree.CompilationUnitTree;
 import com.sun.source.tree.ExpressionStatementTree;
 import com.sun.source.tree.LambdaExpressionTree;
@@ -17,6 +18,8 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 import javax.lang.model.type.TypeKind;
 import saltmarcher.quality.errorprone.view.ViewArchitectureSupport;
+import saltmarcher.quality.errorprone.view.ViewRole;
+import saltmarcher.quality.errorprone.view.ViewSourceDescriptor;
 
 @BugPattern(
         name = "ViewBinderApplicationServiceReadback",
@@ -27,11 +30,11 @@ public final class ViewBinderApplicationServiceReadbackChecker extends BugChecke
 
     @Override
     public Description matchCompilationUnit(CompilationUnitTree tree, VisitorState state) {
-        if (!ViewArchitectureSupport.isBinderSource(tree)) {
+        ViewSourceDescriptor source = ViewSourceDescriptor.describe(tree);
+        if (!source.isActiveRootSource() || source.role() != ViewRole.BINDER) {
             return Description.NO_MATCH;
         }
 
-        String sourcePackageName = ViewArchitectureSupport.packageName(tree);
         Set<String> violations = new LinkedHashSet<>();
         new TreePathScanner<Void, Void>() {
             @Override
@@ -59,8 +62,9 @@ public final class ViewBinderApplicationServiceReadbackChecker extends BugChecke
         if (violations.isEmpty()) {
             return Description.NO_MATCH;
         }
-        return buildDescription(tree)
-                .setMessage("Binder package '" + sourcePackageName
+        ClassTree topLevelClass = ViewArchitectureSupport.topLevelClass(tree);
+        return buildDescription(topLevelClass == null ? tree : topLevelClass)
+                .setMessage("Binder package '" + source.packageName()
                         + "' value-consumes ApplicationService results: "
                         + String.join(", ", violations)
                         + ". Binders may send commands to ApplicationServices only; same-context readback and feedback must come from direct published/*Model runtime services, never from ApplicationService return values.")

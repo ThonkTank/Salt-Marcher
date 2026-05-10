@@ -5,6 +5,7 @@ import com.google.errorprone.VisitorState;
 import com.google.errorprone.bugpatterns.BugChecker;
 import com.google.errorprone.matchers.Description;
 import com.google.errorprone.util.ASTHelpers;
+import com.sun.source.tree.ClassTree;
 import com.sun.source.tree.CompilationUnitTree;
 import com.sun.source.tree.MethodInvocationTree;
 import com.sun.source.util.TreePathScanner;
@@ -12,6 +13,8 @@ import com.sun.tools.javac.code.Symbol;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import saltmarcher.quality.errorprone.view.ViewArchitectureSupport;
+import saltmarcher.quality.errorprone.view.ViewRole;
+import saltmarcher.quality.errorprone.view.ViewSourceDescriptor;
 
 @BugPattern(
         name = "ViewBinderProjectionModelRequestProtocol",
@@ -22,11 +25,11 @@ public final class ViewBinderProjectionModelRequestProtocolChecker extends BugCh
 
     @Override
     public Description matchCompilationUnit(CompilationUnitTree tree, VisitorState state) {
-        if (!ViewArchitectureSupport.isBinderSource(tree)) {
+        ViewSourceDescriptor source = ViewSourceDescriptor.describe(tree);
+        if (!source.isActiveRootSource() || source.role() != ViewRole.BINDER) {
             return Description.NO_MATCH;
         }
 
-        String sourcePackageName = ViewArchitectureSupport.packageName(tree);
         Set<String> violations = new LinkedHashSet<>();
         new TreePathScanner<Void, Void>() {
             @Override
@@ -47,8 +50,9 @@ public final class ViewBinderProjectionModelRequestProtocolChecker extends BugCh
         if (violations.isEmpty()) {
             return Description.NO_MATCH;
         }
-        return buildDescription(tree)
-                .setMessage("Binder package '" + sourcePackageName
+        ClassTree topLevelClass = ViewArchitectureSupport.topLevelClass(tree);
+        return buildDescription(topLevelClass == null ? tree : topLevelClass)
+                .setMessage("Binder package '" + source.packageName()
                         + "' wires request/token protocol APIs from view models: "
                         + String.join(", ", violations)
                         + ". Binder side-effects must not be reconstructed from projection-model request protocols.")

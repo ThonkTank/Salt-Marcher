@@ -13,7 +13,6 @@ import com.sun.source.tree.NewClassTree;
 import com.sun.source.tree.Tree;
 import com.sun.source.tree.VariableTree;
 import com.sun.source.util.TreePathScanner;
-import com.sun.source.util.TreeScanner;
 import com.sun.tools.javac.code.Symbol;
 import java.util.LinkedHashSet;
 import java.util.Set;
@@ -61,7 +60,7 @@ public final class ViewInputEventBoundaryChecker extends BugChecker
             Set<String> violations,
             Tree[] firstViolationTree
     ) {
-        ClassTree topLevelClass = topLevelClass(tree);
+        ClassTree topLevelClass = ViewArchitectureSupport.topLevelClass(tree);
         Set<String> forbiddenReferences = new LinkedHashSet<>();
 
         for (String referencedType : ViewArchitectureSupport.collectReferencedTypes(tree)) {
@@ -78,6 +77,12 @@ public final class ViewInputEventBoundaryChecker extends BugChecker
             }
             if (referencedType.startsWith("javafx.")) {
                 forbiddenReferences.add(referencedType);
+                recordViolationTree(topLevelClass, firstViolationTree);
+                continue;
+            }
+            if (ViewArchitectureSupport.isTargetPublishedEventReference(
+                    ViewArchitectureSupport.topLevelQualifiedTypeNameOf(referencedType))) {
+                forbiddenReferences.add("ViewInputEvent PublishedEvent protocol coupling");
                 recordViolationTree(topLevelClass, firstViolationTree);
                 continue;
             }
@@ -154,26 +159,12 @@ public final class ViewInputEventBoundaryChecker extends BugChecker
     }
 
     private static boolean isTopLevelRecord(CompilationUnitTree tree) {
-        ClassTree topLevelClass = topLevelClass(tree);
+        ClassTree topLevelClass = ViewArchitectureSupport.topLevelClass(tree);
         return topLevelClass != null && topLevelClass.getKind() == Tree.Kind.RECORD;
     }
 
-    private static ClassTree topLevelClass(CompilationUnitTree tree) {
-        ClassTree[] result = {null};
-        new TreeScanner<Void, Void>() {
-            @Override
-            public Void visitClass(ClassTree classTree, Void unused) {
-                if (result[0] == null) {
-                    result[0] = classTree;
-                }
-                return null;
-            }
-        }.scan(tree, null);
-        return result[0];
-    }
-
     private static boolean hasExplicitTopLevelNonConstructorMethod(CompilationUnitTree tree) {
-        ClassTree topLevelClass = topLevelClass(tree);
+        ClassTree topLevelClass = ViewArchitectureSupport.topLevelClass(tree);
         if (topLevelClass == null) {
             return false;
         }
@@ -186,7 +177,7 @@ public final class ViewInputEventBoundaryChecker extends BugChecker
     }
 
     private static boolean hasForbiddenDiscriminatorRecordComponent(CompilationUnitTree tree) {
-        ClassTree topLevelClass = topLevelClass(tree);
+        ClassTree topLevelClass = ViewArchitectureSupport.topLevelClass(tree);
         if (topLevelClass == null) {
             return false;
         }
@@ -203,7 +194,7 @@ public final class ViewInputEventBoundaryChecker extends BugChecker
     }
 
     private static boolean hasForbiddenNestedDiscriminatorEnum(CompilationUnitTree tree) {
-        ClassTree topLevelClass = topLevelClass(tree);
+        ClassTree topLevelClass = ViewArchitectureSupport.topLevelClass(tree);
         if (topLevelClass == null) {
             return false;
         }
@@ -220,7 +211,7 @@ public final class ViewInputEventBoundaryChecker extends BugChecker
     }
 
     private static boolean hasPublishedEventProtocolCoupling(CompilationUnitTree tree) {
-        ClassTree topLevelClass = topLevelClass(tree);
+        ClassTree topLevelClass = ViewArchitectureSupport.topLevelClass(tree);
         if (topLevelClass == null) {
             return false;
         }
@@ -243,14 +234,15 @@ public final class ViewInputEventBoundaryChecker extends BugChecker
             String topLevelSimpleName,
             String referencedType
     ) {
-        if (ViewArchitectureSupport.isViewInputEventSource(tree)
+        ViewSourceDescriptor source = ViewSourceDescriptor.describe(tree);
+        if (source.role() == ViewRole.VIEW_INPUT_EVENT
                 && ViewArchitectureSupport.isOwnTopLevelOrNestedTypeReference(
                 sourcePackageName,
                 topLevelSimpleName,
                 referencedType)) {
             return true;
         }
-        return ViewArchitectureSupport.isPanelViewSource(tree)
+        return source.isPassiveViewSource()
                 && ViewArchitectureSupport.isSameStemViewInputEventReference(
                 sourcePackageName,
                 topLevelSimpleName,
@@ -258,15 +250,7 @@ public final class ViewInputEventBoundaryChecker extends BugChecker
     }
 
     private static String qualifiedTypeNameOf(NewClassTree newClassTree) {
-        Symbol symbol = ASTHelpers.getSymbol(newClassTree);
-        if (symbol == null) {
-            return "";
-        }
-        String qualifiedTypeName = ViewArchitectureSupport.getQualifiedTypeName(symbol);
-        if (qualifiedTypeName != null && !qualifiedTypeName.isBlank()) {
-            return qualifiedTypeName;
-        }
-        return ASTHelpers.getType(newClassTree) == null ? "" : ASTHelpers.getType(newClassTree).toString();
+        return ViewArchitectureSupport.qualifiedTypeNameOf(newClassTree);
     }
 
     private static String topLevelConstructedViewInputEventType(NewClassTree newClassTree) {

@@ -8,6 +8,8 @@ import com.sun.source.tree.CompilationUnitTree;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import saltmarcher.quality.errorprone.view.ViewArchitectureSupport;
+import saltmarcher.quality.errorprone.view.ViewRole;
+import saltmarcher.quality.errorprone.view.ViewSourceDescriptor;
 
 @BugPattern(
         name = "DungeonMapContentModelProjectionBoundary",
@@ -32,8 +34,10 @@ public final class DungeonMapContentModelProjectionBoundaryChecker extends BugCh
 
     @Override
     public Description matchCompilationUnit(CompilationUnitTree tree, VisitorState state) {
-        if (!ViewArchitectureSupport.isViewModelSource(tree)
-                || !"DungeonMapContentModel".equals(ViewArchitectureSupport.topLevelSimpleName(tree))) {
+        ViewSourceDescriptor source = ViewSourceDescriptor.describe(tree);
+        if (!source.isRecognizedViewSource()
+                || source.role() != ViewRole.CONTENT_MODEL
+                || !"DungeonMapContentModel".equals(source.topLevelSimpleName())) {
             return Description.NO_MATCH;
         }
 

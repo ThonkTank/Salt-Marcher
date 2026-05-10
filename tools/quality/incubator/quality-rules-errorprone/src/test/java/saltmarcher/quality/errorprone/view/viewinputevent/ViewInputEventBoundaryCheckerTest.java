@@ -55,6 +55,40 @@ public final class ViewInputEventBoundaryCheckerTest {
     }
 
     @Test
+    public void rejectsTopLevelHelperMethod() {
+        newHelper()
+                .addSourceLines(
+                        "src/view/slotcontent/primitives/foo/FooViewInputEvent.java",
+                        "package src.view.slotcontent.primitives.foo;",
+                        "// BUG: Diagnostic matches: helper-method",
+                        "record FooViewInputEvent(String text) {",
+                        "  String normalized() {",
+                        "    return text.trim();",
+                        "  }",
+                        "}")
+                .expectErrorMessage("helper-method", containsAll(
+                        "top-level ViewInputEvent helper method",
+                        "ViewInputEvent carriers must stay immutable"))
+                .expectResult(Main.Result.ERROR)
+                .doTest();
+    }
+
+    @Test
+    public void rejectsDiscriminatorComponent() {
+        newHelper()
+                .addSourceLines(
+                        "src/view/slotcontent/primitives/foo/FooViewInputEvent.java",
+                        "package src.view.slotcontent.primitives.foo;",
+                        "// BUG: Diagnostic matches: discriminator-component",
+                        "record FooViewInputEvent(String text, String action) { }")
+                .expectErrorMessage("discriminator-component", containsAll(
+                        "top-level ViewInputEvent discriminator component",
+                        "ViewInputEvent carriers must stay immutable"))
+                .expectResult(Main.Result.ERROR)
+                .doTest();
+    }
+
+    @Test
     public void rejectsConstructionOutsideSameStemView() {
         newHelper()
                 .addSourceLines(
@@ -72,6 +106,56 @@ public final class ViewInputEventBoundaryCheckerTest {
                         "record FooViewInputEvent(String text) { }")
                 .expectErrorMessage("foreign-producer", containsAll(
                         "constructs src.view.slotcontent.primitives.foo.FooViewInputEvent outside same-stem View",
+                        "ViewInputEvent carriers must stay immutable"))
+                .expectResult(Main.Result.ERROR)
+                .doTest();
+    }
+
+    @Test
+    public void rejectsPublishedEventProtocolCoupling() {
+        newHelper()
+                .addSourceLines(
+                        "src/view/slotcontent/primitives/foo/FooPublishedEvent.java",
+                        "package src.view.slotcontent.primitives.foo;",
+                        "record FooPublishedEvent(String text) { }")
+                .addSourceLines(
+                        "src/view/slotcontent/primitives/foo/FooViewInputEvent.java",
+                        "package src.view.slotcontent.primitives.foo;",
+                        "// BUG: Diagnostic matches: published-event-coupling",
+                        "record FooViewInputEvent(FooPublishedEvent event) { }")
+                .expectErrorMessage("published-event-coupling", containsAll(
+                        "ViewInputEvent PublishedEvent protocol coupling",
+                        "ViewInputEvent carriers must stay immutable"))
+                .expectResult(Main.Result.ERROR)
+                .doTest();
+    }
+
+    @Test
+    public void rejectsStaticViewInputEventApiUse() {
+        newHelper()
+                .addSourceLines(
+                        "src/view/slotcontent/primitives/foo/FooView.java",
+                        "package src.view.slotcontent.primitives.foo;",
+                        "final class FooView {",
+                        "  void publish() {",
+                        "    // BUG: Diagnostic matches: static-api",
+                        "    FooViewInputEvent.empty();",
+                        "  }",
+                        "}")
+                .addSourceLines(
+                        "src/view/slotcontent/primitives/foo/FooViewInputEvent.java",
+                        "package src.view.slotcontent.primitives.foo;",
+                        "// BUG: Diagnostic matches: helper-method-side-effect",
+                        "record FooViewInputEvent(String text) {",
+                        "  static FooViewInputEvent empty() {",
+                        "    return new FooViewInputEvent(\"\");",
+                        "  }",
+                        "}")
+                .expectErrorMessage("static-api", containsAll(
+                        "invokes static ViewInputEvent API src.view.slotcontent.primitives.foo.FooViewInputEvent.empty",
+                        "ViewInputEvent carriers must stay immutable"))
+                .expectErrorMessage("helper-method-side-effect", containsAll(
+                        "top-level ViewInputEvent helper method",
                         "ViewInputEvent carriers must stay immutable"))
                 .expectResult(Main.Result.ERROR)
                 .doTest();
@@ -109,7 +193,8 @@ public final class ViewInputEventBoundaryCheckerTest {
     }
 
     private CompilationTestHelper newHelper() {
-        return CompilationTestHelper.newInstance(ViewInputEventBoundaryChecker.class, getClass());
+        return CompilationTestHelper.newInstance(ViewInputEventBoundaryChecker.class, getClass())
+                .matchAllDiagnostics();
     }
 
     private static Predicate<String> containsAll(String... snippets) {

@@ -73,6 +73,36 @@ public final class ViewInputEventSnapshotBoundaryCheckerTest {
     }
 
     @Test
+    public void rejectsPublishedEventBackedSnapshotArgument() {
+        newHelper()
+                .addSourceLines(
+                        "src/view/leftbartabs/catalog/CatalogControlsView.java",
+                        "package src.view.leftbartabs.catalog;",
+                        "import java.util.function.Consumer;",
+                        "final class CatalogControlsView {",
+                        "  private Consumer<CatalogControlsViewInputEvent> handler = event -> { };",
+                        "  private final CatalogPublishedEvent published = new CatalogPublishedEvent(\"hard\");",
+                        "  void publish() {",
+                        "    // BUG: Diagnostic matches: published-event-dependency",
+                        "    handler.accept(new CatalogControlsViewInputEvent(published.difficulty()));",
+                        "  }",
+                        "}")
+                .addSourceLines(
+                        "src/view/leftbartabs/catalog/CatalogControlsViewInputEvent.java",
+                        "package src.view.leftbartabs.catalog;",
+                        "record CatalogControlsViewInputEvent(String difficulty) { }")
+                .addSourceLines(
+                        "src/view/leftbartabs/catalog/CatalogPublishedEvent.java",
+                        "package src.view.leftbartabs.catalog;",
+                        "record CatalogPublishedEvent(String difficulty) { }")
+                .expectErrorMessage("published-event-dependency", containsAll(
+                        "forbidden snapshot dependency src.view.leftbartabs.catalog.CatalogPublishedEvent",
+                        "Build the carrier directly from current widget or raw event state"))
+                .expectResult(Main.Result.ERROR)
+                .doTest();
+    }
+
+    @Test
     public void allowsRawMethodParameterSnapshot() {
         newHelper()
                 .addSourceLines(
@@ -89,6 +119,37 @@ public final class ViewInputEventSnapshotBoundaryCheckerTest {
                         "src/view/leftbartabs/catalog/CatalogControlsViewInputEvent.java",
                         "package src.view.leftbartabs.catalog;",
                         "record CatalogControlsViewInputEvent(String difficulty) { }")
+                .doTest();
+    }
+
+    @Test
+    public void rejectsNestedProjectionConstructionInsideSnapshot() {
+        newHelper()
+                .addSourceLines(
+                        "src/view/leftbartabs/catalog/CatalogControlsView.java",
+                        "package src.view.leftbartabs.catalog;",
+                        "import java.util.function.Consumer;",
+                        "final class CatalogControlsView {",
+                        "  private Consumer<CatalogControlsViewInputEvent> handler = event -> { };",
+                        "  void publish() {",
+                        "    // BUG: Diagnostic matches: nested-projection",
+                        "    handler.accept(new CatalogControlsViewInputEvent(new CatalogContributionModel.Selection(\"hard\")));",
+                        "  }",
+                        "}")
+                .addSourceLines(
+                        "src/view/leftbartabs/catalog/CatalogControlsViewInputEvent.java",
+                        "package src.view.leftbartabs.catalog;",
+                        "record CatalogControlsViewInputEvent(CatalogContributionModel.Selection selection) { }")
+                .addSourceLines(
+                        "src/view/leftbartabs/catalog/CatalogContributionModel.java",
+                        "package src.view.leftbartabs.catalog;",
+                        "final class CatalogContributionModel {",
+                        "  record Selection(String difficulty) { }",
+                        "}")
+                .expectErrorMessage("nested-projection", containsAll(
+                        "forbidden snapshot dependency src.view.leftbartabs.catalog.CatalogContributionModel",
+                        "Build the carrier directly from current widget or raw event state"))
+                .expectResult(Main.Result.ERROR)
                 .doTest();
     }
 
@@ -168,7 +229,8 @@ public final class ViewInputEventSnapshotBoundaryCheckerTest {
     }
 
     private CompilationTestHelper newHelper() {
-        return CompilationTestHelper.newInstance(ViewInputEventSnapshotBoundaryChecker.class, getClass());
+        return CompilationTestHelper.newInstance(ViewInputEventSnapshotBoundaryChecker.class, getClass())
+                .matchAllDiagnostics();
     }
 
     private static Predicate<String> containsAll(String... snippets) {

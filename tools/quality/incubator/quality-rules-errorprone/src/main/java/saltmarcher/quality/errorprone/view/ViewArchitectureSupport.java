@@ -4,10 +4,12 @@ import com.google.errorprone.util.ASTHelpers;
 import com.sun.source.tree.ClassTree;
 import com.sun.source.tree.CompilationUnitTree;
 import com.sun.source.tree.MemberSelectTree;
+import com.sun.source.tree.NewClassTree;
 import com.sun.source.tree.Tree;
 import com.sun.source.util.TreePathScanner;
 import com.sun.source.util.TreeScanner;
 import com.sun.tools.javac.code.Symbol;
+import com.sun.tools.javac.code.Type;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.function.Predicate;
@@ -33,76 +35,22 @@ import javax.lang.model.util.SimpleTypeVisitor14;
 public final class ViewArchitectureSupport {
 
     private static final Set<String> BINDER_ALLOWED_SHELL_TYPES = Set.of(
-            "shell.api.ContributionKey",
-            "shell.api.InspectorEntrySpec",
-            "shell.api.InspectorSink",
-            "shell.api.NavigationGraphicResource",
-            "shell.api.NavigationGroupSpec",
-            "shell.api.ShellBinding",
-            "shell.api.ShellContributionSpec",
-            "shell.api.ShellLeftBarTabMode",
-            "shell.api.ShellLeftBarTabSpec",
-            "shell.api.ShellRuntimeContext",
-            "shell.api.ShellSlot",
-            "shell.api.ShellStateTabSpec",
-            "shell.api.ServiceRegistry",
-            "shell.api.ShellTopBarSpec");
+            "shell.api.ContributionKey", "shell.api.InspectorEntrySpec", "shell.api.InspectorSink",
+            "shell.api.NavigationGraphicResource", "shell.api.NavigationGroupSpec", "shell.api.ShellBinding",
+            "shell.api.ShellContributionSpec", "shell.api.ShellLeftBarTabMode", "shell.api.ShellLeftBarTabSpec",
+            "shell.api.ShellRuntimeContext", "shell.api.ShellSlot", "shell.api.ShellStateTabSpec",
+            "shell.api.ServiceRegistry", "shell.api.ShellTopBarSpec");
     private static final Set<String> CONTRIBUTION_ALLOWED_SHELL_TYPES = Set.of(
-            "shell.api.ContributionKey",
-            "shell.api.InspectorEntrySpec",
-            "shell.api.InspectorSink",
-            "shell.api.NavigationGraphicResource",
-            "shell.api.NavigationGroupSpec",
-            "shell.api.ShellBinding",
-            "shell.api.ShellContribution",
-            "shell.api.ShellContributionSpec",
-            "shell.api.ShellLeftBarTabMode",
-            "shell.api.ShellLeftBarTabSpec",
-            "shell.api.ShellRuntimeContext",
-            "shell.api.ShellStateTabSpec",
+            "shell.api.ContributionKey", "shell.api.InspectorEntrySpec", "shell.api.InspectorSink",
+            "shell.api.NavigationGraphicResource", "shell.api.NavigationGroupSpec", "shell.api.ShellBinding",
+            "shell.api.ShellContribution", "shell.api.ShellContributionSpec", "shell.api.ShellLeftBarTabMode",
+            "shell.api.ShellLeftBarTabSpec", "shell.api.ShellRuntimeContext", "shell.api.ShellStateTabSpec",
             "shell.api.ShellTopBarSpec");
     private static final Set<String> FORBIDDEN_VIEW_JDK_INFRASTRUCTURE_TYPES = Set.of(
-            "java.lang.ClassLoader",
-            "java.lang.Process",
-            "java.lang.ProcessBuilder",
-            "java.lang.Runtime",
-            "java.lang.Thread",
-            "java.lang.ThreadGroup",
-            "java.util.Timer",
-            "java.util.TimerTask");
+            "java.lang.ClassLoader", "java.lang.Process", "java.lang.ProcessBuilder", "java.lang.Runtime",
+            "java.lang.Thread", "java.lang.ThreadGroup", "java.util.Timer", "java.util.TimerTask");
 
     private ViewArchitectureSupport() {
-    }
-
-    public static String packageName(CompilationUnitTree tree) {
-        return tree.getPackageName() == null ? "" : tree.getPackageName().toString();
-    }
-
-    public static boolean isBinderSource(CompilationUnitTree tree) {
-        ViewSourceDescriptor source = ViewSourceDescriptor.describe(tree);
-        return source.isActiveRootSource() && source.role() == ViewRole.BINDER;
-    }
-
-    public static boolean isViewModelSource(CompilationUnitTree tree) {
-        ViewSourceDescriptor source = ViewSourceDescriptor.describe(tree);
-        return source.isRecognizedViewSource() && isProjectionModelRole(source.role());
-    }
-
-    public static boolean isViewInputEventSource(CompilationUnitTree tree) {
-        ViewSourceDescriptor source = ViewSourceDescriptor.describe(tree);
-        return source.isRecognizedViewSource() && source.role() == ViewRole.VIEW_INPUT_EVENT;
-    }
-
-    public static boolean isPanelViewSource(CompilationUnitTree tree) {
-        return ViewSourceDescriptor.describe(tree).isPassiveViewSource();
-    }
-
-    public static String topLevelSimpleName(CompilationUnitTree tree) {
-        String sourceFileName = sourceFileName(tree);
-        if (sourceFileName.endsWith(".java")) {
-            return sourceFileName.substring(0, sourceFileName.length() - ".java".length());
-        }
-        return sourceFileName;
     }
 
     public static ClassTree topLevelClass(CompilationUnitTree tree) {
@@ -166,6 +114,25 @@ public final class ViewArchitectureSupport {
             return classSymbol.getQualifiedName().toString();
         }
         return null;
+    }
+
+    public static String qualifiedTypeNameOf(NewClassTree newClassTree) {
+        Type instantiatedType = ASTHelpers.getType(newClassTree);
+        if (instantiatedType != null && instantiatedType.tsym instanceof Symbol.ClassSymbol classSymbol) {
+            String qualifiedName = classSymbol.getQualifiedName().toString();
+            if (!qualifiedName.isBlank()) {
+                return qualifiedName;
+            }
+        }
+        Symbol symbol = ASTHelpers.getSymbol(newClassTree);
+        if (symbol == null) {
+            return instantiatedType == null ? "" : instantiatedType.toString();
+        }
+        String qualifiedTypeName = getQualifiedTypeName(symbol);
+        if (qualifiedTypeName != null && !qualifiedTypeName.isBlank()) {
+            return qualifiedTypeName;
+        }
+        return instantiatedType == null ? "" : instantiatedType.toString();
     }
 
     public static boolean isAllowedViewModelDomainBoundary(String referencedType) {
@@ -474,15 +441,6 @@ public final class ViewArchitectureSupport {
         return referencedTypes;
     }
 
-    private static String sourceFileName(CompilationUnitTree tree) {
-        if (tree.getSourceFile() == null) {
-            return "";
-        }
-        String name = tree.getSourceFile().getName().replace('\\', '/');
-        int separator = name.lastIndexOf('/');
-        return separator < 0 ? name : name.substring(separator + 1);
-    }
-
     private static void addReference(String qualifiedName, Set<String> referencedTypes) {
         if (qualifiedName != null && !qualifiedName.isBlank()) {
             referencedTypes.add(qualifiedName);
@@ -529,25 +487,20 @@ public final class ViewArchitectureSupport {
         if (referencedType == null || referencedType.isBlank()) {
             return false;
         }
-        return referencedType.startsWith("javafx.event.")
-                || referencedType.equals("javafx.beans.InvalidationListener")
-                || referencedType.equals("javafx.beans.WeakInvalidationListener")
-                || referencedType.equals("javafx.beans.value.ChangeListener")
-                || referencedType.equals("javafx.beans.value.WeakChangeListener")
-                || referencedType.equals("javafx.collections.ListChangeListener")
-                || referencedType.equals("javafx.collections.MapChangeListener")
-                || referencedType.equals("javafx.collections.SetChangeListener")
-                || referencedType.equals("javafx.collections.WeakListChangeListener")
-                || referencedType.equals("javafx.collections.WeakMapChangeListener")
-                || referencedType.equals("javafx.collections.WeakSetChangeListener");
+        return referencedType.startsWith("javafx.event.") || Set.of(
+                "javafx.beans.InvalidationListener", "javafx.beans.WeakInvalidationListener",
+                "javafx.beans.value.ChangeListener", "javafx.beans.value.WeakChangeListener",
+                "javafx.collections.ListChangeListener", "javafx.collections.MapChangeListener",
+                "javafx.collections.SetChangeListener", "javafx.collections.WeakListChangeListener",
+                "javafx.collections.WeakMapChangeListener", "javafx.collections.WeakSetChangeListener")
+                .contains(referencedType);
     }
 
     private static boolean isKnownAsyncProtocolType(String referencedType) {
         if (referencedType == null || referencedType.isBlank()) {
             return false;
         }
-        return referencedType.equals("java.util.concurrent.Future")
-                || referencedType.equals("java.util.concurrent.CompletableFuture")
+        return referencedType.equals("java.util.concurrent.Future") || referencedType.equals("java.util.concurrent.CompletableFuture")
                 || referencedType.equals("java.util.concurrent.CompletionStage");
     }
 
@@ -564,8 +517,7 @@ public final class ViewArchitectureSupport {
             return false;
         }
         Element element = declaredType.asElement();
-        if (!(element instanceof TypeElement typeElement)
-                || !"java.util.function.Consumer".contentEquals(typeElement.getQualifiedName())
+        if (!(element instanceof TypeElement typeElement) || !"java.util.function.Consumer".contentEquals(typeElement.getQualifiedName())
                 || declaredType.getTypeArguments().size() != 1) {
             return false;
         }
@@ -597,9 +549,7 @@ public final class ViewArchitectureSupport {
     }
 
     private static boolean isProjectionModelRole(ViewRole role) {
-        return role == ViewRole.LEGACY_VIEW_MODEL
-                || role == ViewRole.CONTRIBUTION_MODEL
-                || role == ViewRole.CONTENT_MODEL;
+        return role == ViewRole.LEGACY_VIEW_MODEL || role == ViewRole.CONTRIBUTION_MODEL || role == ViewRole.CONTENT_MODEL;
     }
 
     private static boolean isDomainWriteCarrier(String referencedType) {
@@ -611,8 +561,7 @@ public final class ViewArchitectureSupport {
             return true;
         }
         for (String allowedType : allowedTypes) {
-            if (referencedType.equals(allowedType)
-                    || referencedType.startsWith(allowedType + "$")
+            if (referencedType.equals(allowedType) || referencedType.startsWith(allowedType + "$")
                     || referencedType.startsWith(allowedType + ".")) {
                 return true;
             }

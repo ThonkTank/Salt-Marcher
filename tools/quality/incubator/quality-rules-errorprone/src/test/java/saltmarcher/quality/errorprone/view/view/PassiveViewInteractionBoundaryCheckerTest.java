@@ -63,6 +63,32 @@ public final class PassiveViewInteractionBoundaryCheckerTest {
     }
 
     @Test
+    public void rejectsShellApiCall() {
+        newHelper()
+                .addSourceLines(
+                        "src/view/slotcontent/primitives/foo/FooView.java",
+                        "package src.view.slotcontent.primitives.foo;",
+                        "import shell.frame.ToolbarBridge;",
+                        "final class FooView {",
+                        "  void render(ToolbarBridge bridge) {",
+                        "    // BUG: Diagnostic matches: shell-member",
+                        "    bridge.publish();",
+                        "  }",
+                        "}")
+                .addSourceLines(
+                        "shell/frame/ToolbarBridge.java",
+                        "package shell.frame;",
+                        "public final class ToolbarBridge {",
+                        "  public void publish() { }",
+                        "}")
+                .expectErrorMessage("shell-member", containsAll(
+                        "project member shell.frame.ToolbarBridge.publish()",
+                        "crosses the passive-View interaction boundary"))
+                .expectResult(Main.Result.ERROR)
+                .doTest();
+    }
+
+    @Test
     public void allowsSameStemViewInputEventConstruction() {
         newHelper()
                 .addSourceLines(
@@ -157,7 +183,8 @@ public final class PassiveViewInteractionBoundaryCheckerTest {
     }
 
     private CompilationTestHelper newHelper() {
-        return CompilationTestHelper.newInstance(PassiveViewInteractionBoundaryChecker.class, getClass());
+        return CompilationTestHelper.newInstance(PassiveViewInteractionBoundaryChecker.class, getClass())
+                .matchAllDiagnostics();
     }
 
     private static Predicate<String> containsAll(String... snippets) {

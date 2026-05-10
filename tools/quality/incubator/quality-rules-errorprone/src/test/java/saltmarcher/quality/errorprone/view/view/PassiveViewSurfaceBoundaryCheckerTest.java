@@ -53,6 +53,25 @@ public final class PassiveViewSurfaceBoundaryCheckerTest {
     }
 
     @Test
+    public void rejectsStaticUtilityViewShape() {
+        newHelper()
+                .addSourceLines(
+                        "src/view/slotcontent/primitives/foo/FooView.java",
+                        "package src.view.slotcontent.primitives.foo;",
+                        "// BUG: Diagnostic matches: utility-shape",
+                        "final class FooView {",
+                        "  private static String renderText() {",
+                        "    return \"x\";",
+                        "  }",
+                        "}")
+                .expectErrorMessage("utility-shape", containsAll(
+                        "static utility shape",
+                        "Passive View 'src.view.slotcontent.primitives.foo.FooView'"))
+                .expectResult(Main.Result.ERROR)
+                .doTest();
+    }
+
+    @Test
     public void allowsProjectFreePreparedStateSinkAccessor() {
         newHelper()
                 .addSourceLines(
@@ -64,6 +83,23 @@ public final class PassiveViewSurfaceBoundaryCheckerTest {
                         "    return text -> { };",
                         "  }",
                         "}")
+                .doTest();
+    }
+
+    @Test
+    public void rejectsOutwardMutableField() {
+        newHelper()
+                .addSourceLines(
+                        "src/view/slotcontent/primitives/foo/FooView.java",
+                        "package src.view.slotcontent.primitives.foo;",
+                        "// BUG: Diagnostic matches: outward-field",
+                        "final class FooView {",
+                        "  public String title;",
+                        "}")
+                .expectErrorMessage("outward-field", containsAll(
+                        "title field",
+                        "project-free prepared-state sink accessors"))
+                .expectResult(Main.Result.ERROR)
                 .doTest();
     }
 
@@ -164,7 +200,8 @@ public final class PassiveViewSurfaceBoundaryCheckerTest {
     }
 
     private CompilationTestHelper newHelper() {
-        return CompilationTestHelper.newInstance(PassiveViewSurfaceBoundaryChecker.class, getClass());
+        return CompilationTestHelper.newInstance(PassiveViewSurfaceBoundaryChecker.class, getClass())
+                .matchAllDiagnostics();
     }
 
     private static Predicate<String> containsAll(String... snippets) {

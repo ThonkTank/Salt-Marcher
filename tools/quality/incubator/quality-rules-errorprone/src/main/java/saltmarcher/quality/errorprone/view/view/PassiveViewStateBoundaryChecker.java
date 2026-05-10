@@ -31,34 +31,11 @@ public final class PassiveViewStateBoundaryChecker extends BugChecker
         implements BugChecker.CompilationUnitTreeMatcher {
 
     private static final Set<String> FORBIDDEN_STREAM_METHODS = Set.of(
-            "collect",
-            "distinct",
-            "filter",
-            "flatMap",
-            "flatMapToDouble",
-            "flatMapToInt",
-            "flatMapToLong",
-            "map",
-            "mapMulti",
-            "mapToDouble",
-            "mapToInt",
-            "mapToLong",
-            "sorted",
-            "toList");
-
+            "collect", "distinct", "filter", "flatMap", "flatMapToDouble", "flatMapToInt", "flatMapToLong", "map",
+            "mapMulti", "mapToDouble", "mapToInt", "mapToLong", "sorted", "toList");
     private static final Set<String> FORBIDDEN_COMPARATOR_METHODS = Set.of(
-            "comparing",
-            "comparingDouble",
-            "comparingInt",
-            "comparingLong",
-            "naturalOrder",
-            "reverseOrder");
-
-    private static final Set<String> PRESENTATION_MUTATION_METHODS = Set.of(
-            "setDisable",
-            "setManaged",
-            "setText",
-            "setVisible");
+            "comparing", "comparingDouble", "comparingInt", "comparingLong", "naturalOrder", "reverseOrder");
+    private static final Set<String> PRESENTATION_MUTATION_METHODS = Set.of("setDisable", "setManaged", "setText", "setVisible");
 
     @Override
     public Description matchCompilationUnit(CompilationUnitTree tree, VisitorState state) {
@@ -236,23 +213,11 @@ public final class PassiveViewStateBoundaryChecker extends BugChecker
 
     private static boolean isScalarSemanticState(TypeMirror typeMirror) {
         String qualifiedName = typeMirror.toString();
-        return qualifiedName.equals("boolean")
-                || qualifiedName.equals("byte")
-                || qualifiedName.equals("short")
-                || qualifiedName.equals("int")
-                || qualifiedName.equals("long")
-                || qualifiedName.equals("float")
-                || qualifiedName.equals("double")
-                || qualifiedName.equals("char")
-                || qualifiedName.equals("java.lang.Boolean")
-                || qualifiedName.equals("java.lang.Byte")
-                || qualifiedName.equals("java.lang.Short")
-                || qualifiedName.equals("java.lang.Integer")
-                || qualifiedName.equals("java.lang.Long")
-                || qualifiedName.equals("java.lang.Float")
-                || qualifiedName.equals("java.lang.Double")
-                || qualifiedName.equals("java.lang.Character")
-                || qualifiedName.equals("java.lang.String");
+        return Set.of(
+                "boolean", "byte", "short", "int", "long", "float", "double", "char",
+                "java.lang.Boolean", "java.lang.Byte", "java.lang.Short", "java.lang.Integer",
+                "java.lang.Long", "java.lang.Float", "java.lang.Double", "java.lang.Character",
+                "java.lang.String").contains(qualifiedName);
     }
 
     private static boolean isCollectionSemanticState(TypeMirror typeMirror) {

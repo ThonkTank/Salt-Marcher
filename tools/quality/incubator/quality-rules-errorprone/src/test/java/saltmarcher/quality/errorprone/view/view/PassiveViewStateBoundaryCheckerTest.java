@@ -49,6 +49,23 @@ public final class PassiveViewStateBoundaryCheckerTest {
     }
 
     @Test
+    public void allowsTechnicalWidgetField() {
+        newHelper()
+                .addSourceLines(
+                        "src/view/slotcontent/primitives/foo/FooView.java",
+                        "package src.view.slotcontent.primitives.foo;",
+                        "import javafx.scene.control.Label;",
+                        "final class FooView {",
+                        "  private final Label title = new Label();",
+                        "}")
+                .addSourceLines(
+                        "javafx/scene/control/Label.java",
+                        "package javafx.scene.control;",
+                        "public class Label { }")
+                .doTest();
+    }
+
+    @Test
     public void allowsSameStemSeamOnly() {
         newHelper()
                 .addSourceLines(
@@ -62,6 +79,47 @@ public final class PassiveViewStateBoundaryCheckerTest {
                         "src/view/leftbartabs/catalog/CatalogControlsViewInputEvent.java",
                         "package src.view.leftbartabs.catalog;",
                         "record CatalogControlsViewInputEvent(String raw) { }")
+                .doTest();
+    }
+
+    @Test
+    public void rejectsModelDerivedSwitchDecision() {
+        newHelper()
+                .addSourceLines(
+                        "src/view/leftbartabs/catalog/CatalogControlsView.java",
+                        "package src.view.leftbartabs.catalog;",
+                        "import javafx.scene.control.Label;",
+                        "final class CatalogControlsView {",
+                        "  private final Label title = new Label();",
+                        "  void render(CatalogContributionModel model) {",
+                        "    // BUG: Diagnostic matches: switch-decision",
+                        "    switch (model.mode()) {",
+                        "      case \"compact\":",
+                        "        title.setVisible(false);",
+                        "        break;",
+                        "      default:",
+                        "        title.setVisible(true);",
+                        "    }",
+                        "  }",
+                        "}")
+                .addSourceLines(
+                        "src/view/leftbartabs/catalog/CatalogContributionModel.java",
+                        "package src.view.leftbartabs.catalog;",
+                        "final class CatalogContributionModel {",
+                        "  String mode() {",
+                        "    return \"compact\";",
+                        "  }",
+                        "}")
+                .addSourceLines(
+                        "javafx/scene/control/Label.java",
+                        "package javafx.scene.control;",
+                        "public class Label {",
+                        "  public void setVisible(boolean value) { }",
+                        "}")
+                .expectErrorMessage("switch-decision", containsAll(
+                        "presentation decision switch",
+                        "model-derived presentation decisions belong outside the View"))
+                .expectResult(Main.Result.ERROR)
                 .doTest();
     }
 
@@ -132,7 +190,8 @@ public final class PassiveViewStateBoundaryCheckerTest {
     }
 
     private CompilationTestHelper newHelper() {
-        return CompilationTestHelper.newInstance(PassiveViewStateBoundaryChecker.class, getClass());
+        return CompilationTestHelper.newInstance(PassiveViewStateBoundaryChecker.class, getClass())
+                .matchAllDiagnostics();
     }
 
     private static Predicate<String> containsAll(String... snippets) {

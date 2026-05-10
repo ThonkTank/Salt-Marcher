@@ -17,7 +17,7 @@ public record ViewSourceDescriptor(
             "controls", "main", "state", "details", "topbar", "primitives");
 
     public static ViewSourceDescriptor describe(CompilationUnitTree tree) {
-        String packageName = ViewArchitectureSupport.packageName(tree);
+        String packageName = tree.getPackageName() == null ? "" : tree.getPackageName().toString();
         String topLevelSimpleName = topLevelSimpleName(tree);
         String qualifiedTopLevelTypeName = packageName.isBlank()
                 ? topLevelSimpleName

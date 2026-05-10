@@ -13,7 +13,6 @@ import com.sun.source.tree.NewClassTree;
 import com.sun.source.tree.Tree;
 import com.sun.source.util.TreePathScanner;
 import com.sun.tools.javac.code.Symbol;
-import com.sun.tools.javac.code.Type;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import javax.lang.model.element.Modifier;
@@ -91,7 +90,7 @@ public final class PassiveViewInteractionBoundaryChecker extends BugChecker
 
             @Override
             public Void visitNewClass(NewClassTree newClassTree, Void unused) {
-                String constructedType = qualifiedTypeNameOf(newClassTree);
+                String constructedType = ViewArchitectureSupport.qualifiedTypeNameOf(newClassTree);
                 if (isForbiddenConstructedType(constructedType, sourcePackageName, viewSimpleName)) {
                     violations.add("constructs " + ViewArchitectureSupport.topLevelQualifiedTypeNameOf(constructedType));
                     recordViolationTree(newClassTree, firstViolationTree);
@@ -222,25 +221,6 @@ public final class PassiveViewInteractionBoundaryChecker extends BugChecker
             return true;
         }
         return false;
-    }
-
-    private static String qualifiedTypeNameOf(NewClassTree newClassTree) {
-        Type instantiatedType = ASTHelpers.getType(newClassTree);
-        if (instantiatedType != null && instantiatedType.tsym instanceof Symbol.ClassSymbol classSymbol) {
-            String qualifiedName = classSymbol.getQualifiedName().toString();
-            if (!qualifiedName.isBlank()) {
-                return qualifiedName;
-            }
-        }
-        Symbol symbol = ASTHelpers.getSymbol(newClassTree);
-        if (symbol == null) {
-            return "";
-        }
-        String qualifiedTypeName = ViewArchitectureSupport.getQualifiedTypeName(symbol);
-        if (qualifiedTypeName != null && !qualifiedTypeName.isBlank()) {
-            return qualifiedTypeName;
-        }
-        return ASTHelpers.getType(newClassTree) == null ? "" : ASTHelpers.getType(newClassTree).toString();
     }
 
     private static void recordViolationTree(Tree tree, Tree[] firstViolationTree) {

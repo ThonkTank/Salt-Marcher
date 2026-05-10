@@ -9,7 +9,7 @@ import org.junit.runners.JUnit4;
 public final class ViewContributionEntrypointShapeCheckerTest {
 
     private final CompilationTestHelper compilationHelper = CompilationTestHelper.newInstance(
-            ViewContributionEntrypointShapeChecker.class,
+            ViewContributionBoundaryCheckers.ViewContributionEntrypointShapeChecker.class,
             getClass());
 
     @Test
