@@ -100,8 +100,8 @@ root plugins. The staged `view-topology` surface is intentionally routed to
 the dedicated closed-world `checkViewLayerEnforcement` bundle owner rather
 than to a second view-specific graph-analysis owner.
 
-Bundle owners MAY know their private ArchUnit, Error Prone, PMD,
-jQAssistant, or build-harness tasks. They MUST NOT depend on shell wrappers.
+Bundle owners MAY know their private ArchUnit, Error Prone, or build-harness
+tasks. They MUST NOT depend on shell wrappers.
 They communicate with the verification core only through stable typed registry
 metadata, their bundle-local lifecycle tasks, and any explicitly declared
 report-only sibling surfaces.
@@ -112,10 +112,9 @@ focused bundles just to reuse the bundle registry.
 
 ### 4. Rule Implementation
 
-Private rule implementation lives in build-harness, PMD rules, Error Prone
-rules, ArchUnit suites, jQAssistant rules, typed Gradle tasks, and the generic
-documentation-coverage catalog plus the small set of remaining custom
-documentation rules.
+Private rule implementation lives in build-harness, Error Prone rules,
+ArchUnit suites, typed Gradle tasks, and the generic documentation-coverage
+catalog plus the small set of remaining custom documentation rules.
 
 Rule engines MUST remain ignorant of staged surfaces, shell wrappers,
 production-handoff flows, and runtime UX concerns.
@@ -137,7 +136,7 @@ Forbidden shortcuts:
 - `settings.gradle.kts` reconstructing public surface mapping, exception-bundle plugins, or private rule membership
 - root build scripts duplicating the public surface mapping already owned by the
   verification core
-- build-harness, PMD, Error Prone, or jQAssistant code knowing staged surface
+- build-harness, Error Prone, or ArchUnit code knowing staged surface
   names
 
 ## Focused Surface Propagation
@@ -160,16 +159,10 @@ surface or bundle selection from `StartParameter` task names once the
 settings-owned selection facts were published.
 Included builds own their technical registration from typed registry metadata
 and explicit static source roots such as build-harness rule classes, Error
-Prone checker lists, ArchUnit task shapes, PMD task shapes, jQAssistant task
-shapes, and generic documentation-coverage spec ids or custom-task kinds. A
-jQAssistant task shape may declare one local rule
-directory or multiple rule directories; the verification core materializes one
-effective rules root from that registry metadata instead of forcing bundles
-to duplicate shared taxonomy files. Harness wiring MUST NOT rely on parallel
-families of tiny launcher mains or `*-host.gradle.kts` scripts as a second
-source of truth for the same metadata, and it MUST NOT regenerate a second
-snapshot copy of the same registry metadata just to make same-worktree
-parallelism safe.
+Prone checker lists, ArchUnit task shapes, and generic
+documentation-coverage spec ids or custom-task kinds. Harness wiring MUST NOT
+rely on parallel families of tiny launcher mains or `*-host.gradle.kts`
+scripts as a second source of truth for the same metadata.
 Shared verification task registration inside `tools/gradle/build-logic` should
 flow through typed plugin or extension APIs rather than through untyped
 `extra[...]` function exports between precompiled script plugins.
@@ -182,13 +175,17 @@ as well: bundles contribute root `architectureCheck` and
 ids through explicit `buildHarnessArchitectureRuleClasses`,
 `buildHarnessDocumentationRuleClasses`, and
 `buildHarnessDocumentationCoverageSpecIds` metadata instead of hidden
-`ServiceLoader` resources, bundle README inventories, or hardcoded
+bundle README inventories, or hardcoded
 optional-class tables in the owning checkers. Focused build-harness tasks
 should execute through the generic `ArchitectureCheckMain` or
 `DocumentationCheckMain` paths with task-local rule-class lists or coverage
 spec ids instead of one bundle-specific Java launcher per focused task.
 `build-harness:processResources` is therefore expected to stay `NO-SOURCE` in
 steady-state wrapper runs.
+Error Prone checker discovery is likewise centralized: the host
+`quality-rules-errorprone` artifact owns the single
+`META-INF/services/com.google.errorprone.bugpatterns.BugChecker` registry and
+bundle-local service files are not part of the intended model.
 Focused verification tasks with stable declared inputs and outputs SHOULD use
 normal Gradle up-to-date and build-cache behavior instead of forcing fresh
 execution every run. Successful unchanged verification results may be reused;

@@ -86,6 +86,7 @@ private class EnforcementBundleBuilder(
         buildHarnessArchitectureRuleClasses = buildHarnessArchitectureRuleClasses.toList(),
         buildHarnessDocumentationRuleClasses = buildHarnessDocumentationRuleClasses.toList(),
         buildHarnessDocumentationCoverageSpecIds = buildHarnessDocumentationCoverageSpecIds.toList(),
+        buildHarnessTaskMainClasses = buildHarnessTaskMainClasses.toMap(),
         buildHarnessTaskRuleClasses = buildHarnessTaskRuleClasses.toMap(),
         errorProneCheckers = errorProneCheckers.toList(),
         archunit = archunit,

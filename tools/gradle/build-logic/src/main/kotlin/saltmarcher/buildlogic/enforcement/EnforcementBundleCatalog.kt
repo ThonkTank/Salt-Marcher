@@ -32,6 +32,7 @@ data class EnforcementBundleDescriptor(
     val buildHarnessArchitectureRuleClasses: List<String>,
     val buildHarnessDocumentationRuleClasses: List<String>,
     val buildHarnessDocumentationCoverageSpecIds: List<String>,
+    val buildHarnessTaskMainClasses: Map<String, String>,
     val buildHarnessTaskRuleClasses: Map<String, List<String>>,
     val errorProneCheckers: List<String>,
     val archunit: EnforcementArchunitTask?,
@@ -55,7 +56,8 @@ data class EnforcementBundleDescriptor(
         if (taskName.endsWith("DocumentationEnforcementCheck")) buildHarnessDocumentationCoverageSpecIds else emptyList()
 
     fun buildHarnessTaskNames(): List<String> = taskNames.filter { taskName ->
-        buildHarnessTaskRuleClasses(taskName).isNotEmpty() ||
+        buildHarnessTaskMainClasses.containsKey(taskName) ||
+            buildHarnessTaskRuleClasses(taskName).isNotEmpty() ||
             buildHarnessTaskDocumentationCoverageSpecIds(taskName).isNotEmpty()
     }
 }
