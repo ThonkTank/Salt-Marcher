@@ -7,11 +7,11 @@ import src.domain.encounter.EncounterApplicationService;
 import src.domain.encounter.published.RefreshEncounterPlanBudgetCommand;
 import src.domain.party.PartyApplicationService;
 import src.domain.party.published.CalculateAdventuringDayCommand;
-import src.domain.sessionplanner.session.port.SessionEncounterFactsLookup;
-import src.domain.sessionplanner.session.port.SessionPartyFactsLookup;
+import src.domain.sessionplanner.model.session.repository.SessionEncounterFactsRepository;
+import src.domain.sessionplanner.model.session.repository.SessionPartyFactsRepository;
 
 public final class ApplicationSessionPlannerFactsQueryAdapter
-        implements SessionPartyFactsLookup, SessionEncounterFactsLookup {
+        implements SessionPartyFactsRepository, SessionEncounterFactsRepository {
 
     private final PartyApplicationService party;
     private final SessionPlannerPartyFactsPublishedReadback partyReadback;

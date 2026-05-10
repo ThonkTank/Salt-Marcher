@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-05-07
+Last Reviewed: 2026-05-10
 Source of Truth: Encounter feature ownership, saved-plan write model, runtime
 generation policy, and domain invariants.
 
@@ -40,7 +40,7 @@ values before invoking draft construction.
 
 Saved encounter plans publish only the chooser display language reused by the
 encounter builder. SessionPlanner-specific list and budget/detail work forms
-leave encounter through the foreign `SessionEncounterFactsLookup` service seam
+leave encounter through the foreign `SessionEncounterFactsRepository` service seam
 instead of an encounter-owned `published/*Model` reply channel. The chooser
 surface is intentionally thin and does not mirror the internal
 `EncounterPlanSummary` record. Creature details remain owned by the creatures
@@ -192,7 +192,7 @@ runtime state.
 - `GeneratedEncounter`: exported generated encounter suggestion.
 - `EncounterPlan`: saved encounter roster aggregate.
 - `SavedEncounterPlanChoice`: published saved-plan chooser display row.
-- `SessionEncounterFactsLookup.EncounterPlanFact`: sessionplanner-facing
+- `SessionEncounterFactsRepository.EncounterPlanFact`: sessionplanner-facing
   saved-plan planning readout.
 
 ## Domain Policies

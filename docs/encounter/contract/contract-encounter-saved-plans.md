@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-05-07
+Last Reviewed: 2026-05-10
 Source of Truth: Service contract for the encounter-owned saved-plan chooser
 facts consumed by SessionPlanner.
 
@@ -13,7 +13,7 @@ by SessionPlanner.
 
 ## Read Surface
 
-- `SessionEncounterFactsLookup.listEncounterPlans()`
+- `SessionEncounterFactsRepository.listEncounterPlans()`
   returns one `EncounterPlanListFact`
 - `EncounterPlanListFact`
   returns availability, a list of `SavedEncounterPlanFact`, and a status text

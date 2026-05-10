@@ -4,8 +4,8 @@ import java.util.Objects;
 import java.util.Optional;
 import src.data.sessionplanner.gateway.local.SqliteSessionPlannerLocalGateway;
 import src.data.sessionplanner.mapper.SessionPlanMapper;
-import src.domain.sessionplanner.session.aggregate.SessionPlan;
-import src.domain.sessionplanner.session.port.SessionPlanRepository;
+import src.domain.sessionplanner.model.session.model.SessionPlan;
+import src.domain.sessionplanner.model.session.repository.SessionPlanRepository;
 
 public final class SqliteSessionPlanRepository implements SessionPlanRepository {
 

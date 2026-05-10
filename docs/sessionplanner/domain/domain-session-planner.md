@@ -1,6 +1,6 @@
 Status: Draft
 Owner: SaltMarcher Team
-Last Reviewed: 2026-05-06
+Last Reviewed: 2026-05-10
 Source of Truth: Session planner context role, session-record ownership, and
 domain invariants.
 
@@ -49,9 +49,9 @@ The root application service coordinates:
 Current state:
 
 - the current code already routes planner writes through dedicated
-  `application/*UseCase` owners over `SessionPlan`
-- it now keeps exactly one repository-backed current session through a
-  planner-owned runtime repository port and current-session access seam
+  `model/session/usecase/*UseCase` owners over `SessionPlan`
+- it now keeps exactly one repository-backed current session through
+  planner-owned session repositories plus canonical load/save session use cases
 - the read-only planner state models are exported directly instead of being
   loaded through a root query method
 
@@ -115,8 +115,8 @@ Core invariants:
 
 Current state:
 
-- the current code keeps one current persisted session through a planner-owned
-  repository port plus current-session access seam
+- the current code keeps one current persisted session through planner-owned
+  session repositories plus canonical load/save session use cases
 - reopening the planner after reload or application restart preserves
   planner-owned
   participant refs, encounter order, allocations, rests, placeholders, and

@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-05-08
+Last Reviewed: 2026-05-10
 Source of Truth: Compatibility-visible domain contract for the session planner
 context.
 
@@ -47,9 +47,9 @@ planner read models.
 Current state:
 
 - the current code already delegates planner mutations to dedicated
-  `application/*UseCase` owners over `SessionPlan`
-- it now keeps exactly one repository-backed current session through a
-  planner-owned repository port and current-session access seam
+  `model/session/usecase/*UseCase` owners over `SessionPlan`
+- it now keeps exactly one repository-backed current session through
+  planner-owned session repositories and canonical load/save session use cases
 - the read-only planner state model is exported directly instead of being
   loaded through a root query method
 

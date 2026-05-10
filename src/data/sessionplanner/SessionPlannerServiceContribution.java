@@ -10,7 +10,7 @@ import src.domain.sessionplanner.published.SessionPlannerCurrentSessionModel;
 import src.domain.sessionplanner.published.SessionPlannerEncountersModel;
 import src.domain.sessionplanner.published.SessionPlannerParticipantsModel;
 import src.domain.sessionplanner.published.SessionPlannerStatePanelModel;
-import src.domain.sessionplanner.session.port.SessionPlanRepository;
+import src.domain.sessionplanner.model.session.repository.SessionPlanRepository;
 
 public final class SessionPlannerServiceContribution implements ServiceContribution {
 

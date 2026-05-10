@@ -1,6 +1,6 @@
 Status: Draft
 Owner: SaltMarcher Team
-Last Reviewed: 2026-05-06
+Last Reviewed: 2026-05-10
 Source of Truth: Feature architecture, owning boundaries, and allowed seams
 for the session planner session record and planning workspace.
 
@@ -42,7 +42,7 @@ creature-detail truth, or loot truth.
   `SessionPlannerParticipantsModel`,
   `SessionPlannerEncountersModel`, and
   `SessionPlannerStatePanelModel`
-- `src/domain/sessionplanner/session/aggregate/SessionPlan`
+- `src/domain/sessionplanner/model/session/model/SessionPlan`
   is the authored aggregate root for persisted session truth
 - `src/data/sessionplanner/SessionPlannerServiceContribution.java`
   is the target feature-owned runtime entrypoint for planner persistence and
@@ -51,8 +51,8 @@ creature-detail truth, or loot truth.
 Current state:
 
 - the current implementation now uses `SessionPlan` plus
-  `src/domain/sessionplanner/application/*UseCase.java` under one
-  repository-backed current-session access seam inside the domain layer
+  `src/domain/sessionplanner/model/session/usecase/*UseCase.java` under
+  planner-owned session repositories and canonical load/save session use cases
 - `SessionPlannerApplicationService` now exposes focused planner workflows
   instead of one generic apply-command bag
 - `src/data/sessionplanner/SessionPlannerServiceContribution.java` now owns

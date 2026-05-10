@@ -11,11 +11,11 @@ import src.domain.sessionplanner.published.SessionPlannerParticipantsProjection;
 import src.domain.sessionplanner.published.SessionPlannerRestKind;
 import src.domain.sessionplanner.published.SessionPlannerSessionSnapshot;
 import src.domain.sessionplanner.published.SessionPlannerStatePanelProjection;
-import src.domain.sessionplanner.session.aggregate.SessionPlan;
-import src.domain.sessionplanner.session.port.SessionEncounterFactsLookup;
-import src.domain.sessionplanner.session.port.SessionPartyFactsLookup;
-import src.domain.sessionplanner.session.value.SessionEncounter;
-import src.domain.sessionplanner.session.value.SessionRestPlacement;
+import src.domain.sessionplanner.model.session.model.SessionEncounter;
+import src.domain.sessionplanner.model.session.model.SessionPlan;
+import src.domain.sessionplanner.model.session.model.SessionRestPlacement;
+import src.domain.sessionplanner.model.session.repository.SessionEncounterFactsRepository;
+import src.domain.sessionplanner.model.session.repository.SessionPartyFactsRepository;
 
 @SuppressWarnings({
         "PMD.CouplingBetweenObjects",
@@ -28,11 +28,11 @@ public final class SessionPlannerPublishedStateProjector {
 
     public SessionPlannerSessionSnapshot projectSession(
             SessionPlan session,
-            SessionPartyFactsLookup partyFacts,
-            SessionEncounterFactsLookup encounterFacts
+            SessionPartyFactsRepository partyFacts,
+            SessionEncounterFactsRepository encounterFacts
     ) {
         ProjectionContext context = buildContext(session, partyFacts, encounterFacts);
-        SessionEncounterFactsLookup.EncounterPlanListFact encounterPlansFact = encounterFacts.listEncounterPlans();
+        SessionEncounterFactsRepository.EncounterPlanListFact encounterPlansFact = encounterFacts.listEncounterPlans();
         List<SessionPlannerSessionSnapshot.AvailableEncounterPlan> availablePlans =
                 buildAvailablePlans(encounterPlansFact, context.loadedEncounters(), encounterFacts);
         return new SessionPlannerSessionSnapshot(
@@ -54,7 +54,7 @@ public final class SessionPlannerPublishedStateProjector {
 
     public SessionPlannerParticipantsProjection projectParticipants(
             SessionPlan session,
-            SessionPartyFactsLookup partyFacts
+            SessionPartyFactsRepository partyFacts
     ) {
         ProjectionContext context = buildParticipantContext(session, partyFacts);
         return new SessionPlannerParticipantsProjection(
@@ -65,8 +65,8 @@ public final class SessionPlannerPublishedStateProjector {
 
     public SessionPlannerEncountersProjection projectEncounters(
             SessionPlan session,
-            SessionPartyFactsLookup partyFacts,
-            SessionEncounterFactsLookup encounterFacts
+            SessionPartyFactsRepository partyFacts,
+            SessionEncounterFactsRepository encounterFacts
     ) {
         ProjectionContext context = buildContext(session, partyFacts, encounterFacts);
         return new SessionPlannerEncountersProjection(
@@ -79,8 +79,8 @@ public final class SessionPlannerPublishedStateProjector {
 
     public SessionPlannerStatePanelProjection projectStatePanel(
             SessionPlan session,
-            SessionPartyFactsLookup partyFacts,
-            SessionEncounterFactsLookup encounterFacts
+            SessionPartyFactsRepository partyFacts,
+            SessionEncounterFactsRepository encounterFacts
     ) {
         ProjectionContext context = buildContext(session, partyFacts, encounterFacts);
         SessionPlannerSessionSnapshot sessionSnapshot = projectSession(session, partyFacts, encounterFacts);
@@ -91,20 +91,20 @@ public final class SessionPlannerPublishedStateProjector {
 
     private static ProjectionContext buildContext(
             SessionPlan session,
-            SessionPartyFactsLookup partyFacts,
-            SessionEncounterFactsLookup encounterFacts
+            SessionPartyFactsRepository partyFacts,
+            SessionEncounterFactsRepository encounterFacts
     ) {
         ProjectionContext participantContext = buildParticipantContext(session, partyFacts);
         boolean sessionReady = !participantContext.participants().isEmpty()
                 && participantContext.participants().stream()
                 .allMatch(SessionPlannerParticipantsProjection.SessionParticipant::available);
-        Map<Long, SessionEncounterFactsLookup.EncounterPlanFact> loadedEncounters =
+        Map<Long, SessionEncounterFactsRepository.EncounterPlanFact> loadedEncounters =
                 loadSessionEncounterFacts(session, encounterFacts);
-        SessionPartyFactsLookup.AdventuringDayFact budgetFact = sessionReady
+        SessionPartyFactsRepository.AdventuringDayFact budgetFact = sessionReady
                 ? partyFacts.calculateAdventuringDay(
                         participantContext.resolvedLevels(),
                         plannedEncounterXp(session, loadedEncounters))
-                : SessionPartyFactsLookup.AdventuringDayFact.unavailable();
+                : SessionPartyFactsRepository.AdventuringDayFact.unavailable();
         int scaledBudgetXp = budgetFact.available() ? session.encounterDays().scaleBudget(budgetFact.totalBudgetXp()) : 0;
         return new ProjectionContext(
                 participantContext.partyMembersFact(),
@@ -117,9 +117,9 @@ public final class SessionPlannerPublishedStateProjector {
 
     private static ProjectionContext buildParticipantContext(
             SessionPlan session,
-            SessionPartyFactsLookup partyFacts
+            SessionPartyFactsRepository partyFacts
     ) {
-        SessionPartyFactsLookup.ActivePartyMembersFact partyMembersFact = partyFacts.loadActivePartyMembers();
+        SessionPartyFactsRepository.ActivePartyMembersFact partyMembersFact = partyFacts.loadActivePartyMembers();
         List<SessionPlannerParticipantsProjection.SessionParticipant> participants =
                 buildParticipants(session, partyMembersFact);
         List<Integer> resolvedLevels = participants.stream()
@@ -131,7 +131,7 @@ public final class SessionPlannerPublishedStateProjector {
                 participants,
                 resolvedLevels,
                 new HashMap<>(),
-                SessionPartyFactsLookup.AdventuringDayFact.unavailable(),
+                SessionPartyFactsRepository.AdventuringDayFact.unavailable(),
                 0);
     }
 
@@ -139,7 +139,7 @@ public final class SessionPlannerPublishedStateProjector {
             SessionPlan session,
             List<Integer> resolvedLevels,
             List<SessionPlannerParticipantsProjection.SessionParticipant> participants,
-            SessionPartyFactsLookup.ActivePartyMembersFact partyMembersFact
+            SessionPartyFactsRepository.ActivePartyMembersFact partyMembersFact
     ) {
         int sessionSize = session.participantRefs().size();
         int averageLevel = resolvedLevels.isEmpty()
@@ -174,9 +174,9 @@ public final class SessionPlannerPublishedStateProjector {
 
     private static SessionPlannerSessionSnapshot.XpBudgetState buildXpBudgetState(
             SessionPlan session,
-            SessionPartyFactsLookup.AdventuringDayFact budgetFact,
+            SessionPartyFactsRepository.AdventuringDayFact budgetFact,
             int scaledBudgetXp,
-            Map<Long, SessionEncounterFactsLookup.EncounterPlanFact> loadedEncounters
+            Map<Long, SessionEncounterFactsRepository.EncounterPlanFact> loadedEncounters
     ) {
         if (!budgetFact.available()) {
             return SessionPlannerSessionSnapshot.XpBudgetState.empty();
@@ -199,7 +199,7 @@ public final class SessionPlannerPublishedStateProjector {
     }
 
     private static SessionPlannerSessionSnapshot.RestAdviceState buildRestAdviceState(
-            SessionPartyFactsLookup.AdventuringDayFact budgetFact,
+            SessionPartyFactsRepository.AdventuringDayFact budgetFact,
             int placedShortRests,
             int placedLongRests
     ) {
@@ -217,16 +217,16 @@ public final class SessionPlannerPublishedStateProjector {
     }
 
     private static List<SessionPlannerSessionSnapshot.AvailableEncounterPlan> buildAvailablePlans(
-            SessionEncounterFactsLookup.EncounterPlanListFact encounterPlansFact,
-            Map<Long, SessionEncounterFactsLookup.EncounterPlanFact> loadedEncounters,
-            SessionEncounterFactsLookup encounterFacts
+            SessionEncounterFactsRepository.EncounterPlanListFact encounterPlansFact,
+            Map<Long, SessionEncounterFactsRepository.EncounterPlanFact> loadedEncounters,
+            SessionEncounterFactsRepository encounterFacts
     ) {
         if (!encounterPlansFact.available()) {
             return List.of();
         }
         List<SessionPlannerSessionSnapshot.AvailableEncounterPlan> availablePlans = new ArrayList<>();
-        for (SessionEncounterFactsLookup.SavedEncounterPlanFact plan : encounterPlansFact.plans()) {
-            SessionEncounterFactsLookup.EncounterPlanFact detail = encounterFacts.loadEncounterPlan(plan.planId());
+        for (SessionEncounterFactsRepository.SavedEncounterPlanFact plan : encounterPlansFact.plans()) {
+            SessionEncounterFactsRepository.EncounterPlanFact detail = encounterFacts.loadEncounterPlan(plan.planId());
             loadedEncounters.put(plan.planId(), detail);
             availablePlans.add(new SessionPlannerSessionSnapshot.AvailableEncounterPlan(
                     plan.planId(),
@@ -240,11 +240,11 @@ public final class SessionPlannerPublishedStateProjector {
         return List.copyOf(availablePlans);
     }
 
-    private static Map<Long, SessionEncounterFactsLookup.EncounterPlanFact> loadSessionEncounterFacts(
+    private static Map<Long, SessionEncounterFactsRepository.EncounterPlanFact> loadSessionEncounterFacts(
             SessionPlan session,
-            SessionEncounterFactsLookup encounterFacts
+            SessionEncounterFactsRepository encounterFacts
     ) {
-        Map<Long, SessionEncounterFactsLookup.EncounterPlanFact> loadedEncounters = new HashMap<>();
+        Map<Long, SessionEncounterFactsRepository.EncounterPlanFact> loadedEncounters = new HashMap<>();
         for (SessionEncounter encounter : session.encounters()) {
             loadedEncounters.computeIfAbsent(encounter.encounterPlanId(), encounterFacts::loadEncounterPlan);
         }
@@ -253,11 +253,11 @@ public final class SessionPlannerPublishedStateProjector {
 
     private static List<SessionPlannerParticipantsProjection.SessionParticipant> buildParticipants(
             SessionPlan session,
-            SessionPartyFactsLookup.ActivePartyMembersFact activeMembers
+            SessionPartyFactsRepository.ActivePartyMembersFact activeMembers
     ) {
         List<SessionPlannerParticipantsProjection.SessionParticipant> participants = new ArrayList<>();
         for (Long participantRef : session.participantRefs()) {
-            SessionPartyFactsLookup.PartyMemberProfile member = activeMembers.resolve(participantRef);
+            SessionPartyFactsRepository.PartyMemberProfile member = activeMembers.resolve(participantRef);
             if (member == null) {
                 participants.add(new SessionPlannerParticipantsProjection.SessionParticipant(
                         participantRef,
@@ -278,11 +278,11 @@ public final class SessionPlannerPublishedStateProjector {
     }
 
     private static List<SessionPlannerParticipantsProjection.ActivePartyMember> buildActivePartyMembers(
-            List<SessionPartyFactsLookup.PartyMemberProfile> members
+            List<SessionPartyFactsRepository.PartyMemberProfile> members
     ) {
         List<SessionPlannerParticipantsProjection.ActivePartyMember> activePartyMembers = new ArrayList<>();
-        for (SessionPartyFactsLookup.PartyMemberProfile member
-                : members == null ? List.<SessionPartyFactsLookup.PartyMemberProfile>of() : members) {
+        for (SessionPartyFactsRepository.PartyMemberProfile member
+                : members == null ? List.<SessionPartyFactsRepository.PartyMemberProfile>of() : members) {
             activePartyMembers.add(new SessionPlannerParticipantsProjection.ActivePartyMember(
                     member.characterId(),
                     member.displayName(),
@@ -294,12 +294,12 @@ public final class SessionPlannerPublishedStateProjector {
     private static List<SessionPlannerEncountersProjection.PlannedEncounter> buildPlannedEncounters(
             SessionPlan session,
             int scaledBudgetXp,
-            Map<Long, SessionEncounterFactsLookup.EncounterPlanFact> loadedEncounters,
-            SessionEncounterFactsLookup encounterFacts
+            Map<Long, SessionEncounterFactsRepository.EncounterPlanFact> loadedEncounters,
+            SessionEncounterFactsRepository encounterFacts
     ) {
         List<SessionPlannerEncountersProjection.PlannedEncounter> plannedEncounters = new ArrayList<>();
         for (SessionEncounter encounter : session.encounters()) {
-            SessionEncounterFactsLookup.EncounterPlanFact detail = loadedEncounters.computeIfAbsent(
+            SessionEncounterFactsRepository.EncounterPlanFact detail = loadedEncounters.computeIfAbsent(
                     encounter.encounterPlanId(),
                     encounterFacts::loadEncounterPlan);
             int targetXp = encounter.allocation().budgetPercentage()
@@ -374,8 +374,8 @@ public final class SessionPlannerPublishedStateProjector {
 
     private static String resolveStatus(
             List<SessionPlannerParticipantsProjection.SessionParticipant> participants,
-            SessionPartyFactsLookup.ActivePartyMembersFact partyMembersFact,
-            SessionEncounterFactsLookup.EncounterPlanListFact encounterPlansFact,
+            SessionPartyFactsRepository.ActivePartyMembersFact partyMembersFact,
+            SessionEncounterFactsRepository.EncounterPlanListFact encounterPlansFact,
             String sessionStatusText
     ) {
         if (sessionStatusText != null && !sessionStatusText.isBlank()) {
@@ -409,12 +409,12 @@ public final class SessionPlannerPublishedStateProjector {
 
     private static int plannedEncounterXp(
             SessionPlan session,
-            Map<Long, SessionEncounterFactsLookup.EncounterPlanFact> loadedEncounters
+            Map<Long, SessionEncounterFactsRepository.EncounterPlanFact> loadedEncounters
     ) {
         return session.encounters().stream()
                 .mapToInt(encounter -> loadedEncounters.getOrDefault(
                         encounter.encounterPlanId(),
-                        SessionEncounterFactsLookup.EncounterPlanFact.unavailable(
+                        SessionEncounterFactsRepository.EncounterPlanFact.unavailable(
                                 encounter.encounterPlanId(),
                                 "Encounter-Plan fehlt.")).adjustedXp())
                 .sum();
@@ -469,11 +469,11 @@ public final class SessionPlannerPublishedStateProjector {
     }
 
     private record ProjectionContext(
-            SessionPartyFactsLookup.ActivePartyMembersFact partyMembersFact,
+            SessionPartyFactsRepository.ActivePartyMembersFact partyMembersFact,
             List<SessionPlannerParticipantsProjection.SessionParticipant> participants,
             List<Integer> resolvedLevels,
-            Map<Long, SessionEncounterFactsLookup.EncounterPlanFact> loadedEncounters,
-            SessionPartyFactsLookup.AdventuringDayFact budgetFact,
+            Map<Long, SessionEncounterFactsRepository.EncounterPlanFact> loadedEncounters,
+            SessionPartyFactsRepository.AdventuringDayFact budgetFact,
             int scaledBudgetXp
     ) {
     }

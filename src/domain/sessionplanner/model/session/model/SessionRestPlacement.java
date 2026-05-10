@@ -1,4 +1,4 @@
-package src.domain.sessionplanner.session.value;
+package src.domain.sessionplanner.model.session.model;
 
 import java.util.Objects;
 

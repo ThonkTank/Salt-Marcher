@@ -9,12 +9,12 @@ import src.data.sessionplanner.model.SessionParticipantRecord;
 import src.data.sessionplanner.model.SessionPlanRecord;
 import src.data.sessionplanner.model.SessionPlanSnapshotRecord;
 import src.data.sessionplanner.model.SessionRestPlacementRecord;
-import src.domain.sessionplanner.session.aggregate.SessionPlan;
-import src.domain.sessionplanner.session.value.EncounterDays;
-import src.domain.sessionplanner.session.value.SessionEncounter;
-import src.domain.sessionplanner.session.value.SessionEncounterAllocation;
-import src.domain.sessionplanner.session.value.SessionLootPlaceholder;
-import src.domain.sessionplanner.session.value.SessionRestPlacement;
+import src.domain.sessionplanner.model.session.model.EncounterDays;
+import src.domain.sessionplanner.model.session.model.SessionEncounter;
+import src.domain.sessionplanner.model.session.model.SessionEncounterAllocation;
+import src.domain.sessionplanner.model.session.model.SessionLootPlaceholder;
+import src.domain.sessionplanner.model.session.model.SessionPlan;
+import src.domain.sessionplanner.model.session.model.SessionRestPlacement;
 
 public final class SessionPlanMapper {
 

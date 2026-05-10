@@ -1,6 +1,6 @@
 Status: Deprecated
 Owner: SaltMarcher Team
-Last Reviewed: 2026-05-08
+Last Reviewed: 2026-05-10
 Source of Truth: Compatibility mirror for canonical documentation at `docs/encounter/domain/domain-encounter.md`.
 
 # Encounter Domain Model Compatibility Mirror
@@ -29,7 +29,7 @@ chooser display language, and status vocabulary.
 
 Saved encounter plans publish only thin chooser display language. The
 SessionPlanner list/detail work forms leave encounter through the foreign
-`SessionEncounterFactsLookup` service seam instead of encounter-owned
+`SessionEncounterFactsRepository` service seam instead of encounter-owned
 published read models. Creature details remain owned by the creatures context
 and are reloaded when a saved plan is opened.
 

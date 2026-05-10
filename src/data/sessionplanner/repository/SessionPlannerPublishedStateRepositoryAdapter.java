@@ -15,11 +15,11 @@ import src.domain.sessionplanner.published.SessionPlannerParticipantsProjection;
 import src.domain.sessionplanner.published.SessionPlannerSessionSnapshot;
 import src.domain.sessionplanner.published.SessionPlannerStatePanelModel;
 import src.domain.sessionplanner.published.SessionPlannerStatePanelProjection;
-import src.domain.sessionplanner.session.aggregate.SessionPlan;
-import src.domain.sessionplanner.session.port.SessionEncounterFactsLookup;
-import src.domain.sessionplanner.session.port.SessionPartyFactsLookup;
-import src.domain.sessionplanner.session.port.SessionPlanRepository;
-import src.domain.sessionplanner.session.port.SessionPlannerPublishedStateRepository;
+import src.domain.sessionplanner.model.session.model.SessionPlan;
+import src.domain.sessionplanner.model.session.repository.SessionEncounterFactsRepository;
+import src.domain.sessionplanner.model.session.repository.SessionPartyFactsRepository;
+import src.domain.sessionplanner.model.session.repository.SessionPlanRepository;
+import src.domain.sessionplanner.model.session.repository.SessionPlannerPublishedStateRepository;
 
 @SuppressWarnings({
         "PMD.CouplingBetweenObjects",
@@ -30,8 +30,8 @@ public final class SessionPlannerPublishedStateRepositoryAdapter implements Sess
     private static final String LISTENER_PARAMETER = "listener";
 
     private final SessionPlanRepository repository;
-    private final SessionPartyFactsLookup partyFacts;
-    private final SessionEncounterFactsLookup encounterFacts;
+    private final SessionPartyFactsRepository partyFacts;
+    private final SessionEncounterFactsRepository encounterFacts;
     private final SessionPlannerPublishedStateProjector projector = new SessionPlannerPublishedStateProjector();
     private final List<Consumer<SessionPlannerSessionSnapshot>> sessionListeners = new ArrayList<>();
     private final List<Consumer<SessionPlannerParticipantsProjection>> participantsListeners = new ArrayList<>();
@@ -56,8 +56,8 @@ public final class SessionPlannerPublishedStateRepositoryAdapter implements Sess
 
     public SessionPlannerPublishedStateRepositoryAdapter(
             SessionPlanRepository repository,
-            SessionPartyFactsLookup partyFacts,
-            SessionEncounterFactsLookup encounterFacts
+            SessionPartyFactsRepository partyFacts,
+            SessionEncounterFactsRepository encounterFacts
     ) {
         this.repository = Objects.requireNonNull(repository, "repository");
         this.partyFacts = Objects.requireNonNull(partyFacts, "partyFacts");

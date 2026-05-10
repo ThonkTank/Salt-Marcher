@@ -1,4 +1,4 @@
-package src.domain.sessionplanner.session.aggregate;
+package src.domain.sessionplanner.model.session.model;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -6,12 +6,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
-import src.domain.sessionplanner.session.value.EncounterDays;
-import src.domain.sessionplanner.session.value.SessionEncounter;
-import src.domain.sessionplanner.session.value.SessionEncounterAllocation;
-import src.domain.sessionplanner.session.value.SessionLootPlaceholder;
-import src.domain.sessionplanner.session.value.SessionRestPlacement;
-
 public record SessionPlan(
         long sessionId,
         List<Long> participantRefs,

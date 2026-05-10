@@ -1,8 +1,8 @@
-package src.domain.sessionplanner.session.port;
+package src.domain.sessionplanner.model.session.repository;
 
 import java.util.List;
 
-public interface SessionEncounterFactsLookup {
+public interface SessionEncounterFactsRepository {
 
     EncounterPlanListFact listEncounterPlans();
 
