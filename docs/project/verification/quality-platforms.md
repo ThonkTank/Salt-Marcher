@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-05-07
+Last Reviewed: 2026-05-10
 Source of Truth: Quality-platform operating model, status vocabulary,
 verification policy, and architecture-harness relationship for SaltMarcher
 quality gates.
@@ -142,6 +142,9 @@ surface set:
   runs the canonical Styling enforcement surface.
 - `checkLayeringEnforcement`
   runs the canonical Layering enforcement surface.
+- `checkArchitecture`
+  runs the small public architecture aggregate over the canonical layer
+  surfaces plus the internal generic architecture owners.
 - `checkDocumentationEnforcement`
   runs the dedicated Markdown-backed architecture and enforcement-document
   coverage path and stays intentionally outside `check` and `build`.
@@ -153,8 +156,8 @@ are no longer part of the public verification contract. They may still exist as
 technical implementation tasks behind those layer surfaces, but they are not
 documented public entrypoints and must not be used as the canonical routing
 surface in owner docs. `production-handoff` is the only public broad
-implementation-handoff aggregate above the focused layer and documentation
-surfaces.
+implementation-handoff aggregate above `checkArchitecture` and the
+documentation surface.
 
 `production-handoff` is the public aggregate for production-code verification.
 It combines:
@@ -162,13 +165,10 @@ It combines:
 - assemble and `test`
 - the quality-hygiene blocker path through PMD, SpotBugs, CPD, Lizard,
   compiled-artifact hygiene, and whole-program dead-code reachability
-- the canonical layer surfaces
-- generic ArchUnit coverage such as `architectureTest`
-- the non-documentation build-harness aggregate `:build-harness:architectureCheck`
+- the public `checkArchitecture` aggregate
 
 `check` remains the central local build-health aggregate. Its architecture
-coverage comes through the explicitly attached layer surfaces plus
-`architectureTest` and `:build-harness:architectureCheck`.
+coverage comes through the public `checkArchitecture` aggregate.
 `checkDocumentationEnforcement` remains intentionally separate so
 documentation-only work has a smaller proof route.
 

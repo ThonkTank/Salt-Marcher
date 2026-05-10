@@ -19,6 +19,7 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 import javax.lang.model.element.Modifier;
 import saltmarcher.quality.errorprone.view.ViewArchitectureSupport;
+import saltmarcher.quality.errorprone.view.ViewSourceDescriptor;
 
 @BugPattern(
         name = "ViewInputEventSnapshotBoundary",
@@ -29,13 +30,14 @@ public final class ViewInputEventSnapshotBoundaryChecker extends BugChecker
 
     @Override
     public Description matchCompilationUnit(CompilationUnitTree tree, VisitorState state) {
-        if (!ViewArchitectureSupport.isPanelViewSource(tree)) {
+        ViewSourceDescriptor source = ViewSourceDescriptor.describe(tree);
+        if (!source.isPassiveViewSource()) {
             return Description.NO_MATCH;
         }
 
-        String sourcePackageName = ViewArchitectureSupport.packageName(tree);
-        String viewSimpleName = ViewArchitectureSupport.topLevelSimpleName(tree);
-        String qualifiedViewName = sourcePackageName + "." + viewSimpleName;
+        String sourcePackageName = source.packageName();
+        String viewSimpleName = source.topLevelSimpleName();
+        String qualifiedViewName = source.qualifiedTopLevelTypeName();
         Tree[] firstViolationTree = {null};
         Set<String> violations = new LinkedHashSet<>();
         new TreePathScanner<Void, Void>() {

@@ -19,6 +19,8 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 import javax.lang.model.element.Modifier;
 import saltmarcher.quality.errorprone.view.ViewArchitectureSupport;
+import saltmarcher.quality.errorprone.view.ViewRole;
+import saltmarcher.quality.errorprone.view.ViewSourceDescriptor;
 
 @BugPattern(
         name = "ViewInputEventBoundary",
@@ -29,15 +31,16 @@ public final class ViewInputEventBoundaryChecker extends BugChecker
 
     @Override
     public Description matchCompilationUnit(CompilationUnitTree tree, VisitorState state) {
-        String sourcePackageName = ViewArchitectureSupport.packageName(tree);
+        ViewSourceDescriptor source = ViewSourceDescriptor.describe(tree);
+        String sourcePackageName = source.packageName();
         if (!sourcePackageName.startsWith("src.view.")) {
             return Description.NO_MATCH;
         }
-        String topLevelSimpleName = ViewArchitectureSupport.topLevelSimpleName(tree);
+        String topLevelSimpleName = source.topLevelSimpleName();
 
         Tree[] firstViolationTree = {null};
         Set<String> violations = new LinkedHashSet<>();
-        if (ViewArchitectureSupport.isViewInputEventSource(tree)) {
+        if (source.role() == ViewRole.VIEW_INPUT_EVENT) {
             collectCarrierBoundaryViolations(tree, sourcePackageName, topLevelSimpleName, violations, firstViolationTree);
         }
         collectCarrierProducerViolations(tree, sourcePackageName, topLevelSimpleName, violations, firstViolationTree);
@@ -125,8 +128,8 @@ public final class ViewInputEventBoundaryChecker extends BugChecker
         new TreePathScanner<Void, Void>() {
             @Override
             public Void visitNewClass(NewClassTree newClassTree, Void unused) {
-                String constructedType = qualifiedTypeNameOf(newClassTree);
-                if (isTopLevelViewInputEventType(constructedType)
+                String constructedType = topLevelConstructedViewInputEventType(newClassTree);
+                if (!constructedType.isBlank()
                         && !isAllowedTopLevelCarrierProducer(tree, sourcePackageName, topLevelSimpleName, constructedType)) {
                     violations.add("constructs " + topLevelViewInputEventTypeName(constructedType)
                             + " outside same-stem View");
@@ -267,11 +270,26 @@ public final class ViewInputEventBoundaryChecker extends BugChecker
         return ASTHelpers.getType(newClassTree) == null ? "" : ASTHelpers.getType(newClassTree).toString();
     }
 
+    private static String topLevelConstructedViewInputEventType(NewClassTree newClassTree) {
+        String constructedType = qualifiedTypeNameOf(newClassTree);
+        if (isTopLevelViewInputEventType(constructedType)) {
+            return ViewArchitectureSupport.topLevelQualifiedTypeNameOf(constructedType);
+        }
+        Set<String> referencedTypes = new LinkedHashSet<>();
+        ViewArchitectureSupport.collectReferencedTypes(newClassTree, referencedTypes);
+        return referencedTypes.stream()
+                .map(ViewArchitectureSupport::topLevelQualifiedTypeNameOf)
+                .filter(ViewInputEventBoundaryChecker::isTopLevelViewInputEventType)
+                .findFirst()
+                .orElse("");
+    }
+
     private static boolean isTopLevelViewInputEventType(String referencedType) {
-        if (!ViewArchitectureSupport.isTargetViewInputEventReference(referencedType)) {
+        String topLevelReferencedType = ViewArchitectureSupport.topLevelQualifiedTypeNameOf(referencedType);
+        if (!ViewArchitectureSupport.isTargetViewInputEventReference(topLevelReferencedType)) {
             return false;
         }
-        return referencedType.equals(topLevelViewInputEventTypeName(referencedType));
+        return topLevelReferencedType.equals(topLevelViewInputEventTypeName(topLevelReferencedType));
     }
 
     private static String topLevelViewInputEventTypeName(String referencedType) {

@@ -6,6 +6,7 @@ readonly REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 readonly HEARTBEAT_SECONDS=30
 declare -a DIAGNOSTIC_CONTINUE_TASK_NAMES=(
   checkNoDeadCode
+  checkArchitecture
   production-handoff
   checkDocumentationEnforcement
   checkViewEnforcement

@@ -12,19 +12,17 @@ public record SessionPlannerControlsViewInputEvent(ControlsInput controlsInput) 
             SetEncounterDaysInput, AttachPlanInput {
     }
 
-    public enum CreateSessionTrigger implements ControlsInput, SessionPlannerPublishedEvent.Mutation {
+    public enum CreateSessionTrigger implements ControlsInput {
         CREATE_SESSION
     }
 
-    public record AddParticipantInput(long participantToAddId)
-            implements ControlsInput, SessionPlannerPublishedEvent.Mutation {
+    public record AddParticipantInput(long participantToAddId) implements ControlsInput {
         public AddParticipantInput {
             participantToAddId = Math.max(0L, participantToAddId);
         }
     }
 
-    public record RemoveParticipantInput(long participantToRemoveId)
-            implements ControlsInput, SessionPlannerPublishedEvent.Mutation {
+    public record RemoveParticipantInput(long participantToRemoveId) implements ControlsInput {
         public RemoveParticipantInput {
             participantToRemoveId = Math.max(0L, participantToRemoveId);
         }
@@ -36,8 +34,7 @@ public record SessionPlannerControlsViewInputEvent(ControlsInput controlsInput) 
         }
     }
 
-    public record AttachPlanInput(long planIdToAttach)
-            implements ControlsInput, SessionPlannerPublishedEvent.Mutation {
+    public record AttachPlanInput(long planIdToAttach) implements ControlsInput {
         public AttachPlanInput {
             planIdToAttach = Math.max(0L, planIdToAttach);
         }

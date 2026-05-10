@@ -7,11 +7,9 @@ import shell.api.ShellBinding;
 import shell.api.ShellRuntimeContext;
 import shell.api.ShellSlot;
 import src.domain.travel.TravelApplicationService;
-import src.domain.travel.published.ApplyTravelDungeonSessionCommand;
 import src.domain.travel.published.LoadTravelDungeonQuery;
 import src.domain.travel.published.TravelDungeonModel;
 import src.domain.travel.published.TravelDungeonSnapshot;
-import src.domain.travel.published.TravelOverlaySettings;
 import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel;
 import src.view.slotcontent.main.dungeonmap.DungeonMapView;
 
@@ -29,11 +27,10 @@ final class DungeonTravelBinder {
         DungeonTravelContributionModel contributionModel = new DungeonTravelContributionModel();
         DungeonMapContentModel mapContentModel = new DungeonMapContentModel("Travel workspace", false);
         DungeonTravelIntentHandler intentHandler =
-                new DungeonTravelIntentHandler(contributionModel, mapContentModel.mapCanvasContentModel());
+                new DungeonTravelIntentHandler(contributionModel, mapContentModel.mapCanvasContentModel(), travel);
         DungeonTravelControlsView controls = new DungeonTravelControlsView();
         DungeonMapView main = new DungeonMapView();
         DungeonTravelStateView state = new DungeonTravelStateView();
-        bindTravelRequests(travel, intentHandler);
         main.bind(mapContentModel);
         controls.bind(contributionModel);
         state.bind(contributionModel);
@@ -48,15 +45,6 @@ final class DungeonTravelBinder {
         return new Binding(controls, main, state);
     }
 
-    private static void bindTravelRequests(
-            TravelApplicationService travel,
-            DungeonTravelIntentHandler intentHandler
-    ) {
-        intentHandler.onPublishedEventRequested(actionEvent -> {
-            travel.applyDungeonTravelSession(toCommand(actionEvent));
-        });
-    }
-
     private static void applySnapshot(
             TravelDungeonSnapshot snapshot,
             DungeonTravelContributionModel contributionModel,
@@ -64,30 +52,6 @@ final class DungeonTravelBinder {
     ) {
         contributionModel.apply(snapshot);
         mapContentModel.applyTravelSnapshot(snapshot);
-    }
-
-    private static ApplyTravelDungeonSessionCommand toCommand(DungeonTravelStatePublishedEvent event) {
-        return switch (Objects.requireNonNull(event, "event").kind()) {
-            case ACTION -> new ApplyTravelDungeonSessionCommand(
-                    ApplyTravelDungeonSessionCommand.Action.ACTION,
-                    event.actionId(),
-                    0,
-                    TravelOverlaySettings.defaults());
-            case SET_PROJECTION_LEVEL -> new ApplyTravelDungeonSessionCommand(
-                    ApplyTravelDungeonSessionCommand.Action.SET_PROJECTION_LEVEL,
-                    "",
-                    event.projectionLevel(),
-                    TravelOverlaySettings.defaults());
-            case SET_OVERLAY -> new ApplyTravelDungeonSessionCommand(
-                    ApplyTravelDungeonSessionCommand.Action.SET_OVERLAY,
-                    "",
-                    0,
-                    new TravelOverlaySettings(
-                            event.overlayModeKey(),
-                            event.overlayRange(),
-                            event.overlayOpacity(),
-                            event.overlayLevels()));
-        };
     }
 
     private record Binding(

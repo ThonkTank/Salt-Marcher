@@ -9,7 +9,6 @@ import org.gradle.kotlin.dsl.named
 import org.gradle.kotlin.dsl.register
 import org.gradle.kotlin.dsl.withType
 import org.gradle.language.base.plugins.LifecycleBasePlugin
-import saltmarcher.buildlogic.enforcement.standardVerificationSurfaceCatalog
 import saltmarcher.buildlogic.tasks.CheckNoCompiledArtifactsTask
 import saltmarcher.buildlogic.tasks.hygiene.CkjmReportTask
 import saltmarcher.buildlogic.tasks.hygiene.CheckNoDeadCodeTask
@@ -23,9 +22,6 @@ internal fun Project.registerQualityConventionLifecycleTasks(
     toolConfigurations: QualityConventionToolConfigurations
 ){
     val verificationLayout = environment.verificationLayout
-    val publicVerificationSurfaceNames = standardVerificationSurfaceCatalog(environment.enforcementBundles.catalog)
-        .surfacesInOrder
-        .map { surface -> surface.publicTaskName }
     val resetMainJavaClassesOutput = tasks.register<Delete>("resetMainJavaClassesOutput") {
         description = "Remove compiled main classes before recompilation so deleted sources cannot survive as stale bytecode."
         delete(verificationLayout.mainJavaClassesDir)
@@ -147,9 +143,7 @@ internal fun Project.registerQualityConventionLifecycleTasks(
     val check = tasks.named("check") {
         dependsOn("assemble")
         dependsOn("test")
-        dependsOn("architectureTest")
-        dependsOn(gradle.includedBuild("build-harness").task(":architectureCheck"))
-        publicVerificationSurfaceNames.forEach(::dependsOn)
+        dependsOn("checkArchitecture")
         dependsOn(tasks.named("pmdMain"))
         dependsOn(tasks.named("spotbugsMain"))
         dependsOn(cpdMain)

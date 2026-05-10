@@ -136,6 +136,14 @@ internal fun Project.configureVerificationCore() {
         dependsOn(gradle.includedBuild("build-harness").task(":documentationEnforcementCheck"))
     }
 
+    val checkArchitecture = tasks.register("checkArchitecture") {
+        group = LifecycleBasePlugin.VERIFICATION_GROUP
+        description = "Run the public architecture aggregate through the canonical layer surfaces and internal architecture owners."
+        dependsOn("architectureTest")
+        dependsOn(gradle.includedBuild("build-harness").task(":architectureCheck"))
+        publicVerificationSurfaceNames.forEach(::dependsOn)
+    }
+
     tasks.register("desktop-install") {
         group = LifecycleBasePlugin.VERIFICATION_GROUP
         description = "Run the convenience desktop installation path after a green local handoff."
@@ -147,8 +155,7 @@ internal fun Project.configureVerificationCore() {
         description = "Run the public production handoff surface through the small verification API and internal quality owners."
         dependsOn("assemble")
         dependsOn("test")
-        dependsOn("architectureTest")
-        dependsOn(gradle.includedBuild("build-harness").task(":architectureCheck"))
+        dependsOn(checkArchitecture)
         dependsOn("pmdMain")
         dependsOn("spotbugsMain")
         dependsOn("cpdMain")
@@ -156,7 +163,6 @@ internal fun Project.configureVerificationCore() {
         dependsOn("checkNoCompiledArtifactsInSource")
         dependsOn("checkNoDeadCode")
         dependsOn("pmdStrictMain")
-        publicVerificationSurfaceNames.forEach(::dependsOn)
     }
 
 }

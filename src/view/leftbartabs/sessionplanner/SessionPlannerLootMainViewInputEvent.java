@@ -11,12 +11,11 @@ public record SessionPlannerLootMainViewInputEvent(LootInput lootInput) {
     public sealed interface LootInput permits AddLootPlaceholderTrigger, RemoveLootPlaceholderInput {
     }
 
-    public enum AddLootPlaceholderTrigger implements LootInput, SessionPlannerPublishedEvent.Mutation {
+    public enum AddLootPlaceholderTrigger implements LootInput {
         ADD_LOOT_PLACEHOLDER
     }
 
-    public record RemoveLootPlaceholderInput(long lootToken)
-            implements LootInput, SessionPlannerPublishedEvent.Mutation {
+    public record RemoveLootPlaceholderInput(long lootToken) implements LootInput {
         public RemoveLootPlaceholderInput {
             lootToken = Math.max(0L, lootToken);
         }

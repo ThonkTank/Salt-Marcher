@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-05-07
+Last Reviewed: 2026-05-10
 Source of Truth: Verification-surface ownership, layer boundaries, and public
 verification-entry architecture for SaltMarcher build logic.
 
@@ -71,6 +71,7 @@ Mechanically enforced public verification surfaces are:
   `checkDomainEnforcement`, `checkDataEnforcement`,
   `checkShellEnforcement`, `checkBootstrapEnforcement`,
   `checkStylingEnforcement`, and `checkLayeringEnforcement`
+- public architecture aggregate: `checkArchitecture`
 - focused documentation surface: `checkDocumentationEnforcement`
 - broad handoff surface: `production-handoff`
 
@@ -78,8 +79,8 @@ Mechanically enforced public verification surfaces are:
 verification surface. Root-owned hygiene and architecture tasks such as
 `checkNoDeadCode`, `architectureTest`, and
 `:build-harness:architectureCheck` remain internal dependencies behind
-`production-handoff` and `check`; they are not focused enforcement bundles and
-not a second public API.
+`checkArchitecture`, `production-handoff`, and `check`; they are not focused
+enforcement bundles and not a second public API.
 
 The verification core owns the mapping from a public surface to its underlying
 Gradle dependencies. Root build scripts MUST consume this core instead of
@@ -94,9 +95,11 @@ by the verification core from that registry, and the verification core then
 groups them behind the small layer-surface set. Bundles with small local
 extras such as stylesheet or FXML checks still register through the same
 standard verification-core path instead of through dedicated root plugins. The
-closed-world View topology owner stays an internal dependency behind the public
-`checkViewEnforcement` surface rather than becoming a second public
-graph-analysis route.
+View model behind the public `checkViewEnforcement` surface has exactly two
+technical owners: the closed-world build-harness topology core and the shared
+Error Prone View core. The verification core MUST NOT open a second
+alternative View structure through extra public role-local entrypoints, a
+third shared core, or bundle-specific root-launcher families.
 
 Bundle owners MAY know their private ArchUnit, Error Prone, or build-harness
 tasks. They MUST NOT depend on shell wrappers.
@@ -123,8 +126,8 @@ Allowed dependency direction is strictly inward:
 
 - runtime wrappers -> public verification surface names plus the
   `desktop-install` convenience entrypoint only
-- verification core -> public layer surfaces, `production-handoff`,
-  included-build entrypoints, and enforcement specs
+- verification core -> public layer surfaces, `checkArchitecture`,
+  `production-handoff`, included-build entrypoints, and enforcement specs
 - bundle owners -> private rule tasks and typed proof wiring
 - rule implementation -> concrete source files, compiled classes, documentation
   inventories, and engine-local support code

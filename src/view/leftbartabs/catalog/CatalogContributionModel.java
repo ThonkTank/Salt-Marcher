@@ -158,8 +158,8 @@ public final class CatalogContributionModel {
         return state.interactionState();
     }
 
-    CatalogPublishedEvent searchEvent() {
-        return state.searchEvent();
+    SearchRequest currentSearchRequest() {
+        return state.currentSearchRequest();
     }
 
     private void refreshControlsProjection() {
@@ -907,9 +907,9 @@ public final class CatalogContributionModel {
             return new InteractionState(localFilters, controlsState, authoritativeControls);
         }
 
-        CatalogPublishedEvent searchEvent() {
+        SearchRequest currentSearchRequest() {
             CreatureFilters filters = mergedFilters(localFilters, authoritativeControls);
-            return CatalogPublishedEvent.search(
+            return new SearchRequest(
                     filters.nameQuery(),
                     filters.challengeRatingMin(),
                     filters.challengeRatingMax(),
@@ -918,7 +918,8 @@ public final class CatalogContributionModel {
                     filters.subtypes(),
                     filters.biomes(),
                     filters.alignments(),
-                    selectedSort.key(),
+                    selectedSort.field(),
+                    selectedSort.direction(),
                     pageOffset);
         }
 
@@ -940,6 +941,35 @@ public final class CatalogContributionModel {
 
         MainProjection mainProjection() {
             return MainProjection.from(rows, selectedSort, pageOffset, totalCount, placeholderText);
+        }
+    }
+
+    record SearchRequest(
+            String nameQuery,
+            String challengeRatingMin,
+            String challengeRatingMax,
+            List<String> sizes,
+            List<String> creatureTypes,
+            List<String> creatureSubtypes,
+            List<String> biomes,
+            List<String> alignments,
+            CreatureCatalogSortField sortField,
+            CreatureSortDirection sortDirection,
+            int pageOffset
+    ) {
+
+        SearchRequest {
+            nameQuery = safe(nameQuery);
+            challengeRatingMin = safe(challengeRatingMin);
+            challengeRatingMax = safe(challengeRatingMax);
+            sizes = copiedList(sizes);
+            creatureTypes = copiedList(creatureTypes);
+            creatureSubtypes = copiedList(creatureSubtypes);
+            biomes = copiedList(biomes);
+            alignments = copiedList(alignments);
+            sortField = sortField == null ? CreatureCatalogSortField.NAME : sortField;
+            sortDirection = sortDirection == null ? CreatureSortDirection.ASCENDING : sortDirection;
+            pageOffset = Math.max(0, pageOffset);
         }
     }
 }

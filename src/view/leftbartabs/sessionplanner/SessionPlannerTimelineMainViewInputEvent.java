@@ -13,8 +13,7 @@ public record SessionPlannerTimelineMainViewInputEvent(TimelineInput timelineInp
             RemoveEncounterInput, RestGapInput {
     }
 
-    public record SelectEncounterInput(long selectedEncounterToken)
-            implements TimelineInput, SessionPlannerPublishedEvent.Mutation {
+    public record SelectEncounterInput(long selectedEncounterToken) implements TimelineInput {
         public SelectEncounterInput {
             selectedEncounterToken = Math.max(0L, selectedEncounterToken);
         }
@@ -23,7 +22,7 @@ public record SessionPlannerTimelineMainViewInputEvent(TimelineInput timelineInp
     public record SetEncounterAllocationInput(
             long encounterToken,
             BigDecimal targetAllocationPercentage
-    ) implements TimelineInput, SessionPlannerPublishedEvent.Mutation {
+    ) implements TimelineInput {
         public SetEncounterAllocationInput {
             encounterToken = Math.max(0L, encounterToken);
             targetAllocationPercentage = targetAllocationPercentage == null
@@ -35,7 +34,7 @@ public record SessionPlannerTimelineMainViewInputEvent(TimelineInput timelineInp
     public record MoveEncounterInput(
             long encounterToken,
             Direction direction
-    ) implements TimelineInput, SessionPlannerPublishedEvent.Mutation {
+    ) implements TimelineInput {
         public MoveEncounterInput {
             encounterToken = Math.max(0L, encounterToken);
             direction = direction == null ? Direction.UP : direction;
@@ -46,8 +45,7 @@ public record SessionPlannerTimelineMainViewInputEvent(TimelineInput timelineInp
         }
     }
 
-    public record RemoveEncounterInput(long encounterTokenToRemove)
-            implements TimelineInput, SessionPlannerPublishedEvent.Mutation {
+    public record RemoveEncounterInput(long encounterTokenToRemove) implements TimelineInput {
         public RemoveEncounterInput {
             encounterTokenToRemove = Math.max(0L, encounterTokenToRemove);
         }
@@ -57,7 +55,7 @@ public record SessionPlannerTimelineMainViewInputEvent(TimelineInput timelineInp
             long leftEncounterId,
             long rightEncounterId,
             RestSelection restSelection
-    ) implements TimelineInput, SessionPlannerPublishedEvent.Mutation {
+    ) implements TimelineInput {
         public RestGapInput {
             leftEncounterId = Math.max(0L, leftEncounterId);
             rightEncounterId = Math.max(0L, rightEncounterId);

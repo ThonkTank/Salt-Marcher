@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-05-09
+Last Reviewed: 2026-05-10
 Source of Truth: Detailed local gate inventory, aggregate entrypoints, and
 concurrent local invocation policy for SaltMarcher quality platforms.
 
@@ -227,12 +227,7 @@ layer.
 `check` includes:
 
 - Java compiler hygiene through `compileJava`
-- the public architecture layer surfaces `checkViewEnforcement`,
-  `checkDomainEnforcement`, `checkDataEnforcement`,
-  `checkShellEnforcement`, `checkBootstrapEnforcement`,
-  `checkStylingEnforcement`, and `checkLayeringEnforcement`
-- generic architecture internals through `architectureTest` and
-  `:build-harness:architectureCheck`
+- the public architecture aggregate `checkArchitecture`
 - repository and resource policy checks
 - PMD source-smell detection through `pmdMain`
 - SpotBugs plus FindSecBugs through `spotbugsMain`
@@ -245,8 +240,7 @@ implementation-handoff route required by `AGENTS.md` for production-code
 changes. The wrapper is runtime-only: it forwards the canonical surface name to
 one same-named Gradle lifecycle task, and the verification core expands
 `production-handoff` directly to assemble, `test`, the quality-hygiene tool
-owners, the canonical layer surfaces, `architectureTest`, and
-`:build-harness:architectureCheck` inside Gradle.
+owners, and `checkArchitecture` inside Gradle.
 By default, `production-handoff` now runs with Gradle `--continue` at the
 staged-handoff level so the canonical implementation-handoff route reports the
 broader current failure set in one run. The staged handoff still fails overall
@@ -293,7 +287,7 @@ Focused investigation entrypoints are `compileJava`, `pmdMain`,
 `checkCentralizedStylesheets`, `checkDefinedStyleClassSelectors`,
 `checkStylingCentralStylesheetOwner`, `checkNoCompiledArtifactsInSource`,
 `checkDesktopPackagingInputs`, `checkDesktopAppImageLayout`,
-`checkViewFxmlResources`, `checkViewEnforcement`,
+`checkViewFxmlResources`, `checkArchitecture`, `checkViewEnforcement`,
 `checkDomainEnforcement`, `checkDataEnforcement`, `checkShellEnforcement`,
 `checkBootstrapEnforcement`, `checkStylingEnforcement`,
 `checkLayeringEnforcement`, and `checkDocumentationEnforcement`, each run
@@ -305,18 +299,18 @@ entrypoint for the same blocking ruleset.
 
 Architecture-focused and handoff public entrypoints are:
 
+- `./gradlew checkArchitecture --console=plain`
+  Aggregates the public architecture surface through the canonical layer
+  surfaces, `architectureTest`, and `:build-harness:architectureCheck`.
 - `tools/gradle/run-staged-verification.sh production-handoff`
   Aggregates the public production-code handoff route through assemble,
-  `test`, the quality-hygiene tool owners, the canonical layer surfaces,
-  `architectureTest`, and `:build-harness:architectureCheck`.
+  `test`, the quality-hygiene tool owners, and `checkArchitecture`.
 - `./gradlew checkDocumentationEnforcement --console=plain`
   Aggregates the focused Markdown-backed architecture and enforcement-document
   coverage path through `:build-harness:documentationEnforcementCheck`.
 - `./gradlew checkViewEnforcement --console=plain`
   Aggregates the canonical View enforcement surface through the closed-world
-  View Layer topology proof plus the passive `View`, `ViewInputEvent`,
-  `Contribution`, `Binder`, `ContributionModel`, `ContentModel`, and
-  `IntentHandler` bundles.
+  View topology owner plus the shared Error Prone View core.
 - `./gradlew checkDomainEnforcement --console=plain`
   Aggregates the canonical Domain enforcement surface through the Domain
   Context, Layer, UseCase, ApplicationService, Published, Port, Model,

@@ -2,7 +2,9 @@ package src.view.leftbartabs.dungeontravel;
 
 import java.util.List;
 import java.util.Objects;
-import java.util.function.Consumer;
+import src.domain.travel.TravelApplicationService;
+import src.domain.travel.published.ApplyTravelDungeonSessionCommand;
+import src.domain.travel.published.TravelOverlaySettings;
 import src.view.slotcontent.main.dungeonmap.DungeonMapViewInputEvent;
 import src.view.slotcontent.primitives.mapcanvas.MapCanvasContentModel;
 import src.view.slotcontent.primitives.mapcanvas.MapCanvasViewInputEvent;
@@ -14,18 +16,16 @@ final class DungeonTravelIntentHandler {
 
     private final DungeonTravelContributionModel presentationModel;
     private final MapCanvasContentModel mapCanvasContentModel;
-    private Consumer<DungeonTravelStatePublishedEvent> publishedEventListener = ignored -> {};
+    private final TravelApplicationService travel;
 
     DungeonTravelIntentHandler(
             DungeonTravelContributionModel presentationModel,
-            MapCanvasContentModel mapCanvasContentModel
+            MapCanvasContentModel mapCanvasContentModel,
+            TravelApplicationService travel
     ) {
         this.presentationModel = Objects.requireNonNull(presentationModel, "presentationModel");
         this.mapCanvasContentModel = Objects.requireNonNull(mapCanvasContentModel, "mapCanvasContentModel");
-    }
-
-    void onPublishedEventRequested(Consumer<DungeonTravelStatePublishedEvent> listener) {
-        publishedEventListener = listener == null ? ignored -> {} : listener;
+        this.travel = Objects.requireNonNull(travel, "travel");
     }
 
     void consume(DungeonMapViewInputEvent event) {
@@ -44,22 +44,33 @@ final class DungeonTravelIntentHandler {
             return;
         }
         if (event.projectionLevelShift() != 0) {
-            publishedEventListener.accept(DungeonTravelStatePublishedEvent.setProjectionLevel(
-                    presentationModel.currentProjectionLevel() + event.projectionLevelShift()));
+            travel.applyDungeonTravelSession(new ApplyTravelDungeonSessionCommand(
+                    ApplyTravelDungeonSessionCommand.Action.SET_PROJECTION_LEVEL,
+                    "",
+                    presentationModel.currentProjectionLevel() + event.projectionLevelShift(),
+                    TravelOverlaySettings.defaults()));
             return;
         }
-        publishedEventListener.accept(DungeonTravelStatePublishedEvent.setOverlay(
-                event.overlayModeKey(),
-                event.overlayRange(),
-                event.overlayOpacity(),
-                parseLevels(event.overlayLevelsText())));
+        travel.applyDungeonTravelSession(new ApplyTravelDungeonSessionCommand(
+                ApplyTravelDungeonSessionCommand.Action.SET_OVERLAY,
+                "",
+                0,
+                new TravelOverlaySettings(
+                        event.overlayModeKey(),
+                        event.overlayRange(),
+                        event.overlayOpacity(),
+                        parseLevels(event.overlayLevelsText()))));
     }
 
     void consume(DungeonTravelStateViewInputEvent event) {
         if (event == null) {
             return;
         }
-        publishedEventListener.accept(DungeonTravelStatePublishedEvent.action(event.actionId()));
+        travel.applyDungeonTravelSession(new ApplyTravelDungeonSessionCommand(
+                ApplyTravelDungeonSessionCommand.Action.ACTION,
+                event.actionId(),
+                0,
+                TravelOverlaySettings.defaults()));
     }
 
     private static List<Integer> parseLevels(String rawLevelsText) {

@@ -2,34 +2,112 @@ package src.view.leftbartabs.sessionplanner;
 
 import java.math.BigDecimal;
 import java.util.Objects;
-import java.util.function.Consumer;
 import org.jspecify.annotations.Nullable;
+import src.domain.sessionplanner.SessionPlannerApplicationService;
+import src.domain.sessionplanner.published.AddSessionLootPlaceholderCommand;
+import src.domain.sessionplanner.published.AddSessionParticipantCommand;
+import src.domain.sessionplanner.published.AttachSessionEncounterCommand;
+import src.domain.sessionplanner.published.ClearSessionRestGapCommand;
+import src.domain.sessionplanner.published.CreateSessionPlanCommand;
+import src.domain.sessionplanner.published.MoveSessionEncounterDownCommand;
+import src.domain.sessionplanner.published.MoveSessionEncounterUpCommand;
+import src.domain.sessionplanner.published.RemoveSessionEncounterCommand;
+import src.domain.sessionplanner.published.RemoveSessionLootPlaceholderCommand;
+import src.domain.sessionplanner.published.RemoveSessionParticipantCommand;
+import src.domain.sessionplanner.published.SelectSessionEncounterCommand;
+import src.domain.sessionplanner.published.SessionPlannerEncounterAllocationCommand;
+import src.domain.sessionplanner.published.SessionPlannerRestKind;
+import src.domain.sessionplanner.published.SetSessionEncounterDaysCommand;
+import src.domain.sessionplanner.published.SetSessionRestGapCommand;
 
 final class SessionPlannerIntentHandler {
 
-    private Consumer<SessionPlannerPublishedEvent> publishedEventListener = ignored -> { };
+    private final SessionPlannerApplicationService planner;
 
-    void onPublishedEventRequested(Consumer<SessionPlannerPublishedEvent> listener) {
-        publishedEventListener = listener == null ? ignored -> { } : listener;
+    SessionPlannerIntentHandler(SessionPlannerApplicationService planner) {
+        this.planner = Objects.requireNonNull(planner, "planner");
     }
 
     void consume(SessionPlannerControlsViewInputEvent event) {
-        publish(ControlsInputInterpreter.interpret(event));
-    }
-
-    void consume(SessionPlannerTimelineMainViewInputEvent event) {
-        publish(TimelineInputInterpreter.interpret(event));
-    }
-
-    void consume(SessionPlannerLootMainViewInputEvent event) {
-        publish(LootInputInterpreter.interpret(event));
-    }
-
-    private void publish(@Nullable SessionPlannerPublishedEvent event) {
         if (event == null) {
             return;
         }
-        publishedEventListener.accept(Objects.requireNonNull(event, "event"));
+        switch (event.controlsInput()) {
+            case SessionPlannerControlsViewInputEvent.CreateSessionTrigger ignored ->
+                    planner.createSession(new CreateSessionPlanCommand());
+            case SessionPlannerControlsViewInputEvent.AddParticipantInput addParticipant -> {
+                if (hasPositiveId(addParticipant.participantToAddId())) {
+                    planner.addParticipant(new AddSessionParticipantCommand(addParticipant.participantToAddId()));
+                }
+            }
+            case SessionPlannerControlsViewInputEvent.RemoveParticipantInput removeParticipant -> {
+                if (hasPositiveId(removeParticipant.participantToRemoveId())) {
+                    planner.removeParticipant(new RemoveSessionParticipantCommand(
+                            removeParticipant.participantToRemoveId()));
+                }
+            }
+            case SessionPlannerControlsViewInputEvent.SetEncounterDaysInput encounterDaysInput -> {
+                BigDecimal encounterDays = parsePositiveDecimal(encounterDaysInput.encounterDaysText());
+                if (encounterDays != null) {
+                    planner.setEncounterDays(new SetSessionEncounterDaysCommand(encounterDays));
+                }
+            }
+            case SessionPlannerControlsViewInputEvent.AttachPlanInput attachPlan -> {
+                if (hasPositiveId(attachPlan.planIdToAttach())) {
+                    planner.attachEncounter(new AttachSessionEncounterCommand(attachPlan.planIdToAttach()));
+                }
+            }
+        }
+    }
+
+    void consume(SessionPlannerTimelineMainViewInputEvent event) {
+        if (event == null) {
+            return;
+        }
+        switch (event.timelineInput()) {
+            case SessionPlannerTimelineMainViewInputEvent.SelectEncounterInput selection -> {
+                if (hasPositiveId(selection.selectedEncounterToken())) {
+                    planner.selectEncounter(new SelectSessionEncounterCommand(selection.selectedEncounterToken()));
+                }
+            }
+            case SessionPlannerTimelineMainViewInputEvent.SetEncounterAllocationInput allocation -> {
+                if (hasPositiveId(allocation.encounterToken())) {
+                    planner.setEncounterAllocation(new SessionPlannerEncounterAllocationCommand(
+                            allocation.encounterToken(),
+                            allocation.targetAllocationPercentage()));
+                }
+            }
+            case SessionPlannerTimelineMainViewInputEvent.MoveEncounterInput move -> {
+                if (hasPositiveId(move.encounterToken())) {
+                    applyMove(move);
+                }
+            }
+            case SessionPlannerTimelineMainViewInputEvent.RemoveEncounterInput removal -> {
+                if (hasPositiveId(removal.encounterTokenToRemove())) {
+                    planner.removeEncounter(new RemoveSessionEncounterCommand(removal.encounterTokenToRemove()));
+                }
+            }
+            case SessionPlannerTimelineMainViewInputEvent.RestGapInput restGap -> {
+                if (isResolvedGap(restGap.leftEncounterId(), restGap.rightEncounterId())) {
+                    applyRestGap(restGap);
+                }
+            }
+        }
+    }
+
+    void consume(SessionPlannerLootMainViewInputEvent event) {
+        if (event == null) {
+            return;
+        }
+        switch (event.lootInput()) {
+            case SessionPlannerLootMainViewInputEvent.AddLootPlaceholderTrigger ignored ->
+                    planner.addLootPlaceholder(new AddSessionLootPlaceholderCommand());
+            case SessionPlannerLootMainViewInputEvent.RemoveLootPlaceholderInput removeLoot -> {
+                if (hasPositiveId(removeLoot.lootToken())) {
+                    planner.removeLootPlaceholder(new RemoveSessionLootPlaceholderCommand(removeLoot.lootToken()));
+                }
+            }
+        }
     }
 
     private static boolean hasPositiveId(long id) {
@@ -40,108 +118,44 @@ final class SessionPlannerIntentHandler {
         return hasPositiveId(leftEncounterId) && hasPositiveId(rightEncounterId);
     }
 
-    private static final class ControlsInputInterpreter {
-        private static @Nullable SessionPlannerPublishedEvent interpret(@Nullable SessionPlannerControlsViewInputEvent event) {
-            if (event == null) {
-                return null;
-            }
-            return interpret(event.controlsInput());
+    private void applyMove(SessionPlannerTimelineMainViewInputEvent.MoveEncounterInput moveEncounter) {
+        if (moveEncounter.movesDown()) {
+            planner.moveEncounterDown(new MoveSessionEncounterDownCommand(moveEncounter.encounterToken()));
+            return;
         }
+        planner.moveEncounterUp(new MoveSessionEncounterUpCommand(moveEncounter.encounterToken()));
+    }
 
-        private static @Nullable SessionPlannerPublishedEvent interpret(
-                SessionPlannerControlsViewInputEvent.ControlsInput controlsInput
-        ) {
-            return switch (controlsInput) {
-                case SessionPlannerControlsViewInputEvent.CreateSessionTrigger createSessionTrigger ->
-                        new SessionPlannerPublishedEvent(createSessionTrigger);
-                case SessionPlannerControlsViewInputEvent.AddParticipantInput addParticipant ->
-                        publishWhenValid(addParticipant, addParticipant.participantToAddId());
-                case SessionPlannerControlsViewInputEvent.RemoveParticipantInput removeParticipant ->
-                        publishWhenValid(removeParticipant, removeParticipant.participantToRemoveId());
-                case SessionPlannerControlsViewInputEvent.SetEncounterDaysInput encounterDaysInput ->
-                        publishEncounterDays(encounterDaysInput);
-                case SessionPlannerControlsViewInputEvent.AttachPlanInput attachPlan ->
-                        publishWhenValid(attachPlan, attachPlan.planIdToAttach());
-            };
+    private void applyRestGap(SessionPlannerTimelineMainViewInputEvent.RestGapInput restGap) {
+        if (restGap.clearsRestGap()) {
+            planner.clearRestGap(new ClearSessionRestGapCommand(
+                    restGap.leftEncounterId(),
+                    restGap.rightEncounterId()));
+            return;
         }
+        planner.setRestGap(new SetSessionRestGapCommand(
+                restGap.leftEncounterId(),
+                restGap.rightEncounterId(),
+                toRestKind(restGap.restSelection())));
+    }
 
-        private static @Nullable SessionPlannerPublishedEvent publishWhenValid(
-                SessionPlannerPublishedEvent.Mutation mutation,
-                long id
-        ) {
-            return hasPositiveId(id) ? new SessionPlannerPublishedEvent(mutation) : null;
+    private static @Nullable BigDecimal parsePositiveDecimal(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return null;
         }
-
-        private static @Nullable SessionPlannerPublishedEvent publishEncounterDays(
-                SessionPlannerControlsViewInputEvent.SetEncounterDaysInput encounterDaysInput
-        ) {
-            BigDecimal encounterDays = parsePositiveDecimal(encounterDaysInput.encounterDaysText());
-            return encounterDays == null
-                    ? null
-                    : new SessionPlannerPublishedEvent(new SessionPlannerPublishedEvent.SetEncounterDaysMutation(encounterDays));
-        }
-
-        private static @Nullable BigDecimal parsePositiveDecimal(String raw) {
-            if (raw == null || raw.isBlank()) {
-                return null;
-            }
-            try {
-                BigDecimal parsed = new BigDecimal(raw.trim().replace(',', '.'));
-                return parsed.signum() <= 0 ? null : parsed;
-            } catch (NumberFormatException exception) {
-                return null;
-            }
+        try {
+            BigDecimal parsed = new BigDecimal(raw.trim().replace(',', '.'));
+            return parsed.signum() <= 0 ? null : parsed;
+        } catch (NumberFormatException exception) {
+            return null;
         }
     }
 
-    private static final class TimelineInputInterpreter {
-        private static @Nullable SessionPlannerPublishedEvent interpret(@Nullable SessionPlannerTimelineMainViewInputEvent event) {
-            if (event == null) {
-                return null;
-            }
-            return interpret(event.timelineInput());
-        }
-
-        private static @Nullable SessionPlannerPublishedEvent interpret(
-                SessionPlannerTimelineMainViewInputEvent.TimelineInput timelineInput
-        ) {
-            return switch (timelineInput) {
-                case SessionPlannerTimelineMainViewInputEvent.SelectEncounterInput selection ->
-                        publishWhenValid(selection, selection.selectedEncounterToken());
-                case SessionPlannerTimelineMainViewInputEvent.SetEncounterAllocationInput allocation ->
-                        publishWhenValid(allocation, allocation.encounterToken());
-                case SessionPlannerTimelineMainViewInputEvent.MoveEncounterInput move ->
-                        publishWhenValid(move, move.encounterToken());
-                case SessionPlannerTimelineMainViewInputEvent.RemoveEncounterInput removal ->
-                        publishWhenValid(removal, removal.encounterTokenToRemove());
-                case SessionPlannerTimelineMainViewInputEvent.RestGapInput restGap ->
-                        isResolvedGap(restGap.leftEncounterId(), restGap.rightEncounterId())
-                                ? new SessionPlannerPublishedEvent(restGap)
-                                : null;
-            };
-        }
-
-        private static @Nullable SessionPlannerPublishedEvent publishWhenValid(
-                SessionPlannerPublishedEvent.Mutation mutation,
-                long id
-        ) {
-            return hasPositiveId(id) ? new SessionPlannerPublishedEvent(mutation) : null;
-        }
-    }
-
-    private static final class LootInputInterpreter {
-        private static @Nullable SessionPlannerPublishedEvent interpret(@Nullable SessionPlannerLootMainViewInputEvent event) {
-            if (event == null) {
-                return null;
-            }
-            return switch (event.lootInput()) {
-                case SessionPlannerLootMainViewInputEvent.AddLootPlaceholderTrigger addLoot ->
-                        new SessionPlannerPublishedEvent(addLoot);
-                case SessionPlannerLootMainViewInputEvent.RemoveLootPlaceholderInput removeLoot ->
-                        hasPositiveId(removeLoot.lootToken())
-                                ? new SessionPlannerPublishedEvent(removeLoot)
-                                : null;
-            };
-        }
+    private static SessionPlannerRestKind toRestKind(SessionPlannerTimelineMainViewInputEvent.RestSelection selection) {
+        return switch (SessionPlannerTimelineMainViewInputEvent.RestSelection.normalized(selection)) {
+            case NONE -> SessionPlannerRestKind.NONE;
+            case SHORT_REST -> SessionPlannerRestKind.SHORT_REST;
+            case LONG_REST -> SessionPlannerRestKind.LONG_REST;
+        };
     }
 }
