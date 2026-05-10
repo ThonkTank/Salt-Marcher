@@ -26,17 +26,17 @@ detail snapshots publish current XP, current-level XP floor, next-level XP
 threshold, and rest cadence facts so downstream views can render progression
 without depending on roster internals.
 
-The `roster/` domain module must not depend on any `src.domain.*.published.*`
-carriers. The application boundary translates public carriers into roster
-values before delegating to the model.
+The `model/roster/**` domain family must not depend on any
+`src.domain.*.published.*` carriers. The application boundary translates
+public carriers into roster values before delegating to the model.
 
 ## Application Boundary
 
-`application/` contains party use cases and party-owned boundary projection.
-Use cases load one `PartyRoster`, delegate mutation or query decisions to the
-roster model and policies, save through the domain-owned outbound port, and
-publish mapped command or read-side results through the root boundary and the
-exported party models.
+`application/` contains party use cases. Use cases load one `PartyRoster`,
+delegate mutation or query decisions to the roster model, and save through the
+domain-owned roster persistence repository. `PartyApplicationService`
+coordinates those use cases with the separate party published-state repository
+that refreshes exported read models and mutation feedback.
 
 ## Write Model
 
@@ -53,14 +53,16 @@ The authored write model is the persisted party roster and character state:
 
 Aggregate Root: PartyRoster
 
-`roster/aggregate/PartyRoster` is the transaction boundary for one party
+`model/roster/model/PartyRoster` is the transaction boundary for one party
 roster. It owns the character collection, next character identity, membership
 assignment, XP awards and corrections, and rest-driven progression
 transitions.
 
-`roster/entity/PartyCharacter` is an identity-bearing child entity. Roster
-value objects own identity, progress, combat profile, membership, rest type,
-travel position, and mutation status vocabulary.
+`model/roster/model/PartyCharacter` is an identity-bearing child model.
+`model/roster/model/**` owns identity, progress, combat profile, membership,
+rest type, travel position, and mutation status vocabulary. Pure roster work
+steps live under `model/roster/helper/`, and outbound collaborators live under
+`model/roster/repository/`.
 
 ## Commands And Invariants
 
@@ -94,10 +96,10 @@ Core invariants:
 
 ## Consistency Model
 
-One roster mutation changes one `PartyRoster` aggregate instance and is saved by
-the party roster port. Other contexts consume party state through the party
-command boundary and exported party read models instead of sharing roster
-internals.
+One roster mutation changes one `PartyRoster` aggregate instance and is saved
+by the party roster persistence repository. Other contexts consume party state
+through the party command boundary and exported party read models instead of
+sharing roster internals.
 
 ## Ubiquitous Language
 
@@ -115,22 +117,21 @@ internals.
 
 Current state:
 
-- `roster/` is moving into explicit role subpackages.
-- `aggregate/`, `entity/`, `value/`, `policy/`, and `port/` own the
-  roster model roles.
-- `application/` coordinates port access and publishes command or read-side
-  results to the root boundary and exported party models.
+- party roster production code now lives under `model/roster/model/`,
+  `model/roster/helper/`, and `model/roster/repository/`.
+- `application/` coordinates roster persistence and party published-state
+  refresh through separate repository roles.
 - Dungeon travel now persists active character positions through the party
   application boundary instead of storing them in shell runtime session state
   or a campaign-level model.
 
 Target state:
 
-- keep party mutation rules on the roster aggregate and related roster policies
+- keep party mutation rules on the roster model and related pure helper work
 - keep root and internal application services thin
-- keep roster role packages free of all `src.domain.*.published.*` dependencies
+- keep `model/roster/**` free of all `src.domain.*.published.*` dependencies
 - keep character-specific state, including dungeon and overworld travel
-  position, with the character aggregate state
+  position, with the character-owned roster state
 
 ## References
 

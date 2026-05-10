@@ -2,12 +2,12 @@ package src.domain.party;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Supplier;
 import src.domain.party.application.AdjustPartyXpUseCase;
 import src.domain.party.application.AwardPartyXpUseCase;
 import src.domain.party.application.CreateCharacterUseCase;
 import src.domain.party.application.DeleteCharacterUseCase;
 import src.domain.party.application.MovePartyCharactersUseCase;
-import src.domain.party.application.PartyRuntimeFeedbackUseCase;
 import src.domain.party.application.PerformPartyRestUseCase;
 import src.domain.party.application.SetPartyMembershipUseCase;
 import src.domain.party.application.UpdateCharacterUseCase;
@@ -24,11 +24,13 @@ import src.domain.party.model.roster.model.PartyCharacterDraft;
 import src.domain.party.model.roster.model.PartyDungeonTravelLocation;
 import src.domain.party.model.roster.model.PartyDungeonTravelLocationKind;
 import src.domain.party.model.roster.model.PartyMembership;
+import src.domain.party.model.roster.model.PartyMutationStatus;
 import src.domain.party.model.roster.model.PartyOverworldTravelLocation;
 import src.domain.party.model.roster.model.PartyRestType;
 import src.domain.party.model.roster.model.PartyTravelHeading;
 import src.domain.party.model.roster.model.PartyTravelLocation;
 import src.domain.party.model.roster.model.PartyTravelTile;
+import src.domain.party.model.roster.repository.PartyPublishedStateRepository;
 import src.domain.party.model.roster.repository.PartyRosterRepository;
 
 /**
@@ -36,7 +38,7 @@ import src.domain.party.model.roster.repository.PartyRosterRepository;
  */
 public final class PartyApplicationService {
 
-    private final PartyRuntimeFeedbackUseCase runtimeAccess;
+    private final PartyPublishedStateRepository publishedStateRepository;
     private final CreateCharacterUseCase createCharacterUseCase;
     private final UpdateCharacterUseCase updateCharacterUseCase;
     private final DeleteCharacterUseCase deleteCharacterUseCase;
@@ -46,9 +48,12 @@ public final class PartyApplicationService {
     private final PerformPartyRestUseCase performPartyRestUseCase;
     private final MovePartyCharactersUseCase movePartyCharactersUseCase;
 
-    public PartyApplicationService(PartyRosterRepository rosterRepository) {
+    public PartyApplicationService(
+            PartyRosterRepository rosterRepository,
+            PartyPublishedStateRepository publishedStateRepository
+    ) {
         PartyRosterRepository repository = Objects.requireNonNull(rosterRepository, "rosterRepository");
-        this.runtimeAccess = PartyRuntimeFeedbackUseCase.fromRepository(repository);
+        this.publishedStateRepository = Objects.requireNonNull(publishedStateRepository, "publishedStateRepository");
         this.createCharacterUseCase = new CreateCharacterUseCase(repository);
         this.updateCharacterUseCase = new UpdateCharacterUseCase(repository);
         this.deleteCharacterUseCase = new DeleteCharacterUseCase(repository);
@@ -60,55 +65,67 @@ public final class PartyApplicationService {
     }
 
     public void createCharacter(CreateCharacterCommand command) {
-        runtimeAccess.runMutation(() -> createCharacterUseCase.execute(
+        runMutation(() -> createCharacterUseCase.execute(
                 BoundaryValues.draft(command == null ? null : command.draft()),
                 BoundaryValues.membership(command == null ? null : command.membership())));
     }
 
     public void updateCharacter(UpdateCharacterCommand command) {
-        runtimeAccess.runMutation(() -> updateCharacterUseCase.execute(
+        runMutation(() -> updateCharacterUseCase.execute(
                 command == null ? 0L : command.id(),
                 BoundaryValues.draft(command == null ? null : command.draft())));
     }
 
     public void deleteCharacter(DeleteCharacterCommand command) {
-        runtimeAccess.runMutation(() -> deleteCharacterUseCase.execute(command == null ? 0L : command.id()));
+        runMutation(() -> deleteCharacterUseCase.execute(command == null ? 0L : command.id()));
     }
 
     public void setMembership(SetPartyMembershipCommand command) {
-        runtimeAccess.runMutation(() -> setPartyMembershipUseCase.execute(
+        runMutation(() -> setPartyMembershipUseCase.execute(
                 command == null ? 0L : command.id(),
                 BoundaryValues.membership(command == null ? null : command.membership())));
     }
 
     public void awardXp(AwardPartyXpCommand command) {
-        runtimeAccess.runMutation(() -> awardPartyXpUseCase.execute(
+        runMutation(() -> awardPartyXpUseCase.execute(
                 BoundaryValues.ids(command == null ? null : command.ids()),
                 command == null ? 0 : command.xpPerCharacter()));
     }
 
     public void adjustXp(AdjustPartyXpCommand command) {
-        runtimeAccess.runMutation(() -> adjustPartyXpUseCase.execute(
+        runMutation(() -> adjustPartyXpUseCase.execute(
                 BoundaryValues.ids(command == null ? null : command.ids()),
                 command == null ? 0 : command.xpDelta()));
     }
 
     public void performRest(PerformPartyRestCommand command) {
-        runtimeAccess.runMutation(() -> performPartyRestUseCase.execute(
+        runMutation(() -> performPartyRestUseCase.execute(
                 BoundaryValues.restType(command == null ? null : command.restType())));
     }
 
     public void moveCharacters(MovePartyCharactersCommand command) {
-        runtimeAccess.runMutation(() -> movePartyCharactersUseCase.execute(
+        runMutation(() -> movePartyCharactersUseCase.execute(
                 BoundaryValues.ids(command == null ? null : command.characterIds()),
                 BoundaryValues.travelLocation(command == null ? null : command.target()),
                 command == null || command.attachToPartyToken()));
     }
 
     public void calculateAdventuringDay(CalculateAdventuringDayCommand command) {
-        runtimeAccess.publishAdventuringDayCalculation(
+        publishedStateRepository.publishAdventuringDayCalculation(
                 BoundaryValues.levels(command == null ? null : command.levels()),
                 command == null ? 0 : command.totalGroupXp());
+    }
+
+    private void runMutation(Supplier<PartyMutationStatus> operation) {
+        try {
+            PartyMutationStatus status = operation.get();
+            if (status == PartyMutationStatus.SUCCESS) {
+                publishedStateRepository.publishRepositoryBackedState();
+            }
+            publishedStateRepository.publishMutationStatus(status);
+        } catch (IllegalStateException exception) {
+            publishedStateRepository.publishStorageErrorMutation();
+        }
     }
 
     private static final class BoundaryValues {

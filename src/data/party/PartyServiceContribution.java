@@ -3,7 +3,7 @@ package src.data.party;
 import shell.api.ServiceContribution;
 import shell.api.ServiceRegistry;
 import src.data.party.repository.SqlitePartyRosterRepository;
-import src.data.party.repository.PartyBoundaryRuntimeAdapter;
+import src.data.party.repository.PartyPublishedStateRepositoryAdapter;
 import src.domain.party.PartyApplicationService;
 import src.domain.party.published.ActivePartyCompositionModel;
 import src.domain.party.published.ActivePartyModel;
@@ -12,6 +12,7 @@ import src.domain.party.published.AdventuringDaySummaryModel;
 import src.domain.party.published.PartyMutationModel;
 import src.domain.party.published.PartySnapshotModel;
 import src.domain.party.published.PartyTravelPositionsModel;
+import src.domain.party.model.roster.repository.PartyPublishedStateRepository;
 import src.domain.party.model.roster.repository.PartyRosterRepository;
 
 /**
@@ -27,15 +28,16 @@ public final class PartyServiceContribution implements ServiceContribution {
     @Override
     public void register(ServiceRegistry.Builder builder) {
         PartyRosterRepository repository = new SqlitePartyRosterRepository();
-        PartyBoundaryRuntimeAdapter runtime = new PartyBoundaryRuntimeAdapter(repository);
-        PartyApplicationService service = new PartyApplicationService(runtime);
+        PartyPublishedStateRepositoryAdapter publishedState = new PartyPublishedStateRepositoryAdapter(repository);
+        PartyPublishedStateRepository publishedStateRepository = publishedState;
+        PartyApplicationService service = new PartyApplicationService(repository, publishedStateRepository);
         builder.register(PartyApplicationService.class, service);
-        builder.register(PartySnapshotModel.class, runtime.partySnapshotModel);
-        builder.register(ActivePartyModel.class, runtime.activePartyModel);
-        builder.register(ActivePartyCompositionModel.class, runtime.activePartyCompositionModel);
-        builder.register(AdventuringDaySummaryModel.class, runtime.adventuringDaySummaryModel);
-        builder.register(PartyTravelPositionsModel.class, runtime.partyTravelPositionsModel);
-        builder.register(PartyMutationModel.class, runtime.partyMutationModel);
-        builder.register(AdventuringDayCalculationModel.class, runtime.adventuringDayCalculationModel);
+        builder.register(PartySnapshotModel.class, publishedState.partySnapshotModel);
+        builder.register(ActivePartyModel.class, publishedState.activePartyModel);
+        builder.register(ActivePartyCompositionModel.class, publishedState.activePartyCompositionModel);
+        builder.register(AdventuringDaySummaryModel.class, publishedState.adventuringDaySummaryModel);
+        builder.register(PartyTravelPositionsModel.class, publishedState.partyTravelPositionsModel);
+        builder.register(PartyMutationModel.class, publishedState.partyMutationModel);
+        builder.register(AdventuringDayCalculationModel.class, publishedState.adventuringDayCalculationModel);
     }
 }

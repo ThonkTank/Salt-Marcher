@@ -3,11 +3,13 @@ package src.domain.party.model.roster.repository;
 import java.util.List;
 import src.domain.party.model.roster.model.PartyMutationStatus;
 
-public interface PartyRuntimeRepository {
+public interface PartyPublishedStateRepository {
 
-    void recordMutationStatus(PartyMutationStatus status);
+    void publishRepositoryBackedState();
 
-    void recordStorageErrorMutation();
+    void publishMutationStatus(PartyMutationStatus status);
+
+    void publishStorageErrorMutation();
 
     void publishAdventuringDayCalculation(List<Integer> levels, int totalGroupXp);
 }

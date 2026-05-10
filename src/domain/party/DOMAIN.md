@@ -33,9 +33,9 @@ Application Service: PartyApplicationService
 
 `application/` contains party use cases and party-owned boundary projection.
 Use cases load one `PartyRoster`, delegate mutation or query decisions to the
-roster model and policies, save through the domain-owned outbound port, and
-publish command or read-side results through the root boundary and exported
-party models.
+roster model, save through the domain-owned roster persistence repository, and
+coordinate exported read-model refresh through the separate party
+published-state repository.
 
 ## Aggregate Model
 
@@ -70,9 +70,9 @@ Core invariants:
 ## Consistency Model
 
 One roster mutation changes one `PartyRoster` aggregate instance and is saved
-by the party roster port. Other contexts consume party state through the
-party command boundary and exported party models instead of sharing roster
-internals.
+by the party roster persistence repository. Other contexts consume party state
+through the party command boundary and exported party models instead of
+sharing roster internals.
 
 ## Ubiquitous Language
 

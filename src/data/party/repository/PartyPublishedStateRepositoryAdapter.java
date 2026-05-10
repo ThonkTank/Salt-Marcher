@@ -26,19 +26,17 @@ import src.domain.party.published.PartySnapshotResult;
 import src.domain.party.published.PartyTravelPositionsModel;
 import src.domain.party.published.PartyTravelPositionsResult;
 import src.domain.party.model.roster.model.PartyMutationStatus;
-import src.domain.party.model.roster.model.PartyRoster;
+import src.domain.party.model.roster.repository.PartyPublishedStateRepository;
 import src.domain.party.model.roster.repository.PartyRosterRepository;
-import src.domain.party.model.roster.repository.PartyRuntimeRepository;
 
 @SuppressWarnings({
         "PMD.CouplingBetweenObjects",
         "PMD.TooManyMethods"
 })
-public final class PartyBoundaryRuntimeAdapter implements PartyRosterRepository, PartyRuntimeRepository {
+public final class PartyPublishedStateRepositoryAdapter implements PartyPublishedStateRepository {
 
     private static final String LISTENER_PARAMETER = "listener";
 
-    private final PartyRosterRepository delegate;
     private final LoadPartySnapshotUseCase loadPartySnapshotUseCase;
     private final LoadActivePartyUseCase loadActivePartyUseCase;
     private final LoadActivePartyCompositionUseCase loadActivePartyCompositionUseCase;
@@ -83,36 +81,30 @@ public final class PartyBoundaryRuntimeAdapter implements PartyRosterRepository,
     private AdventuringDayCalculationResult currentAdventuringDayCalculation =
             PartyBoundaryProjector.failedAdventuringDayCalculationResult();
 
-    public PartyBoundaryRuntimeAdapter(PartyRosterRepository delegate) {
-        this.delegate = Objects.requireNonNull(delegate, "delegate");
-        this.loadPartySnapshotUseCase = new LoadPartySnapshotUseCase(this);
-        this.loadActivePartyUseCase = new LoadActivePartyUseCase(this);
-        this.loadActivePartyCompositionUseCase = new LoadActivePartyCompositionUseCase(this);
-        this.loadAdventuringDaySummaryUseCase = new LoadAdventuringDaySummaryUseCase(this);
-        this.loadPartyTravelPositionsUseCase = new LoadPartyTravelPositionsUseCase(this);
+    public PartyPublishedStateRepositoryAdapter(PartyRosterRepository delegate) {
+        PartyRosterRepository repository = Objects.requireNonNull(delegate, "delegate");
+        this.loadPartySnapshotUseCase = new LoadPartySnapshotUseCase(repository);
+        this.loadActivePartyUseCase = new LoadActivePartyUseCase(repository);
+        this.loadActivePartyCompositionUseCase = new LoadActivePartyCompositionUseCase(repository);
+        this.loadAdventuringDaySummaryUseCase = new LoadAdventuringDaySummaryUseCase(repository);
+        this.loadPartyTravelPositionsUseCase = new LoadPartyTravelPositionsUseCase(repository);
         this.calculateAdventuringDayUseCase = new CalculateAdventuringDayUseCase();
         refreshRepositoryBackedState(false);
     }
 
     @Override
-    public PartyRoster load() {
-        return delegate.load();
-    }
-
-    @Override
-    public void save(PartyRoster roster) {
-        delegate.save(roster);
+    public void publishRepositoryBackedState() {
         refreshRepositoryBackedState(true);
     }
 
     @Override
-    public void recordMutationStatus(PartyMutationStatus status) {
+    public void publishMutationStatus(PartyMutationStatus status) {
         currentPartyMutation = new MutationResult(PartyBoundaryProjector.mapMutationStatus(status));
         notifyPartyMutationListeners(currentPartyMutation);
     }
 
     @Override
-    public void recordStorageErrorMutation() {
+    public void publishStorageErrorMutation() {
         currentPartyMutation = PartyBoundaryProjector.storageErrorMutationResult();
         notifyPartyMutationListeners(currentPartyMutation);
     }
