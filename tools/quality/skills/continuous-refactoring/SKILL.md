@@ -56,7 +56,18 @@ manifests:
 9. For dependency work, check whether Dependabot already owns the update path.
    Dependency upgrades must remain dependency-only unless the user explicitly
    combines them with product work.
-10. Run the required SaltMarcher verification surface for the actual changed
+10. After implementation and before commit or handoff, run an adversarial
+    review through a separate subagent with the narrowest matching review skill:
+    `review-quality` by default for production code, `review-architecture` for
+    layer or owner-boundary changes, `review-security` for security-,
+    persistence-, shell-, dependency-, workflow-, or external-input-adjacent
+    changes, `review-ui` for UI behavior, and `review-director` for mixed or
+    high-risk changes.
+11. Classify review findings as `Must Fix Before Commit`,
+    `Should Fix In This Pass`, `Separate Slice`, or
+    `False Positive / Review-Owned`. Fix unresolved `Must Fix Before Commit`
+    findings and rerun the matching subagent review for the changed scope.
+12. Run the required SaltMarcher verification surface for the actual changed
     files before handoff.
 
 ## Evidence Sources
@@ -102,6 +113,12 @@ Every covered handoff must report one of these exact statuses:
 - `No in-scope cleanup found`: name the reports or focused checks inspected.
 - `Deferred as separate slice`: name the finding and why it is not safe inside
   the current pass.
+
+Every covered handoff must also name the adversarial review subagent or review
+skill used, state whether any `Must Fix Before Commit` findings were found,
+and list any follow-up review after fixes. Do not add a separate changelog,
+pull-request template, or review-ledger file solely for this evidence; normal
+commit history, handoff text, and memories carry the history.
 
 Also report out-of-scope blockers discovered while running required gates. Do
 not claim that global debt is solved because a scoped pass is clean.

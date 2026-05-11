@@ -66,6 +66,15 @@ document exists.
   refactoring, or reviewing. The skill is a workflow rule for keeping cleanup
   inside the normal development pass; it does not authorize new gates or
   repo-wide cleanup waves by itself.
+- Completed implementation passes must receive an adversarial review from a
+  separate subagent before commit or handoff. Use the narrowest matching review
+  skill for the changed surface: `review-quality` by default for production
+  code, `review-architecture` for layer or owner-boundary changes,
+  `review-security` for security-, persistence-, shell-, dependency-, workflow-,
+  or external-input-adjacent changes, `review-ui` for UI behavior, and
+  `review-director` for mixed or high-risk changes. Agent-facing instruction
+  changes must still use `agent-instruction-engineering` before that review.
+  A pass with unresolved `Must Fix Before Commit` findings remains WIP.
 - Work under `src/domain/**` must use the repo-owned `domain-layer` skill and
   follow the canonical domain-layer standard before changes are made or
   reviewed.
@@ -111,6 +120,12 @@ document exists.
 - A pass without the required production-code full build, check-only
   package/bundle rerun, or documentation-enforcement rerun is incomplete and
   must remain WIP.
+- A pass without the required adversarial subagent review is incomplete and
+  must remain WIP. The handoff must name the review subagent or review skill,
+  the finding classification outcome, any fixes made after review, and whether
+  a follow-up review was required. Do not create a separate review ledger,
+  pull-request template, or changelog entry only to record this; normal commit
+  history, handoff text, and memories carry the history.
 - Parallel agent implementation work must not share one live checkout. Each
   agent must work in its own linked git worktree on its own branch, preferably
   under `build/codex-worktrees/<topic>/` or a temporary external worktree when

@@ -83,6 +83,17 @@ When a covered artifact changes, reviewers must check:
   surfaces?
 - Does the chosen verification path match the actual changed surfaces?
 
+Covered instruction changes must also receive an adversarial review from a
+separate subagent before commit or handoff. The implementation agent remains
+responsible for running `agent-instruction-engineering` first, then selecting a
+review skill that matches the risk of the instruction change: use
+`review-quality` for local wording and ownership cleanup, `review-architecture`
+when the instruction changes architecture or verification ownership, and
+`review-director` when the change is mixed or high risk. Findings are classified
+as `Must Fix Before Commit`, `Should Fix In This Pass`, `Separate Slice`, or
+`False Positive / Review-Owned`; unresolved `Must Fix Before Commit` findings
+keep the pass WIP.
+
 ## References
 
 - [Architecture Overview](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/overview.md:1)

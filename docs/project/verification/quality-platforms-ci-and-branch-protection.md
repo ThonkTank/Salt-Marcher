@@ -100,7 +100,9 @@ place:
 - Prefer merge queue once the repository plan supports it; if merge queue is
   enabled, require the same quality-platform jobs on `merge_group` that are
   required on `pull_request`.
-- Keep required reviews optional unless the team later decides otherwise.
+- Keep human GitHub approval reviews optional unless the team later decides
+  otherwise; SaltMarcher's mandatory review is the local adversarial subagent
+  review before commit or handoff.
 - Require `quality-platforms / production-handoff`.
 - Require `quality-platforms / sonarcloud`.
 - Require `quality-platforms / codescene`.
@@ -112,6 +114,16 @@ place:
 
 The quality platforms do not replace human review.
 
+- completed implementation passes require a separate adversarial review
+  subagent before commit or handoff; use `review-quality` by default,
+  `review-architecture` for architecture or owner-boundary changes,
+  `review-security` for security-, persistence-, shell-, workflow-,
+  dependency-, or external-input-adjacent changes, `review-ui` for UI behavior,
+  and `review-director` for mixed or high-risk changes
+- review findings are classified as `Must Fix Before Commit`,
+  `Should Fix In This Pass`, `Separate Slice`, or
+  `False Positive / Review-Owned`; unresolved `Must Fix Before Commit`
+  findings keep the pass WIP
 - documentation ownership, source-of-truth conflicts, and same-change
   documentation updates remain review responsibilities
 - `AGENTS.md` defines the default local verification scope mechanically by

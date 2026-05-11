@@ -116,6 +116,9 @@ manual testing for behavior verification.
 - use manual testing for workflow behavior, desktop interaction, UI judgment,
   and product acceptance
 - `./gradlew test` is not a general-purpose home for behavior-regression suites
+- require an adversarial review from a separate subagent before commit or
+  handoff for completed implementation passes; the review is a workflow
+  obligation, not a new compile/build/check gate
 
 ## Continuous Refactoring Relationship
 
@@ -131,6 +134,9 @@ their current blocking status; CKJM remains an informational report. The
 continuous-refactoring workflow only requires agents to inspect and report
 touched-scope findings, perform small behavior-preserving local cleanup, and
 split larger refactors or dependency upgrades into separate reviewable passes.
+It also requires a separate adversarial subagent review before commit or
+handoff, using the narrowest matching review skill for the changed surface and
+fixing or explicitly deferring classified findings before handoff.
 
 This follows the external workflow references mirrored under
 `/home/aaron/Schreibtisch/projects/references/continuous-refactoring/`:
