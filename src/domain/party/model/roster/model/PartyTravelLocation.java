@@ -1,5 +1,5 @@
 package src.domain.party.model.roster.model;
 
-public sealed interface PartyTravelLocation
+public sealed class PartyTravelLocation
         permits PartyDungeonTravelLocation, PartyOverworldTravelLocation {
 }

@@ -1,4 +1,4 @@
-package src.domain.creatures.runtime.port;
+package src.domain.creatures.model.catalog.repository;
 
 import src.domain.creatures.published.CreatureCatalogPageResult;
 import src.domain.creatures.published.CreatureDetailResult;

@@ -144,13 +144,21 @@ public final class LoadAdventuringDaySummaryUseCase {
 
         private AdventuringDayStatus toStatus(List<PartyCharacter> activeMembers) {
             return new AdventuringDayStatus(
-                    activeMembers.stream().map(character -> character.progress().level()).toList(),
+                    activeLevels(activeMembers),
                     shortRestPendingCount == 0 ? 0 : (int) Math.round(remainingToShortRest / shortRestPendingCount),
                     (int) Math.round(remainingToLongRest / activeMemberCount),
                     consumedXp,
                     totalBudgetXp,
                     totalBudgetXp <= 0 ? 0 : (int) Math.round(consumedXp * 100.0 / totalBudgetXp),
                     restCadenceStatuses);
+        }
+
+        private static List<Integer> activeLevels(List<PartyCharacter> activeMembers) {
+            List<Integer> levels = new ArrayList<>(activeMembers.size());
+            for (PartyCharacter character : activeMembers) {
+                levels.add(character.progress().level());
+            }
+            return List.copyOf(levels);
         }
     }
 

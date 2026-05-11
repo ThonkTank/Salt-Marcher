@@ -2,19 +2,19 @@ package src.data.creatures.mapper;
 
 import org.jspecify.annotations.Nullable;
 import src.data.creatures.model.EncounterCandidateRecord;
-import src.domain.creatures.catalog.port.CreatureCatalogLookup;
+import src.domain.creatures.model.catalog.repository.CreatureCatalogRepository;
 
 public final class EncounterCandidateMapper {
 
     private EncounterCandidateMapper() {
     }
 
-    public static CreatureCatalogLookup.EncounterCandidateProfile toDomain(EncounterCandidateRecord record) {
+    public static CreatureCatalogRepository.EncounterCandidateProfile toDomain(EncounterCandidateRecord record) {
         EncounterCandidateRecord.Identity identity = record.identity();
         EncounterCandidateRecord.Challenge challenge = record.challenge();
         EncounterCandidateRecord.Durability durability = record.durability();
         EncounterCandidateRecord.Combat combat = record.combat();
-        return new CreatureCatalogLookup.EncounterCandidateProfile(
+        return new CreatureCatalogRepository.EncounterCandidateProfile(
                 identity.id(),
                 safeText(identity.name()),
                 safeText(identity.creatureType()),

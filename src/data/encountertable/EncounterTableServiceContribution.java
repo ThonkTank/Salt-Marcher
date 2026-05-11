@@ -5,7 +5,7 @@ import shell.api.ServiceRegistry;
 import src.data.encountertable.repository.EncounterTablePublishedStateRepositoryAdapter;
 import src.data.encountertable.query.SqliteEncounterTableCatalogAdapter;
 import src.domain.encountertable.EncounterTableApplicationService;
-import src.domain.encountertable.catalog.port.EncounterTableCatalog;
+import src.domain.encountertable.model.catalog.repository.EncounterTableCatalogRepository;
 import src.domain.encountertable.published.EncounterTableCatalogModel;
 
 public final class EncounterTableServiceContribution implements ServiceContribution {
@@ -17,7 +17,7 @@ public final class EncounterTableServiceContribution implements ServiceContribut
 
     @Override
     public void register(ServiceRegistry.Builder builder) {
-        EncounterTableCatalog catalog = new SqliteEncounterTableCatalogAdapter();
+        EncounterTableCatalogRepository catalog = new SqliteEncounterTableCatalogAdapter();
         EncounterTablePublishedStateRepositoryAdapter publishedState = new EncounterTablePublishedStateRepositoryAdapter();
         EncounterTableApplicationService applicationService = new EncounterTableApplicationService(catalog, publishedState);
         builder.register(

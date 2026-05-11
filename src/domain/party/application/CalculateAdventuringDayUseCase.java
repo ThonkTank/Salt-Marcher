@@ -45,8 +45,8 @@ public final class CalculateAdventuringDayUseCase {
         List<LevelProgress> levelProgressions = buildLevelProgressions(levels, perCharacterAwardedXp);
         List<ProgressEvent> events = new ArrayList<>();
 
-        int[] startLevels = levels.stream().mapToInt(Integer::intValue).toArray();
-        int[] currentLevels = levels.stream().mapToInt(Integer::intValue).toArray();
+        int[] startLevels = toLevelArray(levels);
+        int[] currentLevels = toLevelArray(levels);
         int consumedGroupXp = 0;
         int remainingGroupXp = totalGroupXp;
         int dayNumber = 1;
@@ -102,10 +102,7 @@ public final class CalculateAdventuringDayUseCase {
             dayNumber++;
         }
 
-        events.sort(Comparator
-                .comparingInt(ProgressEvent::groupXp)
-                .thenComparing(event -> event.type().sortOrder())
-                .thenComparingInt(ProgressEvent::newLevel));
+        events.sort(new ProgressEventComparator());
 
         return new Progress(
                 totalGroupXp,
@@ -123,7 +120,9 @@ public final class CalculateAdventuringDayUseCase {
         Map<LevelSpan, Integer> counts = new LinkedHashMap<>();
         for (Integer level : levels) {
             int endLevel = levelAfterAwardedXp(level, perCharacterAwardedXp);
-            counts.merge(new LevelSpan(level, endLevel), 1, Integer::sum);
+            LevelSpan span = new LevelSpan(level, endLevel);
+            Integer currentCount = counts.get(span);
+            counts.put(span, currentCount == null ? 1 : currentCount + 1);
         }
         List<LevelProgress> result = new ArrayList<>();
         for (Map.Entry<LevelSpan, Integer> entry : counts.entrySet()) {
@@ -156,8 +155,7 @@ public final class CalculateAdventuringDayUseCase {
             int dayStartXp,
             int dayEndXp,
             boolean partialDay) {
-        Map<BreakpointLevel, Integer> groupedEvents = new TreeMap<>(
-                Comparator.comparingInt(BreakpointLevel::groupXp).thenComparingInt(BreakpointLevel::newLevel));
+        Map<BreakpointLevel, Integer> groupedEvents = new TreeMap<>(new BreakpointLevelComparator());
 
         for (int i = 0; i < currentLevels.length; i++) {
             while (currentLevels[i] < 20) {
@@ -171,7 +169,9 @@ public final class CalculateAdventuringDayUseCase {
                 if (breakpoint > dayEndXp) {
                     break;
                 }
-                groupedEvents.merge(new BreakpointLevel(breakpoint, nextLevel), 1, Integer::sum);
+                BreakpointLevel level = new BreakpointLevel(breakpoint, nextLevel);
+                Integer currentCount = groupedEvents.get(level);
+                groupedEvents.put(level, currentCount == null ? 1 : currentCount + 1);
                 currentLevels[i] = nextLevel;
             }
         }
@@ -198,6 +198,40 @@ public final class CalculateAdventuringDayUseCase {
             }
         }
         return List.copyOf(normalized);
+    }
+
+    private static int[] toLevelArray(List<Integer> levels) {
+        int[] result = new int[levels.size()];
+        for (int index = 0; index < levels.size(); index++) {
+            result[index] = levels.get(index);
+        }
+        return result;
+    }
+
+    private static final class ProgressEventComparator implements Comparator<ProgressEvent> {
+        @Override
+        public int compare(ProgressEvent first, ProgressEvent second) {
+            int xpComparison = Integer.compare(first.groupXp(), second.groupXp());
+            if (xpComparison != 0) {
+                return xpComparison;
+            }
+            int typeComparison = Integer.compare(first.type().sortOrder(), second.type().sortOrder());
+            if (typeComparison != 0) {
+                return typeComparison;
+            }
+            return Integer.compare(first.newLevel(), second.newLevel());
+        }
+    }
+
+    private static final class BreakpointLevelComparator implements Comparator<BreakpointLevel> {
+        @Override
+        public int compare(BreakpointLevel first, BreakpointLevel second) {
+            int xpComparison = Integer.compare(first.groupXp(), second.groupXp());
+            if (xpComparison != 0) {
+                return xpComparison;
+            }
+            return Integer.compare(first.newLevel(), second.newLevel());
+        }
     }
 
     public record Result(Budget budget, Progress progress) {

@@ -9,23 +9,20 @@ import src.data.creatures.model.CreatureDetailRecord;
 import src.data.creatures.model.CreatureFilterValuesRecord;
 import src.data.creatures.model.EncounterCandidateCriteriaRecord;
 import src.data.creatures.model.EncounterCandidateRecord;
-import src.domain.creatures.catalog.port.CreatureCatalogLookup;
-import src.domain.creatures.catalog.port.CreatureCatalogLookup.CreatureProfile;
-import src.domain.creatures.published.CreatureCatalogPage;
-import src.domain.creatures.published.CreatureCatalogSortField;
-import src.domain.creatures.published.CreatureSortDirection;
+import src.domain.creatures.model.catalog.repository.CreatureCatalogRepository;
+import src.domain.creatures.model.catalog.repository.CreatureCatalogRepository.CreatureProfile;
 
 public final class CreatureCatalogQueryMappingFacade {
 
     private CreatureCatalogQueryMappingFacade() {
     }
 
-    public static CreatureCatalogLookup.DistinctFilterValues toQueryValues(CreatureFilterValuesRecord record) {
+    public static CreatureCatalogRepository.DistinctFilterValues toQueryValues(CreatureFilterValuesRecord record) {
         return CreatureFilterValuesMapper.toQueryValues(record);
     }
 
     public static CreatureCatalogSearchCriteriaRecord toSearchCriteria(
-            CreatureCatalogLookup.CatalogSearchSpec spec
+            CreatureCatalogRepository.CatalogSearchSpec spec
     ) {
         return new CreatureCatalogSearchCriteriaRecord(
                 spec.nameQuery(),
@@ -42,7 +39,7 @@ public final class CreatureCatalogQueryMappingFacade {
                 spec.pageOffset());
     }
 
-    public static CreatureCatalogPage toDomain(CreatureCatalogPageRecord record) {
+    public static CreatureCatalogRepository.CatalogPageData toDomain(CreatureCatalogPageRecord record) {
         return CreatureCatalogPageMapper.toDomain(record);
     }
 
@@ -51,7 +48,7 @@ public final class CreatureCatalogQueryMappingFacade {
     }
 
     public static EncounterCandidateCriteriaRecord toEncounterCriteria(
-            CreatureCatalogLookup.EncounterCandidateSpec spec
+            CreatureCatalogRepository.EncounterCandidateSpec spec
     ) {
         return new EncounterCandidateCriteriaRecord(
                 spec.types(),
@@ -62,20 +59,20 @@ public final class CreatureCatalogQueryMappingFacade {
                 spec.limit());
     }
 
-    public static List<CreatureCatalogLookup.EncounterCandidateProfile> toDomain(List<EncounterCandidateRecord> records) {
+    public static List<CreatureCatalogRepository.EncounterCandidateProfile> toDomain(List<EncounterCandidateRecord> records) {
         return records.stream()
                 .map(EncounterCandidateMapper::toDomain)
                 .toList();
     }
 
     private static CreatureCatalogSearchCriteriaRecord.SortField toSearchSortField(
-            CreatureCatalogSortField sortField
+            CreatureCatalogRepository.CatalogSortField sortField
     ) {
         return CreatureCatalogSearchCriteriaRecord.SortField.valueOf(sortField.name());
     }
 
     private static CreatureCatalogSearchCriteriaRecord.SortDirection toSearchSortDirection(
-            CreatureSortDirection sortDirection
+            CreatureCatalogRepository.CatalogSortDirection sortDirection
     ) {
         return CreatureCatalogSearchCriteriaRecord.SortDirection.valueOf(sortDirection.name());
     }

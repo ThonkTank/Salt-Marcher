@@ -2,17 +2,17 @@ package src.data.creatures.mapper;
 
 import org.jspecify.annotations.Nullable;
 import src.data.creatures.model.CreatureCatalogRecord;
-import src.domain.creatures.published.CreatureCatalogRow;
+import src.domain.creatures.model.catalog.repository.CreatureCatalogRepository;
 
 public final class CreatureCatalogRowMapper {
 
     private CreatureCatalogRowMapper() {
     }
 
-    public static CreatureCatalogRow toDomain(CreatureCatalogRecord record) {
+    public static CreatureCatalogRepository.CatalogRowData toDomain(CreatureCatalogRecord record) {
         CreatureCatalogRecord.Identity identity = record.identity();
         CreatureCatalogRecord.CombatStats combatStats = record.combatStats();
-        return new CreatureCatalogRow(
+        return new CreatureCatalogRepository.CatalogRowData(
                 identity.id(),
                 safeText(identity.name()),
                 safeText(identity.size()),

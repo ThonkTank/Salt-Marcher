@@ -7,7 +7,7 @@ import java.util.function.Consumer;
 import src.domain.encountertable.published.EncounterTableCatalogModel;
 import src.domain.encountertable.published.EncounterTableCatalogResult;
 import src.domain.encountertable.published.EncounterTableReadStatus;
-import src.domain.encountertable.runtime.port.EncounterTablePublishedStateRepository;
+import src.domain.encountertable.model.catalog.repository.EncounterTablePublishedStateRepository;
 
 public final class EncounterTablePublishedStateRepositoryAdapter implements EncounterTablePublishedStateRepository {
 

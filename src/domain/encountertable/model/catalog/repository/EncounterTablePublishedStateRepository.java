@@ -1,4 +1,4 @@
-package src.domain.encountertable.runtime.port;
+package src.domain.encountertable.model.catalog.repository;
 
 import src.domain.encountertable.published.EncounterTableCatalogResult;
 

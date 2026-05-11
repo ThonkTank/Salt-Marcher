@@ -4,15 +4,14 @@ import java.util.List;
 import org.jspecify.annotations.Nullable;
 import src.data.creatures.model.CreatureActionRecord;
 import src.data.creatures.model.CreatureDetailRecord;
-import src.domain.creatures.catalog.port.CreatureCatalogLookup;
-import src.domain.creatures.published.CreatureActionDetail;
+import src.domain.creatures.model.catalog.repository.CreatureCatalogRepository;
 
 final class CreatureDetailDomainAssembler {
 
     private final CreatureDetailIdentityFields identity;
     private final CreatureDetailVitalsFields vitals;
     private final CreatureDetailTraitFields traits;
-    private final List<CreatureActionDetail> actions;
+    private final List<CreatureCatalogRepository.CreatureActionData> actions;
 
     CreatureDetailDomainAssembler(CreatureDetailRecord record) {
         identity = new CreatureDetailIdentityFields(record.identity());
@@ -21,9 +20,9 @@ final class CreatureDetailDomainAssembler {
         actions = mapActions(record.actions());
     }
 
-    CreatureCatalogLookup.CreatureProfile toDomain() {
-        return new CreatureCatalogLookup.CreatureProfile(
-                new CreatureCatalogLookup.CreatureIdentity(
+    CreatureCatalogRepository.CreatureProfile toDomain() {
+        return new CreatureCatalogRepository.CreatureProfile(
+                new CreatureCatalogRepository.CreatureIdentity(
                         identity.id,
                         safeText(identity.name),
                         safeText(identity.size),
@@ -33,7 +32,7 @@ final class CreatureDetailDomainAssembler {
                         safeText(identity.alignment),
                         safeText(identity.challengeRating),
                         identity.xp),
-                new CreatureCatalogLookup.CreatureVitals(
+                new CreatureCatalogRepository.CreatureVitals(
                         vitals.hitPoints,
                         vitals.hitDiceExpression,
                         vitals.hitDiceCount,
@@ -46,7 +45,7 @@ final class CreatureDetailDomainAssembler {
                         vitals.swimSpeed,
                         vitals.climbSpeed,
                         vitals.burrowSpeed),
-                new CreatureCatalogLookup.CreatureAbilities(
+                new CreatureCatalogRepository.CreatureAbilities(
                         vitals.strength,
                         vitals.dexterity,
                         vitals.constitution,
@@ -55,7 +54,7 @@ final class CreatureDetailDomainAssembler {
                         vitals.charisma,
                         vitals.initiativeBonus,
                         vitals.proficiencyBonus),
-                new CreatureCatalogLookup.CreatureTraits(
+                new CreatureCatalogRepository.CreatureTraits(
                         traits.savingThrows,
                         traits.skills,
                         traits.damageVulnerabilities,
@@ -69,7 +68,7 @@ final class CreatureDetailDomainAssembler {
                 actions);
     }
 
-    private static List<CreatureActionDetail> mapActions(List<CreatureActionRecord> records) {
+    private static List<CreatureCatalogRepository.CreatureActionData> mapActions(List<CreatureActionRecord> records) {
         return records.stream().map(CreatureActionMapper::toDomain).toList();
     }
 

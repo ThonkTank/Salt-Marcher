@@ -15,7 +15,7 @@ import src.domain.creatures.published.CreatureFilterOptionsResult;
 import src.domain.creatures.published.CreatureLookupStatus;
 import src.domain.creatures.published.CreatureQueryStatus;
 import src.domain.creatures.published.CreatureReadStatus;
-import src.domain.creatures.runtime.port.CreaturesPublishedStateRepository;
+import src.domain.creatures.model.catalog.repository.CreaturesPublishedStateRepository;
 
 public final class CreaturePublishedStateRepositoryAdapter implements CreaturesPublishedStateRepository {
 

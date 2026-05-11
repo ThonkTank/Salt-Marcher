@@ -1,13 +1,22 @@
-package src.domain.creatures.catalog.port;
+package src.domain.creatures.model.catalog.repository;
 
 import java.util.List;
 import org.jspecify.annotations.Nullable;
-import src.domain.creatures.published.CreatureActionDetail;
-import src.domain.creatures.published.CreatureCatalogPage;
-import src.domain.creatures.published.CreatureCatalogSortField;
-import src.domain.creatures.published.CreatureSortDirection;
 
-public interface CreatureCatalogLookup {
+public interface CreatureCatalogRepository {
+
+    enum CatalogSortField {
+        NAME,
+        CHALLENGE_RATING,
+        XP,
+        HIT_POINTS,
+        ARMOR_CLASS
+    }
+
+    enum CatalogSortDirection {
+        ASCENDING,
+        DESCENDING
+    }
 
     record DistinctFilterValues(
             List<String> sizes,
@@ -59,8 +68,8 @@ public interface CreatureCatalogLookup {
             List<String> subtypes,
             List<String> biomes,
             List<String> alignments,
-            CreatureCatalogSortField sortField,
-            CreatureSortDirection sortDirection,
+            CatalogSortField sortField,
+            CatalogSortDirection sortDirection,
             int pageSize,
             int pageOffset
     ) {
@@ -197,12 +206,25 @@ public interface CreatureCatalogLookup {
     ) {
     }
 
+    record CreatureActionData(
+            String actionType,
+            String name,
+            String description,
+            @Nullable Integer toHitBonus
+    ) {
+        public CreatureActionData {
+            actionType = actionType == null ? "" : actionType;
+            name = name == null ? "" : name;
+            description = description == null ? "" : description;
+        }
+    }
+
     record CreatureProfile(
             CreatureIdentity identity,
             CreatureVitals vitals,
             CreatureAbilities abilities,
             CreatureTraits traits,
-            List<CreatureActionDetail> actions
+            List<CreatureActionData> actions
     ) {
         public CreatureProfile {
             identity = identity == null
@@ -377,6 +399,45 @@ public interface CreatureCatalogLookup {
         }
     }
 
+    record CatalogPageData(
+            List<CatalogRowData> rows,
+            int totalCount,
+            int pageSize,
+            int pageOffset
+    ) {
+        public CatalogPageData {
+            rows = rows == null ? List.of() : List.copyOf(rows);
+            totalCount = Math.max(0, totalCount);
+            pageSize = Math.max(0, pageSize);
+            pageOffset = Math.max(0, pageOffset);
+        }
+
+        @Override
+        public List<CatalogRowData> rows() {
+            return List.copyOf(rows);
+        }
+    }
+
+    record CatalogRowData(
+            long id,
+            String name,
+            String size,
+            String creatureType,
+            String alignment,
+            String challengeRating,
+            int xp,
+            int hitPoints,
+            int armorClass
+    ) {
+        public CatalogRowData {
+            name = name == null ? "" : name;
+            size = size == null ? "" : size;
+            creatureType = creatureType == null ? "" : creatureType;
+            alignment = alignment == null ? "" : alignment;
+            challengeRating = challengeRating == null ? "" : challengeRating;
+        }
+    }
+
     record EncounterCandidateProfile(
             long id,
             String name,
@@ -395,7 +456,7 @@ public interface CreatureCatalogLookup {
 
     DistinctFilterValues loadFilterValues();
 
-    CreatureCatalogPage searchCatalog(CatalogSearchSpec spec);
+    CatalogPageData searchCatalog(CatalogSearchSpec spec);
 
     @Nullable CreatureProfile loadCreatureDetail(long creatureId);
 

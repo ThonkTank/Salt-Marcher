@@ -3,16 +3,16 @@ package src.data.encountertable.mapper;
 import org.jspecify.annotations.Nullable;
 import src.data.encountertable.model.EncounterTableCandidateRecord;
 import src.data.encountertable.model.EncounterTableSummaryRecord;
-import src.domain.encountertable.catalog.value.EncounterTableCandidateData;
-import src.domain.encountertable.published.EncounterTableSummary;
+import src.domain.encountertable.model.catalog.model.EncounterTableCandidateData;
+import src.domain.encountertable.model.catalog.model.EncounterTableSummaryData;
 
 public final class EncounterTableMapper {
 
     private EncounterTableMapper() {
     }
 
-    public static EncounterTableSummary toDomain(EncounterTableSummaryRecord record) {
-        return new EncounterTableSummary(record.tableId(), safeText(record.name()), record.linkedLootTableId());
+    public static EncounterTableSummaryData toDomain(EncounterTableSummaryRecord record) {
+        return new EncounterTableSummaryData(record.tableId(), safeText(record.name()), record.linkedLootTableId());
     }
 
     public static EncounterTableCandidateData toDomain(EncounterTableCandidateRecord record) {

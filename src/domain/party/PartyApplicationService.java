@@ -2,7 +2,6 @@ package src.domain.party;
 
 import java.util.List;
 import java.util.Objects;
-import java.util.function.Supplier;
 import src.domain.party.application.AdjustPartyXpUseCase;
 import src.domain.party.application.AwardPartyXpUseCase;
 import src.domain.party.application.CreateCharacterUseCase;
@@ -116,9 +115,9 @@ public final class PartyApplicationService {
                 command == null ? 0 : command.totalGroupXp());
     }
 
-    private void runMutation(Supplier<PartyMutationStatus> operation) {
+    private void runMutation(PartyMutationOperation operation) {
         try {
-            PartyMutationStatus status = operation.get();
+            PartyMutationStatus status = operation.execute();
             if (status == PartyMutationStatus.SUCCESS) {
                 publishedStateRepository.publishRepositoryBackedState();
             }
@@ -126,6 +125,10 @@ public final class PartyApplicationService {
         } catch (IllegalStateException exception) {
             publishedStateRepository.publishStorageErrorMutation();
         }
+    }
+
+    private interface PartyMutationOperation {
+        PartyMutationStatus execute();
     }
 
     private static final class BoundaryValues {

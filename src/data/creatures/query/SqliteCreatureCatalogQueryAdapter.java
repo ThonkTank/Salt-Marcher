@@ -3,12 +3,11 @@ package src.data.creatures.query;
 import org.jspecify.annotations.Nullable;
 import src.data.creatures.gateway.local.SqliteCreatureCatalogLocalGateway;
 import src.data.creatures.mapper.CreatureCatalogQueryMappingFacade;
-import src.domain.creatures.catalog.port.CreatureCatalogLookup;
+import src.domain.creatures.model.catalog.repository.CreatureCatalogRepository;
 
 import java.util.List;
-import src.domain.creatures.published.CreatureCatalogPage;
 
-public final class SqliteCreatureCatalogQueryAdapter implements CreatureCatalogLookup {
+public final class SqliteCreatureCatalogQueryAdapter implements CreatureCatalogRepository {
 
     private final SqliteCreatureCatalogLocalGateway gateway;
 
@@ -26,7 +25,7 @@ public final class SqliteCreatureCatalogQueryAdapter implements CreatureCatalogL
     }
 
     @Override
-    public CreatureCatalogPage searchCatalog(CatalogSearchSpec spec) {
+    public CatalogPageData searchCatalog(CatalogSearchSpec spec) {
         return CreatureCatalogQueryMappingFacade.toDomain(
                 gateway.searchCatalog(CreatureCatalogQueryMappingFacade.toSearchCriteria(spec)));
     }

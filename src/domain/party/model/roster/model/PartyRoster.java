@@ -60,7 +60,7 @@ public final class PartyRoster {
         if (!draftValidator.isValid(draft)) {
             return new MutationResult(PartyMutationStatus.INVALID_INPUT, this);
         }
-        List<PartyCharacter> nextCharacters = mutations.replace(characters, id, character -> character.update(draft));
+        List<PartyCharacter> nextCharacters = mutations.updateDraft(characters, id, draft);
         if (nextCharacters.isEmpty()) {
             return new MutationResult(PartyMutationStatus.NOT_FOUND, this);
         }
@@ -79,7 +79,7 @@ public final class PartyRoster {
         if (membership == null) {
             return new MutationResult(PartyMutationStatus.INVALID_INPUT, this);
         }
-        List<PartyCharacter> nextCharacters = mutations.replace(characters, id, character -> character.withMembership(membership));
+        List<PartyCharacter> nextCharacters = mutations.updateMembership(characters, id, membership);
         if (nextCharacters.isEmpty()) {
             return new MutationResult(PartyMutationStatus.NOT_FOUND, this);
         }
@@ -114,10 +114,7 @@ public final class PartyRoster {
         if (location == null || ids == null || ids.isEmpty()) {
             return new MutationResult(PartyMutationStatus.INVALID_INPUT, this);
         }
-        List<PartyCharacter> nextCharacters = mutations.replace(
-                characters,
-                ids,
-                character -> character.moveTo(location, attachToPartyToken));
+        List<PartyCharacter> nextCharacters = mutations.moveCharacters(characters, ids, location, attachToPartyToken);
         if (nextCharacters.isEmpty()) {
             return new MutationResult(PartyMutationStatus.NOT_FOUND, this);
         }

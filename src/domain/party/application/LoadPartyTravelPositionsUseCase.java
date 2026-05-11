@@ -1,5 +1,6 @@
 package src.domain.party.application;
 
+import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -18,16 +19,18 @@ public final class LoadPartyTravelPositionsUseCase {
 
     public Result execute(List<Long> characterIds) {
         Set<Long> requestedIds = new LinkedHashSet<>(characterIds == null ? List.of() : characterIds);
-        List<TravelPosition> positions = repository.load().characters().stream()
-                .filter(character -> requestedIds.isEmpty() || requestedIds.contains(character.id()))
-                .map(LoadPartyTravelPositionsUseCase::travelPosition)
-                .toList();
-        PartyTravelLocation partyTokenLocation = positions.stream()
-                .filter(TravelPosition::attachedToPartyToken)
-                .map(TravelPosition::location)
-                .filter(location -> location != null)
-                .findFirst()
-                .orElse(null);
+        List<TravelPosition> positions = new ArrayList<>();
+        PartyTravelLocation partyTokenLocation = null;
+        for (PartyCharacter character : repository.load().characters()) {
+            if (!requestedIds.isEmpty() && !requestedIds.contains(character.id())) {
+                continue;
+            }
+            TravelPosition position = travelPosition(character);
+            positions.add(position);
+            if (partyTokenLocation == null && position.attachedToPartyToken() && position.location() != null) {
+                partyTokenLocation = position.location();
+            }
+        }
         return new Result(positions, partyTokenLocation);
     }
 

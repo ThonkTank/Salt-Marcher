@@ -5,11 +5,11 @@ import java.util.Objects;
 import java.util.ArrayList;
 import src.data.encountertable.gateway.local.SqliteEncounterTableLocalGateway;
 import src.data.encountertable.mapper.EncounterTableMapper;
-import src.domain.encountertable.catalog.port.EncounterTableCatalog;
-import src.domain.encountertable.catalog.value.EncounterTableCandidateData;
-import src.domain.encountertable.published.EncounterTableSummary;
+import src.domain.encountertable.model.catalog.model.EncounterTableCandidateData;
+import src.domain.encountertable.model.catalog.model.EncounterTableSummaryData;
+import src.domain.encountertable.model.catalog.repository.EncounterTableCatalogRepository;
 
-public final class SqliteEncounterTableCatalogAdapter implements EncounterTableCatalog {
+public final class SqliteEncounterTableCatalogAdapter implements EncounterTableCatalogRepository {
 
     private final SqliteEncounterTableLocalGateway gateway;
 
@@ -22,8 +22,8 @@ public final class SqliteEncounterTableCatalogAdapter implements EncounterTableC
     }
 
     @Override
-    public List<EncounterTableSummary> loadSummaries() {
-        List<EncounterTableSummary> summaries = new ArrayList<>();
+    public List<EncounterTableSummaryData> loadSummaries() {
+        List<EncounterTableSummaryData> summaries = new ArrayList<>();
         gateway.loadSummaries().forEach(record -> summaries.add(EncounterTableMapper.toDomain(record)));
         return List.copyOf(summaries);
     }

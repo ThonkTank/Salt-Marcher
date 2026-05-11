@@ -1,4 +1,4 @@
-package src.domain.encountertable.catalog.value;
+package src.domain.encountertable.model.catalog.model;
 
 import org.jspecify.annotations.Nullable;
 

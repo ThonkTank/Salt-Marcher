@@ -1,7 +1,9 @@
 package src.domain.party.model.roster.model;
 
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+
 public record PartyRosterProjection(
         List<PartyCharacter> activeMembers,
         List<PartyCharacter> reserveMembers,
@@ -30,26 +32,62 @@ public record PartyRosterProjection(
     }
 
     public static PartyRosterProjection from(List<PartyCharacter> characters) {
-        List<PartyCharacter> activeMembers = characters.stream()
-                .filter(character -> character.membership().isActive())
-                .sorted(Comparator.comparingLong(PartyCharacter::id))
-                .toList();
-        List<PartyCharacter> reserveMembers = characters.stream()
-                .filter(character -> !character.membership().isActive())
-                .sorted(Comparator.comparing((PartyCharacter character) -> character.identity().name(), String.CASE_INSENSITIVE_ORDER)
-                        .thenComparingLong(PartyCharacter::id))
-                .toList();
-        List<Integer> activeLevels = activeMembers.stream()
-                .sorted(Comparator.comparingInt((PartyCharacter character) -> character.progress().level())
-                        .thenComparingLong(PartyCharacter::id))
-                .map(character -> character.progress().level())
-                .toList();
+        List<PartyCharacter> activeMembers = new ArrayList<>();
+        List<PartyCharacter> reserveMembers = new ArrayList<>();
+        for (PartyCharacter character : characters) {
+            if (character.membership().isActive()) {
+                activeMembers.add(character);
+            } else {
+                reserveMembers.add(character);
+            }
+        }
+        activeMembers.sort(new ActiveMemberComparator());
+        reserveMembers.sort(new ReserveMemberComparator());
+
+        List<PartyCharacter> activeMembersByLevel = new ArrayList<>(activeMembers);
+        activeMembersByLevel.sort(new ActiveLevelComparator());
+        List<Integer> activeLevels = new ArrayList<>(activeMembersByLevel.size());
+        int totalLevel = 0;
+        for (PartyCharacter character : activeMembersByLevel) {
+            int level = character.progress().level();
+            activeLevels.add(level);
+            totalLevel += level;
+        }
+
         int averageLevel = activeMembers.isEmpty()
                 ? 1
-                : (int) Math.round(activeMembers.stream()
-                .mapToInt(character -> character.progress().level())
-                .average()
-                .orElse(1.0));
+                : (int) Math.round((double) totalLevel / activeMembers.size());
         return new PartyRosterProjection(activeMembers, reserveMembers, activeLevels, averageLevel);
+    }
+
+    private static final class ActiveMemberComparator implements Comparator<PartyCharacter> {
+        @Override
+        public int compare(PartyCharacter first, PartyCharacter second) {
+            return Long.compare(first.id(), second.id());
+        }
+    }
+
+    private static final class ReserveMemberComparator implements Comparator<PartyCharacter> {
+        @Override
+        public int compare(PartyCharacter first, PartyCharacter second) {
+            int nameComparison = String.CASE_INSENSITIVE_ORDER.compare(
+                    first.identity().name(),
+                    second.identity().name());
+            if (nameComparison != 0) {
+                return nameComparison;
+            }
+            return Long.compare(first.id(), second.id());
+        }
+    }
+
+    private static final class ActiveLevelComparator implements Comparator<PartyCharacter> {
+        @Override
+        public int compare(PartyCharacter first, PartyCharacter second) {
+            int levelComparison = Integer.compare(first.progress().level(), second.progress().level());
+            if (levelComparison != 0) {
+                return levelComparison;
+            }
+            return Long.compare(first.id(), second.id());
+        }
     }
 }

@@ -2,7 +2,7 @@ package src.domain.encounter.model.reference.model;
 
 import java.util.List;
 import org.jspecify.annotations.Nullable;
-import src.domain.creatures.catalog.port.CreatureCatalogLookup;
+import src.domain.creatures.model.catalog.repository.CreatureCatalogRepository;
 import src.domain.encounter.model.generation.model.EncounterCreatureFacts;
 
 public record EncounterCreatureReference(
@@ -36,7 +36,7 @@ public record EncounterCreatureReference(
         actionTypes = actionTypes == null ? List.of() : List.copyOf(actionTypes);
     }
 
-    public static EncounterCreatureReference fromCatalogProfile(CreatureCatalogLookup.CreatureProfile detail) {
+    public static EncounterCreatureReference fromCatalogProfile(CreatureCatalogRepository.CreatureProfile detail) {
         if (detail == null) {
             return new EncounterCreatureReference(0L, "", "", "", 0, 0, null, null, null, 0, 0, 0, 0, 0, 0, 0, null, null, null, 0, List.of());
         }
@@ -124,9 +124,9 @@ public record EncounterCreatureReference(
 
     private static final class CatalogProfileProjection {
 
-        private final CreatureCatalogLookup.CreatureProfile detail;
+        private final CreatureCatalogRepository.CreatureProfile detail;
 
-        private CatalogProfileProjection(CreatureCatalogLookup.CreatureProfile detail) {
+        private CatalogProfileProjection(CreatureCatalogRepository.CreatureProfile detail) {
             this.detail = detail;
         }
 
