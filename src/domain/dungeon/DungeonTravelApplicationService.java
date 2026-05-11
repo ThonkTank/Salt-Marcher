@@ -8,7 +8,6 @@ import src.domain.dungeon.application.MoveDungeonTravelActionUseCase;
 import src.domain.dungeon.application.PublishDungeonTravelResultUseCase;
 import src.domain.dungeon.application.TranslateDungeonTravelInputUseCase;
 import src.domain.dungeon.model.map.repository.DungeonMapRepository;
-import src.domain.dungeon.map.port.DungeonMapSearch;
 import src.domain.dungeon.published.DungeonTravelCommand;
 import src.domain.dungeon.published.DungeonTravelResponse;
 
@@ -25,14 +24,12 @@ public final class DungeonTravelApplicationService {
 
     public DungeonTravelApplicationService(
             DungeonMapRepository mapRepository,
-            DungeonMapSearch mapSearch,
             DungeonPublishedStatePublisher publishedStatePublisher
     ) {
         DungeonMapRepository repository = Objects.requireNonNull(mapRepository, "mapRepository");
-        DungeonMapSearch search = Objects.requireNonNull(mapSearch, "mapSearch");
         this.publishedStatePublisher = Objects.requireNonNull(publishedStatePublisher, "publishedStatePublisher");
         BuildDungeonDerivedStateUseCase derive = new BuildDungeonDerivedStateUseCase();
-        LoadDungeonMapUseCase loadDungeonMapUseCase = new LoadDungeonMapUseCase(repository, search);
+        LoadDungeonMapUseCase loadDungeonMapUseCase = new LoadDungeonMapUseCase(repository);
         this.loadDungeonTravelSurfaceUseCase = new LoadDungeonTravelSurfaceUseCase(loadDungeonMapUseCase, derive);
         this.moveDungeonTravelActionUseCase = new MoveDungeonTravelActionUseCase(
                 loadDungeonMapUseCase,

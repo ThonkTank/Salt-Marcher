@@ -1,10 +1,10 @@
 package src.domain.dungeon.application;
 
-import src.domain.dungeon.map.port.DungeonMapSearch;
-import src.domain.dungeon.model.map.model.DungeonMapIdentity;
-
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
+import src.domain.dungeon.model.map.model.DungeonMapIdentity;
+import src.domain.dungeon.model.map.repository.DungeonMapRepository;
 
 /**
  * Searches authored dungeon map metadata.
@@ -39,15 +39,15 @@ public final class SearchDungeonMapsUseCase {
         }
     }
 
-    private final DungeonMapSearch search;
+    private final DungeonMapRepository repository;
 
-    public SearchDungeonMapsUseCase(DungeonMapSearch search) {
-        this.search = search;
+    public SearchDungeonMapsUseCase(DungeonMapRepository repository) {
+        this.repository = Objects.requireNonNull(repository, "repository");
     }
 
     public List<MapSummary> execute(String searchTerm) {
         String effectiveSearchTerm = searchTerm == null ? "" : searchTerm;
-        return search.searchByName(effectiveSearchTerm).stream()
+        return repository.searchByName(effectiveSearchTerm).stream()
                 .map(map -> new MapSummary(
                         map.metadata().mapId(),
                         map.metadata().mapName(),

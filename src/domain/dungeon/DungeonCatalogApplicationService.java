@@ -7,7 +7,6 @@ import src.domain.dungeon.application.DeleteDungeonMapUseCase;
 import src.domain.dungeon.application.RenameDungeonMapUseCase;
 import src.domain.dungeon.application.SearchDungeonMapsUseCase;
 import src.domain.dungeon.model.map.repository.DungeonMapRepository;
-import src.domain.dungeon.map.port.DungeonMapSearch;
 import src.domain.dungeon.model.map.model.DungeonMapIdentity;
 import src.domain.dungeon.published.DungeonMapCatalogCommand;
 import src.domain.dungeon.published.DungeonMapCatalogResponse;
@@ -27,13 +26,11 @@ public final class DungeonCatalogApplicationService {
 
     public DungeonCatalogApplicationService(
             DungeonMapRepository mapRepository,
-            DungeonMapSearch mapSearch,
             DungeonPublishedStatePublisher publishedStatePublisher
     ) {
         DungeonMapRepository repository = Objects.requireNonNull(mapRepository, "mapRepository");
-        DungeonMapSearch search = Objects.requireNonNull(mapSearch, "mapSearch");
         this.publishedStatePublisher = Objects.requireNonNull(publishedStatePublisher, "publishedStatePublisher");
-        this.searchDungeonMapsUseCase = new SearchDungeonMapsUseCase(search);
+        this.searchDungeonMapsUseCase = new SearchDungeonMapsUseCase(repository);
         this.createDungeonMapUseCase = new CreateDungeonMapUseCase(repository::nextMapId, repository::save);
         this.renameDungeonMapUseCase = new RenameDungeonMapUseCase(repository::findById, repository::save);
         this.deleteDungeonMapUseCase = new DeleteDungeonMapUseCase(repository::delete);

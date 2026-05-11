@@ -6,6 +6,7 @@ import src.domain.dungeon.model.map.model.DungeonMap;
 import src.domain.dungeon.model.map.repository.DungeonMapRepository;
 import src.domain.dungeon.model.map.model.DungeonMapIdentity;
 
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -32,6 +33,18 @@ public final class SqliteDungeonMapRepository implements DungeonMapRepository {
             return Optional.empty();
         }
         return gateway.findMap(mapId.value()).map(DungeonMapRecordMapper::toDomain);
+    }
+
+    @Override
+    public List<DungeonMap> searchByName(String query) {
+        return gateway.searchMaps(query).stream()
+                .map(DungeonMapRecordMapper::toDomain)
+                .toList();
+    }
+
+    @Override
+    public Optional<DungeonMap> firstMap() {
+        return gateway.firstMap().map(DungeonMapRecordMapper::toDomain);
     }
 
     @Override

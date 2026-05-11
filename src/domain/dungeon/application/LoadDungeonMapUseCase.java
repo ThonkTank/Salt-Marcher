@@ -7,7 +7,6 @@ import java.util.function.Supplier;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.map.model.DungeonMap;
 import src.domain.dungeon.model.map.repository.DungeonMapRepository;
-import src.domain.dungeon.map.port.DungeonMapSearch;
 import src.domain.dungeon.model.map.model.DungeonMapIdentity;
 
 /**
@@ -19,12 +18,11 @@ public final class LoadDungeonMapUseCase {
     private final Supplier<Optional<DungeonMap>> firstMap;
 
     public LoadDungeonMapUseCase(
-            DungeonMapRepository repository,
-            DungeonMapSearch search
+            DungeonMapRepository repository
     ) {
         this(
                 Objects.requireNonNull(repository, "repository")::findById,
-                Objects.requireNonNull(search, "search")::firstMap);
+                Objects.requireNonNull(repository, "repository")::firstMap);
     }
 
     LoadDungeonMapUseCase(
