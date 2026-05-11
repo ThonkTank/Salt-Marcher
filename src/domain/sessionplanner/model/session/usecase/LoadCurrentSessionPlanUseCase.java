@@ -1,13 +1,9 @@
 package src.domain.sessionplanner.model.session.usecase;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import org.jspecify.annotations.Nullable;
-import src.domain.sessionplanner.model.session.model.EncounterDays;
 import src.domain.sessionplanner.model.session.model.SessionPlan;
-import src.domain.sessionplanner.model.session.repository.SessionPartyFactsRepository;
 import src.domain.sessionplanner.model.session.repository.SessionPlanRepository;
 
 public final class LoadCurrentSessionPlanUseCase {
@@ -16,15 +12,15 @@ public final class LoadCurrentSessionPlanUseCase {
     private static final String LOAD_FAILURE_STATUS = "Session konnte nicht geladen werden.";
 
     private final SessionPlanRepository repository;
-    private final SessionPartyFactsRepository partyFactsRepository;
+    private final SeedSessionPlanUseCase seedSessionPlanUseCase;
     private @Nullable SessionPlan currentSession;
 
     public LoadCurrentSessionPlanUseCase(
             SessionPlanRepository repository,
-            SessionPartyFactsRepository partyFactsRepository
+            SeedSessionPlanUseCase seedSessionPlanUseCase
     ) {
         this.repository = Objects.requireNonNull(repository, "repository");
-        this.partyFactsRepository = Objects.requireNonNull(partyFactsRepository, "partyFactsRepository");
+        this.seedSessionPlanUseCase = Objects.requireNonNull(seedSessionPlanUseCase, "seedSessionPlanUseCase");
     }
 
     public SessionPlan execute() {
@@ -51,19 +47,7 @@ public final class LoadCurrentSessionPlanUseCase {
     }
 
     private SessionPlan createSeeded(long sessionId) {
-        List<Long> participantRefs = new ArrayList<>();
-        try {
-            SessionPartyFactsRepository.ActivePartyMembersFact activeParty = partyFactsRepository.loadActivePartyMembers();
-            if (!activeParty.available()) {
-                return SessionPlan.seeded(sessionId, List.of(), EncounterDays.one());
-            }
-            for (SessionPartyFactsRepository.PartyMemberProfile member : activeParty.members()) {
-                participantRefs.add(member.characterId());
-            }
-        } catch (IllegalStateException exception) {
-            return SessionPlan.seeded(sessionId, List.of(), EncounterDays.one());
-        }
-        return SessionPlan.seeded(sessionId, participantRefs, EncounterDays.one());
+        return seedSessionPlanUseCase.execute(sessionId);
     }
 
     private SessionPlan fallbackSession(String statusText) {

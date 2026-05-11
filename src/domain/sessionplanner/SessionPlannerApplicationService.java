@@ -18,6 +18,7 @@ import src.domain.sessionplanner.model.session.usecase.RemoveSessionLootPlacehol
 import src.domain.sessionplanner.model.session.usecase.RemoveSessionParticipantUseCase;
 import src.domain.sessionplanner.model.session.usecase.SaveCurrentSessionPlanUseCase;
 import src.domain.sessionplanner.model.session.usecase.SelectSessionEncounterUseCase;
+import src.domain.sessionplanner.model.session.usecase.SeedSessionPlanUseCase;
 import src.domain.sessionplanner.model.session.usecase.SetSessionEncounterAllocationUseCase;
 import src.domain.sessionplanner.model.session.usecase.SetSessionEncounterDaysUseCase;
 import src.domain.sessionplanner.model.session.usecase.SetSessionRestGapUseCase;
@@ -64,10 +65,12 @@ public final class SessionPlannerApplicationService {
         Objects.requireNonNull(repository, "repository");
         Objects.requireNonNull(partyFacts, "partyFacts");
         this.publishedStateRepository = Objects.requireNonNull(publishedStateRepository, "publishedStateRepository");
-        this.loadCurrentSessionPlanUseCase = new LoadCurrentSessionPlanUseCase(repository, partyFacts);
+        SeedSessionPlanUseCase seedSessionPlanUseCase = new SeedSessionPlanUseCase(partyFacts);
+        this.loadCurrentSessionPlanUseCase = new LoadCurrentSessionPlanUseCase(repository, seedSessionPlanUseCase);
         SaveCurrentSessionPlanUseCase saveCurrentSessionPlanUseCase =
                 new SaveCurrentSessionPlanUseCase(repository, loadCurrentSessionPlanUseCase);
-        this.createSessionUseCase = new CreateSessionPlanUseCase(repository, partyFacts, saveCurrentSessionPlanUseCase);
+        this.createSessionUseCase = new CreateSessionPlanUseCase(
+                repository, saveCurrentSessionPlanUseCase, seedSessionPlanUseCase);
         this.addParticipantUseCase = new AddSessionParticipantUseCase(loadCurrentSessionPlanUseCase, saveCurrentSessionPlanUseCase);
         this.removeParticipantUseCase = new RemoveSessionParticipantUseCase(loadCurrentSessionPlanUseCase, saveCurrentSessionPlanUseCase);
         this.setEncounterDaysUseCase = new SetSessionEncounterDaysUseCase(loadCurrentSessionPlanUseCase, saveCurrentSessionPlanUseCase);
