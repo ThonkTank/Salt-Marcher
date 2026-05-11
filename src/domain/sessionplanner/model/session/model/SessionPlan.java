@@ -219,7 +219,14 @@ public record SessionPlan(
 
     public SessionPlan removeLootPlaceholder(long lootId) {
         List<SessionLootPlaceholder> nextLootPlaceholders = new ArrayList<>(lootPlaceholders);
-        boolean removed = nextLootPlaceholders.removeIf(placeholder -> placeholder.lootId() == lootId);
+        boolean removed = false;
+        Iterator<SessionLootPlaceholder> iterator = nextLootPlaceholders.iterator();
+        while (iterator.hasNext()) {
+            if (iterator.next().lootId() == lootId) {
+                iterator.remove();
+                removed = true;
+            }
+        }
         return removed
                 ? copy(participantRefs, encounterDays, encounters, restPlacements, nextLootPlaceholders, selectedEncounterId,
                 "Loot-Platzhalter entfernt.", nextEncounterId, nextLootId)
@@ -289,10 +296,13 @@ public record SessionPlan(
             List<SessionRestPlacement> restPlacements
     ) {
         List<SessionRestPlacement> nextRestPlacements = new ArrayList<>(restPlacements);
-        nextRestPlacements.removeIf(placement -> !isAdjacent(
-                encounters,
-                placement.leftEncounterId(),
-                placement.rightEncounterId()));
+        Iterator<SessionRestPlacement> iterator = nextRestPlacements.iterator();
+        while (iterator.hasNext()) {
+            SessionRestPlacement placement = iterator.next();
+            if (!isAdjacent(encounters, placement.leftEncounterId(), placement.rightEncounterId())) {
+                iterator.remove();
+            }
+        }
         return nextRestPlacements;
     }
 

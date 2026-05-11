@@ -3,7 +3,6 @@ package src.domain.dungeon.model.map.model;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.map.model.DungeonMap;
 import src.domain.dungeon.model.map.model.DungeonCorridor;
@@ -13,10 +12,8 @@ import src.domain.dungeon.model.map.model.DungeonCell;
 import src.domain.dungeon.model.map.model.DungeonClusterBoundary;
 import src.domain.dungeon.model.map.model.DungeonClusterBoundaryKind;
 import src.domain.dungeon.model.map.model.DungeonCorridorAnchorBinding;
-import src.domain.dungeon.model.map.model.DungeonCorridorAnchorEndpoint;
 import src.domain.dungeon.model.map.model.DungeonCorridorAnchorRef;
 import src.domain.dungeon.model.map.model.DungeonCorridorDoorBinding;
-import src.domain.dungeon.model.map.model.DungeonCorridorDoorEndpoint;
 import src.domain.dungeon.model.map.model.DungeonCorridorEndpoint;
 import src.domain.dungeon.model.map.model.DungeonEdge;
 import src.domain.dungeon.model.map.model.DungeonTopologyRef;
@@ -31,22 +28,22 @@ public final class DungeonCorridorEndpointResolutionLogic {
     private static final DungeonMapLookupLogic LOOKUP_SERVICE = new DungeonMapLookupLogic();
 
     public @Nullable ResolvedEndpointResult resolve(DungeonMap dungeonMap, DungeonCorridorEndpoint endpoint) {
-        Objects.requireNonNull(dungeonMap, "dungeonMap");
+        java.util.Objects.requireNonNull(dungeonMap, "dungeonMap");
         if (endpoint == null || !endpoint.present()) {
             return null;
         }
-        if (endpoint instanceof DungeonCorridorDoorEndpoint doorEndpoint) {
-            return resolveDoorEndpoint(dungeonMap, doorEndpoint);
+        if (endpoint.isDoorEndpoint()) {
+            return resolveDoorEndpoint(dungeonMap, endpoint);
         }
-        if (endpoint instanceof DungeonCorridorAnchorEndpoint anchorEndpoint) {
-            return resolveAnchorEndpoint(dungeonMap, anchorEndpoint);
+        if (endpoint.isAnchorEndpoint()) {
+            return resolveAnchorEndpoint(dungeonMap, endpoint);
         }
         return null;
     }
 
     private static @Nullable ResolvedEndpointResult resolveDoorEndpoint(
             DungeonMap dungeonMap,
-            DungeonCorridorDoorEndpoint endpoint
+            DungeonCorridorEndpoint endpoint
     ) {
         DungeonRoomCluster cluster = LOOKUP_SERVICE.cluster(dungeonMap, endpoint.clusterId());
         if (cluster == null) {
@@ -73,7 +70,7 @@ public final class DungeonCorridorEndpointResolutionLogic {
 
     private static @Nullable ResolvedEndpointResult resolveAnchorEndpoint(
             DungeonMap dungeonMap,
-            DungeonCorridorAnchorEndpoint endpoint
+            DungeonCorridorEndpoint endpoint
     ) {
         DungeonCorridor host = LOOKUP_SERVICE.corridor(dungeonMap, endpoint.hostCorridorId());
         if (host == null) {
@@ -162,12 +159,18 @@ public final class DungeonCorridorEndpointResolutionLogic {
     }
 
     private static long nextAnchorId(DungeonMap dungeonMap) {
-        return dungeonMap.connections().corridors().stream()
-                .flatMap(corridor -> corridor.bindings().anchorBindings().stream())
-                .filter(Objects::nonNull)
-                .mapToLong(DungeonCorridorAnchorBinding::anchorId)
-                .max()
-                .orElse(0L) + 1L;
+        long result = 0L;
+        for (DungeonCorridor corridor : dungeonMap.connections().corridors()) {
+            if (corridor == null) {
+                continue;
+            }
+            for (DungeonCorridorAnchorBinding binding : corridor.bindings().anchorBindings()) {
+                if (binding != null && binding.anchorId() > result) {
+                    result = binding.anchorId();
+                }
+            }
+        }
+        return result + 1L;
     }
 
     public record ResolvedEndpointResult(DungeonMap map, ResolvedCorridorEndpoint endpoint) {

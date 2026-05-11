@@ -4,8 +4,6 @@ import java.util.List;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.map.model.DungeonCell;
 import src.domain.dungeon.model.map.model.DungeonClusterBoundaryKind;
-import src.domain.dungeon.model.map.model.DungeonCorridorAnchorEndpoint;
-import src.domain.dungeon.model.map.model.DungeonCorridorDoorEndpoint;
 import src.domain.dungeon.model.map.model.DungeonCorridorEndpoint;
 import src.domain.dungeon.model.map.model.DungeonCorridorRoomEndpoint;
 import src.domain.dungeon.model.map.model.DungeonEditorHandle;
@@ -115,17 +113,17 @@ final class DungeonOperationEndpointTranslator {
 
     DungeonCorridorEndpoint corridorEndpoint(DungeonEditorOperation.CorridorEndpoint endpoint) {
         return switch (endpoint) {
-            case DungeonEditorOperation.CorridorDoorEndpoint doorEndpoint -> new DungeonCorridorDoorEndpoint(
+            case DungeonEditorOperation.CorridorDoorEndpoint doorEndpoint -> DungeonCorridorEndpoint.door(
                     doorEndpoint.roomId(),
                     doorEndpoint.clusterId(),
                     inputUseCase.domainCell(doorEndpoint.roomCell()),
                     direction(doorEndpoint.direction()),
                     inputUseCase.domainTopologyRef(doorEndpoint.topologyRef()));
-            case DungeonEditorOperation.CorridorAnchorEndpoint anchorEndpoint -> new DungeonCorridorAnchorEndpoint(
+            case DungeonEditorOperation.CorridorAnchorEndpoint anchorEndpoint -> DungeonCorridorEndpoint.anchor(
                     anchorEndpoint.hostCorridorId(),
                     inputUseCase.domainCell(anchorEndpoint.anchorCell()),
                     inputUseCase.domainTopologyRef(anchorEndpoint.topologyRef()));
-            case null -> new DungeonCorridorDoorEndpoint(
+            case null -> DungeonCorridorEndpoint.door(
                     0L,
                     0L,
                     inputUseCase.domainCell(null),

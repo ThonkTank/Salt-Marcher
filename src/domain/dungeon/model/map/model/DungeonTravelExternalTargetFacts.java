@@ -1,26 +1,36 @@
 package src.domain.dungeon.model.map.model;
 
-public sealed interface DungeonTravelExternalTargetFacts
-        permits DungeonTravelExternalTargetFacts.OverworldTile {
+public final class DungeonTravelExternalTargetFacts {
 
-    final class OverworldTile implements DungeonTravelExternalTargetFacts {
-        private final long mapId;
-        private final long tileId;
+    private static final String OVERWORLD_TILE_KIND = "OVERWORLD_TILE";
 
-        public OverworldTile(
-                long mapId,
-                long tileId
-        ) {
-            this.mapId = Math.max(0L, mapId);
-            this.tileId = Math.max(0L, tileId);
-        }
+    private final String kind;
+    private final long mapId;
+    private final long tileId;
 
-        public long mapId() {
-            return mapId;
-        }
+    private DungeonTravelExternalTargetFacts(
+            String kind,
+            long mapId,
+            long tileId
+    ) {
+        this.kind = kind == null || kind.isBlank() ? OVERWORLD_TILE_KIND : kind.trim();
+        this.mapId = Math.max(0L, mapId);
+        this.tileId = Math.max(0L, tileId);
+    }
 
-        public long tileId() {
-            return tileId;
-        }
+    public static DungeonTravelExternalTargetFacts overworldTile(long mapId, long tileId) {
+        return new DungeonTravelExternalTargetFacts(OVERWORLD_TILE_KIND, mapId, tileId);
+    }
+
+    public boolean isOverworldTile() {
+        return OVERWORLD_TILE_KIND.equals(kind);
+    }
+
+    public long mapId() {
+        return mapId;
+    }
+
+    public long tileId() {
+        return tileId;
     }
 }

@@ -51,11 +51,11 @@ final class DungeonTransitionRecordMapperSupport {
 
     private static DungeonTransitionDestination transitionDestination(DungeonTransitionRecord record) {
         if (DESTINATION_DUNGEON_MAP.equalsIgnoreCase(record.destinationType())) {
-            return new DungeonTransitionDestination.DungeonMapDestination(
+            return DungeonTransitionDestination.dungeonMapDestination(
                     record.targetDungeonMapId() == null ? 0L : record.targetDungeonMapId(),
                     record.targetTransitionId());
         }
-        return new DungeonTransitionDestination.OverworldTileDestination(
+        return DungeonTransitionDestination.overworldTileDestination(
                 record.targetOverworldMapId() == null ? 0L : record.targetOverworldMapId(),
                 record.targetOverworldTileId() == null ? 0L : record.targetOverworldTileId());
     }
@@ -79,19 +79,19 @@ final class DungeonTransitionRecordMapperSupport {
     }
 
     private static DestinationRecord destinationRecord(DungeonTransitionDestination destination) {
-        if (destination instanceof DungeonTransitionDestination.DungeonMapDestination dungeon) {
+        if (destination != null && destination.isDungeonMapDestination()) {
             return new DestinationRecord(
                     DESTINATION_DUNGEON_MAP,
                     null,
                     null,
-                    dungeon.mapId(),
-                    dungeon.transitionId());
+                    destination.mapId(),
+                    destination.transitionId());
         }
-        if (destination instanceof DungeonTransitionDestination.OverworldTileDestination overworld) {
+        if (destination != null && destination.isOverworldTileDestination()) {
             return new DestinationRecord(
                     DESTINATION_OVERWORLD_TILE,
-                    overworld.mapId(),
-                    overworld.tileId(),
+                    destination.mapId(),
+                    destination.tileId(),
                     null,
                     null);
         }

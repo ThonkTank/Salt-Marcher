@@ -31,10 +31,35 @@ public record DungeonMapFacts(
     }
 
     public List<DungeonCell> allCells() {
-        return java.util.stream.Stream.concat(
-                        areas.stream().flatMap(area -> area.cells().stream()),
-                        features.stream().flatMap(feature -> feature.cells().stream()))
-                .distinct()
-                .toList();
+        java.util.ArrayList<DungeonCell> result = new java.util.ArrayList<>();
+        appendUniqueAreaCells(result);
+        appendUniqueFeatureCells(result);
+        return List.copyOf(result);
+    }
+
+    private void appendUniqueAreaCells(List<DungeonCell> result) {
+        for (DungeonAreaFacts area : areas) {
+            if (area == null) {
+                continue;
+            }
+            appendUniqueCells(result, area.cells());
+        }
+    }
+
+    private void appendUniqueFeatureCells(List<DungeonCell> result) {
+        for (DungeonFeatureFacts feature : features) {
+            if (feature == null) {
+                continue;
+            }
+            appendUniqueCells(result, feature.cells());
+        }
+    }
+
+    private static void appendUniqueCells(List<DungeonCell> result, List<DungeonCell> cells) {
+        for (DungeonCell cell : cells == null ? List.<DungeonCell>of() : cells) {
+            if (cell != null && !result.contains(cell)) {
+                result.add(cell);
+            }
+        }
     }
 }

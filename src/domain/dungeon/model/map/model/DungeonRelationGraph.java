@@ -27,15 +27,19 @@ public record DungeonRelationGraph(
 
     public List<String> summaries() {
         List<String> result = new ArrayList<>();
-        connections.stream()
-                .map(connection -> "corridor " + connection.corridorId() + " -> room " + connection.roomId()
-                        + " (" + connection.direction() + ")")
-                .forEach(result::add);
-        featureRelations.stream()
-                .map(relation -> relation.ownerKind() + " " + relation.ownerId()
+        for (ConnectionRelation connection : connections) {
+            if (connection != null) {
+                result.add("corridor " + connection.corridorId() + " -> room " + connection.roomId()
+                        + " (" + connection.direction() + ")");
+            }
+        }
+        for (FeatureRelation relation : featureRelations) {
+            if (relation != null) {
+                result.add(relation.ownerKind() + " " + relation.ownerId()
                         + " -> " + relation.targetKind() + " " + relation.targetId()
-                        + " (" + relation.relationKind() + ")")
-                .forEach(result::add);
+                        + " (" + relation.relationKind() + ")");
+            }
+        }
         return List.copyOf(result);
     }
 

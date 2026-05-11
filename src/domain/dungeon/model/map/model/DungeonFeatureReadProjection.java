@@ -38,7 +38,7 @@ public final class DungeonFeatureReadProjection {
                     DungeonFeatureType.STAIR,
                     stair.stairId(),
                     stair.name(),
-                    sortedCells(DungeonStairOps.occupiedCells(stair).stream().toList()),
+                    sortedCells(new ArrayList<>(DungeonStairOps.occupiedCells(stair))),
                     stairDescription(stair),
                     stairDestinationLabel(stair)));
             if (stair.corridorId() != null) {
@@ -82,14 +82,14 @@ public final class DungeonFeatureReadProjection {
     }
 
     private static List<DungeonCell> sortedCells(List<DungeonCell> cells) {
-        return (cells == null ? List.<DungeonCell>of() : cells).stream()
-                .filter(cell -> cell != null)
-                .distinct()
-                .sorted(Comparator
-                        .comparingInt(DungeonCell::level)
-                        .thenComparingInt(DungeonCell::r)
-                        .thenComparingInt(DungeonCell::q))
-                .toList();
+        List<DungeonCell> result = new ArrayList<>();
+        for (DungeonCell cell : cells == null ? List.<DungeonCell>of() : cells) {
+            if (cell != null && !result.contains(cell)) {
+                result.add(cell);
+            }
+        }
+        result.sort(new CellComparator());
+        return List.copyOf(result);
     }
 
     private static String stairDescription(DungeonStair stair) {
@@ -106,13 +106,15 @@ public final class DungeonFeatureReadProjection {
         if (stair == null || stair.exits().isEmpty()) {
             return "";
         }
-        return stair.exits().stream()
-                .map(DungeonStairExit::label)
-                .filter(label -> label != null && !label.isBlank())
-                .distinct()
-                .sorted(String.CASE_INSENSITIVE_ORDER)
-                .reduce((left, right) -> left + ", " + right)
-                .orElse("");
+        List<String> labels = new ArrayList<>();
+        for (DungeonStairExit exit : stair.exits()) {
+            String label = exit == null ? "" : exit.label();
+            if (!label.isBlank() && !labels.contains(label)) {
+                labels.add(label);
+            }
+        }
+        labels.sort(String.CASE_INSENSITIVE_ORDER);
+        return String.join(", ", labels);
     }
 
     private static String transitionDescription(DungeonTransition transition) {
@@ -133,17 +135,17 @@ public final class DungeonFeatureReadProjection {
             DungeonTransition transition,
             DungeonTransitionDestination destination
     ) {
-        if (destination instanceof DungeonTransitionDestination.OverworldTileDestination overworld) {
+        if (destination != null && destination.isOverworldTileDestination()) {
             return new DungeonRelationGraph.FeatureRelation(
                     transition.transitionId(),
                     FEATURE_KIND_TRANSITION,
-                    overworld.tileId(),
+                    destination.tileId(),
                     "overworld-tile",
                     "targets");
         }
-        if (destination instanceof DungeonTransitionDestination.DungeonMapDestination dungeon) {
-            long targetId = dungeon.transitionId() == null ? dungeon.mapId() : dungeon.transitionId();
-            String targetKind = dungeon.transitionId() == null ? "dungeon-map" : FEATURE_KIND_TRANSITION;
+        if (destination != null && destination.isDungeonMapDestination()) {
+            long targetId = destination.transitionId() == null ? destination.mapId() : destination.transitionId();
+            String targetKind = destination.transitionId() == null ? "dungeon-map" : FEATURE_KIND_TRANSITION;
             return new DungeonRelationGraph.FeatureRelation(
                     transition.transitionId(),
                     FEATURE_KIND_TRANSITION,
@@ -166,6 +168,21 @@ public final class DungeonFeatureReadProjection {
         public Result {
             features = features == null ? List.of() : List.copyOf(features);
             relations = relations == null ? List.of() : List.copyOf(relations);
+        }
+    }
+
+    private static final class CellComparator implements Comparator<DungeonCell> {
+        @Override
+        public int compare(DungeonCell left, DungeonCell right) {
+            int levelComparison = Integer.compare(left.level(), right.level());
+            if (levelComparison != 0) {
+                return levelComparison;
+            }
+            int rowComparison = Integer.compare(left.r(), right.r());
+            if (rowComparison != 0) {
+                return rowComparison;
+            }
+            return Integer.compare(left.q(), right.q());
         }
     }
 }

@@ -9,5 +9,5 @@ public record StairPlacement(
         int endFloor,
         int q,
         int r
-) implements MapPlacement {
+) {
 }

@@ -40,9 +40,12 @@ public final class DungeonCorridorOps {
         if (corridor == null || roomId <= 0L || !corridor.roomIds().contains(roomId)) {
             return corridor;
         }
-        List<Long> updated = corridor.roomIds().stream()
-                .filter(existing -> existing != roomId)
-                .toList();
+        List<Long> updated = new ArrayList<>();
+        for (Long existing : corridor.roomIds()) {
+            if (existing != null && existing != roomId) {
+                updated.add(existing);
+            }
+        }
         return new DungeonCorridor(
                 corridor.corridorId(),
                 corridor.mapId(),

@@ -1,6 +1,5 @@
 package src.domain.sessionplanner.model.session.usecase;
 
-import src.domain.sessionplanner.model.session.model.SessionPlan;
 import src.domain.sessionplanner.model.session.repository.SessionPlanRepository;
 
 public final class CreateSessionPlanUseCase {
@@ -23,7 +22,7 @@ public final class CreateSessionPlanUseCase {
 
     public void execute() {
         saveCurrentSessionPlanUseCase.executeNewCurrent(
-                createSeeded(nextSessionId()).withStatus("Neue Session erstellt."));
+                seedSessionPlanUseCase.execute(nextSessionId()).withStatus("Neue Session erstellt."));
     }
 
     private long nextSessionId() {
@@ -32,9 +31,5 @@ public final class CreateSessionPlanUseCase {
         } catch (IllegalStateException exception) {
             return INITIAL_SESSION_ID;
         }
-    }
-
-    private SessionPlan createSeeded(long sessionId) {
-        return seedSessionPlanUseCase.execute(sessionId);
     }
 }

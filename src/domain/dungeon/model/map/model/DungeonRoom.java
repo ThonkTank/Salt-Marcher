@@ -57,9 +57,15 @@ public final class DungeonRoom {
     }
 
     public int primaryLevel() {
-        return floorAnchors.keySet().stream()
-                .min(Integer::compareTo)
-                .orElse(0);
+        int result = 0;
+        boolean found = false;
+        for (Integer level : floorAnchors.keySet()) {
+            if (level != null && (!found || level < result)) {
+                result = level;
+                found = true;
+            }
+        }
+        return result;
     }
 
     public DungeonRoomNarration narration() {

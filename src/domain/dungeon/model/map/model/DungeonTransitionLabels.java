@@ -8,13 +8,13 @@ final class DungeonTransitionLabels {
     }
 
     static String destinationLabel(DungeonTransitionDestination destination) {
-        if (destination instanceof DungeonTransitionDestination.OverworldTileDestination overworld) {
-            return "Overworld-Feld " + overworld.tileId();
+        if (destination != null && destination.isOverworldTileDestination()) {
+            return "Overworld-Feld " + destination.tileId();
         }
-        if (destination instanceof DungeonTransitionDestination.DungeonMapDestination dungeon) {
-            return dungeon.transitionId() == null
-                    ? "Dungeon " + dungeon.mapId()
-                    : "Dungeon " + dungeon.mapId() + " / Übergang " + dungeon.transitionId();
+        if (destination != null && destination.isDungeonMapDestination()) {
+            return destination.transitionId() == null
+                    ? "Dungeon " + destination.mapId()
+                    : "Dungeon " + destination.mapId() + " / Übergang " + destination.transitionId();
         }
         return "";
     }

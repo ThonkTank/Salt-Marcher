@@ -5,7 +5,6 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import src.domain.dungeon.model.map.model.DungeonCorridor;
 import src.domain.dungeon.model.map.model.DungeonCorridorOps;
@@ -22,14 +21,18 @@ public final class DungeonCorridorAnchorPruningRules {
         AnchorUsage usage = AnchorUsage.from(corridors);
         List<DungeonCorridor> result = new ArrayList<>();
         for (DungeonCorridor corridor : corridors == null ? List.<DungeonCorridor>of() : corridors) {
-            List<DungeonCorridorAnchorBinding> keptBindings = corridor.bindings().anchorBindings().stream()
-                    .filter(Objects::nonNull)
-                    .filter(binding -> usage.referenced().contains(binding.topologyRef()))
-                    .toList();
-            List<DungeonCorridorAnchorRef> keptRefs = corridor.bindings().anchorRefs().stream()
-                    .filter(Objects::nonNull)
-                    .filter(ref -> ref.present() && usage.hosted().containsKey(ref.topologyRef()))
-                    .toList();
+            List<DungeonCorridorAnchorBinding> keptBindings = new ArrayList<>();
+            for (DungeonCorridorAnchorBinding binding : corridor.bindings().anchorBindings()) {
+                if (binding != null && usage.referenced().contains(binding.topologyRef())) {
+                    keptBindings.add(binding);
+                }
+            }
+            List<DungeonCorridorAnchorRef> keptRefs = new ArrayList<>();
+            for (DungeonCorridorAnchorRef ref : corridor.bindings().anchorRefs()) {
+                if (ref != null && ref.present() && usage.hosted().containsKey(ref.topologyRef())) {
+                    keptRefs.add(ref);
+                }
+            }
             result.add(DungeonCorridorOps.withBindings(
                     corridor,
                     corridor.bindings()
@@ -43,16 +46,26 @@ public final class DungeonCorridorAnchorPruningRules {
         if (owner == null) {
             return false;
         }
-        Set<DungeonTopologyRef> ownedRefs = owner.bindings().anchorBindings().stream()
-                .filter(Objects::nonNull)
-                .map(DungeonCorridorAnchorBinding::topologyRef)
-                .collect(LinkedHashSet::new, Set::add, Set::addAll);
-        return !ownedRefs.isEmpty() && (corridors == null ? List.<DungeonCorridor>of() : corridors).stream()
-                .filter(candidate -> candidate.corridorId() != owner.corridorId())
-                .flatMap(candidate -> candidate.bindings().anchorRefs().stream())
-                .filter(Objects::nonNull)
-                .map(DungeonCorridorAnchorRef::topologyRef)
-                .noneMatch(ownedRefs::contains);
+        Set<DungeonTopologyRef> ownedRefs = new LinkedHashSet<>();
+        for (DungeonCorridorAnchorBinding binding : owner.bindings().anchorBindings()) {
+            if (binding != null) {
+                ownedRefs.add(binding.topologyRef());
+            }
+        }
+        if (ownedRefs.isEmpty()) {
+            return false;
+        }
+        for (DungeonCorridor candidate : corridors == null ? List.<DungeonCorridor>of() : corridors) {
+            if (candidate == null || candidate.corridorId() == owner.corridorId()) {
+                continue;
+            }
+            for (DungeonCorridorAnchorRef ref : candidate.bindings().anchorRefs()) {
+                if (ref != null && ownedRefs.contains(ref.topologyRef())) {
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 
     private record AnchorUsage(

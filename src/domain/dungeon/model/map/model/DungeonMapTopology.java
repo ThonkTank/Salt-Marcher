@@ -146,25 +146,28 @@ public record DungeonMapTopology(
         if (ref == null || !ref.present()) {
             return Optional.empty();
         }
-        return bindings.stream()
-                .filter(binding -> binding.ref().equals(ref))
-                .findFirst();
+        for (DungeonTopologyBinding binding : bindings) {
+            if (binding != null && binding.ref().equals(ref)) {
+                return Optional.of(binding);
+            }
+        }
+        return Optional.empty();
     }
 
     public OptionalLong clusterIdFor(DungeonTopologyRef ref) {
-        return find(ref)
-                .map(DungeonTopologyBinding::clusterId)
-                .filter(clusterId -> clusterId > 0L)
-                .map(OptionalLong::of)
-                .orElseGet(OptionalLong::empty);
+        Optional<DungeonTopologyBinding> binding = find(ref);
+        if (binding.isEmpty() || binding.get().clusterId() <= 0L) {
+            return OptionalLong.empty();
+        }
+        return OptionalLong.of(binding.get().clusterId());
     }
 
     public OptionalLong corridorIdFor(DungeonTopologyRef ref) {
-        return find(ref)
-                .map(DungeonTopologyBinding::corridorId)
-                .filter(corridorId -> corridorId > 0L)
-                .map(OptionalLong::of)
-                .orElseGet(OptionalLong::empty);
+        Optional<DungeonTopologyBinding> binding = find(ref);
+        if (binding.isEmpty() || binding.get().corridorId() <= 0L) {
+            return OptionalLong.empty();
+        }
+        return OptionalLong.of(binding.get().corridorId());
     }
 
     public boolean isEmpty() {

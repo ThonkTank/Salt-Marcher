@@ -6,7 +6,7 @@ public record DungeonCorridorDoorEndpoint(
         DungeonCell roomCell,
         DungeonEdgeDirection direction,
         DungeonTopologyRef topologyRef
-) implements DungeonCorridorEndpoint {
+) {
 
     public DungeonCorridorDoorEndpoint {
         roomId = Math.max(0L, roomId);
@@ -16,17 +16,14 @@ public record DungeonCorridorDoorEndpoint(
         topologyRef = topologyRef == null ? DungeonTopologyRef.empty() : topologyRef;
     }
 
-    @Override
     public boolean present() {
         return roomId > 0L && clusterId > 0L;
     }
 
-    @Override
     public DungeonCell corridorCell() {
         return direction.neighborOf(roomCell);
     }
 
-    @Override
     public int level() {
         return roomCell.level();
     }

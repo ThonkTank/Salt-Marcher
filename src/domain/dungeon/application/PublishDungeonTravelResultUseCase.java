@@ -26,8 +26,8 @@ public final class PublishDungeonTravelResultUseCase {
     private @Nullable DungeonTravelExternalTarget travelExternalTarget(
             @Nullable DungeonTravelExternalTargetFacts externalTarget
     ) {
-        if (externalTarget instanceof DungeonTravelExternalTargetFacts.OverworldTile overworld) {
-            return new DungeonTravelExternalTarget.OverworldTile(overworld.mapId(), overworld.tileId());
+        if (externalTarget != null && externalTarget.isOverworldTile()) {
+            return new DungeonTravelExternalTarget.OverworldTile(externalTarget.mapId(), externalTarget.tileId());
         }
         return null;
     }

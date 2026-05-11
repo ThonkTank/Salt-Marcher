@@ -118,26 +118,26 @@ public final class MoveDungeonTravelActionUseCase {
 
         private DungeonTravelMoveFacts moveTransition(DungeonTravelActionFacts action) {
             DungeonTransitionDestination destination = action.transitionDestination();
-            if (destination instanceof DungeonTransitionDestination.OverworldTileDestination overworld) {
+            if (destination != null && destination.isOverworldTileDestination()) {
                 DungeonTravelSurfaceFacts surface = projector.project(
                         currentMap,
                         currentDerived,
                         currentSurface.position(),
-                        "Übergang führt zum Overworld-Feld " + overworld.tileId() + ".");
+                        "Übergang führt zum Overworld-Feld " + destination.tileId() + ".");
                 return moveResult(
                         DungeonTravelMoveStatus.EXTERNAL_TARGET,
                         surface.statusLabel(),
                         surface,
-                        new DungeonTravelExternalTargetFacts.OverworldTile(overworld.mapId(), overworld.tileId()));
+                        DungeonTravelExternalTargetFacts.overworldTile(destination.mapId(), destination.tileId()));
             }
-            if (destination instanceof DungeonTransitionDestination.DungeonMapDestination dungeon) {
-                return moveToDungeonTransition(dungeon);
+            if (destination != null && destination.isDungeonMapDestination()) {
+                return moveToDungeonTransition(destination);
             }
             return unavailableFromCurrent("Übergangsziel ist nicht verfügbar.");
         }
 
         private DungeonTravelMoveFacts moveToDungeonTransition(
-                DungeonTransitionDestination.DungeonMapDestination destination
+                DungeonTransitionDestination destination
         ) {
             if (destination.transitionId() == null) {
                 return unavailableFromCurrent("Ziel-Übergang ist noch nicht platziert.");
@@ -171,10 +171,12 @@ public final class MoveDungeonTravelActionUseCase {
         }
 
         private DungeonTransition findTransition(DungeonMap dungeonMap, long transitionId) {
-            return dungeonMap.connections().transitions().stream()
-                    .filter(transition -> transition.transitionId() == transitionId)
-                    .findFirst()
-                    .orElse(null);
+            for (DungeonTransition transition : dungeonMap.connections().transitions()) {
+                if (transition != null && transition.transitionId() == transitionId) {
+                    return transition;
+                }
+            }
+            return null;
         }
 
         private DungeonTravelMoveFacts moveResult(

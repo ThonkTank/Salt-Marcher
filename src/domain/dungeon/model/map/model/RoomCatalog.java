@@ -21,9 +21,12 @@ public record RoomCatalog(
     }
 
     public Optional<DungeonRoom> findRoom(long roomId) {
-        return rooms.stream()
-                .filter(room -> room.roomId() == roomId)
-                .findFirst();
+        for (DungeonRoom room : rooms) {
+            if (room != null && room.roomId() == roomId) {
+                return Optional.of(room);
+            }
+        }
+        return Optional.empty();
     }
 
 }

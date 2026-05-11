@@ -28,7 +28,12 @@ public final class DungeonRoomCellProjection {
             DungeonRoomCellAssignmentSupport.assignLevelCells(result, this, cluster, safeRooms, level);
         }
         for (DungeonRoom room : safeRooms) {
-            result.computeIfAbsent(room.roomId(), ignored -> new ArrayList<>()).add(room.primaryAnchor());
+            List<DungeonCell> roomCells = result.get(room.roomId());
+            if (roomCells == null) {
+                roomCells = new ArrayList<>();
+                result.put(room.roomId(), roomCells);
+            }
+            roomCells.add(room.primaryAnchor());
         }
         return normalizeCellsByRoom(result);
     }
@@ -72,13 +77,7 @@ public final class DungeonRoomCellProjection {
 
     public List<Set<DungeonCell>> connectedComponents(Set<DungeonCell> cells) {
         List<Set<DungeonCell>> components = new ArrayList<>(TRAVERSAL_SUPPORT.connectedComponents(cells));
-        components.sort(Comparator
-                .comparingInt((Set<DungeonCell> component) -> component.stream()
-                        .mapToInt(DungeonCell::level)
-                        .min()
-                        .orElse(0))
-                .thenComparingInt(component -> component.stream().mapToInt(DungeonCell::r).min().orElse(0))
-                .thenComparingInt(component -> component.stream().mapToInt(DungeonCell::q).min().orElse(0)));
+        components.sort(new ComponentComparator());
         return List.copyOf(components);
     }
 
@@ -126,12 +125,79 @@ public final class DungeonRoomCellProjection {
                 result.add(cell);
             }
         }
-        return result.stream()
-                .distinct()
-                .sorted(Comparator
-                        .comparingInt(DungeonCell::level)
-                        .thenComparingInt(DungeonCell::r)
-                        .thenComparingInt(DungeonCell::q))
-                .toList();
+        List<DungeonCell> unique = new ArrayList<>();
+        for (DungeonCell cell : result) {
+            if (!unique.contains(cell)) {
+                unique.add(cell);
+            }
+        }
+        unique.sort(new CellComparator());
+        return List.copyOf(unique);
+    }
+
+    private static int minimumLevel(Set<DungeonCell> component) {
+        int result = 0;
+        boolean found = false;
+        for (DungeonCell cell : component == null ? Set.<DungeonCell>of() : component) {
+            if (cell != null && (!found || cell.level() < result)) {
+                result = cell.level();
+                found = true;
+            }
+        }
+        return result;
+    }
+
+    private static int minimumRow(Set<DungeonCell> component) {
+        int result = 0;
+        boolean found = false;
+        for (DungeonCell cell : component == null ? Set.<DungeonCell>of() : component) {
+            if (cell != null && (!found || cell.r() < result)) {
+                result = cell.r();
+                found = true;
+            }
+        }
+        return result;
+    }
+
+    private static int minimumColumn(Set<DungeonCell> component) {
+        int result = 0;
+        boolean found = false;
+        for (DungeonCell cell : component == null ? Set.<DungeonCell>of() : component) {
+            if (cell != null && (!found || cell.q() < result)) {
+                result = cell.q();
+                found = true;
+            }
+        }
+        return result;
+    }
+
+    private static final class ComponentComparator implements Comparator<Set<DungeonCell>> {
+        @Override
+        public int compare(Set<DungeonCell> left, Set<DungeonCell> right) {
+            int levelComparison = Integer.compare(minimumLevel(left), minimumLevel(right));
+            if (levelComparison != 0) {
+                return levelComparison;
+            }
+            int rowComparison = Integer.compare(minimumRow(left), minimumRow(right));
+            if (rowComparison != 0) {
+                return rowComparison;
+            }
+            return Integer.compare(minimumColumn(left), minimumColumn(right));
+        }
+    }
+
+    private static final class CellComparator implements Comparator<DungeonCell> {
+        @Override
+        public int compare(DungeonCell left, DungeonCell right) {
+            int levelComparison = Integer.compare(left.level(), right.level());
+            if (levelComparison != 0) {
+                return levelComparison;
+            }
+            int rowComparison = Integer.compare(left.r(), right.r());
+            if (rowComparison != 0) {
+                return rowComparison;
+            }
+            return Integer.compare(left.q(), right.q());
+        }
     }
 }

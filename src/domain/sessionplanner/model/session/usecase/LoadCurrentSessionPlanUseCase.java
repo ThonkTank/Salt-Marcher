@@ -13,7 +13,7 @@ public final class LoadCurrentSessionPlanUseCase {
 
     private final SessionPlanRepository repository;
     private final SeedSessionPlanUseCase seedSessionPlanUseCase;
-    private @Nullable SessionPlan currentSession;
+    private final CurrentSessionPlanState currentState = new CurrentSessionPlanState();
 
     public LoadCurrentSessionPlanUseCase(
             SessionPlanRepository repository,
@@ -24,36 +24,48 @@ public final class LoadCurrentSessionPlanUseCase {
     }
 
     public SessionPlan execute() {
+        SessionPlan currentSession = currentState.currentSession();
         if (currentSession == null) {
             currentSession = loadCurrentOrSeed();
+            currentState.replace(currentSession);
         }
         return currentSession;
     }
 
     void replaceCached(SessionPlan sessionPlan) {
-        currentSession = Objects.requireNonNull(sessionPlan, "sessionPlan");
+        currentState.replace(Objects.requireNonNull(sessionPlan, "sessionPlan"));
     }
 
     private SessionPlan loadCurrentOrSeed() {
         try {
-            return loadCurrent().orElseGet(() -> createSeeded(INITIAL_SESSION_ID));
+            Optional<SessionPlan> currentSession = repository.loadCurrent();
+            if (currentSession.isPresent()) {
+                return currentSession.get().clearStatus();
+            }
+            return seedSessionPlanUseCase.execute(INITIAL_SESSION_ID);
         } catch (IllegalStateException exception) {
             return fallbackSession(LOAD_FAILURE_STATUS);
         }
     }
 
-    private Optional<SessionPlan> loadCurrent() {
-        return repository.loadCurrent().map(SessionPlan::clearStatus);
-    }
-
-    private SessionPlan createSeeded(long sessionId) {
-        return seedSessionPlanUseCase.execute(sessionId);
-    }
-
     private SessionPlan fallbackSession(String statusText) {
+        SessionPlan currentSession = currentState.currentSession();
         SessionPlan base = currentSession == null
-                ? createSeeded(INITIAL_SESSION_ID)
+                ? seedSessionPlanUseCase.execute(INITIAL_SESSION_ID)
                 : currentSession.clearStatus();
         return base.withStatus(statusText);
+    }
+
+    private static final class CurrentSessionPlanState {
+
+        private @Nullable SessionPlan currentSession;
+
+        private @Nullable SessionPlan currentSession() {
+            return currentSession;
+        }
+
+        private void replace(SessionPlan sessionPlan) {
+            currentSession = sessionPlan;
+        }
     }
 }

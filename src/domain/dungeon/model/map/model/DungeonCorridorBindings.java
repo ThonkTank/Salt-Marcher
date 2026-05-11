@@ -2,7 +2,6 @@ package src.domain.dungeon.model.map.model;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 
 public record DungeonCorridorBindings(
         List<DungeonCorridorWaypoint> waypoints,
@@ -26,9 +25,12 @@ public record DungeonCorridorBindings(
         if (binding == null) {
             return this;
         }
-        List<DungeonCorridorDoorBinding> updated = new ArrayList<>(doorBindings.stream()
-                .filter(existing -> existing == null || existing.roomId() != binding.roomId())
-                .toList());
+        List<DungeonCorridorDoorBinding> updated = new ArrayList<>();
+        for (DungeonCorridorDoorBinding existing : doorBindings) {
+            if (existing == null || existing.roomId() != binding.roomId()) {
+                updated.add(existing);
+            }
+        }
         updated.add(binding);
         return new DungeonCorridorBindings(waypoints, updated, anchorBindings, anchorRefs);
     }
@@ -37,9 +39,12 @@ public record DungeonCorridorBindings(
         if (roomId <= 0L || doorBindings.isEmpty()) {
             return this;
         }
-        List<DungeonCorridorDoorBinding> updated = doorBindings.stream()
-                .filter(existing -> existing == null || existing.roomId() != roomId)
-                .toList();
+        List<DungeonCorridorDoorBinding> updated = new ArrayList<>();
+        for (DungeonCorridorDoorBinding existing : doorBindings) {
+            if (existing == null || existing.roomId() != roomId) {
+                updated.add(existing);
+            }
+        }
         return updated.size() == doorBindings.size()
                 ? this
                 : new DungeonCorridorBindings(waypoints, updated, anchorBindings, anchorRefs);
@@ -49,9 +54,12 @@ public record DungeonCorridorBindings(
         if (binding == null || !binding.topologyRef().present()) {
             return this;
         }
-        List<DungeonCorridorAnchorBinding> updated = new ArrayList<>(anchorBindings.stream()
-                .filter(existing -> existing != null && !existing.topologyRef().equals(binding.topologyRef()))
-                .toList());
+        List<DungeonCorridorAnchorBinding> updated = new ArrayList<>();
+        for (DungeonCorridorAnchorBinding existing : anchorBindings) {
+            if (existing != null && !existing.topologyRef().equals(binding.topologyRef())) {
+                updated.add(existing);
+            }
+        }
         updated.add(binding);
         return new DungeonCorridorBindings(waypoints, doorBindings, updated, anchorRefs);
     }
@@ -60,9 +68,12 @@ public record DungeonCorridorBindings(
         if (ref == null || !ref.present()) {
             return this;
         }
-        List<DungeonCorridorAnchorRef> updated = new ArrayList<>(anchorRefs.stream()
-                .filter(existing -> existing != null && !existing.topologyRef().equals(ref.topologyRef()))
-                .toList());
+        List<DungeonCorridorAnchorRef> updated = new ArrayList<>();
+        for (DungeonCorridorAnchorRef existing : anchorRefs) {
+            if (existing != null && !existing.topologyRef().equals(ref.topologyRef())) {
+                updated.add(existing);
+            }
+        }
         updated.add(ref);
         return new DungeonCorridorBindings(waypoints, doorBindings, anchorBindings, updated);
     }
@@ -86,16 +97,24 @@ public record DungeonCorridorBindings(
         if (roomIds == null || roomIds.isEmpty()) {
             return empty();
         }
-        List<DungeonCorridorDoorBinding> sanitizedDoors = doorBindings.stream()
-                .filter(Objects::nonNull)
-                .filter(binding -> roomIds.contains(binding.roomId()))
-                .toList();
-        List<DungeonCorridorAnchorBinding> sanitizedAnchors = anchorBindings.stream()
-                .filter(Objects::nonNull)
-                .toList();
-        List<DungeonCorridorAnchorRef> sanitizedRefs = anchorRefs.stream()
-                .filter(Objects::nonNull)
-                .toList();
+        List<DungeonCorridorDoorBinding> sanitizedDoors = new ArrayList<>();
+        for (DungeonCorridorDoorBinding binding : doorBindings) {
+            if (binding != null && roomIds.contains(binding.roomId())) {
+                sanitizedDoors.add(binding);
+            }
+        }
+        List<DungeonCorridorAnchorBinding> sanitizedAnchors = new ArrayList<>();
+        for (DungeonCorridorAnchorBinding binding : anchorBindings) {
+            if (binding != null) {
+                sanitizedAnchors.add(binding);
+            }
+        }
+        List<DungeonCorridorAnchorRef> sanitizedRefs = new ArrayList<>();
+        for (DungeonCorridorAnchorRef ref : anchorRefs) {
+            if (ref != null) {
+                sanitizedRefs.add(ref);
+            }
+        }
         return new DungeonCorridorBindings(waypoints, sanitizedDoors, sanitizedAnchors, sanitizedRefs);
     }
 }

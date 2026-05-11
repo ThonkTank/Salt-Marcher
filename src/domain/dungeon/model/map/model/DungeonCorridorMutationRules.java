@@ -7,7 +7,6 @@ import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.map.model.DungeonMap;
 import src.domain.dungeon.model.map.model.DungeonCorridor;
 import src.domain.dungeon.model.map.model.DungeonRoom;
-import src.domain.dungeon.model.map.model.DungeonCorridorDoorEndpoint;
 import src.domain.dungeon.model.map.model.DungeonCorridorEndpoint;
 
 final class DungeonCorridorMutationRules {
@@ -16,12 +15,11 @@ final class DungeonCorridorMutationRules {
     private static final DungeonMapLookupLogic LOOKUP_SERVICE = new DungeonMapLookupLogic();
 
     boolean sameClusterOnly(DungeonMap dungeonMap, DungeonCorridorEndpoint start, DungeonCorridorEndpoint end) {
-        if (!(start instanceof DungeonCorridorDoorEndpoint startDoor)
-                || !(end instanceof DungeonCorridorDoorEndpoint endDoor)) {
+        if (start == null || end == null || !start.isDoorEndpoint() || !end.isDoorEndpoint()) {
             return false;
         }
-        DungeonRoom left = LOOKUP_SERVICE.room(dungeonMap, startDoor.roomId());
-        DungeonRoom right = LOOKUP_SERVICE.room(dungeonMap, endDoor.roomId());
+        DungeonRoom left = LOOKUP_SERVICE.room(dungeonMap, start.roomId());
+        DungeonRoom right = LOOKUP_SERVICE.room(dungeonMap, end.roomId());
         return left != null && right != null && left.clusterId() == right.clusterId();
     }
 
@@ -49,9 +47,12 @@ final class DungeonCorridorMutationRules {
     }
 
     long nextCorridorId(DungeonMap dungeonMap) {
-        return dungeonMap.connections().corridors().stream()
-                .mapToLong(DungeonCorridor::corridorId)
-                .max()
-                .orElse(0L) + 1L;
+        long result = 0L;
+        for (DungeonCorridor corridor : dungeonMap.connections().corridors()) {
+            if (corridor != null && corridor.corridorId() > result) {
+                result = corridor.corridorId();
+            }
+        }
+        return result + 1L;
     }
 }

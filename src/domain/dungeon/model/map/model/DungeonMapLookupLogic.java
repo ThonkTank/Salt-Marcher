@@ -9,23 +9,29 @@ import src.domain.dungeon.model.map.model.DungeonRoomCluster;
 public final class DungeonMapLookupLogic {
 
     public @Nullable DungeonRoom room(DungeonMap dungeonMap, long roomId) {
-        return dungeonMap.rooms().rooms().stream()
-                .filter(room -> room.roomId() == roomId)
-                .findFirst()
-                .orElse(null);
+        for (DungeonRoom room : dungeonMap.rooms().rooms()) {
+            if (room != null && room.roomId() == roomId) {
+                return room;
+            }
+        }
+        return null;
     }
 
     public @Nullable DungeonRoomCluster cluster(DungeonMap dungeonMap, long clusterId) {
-        return dungeonMap.topology().roomClusters().stream()
-                .filter(cluster -> cluster.clusterId() == clusterId)
-                .findFirst()
-                .orElse(null);
+        for (DungeonRoomCluster cluster : dungeonMap.topology().roomClusters()) {
+            if (cluster != null && cluster.clusterId() == clusterId) {
+                return cluster;
+            }
+        }
+        return null;
     }
 
     public @Nullable DungeonCorridor corridor(DungeonMap dungeonMap, long corridorId) {
-        return dungeonMap.connections().corridors().stream()
-                .filter(candidate -> candidate.corridorId() == corridorId)
-                .findFirst()
-                .orElse(null);
+        for (DungeonCorridor candidate : dungeonMap.connections().corridors()) {
+            if (candidate != null && candidate.corridorId() == corridorId) {
+                return candidate;
+            }
+        }
+        return null;
     }
 }

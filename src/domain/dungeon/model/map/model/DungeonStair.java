@@ -6,6 +6,8 @@ import src.domain.dungeon.model.map.model.DungeonEdgeDirection;
 import src.domain.dungeon.model.map.model.DungeonStairExit;
 import src.domain.dungeon.model.map.model.DungeonStairShape;
 
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 public final class DungeonStair {
@@ -81,22 +83,8 @@ public final class DungeonStair {
             direction = direction == null ? DungeonEdgeDirection.NORTH : direction;
             dimension1 = Math.max(0, dimension1);
             dimension2 = Math.max(0, dimension2);
-            path = (path == null ? List.<DungeonCell>of() : path).stream()
-                    .filter(cell -> cell != null)
-                    .distinct()
-                    .sorted(java.util.Comparator
-                            .comparingInt(DungeonCell::level)
-                            .thenComparingInt(DungeonCell::r)
-                            .thenComparingInt(DungeonCell::q))
-                    .toList();
-            exits = (exits == null ? List.<DungeonStairExit>of() : exits).stream()
-                    .filter(exit -> exit != null)
-                    .sorted(java.util.Comparator
-                            .comparingInt((DungeonStairExit exit) -> exit.position().level())
-                            .thenComparingInt(exit -> exit.position().r())
-                            .thenComparingInt(exit -> exit.position().q())
-                            .thenComparingLong(DungeonStairExit::exitId))
-                    .toList();
+            path = sortedUniquePath(path);
+            exits = sortedExits(exits);
             corridorId = positiveCorridorId(corridorId);
         }
 
@@ -116,6 +104,62 @@ public final class DungeonStair {
                 return null;
             }
             return corridorId;
+        }
+
+        private static List<DungeonCell> sortedUniquePath(List<DungeonCell> source) {
+            List<DungeonCell> result = new ArrayList<>();
+            for (DungeonCell cell : source == null ? List.<DungeonCell>of() : source) {
+                if (cell != null && !result.contains(cell)) {
+                    result.add(cell);
+                }
+            }
+            result.sort(new CellComparator());
+            return List.copyOf(result);
+        }
+
+        private static List<DungeonStairExit> sortedExits(List<DungeonStairExit> source) {
+            List<DungeonStairExit> result = new ArrayList<>();
+            for (DungeonStairExit exit : source == null ? List.<DungeonStairExit>of() : source) {
+                if (exit != null) {
+                    result.add(exit);
+                }
+            }
+            result.sort(new StairExitComparator());
+            return List.copyOf(result);
+        }
+
+        private static final class CellComparator implements Comparator<DungeonCell> {
+            @Override
+            public int compare(DungeonCell left, DungeonCell right) {
+                int levelComparison = Integer.compare(left.level(), right.level());
+                if (levelComparison != 0) {
+                    return levelComparison;
+                }
+                int rowComparison = Integer.compare(left.r(), right.r());
+                if (rowComparison != 0) {
+                    return rowComparison;
+                }
+                return Integer.compare(left.q(), right.q());
+            }
+        }
+
+        private static final class StairExitComparator implements Comparator<DungeonStairExit> {
+            @Override
+            public int compare(DungeonStairExit left, DungeonStairExit right) {
+                int levelComparison = Integer.compare(left.position().level(), right.position().level());
+                if (levelComparison != 0) {
+                    return levelComparison;
+                }
+                int rowComparison = Integer.compare(left.position().r(), right.position().r());
+                if (rowComparison != 0) {
+                    return rowComparison;
+                }
+                int columnComparison = Integer.compare(left.position().q(), right.position().q());
+                if (columnComparison != 0) {
+                    return columnComparison;
+                }
+                return Long.compare(left.exitId(), right.exitId());
+            }
         }
     }
 }

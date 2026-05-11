@@ -4,7 +4,7 @@ public record DungeonCorridorAnchorEndpoint(
         long hostCorridorId,
         DungeonCell anchorCell,
         DungeonTopologyRef topologyRef
-) implements DungeonCorridorEndpoint {
+) {
 
     public DungeonCorridorAnchorEndpoint {
         hostCorridorId = Math.max(0L, hostCorridorId);
@@ -12,17 +12,14 @@ public record DungeonCorridorAnchorEndpoint(
         topologyRef = topologyRef == null ? DungeonTopologyRef.empty() : topologyRef;
     }
 
-    @Override
     public boolean present() {
         return hostCorridorId > 0L;
     }
 
-    @Override
     public DungeonCell corridorCell() {
         return anchorCell;
     }
 
-    @Override
     public int level() {
         return anchorCell.level();
     }
