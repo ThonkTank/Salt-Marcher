@@ -1,4 +1,4 @@
-package src.data.encounter.query;
+package src.data.encounter.repository;
 
 import java.util.List;
 import java.util.Objects;
@@ -9,9 +9,9 @@ import src.domain.creatures.model.catalog.port.CreatureCatalogPort;
 import src.domain.encounter.model.generation.helper.EncounterCandidateProfileHelper;
 import src.domain.encounter.model.generation.model.EncounterCandidateProfile;
 import src.domain.encounter.model.generation.model.EncounterCreatureFacts;
-import src.domain.encounter.model.reference.repository.EncounterCreatureRepository;
 import src.domain.encounter.model.reference.model.EncounterCreatureCandidateCriteria;
 import src.domain.encounter.model.reference.model.EncounterCreatureReference;
+import src.domain.encounter.model.reference.repository.EncounterCreatureRepository;
 
 public final class ApplicationEncounterCreatureRepository implements EncounterCreatureRepository {
 

@@ -1,4 +1,4 @@
-package src.data.encounter.query;
+package src.data.encounter.repository;
 
 import java.util.List;
 import java.util.Objects;
@@ -6,8 +6,8 @@ import src.data.encountertable.query.SqliteEncounterTableCatalogAdapter;
 import src.domain.encounter.model.generation.helper.EncounterCandidateProfileHelper;
 import src.domain.encounter.model.generation.model.EncounterCandidateProfile;
 import src.domain.encounter.model.generation.model.EncounterCreatureFacts;
-import src.domain.encounter.model.reference.repository.EncounterTableCandidateRepository;
 import src.domain.encounter.model.reference.model.EncounterTableCandidateCriteria;
+import src.domain.encounter.model.reference.repository.EncounterTableCandidateRepository;
 import src.domain.encountertable.model.catalog.port.EncounterTableCatalogPort;
 
 public final class ApplicationEncounterTableCandidateRepository implements EncounterTableCandidateRepository {
