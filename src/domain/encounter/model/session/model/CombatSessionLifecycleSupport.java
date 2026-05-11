@@ -1,8 +1,6 @@
 package src.domain.encounter.model.session.model;
 
 import src.domain.encounter.model.session.model.EncounterSessionValues.Mode;
-import src.domain.encounter.model.session.model.CombatRosterMutation;
-import src.domain.encounter.model.session.model.CombatTurn;
 
 final class CombatSessionLifecycleSupport {
 

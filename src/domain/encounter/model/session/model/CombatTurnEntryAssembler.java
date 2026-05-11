@@ -2,8 +2,6 @@ package src.domain.encounter.model.session.model;
 
 import java.util.ArrayList;
 import java.util.List;
-import src.domain.encounter.model.session.model.Combatant;
-import src.domain.encounter.model.session.model.CombatTurnEntry;
 
 final class CombatTurnEntryAssembler {
 

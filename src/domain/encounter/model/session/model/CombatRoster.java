@@ -2,7 +2,6 @@ package src.domain.encounter.model.session.model;
 
 import java.util.ArrayList;
 import java.util.List;
-import src.domain.encounter.model.session.model.Combatant;
 
 public final class CombatRoster {
 

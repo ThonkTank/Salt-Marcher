@@ -4,8 +4,6 @@ import static src.domain.encounter.model.session.model.EncounterSessionValues.*;
 
 import java.util.ArrayList;
 import java.util.List;
-import src.domain.encounter.model.session.model.CombatRosterBuilder;
-import src.domain.encounter.model.session.model.CombatTurn;
 
 final class CombatInitiativeTracker {
 

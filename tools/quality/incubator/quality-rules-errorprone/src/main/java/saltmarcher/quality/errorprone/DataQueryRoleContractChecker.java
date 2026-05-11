@@ -303,6 +303,7 @@ public final class DataQueryRoleContractChecker extends BugChecker implements Bu
             }
             if (simpleName.endsWith("Lookup")
                     || simpleName.endsWith("Catalog")
+                    || simpleName.endsWith("Port")
                     || simpleName.endsWith("Search")) {
                 return true;
             }

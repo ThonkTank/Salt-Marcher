@@ -1,11 +1,8 @@
 package src.domain.encounter.model.session.model;
 
 import java.util.List;
-import src.domain.encounter.model.session.model.CombatRoster;
-import src.domain.encounter.model.session.model.Combatant;
 import src.domain.encounter.model.session.model.EncounterSessionValues.CreatureDetailData;
 import src.domain.encounter.model.session.model.EncounterSessionValues.EncounterCreatureData;
-import src.domain.encounter.model.session.model.MonsterCombatProfile;
 
 public final class CombatRosterBuilder {
 

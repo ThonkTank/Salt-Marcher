@@ -1,7 +1,5 @@
 package src.domain.encounter.model.session.repository;
 
-import static src.domain.encounter.model.session.model.EncounterSessionValues.*;
-
 import java.util.List;
 import java.util.Optional;
 import org.jspecify.annotations.Nullable;

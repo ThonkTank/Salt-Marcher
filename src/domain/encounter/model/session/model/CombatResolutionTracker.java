@@ -1,7 +1,6 @@
 package src.domain.encounter.model.session.model;
 
 import java.util.List;
-import src.domain.encounter.model.session.model.CombatRosterMutation;
 import src.domain.encounter.model.session.model.EncounterSessionValues.AwardXpOutcome;
 import src.domain.encounter.model.session.model.EncounterSessionValues.PartyMemberData;
 import src.domain.encounter.model.session.model.EncounterSessionValues.ResultEnemyData;
