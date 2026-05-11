@@ -5,10 +5,10 @@ import src.domain.dungeoneditor.model.interaction.model.DungeonEditorMainViewInt
 import src.domain.dungeoneditor.model.interaction.model.DungeonEditorMainViewInteractionValues.HitTarget;
 import src.domain.dungeoneditor.model.interaction.model.DungeonEditorMainViewInteractionValues.PointerState;
 
-final class DungeonEditorMainViewInputBoundaryTranslationHelper {
+public final class DungeonEditorMainViewInputBoundaryTranslationHelper {
     private static final double VERTEX_SNAP_DISTANCE = 0.22;
 
-    PointerState resolvePointerState(
+    public PointerState resolvePointerState(
             double canvasX,
             double canvasY,
             int level,

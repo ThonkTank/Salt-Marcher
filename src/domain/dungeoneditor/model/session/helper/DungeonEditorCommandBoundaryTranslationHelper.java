@@ -14,7 +14,7 @@ public final class DungeonEditorCommandBoundaryTranslationHelper {
     public static @Nullable DungeonMapId requestedDomainMapId(@Nullable LoadDungeonEditorQuery query) {
         LoadDungeonEditorQuery effectiveQuery = query == null ? new LoadDungeonEditorQuery(null) : query;
         DungeonEditorMapId mapId = effectiveQuery.mapId();
-        DungeonEditorWorkspaceValues.MapId workspaceMapId = toWorkspaceMapId(mapId);
+         DungeonEditorWorkspaceValues.MapId workspaceMapId = toWorkspaceMapId(mapId);
         return workspaceMapId == null ? null : new DungeonMapId(workspaceMapId.value());
     }
 

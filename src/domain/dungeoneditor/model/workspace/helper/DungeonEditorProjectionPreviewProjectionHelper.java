@@ -2,6 +2,8 @@ package src.domain.dungeoneditor.model.workspace.helper;
 
 import java.util.List;
 import org.jspecify.annotations.Nullable;
+import src.domain.dungeoneditor.model.interaction.helper.DungeonEditorBoundaryStretchPreviewProjectionHelper;
+import src.domain.dungeoneditor.model.interaction.helper.DungeonEditorClusterMovePreviewProjectionHelper;
 import src.domain.dungeoneditor.published.DungeonEditorMapProjectionSnapshot;
 import src.domain.dungeoneditor.published.DungeonEditorTopologyElementRef;
 import src.domain.dungeoneditor.model.session.model.DungeonEditorSessionValues;

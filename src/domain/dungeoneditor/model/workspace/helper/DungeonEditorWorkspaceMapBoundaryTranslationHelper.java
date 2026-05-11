@@ -8,24 +8,24 @@ import src.domain.dungeon.published.DungeonMapSummary;
 import src.domain.dungeon.published.DungeonSnapshot;
 import src.domain.dungeoneditor.model.workspace.model.DungeonEditorWorkspaceValues;
 
-final class DungeonEditorWorkspaceMapBoundaryTranslationHelper {
+public final class DungeonEditorWorkspaceMapBoundaryTranslationHelper {
 
     private DungeonEditorWorkspaceMapBoundaryTranslationHelper() {
     }
 
-    static DungeonEditorWorkspaceValues.@Nullable MapId toWorkspaceMapId(@Nullable DungeonMapId mapId) {
+    public static DungeonEditorWorkspaceValues.@Nullable MapId toWorkspaceMapId(@Nullable DungeonMapId mapId) {
         return mapId == null ? null : new DungeonEditorWorkspaceValues.MapId(mapId.value());
     }
 
-    static @Nullable DungeonMapId toDomainMapId(DungeonEditorWorkspaceValues.@Nullable MapId mapId) {
+    public static @Nullable DungeonMapId toDomainMapId(DungeonEditorWorkspaceValues.@Nullable MapId mapId) {
         return mapId == null ? null : new DungeonMapId(mapId.value());
     }
 
-    static DungeonEditorWorkspaceValues.MapSummary toWorkspaceMapSummary(@Nullable DungeonMapSummary map) {
+    public static DungeonEditorWorkspaceValues.MapSummary toWorkspaceMapSummary(@Nullable DungeonMapSummary map) {
         return map == null
                 ? new DungeonEditorWorkspaceValues.MapSummary(new DungeonEditorWorkspaceValues.MapId(1L), "Dungeon Map", 0L)
                 : new DungeonEditorWorkspaceValues.MapSummary(
-                        Objects.requireNonNull(toWorkspaceMapId(map.mapId())),
+                         Objects.requireNonNull(toWorkspaceMapId(map.mapId())),
                         map.mapName(),
                         map.revision());
     }

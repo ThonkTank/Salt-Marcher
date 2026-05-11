@@ -26,7 +26,7 @@ public final class DungeonEditorWorkspaceValues {
 
         @Override
         public boolean equals(Object other) {
-            return this == other || other instanceof MapId that && value == that.value;
+            return this == other || (other instanceof MapId that && value == that.value);
         }
 
         @Override

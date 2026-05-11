@@ -10,12 +10,12 @@ import src.domain.dungeoneditor.model.session.model.DungeonEditorSessionSnapshot
 import src.domain.dungeoneditor.model.workspace.model.DungeonEditorWorkspaceValues.Cell;
 import src.domain.dungeoneditor.model.workspace.model.DungeonEditorWorkspaceValues.Feature;
 
-final class DungeonEditorSnapshotProjectionLevelProjectionHelper {
+public final class DungeonEditorSnapshotProjectionLevelProjectionHelper {
 
     private DungeonEditorSnapshotProjectionLevelProjectionHelper() {
     }
 
-    static int clampProjectionLevel(
+    public static int clampProjectionLevel(
             DungeonEditorSessionSnapshot.@Nullable SurfaceData surface,
             int projectionLevel
     ) {

@@ -8,7 +8,7 @@ import src.domain.dungeoneditor.model.interaction.model.DungeonEditorMainViewInt
 import src.domain.dungeoneditor.model.interaction.model.DungeonEditorMainViewInteractionValues.HitKind;
 import src.domain.dungeoneditor.model.interaction.model.DungeonEditorMainViewInteractionValues.HitTarget;
 
-final class DungeonEditorMainViewHitRefBoundaryTranslationHelper {
+public final class DungeonEditorMainViewHitRefBoundaryTranslationHelper {
     private static final int MINIMUM_HIT_REF_PARTS = 2;
 
     private DungeonEditorMainViewHitRefBoundaryTranslationHelper() {

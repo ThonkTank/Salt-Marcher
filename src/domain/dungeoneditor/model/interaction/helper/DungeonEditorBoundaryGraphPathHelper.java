@@ -12,7 +12,7 @@ import java.util.Set;
 import src.domain.dungeoneditor.model.interaction.model.DungeonEditorInteractionValues.VertexKey;
 import src.domain.dungeoneditor.model.interaction.model.DungeonEditorMainViewInteractionValues.EdgeKey;
 
-final class DungeonEditorBoundaryGraphPathHelper {
+public final class DungeonEditorBoundaryGraphPathHelper {
 
     private DungeonEditorBoundaryGraphPathHelper() {
     }

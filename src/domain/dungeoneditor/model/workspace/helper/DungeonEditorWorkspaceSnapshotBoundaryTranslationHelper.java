@@ -7,7 +7,7 @@ import src.domain.dungeon.published.DungeonFeatureSnapshot;
 import src.domain.dungeon.published.DungeonTopologyKind;
 import src.domain.dungeoneditor.model.workspace.model.DungeonEditorWorkspaceValues;
 
-final class DungeonEditorWorkspaceSnapshotBoundaryTranslationHelper {
+public final class DungeonEditorWorkspaceSnapshotBoundaryTranslationHelper {
 
     private DungeonEditorWorkspaceSnapshotBoundaryTranslationHelper() {
     }

@@ -5,25 +5,25 @@ import src.domain.dungeon.published.DungeonCellRef;
 import src.domain.dungeon.published.DungeonEdgeRef;
 import src.domain.dungeoneditor.model.workspace.model.DungeonEditorWorkspaceValues;
 
-final class DungeonEditorWorkspaceCellBoundaryTranslationHelper {
+public final class DungeonEditorWorkspaceCellBoundaryTranslationHelper {
 
     private DungeonEditorWorkspaceCellBoundaryTranslationHelper() {
     }
 
-    static DungeonCellRef toDomainCell(DungeonEditorWorkspaceValues.Cell cell) {
+    public static DungeonCellRef toDomainCell(DungeonEditorWorkspaceValues.Cell cell) {
         DungeonEditorWorkspaceValues.Cell safeCell = cell == null
                 ? DungeonEditorWorkspaceValues.Cell.empty()
                 : cell;
         return new DungeonCellRef(safeCell.q(), safeCell.r(), safeCell.level());
     }
 
-    static DungeonEdgeRef toDomainEdge(DungeonEditorWorkspaceValues.Edge edge) {
+    public static DungeonEdgeRef toDomainEdge(DungeonEditorWorkspaceValues.Edge edge) {
         DungeonEditorWorkspaceValues.Edge safeEdge = edge == null
                 ? new DungeonEditorWorkspaceValues.Edge(
                         DungeonEditorWorkspaceValues.Cell.empty(),
                         DungeonEditorWorkspaceValues.Cell.empty())
                 : edge;
-        return new DungeonEdgeRef(toDomainCell(safeEdge.from()), toDomainCell(safeEdge.to()));
+         return new DungeonEdgeRef(toDomainCell(safeEdge.from()), toDomainCell(safeEdge.to()));
     }
 
     static DungeonEditorWorkspaceValues.Cell toWorkspaceCell(@Nullable DungeonCellRef cell) {

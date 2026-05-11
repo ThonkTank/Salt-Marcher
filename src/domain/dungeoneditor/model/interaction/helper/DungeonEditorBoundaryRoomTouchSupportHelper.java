@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import src.domain.dungeoneditor.model.workspace.model.DungeonEditorWorkspaceValues;
 
-final class DungeonEditorBoundaryRoomTouchSupportHelper {
+public final class DungeonEditorBoundaryRoomTouchSupportHelper {
 
     private DungeonEditorBoundaryRoomTouchSupportHelper() {
     }

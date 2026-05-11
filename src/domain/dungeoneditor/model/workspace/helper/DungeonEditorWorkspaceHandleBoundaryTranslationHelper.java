@@ -5,12 +5,12 @@ import src.domain.dungeon.published.DungeonEditorHandleKind;
 import src.domain.dungeon.published.DungeonEditorHandleRef;
 import src.domain.dungeoneditor.model.workspace.model.DungeonEditorWorkspaceValues;
 
-final class DungeonEditorWorkspaceHandleBoundaryTranslationHelper {
+public final class DungeonEditorWorkspaceHandleBoundaryTranslationHelper {
 
     private DungeonEditorWorkspaceHandleBoundaryTranslationHelper() {
     }
 
-    static DungeonEditorHandleRef toDomainHandleRef(DungeonEditorWorkspaceValues.HandleRef ref) {
+    public static DungeonEditorHandleRef toDomainHandleRef(DungeonEditorWorkspaceValues.HandleRef ref) {
         DungeonEditorWorkspaceValues.HandleRef safeRef = ref == null
                 ? DungeonEditorWorkspaceValues.HandleRef.empty()
                 : ref;
@@ -22,7 +22,7 @@ final class DungeonEditorWorkspaceHandleBoundaryTranslationHelper {
                 safeRef.corridorId(),
                 safeRef.roomId(),
                 safeRef.index(),
-                DungeonEditorWorkspaceCellBoundaryTranslationHelper.toDomainCell(safeRef.cell()),
+                 DungeonEditorWorkspaceCellBoundaryTranslationHelper.toDomainCell(safeRef.cell()),
                 safeRef.direction());
     }
 

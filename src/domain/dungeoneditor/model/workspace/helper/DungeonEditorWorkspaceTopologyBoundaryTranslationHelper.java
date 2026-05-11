@@ -6,7 +6,7 @@ import src.domain.dungeon.published.DungeonTopologyElementKind;
 import src.domain.dungeon.published.DungeonTopologyElementRef;
 import src.domain.dungeoneditor.model.workspace.model.DungeonEditorWorkspaceValues;
 
-final class DungeonEditorWorkspaceTopologyBoundaryTranslationHelper {
+public final class DungeonEditorWorkspaceTopologyBoundaryTranslationHelper {
 
     private DungeonEditorWorkspaceTopologyBoundaryTranslationHelper() {
     }
@@ -28,7 +28,7 @@ final class DungeonEditorWorkspaceTopologyBoundaryTranslationHelper {
                         ref.id());
     }
 
-    static DungeonBoundaryKind toDomainBoundaryKind(DungeonEditorWorkspaceValues.BoundaryKind boundaryKind) {
+    public static DungeonBoundaryKind toDomainBoundaryKind(DungeonEditorWorkspaceValues.BoundaryKind boundaryKind) {
         return boundaryKind != null && boundaryKind.isDoor()
                 ? DungeonBoundaryKind.DOOR
                 : DungeonBoundaryKind.WALL;

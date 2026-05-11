@@ -4,6 +4,10 @@ import java.util.ArrayList;
 import java.util.List;
 import src.domain.dungeoneditor.published.DungeonEditorMapProjectionSnapshot;
 import src.domain.dungeoneditor.model.session.model.DungeonEditorSessionValues;
+import src.domain.dungeoneditor.model.workspace.helper.DungeonEditorProjectionElementProjectionHelper;
+import src.domain.dungeoneditor.model.workspace.helper.DungeonEditorProjectionGeometryProjectionHelper;
+import src.domain.dungeoneditor.model.workspace.helper.DungeonEditorProjectionIndexProjectionHelper;
+import src.domain.dungeoneditor.model.workspace.helper.DungeonEditorProjectionSelectionProjectionHelper;
 import src.domain.dungeoneditor.model.workspace.model.DungeonEditorWorkspaceValues;
 
 public final class DungeonEditorClusterMovePreviewProjectionHelper {

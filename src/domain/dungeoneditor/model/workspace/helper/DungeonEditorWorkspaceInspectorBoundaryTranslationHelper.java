@@ -6,7 +6,7 @@ import src.domain.dungeon.published.DungeonCellRef;
 import src.domain.dungeon.published.DungeonInspectorSnapshot;
 import src.domain.dungeoneditor.model.workspace.model.DungeonEditorWorkspaceValues;
 
-final class DungeonEditorWorkspaceInspectorBoundaryTranslationHelper {
+public final class DungeonEditorWorkspaceInspectorBoundaryTranslationHelper {
 
     private DungeonEditorWorkspaceInspectorBoundaryTranslationHelper() {
     }
@@ -26,7 +26,7 @@ final class DungeonEditorWorkspaceInspectorBoundaryTranslationHelper {
                         .toList());
     }
 
-    static DungeonInspectorSnapshot.RoomExitNarration toDomainRoomExit(
+    public static DungeonInspectorSnapshot.RoomExitNarration toDomainRoomExit(
             DungeonEditorWorkspaceValues.RoomExitNarration exit
     ) {
         DungeonEditorWorkspaceValues.RoomExitNarration safeExit = exit == null
@@ -38,7 +38,7 @@ final class DungeonEditorWorkspaceInspectorBoundaryTranslationHelper {
                 : exit;
         return new DungeonInspectorSnapshot.RoomExitNarration(
                 safeExit.label(),
-                DungeonEditorWorkspaceCellBoundaryTranslationHelper.toDomainCell(safeExit.cell()),
+                 DungeonEditorWorkspaceCellBoundaryTranslationHelper.toDomainCell(safeExit.cell()),
                 safeExit.direction(),
                 safeExit.description());
     }

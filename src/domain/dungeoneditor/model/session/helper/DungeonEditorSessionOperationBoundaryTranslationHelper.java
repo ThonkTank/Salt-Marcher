@@ -3,13 +3,17 @@ package src.domain.dungeoneditor.model.session.helper;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.published.DungeonEditorOperation;
 import src.domain.dungeoneditor.model.session.model.DungeonEditorSessionValues;
+import src.domain.dungeoneditor.model.workspace.helper.DungeonEditorWorkspaceCellBoundaryTranslationHelper;
+import src.domain.dungeoneditor.model.workspace.helper.DungeonEditorWorkspaceHandleBoundaryTranslationHelper;
+import src.domain.dungeoneditor.model.workspace.helper.DungeonEditorWorkspaceOperationBoundaryTranslationHelper;
+import src.domain.dungeoneditor.model.workspace.helper.DungeonEditorWorkspaceTopologyBoundaryTranslationHelper;
 
-final class DungeonEditorSessionOperationBoundaryTranslationHelper {
+public final class DungeonEditorSessionOperationBoundaryTranslationHelper {
 
     private DungeonEditorSessionOperationBoundaryTranslationHelper() {
     }
 
-    static @Nullable DungeonEditorOperation toDungeonOperation(DungeonEditorSessionValues.Preview preview) {
+    public static @Nullable DungeonEditorOperation toDungeonOperation(DungeonEditorSessionValues.Preview preview) {
         if (preview == null || preview == DungeonEditorSessionValues.Preview.none()) {
             return null;
         }
@@ -44,11 +48,11 @@ final class DungeonEditorSessionOperationBoundaryTranslationHelper {
         }
         return room.deleteMode()
                 ? new DungeonEditorOperation.DeleteRoomRectangle(
-                        DungeonEditorWorkspaceCellBoundaryTranslationHelper.toDomainCell(room.start()),
-                        DungeonEditorWorkspaceCellBoundaryTranslationHelper.toDomainCell(room.end()))
+                         DungeonEditorWorkspaceCellBoundaryTranslationHelper.toDomainCell(room.start()),
+                         DungeonEditorWorkspaceCellBoundaryTranslationHelper.toDomainCell(room.end()))
                 : new DungeonEditorOperation.PaintRoomRectangle(
-                        DungeonEditorWorkspaceCellBoundaryTranslationHelper.toDomainCell(room.start()),
-                        DungeonEditorWorkspaceCellBoundaryTranslationHelper.toDomainCell(room.end()));
+                         DungeonEditorWorkspaceCellBoundaryTranslationHelper.toDomainCell(room.start()),
+                         DungeonEditorWorkspaceCellBoundaryTranslationHelper.toDomainCell(room.end()));
     }
 
     private static @Nullable DungeonEditorOperation boundaryOperation(
@@ -60,9 +64,9 @@ final class DungeonEditorSessionOperationBoundaryTranslationHelper {
         return new DungeonEditorOperation.EditClusterBoundaries(
                 boundaries.clusterId(),
                 boundaries.edges().stream()
-                        .map(DungeonEditorWorkspaceCellBoundaryTranslationHelper::toDomainEdge)
+                         .map(DungeonEditorWorkspaceCellBoundaryTranslationHelper::toDomainEdge)
                         .toList(),
-                DungeonEditorWorkspaceTopologyBoundaryTranslationHelper.toDomainBoundaryKind(boundaries.boundaryKind()),
+                 DungeonEditorWorkspaceTopologyBoundaryTranslationHelper.toDomainBoundaryKind(boundaries.boundaryKind()),
                 boundaries.deleteMode());
     }
 
@@ -73,8 +77,8 @@ final class DungeonEditorSessionOperationBoundaryTranslationHelper {
             return null;
         }
         return new DungeonEditorOperation.CreateCorridor(
-                DungeonEditorWorkspaceOperationBoundaryTranslationHelper.toDomainCorridorEndpoint(corridor.start()),
-                DungeonEditorWorkspaceOperationBoundaryTranslationHelper.toDomainCorridorEndpoint(corridor.end()));
+                 DungeonEditorWorkspaceOperationBoundaryTranslationHelper.toDomainCorridorEndpoint(corridor.start()),
+                 DungeonEditorWorkspaceOperationBoundaryTranslationHelper.toDomainCorridorEndpoint(corridor.end()));
     }
 
     private static @Nullable DungeonEditorOperation corridorDeleteOperation(
@@ -93,7 +97,7 @@ final class DungeonEditorSessionOperationBoundaryTranslationHelper {
             return null;
         }
         return new DungeonEditorOperation.MoveEditorHandle(
-                DungeonEditorWorkspaceHandleBoundaryTranslationHelper.toDomainHandleRef(moveHandle.handleRef()),
+                 DungeonEditorWorkspaceHandleBoundaryTranslationHelper.toDomainHandleRef(moveHandle.handleRef()),
                 moveHandle.deltaQ(),
                 moveHandle.deltaR(),
                 moveHandle.deltaLevel());
@@ -108,7 +112,7 @@ final class DungeonEditorSessionOperationBoundaryTranslationHelper {
         return new DungeonEditorOperation.MoveBoundaryStretch(
                 stretch.clusterId(),
                 stretch.sourceEdges().stream()
-                        .map(DungeonEditorWorkspaceCellBoundaryTranslationHelper::toDomainEdge)
+                         .map(DungeonEditorWorkspaceCellBoundaryTranslationHelper::toDomainEdge)
                         .toList(),
                 stretch.deltaQ(),
                 stretch.deltaR(),
