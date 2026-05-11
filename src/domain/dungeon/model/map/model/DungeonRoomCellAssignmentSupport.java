@@ -50,12 +50,21 @@ final class DungeonRoomCellAssignmentSupport {
             clusterCells.add(anchor);
             unclaimedCells.add(anchor);
         } else if (!unclaimedCells.contains(anchor)) {
-            result.computeIfAbsent(room.roomId(), ignored -> new ArrayList<>()).add(anchor);
+            roomCells(result, room.roomId()).add(anchor);
             return;
         }
         Set<DungeonCell> reachable = TRAVERSAL_SUPPORT.reachableCells(anchor, unclaimedCells, barriers, cluster.center());
         reachable = reachable.isEmpty() ? Set.of(anchor) : reachable;
         unclaimedCells.removeAll(reachable);
-        result.computeIfAbsent(room.roomId(), ignored -> new ArrayList<>()).addAll(reachable);
+        roomCells(result, room.roomId()).addAll(reachable);
+    }
+
+    private static List<DungeonCell> roomCells(Map<Long, List<DungeonCell>> result, long roomId) {
+        List<DungeonCell> cells = result.get(roomId);
+        if (cells == null) {
+            cells = new ArrayList<>();
+            result.put(roomId, cells);
+        }
+        return cells;
     }
 }

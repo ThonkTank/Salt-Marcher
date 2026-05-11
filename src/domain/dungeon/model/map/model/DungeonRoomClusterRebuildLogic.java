@@ -1,7 +1,6 @@
 package src.domain.dungeon.model.map.model;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -24,9 +23,7 @@ final class DungeonRoomClusterRebuildLogic {
     DungeonMap rebuilt(DungeonMap dungeonMap, List<DungeonRoomTopologyClusterWork> workClusters) {
         List<DungeonRoomCluster> clusters = new ArrayList<>();
         List<DungeonRoom> rooms = new ArrayList<>();
-        for (DungeonRoomTopologyClusterWork work : workClusters.stream()
-                .sorted(Comparator.comparingLong(clusterWork -> clusterWork.cluster().clusterId()))
-                .toList()) {
+        for (DungeonRoomTopologyClusterWork work : sortedByClusterId(workClusters)) {
             if (work.allCells().isEmpty()) {
                 continue;
             }
@@ -51,9 +48,7 @@ final class DungeonRoomClusterRebuildLogic {
     DungeonMap rebuiltPreservingRooms(DungeonMap dungeonMap, List<DungeonRoomTopologyClusterWork> workClusters) {
         List<DungeonRoomCluster> clusters = new ArrayList<>();
         List<DungeonRoom> rooms = new ArrayList<>();
-        for (DungeonRoomTopologyClusterWork work : workClusters.stream()
-                .sorted(Comparator.comparingLong(clusterWork -> clusterWork.cluster().clusterId()))
-                .toList()) {
+        for (DungeonRoomTopologyClusterWork work : sortedByClusterId(workClusters)) {
             if (work.allCells().isEmpty() || work.rooms().isEmpty()) {
                 continue;
             }
@@ -106,7 +101,8 @@ final class DungeonRoomClusterRebuildLogic {
 
     private List<DungeonRoom> roomsFor(DungeonRoomTopologyClusterWork work) {
         DungeonRoom template = work.rooms().isEmpty() ? null : work.rooms().getFirst();
-        DungeonCell anchor = DungeonRoomCellProjection.sortedCells(work.allCells()).stream().findFirst().orElse(null);
+        List<DungeonCell> sortedCells = DungeonRoomCellProjection.sortedCells(work.allCells());
+        DungeonCell anchor = sortedCells.isEmpty() ? null : sortedCells.getFirst();
         if (anchor == null) {
             return List.of();
         }
@@ -127,9 +123,12 @@ final class DungeonRoomClusterRebuildLogic {
         Map<Integer, List<DungeonClusterBoundary>> result = new LinkedHashMap<>();
         for (Map.Entry<Integer, List<DungeonClusterBoundary>> entry : cluster.boundariesByLevel().entrySet()) {
             Set<DungeonCell> cells = new LinkedHashSet<>(cellsByLevel.getOrDefault(entry.getKey(), List.of()));
-            List<DungeonClusterBoundary> preserved = entry.getValue().stream()
-                    .filter(boundary -> cells.contains(boundary.absoluteCell(cluster.center())))
-                    .toList();
+            List<DungeonClusterBoundary> preserved = new ArrayList<>();
+            for (DungeonClusterBoundary boundary : entry.getValue()) {
+                if (boundary != null && cells.contains(boundary.absoluteCell(cluster.center()))) {
+                    preserved.add(boundary);
+                }
+            }
             if (!preserved.isEmpty()) {
                 result.put(entry.getKey(), preserved);
             }
@@ -138,10 +137,31 @@ final class DungeonRoomClusterRebuildLogic {
     }
 
     private long nextRoomId(DungeonRoomCluster cluster, List<DungeonRoom> rooms) {
-        return rooms.stream()
-                .mapToLong(DungeonRoom::roomId)
-                .min()
-                .orElse(Math.max(1L, cluster.clusterId()));
+        long result = 0L;
+        boolean found = false;
+        for (DungeonRoom room : rooms == null ? List.<DungeonRoom>of() : rooms) {
+            if (room != null && (!found || room.roomId() < result)) {
+                result = room.roomId();
+                found = true;
+            }
+        }
+        return found ? result : Math.max(1L, cluster.clusterId());
+    }
+
+    private static List<DungeonRoomTopologyClusterWork> sortedByClusterId(
+            List<DungeonRoomTopologyClusterWork> workClusters
+    ) {
+        List<DungeonRoomTopologyClusterWork> result = new ArrayList<>(
+                workClusters == null ? List.of() : workClusters);
+        result.sort(new ClusterWorkComparator());
+        return result;
+    }
+
+    private static final class ClusterWorkComparator implements java.util.Comparator<DungeonRoomTopologyClusterWork> {
+        @Override
+        public int compare(DungeonRoomTopologyClusterWork left, DungeonRoomTopologyClusterWork right) {
+            return Long.compare(left.cluster().clusterId(), right.cluster().clusterId());
+        }
     }
 
     private Map<Integer, List<DungeonCell>> verticesByLevel(DungeonRoomTopologyClusterWork work) {

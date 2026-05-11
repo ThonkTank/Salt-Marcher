@@ -33,9 +33,14 @@ final class DungeonRoomClusterWorkLogic {
             List<DungeonRoomTopologyClusterWork> clusters,
             Set<DungeonCell> cells
     ) {
-        return clusters.stream()
-                .filter(work -> intersects(work.cellsAt(cells.iterator().next().level()), cells))
-                .toList();
+        List<DungeonRoomTopologyClusterWork> result = new ArrayList<>();
+        int level = cells.iterator().next().level();
+        for (DungeonRoomTopologyClusterWork work : clusters == null ? List.<DungeonRoomTopologyClusterWork>of() : clusters) {
+            if (work != null && intersects(work.cellsAt(level), cells)) {
+                result.add(work);
+            }
+        }
+        return List.copyOf(result);
     }
 
     IdAllocation newIdAllocation(DungeonMap dungeonMap) {
@@ -76,7 +81,12 @@ final class DungeonRoomClusterWorkLogic {
     private Map<Integer, List<DungeonCell>> cellsByLevel(Iterable<DungeonCell> cells) {
         Map<Integer, List<DungeonCell>> grouped = new LinkedHashMap<>();
         for (DungeonCell cell : cells == null ? List.<DungeonCell>of() : cells) {
-            grouped.computeIfAbsent(cell.level(), ignored -> new ArrayList<>()).add(cell);
+            List<DungeonCell> levelCells = grouped.get(cell.level());
+            if (levelCells == null) {
+                levelCells = new ArrayList<>();
+                grouped.put(cell.level(), levelCells);
+            }
+            levelCells.add(cell);
         }
         Map<Integer, List<DungeonCell>> result = new LinkedHashMap<>();
         for (Map.Entry<Integer, List<DungeonCell>> entry : grouped.entrySet()) {
@@ -88,7 +98,12 @@ final class DungeonRoomClusterWorkLogic {
     private Map<Long, List<DungeonRoom>> roomsByCluster(List<DungeonRoom> rooms) {
         Map<Long, List<DungeonRoom>> result = new LinkedHashMap<>();
         for (DungeonRoom room : rooms == null ? List.<DungeonRoom>of() : rooms) {
-            result.computeIfAbsent(room.clusterId(), ignored -> new ArrayList<>()).add(room);
+            List<DungeonRoom> clusterRooms = result.get(room.clusterId());
+            if (clusterRooms == null) {
+                clusterRooms = new ArrayList<>();
+                result.put(room.clusterId(), clusterRooms);
+            }
+            clusterRooms.add(room);
         }
         return Map.copyOf(result);
     }
@@ -102,14 +117,28 @@ final class DungeonRoomClusterWorkLogic {
         private long nextRoomId;
 
         IdAllocation(DungeonMap dungeonMap) {
-            this.nextClusterId = dungeonMap.topology().roomClusters().stream()
-                    .mapToLong(DungeonRoomCluster::clusterId)
-                    .max()
-                    .orElse(0L) + 1L;
-            this.nextRoomId = dungeonMap.rooms().rooms().stream()
-                    .mapToLong(DungeonRoom::roomId)
-                    .max()
-                    .orElse(0L) + 1L;
+            this.nextClusterId = nextClusterId(dungeonMap);
+            this.nextRoomId = nextRoomId(dungeonMap);
+        }
+
+        private static long nextClusterId(DungeonMap dungeonMap) {
+            long result = 0L;
+            for (DungeonRoomCluster cluster : dungeonMap.topology().roomClusters()) {
+                if (cluster != null && cluster.clusterId() > result) {
+                    result = cluster.clusterId();
+                }
+            }
+            return result + 1L;
+        }
+
+        private static long nextRoomId(DungeonMap dungeonMap) {
+            long result = 0L;
+            for (DungeonRoom room : dungeonMap.rooms().rooms()) {
+                if (room != null && room.roomId() > result) {
+                    result = room.roomId();
+                }
+            }
+            return result + 1L;
         }
 
         ClusterRoomIds reserveClusterAndRoom() {

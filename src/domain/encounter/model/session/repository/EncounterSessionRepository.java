@@ -192,7 +192,7 @@ public final class EncounterSessionRepository implements EncounterSession.Sessio
                     advisoryMessages(autoResolved, fallbackUsed));
         }
 
-        private EncounterCreatureData toCreature(EncounterGenerationUseCase.GeneratedCreature creature) {
+        private EncounterCreatureData toCreature(src.domain.encounter.published.EncounterCreature creature) {
             Optional<CreatureDetailData> detail = loadCreature(creature.creatureId());
             if (detail.isPresent()) {
                 CreatureDetailData current = detail.orElseThrow();

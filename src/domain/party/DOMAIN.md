@@ -78,7 +78,7 @@ sharing roster internals.
 
 - `PartyRoster`: authored party aggregate.
 - `PartyCharacter`: identity-bearing character inside the roster.
-- `PartyMembership`: active or reserve participation state.
+- `MembershipState`: active or reserve participation state.
 - `PartyCharacterProgress`: level, XP, and rest-cadence progress.
 
 ## References

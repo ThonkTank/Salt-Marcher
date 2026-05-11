@@ -26,7 +26,7 @@ public final class DungeonTransition {
         this.description = description == null ? "" : description.trim();
         this.anchor = anchor;
         this.destination = destination == null
-                ? new DungeonTransitionDestination.OverworldTileDestination(0L, 0L)
+                ? DungeonTransitionDestination.overworldTileDestination(0L, 0L)
                 : destination;
         this.linkedTransitionId = linkedTransitionId == null || linkedTransitionId <= 0L ? null : linkedTransitionId;
     }

@@ -85,10 +85,15 @@ final class DungeonBoundaryStretchConnectorLogic {
         if (path.isEmpty()) {
             return Optional.empty();
         }
-        List<DungeonBoundaryKey> keys = path.stream().map(DungeonBoundaryKey::from).toList();
-        long presentCount = keys.stream()
-                .filter(key -> !sourceKeys.contains(key) && boundaries.containsKey(key))
-                .count();
+        List<DungeonBoundaryKey> keys = new java.util.ArrayList<>();
+        long presentCount = 0L;
+        for (DungeonEdge edge : path) {
+            DungeonBoundaryKey key = DungeonBoundaryKey.from(edge);
+            keys.add(key);
+            if (!sourceKeys.contains(key) && boundaries.containsKey(key)) {
+                presentCount++;
+            }
+        }
         if (hasNoPresentBoundaries(presentCount)) {
             return Optional.of(new ConnectorAction(false, path));
         }

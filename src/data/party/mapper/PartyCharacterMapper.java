@@ -8,12 +8,12 @@ import src.domain.party.model.roster.model.PartyCharacterIdentity;
 import src.domain.party.model.roster.model.PartyCharacterProgress;
 import src.domain.party.model.roster.model.PartyCharacterTravelState;
 import src.domain.party.model.roster.model.PartyDungeonTravelLocation;
-import src.domain.party.model.roster.model.PartyDungeonTravelLocationKind;
-import src.domain.party.model.roster.model.PartyMembership;
+import src.domain.party.published.PartyDungeonTravelLocationKind;
+import src.domain.party.published.MembershipState;
 import src.domain.party.model.roster.model.PartyOverworldTravelLocation;
-import src.domain.party.model.roster.model.PartyTravelHeading;
+import src.domain.party.published.PartyTravelHeading;
 import src.domain.party.model.roster.model.PartyTravelLocation;
-import src.domain.party.model.roster.model.PartyTravelTile;
+import src.domain.party.published.PartyTravelTile;
 
 final class PartyCharacterMapper {
 
@@ -39,7 +39,7 @@ final class PartyCharacterMapper {
                 new PartyCharacterCombatProfile(
                         combat.passivePerception(),
                         combat.armorClass()),
-                PartyMembership.fromPersistence(record.membership()),
+                MembershipState.fromPersistence(record.membership()),
                 toDomainTravel(record.travel()));
     }
 

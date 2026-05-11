@@ -1,7 +1,6 @@
 package src.domain.dungeon.model.map.model;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -55,9 +54,11 @@ public final class DungeonCorridorConnectionNormalizationLogic {
                 0L,
                 Map.of());
         Map<Long, List<DungeonCell>> result = new LinkedHashMap<>();
-        projection.areas().stream()
-                .filter(area -> area.isCorridor())
-                .forEach(area -> result.put(area.id(), area.cells()));
+        for (DungeonAreaFacts area : projection.areas()) {
+            if (area != null && area.isCorridor()) {
+                result.put(area.id(), area.cells());
+            }
+        }
         return Map.copyOf(result);
     }
 
@@ -65,26 +66,28 @@ public final class DungeonCorridorConnectionNormalizationLogic {
         if (desired == null || candidates == null || candidates.isEmpty()) {
             return desired == null ? new DungeonCell(0, 0, 0) : desired;
         }
-        return candidates.stream()
-                .min(Comparator
-                        .comparingInt((DungeonCell candidate) -> manhattan(desired, candidate))
-                        .thenComparingInt(DungeonCell::level)
-                        .thenComparingInt(DungeonCell::r)
-                        .thenComparingInt(DungeonCell::q))
-                .orElse(desired);
+        DungeonCell result = desired;
+        for (DungeonCell candidate : candidates) {
+            if (candidate != null && betterSnapCandidate(candidate, result, desired)) {
+                result = candidate;
+            }
+        }
+        return result;
     }
 
     private List<DungeonCorridor> snapOwnedAnchors(DungeonMap dungeonMap, List<DungeonCorridor> corridors) {
         Map<Long, List<DungeonCell>> cellsByCorridor = corridorCellsByCorridor(dungeonMap, corridors);
         List<DungeonCorridor> result = new ArrayList<>();
         for (DungeonCorridor corridor : corridors == null ? List.<DungeonCorridor>of() : corridors) {
-            List<DungeonCorridorAnchorBinding> snapped = corridor.bindings().anchorBindings().stream()
-                    .filter(Objects::nonNull)
-                    .map(binding -> binding.withAbsoluteCell(
+            List<DungeonCorridorAnchorBinding> snapped = new ArrayList<>();
+            for (DungeonCorridorAnchorBinding binding : corridor.bindings().anchorBindings()) {
+                if (binding != null) {
+                    snapped.add(binding.withAbsoluteCell(
                             snapToHostCorridorCell(
                                     binding.absoluteCell(),
-                                    cellsByCorridor.getOrDefault(binding.hostCorridorId(), List.of(binding.absoluteCell())))))
-                    .toList();
+                                    cellsByCorridor.getOrDefault(binding.hostCorridorId(), List.of(binding.absoluteCell())))));
+                }
+            }
             result.add(DungeonCorridorOps.withBindings(corridor, corridor.bindings().replaceAnchorBindings(snapped)));
         }
         return List.copyOf(result);
@@ -94,9 +97,12 @@ public final class DungeonCorridorConnectionNormalizationLogic {
         DungeonRoomCellProjection projector = new DungeonRoomCellProjection();
         Map<Long, List<DungeonCell>> result = new LinkedHashMap<>();
         for (DungeonRoomCluster cluster : dungeonMap.topology().roomClusters()) {
-            List<DungeonRoom> clusterRooms = dungeonMap.rooms().rooms().stream()
-                    .filter(room -> room.clusterId() == cluster.clusterId())
-                    .toList();
+            List<DungeonRoom> clusterRooms = new ArrayList<>();
+            for (DungeonRoom room : dungeonMap.rooms().rooms()) {
+                if (room != null && room.clusterId() == cluster.clusterId()) {
+                    clusterRooms.add(room);
+                }
+            }
             result.putAll(projector.cellsByRoom(cluster, clusterRooms));
         }
         return Map.copyOf(result);
@@ -122,5 +128,21 @@ public final class DungeonCorridorConnectionNormalizationLogic {
         return Math.abs(left.q() - right.q())
                 + Math.abs(left.r() - right.r())
                 + Math.abs(left.level() - right.level());
+    }
+
+    private static boolean betterSnapCandidate(DungeonCell candidate, DungeonCell current, DungeonCell desired) {
+        int distanceComparison = Integer.compare(manhattan(desired, candidate), manhattan(desired, current));
+        if (distanceComparison != 0) {
+            return distanceComparison < 0;
+        }
+        int levelComparison = Integer.compare(candidate.level(), current.level());
+        if (levelComparison != 0) {
+            return levelComparison < 0;
+        }
+        int rowComparison = Integer.compare(candidate.r(), current.r());
+        if (rowComparison != 0) {
+            return rowComparison < 0;
+        }
+        return candidate.q() < current.q();
     }
 }

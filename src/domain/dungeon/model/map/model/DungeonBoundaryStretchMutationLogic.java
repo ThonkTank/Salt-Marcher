@@ -135,14 +135,22 @@ final class DungeonBoundaryStretchMutationLogic {
     private boolean sourceStaysInternal(StretchSelection stretch, Set<DungeonCell> clusterCells) {
         for (StretchEdge edge : stretch.edges()) {
             DungeonBoundaryTouch movedTouch = new DungeonBoundaryTouch(
-                    stretch.orientation().move(edge.edge(), stretch.movement()).touchingCells().stream()
-                            .filter(clusterCells::contains)
-                            .toList());
+                    insideCells(stretch.orientation().move(edge.edge(), stretch.movement()).touchingCells(), clusterCells));
             if (!movedTouch.valid() || !movedTouch.hasTwoInsideCells()) {
                 return false;
             }
         }
         return true;
+    }
+
+    private List<DungeonCell> insideCells(List<DungeonCell> touchingCells, Set<DungeonCell> clusterCells) {
+        List<DungeonCell> result = new java.util.ArrayList<>();
+        for (DungeonCell cell : touchingCells == null ? List.<DungeonCell>of() : touchingCells) {
+            if (clusterCells.contains(cell)) {
+                result.add(cell);
+            }
+        }
+        return List.copyOf(result);
     }
 
     private Optional<DungeonTopologyRef> preserveTopologyRef(

@@ -51,32 +51,40 @@ public final class DungeonPublishedStateRepositoryAdapter implements DungeonPubl
     private DungeonTravelResponse currentTravel = emptyTravel();
 
     @Override
-    public void publishAuthoredRead(DungeonAuthoredReadResult result) {
-        currentAuthoredRead = result == null ? authoredReadModel.current() : result;
+    public void publishAuthoredRead(Object result) {
+        currentAuthoredRead = result instanceof DungeonAuthoredReadResult authoredRead
+                ? authoredRead
+                : authoredReadModel.current();
         for (Consumer<DungeonAuthoredReadResult> listener : List.copyOf(authoredReadListeners)) {
             listener.accept(currentAuthoredRead);
         }
     }
 
     @Override
-    public void publishAuthoredMutation(DungeonAuthoredMutationResult result) {
-        currentAuthoredMutation = result == null ? authoredMutationModel.current() : result;
+    public void publishAuthoredMutation(Object result) {
+        currentAuthoredMutation = result instanceof DungeonAuthoredMutationResult authoredMutation
+                ? authoredMutation
+                : authoredMutationModel.current();
         for (Consumer<DungeonAuthoredMutationResult> listener : List.copyOf(authoredMutationListeners)) {
             listener.accept(currentAuthoredMutation);
         }
     }
 
     @Override
-    public void publishMapCatalog(DungeonMapCatalogResponse response) {
-        currentMapCatalog = response == null ? mapCatalogModel.current() : response;
+    public void publishMapCatalog(Object response) {
+        currentMapCatalog = response instanceof DungeonMapCatalogResponse mapCatalog
+                ? mapCatalog
+                : mapCatalogModel.current();
         for (Consumer<DungeonMapCatalogResponse> listener : List.copyOf(mapCatalogListeners)) {
             listener.accept(currentMapCatalog);
         }
     }
 
     @Override
-    public void publishTravel(DungeonTravelResponse response) {
-        currentTravel = response == null ? travelModel.current() : response;
+    public void publishTravel(Object response) {
+        currentTravel = response instanceof DungeonTravelResponse travel
+                ? travel
+                : travelModel.current();
         for (Consumer<DungeonTravelResponse> listener : List.copyOf(travelListeners)) {
             listener.accept(currentTravel);
         }

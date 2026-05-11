@@ -49,21 +49,21 @@ public final class DungeonBoundaryStretchValueTypes {
         }
 
         public int movementAlongNormal(int deltaQ, int deltaR) {
-            return switch (this) {
-                case VERTICAL -> deltaR == 0 ? deltaQ : 0;
-                case HORIZONTAL -> deltaQ == 0 ? deltaR : 0;
-            };
+            if (this == VERTICAL) {
+                return deltaR == 0 ? deltaQ : 0;
+            }
+            return deltaQ == 0 ? deltaR : 0;
         }
 
         public DungeonEdge move(DungeonEdge edge, int movement) {
-            return switch (this) {
-                case VERTICAL -> new DungeonEdge(
+            if (this == VERTICAL) {
+                return new DungeonEdge(
                         new DungeonCell(edge.from().q() + movement, edge.from().r(), edge.from().level()),
                         new DungeonCell(edge.to().q() + movement, edge.to().r(), edge.to().level()));
-                case HORIZONTAL -> new DungeonEdge(
-                        new DungeonCell(edge.from().q(), edge.from().r() + movement, edge.from().level()),
-                        new DungeonCell(edge.to().q(), edge.to().r() + movement, edge.to().level()));
-            };
+            }
+            return new DungeonEdge(
+                    new DungeonCell(edge.from().q(), edge.from().r() + movement, edge.from().level()),
+                    new DungeonCell(edge.to().q(), edge.to().r() + movement, edge.to().level()));
         }
     }
 
@@ -76,16 +76,34 @@ public final class DungeonBoundaryStretchValueTypes {
         public static BoundarySide resolve(
                 StretchOrientation orientation,
                 DungeonBoundaryTouch touch,
-                int fixedCoordinate
+            int fixedCoordinate
         ) {
             if (orientation == StretchOrientation.VERTICAL) {
-                return touch.insideCells().stream().anyMatch(cell -> cell.q() == fixedCoordinate - 1)
+                return hasInsideCellWithColumn(touch, fixedCoordinate - 1)
                         ? WEST
                         : EAST;
             }
-            return touch.insideCells().stream().anyMatch(cell -> cell.r() == fixedCoordinate - 1)
+            return hasInsideCellWithRow(touch, fixedCoordinate - 1)
                     ? NORTH
                     : SOUTH;
+        }
+
+        private static boolean hasInsideCellWithColumn(DungeonBoundaryTouch touch, int column) {
+            for (DungeonCell cell : touch.insideCells()) {
+                if (cell != null && cell.q() == column) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        private static boolean hasInsideCellWithRow(DungeonBoundaryTouch touch, int row) {
+            for (DungeonCell cell : touch.insideCells()) {
+                if (cell != null && cell.r() == row) {
+                    return true;
+                }
+            }
+            return false;
         }
     }
 

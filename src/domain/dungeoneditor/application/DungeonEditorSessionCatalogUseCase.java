@@ -1,6 +1,7 @@
 package src.domain.dungeoneditor.application;
 
 import java.util.function.Function;
+import src.domain.dungeon.published.DungeonAuthoredReadCommand;
 import src.domain.dungeon.published.DungeonMapCatalogCommand;
 import src.domain.dungeon.published.DungeonMapCatalogResponse;
 import src.domain.dungeoneditor.model.workspace.helper.DungeonEditorWorkspaceMapBoundaryTranslationHelper;
@@ -58,7 +59,7 @@ final class DungeonEditorSessionCatalogUseCase {
                     ApplyDungeonEditorSessionUseCase.requireMapId(command.mapId()),
                     mapName);
         }
-        return new DungeonMapCatalogCommand.DeleteMap(ApplyDungeonEditorSessionUseCase.requireMapId(command.mapId()));
+        return new DungeonAuthoredReadCommand.MapSelection(ApplyDungeonEditorSessionUseCase.requireMapId(command.mapId()));
     }
 
     private DungeonEditorSession applySessionSetting(DungeonEditorSession session, DungeonEditorSessionCommand command) {

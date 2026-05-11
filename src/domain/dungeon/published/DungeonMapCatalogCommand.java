@@ -4,7 +4,7 @@ public sealed interface DungeonMapCatalogCommand permits
         DungeonMapCatalogCommand.Search,
         DungeonMapCatalogCommand.CreateMap,
         DungeonMapCatalogCommand.RenameMap,
-        DungeonMapCatalogCommand.DeleteMap {
+        DungeonAuthoredReadCommand.MapSelection {
 
     record Search(String query) implements DungeonMapCatalogCommand {
 
@@ -31,10 +31,4 @@ public sealed interface DungeonMapCatalogCommand permits
         }
     }
 
-    record DeleteMap(DungeonMapId mapId) implements DungeonMapCatalogCommand {
-
-        public DeleteMap {
-            mapId = mapId == null ? new DungeonMapId(1L) : mapId;
-        }
-    }
 }

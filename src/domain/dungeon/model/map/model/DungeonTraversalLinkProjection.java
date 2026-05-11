@@ -105,10 +105,12 @@ public final class DungeonTraversalLinkProjection {
     }
 
     private static @Nullable DungeonAreaFacts areaAt(DungeonMapFacts map, DungeonCell tile) {
-        return map.areas().stream()
-                .filter(area -> area.cells().contains(tile))
-                .findFirst()
-                .orElse(null);
+        for (DungeonAreaFacts area : map.areas()) {
+            if (area != null && area.cells().contains(tile)) {
+                return area;
+            }
+        }
+        return null;
     }
 
     private static String traversalKey(

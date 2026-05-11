@@ -1,7 +1,7 @@
 package src.domain.party.application;
 
-import src.domain.party.model.roster.model.PartyCharacterDraft;
-import src.domain.party.model.roster.model.PartyMutationStatus;
+import src.domain.party.published.CharacterDraft;
+import src.domain.party.published.MutationStatus;
 import src.domain.party.model.roster.model.PartyRoster;
 import src.domain.party.model.roster.repository.PartyRosterRepository;
 
@@ -13,9 +13,9 @@ public final class UpdateCharacterUseCase {
         this.repository = repository;
     }
 
-    public PartyMutationStatus execute(long id, PartyCharacterDraft draft) {
+    public MutationStatus execute(long id, CharacterDraft draft) {
         PartyRoster.MutationResult mutation = repository.load().updateCharacter(id, draft);
-        if (mutation.status() == PartyMutationStatus.SUCCESS) {
+        if (mutation.status() == MutationStatus.SUCCESS) {
             repository.save(mutation.roster());
         }
         return mutation.status();

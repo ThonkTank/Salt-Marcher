@@ -43,8 +43,8 @@ import src.domain.party.published.RestMilestone;
 import src.domain.party.model.roster.helper.PartyLevelProgressionHelper;
 import src.domain.party.model.roster.model.PartyCharacter;
 import src.domain.party.model.roster.model.PartyDungeonTravelLocation;
-import src.domain.party.model.roster.model.PartyMembership;
-import src.domain.party.model.roster.model.PartyMutationStatus;
+import src.domain.party.published.MembershipState;
+import src.domain.party.published.MutationStatus;
 import src.domain.party.model.roster.model.PartyOverworldTravelLocation;
 import src.domain.party.model.roster.model.PartyTravelLocation;
 
@@ -165,7 +165,7 @@ public final class PartyBoundaryProjector {
                         result.progress().longRests()));
     }
 
-    public static MutationStatus mapMutationStatus(PartyMutationStatus status) {
+    public static MutationStatus mapMutationStatus(MutationStatus status) {
         if (status == null) {
             return MutationStatus.STORAGE_ERROR;
         }
@@ -301,18 +301,18 @@ public final class PartyBoundaryProjector {
         return new PartySnapshot(List.of(), List.of(), new PartySummary(0, 0, 1));
     }
 
-    private static MembershipState toMembershipState(PartyMembership membership) {
-        return membership == PartyMembership.ACTIVE ? MembershipState.ACTIVE : MembershipState.RESERVE;
+    private static MembershipState toMembershipState(MembershipState membership) {
+        return membership == MembershipState.ACTIVE ? MembershipState.ACTIVE : MembershipState.RESERVE;
     }
 
     private static PartyDungeonTravelLocationKind toPublishedDungeonLocationKind(
-            src.domain.party.model.roster.model.PartyDungeonTravelLocationKind locationKind
+            src.domain.party.published.PartyDungeonTravelLocationKind locationKind
     ) {
         return PartyDungeonTravelLocationKind.valueOf(locationKind.name());
     }
 
     private static PartyTravelHeading toPublishedHeading(
-            src.domain.party.model.roster.model.PartyTravelHeading heading
+            src.domain.party.published.PartyTravelHeading heading
     ) {
         return PartyTravelHeading.valueOf(heading.name());
     }

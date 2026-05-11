@@ -9,4 +9,15 @@ public enum PartyTravelHeading {
     public static PartyTravelHeading defaultHeading() {
         return SOUTH;
     }
+
+    public static PartyTravelHeading parse(String value) {
+        if (value == null || value.isBlank()) {
+            return defaultHeading();
+        }
+        try {
+            return PartyTravelHeading.valueOf(value.trim().toUpperCase(java.util.Locale.ROOT));
+        } catch (IllegalArgumentException exception) {
+            return defaultHeading();
+        }
+    }
 }

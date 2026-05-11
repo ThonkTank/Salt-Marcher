@@ -48,7 +48,8 @@ final class DungeonEditorSessionInteractionUseCase {
             return session;
         }
         DungeonOperationResult result = ApplyDungeonEditorSessionUseCase.requireOperationResult(mutateAuthored.apply(
-                new DungeonAuthoredMutationCommand.ApplyOperation(
+                new DungeonAuthoredMutationCommand.Operation(
+                        DungeonAuthoredMutationCommand.Action.APPLY,
                         ApplyDungeonEditorSessionUseCase.requireMapId(session.selectedMapId()),
                         new DungeonEditorOperation.SaveRoomNarration(
                                 roomNarration.roomId(),
@@ -114,7 +115,8 @@ final class DungeonEditorSessionInteractionUseCase {
             return nextSession;
         }
         DungeonOperationResult result = ApplyDungeonEditorSessionUseCase.requireOperationResult(mutateAuthored.apply(
-                new DungeonAuthoredMutationCommand.ApplyOperation(
+                new DungeonAuthoredMutationCommand.Operation(
+                        DungeonAuthoredMutationCommand.Action.APPLY,
                         ApplyDungeonEditorSessionUseCase.requireMapId(nextSession.selectedMapId()),
                         DungeonEditorSessionOperationBoundaryTranslationHelper.toDungeonOperation(effect.applyPreview()))));
         return nextSession.clearPreview().withStatusText(ApplyDungeonEditorSessionUseCase.statusFromMessages(result));

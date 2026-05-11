@@ -23,8 +23,12 @@ public final class DungeonCorridorSemanticsRules {
 
     public boolean matchingCorridorExists(List<DungeonCorridor> corridors, ResolvedCorridorEndpoint start, ResolvedCorridorEndpoint end) {
         Set<CorridorEndpointSemantics> requested = Set.of(semanticsOf(start), semanticsOf(end));
-        return (corridors == null ? List.<DungeonCorridor>of() : corridors).stream()
-                .anyMatch(corridor -> explicitEndpointSemantics(corridor).equals(requested));
+        for (DungeonCorridor corridor : corridors == null ? List.<DungeonCorridor>of() : corridors) {
+            if (corridor != null && explicitEndpointSemantics(corridor).equals(requested)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public boolean equivalent(DungeonCorridor left, DungeonCorridor right) {
@@ -60,54 +64,56 @@ public final class DungeonCorridorSemanticsRules {
         throw new IllegalArgumentException("resolved endpoint must expose door or anchor semantics");
     }
 
-    private sealed interface CorridorEndpointSemantics permits DoorByRefSemantics, DoorByLocationSemantics, AnchorSemantics {
-
-        static CorridorEndpointSemantics forDoor(DungeonCorridorDoorBinding binding) {
-            if (binding.hasTopologyRef()) {
-                return new DoorByRefSemantics(binding.topologyRef());
-            }
-            return new DoorByLocationSemantics(
-                    binding.roomId(),
-                    binding.clusterId(),
-                    binding.relativeCell(),
-                    binding.direction());
-        }
-
-        static CorridorEndpointSemantics forAnchor(DungeonCorridorAnchorRef ref) {
-            return new AnchorSemantics(ref.hostCorridorId(), ref.topologyRef());
-        }
-    }
-
-    private record DoorByRefSemantics(DungeonTopologyRef topologyRef) implements CorridorEndpointSemantics {
-    }
-
-    private record DoorByLocationSemantics(
+    private record CorridorEndpointSemantics(
+            String kind,
             long roomId,
             long clusterId,
             DungeonCell relativeCell,
-            DungeonEdgeDirection direction
-    ) implements CorridorEndpointSemantics {
-    }
+            DungeonEdgeDirection direction,
+            long hostCorridorId,
+            DungeonTopologyRef topologyRef
+    ) {
+        private static final String DOOR_REF = "DOOR_REF";
+        private static final String DOOR_LOCATION = "DOOR_LOCATION";
+        private static final String ANCHOR = "ANCHOR";
 
-    private static final class AnchorSemantics implements CorridorEndpointSemantics {
-        private final long hostCorridorId;
-        private final DungeonTopologyRef topologyRef;
-
-        private AnchorSemantics(long hostCorridorId, DungeonTopologyRef topologyRef) {
-            this.hostCorridorId = hostCorridorId;
-            this.topologyRef = topologyRef;
+        private CorridorEndpointSemantics {
+            kind = kind == null ? "" : kind;
+            relativeCell = relativeCell == null ? new DungeonCell(0, 0, 0) : relativeCell;
+            direction = direction == null ? DungeonEdgeDirection.NORTH : direction;
+            topologyRef = topologyRef == null ? DungeonTopologyRef.empty() : topologyRef;
         }
 
-        @Override
-        public boolean equals(Object other) {
-            return other instanceof AnchorSemantics that
-                    && hostCorridorId == that.hostCorridorId
-                    && Objects.equals(topologyRef, that.topologyRef);
+        private static CorridorEndpointSemantics forDoor(DungeonCorridorDoorBinding binding) {
+            if (binding.hasTopologyRef()) {
+                return new CorridorEndpointSemantics(
+                        DOOR_REF,
+                        0L,
+                        0L,
+                        null,
+                        null,
+                        0L,
+                        binding.topologyRef());
+            }
+            return new CorridorEndpointSemantics(
+                    DOOR_LOCATION,
+                    binding.roomId(),
+                    binding.clusterId(),
+                    binding.relativeCell(),
+                    binding.direction(),
+                    0L,
+                    DungeonTopologyRef.empty());
         }
 
-        @Override
-        public int hashCode() {
-            return Objects.hash(hostCorridorId, topologyRef);
+        private static CorridorEndpointSemantics forAnchor(DungeonCorridorAnchorRef ref) {
+            return new CorridorEndpointSemantics(
+                    ANCHOR,
+                    0L,
+                    0L,
+                    null,
+                    null,
+                    ref.hostCorridorId(),
+                    ref.topologyRef());
         }
     }
 }

@@ -1,7 +1,7 @@
 package src.domain.party.application;
 
-import src.domain.party.model.roster.model.PartyMutationStatus;
-import src.domain.party.model.roster.model.PartyRestType;
+import src.domain.party.published.MutationStatus;
+import src.domain.party.published.RestType;
 import src.domain.party.model.roster.model.PartyRoster;
 import src.domain.party.model.roster.repository.PartyRosterRepository;
 
@@ -13,9 +13,9 @@ public final class PerformPartyRestUseCase {
         this.repository = repository;
     }
 
-    public PartyMutationStatus execute(PartyRestType restType) {
+    public MutationStatus execute(RestType restType) {
         PartyRoster.MutationResult mutation = repository.load().performRest(restType);
-        if (mutation.status() == PartyMutationStatus.SUCCESS) {
+        if (mutation.status() == MutationStatus.SUCCESS) {
             repository.save(mutation.roster());
         }
         return mutation.status();

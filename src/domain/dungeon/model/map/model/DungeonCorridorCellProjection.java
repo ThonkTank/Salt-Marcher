@@ -6,7 +6,6 @@ import src.domain.dungeon.model.map.model.DungeonCell;
 import src.domain.dungeon.model.map.model.DungeonCorridorWaypoint;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -21,7 +20,7 @@ final class DungeonCorridorCellProjection {
             Set<DungeonCell> roomCells
     ) {
         List<DungeonCell> backbone = corridor.bindings().waypoints().isEmpty()
-                ? endpoints.stream().map(DungeonCorridorEndpointResolver.CorridorEndpoint::corridorCell).toList()
+                ? endpointCells(endpoints)
                 : corridorWaypoints(corridor.bindings().waypoints(), clustersById);
         Set<DungeonCell> cells = new LinkedHashSet<>();
         addRouteCells(cells, backbone, roomCells);
@@ -37,12 +36,20 @@ final class DungeonCorridorCellProjection {
                 }
             }
         }
-        return cells.stream()
-                .sorted(Comparator
-                        .comparingInt(DungeonCell::level)
-                        .thenComparingInt(DungeonCell::r)
-                        .thenComparingInt(DungeonCell::q))
-                .toList();
+        List<DungeonCell> result = new ArrayList<>(cells);
+        result.sort(new CellComparator());
+        return List.copyOf(result);
+    }
+
+    private static List<DungeonCell> endpointCells(List<DungeonCorridorEndpointResolver.CorridorEndpoint> endpoints) {
+        List<DungeonCell> result = new ArrayList<>();
+        for (DungeonCorridorEndpointResolver.CorridorEndpoint endpoint
+                : endpoints == null ? List.<DungeonCorridorEndpointResolver.CorridorEndpoint>of() : endpoints) {
+            if (endpoint != null) {
+                result.add(endpoint.corridorCell());
+            }
+        }
+        return List.copyOf(result);
     }
 
     private static List<DungeonCell> corridorWaypoints(
@@ -101,13 +108,13 @@ final class DungeonCorridorCellProjection {
     }
 
     private static DungeonCell nearestCell(DungeonCell origin, List<DungeonCell> candidates) {
-        return candidates.stream()
-                .min(Comparator
-                        .comparingInt((DungeonCell candidate) -> manhattan(origin, candidate))
-                        .thenComparingInt(DungeonCell::level)
-                        .thenComparingInt(DungeonCell::r)
-                        .thenComparingInt(DungeonCell::q))
-                .orElse(origin);
+        DungeonCell result = origin;
+        for (DungeonCell candidate : candidates == null ? List.<DungeonCell>of() : candidates) {
+            if (candidate != null && betterCandidate(candidate, result, origin)) {
+                result = candidate;
+            }
+        }
+        return result;
     }
 
     private static int manhattan(DungeonCell left, DungeonCell right) {
@@ -117,5 +124,36 @@ final class DungeonCorridorCellProjection {
         return Math.abs(left.q() - right.q())
                 + Math.abs(left.r() - right.r())
                 + Math.abs(left.level() - right.level());
+    }
+
+    private static boolean betterCandidate(DungeonCell candidate, DungeonCell current, DungeonCell origin) {
+        int distanceComparison = Integer.compare(manhattan(origin, candidate), manhattan(origin, current));
+        if (distanceComparison != 0) {
+            return distanceComparison < 0;
+        }
+        int levelComparison = Integer.compare(candidate.level(), current.level());
+        if (levelComparison != 0) {
+            return levelComparison < 0;
+        }
+        int rowComparison = Integer.compare(candidate.r(), current.r());
+        if (rowComparison != 0) {
+            return rowComparison < 0;
+        }
+        return candidate.q() < current.q();
+    }
+
+    private static final class CellComparator implements java.util.Comparator<DungeonCell> {
+        @Override
+        public int compare(DungeonCell left, DungeonCell right) {
+            int levelComparison = Integer.compare(left.level(), right.level());
+            if (levelComparison != 0) {
+                return levelComparison;
+            }
+            int rowComparison = Integer.compare(left.r(), right.r());
+            if (rowComparison != 0) {
+                return rowComparison;
+            }
+            return Integer.compare(left.q(), right.q());
+        }
     }
 }

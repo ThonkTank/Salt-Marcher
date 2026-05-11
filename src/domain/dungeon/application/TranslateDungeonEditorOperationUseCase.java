@@ -61,15 +61,12 @@ public final class TranslateDungeonEditorOperationUseCase {
             }
             case DungeonEditorOperation.MoveRoomAnchor moveRoomAnchor ->
                     current -> current.moveRoomAnchor(moveRoomAnchor.deltaQ(), moveRoomAnchor.deltaR());
-            case DungeonEditorOperation.PaintRoomRectangle paintRoomRectangle -> {
-                DungeonCell start = inputUseCase.domainCell(paintRoomRectangle.start());
-                DungeonCell end = inputUseCase.domainCell(paintRoomRectangle.end());
-                yield current -> current.paintRoomRectangle(start, end);
-            }
-            case DungeonEditorOperation.DeleteRoomRectangle deleteRoomRectangle -> {
-                DungeonCell start = inputUseCase.domainCell(deleteRoomRectangle.start());
-                DungeonCell end = inputUseCase.domainCell(deleteRoomRectangle.end());
-                yield current -> current.deleteRoomRectangle(start, end);
+            case DungeonEditorOperation.RoomRectangle roomRectangle -> {
+                DungeonCell start = inputUseCase.domainCell(roomRectangle.start());
+                DungeonCell end = inputUseCase.domainCell(roomRectangle.end());
+                yield roomRectangle.action() == DungeonEditorOperation.RectangleAction.DELETE
+                        ? current -> current.deleteRoomRectangle(start, end)
+                        : current -> current.paintRoomRectangle(start, end);
             }
             case DungeonEditorOperation.EditClusterBoundaries editClusterBoundaries -> {
                 List<DungeonEdge> edges = editClusterBoundaries.edges().stream().map(inputUseCase::domainEdge).toList();

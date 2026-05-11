@@ -12,6 +12,7 @@ import src.domain.encounter.model.generation.model.EncounterDraftEntry;
 import src.domain.encounter.model.generation.model.EncounterDraftMetrics;
 import src.domain.encounter.model.reference.repository.EncounterCreatureRepository;
 import src.domain.encounter.model.reference.model.EncounterCreatureReference;
+import src.domain.encounter.published.EncounterCreature;
 
 final class AssembleEncounterResultUseCase {
 
@@ -26,12 +27,12 @@ final class AssembleEncounterResultUseCase {
         List<EncounterGenerationUseCase.GeneratedAlternative> encounters = new ArrayList<>();
         for (EncounterDraft draft : drafts.stream().limit(alternativeCount).toList()) {
             EncounterDraftMetrics metrics = draft.metrics();
-            List<EncounterGenerationUseCase.GeneratedCreature> creatures = new ArrayList<>();
+            List<EncounterCreature> creatures = new ArrayList<>();
             for (EncounterDraftEntry entry : draft.entries()) {
                 EncounterCreatureReference detail = detailCache.computeIfAbsent(entry.creatureId(), this::loadCreatureDetailOrNull);
                 EncounterCreatureFacts facts = detail == null ? entry.facts() : detail.toFacts();
                 EncounterRoleClassificationHelper.Classification classification = EncounterRoleClassificationHelper.classify(facts);
-                creatures.add(new EncounterGenerationUseCase.GeneratedCreature(
+                creatures.add(new EncounterCreature(
                         entry.creatureId(),
                         entry.creatureName(),
                         entry.challengeRating(),

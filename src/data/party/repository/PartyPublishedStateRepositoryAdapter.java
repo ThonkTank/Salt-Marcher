@@ -25,7 +25,7 @@ import src.domain.party.published.PartySnapshotModel;
 import src.domain.party.published.PartySnapshotResult;
 import src.domain.party.published.PartyTravelPositionsModel;
 import src.domain.party.published.PartyTravelPositionsResult;
-import src.domain.party.model.roster.model.PartyMutationStatus;
+import src.domain.party.published.MutationStatus;
 import src.domain.party.model.roster.repository.PartyPublishedStateRepository;
 import src.domain.party.model.roster.repository.PartyRosterRepository;
 
@@ -98,7 +98,7 @@ public final class PartyPublishedStateRepositoryAdapter implements PartyPublishe
     }
 
     @Override
-    public void publishMutationStatus(PartyMutationStatus status) {
+    public void publishMutationStatus(MutationStatus status) {
         currentPartyMutation = new MutationResult(PartyBoundaryProjector.mapMutationStatus(status));
         notifyPartyMutationListeners(currentPartyMutation);
     }

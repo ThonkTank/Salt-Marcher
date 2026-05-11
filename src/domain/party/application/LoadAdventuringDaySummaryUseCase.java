@@ -3,6 +3,7 @@ package src.domain.party.application;
 import src.domain.party.model.roster.helper.PartyAdventuringDayBudgetHelper;
 import src.domain.party.model.roster.model.PartyCharacter;
 import src.domain.party.model.roster.repository.PartyRosterRepository;
+import src.domain.party.published.RestCadenceStatus;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -60,14 +61,6 @@ public final class LoadAdventuringDaySummaryUseCase {
         public String name() {
             return name;
         }
-    }
-
-    public record RestCadenceStatus(
-            Long characterId,
-            RestMilestone nextMilestone,
-            int xpDelta,
-            RestCadenceUrgency urgency
-    ) {
     }
 
     public record AdventuringDayStatus(

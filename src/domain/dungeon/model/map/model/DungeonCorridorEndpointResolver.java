@@ -140,12 +140,7 @@ final class DungeonCorridorEndpointResolver {
         List<DungeonCell> roomCells = roomCellsByRoom.getOrDefault(roomId, List.of(room.primaryAnchor()));
         Set<DungeonCell> roomCellSet = new LinkedHashSet<>(roomCells);
         DungeonCell anchor = room.primaryAnchor();
-        DungeonCell selectedRoomCell = roomCells.stream()
-                .min(Comparator
-                        .comparingInt((DungeonCell cell) -> manhattan(cell, anchor))
-                        .thenComparingInt(DungeonCell::r)
-                        .thenComparingInt(DungeonCell::q))
-                .orElse(anchor);
+        DungeonCell selectedRoomCell = nearestRoomCell(roomCells, anchor);
         for (DungeonEdgeDirection direction : DungeonEdgeDirection.values()) {
             DungeonCell corridorCell = direction.neighborOf(selectedRoomCell);
             if (!roomCellSet.contains(corridorCell)) {
@@ -178,6 +173,28 @@ final class DungeonCorridorEndpointResolver {
         return Math.abs(left.q() - right.q())
                 + Math.abs(left.r() - right.r())
                 + Math.abs(left.level() - right.level());
+    }
+
+    private static DungeonCell nearestRoomCell(List<DungeonCell> roomCells, DungeonCell anchor) {
+        DungeonCell result = anchor;
+        for (DungeonCell cell : roomCells == null ? List.<DungeonCell>of() : roomCells) {
+            if (cell != null && betterRoomCell(cell, result, anchor)) {
+                result = cell;
+            }
+        }
+        return result;
+    }
+
+    private static boolean betterRoomCell(DungeonCell candidate, DungeonCell current, DungeonCell anchor) {
+        int distanceComparison = Integer.compare(manhattan(candidate, anchor), manhattan(current, anchor));
+        if (distanceComparison != 0) {
+            return distanceComparison < 0;
+        }
+        int rowComparison = Integer.compare(candidate.r(), current.r());
+        if (rowComparison != 0) {
+            return rowComparison < 0;
+        }
+        return candidate.q() < current.q();
     }
 
     record CorridorEndpoint(

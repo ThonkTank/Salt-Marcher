@@ -1,8 +1,11 @@
 package src.domain.encounter.published;
 
+import src.domain.encounter.model.generation.model.EncounterDifficultyIntent;
+import src.domain.encounter.model.generation.model.EncounterTuningIntent;
+
 public record EncounterGenerationDiagnostics(
-        EncounterDifficultyBand resolvedDifficulty,
-        EncounterGenerationTuning resolvedTuning,
+        EncounterDifficultyIntent resolvedDifficulty,
+        EncounterTuningIntent resolvedTuning,
         EncounterGenerationSolutionQuality solutionQuality,
         EncounterGenerationStopCategory stopCategory,
         int candidatePoolSize,
@@ -11,8 +14,8 @@ public record EncounterGenerationDiagnostics(
 ) {
 
     public EncounterGenerationDiagnostics {
-        resolvedDifficulty = resolvedDifficulty == null ? EncounterDifficultyBand.defaultBand() : resolvedDifficulty;
-        resolvedTuning = resolvedTuning == null ? EncounterGenerationTuning.defaultTuning() : resolvedTuning;
+        resolvedDifficulty = resolvedDifficulty == null ? EncounterDifficultyIntent.defaultIntent() : resolvedDifficulty;
+        resolvedTuning = resolvedTuning == null ? EncounterTuningIntent.defaultIntent() : resolvedTuning;
         solutionQuality = solutionQuality == null ? EncounterGenerationSolutionQuality.FALLBACK : solutionQuality;
         stopCategory = stopCategory == null ? EncounterGenerationStopCategory.SEARCH_EXHAUSTED : stopCategory;
         candidatePoolSize = Math.max(0, candidatePoolSize);

@@ -140,9 +140,12 @@ public final class DungeonTopologyMovementLogic {
         }
         Map<Integer, List<DungeonCell>> result = new LinkedHashMap<>();
         for (Map.Entry<Integer, List<DungeonCell>> entry : cellsByLevel.entrySet()) {
-            List<DungeonCell> movedCells = entry.getValue().stream()
-                    .map(cell -> new DungeonCell(cell.q(), cell.r(), cell.level() + deltaLevel))
-                    .toList();
+            List<DungeonCell> movedCells = new ArrayList<>();
+            for (DungeonCell cell : entry.getValue()) {
+                if (cell != null) {
+                    movedCells.add(new DungeonCell(cell.q(), cell.r(), cell.level() + deltaLevel));
+                }
+            }
             result.put(entry.getKey() + deltaLevel, movedCells);
         }
         return Map.copyOf(result);
@@ -157,8 +160,10 @@ public final class DungeonTopologyMovementLogic {
         }
         Map<Integer, List<DungeonClusterBoundary>> result = new LinkedHashMap<>();
         for (Map.Entry<Integer, List<DungeonClusterBoundary>> entry : boundariesByLevel.entrySet()) {
-            List<DungeonClusterBoundary> movedBoundaries = entry.getValue().stream()
-                    .map(boundary -> new DungeonClusterBoundary(
+            List<DungeonClusterBoundary> movedBoundaries = new ArrayList<>();
+            for (DungeonClusterBoundary boundary : entry.getValue()) {
+                if (boundary != null) {
+                    movedBoundaries.add(new DungeonClusterBoundary(
                             boundary.clusterId(),
                             boundary.level() + deltaLevel,
                             new DungeonCell(
@@ -167,8 +172,9 @@ public final class DungeonTopologyMovementLogic {
                                     boundary.relativeCell().level() + deltaLevel),
                             boundary.direction(),
                             boundary.kind(),
-                            boundary.topologyRef()))
-                    .toList();
+                            boundary.topologyRef()));
+                }
+            }
             result.put(entry.getKey() + deltaLevel, movedBoundaries);
         }
         return Map.copyOf(result);

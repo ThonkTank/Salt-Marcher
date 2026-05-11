@@ -11,4 +11,8 @@ public enum SavedEncounterPlanStatus {
     public static SavedEncounterPlanStatus storageErrorStatus() {
         return STORAGE_ERROR;
     }
+
+    public boolean loadedSuccessfully() {
+        return this == SUCCESS;
+    }
 }

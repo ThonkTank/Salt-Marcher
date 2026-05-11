@@ -69,11 +69,11 @@ public final class DungeonAuthoredApplicationService {
     }
 
     private DungeonAuthoredReadResult authoredReadResult(DungeonAuthoredReadCommand command) {
-        if (command instanceof DungeonAuthoredReadCommand.LoadSnapshot loadSnapshot) {
+        if (command instanceof DungeonAuthoredReadCommand.MapSelection mapSelection) {
             return new DungeonAuthoredReadResult.CommittedSnapshot(
                     publishResultUseCase.committedSnapshot(
                             loadDungeonSnapshotUseCase.execute(
-                                    translateInputUseCase.domainMapId(loadSnapshot.mapId()))));
+                                    translateInputUseCase.domainMapId(mapSelection.mapId()))));
         }
         DungeonAuthoredReadCommand.DescribeSelection describeSelection =
                 (DungeonAuthoredReadCommand.DescribeSelection) command;
@@ -89,15 +89,14 @@ public final class DungeonAuthoredApplicationService {
     private ApplyDungeonEditorOperationUseCase.OperationResultData authoredMutationResult(
             DungeonAuthoredMutationCommand command
     ) {
-        if (command instanceof DungeonAuthoredMutationCommand.PreviewOperation previewOperation) {
+        DungeonAuthoredMutationCommand.Operation operation = (DungeonAuthoredMutationCommand.Operation) command;
+        if (operation.action() == DungeonAuthoredMutationCommand.Action.PREVIEW) {
             return applyDungeonEditorOperationUseCase.preview(
-                    translateInputUseCase.domainMapId(previewOperation.mapId()),
-                    translateOperationUseCase.operationMutation(previewOperation.operation()));
+                    translateInputUseCase.domainMapId(operation.mapId()),
+                    translateOperationUseCase.operationMutation(operation.operation()));
         }
-        DungeonAuthoredMutationCommand.ApplyOperation applyOperation =
-                (DungeonAuthoredMutationCommand.ApplyOperation) command;
         return applyDungeonEditorOperationUseCase.execute(
-                translateInputUseCase.domainMapId(applyOperation.mapId()),
-                translateOperationUseCase.operationMutation(applyOperation.operation()));
+                translateInputUseCase.domainMapId(operation.mapId()),
+                translateOperationUseCase.operationMutation(operation.operation()));
     }
 }

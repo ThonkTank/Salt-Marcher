@@ -11,6 +11,8 @@ import src.domain.encounter.model.plan.repository.EncounterPlanRepository;
 import src.domain.encounter.model.plan.model.EncounterPlanCreature;
 import src.domain.encounter.model.reference.repository.EncounterCreatureRepository;
 import src.domain.encounter.model.session.repository.EncounterPartyFactsRepository;
+import src.domain.encounter.published.EncounterPlanBudgetStatus;
+import src.domain.encounter.published.EncounterPlanBudgetSummary;
 
 public final class LoadEncounterPlanBudgetUseCase {
 
@@ -90,64 +92,34 @@ public final class LoadEncounterPlanBudgetUseCase {
     }
 
     public record Result(
-            Status status,
-            @Nullable PlanBudgetSummary summary,
+            EncounterPlanBudgetStatus status,
+            @Nullable EncounterPlanBudgetSummary summary,
             String message
     ) {
 
         public Result {
-            status = status == null ? Status.STORAGE_ERROR : status;
+            status = status == null ? EncounterPlanBudgetStatus.STORAGE_ERROR : status;
             message = message == null ? "" : message;
         }
 
-        static Result success(PlanBudgetSummary summary) {
-            return new Result(Status.SUCCESS, summary, "");
+        static Result success(EncounterPlanBudgetSummary summary) {
+            return new Result(EncounterPlanBudgetStatus.SUCCESS, summary, "");
         }
 
         static Result notFound(String message) {
-            return new Result(Status.NOT_FOUND, null, message);
+            return new Result(EncounterPlanBudgetStatus.NOT_FOUND, null, message);
         }
 
         static Result noActiveParty(String message) {
-            return new Result(Status.NO_ACTIVE_PARTY, null, message);
+            return new Result(EncounterPlanBudgetStatus.NO_ACTIVE_PARTY, null, message);
         }
 
         static Result invalidRequest(String message) {
-            return new Result(Status.INVALID_REQUEST, null, message);
+            return new Result(EncounterPlanBudgetStatus.INVALID_REQUEST, null, message);
         }
 
         static Result storageError(String message) {
-            return new Result(Status.STORAGE_ERROR, null, message);
-        }
-    }
-
-    public enum Status {
-        SUCCESS,
-        NOT_FOUND,
-        NO_ACTIVE_PARTY,
-        INVALID_REQUEST,
-        STORAGE_ERROR
-    }
-
-    public record PlanBudgetSummary(
-            long planId,
-            String name,
-            String generatedLabel,
-            int creatureCount,
-            int totalBaseXp,
-            int adjustedXp,
-            double xpMultiplier,
-            String difficultyLabel
-    ) {
-
-        public PlanBudgetSummary {
-            name = name == null ? "" : name.trim();
-            generatedLabel = generatedLabel == null ? "" : generatedLabel.trim();
-            creatureCount = Math.max(0, creatureCount);
-            totalBaseXp = Math.max(0, totalBaseXp);
-            adjustedXp = Math.max(0, adjustedXp);
-            xpMultiplier = xpMultiplier <= 0.0 ? 1.0 : xpMultiplier;
-            difficultyLabel = difficultyLabel == null ? "" : difficultyLabel.trim();
+            return new Result(EncounterPlanBudgetStatus.STORAGE_ERROR, null, message);
         }
     }
 }

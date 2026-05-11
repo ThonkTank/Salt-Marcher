@@ -22,19 +22,13 @@ import src.domain.sessionplanner.model.session.usecase.SeedSessionPlanUseCase;
 import src.domain.sessionplanner.model.session.usecase.SetSessionEncounterAllocationUseCase;
 import src.domain.sessionplanner.model.session.usecase.SetSessionEncounterDaysUseCase;
 import src.domain.sessionplanner.model.session.usecase.SetSessionRestGapUseCase;
-import src.domain.sessionplanner.published.AddSessionLootPlaceholderCommand;
-import src.domain.sessionplanner.published.AddSessionParticipantCommand;
 import src.domain.sessionplanner.published.AttachSessionEncounterCommand;
 import src.domain.sessionplanner.published.ClearSessionRestGapCommand;
-import src.domain.sessionplanner.published.CreateSessionPlanCommand;
-import src.domain.sessionplanner.published.MoveSessionEncounterDownCommand;
-import src.domain.sessionplanner.published.MoveSessionEncounterUpCommand;
-import src.domain.sessionplanner.published.RemoveSessionEncounterCommand;
 import src.domain.sessionplanner.published.RemoveSessionLootPlaceholderCommand;
-import src.domain.sessionplanner.published.RemoveSessionParticipantCommand;
-import src.domain.sessionplanner.published.SelectSessionEncounterCommand;
+import src.domain.sessionplanner.published.SessionPlannerActionCommand;
+import src.domain.sessionplanner.published.SessionPlannerEncounterCommand;
 import src.domain.sessionplanner.published.SessionPlannerEncounterAllocationCommand;
-import src.domain.sessionplanner.published.SessionPlannerRestGapChange;
+import src.domain.sessionplanner.published.SessionPlannerParticipantCommand;
 import src.domain.sessionplanner.published.SetSessionEncounterDaysCommand;
 import src.domain.sessionplanner.published.SetSessionRestGapCommand;
 
@@ -87,20 +81,20 @@ public final class SessionPlannerApplicationService {
         publishCurrentState();
     }
 
-    public void createSession(CreateSessionPlanCommand command) {
+    public void createSession(SessionPlannerActionCommand command) {
         Objects.requireNonNull(command, "command");
         createSessionUseCase.execute();
         publishCurrentState();
     }
 
-    public void addParticipant(AddSessionParticipantCommand command) {
-        AddSessionParticipantCommand effective = Objects.requireNonNull(command, "command");
+    public void addParticipant(SessionPlannerParticipantCommand command) {
+        SessionPlannerParticipantCommand effective = Objects.requireNonNull(command, "command");
         addParticipantUseCase.execute(effective.characterId());
         publishCurrentState();
     }
 
-    public void removeParticipant(RemoveSessionParticipantCommand command) {
-        RemoveSessionParticipantCommand effective = Objects.requireNonNull(command, "command");
+    public void removeParticipant(SessionPlannerParticipantCommand command) {
+        SessionPlannerParticipantCommand effective = Objects.requireNonNull(command, "command");
         removeParticipantUseCase.execute(effective.characterId());
         publishCurrentState();
     }
@@ -117,26 +111,26 @@ public final class SessionPlannerApplicationService {
         publishCurrentState();
     }
 
-    public void removeEncounter(RemoveSessionEncounterCommand command) {
-        RemoveSessionEncounterCommand effective = Objects.requireNonNull(command, "command");
+    public void removeEncounter(SessionPlannerEncounterCommand command) {
+        SessionPlannerEncounterCommand effective = Objects.requireNonNull(command, "command");
         removeEncounterUseCase.execute(effective.encounterId());
         publishCurrentState();
     }
 
-    public void moveEncounterUp(MoveSessionEncounterUpCommand command) {
-        MoveSessionEncounterUpCommand effective = Objects.requireNonNull(command, "command");
+    public void moveEncounterUp(SessionPlannerEncounterCommand command) {
+        SessionPlannerEncounterCommand effective = Objects.requireNonNull(command, "command");
         moveEncounterUpUseCase.execute(effective.encounterId());
         publishCurrentState();
     }
 
-    public void moveEncounterDown(MoveSessionEncounterDownCommand command) {
-        MoveSessionEncounterDownCommand effective = Objects.requireNonNull(command, "command");
+    public void moveEncounterDown(SessionPlannerEncounterCommand command) {
+        SessionPlannerEncounterCommand effective = Objects.requireNonNull(command, "command");
         moveEncounterDownUseCase.execute(effective.encounterId());
         publishCurrentState();
     }
 
-    public void selectEncounter(SelectSessionEncounterCommand command) {
-        SelectSessionEncounterCommand effective = Objects.requireNonNull(command, "command");
+    public void selectEncounter(SessionPlannerEncounterCommand command) {
+        SessionPlannerEncounterCommand effective = Objects.requireNonNull(command, "command");
         selectEncounterUseCase.execute(effective.encounterId());
         publishCurrentState();
     }
@@ -151,10 +145,7 @@ public final class SessionPlannerApplicationService {
 
     public void setRestGap(SetSessionRestGapCommand command) {
         SetSessionRestGapCommand effective = Objects.requireNonNull(command, "command");
-        setRestGapUseCase.execute(toRestPlacement(new SessionPlannerRestGapChange(
-                effective.leftEncounterId(),
-                effective.rightEncounterId(),
-                effective.restKind())));
+        setRestGapUseCase.execute(toRestPlacement(effective));
         publishCurrentState();
     }
 
@@ -166,7 +157,7 @@ public final class SessionPlannerApplicationService {
         publishCurrentState();
     }
 
-    public void addLootPlaceholder(AddSessionLootPlaceholderCommand command) {
+    public void addLootPlaceholder(SessionPlannerActionCommand command) {
         Objects.requireNonNull(command, "command");
         addLootPlaceholderUseCase.execute();
         publishCurrentState();
@@ -182,7 +173,7 @@ public final class SessionPlannerApplicationService {
         publishedStateRepository.publishCurrentSession(loadCurrentSessionPlanUseCase.execute());
     }
 
-    private static SessionRestPlacement toRestPlacement(SessionPlannerRestGapChange command) {
+    private static SessionRestPlacement toRestPlacement(SetSessionRestGapCommand command) {
         return switch (command.restKind()) {
             case SHORT_REST -> SessionRestPlacement.shortRestBetween(command.leftEncounterId(), command.rightEncounterId());
             case LONG_REST -> SessionRestPlacement.longRestBetween(command.leftEncounterId(), command.rightEncounterId());

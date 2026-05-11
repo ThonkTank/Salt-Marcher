@@ -44,7 +44,7 @@ public record PartyCharacterProgress(
                 shortRestsTakenSinceLongRest);
     }
 
-    public PartyCharacterProgress afterRest(PartyRestType restType) {
+    public PartyCharacterProgress afterRest(RestType restType) {
         if (restType.isShortRest()) {
             return new PartyCharacterProgress(
                     level,

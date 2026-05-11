@@ -1,15 +1,15 @@
 package src.domain.dungeon.published;
 
 public sealed interface DungeonAuthoredReadCommand permits
-        DungeonAuthoredReadCommand.LoadSnapshot,
+        DungeonAuthoredReadCommand.MapSelection,
         DungeonAuthoredReadCommand.DescribeSelection {
 
-    record LoadSnapshot(DungeonMapId mapId) implements DungeonAuthoredReadCommand {
-        public LoadSnapshot() {
+    record MapSelection(DungeonMapId mapId) implements DungeonAuthoredReadCommand, DungeonMapCatalogCommand {
+        public MapSelection() {
             this(new DungeonMapId(1L));
         }
 
-        public LoadSnapshot {
+        public MapSelection {
             mapId = mapId == null ? new DungeonMapId(1L) : mapId;
         }
     }

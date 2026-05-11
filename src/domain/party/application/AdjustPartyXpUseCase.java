@@ -1,7 +1,7 @@
 package src.domain.party.application;
 
 import java.util.List;
-import src.domain.party.model.roster.model.PartyMutationStatus;
+import src.domain.party.published.MutationStatus;
 import src.domain.party.model.roster.model.PartyRoster;
 import src.domain.party.model.roster.repository.PartyRosterRepository;
 
@@ -13,9 +13,9 @@ public final class AdjustPartyXpUseCase {
         this.repository = repository;
     }
 
-    public PartyMutationStatus execute(List<Long> ids, int xpDelta) {
+    public MutationStatus execute(List<Long> ids, int xpDelta) {
         PartyRoster.MutationResult mutation = repository.load().adjustXp(ids, xpDelta);
-        if (mutation.status() == PartyMutationStatus.SUCCESS) {
+        if (mutation.status() == MutationStatus.SUCCESS) {
             repository.save(mutation.roster());
         }
         return mutation.status();

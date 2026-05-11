@@ -1,7 +1,6 @@
 package src.domain.dungeon.model.map.model;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -33,16 +32,18 @@ final class DungeonClusterBoundaryGeometryLogic {
     Map<Integer, List<DungeonClusterBoundary>> boundariesByLevel(Iterable<DungeonClusterBoundary> boundaries) {
         Map<Integer, List<DungeonClusterBoundary>> grouped = new LinkedHashMap<>();
         for (DungeonClusterBoundary boundary : boundaries == null ? List.<DungeonClusterBoundary>of() : boundaries) {
-            grouped.computeIfAbsent(boundary.level(), ignored -> new ArrayList<>()).add(boundary);
+            List<DungeonClusterBoundary> levelBoundaries = grouped.get(boundary.level());
+            if (levelBoundaries == null) {
+                levelBoundaries = new ArrayList<>();
+                grouped.put(boundary.level(), levelBoundaries);
+            }
+            levelBoundaries.add(boundary);
         }
         Map<Integer, List<DungeonClusterBoundary>> result = new LinkedHashMap<>();
         for (Map.Entry<Integer, List<DungeonClusterBoundary>> entry : grouped.entrySet()) {
-            result.put(entry.getKey(), entry.getValue().stream()
-                    .sorted(Comparator
-                            .comparingInt((DungeonClusterBoundary boundary) -> boundary.relativeCell().r())
-                            .thenComparingInt(boundary -> boundary.relativeCell().q())
-                            .thenComparing(boundary -> boundary.direction().name()))
-                    .toList());
+            List<DungeonClusterBoundary> sorted = new ArrayList<>(entry.getValue());
+            sorted.sort(new BoundaryComparator());
+            result.put(entry.getKey(), List.copyOf(sorted));
         }
         return Map.copyOf(result);
     }
@@ -79,9 +80,7 @@ final class DungeonClusterBoundaryGeometryLogic {
         if (invalidTouchingCells(touchingCells)) {
             return null;
         }
-        List<DungeonCell> insideCells = touchingCells.stream()
-                .filter(clusterCells::contains)
-                .toList();
+        List<DungeonCell> insideCells = insideCells(touchingCells, clusterCells);
         if (!supportsBoundaryKind(kind, insideCells)) {
             return null;
         }
@@ -123,10 +122,18 @@ final class DungeonClusterBoundaryGeometryLogic {
     }
 
     private DungeonBoundaryTouch touch(DungeonEdge edge, Set<DungeonCell> clusterCells) {
-        List<DungeonCell> insideCells = edge.touchingCells().stream()
-                .filter(clusterCells::contains)
-                .toList();
+        List<DungeonCell> insideCells = insideCells(edge.touchingCells(), clusterCells);
         return new DungeonBoundaryTouch(insideCells);
+    }
+
+    private static List<DungeonCell> insideCells(List<DungeonCell> touchingCells, Set<DungeonCell> clusterCells) {
+        List<DungeonCell> result = new ArrayList<>();
+        for (DungeonCell cell : touchingCells == null ? List.<DungeonCell>of() : touchingCells) {
+            if (clusterCells.contains(cell)) {
+                result.add(cell);
+            }
+        }
+        return List.copyOf(result);
     }
 
     private @Nullable DungeonEdgeDirection directionFrom(DungeonCell cell, DungeonEdge edge) {
@@ -137,5 +144,20 @@ final class DungeonClusterBoundaryGeometryLogic {
             }
         }
         return null;
+    }
+
+    private static final class BoundaryComparator implements java.util.Comparator<DungeonClusterBoundary> {
+        @Override
+        public int compare(DungeonClusterBoundary left, DungeonClusterBoundary right) {
+            int rowComparison = Integer.compare(left.relativeCell().r(), right.relativeCell().r());
+            if (rowComparison != 0) {
+                return rowComparison;
+            }
+            int columnComparison = Integer.compare(left.relativeCell().q(), right.relativeCell().q());
+            if (columnComparison != 0) {
+                return columnComparison;
+            }
+            return left.direction().name().compareTo(right.direction().name());
+        }
     }
 }

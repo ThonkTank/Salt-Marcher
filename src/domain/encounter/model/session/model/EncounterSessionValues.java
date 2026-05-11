@@ -180,12 +180,6 @@ public final class EncounterSessionValues {
         }
     }
 
-    public record InitiativeInput(String id, int initiative) {
-        public InitiativeInput {
-            id = defaultString(id);
-        }
-    }
-
     public record CombatProjectionData(
             int currentTurnIndex,
             int round,

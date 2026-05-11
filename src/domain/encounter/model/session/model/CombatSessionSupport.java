@@ -6,8 +6,8 @@ import src.domain.encounter.model.session.model.EncounterSessionValues.Encounter
 import src.domain.encounter.model.session.model.EncounterSessionValues.CombatCardData;
 import src.domain.encounter.model.session.model.EncounterSessionValues.CombatProjectionData;
 import src.domain.encounter.model.session.model.EncounterSessionValues.InitiativeEntryData;
-import src.domain.encounter.model.session.model.EncounterSessionValues.InitiativeInput;
 import src.domain.encounter.model.session.model.EncounterSessionValues.PartyMemberData;
+import src.domain.encounter.published.ApplyEncounterStateCommand;
 
 final class CombatSessionSupport {
 
@@ -32,7 +32,9 @@ final class CombatSessionSupport {
                 .findFirst();
     }
 
-    static List<InitiativeInput> safeInitiatives(List<InitiativeInput> initiatives) {
+    static List<ApplyEncounterStateCommand.InitiativeValue> safeInitiatives(
+            List<ApplyEncounterStateCommand.InitiativeValue> initiatives
+    ) {
         return initiatives == null ? List.of() : List.copyOf(initiatives);
     }
 

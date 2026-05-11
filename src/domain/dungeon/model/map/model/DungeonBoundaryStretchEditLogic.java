@@ -38,10 +38,13 @@ final class DungeonBoundaryStretchEditLogic {
             return dungeonMap;
         }
         List<DungeonRoomTopologyClusterWork> clusters = WORK_SERVICE.workClusters(dungeonMap);
-        DungeonRoomTopologyClusterWork target = clusters.stream()
-                .filter(work -> work.cluster().clusterId() == clusterId)
-                .findFirst()
-                .orElse(null);
+        DungeonRoomTopologyClusterWork target = null;
+        for (DungeonRoomTopologyClusterWork work : clusters) {
+            if (work != null && work.cluster().clusterId() == clusterId) {
+                target = work;
+                break;
+            }
+        }
         if (target == null) {
             return dungeonMap;
         }

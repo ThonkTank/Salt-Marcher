@@ -1,7 +1,6 @@
 package src.domain.dungeon.model.map.model;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -55,12 +54,8 @@ final class DungeonRoomBoundaryPartitionLogic {
                 }
             }
         }
-        return result.stream()
-                .sorted(Comparator
-                        .comparingInt(RoomComponent::level)
-                        .thenComparingInt(component -> component.anchor().r())
-                        .thenComparingInt(component -> component.anchor().q()))
-                .toList();
+        result.sort(new RoomComponentComparator());
+        return List.copyOf(result);
     }
 
     private List<Set<DungeonCell>> connectedComponents(
@@ -95,6 +90,21 @@ final class DungeonRoomBoundaryPartitionLogic {
 
         private DungeonCell anchor() {
             return cells.isEmpty() ? new DungeonCell(0, 0, level) : cells.getFirst();
+        }
+    }
+
+    private static final class RoomComponentComparator implements java.util.Comparator<RoomComponent> {
+        @Override
+        public int compare(RoomComponent left, RoomComponent right) {
+            int levelComparison = Integer.compare(left.level(), right.level());
+            if (levelComparison != 0) {
+                return levelComparison;
+            }
+            int rowComparison = Integer.compare(left.anchor().r(), right.anchor().r());
+            if (rowComparison != 0) {
+                return rowComparison;
+            }
+            return Integer.compare(left.anchor().q(), right.anchor().q());
         }
     }
 }

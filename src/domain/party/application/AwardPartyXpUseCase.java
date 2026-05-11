@@ -1,7 +1,7 @@
 package src.domain.party.application;
 
 import java.util.List;
-import src.domain.party.model.roster.model.PartyMutationStatus;
+import src.domain.party.published.MutationStatus;
 import src.domain.party.model.roster.repository.PartyRosterRepository;
 
 public final class AwardPartyXpUseCase {
@@ -12,7 +12,7 @@ public final class AwardPartyXpUseCase {
         this.adjustPartyXpUseCase = new AdjustPartyXpUseCase(repository);
     }
 
-    public PartyMutationStatus execute(List<Long> ids, int xpPerCharacter) {
+    public MutationStatus execute(List<Long> ids, int xpPerCharacter) {
         return adjustPartyXpUseCase.execute(ids, Math.max(0, xpPerCharacter));
     }
 }

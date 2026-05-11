@@ -4,7 +4,7 @@ import java.util.List;
 import java.util.Optional;
 import src.domain.encounter.model.generation.model.EncounterGenerationInputs;
 import src.domain.encounter.model.generation.model.EncounterGenerationRequest;
-import src.domain.encounter.model.session.model.EncounterSessionValues.InitiativeInput;
+import src.domain.encounter.published.ApplyEncounterStateCommand;
 
 public record EncounterSessionCommand(
         Action action,
@@ -14,7 +14,7 @@ public record EncounterSessionCommand(
         long planId,
         int delta,
         long token,
-        List<InitiativeInput> initiativeInputs,
+        List<ApplyEncounterStateCommand.InitiativeValue> initiativeInputs,
         String combatantId,
         int initiative,
         long partyMemberId,

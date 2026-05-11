@@ -65,11 +65,12 @@ public final class DungeonCorridorMutationLogic {
             }
             nextCorridors.add(corridor.corridorId() == corridorId ? updated : corridor);
         }
-        List<DungeonStair> nextStairs = dungeonMap.connections().stairs().stream()
-                .map(stair -> stair.corridorId() != null && stair.corridorId() == mergedCorridorId
-                        ? DungeonStairOps.withCorridorId(stair, corridorId)
-                        : stair)
-                .toList();
+        List<DungeonStair> nextStairs = new ArrayList<>();
+        for (DungeonStair stair : dungeonMap.connections().stairs()) {
+            nextStairs.add(stair != null && stair.corridorId() != null && stair.corridorId() == mergedCorridorId
+                    ? DungeonStairOps.withCorridorId(stair, corridorId)
+                    : stair);
+        }
         return CONNECTION_NORMALIZATION_SERVICE.copyWithConnections(
                 dungeonMap,
                 new ConnectionCatalog(
@@ -87,12 +88,18 @@ public final class DungeonCorridorMutationLogic {
         if (existing == null || ANCHOR_PRUNING_POLICY.ownedAnchorStillReferenced(dungeonMap.connections().corridors(), existing)) {
             return dungeonMap;
         }
-        List<DungeonCorridor> nextCorridors = dungeonMap.connections().corridors().stream()
-                .filter(corridor -> corridor.corridorId() != corridorId)
-                .toList();
-        List<DungeonStair> nextStairs = dungeonMap.connections().stairs().stream()
-                .filter(stair -> stair.corridorId() == null || stair.corridorId() != corridorId)
-                .toList();
+        List<DungeonCorridor> nextCorridors = new ArrayList<>();
+        for (DungeonCorridor corridor : dungeonMap.connections().corridors()) {
+            if (corridor != null && corridor.corridorId() != corridorId) {
+                nextCorridors.add(corridor);
+            }
+        }
+        List<DungeonStair> nextStairs = new ArrayList<>();
+        for (DungeonStair stair : dungeonMap.connections().stairs()) {
+            if (stair != null && (stair.corridorId() == null || stair.corridorId() != corridorId)) {
+                nextStairs.add(stair);
+            }
+        }
         return CONNECTION_NORMALIZATION_SERVICE.copyWithConnections(
                 dungeonMap,
                 new ConnectionCatalog(

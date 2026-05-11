@@ -8,6 +8,7 @@ import src.domain.encounter.model.generation.model.EncounterGenerationRequest;
 import src.domain.encounter.model.reference.repository.EncounterCreatureRepository;
 import src.domain.encounter.model.reference.repository.EncounterTableCandidateRepository;
 import src.domain.encounter.model.session.repository.EncounterPartyFactsRepository;
+import src.domain.encounter.published.EncounterCreature;
 
 public final class EncounterGenerationUseCase {
 
@@ -81,30 +82,11 @@ public final class EncounterGenerationUseCase {
         }
     }
 
-    public record GeneratedCreature(
-            long creatureId,
-            String name,
-            String challengeRating,
-            int xp,
-            int quantity,
-            String role,
-            List<String> tags
-    ) {
-
-        public GeneratedCreature {
-            name = name == null ? "" : name;
-            challengeRating = challengeRating == null ? "" : challengeRating;
-            role = role == null ? "" : role;
-            quantity = Math.max(1, quantity);
-            tags = tags == null ? List.of() : List.copyOf(tags);
-        }
-    }
-
     public record GeneratedAlternative(
             String title,
             src.domain.encounter.model.generation.model.EncounterDifficultyIntent achievedDifficulty,
             int adjustedXp,
-            List<GeneratedCreature> creatures
+            List<EncounterCreature> creatures
     ) {
 
         public GeneratedAlternative {

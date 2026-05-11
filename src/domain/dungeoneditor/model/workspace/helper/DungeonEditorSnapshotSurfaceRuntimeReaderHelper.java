@@ -68,7 +68,8 @@ public final class DungeonEditorSnapshotSurfaceRuntimeReaderHelper {
             return null;
         }
         return requireOperationResult(mutateAuthored.apply(
-                new DungeonAuthoredMutationCommand.PreviewOperation(
+                new DungeonAuthoredMutationCommand.Operation(
+                        DungeonAuthoredMutationCommand.Action.PREVIEW,
                          Objects.requireNonNull(DungeonEditorWorkspaceMapBoundaryTranslationHelper.toDomainMapId(mapId)),
                         operation)));
     }
@@ -104,8 +105,8 @@ public final class DungeonEditorSnapshotSurfaceRuntimeReaderHelper {
         if (mapId == null) {
             return null;
         }
-        DungeonAuthoredReadResult result = loadAuthored.apply(new DungeonAuthoredReadCommand.LoadSnapshot(
-                 Objects.requireNonNull(DungeonEditorWorkspaceMapBoundaryTranslationHelper.toDomainMapId(mapId))));
+        DungeonAuthoredReadResult result = loadAuthored.apply(new DungeonAuthoredReadCommand.MapSelection(
+                Objects.requireNonNull(DungeonEditorWorkspaceMapBoundaryTranslationHelper.toDomainMapId(mapId))));
         if (result instanceof DungeonAuthoredReadResult.CommittedSnapshot committedSnapshot) {
             return committedSnapshot.snapshot();
         }

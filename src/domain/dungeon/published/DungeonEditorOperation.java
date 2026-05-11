@@ -8,8 +8,7 @@ public sealed interface DungeonEditorOperation permits
         DungeonEditorOperation.MoveEditorHandle,
         DungeonEditorOperation.MoveBoundaryStretch,
         DungeonEditorOperation.MoveRoomAnchor,
-        DungeonEditorOperation.PaintRoomRectangle,
-        DungeonEditorOperation.DeleteRoomRectangle,
+        DungeonEditorOperation.RoomRectangle,
         DungeonEditorOperation.EditClusterBoundaries,
         DungeonEditorOperation.CreateCorridor,
         DungeonEditorOperation.ExtendCorridor,
@@ -52,17 +51,21 @@ public sealed interface DungeonEditorOperation permits
     record MoveRoomAnchor(int deltaQ, int deltaR) implements DungeonEditorOperation {
     }
 
-    record PaintRoomRectangle(DungeonCellRef start, DungeonCellRef end) implements DungeonEditorOperation {
-    }
-
-    record DeleteRoomRectangle(
+    record RoomRectangle(
+            RectangleAction action,
             DungeonCellRef start,
             DungeonCellRef end
     ) implements DungeonEditorOperation {
-        public DeleteRoomRectangle {
+        public RoomRectangle {
+            action = action == null ? RectangleAction.PAINT : action;
             start = start == null ? new DungeonCellRef(0, 0, 0) : start;
             end = end == null ? start : end;
         }
+    }
+
+    enum RectangleAction {
+        PAINT,
+        DELETE
     }
 
     record EditClusterBoundaries(

@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Objects;
 import src.domain.encounter.model.plan.repository.EncounterPlanRepository;
 import src.domain.encounter.model.plan.model.EncounterPlanSummary;
+import src.domain.encounter.published.SavedEncounterPlanStatus;
 
 public final class ListSavedEncounterPlansUseCase {
 
@@ -22,31 +23,22 @@ public final class ListSavedEncounterPlansUseCase {
     }
 
     public record Result(
-            Status status,
+            SavedEncounterPlanStatus status,
             List<EncounterPlanSummary> plans,
             String message
     ) {
         public Result {
-            status = status == null ? Status.STORAGE_ERROR : status;
+            status = status == null ? SavedEncounterPlanStatus.STORAGE_ERROR : status;
             plans = plans == null ? List.of() : List.copyOf(plans);
             message = message == null ? "" : message;
         }
 
         static Result success(List<EncounterPlanSummary> plans) {
-            return new Result(Status.SUCCESS, plans, "");
+            return new Result(SavedEncounterPlanStatus.SUCCESS, plans, "");
         }
 
         static Result storageError(String message) {
-            return new Result(Status.STORAGE_ERROR, List.of(), message);
-        }
-    }
-
-    public enum Status {
-        SUCCESS,
-        STORAGE_ERROR;
-
-        public boolean loadedSuccessfully() {
-            return this == SUCCESS;
+            return new Result(SavedEncounterPlanStatus.STORAGE_ERROR, List.of(), message);
         }
     }
 }

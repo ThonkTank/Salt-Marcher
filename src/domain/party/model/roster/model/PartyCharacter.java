@@ -7,7 +7,7 @@ public final class PartyCharacter {
     private final PartyCharacterIdentity identity;
     private final PartyCharacterProgress progress;
     private final PartyCharacterCombatProfile combat;
-    private final PartyMembership membership;
+    private final MembershipState membership;
     private final PartyCharacterTravelState travel;
 
     public PartyCharacter(
@@ -15,7 +15,7 @@ public final class PartyCharacter {
             PartyCharacterIdentity identity,
             PartyCharacterProgress progress,
             PartyCharacterCombatProfile combat,
-            PartyMembership membership
+            MembershipState membership
     ) {
         this(
                 id,
@@ -31,14 +31,14 @@ public final class PartyCharacter {
             PartyCharacterIdentity identity,
             PartyCharacterProgress progress,
             PartyCharacterCombatProfile combat,
-            PartyMembership membership,
+            MembershipState membership,
             PartyCharacterTravelState travel
     ) {
         this.id = Math.max(1L, id);
         this.identity = Objects.requireNonNull(identity, "identity");
         this.progress = Objects.requireNonNull(progress, "progress");
         this.combat = Objects.requireNonNull(combat, "combat");
-        this.membership = Objects.requireNonNullElse(membership, PartyMembership.RESERVE);
+        this.membership = Objects.requireNonNullElse(membership, MembershipState.RESERVE);
         this.travel = travel == null ? PartyCharacterTravelState.attachedWithoutLocation() : travel;
     }
 
@@ -58,7 +58,7 @@ public final class PartyCharacter {
         return combat;
     }
 
-    public PartyMembership membership() {
+    public MembershipState membership() {
         return membership;
     }
 
@@ -66,7 +66,7 @@ public final class PartyCharacter {
         return travel;
     }
 
-    public PartyCharacter update(PartyCharacterDraft draft) {
+    public PartyCharacter update(CharacterDraft draft) {
         return new PartyCharacter(
                 id,
                 new PartyCharacterIdentity(draft.name(), draft.playerName()),
@@ -76,7 +76,7 @@ public final class PartyCharacter {
                 travel);
     }
 
-    public PartyCharacter withMembership(PartyMembership nextMembership) {
+    public PartyCharacter withMembership(MembershipState nextMembership) {
         return new PartyCharacter(
                 id,
                 identity,
@@ -100,7 +100,7 @@ public final class PartyCharacter {
                 travel);
     }
 
-    public PartyCharacter afterRest(PartyRestType restType) {
+    public PartyCharacter afterRest(RestType restType) {
         return new PartyCharacter(id, identity, progress.afterRest(restType), combat, membership, travel);
     }
 

@@ -37,9 +37,9 @@ public final class PartyRoster {
         return PartyRosterProjection.from(characters);
     }
 
-    public MutationResult createCharacter(PartyCharacterDraft draft, PartyMembership membership) {
+    public MutationResult createCharacter(CharacterDraft draft, MembershipState membership) {
         if (!draftValidator.isValid(draft) || membership == null) {
-            return new MutationResult(PartyMutationStatus.INVALID_INPUT, this);
+            return new MutationResult(MutationStatus.INVALID_INPUT, this);
         }
         List<PartyCharacter> nextCharacters = new ArrayList<>(characters);
         nextCharacters.add(new PartyCharacter(
@@ -53,37 +53,37 @@ public final class PartyRoster {
                         0),
                 new PartyCharacterCombatProfile(draft.passivePerception(), draft.armorClass()),
                 membership));
-        return new MutationResult(PartyMutationStatus.SUCCESS, new PartyRoster(nextCharacterId + 1, nextCharacters));
+        return new MutationResult(MutationStatus.SUCCESS, new PartyRoster(nextCharacterId + 1, nextCharacters));
     }
 
-    public MutationResult updateCharacter(long id, PartyCharacterDraft draft) {
+    public MutationResult updateCharacter(long id, CharacterDraft draft) {
         if (!draftValidator.isValid(draft)) {
-            return new MutationResult(PartyMutationStatus.INVALID_INPUT, this);
+            return new MutationResult(MutationStatus.INVALID_INPUT, this);
         }
         List<PartyCharacter> nextCharacters = mutations.updateDraft(characters, id, draft);
         if (nextCharacters.isEmpty()) {
-            return new MutationResult(PartyMutationStatus.NOT_FOUND, this);
+            return new MutationResult(MutationStatus.NOT_FOUND, this);
         }
-        return new MutationResult(PartyMutationStatus.SUCCESS, new PartyRoster(nextCharacterId, nextCharacters));
+        return new MutationResult(MutationStatus.SUCCESS, new PartyRoster(nextCharacterId, nextCharacters));
     }
 
     public MutationResult deleteCharacter(long id) {
         List<PartyCharacter> nextCharacters = mutations.remove(characters, id);
         if (nextCharacters.isEmpty()) {
-            return new MutationResult(PartyMutationStatus.NOT_FOUND, this);
+            return new MutationResult(MutationStatus.NOT_FOUND, this);
         }
-        return new MutationResult(PartyMutationStatus.SUCCESS, new PartyRoster(nextCharacterId, nextCharacters));
+        return new MutationResult(MutationStatus.SUCCESS, new PartyRoster(nextCharacterId, nextCharacters));
     }
 
-    public MutationResult setMembership(long id, PartyMembership membership) {
+    public MutationResult setMembership(long id, MembershipState membership) {
         if (membership == null) {
-            return new MutationResult(PartyMutationStatus.INVALID_INPUT, this);
+            return new MutationResult(MutationStatus.INVALID_INPUT, this);
         }
         List<PartyCharacter> nextCharacters = mutations.updateMembership(characters, id, membership);
         if (nextCharacters.isEmpty()) {
-            return new MutationResult(PartyMutationStatus.NOT_FOUND, this);
+            return new MutationResult(MutationStatus.NOT_FOUND, this);
         }
-        return new MutationResult(PartyMutationStatus.SUCCESS, new PartyRoster(nextCharacterId, nextCharacters));
+        return new MutationResult(MutationStatus.SUCCESS, new PartyRoster(nextCharacterId, nextCharacters));
     }
 
     public MutationResult awardXp(List<Long> ids, int xpPerCharacter) {
@@ -93,36 +93,36 @@ public final class PartyRoster {
     public MutationResult adjustXp(List<Long> ids, int xpDelta) {
         PartyRosterXpAllocationHelper.Result adjustmentResult = xpAllocator.apply(characters, ids, xpDelta);
         if (!adjustmentResult.validRequest()) {
-            return new MutationResult(PartyMutationStatus.INVALID_INPUT, this);
+            return new MutationResult(MutationStatus.INVALID_INPUT, this);
         }
         if (!adjustmentResult.updatedAny()) {
-            return new MutationResult(PartyMutationStatus.NOT_FOUND, this);
+            return new MutationResult(MutationStatus.NOT_FOUND, this);
         }
-        return new MutationResult(PartyMutationStatus.SUCCESS, new PartyRoster(nextCharacterId, adjustmentResult.characters()));
+        return new MutationResult(MutationStatus.SUCCESS, new PartyRoster(nextCharacterId, adjustmentResult.characters()));
     }
 
-    public MutationResult performRest(PartyRestType restType) {
+    public MutationResult performRest(RestType restType) {
         Objects.requireNonNull(restType, "restType");
         List<PartyCharacter> nextCharacters = new ArrayList<>(characters.size());
         for (PartyCharacter character : characters) {
             nextCharacters.add(character.membership().isActive() ? character.afterRest(restType) : character);
         }
-        return new MutationResult(PartyMutationStatus.SUCCESS, new PartyRoster(nextCharacterId, nextCharacters));
+        return new MutationResult(MutationStatus.SUCCESS, new PartyRoster(nextCharacterId, nextCharacters));
     }
 
     public MutationResult moveCharacters(List<Long> ids, PartyTravelLocation location, boolean attachToPartyToken) {
         if (location == null || ids == null || ids.isEmpty()) {
-            return new MutationResult(PartyMutationStatus.INVALID_INPUT, this);
+            return new MutationResult(MutationStatus.INVALID_INPUT, this);
         }
         List<PartyCharacter> nextCharacters = mutations.moveCharacters(characters, ids, location, attachToPartyToken);
         if (nextCharacters.isEmpty()) {
-            return new MutationResult(PartyMutationStatus.NOT_FOUND, this);
+            return new MutationResult(MutationStatus.NOT_FOUND, this);
         }
-        return new MutationResult(PartyMutationStatus.SUCCESS, new PartyRoster(nextCharacterId, nextCharacters));
+        return new MutationResult(MutationStatus.SUCCESS, new PartyRoster(nextCharacterId, nextCharacters));
     }
 
     public record MutationResult(
-            PartyMutationStatus status,
+            MutationStatus status,
             PartyRoster roster
     ) {
         public MutationResult {

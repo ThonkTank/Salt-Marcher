@@ -19,13 +19,10 @@ final class DungeonRoomCellRasterizer {
         if (loops.isEmpty()) {
             return Set.of(new DungeonCell(center.q(), center.r(), level));
         }
-        int minQ = loops.stream().flatMap(List::stream).mapToInt(DungeonCell::q).min().orElse(0);
-        int maxQ = loops.stream().flatMap(List::stream).mapToInt(DungeonCell::q).max().orElse(0);
-        int minR = loops.stream().flatMap(List::stream).mapToInt(DungeonCell::r).min().orElse(0);
-        int maxR = loops.stream().flatMap(List::stream).mapToInt(DungeonCell::r).max().orElse(0);
+        Bounds bounds = bounds(loops);
         Set<DungeonCell> cells = new LinkedHashSet<>();
-        for (int q = minQ; q <= maxQ; q++) {
-            for (int r = minR; r <= maxR; r++) {
+        for (int q = bounds.minQ(); q <= bounds.maxQ(); q++) {
+            for (int r = bounds.minR(); r <= bounds.maxR(); r++) {
                 if (containsCell(loops, q, r)) {
                     cells.add(new DungeonCell(center.q() + q, center.r() + r, level));
                 }
@@ -78,6 +75,37 @@ final class DungeonRoomCellRasterizer {
             }
         }
         return inside;
+    }
+
+    private static Bounds bounds(List<List<DungeonCell>> loops) {
+        int minQ = 0;
+        int maxQ = 0;
+        int minR = 0;
+        int maxR = 0;
+        boolean found = false;
+        for (List<DungeonCell> loop : loops) {
+            for (DungeonCell cell : loop) {
+                if (cell == null) {
+                    continue;
+                }
+                if (!found) {
+                    minQ = cell.q();
+                    maxQ = cell.q();
+                    minR = cell.r();
+                    maxR = cell.r();
+                    found = true;
+                    continue;
+                }
+                minQ = Math.min(minQ, cell.q());
+                maxQ = Math.max(maxQ, cell.q());
+                minR = Math.min(minR, cell.r());
+                maxR = Math.max(maxR, cell.r());
+            }
+        }
+        return new Bounds(minQ, maxQ, minR, maxR);
+    }
+
+    private record Bounds(int minQ, int maxQ, int minR, int maxR) {
     }
 
     private static boolean polygonContainsCell(List<DungeonCell> polygon, int q, int r) {

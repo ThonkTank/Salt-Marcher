@@ -19,6 +19,7 @@ import src.domain.dungeon.model.map.model.DungeonTravelSurfaceFacts;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -134,16 +135,27 @@ public final class DungeonTravelSurfaceProjection {
             if (mapFacts == null) {
                 return null;
             }
-            return java.util.stream.Stream.concat(
-                            mapFacts.areas().stream().flatMap(area -> area.cells().stream()),
-                            mapFacts.features().stream().flatMap(feature -> feature.cells().stream()))
-                    .distinct()
-                    .sorted(Comparator
-                            .comparingInt(DungeonCell::level)
-                            .thenComparingInt(DungeonCell::r)
-                            .thenComparingInt(DungeonCell::q))
-                    .findFirst()
-                    .orElse(null);
+            List<DungeonCell> cells = new ArrayList<>();
+            for (DungeonAreaFacts area : mapFacts.areas()) {
+                if (area != null) {
+                    appendUniqueCells(cells, area.cells());
+                }
+            }
+            for (DungeonFeatureFacts feature : mapFacts.features()) {
+                if (feature != null) {
+                    appendUniqueCells(cells, feature.cells());
+                }
+            }
+            cells.sort(new CellComparator());
+            return cells.isEmpty() ? null : cells.getFirst();
+        }
+
+        private static void appendUniqueCells(List<DungeonCell> result, List<DungeonCell> cells) {
+            for (DungeonCell cell : cells == null ? List.<DungeonCell>of() : cells) {
+                if (cell != null && !result.contains(cell)) {
+                    result.add(cell);
+                }
+            }
         }
     }
 
@@ -180,28 +192,37 @@ public final class DungeonTravelSurfaceProjection {
             if (mapFacts == null || cell == null) {
                 return null;
             }
-            return mapFacts.areas().stream()
-                    .filter(area -> area.cells().contains(cell))
-                    .findFirst()
-                    .orElse(null);
+            for (DungeonAreaFacts area : mapFacts.areas()) {
+                if (area != null && area.cells().contains(cell)) {
+                    return area;
+                }
+            }
+            return null;
         }
 
         private static @Nullable DungeonFeatureFacts featureAt(DungeonMapFacts mapFacts, DungeonCell cell) {
             if (mapFacts == null || cell == null) {
                 return null;
             }
-            return mapFacts.features().stream()
-                    .filter(feature -> feature.kind() == DungeonFeatureType.STAIR
-                            || feature.kind() == DungeonFeatureType.TRANSITION)
-                    .filter(feature -> feature.cells().contains(cell))
-                    .findFirst()
-                    .orElse(null);
+            for (DungeonFeatureFacts feature : mapFacts.features()) {
+                if (feature != null
+                        && (feature.kind() == DungeonFeatureType.STAIR
+                        || feature.kind() == DungeonFeatureType.TRANSITION)
+                        && feature.cells().contains(cell)) {
+                    return feature;
+                }
+            }
+            return null;
         }
 
         private static Set<DungeonCell> sameLevelCells(List<DungeonCell> cells, int level) {
-            return (cells == null ? List.<DungeonCell>of() : cells).stream()
-                    .filter(cell -> cell != null && cell.level() == level)
-                    .collect(java.util.stream.Collectors.toCollection(java.util.LinkedHashSet::new));
+            Set<DungeonCell> result = new LinkedHashSet<>();
+            for (DungeonCell cell : cells == null ? List.<DungeonCell>of() : cells) {
+                if (cell != null && cell.level() == level) {
+                    result.add(cell);
+                }
+            }
+            return Set.copyOf(result);
         }
     }
 
@@ -235,9 +256,32 @@ public final class DungeonTravelSurfaceProjection {
                                 position.heading()),
                         transition.destination()));
             }
-            return result.stream()
-                    .sorted(Comparator.comparing(DungeonTravelActionFacts::displayLabel, String.CASE_INSENSITIVE_ORDER))
-                    .toList();
+            result.sort(new TravelActionComparator());
+            return List.copyOf(result);
+        }
+    }
+
+    private static final class CellComparator implements Comparator<DungeonCell> {
+        @Override
+        public int compare(DungeonCell left, DungeonCell right) {
+            int levelComparison = Integer.compare(left.level(), right.level());
+            if (levelComparison != 0) {
+                return levelComparison;
+            }
+            int rowComparison = Integer.compare(left.r(), right.r());
+            if (rowComparison != 0) {
+                return rowComparison;
+            }
+            return Integer.compare(left.q(), right.q());
+        }
+    }
+
+    private static final class TravelActionComparator implements Comparator<DungeonTravelActionFacts> {
+        @Override
+        public int compare(DungeonTravelActionFacts left, DungeonTravelActionFacts right) {
+            String leftLabel = left == null ? "" : left.displayLabel();
+            String rightLabel = right == null ? "" : right.displayLabel();
+            return String.CASE_INSENSITIVE_ORDER.compare(leftLabel, rightLabel);
         }
     }
 }

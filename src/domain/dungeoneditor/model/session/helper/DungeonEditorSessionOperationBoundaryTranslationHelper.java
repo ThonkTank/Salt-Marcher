@@ -46,13 +46,12 @@ public final class DungeonEditorSessionOperationBoundaryTranslationHelper {
         if (!(preview instanceof DungeonEditorSessionValues.RoomRectanglePreview room)) {
             return null;
         }
-        return room.deleteMode()
-                ? new DungeonEditorOperation.DeleteRoomRectangle(
-                         DungeonEditorWorkspaceCellBoundaryTranslationHelper.toDomainCell(room.start()),
-                         DungeonEditorWorkspaceCellBoundaryTranslationHelper.toDomainCell(room.end()))
-                : new DungeonEditorOperation.PaintRoomRectangle(
-                         DungeonEditorWorkspaceCellBoundaryTranslationHelper.toDomainCell(room.start()),
-                         DungeonEditorWorkspaceCellBoundaryTranslationHelper.toDomainCell(room.end()));
+        return new DungeonEditorOperation.RoomRectangle(
+                room.deleteMode()
+                        ? DungeonEditorOperation.RectangleAction.DELETE
+                        : DungeonEditorOperation.RectangleAction.PAINT,
+                DungeonEditorWorkspaceCellBoundaryTranslationHelper.toDomainCell(room.start()),
+                DungeonEditorWorkspaceCellBoundaryTranslationHelper.toDomainCell(room.end()));
     }
 
     private static @Nullable DungeonEditorOperation boundaryOperation(

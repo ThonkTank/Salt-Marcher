@@ -27,19 +27,25 @@ public final class DungeonStairOps {
 
     public static Set<Integer> reachableLevels(DungeonStair stair) {
         Set<Integer> result = new LinkedHashSet<>();
-        occupiedCells(stair).stream()
-                .map(DungeonCell::level)
-                .sorted()
-                .forEach(result::add);
+        for (DungeonCell cell : occupiedCells(stair)) {
+            if (cell != null) {
+                result.add(cell.level());
+            }
+        }
         return Set.copyOf(result);
     }
 
     public static List<DungeonStairExit> exitsAtLevel(DungeonStair stair, int level) {
-        return stair == null
-                ? List.of()
-                : stair.exits().stream()
-                .filter(exit -> exit.position().level() == level)
-                .toList();
+        if (stair == null) {
+            return List.of();
+        }
+        java.util.ArrayList<DungeonStairExit> result = new java.util.ArrayList<>();
+        for (DungeonStairExit exit : stair.exits()) {
+            if (exit != null && exit.position().level() == level) {
+                result.add(exit);
+            }
+        }
+        return List.copyOf(result);
     }
 
     public static boolean isReadable(DungeonStair stair) {

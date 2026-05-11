@@ -5,13 +5,13 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import src.domain.party.model.roster.model.PartyCharacter;
-import src.domain.party.model.roster.model.PartyCharacterDraft;
-import src.domain.party.model.roster.model.PartyMembership;
+import src.domain.party.published.CharacterDraft;
+import src.domain.party.published.MembershipState;
 import src.domain.party.model.roster.model.PartyTravelLocation;
 
 public final class PartyRosterMutationHelper {
 
-    public List<PartyCharacter> updateDraft(List<PartyCharacter> characters, long id, PartyCharacterDraft draft) {
+    public List<PartyCharacter> updateDraft(List<PartyCharacter> characters, long id, CharacterDraft draft) {
         List<PartyCharacter> nextCharacters = new ArrayList<>(characters);
         for (int index = 0; index < nextCharacters.size(); index++) {
             PartyCharacter character = nextCharacters.get(index);
@@ -23,7 +23,7 @@ public final class PartyRosterMutationHelper {
         return List.of();
     }
 
-    public List<PartyCharacter> updateMembership(List<PartyCharacter> characters, long id, PartyMembership membership) {
+    public List<PartyCharacter> updateMembership(List<PartyCharacter> characters, long id, MembershipState membership) {
         List<PartyCharacter> nextCharacters = new ArrayList<>(characters);
         for (int index = 0; index < nextCharacters.size(); index++) {
             PartyCharacter character = nextCharacters.get(index);

@@ -1,7 +1,6 @@
 package src.domain.dungeon.model.map.model;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -168,9 +167,8 @@ final class DungeonBoundaryStretchSelectionLogic {
             }
             stretchEdges.add(stretchEdge.get());
         }
-        List<StretchEdge> sortedEdges = stretchEdges.stream()
-                .sorted(Comparator.comparingInt(edge -> seed.orientation().variableCoordinate(edge.edge())))
-                .toList();
+        List<StretchEdge> sortedEdges = new ArrayList<>(stretchEdges);
+        sortedEdges.sort(new StretchEdgeComparator(seed));
         if (sortedEdges.isEmpty()) {
             return List.of();
         }
@@ -184,9 +182,27 @@ final class DungeonBoundaryStretchSelectionLogic {
     }
 
     private DungeonBoundaryTouch touch(DungeonEdge edge, Set<DungeonCell> clusterCells) {
-        List<DungeonCell> insideCells = edge.touchingCells().stream()
-                .filter(clusterCells::contains)
-                .toList();
+        List<DungeonCell> insideCells = new ArrayList<>();
+        for (DungeonCell cell : edge.touchingCells()) {
+            if (clusterCells.contains(cell)) {
+                insideCells.add(cell);
+            }
+        }
         return new DungeonBoundaryTouch(insideCells);
+    }
+
+    private static final class StretchEdgeComparator implements java.util.Comparator<StretchEdge> {
+        private final StretchSeed seed;
+
+        private StretchEdgeComparator(StretchSeed seed) {
+            this.seed = seed;
+        }
+
+        @Override
+        public int compare(StretchEdge left, StretchEdge right) {
+            return Integer.compare(
+                    seed.orientation().variableCoordinate(left.edge()),
+                    seed.orientation().variableCoordinate(right.edge()));
+        }
     }
 }

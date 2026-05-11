@@ -37,10 +37,13 @@ final class DungeonClusterBoundaryEditLogic {
             return dungeonMap;
         }
         List<DungeonRoomTopologyClusterWork> clusters = WORK_SERVICE.workClusters(dungeonMap);
-        DungeonRoomTopologyClusterWork target = clusters.stream()
-                .filter(work -> work.cluster().clusterId() == clusterId)
-                .findFirst()
-                .orElse(null);
+        DungeonRoomTopologyClusterWork target = null;
+        for (DungeonRoomTopologyClusterWork work : clusters) {
+            if (work != null && work.cluster().clusterId() == clusterId) {
+                target = work;
+                break;
+            }
+        }
         if (target == null) {
             return dungeonMap;
         }
@@ -159,10 +162,25 @@ final class DungeonClusterBoundaryEditLogic {
             return 0L;
         }
         Set<DungeonCell> touching = Set.copyOf(edge.touchingCells());
-        return cellsByRoom.values().stream()
-                .filter(roomCells -> roomCells.stream().anyMatch(touching::contains))
-                .limit(2L)
-                .count();
+        long result = 0L;
+        for (List<DungeonCell> roomCells : cellsByRoom.values()) {
+            if (touchesRoom(roomCells, touching)) {
+                result++;
+                if (result >= 2L) {
+                    return result;
+                }
+            }
+        }
+        return result;
+    }
+
+    private boolean touchesRoom(List<DungeonCell> roomCells, Set<DungeonCell> touching) {
+        for (DungeonCell cell : roomCells == null ? List.<DungeonCell>of() : roomCells) {
+            if (touching.contains(cell)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private boolean invalidBoundaryEditRequest(long clusterId, List<DungeonEdge> edges) {

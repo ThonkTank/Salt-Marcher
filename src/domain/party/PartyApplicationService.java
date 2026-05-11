@@ -19,16 +19,16 @@ import src.domain.party.published.MovePartyCharactersCommand;
 import src.domain.party.published.PerformPartyRestCommand;
 import src.domain.party.published.SetPartyMembershipCommand;
 import src.domain.party.published.UpdateCharacterCommand;
-import src.domain.party.model.roster.model.PartyCharacterDraft;
+import src.domain.party.published.CharacterDraft;
 import src.domain.party.model.roster.model.PartyDungeonTravelLocation;
-import src.domain.party.model.roster.model.PartyDungeonTravelLocationKind;
-import src.domain.party.model.roster.model.PartyMembership;
-import src.domain.party.model.roster.model.PartyMutationStatus;
+import src.domain.party.published.PartyDungeonTravelLocationKind;
+import src.domain.party.published.MembershipState;
+import src.domain.party.published.MutationStatus;
 import src.domain.party.model.roster.model.PartyOverworldTravelLocation;
-import src.domain.party.model.roster.model.PartyRestType;
-import src.domain.party.model.roster.model.PartyTravelHeading;
+import src.domain.party.published.RestType;
+import src.domain.party.published.PartyTravelHeading;
 import src.domain.party.model.roster.model.PartyTravelLocation;
-import src.domain.party.model.roster.model.PartyTravelTile;
+import src.domain.party.published.PartyTravelTile;
 import src.domain.party.model.roster.repository.PartyPublishedStateRepository;
 import src.domain.party.model.roster.repository.PartyRosterRepository;
 
@@ -117,8 +117,8 @@ public final class PartyApplicationService {
 
     private void runMutation(PartyMutationOperation operation) {
         try {
-            PartyMutationStatus status = operation.execute();
-            if (status == PartyMutationStatus.SUCCESS) {
+            MutationStatus status = operation.execute();
+            if (status == MutationStatus.SUCCESS) {
                 publishedStateRepository.publishRepositoryBackedState();
             }
             publishedStateRepository.publishMutationStatus(status);
@@ -128,27 +128,27 @@ public final class PartyApplicationService {
     }
 
     private interface PartyMutationOperation {
-        PartyMutationStatus execute();
+        MutationStatus execute();
     }
 
     private static final class BoundaryValues {
 
-        private static PartyMembership membership(
+        private static MembershipState membership(
                 src.domain.party.published.MembershipState membershipState
         ) {
             src.domain.party.published.MembershipState effective = membershipState == null
                     ? src.domain.party.published.MembershipState.valueOf("RESERVE")
                     : membershipState;
-            return PartyMembership.valueOf(effective.name());
+            return MembershipState.valueOf(effective.name());
         }
 
-        private static PartyCharacterDraft draft(
+        private static CharacterDraft draft(
                 src.domain.party.published.CharacterDraft draft
         ) {
             if (draft == null) {
-                return new PartyCharacterDraft("", "", 0, 0, 0);
+                return new CharacterDraft("", "", 0, 0, 0);
             }
-            return new PartyCharacterDraft(
+            return new CharacterDraft(
                     draft.name(),
                     draft.playerName(),
                     draft.level(),
@@ -164,13 +164,13 @@ public final class PartyApplicationService {
             return levels == null ? List.of() : List.copyOf(levels);
         }
 
-        private static PartyRestType restType(
+        private static RestType restType(
                 src.domain.party.published.RestType restType
         ) {
             src.domain.party.published.RestType effective = restType == null
                     ? src.domain.party.published.RestType.valueOf("SHORT_REST")
                     : restType;
-            return PartyRestType.valueOf(effective.name());
+            return RestType.valueOf(effective.name());
         }
 
         private static PartyTravelLocation travelLocation(

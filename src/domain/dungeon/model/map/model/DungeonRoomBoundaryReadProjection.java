@@ -52,7 +52,12 @@ final class DungeonRoomBoundaryReadProjection {
     private static Map<Long, List<DungeonRoom>> roomsByCluster(List<DungeonRoom> rooms) {
         Map<Long, List<DungeonRoom>> result = new LinkedHashMap<>();
         for (DungeonRoom room : rooms) {
-            result.computeIfAbsent(room.clusterId(), ignored -> new ArrayList<>()).add(room);
+            List<DungeonRoom> clusterRooms = result.get(room.clusterId());
+            if (clusterRooms == null) {
+                clusterRooms = new ArrayList<>();
+                result.put(room.clusterId(), clusterRooms);
+            }
+            clusterRooms.add(room);
         }
         return Map.copyOf(result);
     }

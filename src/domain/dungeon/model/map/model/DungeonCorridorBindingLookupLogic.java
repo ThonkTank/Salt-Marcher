@@ -23,7 +23,12 @@ final class DungeonCorridorBindingLookupLogic {
             return false;
         }
         Set<DungeonBoundaryKey> bindingKeys = corridorBindingKeys(dungeonMap, clusterCenter, clusterId, level);
-        return keys.stream().anyMatch(bindingKeys::contains);
+        for (DungeonBoundaryKey key : keys) {
+            if (bindingKeys.contains(key)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     boolean touchesCorridorBinding(
@@ -37,9 +42,12 @@ final class DungeonCorridorBindingLookupLogic {
             return false;
         }
         Set<DungeonBoundaryKey> bindingKeys = corridorBindingKeys(dungeonMap, clusterCenter, clusterId, level);
-        return path.stream()
-                .map(DungeonBoundaryKey::from)
-                .anyMatch(bindingKeys::contains);
+        for (DungeonEdge edge : path) {
+            if (bindingKeys.contains(DungeonBoundaryKey.from(edge))) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private Set<DungeonBoundaryKey> corridorBindingKeys(

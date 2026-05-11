@@ -4,18 +4,13 @@ import java.math.BigDecimal;
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 import src.domain.sessionplanner.SessionPlannerApplicationService;
-import src.domain.sessionplanner.published.AddSessionLootPlaceholderCommand;
-import src.domain.sessionplanner.published.AddSessionParticipantCommand;
 import src.domain.sessionplanner.published.AttachSessionEncounterCommand;
 import src.domain.sessionplanner.published.ClearSessionRestGapCommand;
-import src.domain.sessionplanner.published.CreateSessionPlanCommand;
-import src.domain.sessionplanner.published.MoveSessionEncounterDownCommand;
-import src.domain.sessionplanner.published.MoveSessionEncounterUpCommand;
-import src.domain.sessionplanner.published.RemoveSessionEncounterCommand;
 import src.domain.sessionplanner.published.RemoveSessionLootPlaceholderCommand;
-import src.domain.sessionplanner.published.RemoveSessionParticipantCommand;
-import src.domain.sessionplanner.published.SelectSessionEncounterCommand;
+import src.domain.sessionplanner.published.SessionPlannerActionCommand;
+import src.domain.sessionplanner.published.SessionPlannerEncounterCommand;
 import src.domain.sessionplanner.published.SessionPlannerEncounterAllocationCommand;
+import src.domain.sessionplanner.published.SessionPlannerParticipantCommand;
 import src.domain.sessionplanner.published.SessionPlannerRestKind;
 import src.domain.sessionplanner.published.SetSessionEncounterDaysCommand;
 import src.domain.sessionplanner.published.SetSessionRestGapCommand;
@@ -34,15 +29,19 @@ final class SessionPlannerIntentHandler {
         }
         switch (event.controlsInput()) {
             case SessionPlannerControlsViewInputEvent.CreateSessionTrigger ignored ->
-                    planner.createSession(new CreateSessionPlanCommand());
+                    planner.createSession(new SessionPlannerActionCommand(
+                            SessionPlannerActionCommand.Action.CREATE_SESSION));
             case SessionPlannerControlsViewInputEvent.AddParticipantInput addParticipant -> {
                 if (hasPositiveId(addParticipant.participantToAddId())) {
-                    planner.addParticipant(new AddSessionParticipantCommand(addParticipant.participantToAddId()));
+                    planner.addParticipant(new SessionPlannerParticipantCommand(
+                            SessionPlannerParticipantCommand.Action.ADD,
+                            addParticipant.participantToAddId()));
                 }
             }
             case SessionPlannerControlsViewInputEvent.RemoveParticipantInput removeParticipant -> {
                 if (hasPositiveId(removeParticipant.participantToRemoveId())) {
-                    planner.removeParticipant(new RemoveSessionParticipantCommand(
+                    planner.removeParticipant(new SessionPlannerParticipantCommand(
+                            SessionPlannerParticipantCommand.Action.REMOVE,
                             removeParticipant.participantToRemoveId()));
                 }
             }
@@ -67,7 +66,9 @@ final class SessionPlannerIntentHandler {
         switch (event.timelineInput()) {
             case SessionPlannerTimelineMainViewInputEvent.SelectEncounterInput selection -> {
                 if (hasPositiveId(selection.selectedEncounterToken())) {
-                    planner.selectEncounter(new SelectSessionEncounterCommand(selection.selectedEncounterToken()));
+                    planner.selectEncounter(new SessionPlannerEncounterCommand(
+                            SessionPlannerEncounterCommand.Action.SELECT,
+                            selection.selectedEncounterToken()));
                 }
             }
             case SessionPlannerTimelineMainViewInputEvent.SetEncounterAllocationInput allocation -> {
@@ -84,7 +85,9 @@ final class SessionPlannerIntentHandler {
             }
             case SessionPlannerTimelineMainViewInputEvent.RemoveEncounterInput removal -> {
                 if (hasPositiveId(removal.encounterTokenToRemove())) {
-                    planner.removeEncounter(new RemoveSessionEncounterCommand(removal.encounterTokenToRemove()));
+                    planner.removeEncounter(new SessionPlannerEncounterCommand(
+                            SessionPlannerEncounterCommand.Action.REMOVE,
+                            removal.encounterTokenToRemove()));
                 }
             }
             case SessionPlannerTimelineMainViewInputEvent.RestGapInput restGap -> {
@@ -101,7 +104,8 @@ final class SessionPlannerIntentHandler {
         }
         switch (event.lootInput()) {
             case SessionPlannerLootMainViewInputEvent.AddLootPlaceholderTrigger ignored ->
-                    planner.addLootPlaceholder(new AddSessionLootPlaceholderCommand());
+                    planner.addLootPlaceholder(new SessionPlannerActionCommand(
+                            SessionPlannerActionCommand.Action.ADD_LOOT_PLACEHOLDER));
             case SessionPlannerLootMainViewInputEvent.RemoveLootPlaceholderInput removeLoot -> {
                 if (hasPositiveId(removeLoot.lootToken())) {
                     planner.removeLootPlaceholder(new RemoveSessionLootPlaceholderCommand(removeLoot.lootToken()));
@@ -120,10 +124,14 @@ final class SessionPlannerIntentHandler {
 
     private void applyMove(SessionPlannerTimelineMainViewInputEvent.MoveEncounterInput moveEncounter) {
         if (moveEncounter.movesDown()) {
-            planner.moveEncounterDown(new MoveSessionEncounterDownCommand(moveEncounter.encounterToken()));
+            planner.moveEncounterDown(new SessionPlannerEncounterCommand(
+                    SessionPlannerEncounterCommand.Action.MOVE_DOWN,
+                    moveEncounter.encounterToken()));
             return;
         }
-        planner.moveEncounterUp(new MoveSessionEncounterUpCommand(moveEncounter.encounterToken()));
+        planner.moveEncounterUp(new SessionPlannerEncounterCommand(
+                SessionPlannerEncounterCommand.Action.MOVE_UP,
+                moveEncounter.encounterToken()));
     }
 
     private void applyRestGap(SessionPlannerTimelineMainViewInputEvent.RestGapInput restGap) {

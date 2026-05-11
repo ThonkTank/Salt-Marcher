@@ -93,11 +93,7 @@ final class DungeonTraversalActionCatalog {
                     candidates.add(candidate);
                 }
             }
-            candidates.sort(Comparator
-                    .comparingInt((TraversalCandidate candidate) -> sourceOrder(candidate.link().source().kind()))
-                    .thenComparingInt(candidate -> directionOrder(candidate.direction()))
-                    .thenComparing(candidate -> candidate.link().source().label(), String.CASE_INSENSITIVE_ORDER)
-                    .thenComparing(candidate -> candidate.link().key()));
+            candidates.sort(new TraversalCandidateComparator());
             return candidates;
         }
 
@@ -162,10 +158,12 @@ final class DungeonTraversalActionCatalog {
         }
 
         private static DungeonAreaFacts targetArea(DungeonDerivedState derived, DungeonTraversalEndpoint target) {
-            return derived.map().areas().stream()
-                    .filter(area -> area.id() == target.areaId())
-                    .findFirst()
-                    .orElse(new DungeonAreaFacts(DungeonAreaType.ROOM, 0L, "", List.of()));
+            for (DungeonAreaFacts area : derived.map().areas()) {
+                if (area != null && area.id() == target.areaId()) {
+                    return area;
+                }
+            }
+            return new DungeonAreaFacts(DungeonAreaType.ROOM, 0L, "", List.of());
         }
 
         private static List<String> corridorTargetLabels(
@@ -181,10 +179,11 @@ final class DungeonTraversalActionCatalog {
                 if (connection.corridorId() != corridorId || connection.roomId() == activeArea.id()) {
                     continue;
                 }
-                derived.map().areas().stream()
-                        .filter(area -> area.kind() == DungeonAreaType.ROOM && area.id() == connection.roomId())
-                        .map(DungeonAreaFacts::label)
-                        .forEach(labels::add);
+                for (DungeonAreaFacts area : derived.map().areas()) {
+                    if (area != null && area.kind() == DungeonAreaType.ROOM && area.id() == connection.roomId()) {
+                        labels.add(area.label());
+                    }
+                }
             }
             return List.copyOf(labels);
         }
@@ -221,19 +220,22 @@ final class DungeonTraversalActionCatalog {
             if (activeArea == null || activeArea.kind() != DungeonAreaType.ROOM) {
                 return "";
             }
-            DungeonRoom room = dungeonMap.rooms().rooms().stream()
-                    .filter(candidateRoom -> candidateRoom.roomId() == activeArea.id())
-                    .findFirst()
-                    .orElse(null);
+            DungeonRoom room = null;
+            for (DungeonRoom candidateRoom : dungeonMap.rooms().rooms()) {
+                if (candidateRoom != null && candidateRoom.roomId() == activeArea.id()) {
+                    room = candidateRoom;
+                    break;
+                }
+            }
             if (room == null) {
                 return "";
             }
-            return room.narration().exitDescriptions().stream()
-                    .filter(description -> sameExit(description, candidate))
-                    .map(DungeonRoomExitDescription::description)
-                    .filter(description -> !description.isBlank())
-                    .findFirst()
-                    .orElse("");
+            for (DungeonRoomExitDescription description : room.narration().exitDescriptions()) {
+                if (description != null && sameExit(description, candidate) && !description.description().isBlank()) {
+                    return description.description();
+                }
+            }
+            return "";
         }
 
         private static boolean sameExit(DungeonRoomExitDescription description, TraversalCandidate candidate) {
@@ -301,5 +303,53 @@ final class DungeonTraversalActionCatalog {
             DungeonTraversalEndpoint target,
             @Nullable DungeonEdgeDirection direction
     ) {
+    }
+
+    private static final class TraversalCandidateComparator implements Comparator<TraversalCandidate> {
+        @Override
+        public int compare(TraversalCandidate left, TraversalCandidate right) {
+            int sourceComparison = Integer.compare(sourceOrder(left), sourceOrder(right));
+            if (sourceComparison != 0) {
+                return sourceComparison;
+            }
+            int directionComparison = Integer.compare(directionOrder(left), directionOrder(right));
+            if (directionComparison != 0) {
+                return directionComparison;
+            }
+            int labelComparison = String.CASE_INSENSITIVE_ORDER.compare(sourceLabel(left), sourceLabel(right));
+            if (labelComparison != 0) {
+                return labelComparison;
+            }
+            return sourceKey(left).compareTo(sourceKey(right));
+        }
+
+        private static int sourceOrder(TraversalCandidate candidate) {
+            return candidate != null && candidate.link().source().kind() == DungeonTraversalSourceKind.DOOR ? 0 : 1;
+        }
+
+        private static int directionOrder(TraversalCandidate candidate) {
+            if (candidate == null) {
+                return 0;
+            }
+            DungeonEdgeDirection direction = candidate.direction();
+            if (direction == DungeonEdgeDirection.EAST) {
+                return 1;
+            }
+            if (direction == DungeonEdgeDirection.SOUTH) {
+                return 2;
+            }
+            if (direction == DungeonEdgeDirection.WEST) {
+                return 3;
+            }
+            return 0;
+        }
+
+        private static String sourceLabel(TraversalCandidate candidate) {
+            return candidate == null ? "" : candidate.link().source().label();
+        }
+
+        private static String sourceKey(TraversalCandidate candidate) {
+            return candidate == null ? "" : candidate.link().key();
+        }
     }
 }

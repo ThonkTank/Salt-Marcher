@@ -30,7 +30,6 @@ import src.domain.encounter.model.session.model.EncounterSessionSnapshotData;
 import src.domain.encounter.model.session.model.EncounterSessionValues;
 import src.domain.encounter.model.session.model.EncounterSessionValues.BuilderStateData;
 import src.domain.encounter.model.session.model.EncounterSessionValues.CombatProjectionData;
-import src.domain.encounter.model.session.model.EncounterSessionValues.InitiativeInput;
 import src.domain.encounter.model.session.model.EncounterSessionValues.Mode;
 import src.domain.encounter.model.session.model.EncounterSessionValues.PartyMemberData;
 import src.domain.encounter.model.session.model.EncounterSessionValues.ResultStateData;
@@ -383,7 +382,7 @@ public final class EncounterApplicationService {
                     command.planId(),
                     command.delta(),
                     command.undoToken(),
-                    toInternalInitiatives(command.initiativeValues()),
+                    command.initiativeValues(),
                     command.combatantId(),
                     command.initiative(),
                     command.partyMemberId(),
@@ -398,14 +397,6 @@ public final class EncounterApplicationService {
             return EncounterSessionCommand.Action.valueOf(effective.name());
         }
 
-        private static List<InitiativeInput> toInternalInitiatives(List<ApplyEncounterStateCommand.InitiativeValue> values) {
-            if (values == null) {
-                return List.of();
-            }
-            return values.stream()
-                    .map(value -> new InitiativeInput(value.id(), value.initiative()))
-                    .toList();
-        }
     }
 
     private static final class EncounterStateSnapshotPublication {
@@ -678,20 +669,10 @@ public final class EncounterApplicationService {
                         null,
                         PLAN_BUDGET_NOT_REGISTERED);
             }
-            LoadEncounterPlanBudgetUseCase.PlanBudgetSummary summary = result.summary();
+            src.domain.encounter.published.EncounterPlanBudgetSummary summary = result.summary();
             return new src.domain.encounter.published.EncounterPlanBudgetResult(
-                    src.domain.encounter.published.EncounterPlanBudgetStatus.valueOf(result.status().name()),
-                    summary == null
-                            ? null
-                            : new src.domain.encounter.published.EncounterPlanBudgetSummary(
-                                    summary.planId(),
-                                    summary.name(),
-                                    summary.generatedLabel(),
-                                    summary.creatureCount(),
-                                    summary.totalBaseXp(),
-                                    summary.adjustedXp(),
-                                    summary.xpMultiplier(),
-                                    summary.difficultyLabel()),
+                    result.status(),
+                    summary,
                     result.message());
         }
 

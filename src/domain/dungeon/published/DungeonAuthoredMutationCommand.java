@@ -3,26 +3,22 @@ package src.domain.dungeon.published;
 import org.jspecify.annotations.Nullable;
 
 public sealed interface DungeonAuthoredMutationCommand permits
-        DungeonAuthoredMutationCommand.PreviewOperation,
-        DungeonAuthoredMutationCommand.ApplyOperation {
+        DungeonAuthoredMutationCommand.Operation {
 
-    record PreviewOperation(
+    record Operation(
+            Action action,
             DungeonMapId mapId,
             @Nullable DungeonEditorOperation operation
     ) implements DungeonAuthoredMutationCommand {
 
-        public PreviewOperation {
+        public Operation {
+            action = action == null ? Action.APPLY : action;
             mapId = mapId == null ? new DungeonMapId(1L) : mapId;
         }
     }
 
-    record ApplyOperation(
-            DungeonMapId mapId,
-            @Nullable DungeonEditorOperation operation
-    ) implements DungeonAuthoredMutationCommand {
-
-        public ApplyOperation {
-            mapId = mapId == null ? new DungeonMapId(1L) : mapId;
-        }
+    enum Action {
+        PREVIEW,
+        APPLY
     }
 }

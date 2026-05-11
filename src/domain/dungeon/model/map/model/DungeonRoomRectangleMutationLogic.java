@@ -1,7 +1,6 @@
 package src.domain.dungeon.model.map.model;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -33,9 +32,7 @@ final class DungeonRoomRectangleMutationLogic {
             return REBUILD_SERVICE.rebuilt(dungeonMap, clusters);
         }
 
-        DungeonRoomTopologyClusterWork target = affected.stream()
-                .min(Comparator.comparingLong(work -> work.cluster().clusterId()))
-                .orElseThrow();
+        DungeonRoomTopologyClusterWork target = firstByClusterId(affected);
         Set<DungeonCell> targetLevelCells = new LinkedHashSet<>(target.cellsAt(start.level()));
         targetLevelCells.addAll(paintedCells);
         for (DungeonRoomTopologyClusterWork work : affected) {
@@ -71,7 +68,7 @@ final class DungeonRoomRectangleMutationLogic {
             List<Set<DungeonCell>> components = CELL_PROJECTOR.connectedComponents(remainingAtLevel);
             Map<Integer, List<DungeonCell>> otherLevels = new LinkedHashMap<>(work.cellsByLevel());
             otherLevels.remove(start.level());
-            if (components.isEmpty() && otherLevels.values().stream().allMatch(List::isEmpty)) {
+            if (components.isEmpty() && allLevelsEmpty(otherLevels)) {
                 continue;
             }
             if (components.isEmpty()) {
@@ -114,5 +111,27 @@ final class DungeonRoomRectangleMutationLogic {
             }
         }
         return Set.copyOf(cells);
+    }
+
+    private static DungeonRoomTopologyClusterWork firstByClusterId(List<DungeonRoomTopologyClusterWork> affected) {
+        DungeonRoomTopologyClusterWork result = null;
+        for (DungeonRoomTopologyClusterWork work : affected) {
+            if (work != null && (result == null || work.cluster().clusterId() < result.cluster().clusterId())) {
+                result = work;
+            }
+        }
+        if (result == null) {
+            throw new IllegalStateException("affected cluster expected");
+        }
+        return result;
+    }
+
+    private static boolean allLevelsEmpty(Map<Integer, List<DungeonCell>> levels) {
+        for (List<DungeonCell> cells : levels.values()) {
+            if (cells != null && !cells.isEmpty()) {
+                return false;
+            }
+        }
+        return true;
     }
 }
