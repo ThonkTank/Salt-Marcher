@@ -7,6 +7,7 @@ import src.domain.dungeon.application.DeleteDungeonMapUseCase;
 import src.domain.dungeon.application.RenameDungeonMapUseCase;
 import src.domain.dungeon.application.SearchDungeonMapsUseCase;
 import src.domain.dungeon.model.map.repository.DungeonMapRepository;
+import src.domain.dungeon.model.map.repository.DungeonPublishedStateRepository;
 import src.domain.dungeon.model.map.model.DungeonMapIdentity;
 import src.domain.dungeon.published.DungeonMapCatalogCommand;
 import src.domain.dungeon.published.DungeonMapCatalogResponse;
@@ -18,7 +19,7 @@ import src.domain.dungeon.published.DungeonMapSummary;
  */
 public final class DungeonCatalogApplicationService {
 
-    private final DungeonPublishedStatePublisher publishedStatePublisher;
+    private final DungeonPublishedStateRepository publishedStateRepository;
     private final SearchDungeonMapsUseCase searchDungeonMapsUseCase;
     private final CreateDungeonMapUseCase createDungeonMapUseCase;
     private final RenameDungeonMapUseCase renameDungeonMapUseCase;
@@ -26,10 +27,10 @@ public final class DungeonCatalogApplicationService {
 
     public DungeonCatalogApplicationService(
             DungeonMapRepository mapRepository,
-            DungeonPublishedStatePublisher publishedStatePublisher
+            DungeonPublishedStateRepository publishedStateRepository
     ) {
         DungeonMapRepository repository = Objects.requireNonNull(mapRepository, "mapRepository");
-        this.publishedStatePublisher = Objects.requireNonNull(publishedStatePublisher, "publishedStatePublisher");
+        this.publishedStateRepository = Objects.requireNonNull(publishedStateRepository, "publishedStateRepository");
         this.searchDungeonMapsUseCase = new SearchDungeonMapsUseCase(repository);
         this.createDungeonMapUseCase = new CreateDungeonMapUseCase(repository::nextMapId, repository::save);
         this.renameDungeonMapUseCase = new RenameDungeonMapUseCase(repository::findById, repository::save);
@@ -38,7 +39,7 @@ public final class DungeonCatalogApplicationService {
 
     public void catalog(DungeonMapCatalogCommand command) {
         DungeonMapCatalogResponse response = catalogResponse(Objects.requireNonNull(command, "command"));
-        publishedStatePublisher.publishMapCatalog(response);
+        publishedStateRepository.publishMapCatalog(response);
     }
 
     private DungeonMapCatalogResponse catalogResponse(DungeonMapCatalogCommand command) {

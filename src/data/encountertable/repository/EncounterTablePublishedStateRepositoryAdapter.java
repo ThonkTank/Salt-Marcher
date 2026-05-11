@@ -4,10 +4,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
+import src.domain.encountertable.model.catalog.repository.EncounterTablePublishedStateRepository;
 import src.domain.encountertable.published.EncounterTableCatalogModel;
 import src.domain.encountertable.published.EncounterTableCatalogResult;
 import src.domain.encountertable.published.EncounterTableReadStatus;
-import src.domain.encountertable.model.catalog.repository.EncounterTablePublishedStateRepository;
+import src.domain.encountertable.published.EncounterTableSummary;
 
 public final class EncounterTablePublishedStateRepositoryAdapter implements EncounterTablePublishedStateRepository {
 
@@ -23,10 +24,18 @@ public final class EncounterTablePublishedStateRepositoryAdapter implements Enco
             new EncounterTableCatalogResult(EncounterTableReadStatus.STORAGE_ERROR, List.of());
 
     @Override
-    public void publishCatalog(EncounterTableCatalogResult result) {
-        currentCatalog = result == null
-                ? new EncounterTableCatalogResult(EncounterTableReadStatus.STORAGE_ERROR, List.of())
-                : result;
+    public void publishCatalog(CatalogPublication result) {
+        CatalogPublication safeResult = result == null ? new CatalogPublication(STORAGE_ERROR, List.of()) : result;
+        currentCatalog = new EncounterTableCatalogResult(
+                SUCCESS.equals(safeResult.status())
+                        ? EncounterTableReadStatus.SUCCESS
+                        : EncounterTableReadStatus.STORAGE_ERROR,
+                safeResult.tables().stream()
+                        .map(summary -> new EncounterTableSummary(
+                                summary.tableId(),
+                                summary.name(),
+                                summary.linkedLootTableId()))
+                        .toList());
         for (Consumer<EncounterTableCatalogResult> listener : List.copyOf(catalogListeners)) {
             listener.accept(currentCatalog);
         }

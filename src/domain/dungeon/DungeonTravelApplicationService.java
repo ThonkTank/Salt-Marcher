@@ -8,6 +8,7 @@ import src.domain.dungeon.application.MoveDungeonTravelActionUseCase;
 import src.domain.dungeon.application.PublishDungeonTravelResultUseCase;
 import src.domain.dungeon.application.TranslateDungeonTravelInputUseCase;
 import src.domain.dungeon.model.map.repository.DungeonMapRepository;
+import src.domain.dungeon.model.map.repository.DungeonPublishedStateRepository;
 import src.domain.dungeon.published.DungeonTravelCommand;
 import src.domain.dungeon.published.DungeonTravelResponse;
 
@@ -16,7 +17,7 @@ import src.domain.dungeon.published.DungeonTravelResponse;
  */
 public final class DungeonTravelApplicationService {
 
-    private final DungeonPublishedStatePublisher publishedStatePublisher;
+    private final DungeonPublishedStateRepository publishedStateRepository;
     private final LoadDungeonTravelSurfaceUseCase loadDungeonTravelSurfaceUseCase;
     private final MoveDungeonTravelActionUseCase moveDungeonTravelActionUseCase;
     private final PublishDungeonTravelResultUseCase publishResultUseCase = new PublishDungeonTravelResultUseCase();
@@ -24,10 +25,10 @@ public final class DungeonTravelApplicationService {
 
     public DungeonTravelApplicationService(
             DungeonMapRepository mapRepository,
-            DungeonPublishedStatePublisher publishedStatePublisher
+            DungeonPublishedStateRepository publishedStateRepository
     ) {
         DungeonMapRepository repository = Objects.requireNonNull(mapRepository, "mapRepository");
-        this.publishedStatePublisher = Objects.requireNonNull(publishedStatePublisher, "publishedStatePublisher");
+        this.publishedStateRepository = Objects.requireNonNull(publishedStateRepository, "publishedStateRepository");
         BuildDungeonDerivedStateUseCase derive = new BuildDungeonDerivedStateUseCase();
         LoadDungeonMapUseCase loadDungeonMapUseCase = new LoadDungeonMapUseCase(repository);
         this.loadDungeonTravelSurfaceUseCase = new LoadDungeonTravelSurfaceUseCase(loadDungeonMapUseCase, derive);
@@ -39,7 +40,7 @@ public final class DungeonTravelApplicationService {
 
     public void travel(DungeonTravelCommand command) {
         DungeonTravelResponse response = travelResponse(Objects.requireNonNull(command, "command"));
-        publishedStatePublisher.publishTravel(response);
+        publishedStateRepository.publishTravel(response);
     }
 
     private DungeonTravelResponse travelResponse(DungeonTravelCommand command) {

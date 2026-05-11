@@ -1,16 +1,16 @@
 package src.domain.creatures.application;
 
 import org.jspecify.annotations.Nullable;
-import src.domain.creatures.model.catalog.repository.CreatureCatalogRepository;
-import src.domain.creatures.model.catalog.repository.CreatureCatalogRepository.CreatureProfile;
+import src.domain.creatures.model.catalog.port.CreatureCatalogLookup;
+import src.domain.creatures.model.catalog.port.CreatureCatalogLookup.CreatureProfile;
 
 import java.util.Objects;
 
 public final class LoadCreatureDetailUseCase {
 
-    private final CreatureCatalogRepository lookup;
+    private final CreatureCatalogLookup lookup;
 
-    public LoadCreatureDetailUseCase(CreatureCatalogRepository lookup) {
+    public LoadCreatureDetailUseCase(CreatureCatalogLookup lookup) {
         this.lookup = Objects.requireNonNull(lookup, "lookup");
     }
 

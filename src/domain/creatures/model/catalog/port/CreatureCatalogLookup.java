@@ -1,22 +1,9 @@
-package src.domain.creatures.model.catalog.repository;
+package src.domain.creatures.model.catalog.port;
 
 import java.util.List;
 import org.jspecify.annotations.Nullable;
 
-public interface CreatureCatalogRepository {
-
-    enum CatalogSortField {
-        NAME,
-        CHALLENGE_RATING,
-        XP,
-        HIT_POINTS,
-        ARMOR_CLASS
-    }
-
-    enum CatalogSortDirection {
-        ASCENDING,
-        DESCENDING
-    }
+public interface CreatureCatalogLookup {
 
     record DistinctFilterValues(
             List<String> sizes,
@@ -68,8 +55,8 @@ public interface CreatureCatalogRepository {
             List<String> subtypes,
             List<String> biomes,
             List<String> alignments,
-            CatalogSortField sortField,
-            CatalogSortDirection sortDirection,
+            String sortField,
+            boolean sortAscending,
             int pageSize,
             int pageOffset
     ) {
@@ -206,16 +193,38 @@ public interface CreatureCatalogRepository {
     ) {
     }
 
-    record CreatureActionData(
-            String actionType,
-            String name,
-            String description,
-            @Nullable Integer toHitBonus
-    ) {
-        public CreatureActionData {
-            actionType = actionType == null ? "" : actionType;
-            name = name == null ? "" : name;
-            description = description == null ? "" : description;
+    final class CreatureActionData {
+        private final String actionType;
+        private final String name;
+        private final String description;
+        private final @Nullable Integer toHitBonus;
+
+        public CreatureActionData(
+                String actionType,
+                String name,
+                String description,
+                @Nullable Integer toHitBonus
+        ) {
+            this.actionType = actionType == null ? "" : actionType;
+            this.name = name == null ? "" : name;
+            this.description = description == null ? "" : description;
+            this.toHitBonus = toHitBonus;
+        }
+
+        public String actionType() {
+            return actionType;
+        }
+
+        public String name() {
+            return name;
+        }
+
+        public String description() {
+            return description;
+        }
+
+        public @Nullable Integer toHitBonus() {
+            return toHitBonus;
         }
     }
 
@@ -399,42 +408,103 @@ public interface CreatureCatalogRepository {
         }
     }
 
-    record CatalogPageData(
-            List<CatalogRowData> rows,
-            int totalCount,
-            int pageSize,
-            int pageOffset
-    ) {
-        public CatalogPageData {
-            rows = rows == null ? List.of() : List.copyOf(rows);
-            totalCount = Math.max(0, totalCount);
-            pageSize = Math.max(0, pageSize);
-            pageOffset = Math.max(0, pageOffset);
+    final class CatalogPageData {
+        private final List<CatalogRowData> rows;
+        private final int totalCount;
+        private final int pageSize;
+        private final int pageOffset;
+
+        public CatalogPageData(List<CatalogRowData> rows, int totalCount, int pageSize, int pageOffset) {
+            this.rows = rows == null ? List.of() : List.copyOf(rows);
+            this.totalCount = Math.max(0, totalCount);
+            this.pageSize = Math.max(0, pageSize);
+            this.pageOffset = Math.max(0, pageOffset);
         }
 
-        @Override
         public List<CatalogRowData> rows() {
             return List.copyOf(rows);
         }
+
+        public int totalCount() {
+            return totalCount;
+        }
+
+        public int pageSize() {
+            return pageSize;
+        }
+
+        public int pageOffset() {
+            return pageOffset;
+        }
     }
 
-    record CatalogRowData(
-            long id,
-            String name,
-            String size,
-            String creatureType,
-            String alignment,
-            String challengeRating,
-            int xp,
-            int hitPoints,
-            int armorClass
-    ) {
-        public CatalogRowData {
-            name = name == null ? "" : name;
-            size = size == null ? "" : size;
-            creatureType = creatureType == null ? "" : creatureType;
-            alignment = alignment == null ? "" : alignment;
-            challengeRating = challengeRating == null ? "" : challengeRating;
+    final class CatalogRowData {
+        private final long id;
+        private final String name;
+        private final String size;
+        private final String creatureType;
+        private final String alignment;
+        private final String challengeRating;
+        private final int xp;
+        private final int hitPoints;
+        private final int armorClass;
+
+        public CatalogRowData(
+                long id,
+                String name,
+                String size,
+                String creatureType,
+                String alignment,
+                String challengeRating,
+                int xp,
+                int hitPoints,
+                int armorClass
+        ) {
+            this.id = id;
+            this.name = name == null ? "" : name;
+            this.size = size == null ? "" : size;
+            this.creatureType = creatureType == null ? "" : creatureType;
+            this.alignment = alignment == null ? "" : alignment;
+            this.challengeRating = challengeRating == null ? "" : challengeRating;
+            this.xp = xp;
+            this.hitPoints = hitPoints;
+            this.armorClass = armorClass;
+        }
+
+        public long id() {
+            return id;
+        }
+
+        public String name() {
+            return name;
+        }
+
+        public String size() {
+            return size;
+        }
+
+        public String creatureType() {
+            return creatureType;
+        }
+
+        public String alignment() {
+            return alignment;
+        }
+
+        public String challengeRating() {
+            return challengeRating;
+        }
+
+        public int xp() {
+            return xp;
+        }
+
+        public int hitPoints() {
+            return hitPoints;
+        }
+
+        public int armorClass() {
+            return armorClass;
         }
     }
 

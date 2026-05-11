@@ -1,10 +1,10 @@
 package src.data.dungeon.repository;
 
-import src.domain.dungeon.DungeonPublishedStatePublisher;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
+import src.domain.dungeon.model.map.repository.DungeonPublishedStateRepository;
 import src.domain.dungeon.published.DungeonAuthoredMutationModel;
 import src.domain.dungeon.published.DungeonAuthoredMutationResult;
 import src.domain.dungeon.published.DungeonAuthoredReadModel;
@@ -25,7 +25,7 @@ import src.domain.dungeon.published.DungeonTravelResponse;
 import src.domain.dungeon.published.DungeonTravelSurfaceSnapshot;
 import src.domain.dungeon.published.DungeonCellRef;
 
-public final class DungeonPublishedStateRepositoryAdapter implements DungeonPublishedStatePublisher {
+public final class DungeonPublishedStateRepositoryAdapter implements DungeonPublishedStateRepository {
 
     private static final String LISTENER_PARAMETER = "listener";
 

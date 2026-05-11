@@ -9,20 +9,20 @@ import src.data.creatures.model.CreatureDetailRecord;
 import src.data.creatures.model.CreatureFilterValuesRecord;
 import src.data.creatures.model.EncounterCandidateCriteriaRecord;
 import src.data.creatures.model.EncounterCandidateRecord;
-import src.domain.creatures.model.catalog.repository.CreatureCatalogRepository;
-import src.domain.creatures.model.catalog.repository.CreatureCatalogRepository.CreatureProfile;
+import src.domain.creatures.model.catalog.port.CreatureCatalogLookup;
+import src.domain.creatures.model.catalog.port.CreatureCatalogLookup.CreatureProfile;
 
 public final class CreatureCatalogQueryMappingFacade {
 
     private CreatureCatalogQueryMappingFacade() {
     }
 
-    public static CreatureCatalogRepository.DistinctFilterValues toQueryValues(CreatureFilterValuesRecord record) {
+    public static CreatureCatalogLookup.DistinctFilterValues toQueryValues(CreatureFilterValuesRecord record) {
         return CreatureFilterValuesMapper.toQueryValues(record);
     }
 
     public static CreatureCatalogSearchCriteriaRecord toSearchCriteria(
-            CreatureCatalogRepository.CatalogSearchSpec spec
+            CreatureCatalogLookup.CatalogSearchSpec spec
     ) {
         return new CreatureCatalogSearchCriteriaRecord(
                 spec.nameQuery(),
@@ -34,12 +34,14 @@ public final class CreatureCatalogQueryMappingFacade {
                 spec.biomes(),
                 spec.alignments(),
                 toSearchSortField(Objects.requireNonNull(spec.sortField(), "sortField")),
-                toSearchSortDirection(Objects.requireNonNull(spec.sortDirection(), "sortDirection")),
+                spec.sortAscending()
+                        ? CreatureCatalogSearchCriteriaRecord.SortDirection.ASCENDING
+                        : CreatureCatalogSearchCriteriaRecord.SortDirection.DESCENDING,
                 spec.pageSize(),
                 spec.pageOffset());
     }
 
-    public static CreatureCatalogRepository.CatalogPageData toDomain(CreatureCatalogPageRecord record) {
+    public static CreatureCatalogLookup.CatalogPageData toDomain(CreatureCatalogPageRecord record) {
         return CreatureCatalogPageMapper.toDomain(record);
     }
 
@@ -48,7 +50,7 @@ public final class CreatureCatalogQueryMappingFacade {
     }
 
     public static EncounterCandidateCriteriaRecord toEncounterCriteria(
-            CreatureCatalogRepository.EncounterCandidateSpec spec
+            CreatureCatalogLookup.EncounterCandidateSpec spec
     ) {
         return new EncounterCandidateCriteriaRecord(
                 spec.types(),
@@ -59,21 +61,13 @@ public final class CreatureCatalogQueryMappingFacade {
                 spec.limit());
     }
 
-    public static List<CreatureCatalogRepository.EncounterCandidateProfile> toDomain(List<EncounterCandidateRecord> records) {
+    public static List<CreatureCatalogLookup.EncounterCandidateProfile> toDomain(List<EncounterCandidateRecord> records) {
         return records.stream()
                 .map(EncounterCandidateMapper::toDomain)
                 .toList();
     }
 
-    private static CreatureCatalogSearchCriteriaRecord.SortField toSearchSortField(
-            CreatureCatalogRepository.CatalogSortField sortField
-    ) {
-        return CreatureCatalogSearchCriteriaRecord.SortField.valueOf(sortField.name());
-    }
-
-    private static CreatureCatalogSearchCriteriaRecord.SortDirection toSearchSortDirection(
-            CreatureCatalogRepository.CatalogSortDirection sortDirection
-    ) {
-        return CreatureCatalogSearchCriteriaRecord.SortDirection.valueOf(sortDirection.name());
+    private static CreatureCatalogSearchCriteriaRecord.SortField toSearchSortField(String sortField) {
+        return CreatureCatalogSearchCriteriaRecord.SortField.valueOf(sortField);
     }
 }

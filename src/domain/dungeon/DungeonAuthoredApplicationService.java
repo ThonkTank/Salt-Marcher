@@ -12,6 +12,7 @@ import src.domain.dungeon.application.PublishDungeonEditorHandlesUseCase;
 import src.domain.dungeon.application.TranslateDungeonAuthoredInputUseCase;
 import src.domain.dungeon.application.TranslateDungeonEditorOperationUseCase;
 import src.domain.dungeon.model.map.repository.DungeonMapRepository;
+import src.domain.dungeon.model.map.repository.DungeonPublishedStateRepository;
 import src.domain.dungeon.published.DungeonAuthoredMutationCommand;
 import src.domain.dungeon.published.DungeonAuthoredMutationResult;
 import src.domain.dungeon.published.DungeonAuthoredReadCommand;
@@ -22,7 +23,7 @@ import src.domain.dungeon.published.DungeonAuthoredReadResult;
  */
 public final class DungeonAuthoredApplicationService {
 
-    private final DungeonPublishedStatePublisher publishedStatePublisher;
+    private final DungeonPublishedStateRepository publishedStateRepository;
     private final LoadDungeonSnapshotUseCase loadDungeonSnapshotUseCase;
     private final ApplyDungeonEditorOperationUseCase applyDungeonEditorOperationUseCase;
     private final PublishDungeonAuthoredResultUseCase publishResultUseCase = new PublishDungeonAuthoredResultUseCase();
@@ -33,10 +34,10 @@ public final class DungeonAuthoredApplicationService {
 
     public DungeonAuthoredApplicationService(
             DungeonMapRepository mapRepository,
-            DungeonPublishedStatePublisher publishedStatePublisher
+            DungeonPublishedStateRepository publishedStateRepository
     ) {
         DungeonMapRepository repository = Objects.requireNonNull(mapRepository, "mapRepository");
-        this.publishedStatePublisher = Objects.requireNonNull(publishedStatePublisher, "publishedStatePublisher");
+        this.publishedStateRepository = Objects.requireNonNull(publishedStateRepository, "publishedStateRepository");
         BuildDungeonDerivedStateUseCase derive = new BuildDungeonDerivedStateUseCase();
         LoadDungeonMapUseCase loadDungeonMapUseCase = new LoadDungeonMapUseCase(repository);
         PublishDungeonEditorHandlesUseCase publishDungeonEditorHandlesUseCase = new PublishDungeonEditorHandlesUseCase();
@@ -57,13 +58,13 @@ public final class DungeonAuthoredApplicationService {
 
     public void refreshAuthored(DungeonAuthoredReadCommand command) {
         DungeonAuthoredReadResult result = authoredReadResult(Objects.requireNonNull(command, "command"));
-        publishedStatePublisher.publishAuthoredRead(result);
+        publishedStateRepository.publishAuthoredRead(result);
     }
 
     public void mutateAuthored(DungeonAuthoredMutationCommand command) {
         ApplyDungeonEditorOperationUseCase.OperationResultData result = authoredMutationResult(
                 Objects.requireNonNull(command, "command"));
-        publishedStatePublisher.publishAuthoredMutation(
+        publishedStateRepository.publishAuthoredMutation(
                 new DungeonAuthoredMutationResult.Operation(publishResultUseCase.operationResult(result)));
     }
 

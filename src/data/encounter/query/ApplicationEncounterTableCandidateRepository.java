@@ -8,17 +8,17 @@ import src.domain.encounter.model.generation.model.EncounterCandidateProfile;
 import src.domain.encounter.model.generation.model.EncounterCreatureFacts;
 import src.domain.encounter.model.reference.repository.EncounterTableCandidateRepository;
 import src.domain.encounter.model.reference.model.EncounterTableCandidateCriteria;
-import src.domain.encountertable.model.catalog.repository.EncounterTableCatalogRepository;
+import src.domain.encountertable.model.catalog.port.EncounterTableCatalog;
 
 public final class ApplicationEncounterTableCandidateRepository implements EncounterTableCandidateRepository {
 
-    private final EncounterTableCatalogRepository encounterTableCatalog;
+    private final EncounterTableCatalog encounterTableCatalog;
 
     public ApplicationEncounterTableCandidateRepository() {
         this(new SqliteEncounterTableCatalogAdapter());
     }
 
-    ApplicationEncounterTableCandidateRepository(EncounterTableCatalogRepository encounterTableCatalog) {
+    ApplicationEncounterTableCandidateRepository(EncounterTableCatalog encounterTableCatalog) {
         this.encounterTableCatalog = Objects.requireNonNull(encounterTableCatalog, "encounterTableCatalog");
     }
 

@@ -4,7 +4,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import src.data.creatures.query.SqliteCreatureCatalogQueryAdapter;
-import src.domain.creatures.model.catalog.repository.CreatureCatalogRepository;
+import src.domain.creatures.model.catalog.port.CreatureCatalogLookup;
 import src.domain.encounter.model.generation.helper.EncounterCandidateProfileHelper;
 import src.domain.encounter.model.generation.model.EncounterCandidateProfile;
 import src.domain.encounter.model.generation.model.EncounterCreatureFacts;
@@ -17,13 +17,13 @@ public final class ApplicationEncounterCreatureRepository implements EncounterCr
     private static final int DEFAULT_LIMIT = 250;
     private static final int MAX_LIMIT = 1000;
 
-    private final CreatureCatalogRepository creatureCatalogLookup;
+    private final CreatureCatalogLookup creatureCatalogLookup;
 
     public ApplicationEncounterCreatureRepository() {
         this(new SqliteCreatureCatalogQueryAdapter());
     }
 
-    ApplicationEncounterCreatureRepository(CreatureCatalogRepository creatureCatalogLookup) {
+    ApplicationEncounterCreatureRepository(CreatureCatalogLookup creatureCatalogLookup) {
         this.creatureCatalogLookup = Objects.requireNonNull(creatureCatalogLookup, "creatureCatalogLookup");
     }
 
@@ -46,7 +46,7 @@ public final class ApplicationEncounterCreatureRepository implements EncounterCr
         if (minimumXp > maximumXp) {
             return List.of();
         }
-        CreatureCatalogRepository.EncounterCandidateSpec spec = new CreatureCatalogRepository.EncounterCandidateSpec(
+        CreatureCatalogLookup.EncounterCandidateSpec spec = new CreatureCatalogLookup.EncounterCandidateSpec(
                 safeCriteria.creatureTypes(),
                 safeCriteria.creatureSubtypes(),
                 safeCriteria.biomes(),
@@ -65,7 +65,7 @@ public final class ApplicationEncounterCreatureRepository implements EncounterCr
         return Math.min(limit, MAX_LIMIT);
     }
 
-    private static EncounterCandidateProfile toProfile(CreatureCatalogRepository.EncounterCandidateProfile candidate) {
+    private static EncounterCandidateProfile toProfile(CreatureCatalogLookup.EncounterCandidateProfile candidate) {
         return EncounterCandidateProfileHelper.fromFacts(new EncounterCreatureFacts(
                 candidate.id(),
                 candidate.name(),

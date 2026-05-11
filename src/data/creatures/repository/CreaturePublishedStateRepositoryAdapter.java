@@ -4,9 +4,15 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
+import org.jspecify.annotations.Nullable;
+import src.domain.creatures.model.catalog.port.CreatureCatalogLookup;
+import src.domain.creatures.model.catalog.repository.CreaturesPublishedStateRepository;
+import src.domain.creatures.published.CreatureActionDetail;
 import src.domain.creatures.published.CreatureCatalogModel;
 import src.domain.creatures.published.CreatureCatalogPage;
 import src.domain.creatures.published.CreatureCatalogPageResult;
+import src.domain.creatures.published.CreatureCatalogRow;
+import src.domain.creatures.published.CreatureDetail;
 import src.domain.creatures.published.CreatureDetailModel;
 import src.domain.creatures.published.CreatureDetailResult;
 import src.domain.creatures.published.CreatureFilterOptions;
@@ -15,7 +21,6 @@ import src.domain.creatures.published.CreatureFilterOptionsResult;
 import src.domain.creatures.published.CreatureLookupStatus;
 import src.domain.creatures.published.CreatureQueryStatus;
 import src.domain.creatures.published.CreatureReadStatus;
-import src.domain.creatures.model.catalog.repository.CreaturesPublishedStateRepository;
 
 public final class CreaturePublishedStateRepositoryAdapter implements CreaturesPublishedStateRepository {
 
@@ -43,26 +48,42 @@ public final class CreaturePublishedStateRepositoryAdapter implements CreaturesP
             new CreatureDetailResult(CreatureLookupStatus.STORAGE_ERROR, null);
 
     @Override
-    public void publishFilterOptions(CreatureFilterOptionsResult result) {
-        currentFilterOptions = result == null
-                ? new CreatureFilterOptionsResult(CreatureReadStatus.STORAGE_ERROR, null)
+    public void publishFilterOptions(FilterOptionsPublication result) {
+        FilterOptionsPublication safeResult = result == null
+                ? new FilterOptionsPublication(STORAGE_ERROR, null, List.of())
                 : result;
+        CreatureCatalogLookup.DistinctFilterValues values = safeResult.values();
+        currentFilterOptions = new CreatureFilterOptionsResult(
+                toReadStatus(safeResult.status()),
+                new CreatureFilterOptions(
+                        values.sizes(),
+                        values.types(),
+                        values.subtypes(),
+                        values.biomes(),
+                        values.alignments(),
+                        safeResult.challengeRatings()));
         notifyListeners(filterOptionsListeners, currentFilterOptions);
     }
 
     @Override
-    public void publishCatalogPage(CreatureCatalogPageResult result) {
-        currentCatalogPage = result == null
-                ? new CreatureCatalogPageResult(CreatureQueryStatus.STORAGE_ERROR, null)
+    public void publishCatalogPage(CatalogPagePublication result) {
+        CatalogPagePublication safeResult = result == null
+                ? new CatalogPagePublication(STORAGE_ERROR, null)
                 : result;
+        currentCatalogPage = new CreatureCatalogPageResult(
+                toQueryStatus(safeResult.status()),
+                toPublishedCatalogPage(safeResult.page()));
         notifyListeners(catalogListeners, currentCatalogPage);
     }
 
     @Override
-    public void publishCreatureDetail(CreatureDetailResult result) {
-        currentCreatureDetail = result == null
-                ? new CreatureDetailResult(CreatureLookupStatus.STORAGE_ERROR, null)
+    public void publishCreatureDetail(CreatureDetailPublication result) {
+        CreatureDetailPublication safeResult = result == null
+                ? new CreatureDetailPublication(STORAGE_ERROR, null)
                 : result;
+        currentCreatureDetail = new CreatureDetailResult(
+                toLookupStatus(safeResult.status()),
+                toPublishedCreatureDetail(safeResult.detail()));
         notifyListeners(detailListeners, currentCreatureDetail);
     }
 
@@ -102,4 +123,95 @@ public final class CreaturePublishedStateRepositoryAdapter implements CreaturesP
         }
     }
 
+    private static CreatureReadStatus toReadStatus(String status) {
+        return SUCCESS.equals(status) ? CreatureReadStatus.SUCCESS : CreatureReadStatus.STORAGE_ERROR;
+    }
+
+    private static CreatureQueryStatus toQueryStatus(String status) {
+        return switch (status) {
+            case SUCCESS -> CreatureQueryStatus.SUCCESS;
+            case INVALID_QUERY -> CreatureQueryStatus.INVALID_QUERY;
+            default -> CreatureQueryStatus.STORAGE_ERROR;
+        };
+    }
+
+    private static CreatureLookupStatus toLookupStatus(String status) {
+        return switch (status) {
+            case SUCCESS -> CreatureLookupStatus.SUCCESS;
+            case NOT_FOUND -> CreatureLookupStatus.NOT_FOUND;
+            default -> CreatureLookupStatus.STORAGE_ERROR;
+        };
+    }
+
+    private static CreatureCatalogPage toPublishedCatalogPage(CreatureCatalogLookup.CatalogPageData page) {
+        return new CreatureCatalogPage(
+                page.rows().stream()
+                        .map(row -> new CreatureCatalogRow(
+                                row.id(),
+                                row.name(),
+                                row.size(),
+                                row.creatureType(),
+                                row.alignment(),
+                                row.challengeRating(),
+                                row.xp(),
+                                row.hitPoints(),
+                                row.armorClass()))
+                        .toList(),
+                page.totalCount(),
+                page.pageSize(),
+                page.pageOffset());
+    }
+
+    private static @Nullable CreatureDetail toPublishedCreatureDetail(@Nullable CreatureCatalogLookup.CreatureProfile detail) {
+        if (detail == null) {
+            return null;
+        }
+        return new CreatureDetail(
+                detail.id(),
+                detail.name(),
+                detail.size(),
+                detail.creatureType(),
+                detail.subtypes(),
+                detail.biomes(),
+                detail.alignment(),
+                detail.challengeRating(),
+                detail.xp(),
+                detail.hitPoints(),
+                detail.hitDiceExpression(),
+                detail.hitDiceCount(),
+                detail.hitDiceSides(),
+                detail.hitDiceModifier(),
+                detail.armorClass(),
+                detail.armorClassNotes(),
+                detail.walkSpeed(),
+                detail.flySpeed(),
+                detail.swimSpeed(),
+                detail.climbSpeed(),
+                detail.burrowSpeed(),
+                detail.strength(),
+                detail.dexterity(),
+                detail.constitution(),
+                detail.intelligence(),
+                detail.wisdom(),
+                detail.charisma(),
+                detail.initiativeBonus(),
+                detail.proficiencyBonus(),
+                detail.savingThrows(),
+                detail.skills(),
+                detail.damageVulnerabilities(),
+                detail.damageResistances(),
+                detail.damageImmunities(),
+                detail.conditionImmunities(),
+                detail.senses(),
+                detail.passivePerception(),
+                detail.languages(),
+                detail.legendaryActionCount(),
+                detail.actions().stream()
+                        .map(action -> new CreatureActionDetail(
+                                action.actionType(),
+                                action.name(),
+                                action.description(),
+                                action.toHitBonus()))
+                        .toList());
+    }
 }

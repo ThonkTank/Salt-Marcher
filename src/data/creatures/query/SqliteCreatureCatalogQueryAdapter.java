@@ -3,11 +3,11 @@ package src.data.creatures.query;
 import org.jspecify.annotations.Nullable;
 import src.data.creatures.gateway.local.SqliteCreatureCatalogLocalGateway;
 import src.data.creatures.mapper.CreatureCatalogQueryMappingFacade;
-import src.domain.creatures.model.catalog.repository.CreatureCatalogRepository;
+import src.domain.creatures.model.catalog.port.CreatureCatalogLookup;
 
 import java.util.List;
 
-public final class SqliteCreatureCatalogQueryAdapter implements CreatureCatalogRepository {
+public final class SqliteCreatureCatalogQueryAdapter implements CreatureCatalogLookup {
 
     private final SqliteCreatureCatalogLocalGateway gateway;
 

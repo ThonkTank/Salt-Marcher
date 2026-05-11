@@ -5,7 +5,7 @@ import shell.api.ServiceRegistry;
 import src.data.creatures.repository.CreaturePublishedStateRepositoryAdapter;
 import src.data.creatures.query.SqliteCreatureCatalogQueryAdapter;
 import src.domain.creatures.CreaturesApplicationService;
-import src.domain.creatures.model.catalog.repository.CreatureCatalogRepository;
+import src.domain.creatures.model.catalog.port.CreatureCatalogLookup;
 import src.domain.creatures.published.CreatureCatalogModel;
 import src.domain.creatures.published.CreatureDetailModel;
 import src.domain.creatures.published.CreatureFilterOptionsModel;
@@ -22,7 +22,7 @@ public final class CreaturesServiceContribution implements ServiceContribution {
 
     @Override
     public void register(ServiceRegistry.Builder builder) {
-        CreatureCatalogRepository queryPort = new SqliteCreatureCatalogQueryAdapter();
+        CreatureCatalogLookup queryPort = new SqliteCreatureCatalogQueryAdapter();
         CreaturePublishedStateRepositoryAdapter publishedState = new CreaturePublishedStateRepositoryAdapter();
         CreaturesApplicationService applicationService = new CreaturesApplicationService(queryPort, publishedState);
         builder.register(
