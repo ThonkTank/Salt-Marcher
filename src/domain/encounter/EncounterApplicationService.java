@@ -108,7 +108,7 @@ public final class EncounterApplicationService {
                     loadBudgetUseCase);
             return;
         }
-        EncounterSession session = useCase.apply(EncounterStateBoundaryTranslator.toInternalCommand(command));
+        EncounterSession session = useCase.apply(EncounterStateCommandTranslation.toInternalCommand(command));
         PublishedStateWriter.publishCurrentSession(
                 sessionPublishedStateRepository,
                 session,
@@ -133,7 +133,7 @@ public final class EncounterApplicationService {
                 ? new UpdateEncounterBuilderInputsCommand(src.domain.encounter.published.EncounterBuilderInputs.empty())
                 : command;
         EncounterSession session = useCase.apply(EncounterSessionCommand.updateBuilderInputs(
-                EncounterBuilderInputsBoundaryTranslator.toInternal(effective.inputs())));
+                EncounterBuilderInputsTranslation.toInternal(effective.inputs())));
         PublishedStateWriter.publishCurrentSession(
                 sessionPublishedStateRepository,
                 session,
@@ -187,9 +187,9 @@ public final class EncounterApplicationService {
         }
     }
 
-    private static final class EncounterBudgetBoundaryTranslator {
+    private static final class EncounterBudgetTranslation {
 
-        private EncounterBudgetBoundaryTranslator() {
+        private EncounterBudgetTranslation() {
         }
 
         private static EncounterTuningPreviewLabels tuningPreviewLabels(EncounterDifficultyMathHelper.BudgetSummary budget) {
@@ -273,9 +273,9 @@ public final class EncounterApplicationService {
         }
     }
 
-    private static final class EncounterBuilderInputsBoundaryTranslator {
+    private static final class EncounterBuilderInputsTranslation {
 
-        private EncounterBuilderInputsBoundaryTranslator() {
+        private EncounterBuilderInputsTranslation() {
         }
 
         private static EncounterGenerationInputs toInternal(EncounterBuilderInputs inputs) {
@@ -337,11 +337,11 @@ public final class EncounterApplicationService {
         }
     }
 
-    private static final class EncounterPlanBoundaryTranslator {
+    private static final class EncounterPlanTranslation {
 
         private static final String CREATURES_SUFFIX = " Kreaturen";
 
-        private EncounterPlanBoundaryTranslator() {
+        private EncounterPlanTranslation() {
         }
 
         private static SavedEncounterPlanSummary toPublishedSummary(EncounterPlanSummary summary) {
@@ -366,9 +366,9 @@ public final class EncounterApplicationService {
         }
     }
 
-    private static final class EncounterStateBoundaryTranslator {
+    private static final class EncounterStateCommandTranslation {
 
-        private EncounterStateBoundaryTranslator() {
+        private EncounterStateCommandTranslation() {
         }
 
         private static EncounterSessionCommand toInternalCommand(@Nullable ApplyEncounterStateCommand command) {
@@ -378,7 +378,7 @@ public final class EncounterApplicationService {
             return new EncounterSessionCommand(
                     toInternalAction(command.action()),
                     Optional.empty(),
-                    EncounterBuilderInputsBoundaryTranslator.toInternal(null),
+                    EncounterBuilderInputsTranslation.toInternal(null),
                     command.creatureId(),
                     command.planId(),
                     command.delta(),
@@ -408,9 +408,9 @@ public final class EncounterApplicationService {
         }
     }
 
-    private static final class EncounterStateSnapshotProjector {
+    private static final class EncounterStateSnapshotPublication {
 
-        private EncounterStateSnapshotProjector() {
+        private EncounterStateSnapshotPublication() {
         }
 
         private static EncounterStateSnapshot toPublishedSnapshot(EncounterSession session) {
@@ -438,7 +438,7 @@ public final class EncounterApplicationService {
         private static EncounterBuilderInputs toPublishedBuilderInputs(EncounterSession session) {
             return session == null
                     ? EncounterBuilderInputs.empty()
-                    : EncounterBuilderInputsBoundaryTranslator.toPublished(session.builderInputs());
+                    : EncounterBuilderInputsTranslation.toPublished(session.builderInputs());
         }
 
         private static EncounterStateSnapshot.Mode toPublishedMode(int mode) {
@@ -467,7 +467,7 @@ public final class EncounterApplicationService {
                     toPublishedBuilderSettings(safeState.builderInputs()),
                     safeState.generationAdvisoryMessages(),
                     safeState.savedPlans().stream()
-                            .map(EncounterPlanBoundaryTranslator::toPublishedSummary)
+                            .map(EncounterPlanTranslation::toPublishedSummary)
                             .toList(),
                     safeState.roster().stream()
                             .map(creature -> new EncounterStateSnapshot.RosterCard(
@@ -492,7 +492,7 @@ public final class EncounterApplicationService {
         }
 
         private static EncounterStateSnapshot.BuilderSettings toPublishedBuilderSettings(EncounterGenerationInputs inputs) {
-            EncounterBuilderInputs published = EncounterBuilderInputsBoundaryTranslator.toPublished(inputs);
+            EncounterBuilderInputs published = EncounterBuilderInputsTranslation.toPublished(inputs);
             return new EncounterStateSnapshot.BuilderSettings(
                     published.autoDifficulty() ? "Auto" : difficultyLabel(published.difficultyLevel()),
                     published.autoBalance() ? -1 : published.balanceLevel(),
@@ -592,9 +592,9 @@ public final class EncounterApplicationService {
         ) {
             repository.publishCurrentSession(
                     session == null ? src.domain.encounter.published.EncounterStateSnapshot.empty("Encounter session is not registered.")
-                            : EncounterStateSnapshotProjector.toPublishedSnapshot(session),
+                            : EncounterStateSnapshotPublication.toPublishedSnapshot(session),
                     session == null ? EncounterBuilderInputs.empty()
-                            : EncounterStateSnapshotProjector.toPublishedBuilderInputs(session),
+                            : EncounterStateSnapshotPublication.toPublishedBuilderInputs(session),
                     toTuningPreviewResult(loadBudgetResult(loadBudgetUseCase)));
         }
 
@@ -665,7 +665,7 @@ public final class EncounterApplicationService {
                     result.status().loadedSuccessfully()
                             ? src.domain.encounter.published.SavedEncounterPlanStatus.successStatus()
                             : src.domain.encounter.published.SavedEncounterPlanStatus.storageErrorStatus(),
-                    result.plans().stream().map(EncounterPlanBoundaryTranslator::toPublishedSummary).toList(),
+                    result.plans().stream().map(EncounterPlanTranslation::toPublishedSummary).toList(),
                     result.message());
         }
 
@@ -701,12 +701,12 @@ public final class EncounterApplicationService {
             if (result == null) {
                 return new src.domain.encounter.published.EncounterTuningPreviewResult(
                         src.domain.encounter.published.EncounterGenerationStatus.STORAGE_ERROR,
-                        EncounterBudgetBoundaryTranslator.tuningPreviewLabels(emptyBudgetSummary()),
+                        EncounterBudgetTranslation.tuningPreviewLabels(emptyBudgetSummary()),
                         TUNING_PREVIEW_NOT_REGISTERED);
             }
             return new src.domain.encounter.published.EncounterTuningPreviewResult(
                     toEncounterGenerationStatus(result.status()),
-                    EncounterBudgetBoundaryTranslator.tuningPreviewLabels(
+                    EncounterBudgetTranslation.tuningPreviewLabels(
                             result.budget() == null ? emptyBudgetSummary() : result.budget()),
                     result.message());
         }
