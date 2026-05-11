@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-29
+Last Reviewed: 2026-05-11
 Source of Truth: Governance for agent instruction surfaces, the mandatory
 global instruction skill, and ownership boundaries between instruction
 artifacts.
@@ -57,6 +57,10 @@ Any work on covered surfaces must use that skill first.
 ## Ownership Rules
 
 - `AGENTS.md` owns project-wide norms only.
+- `AGENTS.md` must stay an early router: it names mandatory triggers,
+  canonical owners, and repo-specific verification surfaces, but it must not
+  become a glossary, feature spec, migration plan, or second copy of a layer
+  standard.
 - `SKILL.md` owns reusable agent workflow and trigger logic for one skill.
 - `docs/project/<type>/*.md` own reusable project-wide rules for one
   topic.

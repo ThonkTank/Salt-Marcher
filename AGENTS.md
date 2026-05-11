@@ -1,14 +1,33 @@
 # SaltMarcher Working Constitution
 
-This file defines the project-wide documentation and architecture governance for
-SaltMarcher. It is intentionally short. It does not hold feature-specific
-specifications, long-form target designs, or implementation plans.
+This file is the early routing surface for SaltMarcher agents. It defines only
+the repo-specific rules an agent needs before choosing canonical documentation,
+skills, or verification. It does not hold feature specifications, long-form
+target designs, migration plans, or glossary truth.
 
 Global workspace rules live in
 `/home/aaron/Schreibtisch/projects/AGENTS.md` and apply to SaltMarcher unless
 this file adds a stricter SaltMarcher-specific rule.
 
-## Purpose
+## Task Context Protocol
+
+Before changing repo-tracked files in SaltMarcher:
+
+1. Follow the workspace preflight and dirty-baseline rules in
+   `/home/aaron/Schreibtisch/projects/AGENTS.md`.
+2. Classify the touched surface: production code, check/enforcement package,
+   documentation, agent instruction, source-backed decision, or a combination.
+3. Read the nearest canonical owner for that surface before copying nearby
+   implementation shape.
+4. Use every mandatory skill named by the workspace or SaltMarcher routing
+   rules before planning, implementing, refactoring, or reviewing covered work.
+5. Identify the required verification surface before editing and report the
+   literal result before handoff.
+
+If a touched surface has no clear canonical owner, stop and report the ambiguity
+instead of creating a second source of truth.
+
+## Documentation Routing
 
 SaltMarcher keeps documentation by document type, not by convenience. Each
 topic has one canonical home, and every other document may only summarize or
@@ -25,24 +44,7 @@ Legacy roots `docs/architecture/`, `docs/standards/`, `docs/adr/`,
 are not canonical and must be removed instead of preserved once the owning
 document exists.
 
-## Core Terms
-
-- `Feature`: a project-local vertical slice with view, domain, and data code.
-- `Application Service`: a family-scoped public backend boundary of a domain
-  context below the view layer.
-- `Shell Contribution`: a feature entrypoint that registers UI content with the
-  passive shell.
-- `Service Contribution`: a feature entrypoint that registers exported runtime
-  services with the passive shell.
-- `Domain Repository`: a domain-owned outbound collaborator that triggers
-  foreign domain work or layered data access.
-- `Domain Port`: a domain-internal listener that reacts to foreign published
-  state.
-- `Write Model`: the authored state a feature owns and is allowed to persist.
-- `Derived State`: any state rebuilt deterministically from the write model.
-- `Source of Truth`: the single document that is authoritative for a topic.
-
-## SaltMarcher Rules
+## Skill Routing
 
 - Behavior-coupled automated tests are not part of the project strategy; use
   the quality-platform gates plus manual testing instead.
@@ -50,6 +52,13 @@ document exists.
   meta-test layers; enforce repository policy directly in the owning gate.
 - New compile/build/check gates require explicit user request. Detailed
   verification policy lives in `docs/project/verification/quality-platforms.md`.
+- Work on `AGENTS.md`, any `SKILL.md`, `agents/openai.yaml`, or other
+  agent-facing instruction surface must use the global
+  `agent-instruction-engineering` skill and follow
+  `docs/project/architecture/agent-instructions.md`.
+- Work that uses external sources or local source evidence for decisions must
+  use the global `source-references` skill and follow
+  `docs/project/verification/source-references.md`.
 - Work under `src/domain/**` must use the repo-owned `domain-layer` skill and
   follow the canonical domain-layer standard before changes are made or
   reviewed.
@@ -124,17 +133,6 @@ document exists.
   successful production handoff before handoff unless the user explicitly
   waives reinstall, the task is documentation-only, or the task is purely
   non-code planning or review work.
-
-## Document Types
-
-- `docs/project/<type>/*.md`
-  Project-wide canonical docs where `<type>` is one of `architecture`,
-  `requirements`, `contract`, `domain`, `delivery`, or `verification`.
-- `docs/<feature>/<type>/*.md`
-  Feature-owned canonical docs using the same closed six-type set.
-- some feature folders may intentionally omit `domain`, `contract`,
-  `delivery`, or `verification` files when they own no write model,
-  persistence truth, rollout notes, or separate proof surface.
 
 ## References
 
