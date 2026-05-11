@@ -24,13 +24,9 @@ the pattern or become a second architecture owner.
 
 ## Current State And Target State
 
-Current state:
-
-- active production code still contains legacy named-module tactical packages
-  such as `aggregate/`, `entity/`, `policy/`, `service/`, and outbound
-  `port/` interfaces
-- active mechanical blockers still cover parts of that legacy shape
-- some contexts still expose only one root `*ApplicationService`
+Current state: production still contains some legacy tactical packages and
+blockers that cover that migration shape. Enforcement documents must describe
+remaining drift literally instead of making it the target architecture.
 
 Target state:
 
@@ -49,10 +45,6 @@ Target state:
 - `Repository` is the outbound domain role for foreign domain writes and
   layered data access
 
-Until production migration catches up, enforcement documents MUST state any
-remaining drift literally instead of silently reintroducing the old model as a
-second truth.
-
 ## Role Family
 
 The closed architectural role family is:
@@ -68,8 +60,7 @@ The closed architectural role family is:
 | `Port` | Inbound listener on foreign published state. |
 | `Repository` | Outbound trigger for foreign domain work and layered data access. |
 
-No other topology role is legal. Any type or package shape outside the closed
-role family above is rejected.
+Any topology outside this closed role family is illegal.
 
 ## Core Principles
 
@@ -109,11 +100,6 @@ Published`
 `own Repository -> foreign ApplicationService -> foreign UseCase -> foreign
 Model -> foreign Published -> own Port -> own UseCase -> own Model -> own
 Published`
-
-### Data Roundtrip
-
-`own Repository -> layered data adapter -> internal domain/application return
-types -> own UseCase -> own Model -> own Published`
 
 ## Role Contracts
 
@@ -264,24 +250,10 @@ Rules:
 
 ## Current Mechanical Drift
 
-The active blockers now prove the target root/model topology and reserved role
-suffix placement, but production migration still lags behind that target.
-
-- `checkDomainEnforcement` now allows one or more direct root
-  `*ApplicationService` files and validates `DOMAIN.md`-declared root services
-- `checkDomainEnforcement` now hard-cuts root buckets, direct root
-  `*ApplicationService` file ownership, model-family role buckets, model
-  subtree technical-bucket rejection, direct-file placement, and reserved role
-  suffix ownership
-- `compileJava` now blocks path/package/file-shape drift for domain sources
-  through a dedicated closed-topology perimeter checker instead of leaving role
-  renames and moves to build-harness scanning alone
-- `checkDomainEnforcement` now hard-cuts root `application/` to direct
-  `*UseCase.java` files only
-- the canonical Domain surface now also carries the `Port`, `Repository`,
-  `Model`, `Helper`, and `Constants` role blockers for bucket placement and
-  role file forms; deeper purity and communication semantics remain
-  review-owned where the neighboring owner docs say so
+`checkDomainEnforcement` and `compileJava` now block the target root/model
+topology, declared root services, reserved role suffix placement, and direct
+role-file forms. Detailed gate ownership and remaining review-owned gaps live
+in the Domain enforcement documents.
 
 ## Context Roles
 
@@ -371,15 +343,6 @@ Generation-policy contexts MUST additionally include:
 
 ## References
 
-- [Architecture Overview](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/overview.md:1)
 - [Layering Architecture Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/layering-architecture.md:1)
-- [Data Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/data-layer.md:1)
 - [Domain Layer Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/domain-layer-enforcement.md:1)
-- [Domain ApplicationService Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/domain-application-service-enforcement.md:1)
-- [Domain UseCase Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/domain-use-case-enforcement.md:1)
-- [Domain Published Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/domain-published-enforcement.md:1)
-- [Domain Port Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/domain-port-enforcement.md:1)
-- [Domain Repository Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/domain-repository-enforcement.md:1)
-- [Domain Model Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/domain-model-enforcement.md:1)
-- [Domain Helper Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/domain-helper-enforcement.md:1)
-- [Domain Constants Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/domain-constants-enforcement.md:1)
+- [Domain Context Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/domain-context-enforcement.md:1)

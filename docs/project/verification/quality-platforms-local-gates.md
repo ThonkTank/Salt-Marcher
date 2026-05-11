@@ -1,16 +1,18 @@
 Status: Active
 Owner: SaltMarcher Team
 Last Reviewed: 2026-05-10
-Source of Truth: Detailed local gate inventory, aggregate entrypoints, and
-concurrent local invocation policy for SaltMarcher quality platforms.
+Source of Truth: Detailed local gate inventory for SaltMarcher quality
+platforms.
 
 # Quality Platforms Local Gates
 
 ## Purpose
 
-This subordinate standard defines the detailed local gate inventory and local
-operating entrypoints beneath the umbrella
+This subordinate standard defines the detailed local gate inventory beneath
+the umbrella
 [Quality Platforms Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/verification/quality-platforms.md:1).
+Aggregate entrypoints and local worktree invocation policy live in
+[Quality Platforms Local Entrypoints](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/verification/quality-platforms-local-entrypoints.md:1).
 
 ## Local Gate Inventory
 
@@ -216,189 +218,9 @@ The dedicated passive-`View` direct-render placement proof route is
 selector vocabulary remain available through the separate layer-wide direct
 tasks listed above.
 
-## Aggregates And Entry Points
-
-`./gradlew check --console=plain` is the local full build-health blocker and
-the single central aggregate for repository-owned blocking Gradle checks.
-
-For wrapper-based local runs, failure aggregation across independent gates is a
-runtime-wrapper concern. `tools/gradle/run-observable-gradle.sh` may add
-Gradle `--continue` for diagnostic entrypoints so the build reports the full
-current failure set without moving that policy into the convention-plugin
-layer.
-
-`check` includes:
-
-- Java compiler hygiene through `compileJava`
-- the public architecture aggregate `checkArchitecture`
-- repository and resource policy checks
-- PMD source-smell detection through `pmdMain`
-- SpotBugs plus FindSecBugs through `spotbugsMain`
-- duplicate-code detection through `cpdMain`
-- cyclomatic-complexity detection through `lizardMain`
-- OO-metric regression reporting through `ckjmMain`
-
-`tools/gradle/run-staged-verification.sh production-handoff` is the default
-implementation-handoff route required by `AGENTS.md` for production-code
-changes. The wrapper is runtime-only: it forwards the canonical surface name to
-one same-named Gradle lifecycle task, and the verification core expands
-`production-handoff` directly to assemble, `test`, the quality-hygiene tool
-owners, and `checkArchitecture` inside Gradle.
-By default, `production-handoff` now runs with Gradle `--continue` at the
-staged-handoff level so the canonical implementation-handoff route reports the
-broader current failure set in one run. The staged handoff still fails overall
-when any blocking dependency fails. Callers may still pass `--continue`
-explicitly for clarity, but the canonical wrapper now adds that default
-itself.
-Additional Gradle investigation flags may be passed after `--`, but the
-runtime wrapper keeps ownership of its own invocation defaults such as
-`--console=plain`. If callers pass wrapper-owned runtime flags again through
-the extra-args channel, the runtime wrapper ignores them and logs the filtered
-arguments instead of forwarding duplicate built-in Gradle options.
-Before Gradle starts, the wrapper also performs a local-socket runtime
-preflight so environments without the required IPv4 bind support fail early
-with an explicit runtime diagnostic instead of surfacing a late internal
-Gradle startup error.
-
-For check-only implementation work limited to one or more concrete enforcement
-packages under `tools/quality/**`, `tools/gradle/build-harness/**`,
-`tools/quality/rules/quality-rules/**`,
-`tools/quality/incubator/quality-rules-errorprone/**`, or verification-only
-wiring such as `build.gradle.kts`, `settings.gradle.kts`,
-`tools/gradle/build-logic/**`, or `tools/gradle/build-logic-settings/**`, the
-required handoff proof is the corresponding focused package task or canonical
-layer surface instead of the full build. When the pass touches shared
-verification wiring but still stays check-only, rerun the focused entrypoints
-for the actually affected packages; broader package waves are explicit and do
-not automatically become the full-build path.
-
-`./gradlew checkDocumentationEnforcement --console=plain` is a focused
-`Blocking Local Gate` for Markdown-backed architecture and enforcement
-documentation checks. It is intentionally outside `check` and `build` so
-documentation-only changes use a narrower proof route by default without
-pulling the full application build and install path. There is no second public
-wrapper surface for this gate; the direct Gradle task is the canonical routing
-path.
-
-A completed implementation pass is incomplete until the required
-production-code full build, check-only package/layer rerun, or
-documentation-enforcement rerun has completed, or a concrete blocker has been
-reported.
-
-Focused investigation entrypoints are `compileJava`, `pmdMain`,
-`pmdStrictMain`, `spotbugsMain`, `cpdMain`, `lizardMain`, `ckjmMain`,
-`checkCentralizedStylesheets`, `checkDefinedStyleClassSelectors`,
-`checkStylingCentralStylesheetOwner`, `checkNoCompiledArtifactsInSource`,
-`checkDesktopPackagingInputs`, `checkDesktopAppImageLayout`,
-`checkViewFxmlResources`, `checkArchitecture`, `checkViewEnforcement`,
-`checkDomainEnforcement`, `checkDataEnforcement`, `checkShellEnforcement`,
-`checkBootstrapEnforcement`, `checkStylingEnforcement`,
-`checkLayeringEnforcement`, and `checkDocumentationEnforcement`, each run
-through `./gradlew <task> --console=plain`.
-
-`pmdMain` and `spotbugsMain` are central blocking gates and may also be run as
-focused direct entrypoints. `pmdStrictMain` remains the focused text-first PMD
-entrypoint for the same blocking ruleset.
-
-Architecture-focused and handoff public entrypoints are:
-
-- `./gradlew checkArchitecture --console=plain`
-  Aggregates the public architecture surface through the canonical layer
-  surfaces, `architectureTest`, and `:build-harness:architectureCheck`.
-- `tools/gradle/run-staged-verification.sh production-handoff`
-  Aggregates the public production-code handoff route through assemble,
-  `test`, the quality-hygiene tool owners, and `checkArchitecture`.
-- `./gradlew checkDocumentationEnforcement --console=plain`
-  Aggregates the focused Markdown-backed architecture and enforcement-document
-  coverage path through `:build-harness:documentationEnforcementCheck`.
-- `./gradlew checkViewEnforcement --console=plain`
-  Aggregates the canonical View enforcement surface through the closed-world
-  View topology owner plus the shared Error Prone View core.
-- `./gradlew checkDomainEnforcement --console=plain`
-  Aggregates the canonical Domain enforcement surface through the Domain
-  Context, Layer, UseCase, ApplicationService, Published, Port, Model,
-  Helper, Constants, and Repository bundles.
-- `./gradlew checkDataEnforcement --console=plain`
-  Aggregates the canonical Data enforcement surface through the Data Layer,
-  Model, Gateway, Mapper, Persistencecore, Query, Repository, and
-  ServiceContribution bundles.
-- `./gradlew checkShellEnforcement --console=plain`
-  Aggregates the canonical Shell enforcement surface through the
-  `ShellRuntimeContext`, `AppShell`, and Shell Layer bundles.
-- `./gradlew checkBootstrapEnforcement --console=plain`
-  Aggregates the canonical Bootstrap enforcement surface through the
-  `AppBootstrap` and Bootstrap Layer bundles.
-- `./gradlew checkStylingEnforcement --console=plain`
-  Aggregates the canonical Styling enforcement surface through the
-  styling-layer and passive-`View` direct-render styling bundles.
-- `./gradlew checkLayeringEnforcement --console=plain`
-  Aggregates the canonical Layering enforcement surface through the blocker
-  Layering Architecture bundle.
-
-Internal `verify*Bundle` selector tasks may still exist for typed harness
-selection and internal ownership routing, but they are not public proof
-entrypoints and must not replace the canonical layer-surface commands above.
-The same rule applies to internal build-harness topology tasks whose technical
-names still begin with `check*`.
-
-The Gradle convention implementation must keep these public entrypoints stable
-while organizing internal wiring by policy area: invocation behavior, compiler
-gates, graph analysis, quality reports, repository/resource policy, and the
-central aggregate. This keeps local command usage stable while making the build
-logic easier to extend.
-
-### Parallel Local Worktrees
-
-Local Gradle gates support concurrent agent work through checkout separation,
-not through wrapper-managed same-worktree isolation.
-
-Parallel implementation work MUST use one linked git worktree plus one branch
-per agent. The preferred local shape is:
-
-1. create a linked worktree under `build/codex-worktrees/<topic>/`
-2. create or switch to an agent-owned branch inside that worktree
-3. implement and verify there with the normal public Gradle entrypoints
-4. merge back into the repo-root `SaltMarcher/` checkout only after the
-   required local verification surface is green
-5. remove the temporary linked worktree and delete the temporary local branch
-   once the verified result lives in the real local working tree
-
-This keeps each agent's mutable `build/` and `.gradle/` state naturally scoped
-to its own filesystem tree. The harness therefore no longer creates
-per-invocation `.gradle/isolated-runs/**` roots, synthetic included-build
-mirrors, wrapper-published plugin repositories, generated descriptor snapshots,
-or wrapper-owned retained-failure export surfaces.
-
-The verification core still computes focused bundle selection during settings
-evaluation and still registers the same public layer surfaces,
-`checkDocumentationEnforcement`, and staged lifecycle tasks. The difference is
-that the included builds and bundle descriptors are resolved directly from the
-active worktree layout.
-
-`./gradlew` now uses Gradle's normal daemon behavior unless the caller
-explicitly passes `--daemon` or `--no-daemon`. `tools/gradle/run-observable-gradle.sh` and
-`tools/gradle/run-staged-verification.sh` remain the preferred runtime wrappers
-for observability and staged surface routing, but they no longer provide
-parallel safety by rewriting Gradle cache or build directories.
-
-Callers may still pass investigation-oriented extra args such as
-`--rerun-tasks`, `--stacktrace`, `--info`, or `--scan`, while the runtime
-wrappers continue to own their own invocation defaults such as
-`--console=plain` and the default `--continue` policy for diagnostic surfaces.
-
-This does not make bytecode-dependent entrypoints source-only. `spotbugsMain`,
-`ckjmMain`, and the public layer surfaces still require current compiled
-classes; if `compileJava` fails, those entrypoints may be skipped because
-their prerequisite failed rather than because another independent check
-failed.
-
-Local blocking Gradle gates may still finish `UP-TO-DATE` or `FROM-CACHE` when
-their declared inputs and outputs are unchanged. That reuse now comes from
-normal Gradle behavior inside the active worktree rather than from wrapper
-managed same-worktree snapshot infrastructure.
-
 ## References
 
 - [Quality Platforms Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/verification/quality-platforms.md:1)
+- [Quality Platforms Local Entrypoints](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/verification/quality-platforms-local-entrypoints.md:1)
 - [Layering Architecture Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/layering-architecture-enforcement.md:1)
 - [Styling Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/styling.md:1)

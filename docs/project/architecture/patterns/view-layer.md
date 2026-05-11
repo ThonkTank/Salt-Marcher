@@ -319,49 +319,21 @@ Domain read-side contract:
    read-side `published/*Model`, the architecture is incomplete and must not
    be disguised by direct Binder-side result-to-view-state copying
 
-This means:
+Consequences:
 
-- `ContributionModel` and `ContentModel` do expose active tool, selection,
-  hovered target, and other input-relevant state when the same-root
-  `IntentHandler` needs those facts to interpret a full `ViewInputEvent`
-- those exposed facts remain projection state only; they are not an
-  `IntentHandler` backchannel for reconstructing write-side commands from
-  imperative request fields or ad-hoc session mirrors
-- `ContributionModel` and `ContentModel` do not expose request fields, command
-  carriers, request-token/publish-like outward APIs, service handles, shell
-  contracts, or deep nested orchestration state
-- `ContributionModel` and `ContentModel` expose observable state only; they do
-  not emit separate presentation-event APIs
-- pure view-layer state such as open dropdown state, transient widget focus,
-  or comparable UI-only mode state may be mutated directly by the local
-  `IntentHandler` in the same-root `ContributionModel` or a reused child
-  `ContentModel` without a domain roundtrip
-- if one same-context `published/*Model` intentionally represents an
-  application-owned session rather than authored write-model truth, that
-  session may still own authoritative non-persisted interaction facts such as
-  editor selection, preview, active tool, or projection settings
-  provided those facts return to the view layer only through
-  `current()` and `subscribe(...)` on that `published/*Model`
-- a `View` without a local `IntentHandler` still stays passive; it does not
+- `ContributionModel` and `ContentModel` may expose input-relevant projection
+  facts, but not request fields, command carriers, request-token APIs, service
+  handles, shell contracts, or deep orchestration state.
+- pure view-layer state may be mutated by the local `IntentHandler`; domain
+  state returns only through same-context `published/*Model` readback.
+- a `View` without a local `IntentHandler` still stays passive and must not
   infer business meaning, construct write-side carriers, or mutate model state
-  through alternate callback seams
-- a reusable unit owns its own `ContentModel`; reusable projection or
-  interpretation duties do not shift into the passive `View` itself
-- when a reusable shared primitive still needs broad preparation logic after
-  that move, the next step is stronger model or readback preparation above the
-  primitive, not a spread of free top-level helper files inside the primitive
-  package
-- `IntentHandler` owns input interpretation and direct service invocation, but
-  not view instantiation or shell APIs
-- when a domain roundtrip is needed, the `IntentHandler` builds exactly one
-  focused work request from the received `ViewInputEvent`; it does not
-  synthesize refresh/request protocols or rebuild a richer command/session
-  object from projection state
-- thin same-context `published/*Model` readback remains the only authoritative
-  return path into the view layer
-- passive Views do not imperatively query business meaning, do not receive
-  presenter-style commands, do not send ad-hoc partial event bags, and do not
-  expect synchronous technical acknowledgements from the `IntentHandler`
+  through alternate callback seams.
+- reusable units own their `ContentModel`; reusable projection or
+  interpretation duties do not shift into the passive `View`.
+- `IntentHandler` owns input interpretation and direct service invocation, not
+  view instantiation, shell APIs, refresh protocols, or richer command/session
+  reconstruction from projection state.
 
 ## References
 
@@ -369,10 +341,5 @@ This means:
 - [Shell Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/shell-layer.md:1)
 - [Bootstrap Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/bootstrap.md:1)
 - [View Layer Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/view-layer-enforcement.md:1)
-- [View Contribution Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/view-contribution-enforcement.md:1)
-- [View Binder Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/view-binder-enforcement.md:1)
-- [View ContributionModel Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/view-contribution-model-enforcement.md:1)
-- [View ContentModel Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/view-content-model-enforcement.md:1)
-- [View IntentHandler Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/view-intent-handler-enforcement.md:1)
 - [View Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/view-view-enforcement.md:1)
 - [ViewInputEvent Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/view-view-input-event-enforcement.md:1)

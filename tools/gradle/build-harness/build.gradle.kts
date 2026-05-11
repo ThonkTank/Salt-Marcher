@@ -143,6 +143,7 @@ activeEnforcementBundleIds.forEach { bundleId ->
 
 if (!focusedEnforcementBundleMode) {
     val documentationRootRuleClasses = listOf(
+        "saltmarcher.architecture.documentation.DocumentationHygieneRules",
         "saltmarcher.architecture.documentation.domain.DomainDocumentationRules"
     )
     registerBuildHarnessTask(

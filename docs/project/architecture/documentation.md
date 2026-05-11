@@ -121,7 +121,7 @@ owning `docs/<feature>/<type>/` or `docs/project/<type>/` location.
 - Use links instead of restating a topic that already has a source of truth.
 - Do not mix glossary, architecture, feature spec, and delivery planning in one
   file.
-- Split a document once it becomes hard to scan or exceeds roughly 350 lines.
+- Split a document once it becomes hard to scan or exceeds 350 lines.
 - Keep one language per document. German and English are both allowed.
 - Prefer fixed filenames at the owning root over free-form naming.
 
@@ -142,6 +142,9 @@ Documentation governance is broader than compile-time enforcement.
 - That gate owns focused structural enforcement for governed documentation
   surfaces such as `docs/**`, `src/domain/**/DOMAIN.md`, repo-local
   `AGENTS.md`, and Markdown documentation under `tools/quality/**`.
+- The gate mechanically blocks missing `docs/**` metadata, forbidden legacy
+  documentation roots, redirect-only source Markdown, and Markdown files over
+  350 lines on governed repo-facing surfaces.
 - Mechanical checks may lint structure when a dedicated docs gate exists.
 - Mixed implementation changes that also touch non-documentation code, Gradle,
   or build sources still follow the broader verification path owned by

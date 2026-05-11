@@ -177,7 +177,7 @@ Public verification aggregates and canonical layer surfaces should register
 through typed registry providers rather than by matching task names at
 configuration time. Bundle-owned verification tasks remain implementation
 details behind those surfaces unless a task is explicitly documented here or in
-`quality-platforms-local-gates.md` as a public focused utility gate.
+`quality-platforms-local-entrypoints.md` as a public focused utility gate.
 The remaining root-owned build-harness optional rules are now registry-driven
 as well: bundles contribute root `architectureCheck` and
 `documentationEnforcementCheck` rule classes and documentation-coverage spec
@@ -231,3 +231,4 @@ branches, not from wrapper-managed cache or build-directory rewriting.
 - [Documentation Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/documentation.md:1)
 - [Quality Platforms Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/verification/quality-platforms.md:1)
 - [Quality Platforms Local Gates](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/verification/quality-platforms-local-gates.md:1)
+- [Quality Platforms Local Entrypoints](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/verification/quality-platforms-local-entrypoints.md:1)

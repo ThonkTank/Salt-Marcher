@@ -91,9 +91,12 @@ complete report, but a violating gate must not produce a successful `check` or
 ## Detailed Operating Subdocuments
 
 - [Quality Platforms Local Gates](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/verification/quality-platforms-local-gates.md:1)
+  owns the detailed local gate inventory
+- [Quality Platforms Local Entrypoints](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/verification/quality-platforms-local-entrypoints.md:1)
+  owns aggregate entrypoints, staged handoff routing, and parallel local
+  worktree policy
 - [Verification Core Architecture](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/verification-core.md:1)
-  owns the detailed local gate inventory, aggregate entrypoints, and parallel
-  local worktree policy
+  owns the Gradle-side verification-core architecture behind those surfaces
 - [Quality Platforms CI And Branch Protection](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/verification/quality-platforms-ci-and-branch-protection.md:1)
   owns the detailed GitHub Actions, service-setup, branch-protection, and
   review-governance policy
@@ -204,8 +207,8 @@ coverage comes through the public `checkArchitecture` aggregate.
 documentation-only work has a smaller proof route.
 
 Default local proof routing by change type lives in
-`docs/project/verification/quality-platforms-local-gates.md` and `AGENTS.md`:
-production-code changes use
+`docs/project/verification/quality-platforms-local-entrypoints.md` and
+`AGENTS.md`: production-code changes use
 `tools/gradle/run-staged-verification.sh production-handoff`,
 documentation-only changes use
 `./gradlew checkDocumentationEnforcement --console=plain`, and check-only
@@ -221,7 +224,7 @@ engines stay behind those surfaces.
 
 Wrapper-based local entrypoints keep their public names, but parallel local
 safety now comes from the worktree workflow described in
-`docs/project/verification/quality-platforms-local-gates.md`: one linked git
+`docs/project/verification/quality-platforms-local-entrypoints.md`: one linked git
 worktree plus one branch per agent, verification inside that worktree, and
 merge-back only after the required local surface is green.
 
@@ -236,6 +239,7 @@ enforced, the enforcement document is the canonical classification.
 - [Documentation Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/documentation.md:1)
 - [Styling Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/styling.md:1)
 - [Quality Platforms Local Gates](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/verification/quality-platforms-local-gates.md:1)
+- [Quality Platforms Local Entrypoints](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/verification/quality-platforms-local-entrypoints.md:1)
 - [Verification Core Architecture](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/verification-core.md:1)
 - [Quality Platforms CI And Branch Protection](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/verification/quality-platforms-ci-and-branch-protection.md:1)
 - [PMD Java Design Rules Reference](/home/aaron/Schreibtisch/projects/references/quality-platforms/pmd-java-design-rules.md:1)
