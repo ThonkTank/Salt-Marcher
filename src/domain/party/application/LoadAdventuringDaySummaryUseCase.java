@@ -4,6 +4,8 @@ import src.domain.party.model.roster.helper.PartyAdventuringDayBudgetHelper;
 import src.domain.party.model.roster.model.PartyCharacter;
 import src.domain.party.model.roster.repository.PartyRosterRepository;
 import src.domain.party.published.RestCadenceStatus;
+import src.domain.party.published.RestCadenceUrgency;
+import src.domain.party.published.RestMilestone;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -27,40 +29,6 @@ public final class LoadAdventuringDaySummaryUseCase {
             summary.include(restCadenceFor(character));
         }
         return summary.toStatus(activeMembers);
-    }
-
-    public static final class RestMilestone {
-
-        public static final RestMilestone SHORT_REST_ONE = new RestMilestone("SHORT_REST_ONE");
-        public static final RestMilestone SHORT_REST_TWO = new RestMilestone("SHORT_REST_TWO");
-        public static final RestMilestone LONG_REST = new RestMilestone("LONG_REST");
-
-        private final String name;
-
-        private RestMilestone(String name) {
-            this.name = name;
-        }
-
-        public String name() {
-            return name;
-        }
-    }
-
-    public static final class RestCadenceUrgency {
-
-        public static final RestCadenceUrgency NORMAL = new RestCadenceUrgency("NORMAL");
-        public static final RestCadenceUrgency SOON = new RestCadenceUrgency("SOON");
-        public static final RestCadenceUrgency OVERDUE = new RestCadenceUrgency("OVERDUE");
-
-        private final String name;
-
-        private RestCadenceUrgency(String name) {
-            this.name = name;
-        }
-
-        public String name() {
-            return name;
-        }
     }
 
     public record AdventuringDayStatus(

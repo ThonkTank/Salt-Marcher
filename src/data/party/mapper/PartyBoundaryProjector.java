@@ -225,25 +225,11 @@ public final class PartyBoundaryProjector {
         return null;
     }
 
-    private static RestCadenceStatus mapRestCadenceStatus(LoadAdventuringDaySummaryUseCase.RestCadenceStatus status) {
+    private static RestCadenceStatus mapRestCadenceStatus(RestCadenceStatus status) {
         if (status == null) {
             return new RestCadenceStatus(null, RestMilestone.LONG_REST, 0, RestCadenceUrgency.NORMAL);
         }
-        LoadAdventuringDaySummaryUseCase.RestMilestone milestone = status.nextMilestone();
-        LoadAdventuringDaySummaryUseCase.RestCadenceUrgency urgency = status.urgency();
-        return new RestCadenceStatus(
-                status.characterId(),
-                milestone == LoadAdventuringDaySummaryUseCase.RestMilestone.SHORT_REST_ONE
-                        ? RestMilestone.SHORT_REST_ONE
-                        : milestone == LoadAdventuringDaySummaryUseCase.RestMilestone.SHORT_REST_TWO
-                                ? RestMilestone.SHORT_REST_TWO
-                                : RestMilestone.LONG_REST,
-                status.xpDelta(),
-                urgency == LoadAdventuringDaySummaryUseCase.RestCadenceUrgency.SOON
-                        ? RestCadenceUrgency.SOON
-                        : urgency == LoadAdventuringDaySummaryUseCase.RestCadenceUrgency.OVERDUE
-                                ? RestCadenceUrgency.OVERDUE
-                                : RestCadenceUrgency.NORMAL);
+        return status;
     }
 
     private static AdventuringDayBudget mapAdventuringDayBudget(CalculateAdventuringDayUseCase.Budget budget) {

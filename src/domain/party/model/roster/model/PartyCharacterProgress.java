@@ -1,6 +1,7 @@
 package src.domain.party.model.roster.model;
 
 import src.domain.party.model.roster.helper.PartyLevelProgressionHelper;
+import src.domain.party.published.RestType;
 
 public record PartyCharacterProgress(
         int level,

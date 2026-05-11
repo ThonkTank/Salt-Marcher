@@ -1,6 +1,10 @@
 package src.domain.party.model.roster.model;
 
 import java.util.Objects;
+import src.domain.party.published.CharacterDraft;
+import src.domain.party.published.MembershipState;
+import src.domain.party.published.RestType;
+
 public final class PartyCharacter {
 
     private final long id;

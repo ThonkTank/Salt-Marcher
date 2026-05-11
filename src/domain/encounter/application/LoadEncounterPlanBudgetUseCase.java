@@ -54,7 +54,7 @@ public final class LoadEncounterPlanBudgetUseCase {
         EncounterDifficultyMathHelper.Thresholds thresholds = EncounterDifficultyMathHelper.thresholdsFor(activeLevels);
         double multiplier = EncounterDifficultyTargetHelper.multiplierFor(creatureCount, activeLevels.size());
         int adjustedXp = (int) Math.round(totalBaseXp * multiplier);
-        return Result.success(new PlanBudgetSummary(
+        return Result.success(new EncounterPlanBudgetSummary(
                 plan.id(),
                 plan.name(),
                 plan.generatedLabel(),

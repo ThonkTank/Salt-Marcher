@@ -1,6 +1,9 @@
 package src.domain.party.model.roster.model;
 
 import java.util.Objects;
+import src.domain.party.published.PartyDungeonTravelLocationKind;
+import src.domain.party.published.PartyTravelHeading;
+import src.domain.party.published.PartyTravelTile;
 
 public final class PartyDungeonTravelLocation extends PartyTravelLocation {
 

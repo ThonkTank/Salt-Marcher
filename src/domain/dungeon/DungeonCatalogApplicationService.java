@@ -59,7 +59,7 @@ public final class DungeonCatalogApplicationService {
                     DungeonMapCatalogResponse.MutationKind.RENAMED,
                     id(renameDungeonMapUseCase.execute(domainId(renameMap.mapId()), renameMap.mapName()).mapId()));
         }
-        DungeonMapCatalogCommand.DeleteMap deleteMap = (DungeonMapCatalogCommand.DeleteMap) command;
+        DungeonAuthoredReadCommand.MapSelection deleteMap = (DungeonAuthoredReadCommand.MapSelection) command;
         return new DungeonMapCatalogResponse.MapMutation(
                 DungeonMapCatalogResponse.MutationKind.DELETED,
                 id(deleteDungeonMapUseCase.execute(domainId(deleteMap.mapId()))));
