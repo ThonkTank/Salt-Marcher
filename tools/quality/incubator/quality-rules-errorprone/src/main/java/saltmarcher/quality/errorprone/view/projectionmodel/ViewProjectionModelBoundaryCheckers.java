@@ -14,7 +14,6 @@ import java.util.Set;
 import javax.lang.model.element.Modifier;
 import saltmarcher.quality.errorprone.view.ViewArchitectureSupport;
 import saltmarcher.quality.errorprone.view.ViewRole;
-import saltmarcher.quality.errorprone.view.ViewRoleDependencySupport;
 import saltmarcher.quality.errorprone.view.ViewSourceDescriptor;
 
 public final class ViewProjectionModelBoundaryCheckers {
@@ -150,7 +149,7 @@ public final class ViewProjectionModelBoundaryCheckers {
         if (!source.isRecognizedViewSource() || source.role() != role) {
             return Description.NO_MATCH;
         }
-        Set<String> forbiddenReferences = ViewRoleDependencySupport.collectForbiddenReferences(tree, state, source);
+        Set<String> forbiddenReferences = collectForbiddenDependencyReferences(tree, state, source);
         if (forbiddenReferences.isEmpty()) {
             return Description.NO_MATCH;
         }
@@ -193,6 +192,59 @@ public final class ViewProjectionModelBoundaryCheckers {
                 .build();
     }
 
+    private static Set<String> collectForbiddenDependencyReferences(
+            CompilationUnitTree tree,
+            VisitorState state,
+            ViewSourceDescriptor source
+    ) {
+        String sourceText = sourceText(tree, state);
+        Set<String> forbiddenReferences = new LinkedHashSet<>();
+        for (String referencedType : ViewArchitectureSupport.collectReferencedTypes(tree)) {
+            if (isForbiddenDependencyReference(referencedType, source, sourceText)) {
+                forbiddenReferences.add(referencedType);
+            }
+        }
+        return forbiddenReferences;
+    }
+
+    private static boolean isForbiddenDependencyReference(
+            String referencedType,
+            ViewSourceDescriptor source,
+            String sourceText
+    ) {
+        if (referencedType == null || referencedType.isBlank()) {
+            return false;
+        }
+        if ("java.util.concurrent.Callable".equals(referencedType)
+                && !sourceText.contains("Callable")
+                && !sourceText.contains("java.util.concurrent")) {
+            return false;
+        }
+        if (ViewArchitectureSupport.isForbiddenViewInfrastructureJdkType(referencedType)) {
+            return true;
+        }
+        if (referencedType.startsWith("javafx.")) {
+            return !ViewArchitectureSupport.isAllowedViewModelJavafxType(referencedType);
+        }
+        if (referencedType.startsWith("shell.") || referencedType.startsWith("src.data.")) {
+            return true;
+        }
+        if (referencedType.startsWith("src.domain.")) {
+            return !ViewArchitectureSupport.isAllowedPresentationModelDomainBoundary(referencedType);
+        }
+        ViewSourceDescriptor referencedSource = ViewSourceDescriptor.describeReferencedType(referencedType);
+        if (!referencedSource.isRecognizedViewSource()) {
+            return false;
+        }
+        if (!referencedSource.isProjectionModelSource()) {
+            return true;
+        }
+        if (source.isSameViewUnitAs(referencedSource)) {
+            return false;
+        }
+        return source.isSlotcontentSource() || !referencedSource.isReusableProjectionModelSource();
+    }
+
     private static boolean isForbiddenNestedCarrier(ClassTree nestedClass) {
         if (nestedClass.getSimpleName().isEmpty()) {
             return false;
@@ -217,5 +269,17 @@ public final class ViewProjectionModelBoundaryCheckers {
     private static boolean isPublishedCarrier(String constructedType) {
         return constructedType != null
                 && constructedType.matches("^src\\.domain\\.[^.]+\\.published\\.[^.]+(?:\\$.*)?$");
+    }
+
+    private static String sourceText(CompilationUnitTree tree, VisitorState state) {
+        if (tree.getSourceFile() == null) {
+            return "";
+        }
+        try {
+            String sourceText = state.getSourceForNode(tree);
+            return sourceText == null ? "" : sourceText;
+        } catch (IllegalArgumentException ignored) {
+            return "";
+        }
     }
 }

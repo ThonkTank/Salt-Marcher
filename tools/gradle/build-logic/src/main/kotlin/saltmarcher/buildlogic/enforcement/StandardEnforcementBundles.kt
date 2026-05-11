@@ -211,6 +211,8 @@ fun standardEnforcementBundleDescriptors(): List<EnforcementBundleDescriptor> = 
     bundle("viewLayer", 0) {
         selectorTask("Internal selector for the closed-world View Layer topology bundle.")
         verificationSources(listOf("shell", "src"), listOf("api/**/*.java", "view/**/*.java", "domain/**/published/**/*.java"))
+        // The topology owner keeps its historical included-build task name, but
+        // the public routing surface stays checkViewEnforcement only.
         buildHarnessTopologyTask(
             "checkViewLayerEnforcement",
             listOf("saltmarcher.architecture.view.ViewTopologyPerimeterRules", "saltmarcher.architecture.view.ViewLayerTopologyRules")

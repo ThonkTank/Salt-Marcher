@@ -42,6 +42,27 @@ public final class ViewProjectionModelBoundaryCheckersTest {
     }
 
     @Test
+    public void rejectsLegacyViewModelReferences() {
+        newContributionModelDependencyHelper()
+                .addSourceLines(
+                        "src/view/leftbartabs/foo/FooContributionModel.java",
+                        "package src.view.leftbartabs.foo;",
+                        "// BUG: Diagnostic matches: legacy-models",
+                        "public final class FooContributionModel {",
+                        "  private final FooViewModel legacyA = null;",
+                        "  private final FooPresentationModel legacyB = null;",
+                        "}")
+                .addSourceLines("src/view/leftbartabs/foo/FooViewModel.java", "package src.view.leftbartabs.foo;", "public final class FooViewModel {}")
+                .addSourceLines("src/view/leftbartabs/foo/FooPresentationModel.java", "package src.view.leftbartabs.foo;", "public final class FooPresentationModel {}")
+                .expectErrorMessage("legacy-models", containsAll(
+                        "violates ContributionModel dependency boundaries",
+                        "src.view.leftbartabs.foo.FooViewModel",
+                        "src.view.leftbartabs.foo.FooPresentationModel"))
+                .expectResult(Main.Result.ERROR)
+                .doTest();
+    }
+
+    @Test
     public void rejectsNestedContentModelCarrier() {
         newContentModelFlatSurfaceHelper()
                 .addSourceLines(

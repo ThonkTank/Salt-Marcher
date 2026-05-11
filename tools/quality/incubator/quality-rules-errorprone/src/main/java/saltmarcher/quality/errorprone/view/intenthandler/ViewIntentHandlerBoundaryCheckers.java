@@ -19,7 +19,6 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 import saltmarcher.quality.errorprone.view.ViewArchitectureSupport;
 import saltmarcher.quality.errorprone.view.ViewRole;
-import saltmarcher.quality.errorprone.view.ViewRoleDependencySupport;
 import saltmarcher.quality.errorprone.view.ViewSourceDescriptor;
 
 public final class ViewIntentHandlerBoundaryCheckers {
@@ -64,7 +63,7 @@ public final class ViewIntentHandlerBoundaryCheckers {
                 return Description.NO_MATCH;
             }
 
-            Set<String> forbiddenReferences = ViewRoleDependencySupport.collectForbiddenReferences(tree, state, source);
+            Set<String> forbiddenReferences = collectForbiddenDependencyReferences(tree, state, source);
             forbiddenReferences.addAll(collectLegacyPublishedEventProtocols(tree));
             if (forbiddenReferences.isEmpty()) {
                 return Description.NO_MATCH;
@@ -147,12 +146,62 @@ public final class ViewIntentHandlerBoundaryCheckers {
         return violations;
     }
 
+    private static Set<String> collectForbiddenDependencyReferences(
+            CompilationUnitTree tree,
+            VisitorState state,
+            ViewSourceDescriptor source
+    ) {
+        String sourceText = sourceText(tree, state);
+        Set<String> forbiddenReferences = new LinkedHashSet<>();
+        for (String referencedType : ViewArchitectureSupport.collectReferencedTypes(tree)) {
+            if (isForbiddenDependencyReference(referencedType, source, sourceText)) {
+                forbiddenReferences.add(referencedType);
+            }
+        }
+        return forbiddenReferences;
+    }
+
+    private static boolean isForbiddenDependencyReference(
+            String referencedType,
+            ViewSourceDescriptor source,
+            String sourceText
+    ) {
+        if (referencedType == null || referencedType.isBlank()) {
+            return false;
+        }
+        if ("java.util.concurrent.Callable".equals(referencedType)
+                && !sourceText.contains("Callable")
+                && !sourceText.contains("java.util.concurrent")) {
+            return false;
+        }
+        if (ViewArchitectureSupport.isForbiddenViewInfrastructureJdkType(referencedType)) {
+            return true;
+        }
+        if (referencedType.startsWith("javafx.") || referencedType.startsWith("shell.") || referencedType.startsWith("src.data.")) {
+            return true;
+        }
+        if (referencedType.startsWith("src.domain.")) {
+            return !ViewArchitectureSupport.isAllowedIntentHandlerDomainBoundary(source.packageName(), referencedType);
+        }
+        ViewSourceDescriptor referencedSource = ViewSourceDescriptor.describeReferencedType(referencedType);
+        if (!referencedSource.isRecognizedViewSource()) {
+            return false;
+        }
+        return switch (referencedSource.role()) {
+            case INTENT_HANDLER -> !source.isSameViewUnitAs(referencedSource);
+            case VIEW_INPUT_EVENT -> !source.isSameViewUnitOrReusableSlotcontent(referencedSource, ViewRole.VIEW_INPUT_EVENT);
+            case PUBLISHED_EVENT -> true;
+            default -> !referencedSource.isProjectionModelSource()
+                    || !source.isSameViewUnitOrReusableProjectionModel(referencedSource);
+        };
+    }
+
     private static boolean referencesPublishedEvent(Tree tree) {
         Set<String> referencedTypes = new LinkedHashSet<>();
         ViewArchitectureSupport.collectReferencedTypes(tree, referencedTypes);
         return referencedTypes.stream()
-                .map(ViewArchitectureSupport::topLevelQualifiedTypeNameOf)
-                .anyMatch(ViewArchitectureSupport::isTargetPublishedEventReference);
+                .map(ViewSourceDescriptor::describeReferencedType)
+                .anyMatch(referencedSource -> referencedSource.hasRole(ViewRole.PUBLISHED_EVENT));
     }
 
     private static boolean isAllowedConsumeMethod(MethodTree methodTree, String sourcePackageName) {
@@ -181,11 +230,11 @@ public final class ViewIntentHandlerBoundaryCheckers {
             }
         }
         return referencedTypes.stream()
-                .anyMatch(referencedType ->
-                        ViewArchitectureSupport.isTargetViewInputEventReference(referencedType)
-                                && ViewArchitectureSupport.isSameViewRootOrReusableSlotcontentViewInputEventReference(
-                                sourcePackageName,
-                                referencedType));
+                .map(ViewSourceDescriptor::describeReferencedType)
+                .anyMatch(referencedSource ->
+                        referencedSource.hasRole(ViewRole.VIEW_INPUT_EVENT)
+                                && (referencedSource.isSameViewUnitPackage(sourcePackageName)
+                                || referencedSource.isReusableSlotcontentRole(ViewRole.VIEW_INPUT_EVENT)));
     }
 
     private static void collectDiscriminatorDispatchViolations(
@@ -225,5 +274,17 @@ public final class ViewIntentHandlerBoundaryCheckers {
     private static Tree boundaryAnchor(CompilationUnitTree tree) {
         Tree anchor = ViewArchitectureSupport.topLevelClass(tree);
         return anchor == null ? tree : anchor;
+    }
+
+    private static String sourceText(CompilationUnitTree tree, VisitorState state) {
+        if (tree.getSourceFile() == null) {
+            return "";
+        }
+        try {
+            String sourceText = state.getSourceForNode(tree);
+            return sourceText == null ? "" : sourceText;
+        } catch (IllegalArgumentException ignored) {
+            return "";
+        }
     }
 }

@@ -100,6 +100,9 @@ technical owners: the closed-world build-harness topology core and the shared
 Error Prone View core. The verification core MUST NOT open a second
 alternative View structure through extra public role-local entrypoints, a
 third shared core, or bundle-specific root-launcher families.
+Physical module layout and owner-document splits therefore do not need to map
+1:1 to the internal technical owner shape as long as the public surface truth
+and the two-owner View model stay unchanged.
 
 Bundle owners MAY know their private ArchUnit, Error Prone, or build-harness
 tasks. They MUST NOT depend on shell wrappers.

@@ -52,8 +52,6 @@ public enum ViewRole {
     }
 
     public boolean isProjectionModel() {
-        return this == LEGACY_VIEW_MODEL
-                || this == CONTRIBUTION_MODEL
-                || this == CONTENT_MODEL;
+        return this == CONTRIBUTION_MODEL || this == CONTENT_MODEL;
     }
 }

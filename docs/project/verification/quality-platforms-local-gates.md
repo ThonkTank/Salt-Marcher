@@ -60,7 +60,10 @@ Styling, and Layering entrypoints are `checkDomainEnforcement`,
 `checkLayeringEnforcement`. Whole-program compiled dead-code analysis enters
 through `checkNoDeadCode`. Internal bundle tasks may still exist as technical
 implementation surfaces beneath those layer entrypoints, but they are not part
-of the public verification API. The
+of the public verification API. That also applies when an internal build-harness
+topology task still carries a technical `check*` name such as
+`checkViewLayerEnforcement`; the public command remains
+`checkViewEnforcement`. The
 technical owner split behind the public View route is now only the
 build-harness View topology core plus the shared Error Prone View core under
 `tools/quality/incubator/quality-rules-errorprone/**`.
@@ -335,6 +338,8 @@ Architecture-focused and handoff public entrypoints are:
 Internal `verify*Bundle` selector tasks may still exist for typed harness
 selection and internal ownership routing, but they are not public proof
 entrypoints and must not replace the canonical layer-surface commands above.
+The same rule applies to internal build-harness topology tasks whose technical
+names still begin with `check*`.
 
 The Gradle convention implementation must keep these public entrypoints stable
 while organizing internal wiring by policy area: invocation behavior, compiler
