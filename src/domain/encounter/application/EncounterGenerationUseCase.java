@@ -3,9 +3,10 @@ package src.domain.encounter.application;
 import java.util.List;
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
-import src.domain.encounter.generation.value.EncounterGenerationRequest;
-import src.domain.encounter.reference.port.EncounterCreatureLookup;
-import src.domain.encounter.reference.port.EncounterTableCandidateLookup;
+import src.domain.encounter.model.generation.model.EncounterGenerationDiagnosticsData;
+import src.domain.encounter.model.generation.model.EncounterGenerationRequest;
+import src.domain.encounter.model.reference.repository.EncounterCreatureRepository;
+import src.domain.encounter.model.reference.repository.EncounterTableCandidateRepository;
 import src.domain.encounter.model.session.repository.EncounterPartyFactsRepository;
 
 public final class EncounterGenerationUseCase {
@@ -13,17 +14,17 @@ public final class EncounterGenerationUseCase {
     private static final int SEARCH_LIMIT = 240;
 
     private final EncounterPartyFactsRepository party;
-    private final EncounterCreatureLookup creatures;
-    private final @Nullable EncounterTableCandidateLookup encounterTables;
+    private final EncounterCreatureRepository creatures;
+    private final @Nullable EncounterTableCandidateRepository encounterTables;
 
-    public EncounterGenerationUseCase(EncounterPartyFactsRepository party, EncounterCreatureLookup creatures) {
+    public EncounterGenerationUseCase(EncounterPartyFactsRepository party, EncounterCreatureRepository creatures) {
         this(party, creatures, null);
     }
 
     public EncounterGenerationUseCase(
             EncounterPartyFactsRepository party,
-            EncounterCreatureLookup creatures,
-            @Nullable EncounterTableCandidateLookup encounterTables
+            EncounterCreatureRepository creatures,
+            @Nullable EncounterTableCandidateRepository encounterTables
     ) {
         this.party = Objects.requireNonNull(party, "party");
         this.creatures = Objects.requireNonNull(creatures, "creatures");
@@ -101,7 +102,7 @@ public final class EncounterGenerationUseCase {
 
     public record GeneratedAlternative(
             String title,
-            src.domain.encounter.generation.value.EncounterDifficultyIntent achievedDifficulty,
+            src.domain.encounter.model.generation.model.EncounterDifficultyIntent achievedDifficulty,
             int adjustedXp,
             List<GeneratedCreature> creatures
     ) {
@@ -109,7 +110,7 @@ public final class EncounterGenerationUseCase {
         public GeneratedAlternative {
             title = title == null ? "" : title;
             achievedDifficulty = achievedDifficulty == null
-                    ? src.domain.encounter.generation.value.EncounterDifficultyIntent.defaultIntent()
+                    ? src.domain.encounter.model.generation.model.EncounterDifficultyIntent.defaultIntent()
                     : achievedDifficulty;
             adjustedXp = Math.max(0, adjustedXp);
             creatures = creatures == null ? List.of() : List.copyOf(creatures);

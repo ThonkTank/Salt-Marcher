@@ -2,9 +2,9 @@ package src.domain.encounter.application;
 
 import java.util.List;
 import java.util.Objects;
-import src.domain.encounter.plan.aggregate.EncounterPlan;
-import src.domain.encounter.plan.port.EncounterPlanRepository;
-import src.domain.encounter.plan.value.EncounterPlanCreature;
+import src.domain.encounter.model.plan.model.EncounterPlan;
+import src.domain.encounter.model.plan.repository.EncounterPlanRepository;
+import src.domain.encounter.model.plan.model.EncounterPlanCreature;
 
 public final class SaveEncounterPlanUseCase {
 

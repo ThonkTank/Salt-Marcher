@@ -2,8 +2,8 @@ package src.domain.encounter.model.session.model;
 
 import java.util.List;
 import java.util.Optional;
-import src.domain.encounter.generation.value.EncounterGenerationInputs;
-import src.domain.encounter.generation.value.EncounterGenerationRequest;
+import src.domain.encounter.model.generation.model.EncounterGenerationInputs;
+import src.domain.encounter.model.generation.model.EncounterGenerationRequest;
 import src.domain.encounter.model.session.model.EncounterSessionValues.InitiativeInput;
 
 public record EncounterSessionCommand(

@@ -2,9 +2,9 @@ package src.domain.encounter.model.session.model;
 
 import java.util.List;
 import java.util.Optional;
-import src.domain.encounter.generation.value.EncounterGenerationInputs;
-import src.domain.encounter.plan.aggregate.EncounterPlan;
-import src.domain.encounter.plan.value.EncounterPlanSummary;
+import src.domain.encounter.model.generation.model.EncounterGenerationInputs;
+import src.domain.encounter.model.plan.model.EncounterPlan;
+import src.domain.encounter.model.plan.model.EncounterPlanSummary;
 
 public final class EncounterSessionValues {
 

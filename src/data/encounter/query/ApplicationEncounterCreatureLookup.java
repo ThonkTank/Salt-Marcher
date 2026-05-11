@@ -5,25 +5,25 @@ import java.util.Objects;
 import java.util.Optional;
 import src.data.creatures.query.SqliteCreatureCatalogQueryAdapter;
 import src.domain.creatures.catalog.port.CreatureCatalogLookup;
-import src.domain.encounter.generation.policy.EncounterCandidateProfiles;
-import src.domain.encounter.generation.value.EncounterCandidateProfile;
-import src.domain.encounter.generation.value.EncounterCreatureFacts;
-import src.domain.encounter.reference.port.EncounterCreatureLookup;
-import src.domain.encounter.reference.value.EncounterCreatureCandidateCriteria;
-import src.domain.encounter.reference.value.EncounterCreatureReference;
+import src.domain.encounter.model.generation.helper.EncounterCandidateProfileHelper;
+import src.domain.encounter.model.generation.model.EncounterCandidateProfile;
+import src.domain.encounter.model.generation.model.EncounterCreatureFacts;
+import src.domain.encounter.model.reference.repository.EncounterCreatureRepository;
+import src.domain.encounter.model.reference.model.EncounterCreatureCandidateCriteria;
+import src.domain.encounter.model.reference.model.EncounterCreatureReference;
 
-public final class ApplicationEncounterCreatureLookup implements EncounterCreatureLookup {
+public final class ApplicationEncounterCreatureRepository implements EncounterCreatureRepository {
 
     private static final int DEFAULT_LIMIT = 250;
     private static final int MAX_LIMIT = 1000;
 
     private final CreatureCatalogLookup creatureCatalogLookup;
 
-    public ApplicationEncounterCreatureLookup() {
+    public ApplicationEncounterCreatureRepository() {
         this(new SqliteCreatureCatalogQueryAdapter());
     }
 
-    ApplicationEncounterCreatureLookup(CreatureCatalogLookup creatureCatalogLookup) {
+    ApplicationEncounterCreatureRepository(CreatureCatalogLookup creatureCatalogLookup) {
         this.creatureCatalogLookup = Objects.requireNonNull(creatureCatalogLookup, "creatureCatalogLookup");
     }
 
@@ -54,7 +54,7 @@ public final class ApplicationEncounterCreatureLookup implements EncounterCreatu
                 maximumXp,
                 normalizeLimit(safeCriteria.limit()));
         return creatureCatalogLookup.loadEncounterCandidates(spec).stream()
-                .map(ApplicationEncounterCreatureLookup::toProfile)
+                .map(ApplicationEncounterCreatureRepository::toProfile)
                 .toList();
     }
 
@@ -66,7 +66,7 @@ public final class ApplicationEncounterCreatureLookup implements EncounterCreatu
     }
 
     private static EncounterCandidateProfile toProfile(CreatureCatalogLookup.EncounterCandidateProfile candidate) {
-        return EncounterCandidateProfiles.fromFacts(new EncounterCreatureFacts(
+        return EncounterCandidateProfileHelper.fromFacts(new EncounterCreatureFacts(
                 candidate.id(),
                 candidate.name(),
                 candidate.creatureType(),

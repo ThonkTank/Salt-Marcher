@@ -1,14 +1,14 @@
 package src.domain.encounter.application;
 
 import java.util.Objects;
-import src.domain.encounter.generation.policy.EncounterDifficultyMath;
+import src.domain.encounter.model.generation.helper.EncounterDifficultyMathHelper;
 import src.domain.encounter.model.session.repository.EncounterPartyFactsRepository;
 
 public final class LoadEncounterBudgetUseCase {
 
     private final EncounterPartyFactsRepository party;
-    private static final EncounterDifficultyMath.BudgetSummary EMPTY_BUDGET =
-            new EncounterDifficultyMath.BudgetSummary(java.util.List.of(), 1, 0, 0, 0, 0, 0, 0, 0);
+    private static final EncounterDifficultyMathHelper.BudgetSummary EMPTY_BUDGET =
+            new EncounterDifficultyMathHelper.BudgetSummary(java.util.List.of(), 1, 0, 0, 0, 0, 0, 0, 0);
 
     public LoadEncounterBudgetUseCase(EncounterPartyFactsRepository party) {
         this.party = Objects.requireNonNull(party, "party");
@@ -22,7 +22,7 @@ public final class LoadEncounterBudgetUseCase {
         if (facts.status().isNoActiveParty()) {
             return Result.noActiveParty();
         }
-        EncounterDifficultyMath.BudgetSummary summary = EncounterDifficultyMath.summarizeBudget(
+        EncounterDifficultyMathHelper.BudgetSummary summary = EncounterDifficultyMathHelper.summarizeBudget(
                 facts.activePartyLevels(),
                 facts.consumedDailyXp(),
                 facts.totalBudgetXp());
@@ -31,7 +31,7 @@ public final class LoadEncounterBudgetUseCase {
 
     public record Result(
             EncounterPartyFactsRepository.Status status,
-            EncounterDifficultyMath.BudgetSummary budget,
+            EncounterDifficultyMathHelper.BudgetSummary budget,
             String message
     ) {
 
@@ -40,7 +40,7 @@ public final class LoadEncounterBudgetUseCase {
             message = message == null ? "" : message;
         }
 
-        static Result success(EncounterDifficultyMath.BudgetSummary budget) {
+        static Result success(EncounterDifficultyMathHelper.BudgetSummary budget) {
             return new Result(EncounterPartyFactsRepository.Status.successStatus(), budget, "");
         }
 

@@ -3,9 +3,9 @@ package src.data.encounter.mapper;
 import java.util.List;
 import src.data.encounter.model.EncounterPlanCreatureRecord;
 import src.data.encounter.model.EncounterPlanRecord;
-import src.domain.encounter.plan.aggregate.EncounterPlan;
-import src.domain.encounter.plan.value.EncounterPlanCreature;
-import src.domain.encounter.plan.value.EncounterPlanSummary;
+import src.domain.encounter.model.plan.model.EncounterPlan;
+import src.domain.encounter.model.plan.model.EncounterPlanCreature;
+import src.domain.encounter.model.plan.model.EncounterPlanSummary;
 
 public final class EncounterPlanMapper {
 

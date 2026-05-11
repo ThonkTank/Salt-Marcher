@@ -5,19 +5,19 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.jspecify.annotations.Nullable;
-import src.domain.encounter.generation.policy.EncounterRoleClassifier;
-import src.domain.encounter.generation.value.EncounterCreatureFacts;
-import src.domain.encounter.generation.value.EncounterDraft;
-import src.domain.encounter.generation.value.EncounterDraftEntry;
-import src.domain.encounter.generation.value.EncounterDraftMetrics;
-import src.domain.encounter.reference.port.EncounterCreatureLookup;
-import src.domain.encounter.reference.value.EncounterCreatureReference;
+import src.domain.encounter.model.generation.helper.EncounterRoleClassificationHelper;
+import src.domain.encounter.model.generation.model.EncounterCreatureFacts;
+import src.domain.encounter.model.generation.model.EncounterDraft;
+import src.domain.encounter.model.generation.model.EncounterDraftEntry;
+import src.domain.encounter.model.generation.model.EncounterDraftMetrics;
+import src.domain.encounter.model.reference.repository.EncounterCreatureRepository;
+import src.domain.encounter.model.reference.model.EncounterCreatureReference;
 
 final class AssembleEncounterResultUseCase {
 
-    private final EncounterCreatureLookup creatures;
+    private final EncounterCreatureRepository creatures;
 
-    AssembleEncounterResultUseCase(EncounterCreatureLookup creatures) {
+    AssembleEncounterResultUseCase(EncounterCreatureRepository creatures) {
         this.creatures = creatures;
     }
 
@@ -30,7 +30,7 @@ final class AssembleEncounterResultUseCase {
             for (EncounterDraftEntry entry : draft.entries()) {
                 EncounterCreatureReference detail = detailCache.computeIfAbsent(entry.creatureId(), this::loadCreatureDetailOrNull);
                 EncounterCreatureFacts facts = detail == null ? entry.facts() : detail.toFacts();
-                EncounterRoleClassifier.Classification classification = EncounterRoleClassifier.classify(facts);
+                EncounterRoleClassificationHelper.Classification classification = EncounterRoleClassificationHelper.classify(facts);
                 creatures.add(new EncounterGenerationUseCase.GeneratedCreature(
                         entry.creatureId(),
                         entry.creatureName(),

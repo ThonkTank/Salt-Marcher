@@ -5,7 +5,7 @@ import static src.domain.encounter.model.session.model.EncounterSessionValues.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import src.domain.encounter.plan.value.EncounterPlanSummary;
+import src.domain.encounter.model.plan.model.EncounterPlanSummary;
 
 final class EncounterSessionContext {
 

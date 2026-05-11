@@ -4,12 +4,12 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import org.jspecify.annotations.Nullable;
-import src.domain.encounter.generation.policy.EncounterDifficultyMath;
-import src.domain.encounter.generation.policy.EncounterDifficultyTargets;
-import src.domain.encounter.plan.aggregate.EncounterPlan;
-import src.domain.encounter.plan.port.EncounterPlanRepository;
-import src.domain.encounter.plan.value.EncounterPlanCreature;
-import src.domain.encounter.reference.port.EncounterCreatureLookup;
+import src.domain.encounter.model.generation.helper.EncounterDifficultyMathHelper;
+import src.domain.encounter.model.generation.helper.EncounterDifficultyTargetHelper;
+import src.domain.encounter.model.plan.model.EncounterPlan;
+import src.domain.encounter.model.plan.repository.EncounterPlanRepository;
+import src.domain.encounter.model.plan.model.EncounterPlanCreature;
+import src.domain.encounter.model.reference.repository.EncounterCreatureRepository;
 import src.domain.encounter.model.session.repository.EncounterPartyFactsRepository;
 
 public final class LoadEncounterPlanBudgetUseCase {
@@ -18,12 +18,12 @@ public final class LoadEncounterPlanBudgetUseCase {
 
     private final EncounterPlanRepository plans;
     private final EncounterPartyFactsRepository party;
-    private final EncounterCreatureLookup creatures;
+    private final EncounterCreatureRepository creatures;
 
     public LoadEncounterPlanBudgetUseCase(
             EncounterPlanRepository plans,
             EncounterPartyFactsRepository party,
-            EncounterCreatureLookup creatures
+            EncounterCreatureRepository creatures
     ) {
         this.plans = Objects.requireNonNull(plans, "plans");
         this.party = Objects.requireNonNull(party, "party");
@@ -49,8 +49,8 @@ public final class LoadEncounterPlanBudgetUseCase {
         EncounterPlan plan = maybePlan.get();
         int totalBaseXp = totalBaseXp(plan.creatures());
         int creatureCount = plan.creatureCount();
-        EncounterDifficultyMath.Thresholds thresholds = EncounterDifficultyMath.thresholdsFor(activeLevels);
-        double multiplier = EncounterDifficultyTargets.multiplierFor(creatureCount, activeLevels.size());
+        EncounterDifficultyMathHelper.Thresholds thresholds = EncounterDifficultyMathHelper.thresholdsFor(activeLevels);
+        double multiplier = EncounterDifficultyTargetHelper.multiplierFor(creatureCount, activeLevels.size());
         int adjustedXp = (int) Math.round(totalBaseXp * multiplier);
         return Result.success(new PlanBudgetSummary(
                 plan.id(),
@@ -66,7 +66,7 @@ public final class LoadEncounterPlanBudgetUseCase {
     private int totalBaseXp(List<EncounterPlanCreature> creaturesInPlan) {
         int total = 0;
         for (EncounterPlanCreature creature : creaturesInPlan == null ? List.<EncounterPlanCreature>of() : creaturesInPlan) {
-            Optional<src.domain.encounter.reference.value.EncounterCreatureReference> reference =
+            Optional<src.domain.encounter.model.reference.model.EncounterCreatureReference> reference =
                     creatures.loadCreature(creature.creatureId());
             if (reference.isEmpty()) {
                 throw new IllegalStateException("Creature detail could not be loaded for plan budget.");
@@ -76,7 +76,7 @@ public final class LoadEncounterPlanBudgetUseCase {
         return total;
     }
 
-    private static String difficultyLabel(int adjustedXp, EncounterDifficultyMath.Thresholds thresholds) {
+    private static String difficultyLabel(int adjustedXp, EncounterDifficultyMathHelper.Thresholds thresholds) {
         if (adjustedXp >= thresholds.deadly()) {
             return "Deadly";
         }

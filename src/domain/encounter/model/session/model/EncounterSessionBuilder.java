@@ -6,10 +6,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.OptionalLong;
-import src.domain.encounter.generation.value.EncounterGenerationInputs;
-import src.domain.encounter.generation.value.EncounterGenerationRequest;
-import src.domain.encounter.plan.aggregate.EncounterPlan;
-import src.domain.encounter.plan.value.EncounterPlanCreature;
+import src.domain.encounter.model.generation.model.EncounterGenerationInputs;
+import src.domain.encounter.model.generation.model.EncounterGenerationRequest;
+import src.domain.encounter.model.plan.model.EncounterPlan;
+import src.domain.encounter.model.plan.model.EncounterPlanCreature;
 
 final class EncounterSessionBuilder {
 

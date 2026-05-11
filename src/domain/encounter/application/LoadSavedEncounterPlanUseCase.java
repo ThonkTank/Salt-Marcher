@@ -2,8 +2,8 @@ package src.domain.encounter.application;
 
 import java.util.Objects;
 import java.util.Optional;
-import src.domain.encounter.plan.aggregate.EncounterPlan;
-import src.domain.encounter.plan.port.EncounterPlanRepository;
+import src.domain.encounter.model.plan.model.EncounterPlan;
+import src.domain.encounter.model.plan.repository.EncounterPlanRepository;
 
 public final class LoadSavedEncounterPlanUseCase {
 

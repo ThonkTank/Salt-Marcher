@@ -5,25 +5,25 @@ import static src.domain.encounter.model.session.model.EncounterSessionValues.*;
 import java.util.List;
 import java.util.Optional;
 import org.jspecify.annotations.Nullable;
-import src.domain.encounter.application.EncounterGenerationDiagnosticsData;
+import src.domain.encounter.model.generation.model.EncounterGenerationDiagnosticsData;
 import src.domain.encounter.application.EncounterGenerationUseCase;
 import src.domain.encounter.application.ListSavedEncounterPlansUseCase;
 import src.domain.encounter.application.LoadEncounterBudgetUseCase;
 import src.domain.encounter.application.LoadSavedEncounterPlanUseCase;
 import src.domain.encounter.application.SaveEncounterPlanUseCase;
-import src.domain.encounter.generation.policy.EncounterDifficultyMath;
-import src.domain.encounter.generation.value.EncounterDifficultyIntent;
-import src.domain.encounter.generation.value.EncounterGenerationRequest;
-import src.domain.encounter.generation.value.EncounterTuningIntent;
-import src.domain.encounter.plan.aggregate.EncounterPlan;
-import src.domain.encounter.reference.port.EncounterCreatureLookup;
-import src.domain.encounter.reference.value.EncounterCreatureReference;
+import src.domain.encounter.model.generation.helper.EncounterDifficultyMathHelper;
+import src.domain.encounter.model.generation.model.EncounterDifficultyIntent;
+import src.domain.encounter.model.generation.model.EncounterGenerationRequest;
+import src.domain.encounter.model.generation.model.EncounterTuningIntent;
+import src.domain.encounter.model.plan.model.EncounterPlan;
+import src.domain.encounter.model.reference.repository.EncounterCreatureRepository;
+import src.domain.encounter.model.reference.model.EncounterCreatureReference;
 import src.domain.encounter.model.session.model.EncounterSession;
 
 public final class EncounterSessionRepository implements EncounterSession.SessionRepository {
 
     private final EncounterPartyFactsRepository party;
-    private final EncounterCreatureLookup creatures;
+    private final EncounterCreatureRepository creatures;
     private final @Nullable EncounterGenerationUseCase generator;
     private final @Nullable LoadEncounterBudgetUseCase loadBudgetUseCase;
     private final @Nullable SaveEncounterPlanUseCase savePlanUseCase;
@@ -33,7 +33,7 @@ public final class EncounterSessionRepository implements EncounterSession.Sessio
 
     public EncounterSessionRepository(
             EncounterPartyFactsRepository party,
-            EncounterCreatureLookup creatures,
+            EncounterCreatureRepository creatures,
             @Nullable EncounterGenerationUseCase generator,
             @Nullable LoadEncounterBudgetUseCase loadBudgetUseCase,
             @Nullable SaveEncounterPlanUseCase savePlanUseCase,
@@ -260,7 +260,7 @@ public final class EncounterSessionRepository implements EncounterSession.Sessio
         }
     }
 
-    private static BudgetData toSessionBudget(EncounterDifficultyMath.BudgetSummary budget) {
+    private static BudgetData toSessionBudget(EncounterDifficultyMathHelper.BudgetSummary budget) {
         return new BudgetData(
                 budget.activePartyLevels(),
                 budget.averagePartyLevel(),

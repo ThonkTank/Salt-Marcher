@@ -8,9 +8,9 @@ import src.data.encounter.mapper.EncounterPlanMapper;
 import src.data.encounter.model.EncounterPlanCreatureRecord;
 import src.data.encounter.model.EncounterPlanRecord;
 import src.data.encounter.model.EncounterPlanSnapshotRecord;
-import src.domain.encounter.plan.aggregate.EncounterPlan;
-import src.domain.encounter.plan.port.EncounterPlanRepository;
-import src.domain.encounter.plan.value.EncounterPlanSummary;
+import src.domain.encounter.model.plan.model.EncounterPlan;
+import src.domain.encounter.model.plan.repository.EncounterPlanRepository;
+import src.domain.encounter.model.plan.model.EncounterPlanSummary;
 
 public final class SqliteEncounterPlanRepository implements EncounterPlanRepository {
 

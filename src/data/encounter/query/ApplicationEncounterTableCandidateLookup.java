@@ -3,22 +3,22 @@ package src.data.encounter.query;
 import java.util.List;
 import java.util.Objects;
 import src.data.encountertable.query.SqliteEncounterTableCatalogAdapter;
-import src.domain.encounter.generation.policy.EncounterCandidateProfiles;
-import src.domain.encounter.generation.value.EncounterCandidateProfile;
-import src.domain.encounter.generation.value.EncounterCreatureFacts;
-import src.domain.encounter.reference.port.EncounterTableCandidateLookup;
-import src.domain.encounter.reference.value.EncounterTableCandidateCriteria;
+import src.domain.encounter.model.generation.helper.EncounterCandidateProfileHelper;
+import src.domain.encounter.model.generation.model.EncounterCandidateProfile;
+import src.domain.encounter.model.generation.model.EncounterCreatureFacts;
+import src.domain.encounter.model.reference.repository.EncounterTableCandidateRepository;
+import src.domain.encounter.model.reference.model.EncounterTableCandidateCriteria;
 import src.domain.encountertable.catalog.port.EncounterTableCatalog;
 
-public final class ApplicationEncounterTableCandidateLookup implements EncounterTableCandidateLookup {
+public final class ApplicationEncounterTableCandidateRepository implements EncounterTableCandidateRepository {
 
     private final EncounterTableCatalog encounterTableCatalog;
 
-    public ApplicationEncounterTableCandidateLookup() {
+    public ApplicationEncounterTableCandidateRepository() {
         this(new SqliteEncounterTableCatalogAdapter());
     }
 
-    ApplicationEncounterTableCandidateLookup(EncounterTableCatalog encounterTableCatalog) {
+    ApplicationEncounterTableCandidateRepository(EncounterTableCatalog encounterTableCatalog) {
         this.encounterTableCatalog = Objects.requireNonNull(encounterTableCatalog, "encounterTableCatalog");
     }
 
@@ -36,7 +36,7 @@ public final class ApplicationEncounterTableCandidateLookup implements Encounter
         }
         int effectiveMaximumXp = safeCriteria.maximumXp() <= 0 ? Integer.MAX_VALUE : safeCriteria.maximumXp();
         return encounterTableCatalog.loadGenerationCandidates(normalizedTableIds, effectiveMaximumXp).stream()
-                .map(candidate -> EncounterCandidateProfiles.fromFacts(
+                .map(candidate -> EncounterCandidateProfileHelper.fromFacts(
                         new EncounterCreatureFacts(
                                 candidate.creatureId(),
                                 candidate.name(),

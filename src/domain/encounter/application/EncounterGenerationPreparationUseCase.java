@@ -2,7 +2,8 @@ package src.domain.encounter.application;
 
 import java.util.List;
 import org.jspecify.annotations.Nullable;
-import src.domain.encounter.generation.value.EncounterDraft;
+import src.domain.encounter.model.generation.model.EncounterDraft;
+import src.domain.encounter.model.generation.model.EncounterGenerationDiagnosticsData;
 
 record EncounterGenerationPreparationUseCase(
         boolean success,
