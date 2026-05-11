@@ -83,19 +83,17 @@ When a covered artifact changes, reviewers must check:
   surfaces?
 - Does the chosen verification path match the actual changed surfaces?
 
-Covered instruction changes must also receive an adversarial review from a
-separate subagent using the repo-owned
-`tools/quality/skills/adversarial-review/SKILL.md` before commit or handoff.
-The implementation agent remains responsible for running
-`agent-instruction-engineering` first. The review subagent may use specialist
-review skills as supporting lenses, but `adversarial-review` owns the required
-finding classes and the rule that repository evidence outranks the implementing
-agent's summary. Unresolved `Must Fix Before Commit` findings keep the pass WIP.
+Covered instruction changes also follow the repo-wide adversarial review route
+in `AGENTS.md`. The repo-owned
+`tools/quality/skills/adversarial-review/SKILL.md` owns the mandatory review
+protocol. This standard adds only the instruction-specific review questions
+above.
 
 ## References
 
 - [Architecture Overview](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/overview.md:1)
 - [Documentation Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/documentation.md:1)
+- [Agent Context Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/agent-context.md:1)
 - [Layering Architecture Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/layering-architecture.md:1)
 - [Global Agent Instruction Engineering Skill](/home/aaron/.codex/skills/local/agent-instruction-engineering/SKILL.md:1)
 - [Adversarial Review Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/adversarial-review/SKILL.md:1)

@@ -56,15 +56,10 @@ manifests:
 9. For dependency work, check whether Dependabot already owns the update path.
    Dependency upgrades must remain dependency-only unless the user explicitly
    combines them with product work.
-10. After implementation and before commit or handoff, run an adversarial
-    review through a separate subagent using
-    `tools/quality/skills/adversarial-review/SKILL.md`. Specialist review
-    skills may support the review, but they do not replace the repo-owned
-    review protocol.
-11. Classify review findings as `Must Fix Before Commit`,
-    `Should Fix In This Pass`, `Separate Slice`, or
-    `False Positive / Review-Owned`. Fix unresolved `Must Fix Before Commit`
-    findings and rerun the matching subagent review for the changed scope.
+10. After implementation and before commit or handoff, run the repo-wide
+    adversarial review route through the repo-owned
+    `tools/quality/skills/adversarial-review/SKILL.md`.
+11. Resolve review findings according to that skill before handoff.
 12. Run the required SaltMarcher verification surface for the actual changed
     files before handoff.
 
@@ -112,11 +107,10 @@ Every covered handoff must report one of these exact statuses:
 - `Deferred as separate slice`: name the finding and why it is not safe inside
   the current pass.
 
-Every covered handoff must also name the adversarial review subagent, state
-whether any `Must Fix Before Commit` findings were found, and list any follow-up
-review after fixes. Do not add a separate changelog, pull-request template, or
-review-ledger file solely for this evidence; normal commit history, handoff
-text, and memories carry the history.
+Every covered handoff must also report the adversarial review outcome required
+by the repo-owned review skill. Do not add a separate changelog, pull-request
+template, or review-ledger file solely for this evidence; normal commit
+history, handoff text, and memories carry the history.
 
 Also report out-of-scope blockers discovered while running required gates. Do
 not claim that global debt is solved because a scoped pass is clean.

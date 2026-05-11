@@ -116,10 +116,9 @@ manual testing for behavior verification.
 - use manual testing for workflow behavior, desktop interaction, UI judgment,
   and product acceptance
 - `./gradlew test` is not a general-purpose home for behavior-regression suites
-- require an adversarial review from a separate subagent using the repo-owned
-  `adversarial-review` skill before commit or handoff for completed
-  repo-tracked change passes; the review is a workflow obligation, not a new
-  compile/build/check gate
+- require the repo-wide adversarial review route before commit or handoff for
+  completed repo-tracked change passes; this is a workflow obligation, not a
+  new compile/build/check gate
 
 ## Continuous Refactoring Relationship
 
@@ -135,10 +134,10 @@ their current blocking status; CKJM remains an informational report. The
 continuous-refactoring workflow only requires agents to inspect and report
 touched-scope findings, perform small behavior-preserving local cleanup, and
 split larger refactors or dependency upgrades into separate reviewable passes.
-It also requires a separate adversarial subagent review before commit or
-handoff through `tools/quality/skills/adversarial-review/SKILL.md`. Agents must
-fix `Must Fix Before Commit` findings before handoff; only non-blocking
-classifications may be fixed in the current pass or explicitly deferred.
+It also follows the repo-wide adversarial review route before commit or handoff.
+The review protocol is owned by
+`tools/quality/skills/adversarial-review/SKILL.md`, not by this quality-platform
+standard.
 
 This follows the external workflow references mirrored under
 `/home/aaron/Schreibtisch/projects/references/continuous-refactoring/`:

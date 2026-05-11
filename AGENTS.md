@@ -61,6 +61,10 @@ document exists.
 - Work that uses external sources or local source evidence for decisions must
   use the global `source-references` skill and follow
   `docs/project/verification/source-references.md`.
+- Work that plans, implements, refactors, or reviews a SaltMarcher repo-tracked
+  change must use the repo-owned `context-hygiene` skill before relying on
+  nearby files as precedent. The skill is a routing and context-budget rule; it
+  does not authorize new gates or broad documentation rewrites by itself.
 - Production-code, check/enforcement, and dependency work must use the
   repo-owned `continuous-refactoring` skill before planning, implementing,
   refactoring, or reviewing. The skill is a workflow rule for keeping cleanup
@@ -68,13 +72,10 @@ document exists.
   repo-wide cleanup waves by itself.
 - Completed repo-tracked change passes must receive an adversarial review from
   a separate subagent using the repo-owned `adversarial-review` skill before
-  commit or handoff. The review subagent must inspect repository evidence
-  directly instead of accepting the implementing agent's summary as proof. It
-  may use specialist review skills as supporting lenses, but
-  `tools/quality/skills/adversarial-review/SKILL.md` owns the mandatory review
-  protocol. Agent-facing instruction changes must still use
-  `agent-instruction-engineering` before that review. A pass with unresolved
-  `Must Fix Before Commit` findings remains WIP.
+  commit or handoff. `tools/quality/skills/adversarial-review/SKILL.md` owns
+  the mandatory review protocol; this file only routes to it. Agent-facing
+  instruction changes must still use `agent-instruction-engineering` before
+  that review. A pass with unresolved blocking review findings remains WIP.
 - Work under `src/domain/**` must use the repo-owned `domain-layer` skill and
   follow the canonical domain-layer standard before changes are made or
   reviewed.
@@ -121,11 +122,10 @@ document exists.
   package/bundle rerun, or documentation-enforcement rerun is incomplete and
   must remain WIP.
 - A pass without the required `adversarial-review` subagent review is incomplete
-  and must remain WIP. The handoff must name the review subagent, the finding
-  classification outcome, any fixes made after review, and whether a follow-up
-  review was required. Do not create a separate review ledger,
-  pull-request template, or changelog entry only to record this; normal commit
-  history, handoff text, and memories carry the history.
+  and must remain WIP. Handoffs must report the review outcome required by the
+  skill. Do not create a separate review ledger, pull-request template, or
+  changelog entry only to record this; normal commit history, handoff text, and
+  memories carry the history.
 - Parallel agent implementation work must not share one live checkout. Each
   agent must work in its own linked git worktree on its own branch, preferably
   under `build/codex-worktrees/<topic>/` or a temporary external worktree when
@@ -165,6 +165,8 @@ document exists.
 - [Source References Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/verification/source-references.md:1)
 - [Global Source References Skill](/home/aaron/.codex/skills/local/source-references/SKILL.md:1)
 - [Global Agent Instruction Engineering Skill](/home/aaron/.codex/skills/local/agent-instruction-engineering/SKILL.md:1)
+- [Context Hygiene Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/agent-context.md:1)
+- [Context Hygiene Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/context-hygiene/SKILL.md:1)
 - [Continuous Refactoring Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/continuous-refactoring/SKILL.md:1)
 - [Adversarial Review Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/adversarial-review/SKILL.md:1)
 - [Domain Layer Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/domain-layer/SKILL.md:1)
