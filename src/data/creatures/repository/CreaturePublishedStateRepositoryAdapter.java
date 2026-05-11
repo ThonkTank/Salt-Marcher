@@ -6,6 +6,7 @@ import java.util.Objects;
 import java.util.function.Consumer;
 import org.jspecify.annotations.Nullable;
 import src.domain.creatures.model.catalog.port.CreatureCatalogLookup;
+import src.domain.creatures.model.catalog.port.CreatureCatalogLookup.CreatureProfile;
 import src.domain.creatures.model.catalog.repository.CreaturesPublishedStateRepository;
 import src.domain.creatures.published.CreatureActionDetail;
 import src.domain.creatures.published.CreatureCatalogModel;
@@ -25,6 +26,10 @@ import src.domain.creatures.published.CreatureReadStatus;
 public final class CreaturePublishedStateRepositoryAdapter implements CreaturesPublishedStateRepository {
 
     private static final String LISTENER_PARAMETER = "listener";
+    private static final CreatureCatalogLookup.DistinctFilterValues EMPTY_FILTER_VALUES =
+            new CreatureCatalogLookup.DistinctFilterValues(List.of(), List.of(), List.of(), List.of(), List.of());
+    private static final CreatureCatalogLookup.CatalogPageData EMPTY_CATALOG_PAGE =
+            new CreatureCatalogLookup.CatalogPageData(List.of(), 0, 50, 0);
 
     private final List<Consumer<CreatureFilterOptionsResult>> filterOptionsListeners = new ArrayList<>();
     private final List<Consumer<CreatureCatalogPageResult>> catalogListeners = new ArrayList<>();
@@ -41,34 +46,30 @@ public final class CreaturePublishedStateRepositoryAdapter implements CreaturesP
             this::subscribeDetailListener);
 
     private CreatureFilterOptionsResult currentFilterOptions =
-            new CreatureFilterOptionsResult(CreatureReadStatus.STORAGE_ERROR, CreatureFilterOptions.empty());
+            new CreatureFilterOptionsResult(
+                    CreatureReadStatus.STORAGE_ERROR,
+                    toPublishedFilterOptions(EMPTY_FILTER_VALUES, List.of()));
     private CreatureCatalogPageResult currentCatalogPage =
-            new CreatureCatalogPageResult(CreatureQueryStatus.STORAGE_ERROR, CreatureCatalogPage.empty(50, 0));
+            new CreatureCatalogPageResult(CreatureQueryStatus.STORAGE_ERROR, toPublishedCatalogPage(EMPTY_CATALOG_PAGE));
     private CreatureDetailResult currentCreatureDetail =
             new CreatureDetailResult(CreatureLookupStatus.STORAGE_ERROR, null);
 
     @Override
     public void publishFilterOptions(FilterOptionsPublication result) {
         FilterOptionsPublication safeResult = result == null
-                ? new FilterOptionsPublication(STORAGE_ERROR, null, List.of())
+                ? new FilterOptionsPublication(STORAGE_ERROR, EMPTY_FILTER_VALUES, List.of())
                 : result;
         CreatureCatalogLookup.DistinctFilterValues values = safeResult.values();
         currentFilterOptions = new CreatureFilterOptionsResult(
                 toReadStatus(safeResult.status()),
-                new CreatureFilterOptions(
-                        values.sizes(),
-                        values.types(),
-                        values.subtypes(),
-                        values.biomes(),
-                        values.alignments(),
-                        safeResult.challengeRatings()));
+                toPublishedFilterOptions(values, safeResult.challengeRatings()));
         notifyListeners(filterOptionsListeners, currentFilterOptions);
     }
 
     @Override
     public void publishCatalogPage(CatalogPagePublication result) {
         CatalogPagePublication safeResult = result == null
-                ? new CatalogPagePublication(STORAGE_ERROR, null)
+                ? new CatalogPagePublication(STORAGE_ERROR, EMPTY_CATALOG_PAGE)
                 : result;
         currentCatalogPage = new CreatureCatalogPageResult(
                 toQueryStatus(safeResult.status()),
@@ -143,6 +144,19 @@ public final class CreaturePublishedStateRepositoryAdapter implements CreaturesP
         };
     }
 
+    private static CreatureFilterOptions toPublishedFilterOptions(
+            CreatureCatalogLookup.DistinctFilterValues values,
+            List<String> challengeRatings
+    ) {
+        return new CreatureFilterOptions(
+                values.sizes(),
+                values.types(),
+                values.subtypes(),
+                values.biomes(),
+                values.alignments(),
+                challengeRatings);
+    }
+
     private static CreatureCatalogPage toPublishedCatalogPage(CreatureCatalogLookup.CatalogPageData page) {
         return new CreatureCatalogPage(
                 page.rows().stream()
@@ -162,7 +176,7 @@ public final class CreaturePublishedStateRepositoryAdapter implements CreaturesP
                 page.pageOffset());
     }
 
-    private static @Nullable CreatureDetail toPublishedCreatureDetail(@Nullable CreatureCatalogLookup.CreatureProfile detail) {
+    private static @Nullable CreatureDetail toPublishedCreatureDetail(@Nullable CreatureProfile detail) {
         if (detail == null) {
             return null;
         }

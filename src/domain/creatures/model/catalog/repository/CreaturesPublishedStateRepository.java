@@ -3,6 +3,7 @@ package src.domain.creatures.model.catalog.repository;
 import java.util.List;
 import org.jspecify.annotations.Nullable;
 import src.domain.creatures.model.catalog.port.CreatureCatalogLookup;
+import src.domain.creatures.model.catalog.port.CreatureCatalogLookup.CreatureProfile;
 
 public interface CreaturesPublishedStateRepository {
 
@@ -67,9 +68,9 @@ public interface CreaturesPublishedStateRepository {
 
     final class CreatureDetailPublication {
         private final String status;
-        private final @Nullable CreatureCatalogLookup.CreatureProfile detail;
+        private final @Nullable CreatureProfile detail;
 
-        public CreatureDetailPublication(String status, @Nullable CreatureCatalogLookup.CreatureProfile detail) {
+        public CreatureDetailPublication(String status, @Nullable CreatureProfile detail) {
             this.status = status == null ? STORAGE_ERROR : status;
             this.detail = detail;
         }
@@ -78,7 +79,7 @@ public interface CreaturesPublishedStateRepository {
             return status;
         }
 
-        public @Nullable CreatureCatalogLookup.CreatureProfile detail() {
+        public @Nullable CreatureProfile detail() {
             return detail;
         }
     }
