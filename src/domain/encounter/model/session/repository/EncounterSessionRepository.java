@@ -17,6 +17,16 @@ import src.domain.encounter.model.plan.model.EncounterPlan;
 import src.domain.encounter.model.reference.repository.EncounterCreatureRepository;
 import src.domain.encounter.model.reference.model.EncounterCreatureReference;
 import src.domain.encounter.model.session.model.EncounterSession;
+import src.domain.encounter.model.session.model.EncounterSessionValues.AwardXpOutcome;
+import src.domain.encounter.model.session.model.EncounterSessionValues.BudgetData;
+import src.domain.encounter.model.session.model.EncounterSessionValues.CreatureDetailData;
+import src.domain.encounter.model.session.model.EncounterSessionValues.EncounterCreatureData;
+import src.domain.encounter.model.session.model.EncounterSessionValues.GeneratedEncounterData;
+import src.domain.encounter.model.session.model.EncounterSessionValues.GenerationDiagnosticsData;
+import src.domain.encounter.model.session.model.EncounterSessionValues.GenerationResultData;
+import src.domain.encounter.model.session.model.EncounterSessionValues.ListPlansOutcome;
+import src.domain.encounter.model.session.model.EncounterSessionValues.PartyMemberData;
+import src.domain.encounter.model.session.model.EncounterSessionValues.PlanOutcome;
 
 public final class EncounterSessionRepository implements EncounterSession.SessionRepository {
 

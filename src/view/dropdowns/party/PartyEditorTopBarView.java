@@ -1,6 +1,7 @@
 package src.view.dropdowns.party;
 
 import java.util.function.Consumer;
+import javafx.beans.value.ChangeListener;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
@@ -30,7 +31,6 @@ public final class PartyEditorTopBarView extends VBox {
     private final Button cancelButton = new Button("Abbrechen");
     private final Button submitButton = new Button("Speichern");
     private Consumer<PartyEditorTopBarViewInputEvent> viewInputEventHandler = ignored -> { };
-    private boolean syncingFromModel;
 
     public PartyEditorTopBarView() {
         getStyleClass().addAll("dropdown-window", "dropdown-form", "party-editor-inline");
@@ -62,13 +62,8 @@ public final class PartyEditorTopBarView extends VBox {
         titleLabel.setText(content.editingExisting() ? "Charakter bearbeiten" : "Neuer Charakter");
         submitButton.setText(content.editingExisting() ? "Speichern" : "Erstellen");
         revealDeleteButton.showWhen(content.editingExisting());
-        syncingFromModel = true;
-        try {
-            fields.populate(content);
-        } finally {
-            syncingFromModel = false;
-        }
-        deleteSection.showConfirmation(safe(fields.nameField.getText()).trim(), content.deleteConfirmationVisible());
+        fields.populate(content);
+        deleteSection.showConfirmation(fields.memberName(), content.deleteConfirmationVisible());
         updateSubmitDisabled();
     }
 
@@ -93,12 +88,7 @@ public final class PartyEditorTopBarView extends VBox {
                 deleteConfirmationRequested,
                 deleteConfirmationCancelled,
                 deleteConfirmed,
-                new PartyEditorTopBarViewInputEvent.EditorDraft(
-                        fields.nameField.getText(),
-                        fields.playerNameField.getText(),
-                        fields.levelField.getText(),
-                        fields.passivePerceptionField.getText(),
-                        fields.armorClassField.getText())));
+                fields.draft()));
     }
 
     private void updateSubmitDisabled() {
@@ -107,10 +97,8 @@ public final class PartyEditorTopBarView extends VBox {
 
     private void onDraftChanged() {
         updateSubmitDisabled();
-        deleteSection.showConfirmation(safe(fields.nameField.getText()).trim(), deleteSection.isVisible());
-        if (!syncingFromModel) {
-            publish(false, false, false, false, false);
-        }
+        deleteSection.showConfirmation(fields.memberName(), deleteSection.isVisible());
+        publish(false, false, false, false, false);
     }
 
     private static String safe(String value) {
@@ -212,18 +200,16 @@ public final class PartyEditorTopBarView extends VBox {
         private final TextField levelField = new IntegerField(LEVEL_PROMPT);
         private final TextField passivePerceptionField = new IntegerField(PASSIVE_PERCEPTION_PROMPT);
         private final TextField armorClassField = new IntegerField(ARMOR_CLASS_PROMPT);
+        private final ChangeListener<String> draftListener;
 
         private EditorFields(Runnable onSubmit, Runnable onDraftChanged) {
+            draftListener = (ignored, before, after) -> onDraftChanged.run();
             bindSubmit(nameField, onSubmit);
             bindSubmit(playerNameField, onSubmit);
             bindSubmit(levelField, onSubmit);
             bindSubmit(passivePerceptionField, onSubmit);
             bindSubmit(armorClassField, onSubmit);
-            nameField.textProperty().addListener((ignored, before, after) -> onDraftChanged.run());
-            playerNameField.textProperty().addListener((ignored, before, after) -> onDraftChanged.run());
-            levelField.textProperty().addListener((ignored, before, after) -> onDraftChanged.run());
-            passivePerceptionField.textProperty().addListener((ignored, before, after) -> onDraftChanged.run());
-            armorClassField.textProperty().addListener((ignored, before, after) -> onDraftChanged.run());
+            addDraftListener();
         }
 
         private boolean nameBlank() {
@@ -231,15 +217,49 @@ public final class PartyEditorTopBarView extends VBox {
         }
 
         private void populate(PartyTopBarContributionModel.EditorPanelModel content) {
-            nameField.setText(content.memberName());
-            playerNameField.setText(content.playerName());
-            levelField.setText(content.rawLevel());
-            passivePerceptionField.setText(content.rawPassivePerception());
-            armorClassField.setText(content.rawArmorClass());
+            removeDraftListener();
+            try {
+                nameField.setText(content.memberName());
+                playerNameField.setText(content.playerName());
+                levelField.setText(content.rawLevel());
+                passivePerceptionField.setText(content.rawPassivePerception());
+                armorClassField.setText(content.rawArmorClass());
+            } finally {
+                addDraftListener();
+            }
+        }
+
+        private PartyEditorTopBarViewInputEvent.EditorDraft draft() {
+            return new PartyEditorTopBarViewInputEvent.EditorDraft(
+                    nameField.getText(),
+                    playerNameField.getText(),
+                    levelField.getText(),
+                    passivePerceptionField.getText(),
+                    armorClassField.getText());
+        }
+
+        private String memberName() {
+            return safe(nameField.getText()).trim();
         }
 
         private static void bindSubmit(TextField field, Runnable onSubmit) {
             field.setOnAction(event -> onSubmit.run());
+        }
+
+        private void addDraftListener() {
+            nameField.textProperty().addListener(draftListener);
+            playerNameField.textProperty().addListener(draftListener);
+            levelField.textProperty().addListener(draftListener);
+            passivePerceptionField.textProperty().addListener(draftListener);
+            armorClassField.textProperty().addListener(draftListener);
+        }
+
+        private void removeDraftListener() {
+            nameField.textProperty().removeListener(draftListener);
+            playerNameField.textProperty().removeListener(draftListener);
+            levelField.textProperty().removeListener(draftListener);
+            passivePerceptionField.textProperty().removeListener(draftListener);
+            armorClassField.textProperty().removeListener(draftListener);
         }
     }
 
