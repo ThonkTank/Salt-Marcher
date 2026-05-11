@@ -25,7 +25,7 @@ public final class CreaturesApplicationService {
 
     private static final long NO_CREATURE_ID = 0L;
     private static final CreatureCatalogData.DistinctFilterValues EMPTY_FILTER_VALUES =
-            new CreatureCatalogData.DistinctFilterValues(List.of(), List.of(), List.of(), List.of(), List.of());
+            CreatureCatalogData.emptyFilterValues();
 
     private final LoadCreatureFilterOptionsUseCase loadCreatureFilterOptionsUseCase;
     private final SearchCreatureCatalogUseCase searchCreatureCatalogUseCase;
@@ -192,6 +192,6 @@ public final class CreaturesApplicationService {
     }
 
     private static CreatureCatalogData.CatalogPageData emptyPage(int pageSize, int pageOffset) {
-        return new CreatureCatalogData.CatalogPageData(List.of(), 0, pageSize, pageOffset);
+        return CreatureCatalogData.emptyCatalogPage(pageSize, pageOffset);
     }
 }

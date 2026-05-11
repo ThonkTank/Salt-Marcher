@@ -57,12 +57,10 @@ manifests:
    Dependency upgrades must remain dependency-only unless the user explicitly
    combines them with product work.
 10. After implementation and before commit or handoff, run an adversarial
-    review through a separate subagent with the narrowest matching review skill:
-    `review-quality` by default for production code, `review-architecture` for
-    layer or owner-boundary changes, `review-security` for security-,
-    persistence-, shell-, dependency-, workflow-, or external-input-adjacent
-    changes, `review-ui` for UI behavior, and `review-director` for mixed or
-    high-risk changes.
+    review through a separate subagent using
+    `tools/quality/skills/adversarial-review/SKILL.md`. Specialist review
+    skills may support the review, but they do not replace the repo-owned
+    review protocol.
 11. Classify review findings as `Must Fix Before Commit`,
     `Should Fix In This Pass`, `Separate Slice`, or
     `False Positive / Review-Owned`. Fix unresolved `Must Fix Before Commit`
@@ -114,11 +112,11 @@ Every covered handoff must report one of these exact statuses:
 - `Deferred as separate slice`: name the finding and why it is not safe inside
   the current pass.
 
-Every covered handoff must also name the adversarial review subagent or review
-skill used, state whether any `Must Fix Before Commit` findings were found,
-and list any follow-up review after fixes. Do not add a separate changelog,
-pull-request template, or review-ledger file solely for this evidence; normal
-commit history, handoff text, and memories carry the history.
+Every covered handoff must also name the adversarial review subagent, state
+whether any `Must Fix Before Commit` findings were found, and list any follow-up
+review after fixes. Do not add a separate changelog, pull-request template, or
+review-ledger file solely for this evidence; normal commit history, handoff
+text, and memories carry the history.
 
 Also report out-of-scope blockers discovered while running required gates. Do
 not claim that global debt is solved because a scoped pass is clean.
@@ -135,3 +133,4 @@ not claim that global debt is solved because a scoped pass is clean.
 - [OpenRewrite Gradle Plugin Configuration](/home/aaron/Schreibtisch/projects/references/continuous-refactoring/openrewrite-gradle-plugin-configuration.md)
 - [OpenAI Codex Refactor Your Codebase](/home/aaron/Schreibtisch/projects/references/continuous-refactoring/openai-codex-refactor-your-codebase.md)
 - [OpenAI Codex Worktrees](/home/aaron/Schreibtisch/projects/references/continuous-refactoring/openai-codex-worktrees.md)
+- [Adversarial Review Skill](../adversarial-review/SKILL.md)

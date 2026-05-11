@@ -30,7 +30,7 @@ public interface CreaturesPublishedStateRepository {
         ) {
             this.status = status == null ? STORAGE_ERROR : status;
             this.values = values == null
-                    ? new CreatureCatalogData.DistinctFilterValues(List.of(), List.of(), List.of(), List.of(), List.of())
+                    ? CreatureCatalogData.emptyFilterValues()
                     : values;
             this.challengeRatings = challengeRatings == null ? List.of() : List.copyOf(challengeRatings);
         }
@@ -54,7 +54,7 @@ public interface CreaturesPublishedStateRepository {
 
         public CatalogPagePublication(String status, CreatureCatalogData.CatalogPageData page) {
             this.status = status == null ? STORAGE_ERROR : status;
-            this.page = page == null ? new CreatureCatalogData.CatalogPageData(List.of(), 0, 50, 0) : page;
+            this.page = page == null ? CreatureCatalogData.emptyCatalogPage(50, 0) : page;
         }
 
         public String status() {

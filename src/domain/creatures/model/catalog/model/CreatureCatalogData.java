@@ -8,6 +8,14 @@ public final class CreatureCatalogData {
     private CreatureCatalogData() {
     }
 
+    public static DistinctFilterValues emptyFilterValues() {
+        return new DistinctFilterValues(List.of(), List.of(), List.of(), List.of(), List.of());
+    }
+
+    public static CatalogPageData emptyCatalogPage(int pageSize, int pageOffset) {
+        return new CatalogPageData(List.of(), 0, pageSize, pageOffset);
+    }
+
     public record DistinctFilterValues(
             List<String> sizes,
             List<String> types,

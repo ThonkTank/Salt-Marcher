@@ -34,9 +34,7 @@ public final class CreatureCatalogQueryMappingFacade {
                 spec.biomes(),
                 spec.alignments(),
                 toSearchSortField(Objects.requireNonNull(spec.sortField(), "sortField")),
-                spec.sortAscending()
-                        ? CreatureCatalogSearchCriteriaRecord.SortDirection.ASCENDING
-                        : CreatureCatalogSearchCriteriaRecord.SortDirection.DESCENDING,
+                CreatureCatalogSearchCriteriaRecord.sortDirection(spec.sortAscending()),
                 spec.pageSize(),
                 spec.pageOffset());
     }

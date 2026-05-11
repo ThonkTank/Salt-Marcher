@@ -66,15 +66,15 @@ document exists.
   refactoring, or reviewing. The skill is a workflow rule for keeping cleanup
   inside the normal development pass; it does not authorize new gates or
   repo-wide cleanup waves by itself.
-- Completed implementation passes must receive an adversarial review from a
-  separate subagent before commit or handoff. Use the narrowest matching review
-  skill for the changed surface: `review-quality` by default for production
-  code, `review-architecture` for layer or owner-boundary changes,
-  `review-security` for security-, persistence-, shell-, dependency-, workflow-,
-  or external-input-adjacent changes, `review-ui` for UI behavior, and
-  `review-director` for mixed or high-risk changes. Agent-facing instruction
-  changes must still use `agent-instruction-engineering` before that review.
-  A pass with unresolved `Must Fix Before Commit` findings remains WIP.
+- Completed repo-tracked change passes must receive an adversarial review from
+  a separate subagent using the repo-owned `adversarial-review` skill before
+  commit or handoff. The review subagent must inspect repository evidence
+  directly instead of accepting the implementing agent's summary as proof. It
+  may use specialist review skills as supporting lenses, but
+  `tools/quality/skills/adversarial-review/SKILL.md` owns the mandatory review
+  protocol. Agent-facing instruction changes must still use
+  `agent-instruction-engineering` before that review. A pass with unresolved
+  `Must Fix Before Commit` findings remains WIP.
 - Work under `src/domain/**` must use the repo-owned `domain-layer` skill and
   follow the canonical domain-layer standard before changes are made or
   reviewed.
@@ -120,10 +120,10 @@ document exists.
 - A pass without the required production-code full build, check-only
   package/bundle rerun, or documentation-enforcement rerun is incomplete and
   must remain WIP.
-- A pass without the required adversarial subagent review is incomplete and
-  must remain WIP. The handoff must name the review subagent or review skill,
-  the finding classification outcome, any fixes made after review, and whether
-  a follow-up review was required. Do not create a separate review ledger,
+- A pass without the required `adversarial-review` subagent review is incomplete
+  and must remain WIP. The handoff must name the review subagent, the finding
+  classification outcome, any fixes made after review, and whether a follow-up
+  review was required. Do not create a separate review ledger,
   pull-request template, or changelog entry only to record this; normal commit
   history, handoff text, and memories carry the history.
 - Parallel agent implementation work must not share one live checkout. Each
@@ -166,6 +166,7 @@ document exists.
 - [Global Source References Skill](/home/aaron/.codex/skills/local/source-references/SKILL.md:1)
 - [Global Agent Instruction Engineering Skill](/home/aaron/.codex/skills/local/agent-instruction-engineering/SKILL.md:1)
 - [Continuous Refactoring Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/continuous-refactoring/SKILL.md:1)
+- [Adversarial Review Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/adversarial-review/SKILL.md:1)
 - [Domain Layer Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/domain-layer/SKILL.md:1)
 - [View Layer MVVM Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/view-layer-mvvm/SKILL.md:1)
 - [View Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/view-layer.md:1)

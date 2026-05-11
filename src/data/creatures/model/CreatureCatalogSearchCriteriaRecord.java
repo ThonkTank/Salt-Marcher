@@ -41,4 +41,8 @@ public record CreatureCatalogSearchCriteriaRecord(
         ASCENDING,
         DESCENDING
     }
+
+    public static SortDirection sortDirection(boolean ascending) {
+        return ascending ? SortDirection.ASCENDING : SortDirection.DESCENDING;
+    }
 }

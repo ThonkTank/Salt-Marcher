@@ -17,6 +17,7 @@ public final class ApplicationEncounterCreatureRepository implements EncounterCr
 
     private static final int DEFAULT_LIMIT = 250;
     private static final int MAX_LIMIT = 1000;
+    private static final long NO_CREATURE_ID = 0L;
 
     private final CreatureCatalogPort creatureCatalogLookup;
 
@@ -30,7 +31,7 @@ public final class ApplicationEncounterCreatureRepository implements EncounterCr
 
     @Override
     public Optional<EncounterCreatureReference> loadCreature(long creatureId) {
-        if (creatureId <= 0L) {
+        if (creatureId <= NO_CREATURE_ID) {
             return Optional.empty();
         }
         return Optional.ofNullable(creatureCatalogLookup.loadCreatureDetail(creatureId))

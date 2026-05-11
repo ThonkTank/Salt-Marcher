@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-05-10
+Last Reviewed: 2026-05-11
 Source of Truth: Detailed CI job policy, external service setup, branch
 protection expectations, and review governance for SaltMarcher quality
 platforms.
@@ -102,7 +102,8 @@ place:
   required on `pull_request`.
 - Keep human GitHub approval reviews optional unless the team later decides
   otherwise; SaltMarcher's mandatory review is the local adversarial subagent
-  review before commit or handoff.
+  review before commit or handoff through the repo-owned `adversarial-review`
+  skill.
 - Require `quality-platforms / production-handoff`.
 - Require `quality-platforms / sonarcloud`.
 - Require `quality-platforms / codescene`.
@@ -112,14 +113,12 @@ place:
 
 ## Review Governance
 
-The quality platforms do not replace human review.
+The quality platforms do not replace review judgment.
 
-- completed implementation passes require a separate adversarial review
-  subagent before commit or handoff; use `review-quality` by default,
-  `review-architecture` for architecture or owner-boundary changes,
-  `review-security` for security-, persistence-, shell-, workflow-,
-  dependency-, or external-input-adjacent changes, `review-ui` for UI behavior,
-  and `review-director` for mixed or high-risk changes
+- completed repo-tracked change passes require a separate adversarial review
+  subagent using `tools/quality/skills/adversarial-review/SKILL.md` before
+  commit or handoff; specialist review skills may support that review, but they
+  do not replace the repo-owned review protocol
 - review findings are classified as `Must Fix Before Commit`,
   `Should Fix In This Pass`, `Separate Slice`, or
   `False Positive / Review-Owned`; unresolved `Must Fix Before Commit`
@@ -145,3 +144,4 @@ The quality platforms do not replace human review.
 
 - [Quality Platforms Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/verification/quality-platforms.md:1)
 - [.github/workflows/quality-platforms.yml](/home/aaron/Schreibtisch/projects/SaltMarcher/.github/workflows/quality-platforms.yml:1)
+- [Adversarial Review Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/adversarial-review/SKILL.md:1)

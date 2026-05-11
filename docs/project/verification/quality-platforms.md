@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-05-10
+Last Reviewed: 2026-05-11
 Source of Truth: Quality-platform operating model, status vocabulary,
 verification policy, and architecture-harness relationship for SaltMarcher
 quality gates.
@@ -116,9 +116,10 @@ manual testing for behavior verification.
 - use manual testing for workflow behavior, desktop interaction, UI judgment,
   and product acceptance
 - `./gradlew test` is not a general-purpose home for behavior-regression suites
-- require an adversarial review from a separate subagent before commit or
-  handoff for completed implementation passes; the review is a workflow
-  obligation, not a new compile/build/check gate
+- require an adversarial review from a separate subagent using the repo-owned
+  `adversarial-review` skill before commit or handoff for completed
+  repo-tracked change passes; the review is a workflow obligation, not a new
+  compile/build/check gate
 
 ## Continuous Refactoring Relationship
 
@@ -135,8 +136,9 @@ continuous-refactoring workflow only requires agents to inspect and report
 touched-scope findings, perform small behavior-preserving local cleanup, and
 split larger refactors or dependency upgrades into separate reviewable passes.
 It also requires a separate adversarial subagent review before commit or
-handoff, using the narrowest matching review skill for the changed surface and
-fixing or explicitly deferring classified findings before handoff.
+handoff through `tools/quality/skills/adversarial-review/SKILL.md`. Agents must
+fix `Must Fix Before Commit` findings before handoff; only non-blocking
+classifications may be fixed in the current pass or explicitly deferred.
 
 This follows the external workflow references mirrored under
 `/home/aaron/Schreibtisch/projects/references/continuous-refactoring/`:
@@ -253,3 +255,4 @@ enforced, the enforcement document is the canonical classification.
 - [OpenRewrite Gradle Plugin Configuration](/home/aaron/Schreibtisch/projects/references/continuous-refactoring/openrewrite-gradle-plugin-configuration.md:1)
 - [OpenAI Codex Refactor Your Codebase](/home/aaron/Schreibtisch/projects/references/continuous-refactoring/openai-codex-refactor-your-codebase.md:1)
 - [OpenAI Codex Worktrees](/home/aaron/Schreibtisch/projects/references/continuous-refactoring/openai-codex-worktrees.md:1)
+- [Adversarial Review Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/adversarial-review/SKILL.md:1)

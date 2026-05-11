@@ -27,9 +27,9 @@ public final class CreaturePublishedStateRepositoryAdapter implements CreaturesP
 
     private static final String LISTENER_PARAMETER = "listener";
     private static final CreatureCatalogData.DistinctFilterValues EMPTY_FILTER_VALUES =
-            new CreatureCatalogData.DistinctFilterValues(List.of(), List.of(), List.of(), List.of(), List.of());
+            CreatureCatalogData.emptyFilterValues();
     private static final CreatureCatalogData.CatalogPageData EMPTY_CATALOG_PAGE =
-            new CreatureCatalogData.CatalogPageData(List.of(), 0, 50, 0);
+            CreatureCatalogData.emptyCatalogPage(50, 0);
 
     private final List<Consumer<CreatureFilterOptionsResult>> filterOptionsListeners = new ArrayList<>();
     private final List<Consumer<CreatureCatalogPageResult>> catalogListeners = new ArrayList<>();
