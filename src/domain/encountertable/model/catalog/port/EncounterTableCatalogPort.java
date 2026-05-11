@@ -4,7 +4,7 @@ import java.util.List;
 import src.domain.encountertable.model.catalog.model.EncounterTableCandidateData;
 import src.domain.encountertable.model.catalog.model.EncounterTableSummaryData;
 
-public interface EncounterTableCatalog {
+public interface EncounterTableCatalogPort {
 
     List<EncounterTableSummaryData> loadSummaries();
 

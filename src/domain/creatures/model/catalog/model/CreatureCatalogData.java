@@ -1,11 +1,14 @@
-package src.domain.creatures.model.catalog.port;
+package src.domain.creatures.model.catalog.model;
 
 import java.util.List;
 import org.jspecify.annotations.Nullable;
 
-public interface CreatureCatalogLookup {
+public final class CreatureCatalogData {
 
-    record DistinctFilterValues(
+    private CreatureCatalogData() {
+    }
+
+    public record DistinctFilterValues(
             List<String> sizes,
             List<String> types,
             List<String> subtypes,
@@ -46,7 +49,7 @@ public interface CreatureCatalogLookup {
         }
     }
 
-    record CatalogSearchSpec(
+    public record CatalogSearchSpec(
             @Nullable String nameQuery,
             @Nullable Integer minimumXp,
             @Nullable Integer maximumXp,
@@ -94,7 +97,7 @@ public interface CreatureCatalogLookup {
         }
     }
 
-    record EncounterCandidateSpec(
+    public record EncounterCandidateSpec(
             List<String> types,
             List<String> subtypes,
             List<String> biomes,
@@ -124,7 +127,7 @@ public interface CreatureCatalogLookup {
         }
     }
 
-    record CreatureIdentity(
+    public record CreatureIdentity(
             long id,
             String name,
             String size,
@@ -151,7 +154,7 @@ public interface CreatureCatalogLookup {
         }
     }
 
-    record CreatureVitals(
+    public record CreatureVitals(
             int hitPoints,
             @Nullable String hitDiceExpression,
             @Nullable Integer hitDiceCount,
@@ -167,7 +170,7 @@ public interface CreatureCatalogLookup {
     ) {
     }
 
-    record CreatureAbilities(
+    public record CreatureAbilities(
             int strength,
             int dexterity,
             int constitution,
@@ -179,7 +182,7 @@ public interface CreatureCatalogLookup {
     ) {
     }
 
-    record CreatureTraits(
+    public record CreatureTraits(
             @Nullable String savingThrows,
             @Nullable String skills,
             @Nullable String damageVulnerabilities,
@@ -193,7 +196,7 @@ public interface CreatureCatalogLookup {
     ) {
     }
 
-    final class CreatureActionData {
+    public static final class CreatureActionData {
         private final String actionType;
         private final String name;
         private final String description;
@@ -228,7 +231,7 @@ public interface CreatureCatalogLookup {
         }
     }
 
-    record CreatureProfile(
+    public record CreatureProfile(
             CreatureIdentity identity,
             CreatureVitals vitals,
             CreatureAbilities abilities,
@@ -408,7 +411,7 @@ public interface CreatureCatalogLookup {
         }
     }
 
-    final class CatalogPageData {
+    public static final class CatalogPageData {
         private final List<CatalogRowData> rows;
         private final int totalCount;
         private final int pageSize;
@@ -438,7 +441,7 @@ public interface CreatureCatalogLookup {
         }
     }
 
-    final class CatalogRowData {
+    public static final class CatalogRowData {
         private final long id;
         private final String name;
         private final String size;
@@ -508,7 +511,7 @@ public interface CreatureCatalogLookup {
         }
     }
 
-    record EncounterCandidateProfile(
+    public record EncounterCandidateProfile(
             long id,
             String name,
             String creatureType,
@@ -523,14 +526,6 @@ public interface CreatureCatalogLookup {
             int legendaryActionCount
     ) {
     }
-
-    DistinctFilterValues loadFilterValues();
-
-    CatalogPageData searchCatalog(CatalogSearchSpec spec);
-
-    @Nullable CreatureProfile loadCreatureDetail(long creatureId);
-
-    List<EncounterCandidateProfile> loadEncounterCandidates(EncounterCandidateSpec spec);
 
     private static List<String> copyStrings(List<String> values) {
         return values == null ? List.of() : List.copyOf(values);

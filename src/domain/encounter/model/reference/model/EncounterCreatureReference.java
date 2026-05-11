@@ -2,7 +2,6 @@ package src.domain.encounter.model.reference.model;
 
 import java.util.List;
 import org.jspecify.annotations.Nullable;
-import src.domain.creatures.model.catalog.port.CreatureCatalogLookup;
 import src.domain.encounter.model.generation.model.EncounterCreatureFacts;
 
 public record EncounterCreatureReference(
@@ -34,13 +33,6 @@ public record EncounterCreatureReference(
         creatureType = creatureType == null ? "" : creatureType;
         challengeRating = challengeRating == null ? "" : challengeRating;
         actionTypes = actionTypes == null ? List.of() : List.copyOf(actionTypes);
-    }
-
-    public static EncounterCreatureReference fromCatalogProfile(CreatureCatalogLookup.CreatureProfile detail) {
-        if (detail == null) {
-            return new EncounterCreatureReference(0L, "", "", "", 0, 0, null, null, null, 0, 0, 0, 0, 0, 0, 0, null, null, null, 0, List.of());
-        }
-        return new CatalogProfileProjection(detail).toReference();
     }
 
     public EncounterCreatureFacts toFacts() {
@@ -122,39 +114,4 @@ public record EncounterCreatureReference(
     ) {
     }
 
-    private static final class CatalogProfileProjection {
-
-        private final CreatureCatalogLookup.CreatureProfile detail;
-
-        private CatalogProfileProjection(CreatureCatalogLookup.CreatureProfile detail) {
-            this.detail = detail;
-        }
-
-        private EncounterCreatureReference toReference() {
-            return new EncounterCreatureReference(
-                    detail.id(),
-                    detail.name(),
-                    detail.creatureType(),
-                    detail.challengeRating(),
-                    detail.xp(),
-                    detail.hitPoints(),
-                    detail.hitDiceCount(),
-                    detail.hitDiceSides(),
-                    detail.hitDiceModifier(),
-                    detail.armorClass(),
-                    detail.initiativeBonus(),
-                    detail.legendaryActionCount(),
-                    detail.flySpeed(),
-                    detail.swimSpeed(),
-                    detail.climbSpeed(),
-                    detail.burrowSpeed(),
-                    detail.damageResistances(),
-                    detail.damageImmunities(),
-                    detail.conditionImmunities(),
-                    detail.passivePerception(),
-                    detail.actions().stream()
-                            .map(action -> action.actionType())
-                            .toList());
-        }
-    }
 }

@@ -3,13 +3,13 @@ package src.domain.encountertable.application;
 import java.util.List;
 import java.util.Objects;
 import src.domain.encountertable.model.catalog.model.EncounterTableSummaryData;
-import src.domain.encountertable.model.catalog.port.EncounterTableCatalog;
+import src.domain.encountertable.model.catalog.port.EncounterTableCatalogPort;
 
 public final class LoadEncounterTableSummariesUseCase {
 
-    private final EncounterTableCatalog catalog;
+    private final EncounterTableCatalogPort catalog;
 
-    public LoadEncounterTableSummariesUseCase(EncounterTableCatalog catalog) {
+    public LoadEncounterTableSummariesUseCase(EncounterTableCatalogPort catalog) {
         this.catalog = Objects.requireNonNull(catalog, "catalog");
     }
 

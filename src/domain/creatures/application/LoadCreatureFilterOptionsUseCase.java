@@ -1,6 +1,7 @@
 package src.domain.creatures.application;
 
-import src.domain.creatures.model.catalog.port.CreatureCatalogLookup;
+import src.domain.creatures.model.catalog.model.CreatureCatalogData;
+import src.domain.creatures.model.catalog.port.CreatureCatalogPort;
 
 import org.jspecify.annotations.Nullable;
 import java.util.List;
@@ -52,14 +53,14 @@ public final class LoadCreatureFilterOptionsUseCase {
             Map.entry("30", 155000)
     );
 
-    private final CreatureCatalogLookup lookup;
+    private final CreatureCatalogPort lookup;
 
-    public LoadCreatureFilterOptionsUseCase(CreatureCatalogLookup lookup) {
+    public LoadCreatureFilterOptionsUseCase(CreatureCatalogPort lookup) {
         this.lookup = Objects.requireNonNull(lookup, "lookup");
     }
 
     public FilterOptions execute() {
-        CreatureCatalogLookup.DistinctFilterValues values = lookup.loadFilterValues();
+        CreatureCatalogData.DistinctFilterValues values = lookup.loadFilterValues();
         return new FilterOptions(values, CHALLENGE_RATINGS);
     }
 
@@ -71,11 +72,11 @@ public final class LoadCreatureFilterOptionsUseCase {
     }
 
     public record FilterOptions(
-            CreatureCatalogLookup.DistinctFilterValues values,
+            CreatureCatalogData.DistinctFilterValues values,
             List<String> challengeRatings
     ) {
-        private static final CreatureCatalogLookup.DistinctFilterValues EMPTY_VALUES =
-                new CreatureCatalogLookup.DistinctFilterValues(
+        private static final CreatureCatalogData.DistinctFilterValues EMPTY_VALUES =
+                new CreatureCatalogData.DistinctFilterValues(
                         List.of(), List.of(), List.of(), List.of(), List.of());
 
         public FilterOptions {

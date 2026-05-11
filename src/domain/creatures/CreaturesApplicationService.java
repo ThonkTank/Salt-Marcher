@@ -6,7 +6,8 @@ import org.jspecify.annotations.Nullable;
 import src.domain.creatures.application.LoadCreatureDetailUseCase;
 import src.domain.creatures.application.LoadCreatureFilterOptionsUseCase;
 import src.domain.creatures.application.SearchCreatureCatalogUseCase;
-import src.domain.creatures.model.catalog.port.CreatureCatalogLookup;
+import src.domain.creatures.model.catalog.model.CreatureCatalogData;
+import src.domain.creatures.model.catalog.port.CreatureCatalogPort;
 import src.domain.creatures.model.catalog.repository.CreaturesPublishedStateRepository;
 import src.domain.creatures.published.CreatureCatalogSortField;
 import src.domain.creatures.published.CreatureSortDirection;
@@ -23,8 +24,8 @@ import src.domain.creatures.published.SelectCreatureDetailCommand;
 public final class CreaturesApplicationService {
 
     private static final long NO_CREATURE_ID = 0L;
-    private static final CreatureCatalogLookup.DistinctFilterValues EMPTY_FILTER_VALUES =
-            new CreatureCatalogLookup.DistinctFilterValues(List.of(), List.of(), List.of(), List.of(), List.of());
+    private static final CreatureCatalogData.DistinctFilterValues EMPTY_FILTER_VALUES =
+            new CreatureCatalogData.DistinctFilterValues(List.of(), List.of(), List.of(), List.of(), List.of());
 
     private final LoadCreatureFilterOptionsUseCase loadCreatureFilterOptionsUseCase;
     private final SearchCreatureCatalogUseCase searchCreatureCatalogUseCase;
@@ -32,10 +33,10 @@ public final class CreaturesApplicationService {
     private final CreaturesPublishedStateRepository publishedStateRepository;
 
     public CreaturesApplicationService(
-            CreatureCatalogLookup creatureCatalogLookup,
+            CreatureCatalogPort creatureCatalogLookup,
             CreaturesPublishedStateRepository publishedStateRepository
     ) {
-        CreatureCatalogLookup lookup = Objects.requireNonNull(creatureCatalogLookup, "creatureCatalogLookup");
+        CreatureCatalogPort lookup = Objects.requireNonNull(creatureCatalogLookup, "creatureCatalogLookup");
         this.loadCreatureFilterOptionsUseCase = new LoadCreatureFilterOptionsUseCase(lookup);
         this.searchCreatureCatalogUseCase = new SearchCreatureCatalogUseCase(lookup);
         this.loadCreatureDetailUseCase = new LoadCreatureDetailUseCase(lookup);
@@ -86,7 +87,7 @@ public final class CreaturesApplicationService {
                         null));
                 return;
             }
-            CreatureCatalogLookup.CreatureProfile detail = loadCreatureDetailUseCase.execute(creatureId);
+            CreatureCatalogData.CreatureProfile detail = loadCreatureDetailUseCase.execute(creatureId);
             if (detail == null) {
                 publishedStateRepository.publishCreatureDetail(new CreaturesPublishedStateRepository.CreatureDetailPublication(
                         CreaturesPublishedStateRepository.NOT_FOUND,
@@ -103,7 +104,7 @@ public final class CreaturesApplicationService {
         }
     }
 
-    private record NormalizedCatalogCommand(boolean valid, CreatureCatalogLookup.CatalogSearchSpec spec) {
+    private record NormalizedCatalogCommand(boolean valid, CreatureCatalogData.CatalogSearchSpec spec) {
 
         private static final int DEFAULT_PAGE_SIZE = 50;
         private static final int MAX_PAGE_SIZE = 100;
@@ -119,7 +120,7 @@ public final class CreaturesApplicationService {
             int pageOffset = Math.max(0, effectiveCommand.pageOffset());
             return new NormalizedCatalogCommand(
                     hasValidChallengeRatingRange(minimumChallengeRating, maximumChallengeRating, minimumXp, maximumXp),
-                    new CreatureCatalogLookup.CatalogSearchSpec(
+                    new CreatureCatalogData.CatalogSearchSpec(
                             trimmedOrNull(effectiveCommand.nameQuery()),
                             minimumXp,
                             maximumXp,
@@ -190,7 +191,7 @@ public final class CreaturesApplicationService {
         }
     }
 
-    private static CreatureCatalogLookup.CatalogPageData emptyPage(int pageSize, int pageOffset) {
-        return new CreatureCatalogLookup.CatalogPageData(List.of(), 0, pageSize, pageOffset);
+    private static CreatureCatalogData.CatalogPageData emptyPage(int pageSize, int pageOffset) {
+        return new CreatureCatalogData.CatalogPageData(List.of(), 0, pageSize, pageOffset);
     }
 }

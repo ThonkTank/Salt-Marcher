@@ -1,18 +1,19 @@
 package src.domain.creatures.application;
 
-import src.domain.creatures.model.catalog.port.CreatureCatalogLookup;
+import src.domain.creatures.model.catalog.model.CreatureCatalogData;
+import src.domain.creatures.model.catalog.port.CreatureCatalogPort;
 
 import java.util.Objects;
 
 public final class SearchCreatureCatalogUseCase {
 
-    private final CreatureCatalogLookup lookup;
+    private final CreatureCatalogPort lookup;
 
-    public SearchCreatureCatalogUseCase(CreatureCatalogLookup lookup) {
+    public SearchCreatureCatalogUseCase(CreatureCatalogPort lookup) {
         this.lookup = Objects.requireNonNull(lookup, "lookup");
     }
 
-    public CreatureCatalogLookup.CatalogPageData execute(CreatureCatalogLookup.CatalogSearchSpec query) {
+    public CreatureCatalogData.CatalogPageData execute(CreatureCatalogData.CatalogSearchSpec query) {
         return lookup.searchCatalog(Objects.requireNonNull(query, "query"));
     }
 }

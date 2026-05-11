@@ -9,20 +9,20 @@ import src.data.creatures.model.CreatureDetailRecord;
 import src.data.creatures.model.CreatureFilterValuesRecord;
 import src.data.creatures.model.EncounterCandidateCriteriaRecord;
 import src.data.creatures.model.EncounterCandidateRecord;
-import src.domain.creatures.model.catalog.port.CreatureCatalogLookup;
-import src.domain.creatures.model.catalog.port.CreatureCatalogLookup.CreatureProfile;
+import src.domain.creatures.model.catalog.model.CreatureCatalogData;
+import src.domain.creatures.model.catalog.model.CreatureCatalogData.CreatureProfile;
 
 public final class CreatureCatalogQueryMappingFacade {
 
     private CreatureCatalogQueryMappingFacade() {
     }
 
-    public static CreatureCatalogLookup.DistinctFilterValues toQueryValues(CreatureFilterValuesRecord record) {
+    public static CreatureCatalogData.DistinctFilterValues toQueryValues(CreatureFilterValuesRecord record) {
         return CreatureFilterValuesMapper.toQueryValues(record);
     }
 
     public static CreatureCatalogSearchCriteriaRecord toSearchCriteria(
-            CreatureCatalogLookup.CatalogSearchSpec spec
+            CreatureCatalogData.CatalogSearchSpec spec
     ) {
         return new CreatureCatalogSearchCriteriaRecord(
                 spec.nameQuery(),
@@ -41,7 +41,7 @@ public final class CreatureCatalogQueryMappingFacade {
                 spec.pageOffset());
     }
 
-    public static CreatureCatalogLookup.CatalogPageData toDomain(CreatureCatalogPageRecord record) {
+    public static CreatureCatalogData.CatalogPageData toDomain(CreatureCatalogPageRecord record) {
         return CreatureCatalogPageMapper.toDomain(record);
     }
 
@@ -50,7 +50,7 @@ public final class CreatureCatalogQueryMappingFacade {
     }
 
     public static EncounterCandidateCriteriaRecord toEncounterCriteria(
-            CreatureCatalogLookup.EncounterCandidateSpec spec
+            CreatureCatalogData.EncounterCandidateSpec spec
     ) {
         return new EncounterCandidateCriteriaRecord(
                 spec.types(),
@@ -61,7 +61,7 @@ public final class CreatureCatalogQueryMappingFacade {
                 spec.limit());
     }
 
-    public static List<CreatureCatalogLookup.EncounterCandidateProfile> toDomain(List<EncounterCandidateRecord> records) {
+    public static List<CreatureCatalogData.EncounterCandidateProfile> toDomain(List<EncounterCandidateRecord> records) {
         return records.stream()
                 .map(EncounterCandidateMapper::toDomain)
                 .toList();

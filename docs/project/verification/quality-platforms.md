@@ -117,6 +117,27 @@ manual testing for behavior verification.
   and product acceptance
 - `./gradlew test` is not a general-purpose home for behavior-regression suites
 
+## Continuous Refactoring Relationship
+
+Continuous refactoring is a workflow obligation, not an additional gate.
+Agents use the repo-owned
+[Continuous Refactoring Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/continuous-refactoring/SKILL.md:1)
+for production-code, check/enforcement, and dependency work so existing
+quality evidence is considered inside the normal development pass.
+
+The proof strength remains owned by the existing gates named in this standard.
+PMD, CPD, Lizard, SpotBugs, compiler hygiene, and dead-code reachability keep
+their current blocking status; CKJM remains an informational report. The
+continuous-refactoring workflow only requires agents to inspect and report
+touched-scope findings, perform small behavior-preserving local cleanup, and
+split larger refactors or dependency upgrades into separate reviewable passes.
+
+This follows the external workflow references mirrored under
+`/home/aaron/Schreibtisch/projects/references/continuous-refactoring/`:
+clean-as-you-code new-code scope, small-change review practice,
+pull-request-scoped quality feedback, Dependabot pull requests, dry-run-first
+mechanical refactoring, and Codex small validated refactoring passes.
+
 ## Architecture Harness Relationship
 
 This standard describes how quality platforms are operated. The architecture
@@ -216,3 +237,13 @@ enforced, the enforcement document is the canonical classification.
 - [SpotBugs Gradle Plugin Reference](/home/aaron/Schreibtisch/projects/references/quality-platforms/spotbugs-gradle-plugin.md:1)
 - [CKJM Metrics Reference](/home/aaron/Schreibtisch/projects/references/quality-platforms/ckjm-metrics.md:1)
 - [CK Metric Reference Values](/home/aaron/Schreibtisch/projects/references/quality-platforms/ck-metric-reference-values.md:1)
+- [Clean as You Code](/home/aaron/Schreibtisch/projects/references/continuous-refactoring/sonar-clean-as-you-code.md:1)
+- [Small CLs](/home/aaron/Schreibtisch/projects/references/continuous-refactoring/google-small-cls.md:1)
+- [The Standard of Code Review](/home/aaron/Schreibtisch/projects/references/continuous-refactoring/google-code-review-standard.md:1)
+- [GitLab Code Quality](/home/aaron/Schreibtisch/projects/references/continuous-refactoring/gitlab-code-quality.md:1)
+- [GitHub Pull Request Code Scanning Alerts](/home/aaron/Schreibtisch/projects/references/continuous-refactoring/github-code-scanning-pr-alerts.md:1)
+- [Dependabot Version Updates](/home/aaron/Schreibtisch/projects/references/continuous-refactoring/github-dependabot-version-updates.md:1)
+- [Dependabot Options Reference](/home/aaron/Schreibtisch/projects/references/continuous-refactoring/github-dependabot-options.md:1)
+- [OpenRewrite Gradle Plugin Configuration](/home/aaron/Schreibtisch/projects/references/continuous-refactoring/openrewrite-gradle-plugin-configuration.md:1)
+- [OpenAI Codex Refactor Your Codebase](/home/aaron/Schreibtisch/projects/references/continuous-refactoring/openai-codex-refactor-your-codebase.md:1)
+- [OpenAI Codex Worktrees](/home/aaron/Schreibtisch/projects/references/continuous-refactoring/openai-codex-worktrees.md:1)

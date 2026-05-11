@@ -5,8 +5,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
 import org.jspecify.annotations.Nullable;
-import src.domain.creatures.model.catalog.port.CreatureCatalogLookup;
-import src.domain.creatures.model.catalog.port.CreatureCatalogLookup.CreatureProfile;
+import src.domain.creatures.model.catalog.model.CreatureCatalogData;
+import src.domain.creatures.model.catalog.model.CreatureCatalogData.CreatureProfile;
 import src.domain.creatures.model.catalog.repository.CreaturesPublishedStateRepository;
 import src.domain.creatures.published.CreatureActionDetail;
 import src.domain.creatures.published.CreatureCatalogModel;
@@ -26,10 +26,10 @@ import src.domain.creatures.published.CreatureReadStatus;
 public final class CreaturePublishedStateRepositoryAdapter implements CreaturesPublishedStateRepository {
 
     private static final String LISTENER_PARAMETER = "listener";
-    private static final CreatureCatalogLookup.DistinctFilterValues EMPTY_FILTER_VALUES =
-            new CreatureCatalogLookup.DistinctFilterValues(List.of(), List.of(), List.of(), List.of(), List.of());
-    private static final CreatureCatalogLookup.CatalogPageData EMPTY_CATALOG_PAGE =
-            new CreatureCatalogLookup.CatalogPageData(List.of(), 0, 50, 0);
+    private static final CreatureCatalogData.DistinctFilterValues EMPTY_FILTER_VALUES =
+            new CreatureCatalogData.DistinctFilterValues(List.of(), List.of(), List.of(), List.of(), List.of());
+    private static final CreatureCatalogData.CatalogPageData EMPTY_CATALOG_PAGE =
+            new CreatureCatalogData.CatalogPageData(List.of(), 0, 50, 0);
 
     private final List<Consumer<CreatureFilterOptionsResult>> filterOptionsListeners = new ArrayList<>();
     private final List<Consumer<CreatureCatalogPageResult>> catalogListeners = new ArrayList<>();
@@ -59,7 +59,7 @@ public final class CreaturePublishedStateRepositoryAdapter implements CreaturesP
         FilterOptionsPublication safeResult = result == null
                 ? new FilterOptionsPublication(STORAGE_ERROR, EMPTY_FILTER_VALUES, List.of())
                 : result;
-        CreatureCatalogLookup.DistinctFilterValues values = safeResult.values();
+        CreatureCatalogData.DistinctFilterValues values = safeResult.values();
         currentFilterOptions = new CreatureFilterOptionsResult(
                 toReadStatus(safeResult.status()),
                 toPublishedFilterOptions(values, safeResult.challengeRatings()));
@@ -145,7 +145,7 @@ public final class CreaturePublishedStateRepositoryAdapter implements CreaturesP
     }
 
     private static CreatureFilterOptions toPublishedFilterOptions(
-            CreatureCatalogLookup.DistinctFilterValues values,
+            CreatureCatalogData.DistinctFilterValues values,
             List<String> challengeRatings
     ) {
         return new CreatureFilterOptions(
@@ -157,7 +157,7 @@ public final class CreaturePublishedStateRepositoryAdapter implements CreaturesP
                 challengeRatings);
     }
 
-    private static CreatureCatalogPage toPublishedCatalogPage(CreatureCatalogLookup.CatalogPageData page) {
+    private static CreatureCatalogPage toPublishedCatalogPage(CreatureCatalogData.CatalogPageData page) {
         return new CreatureCatalogPage(
                 page.rows().stream()
                         .map(row -> new CreatureCatalogRow(

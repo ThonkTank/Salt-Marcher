@@ -2,8 +2,8 @@ package src.domain.creatures.model.catalog.repository;
 
 import java.util.List;
 import org.jspecify.annotations.Nullable;
-import src.domain.creatures.model.catalog.port.CreatureCatalogLookup;
-import src.domain.creatures.model.catalog.port.CreatureCatalogLookup.CreatureProfile;
+import src.domain.creatures.model.catalog.model.CreatureCatalogData;
+import src.domain.creatures.model.catalog.model.CreatureCatalogData.CreatureProfile;
 
 public interface CreaturesPublishedStateRepository {
 
@@ -20,17 +20,17 @@ public interface CreaturesPublishedStateRepository {
 
     final class FilterOptionsPublication {
         private final String status;
-        private final CreatureCatalogLookup.DistinctFilterValues values;
+        private final CreatureCatalogData.DistinctFilterValues values;
         private final List<String> challengeRatings;
 
         public FilterOptionsPublication(
                 String status,
-                CreatureCatalogLookup.DistinctFilterValues values,
+                CreatureCatalogData.DistinctFilterValues values,
                 List<String> challengeRatings
         ) {
             this.status = status == null ? STORAGE_ERROR : status;
             this.values = values == null
-                    ? new CreatureCatalogLookup.DistinctFilterValues(List.of(), List.of(), List.of(), List.of(), List.of())
+                    ? new CreatureCatalogData.DistinctFilterValues(List.of(), List.of(), List.of(), List.of(), List.of())
                     : values;
             this.challengeRatings = challengeRatings == null ? List.of() : List.copyOf(challengeRatings);
         }
@@ -39,7 +39,7 @@ public interface CreaturesPublishedStateRepository {
             return status;
         }
 
-        public CreatureCatalogLookup.DistinctFilterValues values() {
+        public CreatureCatalogData.DistinctFilterValues values() {
             return values;
         }
 
@@ -50,18 +50,18 @@ public interface CreaturesPublishedStateRepository {
 
     final class CatalogPagePublication {
         private final String status;
-        private final CreatureCatalogLookup.CatalogPageData page;
+        private final CreatureCatalogData.CatalogPageData page;
 
-        public CatalogPagePublication(String status, CreatureCatalogLookup.CatalogPageData page) {
+        public CatalogPagePublication(String status, CreatureCatalogData.CatalogPageData page) {
             this.status = status == null ? STORAGE_ERROR : status;
-            this.page = page == null ? new CreatureCatalogLookup.CatalogPageData(List.of(), 0, 50, 0) : page;
+            this.page = page == null ? new CreatureCatalogData.CatalogPageData(List.of(), 0, 50, 0) : page;
         }
 
         public String status() {
             return status;
         }
 
-        public CreatureCatalogLookup.CatalogPageData page() {
+        public CreatureCatalogData.CatalogPageData page() {
             return page;
         }
     }

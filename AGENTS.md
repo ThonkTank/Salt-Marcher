@@ -21,7 +21,9 @@ Before changing repo-tracked files in SaltMarcher:
    implementation shape.
 4. Use every mandatory skill named by the workspace or SaltMarcher routing
    rules before planning, implementing, refactoring, or reviewing covered work.
-5. Identify the required verification surface before editing and report the
+5. For production-code, check/enforcement, or dependency work, identify the
+   continuous-refactoring scope before editing.
+6. Identify the required verification surface before editing and report the
    literal result before handoff.
 
 If a touched surface has no clear canonical owner, stop and report the ambiguity
@@ -59,6 +61,11 @@ document exists.
 - Work that uses external sources or local source evidence for decisions must
   use the global `source-references` skill and follow
   `docs/project/verification/source-references.md`.
+- Production-code, check/enforcement, and dependency work must use the
+  repo-owned `continuous-refactoring` skill before planning, implementing,
+  refactoring, or reviewing. The skill is a workflow rule for keeping cleanup
+  inside the normal development pass; it does not authorize new gates or
+  repo-wide cleanup waves by itself.
 - Work under `src/domain/**` must use the repo-owned `domain-layer` skill and
   follow the canonical domain-layer standard before changes are made or
   reviewed.
@@ -143,6 +150,7 @@ document exists.
 - [Source References Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/verification/source-references.md:1)
 - [Global Source References Skill](/home/aaron/.codex/skills/local/source-references/SKILL.md:1)
 - [Global Agent Instruction Engineering Skill](/home/aaron/.codex/skills/local/agent-instruction-engineering/SKILL.md:1)
+- [Continuous Refactoring Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/continuous-refactoring/SKILL.md:1)
 - [Domain Layer Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/domain-layer/SKILL.md:1)
 - [View Layer MVVM Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/view-layer-mvvm/SKILL.md:1)
 - [View Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/view-layer.md:1)

@@ -4,7 +4,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import src.data.creatures.query.SqliteCreatureCatalogQueryAdapter;
-import src.domain.creatures.model.catalog.port.CreatureCatalogLookup;
+import src.domain.creatures.model.catalog.model.CreatureCatalogData;
+import src.domain.creatures.model.catalog.port.CreatureCatalogPort;
 import src.domain.encounter.model.generation.helper.EncounterCandidateProfileHelper;
 import src.domain.encounter.model.generation.model.EncounterCandidateProfile;
 import src.domain.encounter.model.generation.model.EncounterCreatureFacts;
@@ -17,13 +18,13 @@ public final class ApplicationEncounterCreatureRepository implements EncounterCr
     private static final int DEFAULT_LIMIT = 250;
     private static final int MAX_LIMIT = 1000;
 
-    private final CreatureCatalogLookup creatureCatalogLookup;
+    private final CreatureCatalogPort creatureCatalogLookup;
 
     public ApplicationEncounterCreatureRepository() {
         this(new SqliteCreatureCatalogQueryAdapter());
     }
 
-    ApplicationEncounterCreatureRepository(CreatureCatalogLookup creatureCatalogLookup) {
+    ApplicationEncounterCreatureRepository(CreatureCatalogPort creatureCatalogLookup) {
         this.creatureCatalogLookup = Objects.requireNonNull(creatureCatalogLookup, "creatureCatalogLookup");
     }
 
@@ -33,7 +34,7 @@ public final class ApplicationEncounterCreatureRepository implements EncounterCr
             return Optional.empty();
         }
         return Optional.ofNullable(creatureCatalogLookup.loadCreatureDetail(creatureId))
-                .map(EncounterCreatureReference::fromCatalogProfile);
+                .map(ApplicationEncounterCreatureRepository::toReference);
     }
 
     @Override
@@ -46,7 +47,7 @@ public final class ApplicationEncounterCreatureRepository implements EncounterCr
         if (minimumXp > maximumXp) {
             return List.of();
         }
-        CreatureCatalogLookup.EncounterCandidateSpec spec = new CreatureCatalogLookup.EncounterCandidateSpec(
+        CreatureCatalogData.EncounterCandidateSpec spec = new CreatureCatalogData.EncounterCandidateSpec(
                 safeCriteria.creatureTypes(),
                 safeCriteria.creatureSubtypes(),
                 safeCriteria.biomes(),
@@ -65,7 +66,7 @@ public final class ApplicationEncounterCreatureRepository implements EncounterCr
         return Math.min(limit, MAX_LIMIT);
     }
 
-    private static EncounterCandidateProfile toProfile(CreatureCatalogLookup.EncounterCandidateProfile candidate) {
+    private static EncounterCandidateProfile toProfile(CreatureCatalogData.EncounterCandidateProfile candidate) {
         return EncounterCandidateProfileHelper.fromFacts(new EncounterCreatureFacts(
                 candidate.id(),
                 candidate.name(),
@@ -88,5 +89,32 @@ public final class ApplicationEncounterCreatureRepository implements EncounterCr
                 null,
                 0,
                 List.of()));
+    }
+
+    private static EncounterCreatureReference toReference(CreatureCatalogData.CreatureProfile detail) {
+        return new EncounterCreatureReference(
+                detail.id(),
+                detail.name(),
+                detail.creatureType(),
+                detail.challengeRating(),
+                detail.xp(),
+                detail.hitPoints(),
+                detail.hitDiceCount(),
+                detail.hitDiceSides(),
+                detail.hitDiceModifier(),
+                detail.armorClass(),
+                detail.initiativeBonus(),
+                detail.legendaryActionCount(),
+                detail.flySpeed(),
+                detail.swimSpeed(),
+                detail.climbSpeed(),
+                detail.burrowSpeed(),
+                detail.damageResistances(),
+                detail.damageImmunities(),
+                detail.conditionImmunities(),
+                detail.passivePerception(),
+                detail.actions().stream()
+                        .map(action -> action.actionType())
+                        .toList());
     }
 }
