@@ -1,8 +1,8 @@
 package src.domain.dungeon.application;
 
 import org.jspecify.annotations.Nullable;
-import src.domain.dungeon.map.value.DungeonTravelExternalTargetFacts;
-import src.domain.dungeon.map.value.DungeonTravelMoveFacts;
+import src.domain.dungeon.model.map.model.DungeonTravelExternalTargetFacts;
+import src.domain.dungeon.model.map.model.DungeonTravelMoveFacts;
 import src.domain.dungeon.published.DungeonTravelExternalTarget;
 import src.domain.dungeon.published.DungeonTravelMoveResult;
 import src.domain.dungeon.published.DungeonTravelSurfaceSnapshot;
@@ -11,7 +11,7 @@ public final class PublishDungeonTravelResultUseCase {
 
     private final PublishDungeonTravelSurfaceUseCase surfaceUseCase = new PublishDungeonTravelSurfaceUseCase();
 
-    public DungeonTravelSurfaceSnapshot travelSurface(src.domain.dungeon.map.value.DungeonTravelSurfaceFacts surface) {
+    public DungeonTravelSurfaceSnapshot travelSurface(src.domain.dungeon.model.map.model.DungeonTravelSurfaceFacts surface) {
         return surfaceUseCase.surface(surface);
     }
 

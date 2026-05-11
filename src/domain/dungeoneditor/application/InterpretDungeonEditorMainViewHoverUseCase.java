@@ -1,10 +1,10 @@
 package src.domain.dungeoneditor.application;
 
-import src.domain.dungeoneditor.interaction.value.DungeonEditorMainViewEffect;
-import src.domain.dungeoneditor.interaction.value.DungeonEditorMainViewInteractionValues.InteractionState;
-import src.domain.dungeoneditor.interaction.value.DungeonEditorMainViewInteractionValues.PointerState;
-import src.domain.dungeoneditor.session.value.DungeonEditorSessionValues;
-import src.domain.dungeoneditor.workspace.value.DungeonEditorWorkspaceValues;
+import src.domain.dungeoneditor.model.interaction.model.DungeonEditorMainViewEffect;
+import src.domain.dungeoneditor.model.interaction.model.DungeonEditorMainViewInteractionValues.InteractionState;
+import src.domain.dungeoneditor.model.interaction.model.DungeonEditorMainViewInteractionValues.PointerState;
+import src.domain.dungeoneditor.model.session.model.DungeonEditorSessionValues;
+import src.domain.dungeoneditor.model.workspace.model.DungeonEditorWorkspaceValues;
 
 final class InterpretDungeonEditorMainViewHoverUseCase {
     private final DungeonEditorBoundaryDraftUseCase boundaryDraft = new DungeonEditorBoundaryDraftUseCase();

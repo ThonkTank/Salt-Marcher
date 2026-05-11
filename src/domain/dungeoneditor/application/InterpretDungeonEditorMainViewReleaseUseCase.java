@@ -1,13 +1,13 @@
 package src.domain.dungeoneditor.application;
 
-import src.domain.dungeoneditor.interaction.value.DungeonEditorMainViewEffect;
-import src.domain.dungeoneditor.interaction.value.DungeonEditorMainViewInteractionValues.BoundaryStretchSession;
-import src.domain.dungeoneditor.interaction.value.DungeonEditorMainViewInteractionValues.DragSession;
-import src.domain.dungeoneditor.interaction.value.DungeonEditorMainViewInteractionValues.InteractionState;
-import src.domain.dungeoneditor.interaction.value.DungeonEditorMainViewInteractionValues.PaintSession;
-import src.domain.dungeoneditor.interaction.value.DungeonEditorMainViewInteractionValues.PointerState;
-import src.domain.dungeoneditor.interaction.value.DungeonEditorMainViewInterpretation;
-import src.domain.dungeoneditor.session.value.DungeonEditorSessionValues;
+import src.domain.dungeoneditor.model.interaction.model.DungeonEditorMainViewEffect;
+import src.domain.dungeoneditor.model.interaction.model.DungeonEditorMainViewInteractionValues.BoundaryStretchSession;
+import src.domain.dungeoneditor.model.interaction.model.DungeonEditorMainViewInteractionValues.DragSession;
+import src.domain.dungeoneditor.model.interaction.model.DungeonEditorMainViewInteractionValues.InteractionState;
+import src.domain.dungeoneditor.model.interaction.model.DungeonEditorMainViewInteractionValues.PaintSession;
+import src.domain.dungeoneditor.model.interaction.model.DungeonEditorMainViewInteractionValues.PointerState;
+import src.domain.dungeoneditor.model.interaction.model.DungeonEditorMainViewInterpretation;
+import src.domain.dungeoneditor.model.session.model.DungeonEditorSessionValues;
 
 final class InterpretDungeonEditorMainViewReleaseUseCase {
 

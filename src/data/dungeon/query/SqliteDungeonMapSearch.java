@@ -2,7 +2,7 @@ package src.data.dungeon.query;
 
 import src.data.dungeon.gateway.local.DungeonSqliteGateway;
 import src.data.dungeon.mapper.DungeonMapRecordMapper;
-import src.domain.dungeon.map.aggregate.DungeonMap;
+import src.domain.dungeon.model.map.model.DungeonMap;
 import src.domain.dungeon.map.port.DungeonMapSearch;
 
 import java.util.List;

@@ -1,9 +1,9 @@
 package src.domain.dungeon.application;
 
 import org.jspecify.annotations.Nullable;
-import src.domain.dungeon.map.value.DungeonCell;
-import src.domain.dungeon.map.value.DungeonMapIdentity;
-import src.domain.dungeon.map.value.DungeonTravelPositionFacts;
+import src.domain.dungeon.model.map.model.DungeonCell;
+import src.domain.dungeon.model.map.model.DungeonMapIdentity;
+import src.domain.dungeon.model.map.model.DungeonTravelPositionFacts;
 import src.domain.dungeon.published.DungeonCellRef;
 import src.domain.dungeon.published.DungeonMapId;
 import src.domain.dungeon.published.DungeonTravelPosition;
@@ -16,10 +16,10 @@ public final class TranslateDungeonTravelInputUseCase {
         }
         return new DungeonTravelPositionFacts(
                 domainMapId(position.mapId()),
-                src.domain.dungeon.map.value.DungeonTravelLocationKind.valueOf(position.locationKind().name()),
+                src.domain.dungeon.model.map.model.DungeonTravelLocationKind.valueOf(position.locationKind().name()),
                 position.ownerId(),
                 domainCell(position.tile()),
-                src.domain.dungeon.map.value.DungeonTravelHeading.valueOf(position.heading().name()));
+                src.domain.dungeon.model.map.model.DungeonTravelHeading.valueOf(position.heading().name()));
     }
 
     private static DungeonMapIdentity domainMapId(@Nullable DungeonMapId mapId) {

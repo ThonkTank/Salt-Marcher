@@ -10,10 +10,11 @@ import src.domain.dungeon.published.DungeonMapCatalogCommand;
 import src.domain.dungeon.published.DungeonMapCatalogResponse;
 import src.domain.dungeon.published.DungeonMapId;
 import src.domain.dungeon.published.DungeonOperationResult;
-import src.domain.dungeoneditor.session.entity.DungeonEditorSession;
-import src.domain.dungeoneditor.session.value.DungeonEditorSessionCommand;
-import src.domain.dungeoneditor.session.value.DungeonEditorSessionSnapshot;
-import src.domain.dungeoneditor.workspace.value.DungeonEditorWorkspaceValues;
+import src.domain.dungeoneditor.model.session.model.DungeonEditorSession;
+import src.domain.dungeoneditor.model.session.model.DungeonEditorSessionCommand;
+import src.domain.dungeoneditor.model.session.model.DungeonEditorSessionSnapshot;
+import src.domain.dungeoneditor.model.workspace.helper.DungeonEditorWorkspaceMapBoundaryTranslationHelper;
+import src.domain.dungeoneditor.model.workspace.model.DungeonEditorWorkspaceValues;
 
 public final class ApplyDungeonEditorSessionUseCase {
     private final BuildDungeonEditorSnapshotUseCase snapshotBuilder;
@@ -61,7 +62,7 @@ public final class ApplyDungeonEditorSessionUseCase {
     }
 
     static DungeonMapId requireMapId(DungeonEditorWorkspaceValues.@Nullable MapId mapId) {
-        DungeonMapId domainMapId = DungeonEditorWorkspaceMapBoundaryTranslator.toDomainMapId(mapId);
+        DungeonMapId domainMapId = DungeonEditorWorkspaceMapBoundaryTranslationHelper.toDomainMapId(mapId);
         if (domainMapId == null) {
             throw new IllegalArgumentException("Dungeon-Map-ID fehlt.");
         }

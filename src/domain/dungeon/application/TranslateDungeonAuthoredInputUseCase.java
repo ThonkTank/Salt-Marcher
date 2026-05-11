@@ -1,13 +1,13 @@
 package src.domain.dungeon.application;
 
 import org.jspecify.annotations.Nullable;
-import src.domain.dungeon.map.value.DungeonCell;
-import src.domain.dungeon.map.value.DungeonEditorHandle;
-import src.domain.dungeon.map.value.DungeonEditorHandleType;
-import src.domain.dungeon.map.value.DungeonEdge;
-import src.domain.dungeon.map.value.DungeonEdgeDirection;
-import src.domain.dungeon.map.value.DungeonMapIdentity;
-import src.domain.dungeon.map.value.DungeonTopologyRef;
+import src.domain.dungeon.model.map.model.DungeonCell;
+import src.domain.dungeon.model.map.model.DungeonEditorHandle;
+import src.domain.dungeon.model.map.model.DungeonEditorHandleType;
+import src.domain.dungeon.model.map.model.DungeonEdge;
+import src.domain.dungeon.model.map.model.DungeonEdgeDirection;
+import src.domain.dungeon.model.map.model.DungeonMapIdentity;
+import src.domain.dungeon.model.map.model.DungeonTopologyRef;
 import src.domain.dungeon.published.DungeonCellRef;
 import src.domain.dungeon.published.DungeonEdgeRef;
 import src.domain.dungeon.published.DungeonEditorHandleRef;
@@ -48,7 +48,7 @@ public final class TranslateDungeonAuthoredInputUseCase {
             return DungeonTopologyRef.empty();
         }
         return new DungeonTopologyRef(
-                src.domain.dungeon.map.value.DungeonTopologyElementKind.valueOf(ref.kind().name()),
+                src.domain.dungeon.model.map.model.DungeonTopologyElementKind.valueOf(ref.kind().name()),
                 ref.id());
     }
 

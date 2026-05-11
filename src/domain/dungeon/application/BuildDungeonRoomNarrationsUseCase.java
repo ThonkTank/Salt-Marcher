@@ -4,18 +4,18 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import src.domain.dungeon.map.aggregate.DungeonMap;
-import src.domain.dungeon.map.entity.DungeonRoom;
-import src.domain.dungeon.map.value.DungeonAreaFacts;
-import src.domain.dungeon.map.value.DungeonAreaType;
-import src.domain.dungeon.map.value.DungeonCell;
-import src.domain.dungeon.map.value.DungeonDerivedState;
-import src.domain.dungeon.map.value.DungeonEdgeDirection;
-import src.domain.dungeon.map.value.DungeonRoomExitDescription;
-import src.domain.dungeon.map.value.DungeonTopologyElementKind;
-import src.domain.dungeon.map.value.DungeonTopologyRef;
-import src.domain.dungeon.map.value.DungeonTraversalEndpoint;
-import src.domain.dungeon.map.value.DungeonTraversalLink;
+import src.domain.dungeon.model.map.model.DungeonMap;
+import src.domain.dungeon.model.map.model.DungeonRoom;
+import src.domain.dungeon.model.map.model.DungeonAreaFacts;
+import src.domain.dungeon.model.map.model.DungeonAreaType;
+import src.domain.dungeon.model.map.model.DungeonCell;
+import src.domain.dungeon.model.map.model.DungeonDerivedState;
+import src.domain.dungeon.model.map.model.DungeonEdgeDirection;
+import src.domain.dungeon.model.map.model.DungeonRoomExitDescription;
+import src.domain.dungeon.model.map.model.DungeonTopologyElementKind;
+import src.domain.dungeon.model.map.model.DungeonTopologyRef;
+import src.domain.dungeon.model.map.model.DungeonTraversalEndpoint;
+import src.domain.dungeon.model.map.model.DungeonTraversalLink;
 
 final class BuildDungeonRoomNarrationsUseCase {
 

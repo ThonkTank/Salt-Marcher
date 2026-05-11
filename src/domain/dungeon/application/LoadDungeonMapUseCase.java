@@ -5,10 +5,10 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import org.jspecify.annotations.Nullable;
-import src.domain.dungeon.map.aggregate.DungeonMap;
-import src.domain.dungeon.map.port.DungeonMapRepository;
+import src.domain.dungeon.model.map.model.DungeonMap;
+import src.domain.dungeon.model.map.repository.DungeonMapRepository;
 import src.domain.dungeon.map.port.DungeonMapSearch;
-import src.domain.dungeon.map.value.DungeonMapIdentity;
+import src.domain.dungeon.model.map.model.DungeonMapIdentity;
 
 /**
  * Loads authored dungeon maps through narrow loader functions instead of storing raw ports.

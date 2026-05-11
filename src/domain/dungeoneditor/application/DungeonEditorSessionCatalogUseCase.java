@@ -3,9 +3,10 @@ package src.domain.dungeoneditor.application;
 import java.util.function.Function;
 import src.domain.dungeon.published.DungeonMapCatalogCommand;
 import src.domain.dungeon.published.DungeonMapCatalogResponse;
-import src.domain.dungeoneditor.session.entity.DungeonEditorSession;
-import src.domain.dungeoneditor.session.value.DungeonEditorSessionCommand;
-import src.domain.dungeoneditor.workspace.value.DungeonEditorWorkspaceValues;
+import src.domain.dungeoneditor.model.workspace.helper.DungeonEditorWorkspaceMapBoundaryTranslationHelper;
+import src.domain.dungeoneditor.model.session.model.DungeonEditorSession;
+import src.domain.dungeoneditor.model.session.model.DungeonEditorSessionCommand;
+import src.domain.dungeoneditor.model.workspace.model.DungeonEditorWorkspaceValues;
 
 final class DungeonEditorSessionCatalogUseCase {
     private final Function<DungeonMapCatalogCommand, DungeonMapCatalogResponse> catalog;
@@ -34,7 +35,7 @@ final class DungeonEditorSessionCatalogUseCase {
 
     private DungeonEditorSession applyCatalogMutation(DungeonEditorSession session, DungeonEditorSessionCommand command) {
         String mapName = command.mapName();
-        DungeonEditorWorkspaceValues.MapId nextMapId = DungeonEditorWorkspaceMapBoundaryTranslator.toWorkspaceMapId(
+        DungeonEditorWorkspaceValues.MapId nextMapId = DungeonEditorWorkspaceMapBoundaryTranslationHelper.toWorkspaceMapId(
                 ApplyDungeonEditorSessionUseCase.requireMutationMapId(catalog.apply(catalogCommand(command, mapName))));
         if (command.action().isDeleteMapAction()) {
             DungeonEditorSession nextSession = nextMapId != null && nextMapId.equals(session.selectedMapId())

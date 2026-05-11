@@ -1,8 +1,6 @@
 package src.domain.encounter.model.plan.model;
 
 import java.util.List;
-import src.domain.encounter.model.plan.model.EncounterPlanCreature;
-
 public record EncounterPlan(long id, String name, String generatedLabel, List<EncounterPlanCreature> creatures) {
 
     public EncounterPlan {
@@ -22,7 +20,11 @@ public record EncounterPlan(long id, String name, String generatedLabel, List<En
     }
 
     public int creatureCount() {
-        return creatures.stream().mapToInt(EncounterPlanCreature::quantity).sum();
+        int total = 0;
+        for (EncounterPlanCreature creature : creatures) {
+            total += creature.quantity();
+        }
+        return total;
     }
 
     private static String normalizeName(String value) {

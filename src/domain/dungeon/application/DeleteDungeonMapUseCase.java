@@ -2,7 +2,7 @@ package src.domain.dungeon.application;
 
 import java.util.Objects;
 import java.util.function.Consumer;
-import src.domain.dungeon.map.value.DungeonMapIdentity;
+import src.domain.dungeon.model.map.model.DungeonMapIdentity;
 
 /**
  * Deletes an authored dungeon map aggregate.

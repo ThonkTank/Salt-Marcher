@@ -1,13 +1,13 @@
 package src.domain.dungeon.application;
 
 import java.util.List;
-import src.domain.dungeon.map.value.DungeonAreaFacts;
-import src.domain.dungeon.map.value.DungeonAreaType;
-import src.domain.dungeon.map.value.DungeonBoundaryFacts;
-import src.domain.dungeon.map.value.DungeonEditorHandleFacts;
-import src.domain.dungeon.map.value.DungeonFeatureFacts;
-import src.domain.dungeon.map.value.DungeonMapFacts;
-import src.domain.dungeon.map.value.DungeonTopology;
+import src.domain.dungeon.model.map.model.DungeonAreaFacts;
+import src.domain.dungeon.model.map.model.DungeonAreaType;
+import src.domain.dungeon.model.map.model.DungeonBoundaryFacts;
+import src.domain.dungeon.model.map.model.DungeonEditorHandleFacts;
+import src.domain.dungeon.model.map.model.DungeonFeatureFacts;
+import src.domain.dungeon.model.map.model.DungeonMapFacts;
+import src.domain.dungeon.model.map.model.DungeonTopology;
 import src.domain.dungeon.published.DungeonAreaKind;
 import src.domain.dungeon.published.DungeonAreaSnapshot;
 import src.domain.dungeon.published.DungeonBoundarySnapshot;

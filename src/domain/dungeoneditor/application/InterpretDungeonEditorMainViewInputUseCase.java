@@ -1,17 +1,18 @@
 package src.domain.dungeoneditor.application;
 
 import org.jspecify.annotations.Nullable;
-import src.domain.dungeoneditor.interaction.value.DungeonEditorMainViewEffect;
-import src.domain.dungeoneditor.interaction.value.DungeonEditorMainViewInteractionValues.InteractionState;
-import src.domain.dungeoneditor.interaction.value.DungeonEditorMainViewInterpretation;
-import src.domain.dungeoneditor.interaction.value.DungeonEditorMainViewInteractionValues.PointerState;
-import src.domain.dungeoneditor.session.value.DungeonEditorSessionCommand;
-import src.domain.dungeoneditor.session.value.DungeonEditorSessionValues;
-import src.domain.dungeoneditor.workspace.value.DungeonEditorWorkspaceValues.MapSnapshot;
+import src.domain.dungeoneditor.model.interaction.helper.DungeonEditorMainViewInputBoundaryTranslationHelper;
+import src.domain.dungeoneditor.model.interaction.model.DungeonEditorMainViewEffect;
+import src.domain.dungeoneditor.model.interaction.model.DungeonEditorMainViewInteractionValues.InteractionState;
+import src.domain.dungeoneditor.model.interaction.model.DungeonEditorMainViewInterpretation;
+import src.domain.dungeoneditor.model.interaction.model.DungeonEditorMainViewInteractionValues.PointerState;
+import src.domain.dungeoneditor.model.session.model.DungeonEditorSessionCommand;
+import src.domain.dungeoneditor.model.session.model.DungeonEditorSessionValues;
+import src.domain.dungeoneditor.model.workspace.model.DungeonEditorWorkspaceValues.MapSnapshot;
 
 final class InterpretDungeonEditorMainViewInputUseCase {
-    private final DungeonEditorMainViewInputBoundaryTranslator inputTranslator =
-            new DungeonEditorMainViewInputBoundaryTranslator();
+    private final DungeonEditorMainViewInputBoundaryTranslationHelper inputTranslator =
+            new DungeonEditorMainViewInputBoundaryTranslationHelper();
     private final InterpretDungeonEditorMainViewPressUseCase pressUseCase =
             new InterpretDungeonEditorMainViewPressUseCase();
     private final InterpretDungeonEditorMainViewDragUseCase dragUseCase =

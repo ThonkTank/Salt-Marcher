@@ -1,7 +1,7 @@
 package src.domain.dungeon.application;
 
 import src.domain.dungeon.map.port.DungeonMapSearch;
-import src.domain.dungeon.map.value.DungeonMapIdentity;
+import src.domain.dungeon.model.map.model.DungeonMapIdentity;
 
 import java.util.Comparator;
 import java.util.List;

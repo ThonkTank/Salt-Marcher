@@ -7,9 +7,9 @@ import java.util.Locale;
 import java.util.Set;
 import org.jspecify.annotations.Nullable;
 import src.data.dungeon.model.DungeonTopologyElementRecord;
-import src.domain.dungeon.map.value.DungeonMapTopology;
-import src.domain.dungeon.map.value.DungeonTopologyElementKind;
-import src.domain.dungeon.map.value.DungeonTopologyRef;
+import src.domain.dungeon.model.map.model.DungeonMapTopology;
+import src.domain.dungeon.model.map.model.DungeonTopologyElementKind;
+import src.domain.dungeon.model.map.model.DungeonTopologyRef;
 
 final class DungeonTopologyElementRecordMapperSupport {
 

@@ -4,9 +4,9 @@ import java.util.ArrayList;
 import java.util.List;
 import org.jspecify.annotations.Nullable;
 import src.data.dungeon.model.DungeonTransitionRecord;
-import src.domain.dungeon.map.entity.DungeonTransition;
-import src.domain.dungeon.map.value.DungeonCell;
-import src.domain.dungeon.map.value.DungeonTransitionDestination;
+import src.domain.dungeon.model.map.model.DungeonTransition;
+import src.domain.dungeon.model.map.model.DungeonCell;
+import src.domain.dungeon.model.map.model.DungeonTransitionDestination;
 
 final class DungeonTransitionRecordMapperSupport {
 

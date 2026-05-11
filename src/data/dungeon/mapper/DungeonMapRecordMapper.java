@@ -3,13 +3,13 @@ package src.data.dungeon.mapper;
 import org.jspecify.annotations.Nullable;
 import src.data.dungeon.model.DungeonMapRecord;
 import src.data.dungeon.model.DungeonGridBoundsRecord;
-import src.domain.dungeon.map.aggregate.DungeonMap;
-import src.domain.dungeon.map.value.ConnectionCatalog;
-import src.domain.dungeon.map.value.DungeonMapIdentity;
-import src.domain.dungeon.map.value.DungeonMapTopology;
-import src.domain.dungeon.map.value.DungeonTopology;
-import src.domain.dungeon.map.value.RoomCatalog;
-import src.domain.dungeon.map.value.SpatialTopology;
+import src.domain.dungeon.model.map.model.DungeonMap;
+import src.domain.dungeon.model.map.model.ConnectionCatalog;
+import src.domain.dungeon.model.map.model.DungeonMapIdentity;
+import src.domain.dungeon.model.map.model.DungeonMapTopology;
+import src.domain.dungeon.model.map.model.DungeonTopology;
+import src.domain.dungeon.model.map.model.RoomCatalog;
+import src.domain.dungeon.model.map.model.SpatialTopology;
 
 import java.util.List;
 

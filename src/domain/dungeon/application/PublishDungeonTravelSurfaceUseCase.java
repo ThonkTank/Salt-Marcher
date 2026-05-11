@@ -1,8 +1,8 @@
 package src.domain.dungeon.application;
 
-import src.domain.dungeon.map.value.DungeonTravelActionFacts;
-import src.domain.dungeon.map.value.DungeonTravelPositionFacts;
-import src.domain.dungeon.map.value.DungeonTravelSurfaceFacts;
+import src.domain.dungeon.model.map.model.DungeonTravelActionFacts;
+import src.domain.dungeon.model.map.model.DungeonTravelPositionFacts;
+import src.domain.dungeon.model.map.model.DungeonTravelSurfaceFacts;
 import src.domain.dungeon.published.DungeonTravelActionSnapshot;
 import src.domain.dungeon.published.DungeonTravelContextKind;
 import src.domain.dungeon.published.DungeonTravelPosition;

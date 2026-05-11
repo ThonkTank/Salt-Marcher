@@ -3,8 +3,8 @@ package src.domain.dungeon.application;
 import java.util.Objects;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import src.domain.dungeon.map.aggregate.DungeonMap;
-import src.domain.dungeon.map.value.DungeonMapIdentity;
+import src.domain.dungeon.model.map.model.DungeonMap;
+import src.domain.dungeon.model.map.model.DungeonMapIdentity;
 
 /**
  * Creates an empty authored dungeon map aggregate.

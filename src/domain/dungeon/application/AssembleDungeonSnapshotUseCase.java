@@ -2,9 +2,9 @@ package src.domain.dungeon.application;
 
 import java.util.List;
 import java.util.Objects;
-import src.domain.dungeon.map.aggregate.DungeonMap;
-import src.domain.dungeon.map.value.DungeonDerivedState;
-import src.domain.dungeon.map.value.DungeonEditorHandleFacts;
+import src.domain.dungeon.model.map.model.DungeonMap;
+import src.domain.dungeon.model.map.model.DungeonDerivedState;
+import src.domain.dungeon.model.map.model.DungeonEditorHandleFacts;
 
 /**
  * Assembles committed dungeon snapshot data from authored truth and derived state.

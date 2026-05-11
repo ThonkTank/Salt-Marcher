@@ -7,11 +7,11 @@ import src.data.dungeon.model.DungeonCorridorAnchorRefRecord;
 import src.data.dungeon.model.DungeonCorridorDoorBindingRecord;
 import src.data.dungeon.model.DungeonCorridorRecord;
 import src.data.dungeon.model.DungeonCorridorWaypointRecord;
-import src.domain.dungeon.map.entity.DungeonCorridor;
-import src.domain.dungeon.map.value.DungeonCorridorAnchorBinding;
-import src.domain.dungeon.map.value.DungeonCorridorAnchorRef;
-import src.domain.dungeon.map.value.DungeonCorridorDoorBinding;
-import src.domain.dungeon.map.value.DungeonCorridorWaypoint;
+import src.domain.dungeon.model.map.model.DungeonCorridor;
+import src.domain.dungeon.model.map.model.DungeonCorridorAnchorBinding;
+import src.domain.dungeon.model.map.model.DungeonCorridorAnchorRef;
+import src.domain.dungeon.model.map.model.DungeonCorridorDoorBinding;
+import src.domain.dungeon.model.map.model.DungeonCorridorWaypoint;
 
 final class DungeonCorridorConnectionWriteMapperSupport {
 

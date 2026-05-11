@@ -11,12 +11,12 @@ import src.domain.dungeon.published.DungeonAuthoredReadModel;
 import src.domain.dungeon.published.DungeonMapCatalogModel;
 import src.domain.dungeon.published.DungeonMapId;
 import src.domain.dungeoneditor.application.ApplyDungeonEditorSessionUseCase;
-import src.domain.dungeoneditor.application.DungeonEditorCommandBoundaryTranslator;
-import src.domain.dungeoneditor.application.DungeonEditorSnapshotProjector;
+import src.domain.dungeoneditor.model.session.helper.DungeonEditorCommandBoundaryTranslationHelper;
+import src.domain.dungeoneditor.model.workspace.helper.DungeonEditorSnapshotProjectionHelper;
 import src.domain.dungeoneditor.published.DungeonEditorModel;
 import src.domain.dungeoneditor.published.DungeonEditorSnapshot;
 import src.domain.dungeoneditor.published.LoadDungeonEditorQuery;
-import src.domain.dungeoneditor.session.value.DungeonEditorSessionCommand;
+import src.domain.dungeoneditor.model.session.model.DungeonEditorSessionCommand;
 
 public final class DungeonEditorApplicationService {
 
@@ -57,7 +57,7 @@ public final class DungeonEditorApplicationService {
     }
 
     public DungeonEditorModel loadEditor(LoadDungeonEditorQuery query) {
-        DungeonMapId requestedMapId = DungeonEditorCommandBoundaryTranslator.requestedDomainMapId(query);
+        DungeonMapId requestedMapId = DungeonEditorCommandBoundaryTranslationHelper.requestedDomainMapId(query);
         if (requestedMapId != null) {
             applyDungeonEditorSessionUseCase.primeSelectedMap(requestedMapId);
         }
@@ -81,7 +81,7 @@ public final class DungeonEditorApplicationService {
     }
 
     private DungeonEditorSnapshot currentEditorSnapshot() {
-        return DungeonEditorSnapshotProjector.toPublishedSnapshot(applyDungeonEditorSessionUseCase.snapshot());
+        return DungeonEditorSnapshotProjectionHelper.toPublishedSnapshot(applyDungeonEditorSessionUseCase.snapshot());
     }
 
     private Runnable subscribeEditorListener(Consumer<DungeonEditorSnapshot> listener) {

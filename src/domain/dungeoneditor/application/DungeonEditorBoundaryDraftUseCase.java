@@ -3,25 +3,25 @@ package src.domain.dungeoneditor.application;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
-import src.domain.dungeoneditor.interaction.service.DungeonEditorBoundaryClusterResolver;
-import src.domain.dungeoneditor.interaction.service.DungeonEditorBoundaryGraphService;
-import src.domain.dungeoneditor.interaction.service.DungeonEditorBoundaryRoomTouchService;
-import src.domain.dungeoneditor.interaction.value.DungeonEditorInteractionValues.VertexKey;
-import src.domain.dungeoneditor.interaction.value.DungeonEditorMainViewEffect;
-import src.domain.dungeoneditor.interaction.value.DungeonEditorMainViewInteractionValues.BoundaryDraft;
-import src.domain.dungeoneditor.interaction.value.DungeonEditorMainViewInteractionValues.BoundaryTarget;
-import src.domain.dungeoneditor.interaction.value.DungeonEditorMainViewInteractionValues.EdgeKey;
-import src.domain.dungeoneditor.interaction.value.DungeonEditorMainViewInteractionValues.InteractionState;
-import src.domain.dungeoneditor.interaction.value.DungeonEditorMainViewInterpretation;
-import src.domain.dungeoneditor.interaction.value.DungeonEditorMainViewInteractionValues.PathResult;
-import src.domain.dungeoneditor.interaction.value.DungeonEditorMainViewInteractionValues.PointerState;
-import src.domain.dungeoneditor.session.value.DungeonEditorSessionValues;
-import src.domain.dungeoneditor.workspace.value.DungeonEditorWorkspaceValues;
+import src.domain.dungeoneditor.model.interaction.helper.DungeonEditorBoundaryClusterResolutionHelper;
+import src.domain.dungeoneditor.model.interaction.helper.DungeonEditorBoundaryGraphHelper;
+import src.domain.dungeoneditor.model.interaction.helper.DungeonEditorBoundaryRoomTouchHelper;
+import src.domain.dungeoneditor.model.interaction.model.DungeonEditorInteractionValues.VertexKey;
+import src.domain.dungeoneditor.model.interaction.model.DungeonEditorMainViewEffect;
+import src.domain.dungeoneditor.model.interaction.model.DungeonEditorMainViewInteractionValues.BoundaryDraft;
+import src.domain.dungeoneditor.model.interaction.model.DungeonEditorMainViewInteractionValues.BoundaryTarget;
+import src.domain.dungeoneditor.model.interaction.model.DungeonEditorMainViewInteractionValues.EdgeKey;
+import src.domain.dungeoneditor.model.interaction.model.DungeonEditorMainViewInteractionValues.InteractionState;
+import src.domain.dungeoneditor.model.interaction.model.DungeonEditorMainViewInterpretation;
+import src.domain.dungeoneditor.model.interaction.model.DungeonEditorMainViewInteractionValues.PathResult;
+import src.domain.dungeoneditor.model.interaction.model.DungeonEditorMainViewInteractionValues.PointerState;
+import src.domain.dungeoneditor.model.session.model.DungeonEditorSessionValues;
+import src.domain.dungeoneditor.model.workspace.model.DungeonEditorWorkspaceValues;
 
 final class DungeonEditorBoundaryDraftUseCase {
-    private final DungeonEditorBoundaryClusterResolver clusterResolver = new DungeonEditorBoundaryClusterResolver();
-    private final DungeonEditorBoundaryGraphService graphService = new DungeonEditorBoundaryGraphService();
-    private final DungeonEditorBoundaryRoomTouchService roomTouchService = new DungeonEditorBoundaryRoomTouchService();
+    private final DungeonEditorBoundaryClusterResolutionHelper clusterResolver = new DungeonEditorBoundaryClusterResolutionHelper();
+    private final DungeonEditorBoundaryGraphHelper graphService = new DungeonEditorBoundaryGraphHelper();
+    private final DungeonEditorBoundaryRoomTouchHelper roomTouchService = new DungeonEditorBoundaryRoomTouchHelper();
 
     DungeonEditorMainViewInterpretation press(
             PointerState input,
@@ -110,7 +110,7 @@ final class DungeonEditorBoundaryDraftUseCase {
     private DungeonEditorMainViewInterpretation beginBoundaryDraft(
             DungeonEditorWorkspaceValues.MapSnapshot snapshot,
             long clusterId,
-            src.domain.dungeoneditor.interaction.value.DungeonEditorInteractionValues.VertexTarget vertex,
+            src.domain.dungeoneditor.model.interaction.model.DungeonEditorInteractionValues.VertexTarget vertex,
             boolean deleteMode,
             VertexKey nextVertex,
             InteractionState state
@@ -182,7 +182,7 @@ final class DungeonEditorBoundaryDraftUseCase {
     }
 
     private static boolean vertexPresent(
-            src.domain.dungeoneditor.interaction.value.DungeonEditorInteractionValues.VertexTarget vertex
+            src.domain.dungeoneditor.model.interaction.model.DungeonEditorInteractionValues.VertexTarget vertex
     ) {
         return vertex != null && vertex.present();
     }

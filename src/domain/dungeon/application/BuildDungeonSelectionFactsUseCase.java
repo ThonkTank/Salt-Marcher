@@ -2,14 +2,14 @@ package src.domain.dungeon.application;
 
 import java.util.ArrayList;
 import java.util.List;
-import src.domain.dungeon.map.entity.DungeonAggregate;
-import src.domain.dungeon.map.entity.DungeonPrimitive;
-import src.domain.dungeon.map.value.DungeonAreaFacts;
-import src.domain.dungeon.map.value.DungeonBoundaryFacts;
-import src.domain.dungeon.map.value.DungeonDerivedState;
-import src.domain.dungeon.map.value.DungeonFeatureFacts;
-import src.domain.dungeon.map.value.DungeonTopologyElementKind;
-import src.domain.dungeon.map.value.DungeonTopologyRef;
+import src.domain.dungeon.model.map.model.DungeonState;
+import src.domain.dungeon.model.map.model.DungeonPrimitive;
+import src.domain.dungeon.model.map.model.DungeonAreaFacts;
+import src.domain.dungeon.model.map.model.DungeonBoundaryFacts;
+import src.domain.dungeon.model.map.model.DungeonDerivedState;
+import src.domain.dungeon.model.map.model.DungeonFeatureFacts;
+import src.domain.dungeon.model.map.model.DungeonTopologyElementKind;
+import src.domain.dungeon.model.map.model.DungeonTopologyRef;
 
 final class BuildDungeonSelectionFactsUseCase {
 
@@ -121,10 +121,10 @@ final class BuildDungeonSelectionFactsUseCase {
         }
 
         private static LoadDungeonSnapshotUseCase.InspectorSnapshotData aggregateSelection(
-                List<DungeonAggregate> aggregates,
+                List<DungeonState> aggregates,
                 DungeonTopologyRef topologyRef
         ) {
-            for (DungeonAggregate aggregate : aggregates) {
+            for (DungeonState aggregate : aggregates) {
                 if (matchesAggregate(topologyRef, aggregate)) {
                     return new LoadDungeonSnapshotUseCase.InspectorSnapshotData(
                             aggregate.label(),
@@ -155,7 +155,7 @@ final class BuildDungeonSelectionFactsUseCase {
             return null;
         }
 
-        private static boolean matchesAggregate(DungeonTopologyRef topologyRef, DungeonAggregate aggregate) {
+        private static boolean matchesAggregate(DungeonTopologyRef topologyRef, DungeonState aggregate) {
             return aggregate.id() == topologyRef.id()
                     && DungeonTopologyElementKind.fromAreaType(aggregate.kind()) == topologyRef.kind();
         }

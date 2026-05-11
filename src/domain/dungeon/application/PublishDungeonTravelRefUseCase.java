@@ -1,10 +1,10 @@
 package src.domain.dungeon.application;
 
 import org.jspecify.annotations.Nullable;
-import src.domain.dungeon.map.value.DungeonCell;
-import src.domain.dungeon.map.value.DungeonEdge;
-import src.domain.dungeon.map.value.DungeonMapIdentity;
-import src.domain.dungeon.map.value.DungeonTopologyRef;
+import src.domain.dungeon.model.map.model.DungeonCell;
+import src.domain.dungeon.model.map.model.DungeonEdge;
+import src.domain.dungeon.model.map.model.DungeonMapIdentity;
+import src.domain.dungeon.model.map.model.DungeonTopologyRef;
 import src.domain.dungeon.published.DungeonCellRef;
 import src.domain.dungeon.published.DungeonEdgeRef;
 import src.domain.dungeon.published.DungeonMapId;

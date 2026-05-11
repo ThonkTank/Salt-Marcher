@@ -1,11 +1,11 @@
 package src.domain.dungeon.application;
 
-import src.domain.dungeon.map.value.DungeonCell;
-import src.domain.dungeon.map.value.DungeonDerivedState;
-import src.domain.dungeon.map.value.DungeonEditorHandleFacts;
-import src.domain.dungeon.map.value.DungeonEdgeDirection;
-import src.domain.dungeon.map.value.DungeonMapIdentity;
-import src.domain.dungeon.map.value.DungeonTopologyRef;
+import src.domain.dungeon.model.map.model.DungeonCell;
+import src.domain.dungeon.model.map.model.DungeonDerivedState;
+import src.domain.dungeon.model.map.model.DungeonEditorHandleFacts;
+import src.domain.dungeon.model.map.model.DungeonEdgeDirection;
+import src.domain.dungeon.model.map.model.DungeonMapIdentity;
+import src.domain.dungeon.model.map.model.DungeonTopologyRef;
 
 import java.util.List;
 
@@ -97,7 +97,7 @@ public final class LoadDungeonSnapshotUseCase {
         return snapshotData(loadDungeonMap.execute(mapId));
     }
 
-    private DungeonSnapshotData snapshotData(src.domain.dungeon.map.aggregate.DungeonMap dungeonMap) {
+    private DungeonSnapshotData snapshotData(src.domain.dungeon.model.map.model.DungeonMap dungeonMap) {
         return assembleDungeonSnapshot.execute(
                 dungeonMap,
                 publishDungeonEditorHandles.execute(dungeonMap));

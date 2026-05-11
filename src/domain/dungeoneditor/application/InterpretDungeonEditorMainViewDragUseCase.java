@@ -1,13 +1,13 @@
 package src.domain.dungeoneditor.application;
 
-import src.domain.dungeoneditor.interaction.value.DungeonEditorMainViewEffect;
-import src.domain.dungeoneditor.interaction.value.DungeonEditorMainViewInteractionValues.DragSession;
-import src.domain.dungeoneditor.interaction.value.DungeonEditorMainViewInteractionValues.InteractionState;
-import src.domain.dungeoneditor.interaction.value.DungeonEditorMainViewInteractionValues.PaintSession;
-import src.domain.dungeoneditor.interaction.value.DungeonEditorMainViewInteractionValues.PointerState;
-import src.domain.dungeoneditor.interaction.value.DungeonEditorMainViewInterpretation;
-import src.domain.dungeoneditor.session.value.DungeonEditorSessionValues;
-import src.domain.dungeoneditor.workspace.value.DungeonEditorWorkspaceValues;
+import src.domain.dungeoneditor.model.interaction.model.DungeonEditorMainViewEffect;
+import src.domain.dungeoneditor.model.interaction.model.DungeonEditorMainViewInteractionValues.DragSession;
+import src.domain.dungeoneditor.model.interaction.model.DungeonEditorMainViewInteractionValues.InteractionState;
+import src.domain.dungeoneditor.model.interaction.model.DungeonEditorMainViewInteractionValues.PaintSession;
+import src.domain.dungeoneditor.model.interaction.model.DungeonEditorMainViewInteractionValues.PointerState;
+import src.domain.dungeoneditor.model.interaction.model.DungeonEditorMainViewInterpretation;
+import src.domain.dungeoneditor.model.session.model.DungeonEditorSessionValues;
+import src.domain.dungeoneditor.model.workspace.model.DungeonEditorWorkspaceValues;
 
 final class InterpretDungeonEditorMainViewDragUseCase {
     private final DungeonEditorBoundaryDraftUseCase boundaryDraft = new DungeonEditorBoundaryDraftUseCase();
@@ -46,7 +46,7 @@ final class InterpretDungeonEditorMainViewDragUseCase {
     }
 
     private static DungeonEditorMainViewEffect previewFromStretch(
-            src.domain.dungeoneditor.interaction.value.DungeonEditorMainViewInteractionValues.BoundaryStretchSession stretchSession
+            src.domain.dungeoneditor.model.interaction.model.DungeonEditorMainViewInteractionValues.BoundaryStretchSession stretchSession
     ) {
         if (!stretchSession.present() || !stretchSession.moved()) {
             return DungeonEditorMainViewEffect.clearPreviewIfNeeded(true);

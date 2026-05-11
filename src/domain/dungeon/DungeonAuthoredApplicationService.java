@@ -11,7 +11,7 @@ import src.domain.dungeon.application.PublishDungeonAuthoredResultUseCase;
 import src.domain.dungeon.application.PublishDungeonEditorHandlesUseCase;
 import src.domain.dungeon.application.TranslateDungeonAuthoredInputUseCase;
 import src.domain.dungeon.application.TranslateDungeonEditorOperationUseCase;
-import src.domain.dungeon.map.port.DungeonMapRepository;
+import src.domain.dungeon.model.map.repository.DungeonMapRepository;
 import src.domain.dungeon.map.port.DungeonMapSearch;
 import src.domain.dungeon.published.DungeonAuthoredMutationCommand;
 import src.domain.dungeon.published.DungeonAuthoredMutationResult;

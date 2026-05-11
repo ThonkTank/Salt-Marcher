@@ -6,8 +6,8 @@ import src.domain.dungeon.published.DungeonAuthoredMutationCommand;
 import src.domain.dungeon.published.DungeonAuthoredMutationResult;
 import src.domain.dungeon.published.DungeonMapCatalogCommand;
 import src.domain.dungeon.published.DungeonMapCatalogResponse;
-import src.domain.dungeoneditor.session.entity.DungeonEditorSession;
-import src.domain.dungeoneditor.session.value.DungeonEditorSessionCommand;
+import src.domain.dungeoneditor.model.session.model.DungeonEditorSession;
+import src.domain.dungeoneditor.model.session.model.DungeonEditorSessionCommand;
 
 final class DungeonEditorSessionCommandUseCase {
     private final DungeonEditorSessionCatalogUseCase catalogWorkflow;

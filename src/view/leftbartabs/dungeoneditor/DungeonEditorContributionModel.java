@@ -22,7 +22,7 @@ import src.domain.dungeoneditor.published.DungeonEditorSnapshot;
 import src.domain.dungeoneditor.published.DungeonEditorSurface;
 import src.domain.dungeoneditor.published.DungeonEditorTool;
 import src.domain.dungeoneditor.published.DungeonEditorViewMode;
-import src.domain.dungeoneditor.session.value.DungeonEditorSessionValues;
+import src.domain.dungeoneditor.model.session.model.DungeonEditorSessionValues;
 
 public final class DungeonEditorContributionModel {
 

@@ -1,6 +1,6 @@
 package src.domain.dungeon.application;
 
-import src.domain.dungeon.map.entity.DungeonAggregate;
+import src.domain.dungeon.model.map.model.DungeonState;
 
 final class PublishDungeonAuthoredScalarUseCase {
 
@@ -14,7 +14,7 @@ final class PublishDungeonAuthoredScalarUseCase {
         return Math.max(0, (int) revision);
     }
 
-    static String aggregateSummary(DungeonAggregate aggregate) {
+    static String aggregateSummary(DungeonState aggregate) {
         return aggregate.label() + " #" + aggregate.id();
     }
 }

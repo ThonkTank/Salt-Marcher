@@ -1,17 +1,17 @@
 package src.domain.dungeoneditor.application;
 
-import src.domain.dungeoneditor.interaction.service.DungeonEditorCorridorTargetService;
-import src.domain.dungeoneditor.interaction.value.DungeonEditorMainViewEffect;
-import src.domain.dungeoneditor.interaction.value.DungeonEditorMainViewInteractionValues.CorridorDraft;
-import src.domain.dungeoneditor.interaction.value.DungeonEditorMainViewInteractionValues.InteractionState;
-import src.domain.dungeoneditor.interaction.value.DungeonEditorMainViewInterpretation;
-import src.domain.dungeoneditor.interaction.value.DungeonEditorMainViewInteractionValues.PendingCorridorTarget;
-import src.domain.dungeoneditor.interaction.value.DungeonEditorMainViewInteractionValues.PointerState;
-import src.domain.dungeoneditor.session.value.DungeonEditorSessionValues;
-import src.domain.dungeoneditor.workspace.value.DungeonEditorWorkspaceValues;
+import src.domain.dungeoneditor.model.interaction.helper.DungeonEditorCorridorTargetHelper;
+import src.domain.dungeoneditor.model.interaction.model.DungeonEditorMainViewEffect;
+import src.domain.dungeoneditor.model.interaction.model.DungeonEditorMainViewInteractionValues.CorridorDraft;
+import src.domain.dungeoneditor.model.interaction.model.DungeonEditorMainViewInteractionValues.InteractionState;
+import src.domain.dungeoneditor.model.interaction.model.DungeonEditorMainViewInterpretation;
+import src.domain.dungeoneditor.model.interaction.model.DungeonEditorMainViewInteractionValues.PendingCorridorTarget;
+import src.domain.dungeoneditor.model.interaction.model.DungeonEditorMainViewInteractionValues.PointerState;
+import src.domain.dungeoneditor.model.session.model.DungeonEditorSessionValues;
+import src.domain.dungeoneditor.model.workspace.model.DungeonEditorWorkspaceValues;
 
 final class DungeonEditorCorridorInteractionUseCase {
-    private final DungeonEditorCorridorTargetService targetService = new DungeonEditorCorridorTargetService();
+    private final DungeonEditorCorridorTargetHelper targetService = new DungeonEditorCorridorTargetHelper();
 
     DungeonEditorMainViewInterpretation press(
             PointerState input,

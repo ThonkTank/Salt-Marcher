@@ -2,9 +2,9 @@ package src.domain.dungeon.application;
 
 import java.util.List;
 import java.util.Objects;
-import src.domain.dungeon.map.aggregate.DungeonMap;
-import src.domain.dungeon.map.value.DungeonDerivedState;
-import src.domain.dungeon.map.value.DungeonTopologyRef;
+import src.domain.dungeon.model.map.model.DungeonMap;
+import src.domain.dungeon.model.map.model.DungeonDerivedState;
+import src.domain.dungeon.model.map.model.DungeonTopologyRef;
 
 /**
  * Builds dungeon inspector snapshots from authored truth and selection context.

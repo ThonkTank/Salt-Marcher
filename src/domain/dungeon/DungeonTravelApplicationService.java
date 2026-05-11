@@ -7,7 +7,7 @@ import src.domain.dungeon.application.LoadDungeonTravelSurfaceUseCase;
 import src.domain.dungeon.application.MoveDungeonTravelActionUseCase;
 import src.domain.dungeon.application.PublishDungeonTravelResultUseCase;
 import src.domain.dungeon.application.TranslateDungeonTravelInputUseCase;
-import src.domain.dungeon.map.port.DungeonMapRepository;
+import src.domain.dungeon.model.map.repository.DungeonMapRepository;
 import src.domain.dungeon.map.port.DungeonMapSearch;
 import src.domain.dungeon.published.DungeonTravelCommand;
 import src.domain.dungeon.published.DungeonTravelResponse;

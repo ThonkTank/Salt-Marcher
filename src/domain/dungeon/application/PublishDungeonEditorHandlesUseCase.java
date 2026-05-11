@@ -4,19 +4,19 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import org.jspecify.annotations.Nullable;
-import src.domain.dungeon.map.aggregate.DungeonMap;
-import src.domain.dungeon.map.entity.DungeonCorridor;
-import src.domain.dungeon.map.entity.DungeonRoom;
-import src.domain.dungeon.map.entity.DungeonRoomCluster;
-import src.domain.dungeon.map.entity.DungeonStair;
-import src.domain.dungeon.map.value.DungeonCell;
-import src.domain.dungeon.map.value.DungeonEditorHandle;
-import src.domain.dungeon.map.value.DungeonEditorHandleFacts;
-import src.domain.dungeon.map.value.DungeonEditorHandleType;
-import src.domain.dungeon.map.value.DungeonEdgeDirection;
-import src.domain.dungeon.map.value.DungeonStairExit;
-import src.domain.dungeon.map.value.DungeonTopologyElementKind;
-import src.domain.dungeon.map.value.DungeonTopologyRef;
+import src.domain.dungeon.model.map.model.DungeonMap;
+import src.domain.dungeon.model.map.model.DungeonCorridor;
+import src.domain.dungeon.model.map.model.DungeonRoom;
+import src.domain.dungeon.model.map.model.DungeonRoomCluster;
+import src.domain.dungeon.model.map.model.DungeonStair;
+import src.domain.dungeon.model.map.model.DungeonCell;
+import src.domain.dungeon.model.map.model.DungeonEditorHandle;
+import src.domain.dungeon.model.map.model.DungeonEditorHandleFacts;
+import src.domain.dungeon.model.map.model.DungeonEditorHandleType;
+import src.domain.dungeon.model.map.model.DungeonEdgeDirection;
+import src.domain.dungeon.model.map.model.DungeonStairExit;
+import src.domain.dungeon.model.map.model.DungeonTopologyElementKind;
+import src.domain.dungeon.model.map.model.DungeonTopologyRef;
 
 /**
  * Publishes authored editor handles from one dungeon map snapshot.

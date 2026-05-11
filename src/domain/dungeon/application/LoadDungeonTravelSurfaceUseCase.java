@@ -1,10 +1,10 @@
 package src.domain.dungeon.application;
 
 import org.jspecify.annotations.Nullable;
-import src.domain.dungeon.map.aggregate.DungeonMap;
-import src.domain.dungeon.map.service.DungeonTravelSurfaceProjector;
-import src.domain.dungeon.map.value.DungeonTravelPositionFacts;
-import src.domain.dungeon.map.value.DungeonTravelSurfaceFacts;
+import src.domain.dungeon.model.map.model.DungeonMap;
+import src.domain.dungeon.model.map.model.DungeonTravelSurfaceProjection;
+import src.domain.dungeon.model.map.model.DungeonTravelPositionFacts;
+import src.domain.dungeon.model.map.model.DungeonTravelSurfaceFacts;
 
 public final class LoadDungeonTravelSurfaceUseCase {
 
@@ -22,7 +22,7 @@ public final class LoadDungeonTravelSurfaceUseCase {
 
     private final LoadDungeonMapUseCase loadDungeonMap;
     private final BuildDungeonDerivedStateUseCase derive;
-    private final DungeonTravelSurfaceProjector projector = new DungeonTravelSurfaceProjector();
+    private final DungeonTravelSurfaceProjection projector = new DungeonTravelSurfaceProjection();
 
     public LoadDungeonTravelSurfaceUseCase(
             LoadDungeonMapUseCase loadDungeonMap,

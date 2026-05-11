@@ -4,21 +4,21 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
 import org.jspecify.annotations.Nullable;
-import src.domain.dungeon.map.aggregate.DungeonMap;
-import src.domain.dungeon.map.entity.DungeonTransition;
-import src.domain.dungeon.map.service.DungeonTravelSurfaceProjector;
-import src.domain.dungeon.map.value.DungeonCell;
-import src.domain.dungeon.map.value.DungeonDerivedState;
-import src.domain.dungeon.map.value.DungeonMapIdentity;
-import src.domain.dungeon.map.value.DungeonTransitionDestination;
-import src.domain.dungeon.map.value.DungeonTravelActionFacts;
-import src.domain.dungeon.map.value.DungeonTravelActionKind;
-import src.domain.dungeon.map.value.DungeonTravelExternalTargetFacts;
-import src.domain.dungeon.map.value.DungeonTravelLocationKind;
-import src.domain.dungeon.map.value.DungeonTravelMoveFacts;
-import src.domain.dungeon.map.value.DungeonTravelMoveStatus;
-import src.domain.dungeon.map.value.DungeonTravelPositionFacts;
-import src.domain.dungeon.map.value.DungeonTravelSurfaceFacts;
+import src.domain.dungeon.model.map.model.DungeonMap;
+import src.domain.dungeon.model.map.model.DungeonTransition;
+import src.domain.dungeon.model.map.model.DungeonTravelSurfaceProjection;
+import src.domain.dungeon.model.map.model.DungeonCell;
+import src.domain.dungeon.model.map.model.DungeonDerivedState;
+import src.domain.dungeon.model.map.model.DungeonMapIdentity;
+import src.domain.dungeon.model.map.model.DungeonTransitionDestination;
+import src.domain.dungeon.model.map.model.DungeonTravelActionFacts;
+import src.domain.dungeon.model.map.model.DungeonTravelActionKind;
+import src.domain.dungeon.model.map.model.DungeonTravelExternalTargetFacts;
+import src.domain.dungeon.model.map.model.DungeonTravelLocationKind;
+import src.domain.dungeon.model.map.model.DungeonTravelMoveFacts;
+import src.domain.dungeon.model.map.model.DungeonTravelMoveStatus;
+import src.domain.dungeon.model.map.model.DungeonTravelPositionFacts;
+import src.domain.dungeon.model.map.model.DungeonTravelSurfaceFacts;
 
 public final class MoveDungeonTravelActionUseCase {
 
@@ -46,7 +46,7 @@ public final class MoveDungeonTravelActionUseCase {
     private final LoadDungeonMapUseCase loadDungeonMap;
     private final Function<DungeonMapIdentity, Optional<DungeonMap>> findById;
     private final Function<DungeonMap, DungeonDerivedState> deriveState;
-    private final DungeonTravelSurfaceProjector projector = new DungeonTravelSurfaceProjector();
+    private final DungeonTravelSurfaceProjection projector = new DungeonTravelSurfaceProjection();
 
     public MoveDungeonTravelActionUseCase(
             LoadDungeonMapUseCase loadDungeonMap,

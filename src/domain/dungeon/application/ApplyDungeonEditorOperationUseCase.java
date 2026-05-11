@@ -1,9 +1,9 @@
 package src.domain.dungeon.application;
 
-import src.domain.dungeon.map.aggregate.DungeonMap;
-import src.domain.dungeon.map.policy.DungeonMapOperationFeedbackPolicy;
-import src.domain.dungeon.map.value.DungeonDerivedState;
-import src.domain.dungeon.map.value.DungeonMapIdentity;
+import src.domain.dungeon.model.map.model.DungeonMap;
+import src.domain.dungeon.model.map.model.DungeonMapOperationFeedbackRules;
+import src.domain.dungeon.model.map.model.DungeonDerivedState;
+import src.domain.dungeon.model.map.model.DungeonMapIdentity;
 
 import java.util.List;
 import java.util.Objects;
@@ -15,8 +15,8 @@ import org.jspecify.annotations.Nullable;
  */
 public final class ApplyDungeonEditorOperationUseCase {
 
-    private static final DungeonMapOperationFeedbackPolicy OPERATION_FEEDBACK_POLICY =
-            new DungeonMapOperationFeedbackPolicy();
+    private static final DungeonMapOperationFeedbackRules OPERATION_FEEDBACK_POLICY =
+            new DungeonMapOperationFeedbackRules();
 
     @FunctionalInterface
     public interface OperationMutation {
