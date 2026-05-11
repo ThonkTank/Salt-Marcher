@@ -83,9 +83,11 @@ public record EncounterCreatureReference(
     }
 
     private List<EncounterCreatureFacts.ActionFacts> toActionFacts() {
-        return actionTypes.stream()
-                .map(EncounterCreatureFacts.ActionFacts::new)
-                .toList();
+        List<EncounterCreatureFacts.ActionFacts> facts = new java.util.ArrayList<>(actionTypes.size());
+        for (String actionType : actionTypes) {
+            facts.add(new EncounterCreatureFacts.ActionFacts(actionType));
+        }
+        return List.copyOf(facts);
     }
 
     private record CombatProjection(
