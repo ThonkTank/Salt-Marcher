@@ -15,7 +15,16 @@ public final class SetSessionRestGapUseCase {
         this.saveCurrentSessionPlanUseCase = saveCurrentSessionPlanUseCase;
     }
 
-    public void execute(SessionRestPlacement placement) {
-        saveCurrentSessionPlanUseCase.execute(loadCurrentSessionPlanUseCase.execute().setRestPlacement(placement));
+    public void execute(long leftEncounterId, long rightEncounterId, String restKind) {
+        saveCurrentSessionPlanUseCase.execute(loadCurrentSessionPlanUseCase.execute().setRestPlacement(
+                toRestPlacement(leftEncounterId, rightEncounterId, restKind)));
+    }
+
+    private static SessionRestPlacement toRestPlacement(long leftEncounterId, long rightEncounterId, String restKind) {
+        return switch (restKind == null ? "" : restKind) {
+            case "SHORT_REST" -> SessionRestPlacement.shortRestBetween(leftEncounterId, rightEncounterId);
+            case "LONG_REST" -> SessionRestPlacement.longRestBetween(leftEncounterId, rightEncounterId);
+            default -> throw new IllegalArgumentException("Rest kind has no placement.");
+        };
     }
 }

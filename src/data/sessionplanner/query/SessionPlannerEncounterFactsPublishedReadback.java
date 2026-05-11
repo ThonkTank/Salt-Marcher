@@ -9,11 +9,11 @@ import src.domain.encounter.published.SavedEncounterPlanListModel;
 import src.domain.encounter.published.SavedEncounterPlanListResult;
 import src.domain.encounter.published.SavedEncounterPlanStatus;
 import src.domain.encounter.published.SavedEncounterPlanSummary;
-import src.domain.sessionplanner.model.session.repository.SessionEncounterFactsRepository;
+import src.domain.sessionplanner.model.session.port.SessionEncounterFactsLookup;
 
 final class SessionPlannerEncounterFactsPublishedReadback {
 
-    private SessionEncounterFactsRepository.EncounterPlanListFact currentEncounterPlans;
+    private SessionEncounterFactsLookup.EncounterPlanListFact currentEncounterPlans;
     private EncounterPlanBudgetResult currentPlanBudget;
 
     SessionPlannerEncounterFactsPublishedReadback(
@@ -30,19 +30,19 @@ final class SessionPlannerEncounterFactsPublishedReadback {
         planBudget.subscribe(result -> currentPlanBudget = result);
     }
 
-    SessionEncounterFactsRepository.EncounterPlanListFact listEncounterPlans() {
+    SessionEncounterFactsLookup.EncounterPlanListFact listEncounterPlans() {
         return currentEncounterPlans;
     }
 
-    SessionEncounterFactsRepository.EncounterPlanFact currentEncounterPlan(long encounterPlanId) {
+    SessionEncounterFactsLookup.EncounterPlanFact currentEncounterPlan(long encounterPlanId) {
         EncounterPlanBudgetResult result = currentPlanBudget;
         if (result == null || result.status() != EncounterPlanBudgetStatus.SUCCESS || result.summary() == null) {
             String message = result == null || result.message().isBlank()
                     ? "Encounter-Plan konnte nicht geladen werden."
                     : result.message();
-            return SessionEncounterFactsRepository.EncounterPlanFact.unavailable(encounterPlanId, message);
+            return SessionEncounterFactsLookup.EncounterPlanFact.unavailable(encounterPlanId, message);
         }
-        return new SessionEncounterFactsRepository.EncounterPlanFact(
+        return new SessionEncounterFactsLookup.EncounterPlanFact(
                 true,
                 result.summary().planId(),
                 result.summary().name(),
@@ -55,23 +55,23 @@ final class SessionPlannerEncounterFactsPublishedReadback {
                 "Adj. XP " + result.summary().adjustedXp() + " · " + result.summary().difficultyLabel());
     }
 
-    private static SessionEncounterFactsRepository.EncounterPlanListFact toEncounterPlanListFact(
+    private static SessionEncounterFactsLookup.EncounterPlanListFact toEncounterPlanListFact(
             SavedEncounterPlanListResult result
     ) {
         if (result == null || result.status() != SavedEncounterPlanStatus.SUCCESS) {
-            return new SessionEncounterFactsRepository.EncounterPlanListFact(
+            return new SessionEncounterFactsLookup.EncounterPlanListFact(
                     false,
                     List.of(),
                     result == null ? "" : result.message());
         }
-        return new SessionEncounterFactsRepository.EncounterPlanListFact(
+        return new SessionEncounterFactsLookup.EncounterPlanListFact(
                 true,
                 result.plans().stream().map(SessionPlannerEncounterFactsPublishedReadback::toSavedEncounterPlanFact).toList(),
                 "");
     }
 
-    private static SessionEncounterFactsRepository.SavedEncounterPlanFact toSavedEncounterPlanFact(SavedEncounterPlanSummary plan) {
-        return new SessionEncounterFactsRepository.SavedEncounterPlanFact(
+    private static SessionEncounterFactsLookup.SavedEncounterPlanFact toSavedEncounterPlanFact(SavedEncounterPlanSummary plan) {
+        return new SessionEncounterFactsLookup.SavedEncounterPlanFact(
                 plan == null ? 0L : plan.planId(),
                 plan == null ? "" : plan.name(),
                 plan == null ? "" : plan.summaryText());

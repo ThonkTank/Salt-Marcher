@@ -1,16 +1,27 @@
 package src.data.sessionplanner;
 
+import java.util.Objects;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 import shell.api.ServiceContribution;
 import shell.api.ServiceRegistry;
-import src.data.sessionplanner.query.ApplicationSessionPlannerFactsQueryAdapter;
+import src.data.sessionplanner.query.SessionPlannerEncounterFactsQueryAdapter;
+import src.data.sessionplanner.query.SessionPlannerPartyFactsQueryAdapter;
 import src.data.sessionplanner.repository.SessionPlannerPublishedStateRepositoryAdapter;
 import src.data.sessionplanner.repository.SqliteSessionPlanRepository;
+import src.domain.encounter.EncounterApplicationService;
+import src.domain.encounter.published.EncounterPlanBudgetModel;
+import src.domain.encounter.published.SavedEncounterPlanListModel;
+import src.domain.party.PartyApplicationService;
+import src.domain.party.published.ActivePartyModel;
+import src.domain.party.published.AdventuringDayCalculationModel;
 import src.domain.sessionplanner.SessionPlannerApplicationService;
+import src.domain.sessionplanner.SessionPlannerApplicationServiceFactory;
+import src.domain.sessionplanner.model.session.repository.SessionPlanRepository;
 import src.domain.sessionplanner.published.SessionPlannerCurrentSessionModel;
 import src.domain.sessionplanner.published.SessionPlannerEncountersModel;
 import src.domain.sessionplanner.published.SessionPlannerParticipantsModel;
 import src.domain.sessionplanner.published.SessionPlannerStatePanelModel;
-import src.domain.sessionplanner.model.session.repository.SessionPlanRepository;
 
 public final class SessionPlannerServiceContribution implements ServiceContribution {
 
@@ -22,90 +33,47 @@ public final class SessionPlannerServiceContribution implements ServiceContribut
     @Override
     public void register(ServiceRegistry.Builder builder) {
         SessionPlanRepository repository = new SqliteSessionPlanRepository();
-        AssemblyFactory assemblies = new AssemblyFactory(repository);
+        AtomicReference<SessionPlannerPublishedStateRepositoryAdapter> publishedState = new AtomicReference<>();
+        Function<ServiceRegistry, SessionPlannerPublishedStateRepositoryAdapter> publishedStateFactory = services -> {
+            SessionPlannerPublishedStateRepositoryAdapter existing = publishedState.get();
+            if (existing != null) {
+                return existing;
+            }
+            ServiceRegistry registry = Objects.requireNonNull(services, "services");
+            SessionPlannerPublishedStateRepositoryAdapter candidate = new SessionPlannerPublishedStateRepositoryAdapter(
+                    repository,
+                    new SessionPlannerPartyFactsQueryAdapter(
+                            registry.require(PartyApplicationService.class),
+                            registry.require(ActivePartyModel.class),
+                            registry.require(AdventuringDayCalculationModel.class)),
+                    new SessionPlannerEncounterFactsQueryAdapter(
+                            registry.require(EncounterApplicationService.class),
+                            registry.require(SavedEncounterPlanListModel.class),
+                            registry.require(EncounterPlanBudgetModel.class)));
+            return publishedState.compareAndSet(null, candidate)
+                    ? candidate
+                    : Objects.requireNonNull(publishedState.get(), "publishedState");
+        };
         builder.registerFactory(
                 SessionPlannerApplicationService.class,
-                services -> assemblies.applicationService(services));
+                services -> new SessionPlannerApplicationServiceFactory().create(
+                        repository,
+                        new SessionPlannerPartyFactsQueryAdapter(
+                                services.require(PartyApplicationService.class),
+                                services.require(ActivePartyModel.class),
+                                services.require(AdventuringDayCalculationModel.class)),
+                        publishedStateFactory.apply(services)));
         builder.registerFactory(
                 SessionPlannerCurrentSessionModel.class,
-                services -> assemblies.currentSessionModel(services));
+                services -> publishedStateFactory.apply(services).currentSessionModel);
         builder.registerFactory(
                 SessionPlannerParticipantsModel.class,
-                services -> assemblies.participantsModel(services));
+                services -> publishedStateFactory.apply(services).participantsModel);
         builder.registerFactory(
                 SessionPlannerEncountersModel.class,
-                services -> assemblies.encountersModel(services));
+                services -> publishedStateFactory.apply(services).encountersModel);
         builder.registerFactory(
                 SessionPlannerStatePanelModel.class,
-                services -> assemblies.statePanelModel(services));
-    }
-
-    private static final class AssemblyFactory {
-
-        private final SessionPlanRepository repository;
-        private ResolvedAssembly resolved;
-
-        private AssemblyFactory(SessionPlanRepository repository) {
-            this.repository = repository;
-        }
-
-        private SessionPlannerApplicationService applicationService(ServiceRegistry services) {
-            return resolve(services).applicationService();
-        }
-
-        private SessionPlannerCurrentSessionModel currentSessionModel(ServiceRegistry services) {
-            return resolve(services).currentSessionModel();
-        }
-
-        private SessionPlannerParticipantsModel participantsModel(ServiceRegistry services) {
-            return resolve(services).participantsModel();
-        }
-
-        private SessionPlannerEncountersModel encountersModel(ServiceRegistry services) {
-            return resolve(services).encountersModel();
-        }
-
-        private SessionPlannerStatePanelModel statePanelModel(ServiceRegistry services) {
-            return resolve(services).statePanelModel();
-        }
-
-        private ResolvedAssembly resolve(ServiceRegistry services) {
-            if (resolved == null) {
-                resolved = new ResolvedAssembly(repository, services);
-            }
-            return resolved;
-        }
-    }
-
-    private static final class ResolvedAssembly {
-
-        private final SessionPlannerApplicationService applicationService;
-        private final SessionPlannerPublishedStateRepositoryAdapter publishedState;
-
-        private ResolvedAssembly(SessionPlanRepository repository, ServiceRegistry services) {
-            ApplicationSessionPlannerFactsQueryAdapter facts = ApplicationSessionPlannerFactsQueryAdapter.create(services);
-            this.publishedState = new SessionPlannerPublishedStateRepositoryAdapter(repository, facts, facts);
-            this.applicationService = new SessionPlannerApplicationService(repository, facts, publishedState);
-        }
-
-        private SessionPlannerApplicationService applicationService() {
-            return applicationService;
-        }
-
-        private SessionPlannerCurrentSessionModel currentSessionModel() {
-            return publishedState.currentSessionModel();
-        }
-
-        private SessionPlannerParticipantsModel participantsModel() {
-            return publishedState.participantsModel();
-        }
-
-        private SessionPlannerEncountersModel encountersModel() {
-            return publishedState.encountersModel();
-        }
-
-        private SessionPlannerStatePanelModel statePanelModel() {
-            return publishedState.statePanelModel();
-        }
+                services -> publishedStateFactory.apply(services).statePanelModel);
     }
 }

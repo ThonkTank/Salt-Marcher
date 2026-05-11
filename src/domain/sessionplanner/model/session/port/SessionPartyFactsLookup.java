@@ -1,11 +1,11 @@
-package src.domain.sessionplanner.model.session.repository;
+package src.domain.sessionplanner.model.session.port;
 
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.jspecify.annotations.Nullable;
 
-public interface SessionPartyFactsRepository {
+public interface SessionPartyFactsLookup {
 
     ActivePartyMembersFact loadActivePartyMembers();
 

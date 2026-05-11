@@ -2,7 +2,6 @@ package src.domain.sessionplanner.model.session.usecase;
 
 import java.util.Objects;
 import java.util.Optional;
-import org.jspecify.annotations.Nullable;
 import src.domain.sessionplanner.model.session.model.SessionPlan;
 import src.domain.sessionplanner.model.session.repository.SessionPlanRepository;
 
@@ -13,7 +12,6 @@ public final class LoadCurrentSessionPlanUseCase {
 
     private final SessionPlanRepository repository;
     private final SeedSessionPlanUseCase seedSessionPlanUseCase;
-    private final CurrentSessionPlanState currentState = new CurrentSessionPlanState();
 
     public LoadCurrentSessionPlanUseCase(
             SessionPlanRepository repository,
@@ -24,16 +22,7 @@ public final class LoadCurrentSessionPlanUseCase {
     }
 
     public SessionPlan execute() {
-        SessionPlan currentSession = currentState.currentSession();
-        if (currentSession == null) {
-            currentSession = loadCurrentOrSeed();
-            currentState.replace(currentSession);
-        }
-        return currentSession;
-    }
-
-    void replaceCached(SessionPlan sessionPlan) {
-        currentState.replace(Objects.requireNonNull(sessionPlan, "sessionPlan"));
+        return loadCurrentOrSeed();
     }
 
     private SessionPlan loadCurrentOrSeed() {
@@ -49,23 +38,6 @@ public final class LoadCurrentSessionPlanUseCase {
     }
 
     private SessionPlan fallbackSession(String statusText) {
-        SessionPlan currentSession = currentState.currentSession();
-        SessionPlan base = currentSession == null
-                ? seedSessionPlanUseCase.execute(INITIAL_SESSION_ID)
-                : currentSession.clearStatus();
-        return base.withStatus(statusText);
-    }
-
-    private static final class CurrentSessionPlanState {
-
-        private @Nullable SessionPlan currentSession;
-
-        private @Nullable SessionPlan currentSession() {
-            return currentSession;
-        }
-
-        private void replace(SessionPlan sessionPlan) {
-            currentSession = sessionPlan;
-        }
+        return seedSessionPlanUseCase.execute(INITIAL_SESSION_ID).withStatus(statusText);
     }
 }

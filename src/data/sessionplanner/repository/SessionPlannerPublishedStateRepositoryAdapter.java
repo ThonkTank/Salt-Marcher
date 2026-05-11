@@ -16,8 +16,8 @@ import src.domain.sessionplanner.published.SessionPlannerSessionSnapshot;
 import src.domain.sessionplanner.published.SessionPlannerStatePanelModel;
 import src.domain.sessionplanner.published.SessionPlannerStatePanelProjection;
 import src.domain.sessionplanner.model.session.model.SessionPlan;
-import src.domain.sessionplanner.model.session.repository.SessionEncounterFactsRepository;
-import src.domain.sessionplanner.model.session.repository.SessionPartyFactsRepository;
+import src.domain.sessionplanner.model.session.port.SessionEncounterFactsLookup;
+import src.domain.sessionplanner.model.session.port.SessionPartyFactsLookup;
 import src.domain.sessionplanner.model.session.repository.SessionPlanRepository;
 import src.domain.sessionplanner.model.session.repository.SessionPlannerPublishedStateRepository;
 
@@ -30,23 +30,23 @@ public final class SessionPlannerPublishedStateRepositoryAdapter implements Sess
     private static final String LISTENER_PARAMETER = "listener";
 
     private final SessionPlanRepository repository;
-    private final SessionPartyFactsRepository partyFacts;
-    private final SessionEncounterFactsRepository encounterFacts;
+    private final SessionPartyFactsLookup partyFacts;
+    private final SessionEncounterFactsLookup encounterFacts;
     private final SessionPlannerPublishedStateProjector projector = new SessionPlannerPublishedStateProjector();
     private final List<Consumer<SessionPlannerSessionSnapshot>> sessionListeners = new ArrayList<>();
     private final List<Consumer<SessionPlannerParticipantsProjection>> participantsListeners = new ArrayList<>();
     private final List<Consumer<SessionPlannerEncountersProjection>> encountersListeners = new ArrayList<>();
     private final List<Consumer<SessionPlannerStatePanelProjection>> statePanelListeners = new ArrayList<>();
-    private final SessionPlannerCurrentSessionModel currentSessionModel = new SessionPlannerCurrentSessionModel(
+    public final SessionPlannerCurrentSessionModel currentSessionModel = new SessionPlannerCurrentSessionModel(
             this::currentSessionSnapshot,
             this::subscribeSessionListener);
-    private final SessionPlannerParticipantsModel participantsModel = new SessionPlannerParticipantsModel(
+    public final SessionPlannerParticipantsModel participantsModel = new SessionPlannerParticipantsModel(
             this::currentParticipantsProjection,
             this::subscribeParticipantsListener);
-    private final SessionPlannerEncountersModel encountersModel = new SessionPlannerEncountersModel(
+    public final SessionPlannerEncountersModel encountersModel = new SessionPlannerEncountersModel(
             this::currentEncountersProjection,
             this::subscribeEncountersListener);
-    private final SessionPlannerStatePanelModel statePanelModel = new SessionPlannerStatePanelModel(
+    public final SessionPlannerStatePanelModel statePanelModel = new SessionPlannerStatePanelModel(
             this::currentStatePanelProjection,
             this::subscribeStatePanelListener);
     private @Nullable SessionPlannerSessionSnapshot currentSessionSnapshot;
@@ -56,8 +56,8 @@ public final class SessionPlannerPublishedStateRepositoryAdapter implements Sess
 
     public SessionPlannerPublishedStateRepositoryAdapter(
             SessionPlanRepository repository,
-            SessionPartyFactsRepository partyFacts,
-            SessionEncounterFactsRepository encounterFacts
+            SessionPartyFactsLookup partyFacts,
+            SessionEncounterFactsLookup encounterFacts
     ) {
         this.repository = Objects.requireNonNull(repository, "repository");
         this.partyFacts = Objects.requireNonNull(partyFacts, "partyFacts");
@@ -75,22 +75,6 @@ public final class SessionPlannerPublishedStateRepositoryAdapter implements Sess
         notifyParticipantsListeners(currentParticipantsProjection);
         notifyEncountersListeners(currentEncountersProjection);
         notifyStatePanelListeners(currentStatePanelProjection);
-    }
-
-    public SessionPlannerCurrentSessionModel currentSessionModel() {
-        return currentSessionModel;
-    }
-
-    public SessionPlannerParticipantsModel participantsModel() {
-        return participantsModel;
-    }
-
-    public SessionPlannerEncountersModel encountersModel() {
-        return encountersModel;
-    }
-
-    public SessionPlannerStatePanelModel statePanelModel() {
-        return statePanelModel;
     }
 
     private SessionPlannerSessionSnapshot currentSessionSnapshot() {
