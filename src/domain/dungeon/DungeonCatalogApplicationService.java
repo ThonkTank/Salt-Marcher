@@ -9,6 +9,7 @@ import src.domain.dungeon.application.SearchDungeonMapsUseCase;
 import src.domain.dungeon.model.map.repository.DungeonMapRepository;
 import src.domain.dungeon.model.map.repository.DungeonPublishedStateRepository;
 import src.domain.dungeon.model.map.model.DungeonMapIdentity;
+import src.domain.dungeon.published.DungeonAuthoredReadCommand;
 import src.domain.dungeon.published.DungeonMapCatalogCommand;
 import src.domain.dungeon.published.DungeonMapCatalogResponse;
 import src.domain.dungeon.published.DungeonMapId;
