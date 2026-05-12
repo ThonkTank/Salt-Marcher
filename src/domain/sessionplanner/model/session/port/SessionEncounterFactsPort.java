@@ -2,7 +2,7 @@ package src.domain.sessionplanner.model.session.port;
 
 import java.util.List;
 
-public interface SessionEncounterFactsLookup {
+public interface SessionEncounterFactsPort {
 
     EncounterPlanListFact listEncounterPlans();
 

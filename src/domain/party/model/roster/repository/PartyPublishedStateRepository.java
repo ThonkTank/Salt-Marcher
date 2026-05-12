@@ -1,13 +1,13 @@
 package src.domain.party.model.roster.repository;
 
 import java.util.List;
-import src.domain.party.published.MutationStatus;
+import src.domain.party.model.roster.model.PartyMutationStatus;
 
 public interface PartyPublishedStateRepository {
 
     void publishRepositoryBackedState();
 
-    void publishMutationStatus(MutationStatus status);
+    void publishMutationStatus(PartyMutationStatus status);
 
     void publishStorageErrorMutation();
 

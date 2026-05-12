@@ -5,9 +5,9 @@ import src.domain.encounter.EncounterApplicationService;
 import src.domain.encounter.published.EncounterPlanBudgetModel;
 import src.domain.encounter.published.RefreshEncounterPlanBudgetCommand;
 import src.domain.encounter.published.SavedEncounterPlanListModel;
-import src.domain.sessionplanner.model.session.port.SessionEncounterFactsLookup;
+import src.domain.sessionplanner.model.session.port.SessionEncounterFactsPort;
 
-public final class SessionPlannerEncounterFactsQueryAdapter implements SessionEncounterFactsLookup {
+public final class SessionPlannerEncounterFactsQueryAdapter implements SessionEncounterFactsPort {
 
     private final EncounterApplicationService encounters;
     private final SessionPlannerEncounterFactsPublishedReadback encounterReadback;

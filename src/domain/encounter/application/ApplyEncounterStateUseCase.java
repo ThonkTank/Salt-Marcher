@@ -1,6 +1,5 @@
 package src.domain.encounter.application;
 
-import java.util.Optional;
 import org.jspecify.annotations.Nullable;
 import src.domain.encounter.model.session.model.EncounterSession;
 import src.domain.encounter.model.session.model.EncounterSessionCommand;

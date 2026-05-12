@@ -26,6 +26,7 @@ public record EncounterTuningPreviewData(
 
     public enum Status {
         SUCCESS,
+        NO_ACTIVE_PARTY,
         STORAGE_ERROR
     }
 

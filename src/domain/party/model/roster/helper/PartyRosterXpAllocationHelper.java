@@ -17,7 +17,13 @@ public final class PartyRosterXpAllocationHelper {
         List<PartyCharacter> nextCharacters = new ArrayList<>(characters.size());
         for (PartyCharacter character : characters) {
             if (requestedIds.contains(character.id())) {
-                nextCharacters.add(character.adjustXp(xpDelta));
+                nextCharacters.add(new PartyCharacter(
+                        character.id(),
+                        character.identity(),
+                        character.progress().adjustXp(xpDelta),
+                        character.combat(),
+                        character.membership(),
+                        character.travel()));
                 updatedAny = true;
             } else {
                 nextCharacters.add(character);

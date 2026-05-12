@@ -16,6 +16,7 @@ import src.domain.encounter.model.generation.model.EncounterTuningIntent;
 import src.domain.encounter.model.plan.model.EncounterPlan;
 import src.domain.encounter.model.reference.repository.EncounterCreatureRepository;
 import src.domain.encounter.model.reference.model.EncounterCreatureReference;
+import src.domain.encounter.model.generation.model.GeneratedEncounterCreatureData;
 import src.domain.encounter.model.session.model.EncounterSession;
 import src.domain.encounter.model.session.model.EncounterSessionValues.AwardXpOutcome;
 import src.domain.encounter.model.session.model.EncounterSessionValues.BudgetData;
@@ -154,9 +155,9 @@ public final class EncounterSessionRepository implements EncounterSession.Sessio
         if (useCase == null) {
             return new ListPlansOutcome(false, List.of(), "Encounter plan storage is not registered.");
         }
-        ListSavedEncounterPlansUseCase.Result result = useCase.execute();
+        src.domain.encounter.model.plan.model.SavedEncounterPlansLoadResult result = useCase.execute();
         return new ListPlansOutcome(
-                result.status().loadedSuccessfully(),
+                result.status() == src.domain.encounter.model.plan.model.SavedEncounterPlansLoadResult.Status.SUCCESS,
                 result.plans(),
                 result.message());
     }
@@ -192,7 +193,7 @@ public final class EncounterSessionRepository implements EncounterSession.Sessio
                     advisoryMessages(autoResolved, fallbackUsed));
         }
 
-        private EncounterCreatureData toCreature(src.domain.encounter.published.EncounterCreature creature) {
+        private EncounterCreatureData toCreature(GeneratedEncounterCreatureData creature) {
             Optional<CreatureDetailData> detail = loadCreature(creature.creatureId());
             if (detail.isPresent()) {
                 CreatureDetailData current = detail.orElseThrow();

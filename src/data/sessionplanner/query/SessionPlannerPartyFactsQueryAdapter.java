@@ -6,9 +6,9 @@ import src.domain.party.PartyApplicationService;
 import src.domain.party.published.ActivePartyModel;
 import src.domain.party.published.AdventuringDayCalculationModel;
 import src.domain.party.published.CalculateAdventuringDayCommand;
-import src.domain.sessionplanner.model.session.port.SessionPartyFactsLookup;
+import src.domain.sessionplanner.model.session.port.SessionPartyFactsPort;
 
-public final class SessionPlannerPartyFactsQueryAdapter implements SessionPartyFactsLookup {
+public final class SessionPlannerPartyFactsQueryAdapter implements SessionPartyFactsPort {
 
     private final PartyApplicationService party;
     private final SessionPlannerPartyFactsPublishedReadback partyReadback;

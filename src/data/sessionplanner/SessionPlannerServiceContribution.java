@@ -16,8 +16,26 @@ import src.domain.party.PartyApplicationService;
 import src.domain.party.published.ActivePartyModel;
 import src.domain.party.published.AdventuringDayCalculationModel;
 import src.domain.sessionplanner.SessionPlannerApplicationService;
-import src.domain.sessionplanner.SessionPlannerApplicationServiceFactory;
+import src.domain.sessionplanner.model.session.port.SessionPartyFactsPort;
 import src.domain.sessionplanner.model.session.repository.SessionPlanRepository;
+import src.domain.sessionplanner.model.session.repository.SessionPlannerPublishedStateRepository;
+import src.domain.sessionplanner.model.session.usecase.AddSessionLootPlaceholderUseCase;
+import src.domain.sessionplanner.model.session.usecase.AddSessionParticipantUseCase;
+import src.domain.sessionplanner.model.session.usecase.AttachSessionEncounterUseCase;
+import src.domain.sessionplanner.model.session.usecase.ClearSessionRestGapUseCase;
+import src.domain.sessionplanner.model.session.usecase.CreateSessionPlanUseCase;
+import src.domain.sessionplanner.model.session.usecase.LoadCurrentSessionPlanUseCase;
+import src.domain.sessionplanner.model.session.usecase.MoveSessionEncounterDownUseCase;
+import src.domain.sessionplanner.model.session.usecase.MoveSessionEncounterUpUseCase;
+import src.domain.sessionplanner.model.session.usecase.RemoveSessionEncounterUseCase;
+import src.domain.sessionplanner.model.session.usecase.RemoveSessionLootPlaceholderUseCase;
+import src.domain.sessionplanner.model.session.usecase.RemoveSessionParticipantUseCase;
+import src.domain.sessionplanner.model.session.usecase.SaveCurrentSessionPlanUseCase;
+import src.domain.sessionplanner.model.session.usecase.SeedSessionPlanUseCase;
+import src.domain.sessionplanner.model.session.usecase.SelectSessionEncounterUseCase;
+import src.domain.sessionplanner.model.session.usecase.SetSessionEncounterAllocationUseCase;
+import src.domain.sessionplanner.model.session.usecase.SetSessionEncounterDaysUseCase;
+import src.domain.sessionplanner.model.session.usecase.SetSessionRestGapUseCase;
 import src.domain.sessionplanner.published.SessionPlannerCurrentSessionModel;
 import src.domain.sessionplanner.published.SessionPlannerEncountersModel;
 import src.domain.sessionplanner.published.SessionPlannerParticipantsModel;
@@ -56,7 +74,7 @@ public final class SessionPlannerServiceContribution implements ServiceContribut
         };
         builder.registerFactory(
                 SessionPlannerApplicationService.class,
-                services -> new SessionPlannerApplicationServiceFactory().create(
+                services -> createApplicationService(
                         repository,
                         new SessionPlannerPartyFactsQueryAdapter(
                                 services.require(PartyApplicationService.class),
@@ -65,15 +83,58 @@ public final class SessionPlannerServiceContribution implements ServiceContribut
                         publishedStateFactory.apply(services)));
         builder.registerFactory(
                 SessionPlannerCurrentSessionModel.class,
-                services -> publishedStateFactory.apply(services).currentSessionModel);
+                services -> {
+                    SessionPlannerPublishedStateRepositoryAdapter adapter = publishedStateFactory.apply(services);
+                    return adapter.currentSessionModel();
+                });
         builder.registerFactory(
                 SessionPlannerParticipantsModel.class,
-                services -> publishedStateFactory.apply(services).participantsModel);
+                services -> {
+                    SessionPlannerPublishedStateRepositoryAdapter adapter = publishedStateFactory.apply(services);
+                    return adapter.participantsModel();
+                });
         builder.registerFactory(
                 SessionPlannerEncountersModel.class,
-                services -> publishedStateFactory.apply(services).encountersModel);
+                services -> {
+                    SessionPlannerPublishedStateRepositoryAdapter adapter = publishedStateFactory.apply(services);
+                    return adapter.encountersModel();
+                });
         builder.registerFactory(
                 SessionPlannerStatePanelModel.class,
-                services -> publishedStateFactory.apply(services).statePanelModel);
+                services -> {
+                    SessionPlannerPublishedStateRepositoryAdapter adapter = publishedStateFactory.apply(services);
+                    return adapter.statePanelModel();
+                });
+    }
+
+    private static SessionPlannerApplicationService createApplicationService(
+            SessionPlanRepository repository,
+            SessionPartyFactsPort partyFacts,
+            SessionPlannerPublishedStateRepository publishedStateRepository
+    ) {
+        SessionPlanRepository sessionRepository = Objects.requireNonNull(repository, "repository");
+        SessionPartyFactsPort partyFactsPort = Objects.requireNonNull(partyFacts, "partyFacts");
+        SessionPlannerPublishedStateRepository publishedState =
+                Objects.requireNonNull(publishedStateRepository, "publishedStateRepository");
+        SeedSessionPlanUseCase seedSessionPlanUseCase = new SeedSessionPlanUseCase(partyFactsPort);
+        LoadCurrentSessionPlanUseCase loadCurrentSessionPlanUseCase =
+                new LoadCurrentSessionPlanUseCase(sessionRepository, seedSessionPlanUseCase);
+        SaveCurrentSessionPlanUseCase saveCurrentSessionPlanUseCase =
+                new SaveCurrentSessionPlanUseCase(sessionRepository, publishedState);
+        return new SessionPlannerApplicationService(
+                new CreateSessionPlanUseCase(sessionRepository, saveCurrentSessionPlanUseCase, seedSessionPlanUseCase),
+                new AddSessionParticipantUseCase(loadCurrentSessionPlanUseCase, saveCurrentSessionPlanUseCase),
+                new RemoveSessionParticipantUseCase(loadCurrentSessionPlanUseCase, saveCurrentSessionPlanUseCase),
+                new SetSessionEncounterDaysUseCase(loadCurrentSessionPlanUseCase, saveCurrentSessionPlanUseCase),
+                new AttachSessionEncounterUseCase(loadCurrentSessionPlanUseCase, saveCurrentSessionPlanUseCase),
+                new RemoveSessionEncounterUseCase(loadCurrentSessionPlanUseCase, saveCurrentSessionPlanUseCase),
+                new MoveSessionEncounterUpUseCase(loadCurrentSessionPlanUseCase, saveCurrentSessionPlanUseCase),
+                new MoveSessionEncounterDownUseCase(loadCurrentSessionPlanUseCase, saveCurrentSessionPlanUseCase),
+                new SetSessionEncounterAllocationUseCase(loadCurrentSessionPlanUseCase, saveCurrentSessionPlanUseCase),
+                new SelectSessionEncounterUseCase(loadCurrentSessionPlanUseCase, saveCurrentSessionPlanUseCase),
+                new SetSessionRestGapUseCase(loadCurrentSessionPlanUseCase, saveCurrentSessionPlanUseCase),
+                new ClearSessionRestGapUseCase(loadCurrentSessionPlanUseCase, saveCurrentSessionPlanUseCase),
+                new AddSessionLootPlaceholderUseCase(loadCurrentSessionPlanUseCase, saveCurrentSessionPlanUseCase),
+                new RemoveSessionLootPlaceholderUseCase(loadCurrentSessionPlanUseCase, saveCurrentSessionPlanUseCase));
     }
 }

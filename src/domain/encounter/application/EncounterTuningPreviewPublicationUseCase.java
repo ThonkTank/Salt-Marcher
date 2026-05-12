@@ -4,10 +4,8 @@ import java.util.List;
 import org.jspecify.annotations.Nullable;
 import src.domain.encounter.model.generation.helper.EncounterDifficultyMathHelper;
 import src.domain.encounter.model.generation.model.EncounterRequestedDifficulty;
+import src.domain.encounter.model.session.model.EncounterTuningPreviewData;
 import src.domain.encounter.model.session.repository.EncounterPartyFactsRepository;
-import src.domain.encounter.published.EncounterGenerationStatus;
-import src.domain.encounter.published.EncounterTuningPreviewLabels;
-import src.domain.encounter.published.EncounterTuningPreviewResult;
 
 final class EncounterTuningPreviewPublicationUseCase {
 
@@ -20,8 +18,8 @@ final class EncounterTuningPreviewPublicationUseCase {
         this.loadBudgetUseCase = loadBudgetUseCase;
     }
 
-    EncounterTuningPreviewResult toResult() {
-        return toTuningPreviewResult(loadBudgetResult());
+    EncounterTuningPreviewData toData() {
+        return toTuningPreviewData(loadBudgetResult());
     }
 
     private LoadEncounterBudgetUseCase.Result loadBudgetResult() {
@@ -41,36 +39,44 @@ final class EncounterTuningPreviewPublicationUseCase {
         }
     }
 
-    private static EncounterTuningPreviewResult toTuningPreviewResult(LoadEncounterBudgetUseCase.Result result) {
+    private static EncounterTuningPreviewData toTuningPreviewData(LoadEncounterBudgetUseCase.Result result) {
         if (result == null) {
-            return new EncounterTuningPreviewResult(
-                    EncounterGenerationStatus.STORAGE_ERROR,
-                    tuningPreviewLabels(emptyBudgetSummary()),
+            return new EncounterTuningPreviewData(
+                    EncounterTuningPreviewData.Status.STORAGE_ERROR,
+                    tuningPreviewLabels(emptyBudgetSummary()).easyLabels(),
+                    tuningPreviewLabels(emptyBudgetSummary()).mediumLabels(),
+                    tuningPreviewLabels(emptyBudgetSummary()).hardLabels(),
+                    tuningPreviewLabels(emptyBudgetSummary()).deadlyLabels(),
                     TUNING_PREVIEW_NOT_REGISTERED);
         }
-        return new EncounterTuningPreviewResult(
-                toEncounterGenerationStatus(result.status()),
-                tuningPreviewLabels(result.budget() == null ? emptyBudgetSummary() : result.budget()),
+        EncounterTuningPreviewData labels = tuningPreviewLabels(result.budget() == null ? emptyBudgetSummary() : result.budget());
+        return new EncounterTuningPreviewData(
+                toStatus(result.status()),
+                labels.easyLabels(),
+                labels.mediumLabels(),
+                labels.hardLabels(),
+                labels.deadlyLabels(),
                 result.message());
     }
 
-    private static EncounterGenerationStatus toEncounterGenerationStatus(EncounterPartyFactsRepository.Status status) {
+    private static EncounterTuningPreviewData.Status toStatus(EncounterPartyFactsRepository.Status status) {
         if (status == null) {
-            return EncounterGenerationStatus.STORAGE_ERROR;
+            return EncounterTuningPreviewData.Status.STORAGE_ERROR;
         }
         return switch (status) {
-            case SUCCESS -> EncounterGenerationStatus.successStatus();
-            case NO_ACTIVE_PARTY -> EncounterGenerationStatus.noActivePartyStatus();
-            case STORAGE_ERROR -> EncounterGenerationStatus.defaultFailure();
+            case SUCCESS -> EncounterTuningPreviewData.Status.SUCCESS;
+            case NO_ACTIVE_PARTY -> EncounterTuningPreviewData.Status.NO_ACTIVE_PARTY;
+            case STORAGE_ERROR -> EncounterTuningPreviewData.Status.STORAGE_ERROR;
         };
     }
 
-    private static EncounterTuningPreviewLabels tuningPreviewLabels(EncounterDifficultyMathHelper.BudgetSummary budget) {
+    private static EncounterTuningPreviewData tuningPreviewLabels(EncounterDifficultyMathHelper.BudgetSummary budget) {
         int averageLevel = budget == null ? 1 : Math.max(1, Math.min(20, budget.averagePartyLevel()));
         int partySize = budget == null || budget.activePartyLevels().isEmpty()
                 ? 1
                 : Math.max(1, budget.activePartyLevels().size());
-        return new EncounterTuningPreviewLabels(
+        return new EncounterTuningPreviewData(
+                EncounterTuningPreviewData.Status.SUCCESS,
                 List.of(
                         previewLabel(1.0, difficultyRangeLabel(EncounterRequestedDifficulty.EASY, averageLevel, partySize)),
                         previewLabel(2.0, difficultyRangeLabel(EncounterRequestedDifficulty.MEDIUM, averageLevel, partySize)),
@@ -92,11 +98,12 @@ final class EncounterTuningPreviewPublicationUseCase {
                         previewLabel(1.0, "1 Typ"),
                         previewLabel(2.0, "2 Typen"),
                         previewLabel(3.0, "3 Typen"),
-                        previewLabel(4.0, "4 Typen")));
+                        previewLabel(4.0, "4 Typen")),
+                "");
     }
 
-    private static EncounterTuningPreviewLabels.PreviewLabel previewLabel(double value, String label) {
-        return new EncounterTuningPreviewLabels.PreviewLabel(value, label);
+    private static EncounterTuningPreviewData.PreviewLabel previewLabel(double value, String label) {
+        return new EncounterTuningPreviewData.PreviewLabel(value, label);
     }
 
     private static String difficultyRangeLabel(EncounterRequestedDifficulty band, int averageLevel, int partySize) {

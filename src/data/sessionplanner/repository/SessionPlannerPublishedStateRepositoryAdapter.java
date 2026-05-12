@@ -16,8 +16,8 @@ import src.domain.sessionplanner.published.SessionPlannerSessionSnapshot;
 import src.domain.sessionplanner.published.SessionPlannerStatePanelModel;
 import src.domain.sessionplanner.published.SessionPlannerStatePanelProjection;
 import src.domain.sessionplanner.model.session.model.SessionPlan;
-import src.domain.sessionplanner.model.session.port.SessionEncounterFactsLookup;
-import src.domain.sessionplanner.model.session.port.SessionPartyFactsLookup;
+import src.domain.sessionplanner.model.session.port.SessionEncounterFactsPort;
+import src.domain.sessionplanner.model.session.port.SessionPartyFactsPort;
 import src.domain.sessionplanner.model.session.repository.SessionPlanRepository;
 import src.domain.sessionplanner.model.session.repository.SessionPlannerPublishedStateRepository;
 
@@ -30,8 +30,8 @@ public final class SessionPlannerPublishedStateRepositoryAdapter implements Sess
     private static final String LISTENER_PARAMETER = "listener";
 
     private final SessionPlanRepository repository;
-    private final SessionPartyFactsLookup partyFacts;
-    private final SessionEncounterFactsLookup encounterFacts;
+    private final SessionPartyFactsPort partyFacts;
+    private final SessionEncounterFactsPort encounterFacts;
     private final SessionPlannerPublishedStateProjector projector = new SessionPlannerPublishedStateProjector();
     private final List<Consumer<SessionPlannerSessionSnapshot>> sessionListeners = new ArrayList<>();
     private final List<Consumer<SessionPlannerParticipantsProjection>> participantsListeners = new ArrayList<>();
@@ -56,12 +56,28 @@ public final class SessionPlannerPublishedStateRepositoryAdapter implements Sess
 
     public SessionPlannerPublishedStateRepositoryAdapter(
             SessionPlanRepository repository,
-            SessionPartyFactsLookup partyFacts,
-            SessionEncounterFactsLookup encounterFacts
+            SessionPartyFactsPort partyFacts,
+            SessionEncounterFactsPort encounterFacts
     ) {
         this.repository = Objects.requireNonNull(repository, "repository");
         this.partyFacts = Objects.requireNonNull(partyFacts, "partyFacts");
         this.encounterFacts = Objects.requireNonNull(encounterFacts, "encounterFacts");
+    }
+
+    public SessionPlannerCurrentSessionModel currentSessionModel() {
+        return currentSessionModel;
+    }
+
+    public SessionPlannerParticipantsModel participantsModel() {
+        return participantsModel;
+    }
+
+    public SessionPlannerEncountersModel encountersModel() {
+        return encountersModel;
+    }
+
+    public SessionPlannerStatePanelModel statePanelModel() {
+        return statePanelModel;
     }
 
     @Override

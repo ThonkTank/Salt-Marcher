@@ -1,10 +1,8 @@
 package src.domain.encounter.application;
 
-import java.util.List;
 import java.util.Objects;
 import src.domain.encounter.model.plan.model.SavedEncounterPlansLoadResult;
 import src.domain.encounter.model.plan.repository.EncounterPlanRepository;
-import src.domain.encounter.model.plan.model.EncounterPlanSummary;
 
 public final class ListSavedEncounterPlansUseCase {
 

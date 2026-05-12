@@ -5,19 +5,19 @@ import java.util.List;
 import java.util.Objects;
 import src.domain.sessionplanner.model.session.helper.SessionPlanSeedHelper;
 import src.domain.sessionplanner.model.session.model.SessionPlan;
-import src.domain.sessionplanner.model.session.port.SessionPartyFactsLookup;
+import src.domain.sessionplanner.model.session.port.SessionPartyFactsPort;
 
 public final class SeedSessionPlanUseCase {
 
-    private final SessionPartyFactsLookup partyFactsRepository;
+    private final SessionPartyFactsPort partyFactsRepository;
 
-    public SeedSessionPlanUseCase(SessionPartyFactsLookup partyFactsRepository) {
+    public SeedSessionPlanUseCase(SessionPartyFactsPort partyFactsRepository) {
         this.partyFactsRepository = Objects.requireNonNull(partyFactsRepository, "partyFactsRepository");
     }
 
     SessionPlan execute(long sessionId) {
         try {
-            SessionPartyFactsLookup.ActivePartyMembersFact activeParty =
+            SessionPartyFactsPort.ActivePartyMembersFact activeParty =
                     partyFactsRepository.loadActivePartyMembers();
             return SessionPlanSeedHelper.createSeeded(
                     sessionId,
@@ -28,9 +28,9 @@ public final class SeedSessionPlanUseCase {
         }
     }
 
-    private List<Long> participantRefs(SessionPartyFactsLookup.ActivePartyMembersFact activeParty) {
+    private List<Long> participantRefs(SessionPartyFactsPort.ActivePartyMembersFact activeParty) {
         List<Long> participantRefs = new ArrayList<>();
-        for (SessionPartyFactsLookup.PartyMemberProfile member : activeParty.members()) {
+        for (SessionPartyFactsPort.PartyMemberProfile member : activeParty.members()) {
             participantRefs.add(member.characterId());
         }
         return participantRefs;

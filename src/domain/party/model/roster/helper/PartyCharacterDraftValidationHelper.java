@@ -1,10 +1,10 @@
 package src.domain.party.model.roster.helper;
 
-import src.domain.party.published.CharacterDraft;
+import src.domain.party.model.roster.model.PartyCharacterDraft;
 
 public final class PartyCharacterDraftValidationHelper {
 
-    public boolean isValid(CharacterDraft draft) {
+    public boolean isValid(PartyCharacterDraft draft) {
         return draft != null
                 && draft.name() != null
                 && !draft.name().trim().isEmpty()

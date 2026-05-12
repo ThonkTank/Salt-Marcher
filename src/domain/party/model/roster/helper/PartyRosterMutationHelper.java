@@ -5,30 +5,38 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import src.domain.party.model.roster.model.PartyCharacter;
-import src.domain.party.published.CharacterDraft;
-import src.domain.party.published.MembershipState;
+import src.domain.party.model.roster.model.PartyCharacterCombatProfile;
+import src.domain.party.model.roster.model.PartyCharacterDraft;
+import src.domain.party.model.roster.model.PartyCharacterIdentity;
+import src.domain.party.model.roster.model.PartyMembership;
 import src.domain.party.model.roster.model.PartyTravelLocation;
 
 public final class PartyRosterMutationHelper {
 
-    public List<PartyCharacter> updateDraft(List<PartyCharacter> characters, long id, CharacterDraft draft) {
+    public List<PartyCharacter> updateDraft(List<PartyCharacter> characters, long id, PartyCharacterDraft draft) {
         List<PartyCharacter> nextCharacters = new ArrayList<>(characters);
         for (int index = 0; index < nextCharacters.size(); index++) {
             PartyCharacter character = nextCharacters.get(index);
             if (character.id() == id) {
-                nextCharacters.set(index, character.update(draft));
+                nextCharacters.set(index, updatedCharacter(character, draft));
                 return nextCharacters;
             }
         }
         return List.of();
     }
 
-    public List<PartyCharacter> updateMembership(List<PartyCharacter> characters, long id, MembershipState membership) {
+    public List<PartyCharacter> updateMembership(List<PartyCharacter> characters, long id, PartyMembership membership) {
         List<PartyCharacter> nextCharacters = new ArrayList<>(characters);
         for (int index = 0; index < nextCharacters.size(); index++) {
             PartyCharacter character = nextCharacters.get(index);
             if (character.id() == id) {
-                nextCharacters.set(index, character.withMembership(membership));
+                nextCharacters.set(index, new PartyCharacter(
+                        character.id(),
+                        character.identity(),
+                        character.progress(),
+                        character.combat(),
+                        membership,
+                        character.travel()));
                 return nextCharacters;
             }
         }
@@ -50,7 +58,13 @@ public final class PartyRosterMutationHelper {
         for (int index = 0; index < nextCharacters.size(); index++) {
             PartyCharacter character = nextCharacters.get(index);
             if (requestedIds.contains(character.id())) {
-                nextCharacters.set(index, character.moveTo(location, attachToPartyToken));
+                nextCharacters.set(index, new PartyCharacter(
+                        character.id(),
+                        character.identity(),
+                        character.progress(),
+                        character.combat(),
+                        character.membership(),
+                        new src.domain.party.model.roster.model.PartyCharacterTravelState(location, attachToPartyToken)));
                 updated = true;
             }
         }
@@ -66,5 +80,15 @@ public final class PartyRosterMutationHelper {
             }
         }
         return List.of();
+    }
+
+    private static PartyCharacter updatedCharacter(PartyCharacter character, PartyCharacterDraft draft) {
+        return new PartyCharacter(
+                character.id(),
+                new PartyCharacterIdentity(draft.name(), draft.playerName()),
+                character.progress().withLevel(draft.level()),
+                new PartyCharacterCombatProfile(draft.passivePerception(), draft.armorClass()),
+                character.membership(),
+                character.travel());
     }
 }

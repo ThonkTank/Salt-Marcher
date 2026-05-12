@@ -9,12 +9,12 @@ import src.domain.party.published.AdventuringDayCalculationResult;
 import src.domain.party.published.AdventuringDayPlanningSummary;
 import src.domain.party.published.PartyMemberSummary;
 import src.domain.party.published.ReadStatus;
-import src.domain.sessionplanner.model.session.port.SessionPartyFactsLookup;
+import src.domain.sessionplanner.model.session.port.SessionPartyFactsPort;
 
 final class SessionPlannerPartyFactsPublishedReadback {
 
-    private SessionPartyFactsLookup.ActivePartyMembersFact currentActivePartyMembers;
-    private SessionPartyFactsLookup.AdventuringDayFact currentAdventuringDayFact;
+    private SessionPartyFactsPort.ActivePartyMembersFact currentActivePartyMembers;
+    private SessionPartyFactsPort.AdventuringDayFact currentAdventuringDayFact;
 
     SessionPlannerPartyFactsPublishedReadback(
             ActivePartyModel activePartyModel,
@@ -29,35 +29,35 @@ final class SessionPlannerPartyFactsPublishedReadback {
         adventuringDay.subscribe(result -> currentAdventuringDayFact = toAdventuringDayFact(result));
     }
 
-    SessionPartyFactsLookup.ActivePartyMembersFact loadActivePartyMembers() {
+    SessionPartyFactsPort.ActivePartyMembersFact loadActivePartyMembers() {
         return currentActivePartyMembers;
     }
 
-    SessionPartyFactsLookup.AdventuringDayFact currentAdventuringDayFact() {
+    SessionPartyFactsPort.AdventuringDayFact currentAdventuringDayFact() {
         return currentAdventuringDayFact;
     }
 
-    private static SessionPartyFactsLookup.ActivePartyMembersFact toActivePartyMembersFact(ActivePartyResult result) {
+    private static SessionPartyFactsPort.ActivePartyMembersFact toActivePartyMembersFact(ActivePartyResult result) {
         if (result == null || result.status() != ReadStatus.SUCCESS) {
-            return new SessionPartyFactsLookup.ActivePartyMembersFact(
+            return new SessionPartyFactsPort.ActivePartyMembersFact(
                     false,
                     List.of(),
                     "Aktive Party konnte nicht geladen werden.");
         }
-        return new SessionPartyFactsLookup.ActivePartyMembersFact(
+        return new SessionPartyFactsPort.ActivePartyMembersFact(
                 true,
                 result.members().stream().map(SessionPlannerPartyFactsPublishedReadback::toPartyMemberFact).toList(),
                 "");
     }
 
-    private static SessionPartyFactsLookup.AdventuringDayFact toAdventuringDayFact(
+    private static SessionPartyFactsPort.AdventuringDayFact toAdventuringDayFact(
             AdventuringDayCalculationResult result
     ) {
         AdventuringDayPlanningSummary summary = result == null ? null : result.planningSummary();
         if (result == null || result.status() != ReadStatus.SUCCESS || summary == null) {
-            return SessionPartyFactsLookup.AdventuringDayFact.unavailable();
+            return SessionPartyFactsPort.AdventuringDayFact.unavailable();
         }
-        return new SessionPartyFactsLookup.AdventuringDayFact(
+        return new SessionPartyFactsPort.AdventuringDayFact(
                 true,
                 summary.totalBudgetXp(),
                 summary.firstShortRestXp(),
@@ -66,8 +66,8 @@ final class SessionPlannerPartyFactsPublishedReadback {
                 summary.recommendedLongRests());
     }
 
-    private static SessionPartyFactsLookup.PartyMemberProfile toPartyMemberFact(PartyMemberSummary member) {
-        return new SessionPartyFactsLookup.PartyMemberProfile(
+    private static SessionPartyFactsPort.PartyMemberProfile toPartyMemberFact(PartyMemberSummary member) {
+        return new SessionPartyFactsPort.PartyMemberProfile(
                 member == null || member.id() == null ? 0L : member.id(),
                 member == null ? "" : member.name(),
                 member == null ? 0 : member.level());

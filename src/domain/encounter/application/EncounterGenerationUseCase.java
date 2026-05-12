@@ -5,10 +5,10 @@ import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 import src.domain.encounter.model.generation.model.EncounterGenerationDiagnosticsData;
 import src.domain.encounter.model.generation.model.EncounterGenerationRequest;
+import src.domain.encounter.model.generation.model.GeneratedEncounterCreatureData;
 import src.domain.encounter.model.reference.repository.EncounterCreatureRepository;
 import src.domain.encounter.model.reference.repository.EncounterTableCandidateRepository;
 import src.domain.encounter.model.session.repository.EncounterPartyFactsRepository;
-import src.domain.encounter.published.EncounterCreature;
 
 public final class EncounterGenerationUseCase {
 
@@ -86,7 +86,7 @@ public final class EncounterGenerationUseCase {
             String title,
             src.domain.encounter.model.generation.model.EncounterDifficultyIntent achievedDifficulty,
             int adjustedXp,
-            List<EncounterCreature> creatures
+            List<GeneratedEncounterCreatureData> creatures
     ) {
 
         public GeneratedAlternative {
