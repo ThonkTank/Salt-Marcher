@@ -1,11 +1,11 @@
 package src.domain.encounter.model.plan.repository;
 
-import src.domain.encounter.published.EncounterPlanBudgetResult;
-import src.domain.encounter.published.SavedEncounterPlanListResult;
+import src.domain.encounter.model.plan.model.EncounterPlanBudgetLoadResult;
+import src.domain.encounter.model.plan.model.SavedEncounterPlansLoadResult;
 
 public interface EncounterPlanPublishedStateRepository {
 
-    void publishSavedPlans(SavedEncounterPlanListResult result);
+    void publishSavedPlans(SavedEncounterPlansLoadResult result);
 
-    void publishPlanBudget(EncounterPlanBudgetResult result);
+    void publishPlanBudget(EncounterPlanBudgetLoadResult result);
 }

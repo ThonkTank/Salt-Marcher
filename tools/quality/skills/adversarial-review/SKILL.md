@@ -57,9 +57,9 @@ and targeted file reads. Keep exploration read-only.
 
 Classify every issue with exactly one of these labels:
 
-- `Must Fix Before Commit`: the change violates a binding rule, leaves a
+- `Must Fix Before Handoff`: the change violates a binding rule, leaves a
   required proof missing, creates contradictory canonical truth, weakens a
-  gate, or would make handoff misleading.
+  gate, or would make final handoff, commit, or publication misleading.
 - `Should Fix In This Pass`: the issue is local, low risk, and directly within
   the changed owner scope, but not severe enough to block if the implementer
   explicitly defers it.
@@ -69,7 +69,7 @@ Classify every issue with exactly one of these labels:
   pass, is already covered by an owner, or requires human/product judgment
   rather than a mechanical fix.
 
-`Must Fix Before Commit` findings must not be deferred. If they remain
+`Must Fix Before Handoff` findings must not be deferred. If they remain
 unresolved, state that the pass remains WIP.
 
 ## Output
@@ -77,7 +77,7 @@ unresolved, state that the pass remains WIP.
 Lead with findings ordered by severity. Use this shape:
 
 ```text
-Must Fix Before Commit
+Must Fix Before Handoff
 - path:line - issue and required fix
 
 Should Fix In This Pass

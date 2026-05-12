@@ -4,7 +4,6 @@ import java.util.Optional;
 import org.jspecify.annotations.Nullable;
 import src.domain.encounter.model.session.model.EncounterSession;
 import src.domain.encounter.model.session.model.EncounterSessionCommand;
-import src.domain.encounter.published.ApplyEncounterStateCommand;
 
 public final class ApplyEncounterStateUseCase {
 
@@ -22,43 +21,17 @@ public final class ApplyEncounterStateUseCase {
         this.publishSavedPlansUseCase = java.util.Objects.requireNonNull(publishSavedPlansUseCase, "publishSavedPlansUseCase");
     }
 
-    public void execute(@Nullable ApplyEncounterStateCommand command) {
+    public void execute(@Nullable EncounterSessionCommand command) {
         ApplyEncounterSessionUseCase useCase = applySessionUseCase;
         if (useCase == null) {
             publishSessionUseCase.execute(null);
             return;
         }
-        EncounterSession session = useCase.apply(toInternalCommand(command));
+        EncounterSessionCommand effective = command == null ? EncounterSessionCommand.refresh() : command;
+        EncounterSession session = useCase.apply(effective);
         publishSessionUseCase.execute(session);
-        if (command == null || command.action().republishesSavedPlans()) {
+        if (effective.action().republishesSavedPlans()) {
             publishSavedPlansUseCase.execute();
         }
-    }
-
-    private static EncounterSessionCommand toInternalCommand(@Nullable ApplyEncounterStateCommand command) {
-        if (command == null) {
-            return EncounterSessionCommand.refresh();
-        }
-        return new EncounterSessionCommand(
-                toInternalAction(command.action()),
-                Optional.empty(),
-                EncounterBuilderInputsTranslationUseCase.toInternal(null),
-                command.creatureId(),
-                command.planId(),
-                command.delta(),
-                command.undoToken(),
-                command.initiativeValues(),
-                command.combatantId(),
-                command.initiative(),
-                command.partyMemberId(),
-                command.amount(),
-                command.healing());
-    }
-
-    private static EncounterSessionCommand.Action toInternalAction(ApplyEncounterStateCommand.Action action) {
-        ApplyEncounterStateCommand.Action effective = action == null
-                ? ApplyEncounterStateCommand.Action.REFRESH
-                : action;
-        return EncounterSessionCommand.Action.valueOf(effective.name());
     }
 }

@@ -7,7 +7,6 @@ import src.domain.encounter.model.session.model.EncounterSessionValues.CombatCar
 import src.domain.encounter.model.session.model.EncounterSessionValues.CombatProjectionData;
 import src.domain.encounter.model.session.model.EncounterSessionValues.InitiativeEntryData;
 import src.domain.encounter.model.session.model.EncounterSessionValues.PartyMemberData;
-import src.domain.encounter.published.ApplyEncounterStateCommand;
 
 final class CombatSessionSupport {
 
@@ -32,8 +31,8 @@ final class CombatSessionSupport {
                 .findFirst();
     }
 
-    static List<ApplyEncounterStateCommand.InitiativeValue> safeInitiatives(
-            List<ApplyEncounterStateCommand.InitiativeValue> initiatives
+    static List<EncounterInitiativeInput> safeInitiatives(
+            List<EncounterInitiativeInput> initiatives
     ) {
         return initiatives == null ? List.of() : List.copyOf(initiatives);
     }

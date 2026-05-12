@@ -1,13 +1,8 @@
 package src.domain.encounter.model.session.repository;
 
-import src.domain.encounter.published.EncounterBuilderInputs;
-import src.domain.encounter.published.EncounterStateSnapshot;
-import src.domain.encounter.published.EncounterTuningPreviewResult;
+import src.domain.encounter.model.session.model.EncounterSessionPublicationData;
 
 public interface EncounterSessionPublishedStateRepository {
 
-    void publishCurrentSession(
-            EncounterStateSnapshot state,
-            EncounterBuilderInputs builderInputs,
-            EncounterTuningPreviewResult tuningPreview);
+    void publishCurrentSession(EncounterSessionPublicationData publication);
 }

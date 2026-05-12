@@ -4,7 +4,6 @@ import java.util.List;
 import java.util.Optional;
 import src.domain.encounter.model.generation.model.EncounterGenerationInputs;
 import src.domain.encounter.model.generation.model.EncounterGenerationRequest;
-import src.domain.encounter.published.ApplyEncounterStateCommand;
 
 public record EncounterSessionCommand(
         Action action,
@@ -14,7 +13,7 @@ public record EncounterSessionCommand(
         long planId,
         int delta,
         long token,
-        List<ApplyEncounterStateCommand.InitiativeValue> initiativeInputs,
+        List<EncounterInitiativeInput> initiativeInputs,
         String combatantId,
         int initiative,
         long partyMemberId,
@@ -85,6 +84,12 @@ public record EncounterSessionCommand(
         END_COMBAT,
         AWARD_XP,
         RETURN_TO_BUILDER_AFTER_RESULTS,
-        MUTATE_HP
+        MUTATE_HP;
+
+        public boolean republishesSavedPlans() {
+            return this == REFRESH
+                    || this == OPEN_SAVED_PLAN
+                    || this == SAVE_CURRENT_PLAN;
+        }
     }
 }

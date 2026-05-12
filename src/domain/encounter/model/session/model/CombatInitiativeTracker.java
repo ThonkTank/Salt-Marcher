@@ -52,7 +52,7 @@ final class CombatInitiativeTracker {
     }
 
     void confirm(
-            List<src.domain.encounter.published.ApplyEncounterStateCommand.InitiativeValue> initiatives,
+            List<EncounterInitiativeInput> initiatives,
             List<EncounterCreatureData> roster,
             CombatRoster combatRoster,
             CombatRosterBuilder combatRosterBuilder,
@@ -62,8 +62,7 @@ final class CombatInitiativeTracker {
     ) {
         combatRoster.clear();
         int fallbackIndex = 0;
-        for (src.domain.encounter.published.ApplyEncounterStateCommand.InitiativeValue input
-                : CombatSessionSupport.safeInitiatives(initiatives)) {
+        for (EncounterInitiativeInput input : CombatSessionSupport.safeInitiatives(initiatives)) {
             InitiativeEntryData entry = CombatSessionSupport.initiativeEntry(pendingRows, input.id()).orElse(null);
             if (entry == null) {
                 continue;
