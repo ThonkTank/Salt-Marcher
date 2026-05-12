@@ -12,8 +12,8 @@ Context Role: Roster Truth Context
 Context Name: SessionPlanner
 
 - `sessionplanner` is the roster-truth context for one authored session plan.
-- Its public backend boundary is
-  `src/domain/sessionplanner/SessionPlannerApplicationService.java`.
+- Its public backend boundaries are the session, participant, encounter, rest,
+  and loot `*ApplicationService` roots under `src/domain/sessionplanner/`.
 - It owns session-local participant references, encounter allocations, rest
   placement, placeholder state, and selection truth.
 - It does not own party truth, encounter-plan roster truth, creature truth, or
@@ -36,13 +36,16 @@ Target state:
 
 ## Application Boundary
 
-Application Service: SessionPlannerApplicationService
+Application Services: SessionPlannerApplicationService,
+SessionPlannerParticipantApplicationService,
+SessionPlannerEncounterApplicationService, SessionPlannerRestApplicationService,
+and SessionPlannerLootApplicationService
 
-The root application service coordinates active-party composition reads,
+The root application services coordinate active-party composition reads,
 party-based adventuring-day calculations, saved encounter-plan budget reads
 through the encounter public boundary, planner-owned repository access, and
-session-local mutations. Readback is published separately through the exported
-planner read models.
+session-local mutations by decision family. Readback is published separately
+through the exported planner read models.
 
 Current state:
 

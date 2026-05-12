@@ -1,6 +1,5 @@
 package src.data.sessionplanner.query;
 
-import java.util.Objects;
 import src.domain.encounter.published.EncounterPlanBudgetModel;
 import src.domain.encounter.published.SavedEncounterPlanListModel;
 import src.domain.sessionplanner.model.session.model.SessionEncounterPlanFact;

@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-05-05
+Last Reviewed: 2026-05-12
 Source of Truth: Complete invariant catalog for passive `*View` surfaces in
 `src/view/**`, limited to constraints proven directly on `*View.java` files,
 passive-`View`-owned FXML resources, or review-owned passive-`View`
@@ -30,8 +30,9 @@ Binder-installed wiring, `IntentHandler` entrypoint shape, or `*PublishedEvent`
 routing. Those stay in the neighboring role documents.
 It does own the passive-View-side claim that the only legal project-facing
 outbound seam is the same-stem `*ViewInputEvent` route built by the `View`
-itself, and that prepared render state enters only through project-free
-inbound sink channels rather than through direct model acquaintance.
+itself, and that prepared render state enters only through the View's own
+same-stem `ContentModel` rather than through foreign model acquaintance,
+imperative render APIs, or callback/result protocols.
 
 The rows below describe the current passive-View blocker surface directly.
 
@@ -47,11 +48,11 @@ The rows below describe the current passive-View blocker surface directly.
 
 | Invariant ID | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- |
-| `view-view-dependency-boundary` | every passive `*View.java` under `src/view/**` | Error Prone `PassiveViewInteractionBoundary` | `./gradlew checkViewEnforcement` | A passive `View` references only JavaFX/JDK UI types, its own same-stem `*ViewInputEvent` type, and same-surface local technical support. Direct acquaintance with `ContributionModel`, `ContentModel`, foreign `View`s, unknown same-package helper files, local `*PublishedEvent` families, domain/data types, shell, bootstrap, and backend seams is blocked. |
+| `view-view-dependency-boundary` | every passive `*View.java` under `src/view/**` | Candidate update to Error Prone `PassiveViewInteractionBoundary` | none yet | Target passive `View` code references only JavaFX/JDK UI types, its own same-stem `*ContentModel`, its own same-stem `*ViewInputEvent` type, and same-surface local technical support. Direct acquaintance with `ContributionModel`, foreign `ContentModel`s, foreign `View`s, unknown same-package helper files, local `*PublishedEvent` families, domain/data types, shell, bootstrap, and backend seams is blocked. |
 | `view-view-type-shape-boundary` | every passive `*View.java` under `src/view/**` | Error Prone `PassiveViewSurfaceBoundary` | `./gradlew checkViewEnforcement` | A passive `View` is a concrete UI surface, not a project-View subclass, project-interface adapter, static utility bucket, or constructor-injected callback/model relay. |
 | `view-view-no-local-semantic-state` | every passive `*View.java` under `src/view/**` | Error Prone `PassiveViewStateBoundary` | `./gradlew checkViewEnforcement` | Passive `View` code does not hide mutable semantic state bags or extra project-acquaintance fields inside the `View`; reusable primitive Views are held to the same dumb-view rule as every other passive `View`. |
-| `view-view-no-project-member-calls` | every passive `*View.java` under `src/view/**` | Error Prone `PassiveViewInteractionBoundary` | `./gradlew checkViewEnforcement` | A passive `View` does not invoke methods on or read members from project classes. The only legal project-type interaction that remains is construction of its own same-stem `*ViewInputEvent` snapshot. |
-| `view-view-no-projection-carrier-construction` | every passive `*View.java` under `src/view/**` | Error Prone `PassiveViewInteractionBoundary` | `./gradlew checkViewEnforcement` | A passive `View` does not construct same-root projection-model support carriers, same-root `*PublishedEvent` carriers, or domain/data/application-service carriers. The only authored passive-View carrier construction that remains legal is its own same-stem `*ViewInputEvent` snapshot; prepared render or hit carriers belong in models or upstream read-side projection instead. |
+| `view-view-no-project-member-calls` | every passive `*View.java` under `src/view/**` | Candidate update to Error Prone `PassiveViewInteractionBoundary` | none yet | A passive `View` does not invoke methods on or read members from project classes except its own same-stem `ContentModel` during `bind(...)`-owned rendering setup. The only other legal project-type interaction is construction of its own same-stem `*ViewInputEvent` snapshot. |
+| `view-view-no-projection-carrier-construction` | every passive `*View.java` under `src/view/**` | Candidate update to Error Prone `PassiveViewInteractionBoundary` | none yet | A passive `View` does not construct `ContentModel`, `ContributionModel`, projection-model support carriers, same-root `*PublishedEvent` carriers, or domain/data/application-service carriers. The only authored passive-View carrier construction that remains legal is its own same-stem `*ViewInputEvent` snapshot; prepared render or hit carriers belong in its same-stem `ContentModel` or upstream read-side projection instead. |
 | `view-view-presentation-decision-leak` | every passive `*View.java` under `src/view/**` | Error Prone `PassiveViewStateBoundary` | `./gradlew checkViewEnforcement` | Passive `View` code does not branch on same-root model-derived state while directly mutating shared widget presentation such as visibility, managed state, enablement, or shared labels. |
 | `view-view-no-local-data-shaping` | every passive `*View.java` under `src/view/**` | Error Prone `PassiveViewStateBoundary` | `./gradlew checkViewEnforcement` | Passive `View` code does not locally rebuild presentation facts through stream/collector/comparator sorting pipelines, JavaFX observable collection synthesis, or similar data-shaping APIs that belong in the owning model or readback path. |
 
@@ -60,8 +61,8 @@ The rows below describe the current passive-View blocker surface directly.
 | Invariant ID | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- |
 | `view-view-input-api` | every passive `View` that participates in the same-stem `*ViewInputEvent` protocol | Error Prone `PassiveViewSurfaceBoundary` | `./gradlew checkViewEnforcement` | An interactive passive `View` exposes exactly one outward input seam, `onViewInputEvent(Consumer<SameStemViewInputEvent>)`, does not misshape that seam, and does not subscribe to another top-level passive `View`'s `onViewInputEvent(...)` route. |
-| `view-view-inbound-prepared-state-sink-shape` | every passive `*View.java` under `src/view/**` that exposes a prepared-state inbound surface | Error Prone `PassiveViewSurfaceBoundary` | `./gradlew checkViewEnforcement` | A passive `View` may expose prepared-state inbound channels only as project-free typed `Consumer<T>` sink accessors. Direct model APIs, project-typed payloads, constructor-injected callbacks, and imperative render methods are not part of the legal inbound surface. |
-| `view-view-callback-seam-boundary` | every passive `*View.java` under `src/view/**` | Error Prone `PassiveViewSurfaceBoundary` | `./gradlew checkViewEnforcement` | Passive `View`s expose no alternate outward callback or result seams beside the single `onViewInputEvent(...)` route, and no imperative public render API beside project-free prepared-state sink accessors; reusable primitive Views are enforced by the same boundary as every other passive `View`. |
+| `view-view-contentmodel-bind-shape` | every passive `*View.java` under `src/view/**` | Candidate update to Error Prone `PassiveViewSurfaceBoundary` | none yet | A passive `View` exposes its prepared-state inbound surface as exactly one `bind(SameStemContentModel)` route. Direct `ContributionModel` APIs, foreign `ContentModel` APIs, project-typed sink payloads, constructor-injected callbacks, and imperative render methods are not part of the target legal inbound surface. |
+| `view-view-callback-seam-boundary` | every passive `*View.java` under `src/view/**` | Candidate update to Error Prone `PassiveViewSurfaceBoundary` | none yet | Passive `View`s expose no alternate outward callback or result seams beside the single `onViewInputEvent(...)` route, and no imperative public render API beside `bind(SameStemContentModel)`; reusable primitive Views are held to the same boundary as every other passive `View`. |
 
 ## Review-Owned
 
@@ -75,26 +76,25 @@ The rows below describe the current passive-View blocker surface directly.
 - `view-view-one-top-level-fragment`
   each passive `View` file still defines exactly one top-level passive `View`
   type rather than several peer fragments in one source file.
-- `view-view-reusable-slotcontent-three-role-shape`
-  every interactive reusable `slotcontent/**` passive `View` belongs to a unit
-  that owns exactly one same-stem `*ViewInputEvent` and exactly one same-unit
-  `*ContentModel`; non-interactive reusable units may stay at the legal
-  `View + ContentModel` shape.
+- `view-view-same-stem-contentmodel-shape`
+  every passive `View` belongs to a co-located same-stem `ContentModel` pair;
+  interactive Views also own exactly one same-stem `*ViewInputEvent`.
 - `view-view-no-handler-business-meaning-expansion`
   a reusable passive `View` without a local `IntentHandler` still stays
   passive; it must not infer business meaning inside otherwise legal local
   presentation code while waiting for same-root interpretation.
-- `view-view-no-contentmodel-reusable-projection-expansion`
-  a reusable passive `View` must not absorb projection or interpretation logic
-  that belongs in its own `ContentModel`.
+- `view-view-no-contentmodel-projection-expansion`
+  a passive `View` must not absorb projection or interpretation logic that
+  belongs in its own same-stem `ContentModel`.
 - `view-view-commandless-reactivity`
-  passive `View`s react only through project-free prepared-state sink channels;
-  they do not receive presenter-style imperative commands as an alternate
+  passive `View`s react only through their own same-stem `ContentModel`; they
+  do not receive presenter-style imperative commands as an alternate
   presentation protocol.
-- `view-view-prepared-state-sink-semantic-adequacy`
-  mechanically legal prepared-state sink accessors still represent a narrow
-  render-only inbound surface instead of drifting into a second protocol for
-  orchestration, request/acknowledgement, or partial semantic reconstruction.
+- `view-view-contentmodel-bind-semantic-adequacy`
+  mechanically legal `bind(SameStemContentModel)` methods still represent a
+  narrow render-only inbound surface instead of drifting into a second protocol
+  for orchestration, request/acknowledgement, or partial semantic
+  reconstruction.
 - `view-view-local-viewinputevent-snapshot-authorship-residual`
   neighboring `ViewInputEvent` enforcement now blocks same-view helper
   reconstruction, forbidden model/domain dependencies, and same-view sentinel

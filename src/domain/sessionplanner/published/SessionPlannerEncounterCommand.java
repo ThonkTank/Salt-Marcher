@@ -1,6 +1,6 @@
 package src.domain.sessionplanner.published;
 
-public record SessionPlannerEncounterCommand(Action action, long encounterId) implements SessionPlannerCommand {
+public record SessionPlannerEncounterCommand(Action action, long encounterId) {
 
     public SessionPlannerEncounterCommand {
         action = action == null ? Action.SELECT : action;

@@ -7,6 +7,10 @@ import shell.api.ShellBinding;
 import shell.api.ShellRuntimeContext;
 import shell.api.ShellSlot;
 import src.domain.sessionplanner.SessionPlannerApplicationService;
+import src.domain.sessionplanner.SessionPlannerEncounterApplicationService;
+import src.domain.sessionplanner.SessionPlannerLootApplicationService;
+import src.domain.sessionplanner.SessionPlannerParticipantApplicationService;
+import src.domain.sessionplanner.SessionPlannerRestApplicationService;
 import src.domain.sessionplanner.published.SessionPlannerCurrentSessionModel;
 import src.domain.sessionplanner.published.SessionPlannerEncountersModel;
 import src.domain.sessionplanner.published.SessionPlannerParticipantsModel;
@@ -23,6 +27,14 @@ final class SessionPlannerBinder {
     ShellBinding bind() {
         SessionPlannerApplicationService planner =
                 runtimeContext.services().require(SessionPlannerApplicationService.class);
+        SessionPlannerParticipantApplicationService participants =
+                runtimeContext.services().require(SessionPlannerParticipantApplicationService.class);
+        SessionPlannerEncounterApplicationService encounters =
+                runtimeContext.services().require(SessionPlannerEncounterApplicationService.class);
+        SessionPlannerRestApplicationService rests =
+                runtimeContext.services().require(SessionPlannerRestApplicationService.class);
+        SessionPlannerLootApplicationService loot =
+                runtimeContext.services().require(SessionPlannerLootApplicationService.class);
         SessionPlannerCurrentSessionModel sessionModel =
                 runtimeContext.services().require(SessionPlannerCurrentSessionModel.class);
         SessionPlannerParticipantsModel participantsModel =
@@ -32,7 +44,12 @@ final class SessionPlannerBinder {
         SessionPlannerStatePanelModel statePanelModel =
                 runtimeContext.services().require(SessionPlannerStatePanelModel.class);
         SessionPlannerContributionModel contributionModel = new SessionPlannerContributionModel();
-        SessionPlannerIntentHandler intentHandler = new SessionPlannerIntentHandler(planner);
+        SessionPlannerIntentHandler intentHandler = new SessionPlannerIntentHandler(
+                planner,
+                participants,
+                encounters,
+                rests,
+                loot);
         SessionPlannerControlsView controlsView = new SessionPlannerControlsView();
         SessionPlannerTimelineMainView timelineView = new SessionPlannerTimelineMainView();
         SessionPlannerLootMainView lootView = new SessionPlannerLootMainView();

@@ -1,6 +1,5 @@
 package src.data.sessionplanner.query;
 
-import java.util.Objects;
 import src.domain.party.published.ActivePartyModel;
 import src.domain.party.published.AdventuringDayCalculationModel;
 import src.domain.sessionplanner.model.session.model.SessionAdventuringDayBudgetFact;
