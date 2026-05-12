@@ -1,6 +1,6 @@
-package src.domain.encounter.model.generation.helper;
+package src.domain.encounter.model.generation.model;
 
-record EncounterTuningTargets(
+public record EncounterTuningTargets(
         int targetCreatureCount,
         int creatureCountTolerance,
         int targetDistinctStatBlocks,

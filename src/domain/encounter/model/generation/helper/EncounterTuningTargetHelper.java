@@ -1,6 +1,7 @@
 package src.domain.encounter.model.generation.helper;
 
 import src.domain.encounter.model.generation.model.EncounterTuningIntent;
+import src.domain.encounter.model.generation.model.EncounterTuningTargets;
 
 public final class EncounterTuningTargetHelper {
 

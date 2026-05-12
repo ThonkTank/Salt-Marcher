@@ -3,6 +3,7 @@ package src.domain.encounter.model.generation.helper;
 import src.domain.encounter.model.generation.model.EncounterDraftComposition;
 import src.domain.encounter.model.generation.model.EncounterDraftEntry;
 import src.domain.encounter.model.generation.model.EncounterTuningIntent;
+import src.domain.encounter.model.generation.model.EncounterTuningTargets;
 
 final class EncounterTuningScoreHelper {
 

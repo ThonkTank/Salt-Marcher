@@ -9,6 +9,7 @@ import src.domain.encounter.model.generation.model.EncounterCandidateProfile;
 import src.domain.encounter.model.generation.model.EncounterDraft;
 import src.domain.encounter.model.generation.model.EncounterDraftBuildRequest;
 import src.domain.encounter.model.generation.model.EncounterProfileCopies;
+import src.domain.encounter.model.generation.model.EncounterTuningTargets;
 
 final class EncounterDiversityDraftEnumerationHelper {
 
@@ -36,8 +37,6 @@ final class EncounterDiversityDraftEnumerationHelper {
                 profiles,
                 request,
                 baseCounts,
-                candidates,
-                additionalDistinct,
                 targets.targetCreatureCount()), candidates, additionalDistinct, new ArrayList<>(), 0);
     }
 
@@ -120,8 +119,6 @@ final class EncounterDiversityDraftEnumerationHelper {
         private final Map<Long, EncounterCandidateProfile> profiles;
         private final EncounterDraftBuildRequest request;
         private final Map<Long, Integer> baseCounts;
-        private final List<EncounterCandidateProfile> candidates;
-        private final int additionalDistinct;
         private final int targetCreatureCount;
 
         private DiversityDraftRequest(
@@ -129,16 +126,12 @@ final class EncounterDiversityDraftEnumerationHelper {
                 Map<Long, EncounterCandidateProfile> profiles,
                 EncounterDraftBuildRequest request,
                 Map<Long, Integer> baseCounts,
-                List<EncounterCandidateProfile> candidates,
-                int additionalDistinct,
                 int targetCreatureCount
         ) {
             this.drafts = drafts;
             this.profiles = profiles;
             this.request = request;
             this.baseCounts = baseCounts;
-            this.candidates = candidates;
-            this.additionalDistinct = additionalDistinct;
             this.targetCreatureCount = targetCreatureCount;
         }
     }

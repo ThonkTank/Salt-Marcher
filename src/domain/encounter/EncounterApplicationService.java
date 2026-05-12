@@ -17,7 +17,7 @@ public final class EncounterApplicationService {
     private final UpdateEncounterBuilderInputsUseCase updateBuilderInputsUseCase;
     private final PublishEncounterPlanBudgetUseCase publishPlanBudgetUseCase;
 
-    EncounterApplicationService(
+    public EncounterApplicationService(
             ApplyEncounterStateUseCase applyStateUseCase,
             UpdateEncounterBuilderInputsUseCase updateBuilderInputsUseCase,
             PublishEncounterPlanBudgetUseCase publishPlanBudgetUseCase
