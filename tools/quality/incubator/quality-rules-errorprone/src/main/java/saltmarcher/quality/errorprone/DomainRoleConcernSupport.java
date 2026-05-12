@@ -48,6 +48,12 @@ final class DomainRoleConcernSupport {
     ) {
     }
 
+    private record ApplicationServiceCarrierScanContext(
+            Symbol.MethodSymbol currentMethod,
+            boolean insideLegalRootParameterType
+    ) {
+    }
+
     private static final Pattern ROOT_PACKAGE = Pattern.compile("^src\\.domain\\.([^.]+)$");
     private static final Pattern ROOT_APPLICATION_PACKAGE = Pattern.compile("^src\\.domain\\.([^.]+)\\.application(\\..*)?$");
     private static final Pattern MODEL_ROLE_PACKAGE =
@@ -365,12 +371,27 @@ final class DomainRoleConcernSupport {
             addApplicationServicePublishedCarrierViolations(
                     sourceRole, typeParameter, "type parameter bound", violations);
         }
-        new TreeScanner<Void, Symbol.MethodSymbol>() {
+        new TreeScanner<Void, ApplicationServiceCarrierScanContext>() {
             @Override
-            public Void visitMethod(MethodTree methodTree, Symbol.MethodSymbol ignored) {
+            public Void scan(Tree currentTree, ApplicationServiceCarrierScanContext context) {
+                if (currentTree != null
+                        && !isInsideLegalRootParameterType(context)
+                        && !(currentTree instanceof MethodTree)
+                        && !isLegalRootParameterVariable(currentTree, context)) {
+                    addApplicationServicePublishedCarrierViolations(
+                            sourceRole,
+                            DataArchitectureSupport.collectReferencedTypes(currentTree),
+                            "type use " + currentTree.getKind(),
+                            violations);
+                }
+                return super.scan(currentTree, context);
+            }
+
+            @Override
+            public Void visitMethod(MethodTree methodTree, ApplicationServiceCarrierScanContext ignored) {
                 Symbol.MethodSymbol methodSymbol = ASTHelpers.getSymbol(methodTree);
                 if (methodSymbol == null) {
-                    return super.visitMethod(methodTree, null);
+                    return super.visitMethod(methodTree, nullContext());
                 }
                 if (!methodSymbol.isConstructor()) {
                     addApplicationServicePublishedCarrierViolations(
@@ -387,24 +408,49 @@ final class DomainRoleConcernSupport {
                                 "method type parameter bound " + methodSymbol.getSimpleName(), violations);
                     }
                 }
-                return super.visitMethod(methodTree, methodSymbol);
+                return super.visitMethod(methodTree, new ApplicationServiceCarrierScanContext(methodSymbol, false));
             }
 
             @Override
-            public Void visitVariable(VariableTree variableTree, Symbol.MethodSymbol currentMethod) {
+            public Void visitVariable(
+                    VariableTree variableTree,
+                    ApplicationServiceCarrierScanContext context) {
                 Symbol symbol = ASTHelpers.getSymbol(variableTree);
+                Symbol.MethodSymbol currentMethod = context == null ? null : context.currentMethod();
                 if (symbol != null) {
                     String position = applicationServiceVariablePosition(variableTree, symbol, currentMethod);
                     boolean legalRootParameter = isLegalApplicationServicePublishedCarrierParameter(
                             symbol, currentMethod);
-                    if (!legalRootParameter) {
-                        addApplicationServicePublishedCarrierViolations(
-                                sourceRole, symbol.asType(), position, violations);
+                    if (legalRootParameter) {
+                        scan(variableTree.getType(), new ApplicationServiceCarrierScanContext(currentMethod, true));
+                        scan(variableTree.getInitializer(), context);
+                        return null;
                     }
+                    addApplicationServicePublishedCarrierViolations(
+                            sourceRole, symbol.asType(), position, violations);
                 }
-                return super.visitVariable(variableTree, currentMethod);
+                return super.visitVariable(variableTree, context);
             }
-        }.scan(topLevelClass, null);
+        }.scan(topLevelClass, nullContext());
+    }
+
+    private static ApplicationServiceCarrierScanContext nullContext() {
+        return new ApplicationServiceCarrierScanContext(null, false);
+    }
+
+    private static boolean isInsideLegalRootParameterType(ApplicationServiceCarrierScanContext context) {
+        return context != null && context.insideLegalRootParameterType();
+    }
+
+    private static boolean isLegalRootParameterVariable(
+            Tree currentTree,
+            ApplicationServiceCarrierScanContext context) {
+        if (!(currentTree instanceof VariableTree variableTree)) {
+            return false;
+        }
+        Symbol symbol = ASTHelpers.getSymbol(variableTree);
+        Symbol.MethodSymbol currentMethod = context == null ? null : context.currentMethod();
+        return symbol != null && isLegalApplicationServicePublishedCarrierParameter(symbol, currentMethod);
     }
 
     private static String applicationServiceVariablePosition(
@@ -443,7 +489,16 @@ final class DomainRoleConcernSupport {
             TypeMirror typeMirror,
             String position,
             Set<String> violations) {
-        for (String referencedType : collectTypeReferences(typeMirror)) {
+        addApplicationServicePublishedCarrierViolations(
+                sourceRole, collectTypeReferences(typeMirror), position, violations);
+    }
+
+    private static void addApplicationServicePublishedCarrierViolations(
+            SourceRole sourceRole,
+            Set<String> referencedTypes,
+            String position,
+            Set<String> violations) {
+        for (String referencedType : referencedTypes) {
             if (isSameFeaturePublishedNonModelType(referencedType, sourceRole.feature())) {
                 violations.add("uses same-feature published non-model carrier " + referencedType
                         + " outside the single public/protected root method parameter at " + position);

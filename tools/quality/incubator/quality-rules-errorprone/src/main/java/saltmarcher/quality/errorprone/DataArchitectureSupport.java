@@ -209,6 +209,12 @@ final class DataArchitectureSupport {
         return referencedTypes;
     }
 
+    static Set<String> collectReferencedTypes(Tree tree) {
+        Set<String> referencedTypes = new LinkedHashSet<>();
+        collectReferencedTypes(tree, referencedTypes);
+        return referencedTypes;
+    }
+
     private static void collectReferencedTypes(Tree tree, Set<String> referencedTypes) {
         Symbol symbol = ASTHelpers.getSymbol(tree);
         if (symbol != null) {

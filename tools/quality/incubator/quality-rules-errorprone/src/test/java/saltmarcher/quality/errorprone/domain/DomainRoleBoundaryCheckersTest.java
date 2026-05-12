@@ -158,6 +158,44 @@ public final class DomainRoleBoundaryCheckersTest {
     }
 
     @Test
+    public void applicationServiceRejectsPublishedCommandSupertypeUse() {
+        CompilationTestHelper.newInstance(DomainApplicationServiceRoleBoundaryChecker.class, getClass())
+                .addSourceLines(
+                        "src/domain/foo/FooSelectionApplicationService.java",
+                        "package src.domain.foo;",
+                        "import src.domain.foo.published.ApplySelectionCommand;",
+                        "// BUG: Diagnostic contains: type use PARAMETERIZED_TYPE",
+                        "public final class FooSelectionApplicationService implements CommandSink<ApplySelectionCommand> {",
+                        "}",
+                        "interface CommandSink<T> { }")
+                .addSourceLines(
+                        "src/domain/foo/published/ApplySelectionCommand.java",
+                        "package src.domain.foo.published;",
+                        "public record ApplySelectionCommand() { }")
+                .doTest();
+    }
+
+    @Test
+    public void applicationServiceRejectsPublishedCommandClassLiteral() {
+        CompilationTestHelper.newInstance(DomainApplicationServiceRoleBoundaryChecker.class, getClass())
+                .addSourceLines(
+                        "src/domain/foo/FooSelectionApplicationService.java",
+                        "package src.domain.foo;",
+                        "import src.domain.foo.published.ApplySelectionCommand;",
+                        "// BUG: Diagnostic contains: type use MEMBER_SELECT",
+                        "public final class FooSelectionApplicationService {",
+                        "  public void apply(ApplySelectionCommand command) {",
+                        "    Class<?> type = ApplySelectionCommand.class;",
+                        "  }",
+                        "}")
+                .addSourceLines(
+                        "src/domain/foo/published/ApplySelectionCommand.java",
+                        "package src.domain.foo.published;",
+                        "public record ApplySelectionCommand() { }")
+                .doTest();
+    }
+
+    @Test
     public void applicationServiceRejectsModelConcern() {
         CompilationTestHelper.newInstance(DomainApplicationServiceRoleBoundaryChecker.class, getClass())
                 .addSourceLines(
