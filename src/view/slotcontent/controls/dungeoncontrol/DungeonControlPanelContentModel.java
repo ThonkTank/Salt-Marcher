@@ -59,6 +59,10 @@ public final class DungeonControlPanelContentModel {
         return OverlayText.parseLevels(raw);
     }
 
+    public String modeName(Mode mode) {
+        return Mode.safe(mode).name();
+    }
+
     private enum OverlayText {
         ;
 
@@ -121,6 +125,11 @@ public final class DungeonControlPanelContentModel {
         }
 
         public String label() {
+            return label;
+        }
+
+        @Override
+        public String toString() {
             return label;
         }
 

@@ -18,6 +18,7 @@ import javafx.scene.text.TextAlignment;
 import org.jspecify.annotations.Nullable;
 import static src.view.slotcontent.primitives.mapcanvas.MapCanvasContentModel.*;
 
+@SuppressWarnings("PMD.CouplingBetweenObjects")
 public class MapCanvasView extends BorderPane {
 
     private static final String DEFAULT_TITLE = "Map";
@@ -36,8 +37,6 @@ public class MapCanvasView extends BorderPane {
     private static final double NO_DELTA = 0.0;
     private static final double MIN_CANVAS_SIZE = 1.0;
     private static final double MIN_GRID_PIXEL_SPACING = 10.0;
-    private static final double MIN_HIT_TOLERANCE = 0.22;
-    private static final double HIT_TOLERANCE_PIXELS = 7.0;
     private static final double ROUNDED_BOX_ARC = 14.0;
     private static final double LABEL_BASELINE_RATIO = 0.69;
     private static final int MIN_POLYGON_POINTS = 3;
@@ -71,7 +70,7 @@ public class MapCanvasView extends BorderPane {
     }
 
     private void redraw() {
-        RenderScene renderScene = surfaceNodes.currentScene(contentModel.currentRenderScene());
+        RenderScene renderScene = surfaceNodes.currentScene(contentModel.canvasStateProperty().get().renderScene());
         CanvasBounds bounds = surfaceNodes.renderBounds();
         GraphicsContext gc = surfaceNodes.graphicsContext();
         renderer.render(gc, renderScene, viewport, bounds);
@@ -278,7 +277,6 @@ public class MapCanvasView extends BorderPane {
         ) {
             double sceneX = viewport.screenToSceneX(event.getX());
             double sceneY = viewport.screenToSceneY(event.getY());
-            RenderScene renderScene = surfaceNodes.currentScene(contentModel.currentRenderScene());
             viewInputEventHandler.accept(new MapCanvasViewInputEvent(
                     interaction,
                     new MapCanvasViewInputEvent.CanvasButtons(
@@ -290,7 +288,7 @@ public class MapCanvasView extends BorderPane {
                             event.isShiftDown(),
                             event.isAltDown()),
                     new MapCanvasViewInputEvent.CanvasPosition(event.getX(), event.getY(), sceneX, sceneY),
-                    SceneHitTester.hit(renderScene, sceneX, sceneY, viewport.gridSize()),
+                    contentModel.hitAt(sceneX, sceneY),
                     NO_DELTA,
                     dragDeltaX,
                     dragDeltaY));
@@ -299,7 +297,6 @@ public class MapCanvasView extends BorderPane {
         private void emitScrollInputEvent(ScrollEvent event) {
             double sceneX = viewport.screenToSceneX(event.getX());
             double sceneY = viewport.screenToSceneY(event.getY());
-            RenderScene renderScene = surfaceNodes.currentScene(contentModel.currentRenderScene());
             viewInputEventHandler.accept(new MapCanvasViewInputEvent(
                     MapCanvasViewInputEvent.Interaction.SCROLL,
                     new MapCanvasViewInputEvent.CanvasButtons(false, false, false),
@@ -308,7 +305,7 @@ public class MapCanvasView extends BorderPane {
                             event.isShiftDown(),
                             event.isAltDown()),
                     new MapCanvasViewInputEvent.CanvasPosition(event.getX(), event.getY(), sceneX, sceneY),
-                    SceneHitTester.hit(renderScene, sceneX, sceneY, viewport.gridSize()),
+                    contentModel.hitAt(sceneX, sceneY),
                     event.getDeltaY(),
                     0.0,
                     0.0));
@@ -646,46 +643,6 @@ public class MapCanvasView extends BorderPane {
         }
     }
 
-    private static final class SceneHitTester {
-
-        private static MapCanvasViewInputEvent.CanvasHit hit(
-                RenderScene renderScene,
-                double sceneX,
-                double sceneY,
-                double gridSize
-        ) {
-            double tolerance = Math.max(HIT_TOLERANCE_PIXELS / gridSize, MIN_HIT_TOLERANCE);
-            for (HitArea hitArea : renderScene.hitAreas()) {
-                if (matches(hitArea, sceneX, sceneY, tolerance)) {
-                    return new MapCanvasViewInputEvent.CanvasHit(
-                            hitArea.hitRef(),
-                            hitArea.primitive(),
-                            hitArea.selectionRef().isBlank() ? null : hitArea.selectionRef());
-                }
-            }
-            return null;
-        }
-
-        private static boolean matches(
-                HitArea hitArea,
-                double sceneX,
-                double sceneY,
-                double tolerance
-        ) {
-            if (hitArea.hitRef().isBlank()) {
-                return false;
-            }
-            if (hitArea instanceof PolygonHitArea polygonHitArea) {
-                return Geometry.pointInPolygon(sceneX, sceneY, polygonHitArea.polygon());
-            }
-            if (hitArea instanceof PolylineHitArea polylineHitArea) {
-                return polylineHitArea.polyline().size() >= MIN_POLYLINE_POINTS
-                        && Geometry.distanceToPolyline(sceneX, sceneY, polylineHitArea.polyline()) <= tolerance;
-            }
-            return false;
-        }
-    }
-
     private static final class Geometry {
 
         private static MapCanvasPoint polygonCenter(List<MapCanvasPoint> polygon) {
@@ -703,58 +660,6 @@ public class MapCanvasView extends BorderPane {
                 maxY = Math.max(maxY, point.y());
             }
             return new MapCanvasPoint((minX + maxX) / 2.0, (minY + maxY) / 2.0);
-        }
-
-        private static boolean pointInPolygon(double x, double y, List<MapCanvasPoint> polygon) {
-            boolean inside = false;
-            int previous = polygon.size() - 1;
-            for (int index = 0; index < polygon.size(); index++) {
-                MapCanvasPoint current = polygon.get(index);
-                MapCanvasPoint before = polygon.get(previous);
-                boolean intersects = (current.y() > y) != (before.y() > y)
-                        && x < (before.x() - current.x()) * (y - current.y()) / (before.y() - current.y())
-                        + current.x();
-                if (intersects) {
-                    inside = !inside;
-                }
-                previous = index;
-            }
-            return inside;
-        }
-
-        private static double distanceToPolyline(
-                double x,
-                double y,
-                List<MapCanvasPoint> polyline
-        ) {
-            double best = Double.MAX_VALUE;
-            for (int index = 1; index < polyline.size(); index++) {
-                MapCanvasPoint start = polyline.get(index - 1);
-                MapCanvasPoint end = polyline.get(index);
-                best = Math.min(best, distanceToSegment(x, y, start.x(), start.y(), end.x(), end.y()));
-            }
-            return best;
-        }
-
-        private static double distanceToSegment(
-                double pointX,
-                double pointY,
-                double startX,
-                double startY,
-                double endX,
-                double endY
-        ) {
-            double deltaX = endX - startX;
-            double deltaY = endY - startY;
-            double lengthSquared = deltaX * deltaX + deltaY * deltaY;
-            if (lengthSquared <= NO_DELTA) {
-                return Math.hypot(pointX - startX, pointY - startY);
-            }
-            double projection = ((pointX - startX) * deltaX + (pointY - startY) * deltaY) / lengthSquared;
-            double clamped = Math.max(0.0, Math.min(1.0, projection));
-            double nearestX = startX + clamped * deltaX;
-            double nearestY = startY + clamped * deltaY;
-            return Math.hypot(pointX - nearestX, pointY - nearestY);
         }
     }
 

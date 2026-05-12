@@ -6,6 +6,7 @@ import javafx.beans.property.ReadOnlyDoubleWrapper;
 import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import org.jspecify.annotations.Nullable;
+import src.view.slotcontent.primitives.mapcanvas.MapCanvasViewInputEvent.CanvasHit;
 
 public final class MapCanvasContentModel {
 
@@ -13,6 +14,10 @@ public final class MapCanvasContentModel {
     private static final double DEFAULT_ZOOM = 1.0;
     private static final double MIN_ZOOM = 0.1;
     private static final double MAX_ZOOM = 4.0;
+    private static final double ZERO_LENGTH = 0.0;
+    private static final double MIN_HIT_TOLERANCE = 0.22;
+    private static final double HIT_TOLERANCE_PIXELS = 7.0;
+    private static final int MIN_POLYLINE_POINTS = 2;
 
     private final String defaultTitle;
     private final ReadOnlyObjectWrapper<CanvasState> canvasState;
@@ -36,10 +41,6 @@ public final class MapCanvasContentModel {
         setState(current.withRenderScene(renderScene == null ? RenderScene.empty(defaultTitle) : renderScene));
     }
 
-    public RenderScene currentRenderScene() {
-        return canvasState.get().renderScene();
-    }
-
     public void resetCamera() {
         setState(canvasState.get().withViewport(Viewport.initial()));
     }
@@ -54,6 +55,10 @@ public final class MapCanvasContentModel {
 
     public Viewport currentViewport() {
         return canvasState.get().viewport();
+    }
+
+    public @Nullable CanvasHit hitAt(double sceneX, double sceneY) {
+        return canvasState.get().hitAt(sceneX, sceneY);
     }
 
     private void setState(CanvasState nextState) {
@@ -80,6 +85,10 @@ public final class MapCanvasContentModel {
 
         private CanvasState withViewport(Viewport nextViewport) {
             return new CanvasState(renderScene, nextViewport);
+        }
+
+        private @Nullable CanvasHit hitAt(double sceneX, double sceneY) {
+            return renderScene.hitAt(sceneX, sceneY, viewport.gridSize());
         }
     }
 
@@ -243,6 +252,20 @@ public final class MapCanvasContentModel {
         public boolean gridView() {
             return viewMode == ViewMode.GRID;
         }
+
+        private @Nullable CanvasHit hitAt(double sceneX, double sceneY, double gridSize) {
+            double tolerance = Math.max(HIT_TOLERANCE_PIXELS / gridSize, MIN_HIT_TOLERANCE);
+            for (HitArea hitArea : hitAreas) {
+                if (hitArea.matches(sceneX, sceneY, tolerance)) {
+                    return new CanvasHit(
+                            hitArea.hitRef(),
+                            hitArea.primitive(),
+                            hitArea.selectionRef().isBlank() ? null : hitArea.selectionRef());
+                }
+            }
+            return null;
+        }
+
     }
 
     public record PaintStyle(
@@ -359,6 +382,8 @@ public final class MapCanvasContentModel {
         MapCanvasViewInputEvent.CanvasPrimitive primitive();
 
         String selectionRef();
+
+        boolean matches(double sceneX, double sceneY, double tolerance);
     }
 
     public record PolygonHitArea(
@@ -374,6 +399,11 @@ public final class MapCanvasContentModel {
             selectionRef = selectionRef == null ? "" : selectionRef;
             polygon = copyOf(polygon);
         }
+
+        @Override
+        public boolean matches(double sceneX, double sceneY, double tolerance) {
+            return !hitRef.isBlank() && Geometry.pointInPolygon(sceneX, sceneY, polygon);
+        }
     }
 
     public record PolylineHitArea(
@@ -388,6 +418,13 @@ public final class MapCanvasContentModel {
             primitive = MapCanvasViewInputEvent.defaultPrimitive(primitive);
             selectionRef = selectionRef == null ? "" : selectionRef;
             polyline = copyOf(polyline);
+        }
+
+        @Override
+        public boolean matches(double sceneX, double sceneY, double tolerance) {
+            return !hitRef.isBlank()
+                    && polyline.size() >= MIN_POLYLINE_POINTS
+                    && Geometry.distanceToPolyline(sceneX, sceneY, polyline) <= tolerance;
         }
     }
 
@@ -412,5 +449,61 @@ public final class MapCanvasContentModel {
 
     private static <T> List<T> copyOf(@Nullable List<T> values) {
         return values == null ? List.of() : List.copyOf(values);
+    }
+
+    private enum Geometry {
+        ;
+
+        private static boolean pointInPolygon(double x, double y, List<MapCanvasPoint> polygon) {
+            boolean inside = false;
+            int previous = polygon.size() - 1;
+            for (int index = 0; index < polygon.size(); index++) {
+                MapCanvasPoint current = polygon.get(index);
+                MapCanvasPoint before = polygon.get(previous);
+                boolean intersects = (current.y() > y) != (before.y() > y)
+                        && x < (before.x() - current.x()) * (y - current.y()) / (before.y() - current.y())
+                        + current.x();
+                if (intersects) {
+                    inside = !inside;
+                }
+                previous = index;
+            }
+            return inside;
+        }
+
+        private static double distanceToPolyline(
+                double x,
+                double y,
+                List<MapCanvasPoint> polyline
+        ) {
+            double best = Double.MAX_VALUE;
+            for (int index = 1; index < polyline.size(); index++) {
+                MapCanvasPoint start = polyline.get(index - 1);
+                MapCanvasPoint end = polyline.get(index);
+                best = Math.min(best, distanceToSegment(x, y, start.x(), start.y(), end.x(), end.y()));
+            }
+            return best;
+        }
+
+        private static double distanceToSegment(
+                double pointX,
+                double pointY,
+                double startX,
+                double startY,
+                double endX,
+                double endY
+        ) {
+            double deltaX = endX - startX;
+            double deltaY = endY - startY;
+            double lengthSquared = deltaX * deltaX + deltaY * deltaY;
+            if (lengthSquared <= ZERO_LENGTH) {
+                return Math.hypot(pointX - startX, pointY - startY);
+            }
+            double projection = ((pointX - startX) * deltaX + (pointY - startY) * deltaY) / lengthSquared;
+            double clamped = Math.max(0.0, Math.min(1.0, projection));
+            double nearestX = startX + clamped * deltaX;
+            double nearestY = startY + clamped * deltaY;
+            return Math.hypot(pointX - nearestX, pointY - nearestY);
+        }
     }
 }

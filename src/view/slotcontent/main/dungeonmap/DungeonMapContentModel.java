@@ -27,6 +27,7 @@ import src.view.slotcontent.primitives.mapcanvas.MapCanvasContentModel;
 import src.view.slotcontent.primitives.mapcanvas.MapCanvasViewInputEvent;
 import static src.view.slotcontent.primitives.mapcanvas.MapCanvasContentModel.*;
 
+@SuppressWarnings("PMD.CouplingBetweenObjects")
 public final class DungeonMapContentModel {
 
     private static final SceneProjector SCENE_PROJECTOR = new SceneProjector();

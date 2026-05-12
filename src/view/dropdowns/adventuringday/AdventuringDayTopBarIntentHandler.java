@@ -24,7 +24,13 @@ final class AdventuringDayTopBarIntentHandler {
         if (event.popupOpening()) {
             return;
         }
-        AdventuringDayTopBarContributionModel.CalculationRequest request = presentationModel.applyViewInput(event);
+        AdventuringDayTopBarContributionModel.CalculationRequest request = presentationModel.applyViewInput(
+                event.useActivePartyRequested(),
+                event.addRowRequested(),
+                event.clearRequested(),
+                event.progressModeSelected(),
+                event.totalGroupXpText(),
+                new AdventuringDayRowProjection().normalizeRows(event.rows()));
         if (request == null) {
             return;
         }

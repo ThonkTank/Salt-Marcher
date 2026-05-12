@@ -32,9 +32,9 @@ final class AdventuringDayTopBarBinder {
         AdventuringDayTopBarIntentHandler intentHandler = new AdventuringDayTopBarIntentHandler(presentationModel, party);
         DropdownPopupContentModel popupContentModel = new DropdownPopupContentModel();
         AdventuringDayTopBarView view = new AdventuringDayTopBarView(popupContentModel);
-        applyPopupPresentation(popupContentModel, presentationModel.triggerTextProperty().get());
+        applyPopupPresentation(popupContentModel, presentationModel.triggerTextProperty().getValue());
         view.onViewInputEvent(intentHandler::consume);
-        view.showPanel(presentationModel.panelProperty().get());
+        view.showPanel(presentationModel.panelProperty().getValue());
         presentationModel.triggerTextProperty().addListener((ignored, before, after) ->
                 applyPopupPresentation(popupContentModel, after));
         presentationModel.panelProperty().addListener((ignored, before, after) -> view.showPanel(after));

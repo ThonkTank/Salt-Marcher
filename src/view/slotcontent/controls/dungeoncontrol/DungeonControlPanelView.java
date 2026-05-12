@@ -1,27 +1,23 @@
 package src.view.slotcontent.controls.dungeoncontrol;
 
-import java.util.List;
 import java.util.function.Consumer;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
-import javafx.scene.control.Control;
 import javafx.scene.control.Label;
-import javafx.scene.control.ScrollPane;
 import javafx.scene.control.Slider;
 import javafx.scene.control.Spinner;
 import javafx.scene.control.TextField;
-import javafx.scene.control.Tooltip;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
-import javafx.util.StringConverter;
 import src.view.slotcontent.primitives.popup.AnchoredPopupContentModel;
 import src.view.slotcontent.primitives.popup.AnchoredPopupView;
 
+@SuppressWarnings("PMD.CouplingBetweenObjects")
 public class DungeonControlPanelView extends VBox {
 
     private final DungeonControlPanelContentModel contentModel = new DungeonControlPanelContentModel();
@@ -35,10 +31,6 @@ public class DungeonControlPanelView extends VBox {
         if (titleText != null && !titleText.isBlank()) {
             getChildren().add(new Label(titleText));
         }
-    }
-
-    protected final void addControl(Node control) {
-        getChildren().add(control);
     }
 
     protected final HBox compactControlRow(Node... controls) {
@@ -57,24 +49,11 @@ public class DungeonControlPanelView extends VBox {
         return group;
     }
 
-    protected final ScrollPane compactControlScroller(Node content) {
-        ScrollPane scroller = new ScrollPane(content);
-        FxAccess.addStyle(scroller, "dungeon-control-scroll");
-        scroller.setFitToHeight(true);
-        scroller.setFitToWidth(false);
-        scroller.setHbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
-        scroller.setVbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
-        return scroller;
-    }
-
     protected final void describe(Node node, String description) {
         if (node == null || description == null || description.isBlank()) {
             return;
         }
         node.setAccessibleText(description);
-        if (node instanceof Control control) {
-            control.setTooltip(new Tooltip(description));
-        }
     }
 
     protected final Label sectionLabel(String text) {
@@ -99,10 +78,6 @@ public class DungeonControlPanelView extends VBox {
 
     public final OverlayControlsPanel newOverlayControls() {
         return new OverlayControlsPanel();
-    }
-
-    private void publish(DungeonControlPanelViewInputEvent event) {
-        viewInputEventHandler.accept(event);
     }
 
     public final class OverlayControlsPanel {
@@ -158,22 +133,11 @@ public class DungeonControlPanelView extends VBox {
         private final HBox rangeRow;
         private final HBox selectedRow;
         private boolean syncing;
-        private List<Integer> displayedSelectedLevels = List.of();
+        private String displayedSelectedLevels = "";
 
         private OverlayPopupContentView() {
             super(6);
             FxAccess.setComboItems(modeSelector, DungeonControlPanelContentModel.Mode.values());
-            modeSelector.setConverter(new StringConverter<>() {
-                @Override
-                public String toString(DungeonControlPanelContentModel.Mode mode) {
-                    return mode == null ? "" : mode.label();
-                }
-
-                @Override
-                public DungeonControlPanelContentModel.Mode fromString(String string) {
-                    return null;
-                }
-            });
             modeSelector.setMaxWidth(Double.MAX_VALUE);
             HBox.setHgrow(modeSelector, Priority.ALWAYS);
 
@@ -209,7 +173,7 @@ public class DungeonControlPanelView extends VBox {
             FxAccess.setSpinnerValue(rangeSpinner, panelState.levelRange());
             opacitySlider.setValue(panelState.opacityPercent());
             selectedLevelsField.setText(panelState.selectedLevelsText());
-            displayedSelectedLevels = contentModel.parseLevels(panelState.selectedLevelsText()).orElse(List.of());
+            displayedSelectedLevels = panelState.selectedLevelsText();
             updateOpacityLabel(panelState.opacityPercent());
             modeSelector.setDisable(panelState.controlsDisabled());
             opacitySlider.setDisable(panelState.controlsDisabled());
@@ -227,7 +191,7 @@ public class DungeonControlPanelView extends VBox {
                                 after,
                                 rangeSpinner.getValue(),
                                 opacitySlider.getValue() / 100.0,
-                                displayedSelectedLevels),
+                                contentModel.parseLevels(displayedSelectedLevels).orElse(java.util.List.of())),
                         modeSelector.isDisabled()));
                 publishOverlayInput();
             });
@@ -251,33 +215,28 @@ public class DungeonControlPanelView extends VBox {
         }
 
         private void publishOverlayInput() {
-            publish(new DungeonControlPanelViewInputEvent(new DungeonControlPanelViewInputEvent.OverlayInput(
-                    currentModeName(),
+            viewInputEventHandler.accept(new DungeonControlPanelViewInputEvent(new DungeonControlPanelViewInputEvent.OverlayInput(
+                    contentModel.modeName(FxAccess.comboValue(modeSelector)),
                     rangeSpinner.getValue() == null ? 0 : rangeSpinner.getValue(),
                     opacitySlider.getValue() / 100.0,
                     selectedLevelsField.getText())));
-        }
-
-        private String currentModeName() {
-            DungeonControlPanelContentModel.Mode currentMode = FxAccess.comboValue(modeSelector);
-            return currentMode == null ? "" : currentMode.name();
         }
 
         private void commitSelectedLevels() {
             if (syncing) {
                 return;
             }
-            java.util.Optional<List<Integer>> parsedLevels = contentModel.parseLevels(selectedLevelsField.getText());
+            java.util.Optional<java.util.List<Integer>> parsedLevels = contentModel.parseLevels(selectedLevelsField.getText());
             if (parsedLevels.isEmpty()) {
                 selectedLevelsField.setText(contentModel.normalizeSelectedLevelsDraft(
                         selectedLevelsField.getText(),
-                        displayedSelectedLevels));
+                        contentModel.parseLevels(displayedSelectedLevels).orElse(java.util.List.of())));
                 return;
             }
-            displayedSelectedLevels = parsedLevels.orElseThrow();
-            selectedLevelsField.setText(contentModel.normalizeSelectedLevelsDraft(
+            displayedSelectedLevels = contentModel.normalizeSelectedLevelsDraft(
                     selectedLevelsField.getText(),
-                    displayedSelectedLevels));
+                    parsedLevels.orElseThrow());
+            selectedLevelsField.setText(displayedSelectedLevels);
             publishOverlayInput();
         }
 
