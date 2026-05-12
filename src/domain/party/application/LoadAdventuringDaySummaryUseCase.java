@@ -3,9 +3,6 @@ package src.domain.party.application;
 import src.domain.party.model.roster.helper.PartyAdventuringDayBudgetHelper;
 import src.domain.party.model.roster.model.PartyCharacter;
 import src.domain.party.model.roster.repository.PartyRosterRepository;
-import src.domain.party.published.RestCadenceStatus;
-import src.domain.party.published.RestCadenceUrgency;
-import src.domain.party.published.RestMilestone;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -38,7 +35,7 @@ public final class LoadAdventuringDaySummaryUseCase {
             int consumedXp,
             int totalBudgetXp,
             int consumedPercent,
-            List<RestCadenceStatus> restCadenceStatuses
+            List<RestCadence> restCadenceStatuses
     ) {
         public AdventuringDayStatus {
             activeLevels = activeLevels == null ? List.of() : List.copyOf(activeLevels);
@@ -54,24 +51,24 @@ public final class LoadAdventuringDaySummaryUseCase {
             case 1 -> PartyAdventuringDayBudgetHelper.afterSecondShortRest(level);
             default -> totalBudget;
         };
-        RestMilestone nextMilestone = switch (character.progress().shortRestsTakenSinceLongRest()) {
-            case 0 -> RestMilestone.SHORT_REST_ONE;
-            case 1 -> RestMilestone.SHORT_REST_TWO;
-            default -> RestMilestone.LONG_REST;
+        RestCadenceMilestone nextMilestone = switch (character.progress().shortRestsTakenSinceLongRest()) {
+            case 0 -> RestCadenceMilestone.SHORT_REST_ONE;
+            case 1 -> RestCadenceMilestone.SHORT_REST_TWO;
+            default -> RestCadenceMilestone.LONG_REST;
         };
         int xpSinceLongRest = character.progress().xpSinceLongRest();
         int xpDelta = targetXp - xpSinceLongRest;
         return new CharacterRestCadence(
-                new RestCadenceStatus(character.id(), nextMilestone, xpDelta, determineUrgency(nextMilestone, xpDelta, level)),
+                new RestCadence(character.id(), nextMilestone, xpDelta, determineUrgency(nextMilestone, xpDelta, level)),
                 totalBudget,
                 xpSinceLongRest);
     }
 
-    private RestCadenceUrgency determineUrgency(RestMilestone milestone, int xpDelta, int level) {
+    private RestCadenceUrgency determineUrgency(RestCadenceMilestone milestone, int xpDelta, int level) {
         if (xpDelta <= 0) {
             return RestCadenceUrgency.OVERDUE;
         }
-        int segmentSize = milestone == RestMilestone.LONG_REST
+        int segmentSize = milestone == RestCadenceMilestone.LONG_REST
                 ? PartyAdventuringDayBudgetHelper.finalSegment(level)
                 : PartyAdventuringDayBudgetHelper.perThird(level);
         int soonThreshold = Math.max(1, (int) Math.round(segmentSize * 0.25));
@@ -86,14 +83,14 @@ public final class LoadAdventuringDaySummaryUseCase {
         private int shortRestPendingCount;
         private int consumedXp;
         private int totalBudgetXp;
-        private final List<RestCadenceStatus> restCadenceStatuses = new ArrayList<>();
+        private final List<RestCadence> restCadenceStatuses = new ArrayList<>();
 
         private SummaryAccumulator(int activeMemberCount) {
             this.activeMemberCount = activeMemberCount;
         }
 
         private void include(CharacterRestCadence cadence) {
-            if (cadence.status().nextMilestone() != RestMilestone.LONG_REST) {
+            if (cadence.status().nextMilestone() != RestCadenceMilestone.LONG_REST) {
                 remainingToShortRest += Math.max(0, cadence.status().xpDelta());
                 shortRestPendingCount++;
             }
@@ -124,9 +121,33 @@ public final class LoadAdventuringDaySummaryUseCase {
     }
 
     private record CharacterRestCadence(
-            RestCadenceStatus status,
+            RestCadence status,
             int totalBudget,
             int xpSinceLongRest
     ) {
+    }
+
+    public record RestCadence(
+            Long characterId,
+            RestCadenceMilestone nextMilestone,
+            int xpDelta,
+            RestCadenceUrgency urgency
+    ) {
+        public RestCadence {
+            nextMilestone = nextMilestone == null ? RestCadenceMilestone.LONG_REST : nextMilestone;
+            urgency = urgency == null ? RestCadenceUrgency.NORMAL : urgency;
+        }
+    }
+
+    public enum RestCadenceMilestone {
+        SHORT_REST_ONE,
+        SHORT_REST_TWO,
+        LONG_REST
+    }
+
+    public enum RestCadenceUrgency {
+        NORMAL,
+        SOON,
+        OVERDUE
     }
 }

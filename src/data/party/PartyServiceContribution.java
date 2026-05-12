@@ -5,6 +5,7 @@ import shell.api.ServiceRegistry;
 import src.data.party.repository.SqlitePartyRosterRepository;
 import src.data.party.repository.PartyPublishedStateRepositoryAdapter;
 import src.domain.party.PartyApplicationService;
+import src.domain.party.PartyApplicationServiceFactory;
 import src.domain.party.published.ActivePartyCompositionModel;
 import src.domain.party.published.ActivePartyModel;
 import src.domain.party.published.AdventuringDayCalculationModel;
@@ -30,7 +31,7 @@ public final class PartyServiceContribution implements ServiceContribution {
         PartyRosterRepository repository = new SqlitePartyRosterRepository();
         PartyPublishedStateRepositoryAdapter publishedState = new PartyPublishedStateRepositoryAdapter(repository);
         PartyPublishedStateRepository publishedStateRepository = publishedState;
-        PartyApplicationService service = new PartyApplicationService(repository, publishedStateRepository);
+        PartyApplicationService service = new PartyApplicationServiceFactory().create(repository, publishedStateRepository);
         builder.register(PartyApplicationService.class, service);
         builder.register(PartySnapshotModel.class, publishedState.partySnapshotModel);
         builder.register(ActivePartyModel.class, publishedState.activePartyModel);

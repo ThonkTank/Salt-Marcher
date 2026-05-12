@@ -22,9 +22,9 @@ public final class SetPartyMembershipUseCase {
         this.publishedStateRepository = Objects.requireNonNull(publishedStateRepository, "publishedStateRepository");
     }
 
-    public void execute(long id, PartyMembership membership) {
+    public void execute(long id, String membership) {
         try {
-            PartyMutationStatus status = updateMembership(id, membership);
+            PartyMutationStatus status = updateMembership(id, membership(membership));
             publish(status);
         } catch (IllegalStateException exception) {
             publishedStateRepository.publishStorageErrorMutation();
@@ -47,5 +47,12 @@ public final class SetPartyMembershipUseCase {
             publishedStateRepository.publishRepositoryBackedState();
         }
         publishedStateRepository.publishMutationStatus(status);
+    }
+
+    private static PartyMembership membership(String membership) {
+        if ("ACTIVE".equals(membership)) {
+            return PartyMembership.ACTIVE;
+        }
+        return PartyMembership.RESERVE;
     }
 }

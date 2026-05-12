@@ -23,9 +23,9 @@ public final class PerformPartyRestUseCase {
         this.publishedStateRepository = Objects.requireNonNull(publishedStateRepository, "publishedStateRepository");
     }
 
-    public void execute(PartyRestType restType) {
+    public void execute(String restType) {
         try {
-            PartyMutationStatus status = perform(restType);
+            PartyMutationStatus status = perform(restType(restType));
             publish(status);
         } catch (IllegalStateException exception) {
             publishedStateRepository.publishStorageErrorMutation();
@@ -57,5 +57,12 @@ public final class PerformPartyRestUseCase {
             publishedStateRepository.publishRepositoryBackedState();
         }
         publishedStateRepository.publishMutationStatus(status);
+    }
+
+    private static PartyRestType restType(String restType) {
+        if ("LONG_REST".equals(restType)) {
+            return PartyRestType.LONG_REST;
+        }
+        return PartyRestType.SHORT_REST;
     }
 }

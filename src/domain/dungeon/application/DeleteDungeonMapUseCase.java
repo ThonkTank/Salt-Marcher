@@ -1,22 +1,22 @@
 package src.domain.dungeon.application;
 
 import java.util.Objects;
-import java.util.function.Consumer;
 import src.domain.dungeon.model.map.model.DungeonMapIdentity;
+import src.domain.dungeon.model.map.repository.DungeonMapRepository;
 
 /**
  * Deletes an authored dungeon map aggregate.
  */
 public final class DeleteDungeonMapUseCase {
 
-    private final Consumer<DungeonMapIdentity> deleteMap;
+    private final DungeonMapRepository repository;
 
-    public DeleteDungeonMapUseCase(Consumer<DungeonMapIdentity> deleteMap) {
-        this.deleteMap = Objects.requireNonNull(deleteMap, "deleteMap");
+    public DeleteDungeonMapUseCase(DungeonMapRepository repository) {
+        this.repository = Objects.requireNonNull(repository, "repository");
     }
 
     public DungeonMapIdentity execute(DungeonMapIdentity mapIdentity) {
-        deleteMap.accept(mapIdentity);
+        repository.delete(mapIdentity);
         return mapIdentity;
     }
 }

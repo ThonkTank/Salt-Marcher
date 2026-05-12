@@ -42,8 +42,8 @@ import src.domain.party.published.RestCadenceStatus;
 import src.domain.party.published.RestMilestone;
 import src.domain.party.model.roster.helper.PartyLevelProgressionHelper;
 import src.domain.party.model.roster.model.PartyCharacter;
-import src.domain.party.model.roster.model.PartyDungeonTravelLocation;
-import src.domain.party.model.roster.model.PartyOverworldTravelLocation;
+import src.domain.party.model.roster.model.PartyMembership;
+import src.domain.party.model.roster.model.PartyMutationStatus;
 import src.domain.party.model.roster.model.PartyTravelLocation;
 
 @SuppressWarnings({
@@ -163,7 +163,7 @@ public final class PartyBoundaryProjector {
                         result.progress().longRests()));
     }
 
-    public static MutationStatus mapMutationStatus(MutationStatus status) {
+    public static MutationStatus mapMutationStatus(PartyMutationStatus status) {
         if (status == null) {
             return MutationStatus.STORAGE_ERROR;
         }
@@ -209,25 +209,32 @@ public final class PartyBoundaryProjector {
     }
 
     private static @Nullable PartyTravelLocationSnapshot mapTravelLocation(@Nullable PartyTravelLocation location) {
-        if (location instanceof PartyDungeonTravelLocation dungeon) {
+        if (location != null && location.space() == PartyTravelLocation.TravelSpace.DUNGEON) {
             return new PartyDungeonTravelLocationSnapshot(
-                    dungeon.mapId(),
-                    toPublishedDungeonLocationKind(dungeon.locationKind()),
-                    dungeon.ownerId(),
-                    new PartyTravelTile(dungeon.tile().q(), dungeon.tile().r(), dungeon.tile().level()),
-                    toPublishedHeading(dungeon.heading()));
+                    location.mapId(),
+                    toPublishedDungeonLocationKind(location.dungeonLocationKind()),
+                    location.dungeonOwnerId(),
+                    new PartyTravelTile(
+                            location.dungeonTile().q(),
+                            location.dungeonTile().r(),
+                            location.dungeonTile().level()),
+                    toPublishedHeading(location.dungeonHeading()));
         }
-        if (location instanceof PartyOverworldTravelLocation overworld) {
-            return new PartyOverworldTravelLocationSnapshot(overworld.mapId(), overworld.tileId());
+        if (location != null && location.space() == PartyTravelLocation.TravelSpace.OVERWORLD) {
+            return new PartyOverworldTravelLocationSnapshot(location.mapId(), location.overworldTileId());
         }
         return null;
     }
 
-    private static RestCadenceStatus mapRestCadenceStatus(RestCadenceStatus status) {
+    private static RestCadenceStatus mapRestCadenceStatus(LoadAdventuringDaySummaryUseCase.RestCadence status) {
         if (status == null) {
             return new RestCadenceStatus(null, RestMilestone.LONG_REST, 0, RestCadenceUrgency.NORMAL);
         }
-        return status;
+        return new RestCadenceStatus(
+                status.characterId(),
+                toPublishedRestMilestone(status.nextMilestone()),
+                status.xpDelta(),
+                toPublishedRestCadenceUrgency(status.urgency()));
     }
 
     private static AdventuringDayBudget mapAdventuringDayBudget(CalculateAdventuringDayUseCase.Budget budget) {
@@ -285,19 +292,43 @@ public final class PartyBoundaryProjector {
         return new PartySnapshot(List.of(), List.of(), new PartySummary(0, 0, 1));
     }
 
-    private static MembershipState toMembershipState(MembershipState membership) {
-        return membership == MembershipState.ACTIVE ? MembershipState.ACTIVE : MembershipState.RESERVE;
+    private static MembershipState toMembershipState(PartyMembership membership) {
+        return membership == PartyMembership.ACTIVE ? MembershipState.ACTIVE : MembershipState.RESERVE;
     }
 
     private static PartyDungeonTravelLocationKind toPublishedDungeonLocationKind(
-            src.domain.party.published.PartyDungeonTravelLocationKind locationKind
+            src.domain.party.model.roster.model.PartyDungeonTravelLocationKind locationKind
     ) {
         return PartyDungeonTravelLocationKind.valueOf(locationKind.name());
     }
 
     private static PartyTravelHeading toPublishedHeading(
-            src.domain.party.published.PartyTravelHeading heading
+            src.domain.party.model.roster.model.PartyTravelHeading heading
     ) {
         return PartyTravelHeading.valueOf(heading.name());
+    }
+
+    private static RestMilestone toPublishedRestMilestone(
+            LoadAdventuringDaySummaryUseCase.RestCadenceMilestone milestone
+    ) {
+        if (milestone == LoadAdventuringDaySummaryUseCase.RestCadenceMilestone.SHORT_REST_ONE) {
+            return RestMilestone.SHORT_REST_ONE;
+        }
+        if (milestone == LoadAdventuringDaySummaryUseCase.RestCadenceMilestone.SHORT_REST_TWO) {
+            return RestMilestone.SHORT_REST_TWO;
+        }
+        return RestMilestone.LONG_REST;
+    }
+
+    private static RestCadenceUrgency toPublishedRestCadenceUrgency(
+            LoadAdventuringDaySummaryUseCase.RestCadenceUrgency urgency
+    ) {
+        if (urgency == LoadAdventuringDaySummaryUseCase.RestCadenceUrgency.OVERDUE) {
+            return RestCadenceUrgency.OVERDUE;
+        }
+        if (urgency == LoadAdventuringDaySummaryUseCase.RestCadenceUrgency.SOON) {
+            return RestCadenceUrgency.SOON;
+        }
+        return RestCadenceUrgency.NORMAL;
     }
 }

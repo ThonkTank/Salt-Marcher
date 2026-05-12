@@ -7,13 +7,11 @@ import src.domain.party.model.roster.model.PartyCharacterCombatProfile;
 import src.domain.party.model.roster.model.PartyCharacterIdentity;
 import src.domain.party.model.roster.model.PartyCharacterProgress;
 import src.domain.party.model.roster.model.PartyCharacterTravelState;
-import src.domain.party.model.roster.model.PartyDungeonTravelLocation;
-import src.domain.party.published.PartyDungeonTravelLocationKind;
-import src.domain.party.published.MembershipState;
-import src.domain.party.model.roster.model.PartyOverworldTravelLocation;
-import src.domain.party.published.PartyTravelHeading;
+import src.domain.party.model.roster.model.PartyDungeonTravelLocationKind;
+import src.domain.party.model.roster.model.PartyMembership;
+import src.domain.party.model.roster.model.PartyTravelHeading;
 import src.domain.party.model.roster.model.PartyTravelLocation;
-import src.domain.party.published.PartyTravelTile;
+import src.domain.party.model.roster.model.PartyTravelTile;
 
 final class PartyCharacterMapper {
 
@@ -39,7 +37,7 @@ final class PartyCharacterMapper {
                 new PartyCharacterCombatProfile(
                         combat.passivePerception(),
                         combat.armorClass()),
-                MembershipState.fromPersistence(record.membership()),
+                PartyMembership.fromPersistence(record.membership()),
                 toDomainTravel(record.travel()));
     }
 
@@ -76,7 +74,7 @@ final class PartyCharacterMapper {
 
     private static @Nullable PartyTravelLocation toDomainTravelLocation(PartyCharacterRecord.Travel travel) {
         if (DUNGEON_LOCATION_KIND.equalsIgnoreCase(travel.locationKind())) {
-            return new PartyDungeonTravelLocation(
+            return PartyTravelLocation.dungeon(
                     valueOrDefault(travel.dungeonMapId(), 1L),
                     PartyDungeonTravelLocationKind.parse(travel.dungeonLocationKind()),
                     valueOrDefault(travel.dungeonOwnerId(), 0L),
@@ -87,7 +85,7 @@ final class PartyCharacterMapper {
                     PartyTravelHeading.parse(travel.dungeonHeading()));
         }
         if (OVERWORLD_LOCATION_KIND.equalsIgnoreCase(travel.locationKind())) {
-            return new PartyOverworldTravelLocation(
+            return PartyTravelLocation.overworld(
                     valueOrDefault(travel.overworldMapId(), 0L),
                     valueOrDefault(travel.overworldTileId(), 0L));
         }
@@ -99,21 +97,21 @@ final class PartyCharacterMapper {
                 ? PartyCharacterTravelState.attachedWithoutLocation()
                 : travel;
         PartyTravelLocation location = safeTravel.location();
-        if (location instanceof PartyDungeonTravelLocation dungeon) {
+        if (location != null && location.space() == PartyTravelLocation.TravelSpace.DUNGEON) {
             return new PartyCharacterRecord.Travel(
                     DUNGEON_LOCATION_KIND,
-                    dungeon.mapId(),
-                    dungeon.locationKind().name(),
-                    dungeon.ownerId(),
-                    dungeon.tile().q(),
-                    dungeon.tile().r(),
-                    dungeon.tile().level(),
-                    dungeon.heading().name(),
+                    location.mapId(),
+                    location.dungeonLocationKind().name(),
+                    location.dungeonOwnerId(),
+                    location.dungeonTile().q(),
+                    location.dungeonTile().r(),
+                    location.dungeonTile().level(),
+                    location.dungeonHeading().name(),
                     null,
                     null,
                     safeTravel.attachedToPartyToken());
         }
-        if (location instanceof PartyOverworldTravelLocation overworld) {
+        if (location != null && location.space() == PartyTravelLocation.TravelSpace.OVERWORLD) {
             return new PartyCharacterRecord.Travel(
                     OVERWORLD_LOCATION_KIND,
                     null,
@@ -123,8 +121,8 @@ final class PartyCharacterMapper {
                     null,
                     null,
                     "",
-                    overworld.mapId(),
-                    overworld.tileId(),
+                    location.mapId(),
+                    location.overworldTileId(),
                     safeTravel.attachedToPartyToken());
         }
         return new PartyCharacterRecord.Travel(

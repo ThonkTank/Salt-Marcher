@@ -1,11 +1,10 @@
 package src.domain.dungeon.application;
 
 import java.util.Objects;
-import java.util.Optional;
-import java.util.function.Function;
 import src.domain.dungeon.model.map.model.DungeonMap;
 import src.domain.dungeon.model.map.model.DungeonMapAuthoring;
 import src.domain.dungeon.model.map.model.DungeonMapIdentity;
+import src.domain.dungeon.model.map.repository.DungeonMapRepository;
 
 /**
  * Renames one authored dungeon map aggregate.
@@ -24,21 +23,16 @@ public final class RenameDungeonMapUseCase {
         }
     }
 
-    private final Function<DungeonMapIdentity, Optional<DungeonMap>> findById;
-    private final Function<DungeonMap, DungeonMap> saveMap;
+    private final DungeonMapRepository repository;
 
-    public RenameDungeonMapUseCase(
-            Function<DungeonMapIdentity, Optional<DungeonMap>> findById,
-            Function<DungeonMap, DungeonMap> saveMap
-    ) {
-        this.findById = Objects.requireNonNull(findById, "findById");
-        this.saveMap = Objects.requireNonNull(saveMap, "saveMap");
+    public RenameDungeonMapUseCase(DungeonMapRepository repository) {
+        this.repository = Objects.requireNonNull(repository, "repository");
     }
 
     public RenamedMap execute(DungeonMapIdentity mapIdentity, String requestedMapName) {
-        DungeonMap dungeonMap = findById.apply(mapIdentity)
+        DungeonMap dungeonMap = repository.findById(mapIdentity)
                 .orElseThrow(() -> new IllegalArgumentException("Unknown dungeon map: " + mapIdentity.value()));
-        DungeonMap renamed = saveMap.apply(DungeonMapAuthoring.rename(dungeonMap, normalizeName(requestedMapName)));
+        DungeonMap renamed = repository.save(DungeonMapAuthoring.rename(dungeonMap, normalizeName(requestedMapName)));
         return new RenamedMap(renamed.metadata().mapId());
     }
 

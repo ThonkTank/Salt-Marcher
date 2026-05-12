@@ -157,7 +157,7 @@ public final class EncounterSessionRepository implements EncounterSession.Sessio
         }
         src.domain.encounter.model.plan.model.SavedEncounterPlansLoadResult result = useCase.execute();
         return new ListPlansOutcome(
-                result.status() == src.domain.encounter.model.plan.model.SavedEncounterPlansLoadResult.Status.SUCCESS,
+                result.loadedSuccessfully(),
                 result.plans(),
                 result.message());
     }

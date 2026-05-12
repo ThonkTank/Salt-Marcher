@@ -22,6 +22,10 @@ public record SavedEncounterPlansLoadResult(
         return new SavedEncounterPlansLoadResult(Status.STORAGE_ERROR, List.of(), message);
     }
 
+    public boolean loadedSuccessfully() {
+        return status == Status.SUCCESS;
+    }
+
     public enum Status {
         SUCCESS,
         STORAGE_ERROR

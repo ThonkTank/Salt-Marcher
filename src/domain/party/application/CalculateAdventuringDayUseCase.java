@@ -6,11 +6,32 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import org.jspecify.annotations.Nullable;
 import src.domain.party.model.roster.helper.PartyAdventuringDayBudgetHelper;
 import src.domain.party.model.roster.helper.PartyLevelProgressionHelper;
-import src.domain.party.published.AdventuringDayLevelProgress;
+import src.domain.party.model.roster.repository.PartyPublishedStateRepository;
 
 public final class CalculateAdventuringDayUseCase {
+
+    private final @Nullable PartyPublishedStateRepository publishedStateRepository;
+
+    public CalculateAdventuringDayUseCase() {
+        this.publishedStateRepository = null;
+    }
+
+    public CalculateAdventuringDayUseCase(PartyPublishedStateRepository publishedStateRepository) {
+        this.publishedStateRepository = java.util.Objects.requireNonNull(
+                publishedStateRepository,
+                "publishedStateRepository");
+    }
+
+    public void publish(List<Integer> levels, int totalGroupXp) {
+        if (publishedStateRepository == null) {
+            throw new IllegalStateException("publishedStateRepository");
+        }
+        PartyPublishedStateRepository publisher = publishedStateRepository;
+        publisher.publishAdventuringDayCalculation(levels, totalGroupXp);
+    }
 
     public Result execute(List<Integer> levels, int totalGroupXp) {
         List<Integer> normalizedLevels = normalizeLevels(levels);
@@ -43,7 +64,7 @@ public final class CalculateAdventuringDayUseCase {
 
         int partySize = levels.size();
         int perCharacterAwardedXp = totalGroupXp / partySize;
-        List<AdventuringDayLevelProgress> levelProgressions = buildLevelProgressions(levels, perCharacterAwardedXp);
+        List<LevelProgress> levelProgressions = buildLevelProgressions(levels, perCharacterAwardedXp);
         List<ProgressEvent> events = new ArrayList<>();
 
         int[] startLevels = toLevelArray(levels);
@@ -117,7 +138,7 @@ public final class CalculateAdventuringDayUseCase {
                 List.copyOf(events));
     }
 
-    private static List<AdventuringDayLevelProgress> buildLevelProgressions(List<Integer> levels, int perCharacterAwardedXp) {
+    private static List<LevelProgress> buildLevelProgressions(List<Integer> levels, int perCharacterAwardedXp) {
         Map<LevelSpan, Integer> counts = new LinkedHashMap<>();
         for (Integer level : levels) {
             int endLevel = levelAfterAwardedXp(level, perCharacterAwardedXp);
@@ -125,10 +146,10 @@ public final class CalculateAdventuringDayUseCase {
             Integer currentCount = counts.get(span);
             counts.put(span, currentCount == null ? 1 : currentCount + 1);
         }
-        List<AdventuringDayLevelProgress> result = new ArrayList<>();
+        List<LevelProgress> result = new ArrayList<>();
         for (Map.Entry<LevelSpan, Integer> entry : counts.entrySet()) {
             LevelSpan span = entry.getKey();
-            result.add(new AdventuringDayLevelProgress(
+            result.add(new LevelProgress(
                     span.startLevel(),
                     span.endLevel(),
                     entry.getValue(),
@@ -254,7 +275,7 @@ public final class CalculateAdventuringDayUseCase {
             double totalDays,
             int shortRests,
             int longRests,
-            List<AdventuringDayLevelProgress> levelProgressions,
+            List<LevelProgress> levelProgressions,
             List<ProgressEvent> events) {
         public Progress {
             levelProgressions = immutableEvents(levelProgressions);
@@ -262,7 +283,7 @@ public final class CalculateAdventuringDayUseCase {
         }
 
         @Override
-        public List<AdventuringDayLevelProgress> levelProgressions() {
+        public List<LevelProgress> levelProgressions() {
             return immutableEvents(levelProgressions);
         }
 
@@ -283,6 +304,13 @@ public final class CalculateAdventuringDayUseCase {
             int newLevel,
             int affectedCharacters,
             boolean partialDay) {
+    }
+
+    public record LevelProgress(
+            int startLevel,
+            int endLevel,
+            int characterCount,
+            int levelUps) {
     }
 
     public static final class ProgressEventType {

@@ -35,9 +35,11 @@ public final class CreateCharacterUseCase {
             int level,
             int passivePerception,
             int armorClass,
-            PartyMembership membership
+            String membership
     ) {
-        runMutation(new PartyCharacterDraft(name, playerName, level, passivePerception, armorClass), membership);
+        runMutation(
+                new PartyCharacterDraft(name, playerName, level, passivePerception, armorClass),
+                membership(membership));
     }
 
     private void runMutation(PartyCharacterDraft draft, PartyMembership membership) {
@@ -74,5 +76,12 @@ public final class CreateCharacterUseCase {
             publishedStateRepository.publishRepositoryBackedState();
         }
         publishedStateRepository.publishMutationStatus(status);
+    }
+
+    private static PartyMembership membership(String membership) {
+        if ("ACTIVE".equals(membership)) {
+            return PartyMembership.ACTIVE;
+        }
+        return PartyMembership.RESERVE;
     }
 }
