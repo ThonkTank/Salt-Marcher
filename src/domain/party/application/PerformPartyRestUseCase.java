@@ -12,6 +12,8 @@ import src.domain.party.model.roster.repository.PartyRosterRepository;
 
 public final class PerformPartyRestUseCase {
 
+    private static final String LONG_REST_TYPE = "LONG_REST";
+
     private final PartyRosterRepository repository;
     private final PartyPublishedStateRepository publishedStateRepository;
 
@@ -60,7 +62,7 @@ public final class PerformPartyRestUseCase {
     }
 
     private static PartyRestType restType(String restType) {
-        if ("LONG_REST".equals(restType)) {
+        if (LONG_REST_TYPE.equals(restType)) {
             return PartyRestType.LONG_REST;
         }
         return PartyRestType.SHORT_REST;

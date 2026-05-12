@@ -7,9 +7,9 @@ import org.jspecify.annotations.Nullable;
 
 public interface SessionPartyFactsPort {
 
-    ActivePartyMembersFact loadActivePartyMembers();
+    ActivePartyMembersFact activePartyMembers();
 
-    AdventuringDayFact calculateAdventuringDay(List<Integer> levels, int plannedEncounterXp);
+    AdventuringDayFact adventuringDayFact();
 
     final class ActivePartyMembersFact {
 

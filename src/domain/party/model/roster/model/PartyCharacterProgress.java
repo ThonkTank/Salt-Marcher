@@ -7,6 +7,8 @@ public record PartyCharacterProgress(
         int xpSinceShortRest,
         int shortRestsTakenSinceLongRest
 ) {
+    private static final int MAX_LEVEL = 20;
+
     public PartyCharacterProgress {
         level = clampLevel(level);
         currentXp = Math.max(0, currentXp);
@@ -55,7 +57,7 @@ public record PartyCharacterProgress(
     }
 
     private static int clampLevel(int value) {
-        return Math.max(1, Math.min(20, value));
+        return Math.max(1, Math.min(MAX_LEVEL, value));
     }
 
     private static int normalizeCurrentXpForLevel(int level, int currentXp) {
@@ -74,8 +76,8 @@ public record PartyCharacterProgress(
     }
 
     private static int nextLevelXp(int level) {
-        if (level >= 20) {
-            return minimumXpForLevel(20);
+        if (level >= MAX_LEVEL) {
+            return minimumXpForLevel(MAX_LEVEL);
         }
         return minimumXpForLevel(level + 1);
     }

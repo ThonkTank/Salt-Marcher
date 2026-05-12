@@ -1,6 +1,7 @@
 package src.domain.party.model.roster.model;
 
 import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 
 public record PartyCharacter(
         long id,
@@ -26,12 +27,19 @@ public record PartyCharacter(
                 PartyCharacterTravelState.attachedWithoutLocation());
     }
 
-    public PartyCharacter {
-        id = Math.max(1L, id);
-        identity = Objects.requireNonNull(identity, "identity");
-        progress = Objects.requireNonNull(progress, "progress");
-        combat = Objects.requireNonNull(combat, "combat");
-        membership = Objects.requireNonNullElse(membership, PartyMembership.RESERVE);
-        travel = travel == null ? PartyCharacterTravelState.attachedWithoutLocation() : travel;
+    public PartyCharacter(
+            long id,
+            PartyCharacterIdentity identity,
+            PartyCharacterProgress progress,
+            PartyCharacterCombatProfile combat,
+            @Nullable PartyMembership membership,
+            @Nullable PartyCharacterTravelState travel
+    ) {
+        this.id = Math.max(1L, id);
+        this.identity = Objects.requireNonNull(identity, "identity");
+        this.progress = Objects.requireNonNull(progress, "progress");
+        this.combat = Objects.requireNonNull(combat, "combat");
+        this.membership = Objects.requireNonNullElse(membership, PartyMembership.RESERVE);
+        this.travel = travel == null ? PartyCharacterTravelState.attachedWithoutLocation() : travel;
     }
 }

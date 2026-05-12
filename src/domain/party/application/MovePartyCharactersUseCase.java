@@ -15,6 +15,9 @@ import src.domain.party.model.roster.repository.PartyRosterRepository;
 
 public final class MovePartyCharactersUseCase {
 
+    private static final String DUNGEON_SPACE = "DUNGEON";
+    private static final String OVERWORLD_SPACE = "OVERWORLD";
+
     private final PartyRosterRepository repository;
     private final PartyPublishedStateRepository publishedStateRepository;
     private final PartyRosterMutationHelper mutations = new PartyRosterMutationHelper();
@@ -34,16 +37,14 @@ public final class MovePartyCharactersUseCase {
             long tileId,
             String dungeonLocationKind,
             long ownerId,
-            int q,
-            int r,
-            int level,
+            List<Integer> dungeonTile,
             String heading,
             boolean attachToPartyToken
     ) {
         try {
             PartyMutationStatus status = move(
                     characterIds,
-                    location(travelSpace, mapId, tileId, dungeonLocationKind, ownerId, q, r, level, heading),
+                    location(travelSpace, mapId, tileId, dungeonLocationKind, ownerId, dungeonTile, heading),
                     attachToPartyToken);
             publish(status);
         } catch (IllegalStateException exception) {
@@ -60,7 +61,7 @@ public final class MovePartyCharactersUseCase {
             return PartyMutationStatus.INVALID_INPUT;
         }
         PartyRoster roster = repository.load();
-        java.util.List<src.domain.party.model.roster.model.PartyCharacter> nextCharacters =
+        List<src.domain.party.model.roster.model.PartyCharacter> nextCharacters =
                 mutations.moveCharacters(roster.characters(), characterIds, location, attachToPartyToken);
         if (nextCharacters.isEmpty()) {
             return PartyMutationStatus.NOT_FOUND;
@@ -82,22 +83,27 @@ public final class MovePartyCharactersUseCase {
             long tileId,
             String dungeonLocationKind,
             long ownerId,
-            int q,
-            int r,
-            int level,
+            List<Integer> dungeonTile,
             String heading
     ) {
-        if ("DUNGEON".equals(travelSpace)) {
+        if (DUNGEON_SPACE.equals(travelSpace)) {
             return PartyTravelLocation.dungeon(
                     mapId,
                     PartyDungeonTravelLocationKind.parse(dungeonLocationKind),
                     ownerId,
-                    new PartyTravelTile(q, r, level),
+                    new PartyTravelTile(tileValue(dungeonTile, 0), tileValue(dungeonTile, 1), tileValue(dungeonTile, 2)),
                     PartyTravelHeading.parse(heading));
         }
-        if ("OVERWORLD".equals(travelSpace)) {
+        if (OVERWORLD_SPACE.equals(travelSpace)) {
             return PartyTravelLocation.overworld(mapId, tileId);
         }
         return null;
+    }
+
+    private static int tileValue(List<Integer> dungeonTile, int index) {
+        if (dungeonTile == null || dungeonTile.size() <= index || dungeonTile.get(index) == null) {
+            return 0;
+        }
+        return dungeonTile.get(index);
     }
 }

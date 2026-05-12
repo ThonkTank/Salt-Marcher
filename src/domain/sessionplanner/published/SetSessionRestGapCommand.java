@@ -8,9 +8,13 @@ public record SetSessionRestGapCommand(
         SessionPlannerRestKind restKind
 ) {
 
-    public SetSessionRestGapCommand {
-        leftEncounterId = Math.max(0L, leftEncounterId);
-        rightEncounterId = Math.max(0L, rightEncounterId);
-        restKind = Objects.requireNonNull(restKind, "restKind");
+    public SetSessionRestGapCommand(
+            long leftEncounterId,
+            long rightEncounterId,
+            SessionPlannerRestKind restKind
+    ) {
+        this.leftEncounterId = Math.max(0L, leftEncounterId);
+        this.rightEncounterId = Math.max(0L, rightEncounterId);
+        this.restKind = Objects.requireNonNull(restKind, "restKind");
     }
 }

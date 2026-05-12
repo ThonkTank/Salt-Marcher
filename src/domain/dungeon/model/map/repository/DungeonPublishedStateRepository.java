@@ -1,12 +1,6 @@
 package src.domain.dungeon.model.map.repository;
 
-import java.util.List;
-import src.domain.dungeon.application.ApplyDungeonEditorOperationUseCase;
-import src.domain.dungeon.application.LoadDungeonSnapshotUseCase;
-import src.domain.dungeon.application.SearchDungeonMapsUseCase;
 import src.domain.dungeon.model.map.model.DungeonMapIdentity;
-import src.domain.dungeon.model.map.model.DungeonTravelMoveFacts;
-import src.domain.dungeon.model.map.model.DungeonTravelSurfaceFacts;
 
 public interface DungeonPublishedStateRepository {
 
@@ -16,17 +10,17 @@ public interface DungeonPublishedStateRepository {
         DELETED
     }
 
-    void publishAuthoredSnapshot(LoadDungeonSnapshotUseCase.DungeonSnapshotData snapshot);
+    void publishAuthoredSnapshot(Object snapshot);
 
-    void publishAuthoredInspector(LoadDungeonSnapshotUseCase.InspectorSnapshotData snapshot);
+    void publishAuthoredInspector(Object snapshot);
 
-    void publishAuthoredMutation(ApplyDungeonEditorOperationUseCase.OperationResultData result);
+    void publishAuthoredMutation(Object result);
 
-    void publishMapCatalog(List<SearchDungeonMapsUseCase.MapSummary> maps);
+    void publishMapCatalog(Object maps);
 
     void publishMapCatalogMutation(CatalogMutationKind mutationKind, DungeonMapIdentity mapId);
 
-    void publishTravelSurface(DungeonTravelSurfaceFacts surface);
+    void publishTravelSurface(Object surface);
 
-    void publishTravelMove(DungeonTravelMoveFacts result);
+    void publishTravelMove(Object result);
 }

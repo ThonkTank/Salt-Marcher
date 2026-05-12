@@ -209,7 +209,7 @@ public final class PartyBoundaryProjector {
     }
 
     private static @Nullable PartyTravelLocationSnapshot mapTravelLocation(@Nullable PartyTravelLocation location) {
-        if (location != null && location.space() == PartyTravelLocation.TravelSpace.DUNGEON) {
+        if (location != null && location.isDungeon()) {
             return new PartyDungeonTravelLocationSnapshot(
                     location.mapId(),
                     toPublishedDungeonLocationKind(location.dungeonLocationKind()),
@@ -220,7 +220,7 @@ public final class PartyBoundaryProjector {
                             location.dungeonTile().level()),
                     toPublishedHeading(location.dungeonHeading()));
         }
-        if (location != null && location.space() == PartyTravelLocation.TravelSpace.OVERWORLD) {
+        if (location != null && location.isOverworld()) {
             return new PartyOverworldTravelLocationSnapshot(location.mapId(), location.overworldTileId());
         }
         return null;

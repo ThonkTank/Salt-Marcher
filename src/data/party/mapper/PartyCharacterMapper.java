@@ -97,7 +97,7 @@ final class PartyCharacterMapper {
                 ? PartyCharacterTravelState.attachedWithoutLocation()
                 : travel;
         PartyTravelLocation location = safeTravel.location();
-        if (location != null && location.space() == PartyTravelLocation.TravelSpace.DUNGEON) {
+        if (location != null && location.isDungeon()) {
             return new PartyCharacterRecord.Travel(
                     DUNGEON_LOCATION_KIND,
                     location.mapId(),
@@ -111,7 +111,7 @@ final class PartyCharacterMapper {
                     null,
                     safeTravel.attachedToPartyToken());
         }
-        if (location != null && location.space() == PartyTravelLocation.TravelSpace.OVERWORLD) {
+        if (location != null && location.isOverworld()) {
             return new PartyCharacterRecord.Travel(
                     OVERWORLD_LOCATION_KIND,
                     null,

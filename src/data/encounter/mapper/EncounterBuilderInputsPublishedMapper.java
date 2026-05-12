@@ -1,16 +1,16 @@
-package src.data.encounter.repository;
+package src.data.encounter.mapper;
 
 import src.domain.encounter.model.generation.model.EncounterGenerationInputs;
 import src.domain.encounter.model.generation.model.EncounterRequestedDifficulty;
 import src.domain.encounter.model.generation.model.EncounterTuningIntent;
 import src.domain.encounter.published.EncounterBuilderInputs;
 
-final class EncounterBuilderInputsPublishedMapper {
+public final class EncounterBuilderInputsPublishedMapper {
 
     private EncounterBuilderInputsPublishedMapper() {
     }
 
-    static EncounterBuilderInputs toPublishedBuilderInputs(EncounterGenerationInputs inputs) {
+    public static EncounterBuilderInputs toPublishedBuilderInputs(EncounterGenerationInputs inputs) {
         EncounterGenerationInputs safeInputs = inputs == null ? EncounterGenerationInputs.empty() : inputs;
         EncounterRequestedDifficulty difficulty = safeInputs.targetDifficulty();
         EncounterTuningIntent tuning = safeInputs.tuning();

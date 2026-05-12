@@ -4,9 +4,9 @@ import java.util.List;
 
 public interface SessionEncounterFactsPort {
 
-    EncounterPlanListFact listEncounterPlans();
+    EncounterPlanListFact encounterPlans();
 
-    EncounterPlanFact loadEncounterPlan(long encounterPlanId);
+    EncounterPlanFact encounterPlan(long encounterPlanId);
 
     record EncounterPlanListFact(
             boolean available,

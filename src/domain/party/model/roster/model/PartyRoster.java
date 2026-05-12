@@ -33,7 +33,7 @@ public final class PartyRoster {
     }
 
     public PartyRoster withCreatedCharacter(PartyCharacter character) {
-        java.util.ArrayList<PartyCharacter> nextCharacters = new java.util.ArrayList<>(characters);
+        List<PartyCharacter> nextCharacters = new java.util.ArrayList<>(characters);
         nextCharacters.add(character);
         return new PartyRoster(nextCharacterId + 1, nextCharacters);
     }

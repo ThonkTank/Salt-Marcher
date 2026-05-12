@@ -29,7 +29,7 @@ final class SessionPlannerPartyFactsPublishedReadback {
         adventuringDay.subscribe(result -> currentAdventuringDayFact = toAdventuringDayFact(result));
     }
 
-    SessionPartyFactsPort.ActivePartyMembersFact loadActivePartyMembers() {
+    SessionPartyFactsPort.ActivePartyMembersFact activePartyMembers() {
         return currentActivePartyMembers;
     }
 

@@ -30,7 +30,7 @@ final class SessionPlannerEncounterFactsPublishedReadback {
         planBudget.subscribe(result -> currentPlanBudget = result);
     }
 
-    SessionEncounterFactsPort.EncounterPlanListFact listEncounterPlans() {
+    SessionEncounterFactsPort.EncounterPlanListFact encounterPlans() {
         return currentEncounterPlans;
     }
 

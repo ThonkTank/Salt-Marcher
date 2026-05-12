@@ -18,7 +18,9 @@ import src.domain.sessionplanner.published.SessionPlannerStatePanelProjection;
 import src.domain.sessionplanner.model.session.model.SessionPlan;
 import src.domain.sessionplanner.model.session.port.SessionEncounterFactsPort;
 import src.domain.sessionplanner.model.session.port.SessionPartyFactsPort;
+import src.domain.sessionplanner.model.session.repository.SessionEncounterFactsRepository;
 import src.domain.sessionplanner.model.session.repository.SessionPlanRepository;
+import src.domain.sessionplanner.model.session.repository.SessionPartyFactsRepository;
 import src.domain.sessionplanner.model.session.repository.SessionPlannerPublishedStateRepository;
 
 @SuppressWarnings({
@@ -30,8 +32,10 @@ public final class SessionPlannerPublishedStateRepositoryAdapter implements Sess
     private static final String LISTENER_PARAMETER = "listener";
 
     private final SessionPlanRepository repository;
-    private final SessionPartyFactsPort partyFacts;
-    private final SessionEncounterFactsPort encounterFacts;
+    private final SessionPartyFactsPort partyFactsPort;
+    private final SessionPartyFactsRepository partyFactsRepository;
+    private final SessionEncounterFactsPort encounterFactsPort;
+    private final SessionEncounterFactsRepository encounterFactsRepository;
     private final SessionPlannerPublishedStateProjector projector = new SessionPlannerPublishedStateProjector();
     private final List<Consumer<SessionPlannerSessionSnapshot>> sessionListeners = new ArrayList<>();
     private final List<Consumer<SessionPlannerParticipantsProjection>> participantsListeners = new ArrayList<>();
@@ -57,11 +61,15 @@ public final class SessionPlannerPublishedStateRepositoryAdapter implements Sess
     public SessionPlannerPublishedStateRepositoryAdapter(
             SessionPlanRepository repository,
             SessionPartyFactsPort partyFacts,
-            SessionEncounterFactsPort encounterFacts
+            SessionPartyFactsRepository partyFactsRepository,
+            SessionEncounterFactsPort encounterFacts,
+            SessionEncounterFactsRepository encounterFactsRepository
     ) {
         this.repository = Objects.requireNonNull(repository, "repository");
-        this.partyFacts = Objects.requireNonNull(partyFacts, "partyFacts");
-        this.encounterFacts = Objects.requireNonNull(encounterFacts, "encounterFacts");
+        this.partyFactsPort = Objects.requireNonNull(partyFacts, "partyFacts");
+        this.partyFactsRepository = Objects.requireNonNull(partyFactsRepository, "partyFactsRepository");
+        this.encounterFactsPort = Objects.requireNonNull(encounterFacts, "encounterFacts");
+        this.encounterFactsRepository = Objects.requireNonNull(encounterFactsRepository, "encounterFactsRepository");
     }
 
     public SessionPlannerCurrentSessionModel currentSessionModel() {
@@ -83,10 +91,25 @@ public final class SessionPlannerPublishedStateRepositoryAdapter implements Sess
     @Override
     public void publishCurrentSession(SessionPlan sessionPlan) {
         SessionPlan safeSession = Objects.requireNonNull(sessionPlan, "sessionPlan");
-        currentSessionSnapshot = projector.projectSession(safeSession, partyFacts, encounterFacts);
-        currentParticipantsProjection = projector.projectParticipants(safeSession, partyFacts);
-        currentEncountersProjection = projector.projectEncounters(safeSession, partyFacts, encounterFacts);
-        currentStatePanelProjection = projector.projectStatePanel(safeSession, partyFacts, encounterFacts);
+        currentSessionSnapshot = projector.projectSession(
+                safeSession,
+                partyFactsPort,
+                partyFactsRepository,
+                encounterFactsPort,
+                encounterFactsRepository);
+        currentParticipantsProjection = projector.projectParticipants(safeSession, partyFactsPort);
+        currentEncountersProjection = projector.projectEncounters(
+                safeSession,
+                partyFactsPort,
+                partyFactsRepository,
+                encounterFactsPort,
+                encounterFactsRepository);
+        currentStatePanelProjection = projector.projectStatePanel(
+                safeSession,
+                partyFactsPort,
+                partyFactsRepository,
+                encounterFactsPort,
+                encounterFactsRepository);
         notifySessionListeners(currentSessionSnapshot);
         notifyParticipantsListeners(currentParticipantsProjection);
         notifyEncountersListeners(currentEncountersProjection);

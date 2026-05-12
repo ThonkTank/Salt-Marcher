@@ -1,4 +1,4 @@
-package src.data.encounter.repository;
+package src.data.encounter.mapper;
 
 import java.util.List;
 import src.domain.encounter.model.plan.model.EncounterPlanBudgetLoadResult;
@@ -12,12 +12,12 @@ import src.domain.encounter.published.SavedEncounterPlanListResult;
 import src.domain.encounter.published.SavedEncounterPlanStatus;
 import src.domain.encounter.published.SavedEncounterPlanSummary;
 
-final class EncounterPlanPublishedStateMapper {
+public final class EncounterPlanPublishedStateMapper {
 
     private EncounterPlanPublishedStateMapper() {
     }
 
-    static SavedEncounterPlanListResult toPublishedSavedPlans(SavedEncounterPlansLoadResult result) {
+    public static SavedEncounterPlanListResult toPublishedSavedPlans(SavedEncounterPlansLoadResult result) {
         return new SavedEncounterPlanListResult(
                 result.loadedSuccessfully()
                         ? SavedEncounterPlanStatus.successStatus()
@@ -26,11 +26,11 @@ final class EncounterPlanPublishedStateMapper {
                 result.message());
     }
 
-    static SavedEncounterPlanListResult storageUnavailable(String message) {
+    public static SavedEncounterPlanListResult storageUnavailable(String message) {
         return new SavedEncounterPlanListResult(SavedEncounterPlanStatus.STORAGE_ERROR, List.of(), message);
     }
 
-    static SavedEncounterPlanSummary toPublishedSummary(EncounterPlanSummary summary) {
+    public static SavedEncounterPlanSummary toPublishedSummary(EncounterPlanSummary summary) {
         if (summary == null) {
             return new SavedEncounterPlanSummary(0L, "", "");
         }
@@ -40,14 +40,14 @@ final class EncounterPlanPublishedStateMapper {
                 summaryText(summary.generatedLabel(), summary.creatureCount()));
     }
 
-    static EncounterPlanBudgetResult toPublishedPlanBudget(EncounterPlanBudgetLoadResult result) {
+    public static EncounterPlanBudgetResult toPublishedPlanBudget(EncounterPlanBudgetLoadResult result) {
         return new EncounterPlanBudgetResult(
                 toPublishedPlanBudgetStatus(result.status()),
                 toPublishedPlanBudgetSummary(result.summary()),
                 result.message());
     }
 
-    static EncounterPlanBudgetResult budgetUnavailable(String message) {
+    public static EncounterPlanBudgetResult budgetUnavailable(String message) {
         return new EncounterPlanBudgetResult(EncounterPlanBudgetStatus.STORAGE_ERROR, null, message);
     }
 

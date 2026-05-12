@@ -17,6 +17,8 @@ import src.domain.party.model.roster.repository.PartyRosterRepository;
 
 public final class CreateCharacterUseCase {
 
+    private static final String ACTIVE_MEMBERSHIP = "ACTIVE";
+
     private final PartyRosterRepository repository;
     private final PartyPublishedStateRepository publishedStateRepository;
     private final PartyCharacterDraftValidationHelper draftValidator = new PartyCharacterDraftValidationHelper();
@@ -79,7 +81,7 @@ public final class CreateCharacterUseCase {
     }
 
     private static PartyMembership membership(String membership) {
-        if ("ACTIVE".equals(membership)) {
+        if (ACTIVE_MEMBERSHIP.equals(membership)) {
             return PartyMembership.ACTIVE;
         }
         return PartyMembership.RESERVE;

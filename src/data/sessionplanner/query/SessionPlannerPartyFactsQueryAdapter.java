@@ -7,8 +7,9 @@ import src.domain.party.published.ActivePartyModel;
 import src.domain.party.published.AdventuringDayCalculationModel;
 import src.domain.party.published.CalculateAdventuringDayCommand;
 import src.domain.sessionplanner.model.session.port.SessionPartyFactsPort;
+import src.domain.sessionplanner.model.session.repository.SessionPartyFactsRepository;
 
-public final class SessionPlannerPartyFactsQueryAdapter implements SessionPartyFactsPort {
+public final class SessionPlannerPartyFactsQueryAdapter implements SessionPartyFactsPort, SessionPartyFactsRepository {
 
     private final PartyApplicationService party;
     private final SessionPlannerPartyFactsPublishedReadback partyReadback;
@@ -25,13 +26,18 @@ public final class SessionPlannerPartyFactsQueryAdapter implements SessionPartyF
     }
 
     @Override
-    public ActivePartyMembersFact loadActivePartyMembers() {
-        return partyReadback.loadActivePartyMembers();
+    public ActivePartyMembersFact activePartyMembers() {
+        return partyReadback.activePartyMembers();
+    }
+
+    @Override
+    public AdventuringDayFact adventuringDayFact() {
+        return partyReadback.currentAdventuringDayFact();
     }
 
     @Override
     public AdventuringDayFact calculateAdventuringDay(List<Integer> levels, int plannedEncounterXp) {
         party.calculateAdventuringDay(new CalculateAdventuringDayCommand(levels, plannedEncounterXp));
-        return partyReadback.currentAdventuringDayFact();
+        return adventuringDayFact();
     }
 }

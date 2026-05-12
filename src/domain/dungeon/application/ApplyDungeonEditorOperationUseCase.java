@@ -98,8 +98,11 @@ public final class ApplyDungeonEditorOperationUseCase {
             DungeonMap current,
             DungeonEditorOperationInstructionUseCase.Instruction operation
     ) {
+        if (operation == null) {
+            return current;
+        }
         return switch (operation) {
-            case null, DungeonEditorOperationInstructionUseCase.Identity ignored -> current;
+            case DungeonEditorOperationInstructionUseCase.Identity ignored -> current;
             case DungeonEditorOperationInstructionUseCase.MoveTopologyElement move -> DungeonMapTopologyOps.moveTopologyElement(
                     current,
                     move.ref(),

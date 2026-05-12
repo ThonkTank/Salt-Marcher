@@ -1,4 +1,4 @@
-package src.data.encounter.repository;
+package src.data.encounter.mapper;
 
 import java.util.List;
 import src.domain.encounter.model.generation.model.EncounterGenerationInputs;
@@ -15,14 +15,14 @@ import src.domain.encounter.published.EncounterBuilderInputs;
 import src.domain.encounter.published.EncounterStateSnapshot;
 import src.domain.encounter.published.EncounterTuningPreviewResult;
 
-final class EncounterSessionPublishedStateMapper {
+public final class EncounterSessionPublishedStateMapper {
 
     private static final String SESSION_NOT_REGISTERED = "Encounter session is not registered.";
 
     private EncounterSessionPublishedStateMapper() {
     }
 
-    static EncounterStateSnapshot toPublishedSnapshot(EncounterSessionPublicationData publication) {
+    public static EncounterStateSnapshot toPublishedSnapshot(EncounterSessionPublicationData publication) {
         EncounterSessionSnapshotData snapshot = publication.snapshot();
         if (snapshot == null) {
             return EncounterStateSnapshot.empty(publication.unavailableMessage().isBlank()
@@ -46,11 +46,11 @@ final class EncounterSessionPublishedStateMapper {
                 snapshot.status());
     }
 
-    static EncounterBuilderInputs toPublishedBuilderInputs(EncounterGenerationInputs inputs) {
+    public static EncounterBuilderInputs toPublishedBuilderInputs(EncounterGenerationInputs inputs) {
         return EncounterBuilderInputsPublishedMapper.toPublishedBuilderInputs(inputs);
     }
 
-    static EncounterTuningPreviewResult toPublishedTuningPreview(EncounterTuningPreviewData data) {
+    public static EncounterTuningPreviewResult toPublishedTuningPreview(EncounterTuningPreviewData data) {
         return EncounterTuningPreviewPublishedMapper.toPublishedTuningPreview(data);
     }
 

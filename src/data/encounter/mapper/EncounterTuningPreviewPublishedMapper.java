@@ -1,16 +1,16 @@
-package src.data.encounter.repository;
+package src.data.encounter.mapper;
 
 import src.domain.encounter.model.session.model.EncounterTuningPreviewData;
 import src.domain.encounter.published.EncounterGenerationStatus;
 import src.domain.encounter.published.EncounterTuningPreviewLabels;
 import src.domain.encounter.published.EncounterTuningPreviewResult;
 
-final class EncounterTuningPreviewPublishedMapper {
+public final class EncounterTuningPreviewPublishedMapper {
 
     private EncounterTuningPreviewPublishedMapper() {
     }
 
-    static EncounterTuningPreviewResult toPublishedTuningPreview(EncounterTuningPreviewData data) {
+    public static EncounterTuningPreviewResult toPublishedTuningPreview(EncounterTuningPreviewData data) {
         EncounterTuningPreviewData safeData = data == null ? EncounterTuningPreviewData.storageError("") : data;
         return new EncounterTuningPreviewResult(
                 toPublishedStatus(safeData.status()),

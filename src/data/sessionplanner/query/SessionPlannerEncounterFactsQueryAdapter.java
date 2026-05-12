@@ -6,8 +6,10 @@ import src.domain.encounter.published.EncounterPlanBudgetModel;
 import src.domain.encounter.published.RefreshEncounterPlanBudgetCommand;
 import src.domain.encounter.published.SavedEncounterPlanListModel;
 import src.domain.sessionplanner.model.session.port.SessionEncounterFactsPort;
+import src.domain.sessionplanner.model.session.repository.SessionEncounterFactsRepository;
 
-public final class SessionPlannerEncounterFactsQueryAdapter implements SessionEncounterFactsPort {
+public final class SessionPlannerEncounterFactsQueryAdapter
+        implements SessionEncounterFactsPort, SessionEncounterFactsRepository {
 
     private final EncounterApplicationService encounters;
     private final SessionPlannerEncounterFactsPublishedReadback encounterReadback;
@@ -24,13 +26,18 @@ public final class SessionPlannerEncounterFactsQueryAdapter implements SessionEn
     }
 
     @Override
-    public EncounterPlanListFact listEncounterPlans() {
-        return encounterReadback.listEncounterPlans();
+    public EncounterPlanListFact encounterPlans() {
+        return encounterReadback.encounterPlans();
+    }
+
+    @Override
+    public EncounterPlanFact encounterPlan(long encounterPlanId) {
+        return encounterReadback.currentEncounterPlan(encounterPlanId);
     }
 
     @Override
     public EncounterPlanFact loadEncounterPlan(long encounterPlanId) {
         encounters.refreshPlanBudget(new RefreshEncounterPlanBudgetCommand(encounterPlanId));
-        return encounterReadback.currentEncounterPlan(encounterPlanId);
+        return encounterPlan(encounterPlanId);
     }
 }

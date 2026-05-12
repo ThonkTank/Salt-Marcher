@@ -58,6 +58,14 @@ public final class PartyTravelLocation {
         return space;
     }
 
+    public boolean isDungeon() {
+        return space == TravelSpace.DUNGEON;
+    }
+
+    public boolean isOverworld() {
+        return space == TravelSpace.OVERWORLD;
+    }
+
     public long mapId() {
         return mapId;
     }

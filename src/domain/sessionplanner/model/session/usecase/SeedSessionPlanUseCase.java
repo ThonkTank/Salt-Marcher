@@ -9,16 +9,16 @@ import src.domain.sessionplanner.model.session.port.SessionPartyFactsPort;
 
 public final class SeedSessionPlanUseCase {
 
-    private final SessionPartyFactsPort partyFactsRepository;
+    private final SessionPartyFactsPort partyFactsPort;
 
-    public SeedSessionPlanUseCase(SessionPartyFactsPort partyFactsRepository) {
-        this.partyFactsRepository = Objects.requireNonNull(partyFactsRepository, "partyFactsRepository");
+    public SeedSessionPlanUseCase(SessionPartyFactsPort partyFactsPort) {
+        this.partyFactsPort = Objects.requireNonNull(partyFactsPort, "partyFactsPort");
     }
 
     SessionPlan execute(long sessionId) {
         try {
             SessionPartyFactsPort.ActivePartyMembersFact activeParty =
-                    partyFactsRepository.loadActivePartyMembers();
+                    partyFactsPort.activePartyMembers();
             return SessionPlanSeedHelper.createSeeded(
                     sessionId,
                     activeParty.available(),
