@@ -9,12 +9,13 @@ import src.domain.party.published.AdventuringDayCalculationResult;
 import src.domain.party.published.AdventuringDayPlanningSummary;
 import src.domain.party.published.PartyMemberSummary;
 import src.domain.party.published.ReadStatus;
+import src.domain.sessionplanner.model.session.model.SessionAdventuringDayBudgetFact;
 import src.domain.sessionplanner.model.session.port.SessionPartyFactsPort;
 
 final class SessionPlannerPartyFactsPublishedReadback {
 
     private SessionPartyFactsPort.ActivePartyMembersFact currentActivePartyMembers;
-    private SessionPartyFactsPort.AdventuringDayFact currentAdventuringDayFact;
+    private SessionAdventuringDayBudgetFact currentAdventuringDayFact;
 
     SessionPlannerPartyFactsPublishedReadback(
             ActivePartyModel activePartyModel,
@@ -33,7 +34,7 @@ final class SessionPlannerPartyFactsPublishedReadback {
         return currentActivePartyMembers;
     }
 
-    SessionPartyFactsPort.AdventuringDayFact currentAdventuringDayFact() {
+    SessionAdventuringDayBudgetFact currentAdventuringDayFact() {
         return currentAdventuringDayFact;
     }
 
@@ -50,14 +51,14 @@ final class SessionPlannerPartyFactsPublishedReadback {
                 "");
     }
 
-    private static SessionPartyFactsPort.AdventuringDayFact toAdventuringDayFact(
+    private static SessionAdventuringDayBudgetFact toAdventuringDayFact(
             AdventuringDayCalculationResult result
     ) {
         AdventuringDayPlanningSummary summary = result == null ? null : result.planningSummary();
         if (result == null || result.status() != ReadStatus.SUCCESS || summary == null) {
-            return SessionPartyFactsPort.AdventuringDayFact.unavailable();
+            return SessionAdventuringDayBudgetFact.unavailable();
         }
-        return new SessionPartyFactsPort.AdventuringDayFact(
+        return new SessionAdventuringDayBudgetFact(
                 true,
                 summary.totalBudgetXp(),
                 summary.firstShortRestXp(),

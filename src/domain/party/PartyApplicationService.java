@@ -12,29 +12,20 @@ import src.domain.party.application.MovePartyCharactersUseCase;
 import src.domain.party.application.PerformPartyRestUseCase;
 import src.domain.party.application.SetPartyMembershipUseCase;
 import src.domain.party.application.UpdateCharacterUseCase;
-import src.domain.party.published.AdjustPartyXpCommand;
-import src.domain.party.published.AwardPartyXpCommand;
-import src.domain.party.published.CalculateAdventuringDayCommand;
 import src.domain.party.published.CharacterDraft;
-import src.domain.party.published.CreateCharacterCommand;
-import src.domain.party.published.DeleteCharacterCommand;
 import src.domain.party.published.MembershipState;
-import src.domain.party.published.MovePartyCharactersCommand;
 import src.domain.party.published.PartyDungeonTravelLocationKind;
 import src.domain.party.published.PartyDungeonTravelLocationSnapshot;
 import src.domain.party.published.PartyOverworldTravelLocationSnapshot;
 import src.domain.party.published.PartyTravelHeading;
 import src.domain.party.published.PartyTravelLocationSnapshot;
 import src.domain.party.published.PartyTravelTile;
-import src.domain.party.published.PerformPartyRestCommand;
 import src.domain.party.published.RestType;
-import src.domain.party.published.SetPartyMembershipCommand;
-import src.domain.party.published.UpdateCharacterCommand;
 
 /**
  * Public backend facade for party management.
  */
-@SuppressWarnings({"PMD.CouplingBetweenObjects", "PMD.ExcessiveImports"})
+@SuppressWarnings("PMD.CouplingBetweenObjects")
 public final class PartyApplicationService {
 
     private final CreateCharacterUseCase createCharacterUseCase;
@@ -48,37 +39,29 @@ public final class PartyApplicationService {
     private final CalculateAdventuringDayUseCase calculateAdventuringDayUseCase;
 
     public PartyApplicationService(
-            Object createCharacterUseCase,
-            Object updateCharacterUseCase,
-            Object deleteCharacterUseCase,
-            Object setPartyMembershipUseCase,
-            Object adjustPartyXpUseCase,
-            Object awardPartyXpUseCase,
-            Object performPartyRestUseCase,
-            Object movePartyCharactersUseCase,
-            Object calculateAdventuringDayUseCase
+            CreateCharacterUseCase createCharacterUseCase,
+            UpdateCharacterUseCase updateCharacterUseCase,
+            DeleteCharacterUseCase deleteCharacterUseCase,
+            SetPartyMembershipUseCase setPartyMembershipUseCase,
+            AdjustPartyXpUseCase adjustPartyXpUseCase,
+            AwardPartyXpUseCase awardPartyXpUseCase,
+            PerformPartyRestUseCase performPartyRestUseCase,
+            MovePartyCharactersUseCase movePartyCharactersUseCase,
+            CalculateAdventuringDayUseCase calculateAdventuringDayUseCase
     ) {
-        this.createCharacterUseCase = (CreateCharacterUseCase)
-                Objects.requireNonNull(createCharacterUseCase, "createCharacterUseCase");
-        this.updateCharacterUseCase = (UpdateCharacterUseCase)
-                Objects.requireNonNull(updateCharacterUseCase, "updateCharacterUseCase");
-        this.deleteCharacterUseCase = (DeleteCharacterUseCase)
-                Objects.requireNonNull(deleteCharacterUseCase, "deleteCharacterUseCase");
-        this.setPartyMembershipUseCase = (SetPartyMembershipUseCase)
-                Objects.requireNonNull(setPartyMembershipUseCase, "setPartyMembershipUseCase");
-        this.adjustPartyXpUseCase = (AdjustPartyXpUseCase)
-                Objects.requireNonNull(adjustPartyXpUseCase, "adjustPartyXpUseCase");
-        this.awardPartyXpUseCase = (AwardPartyXpUseCase)
-                Objects.requireNonNull(awardPartyXpUseCase, "awardPartyXpUseCase");
-        this.performPartyRestUseCase = (PerformPartyRestUseCase)
-                Objects.requireNonNull(performPartyRestUseCase, "performPartyRestUseCase");
-        this.movePartyCharactersUseCase = (MovePartyCharactersUseCase)
-                Objects.requireNonNull(movePartyCharactersUseCase, "movePartyCharactersUseCase");
-        this.calculateAdventuringDayUseCase = (CalculateAdventuringDayUseCase)
+        this.createCharacterUseCase = Objects.requireNonNull(createCharacterUseCase, "createCharacterUseCase");
+        this.updateCharacterUseCase = Objects.requireNonNull(updateCharacterUseCase, "updateCharacterUseCase");
+        this.deleteCharacterUseCase = Objects.requireNonNull(deleteCharacterUseCase, "deleteCharacterUseCase");
+        this.setPartyMembershipUseCase = Objects.requireNonNull(setPartyMembershipUseCase, "setPartyMembershipUseCase");
+        this.adjustPartyXpUseCase = Objects.requireNonNull(adjustPartyXpUseCase, "adjustPartyXpUseCase");
+        this.awardPartyXpUseCase = Objects.requireNonNull(awardPartyXpUseCase, "awardPartyXpUseCase");
+        this.performPartyRestUseCase = Objects.requireNonNull(performPartyRestUseCase, "performPartyRestUseCase");
+        this.movePartyCharactersUseCase = Objects.requireNonNull(movePartyCharactersUseCase, "movePartyCharactersUseCase");
+        this.calculateAdventuringDayUseCase =
                 Objects.requireNonNull(calculateAdventuringDayUseCase, "calculateAdventuringDayUseCase");
     }
 
-    public void createCharacter(CreateCharacterCommand command) {
+    public void createCharacter(src.domain.party.published.CreateCharacterCommand command) {
         CharacterDraft draft = command == null ? null : command.draft();
         createCharacterUseCase.execute(
                 draft == null ? null : draft.name(),
@@ -89,7 +72,7 @@ public final class PartyApplicationService {
                 BoundaryValues.membershipName(command == null ? null : command.membership()));
     }
 
-    public void updateCharacter(UpdateCharacterCommand command) {
+    public void updateCharacter(src.domain.party.published.UpdateCharacterCommand command) {
         CharacterDraft draft = command == null ? null : command.draft();
         updateCharacterUseCase.execute(
                 command == null ? 0L : command.id(),
@@ -100,33 +83,33 @@ public final class PartyApplicationService {
                 draft == null ? 0 : draft.armorClass());
     }
 
-    public void deleteCharacter(DeleteCharacterCommand command) {
+    public void deleteCharacter(src.domain.party.published.DeleteCharacterCommand command) {
         deleteCharacterUseCase.execute(command == null ? 0L : command.id());
     }
 
-    public void setMembership(SetPartyMembershipCommand command) {
+    public void setMembership(src.domain.party.published.SetPartyMembershipCommand command) {
         setPartyMembershipUseCase.execute(
                 command == null ? 0L : command.id(),
                 BoundaryValues.membershipName(command == null ? null : command.membership()));
     }
 
-    public void awardXp(AwardPartyXpCommand command) {
+    public void awardXp(src.domain.party.published.AwardPartyXpCommand command) {
         awardPartyXpUseCase.execute(
                 BoundaryValues.ids(command == null ? null : command.ids()),
                 command == null ? 0 : command.xpPerCharacter());
     }
 
-    public void adjustXp(AdjustPartyXpCommand command) {
+    public void adjustXp(src.domain.party.published.AdjustPartyXpCommand command) {
         adjustPartyXpUseCase.execute(
                 BoundaryValues.ids(command == null ? null : command.ids()),
                 command == null ? 0 : command.xpDelta());
     }
 
-    public void performRest(PerformPartyRestCommand command) {
+    public void performRest(src.domain.party.published.PerformPartyRestCommand command) {
         performPartyRestUseCase.execute(BoundaryValues.restTypeName(command == null ? null : command.restType()));
     }
 
-    public void moveCharacters(MovePartyCharactersCommand command) {
+    public void moveCharacters(src.domain.party.published.MovePartyCharactersCommand command) {
         TravelLocationInput location = BoundaryValues.travelLocation(command == null ? null : command.target());
         movePartyCharactersUseCase.execute(
                 BoundaryValues.ids(command == null ? null : command.characterIds()),
@@ -140,7 +123,7 @@ public final class PartyApplicationService {
                 command == null || command.attachToPartyToken());
     }
 
-    public void calculateAdventuringDay(CalculateAdventuringDayCommand command) {
+    public void calculateAdventuringDay(src.domain.party.published.CalculateAdventuringDayCommand command) {
         calculateAdventuringDayUseCase.publish(
                 BoundaryValues.levels(command == null ? null : command.levels()),
                 command == null ? 0 : command.totalGroupXp());

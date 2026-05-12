@@ -33,6 +33,8 @@ final class DomainBoundarySignaturePuritySupport {
             Pattern.compile("^src\\.domain\\.([^.]+)\\.published(\\..*)?$");
     private static final Pattern ROOT_APPLICATION_SERVICE_TYPE =
             Pattern.compile("^src\\.domain\\.([^.]+)\\.[^.]+ApplicationService$");
+    private static final Pattern ROOT_APPLICATION_USECASE_TYPE =
+            Pattern.compile("^src\\.domain\\.([^.]+)\\.application\\.[^.]+UseCase$");
     private static final Pattern DOMAIN_PUBLISHED_TYPE =
             Pattern.compile("^src\\.domain\\.([^.]+)\\.published\\..+");
     private static final Pattern DOMAIN_PORT_TYPE =
@@ -470,12 +472,20 @@ final class DomainBoundarySignaturePuritySupport {
         if (isForeignRootApplicationService(fqn, rootFeature)) {
             return false;
         }
+        if (isSameFeatureRootUseCase(fqn, rootFeature)) {
+            return false;
+        }
         return !targetFeature.equals(rootFeature) || !isSameFeatureDomainPort(typeElement, rootFeature);
     }
 
     private static boolean isForeignRootApplicationService(String fqn, String rootFeature) {
         var matcher = ROOT_APPLICATION_SERVICE_TYPE.matcher(fqn);
         return matcher.matches() && !matcher.group(1).equals(rootFeature);
+    }
+
+    private static boolean isSameFeatureRootUseCase(String fqn, String rootFeature) {
+        var matcher = ROOT_APPLICATION_USECASE_TYPE.matcher(fqn);
+        return matcher.matches() && matcher.group(1).equals(rootFeature);
     }
 
     private static boolean isSameFeatureDomainPort(TypeElement typeElement, String rootFeature) {

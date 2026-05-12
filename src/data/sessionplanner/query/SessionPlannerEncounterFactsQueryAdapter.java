@@ -5,6 +5,7 @@ import src.domain.encounter.EncounterApplicationService;
 import src.domain.encounter.published.EncounterPlanBudgetModel;
 import src.domain.encounter.published.RefreshEncounterPlanBudgetCommand;
 import src.domain.encounter.published.SavedEncounterPlanListModel;
+import src.domain.sessionplanner.model.session.model.SessionEncounterPlanFact;
 import src.domain.sessionplanner.model.session.port.SessionEncounterFactsPort;
 import src.domain.sessionplanner.model.session.repository.SessionEncounterFactsRepository;
 
@@ -31,24 +32,13 @@ public final class SessionPlannerEncounterFactsQueryAdapter
     }
 
     @Override
-    public EncounterPlanFact encounterPlan(long encounterPlanId) {
+    public SessionEncounterPlanFact encounterPlan(long encounterPlanId) {
         return encounterReadback.currentEncounterPlan(encounterPlanId);
     }
 
     @Override
-    public EncounterPlanDetailFact loadEncounterPlan(long encounterPlanId) {
+    public SessionEncounterPlanFact loadEncounterPlan(long encounterPlanId) {
         encounters.refreshPlanBudget(new RefreshEncounterPlanBudgetCommand(encounterPlanId));
-        EncounterPlanFact fact = encounterPlan(encounterPlanId);
-        return new EncounterPlanDetailFact(
-                fact.available(),
-                fact.planId(),
-                fact.name(),
-                fact.generatedLabel(),
-                fact.creatureCount(),
-                fact.totalBaseXp(),
-                fact.adjustedXp(),
-                fact.xpMultiplier(),
-                fact.difficultyLabel(),
-                fact.statusText());
+        return encounterPlan(encounterPlanId);
     }
 }

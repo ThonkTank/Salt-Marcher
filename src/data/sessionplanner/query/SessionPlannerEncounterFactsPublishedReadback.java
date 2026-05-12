@@ -9,6 +9,7 @@ import src.domain.encounter.published.SavedEncounterPlanListModel;
 import src.domain.encounter.published.SavedEncounterPlanListResult;
 import src.domain.encounter.published.SavedEncounterPlanStatus;
 import src.domain.encounter.published.SavedEncounterPlanSummary;
+import src.domain.sessionplanner.model.session.model.SessionEncounterPlanFact;
 import src.domain.sessionplanner.model.session.port.SessionEncounterFactsPort;
 
 final class SessionPlannerEncounterFactsPublishedReadback {
@@ -34,15 +35,15 @@ final class SessionPlannerEncounterFactsPublishedReadback {
         return currentEncounterPlans;
     }
 
-    SessionEncounterFactsPort.EncounterPlanFact currentEncounterPlan(long encounterPlanId) {
+    SessionEncounterPlanFact currentEncounterPlan(long encounterPlanId) {
         EncounterPlanBudgetResult result = currentPlanBudget;
         if (result == null || result.status() != EncounterPlanBudgetStatus.SUCCESS || result.summary() == null) {
             String message = result == null || result.message().isBlank()
                     ? "Encounter-Plan konnte nicht geladen werden."
                     : result.message();
-            return SessionEncounterFactsPort.EncounterPlanFact.unavailable(encounterPlanId, message);
+            return SessionEncounterPlanFact.unavailable(encounterPlanId, message);
         }
-        return new SessionEncounterFactsPort.EncounterPlanFact(
+        return new SessionEncounterPlanFact(
                 true,
                 result.summary().planId(),
                 result.summary().name(),

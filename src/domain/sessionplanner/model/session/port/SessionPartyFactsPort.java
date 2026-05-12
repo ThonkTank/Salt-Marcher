@@ -4,12 +4,13 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.jspecify.annotations.Nullable;
+import src.domain.sessionplanner.model.session.model.SessionAdventuringDayBudgetFact;
 
 public interface SessionPartyFactsPort {
 
     ActivePartyMembersFact activePartyMembers();
 
-    AdventuringDayFact adventuringDayFact();
+    SessionAdventuringDayBudgetFact adventuringDayFact();
 
     final class ActivePartyMembersFact {
 
@@ -75,17 +76,4 @@ public interface SessionPartyFactsPort {
         }
     }
 
-    record AdventuringDayFact(
-            boolean available,
-            int totalBudgetXp,
-            int firstShortRestXp,
-            int secondShortRestXp,
-            int recommendedShortRests,
-            int recommendedLongRests
-    ) {
-
-        public static AdventuringDayFact unavailable() {
-            return new AdventuringDayFact(false, 0, 0, 0, 0, 0);
-        }
-    }
 }

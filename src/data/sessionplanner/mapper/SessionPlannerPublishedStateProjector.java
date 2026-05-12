@@ -12,6 +12,7 @@ import src.domain.sessionplanner.published.SessionPlannerRestKind;
 import src.domain.sessionplanner.published.SessionPlannerSessionSnapshot;
 import src.domain.sessionplanner.published.SessionPlannerStatePanelProjection;
 import src.domain.sessionplanner.model.session.model.SessionEncounter;
+import src.domain.sessionplanner.model.session.model.SessionEncounterPlanFact;
 import src.domain.sessionplanner.model.session.model.SessionPlan;
 import src.domain.sessionplanner.model.session.model.SessionRestPlacement;
 import src.domain.sessionplanner.model.session.port.SessionEncounterFactsPort;
@@ -132,7 +133,7 @@ public final class SessionPlannerPublishedStateProjector {
         boolean sessionReady = !participantContext.participants().isEmpty()
                 && participantContext.participants().stream()
                 .allMatch(SessionPlannerParticipantsProjection.SessionParticipant::available);
-        Map<Long, SessionEncounterFactsRepository.EncounterPlanDetailFact> loadedEncounters =
+        Map<Long, SessionEncounterPlanFact> loadedEncounters =
                 loadSessionEncounterFacts(session, encounterFactsRepository);
         SessionPartyFactsRepository.AdventuringDayBudgetFact budgetFact = sessionReady
                 ? partyFactsRepository.calculateAdventuringDay(
@@ -210,7 +211,7 @@ public final class SessionPlannerPublishedStateProjector {
             SessionPlan session,
             SessionPartyFactsRepository.AdventuringDayBudgetFact budgetFact,
             int scaledBudgetXp,
-            Map<Long, SessionEncounterFactsRepository.EncounterPlanDetailFact> loadedEncounters
+            Map<Long, SessionEncounterPlanFact> loadedEncounters
     ) {
         if (!budgetFact.available()) {
             return SessionPlannerSessionSnapshot.XpBudgetState.empty();
@@ -252,7 +253,7 @@ public final class SessionPlannerPublishedStateProjector {
 
     private static List<SessionPlannerSessionSnapshot.AvailableEncounterPlan> buildAvailablePlans(
             SessionEncounterFactsPort.EncounterPlanListFact encounterPlansFact,
-            Map<Long, SessionEncounterFactsRepository.EncounterPlanDetailFact> loadedEncounters,
+            Map<Long, SessionEncounterPlanFact> loadedEncounters,
             SessionEncounterFactsRepository encounterFactsRepository
     ) {
         if (!encounterPlansFact.available()) {
@@ -260,7 +261,7 @@ public final class SessionPlannerPublishedStateProjector {
         }
         List<SessionPlannerSessionSnapshot.AvailableEncounterPlan> availablePlans = new ArrayList<>();
         for (SessionEncounterFactsPort.SavedEncounterPlanFact plan : encounterPlansFact.plans()) {
-            SessionEncounterFactsRepository.EncounterPlanDetailFact detail =
+            SessionEncounterPlanFact detail =
                     encounterFactsRepository.loadEncounterPlan(plan.planId());
             loadedEncounters.put(plan.planId(), detail);
             availablePlans.add(new SessionPlannerSessionSnapshot.AvailableEncounterPlan(
@@ -275,11 +276,11 @@ public final class SessionPlannerPublishedStateProjector {
         return List.copyOf(availablePlans);
     }
 
-    private static Map<Long, SessionEncounterFactsRepository.EncounterPlanDetailFact> loadSessionEncounterFacts(
+    private static Map<Long, SessionEncounterPlanFact> loadSessionEncounterFacts(
             SessionPlan session,
             SessionEncounterFactsRepository encounterFactsRepository
     ) {
-        Map<Long, SessionEncounterFactsRepository.EncounterPlanDetailFact> loadedEncounters = new HashMap<>();
+        Map<Long, SessionEncounterPlanFact> loadedEncounters = new HashMap<>();
         for (SessionEncounter encounter : session.encounters()) {
             loadedEncounters.computeIfAbsent(encounter.encounterPlanId(), encounterFactsRepository::loadEncounterPlan);
         }
@@ -329,12 +330,12 @@ public final class SessionPlannerPublishedStateProjector {
     private static List<SessionPlannerEncountersProjection.PlannedEncounter> buildPlannedEncounters(
             SessionPlan session,
             int scaledBudgetXp,
-            Map<Long, SessionEncounterFactsRepository.EncounterPlanDetailFact> loadedEncounters,
+            Map<Long, SessionEncounterPlanFact> loadedEncounters,
             SessionEncounterFactsRepository encounterFactsRepository
     ) {
         List<SessionPlannerEncountersProjection.PlannedEncounter> plannedEncounters = new ArrayList<>();
         for (SessionEncounter encounter : session.encounters()) {
-            SessionEncounterFactsRepository.EncounterPlanDetailFact detail = loadedEncounters.computeIfAbsent(
+            SessionEncounterPlanFact detail = loadedEncounters.computeIfAbsent(
                     encounter.encounterPlanId(),
                     encounterFactsRepository::loadEncounterPlan);
             int targetXp = encounter.allocation().budgetPercentage()
@@ -444,12 +445,12 @@ public final class SessionPlannerPublishedStateProjector {
 
     private static int plannedEncounterXp(
             SessionPlan session,
-            Map<Long, SessionEncounterFactsRepository.EncounterPlanDetailFact> loadedEncounters
+            Map<Long, SessionEncounterPlanFact> loadedEncounters
     ) {
         return session.encounters().stream()
                 .mapToInt(encounter -> loadedEncounters.getOrDefault(
                         encounter.encounterPlanId(),
-                        SessionEncounterFactsRepository.EncounterPlanDetailFact.unavailable(
+                        SessionEncounterPlanFact.unavailable(
                                 encounter.encounterPlanId(),
                                 "Encounter-Plan fehlt.")).adjustedXp())
                 .sum();
@@ -507,7 +508,7 @@ public final class SessionPlannerPublishedStateProjector {
             SessionPartyFactsPort.ActivePartyMembersFact partyMembersFact,
             List<SessionPlannerParticipantsProjection.SessionParticipant> participants,
             List<Integer> resolvedLevels,
-            Map<Long, SessionEncounterFactsRepository.EncounterPlanDetailFact> loadedEncounters,
+            Map<Long, SessionEncounterPlanFact> loadedEncounters,
             SessionPartyFactsRepository.AdventuringDayBudgetFact budgetFact,
             int scaledBudgetXp
     ) {
