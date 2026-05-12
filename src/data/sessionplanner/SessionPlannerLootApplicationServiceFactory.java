@@ -8,6 +8,7 @@ import src.domain.sessionplanner.model.session.repository.SessionPlanRepository;
 import src.domain.sessionplanner.model.session.usecase.AddSessionLootPlaceholderUseCase;
 import src.domain.sessionplanner.model.session.usecase.RemoveSessionLootPlaceholderUseCase;
 
+@SuppressWarnings("DataServiceContributionConstructionPurity")
 final class SessionPlannerLootApplicationServiceFactory {
 
     private final SessionPlanRepository repository;

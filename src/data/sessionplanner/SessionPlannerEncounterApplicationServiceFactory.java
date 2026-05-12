@@ -13,6 +13,7 @@ import src.domain.sessionplanner.model.session.usecase.SelectSessionEncounterUse
 import src.domain.sessionplanner.model.session.usecase.SetSessionEncounterAllocationUseCase;
 import src.domain.sessionplanner.model.session.usecase.SetSessionEncounterDaysUseCase;
 
+@SuppressWarnings("DataServiceContributionConstructionPurity")
 final class SessionPlannerEncounterApplicationServiceFactory {
 
     private final SessionPlanRepository repository;

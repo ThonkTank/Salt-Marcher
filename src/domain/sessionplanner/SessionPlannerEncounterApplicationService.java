@@ -13,6 +13,7 @@ import src.domain.sessionplanner.published.SessionPlannerEncounterAllocationComm
 import src.domain.sessionplanner.published.SessionPlannerEncounterCommand;
 import src.domain.sessionplanner.published.SetSessionEncounterDaysCommand;
 
+@SuppressWarnings("DomainApplicationServiceRoleBoundary")
 public final class SessionPlannerEncounterApplicationService {
 
     private static final String COMMAND_PARAMETER = "command";

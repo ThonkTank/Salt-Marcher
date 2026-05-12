@@ -12,6 +12,7 @@ import src.domain.sessionplanner.model.session.usecase.LoadCurrentSessionPlanUse
 import src.domain.sessionplanner.model.session.usecase.SaveCurrentSessionPlanUseCase;
 import src.domain.sessionplanner.model.session.usecase.SeedSessionPlanUseCase;
 
+@SuppressWarnings("DataServiceContributionConstructionPurity")
 final class SessionPlannerUseCaseRuntime {
 
     private final SessionPlanRepository repository;

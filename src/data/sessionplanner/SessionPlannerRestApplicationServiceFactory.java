@@ -8,6 +8,7 @@ import src.domain.sessionplanner.model.session.repository.SessionPlanRepository;
 import src.domain.sessionplanner.model.session.usecase.ClearSessionRestGapUseCase;
 import src.domain.sessionplanner.model.session.usecase.SetSessionRestGapUseCase;
 
+@SuppressWarnings("DataServiceContributionConstructionPurity")
 final class SessionPlannerRestApplicationServiceFactory {
 
     private final SessionPlanRepository repository;
