@@ -1,8 +1,6 @@
 package src.domain.dungeon.model.map.model;
 
-
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 
 public final class DungeonFeatureReadProjection {
@@ -30,7 +28,7 @@ public final class DungeonFeatureReadProjection {
                     DungeonFeatureType.STAIR,
                     stair.stairId(),
                     stair.name(),
-                    sortedCells(new ArrayList<>(DungeonStairOps.occupiedCells(stair))),
+                    DungeonCellOrdering.sortedCells(DungeonStairOps.occupiedCells(stair)),
                     stairDescription(stair),
                     stairDestinationLabel(stair)));
             if (stair.corridorId() != null) {
@@ -71,17 +69,6 @@ public final class DungeonFeatureReadProjection {
                         "linked"));
             }
         }
-    }
-
-    private static List<DungeonCell> sortedCells(List<DungeonCell> cells) {
-        List<DungeonCell> result = new ArrayList<>();
-        for (DungeonCell cell : cells == null ? List.<DungeonCell>of() : cells) {
-            if (cell != null && !result.contains(cell)) {
-                result.add(cell);
-            }
-        }
-        result.sort(new CellComparator());
-        return List.copyOf(result);
     }
 
     private static String stairDescription(DungeonStair stair) {
@@ -160,21 +147,6 @@ public final class DungeonFeatureReadProjection {
         public Result {
             features = features == null ? List.of() : List.copyOf(features);
             relations = relations == null ? List.of() : List.copyOf(relations);
-        }
-    }
-
-    private static final class CellComparator implements Comparator<DungeonCell> {
-        @Override
-        public int compare(DungeonCell left, DungeonCell right) {
-            int levelComparison = Integer.compare(left.level(), right.level());
-            if (levelComparison != 0) {
-                return levelComparison;
-            }
-            int rowComparison = Integer.compare(left.r(), right.r());
-            if (rowComparison != 0) {
-                return rowComparison;
-            }
-            return Integer.compare(left.q(), right.q());
         }
     }
 }

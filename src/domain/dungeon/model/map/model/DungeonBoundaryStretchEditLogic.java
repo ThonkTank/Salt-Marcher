@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.map.model.DungeonBoundaryStretchValueTypes.StretchMutationResult;
 import src.domain.dungeon.model.map.model.DungeonBoundaryStretchValueTypes.StretchSelection;
 
@@ -53,7 +54,7 @@ final class DungeonBoundaryStretchEditLogic {
         return rebuiltStretch(dungeonMap, clusters, target, stretch.get(), mutation.get());
     }
 
-    private DungeonRoomTopologyClusterWork targetCluster(
+    private @Nullable DungeonRoomTopologyClusterWork targetCluster(
             List<DungeonRoomTopologyClusterWork> clusters,
             long clusterId
     ) {

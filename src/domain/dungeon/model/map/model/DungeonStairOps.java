@@ -50,7 +50,7 @@ public final class DungeonStairOps {
         return !occupiedCells(stair).isEmpty();
     }
 
-    public static DungeonStair withCorridorId(DungeonStair stair, @Nullable Long nextCorridorId) {
+    public static @Nullable DungeonStair withCorridorId(DungeonStair stair, @Nullable Long nextCorridorId) {
         if (stair == null) {
             return null;
         }

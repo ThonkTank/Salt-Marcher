@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.map.model.DungeonBoundaryStretchValueTypes.BoundarySide;
 import src.domain.dungeon.model.map.model.DungeonBoundaryStretchValueTypes.StretchEdge;
 import src.domain.dungeon.model.map.model.DungeonBoundaryStretchValueTypes.StretchOrientation;
@@ -110,7 +111,7 @@ final class DungeonBoundaryStretchSelectionLogic {
             DungeonEdge edge
     ) {
         StretchOrientation orientation = StretchOrientation.from(edge);
-        if (!validEdge(edge, orientation)) {
+        if (orientation == null || !validEdge(edge)) {
             return Optional.empty();
         }
         if (invalidEdgeForSeed(seed, edge, orientation)) {
@@ -128,8 +129,8 @@ final class DungeonBoundaryStretchSelectionLogic {
         return Optional.of(new StretchEdge(edge, key, existing));
     }
 
-    private boolean validEdge(DungeonEdge edge, StretchOrientation orientation) {
-        return edge != null && edge.from() != null && edge.to() != null && orientation != null;
+    private boolean validEdge(DungeonEdge edge) {
+        return edge != null && edge.from() != null && edge.to() != null;
     }
 
     private boolean invalidEdgeForSeed(
@@ -152,7 +153,7 @@ final class DungeonBoundaryStretchSelectionLogic {
                 && seed.side() == BoundarySide.resolve(orientation, touch, seed.fixedCoordinate());
     }
 
-    private boolean boundaryPresenceMatches(StretchSeed seed, DungeonClusterBoundary existing) {
+    private boolean boundaryPresenceMatches(StretchSeed seed, @Nullable DungeonClusterBoundary existing) {
         return seed.outer() ? existing == null : existing != null;
     }
 

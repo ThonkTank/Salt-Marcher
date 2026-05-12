@@ -3,6 +3,7 @@ package src.domain.dungeon.model.map.model;
 
 import java.util.ArrayList;
 import java.util.List;
+import org.jspecify.annotations.Nullable;
 
 public final class DungeonCorridorOps {
 
@@ -86,7 +87,7 @@ public final class DungeonCorridorOps {
                 corridor.bindings().withAnchorRef(ref));
     }
 
-    public static DungeonCorridor withBindings(DungeonCorridor corridor, DungeonCorridorBindings nextBindings) {
+    public static @Nullable DungeonCorridor withBindings(DungeonCorridor corridor, DungeonCorridorBindings nextBindings) {
         if (corridor == null) {
             return null;
         }

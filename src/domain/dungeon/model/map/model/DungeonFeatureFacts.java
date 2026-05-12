@@ -1,5 +1,7 @@
 package src.domain.dungeon.model.map.model;
 
+import org.jspecify.annotations.Nullable;
+
 import java.util.List;
 
 public record DungeonFeatureFacts(
@@ -9,7 +11,7 @@ public record DungeonFeatureFacts(
         List<DungeonCell> cells,
         String description,
         String destinationLabel,
-        DungeonTopologyRef topologyRef
+        @Nullable DungeonTopologyRef topologyRef
 ) {
 
     public DungeonFeatureFacts(
@@ -31,6 +33,7 @@ public record DungeonFeatureFacts(
     }
 
     public DungeonFeatureFacts {
+        kind = kind == null ? DungeonFeatureType.STAIR : kind;
         label = label == null || label.isBlank() ? kind.name() : label.trim();
         cells = cells == null ? List.of() : List.copyOf(cells);
         description = description == null ? "" : description.trim();

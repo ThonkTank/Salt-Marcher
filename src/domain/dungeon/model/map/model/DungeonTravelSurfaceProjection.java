@@ -122,8 +122,8 @@ public final class DungeonTravelSurfaceProjection {
                     appendUniqueCells(cells, feature.cells());
                 }
             }
-            cells.sort(new CellComparator());
-            return cells.isEmpty() ? null : cells.getFirst();
+            List<DungeonCell> sortedCells = DungeonCellOrdering.sortedCells(cells);
+            return sortedCells.isEmpty() ? null : sortedCells.getFirst();
         }
 
         private static void appendUniqueCells(List<DungeonCell> result, List<DungeonCell> cells) {
@@ -234,21 +234,6 @@ public final class DungeonTravelSurfaceProjection {
             }
             result.sort(new TravelActionComparator());
             return List.copyOf(result);
-        }
-    }
-
-    private static final class CellComparator implements Comparator<DungeonCell> {
-        @Override
-        public int compare(DungeonCell left, DungeonCell right) {
-            int levelComparison = Integer.compare(left.level(), right.level());
-            if (levelComparison != 0) {
-                return levelComparison;
-            }
-            int rowComparison = Integer.compare(left.r(), right.r());
-            if (rowComparison != 0) {
-                return rowComparison;
-            }
-            return Integer.compare(left.q(), right.q());
         }
     }
 

@@ -84,8 +84,8 @@ public final class DungeonCorridorSemanticsRules {
                         DOOR_REF,
                         0L,
                         0L,
-                        null,
-                        null,
+                        emptyCell(),
+                        DungeonEdgeDirection.NORTH,
                         0L,
                         binding.topologyRef());
             }
@@ -104,10 +104,14 @@ public final class DungeonCorridorSemanticsRules {
                     ANCHOR,
                     0L,
                     0L,
-                    null,
-                    null,
+                    emptyCell(),
+                    DungeonEdgeDirection.NORTH,
                     ref.hostCorridorId(),
                     ref.topologyRef());
+        }
+
+        private static DungeonCell emptyCell() {
+            return new DungeonCell(0, 0, 0);
         }
     }
 }

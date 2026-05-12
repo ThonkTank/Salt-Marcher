@@ -103,14 +103,7 @@ public final class DungeonStair {
         }
 
         private static List<DungeonCell> sortedUniquePath(List<DungeonCell> source) {
-            List<DungeonCell> result = new ArrayList<>();
-            for (DungeonCell cell : source == null ? List.<DungeonCell>of() : source) {
-                if (cell != null && !result.contains(cell)) {
-                    result.add(cell);
-                }
-            }
-            result.sort(new CellComparator());
-            return List.copyOf(result);
+            return DungeonCellOrdering.sortedCells(source);
         }
 
         private static List<DungeonStairExit> sortedExits(List<DungeonStairExit> source) {
@@ -122,21 +115,6 @@ public final class DungeonStair {
             }
             result.sort(new StairExitComparator());
             return List.copyOf(result);
-        }
-
-        private static final class CellComparator implements Comparator<DungeonCell> {
-            @Override
-            public int compare(DungeonCell left, DungeonCell right) {
-                int levelComparison = Integer.compare(left.level(), right.level());
-                if (levelComparison != 0) {
-                    return levelComparison;
-                }
-                int rowComparison = Integer.compare(left.r(), right.r());
-                if (rowComparison != 0) {
-                    return rowComparison;
-                }
-                return Integer.compare(left.q(), right.q());
-            }
         }
 
         private static final class StairExitComparator implements Comparator<DungeonStairExit> {

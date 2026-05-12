@@ -98,23 +98,6 @@ final class DungeonTraversalActionCatalog {
             return new TraversalCandidate(link, source, target, link.directionFrom(source.tile()));
         }
 
-        private static int sourceOrder(DungeonTraversalSourceKind kind) {
-            return kind == DungeonTraversalSourceKind.DOOR ? 0 : 1;
-        }
-
-        private static int directionOrder(@Nullable DungeonEdgeDirection direction) {
-            DungeonEdgeDirection resolvedDirection = direction == null ? DungeonEdgeDirection.NORTH : direction;
-            if (resolvedDirection == DungeonEdgeDirection.NORTH) {
-                return 0;
-            }
-            if (resolvedDirection == DungeonEdgeDirection.EAST) {
-                return 1;
-            }
-            if (resolvedDirection == DungeonEdgeDirection.SOUTH) {
-                return 2;
-            }
-            return 3;
-        }
     }
 
     private static final class TraversalDestinationLabelResolver {

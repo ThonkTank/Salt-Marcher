@@ -36,7 +36,7 @@ public record DungeonCorridorEndpoint(
                 roomCell,
                 direction,
                 0L,
-                null,
+                emptyCell(),
                 topologyRef);
     }
 
@@ -49,11 +49,15 @@ public record DungeonCorridorEndpoint(
                 DungeonCorridorEndpointKind.ANCHOR,
                 0L,
                 0L,
-                null,
+                emptyCell(),
                 DungeonEdgeDirection.NORTH,
                 hostCorridorId,
                 anchorCell,
                 topologyRef);
+    }
+
+    private static DungeonCell emptyCell() {
+        return new DungeonCell(0, 0, 0);
     }
 
     public boolean present() {

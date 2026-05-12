@@ -42,7 +42,7 @@ public final class SessionPlannerApplicationService {
     private final AddSessionLootPlaceholderUseCase addLootPlaceholderUseCase;
     private final RemoveSessionLootPlaceholderUseCase removeLootPlaceholderUseCase;
 
-    public SessionPlannerApplicationService(
+    SessionPlannerApplicationService(
             CreateSessionPlanUseCase createSessionUseCase,
             AddSessionParticipantUseCase addParticipantUseCase,
             RemoveSessionParticipantUseCase removeParticipantUseCase,

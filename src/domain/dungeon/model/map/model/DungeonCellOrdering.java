@@ -38,6 +38,27 @@ final class DungeonCellOrdering {
         return List.copyOf(result);
     }
 
+    static int compareCells(DungeonCell left, DungeonCell right) {
+        if (left == null && right == null) {
+            return 0;
+        }
+        if (left == null) {
+            return -1;
+        }
+        if (right == null) {
+            return 1;
+        }
+        int levelComparison = Integer.compare(left.level(), right.level());
+        if (levelComparison != 0) {
+            return levelComparison;
+        }
+        int rowComparison = Integer.compare(left.r(), right.r());
+        if (rowComparison != 0) {
+            return rowComparison;
+        }
+        return Integer.compare(left.q(), right.q());
+    }
+
     private static int minimumLevel(Set<DungeonCell> component) {
         int result = 0;
         boolean found = false;
@@ -92,15 +113,7 @@ final class DungeonCellOrdering {
     private static final class CellComparator implements Comparator<DungeonCell> {
         @Override
         public int compare(DungeonCell left, DungeonCell right) {
-            int levelComparison = Integer.compare(left.level(), right.level());
-            if (levelComparison != 0) {
-                return levelComparison;
-            }
-            int rowComparison = Integer.compare(left.r(), right.r());
-            if (rowComparison != 0) {
-                return rowComparison;
-            }
-            return Integer.compare(left.q(), right.q());
+            return compareCells(left, right);
         }
     }
 }

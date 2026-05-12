@@ -56,13 +56,14 @@ final class DungeonCorridorProjectionAssembler {
             DungeonCorridor corridor,
             DungeonCorridorEndpointResolver.CorridorEndpoint endpoint
     ) {
-        DungeonBoundaryKey key = DungeonBoundaryKey.from(Objects.requireNonNull(endpoint.edge()));
+        DungeonEdge edge = Objects.requireNonNull(endpoint.edge());
+        DungeonBoundaryKey key = DungeonBoundaryKey.from(edge);
         long roomId = Objects.requireNonNull(endpoint.roomId());
         long doorId = boundaryIdsByKey.getOrDefault(
                 key,
                 endpoint.topologyRef().present() ? endpoint.topologyRef().id() : key.stableId());
         if (!boundaryIdsByKey.containsKey(key)) {
-            addNewDoor(corridor, endpoint, key, doorId, roomId);
+            addNewDoor(corridor, endpoint, edge, key, doorId, roomId);
         } else {
             addContainment(corridor.corridorId(), doorId, DOOR_KIND);
         }
@@ -72,12 +73,13 @@ final class DungeonCorridorProjectionAssembler {
     private void addNewDoor(
             DungeonCorridor corridor,
             DungeonCorridorEndpointResolver.CorridorEndpoint endpoint,
+            DungeonEdge edge,
             DungeonBoundaryKey key,
             long doorId,
             long roomId
     ) {
         DungeonTopologyRef topologyRef = endpoint.topologyRef();
-        DungeonPrimitive door = new DungeonPrimitive(doorId, DOOR_KIND, "Corridor Door", endpoint.edge());
+        DungeonPrimitive door = new DungeonPrimitive(doorId, DOOR_KIND, "Corridor Door", edge);
         primitiveId = Math.max(primitiveId, doorId + 1L);
         primitives.add(door);
         boundaries.add(new DungeonBoundaryFacts(

@@ -31,23 +31,6 @@ public record DungeonBoundaryKey(
     }
 
     private static int compareCells(DungeonCell left, DungeonCell right) {
-        if (left == right) {
-            return 0;
-        }
-        if (left == null) {
-            return -1;
-        }
-        if (right == null) {
-            return 1;
-        }
-        int levelComparison = Integer.compare(left.level(), right.level());
-        if (levelComparison != 0) {
-            return levelComparison;
-        }
-        int rowComparison = Integer.compare(left.r(), right.r());
-        if (rowComparison != 0) {
-            return rowComparison;
-        }
-        return Integer.compare(left.q(), right.q());
+        return DungeonCellOrdering.compareCells(left, right);
     }
 }
