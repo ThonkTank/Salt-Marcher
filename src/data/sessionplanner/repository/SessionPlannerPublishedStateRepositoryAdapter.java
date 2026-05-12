@@ -72,22 +72,6 @@ public final class SessionPlannerPublishedStateRepositoryAdapter implements Sess
         this.encounterFactsRepository = Objects.requireNonNull(encounterFactsRepository, "encounterFactsRepository");
     }
 
-    public SessionPlannerCurrentSessionModel currentSessionModel() {
-        return currentSessionModel;
-    }
-
-    public SessionPlannerParticipantsModel participantsModel() {
-        return participantsModel;
-    }
-
-    public SessionPlannerEncountersModel encountersModel() {
-        return encountersModel;
-    }
-
-    public SessionPlannerStatePanelModel statePanelModel() {
-        return statePanelModel;
-    }
-
     @Override
     public void publishCurrentSession(SessionPlan sessionPlan) {
         SessionPlan safeSession = Objects.requireNonNull(sessionPlan, "sessionPlan");

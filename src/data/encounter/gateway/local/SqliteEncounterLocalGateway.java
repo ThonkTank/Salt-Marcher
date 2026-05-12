@@ -39,20 +39,7 @@ public final class SqliteEncounterLocalGateway {
         Objects.requireNonNull(plan, "plan");
         Objects.requireNonNull(creatures, "creatures");
         try (Connection connection = openReadyConnection()) {
-            boolean previousAutoCommit = connection.getAutoCommit();
-            connection.setAutoCommit(false);
-            try {
-                long planId = store.savePlan(connection, plan);
-                store.replaceCreatures(connection, planId, creatures);
-                connection.commit();
-                return loadSaved(connection, planId)
-                        .orElseThrow(() -> new IllegalStateException("Saved encounter plan vanished after save."));
-            } catch (SQLException exception) {
-                connection.rollback();
-                throw exception;
-            } finally {
-                connection.setAutoCommit(previousAutoCommit);
-            }
+            return saveInTransaction(connection, plan, creatures);
         } catch (SQLException exception) {
             throw new IllegalStateException("Failed to save encounter plan to SQLite.", exception);
         }
@@ -86,6 +73,27 @@ public final class SqliteEncounterLocalGateway {
             return Optional.empty();
         }
         return Optional.of(new EncounterPlanSnapshotRecord(plan.get(), store.loadCreatures(connection, planId)));
+    }
+
+    private EncounterPlanSnapshotRecord saveInTransaction(
+            Connection connection,
+            EncounterPlanRecord plan,
+            List<EncounterPlanCreatureRecord> creatures
+    ) throws SQLException {
+        boolean previousAutoCommit = connection.getAutoCommit();
+        connection.setAutoCommit(false);
+        try {
+            long planId = store.savePlan(connection, plan);
+            store.replaceCreatures(connection, planId, creatures);
+            connection.commit();
+            return loadSaved(connection, planId)
+                    .orElseThrow(() -> new IllegalStateException("Saved encounter plan vanished after save."));
+        } catch (SQLException exception) {
+            connection.rollback();
+            throw exception;
+        } finally {
+            connection.setAutoCommit(previousAutoCommit);
+        }
     }
 
     private Connection openReadyConnection() throws SQLException {
