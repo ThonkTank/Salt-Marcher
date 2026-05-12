@@ -245,7 +245,7 @@ public final class DocumentationCoverageCatalog {
                             row("domain-applicationservice-no-nested-contracts", "Enforced",
                                     List.of("domain-application-service bundle Error Prone", "DomainApplicationServiceApiShape"),
                                     List.of("./gradlew compileJava", "./gradlew checkDomainEnforcement")),
-                            row("domain-applicationservice-no-retained-published-command-carriers", "Enforced",
+                            row("domain-applicationservice-role-reference-boundary", "Enforced",
                                     List.of("domain-application-service bundle Error Prone", "DomainApplicationServiceRoleBoundary"),
                                     List.of("./gradlew compileJava", "./gradlew checkDomainEnforcement")),
                             row("domain-applicationservice-no-direct-infrastructure-construction-source-pattern", "Review-Owned"),
