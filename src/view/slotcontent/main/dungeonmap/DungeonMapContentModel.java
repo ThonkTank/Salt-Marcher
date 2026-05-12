@@ -24,19 +24,8 @@ import src.domain.travel.published.TravelDungeonMapProjectionSnapshot;
 import src.domain.travel.published.TravelDungeonSnapshot;
 import src.domain.travel.published.TravelOverlaySettings;
 import src.view.slotcontent.primitives.mapcanvas.MapCanvasContentModel;
-import src.view.slotcontent.primitives.mapcanvas.MapCanvasContentModel.BoundaryPrimitive;
-import src.view.slotcontent.primitives.mapcanvas.MapCanvasContentModel.GlyphPrimitive;
-import src.view.slotcontent.primitives.mapcanvas.MapCanvasContentModel.HitArea;
-import src.view.slotcontent.primitives.mapcanvas.MapCanvasContentModel.MapCanvasPoint;
-import src.view.slotcontent.primitives.mapcanvas.MapCanvasContentModel.MapCanvasPolygonPrimitive;
-import src.view.slotcontent.primitives.mapcanvas.MapCanvasContentModel.PaintStyle;
-import src.view.slotcontent.primitives.mapcanvas.MapCanvasContentModel.PolygonHitArea;
-import src.view.slotcontent.primitives.mapcanvas.MapCanvasContentModel.PolylineHitArea;
-import src.view.slotcontent.primitives.mapcanvas.MapCanvasContentModel.RelationPrimitive;
-import src.view.slotcontent.primitives.mapcanvas.MapCanvasContentModel.RenderScene;
-import src.view.slotcontent.primitives.mapcanvas.MapCanvasContentModel.SceneColor;
-import src.view.slotcontent.primitives.mapcanvas.MapCanvasContentModel.TextPrimitive;
 import src.view.slotcontent.primitives.mapcanvas.MapCanvasViewInputEvent;
+import static src.view.slotcontent.primitives.mapcanvas.MapCanvasContentModel.*;
 
 public final class DungeonMapContentModel {
 

@@ -16,20 +16,7 @@ import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
 import javafx.scene.text.TextAlignment;
 import org.jspecify.annotations.Nullable;
-import src.view.slotcontent.primitives.mapcanvas.MapCanvasContentModel.BoundaryPrimitive;
-import src.view.slotcontent.primitives.mapcanvas.MapCanvasContentModel.GlyphPrimitive;
-import src.view.slotcontent.primitives.mapcanvas.MapCanvasContentModel.HitArea;
-import src.view.slotcontent.primitives.mapcanvas.MapCanvasContentModel.MapCanvasPoint;
-import src.view.slotcontent.primitives.mapcanvas.MapCanvasContentModel.MapCanvasPolygonPrimitive;
-import src.view.slotcontent.primitives.mapcanvas.MapCanvasContentModel.OverlayPrimitive;
-import src.view.slotcontent.primitives.mapcanvas.MapCanvasContentModel.PaintStyle;
-import src.view.slotcontent.primitives.mapcanvas.MapCanvasContentModel.PolygonHitArea;
-import src.view.slotcontent.primitives.mapcanvas.MapCanvasContentModel.PolylineHitArea;
-import src.view.slotcontent.primitives.mapcanvas.MapCanvasContentModel.RelationPrimitive;
-import src.view.slotcontent.primitives.mapcanvas.MapCanvasContentModel.RenderScene;
-import src.view.slotcontent.primitives.mapcanvas.MapCanvasContentModel.SceneColor;
-import src.view.slotcontent.primitives.mapcanvas.MapCanvasContentModel.TextPrimitive;
-import src.view.slotcontent.primitives.mapcanvas.MapCanvasContentModel.ViewMode;
+import static src.view.slotcontent.primitives.mapcanvas.MapCanvasContentModel.*;
 
 public class MapCanvasView extends BorderPane {
 
