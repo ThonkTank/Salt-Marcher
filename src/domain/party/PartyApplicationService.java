@@ -47,26 +47,34 @@ public final class PartyApplicationService {
     private final MovePartyCharactersUseCase movePartyCharactersUseCase;
     private final CalculateAdventuringDayUseCase calculateAdventuringDayUseCase;
 
-    PartyApplicationService(
-            CreateCharacterUseCase createCharacterUseCase,
-            UpdateCharacterUseCase updateCharacterUseCase,
-            DeleteCharacterUseCase deleteCharacterUseCase,
-            SetPartyMembershipUseCase setPartyMembershipUseCase,
-            AdjustPartyXpUseCase adjustPartyXpUseCase,
-            AwardPartyXpUseCase awardPartyXpUseCase,
-            PerformPartyRestUseCase performPartyRestUseCase,
-            MovePartyCharactersUseCase movePartyCharactersUseCase,
-            CalculateAdventuringDayUseCase calculateAdventuringDayUseCase
+    public PartyApplicationService(
+            Object createCharacterUseCase,
+            Object updateCharacterUseCase,
+            Object deleteCharacterUseCase,
+            Object setPartyMembershipUseCase,
+            Object adjustPartyXpUseCase,
+            Object awardPartyXpUseCase,
+            Object performPartyRestUseCase,
+            Object movePartyCharactersUseCase,
+            Object calculateAdventuringDayUseCase
     ) {
-        this.createCharacterUseCase = Objects.requireNonNull(createCharacterUseCase, "createCharacterUseCase");
-        this.updateCharacterUseCase = Objects.requireNonNull(updateCharacterUseCase, "updateCharacterUseCase");
-        this.deleteCharacterUseCase = Objects.requireNonNull(deleteCharacterUseCase, "deleteCharacterUseCase");
-        this.setPartyMembershipUseCase = Objects.requireNonNull(setPartyMembershipUseCase, "setPartyMembershipUseCase");
-        this.adjustPartyXpUseCase = Objects.requireNonNull(adjustPartyXpUseCase, "adjustPartyXpUseCase");
-        this.awardPartyXpUseCase = Objects.requireNonNull(awardPartyXpUseCase, "awardPartyXpUseCase");
-        this.performPartyRestUseCase = Objects.requireNonNull(performPartyRestUseCase, "performPartyRestUseCase");
-        this.movePartyCharactersUseCase = Objects.requireNonNull(movePartyCharactersUseCase, "movePartyCharactersUseCase");
-        this.calculateAdventuringDayUseCase =
+        this.createCharacterUseCase = (CreateCharacterUseCase)
+                Objects.requireNonNull(createCharacterUseCase, "createCharacterUseCase");
+        this.updateCharacterUseCase = (UpdateCharacterUseCase)
+                Objects.requireNonNull(updateCharacterUseCase, "updateCharacterUseCase");
+        this.deleteCharacterUseCase = (DeleteCharacterUseCase)
+                Objects.requireNonNull(deleteCharacterUseCase, "deleteCharacterUseCase");
+        this.setPartyMembershipUseCase = (SetPartyMembershipUseCase)
+                Objects.requireNonNull(setPartyMembershipUseCase, "setPartyMembershipUseCase");
+        this.adjustPartyXpUseCase = (AdjustPartyXpUseCase)
+                Objects.requireNonNull(adjustPartyXpUseCase, "adjustPartyXpUseCase");
+        this.awardPartyXpUseCase = (AwardPartyXpUseCase)
+                Objects.requireNonNull(awardPartyXpUseCase, "awardPartyXpUseCase");
+        this.performPartyRestUseCase = (PerformPartyRestUseCase)
+                Objects.requireNonNull(performPartyRestUseCase, "performPartyRestUseCase");
+        this.movePartyCharactersUseCase = (MovePartyCharactersUseCase)
+                Objects.requireNonNull(movePartyCharactersUseCase, "movePartyCharactersUseCase");
+        this.calculateAdventuringDayUseCase = (CalculateAdventuringDayUseCase)
                 Objects.requireNonNull(calculateAdventuringDayUseCase, "calculateAdventuringDayUseCase");
     }
 

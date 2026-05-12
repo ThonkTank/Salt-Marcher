@@ -2,6 +2,9 @@ package src.domain.party.model.roster.helper;
 
 public final class PartyAdventuringDayBudgetHelper {
 
+    private static final int MIN_LEVEL = 1;
+    private static final int MAX_LEVEL = 20;
+
     private static final int[] ADVENTURING_DAY_BUDGETS = {
             0,
             300,
@@ -30,7 +33,7 @@ public final class PartyAdventuringDayBudgetHelper {
     }
 
     public static int perCharacter(int level) {
-        return ADVENTURING_DAY_BUDGETS[PartyLevelProgressionHelper.clampLevel(level)];
+        return ADVENTURING_DAY_BUDGETS[clampLevel(level)];
     }
 
     public static int perThird(int level) {
@@ -47,5 +50,9 @@ public final class PartyAdventuringDayBudgetHelper {
 
     public static int finalSegment(int level) {
         return Math.max(0, perCharacter(level) - afterSecondShortRest(level));
+    }
+
+    private static int clampLevel(int level) {
+        return Math.max(MIN_LEVEL, Math.min(MAX_LEVEL, level));
     }
 }

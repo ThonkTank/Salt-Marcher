@@ -5,7 +5,15 @@ import shell.api.ServiceRegistry;
 import src.data.party.repository.SqlitePartyRosterRepository;
 import src.data.party.repository.PartyPublishedStateRepositoryAdapter;
 import src.domain.party.PartyApplicationService;
-import src.domain.party.PartyApplicationServiceFactory;
+import src.domain.party.application.AdjustPartyXpUseCase;
+import src.domain.party.application.AwardPartyXpUseCase;
+import src.domain.party.application.CalculateAdventuringDayUseCase;
+import src.domain.party.application.CreateCharacterUseCase;
+import src.domain.party.application.DeleteCharacterUseCase;
+import src.domain.party.application.MovePartyCharactersUseCase;
+import src.domain.party.application.PerformPartyRestUseCase;
+import src.domain.party.application.SetPartyMembershipUseCase;
+import src.domain.party.application.UpdateCharacterUseCase;
 import src.domain.party.published.ActivePartyCompositionModel;
 import src.domain.party.published.ActivePartyModel;
 import src.domain.party.published.AdventuringDayCalculationModel;
@@ -31,7 +39,16 @@ public final class PartyServiceContribution implements ServiceContribution {
         PartyRosterRepository repository = new SqlitePartyRosterRepository();
         PartyPublishedStateRepositoryAdapter publishedState = new PartyPublishedStateRepositoryAdapter(repository);
         PartyPublishedStateRepository publishedStateRepository = publishedState;
-        PartyApplicationService service = new PartyApplicationServiceFactory().create(repository, publishedStateRepository);
+        PartyApplicationService service = new PartyApplicationService(
+                new CreateCharacterUseCase(repository, publishedStateRepository),
+                new UpdateCharacterUseCase(repository, publishedStateRepository),
+                new DeleteCharacterUseCase(repository, publishedStateRepository),
+                new SetPartyMembershipUseCase(repository, publishedStateRepository),
+                new AdjustPartyXpUseCase(repository, publishedStateRepository),
+                new AwardPartyXpUseCase(repository, publishedStateRepository),
+                new PerformPartyRestUseCase(repository, publishedStateRepository),
+                new MovePartyCharactersUseCase(repository, publishedStateRepository),
+                new CalculateAdventuringDayUseCase(publishedStateRepository));
         builder.register(PartyApplicationService.class, service);
         builder.register(PartySnapshotModel.class, publishedState.partySnapshotModel);
         builder.register(ActivePartyModel.class, publishedState.activePartyModel);
