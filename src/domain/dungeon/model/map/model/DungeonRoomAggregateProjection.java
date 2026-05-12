@@ -1,10 +1,5 @@
 package src.domain.dungeon.model.map.model;
 
-import src.domain.dungeon.model.map.model.DungeonState;
-import src.domain.dungeon.model.map.model.DungeonRoom;
-import src.domain.dungeon.model.map.model.DungeonAreaFacts;
-import src.domain.dungeon.model.map.model.DungeonAreaType;
-import src.domain.dungeon.model.map.model.DungeonCell;
 
 import java.util.List;
 

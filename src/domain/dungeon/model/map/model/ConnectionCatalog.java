@@ -1,8 +1,5 @@
 package src.domain.dungeon.model.map.model;
 
-import src.domain.dungeon.model.map.model.DungeonCorridor;
-import src.domain.dungeon.model.map.model.DungeonStair;
-import src.domain.dungeon.model.map.model.DungeonTransition;
 
 import java.util.List;
 

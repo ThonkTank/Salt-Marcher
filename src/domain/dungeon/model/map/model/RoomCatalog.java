@@ -1,6 +1,5 @@
 package src.domain.dungeon.model.map.model;
 
-import src.domain.dungeon.model.map.model.DungeonRoom;
 
 import java.util.List;
 import java.util.Optional;

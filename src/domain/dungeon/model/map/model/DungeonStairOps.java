@@ -1,9 +1,6 @@
 package src.domain.dungeon.model.map.model;
 
 import org.jspecify.annotations.Nullable;
-import src.domain.dungeon.model.map.model.DungeonStair;
-import src.domain.dungeon.model.map.model.DungeonCell;
-import src.domain.dungeon.model.map.model.DungeonStairExit;
 
 import java.util.LinkedHashSet;
 import java.util.List;

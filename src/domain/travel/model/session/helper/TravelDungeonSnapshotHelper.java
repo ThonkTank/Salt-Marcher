@@ -3,7 +3,6 @@ package src.domain.travel.model.session.helper;
 import org.jspecify.annotations.Nullable;
 import src.domain.travel.application.ApplyTravelDungeonSessionUseCase;
 import src.domain.travel.published.TravelDungeonAction;
-import src.domain.travel.published.TravelDungeonMapProjectionSnapshot;
 import src.domain.travel.published.TravelDungeonSnapshot;
 import src.domain.travel.published.TravelDungeonWorkspaceState;
 import src.domain.travel.published.TravelOverlaySettings;

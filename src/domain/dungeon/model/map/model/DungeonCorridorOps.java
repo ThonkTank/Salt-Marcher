@@ -1,10 +1,5 @@
 package src.domain.dungeon.model.map.model;
 
-import src.domain.dungeon.model.map.model.DungeonCorridor;
-import src.domain.dungeon.model.map.model.DungeonCorridorAnchorBinding;
-import src.domain.dungeon.model.map.model.DungeonCorridorAnchorRef;
-import src.domain.dungeon.model.map.model.DungeonCorridorBindings;
-import src.domain.dungeon.model.map.model.DungeonCorridorDoorBinding;
 
 import java.util.ArrayList;
 import java.util.List;

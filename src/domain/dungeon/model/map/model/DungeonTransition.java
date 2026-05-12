@@ -1,8 +1,6 @@
 package src.domain.dungeon.model.map.model;
 
 import org.jspecify.annotations.Nullable;
-import src.domain.dungeon.model.map.model.DungeonCell;
-import src.domain.dungeon.model.map.model.DungeonTransitionDestination;
 
 public final class DungeonTransition {
 

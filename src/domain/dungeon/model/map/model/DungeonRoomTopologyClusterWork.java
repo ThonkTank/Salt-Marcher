@@ -3,9 +3,6 @@ package src.domain.dungeon.model.map.model;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import src.domain.dungeon.model.map.model.DungeonRoom;
-import src.domain.dungeon.model.map.model.DungeonRoomCluster;
-import src.domain.dungeon.model.map.model.DungeonRoomCellProjection;
 
 public record DungeonRoomTopologyClusterWork(
         DungeonRoomCluster cluster,

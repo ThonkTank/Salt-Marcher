@@ -38,22 +38,24 @@ final class EncounterDiversityDraftEnumerationHelper {
                 baseCounts,
                 candidates,
                 additionalDistinct,
-                targets.targetCreatureCount()), new ArrayList<>(), 0);
+                targets.targetCreatureCount()), candidates, additionalDistinct, new ArrayList<>(), 0);
     }
 
     private static void appendCombinations(
             DiversityDraftRequest diversityRequest,
+            List<EncounterCandidateProfile> candidates,
+            int additionalDistinct,
             List<EncounterCandidateProfile> selected,
             int startIndex
     ) {
-        if (selected.size() == diversityRequest.additionalDistinct) {
+        if (selected.size() == additionalDistinct) {
             appendSelected(diversityRequest, selected);
             return;
         }
-        int remaining = diversityRequest.additionalDistinct - selected.size();
-        for (int index = startIndex; index <= diversityRequest.candidates.size() - remaining; index++) {
-            selected.add(diversityRequest.candidates.get(index));
-            appendCombinations(diversityRequest, selected, index + 1);
+        int remaining = additionalDistinct - selected.size();
+        for (int index = startIndex; index <= candidates.size() - remaining; index++) {
+            selected.add(candidates.get(index));
+            appendCombinations(diversityRequest, candidates, additionalDistinct, selected, index + 1);
             selected.removeLast();
         }
     }
@@ -102,13 +104,14 @@ final class EncounterDiversityDraftEnumerationHelper {
             int targetCreatureCount
     ) {
         int current = counts.getOrDefault(profile.id(), 0);
-        while (creatureCount < targetCreatureCount
+        int nextCreatureCount = creatureCount;
+        while (nextCreatureCount < targetCreatureCount
                 && current < EncounterProfileCopies.maxAdditionalCopies(profile)) {
             current++;
-            creatureCount++;
+            nextCreatureCount++;
             counts.put(profile.id(), current);
         }
-        return creatureCount;
+        return nextCreatureCount;
     }
 
     private static final class DiversityDraftRequest {

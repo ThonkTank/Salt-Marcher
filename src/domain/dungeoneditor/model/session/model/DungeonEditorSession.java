@@ -1,7 +1,6 @@
 package src.domain.dungeoneditor.model.session.model;
 
 import org.jspecify.annotations.Nullable;
-import src.domain.dungeoneditor.model.session.model.DungeonEditorSessionValues;
 import src.domain.dungeoneditor.model.workspace.model.DungeonEditorWorkspaceValues.MapId;
 
 public record DungeonEditorSession(

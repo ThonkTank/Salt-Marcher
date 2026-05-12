@@ -4,12 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
-import src.domain.dungeon.model.map.model.DungeonMap;
-import src.domain.dungeon.model.map.model.DungeonCorridor;
-import src.domain.dungeon.model.map.model.DungeonCorridorSemanticsRules;
-import src.domain.dungeon.model.map.model.ConnectionCatalog;
-import src.domain.dungeon.model.map.model.DungeonCorridorBindings;
-import src.domain.dungeon.model.map.model.DungeonCorridorEndpoint;
 
 final class DungeonCorridorCreationLogic {
 

@@ -1,13 +1,5 @@
 package src.domain.dungeon.model.map.model;
 
-import src.domain.dungeon.model.map.model.DungeonStair;
-import src.domain.dungeon.model.map.model.DungeonTransition;
-import src.domain.dungeon.model.map.model.DungeonCell;
-import src.domain.dungeon.model.map.model.DungeonFeatureFacts;
-import src.domain.dungeon.model.map.model.DungeonFeatureType;
-import src.domain.dungeon.model.map.model.DungeonRelationGraph;
-import src.domain.dungeon.model.map.model.DungeonStairExit;
-import src.domain.dungeon.model.map.model.DungeonTransitionDestination;
 
 import java.util.ArrayList;
 import java.util.Comparator;

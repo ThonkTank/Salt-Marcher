@@ -1,8 +1,6 @@
 package src.domain.dungeon.model.map.model;
 
 import java.util.List;
-import src.domain.dungeon.model.map.model.DungeonAreaType;
-import src.domain.dungeon.model.map.model.DungeonCell;
 
 /**
  * Identity-bearing authored dungeon area.

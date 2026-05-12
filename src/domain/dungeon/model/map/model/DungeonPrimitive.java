@@ -1,6 +1,5 @@
 package src.domain.dungeon.model.map.model;
 
-import src.domain.dungeon.model.map.model.DungeonEdge;
 
 /**
  * Identity-bearing authored dungeon boundary primitive.

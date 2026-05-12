@@ -1,23 +1,6 @@
 package src.domain.dungeon.model.map.model;
 
 import org.jspecify.annotations.Nullable;
-import src.domain.dungeon.model.map.model.DungeonMap;
-import src.domain.dungeon.model.map.model.DungeonRoom;
-import src.domain.dungeon.model.map.model.DungeonAreaFacts;
-import src.domain.dungeon.model.map.model.DungeonAreaType;
-import src.domain.dungeon.model.map.model.DungeonCell;
-import src.domain.dungeon.model.map.model.DungeonDerivedState;
-import src.domain.dungeon.model.map.model.DungeonEdgeDirection;
-import src.domain.dungeon.model.map.model.DungeonRelationGraph;
-import src.domain.dungeon.model.map.model.DungeonRoomExitDescription;
-import src.domain.dungeon.model.map.model.DungeonTraversalEndpoint;
-import src.domain.dungeon.model.map.model.DungeonTraversalLink;
-import src.domain.dungeon.model.map.model.DungeonTraversalSourceKind;
-import src.domain.dungeon.model.map.model.DungeonTravelActionFacts;
-import src.domain.dungeon.model.map.model.DungeonTravelActionKind;
-import src.domain.dungeon.model.map.model.DungeonTravelHeading;
-import src.domain.dungeon.model.map.model.DungeonTravelLocationKind;
-import src.domain.dungeon.model.map.model.DungeonTravelPositionFacts;
 
 import java.util.ArrayList;
 import java.util.Comparator;

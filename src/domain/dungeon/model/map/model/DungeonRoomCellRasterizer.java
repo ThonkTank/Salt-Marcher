@@ -1,6 +1,5 @@
 package src.domain.dungeon.model.map.model;
 
-import src.domain.dungeon.model.map.model.DungeonCell;
 
 import java.util.ArrayList;
 import java.util.LinkedHashSet;

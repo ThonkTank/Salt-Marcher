@@ -4,13 +4,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-import src.domain.dungeon.model.map.model.DungeonCorridor;
 import src.domain.dungeon.model.map.model.DungeonCorridorEndpointResolutionLogic.ResolvedCorridorEndpoint;
-import src.domain.dungeon.model.map.model.DungeonCell;
-import src.domain.dungeon.model.map.model.DungeonCorridorAnchorRef;
-import src.domain.dungeon.model.map.model.DungeonCorridorDoorBinding;
-import src.domain.dungeon.model.map.model.DungeonEdgeDirection;
-import src.domain.dungeon.model.map.model.DungeonTopologyRef;
 
 /**
  * Owns corridor endpoint equivalence and deduplication semantics.

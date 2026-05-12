@@ -1,18 +1,6 @@
 package src.domain.dungeon.model.map.model;
 
 import org.jspecify.annotations.Nullable;
-import src.domain.dungeon.model.map.model.DungeonMap;
-import src.domain.dungeon.model.map.model.DungeonStair;
-import src.domain.dungeon.model.map.model.DungeonAreaFacts;
-import src.domain.dungeon.model.map.model.DungeonBoundaryFacts;
-import src.domain.dungeon.model.map.model.DungeonCell;
-import src.domain.dungeon.model.map.model.DungeonEdge;
-import src.domain.dungeon.model.map.model.DungeonMapFacts;
-import src.domain.dungeon.model.map.model.DungeonStairExit;
-import src.domain.dungeon.model.map.model.DungeonTraversalEndpoint;
-import src.domain.dungeon.model.map.model.DungeonTraversalLink;
-import src.domain.dungeon.model.map.model.DungeonTraversalSource;
-import src.domain.dungeon.model.map.model.DungeonTraversalSourceKind;
 
 import java.util.ArrayList;
 import java.util.LinkedHashSet;

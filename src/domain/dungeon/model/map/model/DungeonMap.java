@@ -3,27 +3,6 @@ package src.domain.dungeon.model.map.model;
 import java.util.ArrayList;
 import java.util.List;
 import org.jspecify.annotations.Nullable;
-import src.domain.dungeon.model.map.model.DungeonRoom;
-import src.domain.dungeon.model.map.model.DungeonCorridorMutationLogic;
-import src.domain.dungeon.model.map.model.DungeonEditorHandleMovementLogic;
-import src.domain.dungeon.model.map.model.DungeonRoomTopologyEditor;
-import src.domain.dungeon.model.map.model.DungeonTopologyMovementLogic;
-import src.domain.dungeon.model.map.model.ConnectionCatalog;
-import src.domain.dungeon.model.map.model.DungeonCell;
-import src.domain.dungeon.model.map.model.DungeonClusterBoundaryKind;
-import src.domain.dungeon.model.map.model.DungeonCorridorEndpoint;
-import src.domain.dungeon.model.map.model.DungeonCorridorRoomEndpoint;
-import src.domain.dungeon.model.map.model.DungeonEditorHandle;
-import src.domain.dungeon.model.map.model.DungeonEdge;
-import src.domain.dungeon.model.map.model.DungeonMapIdentity;
-import src.domain.dungeon.model.map.model.DungeonMapMetadata;
-import src.domain.dungeon.model.map.model.DungeonMapTopology;
-import src.domain.dungeon.model.map.model.DungeonRoomNarration;
-import src.domain.dungeon.model.map.model.DungeonTopologyRef;
-import src.domain.dungeon.model.map.model.FeatureCatalog;
-import src.domain.dungeon.model.map.model.RoomCatalog;
-import src.domain.dungeon.model.map.model.SpaceCatalog;
-import src.domain.dungeon.model.map.model.SpatialTopology;
 
 /**
  * Canonical aggregate root for one authored dungeon map.

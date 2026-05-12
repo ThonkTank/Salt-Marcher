@@ -3,18 +3,6 @@ package src.domain.dungeon.model.map.model;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import src.domain.dungeon.model.map.model.DungeonMap;
-import src.domain.dungeon.model.map.model.DungeonCorridor;
-import src.domain.dungeon.model.map.model.DungeonStair;
-import src.domain.dungeon.model.map.model.ConnectionCatalog;
-import src.domain.dungeon.model.map.model.DungeonCell;
-import src.domain.dungeon.model.map.model.DungeonCorridorAnchorBinding;
-import src.domain.dungeon.model.map.model.DungeonCorridorBindings;
-import src.domain.dungeon.model.map.model.DungeonCorridorDoorBinding;
-import src.domain.dungeon.model.map.model.DungeonCorridorWaypoint;
-import src.domain.dungeon.model.map.model.DungeonEditorHandle;
-import src.domain.dungeon.model.map.model.DungeonEditorHandleType;
-import src.domain.dungeon.model.map.model.DungeonStairExit;
 
 /**
  * Owns editor-handle movement while the aggregate remains the public entrypoint.

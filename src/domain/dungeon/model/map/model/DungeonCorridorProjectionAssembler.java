@@ -1,16 +1,5 @@
 package src.domain.dungeon.model.map.model;
 
-import src.domain.dungeon.model.map.model.DungeonState;
-import src.domain.dungeon.model.map.model.DungeonCorridor;
-import src.domain.dungeon.model.map.model.DungeonPrimitive;
-import src.domain.dungeon.model.map.model.DungeonAreaFacts;
-import src.domain.dungeon.model.map.model.DungeonAreaType;
-import src.domain.dungeon.model.map.model.DungeonBoundaryFacts;
-import src.domain.dungeon.model.map.model.DungeonBoundaryKey;
-import src.domain.dungeon.model.map.model.DungeonCell;
-import src.domain.dungeon.model.map.model.DungeonRelationGraph;
-import src.domain.dungeon.model.map.model.DungeonTopologyElementKind;
-import src.domain.dungeon.model.map.model.DungeonTopologyRef;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;

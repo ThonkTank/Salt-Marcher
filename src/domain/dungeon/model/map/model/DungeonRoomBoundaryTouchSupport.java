@@ -1,7 +1,5 @@
 package src.domain.dungeon.model.map.model;
 
-import src.domain.dungeon.model.map.model.DungeonCell;
-import src.domain.dungeon.model.map.model.DungeonEdge;
 
 import java.util.ArrayList;
 import java.util.List;

@@ -1,8 +1,6 @@
 package src.domain.dungeon.model.map.model;
 
 import java.util.List;
-import src.domain.dungeon.model.map.model.DungeonState;
-import src.domain.dungeon.model.map.model.DungeonPrimitive;
 
 /**
  * Derived dungeon lookup and render state built from committed truth.
