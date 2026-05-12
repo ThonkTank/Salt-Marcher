@@ -33,6 +33,12 @@ final class DomainBoundarySignaturePuritySupport {
             Pattern.compile("^src\\.domain\\.([^.]+)\\.published(\\..*)?$");
     private static final Pattern DOMAIN_PUBLISHED_TYPE =
             Pattern.compile("^src\\.domain\\.([^.]+)\\.published\\..+");
+    private static final Pattern ROOT_APPLICATION_SERVICE_TYPE =
+            Pattern.compile("^src\\.domain\\.([^.]+)\\.[^.]+ApplicationService$");
+    private static final Pattern ROOT_APPLICATION_USECASE_TYPE =
+            Pattern.compile("^src\\.domain\\.([^.]+)\\.application\\.[^.]+UseCase(?:[.$].*)?$");
+    private static final Pattern DOMAIN_PORT_TYPE =
+            Pattern.compile("^src\\.domain\\.([^.]+)\\.model\\.[^.]+\\.port\\..+");
     private static final Set<String> OUTER_LAYER_PREFIXES = Set.of(
             "bootstrap.",
             "shell.",
@@ -269,95 +275,6 @@ final class DomainBoundarySignaturePuritySupport {
         }, null);
     }
 
-    private static void collectRootConstructorCompositionLeak(
-            String position,
-            TypeMirror typeMirror,
-            String rootFeature,
-            List<String> leaks) {
-        if (typeMirror == null) {
-            return;
-        }
-        typeMirror.accept(new SimpleTypeVisitor14<Void, Void>() {
-            @Override
-            public Void visitDeclared(DeclaredType declaredType, Void unused) {
-                addRootConstructorLeakIfNeeded(position, declaredType.asElement(), rootFeature, leaks);
-                for (TypeMirror typeArgument : declaredType.getTypeArguments()) {
-                    typeArgument.accept(this, null);
-                }
-                return null;
-            }
-
-            @Override
-            public Void visitArray(ArrayType arrayType, Void unused) {
-                arrayType.getComponentType().accept(this, null);
-                return null;
-            }
-
-            @Override
-            public Void visitTypeVariable(TypeVariable typeVariable, Void unused) {
-                typeVariable.getUpperBound().accept(this, null);
-                TypeMirror lowerBound = typeVariable.getLowerBound();
-                if (lowerBound != null) {
-                    lowerBound.accept(this, null);
-                }
-                return null;
-            }
-
-            @Override
-            public Void visitWildcard(WildcardType wildcardType, Void unused) {
-                if (wildcardType.getExtendsBound() != null) {
-                    wildcardType.getExtendsBound().accept(this, null);
-                }
-                if (wildcardType.getSuperBound() != null) {
-                    wildcardType.getSuperBound().accept(this, null);
-                }
-                return null;
-            }
-
-            @Override
-            public Void visitIntersection(IntersectionType intersectionType, Void unused) {
-                for (TypeMirror bound : intersectionType.getBounds()) {
-                    bound.accept(this, null);
-                }
-                return null;
-            }
-
-            @Override
-            public Void visitUnion(UnionType unionType, Void unused) {
-                for (TypeMirror alternative : unionType.getAlternatives()) {
-                    alternative.accept(this, null);
-                }
-                return null;
-            }
-
-            @Override
-            public Void visitError(ErrorType errorType, Void unused) {
-                addRootConstructorLeakIfNeeded(position, errorType.asElement(), rootFeature, leaks);
-                return null;
-            }
-
-            @Override
-            protected Void defaultAction(TypeMirror ignored, Void unused) {
-                return null;
-            }
-
-            @Override
-            public Void visitNoType(NoType noType, Void unused) {
-                return null;
-            }
-
-            @Override
-            public Void visitPrimitive(PrimitiveType primitiveType, Void unused) {
-                return null;
-            }
-
-            @Override
-            public Void visitNull(NullType nullType, Void unused) {
-                return null;
-            }
-        }, null);
-    }
-
     private static void addLeakIfNeeded(
             String position,
             Element element,
@@ -366,19 +283,6 @@ final class DomainBoundarySignaturePuritySupport {
         if (element instanceof TypeElement typeElement) {
             String fqn = typeElement.getQualifiedName().toString();
             if (isForbiddenLeak(fqn, sourceFeature)) {
-                leaks.add(position + " -> " + fqn);
-            }
-        }
-    }
-
-    private static void addRootConstructorLeakIfNeeded(
-            String position,
-            Element element,
-            String rootFeature,
-            List<String> leaks) {
-        if (element instanceof TypeElement typeElement) {
-            String fqn = typeElement.getQualifiedName().toString();
-            if (isForbiddenRootConstructorCompositionType(typeElement, fqn, rootFeature)) {
                 leaks.add(position + " -> " + fqn);
             }
         }
@@ -405,56 +309,6 @@ final class DomainBoundarySignaturePuritySupport {
         }
         var publishedMatcher = DOMAIN_PUBLISHED_TYPE.matcher(fqn);
         return !publishedMatcher.matches() || !publishedMatcher.group(1).equals(sourceFeature);
-    }
-
-    private static boolean isForbiddenRootConstructorCompositionType(
-            TypeElement typeElement,
-            String fqn,
-            String rootFeature) {
-        if (fqn == null || fqn.isBlank()) {
-            return false;
-        }
-        if (OUTER_LAYER_TYPES.contains(fqn)) {
-            return true;
-        }
-        for (String outerPrefix : OUTER_LAYER_PREFIXES) {
-            if (fqn.startsWith(outerPrefix)) {
-                return true;
-            }
-        }
-        if (!fqn.startsWith("src.domain.")) {
-            return false;
-        }
-
-        String targetFeature = domainFeatureName(fqn);
-        if (targetFeature == null) {
-            return false;
-        }
-        if (isForeignRootApplicationService(fqn, rootFeature)) {
-            return false;
-        }
-        if (isSameFeatureRootUseCase(fqn, rootFeature)) {
-            return false;
-        }
-        return !targetFeature.equals(rootFeature) || !isSameFeatureDomainPort(typeElement, rootFeature);
-    }
-
-    private static boolean isForeignRootApplicationService(String fqn, String rootFeature) {
-        var matcher = ROOT_APPLICATION_SERVICE_TYPE.matcher(fqn);
-        return matcher.matches() && !matcher.group(1).equals(rootFeature);
-    }
-
-    private static boolean isSameFeatureRootUseCase(String fqn, String rootFeature) {
-        var matcher = ROOT_APPLICATION_USECASE_TYPE.matcher(fqn);
-        return matcher.matches() && matcher.group(1).equals(rootFeature);
-    }
-
-    private static boolean isSameFeatureDomainPort(TypeElement typeElement, String rootFeature) {
-        if (typeElement.getKind() != ElementKind.INTERFACE) {
-            return false;
-        }
-        var matcher = DOMAIN_PORT_TYPE.matcher(typeElement.getQualifiedName().toString());
-        return matcher.matches() && matcher.group(1).equals(rootFeature);
     }
 
     private static String domainFeatureName(String fqn) {
