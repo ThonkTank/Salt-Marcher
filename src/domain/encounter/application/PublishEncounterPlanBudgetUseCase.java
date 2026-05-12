@@ -1,9 +1,8 @@
 package src.domain.encounter.application;
 
 import org.jspecify.annotations.Nullable;
+import src.domain.encounter.model.plan.model.EncounterPlanBudgetLoadResult;
 import src.domain.encounter.model.plan.repository.EncounterPlanPublishedStateRepository;
-import src.domain.encounter.published.EncounterPlanBudgetResult;
-import src.domain.encounter.published.EncounterPlanBudgetStatus;
 
 public final class PublishEncounterPlanBudgetUseCase {
 
@@ -24,32 +23,13 @@ public final class PublishEncounterPlanBudgetUseCase {
     public void execute(long planId) {
         LoadEncounterPlanBudgetUseCase useCase = loadPlanBudgetUseCase;
         if (useCase == null) {
-            repository.publishPlanBudget(new EncounterPlanBudgetResult(
-                    EncounterPlanBudgetStatus.STORAGE_ERROR,
-                    null,
-                    PLAN_BUDGET_NOT_REGISTERED));
+            repository.publishPlanBudget(EncounterPlanBudgetLoadResult.storageError(PLAN_BUDGET_NOT_REGISTERED));
             return;
         }
         try {
-            repository.publishPlanBudget(toPlanBudgetResult(useCase.execute(planId)));
+            repository.publishPlanBudget(useCase.execute(planId));
         } catch (IllegalStateException exception) {
-            repository.publishPlanBudget(new EncounterPlanBudgetResult(
-                    EncounterPlanBudgetStatus.STORAGE_ERROR,
-                    null,
-                    PLAN_BUDGET_LOAD_FAILED));
+            repository.publishPlanBudget(EncounterPlanBudgetLoadResult.storageError(PLAN_BUDGET_LOAD_FAILED));
         }
-    }
-
-    private static EncounterPlanBudgetResult toPlanBudgetResult(LoadEncounterPlanBudgetUseCase.Result result) {
-        if (result == null) {
-            return new EncounterPlanBudgetResult(
-                    EncounterPlanBudgetStatus.STORAGE_ERROR,
-                    null,
-                    PLAN_BUDGET_NOT_REGISTERED);
-        }
-        return new EncounterPlanBudgetResult(
-                result.status(),
-                result.summary(),
-                result.message());
     }
 }
