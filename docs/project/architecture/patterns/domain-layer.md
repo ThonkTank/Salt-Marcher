@@ -1,8 +1,7 @@
 Status: Active
 Owner: SaltMarcher Team
 Last Reviewed: 2026-05-08
-Source of Truth: Binding domain-layer pattern, role ownership, communication
-seams, context map, and topology for `src/domain/**`.
+Source of Truth: Binding domain-layer pattern, role ownership, communication seams, context map, and topology for `src/domain/**`.
 
 # Domain Layer Standard
 
@@ -24,8 +23,7 @@ the pattern or become a second architecture owner.
 
 ## Current State And Target State
 
-Current state: production still contains some legacy tactical packages and
-blockers that cover that migration shape. Enforcement documents must describe
+Current state: production still contains some legacy tactical packages and blockers that cover that migration shape. Enforcement documents must describe
 remaining drift literally instead of making it the target architecture.
 
 Target state:
@@ -124,14 +122,13 @@ Published`
 - orchestrates reads, writes, repository calls, port-triggered follow-up work,
   and helper invocation
 - direct root `application/*UseCase` is reserved for orchestration across at
-  least two distinct same-context `model/<family>/...` families
-- one-family work belongs under that family's `model/<family>/usecase/`
-- direct root `application/*UseCase` files must not depend on other direct
-  root `application/*UseCase` files or their nested types
+  least two same-context `model/<family>/...` families; one-family work
+  belongs under that family's `model/<family>/usecase/`
+- direct root `application/*UseCase` files must not depend on other root
+  `application/*UseCase` files or their nested types
 - may construct, load, edit, and persist `Model`
 - may collaborate only with same-context `Model`, model-family `UseCase`,
-  `Helper`, `Constants`, `Port`, `Repository`, and foreign root
-  `ApplicationService` boundaries
+  `Helper`, `Constants`, `Port`, `Repository`, and foreign root `ApplicationService`
 - does not hide business-policy logic that belongs in `Helper` or subordinate
   model roles, and it does not absorb published, root-boundary, callback, or
   infrastructure concerns

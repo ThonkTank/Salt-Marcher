@@ -39,6 +39,7 @@ Unified focused bundle entrypoint:
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
 | `domain-applicationservice-no-nested-contracts` | Enforced | every root `*ApplicationService.java` under `src/domain/**` | domain-application-service bundle Error Prone `DomainApplicationServiceApiShape` | `./gradlew compileJava` and `./gradlew checkDomainEnforcement` | Root application services do not expose nested public or protected contract types. |
+| `domain-applicationservice-no-retained-published-command-carriers` | Enforced | every root `*ApplicationService.java` under `src/domain/**` | domain-application-service bundle Error Prone `DomainApplicationServiceRoleBoundary` | `./gradlew compileJava` and `./gradlew checkDomainEnforcement` | Same-context `published/**` non-`*Model` carriers appear only as the single parameter of a public or protected root method. Root services do not retain those carriers in fields, constructor parameters, private method signatures, return types, type variables, local caches, or internal helper state. |
 | `domain-applicationservice-no-direct-infrastructure-construction-source-pattern` | Review-Owned | every root `*ApplicationService.java` under `src/domain/**` | none | none | Root application service source text does not directly instantiate or cache data-adapter or source-adapter infrastructure at the boundary. |
 
 ### Communication Contract

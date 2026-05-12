@@ -129,6 +129,10 @@ final class DomainRoleConcernSupport {
             if (!referencedType.startsWith("src.domain.")) {
                 continue;
             }
+            if (sourceRole.role() == Role.APPLICATION_SERVICE
+                    && isSameFeaturePublishedNonModelType(referencedType, sourceRole.feature())) {
+                continue;
+            }
             if (!isAllowedDomainReference(sourceRole, referencedType)) {
                 violations.add(forbiddenDomainConcernMessage(sourceRole, referencedType));
             }
@@ -340,10 +344,109 @@ final class DomainRoleConcernSupport {
             return;
         }
         switch (sourceRole.role()) {
+            case APPLICATION_SERVICE -> collectApplicationServicePublishedCarrierPositionViolations(
+                    sourceRole, topLevelClass, typeElement, violations);
             case MODEL -> collectModelShapeViolations(typeElement, violations);
             case CONSTANTS -> collectConstantsShapeViolations(topLevelClass, typeElement, violations);
             default -> {
                 // No additional type-shape restrictions here.
+            }
+        }
+    }
+
+    private static void collectApplicationServicePublishedCarrierPositionViolations(
+            SourceRole sourceRole,
+            ClassTree topLevelClass,
+            TypeElement typeElement,
+            Set<String> violations) {
+        for (TypeMirror typeParameter : typeElement.getTypeParameters().stream()
+                .map(typeParameterElement -> typeParameterElement.asType())
+                .toList()) {
+            addApplicationServicePublishedCarrierViolations(
+                    sourceRole, typeParameter, "type parameter bound", violations);
+        }
+        new TreeScanner<Void, Symbol.MethodSymbol>() {
+            @Override
+            public Void visitMethod(MethodTree methodTree, Symbol.MethodSymbol ignored) {
+                Symbol.MethodSymbol methodSymbol = ASTHelpers.getSymbol(methodTree);
+                if (methodSymbol == null) {
+                    return super.visitMethod(methodTree, null);
+                }
+                if (!methodSymbol.isConstructor()) {
+                    addApplicationServicePublishedCarrierViolations(
+                            sourceRole, methodSymbol.getReturnType(),
+                            "method return type " + methodSymbol.getSimpleName(), violations);
+                    for (TypeMirror thrownType : methodSymbol.getThrownTypes()) {
+                        addApplicationServicePublishedCarrierViolations(
+                                sourceRole, thrownType,
+                                "method thrown type " + methodSymbol.getSimpleName(), violations);
+                    }
+                    for (Symbol.TypeVariableSymbol typeParameter : methodSymbol.getTypeParameters()) {
+                        addApplicationServicePublishedCarrierViolations(
+                                sourceRole, typeParameter.asType(),
+                                "method type parameter bound " + methodSymbol.getSimpleName(), violations);
+                    }
+                }
+                return super.visitMethod(methodTree, methodSymbol);
+            }
+
+            @Override
+            public Void visitVariable(VariableTree variableTree, Symbol.MethodSymbol currentMethod) {
+                Symbol symbol = ASTHelpers.getSymbol(variableTree);
+                if (symbol != null) {
+                    String position = applicationServiceVariablePosition(variableTree, symbol, currentMethod);
+                    boolean legalRootParameter = isLegalApplicationServicePublishedCarrierParameter(
+                            symbol, currentMethod);
+                    if (!legalRootParameter) {
+                        addApplicationServicePublishedCarrierViolations(
+                                sourceRole, symbol.asType(), position, violations);
+                    }
+                }
+                return super.visitVariable(variableTree, currentMethod);
+            }
+        }.scan(topLevelClass, null);
+    }
+
+    private static String applicationServiceVariablePosition(
+            VariableTree variableTree,
+            Symbol symbol,
+            Symbol.MethodSymbol currentMethod) {
+        if (currentMethod == null) {
+            return "field " + variableTree.getName();
+        }
+        if (symbol.owner == currentMethod && symbol.getKind() == ElementKind.PARAMETER) {
+            if (currentMethod.isConstructor()) {
+                return "constructor parameter " + variableTree.getName();
+            }
+            return "method parameter " + currentMethod.getSimpleName() + "." + variableTree.getName();
+        }
+        return "local variable " + variableTree.getName();
+    }
+
+    private static boolean isLegalApplicationServicePublishedCarrierParameter(
+            Symbol symbol,
+            Symbol.MethodSymbol currentMethod) {
+        if (currentMethod == null
+                || currentMethod.isConstructor()
+                || symbol.owner != currentMethod
+                || symbol.getKind() != ElementKind.PARAMETER
+                || currentMethod.getParameters().size() != 1
+                || !currentMethod.getParameters().get(0).equals(symbol)) {
+            return false;
+        }
+        Set<Modifier> modifiers = currentMethod.getModifiers();
+        return modifiers.contains(Modifier.PUBLIC) || modifiers.contains(Modifier.PROTECTED);
+    }
+
+    private static void addApplicationServicePublishedCarrierViolations(
+            SourceRole sourceRole,
+            TypeMirror typeMirror,
+            String position,
+            Set<String> violations) {
+        for (String referencedType : collectTypeReferences(typeMirror)) {
+            if (isSameFeaturePublishedNonModelType(referencedType, sourceRole.feature())) {
+                violations.add("uses same-feature published non-model carrier " + referencedType
+                        + " outside the single public/protected root method parameter at " + position);
             }
         }
     }

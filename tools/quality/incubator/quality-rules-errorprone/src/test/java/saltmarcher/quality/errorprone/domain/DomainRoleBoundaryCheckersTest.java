@@ -47,6 +47,117 @@ public final class DomainRoleBoundaryCheckersTest {
     }
 
     @Test
+    public void applicationServiceRejectsPublishedCommandField() {
+        CompilationTestHelper.newInstance(DomainApplicationServiceRoleBoundaryChecker.class, getClass())
+                .addSourceLines(
+                        "src/domain/foo/FooSelectionApplicationService.java",
+                        "package src.domain.foo;",
+                        "import src.domain.foo.published.ApplySelectionCommand;",
+                        "// BUG: Diagnostic contains: field lastCommand",
+                        "public final class FooSelectionApplicationService {",
+                        "  private ApplySelectionCommand lastCommand;",
+                        "}")
+                .addSourceLines(
+                        "src/domain/foo/published/ApplySelectionCommand.java",
+                        "package src.domain.foo.published;",
+                        "public record ApplySelectionCommand() { }")
+                .doTest();
+    }
+
+    @Test
+    public void applicationServiceRejectsPublishedCommandConstructorParameter() {
+        CompilationTestHelper.newInstance(DomainApplicationServiceRoleBoundaryChecker.class, getClass())
+                .addSourceLines(
+                        "src/domain/foo/FooSelectionApplicationService.java",
+                        "package src.domain.foo;",
+                        "import src.domain.foo.published.ApplySelectionCommand;",
+                        "// BUG: Diagnostic contains: constructor parameter command",
+                        "public final class FooSelectionApplicationService {",
+                        "  public FooSelectionApplicationService(ApplySelectionCommand command) { }",
+                        "}")
+                .addSourceLines(
+                        "src/domain/foo/published/ApplySelectionCommand.java",
+                        "package src.domain.foo.published;",
+                        "public record ApplySelectionCommand() { }")
+                .doTest();
+    }
+
+    @Test
+    public void applicationServiceRejectsPublishedCommandPrivateMethodParameter() {
+        CompilationTestHelper.newInstance(DomainApplicationServiceRoleBoundaryChecker.class, getClass())
+                .addSourceLines(
+                        "src/domain/foo/FooSelectionApplicationService.java",
+                        "package src.domain.foo;",
+                        "import src.domain.foo.published.ApplySelectionCommand;",
+                        "// BUG: Diagnostic contains: method parameter interpret.command",
+                        "public final class FooSelectionApplicationService {",
+                        "  private void interpret(ApplySelectionCommand command) { }",
+                        "}")
+                .addSourceLines(
+                        "src/domain/foo/published/ApplySelectionCommand.java",
+                        "package src.domain.foo.published;",
+                        "public record ApplySelectionCommand() { }")
+                .doTest();
+    }
+
+    @Test
+    public void applicationServiceRejectsPublishedCommandReturnType() {
+        CompilationTestHelper.newInstance(DomainApplicationServiceRoleBoundaryChecker.class, getClass())
+                .addSourceLines(
+                        "src/domain/foo/FooSelectionApplicationService.java",
+                        "package src.domain.foo;",
+                        "import src.domain.foo.published.ApplySelectionCommand;",
+                        "// BUG: Diagnostic contains: method return type cached",
+                        "public final class FooSelectionApplicationService {",
+                        "  private ApplySelectionCommand cached() {",
+                        "    return null;",
+                        "  }",
+                        "}")
+                .addSourceLines(
+                        "src/domain/foo/published/ApplySelectionCommand.java",
+                        "package src.domain.foo.published;",
+                        "public record ApplySelectionCommand() { }")
+                .doTest();
+    }
+
+    @Test
+    public void applicationServiceRejectsPublishedCommandTypeVariableBound() {
+        CompilationTestHelper.newInstance(DomainApplicationServiceRoleBoundaryChecker.class, getClass())
+                .addSourceLines(
+                        "src/domain/foo/FooSelectionApplicationService.java",
+                        "package src.domain.foo;",
+                        "import src.domain.foo.published.ApplySelectionCommand;",
+                        "// BUG: Diagnostic contains: type parameter bound",
+                        "public final class FooSelectionApplicationService<T extends ApplySelectionCommand> {",
+                        "}")
+                .addSourceLines(
+                        "src/domain/foo/published/ApplySelectionCommand.java",
+                        "package src.domain.foo.published;",
+                        "public interface ApplySelectionCommand { }")
+                .doTest();
+    }
+
+    @Test
+    public void applicationServiceRejectsPublishedCommandLocalCache() {
+        CompilationTestHelper.newInstance(DomainApplicationServiceRoleBoundaryChecker.class, getClass())
+                .addSourceLines(
+                        "src/domain/foo/FooSelectionApplicationService.java",
+                        "package src.domain.foo;",
+                        "import src.domain.foo.published.ApplySelectionCommand;",
+                        "// BUG: Diagnostic contains: local variable cached",
+                        "public final class FooSelectionApplicationService {",
+                        "  public void apply(ApplySelectionCommand command) {",
+                        "    ApplySelectionCommand cached = command;",
+                        "  }",
+                        "}")
+                .addSourceLines(
+                        "src/domain/foo/published/ApplySelectionCommand.java",
+                        "package src.domain.foo.published;",
+                        "public record ApplySelectionCommand() { }")
+                .doTest();
+    }
+
+    @Test
     public void applicationServiceRejectsModelConcern() {
         CompilationTestHelper.newInstance(DomainApplicationServiceRoleBoundaryChecker.class, getClass())
                 .addSourceLines(
