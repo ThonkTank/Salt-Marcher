@@ -1,6 +1,7 @@
 package saltmarcher.quality.errorprone.domain;
 
 import com.google.errorprone.CompilationTestHelper;
+import java.util.function.Predicate;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -351,6 +352,59 @@ public final class DomainRoleBoundaryCheckersTest {
     }
 
     @Test
+    public void applicationServiceRejectsSameContextRepositoryConstructorParameter() {
+        CompilationTestHelper.newInstance(DomainApplicationServiceRoleBoundaryChecker.class, getClass())
+                .addSourceLines(
+                        "src/domain/foo/FooSelectionApplicationService.java",
+                        "package src.domain.foo;",
+                        "// BUG: Diagnostic contains: references forbidden domain concern src.domain.foo.model.grid.repository.GridRepository",
+                        "public final class FooSelectionApplicationService {",
+                        "  public FooSelectionApplicationService(",
+                        "      src.domain.foo.model.grid.repository.GridRepository repository) { }",
+                        "}")
+                .addSourceLines(
+                        "src/domain/foo/model/grid/repository/GridRepository.java",
+                        "package src.domain.foo.model.grid.repository;",
+                        "public interface GridRepository { }")
+                .doTest();
+    }
+
+    @Test
+    public void applicationServiceRejectsForeignPublishedConstructorParameter() {
+        CompilationTestHelper.newInstance(DomainApplicationServiceRoleBoundaryChecker.class, getClass())
+                .addSourceLines(
+                        "src/domain/foo/FooSelectionApplicationService.java",
+                        "package src.domain.foo;",
+                        "// BUG: Diagnostic contains: references forbidden domain concern src.domain.bar.published.BarSnapshot",
+                        "public final class FooSelectionApplicationService {",
+                        "  public FooSelectionApplicationService(",
+                        "      src.domain.bar.published.BarSnapshot snapshot) { }",
+                        "}")
+                .addSourceLines(
+                        "src/domain/bar/published/BarSnapshot.java",
+                        "package src.domain.bar.published;",
+                        "public record BarSnapshot() { }")
+                .doTest();
+    }
+
+    @Test
+    public void applicationServiceRejectsOuterLayerConstructorParameter() {
+        CompilationTestHelper.newInstance(DomainApplicationServiceRoleBoundaryChecker.class, getClass())
+                .addSourceLines(
+                        "src/domain/foo/FooSelectionApplicationService.java",
+                        "package src.domain.foo;",
+                        "// BUG: Diagnostic contains: references outer-layer type src.view.foo.SelectionView",
+                        "public final class FooSelectionApplicationService {",
+                        "  public FooSelectionApplicationService(src.view.foo.SelectionView view) { }",
+                        "}")
+                .addSourceLines(
+                        "src/view/foo/SelectionView.java",
+                        "package src.view.foo;",
+                        "public final class SelectionView { }")
+                .doTest();
+    }
+
+    @Test
     public void useCaseAllowsCollaboratorMatrix() {
         CompilationTestHelper.newInstance(DomainUseCaseRoleBoundaryChecker.class, getClass())
                 .addSourceLines(
@@ -451,7 +505,7 @@ public final class DomainRoleBoundaryCheckersTest {
                         "import src.domain.foo.application.LoadSelectionUseCase;",
                         "import src.domain.foo.published.SelectionModel;",
                         "import src.view.foo.SelectionView;",
-                        "// BUG: Diagnostic contains: references executable protocol type java.util.function.Function",
+                        "// BUG: Diagnostic matches: forbidden-collaborator-matrix",
                         "final class ApplySelectionUseCase {",
                         "  private final LoadSelectionUseCase loadSelection;",
                         "  private final SelectionModel selectionModel;",
@@ -487,6 +541,12 @@ public final class DomainRoleBoundaryCheckersTest {
                         "src/view/foo/SelectionView.java",
                         "package src.view.foo;",
                         "public final class SelectionView { }")
+                .expectErrorMessage("forbidden-collaborator-matrix", containsAll(
+                        "references root UseCase chain src.domain.foo.application.LoadSelectionUseCase",
+                        "references forbidden domain concern src.domain.foo.published.SelectionModel",
+                        "references forbidden domain concern src.domain.bar.published.BarSnapshot",
+                        "references outer-layer type src.view.foo.SelectionView",
+                        "references executable protocol type java.util.function.Function"))
                 .doTest();
     }
 
@@ -1042,5 +1102,16 @@ public final class DomainRoleBoundaryCheckersTest {
                         "package src.domain.foo.published;",
                         "public interface GridModel { }")
                 .doTest();
+    }
+
+    private static Predicate<String> containsAll(String... snippets) {
+        return message -> {
+            for (String snippet : snippets) {
+                if (!message.contains(snippet)) {
+                    return false;
+                }
+            }
+            return true;
+        };
     }
 }
