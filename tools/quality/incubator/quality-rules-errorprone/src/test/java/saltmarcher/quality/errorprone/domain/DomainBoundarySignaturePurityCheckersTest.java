@@ -49,6 +49,25 @@ public final class DomainBoundarySignaturePurityCheckersTest {
     }
 
     @Test
+    public void publicBoundarySignaturePurityIgnoresNonPublicRootBoundaryType() {
+        CompilationTestHelper.newInstance(DomainPublicBoundarySignaturePurityChecker.class, getClass())
+                .addSourceLines(
+                        "src/domain/foo/FooApplicationService.java",
+                        "package src.domain.foo;",
+                        "import src.domain.bar.published.BarSnapshot;",
+                        "final class FooApplicationService {",
+                        "  public BarSnapshot foreignSnapshot() {",
+                        "    return null;",
+                        "  }",
+                        "}")
+                .addSourceLines(
+                        "src/domain/bar/published/BarSnapshot.java",
+                        "package src.domain.bar.published;",
+                        "public record BarSnapshot() { }")
+                .doTest();
+    }
+
+    @Test
     public void publicBoundarySignaturePurityAllowsJdkValueAndContainerTypes() {
         CompilationTestHelper.newInstance(DomainPublicBoundarySignaturePurityChecker.class, getClass())
                 .addSourceLines(
@@ -79,6 +98,25 @@ public final class DomainBoundarySignaturePurityCheckersTest {
                         "package src.domain.foo.published;",
                         "import src.domain.foo.model.grid.model.GridState;",
                         "final class FooInternalSnapshot {",
+                        "  public GridState state() {",
+                        "    return null;",
+                        "  }",
+                        "}")
+                .addSourceLines(
+                        "src/domain/foo/model/grid/model/GridState.java",
+                        "package src.domain.foo.model.grid.model;",
+                        "public final class GridState { }")
+                .doTest();
+    }
+
+    @Test
+    public void publishedSignaturePurityIgnoresLookalikeOutsideSrcDomain() {
+        CompilationTestHelper.newInstance(DomainPublishedBoundarySignaturePurityChecker.class, getClass())
+                .addSourceLines(
+                        "src/notdomain/foo/published/FooSnapshot.java",
+                        "package src.notdomain.foo.published;",
+                        "import src.domain.foo.model.grid.model.GridState;",
+                        "public final class FooSnapshot {",
                         "  public GridState state() {",
                         "    return null;",
                         "  }",
