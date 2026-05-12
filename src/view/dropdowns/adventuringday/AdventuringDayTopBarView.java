@@ -206,7 +206,7 @@ public final class AdventuringDayTopBarView extends HBox {
         private final PartyRowsPane partyRowsPane = new PartyRowsPane(this::publishSnapshot);
         private final SummaryPane summaryPane = new SummaryPane();
         private final PanelEventPublisher eventPublisher;
-        private boolean syncingFromModel;
+        private int modelSyncDepth;
 
         private CalculatorPane(PanelEventPublisher eventPublisher) {
             this.eventPublisher = eventPublisher == null ? (useActivePartyRequested, addRowRequested, clearRequested) -> { }
@@ -263,8 +263,8 @@ public final class AdventuringDayTopBarView extends HBox {
                     true,
                     AdventuringDayTopBarContributionModel.CalculationPresentation.empty(false, 0))
                     : panelModel;
-            syncingFromModel = true;
             try {
+                modelSyncDepth++;
                 partySummaryLabel.setText(safePanelModel.partySummaryText());
                 budgetModeButton.setSelected(!safePanelModel.progressModeSelected());
                 progressModeButton.setSelected(safePanelModel.progressModeSelected());
@@ -276,7 +276,7 @@ public final class AdventuringDayTopBarView extends HBox {
                 partyRowsPane.showRows(safePanelModel.rows());
                 summaryPane.show(safePanelModel.calculation());
             } finally {
-                syncingFromModel = false;
+                modelSyncDepth--;
             }
         }
 
@@ -293,7 +293,7 @@ public final class AdventuringDayTopBarView extends HBox {
         }
 
         private void publishSnapshot() {
-            if (!syncingFromModel) {
+            if (modelSyncDepth == 0) {
                 eventPublisher.publish(false, false, false);
             }
         }
@@ -412,9 +412,7 @@ public final class AdventuringDayTopBarView extends HBox {
             }
             List<AdventuringDayTopBarViewInputEvent.RowInput> snapshots = new ArrayList<>();
             for (RowControls row : rows) {
-                snapshots.add(new AdventuringDayTopBarViewInputEvent.RowInput(
-                        row.levelCombo.getValue(),
-                        row.countField.getText()));
+                snapshots.add(row.snapshot());
             }
             return List.copyOf(snapshots);
         }
@@ -481,6 +479,12 @@ public final class AdventuringDayTopBarView extends HBox {
 
             private HBox root() {
                 return root;
+            }
+
+            private AdventuringDayTopBarViewInputEvent.RowInput snapshot() {
+                return new AdventuringDayTopBarViewInputEvent.RowInput(
+                        levelCombo.getValue(),
+                        countField.getText());
             }
 
             private void normalizeCountField() {

@@ -25,7 +25,6 @@ import src.domain.encountertable.published.RefreshEncounterTableCatalogCommand;
 import src.view.slotcontent.details.creature.CreatureDetailsContentModel;
 import src.view.slotcontent.details.creature.CreatureDetailsView;
 
-@SuppressWarnings("PMD.TooManyMethods")
 final class CatalogBinder {
 
     private final ShellRuntimeContext runtimeContext;
@@ -35,23 +34,12 @@ final class CatalogBinder {
     }
 
     ShellBinding bind() {
-        CreaturesApplicationService creatures = runtimeContext.services().require(CreaturesApplicationService.class);
-        EncounterTableApplicationService encounterTables =
-                runtimeContext.services().require(EncounterTableApplicationService.class);
-        EncounterApplicationService encounters = runtimeContext.services().require(EncounterApplicationService.class);
-        EncounterBuilderInputsModel builderInputsModel =
-                runtimeContext.services().require(EncounterBuilderInputsModel.class);
-        CreatureFilterOptionsModel filterOptionsModel =
-                runtimeContext.services().require(CreatureFilterOptionsModel.class);
-        CreatureCatalogModel catalogModel = runtimeContext.services().require(CreatureCatalogModel.class);
-        CreatureDetailModel detailModel = runtimeContext.services().require(CreatureDetailModel.class);
-        EncounterTableCatalogModel encounterTableModel =
-                runtimeContext.services().require(EncounterTableCatalogModel.class);
-        EncounterTuningPreviewModel tuningPreviewModel =
-                runtimeContext.services().require(EncounterTuningPreviewModel.class);
+        RuntimeServices services = RuntimeLookup.services(runtimeContext);
+        PublishedModels models = RuntimeLookup.models(runtimeContext);
 
         CatalogContributionModel presentationModel = new CatalogContributionModel();
-        CatalogIntentHandler intentHandler = new CatalogIntentHandler(presentationModel, creatures, encounters);
+        CatalogIntentHandler intentHandler =
+                new CatalogIntentHandler(presentationModel, services.creatures(), services.encounters());
         CatalogControlsView controls = new CatalogControlsView(presentationModel);
         CatalogMainView main = new CatalogMainView();
 
@@ -61,28 +49,28 @@ final class CatalogBinder {
             if (after == null || after.longValue() <= 0L) {
                 return;
             }
-            openCreatureDetails(runtimeContext.inspector(), creatures, detailModel, after.longValue());
+            openCreatureDetails(runtimeContext.inspector(), services.creatures(), models.detail(), after.longValue());
             presentationModel.setCreatureDetailSelection(0L);
         });
 
-        filterOptionsModel.subscribe(presentationModel::applyCreatureFilterOptions);
-        catalogModel.subscribe(presentationModel::applySearchResult);
-        encounterTableModel.subscribe(presentationModel::applyEncounterTables);
-        tuningPreviewModel.subscribe(result -> presentationModel.applyEncounterTuningPreview(result.labels()));
-        builderInputsModel.subscribe(builderInputs -> {
+        models.filterOptions().subscribe(presentationModel::applyCreatureFilterOptions);
+        models.catalog().subscribe(presentationModel::applySearchResult);
+        models.encounterTables().subscribe(presentationModel::applyEncounterTables);
+        models.tuningPreview().subscribe(result -> presentationModel.applyEncounterTuningPreview(result.labels()));
+        models.builderInputs().subscribe(builderInputs -> {
             if (presentationModel.applyEncounterBuilderInputs(builderInputs)) {
-                runSearch(creatures, presentationModel.currentSearchRequest());
+                runSearch(services.creatures(), presentationModel.currentSearchRequest());
             }
         });
 
-        presentationModel.applyCreatureFilterOptions(filterOptionsModel.current());
-        presentationModel.applyEncounterTables(encounterTableModel.current());
-        presentationModel.applyEncounterTuningPreview(tuningPreviewModel.current().labels());
-        presentationModel.applyEncounterBuilderInputs(builderInputsModel.current());
+        presentationModel.applyCreatureFilterOptions(models.filterOptions().current());
+        presentationModel.applyEncounterTables(models.encounterTables().current());
+        presentationModel.applyEncounterTuningPreview(models.tuningPreview().current().labels());
+        presentationModel.applyEncounterBuilderInputs(models.builderInputs().current());
 
-        creatures.refreshFilterOptions(new RefreshCreatureFilterOptionsCommand());
-        encounterTables.refreshCatalog(new RefreshEncounterTableCatalogCommand());
-        runSearch(creatures, presentationModel.currentSearchRequest());
+        services.creatures().refreshFilterOptions(new RefreshCreatureFilterOptionsCommand());
+        services.encounterTables().refreshCatalog(new RefreshEncounterTableCatalogCommand());
+        runSearch(services.creatures(), presentationModel.currentSearchRequest());
         return new Binding(controls, main);
     }
 
@@ -138,6 +126,43 @@ final class CatalogBinder {
                 request.sortDirection(),
                 50,
                 request.pageOffset()));
+    }
+
+    private static final class RuntimeLookup {
+
+        private static RuntimeServices services(ShellRuntimeContext runtimeContext) {
+            return new RuntimeServices(
+                    runtimeContext.services().require(CreaturesApplicationService.class),
+                    runtimeContext.services().require(EncounterTableApplicationService.class),
+                    runtimeContext.services().require(EncounterApplicationService.class));
+        }
+
+        private static PublishedModels models(ShellRuntimeContext runtimeContext) {
+            return new PublishedModels(
+                    runtimeContext.services().require(EncounterBuilderInputsModel.class),
+                    runtimeContext.services().require(CreatureFilterOptionsModel.class),
+                    runtimeContext.services().require(CreatureCatalogModel.class),
+                    runtimeContext.services().require(CreatureDetailModel.class),
+                    runtimeContext.services().require(EncounterTableCatalogModel.class),
+                    runtimeContext.services().require(EncounterTuningPreviewModel.class));
+        }
+    }
+
+    private record RuntimeServices(
+            CreaturesApplicationService creatures,
+            EncounterTableApplicationService encounterTables,
+            EncounterApplicationService encounters
+    ) {
+    }
+
+    private record PublishedModels(
+            EncounterBuilderInputsModel builderInputs,
+            CreatureFilterOptionsModel filterOptions,
+            CreatureCatalogModel catalog,
+            CreatureDetailModel detail,
+            EncounterTableCatalogModel encounterTables,
+            EncounterTuningPreviewModel tuningPreview
+    ) {
     }
 
     private record Binding(Node controls, Node main) implements ShellBinding {

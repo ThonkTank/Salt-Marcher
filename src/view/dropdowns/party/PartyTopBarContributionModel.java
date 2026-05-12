@@ -30,6 +30,7 @@ import src.domain.party.published.RestCadenceUrgency;
 })
 public final class PartyTopBarContributionModel {
 
+    private static final long NO_MEMBER_ID = 0L;
     private static final int MAX_CHARACTER_LEVEL = 20;
 
     private final ReadOnlyStringWrapper triggerText = new ReadOnlyStringWrapper("Keine _Party ▼");
@@ -234,7 +235,7 @@ public final class PartyTopBarContributionModel {
     }
 
     private @Nullable MemberModel findMember(long memberId) {
-        if (memberId <= 0L) {
+        if (memberId <= NO_MEMBER_ID) {
             return null;
         }
         for (MemberModel member : safePanel().activeMembers()) {

@@ -7,8 +7,12 @@ import shell.api.ShellBinding;
 import shell.api.ShellRuntimeContext;
 import shell.api.ShellSlot;
 import src.domain.party.PartyApplicationService;
+import src.domain.party.published.AdventuringDayCalculationResult;
 import src.domain.party.published.AdventuringDayCalculationModel;
+import src.domain.party.published.AdventuringDayResult;
+import src.domain.party.published.AdventuringDaySummary;
 import src.domain.party.published.AdventuringDaySummaryModel;
+import src.domain.party.published.ReadStatus;
 import src.view.slotcontent.topbar.dropdown.DropdownPopupContentModel;
 
 final class AdventuringDayTopBarBinder {
@@ -34,10 +38,35 @@ final class AdventuringDayTopBarBinder {
         presentationModel.triggerTextProperty().addListener((ignored, before, after) ->
                 applyPopupPresentation(popupContentModel, after));
         presentationModel.panelProperty().addListener((ignored, before, after) -> view.showPanel(after));
-        summaryModel.subscribe(presentationModel::applySummaryResult);
-        calculationModel.subscribe(presentationModel::applyCalculationResult);
-        presentationModel.applySummaryResult(summaryModel.current());
+        summaryModel.subscribe(result -> applySummary(presentationModel, result));
+        calculationModel.subscribe(result -> presentationModel.applyCalculationResult(
+                result == null || result.calculation() == null
+                        ? null
+                        : new AdventuringDayCalculationMapper().map(result.calculation()),
+                successful(result)));
+        AdventuringDayResult initialSummary = summaryModel.current();
+        applySummary(presentationModel, initialSummary);
         return new Binding(view);
+    }
+
+    private static void applySummary(
+            AdventuringDayTopBarContributionModel presentationModel,
+            AdventuringDayResult result
+    ) {
+        AdventuringDaySummary summary = result == null ? null : result.summary();
+        presentationModel.applySummaryResult(
+                summary == null ? java.util.List.of() : summary.activePartyLevels(),
+                summary == null ? 0 : summary.remainingToShortRest(),
+                summary == null ? 0 : summary.remainingToLongRest(),
+                successful(result));
+    }
+
+    private static boolean successful(AdventuringDayResult result) {
+        return result != null && result.status() == ReadStatus.SUCCESS;
+    }
+
+    private static boolean successful(AdventuringDayCalculationResult result) {
+        return result != null && result.status() == ReadStatus.SUCCESS;
     }
 
     private static void applyPopupPresentation(

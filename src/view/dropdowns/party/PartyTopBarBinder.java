@@ -13,7 +13,6 @@ import src.domain.party.published.PartyMutationModel;
 import src.domain.party.published.PartySnapshotModel;
 import src.view.slotcontent.topbar.dropdown.DropdownPopupContentModel;
 
-@SuppressWarnings("PMD.CouplingBetweenObjects")
 final class PartyTopBarBinder {
 
     private final ShellRuntimeContext runtimeContext;
