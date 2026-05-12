@@ -16,7 +16,6 @@ import src.domain.party.PartyApplicationService;
 import src.domain.party.published.ActivePartyModel;
 import src.domain.party.published.AdventuringDayCalculationModel;
 import src.domain.sessionplanner.SessionPlannerApplicationService;
-import src.domain.sessionplanner.SessionPlannerApplicationServiceAssembly;
 import src.domain.sessionplanner.model.session.repository.SessionPlanRepository;
 import src.domain.sessionplanner.published.SessionPlannerCurrentSessionModel;
 import src.domain.sessionplanner.published.SessionPlannerEncountersModel;
@@ -60,13 +59,13 @@ public final class SessionPlannerServiceContribution implements ServiceContribut
         };
         builder.registerFactory(
                 SessionPlannerApplicationService.class,
-                services -> SessionPlannerApplicationServiceAssembly.create(
-                        repository,
-                        new SessionPlannerPartyFactsQueryAdapter(
-                                services.require(PartyApplicationService.class),
-                                services.require(ActivePartyModel.class),
-                                services.require(AdventuringDayCalculationModel.class)),
-                        publishedStateFactory.apply(services)));
+                services -> new SessionPlannerApplicationService(new SessionPlannerApplicationService.Assembly(
+                                repository,
+                                new SessionPlannerPartyFactsQueryAdapter(
+                                        services.require(PartyApplicationService.class),
+                                        services.require(ActivePartyModel.class),
+                                        services.require(AdventuringDayCalculationModel.class)),
+                                publishedStateFactory.apply(services))));
         builder.registerFactory(
                 SessionPlannerCurrentSessionModel.class,
                 services -> {

@@ -45,7 +45,8 @@ public final class SqliteEncounterLocalGateway {
                 long planId = store.savePlan(connection, plan);
                 store.replaceCreatures(connection, planId, creatures);
                 connection.commit();
-                return loadSaved(connection, planId);
+                return loadSaved(connection, planId)
+                        .orElseThrow(() -> new IllegalStateException("Saved encounter plan vanished after save."));
             } catch (SQLException exception) {
                 connection.rollback();
                 throw exception;
@@ -79,10 +80,12 @@ public final class SqliteEncounterLocalGateway {
         }
     }
 
-    private EncounterPlanSnapshotRecord loadSaved(Connection connection, long planId) throws SQLException {
-        EncounterPlanRecord plan = store.loadPlan(connection, planId)
-                .orElseThrow(() -> new SQLException("Saved encounter plan vanished after save."));
-        return new EncounterPlanSnapshotRecord(plan, store.loadCreatures(connection, planId));
+    private Optional<EncounterPlanSnapshotRecord> loadSaved(Connection connection, long planId) throws SQLException {
+        Optional<EncounterPlanRecord> plan = store.loadPlan(connection, planId);
+        if (plan.isEmpty()) {
+            return Optional.empty();
+        }
+        return Optional.of(new EncounterPlanSnapshotRecord(plan.get(), store.loadCreatures(connection, planId)));
     }
 
     private Connection openReadyConnection() throws SQLException {
