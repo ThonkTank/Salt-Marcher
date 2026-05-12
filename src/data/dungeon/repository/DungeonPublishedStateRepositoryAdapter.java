@@ -1,6 +1,5 @@
 package src.data.dungeon.repository;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
@@ -35,187 +34,159 @@ public final class DungeonPublishedStateRepositoryAdapter implements DungeonPubl
 
     private static final String LISTENER_PARAMETER = "listener";
 
-    private final List<Consumer<DungeonAuthoredReadResult>> authoredReadListeners = new ArrayList<>();
-    private final List<Consumer<DungeonAuthoredMutationResult>> authoredMutationListeners = new ArrayList<>();
-    private final List<Consumer<DungeonMapCatalogResponse>> mapCatalogListeners = new ArrayList<>();
-    private final List<Consumer<DungeonTravelResponse>> travelListeners = new ArrayList<>();
+    private final PublishedChannel<DungeonAuthoredReadResult> authoredRead =
+            new PublishedChannel<>(DefaultDungeonPublishedState.authoredRead());
+    private final PublishedChannel<DungeonAuthoredMutationResult> authoredMutation =
+            new PublishedChannel<>(DefaultDungeonPublishedState.authoredMutation());
+    private final PublishedChannel<DungeonMapCatalogResponse> mapCatalog =
+            new PublishedChannel<>(new DungeonMapCatalogResponse.MapList(List.of()));
+    private final PublishedChannel<DungeonTravelResponse> travel =
+            new PublishedChannel<>(DefaultDungeonPublishedState.travel());
     private final DungeonPublishedStateProjector projector = new DungeonPublishedStateProjector();
     public final DungeonAuthoredReadModel authoredReadModel = new DungeonAuthoredReadModel(
-            this::currentAuthoredRead,
-            this::subscribeAuthoredReadListener);
+            authoredRead::current,
+            authoredRead::subscribe);
     public final DungeonAuthoredMutationModel authoredMutationModel = new DungeonAuthoredMutationModel(
-            this::currentAuthoredMutation,
-            this::subscribeAuthoredMutationListener);
+            authoredMutation::current,
+            authoredMutation::subscribe);
     public final DungeonMapCatalogModel mapCatalogModel = new DungeonMapCatalogModel(
-            this::currentMapCatalog,
-            this::subscribeMapCatalogListener);
+            mapCatalog::current,
+            mapCatalog::subscribe);
     public final DungeonTravelModel travelModel = new DungeonTravelModel(
-            this::currentTravel,
-            this::subscribeTravelListener);
-    private DungeonAuthoredReadResult currentAuthoredRead = emptyAuthoredRead();
-    private DungeonAuthoredMutationResult currentAuthoredMutation = emptyAuthoredMutation();
-    private DungeonMapCatalogResponse currentMapCatalog = new DungeonMapCatalogResponse.MapList(List.of());
-    private DungeonTravelResponse currentTravel = emptyTravel();
+            travel::current,
+            travel::subscribe);
 
     @Override
     public void publishAuthoredSnapshot(Object snapshot) {
         publishAuthoredRead(snapshot instanceof LoadDungeonSnapshotUseCase.DungeonSnapshotData snapshotData
                 ? projector.authoredSnapshot(snapshotData)
-                : currentAuthoredRead);
+                : authoredRead.current());
     }
 
     @Override
     public void publishAuthoredInspector(Object snapshot) {
         publishAuthoredRead(snapshot instanceof LoadDungeonSnapshotUseCase.InspectorSnapshotData inspectorData
                 ? projector.authoredInspector(inspectorData)
-                : currentAuthoredRead);
+                : authoredRead.current());
     }
 
     @Override
     public void publishAuthoredMutation(Object result) {
-        currentAuthoredMutation = result instanceof ApplyDungeonEditorOperationUseCase.OperationResultData operationResult
+        DungeonAuthoredMutationResult next = result instanceof ApplyDungeonEditorOperationUseCase.OperationResultData operationResult
                 ? projector.authoredMutation(operationResult)
-                : currentAuthoredMutation;
-        for (Consumer<DungeonAuthoredMutationResult> listener : List.copyOf(authoredMutationListeners)) {
-            listener.accept(currentAuthoredMutation);
-        }
+                : authoredMutation.current();
+        authoredMutation.publish(next);
     }
 
     @Override
     public void publishMapCatalog(Object maps) {
-        currentMapCatalog = maps instanceof List<?> mapList
+        DungeonMapCatalogResponse next = maps instanceof List<?> mapList
                 ? projector.mapCatalog(mapList.stream()
                         .filter(SearchDungeonMapsUseCase.MapSummary.class::isInstance)
                         .map(SearchDungeonMapsUseCase.MapSummary.class::cast)
                         .toList())
-                : currentMapCatalog;
-        publishCurrentMapCatalog();
+                : mapCatalog.current();
+        mapCatalog.publish(next);
     }
 
     @Override
     public void publishMapCatalogMutation(CatalogMutationKind mutationKind, DungeonMapIdentity mapId) {
-        currentMapCatalog = projector.mapMutation(
+        mapCatalog.publish(projector.mapMutation(
                 DungeonMapCatalogResponse.MutationKind.valueOf(mutationKind.name()),
-                mapId);
-        publishCurrentMapCatalog();
+                mapId));
     }
 
     @Override
     public void publishTravelSurface(Object surface) {
-        currentTravel = surface instanceof DungeonTravelSurfaceFacts surfaceFacts
+        DungeonTravelResponse next = surface instanceof DungeonTravelSurfaceFacts surfaceFacts
                 ? projector.travelSurface(surfaceFacts)
-                : currentTravel;
-        publishCurrentTravel();
+                : travel.current();
+        travel.publish(next);
     }
 
     @Override
     public void publishTravelMove(Object result) {
-        currentTravel = result instanceof DungeonTravelMoveFacts moveFacts
+        DungeonTravelResponse next = result instanceof DungeonTravelMoveFacts moveFacts
                 ? projector.travelMove(moveFacts)
-                : currentTravel;
-        publishCurrentTravel();
+                : travel.current();
+        travel.publish(next);
     }
 
     private void publishAuthoredRead(DungeonAuthoredReadResult result) {
-        currentAuthoredRead = result;
-        for (Consumer<DungeonAuthoredReadResult> listener : List.copyOf(authoredReadListeners)) {
-            listener.accept(currentAuthoredRead);
+        authoredRead.publish(result);
+    }
+
+    private static final class PublishedChannel<T> {
+
+        private final List<Consumer<T>> listeners = new java.util.ArrayList<>();
+        private T current;
+
+        private PublishedChannel(T initial) {
+            this.current = Objects.requireNonNull(initial, "initial");
+        }
+
+        private T current() {
+            return current;
+        }
+
+        private void publish(T next) {
+            current = Objects.requireNonNull(next, "next");
+            for (Consumer<T> listener : List.copyOf(listeners)) {
+                listener.accept(current);
+            }
+        }
+
+        private Runnable subscribe(Consumer<T> listener) {
+            Consumer<T> safeListener = Objects.requireNonNull(listener, LISTENER_PARAMETER);
+            listeners.add(safeListener);
+            return () -> listeners.remove(safeListener);
         }
     }
 
-    private void publishCurrentMapCatalog() {
-        for (Consumer<DungeonMapCatalogResponse> listener : List.copyOf(mapCatalogListeners)) {
-            listener.accept(currentMapCatalog);
+    private static final class DefaultDungeonPublishedState {
+
+        private static final String DEFAULT_DUNGEON_NAME = "Dungeon";
+
+        private static DungeonAuthoredReadResult authoredRead() {
+            return new DungeonAuthoredReadResult.CommittedSnapshot(snapshot());
         }
-    }
 
-    private void publishCurrentTravel() {
-        for (Consumer<DungeonTravelResponse> listener : List.copyOf(travelListeners)) {
-            listener.accept(currentTravel);
+        private static DungeonAuthoredMutationResult authoredMutation() {
+            return new DungeonAuthoredMutationResult.Operation(new DungeonOperationResult(
+                    snapshot(),
+                    List.of(),
+                    List.of()));
         }
-    }
 
-    private DungeonAuthoredReadResult currentAuthoredRead() {
-        return currentAuthoredRead;
-    }
+        private static DungeonTravelResponse travel() {
+            return new DungeonTravelResponse.Surface(new DungeonTravelSurfaceSnapshot(
+                    DungeonTravelContextKind.DUNGEON,
+                    DEFAULT_DUNGEON_NAME,
+                    0,
+                    DungeonMapSnapshot.empty(),
+                    new DungeonTravelPosition(
+                            new DungeonMapId(1L),
+                            DungeonTravelLocationKind.TILE,
+                            0L,
+                            new DungeonCellRef(0, 0, 0),
+                            DungeonTravelHeading.defaultHeading()),
+                    DEFAULT_DUNGEON_NAME,
+                    "Kein Standort",
+                    "",
+                    "",
+                    "",
+                    "",
+                    List.of()));
+        }
 
-    private DungeonAuthoredMutationResult currentAuthoredMutation() {
-        return currentAuthoredMutation;
-    }
-
-    private DungeonMapCatalogResponse currentMapCatalog() {
-        return currentMapCatalog;
-    }
-
-    private DungeonTravelResponse currentTravel() {
-        return currentTravel;
-    }
-
-    private Runnable subscribeAuthoredReadListener(Consumer<DungeonAuthoredReadResult> listener) {
-        Consumer<DungeonAuthoredReadResult> safeListener = Objects.requireNonNull(listener, LISTENER_PARAMETER);
-        authoredReadListeners.add(safeListener);
-        return () -> authoredReadListeners.remove(safeListener);
-    }
-
-    private Runnable subscribeAuthoredMutationListener(Consumer<DungeonAuthoredMutationResult> listener) {
-        Consumer<DungeonAuthoredMutationResult> safeListener = Objects.requireNonNull(listener, LISTENER_PARAMETER);
-        authoredMutationListeners.add(safeListener);
-        return () -> authoredMutationListeners.remove(safeListener);
-    }
-
-    private Runnable subscribeMapCatalogListener(Consumer<DungeonMapCatalogResponse> listener) {
-        Consumer<DungeonMapCatalogResponse> safeListener = Objects.requireNonNull(listener, LISTENER_PARAMETER);
-        mapCatalogListeners.add(safeListener);
-        return () -> mapCatalogListeners.remove(safeListener);
-    }
-
-    private Runnable subscribeTravelListener(Consumer<DungeonTravelResponse> listener) {
-        Consumer<DungeonTravelResponse> safeListener = Objects.requireNonNull(listener, LISTENER_PARAMETER);
-        travelListeners.add(safeListener);
-        return () -> travelListeners.remove(safeListener);
-    }
-
-    private static DungeonAuthoredReadResult emptyAuthoredRead() {
-        return new DungeonAuthoredReadResult.CommittedSnapshot(new DungeonSnapshot(
-                "Dungeon",
-                DungeonMapMode.EDITOR,
-                DungeonMapSnapshot.empty(),
-                List.of(),
-                List.of(),
-                0));
-    }
-
-    private static DungeonAuthoredMutationResult emptyAuthoredMutation() {
-        return new DungeonAuthoredMutationResult.Operation(new DungeonOperationResult(
-                new DungeonSnapshot(
-                        "Dungeon",
-                        DungeonMapMode.EDITOR,
-                        DungeonMapSnapshot.empty(),
-                        List.of(),
-                        List.of(),
-                        0),
-                List.of(),
-                List.of()));
-    }
-
-    private static DungeonTravelResponse emptyTravel() {
-        return new DungeonTravelResponse.Surface(new DungeonTravelSurfaceSnapshot(
-                DungeonTravelContextKind.DUNGEON,
-                "Dungeon",
-                0,
-                DungeonMapSnapshot.empty(),
-                new DungeonTravelPosition(
-                        new DungeonMapId(1L),
-                        DungeonTravelLocationKind.TILE,
-                        0L,
-                        new DungeonCellRef(0, 0, 0),
-                        DungeonTravelHeading.defaultHeading()),
-                "Dungeon",
-                "Kein Standort",
-                "",
-                "",
-                "",
-                "",
-                List.of()));
+        private static DungeonSnapshot snapshot() {
+            return new DungeonSnapshot(
+                    DEFAULT_DUNGEON_NAME,
+                    DungeonMapMode.EDITOR,
+                    DungeonMapSnapshot.empty(),
+                    List.of(),
+                    List.of(),
+                    0);
+        }
     }
 }
