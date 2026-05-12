@@ -33,12 +33,6 @@ final class DomainBoundarySignaturePuritySupport {
             Pattern.compile("^src\\.domain\\.([^.]+)\\.published(\\..*)?$");
     private static final Pattern DOMAIN_PUBLISHED_TYPE =
             Pattern.compile("^src\\.domain\\.([^.]+)\\.published\\..+");
-    private static final Pattern ROOT_APPLICATION_SERVICE_TYPE =
-            Pattern.compile("^src\\.domain\\.([^.]+)\\.[^.]+ApplicationService$");
-    private static final Pattern ROOT_APPLICATION_USECASE_TYPE =
-            Pattern.compile("^src\\.domain\\.([^.]+)\\.application\\.[^.]+UseCase(?:[.$].*)?$");
-    private static final Pattern DOMAIN_PORT_TYPE =
-            Pattern.compile("^src\\.domain\\.([^.]+)\\.model\\.[^.]+\\.port\\..+");
     private static final Set<String> OUTER_LAYER_PREFIXES = Set.of(
             "bootstrap.",
             "shell.",

@@ -24,8 +24,9 @@ Unified focused bundle entrypoint:
 
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
-| `domain-model-dynamic-state-ownership` | Review-Owned | every internal model type under `src/domain/<context>/model/<family>/model/**` | none | none | Models stay on same-context internal state and state-local operations instead of absorbing helper, repository, port, published, root-boundary, or foreign-domain concerns. |
+| `domain-model-dynamic-state-ownership` | Enforced | every internal model type under `src/domain/<context>/model/<family>/model/**` | domain-model bundle Error Prone `DomainModelRoleBoundary` | `./gradlew compileJava` and `./gradlew checkDomainEnforcement` | Model types reference only same-context `model/**`, same-context `constants/**`, passive platform types, and their own nested types; class-shaped models are final and non-abstract. This does not prove the semantic adequacy of the state they own. |
 | `domain-model-tree-placement` | Enforced | every internal model subtree under `src/domain/<context>/model/<family>/model/` | domain-model bundle build-harness `DomainModelTopologyRules` | `./gradlew checkDomainEnforcement` | Internal model types live under the dedicated `model/<family>/model/` subtree rather than being scattered across helper or orchestration buckets. |
+| `domain-model-state-semantic-adequacy` | Review-Owned | every internal model type under `src/domain/<context>/model/<family>/model/**` | none | none | A mechanically legal model still owns meaningful current work state instead of becoming a passive bag, hidden helper, or misplaced policy surface. |
 
 ### Must Not Contain
 
