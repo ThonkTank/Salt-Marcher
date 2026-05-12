@@ -36,7 +36,7 @@ public final class EncounterResultsStateView extends VBox {
     private final Button resultAwardButton = new Button("XP verteilen");
     private final DialogSurfaceContentModel dialogContentModel = new DialogSurfaceContentModel();
     private final DialogSurfaceView dialog = buildPane();
-    private EncounterStateContributionModel.ResultStateView lastState = EncounterStateContributionModel.ResultStateView.empty();
+    private EncounterResultStateView lastState = EncounterResultStateView.empty();
     private Consumer<EncounterResultsStateViewInputEvent> viewInputEventHandler = ignored -> { };
 
     public EncounterResultsStateView() {
@@ -48,9 +48,9 @@ public final class EncounterResultsStateView extends VBox {
         viewInputEventHandler = handler == null ? ignored -> { } : handler;
     }
 
-    public void showResults(EncounterStateContributionModel.ResultStateView state) {
-        EncounterStateContributionModel.ResultStateView safeState = state == null
-                ? EncounterStateContributionModel.ResultStateView.empty()
+    public void showResults(EncounterResultStateView state) {
+        EncounterResultStateView safeState = state == null
+                ? EncounterResultStateView.empty()
                 : state;
         lastState = safeState;
         resultEnemyList.showEnemies(safeState.enemies(), this::updateResultCalculations);
@@ -98,7 +98,7 @@ public final class EncounterResultsStateView extends VBox {
         int selectedXp = 0;
         long selectedCount = 0;
         int childIndex = 0;
-        for (EncounterStateContributionModel.ResultEnemyView enemy : lastState.enemies()) {
+        for (EncounterResultEnemyView enemy : lastState.enemies()) {
             if (resultEnemyList.isSelected(childIndex)) {
                 selectedXp += enemy.xp();
                 selectedCount++;
@@ -171,10 +171,10 @@ public final class EncounterResultsStateView extends VBox {
         }
 
         private void showEnemies(
-                List<EncounterStateContributionModel.ResultEnemyView> enemies,
+                List<EncounterResultEnemyView> enemies,
                 Runnable onSelectionChanged
         ) {
-            List<EncounterStateContributionModel.ResultEnemyView> safeEnemies = enemies == null ? List.of() : enemies;
+            List<EncounterResultEnemyView> safeEnemies = enemies == null ? List.of() : enemies;
             Runnable safeSelectionChanged = onSelectionChanged == null ? () -> { } : onSelectionChanged;
             getChildren().setAll(safeEnemies.stream()
                     .map(enemy -> createToggle(enemy, safeSelectionChanged))
@@ -190,7 +190,7 @@ public final class EncounterResultsStateView extends VBox {
         }
 
         private CheckBox createToggle(
-                EncounterStateContributionModel.ResultEnemyView enemy,
+                EncounterResultEnemyView enemy,
                 Runnable onSelectionChanged
         ) {
             StyledCheckBox toggle = new StyledCheckBox(enemy.name() + " (" + enemy.status() + ") - " + enemy.loot());

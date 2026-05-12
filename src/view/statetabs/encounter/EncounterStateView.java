@@ -45,22 +45,22 @@ public final class EncounterStateView extends VBox {
         }
     }
 
-    private void showBuilder(EncounterStateContributionModel.BuilderState state) {
+    private void showBuilder(EncounterBuilderState state) {
         builderView.showBuilder(state);
         showContent(builderView);
     }
 
-    private void showInitiative(EncounterStateContributionModel.InitiativeStateView state) {
+    private void showInitiative(EncounterInitiativeStateViewModel state) {
         initiativeView.showInitiative(state);
         showContent(initiativeView);
     }
 
-    private void showCombat(EncounterStateContributionModel.CombatStateView state) {
+    private void showCombat(EncounterCombatStateViewModel state) {
         combatView.showCombat(state);
         showContent(combatView);
     }
 
-    private void showResults(EncounterStateContributionModel.ResultStateView state) {
+    private void showResults(EncounterResultStateView state) {
         resultsView.showResults(state);
         showContent(resultsView);
     }

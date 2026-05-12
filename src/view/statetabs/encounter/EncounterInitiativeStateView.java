@@ -34,14 +34,14 @@ public final class EncounterInitiativeStateView extends VBox {
         viewInputEventHandler = handler == null ? ignored -> { } : handler;
     }
 
-    public void showInitiative(EncounterStateContributionModel.InitiativeStateView state) {
-        EncounterStateContributionModel.InitiativeStateView safeState = state == null
-                ? EncounterStateContributionModel.InitiativeStateView.empty()
+    public void showInitiative(EncounterInitiativeStateViewModel state) {
+        EncounterInitiativeStateViewModel safeState = state == null
+                ? EncounterInitiativeStateViewModel.empty()
                 : state;
         initiativeSpinnerById.clear();
         initiativeList.clearEntries();
         String currentKind = "";
-        for (EncounterStateContributionModel.InitiativeEntryView entry : safeState.entries()) {
+        for (EncounterInitiativeEntryView entry : safeState.entries()) {
             if (!entry.kind().equals(currentKind)) {
                 currentKind = entry.kind();
                 Label header = sectionHeader("SC".equals(currentKind) ? "Spieler" : currentKind);
@@ -70,7 +70,7 @@ public final class EncounterInitiativeStateView extends VBox {
         return nextDialog;
     }
 
-    private Node buildInitiativeRow(EncounterStateContributionModel.InitiativeEntryView entry) {
+    private Node buildInitiativeRow(EncounterInitiativeEntryView entry) {
         InitiativeRow row = new InitiativeRow();
         Label name = new Label(entry.label());
         name.setWrapText(true);
