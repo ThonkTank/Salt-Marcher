@@ -4,6 +4,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
 import src.domain.dungeon.model.map.model.DungeonMap;
+import src.domain.dungeon.model.map.model.DungeonMapAuthoring;
 import src.domain.dungeon.model.map.model.DungeonMapIdentity;
 
 /**
@@ -37,7 +38,7 @@ public final class RenameDungeonMapUseCase {
     public RenamedMap execute(DungeonMapIdentity mapIdentity, String requestedMapName) {
         DungeonMap dungeonMap = findById.apply(mapIdentity)
                 .orElseThrow(() -> new IllegalArgumentException("Unknown dungeon map: " + mapIdentity.value()));
-        DungeonMap renamed = saveMap.apply(dungeonMap.rename(normalizeName(requestedMapName)));
+        DungeonMap renamed = saveMap.apply(DungeonMapAuthoring.rename(dungeonMap, normalizeName(requestedMapName)));
         return new RenamedMap(renamed.metadata().mapId());
     }
 

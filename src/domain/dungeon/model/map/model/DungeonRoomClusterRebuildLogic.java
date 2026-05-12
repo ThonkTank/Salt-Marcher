@@ -92,7 +92,7 @@ final class DungeonRoomClusterRebuildLogic {
 
     private List<DungeonRoom> roomsFor(DungeonRoomTopologyClusterWork work) {
         DungeonRoom template = work.rooms().isEmpty() ? null : work.rooms().getFirst();
-        List<DungeonCell> sortedCells = DungeonRoomCellProjection.sortedCells(work.allCells());
+        List<DungeonCell> sortedCells = DungeonCellOrdering.sortedCells(work.allCells());
         DungeonCell anchor = sortedCells.isEmpty() ? null : sortedCells.getFirst();
         if (anchor == null) {
             return List.of();

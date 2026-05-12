@@ -13,9 +13,9 @@ import src.domain.encounter.model.session.model.EncounterSessionValues.ResultSta
 import src.domain.encounter.published.EncounterBuilderInputs;
 import src.domain.encounter.published.EncounterStateSnapshot;
 
-final class EncounterSessionSnapshotPublication {
+final class EncounterSessionSnapshotPublicationUseCase {
 
-    private EncounterSessionSnapshotPublication() {
+    private EncounterSessionSnapshotPublicationUseCase() {
     }
 
     static EncounterStateSnapshot toPublishedSnapshot(EncounterSession session) {
@@ -38,7 +38,7 @@ final class EncounterSessionSnapshotPublication {
     }
 
     static EncounterBuilderInputs toPublishedBuilderInputs(EncounterSession session) {
-        return EncounterBuilderInputsTranslation.toPublished(session.builderInputs());
+        return EncounterBuilderInputsTranslationUseCase.toPublished(session.builderInputs());
     }
 
     private static EncounterStateSnapshot.Mode toPublishedMode(int mode) {
@@ -66,7 +66,7 @@ final class EncounterSessionSnapshotPublication {
                 toPublishedBuilderSettings(safeState.builderInputs()),
                 safeState.generationAdvisoryMessages(),
                 safeState.savedPlans().stream()
-                        .map(EncounterPlanPublication::toPublishedSummary)
+                        .map(EncounterPlanPublicationUseCase::toPublishedSummary)
                         .toList(),
                 safeState.roster().stream()
                         .map(creature -> new EncounterStateSnapshot.RosterCard(
@@ -91,7 +91,7 @@ final class EncounterSessionSnapshotPublication {
     }
 
     private static EncounterStateSnapshot.BuilderSettings toPublishedBuilderSettings(EncounterGenerationInputs inputs) {
-        EncounterBuilderInputs published = EncounterBuilderInputsTranslation.toPublished(inputs);
+        EncounterBuilderInputs published = EncounterBuilderInputsTranslationUseCase.toPublished(inputs);
         return new EncounterStateSnapshot.BuilderSettings(
                 published.autoDifficulty() ? "Auto" : difficultyLabel(published.difficultyLevel()),
                 published.autoBalance() ? -1 : published.balanceLevel(),

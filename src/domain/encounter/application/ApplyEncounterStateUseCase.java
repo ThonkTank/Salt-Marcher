@@ -42,7 +42,7 @@ public final class ApplyEncounterStateUseCase {
         return new EncounterSessionCommand(
                 toInternalAction(command.action()),
                 Optional.empty(),
-                EncounterBuilderInputsTranslation.toInternal(null),
+                EncounterBuilderInputsTranslationUseCase.toInternal(null),
                 command.creatureId(),
                 command.planId(),
                 command.delta(),

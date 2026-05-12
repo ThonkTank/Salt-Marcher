@@ -78,15 +78,8 @@ final class DungeonBoundaryStretchConnectorLogic {
         if (path.isEmpty()) {
             return Optional.empty();
         }
-        List<DungeonBoundaryKey> keys = new java.util.ArrayList<>();
-        long presentCount = 0L;
-        for (DungeonEdge edge : path) {
-            DungeonBoundaryKey key = DungeonBoundaryKey.from(edge);
-            keys.add(key);
-            if (!sourceKeys.contains(key) && boundaries.containsKey(key)) {
-                presentCount++;
-            }
-        }
+        List<DungeonBoundaryKey> keys = boundaryKeys(path);
+        long presentCount = presentBoundaryCount(boundaries, sourceKeys, keys);
         if (hasNoPresentBoundaries(presentCount)) {
             return Optional.of(new ConnectorAction(false, path));
         }
@@ -100,6 +93,28 @@ final class DungeonBoundaryStretchConnectorLogic {
             }
         }
         return Optional.of(new ConnectorAction(true, path));
+    }
+
+    private List<DungeonBoundaryKey> boundaryKeys(List<DungeonEdge> path) {
+        List<DungeonBoundaryKey> keys = new java.util.ArrayList<>();
+        for (DungeonEdge edge : path) {
+            keys.add(DungeonBoundaryKey.from(edge));
+        }
+        return keys;
+    }
+
+    private long presentBoundaryCount(
+            Map<DungeonBoundaryKey, DungeonClusterBoundary> boundaries,
+            Set<DungeonBoundaryKey> sourceKeys,
+            List<DungeonBoundaryKey> keys
+    ) {
+        long presentCount = 0L;
+        for (DungeonBoundaryKey key : keys) {
+            if (!sourceKeys.contains(key) && boundaries.containsKey(key)) {
+                presentCount++;
+            }
+        }
+        return presentCount;
     }
 
     private void applyConnectorAction(

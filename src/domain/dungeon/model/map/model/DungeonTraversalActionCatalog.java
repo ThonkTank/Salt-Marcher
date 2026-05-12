@@ -203,16 +203,23 @@ final class DungeonTraversalActionCatalog {
             if (activeArea == null || activeArea.kind() != DungeonAreaType.ROOM) {
                 return "";
             }
-            DungeonRoom room = null;
-            for (DungeonRoom candidateRoom : dungeonMap.rooms().rooms()) {
-                if (candidateRoom != null && candidateRoom.roomId() == activeArea.id()) {
-                    room = candidateRoom;
-                    break;
-                }
-            }
+            DungeonRoom room = roomFor(dungeonMap, activeArea);
             if (room == null) {
                 return "";
             }
+            return exitDescription(room, candidate);
+        }
+
+        private static @Nullable DungeonRoom roomFor(DungeonMap dungeonMap, DungeonAreaFacts activeArea) {
+            for (DungeonRoom candidateRoom : dungeonMap.rooms().rooms()) {
+                if (candidateRoom != null && candidateRoom.roomId() == activeArea.id()) {
+                    return candidateRoom;
+                }
+            }
+            return null;
+        }
+
+        private static String exitDescription(DungeonRoom room, TraversalCandidate candidate) {
             for (DungeonRoomExitDescription description : room.narration().exitDescriptions()) {
                 if (description != null && sameExit(description, candidate) && !description.description().isBlank()) {
                     return description.description();
@@ -241,16 +248,7 @@ final class DungeonTraversalActionCatalog {
 
         private static int headingOrder(DungeonTravelHeading heading) {
             DungeonTravelHeading resolvedHeading = heading == null ? DungeonTravelHeading.defaultHeading() : heading;
-            if (resolvedHeading == DungeonTravelHeading.NORTH) {
-                return 0;
-            }
-            if (resolvedHeading == DungeonTravelHeading.EAST) {
-                return 1;
-            }
-            if (resolvedHeading == DungeonTravelHeading.SOUTH) {
-                return 2;
-            }
-            return 3;
+            return resolvedHeading.turnOrder();
         }
 
         private static int directionOrder(@Nullable DungeonEdgeDirection direction) {

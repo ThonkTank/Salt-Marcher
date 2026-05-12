@@ -97,24 +97,40 @@ public record DungeonCorridorBindings(
         if (roomIds == null || roomIds.isEmpty()) {
             return empty();
         }
+        return new DungeonCorridorBindings(
+                waypoints,
+                sanitizedDoorBindings(roomIds),
+                nonNullAnchorBindings(),
+                nonNullAnchorRefs());
+    }
+
+    private List<DungeonCorridorDoorBinding> sanitizedDoorBindings(List<Long> roomIds) {
         List<DungeonCorridorDoorBinding> sanitizedDoors = new ArrayList<>();
         for (DungeonCorridorDoorBinding binding : doorBindings) {
             if (binding != null && roomIds.contains(binding.roomId())) {
                 sanitizedDoors.add(binding);
             }
         }
+        return sanitizedDoors;
+    }
+
+    private List<DungeonCorridorAnchorBinding> nonNullAnchorBindings() {
         List<DungeonCorridorAnchorBinding> sanitizedAnchors = new ArrayList<>();
         for (DungeonCorridorAnchorBinding binding : anchorBindings) {
             if (binding != null) {
                 sanitizedAnchors.add(binding);
             }
         }
+        return sanitizedAnchors;
+    }
+
+    private List<DungeonCorridorAnchorRef> nonNullAnchorRefs() {
         List<DungeonCorridorAnchorRef> sanitizedRefs = new ArrayList<>();
         for (DungeonCorridorAnchorRef ref : anchorRefs) {
             if (ref != null) {
                 sanitizedRefs.add(ref);
             }
         }
-        return new DungeonCorridorBindings(waypoints, sanitizedDoors, sanitizedAnchors, sanitizedRefs);
+        return sanitizedRefs;
     }
 }

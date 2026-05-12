@@ -3,11 +3,11 @@ package src.domain.encounter.application;
 import src.domain.encounter.model.plan.model.EncounterPlanSummary;
 import src.domain.encounter.published.SavedEncounterPlanSummary;
 
-final class EncounterPlanPublication {
+final class EncounterPlanPublicationUseCase {
 
     private static final String CREATURES_SUFFIX = " Kreaturen";
 
-    private EncounterPlanPublication() {
+    private EncounterPlanPublicationUseCase() {
     }
 
     static SavedEncounterPlanSummary toPublishedSummary(EncounterPlanSummary summary) {

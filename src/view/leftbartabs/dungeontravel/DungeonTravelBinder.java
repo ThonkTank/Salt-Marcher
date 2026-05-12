@@ -41,7 +41,7 @@ final class DungeonTravelBinder {
         state.onViewInputEvent(intentHandler::consume);
         travelModel.subscribe(snapshot -> applySnapshot(snapshot, contributionModel, mapContentModel));
         applySnapshot(travelModel.current(), contributionModel, mapContentModel);
-        controls.showZoom(mapContentModel.mapCanvasContentModel().zoom());
+        controls.showZoom(mapContentModel.mapCanvasContentModel().currentViewport().zoom());
         return new Binding(controls, main, state);
     }
 

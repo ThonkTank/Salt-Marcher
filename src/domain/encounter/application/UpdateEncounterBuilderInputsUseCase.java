@@ -29,7 +29,7 @@ public final class UpdateEncounterBuilderInputsUseCase {
                 ? new UpdateEncounterBuilderInputsCommand(EncounterBuilderInputs.empty())
                 : command;
         EncounterSession session = useCase.apply(EncounterSessionCommand.updateBuilderInputs(
-                EncounterBuilderInputsTranslation.toInternal(effective.inputs())));
+                EncounterBuilderInputsTranslationUseCase.toInternal(effective.inputs())));
         publishSessionUseCase.execute(session);
     }
 }

@@ -1,7 +1,5 @@
 package src.domain.dungeon.model.map.model;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Objects;
 
 /**
@@ -16,11 +14,8 @@ public final class DungeonCorridorMutationLogic {
             new DungeonCorridorCreationLogic();
     private static final DungeonCorridorExtensionLogic EXTENSION_SERVICE =
             new DungeonCorridorExtensionLogic();
-    private static final DungeonMapLookupLogic LOOKUP_SERVICE = new DungeonMapLookupLogic();
-    private static final DungeonCorridorMutationRules MUTATION_RULES =
-            new DungeonCorridorMutationRules();
-    private static final DungeonCorridorAnchorPruningRules ANCHOR_PRUNING_POLICY =
-            new DungeonCorridorAnchorPruningRules();
+    private static final DungeonCorridorMergeDeleteLogic MERGE_DELETE_SERVICE =
+            new DungeonCorridorMergeDeleteLogic();
 
     public DungeonMap createCorridor(
             DungeonMap dungeonMap,
@@ -39,66 +34,11 @@ public final class DungeonCorridorMutationLogic {
     }
 
     public DungeonMap mergeCorridors(DungeonMap dungeonMap, long corridorId, long mergedCorridorId) {
-        Objects.requireNonNull(dungeonMap, "dungeonMap");
-        if (MUTATION_RULES.invalidCorridorId(corridorId)
-                || MUTATION_RULES.invalidCorridorId(mergedCorridorId)
-                || corridorId == mergedCorridorId) {
-            return dungeonMap;
-        }
-        DungeonCorridor kept = LOOKUP_SERVICE.corridor(dungeonMap, corridorId);
-        DungeonCorridor merged = LOOKUP_SERVICE.corridor(dungeonMap, mergedCorridorId);
-        if (kept == null || merged == null) {
-            return dungeonMap;
-        }
-        DungeonCorridor updated = DungeonCorridorOps.mergeKeepingThis(kept, merged);
-        List<DungeonCorridor> nextCorridors = new ArrayList<>();
-        for (DungeonCorridor corridor : dungeonMap.connections().corridors()) {
-            if (corridor.corridorId() == mergedCorridorId) {
-                continue;
-            }
-            nextCorridors.add(corridor.corridorId() == corridorId ? updated : corridor);
-        }
-        List<DungeonStair> nextStairs = new ArrayList<>();
-        for (DungeonStair stair : dungeonMap.connections().stairs()) {
-            nextStairs.add(stair != null && stair.corridorId() != null && stair.corridorId() == mergedCorridorId
-                    ? DungeonStairOps.withCorridorId(stair, corridorId)
-                    : stair);
-        }
-        return CONNECTION_NORMALIZATION_SERVICE.copyWithConnections(
-                dungeonMap,
-                new ConnectionCatalog(
-                        List.copyOf(nextCorridors),
-                        nextStairs,
-                        dungeonMap.connections().transitions()));
+        return MERGE_DELETE_SERVICE.mergeCorridors(dungeonMap, corridorId, mergedCorridorId);
     }
 
     public DungeonMap deleteCorridor(DungeonMap dungeonMap, long corridorId) {
-        Objects.requireNonNull(dungeonMap, "dungeonMap");
-        if (MUTATION_RULES.invalidCorridorId(corridorId)) {
-            return dungeonMap;
-        }
-        DungeonCorridor existing = LOOKUP_SERVICE.corridor(dungeonMap, corridorId);
-        if (existing == null || ANCHOR_PRUNING_POLICY.ownedAnchorStillReferenced(dungeonMap.connections().corridors(), existing)) {
-            return dungeonMap;
-        }
-        List<DungeonCorridor> nextCorridors = new ArrayList<>();
-        for (DungeonCorridor corridor : dungeonMap.connections().corridors()) {
-            if (corridor != null && corridor.corridorId() != corridorId) {
-                nextCorridors.add(corridor);
-            }
-        }
-        List<DungeonStair> nextStairs = new ArrayList<>();
-        for (DungeonStair stair : dungeonMap.connections().stairs()) {
-            if (stair != null && (stair.corridorId() == null || stair.corridorId() != corridorId)) {
-                nextStairs.add(stair);
-            }
-        }
-        return CONNECTION_NORMALIZATION_SERVICE.copyWithConnections(
-                dungeonMap,
-                new ConnectionCatalog(
-                        nextCorridors,
-                        nextStairs,
-                        dungeonMap.connections().transitions()));
+        return MERGE_DELETE_SERVICE.deleteCorridor(dungeonMap, corridorId);
     }
 
     public ConnectionCatalog normalizeConnections(DungeonMap dungeonMap, ConnectionCatalog source) {

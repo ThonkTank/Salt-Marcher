@@ -6,6 +6,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.map.model.DungeonMap;
+import src.domain.dungeon.model.map.model.DungeonMapAuthoring;
 import src.domain.dungeon.model.map.repository.DungeonMapRepository;
 import src.domain.dungeon.model.map.model.DungeonMapIdentity;
 
@@ -52,6 +53,6 @@ public final class LoadDungeonMapUseCase {
     }
 
     private static DungeonMap emptyFallbackMap() {
-        return DungeonMap.empty(new DungeonMapIdentity(1L), "Dungeon Map");
+        return DungeonMapAuthoring.empty(new DungeonMapIdentity(1L), "Dungeon Map");
     }
 }

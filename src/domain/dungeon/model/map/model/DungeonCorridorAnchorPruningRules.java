@@ -16,23 +16,11 @@ public final class DungeonCorridorAnchorPruningRules {
         AnchorUsage usage = AnchorUsage.from(corridors);
         List<DungeonCorridor> result = new ArrayList<>();
         for (DungeonCorridor corridor : corridors == null ? List.<DungeonCorridor>of() : corridors) {
-            List<DungeonCorridorAnchorBinding> keptBindings = new ArrayList<>();
-            for (DungeonCorridorAnchorBinding binding : corridor.bindings().anchorBindings()) {
-                if (binding != null && usage.referenced().contains(binding.topologyRef())) {
-                    keptBindings.add(binding);
-                }
-            }
-            List<DungeonCorridorAnchorRef> keptRefs = new ArrayList<>();
-            for (DungeonCorridorAnchorRef ref : corridor.bindings().anchorRefs()) {
-                if (ref != null && ref.present() && usage.hosted().containsKey(ref.topologyRef())) {
-                    keptRefs.add(ref);
-                }
-            }
             result.add(DungeonCorridorOps.withBindings(
                     corridor,
                     corridor.bindings()
-                            .replaceAnchorBindings(keptBindings)
-                            .replaceAnchorRefs(keptRefs)));
+                            .replaceAnchorBindings(keptBindings(corridor, usage))
+                            .replaceAnchorRefs(keptRefs(corridor, usage))));
         }
         return List.copyOf(result);
     }
@@ -41,26 +29,62 @@ public final class DungeonCorridorAnchorPruningRules {
         if (owner == null) {
             return false;
         }
+        Set<DungeonTopologyRef> ownedRefs = ownedAnchorRefs(owner);
+        if (ownedRefs.isEmpty()) {
+            return false;
+        }
+        for (DungeonCorridor candidate : corridors == null ? List.<DungeonCorridor>of() : corridors) {
+            if (candidateReferencesOwnedAnchor(candidate, owner, ownedRefs)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private List<DungeonCorridorAnchorBinding> keptBindings(DungeonCorridor corridor, AnchorUsage usage) {
+        List<DungeonCorridorAnchorBinding> keptBindings = new ArrayList<>();
+        for (DungeonCorridorAnchorBinding binding : corridor.bindings().anchorBindings()) {
+            if (binding != null && usage.referenced().contains(binding.topologyRef())) {
+                keptBindings.add(binding);
+            }
+        }
+        return keptBindings;
+    }
+
+    private List<DungeonCorridorAnchorRef> keptRefs(DungeonCorridor corridor, AnchorUsage usage) {
+        List<DungeonCorridorAnchorRef> keptRefs = new ArrayList<>();
+        for (DungeonCorridorAnchorRef ref : corridor.bindings().anchorRefs()) {
+            if (ref != null && ref.present() && usage.hosted().containsKey(ref.topologyRef())) {
+                keptRefs.add(ref);
+            }
+        }
+        return keptRefs;
+    }
+
+    private Set<DungeonTopologyRef> ownedAnchorRefs(DungeonCorridor owner) {
         Set<DungeonTopologyRef> ownedRefs = new LinkedHashSet<>();
         for (DungeonCorridorAnchorBinding binding : owner.bindings().anchorBindings()) {
             if (binding != null) {
                 ownedRefs.add(binding.topologyRef());
             }
         }
-        if (ownedRefs.isEmpty()) {
+        return ownedRefs;
+    }
+
+    private boolean candidateReferencesOwnedAnchor(
+            DungeonCorridor candidate,
+            DungeonCorridor owner,
+            Set<DungeonTopologyRef> ownedRefs
+    ) {
+        if (candidate == null || candidate.corridorId() == owner.corridorId()) {
             return false;
         }
-        for (DungeonCorridor candidate : corridors == null ? List.<DungeonCorridor>of() : corridors) {
-            if (candidate == null || candidate.corridorId() == owner.corridorId()) {
-                continue;
-            }
-            for (DungeonCorridorAnchorRef ref : candidate.bindings().anchorRefs()) {
-                if (ref != null && ownedRefs.contains(ref.topologyRef())) {
-                    return false;
-                }
+        for (DungeonCorridorAnchorRef ref : candidate.bindings().anchorRefs()) {
+            if (ref != null && ownedRefs.contains(ref.topologyRef())) {
+                return true;
             }
         }
-        return true;
+        return false;
     }
 
     private record AnchorUsage(

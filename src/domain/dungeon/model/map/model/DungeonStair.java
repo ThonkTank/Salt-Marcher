@@ -75,7 +75,7 @@ public final class DungeonStair {
             @Nullable Long corridorId
     ) {
         public Geometry {
-            shape = shape == null ? DungeonStairShape.LADDER : shape;
+            shape = shape == null ? DungeonStairShape.defaultShape() : shape;
             direction = direction == null ? DungeonEdgeDirection.NORTH : direction;
             dimension1 = Math.max(0, dimension1);
             dimension2 = Math.max(0, dimension2);
@@ -86,7 +86,7 @@ public final class DungeonStair {
 
         static Geometry empty() {
             return new Geometry(
-                    DungeonStairShape.LADDER,
+                    DungeonStairShape.defaultShape(),
                     DungeonEdgeDirection.NORTH,
                     0,
                     0,

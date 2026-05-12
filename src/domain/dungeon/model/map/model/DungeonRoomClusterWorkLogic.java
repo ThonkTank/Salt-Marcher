@@ -58,7 +58,7 @@ final class DungeonRoomClusterWorkLogic {
     }
 
     private DungeonRoomCluster newCluster(long clusterId, long mapId, Set<DungeonCell> cells) {
-        DungeonCell center = DungeonRoomCellProjection.sortedCells(cells).getFirst();
+        DungeonCell center = DungeonCellOrdering.sortedCells(cells).getFirst();
         return new DungeonRoomCluster(clusterId, mapId, center, Map.of(), Map.of());
     }
 
@@ -84,7 +84,7 @@ final class DungeonRoomClusterWorkLogic {
         }
         Map<Integer, List<DungeonCell>> result = new LinkedHashMap<>();
         for (Map.Entry<Integer, List<DungeonCell>> entry : grouped.entrySet()) {
-            result.put(entry.getKey(), DungeonRoomCellProjection.sortedCells(entry.getValue()));
+            result.put(entry.getKey(), DungeonCellOrdering.sortedCells(entry.getValue()));
         }
         return Map.copyOf(result);
     }

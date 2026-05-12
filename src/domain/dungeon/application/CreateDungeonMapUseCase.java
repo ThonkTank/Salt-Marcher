@@ -4,6 +4,7 @@ import java.util.Objects;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import src.domain.dungeon.model.map.model.DungeonMap;
+import src.domain.dungeon.model.map.model.DungeonMapAuthoring;
 import src.domain.dungeon.model.map.model.DungeonMapIdentity;
 
 /**
@@ -37,7 +38,7 @@ public final class CreateDungeonMapUseCase {
     public CreatedMap execute(String requestedMapName) {
         DungeonMapIdentity mapIdentity = nextMapId.get();
         String mapName = normalizeName(requestedMapName);
-        DungeonMap dungeonMap = DungeonMap.empty(mapIdentity, mapName);
+        DungeonMap dungeonMap = DungeonMapAuthoring.empty(mapIdentity, mapName);
         DungeonMap saved = saveMap.apply(dungeonMap);
         return new CreatedMap(saved.metadata().mapId());
     }

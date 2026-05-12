@@ -318,7 +318,7 @@ public class MapCanvasView extends BorderPane {
     private final class Viewport {
 
         private double zoom() {
-            return contentModel.zoom();
+            return contentModel.currentViewport().zoom();
         }
 
         private void panByPixels(double deltaX, double deltaY) {
@@ -330,27 +330,27 @@ public class MapCanvasView extends BorderPane {
         }
 
         private double gridSize() {
-            return contentModel.gridSize();
+            return contentModel.currentViewport().gridSize();
         }
 
         private double sceneToScreenX(double sceneX) {
-            return contentModel.sceneToScreenX(sceneX);
+            return contentModel.currentViewport().sceneToScreenX(sceneX);
         }
 
         private double sceneToScreenY(double sceneY) {
-            return contentModel.sceneToScreenY(sceneY);
+            return contentModel.currentViewport().sceneToScreenY(sceneY);
         }
 
         private double screenToSceneX(double screenX) {
-            return contentModel.screenToSceneX(screenX);
+            return contentModel.currentViewport().screenToSceneX(screenX);
         }
 
         private double screenToSceneY(double screenY) {
-            return contentModel.screenToSceneY(screenY);
+            return contentModel.currentViewport().screenToSceneY(screenY);
         }
 
         private double normalizedOffset(double spacing, boolean horizontal) {
-            return contentModel.normalizedOffset(spacing, horizontal);
+            return contentModel.currentViewport().normalizedOffset(spacing, horizontal);
         }
     }
 
@@ -368,7 +368,7 @@ public class MapCanvasView extends BorderPane {
         ) {
             gc.clearRect(0.0, 0.0, bounds.width(), bounds.height());
             fillBackground(gc, bounds);
-            if (renderScene.viewMode() == ViewMode.GRID) {
+            if (renderScene.gridView()) {
                 gridPainter.draw(gc, viewport, bounds);
             }
             shapePainter.drawRelations(gc, renderScene.relations(), viewport);

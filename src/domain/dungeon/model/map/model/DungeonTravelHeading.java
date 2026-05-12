@@ -42,6 +42,32 @@ public final class DungeonTravelHeading {
         return name;
     }
 
+    public String displayLabel() {
+        if (this == NORTH) {
+            return "Norden";
+        }
+        if (this == EAST) {
+            return "Osten";
+        }
+        if (this == SOUTH) {
+            return "Sueden";
+        }
+        return "Westen";
+    }
+
+    public int turnOrder() {
+        if (this == NORTH) {
+            return 0;
+        }
+        if (this == EAST) {
+            return 1;
+        }
+        if (this == SOUTH) {
+            return 2;
+        }
+        return 3;
+    }
+
     @Override
     public String toString() {
         return name;

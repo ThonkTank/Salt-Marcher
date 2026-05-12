@@ -40,10 +40,6 @@ public final class MapCanvasContentModel {
         return canvasState.get().renderScene();
     }
 
-    public double zoom() {
-        return zoom.get();
-    }
-
     public void resetCamera() {
         setState(canvasState.get().withViewport(Viewport.initial()));
     }
@@ -56,28 +52,8 @@ public final class MapCanvasContentModel {
         setState(canvasState.get().withViewport(canvasState.get().viewport().zoomAround(canvasX, canvasY, factor)));
     }
 
-    public double gridSize() {
-        return canvasState.get().viewport().gridSize();
-    }
-
-    public double sceneToScreenX(double sceneX) {
-        return canvasState.get().viewport().sceneToScreenX(sceneX);
-    }
-
-    public double sceneToScreenY(double sceneY) {
-        return canvasState.get().viewport().sceneToScreenY(sceneY);
-    }
-
-    public double screenToSceneX(double screenX) {
-        return canvasState.get().viewport().screenToSceneX(screenX);
-    }
-
-    public double screenToSceneY(double screenY) {
-        return canvasState.get().viewport().screenToSceneY(screenY);
-    }
-
-    public double normalizedOffset(double spacing, boolean horizontal) {
-        return canvasState.get().viewport().normalizedOffset(spacing, horizontal);
+    public Viewport currentViewport() {
+        return canvasState.get().viewport();
     }
 
     private void setState(CanvasState nextState) {
@@ -134,27 +110,27 @@ public final class MapCanvasContentModel {
                     nextZoom);
         }
 
-        private double gridSize() {
+        public double gridSize() {
             return BASE_GRID * zoom;
         }
 
-        private double sceneToScreenX(double sceneX) {
+        public double sceneToScreenX(double sceneX) {
             return panX + sceneX * gridSize();
         }
 
-        private double sceneToScreenY(double sceneY) {
+        public double sceneToScreenY(double sceneY) {
             return panY + sceneY * gridSize();
         }
 
-        private double screenToSceneX(double screenX) {
+        public double screenToSceneX(double screenX) {
             return (screenX - panX) / gridSize();
         }
 
-        private double screenToSceneY(double screenY) {
+        public double screenToSceneY(double screenY) {
             return (screenY - panY) / gridSize();
         }
 
-        private double normalizedOffset(double spacing, boolean horizontal) {
+        public double normalizedOffset(double spacing, boolean horizontal) {
             double pan = horizontal ? panX : panY;
             double offset = pan % spacing;
             return offset < 0.0 ? offset + spacing : offset;
@@ -262,6 +238,10 @@ public final class MapCanvasContentModel {
                     List.of(),
                     List.of(),
                     List.of());
+        }
+
+        public boolean gridView() {
+            return viewMode == ViewMode.GRID;
         }
     }
 

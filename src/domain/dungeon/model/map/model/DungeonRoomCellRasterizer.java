@@ -35,7 +35,7 @@ final class DungeonRoomCellRasterizer {
             return List.of();
         }
         List<DungeonCell> vertices = new ArrayList<>();
-        for (DungeonCell cell : DungeonRoomCellProjection.sortedCells(cells)) {
+        for (DungeonCell cell : DungeonCellOrdering.sortedCells(cells)) {
             int q = cell.q() - center.q();
             int r = cell.r() - center.r();
             vertices.add(new DungeonCell(q, r, cell.level()));

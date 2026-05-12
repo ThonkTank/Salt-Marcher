@@ -42,7 +42,7 @@ final class DungeonRoomRectangleMutationLogic {
             }
         }
         Map<Integer, List<DungeonCell>> nextCells = new LinkedHashMap<>(target.cellsByLevel());
-        nextCells.put(start.level(), DungeonRoomCellProjection.sortedCells(targetLevelCells));
+        nextCells.put(start.level(), DungeonCellOrdering.sortedCells(targetLevelCells));
         nextClusters.add(target.withCellsByLevel(nextCells));
         return REBUILD_SERVICE.rebuilt(dungeonMap, nextClusters);
     }
@@ -77,12 +77,12 @@ final class DungeonRoomRectangleMutationLogic {
                 Map<Integer, List<DungeonCell>> componentCells = new LinkedHashMap<>();
                 if (first) {
                     componentCells.putAll(otherLevels);
-                    componentCells.put(start.level(), DungeonRoomCellProjection.sortedCells(component));
+                    componentCells.put(start.level(), DungeonCellOrdering.sortedCells(component));
                     nextClusters.add(work.withCellsByLevel(componentCells));
                     first = false;
                     continue;
                 }
-                componentCells.put(start.level(), DungeonRoomCellProjection.sortedCells(component));
+                componentCells.put(start.level(), DungeonCellOrdering.sortedCells(component));
                 nextClusters.add(WORK_SERVICE.newClusterWork(
                         ids.reserveClusterAndRoom(),
                         work.cluster().mapId(),

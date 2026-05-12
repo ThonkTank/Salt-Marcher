@@ -9,6 +9,8 @@ import src.domain.dungeon.model.map.model.DungeonCorridorRoomEndpoint;
 import src.domain.dungeon.model.map.model.DungeonEditorHandle;
 import src.domain.dungeon.model.map.model.DungeonEdge;
 import src.domain.dungeon.model.map.model.DungeonEdgeDirection;
+import src.domain.dungeon.model.map.model.DungeonMapCorridorOps;
+import src.domain.dungeon.model.map.model.DungeonMapTopologyOps;
 import src.domain.dungeon.model.map.model.DungeonRoomExitDescription;
 import src.domain.dungeon.model.map.model.DungeonRoomNarration;
 import src.domain.dungeon.model.map.model.DungeonTopologyRef;
@@ -35,7 +37,8 @@ public final class TranslateDungeonEditorOperationUseCase {
             case null -> ApplyDungeonEditorOperationUseCase.OperationMutation.identity();
             case DungeonEditorOperation.MoveTopologyElement moveTopologyElement -> {
                 DungeonTopologyRef ref = inputUseCase.domainTopologyRef(moveTopologyElement.ref());
-                yield current -> current.moveTopologyElement(
+                yield current -> DungeonMapTopologyOps.moveTopologyElement(
+                        current,
                         ref,
                         moveTopologyElement.deltaQ(),
                         moveTopologyElement.deltaR(),
@@ -43,7 +46,8 @@ public final class TranslateDungeonEditorOperationUseCase {
             }
             case DungeonEditorOperation.MoveEditorHandle moveEditorHandle -> {
                 DungeonEditorHandle handle = inputUseCase.domainHandle(moveEditorHandle.ref());
-                yield current -> current.moveEditorHandle(
+                yield current -> DungeonMapTopologyOps.moveEditorHandle(
+                        current,
                         handle,
                         moveEditorHandle.deltaQ(),
                         moveEditorHandle.deltaR(),
@@ -52,7 +56,8 @@ public final class TranslateDungeonEditorOperationUseCase {
             case DungeonEditorOperation.MoveBoundaryStretch moveBoundaryStretch -> {
                 List<DungeonEdge> sourceEdges =
                         moveBoundaryStretch.sourceEdges().stream().map(inputUseCase::domainEdge).toList();
-                yield current -> current.moveBoundaryStretch(
+                yield current -> DungeonMapTopologyOps.moveBoundaryStretch(
+                        current,
                         moveBoundaryStretch.clusterId(),
                         sourceEdges,
                         moveBoundaryStretch.deltaQ(),
@@ -60,20 +65,21 @@ public final class TranslateDungeonEditorOperationUseCase {
                         moveBoundaryStretch.deltaLevel());
             }
             case DungeonEditorOperation.MoveRoomAnchor moveRoomAnchor ->
-                    current -> current.moveRoomAnchor(moveRoomAnchor.deltaQ(), moveRoomAnchor.deltaR());
+                    current -> DungeonMapTopologyOps.moveRoomAnchor(current, moveRoomAnchor.deltaQ(), moveRoomAnchor.deltaR());
             case DungeonEditorOperation.RoomRectangle roomRectangle -> {
                 DungeonCell start = inputUseCase.domainCell(roomRectangle.start());
                 DungeonCell end = inputUseCase.domainCell(roomRectangle.end());
-                yield roomRectangle.action() == DungeonEditorOperation.RectangleAction.DELETE
-                        ? current -> current.deleteRoomRectangle(start, end)
-                        : current -> current.paintRoomRectangle(start, end);
+                yield roomRectangle.action().deletesRoomCells()
+                        ? current -> DungeonMapTopologyOps.deleteRoomRectangle(current, start, end)
+                        : current -> DungeonMapTopologyOps.paintRoomRectangle(current, start, end);
             }
             case DungeonEditorOperation.EditClusterBoundaries editClusterBoundaries -> {
                 List<DungeonEdge> edges = editClusterBoundaries.edges().stream().map(inputUseCase::domainEdge).toList();
                 DungeonClusterBoundaryKind kind = editClusterBoundaries.kind() == DungeonBoundaryKind.DOOR
                         ? DungeonClusterBoundaryKind.DOOR
                         : DungeonClusterBoundaryKind.WALL;
-                yield current -> current.editClusterBoundaries(
+                yield current -> DungeonMapTopologyOps.editClusterBoundaries(
+                        current,
                         editClusterBoundaries.clusterId(),
                         edges,
                         kind,
@@ -82,18 +88,22 @@ public final class TranslateDungeonEditorOperationUseCase {
             case DungeonEditorOperation.CreateCorridor createCorridor -> {
                 DungeonCorridorEndpoint start = endpointTranslator.corridorEndpoint(createCorridor.start());
                 DungeonCorridorEndpoint end = endpointTranslator.corridorEndpoint(createCorridor.end());
-                yield current -> current.createCorridor(start, end);
+                yield current -> DungeonMapCorridorOps.createCorridor(current, start, end);
             }
             case DungeonEditorOperation.ExtendCorridor extendCorridor -> {
                 DungeonCorridorRoomEndpoint endpoint = endpointTranslator.corridorRoomEndpoint(extendCorridor.endpoint());
-                yield current -> current.extendCorridor(extendCorridor.corridorId(), endpoint);
+                yield current -> DungeonMapCorridorOps.extendCorridor(current, extendCorridor.corridorId(), endpoint);
             }
             case DungeonEditorOperation.MergeCorridors mergeCorridors ->
-                    current -> current.mergeCorridors(mergeCorridors.corridorId(), mergeCorridors.mergedCorridorId());
+                    current -> DungeonMapCorridorOps.mergeCorridors(
+                            current,
+                            mergeCorridors.corridorId(),
+                            mergeCorridors.mergedCorridorId());
             case DungeonEditorOperation.DeleteCorridor deleteCorridor ->
-                    current -> current.deleteCorridor(deleteCorridor.corridorId());
+                    current -> DungeonMapCorridorOps.deleteCorridor(current, deleteCorridor.corridorId());
             case DungeonEditorOperation.SaveRoomNarration saveRoomNarration ->
-                    current -> current.saveRoomNarration(
+                    current -> DungeonMapTopologyOps.saveRoomNarration(
+                            current,
                             saveRoomNarration.roomId(),
                             narrationTranslator.roomNarration(saveRoomNarration));
         };

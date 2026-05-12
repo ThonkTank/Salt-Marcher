@@ -9,14 +9,18 @@ public enum DungeonStairShape {
     RECTANGULAR,
     CIRCULAR;
 
+    public static DungeonStairShape defaultShape() {
+        return LADDER;
+    }
+
     public static DungeonStairShape parse(String value) {
         if (value == null || value.isBlank()) {
-            return LADDER;
+            return defaultShape();
         }
         try {
             return valueOf(value.trim().toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException ignored) {
-            return LADDER;
+            return defaultShape();
         }
     }
 }

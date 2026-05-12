@@ -1,34 +1,25 @@
 package src.domain.dungeon.model.map.model;
 
-public final class DungeonCorridorEndpoint {
+public record DungeonCorridorEndpoint(
+        DungeonCorridorEndpointKind kind,
+        long roomId,
+        long clusterId,
+        DungeonCell roomCell,
+        DungeonEdgeDirection direction,
+        long hostCorridorId,
+        DungeonCell anchorCell,
+        DungeonTopologyRef topologyRef
+) {
 
-    private final DungeonCorridorEndpointKind kind;
-    private final long roomId;
-    private final long clusterId;
-    private final DungeonCell roomCell;
-    private final DungeonEdgeDirection direction;
-    private final long hostCorridorId;
-    private final DungeonCell anchorCell;
-    private final DungeonTopologyRef topologyRef;
-
-    private DungeonCorridorEndpoint(
-            DungeonCorridorEndpointKind kind,
-            long roomId,
-            long clusterId,
-            DungeonCell roomCell,
-            DungeonEdgeDirection direction,
-            long hostCorridorId,
-            DungeonCell anchorCell,
-            DungeonTopologyRef topologyRef
-    ) {
-        this.kind = kind == null ? DungeonCorridorEndpointKind.EMPTY : kind;
-        this.roomId = Math.max(0L, roomId);
-        this.clusterId = Math.max(0L, clusterId);
-        this.roomCell = roomCell == null ? new DungeonCell(0, 0, 0) : roomCell;
-        this.direction = direction == null ? DungeonEdgeDirection.NORTH : direction;
-        this.hostCorridorId = Math.max(0L, hostCorridorId);
-        this.anchorCell = anchorCell == null ? new DungeonCell(0, 0, 0) : anchorCell;
-        this.topologyRef = topologyRef == null ? DungeonTopologyRef.empty() : topologyRef;
+    public DungeonCorridorEndpoint {
+        kind = kind == null ? DungeonCorridorEndpointKind.EMPTY : kind;
+        roomId = Math.max(0L, roomId);
+        clusterId = Math.max(0L, clusterId);
+        roomCell = roomCell == null ? new DungeonCell(0, 0, 0) : roomCell;
+        direction = direction == null ? DungeonEdgeDirection.NORTH : direction;
+        hostCorridorId = Math.max(0L, hostCorridorId);
+        anchorCell = anchorCell == null ? new DungeonCell(0, 0, 0) : anchorCell;
+        topologyRef = topologyRef == null ? DungeonTopologyRef.empty() : topologyRef;
     }
 
     public static DungeonCorridorEndpoint door(
@@ -92,35 +83,7 @@ public final class DungeonCorridorEndpoint {
         return kind == DungeonCorridorEndpointKind.ANCHOR;
     }
 
-    public long roomId() {
-        return roomId;
-    }
-
-    public long clusterId() {
-        return clusterId;
-    }
-
-    public DungeonCell roomCell() {
-        return roomCell;
-    }
-
-    public DungeonEdgeDirection direction() {
-        return direction;
-    }
-
-    public long hostCorridorId() {
-        return hostCorridorId;
-    }
-
-    public DungeonCell anchorCell() {
-        return anchorCell;
-    }
-
-    public DungeonTopologyRef topologyRef() {
-        return topologyRef;
-    }
-
-    private enum DungeonCorridorEndpointKind {
+    public enum DungeonCorridorEndpointKind {
         DOOR,
         ANCHOR,
         EMPTY

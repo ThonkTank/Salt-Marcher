@@ -42,7 +42,7 @@ public final class DungeonControlPanelContentModel {
                 current.mode().name(),
                 current.levelRange(),
                 current.opacity(),
-                formatLevels(current.selectedLevels()));
+                OverlayText.formatLevels(current.selectedLevels()));
     }
 
     public OverlayPanelState currentOverlayPanelState() {
@@ -51,54 +51,62 @@ public final class DungeonControlPanelContentModel {
 
     public String normalizeSelectedLevelsDraft(String raw, List<Integer> fallbackLevels) {
         return parseLevels(raw)
-                .map(DungeonControlPanelContentModel::formatLevels)
-                .orElseGet(() -> formatLevels(fallbackLevels));
+                .map(OverlayText::formatLevels)
+                .orElseGet(() -> OverlayText.formatLevels(fallbackLevels));
     }
 
-    public static String summaryText(OverlaySettings settings) {
-        OverlaySettings resolved = settings == null ? OverlaySettings.defaults() : settings;
-        return switch (resolved.mode()) {
-            case OFF -> "Overlay: Aus";
-            case NEARBY -> "Overlay: Nachbarn +/-" + resolved.levelRange()
-                    + " " + percentageText(resolved.opacity());
-            case SELECTED -> "Overlay: Auswahl z=" + levelsSummary(resolved.selectedLevels())
-                    + " " + percentageText(resolved.opacity());
-        };
+    public Optional<List<Integer>> parseLevels(String raw) {
+        return OverlayText.parseLevels(raw);
     }
 
-    public static String formatLevels(List<Integer> levels) {
-        return (levels == null ? List.<Integer>of() : levels).stream()
-                .map(String::valueOf)
-                .sorted(Comparator.comparingInt(Integer::parseInt))
-                .distinct()
-                .reduce((left, right) -> left + ", " + right)
-                .orElse("");
-    }
+    private enum OverlayText {
+        ;
 
-    public static Optional<List<Integer>> parseLevels(String raw) {
-        if (raw == null || raw.isBlank()) {
-            return Optional.of(List.of());
+        private static String summaryText(OverlaySettings settings) {
+            OverlaySettings resolved = settings == null ? OverlaySettings.defaults() : settings;
+            return switch (resolved.mode()) {
+                case OFF -> "Overlay: Aus";
+                case NEARBY -> "Overlay: Nachbarn +/-" + resolved.levelRange()
+                        + " " + percentageText(resolved.opacity());
+                case SELECTED -> "Overlay: Auswahl z=" + levelsSummary(resolved.selectedLevels())
+                        + " " + percentageText(resolved.opacity());
+            };
         }
-        try {
-            return Optional.of(Arrays.stream(raw.split(","))
-                    .map(String::trim)
-                    .filter(part -> !part.isBlank())
-                    .map(Integer::parseInt)
-                    .sorted()
+
+        private static String formatLevels(List<Integer> levels) {
+            return (levels == null ? List.<Integer>of() : levels).stream()
+                    .map(String::valueOf)
+                    .sorted(Comparator.comparingInt(Integer::parseInt))
                     .distinct()
-                    .toList());
-        } catch (NumberFormatException exception) {
-            return Optional.empty();
+                    .reduce((left, right) -> left + ", " + right)
+                    .orElse("");
         }
-    }
 
-    private static String levelsSummary(List<Integer> levels) {
-        String formatted = formatLevels(levels);
-        return formatted.isBlank() ? "-" : formatted;
-    }
+        private static Optional<List<Integer>> parseLevels(String raw) {
+            if (raw == null || raw.isBlank()) {
+                return Optional.of(List.of());
+            }
+            try {
+                return Optional.of(Arrays.stream(raw.split(","))
+                        .map(String::trim)
+                        .filter(part -> !part.isBlank())
+                        .map(Integer::parseInt)
+                        .sorted()
+                        .distinct()
+                        .toList());
+            } catch (NumberFormatException exception) {
+                return Optional.empty();
+            }
+        }
 
-    private static String percentageText(double opacity) {
-        return Math.round(opacity * 100.0) + "%";
+        private static String levelsSummary(List<Integer> levels) {
+            String formatted = formatLevels(levels);
+            return formatted.isBlank() ? "-" : formatted;
+        }
+
+        private static String percentageText(double opacity) {
+            return Math.round(opacity * 100.0) + "%";
+        }
     }
 
     public enum Mode {
@@ -168,11 +176,11 @@ public final class DungeonControlPanelContentModel {
                     safeMode,
                     safeSettings.levelRange(),
                     safeSettings.opacity() * 100.0,
-                    formatLevels(safeSettings.selectedLevels()),
+                    OverlayText.formatLevels(safeSettings.selectedLevels()),
                     rangeVisible,
                     selectedVisible,
                     disabled,
-                    summaryText(safeSettings));
+                    OverlayText.summaryText(safeSettings));
         }
 
         public boolean rangeDisabled() {

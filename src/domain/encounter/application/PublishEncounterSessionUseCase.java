@@ -11,24 +11,24 @@ public final class PublishEncounterSessionUseCase {
     private static final String SESSION_NOT_REGISTERED = "Encounter session is not registered.";
 
     private final EncounterSessionPublishedStateRepository repository;
-    private final EncounterTuningPreviewPublication tuningPreviewPublication;
+    private final EncounterTuningPreviewPublicationUseCase tuningPreviewPublication;
 
     public PublishEncounterSessionUseCase(
             EncounterSessionPublishedStateRepository repository,
             @Nullable LoadEncounterBudgetUseCase loadBudgetUseCase
     ) {
         this.repository = java.util.Objects.requireNonNull(repository, "repository");
-        this.tuningPreviewPublication = new EncounterTuningPreviewPublication(loadBudgetUseCase);
+        this.tuningPreviewPublication = new EncounterTuningPreviewPublicationUseCase(loadBudgetUseCase);
     }
 
     public void execute(@Nullable EncounterSession session) {
         repository.publishCurrentSession(
                 session == null
                         ? EncounterStateSnapshot.empty(SESSION_NOT_REGISTERED)
-                        : EncounterSessionSnapshotPublication.toPublishedSnapshot(session),
+                        : EncounterSessionSnapshotPublicationUseCase.toPublishedSnapshot(session),
                 session == null
                         ? EncounterBuilderInputs.empty()
-                        : EncounterSessionSnapshotPublication.toPublishedBuilderInputs(session),
+                        : EncounterSessionSnapshotPublicationUseCase.toPublishedBuilderInputs(session),
                 tuningPreviewPublication.toResult());
     }
 }

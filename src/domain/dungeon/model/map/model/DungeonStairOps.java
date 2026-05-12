@@ -2,6 +2,7 @@ package src.domain.dungeon.model.map.model;
 
 import org.jspecify.annotations.Nullable;
 
+import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -36,7 +37,7 @@ public final class DungeonStairOps {
         if (stair == null) {
             return List.of();
         }
-        java.util.ArrayList<DungeonStairExit> result = new java.util.ArrayList<>();
+        List<DungeonStairExit> result = new ArrayList<>();
         for (DungeonStairExit exit : stair.exits()) {
             if (exit != null && exit.position().level() == level) {
                 result.add(exit);

@@ -3,8 +3,9 @@ package src.data.dungeon.mapper;
 import org.jspecify.annotations.Nullable;
 import src.data.dungeon.model.DungeonMapRecord;
 import src.data.dungeon.model.DungeonGridBoundsRecord;
-import src.domain.dungeon.model.map.model.DungeonMap;
 import src.domain.dungeon.model.map.model.ConnectionCatalog;
+import src.domain.dungeon.model.map.model.DungeonMap;
+import src.domain.dungeon.model.map.model.DungeonMapAuthoring;
 import src.domain.dungeon.model.map.model.DungeonMapIdentity;
 import src.domain.dungeon.model.map.model.DungeonMapTopology;
 import src.domain.dungeon.model.map.model.DungeonTopology;
@@ -31,7 +32,7 @@ public final class DungeonMapRecordMapper {
         ConnectionCatalog connections = DungeonConnectionRecordMapper.toConnectionCatalog(resolvedRecord);
         DungeonMapTopology topologyIndex =
                 DungeonTopologyElementRecordMapperSupport.toTopologyIndex(resolvedRecord.topologyElements());
-        return DungeonMap.authored(
+        return DungeonMapAuthoring.authored(
                 new DungeonMapIdentity(resolvedRecord.mapId()),
                 resolvedRecord.name(),
                 new SpatialTopology(

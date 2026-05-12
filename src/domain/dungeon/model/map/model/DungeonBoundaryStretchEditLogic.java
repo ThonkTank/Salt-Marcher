@@ -9,8 +9,6 @@ import src.domain.dungeon.model.map.model.DungeonBoundaryStretchValueTypes.Stret
 
 final class DungeonBoundaryStretchEditLogic {
 
-    private static final DungeonClusterBoundaryGeometryLogic GEOMETRY_SERVICE =
-            new DungeonClusterBoundaryGeometryLogic();
     private static final DungeonRoomBoundaryPartitionLogic PARTITION_SERVICE =
             new DungeonRoomBoundaryPartitionLogic();
     private static final DungeonBoundaryStretchSelectionLogic SELECTION_SERVICE =
@@ -32,17 +30,12 @@ final class DungeonBoundaryStretchEditLogic {
             return dungeonMap;
         }
         List<DungeonRoomTopologyClusterWork> clusters = WORK_SERVICE.workClusters(dungeonMap);
-        DungeonRoomTopologyClusterWork target = null;
-        for (DungeonRoomTopologyClusterWork work : clusters) {
-            if (work != null && work.cluster().clusterId() == clusterId) {
-                target = work;
-                break;
-            }
-        }
+        DungeonRoomTopologyClusterWork target = targetCluster(clusters, clusterId);
         if (target == null) {
             return dungeonMap;
         }
-        Map<DungeonBoundaryKey, DungeonClusterBoundary> boundaries = GEOMETRY_SERVICE.boundaryMap(target.cluster());
+        Map<DungeonBoundaryKey, DungeonClusterBoundary> boundaries =
+                DungeonClusterBoundaryOrdering.boundaryMap(target.cluster());
         Optional<StretchSelection> stretch = SELECTION_SERVICE.resolveStretch(
                 target,
                 sourceEdges,
@@ -53,13 +46,34 @@ final class DungeonBoundaryStretchEditLogic {
         if (stretch.isEmpty() || stretch.get().stationary()) {
             return dungeonMap;
         }
-        Optional<StretchMutationResult> mutation = stretch.get().outer()
-                ? MUTATION_SERVICE.applyOuterStretch(dungeonMap, target, stretch.get(), boundaries)
-                : MUTATION_SERVICE.applyInnerStretch(dungeonMap, target, stretch.get(), boundaries);
+        Optional<StretchMutationResult> mutation = applyStretchMutation(dungeonMap, target, stretch.get(), boundaries);
         if (mutation.isEmpty()) {
             return dungeonMap;
         }
         return rebuiltStretch(dungeonMap, clusters, target, stretch.get(), mutation.get());
+    }
+
+    private DungeonRoomTopologyClusterWork targetCluster(
+            List<DungeonRoomTopologyClusterWork> clusters,
+            long clusterId
+    ) {
+        for (DungeonRoomTopologyClusterWork work : clusters) {
+            if (work != null && work.cluster().clusterId() == clusterId) {
+                return work;
+            }
+        }
+        return null;
+    }
+
+    private Optional<StretchMutationResult> applyStretchMutation(
+            DungeonMap dungeonMap,
+            DungeonRoomTopologyClusterWork target,
+            StretchSelection stretch,
+            Map<DungeonBoundaryKey, DungeonClusterBoundary> boundaries
+    ) {
+        return stretch.outer()
+                ? MUTATION_SERVICE.applyOuterStretch(dungeonMap, target, stretch, boundaries)
+                : MUTATION_SERVICE.applyInnerStretch(dungeonMap, target, stretch, boundaries);
     }
 
     private DungeonMap rebuiltStretch(

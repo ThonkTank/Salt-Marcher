@@ -17,7 +17,7 @@ public final class DungeonTravelSurfaceProjection {
             String statusLabel
     ) {
         DungeonMap safeMap = dungeonMap == null
-                ? DungeonMap.empty(new DungeonMapIdentity(1L), "Dungeon")
+                ? DungeonMapAuthoring.empty(new DungeonMapIdentity(1L), "Dungeon")
                 : dungeonMap;
         DungeonMapFacts mapFacts = derived == null ? null : derived.map();
         DungeonMapFacts safeFacts = mapFacts == null
@@ -57,16 +57,7 @@ public final class DungeonTravelSurfaceProjection {
 
     private static String headingLabel(DungeonTravelHeading heading) {
         DungeonTravelHeading resolvedHeading = heading == null ? DungeonTravelHeading.defaultHeading() : heading;
-        if (resolvedHeading == DungeonTravelHeading.NORTH) {
-            return "Norden";
-        }
-        if (resolvedHeading == DungeonTravelHeading.EAST) {
-            return "Osten";
-        }
-        if (resolvedHeading == DungeonTravelHeading.SOUTH) {
-            return "Sueden";
-        }
-        return "Westen";
+        return resolvedHeading.displayLabel();
     }
 
     private record SurfaceScope(

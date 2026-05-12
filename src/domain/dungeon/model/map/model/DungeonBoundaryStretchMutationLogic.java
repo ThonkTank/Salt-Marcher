@@ -46,7 +46,7 @@ final class DungeonBoundaryStretchMutationLogic {
         }
         return Optional.of(new StretchMutationResult(
                 target.cellsByLevel(),
-                GEOMETRY_SERVICE.boundariesByLevel(boundaries.values())));
+                DungeonClusterBoundaryOrdering.boundariesByLevel(boundaries.values())));
     }
 
     Optional<StretchMutationResult> applyOuterStretch(
@@ -69,7 +69,7 @@ final class DungeonBoundaryStretchMutationLogic {
         if (currentLevelCells.isEmpty()) {
             return Optional.empty();
         }
-        nextCellsByLevel.put(stretch.level(), DungeonRoomCellProjection.sortedCells(currentLevelCells));
+        nextCellsByLevel.put(stretch.level(), DungeonCellOrdering.sortedCells(currentLevelCells));
         Map<DungeonBoundaryKey, DungeonClusterBoundary> boundaries = new LinkedHashMap<>(boundaryMap);
         for (BoundaryVertex vertex : stretch.vertices()) {
             if (!BOUNDARY_LOOKUP_SERVICE.hasPerpendicularBoundary(

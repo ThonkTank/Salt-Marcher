@@ -65,7 +65,11 @@ public sealed interface DungeonEditorOperation permits
 
     enum RectangleAction {
         PAINT,
-        DELETE
+        DELETE;
+
+        public boolean deletesRoomCells() {
+            return this == DELETE;
+        }
     }
 
     record EditClusterBoundaries(

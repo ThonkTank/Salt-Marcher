@@ -110,7 +110,7 @@ final class DungeonBoundaryStretchSelectionLogic {
             DungeonEdge edge
     ) {
         StretchOrientation orientation = StretchOrientation.from(edge);
-        if (edge == null || edge.from() == null || edge.to() == null || orientation == null) {
+        if (!validEdge(edge, orientation)) {
             return Optional.empty();
         }
         if (invalidEdgeForSeed(seed, edge, orientation)) {
@@ -122,10 +122,14 @@ final class DungeonBoundaryStretchSelectionLogic {
         }
         DungeonBoundaryKey key = DungeonBoundaryKey.from(edge);
         DungeonClusterBoundary existing = boundaries.get(key);
-        if ((seed.outer() && existing != null) || (!seed.outer() && existing == null)) {
+        if (!boundaryPresenceMatches(seed, existing)) {
             return Optional.empty();
         }
         return Optional.of(new StretchEdge(edge, key, existing));
+    }
+
+    private boolean validEdge(DungeonEdge edge, StretchOrientation orientation) {
+        return edge != null && edge.from() != null && edge.to() != null && orientation != null;
     }
 
     private boolean invalidEdgeForSeed(
@@ -146,6 +150,10 @@ final class DungeonBoundaryStretchSelectionLogic {
         return touch.valid()
                 && seed.outer() == (touch.insideCount() == 1)
                 && seed.side() == BoundarySide.resolve(orientation, touch, seed.fixedCoordinate());
+    }
+
+    private boolean boundaryPresenceMatches(StretchSeed seed, DungeonClusterBoundary existing) {
+        return seed.outer() ? existing == null : existing != null;
     }
 
     private List<StretchEdge> sortedStretchEdges(

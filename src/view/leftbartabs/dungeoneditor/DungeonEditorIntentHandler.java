@@ -65,9 +65,6 @@ final class DungeonEditorIntentHandler {
         private static final int LEVEL_UP_DELTA = 1;
         private static final int LEVEL_DOWN_DELTA = -1;
 
-        private MainViewIntent() {
-        }
-
         private static @Nullable DungeonEditorSessionCommand toCommand(
                 MapCanvasContentModel mapCanvasContentModel,
                 MapCanvasViewInputEvent event
@@ -169,9 +166,6 @@ final class DungeonEditorIntentHandler {
 
         private static final String NAME_MISSING_ERROR = "Name fehlt.";
         private static final long NO_MAP_ID = 0L;
-
-        private ControlsIntent() {
-        }
 
         private static void consume(
                 DungeonEditorContributionModel presentationModel,
@@ -386,9 +380,6 @@ final class DungeonEditorIntentHandler {
 
     private static final class StateSaveIntent {
 
-        private StateSaveIntent() {
-        }
-
         private static @Nullable DungeonEditorSessionCommand toSaveCommand(
                 DungeonEditorContributionModel presentationModel,
                 DungeonEditorStateViewInputEvent event
@@ -452,9 +443,6 @@ final class DungeonEditorIntentHandler {
     }
 
     private static final class Commands {
-
-        private Commands() {
-        }
 
         private static DungeonEditorSessionCommand mainViewCommand(DungeonEditorSessionCommand.MainViewInput mainViewInput) {
             return new DungeonEditorSessionCommand(
@@ -557,9 +545,6 @@ final class DungeonEditorIntentHandler {
     }
 
     private static final class LevelText {
-
-        private LevelText() {
-        }
 
         private static List<Integer> parseLevels(@Nullable String raw) {
             if (raw == null || raw.isBlank()) {

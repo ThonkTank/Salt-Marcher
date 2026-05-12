@@ -9,14 +9,14 @@ import src.domain.encounter.published.EncounterGenerationStatus;
 import src.domain.encounter.published.EncounterTuningPreviewLabels;
 import src.domain.encounter.published.EncounterTuningPreviewResult;
 
-final class EncounterTuningPreviewPublication {
+final class EncounterTuningPreviewPublicationUseCase {
 
     private static final String TUNING_PREVIEW_LOAD_FAILED = "Encounter tuning preview could not be loaded.";
     private static final String TUNING_PREVIEW_NOT_REGISTERED = "Encounter tuning preview service is not registered.";
 
     private final @Nullable LoadEncounterBudgetUseCase loadBudgetUseCase;
 
-    EncounterTuningPreviewPublication(@Nullable LoadEncounterBudgetUseCase loadBudgetUseCase) {
+    EncounterTuningPreviewPublicationUseCase(@Nullable LoadEncounterBudgetUseCase loadBudgetUseCase) {
         this.loadBudgetUseCase = loadBudgetUseCase;
     }
 

@@ -918,6 +918,9 @@ public final class DungeonEditorContributionModel {
                 createSessionToolsByLabel();
         private static final Map<ToolFamily, ToolPalette> PALETTES = createPalettes();
 
+        private ToolCatalog() {
+        }
+
         static String labelOf(@Nullable DungeonEditorTool tool) {
             return TOOL_LABELS.getOrDefault(tool == null ? DungeonEditorTool.SELECT : tool, DEFAULT_TOOL_LABEL);
         }

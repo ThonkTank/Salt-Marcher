@@ -5,9 +5,9 @@ import src.domain.encounter.model.generation.model.EncounterRequestedDifficulty;
 import src.domain.encounter.model.generation.model.EncounterTuningIntent;
 import src.domain.encounter.published.EncounterBuilderInputs;
 
-final class EncounterBuilderInputsTranslation {
+final class EncounterBuilderInputsTranslationUseCase {
 
-    private EncounterBuilderInputsTranslation() {
+    private EncounterBuilderInputsTranslationUseCase() {
     }
 
     static EncounterGenerationInputs toInternal(EncounterBuilderInputs inputs) {

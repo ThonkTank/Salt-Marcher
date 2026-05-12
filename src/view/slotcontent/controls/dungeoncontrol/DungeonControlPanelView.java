@@ -267,8 +267,7 @@ public class DungeonControlPanelView extends VBox {
             if (syncing) {
                 return;
             }
-            java.util.Optional<List<Integer>> parsedLevels =
-                    DungeonControlPanelContentModel.parseLevels(selectedLevelsField.getText());
+            java.util.Optional<List<Integer>> parsedLevels = contentModel.parseLevels(selectedLevelsField.getText());
             if (parsedLevels.isEmpty()) {
                 selectedLevelsField.setText(contentModel.normalizeSelectedLevelsDraft(
                         selectedLevelsField.getText(),

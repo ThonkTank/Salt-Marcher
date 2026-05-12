@@ -35,7 +35,7 @@ public final class DungeonCorridorSemanticsRules {
     }
 
     private static Set<CorridorEndpointSemantics> explicitEndpointSemantics(DungeonCorridor corridor) {
-        LinkedHashSet<CorridorEndpointSemantics> result = new LinkedHashSet<>();
+        Set<CorridorEndpointSemantics> result = new LinkedHashSet<>();
         for (DungeonCorridorDoorBinding binding : corridor.bindings().doorBindings()) {
             result.add(CorridorEndpointSemantics.forDoor(binding));
         }

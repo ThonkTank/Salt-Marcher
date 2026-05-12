@@ -24,7 +24,7 @@ public record DungeonRoomTopologyClusterWork(
         for (List<DungeonCell> cells : cellsByLevel.values()) {
             result.addAll(cells);
         }
-        return DungeonRoomCellProjection.sortedCells(result);
+        return DungeonCellOrdering.sortedCells(result);
     }
 
     public DungeonRoomTopologyClusterWork withCellsByLevel(Map<Integer, List<DungeonCell>> nextCellsByLevel) {

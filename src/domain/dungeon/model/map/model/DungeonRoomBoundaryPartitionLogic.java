@@ -43,7 +43,7 @@ final class DungeonRoomBoundaryPartitionLogic {
             int level = entry.getKey();
             List<DungeonClusterBoundary> barriers = boundariesByLevel.getOrDefault(level, List.of());
             for (Set<DungeonCell> component : connectedComponents(entry.getValue(), barriers, work.cluster().center())) {
-                List<DungeonCell> cells = DungeonRoomCellProjection.sortedCells(component);
+                List<DungeonCell> cells = DungeonCellOrdering.sortedCells(component);
                 if (!cells.isEmpty()) {
                     result.add(new RoomComponent(level, cells));
                 }

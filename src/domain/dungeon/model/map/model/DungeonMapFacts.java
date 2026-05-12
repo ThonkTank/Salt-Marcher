@@ -1,5 +1,6 @@
 package src.domain.dungeon.model.map.model;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public record DungeonMapFacts(
@@ -31,7 +32,7 @@ public record DungeonMapFacts(
     }
 
     public List<DungeonCell> allCells() {
-        java.util.ArrayList<DungeonCell> result = new java.util.ArrayList<>();
+        List<DungeonCell> result = new ArrayList<>();
         appendUniqueAreaCells(result);
         appendUniqueFeatureCells(result);
         return List.copyOf(result);

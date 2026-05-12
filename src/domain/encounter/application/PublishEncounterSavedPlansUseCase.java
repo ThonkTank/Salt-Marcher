@@ -41,7 +41,7 @@ public final class PublishEncounterSavedPlansUseCase {
                 result.status().loadedSuccessfully()
                         ? SavedEncounterPlanStatus.successStatus()
                         : SavedEncounterPlanStatus.storageErrorStatus(),
-                result.plans().stream().map(EncounterPlanPublication::toPublishedSummary).toList(),
+                result.plans().stream().map(EncounterPlanPublicationUseCase::toPublishedSummary).toList(),
                 result.message());
     }
 }
