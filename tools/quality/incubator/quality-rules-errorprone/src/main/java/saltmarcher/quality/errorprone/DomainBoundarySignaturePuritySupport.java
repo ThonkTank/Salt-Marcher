@@ -31,14 +31,8 @@ final class DomainBoundarySignaturePuritySupport {
     private static final Pattern DOMAIN_ROOT_PACKAGE = Pattern.compile("^src\\.domain\\.([^.]+)$");
     private static final Pattern DOMAIN_PUBLISHED_PACKAGE =
             Pattern.compile("^src\\.domain\\.([^.]+)\\.published(\\..*)?$");
-    private static final Pattern ROOT_APPLICATION_SERVICE_TYPE =
-            Pattern.compile("^src\\.domain\\.([^.]+)\\.[^.]+ApplicationService$");
-    private static final Pattern ROOT_APPLICATION_USECASE_TYPE =
-            Pattern.compile("^src\\.domain\\.([^.]+)\\.application\\.[^.]+UseCase$");
     private static final Pattern DOMAIN_PUBLISHED_TYPE =
             Pattern.compile("^src\\.domain\\.([^.]+)\\.published\\..+");
-    private static final Pattern DOMAIN_PORT_TYPE =
-            Pattern.compile("^src\\.domain\\.([^.]+)\\.[^.]+\\.port\\.[^.]+(?:Repository|Lookup|Catalog|Search)$");
     private static final Set<String> OUTER_LAYER_PREFIXES = Set.of(
             "bootstrap.",
             "shell.",
@@ -131,39 +125,6 @@ final class DomainBoundarySignaturePuritySupport {
         for (ExecutableElement constructor : ElementFilter.constructorsIn(typeElement.getEnclosedElements())) {
             if (isPublicOrProtected(constructor)) {
                 collectExecutableLeaks("constructor " + typeElement.getSimpleName(), constructor, sourceFeature, leaks);
-            }
-        }
-    }
-
-    static void collectRootConstructorCompositionLeaks(
-            TypeElement rootType,
-            ExecutableElement constructor,
-            List<String> leaks) {
-        String rootFeature = domainFeatureName(rootType.getQualifiedName().toString());
-        if (rootFeature == null) {
-            return;
-        }
-        for (VariableElement parameter : constructor.getParameters()) {
-            collectRootConstructorCompositionLeak(
-                    "constructor parameter " + parameter.getSimpleName(),
-                    parameter.asType(),
-                    rootFeature,
-                    leaks);
-        }
-        for (TypeMirror thrownType : constructor.getThrownTypes()) {
-            collectRootConstructorCompositionLeak(
-                    "constructor throws clause of " + rootType.getSimpleName(),
-                    thrownType,
-                    rootFeature,
-                    leaks);
-        }
-        for (TypeParameterElement typeParameter : constructor.getTypeParameters()) {
-            for (TypeMirror bound : typeParameter.getBounds()) {
-                collectRootConstructorCompositionLeak(
-                        "constructor type bound of " + typeParameter.getSimpleName(),
-                        bound,
-                        rootFeature,
-                        leaks);
             }
         }
     }

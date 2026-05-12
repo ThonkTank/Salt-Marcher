@@ -35,6 +35,7 @@ internal fun Project.configureQualityConventions() {
         options.errorprone.error("UnusedVariable")
         if (!environment.focusedEnforcementBundleMode) {
             options.errorprone.error("DomainApplicationServiceApiShape")
+            options.errorprone.error("DomainApplicationServiceRoleBoundary")
             options.errorprone.error("DomainModuleFieldPurity")
             options.errorprone.error("DomainPublicBoundarySignaturePurity")
             options.errorprone.error("DomainPublicConcreteTypeShape")

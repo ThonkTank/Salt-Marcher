@@ -8,10 +8,8 @@ import com.google.errorprone.util.ASTHelpers;
 import com.sun.source.tree.ClassTree;
 import java.util.ArrayList;
 import java.util.List;
-import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
-import javax.lang.model.util.ElementFilter;
 
 @BugPattern(
         name = "DomainPublicBoundarySignaturePurity",
@@ -38,14 +36,6 @@ public final class DomainPublicBoundarySignaturePurityChecker extends BugChecker
         }
         List<String> leaks = new ArrayList<>();
         DomainBoundarySignaturePuritySupport.collectGeneralBoundaryLeaks(typeElement, sourceFeature, leaks);
-        for (ExecutableElement constructor : ElementFilter.constructorsIn(typeElement.getEnclosedElements())) {
-            if (DomainBoundarySignaturePuritySupport.isPublicOrProtected(constructor)) {
-                DomainBoundarySignaturePuritySupport.collectRootConstructorCompositionLeaks(
-                        typeElement,
-                        constructor,
-                        leaks);
-            }
-        }
 
         if (leaks.isEmpty()) {
             return Description.NO_MATCH;
