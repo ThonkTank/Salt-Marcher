@@ -1,6 +1,7 @@
 package src.domain.dungeon;
 
 import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.application.ApplyDungeonTravelUseCase;
 import src.domain.dungeon.model.map.model.DungeonCell;
 import src.domain.dungeon.model.map.model.DungeonMapIdentity;
@@ -31,7 +32,7 @@ public final class DungeonTravelApplicationService {
         applyDungeonTravelUseCase.move(domainTravelPosition(moveAction.position()), moveAction.actionId());
     }
 
-    private static DungeonTravelPositionFacts domainTravelPosition(DungeonTravelPosition position) {
+    private static @Nullable DungeonTravelPositionFacts domainTravelPosition(@Nullable DungeonTravelPosition position) {
         if (position == null) {
             return null;
         }
@@ -43,11 +44,11 @@ public final class DungeonTravelApplicationService {
                 src.domain.dungeon.model.map.model.DungeonTravelHeading.valueOf(position.heading().name()));
     }
 
-    private static DungeonMapIdentity domainMapId(DungeonMapId mapId) {
+    private static DungeonMapIdentity domainMapId(@Nullable DungeonMapId mapId) {
         return new DungeonMapIdentity(mapId == null ? 1L : mapId.value());
     }
 
-    private static DungeonCell domainCell(DungeonCellRef cell) {
+    private static DungeonCell domainCell(@Nullable DungeonCellRef cell) {
         return cell == null ? new DungeonCell(0, 0, 0) : new DungeonCell(cell.q(), cell.r(), cell.level());
     }
 }
