@@ -5,6 +5,7 @@ import java.util.List;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.beans.value.ObservableValue;
+import src.domain.party.published.AdventuringDayCalculation;
 
 final class AdventuringDayTopBarContributionModel {
 

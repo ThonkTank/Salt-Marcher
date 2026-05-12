@@ -273,7 +273,7 @@ final class EncounterCombatCardList extends VBox {
             Button up = EncounterCombatStateView.spinnerButton("\u25B2");
             down.setOnAction(event -> field.adjust(currentInitiative, -1));
             up.setOnAction(event -> field.adjust(currentInitiative, 1));
-            CombatStyledButton set = new CombatStyledButton("\u2713 Setzen", STYLE_ACCENT);
+            CombatStyledButton set = new CombatStyledButton("\u2713 Setzen", EncounterCombatStateView.STYLE_ACCENT);
             set.setDefaultButton(true);
             set.setOnAction(event -> {
                 popupContentModel.hide();
@@ -328,7 +328,7 @@ final class EncounterCombatCardList extends VBox {
         void showState(boolean allEnemiesDefeated) {
             CombatStyledButton end = new CombatStyledButton(
                     "_Kampf beenden",
-                    allEnemiesDefeated ? STYLE_ACCENT : "");
+                    allEnemiesDefeated ? EncounterCombatStateView.STYLE_ACCENT : "");
             end.setMaxWidth(Double.MAX_VALUE);
             setHgrow(end, Priority.ALWAYS);
             end.setOnAction(event -> showConfirmState(allEnemiesDefeated));
@@ -338,7 +338,7 @@ final class EncounterCombatCardList extends VBox {
         private void showConfirmState(boolean allEnemiesDefeated) {
             CombatStyledButton cancel = new CombatStyledButton("Abbruch");
             CombatStyledButton confirm = allEnemiesDefeated
-                    ? new CombatStyledButton("_Bestätigen!", STYLE_ACCENT)
+                    ? new CombatStyledButton("_Bestätigen!", EncounterCombatStateView.STYLE_ACCENT)
                     : new CombatStyledButton("_Bestätigen!");
             cancel.setMaxWidth(Double.MAX_VALUE);
             confirm.setMaxWidth(Double.MAX_VALUE);
@@ -428,7 +428,7 @@ final class EncounterCombatCardList extends VBox {
                 down.setOnAction(event -> initiativeField.adjust(10, -1));
                 up.setOnAction(event -> initiativeField.adjust(10, 1));
 
-                CombatStyledButton add = new CombatStyledButton("Hinzufügen", STYLE_ACCENT);
+                CombatStyledButton add = new CombatStyledButton("Hinzufügen", EncounterCombatStateView.STYLE_ACCENT);
                 add.setOnAction(event -> selectCandidate(candidate, initiativeField.parse(10)));
                 initiativeField.setOnAction(event -> selectCandidate(candidate, initiativeField.parse(10)));
 

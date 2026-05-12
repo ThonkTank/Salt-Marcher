@@ -248,7 +248,7 @@ final class EncounterRosterListView extends VBox {
         }
 
         private Node buildRosterCard(EncounterRosterCardView card) {
-            Button minus = new BuilderStyledButton("-", STYLE_COMPACT);
+            Button minus = new BuilderStyledButton("-", EncounterBuilderStateView.STYLE_COMPACT);
             minus.setDisable(card.count() <= 1);
             minus.setOnAction(event ->
                     publish.accept(new EncounterBuilderStateViewInputEvent.ChangeRosterCountInput(card.creatureId(), -1)));
@@ -257,7 +257,7 @@ final class EncounterRosterListView extends VBox {
             count.setMinWidth(24);
             count.setAlignment(Pos.CENTER);
 
-            Button plus = new BuilderStyledButton("+", STYLE_COMPACT);
+            Button plus = new BuilderStyledButton("+", EncounterBuilderStateView.STYLE_COMPACT);
             plus.setOnAction(event ->
                     publish.accept(new EncounterBuilderStateViewInputEvent.ChangeRosterCountInput(card.creatureId(), 1)));
 
@@ -280,7 +280,7 @@ final class EncounterRosterListView extends VBox {
             VBox info = new VBox(2, name, detail);
             HBox.setHgrow(info, Priority.ALWAYS);
 
-            Button remove = new BuilderStyledButton("\u00d7", STYLE_COMPACT, "remove-btn");
+            Button remove = new BuilderStyledButton("\u00d7", EncounterBuilderStateView.STYLE_COMPACT, "remove-btn");
             remove.setOnAction(event ->
                     publish.accept(new EncounterBuilderStateViewInputEvent.RemoveCreatureInput(card.creatureId())));
 
@@ -306,7 +306,10 @@ final class EncounterAdvisoryRegionView extends VBox {
             List<Node> nodes = new ArrayList<>();
             if (state.pendingUndo() != null) {
                 EncounterUndoRemoveView undo = state.pendingUndo();
-                Button undoButton = new BuilderStyledButton("Rueckgaengig", STYLE_COMPACT, STYLE_NEUTRAL_ACTION);
+                Button undoButton = new BuilderStyledButton(
+                        "Rueckgaengig",
+                        EncounterBuilderStateView.STYLE_COMPACT,
+                        EncounterBuilderStateView.STYLE_NEUTRAL_ACTION);
                 undoButton.setOnAction(event ->
                         publish.accept(new EncounterBuilderStateViewInputEvent.UndoRemoveInput(undo.token())));
 

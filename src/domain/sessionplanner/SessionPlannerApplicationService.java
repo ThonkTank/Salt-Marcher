@@ -19,133 +19,160 @@ import src.domain.sessionplanner.published.AttachSessionEncounterCommand;
 import src.domain.sessionplanner.published.ClearSessionRestGapCommand;
 import src.domain.sessionplanner.published.RemoveSessionLootPlaceholderCommand;
 import src.domain.sessionplanner.published.SessionPlannerActionCommand;
-import src.domain.sessionplanner.published.SessionPlannerEncounterCommand;
+import src.domain.sessionplanner.published.SessionPlannerCommand;
 import src.domain.sessionplanner.published.SessionPlannerEncounterAllocationCommand;
+import src.domain.sessionplanner.published.SessionPlannerEncounterCommand;
 import src.domain.sessionplanner.published.SessionPlannerParticipantCommand;
 import src.domain.sessionplanner.published.SetSessionEncounterDaysCommand;
 import src.domain.sessionplanner.published.SetSessionRestGapCommand;
 
 public final class SessionPlannerApplicationService {
 
-    private final CreateSessionPlanUseCase createSessionUseCase;
-    private final AddSessionParticipantUseCase addParticipantUseCase;
-    private final RemoveSessionParticipantUseCase removeParticipantUseCase;
-    private final SetSessionEncounterDaysUseCase setEncounterDaysUseCase;
-    private final AttachSessionEncounterUseCase attachEncounterUseCase;
-    private final RemoveSessionEncounterUseCase removeEncounterUseCase;
-    private final MoveSessionEncounterUpUseCase moveEncounterUpUseCase;
-    private final MoveSessionEncounterDownUseCase moveEncounterDownUseCase;
-    private final SetSessionEncounterAllocationUseCase setEncounterAllocationUseCase;
-    private final SelectSessionEncounterUseCase selectEncounterUseCase;
-    private final SetSessionRestGapUseCase setRestGapUseCase;
-    private final ClearSessionRestGapUseCase clearRestGapUseCase;
-    private final AddSessionLootPlaceholderUseCase addLootPlaceholderUseCase;
-    private final RemoveSessionLootPlaceholderUseCase removeLootPlaceholderUseCase;
+    private static final String COMMAND_PARAMETER = "command";
 
-    @SuppressWarnings("DomainPublicBoundarySignaturePurity")
-    public SessionPlannerApplicationService(
-            CreateSessionPlanUseCase createSessionUseCase,
-            AddSessionParticipantUseCase addParticipantUseCase,
-            RemoveSessionParticipantUseCase removeParticipantUseCase,
-            SetSessionEncounterDaysUseCase setEncounterDaysUseCase,
-            AttachSessionEncounterUseCase attachEncounterUseCase,
-            RemoveSessionEncounterUseCase removeEncounterUseCase,
-            MoveSessionEncounterUpUseCase moveEncounterUpUseCase,
-            MoveSessionEncounterDownUseCase moveEncounterDownUseCase,
-            SetSessionEncounterAllocationUseCase setEncounterAllocationUseCase,
-            SelectSessionEncounterUseCase selectEncounterUseCase,
-            SetSessionRestGapUseCase setRestGapUseCase,
-            ClearSessionRestGapUseCase clearRestGapUseCase,
-            AddSessionLootPlaceholderUseCase addLootPlaceholderUseCase,
-            RemoveSessionLootPlaceholderUseCase removeLootPlaceholderUseCase
+    private final SessionUseCases sessionUseCases;
+    private final ParticipantUseCases participantUseCases;
+    private final EncounterUseCases encounterUseCases;
+    private final RestUseCases restUseCases;
+    private final LootUseCases lootUseCases;
+
+    public SessionPlannerApplicationService(UseCases useCases) {
+        UseCases requiredUseCases = Objects.requireNonNull(useCases, "useCases");
+        this.sessionUseCases = requiredUseCases.sessionUseCases();
+        this.participantUseCases = requiredUseCases.participantUseCases();
+        this.encounterUseCases = requiredUseCases.encounterUseCases();
+        this.restUseCases = requiredUseCases.restUseCases();
+        this.lootUseCases = requiredUseCases.lootUseCases();
+    }
+
+    public void apply(SessionPlannerCommand command) {
+        switch (requireCommand(command)) {
+            case SessionPlannerActionCommand actionCommand -> applyAction(actionCommand);
+            case SessionPlannerParticipantCommand participantCommand -> applyParticipant(participantCommand);
+            case SetSessionEncounterDaysCommand daysCommand ->
+                    encounterUseCases.setDaysUseCase().execute(daysCommand.encounterDays());
+            case AttachSessionEncounterCommand attachCommand ->
+                    encounterUseCases.attachUseCase().execute(attachCommand.encounterPlanId());
+            case SessionPlannerEncounterCommand encounterCommand -> applyEncounter(encounterCommand);
+            case SessionPlannerEncounterAllocationCommand allocationCommand ->
+                    encounterUseCases.setAllocationUseCase().execute(
+                            allocationCommand.encounterId(),
+                            allocationCommand.budgetPercentage());
+            case SetSessionRestGapCommand restCommand -> restUseCases.setUseCase().execute(
+                    restCommand.leftEncounterId(),
+                    restCommand.rightEncounterId(),
+                    restCommand.restKind().name());
+            case ClearSessionRestGapCommand clearCommand -> restUseCases.clearUseCase().execute(
+                    clearCommand.leftEncounterId(),
+                    clearCommand.rightEncounterId());
+            case RemoveSessionLootPlaceholderCommand lootCommand ->
+                    lootUseCases.removeUseCase().execute(lootCommand.lootId());
+            default -> throw new IllegalArgumentException("Unsupported session planner command: " + command.getClass());
+        }
+    }
+
+    private static SessionPlannerCommand requireCommand(SessionPlannerCommand command) {
+        return Objects.requireNonNull(command, COMMAND_PARAMETER);
+    }
+
+    private void applyAction(SessionPlannerActionCommand command) {
+        switch (command.action()) {
+            case CREATE_SESSION -> sessionUseCases.createUseCase().execute();
+            case ADD_LOOT_PLACEHOLDER -> lootUseCases.addUseCase().execute();
+        }
+    }
+
+    private void applyParticipant(SessionPlannerParticipantCommand command) {
+        switch (command.action()) {
+            case ADD -> participantUseCases.addUseCase().execute(command.characterId());
+            case REMOVE -> participantUseCases.removeUseCase().execute(command.characterId());
+        }
+    }
+
+    private void applyEncounter(SessionPlannerEncounterCommand command) {
+        switch (command.action()) {
+            case SELECT -> encounterUseCases.selectUseCase().execute(command.encounterId());
+            case REMOVE -> encounterUseCases.removeUseCase().execute(command.encounterId());
+            case MOVE_UP -> encounterUseCases.moveUpUseCase().execute(command.encounterId());
+            case MOVE_DOWN -> encounterUseCases.moveDownUseCase().execute(command.encounterId());
+        }
+    }
+
+    public record UseCases(
+            SessionUseCases sessionUseCases,
+            ParticipantUseCases participantUseCases,
+            EncounterUseCases encounterUseCases,
+            RestUseCases restUseCases,
+            LootUseCases lootUseCases
     ) {
-        this.createSessionUseCase = Objects.requireNonNull(createSessionUseCase, "createSessionUseCase");
-        this.addParticipantUseCase = Objects.requireNonNull(addParticipantUseCase, "addParticipantUseCase");
-        this.removeParticipantUseCase = Objects.requireNonNull(removeParticipantUseCase, "removeParticipantUseCase");
-        this.setEncounterDaysUseCase = Objects.requireNonNull(setEncounterDaysUseCase, "setEncounterDaysUseCase");
-        this.attachEncounterUseCase = Objects.requireNonNull(attachEncounterUseCase, "attachEncounterUseCase");
-        this.removeEncounterUseCase = Objects.requireNonNull(removeEncounterUseCase, "removeEncounterUseCase");
-        this.moveEncounterUpUseCase = Objects.requireNonNull(moveEncounterUpUseCase, "moveEncounterUpUseCase");
-        this.moveEncounterDownUseCase = Objects.requireNonNull(moveEncounterDownUseCase, "moveEncounterDownUseCase");
-        this.setEncounterAllocationUseCase = Objects.requireNonNull(setEncounterAllocationUseCase, "setEncounterAllocationUseCase");
-        this.selectEncounterUseCase = Objects.requireNonNull(selectEncounterUseCase, "selectEncounterUseCase");
-        this.setRestGapUseCase = Objects.requireNonNull(setRestGapUseCase, "setRestGapUseCase");
-        this.clearRestGapUseCase = Objects.requireNonNull(clearRestGapUseCase, "clearRestGapUseCase");
-        this.addLootPlaceholderUseCase = Objects.requireNonNull(addLootPlaceholderUseCase, "addLootPlaceholderUseCase");
-        this.removeLootPlaceholderUseCase = Objects.requireNonNull(removeLootPlaceholderUseCase, "removeLootPlaceholderUseCase");
+
+        public UseCases {
+            sessionUseCases = Objects.requireNonNull(sessionUseCases, "sessionUseCases");
+            participantUseCases = Objects.requireNonNull(participantUseCases, "participantUseCases");
+            encounterUseCases = Objects.requireNonNull(encounterUseCases, "encounterUseCases");
+            restUseCases = Objects.requireNonNull(restUseCases, "restUseCases");
+            lootUseCases = Objects.requireNonNull(lootUseCases, "lootUseCases");
+        }
     }
 
-    public void createSession(SessionPlannerActionCommand command) {
-        Objects.requireNonNull(command, "command");
-        createSessionUseCase.execute();
+    public record SessionUseCases(CreateSessionPlanUseCase createUseCase) {
+
+        public SessionUseCases {
+            createUseCase = Objects.requireNonNull(createUseCase, "createUseCase");
+        }
     }
 
-    public void addParticipant(SessionPlannerParticipantCommand command) {
-        SessionPlannerParticipantCommand effective = Objects.requireNonNull(command, "command");
-        addParticipantUseCase.execute(effective.characterId());
+    public record ParticipantUseCases(
+            AddSessionParticipantUseCase addUseCase,
+            RemoveSessionParticipantUseCase removeUseCase
+    ) {
+
+        public ParticipantUseCases {
+            addUseCase = Objects.requireNonNull(addUseCase, "addUseCase");
+            removeUseCase = Objects.requireNonNull(removeUseCase, "removeUseCase");
+        }
     }
 
-    public void removeParticipant(SessionPlannerParticipantCommand command) {
-        SessionPlannerParticipantCommand effective = Objects.requireNonNull(command, "command");
-        removeParticipantUseCase.execute(effective.characterId());
+    public record EncounterUseCases(
+            SetSessionEncounterDaysUseCase setDaysUseCase,
+            AttachSessionEncounterUseCase attachUseCase,
+            RemoveSessionEncounterUseCase removeUseCase,
+            MoveSessionEncounterUpUseCase moveUpUseCase,
+            MoveSessionEncounterDownUseCase moveDownUseCase,
+            SetSessionEncounterAllocationUseCase setAllocationUseCase,
+            SelectSessionEncounterUseCase selectUseCase
+    ) {
+
+        public EncounterUseCases {
+            setDaysUseCase = Objects.requireNonNull(setDaysUseCase, "setDaysUseCase");
+            attachUseCase = Objects.requireNonNull(attachUseCase, "attachUseCase");
+            removeUseCase = Objects.requireNonNull(removeUseCase, "removeUseCase");
+            moveUpUseCase = Objects.requireNonNull(moveUpUseCase, "moveUpUseCase");
+            moveDownUseCase = Objects.requireNonNull(moveDownUseCase, "moveDownUseCase");
+            setAllocationUseCase = Objects.requireNonNull(setAllocationUseCase, "setAllocationUseCase");
+            selectUseCase = Objects.requireNonNull(selectUseCase, "selectUseCase");
+        }
     }
 
-    public void setEncounterDays(SetSessionEncounterDaysCommand command) {
-        SetSessionEncounterDaysCommand effective = Objects.requireNonNull(command, "command");
-        setEncounterDaysUseCase.execute(effective.encounterDays());
+    public record RestUseCases(
+            SetSessionRestGapUseCase setUseCase,
+            ClearSessionRestGapUseCase clearUseCase
+    ) {
+
+        public RestUseCases {
+            setUseCase = Objects.requireNonNull(setUseCase, "setUseCase");
+            clearUseCase = Objects.requireNonNull(clearUseCase, "clearUseCase");
+        }
     }
 
-    public void attachEncounter(AttachSessionEncounterCommand command) {
-        AttachSessionEncounterCommand effective = Objects.requireNonNull(command, "command");
-        attachEncounterUseCase.execute(effective.encounterPlanId());
-    }
+    public record LootUseCases(
+            AddSessionLootPlaceholderUseCase addUseCase,
+            RemoveSessionLootPlaceholderUseCase removeUseCase
+    ) {
 
-    public void removeEncounter(SessionPlannerEncounterCommand command) {
-        SessionPlannerEncounterCommand effective = Objects.requireNonNull(command, "command");
-        removeEncounterUseCase.execute(effective.encounterId());
-    }
-
-    public void moveEncounterUp(SessionPlannerEncounterCommand command) {
-        SessionPlannerEncounterCommand effective = Objects.requireNonNull(command, "command");
-        moveEncounterUpUseCase.execute(effective.encounterId());
-    }
-
-    public void moveEncounterDown(SessionPlannerEncounterCommand command) {
-        SessionPlannerEncounterCommand effective = Objects.requireNonNull(command, "command");
-        moveEncounterDownUseCase.execute(effective.encounterId());
-    }
-
-    public void selectEncounter(SessionPlannerEncounterCommand command) {
-        SessionPlannerEncounterCommand effective = Objects.requireNonNull(command, "command");
-        selectEncounterUseCase.execute(effective.encounterId());
-    }
-
-    public void setEncounterAllocation(SessionPlannerEncounterAllocationCommand command) {
-        SessionPlannerEncounterAllocationCommand effective = Objects.requireNonNull(command, "command");
-        setEncounterAllocationUseCase.execute(
-                effective.encounterId(),
-                effective.budgetPercentage());
-    }
-
-    public void setRestGap(SetSessionRestGapCommand command) {
-        SetSessionRestGapCommand effective = Objects.requireNonNull(command, "command");
-        setRestGapUseCase.execute(effective.leftEncounterId(), effective.rightEncounterId(), effective.restKind().name());
-    }
-
-    public void clearRestGap(ClearSessionRestGapCommand command) {
-        ClearSessionRestGapCommand effective = Objects.requireNonNull(command, "command");
-        clearRestGapUseCase.execute(
-                effective.leftEncounterId(),
-                effective.rightEncounterId());
-    }
-
-    public void addLootPlaceholder(SessionPlannerActionCommand command) {
-        Objects.requireNonNull(command, "command");
-        addLootPlaceholderUseCase.execute();
-    }
-
-    public void removeLootPlaceholder(RemoveSessionLootPlaceholderCommand command) {
-        RemoveSessionLootPlaceholderCommand effective = Objects.requireNonNull(command, "command");
-        removeLootPlaceholderUseCase.execute(effective.lootId());
+        public LootUseCases {
+            addUseCase = Objects.requireNonNull(addUseCase, "addUseCase");
+            removeUseCase = Objects.requireNonNull(removeUseCase, "removeUseCase");
+        }
     }
 }

@@ -18,6 +18,12 @@ import src.domain.party.PartyApplicationService;
 import src.domain.party.published.ActivePartyModel;
 import src.domain.party.published.AdventuringDayCalculationModel;
 import src.domain.sessionplanner.SessionPlannerApplicationService;
+import src.domain.sessionplanner.SessionPlannerApplicationService.EncounterUseCases;
+import src.domain.sessionplanner.SessionPlannerApplicationService.LootUseCases;
+import src.domain.sessionplanner.SessionPlannerApplicationService.ParticipantUseCases;
+import src.domain.sessionplanner.SessionPlannerApplicationService.RestUseCases;
+import src.domain.sessionplanner.SessionPlannerApplicationService.SessionUseCases;
+import src.domain.sessionplanner.SessionPlannerApplicationService.UseCases;
 import src.domain.sessionplanner.model.session.repository.SessionPlanRepository;
 import src.domain.sessionplanner.model.session.usecase.AddSessionLootPlaceholderUseCase;
 import src.domain.sessionplanner.model.session.usecase.AddSessionParticipantUseCase;
@@ -103,50 +109,54 @@ public final class SessionPlannerServiceContribution implements ServiceContribut
                     SaveCurrentSessionPlanUseCase saveCurrentSessionPlanUseCase = new SaveCurrentSessionPlanUseCase(
                             repository,
                             publishedStateRepository);
-                    return new SessionPlannerApplicationService(
-                            new CreateSessionPlanUseCase(
+                    return new SessionPlannerApplicationService(new UseCases(
+                            new SessionUseCases(new CreateSessionPlanUseCase(
                                     repository,
                                     saveCurrentSessionPlanUseCase,
-                                    seedSessionPlanUseCase),
-                            new AddSessionParticipantUseCase(
-                                    loadCurrentSessionPlanUseCase,
-                                    saveCurrentSessionPlanUseCase),
-                            new RemoveSessionParticipantUseCase(
-                                    loadCurrentSessionPlanUseCase,
-                                    saveCurrentSessionPlanUseCase),
-                            new SetSessionEncounterDaysUseCase(
-                                    loadCurrentSessionPlanUseCase,
-                                    saveCurrentSessionPlanUseCase),
-                            new AttachSessionEncounterUseCase(
-                                    loadCurrentSessionPlanUseCase,
-                                    saveCurrentSessionPlanUseCase),
-                            new RemoveSessionEncounterUseCase(
-                                    loadCurrentSessionPlanUseCase,
-                                    saveCurrentSessionPlanUseCase),
-                            new MoveSessionEncounterUpUseCase(
-                                    loadCurrentSessionPlanUseCase,
-                                    saveCurrentSessionPlanUseCase),
-                            new MoveSessionEncounterDownUseCase(
-                                    loadCurrentSessionPlanUseCase,
-                                    saveCurrentSessionPlanUseCase),
-                            new SetSessionEncounterAllocationUseCase(
-                                    loadCurrentSessionPlanUseCase,
-                                    saveCurrentSessionPlanUseCase),
-                            new SelectSessionEncounterUseCase(
-                                    loadCurrentSessionPlanUseCase,
-                                    saveCurrentSessionPlanUseCase),
-                            new SetSessionRestGapUseCase(
-                                    loadCurrentSessionPlanUseCase,
-                                    saveCurrentSessionPlanUseCase),
-                            new ClearSessionRestGapUseCase(
-                                    loadCurrentSessionPlanUseCase,
-                                    saveCurrentSessionPlanUseCase),
-                            new AddSessionLootPlaceholderUseCase(
-                                    loadCurrentSessionPlanUseCase,
-                                    saveCurrentSessionPlanUseCase),
-                            new RemoveSessionLootPlaceholderUseCase(
-                                    loadCurrentSessionPlanUseCase,
-                                    saveCurrentSessionPlanUseCase));
+                                    seedSessionPlanUseCase)),
+                            new ParticipantUseCases(
+                                    new AddSessionParticipantUseCase(
+                                            loadCurrentSessionPlanUseCase,
+                                            saveCurrentSessionPlanUseCase),
+                                    new RemoveSessionParticipantUseCase(
+                                            loadCurrentSessionPlanUseCase,
+                                            saveCurrentSessionPlanUseCase)),
+                            new EncounterUseCases(
+                                    new SetSessionEncounterDaysUseCase(
+                                            loadCurrentSessionPlanUseCase,
+                                            saveCurrentSessionPlanUseCase),
+                                    new AttachSessionEncounterUseCase(
+                                            loadCurrentSessionPlanUseCase,
+                                            saveCurrentSessionPlanUseCase),
+                                    new RemoveSessionEncounterUseCase(
+                                            loadCurrentSessionPlanUseCase,
+                                            saveCurrentSessionPlanUseCase),
+                                    new MoveSessionEncounterUpUseCase(
+                                            loadCurrentSessionPlanUseCase,
+                                            saveCurrentSessionPlanUseCase),
+                                    new MoveSessionEncounterDownUseCase(
+                                            loadCurrentSessionPlanUseCase,
+                                            saveCurrentSessionPlanUseCase),
+                                    new SetSessionEncounterAllocationUseCase(
+                                            loadCurrentSessionPlanUseCase,
+                                            saveCurrentSessionPlanUseCase),
+                                    new SelectSessionEncounterUseCase(
+                                            loadCurrentSessionPlanUseCase,
+                                            saveCurrentSessionPlanUseCase)),
+                            new RestUseCases(
+                                    new SetSessionRestGapUseCase(
+                                            loadCurrentSessionPlanUseCase,
+                                            saveCurrentSessionPlanUseCase),
+                                    new ClearSessionRestGapUseCase(
+                                            loadCurrentSessionPlanUseCase,
+                                            saveCurrentSessionPlanUseCase)),
+                            new LootUseCases(
+                                    new AddSessionLootPlaceholderUseCase(
+                                            loadCurrentSessionPlanUseCase,
+                                            saveCurrentSessionPlanUseCase),
+                                    new RemoveSessionLootPlaceholderUseCase(
+                                            loadCurrentSessionPlanUseCase,
+                                            saveCurrentSessionPlanUseCase))));
                 });
         builder.registerFactory(
                 SessionPlannerCurrentSessionModel.class,

@@ -6,7 +6,7 @@ public record SetSessionRestGapCommand(
         long leftEncounterId,
         long rightEncounterId,
         SessionPlannerRestKind restKind
-) {
+) implements SessionPlannerCommand {
 
     public SetSessionRestGapCommand(
             long leftEncounterId,

@@ -27,11 +27,11 @@ public final class DungeonEditorControlsView extends DungeonControlPanelView {
     static final String TRANSITION_DELETE_TOOL = "Übergang löschen";
     static final String TOOL_BUTTON_STYLE = "tool-btn";
 
+    private Consumer<DungeonEditorControlsViewInputEvent> viewInputEventHandler = ignored -> { };
     private final DungeonEditorControlsEvents events = new DungeonEditorControlsEvents(event -> viewInputEventHandler.accept(event));
     private final DungeonEditorMapControlsView mapControls = new DungeonEditorMapControlsView(this, events);
     private final DungeonEditorProjectionControlsView projectionControls = new DungeonEditorProjectionControlsView(this, events);
     private final DungeonEditorToolControlsView toolControls = new DungeonEditorToolControlsView(this, events);
-    private Consumer<DungeonEditorControlsViewInputEvent> viewInputEventHandler = ignored -> { };
 
     public DungeonEditorControlsView() {
         super("");
@@ -126,4 +126,3 @@ public final class DungeonEditorControlsView extends DungeonControlPanelView {
         }
     }
 }
-

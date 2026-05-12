@@ -29,18 +29,18 @@ final class SessionPlannerIntentHandler {
         }
         switch (event.controlsInput()) {
             case SessionPlannerControlsViewInputEvent.CreateSessionTrigger ignored ->
-                    planner.createSession(new SessionPlannerActionCommand(
+                    planner.apply(new SessionPlannerActionCommand(
                             SessionPlannerActionCommand.Action.CREATE_SESSION));
             case SessionPlannerControlsViewInputEvent.AddParticipantInput addParticipant -> {
                 if (hasPositiveId(addParticipant.participantToAddId())) {
-                    planner.addParticipant(new SessionPlannerParticipantCommand(
+                    planner.apply(new SessionPlannerParticipantCommand(
                             SessionPlannerParticipantCommand.Action.ADD,
                             addParticipant.participantToAddId()));
                 }
             }
             case SessionPlannerControlsViewInputEvent.RemoveParticipantInput removeParticipant -> {
                 if (hasPositiveId(removeParticipant.participantToRemoveId())) {
-                    planner.removeParticipant(new SessionPlannerParticipantCommand(
+                    planner.apply(new SessionPlannerParticipantCommand(
                             SessionPlannerParticipantCommand.Action.REMOVE,
                             removeParticipant.participantToRemoveId()));
                 }
@@ -48,12 +48,12 @@ final class SessionPlannerIntentHandler {
             case SessionPlannerControlsViewInputEvent.SetEncounterDaysInput encounterDaysInput -> {
                 BigDecimal encounterDays = parsePositiveDecimal(encounterDaysInput.encounterDaysText());
                 if (encounterDays != null) {
-                    planner.setEncounterDays(new SetSessionEncounterDaysCommand(encounterDays));
+                    planner.apply(new SetSessionEncounterDaysCommand(encounterDays));
                 }
             }
             case SessionPlannerControlsViewInputEvent.AttachPlanInput attachPlan -> {
                 if (hasPositiveId(attachPlan.planIdToAttach())) {
-                    planner.attachEncounter(new AttachSessionEncounterCommand(attachPlan.planIdToAttach()));
+                    planner.apply(new AttachSessionEncounterCommand(attachPlan.planIdToAttach()));
                 }
             }
         }
@@ -66,14 +66,14 @@ final class SessionPlannerIntentHandler {
         switch (event.timelineInput()) {
             case SessionPlannerTimelineMainViewInputEvent.SelectEncounterInput selection -> {
                 if (hasPositiveId(selection.selectedEncounterToken())) {
-                    planner.selectEncounter(new SessionPlannerEncounterCommand(
+                    planner.apply(new SessionPlannerEncounterCommand(
                             SessionPlannerEncounterCommand.Action.SELECT,
                             selection.selectedEncounterToken()));
                 }
             }
             case SessionPlannerTimelineMainViewInputEvent.SetEncounterAllocationInput allocation -> {
                 if (hasPositiveId(allocation.encounterToken())) {
-                    planner.setEncounterAllocation(new SessionPlannerEncounterAllocationCommand(
+                    planner.apply(new SessionPlannerEncounterAllocationCommand(
                             allocation.encounterToken(),
                             allocation.targetAllocationPercentage()));
                 }
@@ -85,7 +85,7 @@ final class SessionPlannerIntentHandler {
             }
             case SessionPlannerTimelineMainViewInputEvent.RemoveEncounterInput removal -> {
                 if (hasPositiveId(removal.encounterTokenToRemove())) {
-                    planner.removeEncounter(new SessionPlannerEncounterCommand(
+                    planner.apply(new SessionPlannerEncounterCommand(
                             SessionPlannerEncounterCommand.Action.REMOVE,
                             removal.encounterTokenToRemove()));
                 }
@@ -104,11 +104,11 @@ final class SessionPlannerIntentHandler {
         }
         switch (event.lootInput()) {
             case SessionPlannerLootMainViewInputEvent.AddLootPlaceholderTrigger ignored ->
-                    planner.addLootPlaceholder(new SessionPlannerActionCommand(
+                    planner.apply(new SessionPlannerActionCommand(
                             SessionPlannerActionCommand.Action.ADD_LOOT_PLACEHOLDER));
             case SessionPlannerLootMainViewInputEvent.RemoveLootPlaceholderInput removeLoot -> {
                 if (hasPositiveId(removeLoot.lootToken())) {
-                    planner.removeLootPlaceholder(new RemoveSessionLootPlaceholderCommand(removeLoot.lootToken()));
+                    planner.apply(new RemoveSessionLootPlaceholderCommand(removeLoot.lootToken()));
                 }
             }
         }
@@ -124,24 +124,24 @@ final class SessionPlannerIntentHandler {
 
     private void applyMove(SessionPlannerTimelineMainViewInputEvent.MoveEncounterInput moveEncounter) {
         if (moveEncounter.movesDown()) {
-            planner.moveEncounterDown(new SessionPlannerEncounterCommand(
+            planner.apply(new SessionPlannerEncounterCommand(
                     SessionPlannerEncounterCommand.Action.MOVE_DOWN,
                     moveEncounter.encounterToken()));
             return;
         }
-        planner.moveEncounterUp(new SessionPlannerEncounterCommand(
+        planner.apply(new SessionPlannerEncounterCommand(
                 SessionPlannerEncounterCommand.Action.MOVE_UP,
                 moveEncounter.encounterToken()));
     }
 
     private void applyRestGap(SessionPlannerTimelineMainViewInputEvent.RestGapInput restGap) {
         if (restGap.clearsRestGap()) {
-            planner.clearRestGap(new ClearSessionRestGapCommand(
+            planner.apply(new ClearSessionRestGapCommand(
                     restGap.leftEncounterId(),
                     restGap.rightEncounterId()));
             return;
         }
-        planner.setRestGap(new SetSessionRestGapCommand(
+        planner.apply(new SetSessionRestGapCommand(
                 restGap.leftEncounterId(),
                 restGap.rightEncounterId(),
                 toRestKind(restGap.restSelection())));
