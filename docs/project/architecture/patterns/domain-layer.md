@@ -123,10 +123,15 @@ Published`
   encounter, or adding one creature
 - orchestrates reads, writes, repository calls, port-triggered follow-up work,
   and helper invocation
+- direct root `application/*UseCase` is reserved for orchestration across at
+  least two distinct same-context `model/<family>/...` families
+- one-family work belongs under that family's `model/<family>/usecase/`
+- direct root `application/*UseCase` files must not depend on other direct
+  root `application/*UseCase` files or their nested types
 - may construct, load, edit, and persist `Model`
-- may collaborate only with same-context `Model`, `UseCase`, `Helper`,
-  `Constants`, `Port`, `Repository`, and foreign root `ApplicationService`
-  boundaries
+- may collaborate only with same-context `Model`, model-family `UseCase`,
+  `Helper`, `Constants`, `Port`, `Repository`, and foreign root
+  `ApplicationService` boundaries
 - does not hide business-policy logic that belongs in `Helper` or subordinate
   model roles, and it does not absorb published, root-boundary, callback, or
   infrastructure concerns

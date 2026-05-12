@@ -24,7 +24,7 @@ public final class MapCanvasContentModel {
     private final ReadOnlyDoubleWrapper zoom = new ReadOnlyDoubleWrapper(DEFAULT_ZOOM);
 
     public MapCanvasContentModel(String defaultTitle) {
-        this.defaultTitle = normalizeTitle(defaultTitle);
+        this.defaultTitle = RenderScene.normalizeTitle(defaultTitle);
         canvasState = new ReadOnlyObjectWrapper<>(CanvasState.initial(RenderScene.empty(this.defaultTitle)));
     }
 
@@ -64,10 +64,6 @@ public final class MapCanvasContentModel {
     private void setState(CanvasState nextState) {
         canvasState.set(nextState);
         zoom.set(nextState.viewport().zoom());
-    }
-
-    private static String normalizeTitle(@Nullable String title) {
-        return title == null || title.isBlank() ? "Map" : title;
     }
 
     public record CanvasState(
@@ -264,6 +260,10 @@ public final class MapCanvasContentModel {
                 }
             }
             return null;
+        }
+
+        private static String normalizeTitle(@Nullable String title) {
+            return title == null || title.isBlank() ? "Map" : title;
         }
 
     }

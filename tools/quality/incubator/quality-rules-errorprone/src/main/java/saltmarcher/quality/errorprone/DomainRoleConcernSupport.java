@@ -57,6 +57,8 @@ final class DomainRoleConcernSupport {
             Pattern.compile("^src\\.domain\\.([^.]+)\\.[^.]+ApplicationService$");
     private static final Pattern DOMAIN_ROOT_APPLICATION_USECASE_TYPE =
             Pattern.compile("^src\\.domain\\.([^.]+)\\.application\\.[^.]+UseCase$");
+    private static final Pattern DOMAIN_ROOT_APPLICATION_USECASE_OWNED_TYPE =
+            Pattern.compile("^src\\.domain\\.([^.]+)\\.application\\.[^.]+UseCase(?:[.$].*)?$");
     private static final Pattern DOMAIN_MODEL_ROLE_TYPE =
             Pattern.compile("^src\\.domain\\.([^.]+)\\.model\\.([^.]+)\\.(model|usecase|helper|constants|port|repository)\\..+");
     private static final Pattern DOMAIN_PUBLISHED_TYPE =
@@ -128,7 +130,7 @@ final class DomainRoleConcernSupport {
                 continue;
             }
             if (!isAllowedDomainReference(sourceRole, referencedType)) {
-                violations.add("references forbidden domain concern " + referencedType);
+                violations.add(forbiddenDomainConcernMessage(sourceRole, referencedType));
             }
         }
         collectShapeViolations(sourceRole, tree, violations);
@@ -148,6 +150,11 @@ final class DomainRoleConcernSupport {
     static boolean isSameFeaturePublishedNonModelType(String referencedType, String feature) {
         return isSameFeaturePublishedType(referencedType, feature)
                 && !isSameFeaturePublishedModelType(referencedType, feature);
+    }
+
+    static boolean isSameFeatureRootUseCaseOwnedType(String referencedType, String feature) {
+        Matcher matcher = DOMAIN_ROOT_APPLICATION_USECASE_OWNED_TYPE.matcher(referencedType);
+        return matcher.matches() && feature.equals(matcher.group(1));
     }
 
     static Set<String> collectTypeReferences(TypeMirror typeMirror) {
@@ -238,6 +245,15 @@ final class DomainRoleConcernSupport {
             case PORT -> isAllowedForPort(sourceRole, referencedType);
             case REPOSITORY -> isAllowedForRepository(sourceRole, referencedType);
         };
+    }
+
+    private static String forbiddenDomainConcernMessage(SourceRole sourceRole, String referencedType) {
+        if (sourceRole.role() == Role.USECASE
+                && sourceRole.family() == null
+                && isSameFeatureRootUseCaseOwnedType(referencedType, sourceRole.feature())) {
+            return "references root UseCase chain " + referencedType;
+        }
+        return "references forbidden domain concern " + referencedType;
     }
 
     private static boolean isAllowedForApplicationService(SourceRole sourceRole, String referencedType) {

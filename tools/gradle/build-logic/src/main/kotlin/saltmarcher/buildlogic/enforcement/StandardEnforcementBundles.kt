@@ -326,7 +326,10 @@ fun standardEnforcementBundleDescriptors(): List<EnforcementBundleDescriptor> = 
     },
     bundle("domainUseCase", 13) {
         selectorTask("Internal selector for the dedicated Domain UseCase enforcement bundle.")
-        errorProneCheckers(listOf("DomainApplicationNoSameContextPublishedDependency", "DomainUseCaseRoleBoundary"))
+        errorProneCheckers(listOf(
+            "DomainApplicationNoSameContextPublishedDependency",
+            "DomainRootUseCaseCrossModelFamilyBoundary",
+            "DomainUseCaseRoleBoundary"))
         verificationSources(listOf("src"), listOf("domain/**/*.java"))
         buildHarnessArchitectureRules(listOf("saltmarcher.architecture.domain.usecase.DomainUseCaseTopologyRules"))
         buildHarnessDocumentationCoverageSpecs(listOf("domainUseCase"))

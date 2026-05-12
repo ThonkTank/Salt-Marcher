@@ -10,6 +10,7 @@ import saltmarcher.quality.errorprone.DomainHelperRoleBoundaryChecker;
 import saltmarcher.quality.errorprone.DomainModelRoleBoundaryChecker;
 import saltmarcher.quality.errorprone.DomainPortRoleBoundaryChecker;
 import saltmarcher.quality.errorprone.DomainRepositoryRoleBoundaryChecker;
+import saltmarcher.quality.errorprone.DomainRootUseCaseCrossModelFamilyBoundaryChecker;
 import saltmarcher.quality.errorprone.DomainUseCaseRoleBoundaryChecker;
 
 @RunWith(JUnit4.class)
@@ -84,6 +85,98 @@ public final class DomainRoleBoundaryCheckersTest {
                         "src/domain/foo/published/SelectionModel.java",
                         "package src.domain.foo.published;",
                         "public interface SelectionModel { }")
+                .doTest();
+    }
+
+    @Test
+    public void rootUseCaseRejectsSameContextRootUseCaseChain() {
+        CompilationTestHelper.newInstance(DomainUseCaseRoleBoundaryChecker.class, getClass())
+                .addSourceLines(
+                        "src/domain/foo/application/ApplySelectionUseCase.java",
+                        "package src.domain.foo.application;",
+                        "import src.domain.foo.application.LoadSelectionUseCase;",
+                        "// BUG: Diagnostic contains: references root UseCase chain src.domain.foo.application.LoadSelectionUseCase",
+                        "final class ApplySelectionUseCase {",
+                        "  private final LoadSelectionUseCase loadSelection;",
+                        "  ApplySelectionUseCase(LoadSelectionUseCase loadSelection) {",
+                        "    this.loadSelection = loadSelection;",
+                        "  }",
+                        "}")
+                .addSourceLines(
+                        "src/domain/foo/application/LoadSelectionUseCase.java",
+                        "package src.domain.foo.application;",
+                        "public final class LoadSelectionUseCase { }")
+                .doTest();
+    }
+
+    @Test
+    public void rootUseCaseRejectsSameContextRootUseCaseNestedType() {
+        CompilationTestHelper.newInstance(DomainUseCaseRoleBoundaryChecker.class, getClass())
+                .addSourceLines(
+                        "src/domain/foo/application/ApplySelectionUseCase.java",
+                        "package src.domain.foo.application;",
+                        "import src.domain.foo.application.LoadSelectionUseCase.SelectionData;",
+                        "// BUG: Diagnostic contains: references root UseCase chain src.domain.foo.application.LoadSelectionUseCase.SelectionData",
+                        "final class ApplySelectionUseCase {",
+                        "  private final SelectionData data;",
+                        "  ApplySelectionUseCase(SelectionData data) {",
+                        "    this.data = data;",
+                        "  }",
+                        "}")
+                .addSourceLines(
+                        "src/domain/foo/application/LoadSelectionUseCase.java",
+                        "package src.domain.foo.application;",
+                        "public final class LoadSelectionUseCase {",
+                        "  public record SelectionData() { }",
+                        "}")
+                .doTest();
+    }
+
+    @Test
+    public void rootUseCaseAllowsCrossModelFamilyOrchestration() {
+        CompilationTestHelper.newInstance(DomainRootUseCaseCrossModelFamilyBoundaryChecker.class, getClass())
+                .addSourceLines(
+                        "src/domain/foo/application/ApplyWorkspaceUseCase.java",
+                        "package src.domain.foo.application;",
+                        "import src.domain.foo.model.grid.model.GridState;",
+                        "import src.domain.foo.model.selection.model.SelectionState;",
+                        "final class ApplyWorkspaceUseCase {",
+                        "  private final GridState grid;",
+                        "  private final SelectionState selection;",
+                        "  ApplyWorkspaceUseCase(GridState grid, SelectionState selection) {",
+                        "    this.grid = grid;",
+                        "    this.selection = selection;",
+                        "  }",
+                        "}")
+                .addSourceLines(
+                        "src/domain/foo/model/grid/model/GridState.java",
+                        "package src.domain.foo.model.grid.model;",
+                        "public final class GridState { }")
+                .addSourceLines(
+                        "src/domain/foo/model/selection/model/SelectionState.java",
+                        "package src.domain.foo.model.selection.model;",
+                        "public final class SelectionState { }")
+                .doTest();
+    }
+
+    @Test
+    public void rootUseCaseRejectsSingleModelFamilyPlacement() {
+        CompilationTestHelper.newInstance(DomainRootUseCaseCrossModelFamilyBoundaryChecker.class, getClass())
+                .addSourceLines(
+                        "src/domain/foo/application/ApplySelectionUseCase.java",
+                        "package src.domain.foo.application;",
+                        "import src.domain.foo.model.selection.model.SelectionState;",
+                        "// BUG: Diagnostic contains: must orchestrate at least two same-context model families",
+                        "final class ApplySelectionUseCase {",
+                        "  private final SelectionState selection;",
+                        "  ApplySelectionUseCase(SelectionState selection) {",
+                        "    this.selection = selection;",
+                        "  }",
+                        "}")
+                .addSourceLines(
+                        "src/domain/foo/model/selection/model/SelectionState.java",
+                        "package src.domain.foo.model.selection.model;",
+                        "public final class SelectionState { }")
                 .doTest();
     }
 
