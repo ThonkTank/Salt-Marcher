@@ -25,7 +25,7 @@ import saltmarcher.quality.errorprone.view.ViewSourceDescriptor;
 
 @BugPattern(
         name = "PassiveViewSurfaceBoundary",
-        summary = "Passive Views stay concrete UI surfaces and may expose only one same-stem input seam plus project-free prepared-state sinks.",
+        summary = "Passive Views stay concrete UI surfaces and may expose only bind(SameStemContentModel) plus an optional same-stem input seam.",
         severity = BugPattern.SeverityLevel.ERROR)
 public final class PassiveViewSurfaceBoundaryChecker extends BugChecker
         implements BugChecker.CompilationUnitTreeMatcher {
@@ -58,7 +58,7 @@ public final class PassiveViewSurfaceBoundaryChecker extends BugChecker
                 .setMessage("Passive View '" + qualifiedViewName
                         + "' violates the passive-View surface boundary through "
                         + String.join(", ", violations)
-                        + ". A passive View stays a concrete UI surface, exposes only onViewInputEvent(Consumer<SameStemViewInputEvent>) outward, and uses only project-free prepared-state sink accessors inward.")
+                        + ". A passive View stays a concrete UI surface, exposes exactly one bind(SameStemContentModel) inbound seam and optionally onViewInputEvent(Consumer<SameStemViewInputEvent>) outward.")
                 .build();
     }
 
@@ -87,6 +87,14 @@ public final class PassiveViewSurfaceBoundaryChecker extends BugChecker
             } else if (member instanceof VariableTree variableTree) {
                 collectFieldViolation(variableTree, violations);
             }
+        }
+        long bindMethodCount = topLevelClass.getMembers().stream()
+                .filter(MethodTree.class::isInstance)
+                .map(MethodTree.class::cast)
+                .filter(methodTree -> isAllowedContentModelBindApi(methodTree, sourcePackageName, viewSimpleName))
+                .count();
+        if (bindMethodCount != 1) {
+            violations.add("bind(SameStemContentModel) count " + bindMethodCount);
         }
     }
 
@@ -141,7 +149,7 @@ public final class PassiveViewSurfaceBoundaryChecker extends BugChecker
         if (isAllowedViewInputEventApi(methodTree, sourcePackageName, viewSimpleName)) {
             return;
         }
-        if (isAllowedPreparedStateSinkAccessor(methodTree, sourcePackageName, viewSimpleName)) {
+        if (isAllowedContentModelBindApi(methodTree, sourcePackageName, viewSimpleName)) {
             return;
         }
         violations.add(methodTree.getName() + "(" + methodTree.getParameters().size() + ")");
@@ -277,58 +285,26 @@ public final class PassiveViewSurfaceBoundaryChecker extends BugChecker
                 viewSimpleName);
     }
 
-    private static boolean isAllowedPreparedStateSinkAccessor(
+    private static boolean isAllowedContentModelBindApi(
             MethodTree methodTree,
             String sourcePackageName,
             String viewSimpleName
     ) {
-        if (!methodTree.getParameters().isEmpty()) {
+        if (!"bind".contentEquals(methodTree.getName())
+                || methodTree.getParameters().size() != 1
+                || !"void".contentEquals(methodTree.getReturnType().toString())
+                || !methodTree.getModifiers().getFlags().contains(Modifier.PUBLIC)) {
             return false;
         }
-        return isPreparedStateSinkType(
-                ASTHelpers.getType(methodTree.getReturnType()),
+        VariableTree parameter = methodTree.getParameters().get(0);
+        TypeMirror parameterType = ASTHelpers.getType(parameter.getType());
+        if (parameterType == null) {
+            return false;
+        }
+        return ViewArchitectureSupport.isSameStemContentModelReference(
                 sourcePackageName,
-                viewSimpleName);
-    }
-
-    private static boolean isPreparedStateSinkType(
-            TypeMirror typeMirror,
-            String sourcePackageName,
-            String viewSimpleName
-    ) {
-        if (typeMirror == null) {
-            return false;
-        }
-        if (ViewArchitectureSupport.isConsumerOfSameStemViewInputEvent(typeMirror, sourcePackageName, viewSimpleName)
-                || ViewArchitectureSupport.isConsumerOfSameRootViewInputEvent(typeMirror, sourcePackageName)) {
-            return false;
-        }
-        if (!isConsumerType(typeMirror)) {
-            return false;
-        }
-        DeclaredType declaredType = (DeclaredType) typeMirror;
-        if (declaredType.getTypeArguments().size() != 1) {
-            return false;
-        }
-        Set<String> referencedTypes = ViewArchitectureSupport.collectTypeReferences(typeMirror);
-        if (referencedTypes.isEmpty()) {
-            return false;
-        }
-        return referencedTypes.stream().allMatch(referencedType ->
-                !referencedType.startsWith("src.")
-                        && !referencedType.startsWith("shell.")
-                        && !referencedType.startsWith("bootstrap.")
-                        && !ViewArchitectureSupport.isForbiddenViewInfrastructureJdkType(referencedType));
-    }
-
-    private static boolean isConsumerType(TypeMirror typeMirror) {
-        if (!(typeMirror instanceof DeclaredType declaredType)) {
-            return false;
-        }
-        if (!(declaredType.asElement() instanceof TypeElement typeElement)) {
-            return false;
-        }
-        return "java.util.function.Consumer".contentEquals(typeElement.getQualifiedName());
+                viewSimpleName,
+                parameterType.toString());
     }
 
     private static boolean isOutwardVisible(ModifiersTree modifiersTree) {

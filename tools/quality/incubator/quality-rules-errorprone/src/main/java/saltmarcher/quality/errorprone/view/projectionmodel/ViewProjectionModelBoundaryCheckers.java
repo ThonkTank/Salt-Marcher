@@ -236,6 +236,12 @@ public final class ViewProjectionModelBoundaryCheckers {
         if (!referencedSource.isRecognizedViewSource()) {
             return false;
         }
+        if (source.role() == ViewRole.CONTENT_MODEL) {
+            if (source.qualifiedTopLevelTypeName().equals(referencedSource.qualifiedTopLevelTypeName())) {
+                return false;
+            }
+            return true;
+        }
         if (!referencedSource.isProjectionModelSource()) {
             return true;
         }

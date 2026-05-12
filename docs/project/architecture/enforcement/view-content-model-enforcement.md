@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-05-12
+Last Reviewed: 2026-05-13
 Source of Truth: Complete invariant catalog for the `*ContentModel` role
 itself in `src/view/**`.
 
@@ -31,9 +31,9 @@ in the view-layer and layering standards.
 Merged focused bundle entrypoint:
 
 - `./gradlew checkViewEnforcement --rerun-tasks --console=plain`
-  runs the focused `ContentModel` bundle. Current reusable-unit role-shape
-  topology enters transitively through `./gradlew checkViewEnforcement`;
-  active-root same-stem `ContentModel` topology is still planned.
+  runs the focused `ContentModel` bundle. Reusable-unit and active-root
+  same-stem `ContentModel` topology enters transitively through
+  `./gradlew checkViewEnforcement`.
   Canonical compile-side blocking behavior remains at `./gradlew compileJava`;
   aggregate blocking behavior enters `./gradlew checkViewEnforcement` and
   `./gradlew check` through this focused role task.
@@ -45,7 +45,7 @@ Merged focused bundle entrypoint:
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
 | `view-contentmodel-reusable-role-shape` | Enforced | every reusable projection-model role file in `src/view/slotcontent/**` | build-harness `ViewLayerTopologyRules` | `./gradlew checkViewEnforcement` and `./gradlew checkViewEnforcement` | A reusable `slotcontent/**` projection-model role uses the reusable role shape `*ContentModel.java` rather than active-root `*ContributionModel.java` or legacy `*ViewModel.java`, `*PresentationModel.java`, or `*Projector.java` files. |
-| `view-contentmodel-active-root-same-stem-role-shape` | Candidate | every active-root passive `*View.java` under `src/view/leftbartabs/**`, `src/view/statetabs/**`, or `src/view/dropdowns/**` | planned build-harness `ViewLayerTopologyRules` | none yet | Every active-root passive `*View.java` must have exactly one co-located same-stem `*ContentModel.java`, and active-root `*ContentModel.java` files are legal only as that paired View-owned content model. |
+| `view-contentmodel-active-root-same-stem-role-shape` | Enforced | every active-root passive `*View.java` under `src/view/leftbartabs/**`, `src/view/statetabs/**`, or `src/view/dropdowns/**` | build-harness `ViewLayerTopologyRules` | `./gradlew checkViewEnforcement` | Every active-root passive `*View.java` must have exactly one co-located same-stem `*ContentModel.java`, and active-root `*ContentModel.java` files are legal only as that paired View-owned content model. |
 
 The target view architecture uses exactly one `*ContentModel` per passive
 `*View`, co-located with that View and sharing its stem. That `ContentModel`

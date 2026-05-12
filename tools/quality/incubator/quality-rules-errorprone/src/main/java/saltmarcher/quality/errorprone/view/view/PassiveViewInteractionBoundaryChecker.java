@@ -21,7 +21,7 @@ import saltmarcher.quality.errorprone.view.ViewSourceDescriptor;
 
 @BugPattern(
         name = "PassiveViewInteractionBoundary",
-        summary = "Passive Views may not depend on, invoke, or construct project-owned collaborators beyond same-stem ViewInputEvent snapshots.",
+        summary = "Passive Views may not depend on, invoke, or construct project-owned collaborators beyond own same-stem ContentModel binding and ViewInputEvent snapshots.",
         severity = BugPattern.SeverityLevel.ERROR)
 public final class PassiveViewInteractionBoundaryChecker extends BugChecker
         implements BugChecker.CompilationUnitTreeMatcher {
@@ -106,7 +106,7 @@ public final class PassiveViewInteractionBoundaryChecker extends BugChecker
                 .setMessage("Passive View '" + qualifiedViewName
                         + "' crosses the passive-View interaction boundary through "
                         + String.join(", ", violations)
-                        + ". A passive View may know project types only enough to author its own same-stem ViewInputEvent snapshot.")
+                        + ". A passive View may know project types only enough to bind its own same-stem ContentModel and author its own same-stem ViewInputEvent snapshot.")
                 .build();
     }
 
@@ -156,6 +156,12 @@ public final class PassiveViewInteractionBoundaryChecker extends BugChecker
                     viewSimpleName,
                     referencedType);
         }
+        if (ViewArchitectureSupport.isTargetViewModelReference(referencedType)) {
+            return !ViewArchitectureSupport.isSameStemContentModelReference(
+                    sourcePackageName,
+                    viewSimpleName,
+                    referencedType);
+        }
         return referencedType.startsWith("src.view.");
     }
 
@@ -170,6 +176,10 @@ public final class PassiveViewInteractionBoundaryChecker extends BugChecker
         if (ownerType.equals(qualifiedViewName)
                 || ownerType.startsWith(qualifiedViewName + "$")
                 || ownerType.startsWith(qualifiedViewName + ".")) {
+            return false;
+        }
+        String viewSimpleName = qualifiedViewName.substring(qualifiedViewName.lastIndexOf('.') + 1);
+        if (ViewArchitectureSupport.isSameStemContentModelReference(sourcePackageName, viewSimpleName, ownerType)) {
             return false;
         }
         if (ownerType.startsWith("shell.")

@@ -23,15 +23,19 @@ If another project doc restates view-layer rules, treat `view-layer.md` as the
 only architectural authority. Neighboring `view-*.md` enforcement docs are
 authoritative only for role-local gate inventory and current mechanical drift.
 
-Mandatory default for reusable `src/view/slotcontent/**` work:
+Mandatory default for passive `src/view/**` work:
 
-- assume one closed reusable-unit shape only:
-  exactly one `*View.java`, exactly one same-stem `*ViewInputEvent.java`, and
-  exactly one `*ContentModel.java`
-- apply that same rule under `slotcontent/primitives/**`
+- identify the touched passive `*View.java` and its co-located same-stem
+  `*ContentModel.java` before changing either side
+- active roots keep exactly one aggregate `*ContributionModel.java`; every
+  passive active-root `*View.java` has exactly one same-stem `*ContentModel.java`
+- reusable `slotcontent/**` keeps one closed reusable-unit shape only:
+  exactly one `*View.java`, exactly one same-stem `*ContentModel.java`, and a
+  same-stem `*ViewInputEvent.java` only when that View is interactive
+- apply the same reusable-unit rule under `slotcontent/primitives/**`
 - keep input interpretation in the same-root active `*IntentHandler`
 - keep component-specific presentation state and component-specific
-  presentation logic in the unit's own `*ContentModel`
+  presentation logic in the View's own same-stem `*ContentModel`
 - keep active-root `*ContributionModel`s focused on root-wide orchestration
   and child-`ContentModel` coordination
 - use the direct roundtrip:
@@ -51,16 +55,16 @@ Before editing a view surface:
 4. For every touched Binder, identify the active root whose lifecycle and
    wiring it owns and the reusable `slotcontent` dependencies it intentionally
    assembles.
-5. For every touched projection model, identify whether it is an active-root
-   `*ContributionModel` or a reusable `slotcontent` `*ContentModel`, and which
-   exact surface state it owns.
+5. For every touched projection model, identify whether it is the active-root
+   aggregate `*ContributionModel` or the same-stem `*ContentModel` for exactly
+   one passive View, and which exact surface state it owns.
 6. For every touched `IntentHandler`, identify the active root whose view
    events it interprets, including any reused `slotcontent/**` surfaces wired
    into that root, which focused work request it builds per interactive view
    family, and which root `*ApplicationService` entrypoint it calls directly,
    or decide that the root is passive and therefore needs no `IntentHandler`.
-7. For reusable `slotcontent/**`, assume exactly one local `*View`, one local
-   same-stem `*ViewInputEvent`, and one local `*ContentModel`.
+7. For every touched passive `*View`, identify its same-stem `*ContentModel`;
+   for interactive Views also identify its same-stem `*ViewInputEvent`.
 8. Before smell- or size-driven refactors, ask whether the passive `View` is
    compensating for missing projection, hit preparation, geometry derivation,
    or input-relevant state that belongs in a `ContributionModel`,
@@ -70,10 +74,9 @@ Before editing a view surface:
 10. Only after that ownership check may you use nested/private helper types as
     a local cleanup tactic; do not default to new top-level helper files under
     `src/view/**`.
-11. When touching `slotcontent/**`, treat any new top-level file outside the
-    closed reusable-unit shape `*View.java`, `*ViewInputEvent.java`, and
-    `*ContentModel.java` as a target-architecture finding unless the user
-    explicitly scopes the work to current-state compatibility only.
+11. Treat any new top-level file outside the active-root or reusable role
+    shapes as a target-architecture finding unless the user explicitly scopes
+    the work to current-state compatibility only.
 
 When reviewing view-layer changes:
 
@@ -89,9 +92,9 @@ When reviewing view-layer changes:
 5. Check that feature-specific one-off components are colocated in their active
    root and that `slotcontent/**` is used only for genuinely reusable generic
    components.
-6. Check that passive Views react through bindings/listeners and emit full
-   same-stem `ViewInputEvent` snapshots instead of issuing imperative commands
-   into a model.
+6. Check that passive Views bind only to their own same-stem `ContentModel`,
+   react through bindings/listeners, and emit full same-stem `ViewInputEvent`
+   snapshots instead of issuing imperative commands into a model.
 7. Check that passive Views do not import shell, domain, data, or
    ApplicationService types.
 8. Treat new component-local `View/`, `ViewModel/`, `assembly/`, view `api/`,
@@ -111,9 +114,8 @@ When reviewing view-layer changes:
 - If code decides what should be shown, enabled, selected, labelled, loaded,
   or reported across a surface, it belongs in the owning
   `ContributionModel` or `ContentModel`.
-- If that decision is component-specific reusable presentation logic, it
-  belongs in the reusable unit's own `ContentModel`, not in the active-root
-  `ContributionModel`.
+- If that decision is component-specific presentation logic, it belongs in the
+  paired View's own `ContentModel`, not in the active-root `ContributionModel`.
 - If code reacts to thin same-context `published/*Model` readback to refresh
   projection state, that reaction belongs in the owning `ContributionModel`
   or `ContentModel`, not as a Binder-owned projection-forwarding workflow.
@@ -123,10 +125,9 @@ When reviewing view-layer changes:
 - If code declares JavaFX controls, layout, canvas drawing, dialogs, popups,
   cell factories, or widget event handlers, it belongs in a View.
 - If code prepares render-ready, hit-ready, label, geometry, selection, or
-  other reusable pre-render/pre-hit state, it belongs in the owning
-  `ContributionModel`, `ContentModel`, or upstream read-side projection rather
-  than in new standalone top-level files outside the closed reusable-unit
-  shape.
+  other pre-render/pre-hit state, it belongs in the owning `ContributionModel`,
+  same-stem `ContentModel`, or upstream read-side projection rather than in
+  new standalone top-level files.
 - If code is feature-specific and not reusable, colocate it in the owning
   `leftbartabs`, `dropdowns`, or `statetabs` package.
 - If code is reusable generic view-layer content, place it under

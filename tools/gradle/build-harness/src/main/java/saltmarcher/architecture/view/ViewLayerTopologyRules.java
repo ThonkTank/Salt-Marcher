@@ -59,6 +59,7 @@ public final class ViewLayerTopologyRules implements ArchitectureRule {
                 count(files, ViewRole.INSPECTOR_ENTRY),
                 count(files, ViewRole.VIEW),
                 collectStems(files, ViewRole.VIEW),
+                collectStems(files, ViewRole.CONTENT_MODEL),
                 collectStems(files, ViewRole.VIEW_INPUT_EVENT));
     }
 
@@ -128,7 +129,7 @@ public final class ViewLayerTopologyRules implements ArchitectureRule {
                             ? "view-layer-active-root-file-role"
                             : "view-layer-slotcontent-file-role",
                     facts.unit().kind() == ViewUnitKind.ACTIVE_ROOT
-                            ? "Active contribution roots may contain only *Contribution.java, *Binder.java, *ContributionModel.java, optional *IntentHandler.java, passive *View.java, and optional *ViewInputEvent.java files. Move projection, formatting, or selection preparation into the owning *ContributionModel or into nested/private helper types inside an allowed role file instead of adding standalone helper files."
+                            ? "Active contribution roots may contain only *Contribution.java, *Binder.java, exactly one aggregate *ContributionModel.java, optional *IntentHandler.java, passive *View.java, same-stem *ContentModel.java, and optional same-stem *ViewInputEvent.java files. Move projection, formatting, selection preparation, or component presentation logic into the owning same-stem *ContentModel or aggregate *ContributionModel instead of adding standalone helper files."
                             : "Reusable slotcontent units may contain only exactly one passive *View.java file, exactly one *ContentModel.java file, and a same-stem *ViewInputEvent.java file only when that View is interactive. Top-level *IntentHandler.java, *PublishedEvent.java, *InspectorEntry.java, *Scene.java, *PointerEvent.java, *Signal.java, *Support.java, and standalone helper files are illegal reusable slotcontent roles.");
         }
     }
@@ -146,10 +147,6 @@ public final class ViewLayerTopologyRules implements ArchitectureRule {
             if (facts.contributionModelCount() != 1) {
                 violations.add(facts.unit().source(), "view-layer-contributionmodel-count",
                         "Each active contribution root must define exactly one aggregate *ContributionModel.java file.");
-            }
-            if (facts.contentModelCount() > 0) {
-                violations.add(facts.unit().source(), "view-layer-contentmodel-forbidden",
-                        "Active contribution roots must not define reusable *ContentModel.java files.");
             }
             if (facts.viewCount() < 1) {
                 violations.add(facts.unit().source(), "view-layer-view-required",
@@ -212,6 +209,7 @@ public final class ViewLayerTopologyRules implements ArchitectureRule {
         }
 
         validateProjectionRoleShape(facts, violations);
+        validateSameStemContentModels(facts, violations);
         validateSameStemViewInputEvents(
                 facts,
                 violations);
@@ -227,13 +225,32 @@ public final class ViewLayerTopologyRules implements ArchitectureRule {
             if (!source.role().isProjectionModel()) {
                 continue;
             }
-            if (facts.unit().kind() == ViewUnitKind.ACTIVE_ROOT && source.role() != ViewRole.CONTRIBUTION_MODEL) {
+            if (facts.unit().kind() == ViewUnitKind.ACTIVE_ROOT
+                    && source.role() != ViewRole.CONTRIBUTION_MODEL
+                    && source.role() != ViewRole.CONTENT_MODEL) {
                 violations.add(source.source(), "view-layer-active-root-projection-role",
-                        "Active contribution roots must name their aggregate projection role *ContributionModel.java.");
+                        "Active contribution roots must use exactly one aggregate *ContributionModel.java plus same-stem *ContentModel.java files paired with passive Views.");
             }
             if (facts.unit().kind() == ViewUnitKind.REUSABLE_SLOTCONTENT && source.role() != ViewRole.CONTENT_MODEL) {
                 violations.add(source.source(), "view-layer-slotcontent-projection-role",
                         "Reusable slotcontent units must name their reusable projection role *ContentModel.java.");
+            }
+        }
+    }
+
+    private static void validateSameStemContentModels(UnitFacts facts, ViolationSink violations) {
+        for (String viewStem : facts.passiveViewStems()) {
+            if (!facts.contentModelStems().contains(viewStem)) {
+                violations.add(facts.unit().source(), "view-layer-view-contentmodel-same-stem",
+                        "Every passive *View.java must own exactly one co-located same-stem *ContentModel.java file in the same view unit. Missing "
+                                + viewStem + "ContentModel.java.");
+            }
+        }
+        for (String contentModelStem : facts.contentModelStems()) {
+            if (!facts.passiveViewStems().contains(contentModelStem)) {
+                violations.add(facts.unit().source(), "view-layer-view-contentmodel-same-stem",
+                        "Every *ContentModel.java file must belong to exactly one same-stem passive *View.java surface in the same view unit. Missing "
+                                + contentModelStem + "View.java.");
             }
         }
     }
@@ -398,6 +415,7 @@ public final class ViewLayerTopologyRules implements ArchitectureRule {
             long inspectorEntryCount,
             long viewCount,
             Set<String> passiveViewStems,
+            Set<String> contentModelStems,
             Set<String> viewInputEventStems
     ) {
         private boolean hasIntentHandler() {

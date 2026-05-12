@@ -206,6 +206,19 @@ public final class ViewArchitectureSupport {
         return isOwnTopLevelOrNestedTypeReference(sourcePackageName, viewSimpleName + "InputEvent", referencedType);
     }
 
+    public static boolean isSameStemContentModelReference(
+            String sourcePackageName,
+            String viewSimpleName,
+            String referencedType
+    ) {
+        if (viewSimpleName == null || viewSimpleName.isBlank() || !viewSimpleName.endsWith("View")) {
+            return false;
+        }
+        String contentModelSimpleName = viewSimpleName.substring(0, viewSimpleName.length() - "View".length())
+                + "ContentModel";
+        return isOwnTopLevelOrNestedTypeReference(sourcePackageName, contentModelSimpleName, referencedType);
+    }
+
     public static boolean isOwnTopLevelOrNestedTypeReference(
             String sourcePackageName,
             String topLevelSimpleName,

@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-05-12
+Last Reviewed: 2026-05-13
 Source of Truth: Complete invariant catalog for the active-root
 `*IntentHandler` role itself in `src/view/**`.
 
@@ -54,7 +54,7 @@ Merged focused bundle entrypoint:
 
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
-| `view-intenthandler-projectionmodel-dependency-surface` | Candidate | every `*IntentHandler.java` under `src/view/**` | planned update to Error Prone `ViewIntentHandlerDependencyBoundary` | none yet | An active-root `IntentHandler` may read only its same-root `*ContributionModel`, same-root child `*ContentModel`, and reused child `slotcontent/**` `*ContentModel` surfaces when it needs local UI facts for interpretation. |
+| `view-intenthandler-projectionmodel-dependency-surface` | Enforced | every `*IntentHandler.java` under `src/view/**` | Error Prone `ViewIntentHandlerDependencyBoundary` | `./gradlew compileJava` | An active-root `IntentHandler` may read only its same-root `*ContributionModel`, same-root child `*ContentModel`, and reused child `slotcontent/**` `*ContentModel` surfaces when it needs local UI facts for interpretation. |
 | `view-intenthandler-viewinputevent-dependency-surface` | Enforced | every `*IntentHandler.java` under `src/view/**` | Error Prone `ViewIntentHandlerDependencyBoundary` and Error Prone `ViewIntentHandlerViewInputEvent` | `./gradlew compileJava` | An active-root `IntentHandler` may consume only same-root or reused child `slotcontent/**` `*ViewInputEvent` families, and those carriers remain the only top-level input protocol it interprets. |
 | `view-intenthandler-root-applicationservice-boundary-surface` | Enforced | every `*IntentHandler.java` under `src/view/**` that crosses the domain-write boundary | Error Prone `ViewIntentHandlerDependencyBoundary` | `./gradlew compileJava` and `./gradlew checkViewEnforcement` | Domain-write work may leave an active-root `IntentHandler` only through a direct dependency on the matching root `*ApplicationService`. |
 | `view-intenthandler-same-surface-local-support-only` | Review-Owned | every `*IntentHandler.java` under `src/view/**` | none | none | Beyond the allowed model and carrier families above, helper state and helper types stay local to the same handler surface instead of becoming hidden foreign-role or cross-unit coordination channels. |
@@ -70,7 +70,7 @@ communication seam obligations documented below.
 | --- | --- | --- | --- | --- | --- |
 | `view-intenthandler-no-shell-data-bootstrap-or-javafx-dependencies` | Enforced | every `*IntentHandler.java` under `src/view/**` | Error Prone `ViewIntentHandlerDependencyBoundary` | `./gradlew compileJava` and `./gradlew checkViewEnforcement` | An `IntentHandler` does not depend on `shell/**`, `bootstrap/**`, `src/data/**`, or `javafx/**`. |
 | `view-intenthandler-no-non-applicationservice-domain-dependencies` | Enforced | every `*IntentHandler.java` under `src/view/**` | Error Prone `ViewIntentHandlerDependencyBoundary` | `./gradlew compileJava` and `./gradlew checkViewEnforcement` | An `IntentHandler` does not depend on domain internals outside the matching root `*ApplicationService`. |
-| `view-intenthandler-no-foreign-or-forbidden-view-role-dependencies` | Candidate | every `*IntentHandler.java` under `src/view/**` | planned update to Error Prone `ViewIntentHandlerDependencyBoundary` | none yet | An active-root handler depends only on same-root `*ContributionModel`, same-root or reused child `*ContentModel`, same-root or reused child `*ViewInputEvent`, direct root `*ApplicationService`, and same-surface local support types. `*PublishedEvent`, foreign `*ContentModel`, and other foreign view-role families are forbidden. |
+| `view-intenthandler-no-foreign-or-forbidden-view-role-dependencies` | Enforced | every `*IntentHandler.java` under `src/view/**` | Error Prone `ViewIntentHandlerDependencyBoundary` | `./gradlew compileJava` | An active-root handler depends only on same-root `*ContributionModel`, same-root or reused child `*ContentModel`, same-root or reused child `*ViewInputEvent`, direct root `*ApplicationService`, and same-surface local support types. `*PublishedEvent`, foreign `*ContentModel`, and other foreign view-role families are forbidden. |
 | `view-intenthandler-no-publishedevent-write-protocol` | Enforced | every `*IntentHandler.java` under `src/view/**` | Error Prone `ViewIntentHandlerDependencyBoundary` | `./gradlew compileJava` and `./gradlew checkViewEnforcement` | An `IntentHandler` does not define outward `*PublishedEvent` write seams such as `onPublishedEventRequested(...)`, `Consumer<...PublishedEvent>` sink fields, or comparable published-event callback protocols. |
 
 ### Communication Contract

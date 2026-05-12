@@ -7,9 +7,6 @@ import saltmarcher.quality.pmd.support.SaltMarcherSourceFacts;
 
 public final class ViewPanelEntrypointRule extends AbstractJavaRule {
 
-    private static final Set<String> LEFT_BAR_TAB_VIEW_PANEL_SUFFIXES = Set.of("ControlsView", "MainView", "StateView");
-    private static final Set<String> TOP_BAR_VIEW_PANEL_SUFFIXES = Set.of("TopBarView");
-    private static final Set<String> STATE_TAB_VIEW_PANEL_SUFFIXES = Set.of("StateView");
     private static final Set<String> DETAILS_VIEW_PANEL_SUFFIXES = Set.of("DetailsView");
 
     @Override
@@ -18,18 +15,27 @@ public final class ViewPanelEntrypointRule extends AbstractJavaRule {
         if (!sourceFacts.isViewPanelSource()) {
             return data;
         }
+        boolean genericView = sourceFacts.simpleName().endsWith("View")
+                && !sourceFacts.simpleName().endsWith("ViewModel")
+                && !sourceFacts.simpleName().endsWith("PresentationModel")
+                && !sourceFacts.simpleName().endsWith("ContributionModel")
+                && !sourceFacts.simpleName().endsWith("ContentModel");
         boolean reusableGenericView = sourceFacts.relativePath().startsWith("src/view/slotcontent/")
                 && sourceFacts.simpleName().endsWith("View")
                 && !sourceFacts.simpleName().endsWith("ViewModel")
                 && !sourceFacts.simpleName().endsWith("PresentationModel")
                 && !sourceFacts.simpleName().endsWith("ContributionModel")
                 && !sourceFacts.simpleName().endsWith("ContentModel");
+        boolean activeRootGenericView = !sourceFacts.relativePath().startsWith("src/view/slotcontent/")
+                && genericView;
         Set<String> allowedSuffixes = allowedViewPanelSuffixes(sourceFacts);
-        if (!reusableGenericView && allowedSuffixes.stream().noneMatch(sourceFacts.simpleName()::endsWith)) {
+        if (!activeRootGenericView
+                && !reusableGenericView
+                && allowedSuffixes.stream().noneMatch(sourceFacts.simpleName()::endsWith)) {
             asCtx(data).addViolationWithMessage(node,
                     "Passive panel views under " + viewAreaName(sourceFacts)
                             + " must end with one of " + allowedSuffixes
-                            + "; slotcontent views under src/view/slotcontent must end with View.");
+                            + "; active-root and slotcontent views must be real *View.java role files.");
         }
         if (!reusableGenericView && !sourceFacts.hasExplicitPublicFinalClass()) {
             asCtx(data).addViolationWithMessage(node, "Passive panel view must be declared public final.");
@@ -45,15 +51,6 @@ public final class ViewPanelEntrypointRule extends AbstractJavaRule {
 
     private static Set<String> allowedViewPanelSuffixes(SaltMarcherSourceFacts sourceFacts) {
         String path = sourceFacts.relativePath();
-        if (path.startsWith("src/view/leftbartabs/")) {
-            return LEFT_BAR_TAB_VIEW_PANEL_SUFFIXES;
-        }
-        if (path.startsWith("src/view/dropdowns/")) {
-            return TOP_BAR_VIEW_PANEL_SUFFIXES;
-        }
-        if (path.startsWith("src/view/statetabs/")) {
-            return STATE_TAB_VIEW_PANEL_SUFFIXES;
-        }
         if (path.startsWith("src/view/slotcontent/details/")) {
             return DETAILS_VIEW_PANEL_SUFFIXES;
         }
