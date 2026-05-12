@@ -1066,6 +1066,44 @@ public final class DomainRoleBoundaryCheckersTest {
     }
 
     @Test
+    public void portAllowsForeignPublishedSameContextUseCaseModelAndConstants() {
+        CompilationTestHelper.newInstance(DomainPortRoleBoundaryChecker.class, getClass())
+                .addSourceLines(
+                        "src/domain/foo/model/grid/port/GridPort.java",
+                        "package src.domain.foo.model.grid.port;",
+                        "import src.domain.bar.published.BarSnapshot;",
+                        "import src.domain.foo.model.grid.constants.GridConstants;",
+                        "import src.domain.foo.model.grid.model.GridCoordinate;",
+                        "import src.domain.foo.model.grid.usecase.NormalizeGridUseCase;",
+                        "interface GridPort {",
+                        "  void receive(BarSnapshot snapshot, GridCoordinate fallback, NormalizeGridUseCase followUp);",
+                        "  default int maxSize() {",
+                        "    return GridConstants.MAX_SIZE;",
+                        "  }",
+                        "}")
+                .addSourceLines(
+                        "src/domain/bar/published/BarSnapshot.java",
+                        "package src.domain.bar.published;",
+                        "public record BarSnapshot(int row) { }")
+                .addSourceLines(
+                        "src/domain/foo/model/grid/constants/GridConstants.java",
+                        "package src.domain.foo.model.grid.constants;",
+                        "public final class GridConstants {",
+                        "  public static final int MAX_SIZE = 12;",
+                        "  private GridConstants() { }",
+                        "}")
+                .addSourceLines(
+                        "src/domain/foo/model/grid/model/GridCoordinate.java",
+                        "package src.domain.foo.model.grid.model;",
+                        "public record GridCoordinate(int row) { }")
+                .addSourceLines(
+                        "src/domain/foo/model/grid/usecase/NormalizeGridUseCase.java",
+                        "package src.domain.foo.model.grid.usecase;",
+                        "public final class NormalizeGridUseCase { }")
+                .doTest();
+    }
+
+    @Test
     public void portRejectsRepositoryConcern() {
         CompilationTestHelper.newInstance(DomainPortRoleBoundaryChecker.class, getClass())
                 .addSourceLines(
@@ -1080,6 +1118,73 @@ public final class DomainRoleBoundaryCheckersTest {
                         "src/domain/foo/model/grid/repository/GridRepository.java",
                         "package src.domain.foo.model.grid.repository;",
                         "public final class GridRepository { }")
+                .doTest();
+    }
+
+    @Test
+    public void portRejectsOuterLayerAndCallbackProtocolConcerns() {
+        CompilationTestHelper.newInstance(DomainPortRoleBoundaryChecker.class, getClass())
+                .addSourceLines(
+                        "src/domain/foo/model/grid/port/GridPort.java",
+                        "package src.domain.foo.model.grid.port;",
+                        "import java.util.function.Consumer;",
+                        "import src.view.foo.GridView;",
+                        "// BUG: Diagnostic matches: port-outer-callback-matrix",
+                        "interface GridPort {",
+                        "  void wire(GridView view, Consumer<String> callback);",
+                        "}")
+                .addSourceLines(
+                        "src/view/foo/GridView.java",
+                        "package src.view.foo;",
+                        "public final class GridView { }")
+                .expectErrorMessage("port-outer-callback-matrix", containsAll(
+                        "references outer-layer type src.view.foo.GridView",
+                        "references executable protocol type java.util.function.Consumer"))
+                .doTest();
+    }
+
+    @Test
+    public void repositoryAllowsForeignApplicationServiceSameContextModelConstantsAndRepository() {
+        CompilationTestHelper.newInstance(DomainRepositoryRoleBoundaryChecker.class, getClass())
+                .addSourceLines(
+                        "src/domain/foo/model/grid/repository/GridRepository.java",
+                        "package src.domain.foo.model.grid.repository;",
+                        "import src.domain.bar.BarGridApplicationService;",
+                        "import src.domain.foo.model.grid.constants.GridConstants;",
+                        "import src.domain.foo.model.grid.model.GridCoordinate;",
+                        "final class GridRepository {",
+                        "  private final BarGridApplicationService foreignService;",
+                        "  private final GridAuditRepository auditRepository;",
+                        "  GridRepository(BarGridApplicationService foreignService, GridAuditRepository auditRepository) {",
+                        "    this.foreignService = foreignService;",
+                        "    this.auditRepository = auditRepository;",
+                        "  }",
+                        "  GridCoordinate normalize(GridCoordinate coordinate) {",
+                        "    auditRepository.record(GridConstants.MAX_SIZE);",
+                        "    return coordinate;",
+                        "  }",
+                        "}")
+                .addSourceLines(
+                        "src/domain/foo/model/grid/repository/GridAuditRepository.java",
+                        "package src.domain.foo.model.grid.repository;",
+                        "public final class GridAuditRepository {",
+                        "  public void record(int size) { }",
+                        "}")
+                .addSourceLines(
+                        "src/domain/bar/BarGridApplicationService.java",
+                        "package src.domain.bar;",
+                        "public final class BarGridApplicationService { }")
+                .addSourceLines(
+                        "src/domain/foo/model/grid/constants/GridConstants.java",
+                        "package src.domain.foo.model.grid.constants;",
+                        "public final class GridConstants {",
+                        "  public static final int MAX_SIZE = 12;",
+                        "  private GridConstants() { }",
+                        "}")
+                .addSourceLines(
+                        "src/domain/foo/model/grid/model/GridCoordinate.java",
+                        "package src.domain.foo.model.grid.model;",
+                        "public record GridCoordinate(int row) { }")
                 .doTest();
     }
 
@@ -1101,6 +1206,53 @@ public final class DomainRoleBoundaryCheckersTest {
                         "src/domain/foo/published/GridModel.java",
                         "package src.domain.foo.published;",
                         "public interface GridModel { }")
+                .doTest();
+    }
+
+    @Test
+    public void repositoryRejectsForeignPublishedConcern() {
+        CompilationTestHelper.newInstance(DomainRepositoryRoleBoundaryChecker.class, getClass())
+                .addSourceLines(
+                        "src/domain/foo/model/grid/repository/GridRepository.java",
+                        "package src.domain.foo.model.grid.repository;",
+                        "import src.domain.bar.published.BarSnapshot;",
+                        "// BUG: Diagnostic contains: references forbidden domain concern src.domain.bar.published.BarSnapshot",
+                        "final class GridRepository {",
+                        "  BarSnapshot load() {",
+                        "    return null;",
+                        "  }",
+                        "}")
+                .addSourceLines(
+                        "src/domain/bar/published/BarSnapshot.java",
+                        "package src.domain.bar.published;",
+                        "public record BarSnapshot(int row) { }")
+                .doTest();
+    }
+
+    @Test
+    public void repositoryRejectsOuterLayerAndCallbackProtocolConcerns() {
+        CompilationTestHelper.newInstance(DomainRepositoryRoleBoundaryChecker.class, getClass())
+                .addSourceLines(
+                        "src/domain/foo/model/grid/repository/GridRepository.java",
+                        "package src.domain.foo.model.grid.repository;",
+                        "import java.util.concurrent.Callable;",
+                        "import src.data.foo.GridRecord;",
+                        "// BUG: Diagnostic matches: repository-outer-callback-matrix",
+                        "final class GridRepository {",
+                        "  private final GridRecord record;",
+                        "  private final Callable<Integer> callback;",
+                        "  GridRepository(GridRecord record, Callable<Integer> callback) {",
+                        "    this.record = record;",
+                        "    this.callback = callback;",
+                        "  }",
+                        "}")
+                .addSourceLines(
+                        "src/data/foo/GridRecord.java",
+                        "package src.data.foo;",
+                        "public record GridRecord(int row) { }")
+                .expectErrorMessage("repository-outer-callback-matrix", containsAll(
+                        "references outer-layer type src.data.foo.GridRecord",
+                        "references executable protocol type java.util.concurrent.Callable"))
                 .doTest();
     }
 
