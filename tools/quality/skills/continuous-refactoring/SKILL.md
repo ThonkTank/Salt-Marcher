@@ -56,12 +56,14 @@ manifests:
 9. For dependency work, check whether Dependabot already owns the update path.
    Dependency upgrades must remain dependency-only unless the user explicitly
    combines them with product work.
-10. After implementation and before commit or handoff, run the repo-wide
-    adversarial review route through the repo-owned
-    `tools/quality/skills/adversarial-review/SKILL.md`.
-11. Resolve review findings according to that skill before handoff.
-12. Run the required SaltMarcher verification surface for the actual changed
-    files before handoff.
+10. Run the required SaltMarcher verification surface for the actual changed
+    files and keep the literal result available for review.
+11. At the end of implementation, run the repo-wide adversarial review route
+    through the repo-owned `tools/quality/skills/adversarial-review/SKILL.md`
+    after the diff exists and after the verification attempt has a literal
+    result, even when verification is red or the pass remains WIP.
+12. Resolve review findings according to that skill before final handoff or
+    any commit/publication decision.
 
 ## Evidence Sources
 

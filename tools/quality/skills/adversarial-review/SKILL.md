@@ -1,14 +1,18 @@
 ---
 name: adversarial-review
-description: Use in a separate subagent before commit or handoff of any SaltMarcher repo-tracked change. Reviews the actual diff, owner docs, and verification evidence independently from the implementing agent, classifies blockers, and never edits files.
+description: Use in a separate subagent at the end of every SaltMarcher repo-tracked implementation pass, after the diff exists and before final handoff or any commit/publication decision. Reviews the actual diff, owner docs, and verification evidence independently from the implementing agent, classifies blockers, and never edits files.
 ---
 
 # Adversarial Review
 
 ## Role
 
-Use this skill only as an independent review subagent. Your job is to find
-actionable risk before commit or handoff, not to complete the implementation.
+Use this skill only as an independent review subagent. Run it after the
+implementation diff exists at the end of every SaltMarcher repo-tracked
+implementation pass, regardless of whether verification is green, the pass is
+still WIP, or a stable commit/publication is planned. Your job is to find
+actionable risk before final handoff and before any commit/publication
+decision, not to complete the implementation.
 
 Do not edit files, stage changes, commit, push, or run formatters. Do not treat
 the implementing agent's summary, desired outcome, or prior conclusions as

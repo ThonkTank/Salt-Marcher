@@ -70,12 +70,15 @@ document exists.
   refactoring, or reviewing. The skill is a workflow rule for keeping cleanup
   inside the normal development pass; it does not authorize new gates or
   repo-wide cleanup waves by itself.
-- Completed repo-tracked change passes must receive an adversarial review from
-  a separate subagent using the repo-owned `adversarial-review` skill before
-  commit or handoff. `tools/quality/skills/adversarial-review/SKILL.md` owns
-  the mandatory review protocol; this file only routes to it. Agent-facing
-  instruction changes must still use `agent-instruction-engineering` before
-  that review. A pass with unresolved blocking review findings remains WIP.
+- Every repo-tracked implementation pass must receive an adversarial review
+  from a separate subagent using the repo-owned `adversarial-review` skill at
+  the end of implementation, alongside the handoff sequence. Run that review
+  after the implementation diff exists and regardless of whether verification
+  is green, the pass is still WIP, or a stable commit/publication is planned.
+  `tools/quality/skills/adversarial-review/SKILL.md` owns the mandatory review
+  protocol; this file only routes to it. Agent-facing instruction changes must
+  still use `agent-instruction-engineering` before that review. A pass with
+  unresolved blocking review findings remains WIP.
 - Work under `src/domain/**` must use the repo-owned `domain-layer` skill and
   follow the canonical domain-layer standard before changes are made or
   reviewed.
