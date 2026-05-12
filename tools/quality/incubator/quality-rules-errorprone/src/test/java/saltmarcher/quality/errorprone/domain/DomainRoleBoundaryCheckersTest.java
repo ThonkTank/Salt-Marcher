@@ -179,6 +179,42 @@ public final class DomainRoleBoundaryCheckersTest {
     }
 
     @Test
+    public void applicationServiceRejectsForeignApplicationServiceConstructorParameter() {
+        CompilationTestHelper.newInstance(DomainApplicationServiceRoleBoundaryChecker.class, getClass())
+                .addSourceLines(
+                        "src/domain/foo/FooSelectionApplicationService.java",
+                        "package src.domain.foo;",
+                        "import src.domain.bar.BarSelectionApplicationService;",
+                        "// BUG: Diagnostic contains: references forbidden domain concern src.domain.bar.BarSelectionApplicationService",
+                        "public final class FooSelectionApplicationService {",
+                        "  public FooSelectionApplicationService(BarSelectionApplicationService service) { }",
+                        "}")
+                .addSourceLines(
+                        "src/domain/bar/BarSelectionApplicationService.java",
+                        "package src.domain.bar;",
+                        "public final class BarSelectionApplicationService { }")
+                .doTest();
+    }
+
+    @Test
+    public void applicationServiceRejectsSameContextPortConstructorParameter() {
+        CompilationTestHelper.newInstance(DomainApplicationServiceRoleBoundaryChecker.class, getClass())
+                .addSourceLines(
+                        "src/domain/foo/FooSelectionApplicationService.java",
+                        "package src.domain.foo;",
+                        "import src.domain.foo.model.grid.port.GridPort;",
+                        "// BUG: Diagnostic contains: references forbidden domain concern src.domain.foo.model.grid.port.GridPort",
+                        "public final class FooSelectionApplicationService {",
+                        "  public FooSelectionApplicationService(GridPort port) { }",
+                        "}")
+                .addSourceLines(
+                        "src/domain/foo/model/grid/port/GridPort.java",
+                        "package src.domain.foo.model.grid.port;",
+                        "public interface GridPort { }")
+                .doTest();
+    }
+
+    @Test
     public void useCaseRejectsSameContextPublishedConcern() {
         CompilationTestHelper.newInstance(DomainUseCaseRoleBoundaryChecker.class, getClass())
                 .addSourceLines(
