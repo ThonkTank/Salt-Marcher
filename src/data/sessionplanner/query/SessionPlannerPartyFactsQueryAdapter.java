@@ -36,8 +36,15 @@ public final class SessionPlannerPartyFactsQueryAdapter implements SessionPartyF
     }
 
     @Override
-    public AdventuringDayFact calculateAdventuringDay(List<Integer> levels, int plannedEncounterXp) {
+    public AdventuringDayBudgetFact calculateAdventuringDay(List<Integer> levels, int plannedEncounterXp) {
         party.calculateAdventuringDay(new CalculateAdventuringDayCommand(levels, plannedEncounterXp));
-        return adventuringDayFact();
+        AdventuringDayFact fact = adventuringDayFact();
+        return new AdventuringDayBudgetFact(
+                fact.available(),
+                fact.totalBudgetXp(),
+                fact.firstShortRestXp(),
+                fact.secondShortRestXp(),
+                fact.recommendedShortRests(),
+                fact.recommendedLongRests());
     }
 }

@@ -36,8 +36,19 @@ public final class SessionPlannerEncounterFactsQueryAdapter
     }
 
     @Override
-    public EncounterPlanFact loadEncounterPlan(long encounterPlanId) {
+    public EncounterPlanDetailFact loadEncounterPlan(long encounterPlanId) {
         encounters.refreshPlanBudget(new RefreshEncounterPlanBudgetCommand(encounterPlanId));
-        return encounterPlan(encounterPlanId);
+        EncounterPlanFact fact = encounterPlan(encounterPlanId);
+        return new EncounterPlanDetailFact(
+                fact.available(),
+                fact.planId(),
+                fact.name(),
+                fact.generatedLabel(),
+                fact.creatureCount(),
+                fact.totalBaseXp(),
+                fact.adjustedXp(),
+                fact.xpMultiplier(),
+                fact.difficultyLabel(),
+                fact.statusText());
     }
 }
