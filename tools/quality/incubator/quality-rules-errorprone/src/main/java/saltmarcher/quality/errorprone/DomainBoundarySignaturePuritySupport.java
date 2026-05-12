@@ -11,20 +11,9 @@ import javax.lang.model.element.RecordComponentElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.TypeParameterElement;
 import javax.lang.model.element.VariableElement;
-import javax.lang.model.type.ArrayType;
-import javax.lang.model.type.DeclaredType;
-import javax.lang.model.type.ErrorType;
 import javax.lang.model.type.ExecutableType;
-import javax.lang.model.type.IntersectionType;
-import javax.lang.model.type.NoType;
-import javax.lang.model.type.NullType;
-import javax.lang.model.type.PrimitiveType;
 import javax.lang.model.type.TypeMirror;
-import javax.lang.model.type.TypeVariable;
-import javax.lang.model.type.UnionType;
-import javax.lang.model.type.WildcardType;
 import javax.lang.model.util.ElementFilter;
-import javax.lang.model.util.SimpleTypeVisitor14;
 
 final class DomainBoundarySignaturePuritySupport {
 
@@ -173,111 +162,9 @@ final class DomainBoundarySignaturePuritySupport {
         if (typeMirror == null) {
             return;
         }
-        typeMirror.accept(new SimpleTypeVisitor14<Void, Void>() {
-            @Override
-            public Void visitDeclared(DeclaredType declaredType, Void unused) {
-                addLeakIfNeeded(position, declaredType.asElement(), sourceFeature, leaks);
-                for (TypeMirror typeArgument : declaredType.getTypeArguments()) {
-                    typeArgument.accept(this, null);
-                }
-                return null;
-            }
-
-            @Override
-            public Void visitArray(ArrayType arrayType, Void unused) {
-                arrayType.getComponentType().accept(this, null);
-                return null;
-            }
-
-            @Override
-            public Void visitTypeVariable(TypeVariable typeVariable, Void unused) {
-                typeVariable.getUpperBound().accept(this, null);
-                TypeMirror lowerBound = typeVariable.getLowerBound();
-                if (lowerBound != null) {
-                    lowerBound.accept(this, null);
-                }
-                return null;
-            }
-
-            @Override
-            public Void visitWildcard(WildcardType wildcardType, Void unused) {
-                if (wildcardType.getExtendsBound() != null) {
-                    wildcardType.getExtendsBound().accept(this, null);
-                }
-                if (wildcardType.getSuperBound() != null) {
-                    wildcardType.getSuperBound().accept(this, null);
-                }
-                return null;
-            }
-
-            @Override
-            public Void visitExecutable(ExecutableType executableType, Void unused) {
-                executableType.getReturnType().accept(this, null);
-                for (TypeMirror parameterType : executableType.getParameterTypes()) {
-                    parameterType.accept(this, null);
-                }
-                for (TypeMirror thrownType : executableType.getThrownTypes()) {
-                    thrownType.accept(this, null);
-                }
-                for (TypeMirror typeVariable : executableType.getTypeVariables()) {
-                    typeVariable.accept(this, null);
-                }
-                return null;
-            }
-
-            @Override
-            public Void visitIntersection(IntersectionType intersectionType, Void unused) {
-                for (TypeMirror bound : intersectionType.getBounds()) {
-                    bound.accept(this, null);
-                }
-                return null;
-            }
-
-            @Override
-            public Void visitUnion(UnionType unionType, Void unused) {
-                for (TypeMirror alternative : unionType.getAlternatives()) {
-                    alternative.accept(this, null);
-                }
-                return null;
-            }
-
-            @Override
-            public Void visitError(ErrorType errorType, Void unused) {
-                addLeakIfNeeded(position, errorType.asElement(), sourceFeature, leaks);
-                return null;
-            }
-
-            @Override
-            protected Void defaultAction(TypeMirror ignored, Void unused) {
-                return null;
-            }
-
-            @Override
-            public Void visitNoType(NoType noType, Void unused) {
-                return null;
-            }
-
-            @Override
-            public Void visitPrimitive(PrimitiveType primitiveType, Void unused) {
-                return null;
-            }
-
-            @Override
-            public Void visitNull(NullType nullType, Void unused) {
-                return null;
-            }
-        }, null);
-    }
-
-    private static void addLeakIfNeeded(
-            String position,
-            Element element,
-            String sourceFeature,
-            List<String> leaks) {
-        if (element instanceof TypeElement typeElement) {
-            String fqn = typeElement.getQualifiedName().toString();
-            if (isForbiddenLeak(fqn, sourceFeature)) {
-                leaks.add(position + " -> " + fqn);
+        for (String referencedType : TypeMirrorReferenceScanner.collectTypeReferences(typeMirror)) {
+            if (isForbiddenLeak(referencedType, sourceFeature)) {
+                leaks.add(position + " -> " + referencedType);
             }
         }
     }

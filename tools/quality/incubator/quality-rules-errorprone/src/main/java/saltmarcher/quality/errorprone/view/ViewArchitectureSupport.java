@@ -17,20 +17,10 @@ import javax.lang.model.element.Element;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
-import javax.lang.model.type.ArrayType;
 import javax.lang.model.type.DeclaredType;
-import javax.lang.model.type.ErrorType;
-import javax.lang.model.type.ExecutableType;
-import javax.lang.model.type.IntersectionType;
-import javax.lang.model.type.NoType;
-import javax.lang.model.type.NullType;
-import javax.lang.model.type.PrimitiveType;
 import javax.lang.model.type.TypeMirror;
-import javax.lang.model.type.TypeVariable;
-import javax.lang.model.type.UnionType;
-import javax.lang.model.type.WildcardType;
 import javax.lang.model.util.ElementFilter;
-import javax.lang.model.util.SimpleTypeVisitor14;
+import saltmarcher.quality.errorprone.TypeMirrorReferenceScanner;
 
 public final class ViewArchitectureSupport {
 
@@ -333,106 +323,7 @@ public final class ViewArchitectureSupport {
     }
 
     public static void collectTypeReferences(TypeMirror typeMirror, Set<String> referencedTypes) {
-        if (typeMirror == null) {
-            return;
-        }
-        typeMirror.accept(new SimpleTypeVisitor14<Void, Void>() {
-            @Override
-            public Void visitDeclared(DeclaredType declaredType, Void unused) {
-                Element element = declaredType.asElement();
-                if (element instanceof TypeElement typeElement) {
-                    addReference(typeElement.getQualifiedName().toString(), referencedTypes);
-                }
-                for (TypeMirror typeArgument : declaredType.getTypeArguments()) {
-                    typeArgument.accept(this, null);
-                }
-                return null;
-            }
-
-            @Override
-            public Void visitArray(ArrayType arrayType, Void unused) {
-                arrayType.getComponentType().accept(this, null);
-                return null;
-            }
-
-            @Override
-            public Void visitTypeVariable(TypeVariable typeVariable, Void unused) {
-                typeVariable.getUpperBound().accept(this, null);
-                TypeMirror lowerBound = typeVariable.getLowerBound();
-                if (lowerBound != null) {
-                    lowerBound.accept(this, null);
-                }
-                return null;
-            }
-
-            @Override
-            public Void visitWildcard(WildcardType wildcardType, Void unused) {
-                if (wildcardType.getExtendsBound() != null) {
-                    wildcardType.getExtendsBound().accept(this, null);
-                }
-                if (wildcardType.getSuperBound() != null) {
-                    wildcardType.getSuperBound().accept(this, null);
-                }
-                return null;
-            }
-
-            @Override
-            public Void visitExecutable(ExecutableType executableType, Void unused) {
-                executableType.getReturnType().accept(this, null);
-                for (TypeMirror thrownType : executableType.getThrownTypes()) {
-                    thrownType.accept(this, null);
-                }
-                for (TypeMirror typeVariable : executableType.getTypeVariables()) {
-                    typeVariable.accept(this, null);
-                }
-                return null;
-            }
-
-            @Override
-            public Void visitIntersection(IntersectionType intersectionType, Void unused) {
-                for (TypeMirror bound : intersectionType.getBounds()) {
-                    bound.accept(this, null);
-                }
-                return null;
-            }
-
-            @Override
-            public Void visitUnion(UnionType unionType, Void unused) {
-                for (TypeMirror alternative : unionType.getAlternatives()) {
-                    alternative.accept(this, null);
-                }
-                return null;
-            }
-
-            @Override
-            public Void visitError(ErrorType errorType, Void unused) {
-                Element element = errorType.asElement();
-                if (element instanceof TypeElement typeElement) {
-                    addReference(typeElement.getQualifiedName().toString(), referencedTypes);
-                }
-                return null;
-            }
-
-            @Override
-            protected Void defaultAction(TypeMirror ignored, Void unused) {
-                return null;
-            }
-
-            @Override
-            public Void visitNoType(NoType noType, Void unused) {
-                return null;
-            }
-
-            @Override
-            public Void visitPrimitive(PrimitiveType primitiveType, Void unused) {
-                return null;
-            }
-
-            @Override
-            public Void visitNull(NullType nullType, Void unused) {
-                return null;
-            }
-        }, null);
+        TypeMirrorReferenceScanner.collectTypeReferences(typeMirror, referencedTypes);
     }
 
     public static Set<String> collectTypeReferences(TypeMirror typeMirror) {
