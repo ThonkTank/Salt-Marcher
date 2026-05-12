@@ -7,12 +7,12 @@ import org.jspecify.annotations.Nullable;
 import src.domain.encounter.model.generation.helper.EncounterDifficultyMathHelper;
 import src.domain.encounter.model.generation.helper.EncounterDifficultyTargetHelper;
 import src.domain.encounter.model.plan.model.EncounterPlan;
+import src.domain.encounter.model.plan.model.EncounterPlanBudgetLoadResult;
+import src.domain.encounter.model.plan.model.EncounterPlanBudgetSummaryData;
 import src.domain.encounter.model.plan.repository.EncounterPlanRepository;
 import src.domain.encounter.model.plan.model.EncounterPlanCreature;
 import src.domain.encounter.model.reference.repository.EncounterCreatureRepository;
 import src.domain.encounter.model.session.repository.EncounterPartyFactsRepository;
-import src.domain.encounter.published.EncounterPlanBudgetStatus;
-import src.domain.encounter.published.EncounterPlanBudgetSummary;
 
 public final class LoadEncounterPlanBudgetUseCase {
 
@@ -32,20 +32,20 @@ public final class LoadEncounterPlanBudgetUseCase {
         this.creatures = Objects.requireNonNull(creatures, "creatures");
     }
 
-    public Result execute(long planId) {
+    public EncounterPlanBudgetLoadResult execute(long planId) {
         if (planId < MIN_PLAN_ID) {
-            return Result.invalidRequest("Encounter plan id must be positive.");
+            return EncounterPlanBudgetLoadResult.invalidRequest("Encounter plan id must be positive.");
         }
         Optional<EncounterPlan> maybePlan = plans.load(planId);
         if (maybePlan.isEmpty()) {
-            return Result.notFound("Encounter plan was not found.");
+            return EncounterPlanBudgetLoadResult.notFound("Encounter plan was not found.");
         }
         EncounterPartyFactsRepository.PartyBudgetFacts facts = party.loadPartyBudgetFacts();
         if (facts.status().isStorageError()) {
-            return Result.storageError("Party data could not be loaded.");
+            return EncounterPlanBudgetLoadResult.storageError("Party data could not be loaded.");
         }
         if (facts.status().isNoActiveParty()) {
-            return Result.noActiveParty("No active party is available.");
+            return EncounterPlanBudgetLoadResult.noActiveParty("No active party is available.");
         }
         List<Integer> activeLevels = facts.activePartyLevels();
         EncounterPlan plan = maybePlan.get();
@@ -54,7 +54,7 @@ public final class LoadEncounterPlanBudgetUseCase {
         EncounterDifficultyMathHelper.Thresholds thresholds = EncounterDifficultyMathHelper.thresholdsFor(activeLevels);
         double multiplier = EncounterDifficultyTargetHelper.multiplierFor(creatureCount, activeLevels.size());
         int adjustedXp = (int) Math.round(totalBaseXp * multiplier);
-        return Result.success(new EncounterPlanBudgetSummary(
+        return EncounterPlanBudgetLoadResult.success(new EncounterPlanBudgetSummaryData(
                 plan.id(),
                 plan.name(),
                 plan.generatedLabel(),
@@ -91,52 +91,4 @@ public final class LoadEncounterPlanBudgetUseCase {
         return adjustedXp <= 0 ? "" : "Easy";
     }
 
-    public static final class Result {
-
-        private final EncounterPlanBudgetStatus status;
-        private final @Nullable EncounterPlanBudgetSummary summary;
-        private final String message;
-
-        public Result(
-                EncounterPlanBudgetStatus status,
-                @Nullable EncounterPlanBudgetSummary summary,
-                String message
-        ) {
-            this.status = status == null ? EncounterPlanBudgetStatus.STORAGE_ERROR : status;
-            this.summary = summary;
-            this.message = message == null ? "" : message;
-        }
-
-        public EncounterPlanBudgetStatus status() {
-            return status;
-        }
-
-        public @Nullable EncounterPlanBudgetSummary summary() {
-            return summary;
-        }
-
-        public String message() {
-            return message;
-        }
-
-        static Result success(EncounterPlanBudgetSummary summary) {
-            return new Result(EncounterPlanBudgetStatus.SUCCESS, summary, "");
-        }
-
-        static Result notFound(String message) {
-            return new Result(EncounterPlanBudgetStatus.NOT_FOUND, null, message);
-        }
-
-        static Result noActiveParty(String message) {
-            return new Result(EncounterPlanBudgetStatus.NO_ACTIVE_PARTY, null, message);
-        }
-
-        static Result invalidRequest(String message) {
-            return new Result(EncounterPlanBudgetStatus.INVALID_REQUEST, null, message);
-        }
-
-        static Result storageError(String message) {
-            return new Result(EncounterPlanBudgetStatus.STORAGE_ERROR, null, message);
-        }
-    }
 }
