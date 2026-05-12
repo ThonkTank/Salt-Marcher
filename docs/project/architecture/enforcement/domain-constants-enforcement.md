@@ -34,6 +34,12 @@ Unified focused bundle entrypoint:
 | --- | --- | --- | --- | --- | --- |
 | `domain-constants-no-runtime-or-state-ownership` | Review-Owned | every constants file under `src/domain/**` | none | none | Constants do not own current state, listeners, callbacks, adapters, or runtime composition. |
 
+### Communication Contract
+
+| Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
+| --- | --- | --- | --- | --- | --- |
+| `domain-constants-constants-only-dependency-boundary` | Enforced | every constants file under `src/domain/**` | domain-constants bundle Error Prone `DomainConstantsRoleBoundary` | `./gradlew checkDomainEnforcement` | Constants reference only same-context `constants/**`, passive platform types, and their own nested types. This does not prove that each constant is semantically necessary or immutable enough beyond the class/member shape checked by the same owner. |
+
 ## References
 
 - [Domain Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/domain-layer.md:1)

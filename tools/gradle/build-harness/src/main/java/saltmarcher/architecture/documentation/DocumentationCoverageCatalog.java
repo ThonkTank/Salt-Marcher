@@ -275,7 +275,10 @@ public final class DocumentationCoverageCatalog {
                                     List.of("domain-constants bundle build-harness", "DomainConstantsTopologyRules"),
                                     List.of("./gradlew checkDomainEnforcement")),
                             row("domain-constants-immutable-only", "Review-Owned"),
-                            row("domain-constants-no-runtime-or-state-ownership", "Review-Owned")))),
+                            row("domain-constants-no-runtime-or-state-ownership", "Review-Owned"),
+                            row("domain-constants-constants-only-dependency-boundary", "Enforced",
+                                    List.of("domain-constants bundle Error Prone", "DomainConstantsRoleBoundary"),
+                                    List.of("./gradlew checkDomainEnforcement"))))),
             Map.entry("domainContext", spec(
                     "docs/project/architecture/enforcement/domain-context-enforcement.md",
                     "domain-context-enforcement-coverage-complete",
