@@ -19,6 +19,23 @@ the implementing agent's summary, desired outcome, or prior conclusions as
 evidence. Verify claims against the repository state, the diff, owner documents,
 and literal command output.
 
+## Caller Obligations
+
+The implementing agent must wait for this required review to complete. A
+running review is not failed, optional, or replaceable merely because it is slow
+or silent.
+
+- Do not impose a time limit on a required review.
+- Do not treat missing interim output as a failure signal.
+- Do not start final handoff, commit, or publication claims while the review is
+  still running.
+- Do not reinterpret an incomplete review as a finding class or as review
+  evidence.
+- Start a replacement review only after the subagent or tool returns an
+  explicit failure signal.
+
+If no explicit failure signal exists, wait for completion.
+
 ## Required Inputs
 
 If the prompt omits any of these, infer them from the checkout before asking:

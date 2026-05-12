@@ -79,6 +79,11 @@ document exists.
   protocol; this file only routes to it. Agent-facing instruction changes must
   still use `agent-instruction-engineering` before that review. A pass with
   unresolved blocking review findings remains WIP.
+- A running required `adversarial-review` is not failed, optional, or
+  replaceable because it is slow or silent. Unless the subagent or tool returns
+  an explicit failure signal, wait for completion. A pass without a completed
+  review remains WIP and must not receive final handoff, commit, or publication
+  claims.
 - Work under `src/domain/**` must use the repo-owned `domain-layer` skill and
   follow the canonical domain-layer standard before changes are made or
   reviewed.
@@ -129,6 +134,10 @@ document exists.
   skill. Do not create a separate review ledger, pull-request template, or
   changelog entry only to record this; normal commit history, handoff text, and
   memories carry the history.
+- Waiting time, missing interim output, or impatience from the implementing
+  agent is not a review failure signal. If the required review is still running,
+  the implementing agent must stay silent or provide only non-final status until
+  the review completes.
 - Parallel agent implementation work must not share one live checkout. Each
   agent must work in its own linked git worktree on its own branch, preferably
   under `build/codex-worktrees/<topic>/` or a temporary external worktree when
