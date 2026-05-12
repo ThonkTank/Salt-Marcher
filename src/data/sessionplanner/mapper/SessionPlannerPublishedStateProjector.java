@@ -11,6 +11,7 @@ import src.domain.sessionplanner.published.SessionPlannerParticipantsProjection;
 import src.domain.sessionplanner.published.SessionPlannerRestKind;
 import src.domain.sessionplanner.published.SessionPlannerSessionSnapshot;
 import src.domain.sessionplanner.published.SessionPlannerStatePanelProjection;
+import src.domain.sessionplanner.model.session.model.SessionAdventuringDayBudgetFact;
 import src.domain.sessionplanner.model.session.model.SessionEncounter;
 import src.domain.sessionplanner.model.session.model.SessionEncounterPlanFact;
 import src.domain.sessionplanner.model.session.model.SessionPlan;
@@ -135,11 +136,11 @@ public final class SessionPlannerPublishedStateProjector {
                 .allMatch(SessionPlannerParticipantsProjection.SessionParticipant::available);
         Map<Long, SessionEncounterPlanFact> loadedEncounters =
                 loadSessionEncounterFacts(session, encounterFactsRepository);
-        SessionPartyFactsRepository.AdventuringDayBudgetFact budgetFact = sessionReady
+        SessionAdventuringDayBudgetFact budgetFact = sessionReady
                 ? partyFactsRepository.calculateAdventuringDay(
                         participantContext.resolvedLevels(),
                         plannedEncounterXp(session, loadedEncounters))
-                : SessionPartyFactsRepository.AdventuringDayBudgetFact.unavailable();
+                : SessionAdventuringDayBudgetFact.unavailable();
         int scaledBudgetXp = budgetFact.available() ? session.encounterDays().scaleBudget(budgetFact.totalBudgetXp()) : 0;
         return new ProjectionContext(
                 participantContext.partyMembersFact(),
@@ -166,7 +167,7 @@ public final class SessionPlannerPublishedStateProjector {
                 participants,
                 resolvedLevels,
                 new HashMap<>(),
-                SessionPartyFactsRepository.AdventuringDayBudgetFact.unavailable(),
+                SessionAdventuringDayBudgetFact.unavailable(),
                 0);
     }
 
@@ -209,7 +210,7 @@ public final class SessionPlannerPublishedStateProjector {
 
     private static SessionPlannerSessionSnapshot.XpBudgetState buildXpBudgetState(
             SessionPlan session,
-            SessionPartyFactsRepository.AdventuringDayBudgetFact budgetFact,
+            SessionAdventuringDayBudgetFact budgetFact,
             int scaledBudgetXp,
             Map<Long, SessionEncounterPlanFact> loadedEncounters
     ) {
@@ -234,7 +235,7 @@ public final class SessionPlannerPublishedStateProjector {
     }
 
     private static SessionPlannerSessionSnapshot.RestAdviceState buildRestAdviceState(
-            SessionPartyFactsRepository.AdventuringDayBudgetFact budgetFact,
+            SessionAdventuringDayBudgetFact budgetFact,
             int placedShortRests,
             int placedLongRests
     ) {
@@ -509,7 +510,7 @@ public final class SessionPlannerPublishedStateProjector {
             List<SessionPlannerParticipantsProjection.SessionParticipant> participants,
             List<Integer> resolvedLevels,
             Map<Long, SessionEncounterPlanFact> loadedEncounters,
-            SessionPartyFactsRepository.AdventuringDayBudgetFact budgetFact,
+            SessionAdventuringDayBudgetFact budgetFact,
             int scaledBudgetXp
     ) {
     }

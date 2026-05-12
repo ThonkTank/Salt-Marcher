@@ -6,6 +6,7 @@ import src.domain.party.PartyApplicationService;
 import src.domain.party.published.ActivePartyModel;
 import src.domain.party.published.AdventuringDayCalculationModel;
 import src.domain.party.published.CalculateAdventuringDayCommand;
+import src.domain.sessionplanner.model.session.model.SessionAdventuringDayBudgetFact;
 import src.domain.sessionplanner.model.session.port.SessionPartyFactsPort;
 import src.domain.sessionplanner.model.session.repository.SessionPartyFactsRepository;
 
@@ -31,20 +32,13 @@ public final class SessionPlannerPartyFactsQueryAdapter implements SessionPartyF
     }
 
     @Override
-    public AdventuringDayFact adventuringDayFact() {
+    public SessionAdventuringDayBudgetFact adventuringDayFact() {
         return partyReadback.currentAdventuringDayFact();
     }
 
     @Override
-    public AdventuringDayBudgetFact calculateAdventuringDay(List<Integer> levels, int plannedEncounterXp) {
+    public SessionAdventuringDayBudgetFact calculateAdventuringDay(List<Integer> levels, int plannedEncounterXp) {
         party.calculateAdventuringDay(new CalculateAdventuringDayCommand(levels, plannedEncounterXp));
-        AdventuringDayFact fact = adventuringDayFact();
-        return new AdventuringDayBudgetFact(
-                fact.available(),
-                fact.totalBudgetXp(),
-                fact.firstShortRestXp(),
-                fact.secondShortRestXp(),
-                fact.recommendedShortRests(),
-                fact.recommendedLongRests());
+        return adventuringDayFact();
     }
 }
