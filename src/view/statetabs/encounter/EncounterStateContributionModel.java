@@ -89,7 +89,7 @@ record EncounterBuilderSettings(
             double amountValue,
             int diversityLevel
     ) {
-        public static EncounterBuilderSettings defaultSettings() {
+        static EncounterBuilderSettings defaultSettings() {
             return new EncounterBuilderSettings("Auto", -1, -1.0, -1);
         }
     }
@@ -102,7 +102,7 @@ record EncounterDifficultySummary(
             int adjustedXp,
             String difficulty
     ) {
-        public EncounterDifficultySummary {
+        EncounterDifficultySummary {
             difficulty = difficulty == null ? "" : difficulty;
         }
     }
@@ -124,7 +124,7 @@ record EncounterBuilderState(
             boolean canClearGenerationHistory,
             @Nullable EncounterUndoRemoveView pendingUndo
     ) {
-        public EncounterBuilderState {
+        EncounterBuilderState {
             partyLabel = partyLabel == null ? "" : partyLabel;
             templateLabel = templateLabel == null ? "" : templateLabel;
             difficulty = difficulty == null ? new EncounterDifficultySummary(0, 0, 0, 0, 0, "") : difficulty;
@@ -156,7 +156,7 @@ record EncounterBuilderState(
     }
 
 record EncounterSavedPlanView(long id, String name, String summaryText) {
-        public EncounterSavedPlanView {
+        EncounterSavedPlanView {
             name = name == null ? "" : name.trim();
             summaryText = summaryText == null ? "" : summaryText.trim();
         }
@@ -172,7 +172,7 @@ record EncounterRosterCardView(
             String role,
             int count
     ) {
-        public EncounterRosterCardView {
+        EncounterRosterCardView {
             name = name == null ? "" : name;
             challengeRating = challengeRating == null ? "" : challengeRating;
             type = type == null ? "" : type;
@@ -182,13 +182,13 @@ record EncounterRosterCardView(
     }
 
 record EncounterUndoRemoveView(long token, String creatureName) {
-        public EncounterUndoRemoveView {
+        EncounterUndoRemoveView {
             creatureName = creatureName == null ? "" : creatureName;
         }
     }
 
 record EncounterInitiativeEntryView(String id, String label, String kind, int initiative) {
-        public EncounterInitiativeEntryView {
+        EncounterInitiativeEntryView {
             id = id == null ? "" : id;
             label = label == null ? "" : label;
             kind = kind == null ? "" : kind;
@@ -196,7 +196,7 @@ record EncounterInitiativeEntryView(String id, String label, String kind, int in
     }
 
 record EncounterInitiativeStateViewModel(List<EncounterInitiativeEntryView> entries) {
-        public EncounterInitiativeStateViewModel {
+        EncounterInitiativeStateViewModel {
             entries = entries == null ? List.of() : List.copyOf(entries);
         }
 
@@ -218,7 +218,7 @@ record EncounterCombatCardView(
             int count,
             String detail
     ) {
-        public EncounterCombatCardView {
+        EncounterCombatCardView {
             id = id == null ? "" : id;
             name = name == null ? "" : name;
             detail = detail == null ? "" : detail;
@@ -227,7 +227,7 @@ record EncounterCombatCardView(
     }
 
 record EncounterPartyMemberCandidate(long memberId, String name, int level) {
-        public EncounterPartyMemberCandidate {
+        EncounterPartyMemberCandidate {
             memberId = Math.max(0L, memberId);
             name = name == null ? "" : name;
         }
@@ -240,7 +240,7 @@ record EncounterCombatStateViewModel(
             boolean allEnemiesDefeated,
             List<EncounterPartyMemberCandidate> missingPartyMembers
     ) {
-        public EncounterCombatStateViewModel {
+        EncounterCombatStateViewModel {
             status = status == null ? "" : status;
             cards = cards == null ? List.of() : List.copyOf(cards);
             missingPartyMembers = missingPartyMembers == null ? List.of() : List.copyOf(missingPartyMembers);
@@ -252,7 +252,7 @@ record EncounterCombatStateViewModel(
     }
 
 record EncounterResultEnemyView(String name, String status, int hpLoss, int xp, boolean defeatedByDefault, String loot) {
-        public EncounterResultEnemyView {
+        EncounterResultEnemyView {
             name = name == null ? "" : name;
             status = status == null ? "" : status;
             loot = loot == null ? "" : loot;
@@ -271,7 +271,7 @@ record EncounterResultStateView(
             boolean canAwardXp,
             int partySize
     ) {
-        public EncounterResultStateView {
+        EncounterResultStateView {
             enemies = enemies == null ? List.of() : List.copyOf(enemies);
             goldSummary = goldSummary == null ? "" : goldSummary;
             lootDetail = lootDetail == null ? "" : lootDetail;

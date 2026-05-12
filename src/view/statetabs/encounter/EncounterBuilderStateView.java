@@ -1,15 +1,5 @@
 package src.view.statetabs.encounter;
 
-import static src.view.statetabs.encounter.EncounterBuilderStateView.DIFFICULTY_STYLE_CLASSES;
-import static src.view.statetabs.encounter.EncounterBuilderStateView.DIFFICULTY_STYLES;
-import static src.view.statetabs.encounter.EncounterBuilderStateView.ROLE_STYLES;
-import static src.view.statetabs.encounter.EncounterBuilderStateView.ROSTER_PLACEHOLDER_TEXT;
-import static src.view.statetabs.encounter.EncounterBuilderStateView.STYLE_ACCENT;
-import static src.view.statetabs.encounter.EncounterBuilderStateView.STYLE_COMPACT;
-import static src.view.statetabs.encounter.EncounterBuilderStateView.STYLE_NEUTRAL_ACTION;
-import static src.view.statetabs.encounter.EncounterBuilderStateView.STYLE_TEXT_MUTED;
-import static src.view.statetabs.encounter.EncounterBuilderStateView.STYLE_TEXT_SECONDARY;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -167,15 +157,15 @@ public final class EncounterBuilderStateView extends VBox {
 final class EncounterBuilderBody extends VBox {
 
         private final EncounterDifficultyBadgeLabel builderDifficultyLabel = new EncounterDifficultyBadgeLabel();
-        private final BuilderStyledLabel builderTemplateLabel = new BuilderStyledLabel("", "small", STYLE_TEXT_SECONDARY);
-        private final BuilderStyledLabel builderPartyLabel = new BuilderStyledLabel("", STYLE_TEXT_SECONDARY);
+        private final BuilderStyledLabel builderTemplateLabel = new BuilderStyledLabel("", "small", EncounterBuilderStateView.STYLE_TEXT_SECONDARY);
+        private final BuilderStyledLabel builderPartyLabel = new BuilderStyledLabel("", EncounterBuilderStateView.STYLE_TEXT_SECONDARY);
         private final BuilderStyledLabel builderXpLabel = new BuilderStyledLabel("", "bold");
         private final BuilderStyledLabel easyThresholdLabel = new BuilderStyledLabel("", "difficulty-easy");
         private final BuilderStyledLabel mediumThresholdLabel = new BuilderStyledLabel("", "difficulty-medium");
         private final BuilderStyledLabel hardThresholdLabel = new BuilderStyledLabel("", "difficulty-hard");
         private final BuilderStyledLabel deadlyThresholdLabel = new BuilderStyledLabel("", "difficulty-deadly");
-        private final BuilderStyledLabel builderStatusLabel = new BuilderStyledLabel("", STYLE_TEXT_SECONDARY);
-        private final BuilderStyledLabel rosterPlaceholder = new BuilderStyledLabel(ROSTER_PLACEHOLDER_TEXT, STYLE_TEXT_MUTED);
+        private final BuilderStyledLabel builderStatusLabel = new BuilderStyledLabel("", EncounterBuilderStateView.STYLE_TEXT_SECONDARY);
+        private final BuilderStyledLabel rosterPlaceholder = new BuilderStyledLabel(EncounterBuilderStateView.ROSTER_PLACEHOLDER_TEXT, EncounterBuilderStateView.STYLE_TEXT_MUTED);
         private final EncounterDifficultyMeterView difficultyMeter = new EncounterDifficultyMeterView();
         private final EncounterRosterListView rosterList;
         private final ScrollPane rosterScroll;
@@ -283,7 +273,7 @@ final class EncounterRosterListView extends VBox {
                     4,
                     new BuilderStyledLabel(
                             "CR " + card.challengeRating() + "  |  " + card.xp() + " XP  |  " + card.type(),
-                            STYLE_TEXT_SECONDARY),
+                            EncounterBuilderStateView.STYLE_TEXT_SECONDARY),
                     new EncounterRoleBadgeLabel(card.role()));
             detail.setAlignment(Pos.CENTER_LEFT);
 
@@ -294,7 +284,7 @@ final class EncounterRosterListView extends VBox {
             remove.setOnAction(event ->
                     publish.accept(new EncounterBuilderStateViewInputEvent.RemoveCreatureInput(card.creatureId())));
 
-            VBox right = new VBox(4, new BuilderStyledLabel("\u25BC", STYLE_TEXT_MUTED, "clickable"), remove);
+            VBox right = new VBox(4, new BuilderStyledLabel("\u25BC", EncounterBuilderStateView.STYLE_TEXT_MUTED, "clickable"), remove);
             right.setAlignment(Pos.CENTER_RIGHT);
 
             HBox summary = new HBox(8, quantity, info, right);
@@ -322,15 +312,15 @@ final class EncounterAdvisoryRegionView extends VBox {
 
                 HBox row = new HBox(
                         8,
-                        new BuilderStyledLabel(undo.creatureName() + " entfernt.", STYLE_TEXT_SECONDARY),
+                        new BuilderStyledLabel(undo.creatureName() + " entfernt.", EncounterBuilderStateView.STYLE_TEXT_SECONDARY),
                         undoButton);
                 row.setAlignment(Pos.CENTER_LEFT);
                 nodes.add(row);
             }
             if (!state.generationAdvisoryMessages().isEmpty()) {
-                nodes.add(new BuilderStyledLabel("Hinweise", "small", STYLE_TEXT_SECONDARY));
+                nodes.add(new BuilderStyledLabel("Hinweise", "small", EncounterBuilderStateView.STYLE_TEXT_SECONDARY));
                 for (String advisory : state.generationAdvisoryMessages()) {
-                    BuilderStyledLabel row = new BuilderStyledLabel(advisory, STYLE_TEXT_SECONDARY);
+                    BuilderStyledLabel row = new BuilderStyledLabel(advisory, EncounterBuilderStateView.STYLE_TEXT_SECONDARY);
                     row.setWrapText(true);
                     nodes.add(row);
                 }
@@ -374,7 +364,7 @@ final class EncounterSavedPlansPopupContent extends VBox {
         }
 
         private void showEmpty() {
-            getChildren().setAll(new BuilderStyledLabel("Keine gespeicherten Encounter.", STYLE_TEXT_SECONDARY));
+            getChildren().setAll(new BuilderStyledLabel("Keine gespeicherten Encounter.", EncounterBuilderStateView.STYLE_TEXT_SECONDARY));
         }
 
         void showPlans(List<EncounterSavedPlanView> plans, Consumer<EncounterSavedPlanView> selectionHandler) {
@@ -409,19 +399,19 @@ final class EncounterSavedPlanOptionButton extends BuilderStyledButton {
 final class EncounterDifficultyBadgeLabel extends BuilderStyledLabel {
 
         EncounterDifficultyBadgeLabel() {
-            super("", STYLE_TEXT_SECONDARY);
+            super("", EncounterBuilderStateView.STYLE_TEXT_SECONDARY);
         }
 
         void showDifficulty(String difficulty) {
             setText(difficulty);
-            replaceStyles(DIFFICULTY_STYLE_CLASSES, EncounterBuilderStyleMappings.lookup(DIFFICULTY_STYLES, difficulty, "difficulty-easy"));
+            replaceStyles(EncounterBuilderStateView.DIFFICULTY_STYLE_CLASSES, EncounterBuilderStyleMappings.lookup(EncounterBuilderStateView.DIFFICULTY_STYLES, difficulty, "difficulty-easy"));
         }
     }
 
 final class EncounterRoleBadgeLabel extends BuilderStyledLabel {
 
         EncounterRoleBadgeLabel(String role) {
-            super(role, "small", "role-badge", EncounterBuilderStyleMappings.lookup(ROLE_STYLES, role, "role-minion"));
+            super(role, "small", "role-badge", EncounterBuilderStyleMappings.lookup(EncounterBuilderStateView.ROLE_STYLES, role, "role-minion"));
         }
     }
 
@@ -458,7 +448,7 @@ final class EncounterBuilderStyleMappings {
         private EncounterBuilderStyleMappings() {
         }
 
-        private static String lookup(Map<String, String> values, String rawValue, String fallback) {
+        static String lookup(Map<String, String> values, String rawValue, String fallback) {
             if (rawValue == null) {
                 return fallback;
             }

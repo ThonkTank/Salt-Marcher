@@ -1,10 +1,5 @@
 package src.view.statetabs.encounter;
 
-import static src.view.statetabs.encounter.EncounterCombatStateView.ACTION_HP_DECREASE;
-import static src.view.statetabs.encounter.EncounterCombatStateView.ACTION_HP_INCREASE;
-import static src.view.statetabs.encounter.EncounterCombatStateView.STYLE_ACCENT;
-import static src.view.statetabs.encounter.EncounterCombatStateView.STYLE_TEXT_SECONDARY;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
@@ -205,12 +200,12 @@ final class EncounterCombatCardList extends VBox {
                             HP_POPUP_STEP,
                             List.of(
                                     new ProgressMeterContentModel.PopupActionModel(
-                                            ACTION_HP_DECREASE,
+                                            EncounterCombatStateView.ACTION_HP_DECREASE,
                                             "-",
                                             "",
                                             true),
                                     new ProgressMeterContentModel.PopupActionModel(
-                                            ACTION_HP_INCREASE,
+                                            EncounterCombatStateView.ACTION_HP_INCREASE,
                                             "+",
                                             "",
                                             false)));
@@ -234,7 +229,7 @@ final class EncounterCombatCardList extends VBox {
                 String cardId,
                 src.view.slotcontent.primitives.progressmeter.ProgressMeterViewInputEvent event
         ) {
-            boolean increase = ACTION_HP_INCREASE.equals(event.actionId());
+            boolean increase = EncounterCombatStateView.ACTION_HP_INCREASE.equals(event.actionId());
             return new EncounterCombatStateViewInputEvent.HpChangeInput(cardId, event.amount(), increase);
         }
 
