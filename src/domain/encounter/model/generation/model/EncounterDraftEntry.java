@@ -14,7 +14,7 @@ public record EncounterDraftEntry(
     }
 
     public String challengeRating() {
-        return profile.challengeRating();
+        return profile.facts().challengeRating();
     }
 
     public int xp() {

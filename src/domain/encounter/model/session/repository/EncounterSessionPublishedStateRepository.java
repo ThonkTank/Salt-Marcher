@@ -1,6 +1,13 @@
 package src.domain.encounter.model.session.repository;
 
-public interface EncounterSessionPublishedStateRepository<S, B, T> {
+import src.domain.encounter.published.EncounterBuilderInputs;
+import src.domain.encounter.published.EncounterStateSnapshot;
+import src.domain.encounter.published.EncounterTuningPreviewResult;
 
-    void publishCurrentSession(S state, B builderInputs, T tuningPreview);
+public interface EncounterSessionPublishedStateRepository {
+
+    void publishCurrentSession(
+            EncounterStateSnapshot state,
+            EncounterBuilderInputs builderInputs,
+            EncounterTuningPreviewResult tuningPreview);
 }

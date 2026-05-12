@@ -8,6 +8,7 @@ import src.data.encounter.repository.ApplicationEncounterPartyFactsRepository;
 import src.data.encounter.repository.EncounterPublishedStateRepositoryAdapter;
 import src.data.encounter.repository.SqliteEncounterPlanRepository;
 import src.domain.encounter.EncounterApplicationService;
+import src.domain.encounter.EncounterApplicationServiceFactory;
 import src.domain.encounter.model.plan.repository.EncounterPlanRepository;
 import src.domain.encounter.published.EncounterBuilderInputsModel;
 import src.domain.encounter.published.EncounterPlanBudgetModel;
@@ -33,7 +34,7 @@ public final class EncounterServiceContribution implements ServiceContribution {
         EncounterPublishedStateRepositoryAdapter publishedState = new EncounterPublishedStateRepositoryAdapter();
         builder.registerFactory(
                 EncounterApplicationService.class,
-                services -> new EncounterApplicationService(
+                services -> new EncounterApplicationServiceFactory().create(
                         new ApplicationEncounterPartyFactsRepository(
                                 services.require(PartyApplicationService.class),
                                 services.require(ActivePartyModel.class),

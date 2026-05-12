@@ -1,9 +1,6 @@
 package src.data.encounter.repository;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
-import java.util.function.Consumer;
 import src.domain.encounter.published.EncounterBuilderInputs;
 import src.domain.encounter.published.EncounterBuilderInputsModel;
 import src.domain.encounter.published.EncounterGenerationStatus;
@@ -22,44 +19,37 @@ import src.domain.encounter.model.plan.repository.EncounterPlanPublishedStateRep
 import src.domain.encounter.model.session.repository.EncounterSessionPublishedStateRepository;
 
 public final class EncounterPublishedStateRepositoryAdapter
-        implements EncounterSessionPublishedStateRepository<
-                EncounterStateSnapshot,
-                EncounterBuilderInputs,
-                EncounterTuningPreviewResult>,
-        EncounterPlanPublishedStateRepository<
-                SavedEncounterPlanListResult,
-                EncounterPlanBudgetResult> {
+        implements EncounterSessionPublishedStateRepository, EncounterPlanPublishedStateRepository {
 
-    private static final String LISTENER_PARAMETER = "listener";
     private static final String SESSION_NOT_REGISTERED = "Encounter session is not registered.";
     private static final String PLAN_STORAGE_NOT_REGISTERED = "Encounter plan storage is not registered.";
     private static final String PLAN_BUDGET_NOT_REGISTERED = "Encounter plan budget service is not registered.";
 
-    private final List<Consumer<EncounterStateSnapshot>> stateListeners = new ArrayList<>();
-    private final List<Consumer<EncounterBuilderInputs>> builderInputsListeners = new ArrayList<>();
-    private final List<Consumer<EncounterTuningPreviewResult>> tuningPreviewListeners = new ArrayList<>();
-    private final List<Consumer<SavedEncounterPlanListResult>> savedPlansListeners = new ArrayList<>();
-    private final List<Consumer<EncounterPlanBudgetResult>> planBudgetListeners = new ArrayList<>();
+    private final EncounterPublishedStateChannel<EncounterStateSnapshot> state =
+            new EncounterPublishedStateChannel<>(EncounterStateSnapshot.empty(SESSION_NOT_REGISTERED));
+    private final EncounterPublishedStateChannel<EncounterBuilderInputs> builderInputs =
+            new EncounterPublishedStateChannel<>(EncounterBuilderInputs.empty());
+    private final EncounterPublishedStateChannel<EncounterTuningPreviewResult> tuningPreview =
+            new EncounterPublishedStateChannel<>(emptyTuningPreview());
+    private final EncounterPublishedStateChannel<SavedEncounterPlanListResult> savedPlans =
+            new EncounterPublishedStateChannel<>(emptySavedPlans());
+    private final EncounterPublishedStateChannel<EncounterPlanBudgetResult> planBudget =
+            new EncounterPublishedStateChannel<>(emptyPlanBudget());
     public final EncounterStateModel stateModel = new EncounterStateModel(
-            this::currentState,
-            this::subscribeStateListener);
+            state::current,
+            state::subscribe);
     public final EncounterBuilderInputsModel builderInputsModel = new EncounterBuilderInputsModel(
-            this::currentBuilderInputs,
-            this::subscribeBuilderInputsListener);
+            builderInputs::current,
+            builderInputs::subscribe);
     public final EncounterTuningPreviewModel tuningPreviewModel = new EncounterTuningPreviewModel(
-            this::currentTuningPreview,
-            this::subscribeTuningPreviewListener);
+            tuningPreview::current,
+            tuningPreview::subscribe);
     public final SavedEncounterPlanListModel savedPlansModel = new SavedEncounterPlanListModel(
-            this::currentSavedPlans,
-            this::subscribeSavedPlansListener);
+            savedPlans::current,
+            savedPlans::subscribe);
     public final EncounterPlanBudgetModel planBudgetModel = new EncounterPlanBudgetModel(
-            this::currentPlanBudget,
-            this::subscribePlanBudgetListener);
-    private EncounterStateSnapshot currentState = EncounterStateSnapshot.empty(SESSION_NOT_REGISTERED);
-    private EncounterBuilderInputs currentBuilderInputs = EncounterBuilderInputs.empty();
-    private EncounterTuningPreviewResult currentTuningPreview = emptyTuningPreview();
-    private SavedEncounterPlanListResult currentSavedPlans = emptySavedPlans();
-    private EncounterPlanBudgetResult currentPlanBudget = emptyPlanBudget();
+            planBudget::current,
+            planBudget::subscribe);
 
     @Override
     public void publishCurrentSession(
@@ -67,108 +57,23 @@ public final class EncounterPublishedStateRepositoryAdapter
             EncounterBuilderInputs builderInputs,
             EncounterTuningPreviewResult tuningPreview
     ) {
-        currentState = state == null ? EncounterStateSnapshot.empty(SESSION_NOT_REGISTERED) : state;
-        currentBuilderInputs = builderInputs == null ? EncounterBuilderInputs.empty() : builderInputs;
-        currentTuningPreview = tuningPreview == null ? emptyTuningPreview() : tuningPreview;
-        notifyStateListeners(currentState);
-        notifyBuilderInputsListeners(currentBuilderInputs);
-        notifyTuningPreviewListeners(currentTuningPreview);
+        this.state.publish(state == null ? EncounterStateSnapshot.empty(SESSION_NOT_REGISTERED) : state);
+        this.builderInputs.publish(builderInputs == null ? EncounterBuilderInputs.empty() : builderInputs);
+        this.tuningPreview.publish(tuningPreview == null ? emptyTuningPreview() : tuningPreview);
     }
 
     @Override
     public void publishSavedPlans(SavedEncounterPlanListResult result) {
-        currentSavedPlans = result == null
+        savedPlans.publish(result == null
                 ? new SavedEncounterPlanListResult(SavedEncounterPlanStatus.STORAGE_ERROR, List.of(), PLAN_STORAGE_NOT_REGISTERED)
-                : result;
-        notifySavedPlansListeners(currentSavedPlans);
+                : result);
     }
 
     @Override
     public void publishPlanBudget(EncounterPlanBudgetResult result) {
-        currentPlanBudget = result == null
+        planBudget.publish(result == null
                 ? new EncounterPlanBudgetResult(EncounterPlanBudgetStatus.STORAGE_ERROR, null, PLAN_BUDGET_NOT_REGISTERED)
-                : result;
-        notifyPlanBudgetListeners(currentPlanBudget);
-    }
-
-    private EncounterStateSnapshot currentState() {
-        return currentState;
-    }
-
-    private EncounterBuilderInputs currentBuilderInputs() {
-        return currentBuilderInputs;
-    }
-
-    private EncounterTuningPreviewResult currentTuningPreview() {
-        return currentTuningPreview;
-    }
-
-    private SavedEncounterPlanListResult currentSavedPlans() {
-        return currentSavedPlans;
-    }
-
-    private EncounterPlanBudgetResult currentPlanBudget() {
-        return currentPlanBudget;
-    }
-
-    private Runnable subscribeStateListener(Consumer<EncounterStateSnapshot> listener) {
-        Consumer<EncounterStateSnapshot> safeListener = Objects.requireNonNull(listener, LISTENER_PARAMETER);
-        stateListeners.add(safeListener);
-        return () -> stateListeners.remove(safeListener);
-    }
-
-    private Runnable subscribeBuilderInputsListener(Consumer<EncounterBuilderInputs> listener) {
-        Consumer<EncounterBuilderInputs> safeListener = Objects.requireNonNull(listener, LISTENER_PARAMETER);
-        builderInputsListeners.add(safeListener);
-        return () -> builderInputsListeners.remove(safeListener);
-    }
-
-    private Runnable subscribeTuningPreviewListener(Consumer<EncounterTuningPreviewResult> listener) {
-        Consumer<EncounterTuningPreviewResult> safeListener = Objects.requireNonNull(listener, LISTENER_PARAMETER);
-        tuningPreviewListeners.add(safeListener);
-        return () -> tuningPreviewListeners.remove(safeListener);
-    }
-
-    private Runnable subscribeSavedPlansListener(Consumer<SavedEncounterPlanListResult> listener) {
-        Consumer<SavedEncounterPlanListResult> safeListener = Objects.requireNonNull(listener, LISTENER_PARAMETER);
-        savedPlansListeners.add(safeListener);
-        return () -> savedPlansListeners.remove(safeListener);
-    }
-
-    private Runnable subscribePlanBudgetListener(Consumer<EncounterPlanBudgetResult> listener) {
-        Consumer<EncounterPlanBudgetResult> safeListener = Objects.requireNonNull(listener, LISTENER_PARAMETER);
-        planBudgetListeners.add(safeListener);
-        return () -> planBudgetListeners.remove(safeListener);
-    }
-
-    private void notifyStateListeners(EncounterStateSnapshot state) {
-        for (Consumer<EncounterStateSnapshot> listener : List.copyOf(stateListeners)) {
-            listener.accept(state);
-        }
-    }
-
-    private void notifyBuilderInputsListeners(EncounterBuilderInputs builderInputs) {
-        for (Consumer<EncounterBuilderInputs> listener : List.copyOf(builderInputsListeners)) {
-            listener.accept(builderInputs);
-        }
-    }
-
-    private void notifyTuningPreviewListeners(EncounterTuningPreviewResult tuningPreview) {
-        for (Consumer<EncounterTuningPreviewResult> listener : List.copyOf(tuningPreviewListeners)) {
-            listener.accept(tuningPreview);
-        }
-    }
-
-    private void notifySavedPlansListeners(SavedEncounterPlanListResult savedPlans) {
-        for (Consumer<SavedEncounterPlanListResult> listener : List.copyOf(savedPlansListeners)) {
-            listener.accept(savedPlans);
-        }
-    }
-
-    private void notifyPlanBudgetListeners(EncounterPlanBudgetResult planBudget) {
-        for (Consumer<EncounterPlanBudgetResult> listener : List.copyOf(planBudgetListeners)) {
-            listener.accept(planBudget);
-        }
+                : result);
     }
 
     private static EncounterTuningPreviewResult emptyTuningPreview() {

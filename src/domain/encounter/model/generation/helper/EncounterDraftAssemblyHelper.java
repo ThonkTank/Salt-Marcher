@@ -5,8 +5,6 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import src.domain.encounter.model.generation.helper.EncounterDifficultyMathHelper;
-import src.domain.encounter.model.generation.helper.EncounterSearchPoolHelper;
 import src.domain.encounter.model.generation.model.EncounterCandidateProfile;
 import src.domain.encounter.model.generation.model.EncounterDifficultyIntent;
 import src.domain.encounter.model.generation.model.EncounterDraft;

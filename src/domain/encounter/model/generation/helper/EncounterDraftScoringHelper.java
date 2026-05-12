@@ -28,7 +28,7 @@ public final class EncounterDraftScoringHelper {
         score += scoreRoleSynergy(composition.roles());
         score += scoreSelectionWeights(composition);
         score += scoreCompositionPenalties(composition);
-        score += EncounterTuningTargetHelper.score(composition, context.tuning(), context.partySize());
+        score += EncounterTuningScoreHelper.score(composition, context.tuning(), context.partySize());
         return score;
     }
 

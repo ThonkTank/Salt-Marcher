@@ -91,15 +91,32 @@ public final class LoadEncounterPlanBudgetUseCase {
         return adjustedXp <= 0 ? "" : "Easy";
     }
 
-    public record Result(
-            EncounterPlanBudgetStatus status,
-            @Nullable EncounterPlanBudgetSummary summary,
-            String message
-    ) {
+    public static final class Result {
 
-        public Result {
-            status = status == null ? EncounterPlanBudgetStatus.STORAGE_ERROR : status;
-            message = message == null ? "" : message;
+        private final EncounterPlanBudgetStatus status;
+        private final @Nullable EncounterPlanBudgetSummary summary;
+        private final String message;
+
+        public Result(
+                EncounterPlanBudgetStatus status,
+                @Nullable EncounterPlanBudgetSummary summary,
+                String message
+        ) {
+            this.status = status == null ? EncounterPlanBudgetStatus.STORAGE_ERROR : status;
+            this.summary = summary;
+            this.message = message == null ? "" : message;
+        }
+
+        public EncounterPlanBudgetStatus status() {
+            return status;
+        }
+
+        public @Nullable EncounterPlanBudgetSummary summary() {
+            return summary;
+        }
+
+        public String message() {
+            return message;
         }
 
         static Result success(EncounterPlanBudgetSummary summary) {

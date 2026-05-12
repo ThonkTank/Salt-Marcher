@@ -1,8 +1,6 @@
 package src.domain.encounter.model.generation.helper;
 
 import java.util.List;
-import src.domain.encounter.model.generation.helper.EncounterDifficultyTargetHelper;
-import src.domain.encounter.model.generation.helper.EncounterDraftScoringHelper;
 import src.domain.encounter.model.generation.model.EncounterDifficultyIntent;
 import src.domain.encounter.model.generation.model.EncounterDraft;
 import src.domain.encounter.model.generation.model.EncounterDraftBuildRequest;
