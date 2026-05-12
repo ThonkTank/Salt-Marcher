@@ -41,7 +41,7 @@ Unified focused bundle entrypoint:
 
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
-| `domain-port-ownership-and-signature-boundary` | Enforced | every `*Port.java` under `src/domain/**` | domain-port bundle Error Prone `DomainPortRoleBoundary` | `./gradlew compileJava` and `./gradlew checkDomainEnforcement` | Ports reference only foreign `published/**`, same-context `UseCase`, same-context `Model`, same-context `Constants`, passive platform types, and their own nested types. This does not prove that the port vocabulary or follow-up workflow is semantically right. |
+| `domain-port-ownership-and-signature-boundary` | Enforced | every `*Port.java` under `src/domain/**` | domain-port bundle Error Prone `DomainPortRoleBoundary` | `./gradlew checkDomainEnforcement` | Ports do not reference forbidden domain roles, known outer-layer types, or executable protocol types. This does not prove that the port vocabulary or follow-up workflow is semantically right. |
 | `domain-port-published-listener-boundary` | Review-Owned | every `Port` collaboration surface | none | none | Ports listen only to foreign `published/**` state and turn those updates into same-context `UseCase` work. |
 
 ### Review-Owned

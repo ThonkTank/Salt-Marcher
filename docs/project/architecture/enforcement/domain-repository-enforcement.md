@@ -38,7 +38,7 @@ Unified focused bundle entrypoint:
 
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
-| `domain-repository-foreign-applicationservice-routing-only` | Enforced | every domain repository under `src/domain/**` | domain-repository bundle Error Prone `DomainRepositoryRoleBoundary` | `./gradlew compileJava` and `./gradlew checkDomainEnforcement` | Repositories reference only foreign root `ApplicationService` boundaries, same-context `Model`, same-context `Constants`, same-context repository-local types, passive platform types, and their own nested types. This does not prove that each outbound call is semantically necessary or correctly named. |
+| `domain-repository-foreign-applicationservice-routing-only` | Enforced | every domain repository under `src/domain/**` | domain-repository bundle Error Prone `DomainRepositoryRoleBoundary` | `./gradlew checkDomainEnforcement` | Repositories do not reference forbidden domain roles, known outer-layer types, or executable protocol types. This does not prove that each outbound call is semantically necessary or correctly named. |
 
 ## References
 

@@ -353,7 +353,7 @@ public final class DocumentationCoverageCatalog {
                             row("domain-helper-no-current-context-access", "Review-Owned"),
                             row("domain-helper-constants-only-downward-dependency", "Enforced",
                                     List.of("domain-helper bundle Error Prone", "DomainHelperRoleBoundary"),
-                                    List.of("./gradlew compileJava", "./gradlew checkDomainEnforcement"))))),
+                                    List.of("./gradlew checkDomainEnforcement"))))),
             Map.entry("domainLayer", spec(
                     "docs/project/architecture/enforcement/domain-layer-enforcement.md",
                     "domain-enforcement-coverage-complete",
@@ -455,7 +455,7 @@ public final class DocumentationCoverageCatalog {
                     rows(
                             row("domain-model-dynamic-state-ownership", "Enforced",
                                     List.of("domain-model bundle Error Prone", "DomainModelRoleBoundary"),
-                                    List.of("./gradlew compileJava", "./gradlew checkDomainEnforcement")),
+                                    List.of("./gradlew checkDomainEnforcement")),
                             row("domain-model-tree-placement", "Enforced",
                                     List.of("domain-model bundle build-harness", "DomainModelTopologyRules"),
                                     List.of("./gradlew checkDomainEnforcement")),
@@ -524,7 +524,7 @@ public final class DocumentationCoverageCatalog {
                             row("domain-port-no-foreign-mutation-or-data-seam", "Review-Owned"),
                             row("domain-port-ownership-and-signature-boundary", "Enforced",
                                     List.of("domain-port bundle Error Prone", "DomainPortRoleBoundary"),
-                                    List.of("./gradlew compileJava", "./gradlew checkDomainEnforcement")),
+                                    List.of("./gradlew checkDomainEnforcement")),
                             row("domain-port-published-listener-boundary", "Review-Owned"),
                             row("domain-port-domain-language", "Review-Owned")))),
             Map.entry("domainRepository", spec(
@@ -543,7 +543,7 @@ public final class DocumentationCoverageCatalog {
                             row("domain-repository-no-src-data-type-leaks", "Review-Owned"),
                             row("domain-repository-foreign-applicationservice-routing-only", "Enforced",
                                     List.of("domain-repository bundle Error Prone", "DomainRepositoryRoleBoundary"),
-                                    List.of("./gradlew compileJava", "./gradlew checkDomainEnforcement"))))),
+                                    List.of("./gradlew checkDomainEnforcement"))))),
             Map.entry("domainUseCase", spec(
                     "docs/project/architecture/enforcement/domain-use-case-enforcement.md",
                     "domain-enforcement-coverage-complete",
