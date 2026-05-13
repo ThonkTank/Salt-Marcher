@@ -222,8 +222,9 @@ and
 [View Styling Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/styling-view-enforcement.md:1).
 The canonical styling-layer bundle proof route is
 `./gradlew checkStylingEnforcement`; it aggregates the stylesheet,
-selector, bundle-local stylesheet-owner, PMD inline-style, and compile-side
-programmatic-styling checks for the layer itself.
+selector, bundle-local stylesheet-owner, compile-side inline-style,
+manual-node-layout styling, and programmatic-styling checks for the layer
+itself.
 The dedicated passive-`View` direct-render placement proof route is
 `./gradlew checkStylingEnforcement`; centralized stylesheet ownership and
 selector vocabulary remain available through the separate layer-wide direct

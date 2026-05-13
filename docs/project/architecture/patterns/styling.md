@@ -22,6 +22,11 @@ its own inline presentation rules.
   selectors. Dynamic selector construction is forbidden.
 - Active application code under `bootstrap/`, `shell/`, and `src/` must not use
   `setStyle(...)`.
+- Passive `View` code must not author ordinary node layout styling through
+  local `Insets`, padding, spacing, gap, or fixed visual size setters. Those
+  visual rules belong in centrally owned style-class selectors. Table-column
+  sizing and layout-growth sentinels may remain in Java when they express
+  control mechanics rather than visual truth.
 - View code should express presentation through style classes and shared
   selectors in the central stylesheet set.
 - Direct rendering in passive Views is allowed, including `Canvas`,
@@ -52,14 +57,15 @@ The current blocking proof surfaces are `checkStylingEnforcement`,
 `checkStylingEnforcement` is the canonical public styling entrypoint. It
 aggregates the centralized stylesheet-owner, stylesheet-file,
 selector-resolution, broad `ViewProgrammaticStyling` compile surfaces, and the
-passive-`View` direct-render styling placement proof. The `setStyle(...)`
-backchannel rule is currently review-owned rather than mechanically blocked.
-Its direct-render `ViewDirectRenderStylingPlacement` compiler rule, which also
-blocks `compileJava`, proves only that local JavaFX styling values appear in
-passive `View` code solely inside the documented direct-render exception. The
-remaining passive-`View` direct-render-value derivation and "no local visual
-system" semantics remain review-owned until the repository adopts a dedicated
-central-token or equivalent non-CSS proof surface.
+passive-`View` direct-render styling placement proof. Its compile-side
+`ViewManualNodeStyling` rule blocks `setStyle(...)` and passive-`View` manual
+ordinary-node layout styling. Its direct-render
+`ViewDirectRenderStylingPlacement` compiler rule, which also blocks
+`compileJava`, proves only that local JavaFX paint/font/stroke style values
+appear in passive `View` code solely inside the documented direct-render
+exception. The remaining passive-`View` direct-render-value derivation and "no
+local visual system" semantics remain review-owned until the repository adopts
+a dedicated central-token or equivalent non-CSS proof surface.
 
 ## References
 

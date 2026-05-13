@@ -291,7 +291,7 @@ fun standardEnforcementBundleDescriptors(): List<EnforcementBundleDescriptor> = 
     )),
     bundle("stylingLayer", 8) {
         selectorTask("Internal selector for the centralized styling-layer enforcement bundle.")
-        errorProneCheckers(listOf("ViewProgrammaticStyling"))
+        errorProneCheckers(listOf("ViewManualNodeStyling", "ViewProgrammaticStyling"))
         verificationSources(listOf("shell", "src"), listOf("api/**/*.java", "view/**/*ContributionModel.java", "view/**/*ContentModel.java", "view/**/*PresentationModel.java", "view/**/*ViewModel.java", "view/**/*View.java", "view/**/*ViewInputEvent.java", "view/**/*InspectorEntry.java", "view/**/*PointerEvent.java", "view/**/*Scene.java", "view/**/*Signal.java", "view/**/*Support.java", "domain/**/published/**/*.java"))
         utilityTask("checkCentralizedStylesheets", EnforcementUtilityTaskKind.CENTRALIZED_STYLESHEETS)
         utilityTask("checkStylingCentralStylesheetOwner", EnforcementUtilityTaskKind.STYLING_CENTRAL_STYLESHEET_OWNER)
