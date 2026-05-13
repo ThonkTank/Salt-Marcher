@@ -137,10 +137,11 @@ wrapper-owned runtime flags again through the extra-args channel, the runtime
 wrapper ignores them and logs the filtered arguments instead of forwarding
 duplicate built-in Gradle options.
 
-Before Gradle starts, the staged wrapper performs a local-socket runtime
-preflight so environments without required IPv4 bind support fail early with
-an explicit runtime diagnostic instead of surfacing a late internal Gradle
-startup error.
+When Gradle startup fails with a known environment problem, the observable
+runtime wrapper emits a post-failure diagnostic hint from the captured log. For
+example, environments without required IPv4 bind support are reported as an
+environment issue rather than a checker failure. This hint is not a pre-Gradle
+socket preflight.
 
 ## Parallel Local Worktrees
 

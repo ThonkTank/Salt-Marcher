@@ -71,22 +71,25 @@ internal fun Project.registerQualityConventionLifecycleTasks(
         reportFile.set(cpdReportFile)
     }
 
-    tasks.register<PmdSourceCheckTask>("pmdStrictMain") {
+    val pmdMain = tasks.named<Pmd>("pmdMain")
+    val pmdStrictMain = tasks.register<PmdSourceCheckTask>("pmdStrictMain") {
         group = LifecycleBasePlugin.VERIFICATION_GROUP
         description = "Derive the text-first PMD source-smell report from the pmdMain XML report."
-        dependsOn(tasks.named("pmdMain"))
+        dependsOn(pmdMain)
         projectRoot.set(layout.projectDirectory)
-        xmlReportFile.set(layout.buildDirectory.file("reports/pmd/main.xml"))
+        xmlReportFile.set(
+            layout.file(pmdMain.map { pmdTask -> pmdTask.reports.xml.outputLocation.get().asFile })
+        )
         reportFile.set(layout.buildDirectory.file("reports/pmd/main-strict.txt"))
     }
 
-    tasks.named<Pmd>("pmdMain") {
+    pmdMain.configure {
         dependsOn(gradle.includedBuild("quality-rules").task(":jar"))
         source = verificationLayout.sourceJavaRoots.asFileTree
         include("**/*.java")
         classpath = files(configurations.named("compileClasspath"))
         ignoreFailures = true
-        finalizedBy(tasks.named("pmdStrictMain"))
+        finalizedBy(pmdStrictMain)
     }
 
     tasks.named<Pmd>("pmdTest") {
