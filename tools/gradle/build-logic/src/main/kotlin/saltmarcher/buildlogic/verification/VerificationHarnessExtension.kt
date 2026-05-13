@@ -63,12 +63,20 @@ internal open class VerificationHarnessExtension(
         return project.tasks.named<JavaCompile>(compileJavaTaskName(sourceSetName)) {
             group = LifecycleBasePlugin.VERIFICATION_GROUP
             description = taskDescription
+            setSource(project.files(roots).asFileTree.matching {
+                includes.forEach(::include)
+                exclude("**/build/**")
+            })
             options.sourcepath = sourceJavaRoots
             destinationDirectory.set(project.layout.buildDirectory.dir("classes/java/verification/$bundleId"))
             if (checkerNames.isEmpty()) {
                 options.errorprone.enabled.set(false)
             } else {
-                apply(configureCommonErrorProneOptions)
+                dependsOn(project.gradle.includedBuild("quality-rules-errorprone").task(":jar"))
+                options.errorprone.enabled.set(true)
+                options.errorprone.disableWarningsInGeneratedCode.set(true)
+                options.errorprone.disableAllChecks.set(true)
+                options.compilerArgs.add("-XDaddTypeAnnotationsToSymbol=true")
                 checkerNames.forEach(options.errorprone::error)
             }
         }

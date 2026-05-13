@@ -23,11 +23,17 @@ class SaltmarcherRootSettingsPlugin : Plugin<Settings> {
             .toSet()
         val broadBuildTaskNames = standardBroadBuildTaskNames()
         val internalSelectorTaskToBundleId = bundleCatalog.selectorTaskToBundleId
+        val focusedCompileTaskToBundleId = bundleCatalog.descriptorsById.values
+            .filter { descriptor -> descriptor.requiresFocusedCompile() }
+            .associate { descriptor ->
+                focusedCompileTaskName(descriptor.bundleId) to descriptor.bundleId
+            }
         val publicSurfaceTaskNames = publicVerificationSurfaceCatalog.taskToBundleIds.keys
         val requestedBundleIds = requestedTaskNames
             .flatMap { taskName ->
                 publicVerificationSurfaceCatalog.taskToBundleIds[taskName]
                     ?: internalSelectorTaskToBundleId[taskName]?.let(::listOf)
+                    ?: focusedCompileTaskToBundleId[taskName]?.let(::listOf)
                     ?: emptyList()
             }
             .distinct()
@@ -35,7 +41,9 @@ class SaltmarcherRootSettingsPlugin : Plugin<Settings> {
             requestedBundleIds.isNotEmpty() &&
             requestedTaskNames.none { taskName -> taskName in broadBuildTaskNames } &&
             requestedTaskNames.all { taskName ->
-                taskName in internalSelectorTaskToBundleId.keys || taskName in publicSurfaceTaskNames
+                taskName in internalSelectorTaskToBundleId.keys ||
+                    taskName in focusedCompileTaskToBundleId.keys ||
+                    taskName in publicSurfaceTaskNames
             }
         val activeEnforcementBundleIds = if (focusedEnforcementBundleMode) {
             bundleCatalog.expandedBundleIds(requestedBundleIds)
@@ -71,6 +79,9 @@ private fun standardBroadBuildTaskNames(): Set<String> = setOf(
     "run",
     "test"
 )
+
+private fun focusedCompileTaskName(bundleId: String): String =
+    "compile${bundleId.replaceFirstChar(Char::uppercaseChar)}VerificationJava"
 
 private fun findRepositoryRoot(startDirectory: File): File {
     return generateSequence(startDirectory.canonicalFile) { directory -> directory.parentFile }

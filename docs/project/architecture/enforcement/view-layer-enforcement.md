@@ -31,13 +31,13 @@ Focused bundle entrypoint:
 
 - `./gradlew checkViewEnforcement --console=plain` runs the currently
   active closed-world view-layer topology checks. The focused role tasks
-  `checkViewEnforcement`, `checkViewEnforcement`,
-  `checkViewEnforcement`, `checkViewEnforcement`,
-  `checkViewEnforcement`, `checkViewEnforcement`,
-  and `checkViewEnforcement` consume that same topology proof
-  transitively before their compile-bound role checks run. `checkViewEnforcement`,
-  `check`, and `build` include the same layer-focused proof surface
-  transitively.
+  `verifyViewLayerBundle`, `verifyViewBundle`, `verifyViewInputEventBundle`,
+  `verifyViewBinderBundle`, `verifyViewContributionBundle`,
+  `verifyViewContributionModelBundle`, `verifyViewContentModelBundle`, and
+  `verifyViewIntentHandlerBundle` consume that same topology proof transitively
+  before their compile-bound role checks run.
+  `checkViewEnforcement`, `check`, and `build` include the same layer-focused
+  proof surface transitively.
 
 Rows below are interpreted only relative to the
 [View Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/view-layer.md:1).

@@ -346,7 +346,7 @@ fun standardEnforcementBundleDescriptors(): List<EnforcementBundleDescriptor> = 
     bundle("domainLayer", 12) {
         selectorTask("Internal selector for the dedicated Domain Layer enforcement bundle.")
         errorProneCheckers(listOf("DomainForbiddenInfrastructureDependency", "DomainModuleNoPublishedCarrierDependency", "DomainSourceTopologyPerimeter"))
-        verificationSources(listOf("src"), listOf("domain/**/*.java"))
+        verificationSources(listOf("."), listOf("src/domain/**/*.java"))
         archunit("domainLayerArchitectureTest", "Run only the Domain Layer-focused architecture test suite.", focusedArchunitIncludes, listOf("architecture/domain/layer/**"))
         buildHarnessArchitectureRules(listOf("saltmarcher.architecture.domain.layer.DomainLayerTopologyRules"))
         buildHarnessDocumentationCoverageSpecs(listOf("domainLayer"))
@@ -364,9 +364,10 @@ fun standardEnforcementBundleDescriptors(): List<EnforcementBundleDescriptor> = 
         selectorTask("Internal selector for the dedicated Domain UseCase enforcement bundle.")
         errorProneCheckers(listOf(
             "DomainApplicationNoSameContextPublishedDependency",
+            "DomainRootUseCaseNoRootUseCaseChains",
             "DomainRootUseCaseCrossModelFamilyBoundary",
             "DomainUseCaseRoleBoundary"))
-        verificationSources(listOf("src"), listOf("domain/**/*.java"))
+        verificationSources(listOf("."), listOf("src/domain/**/*.java"))
         buildHarnessArchitectureRules(listOf("saltmarcher.architecture.domain.usecase.DomainUseCaseTopologyRules"))
         buildHarnessDocumentationCoverageSpecs(listOf("domainUseCase"))
         buildHarnessTopologyTask("domainUseCaseTopologyCheck")
@@ -374,8 +375,12 @@ fun standardEnforcementBundleDescriptors(): List<EnforcementBundleDescriptor> = 
     },
     bundle("domainApplicationService", 14) {
         selectorTask("Internal selector for the dedicated Domain ApplicationService enforcement bundle.")
-        errorProneCheckers(listOf("DomainApplicationServiceApiShape", "DomainPublicBoundarySignaturePurity", "DomainApplicationServiceRoleBoundary"))
-        verificationSources(listOf("src"), listOf("domain/**/*.java"))
+        errorProneCheckers(listOf(
+            "DomainApplicationServiceApiShape",
+            "DomainPublicBoundarySignaturePurity",
+            "DomainApplicationServiceRoleBoundary",
+            "DomainApplicationServiceThinRouter"))
+        verificationSources(listOf("."), listOf("src/domain/**/*.java"))
         buildHarnessArchitectureRules(listOf("saltmarcher.architecture.domain.applicationservice.DomainApplicationServiceTopologyRules"))
         buildHarnessDocumentationRules(listOf("saltmarcher.architecture.domain.applicationservice.DomainApplicationServiceDocumentationRules"))
         buildHarnessDocumentationCoverageSpecs(listOf("domainApplicationService"))
@@ -385,7 +390,7 @@ fun standardEnforcementBundleDescriptors(): List<EnforcementBundleDescriptor> = 
     bundle("domainPublished", 14) {
         selectorTask("Internal selector for the dedicated Domain Published enforcement bundle.")
         errorProneCheckers(listOf("DomainPublishedCarrierShape", "DomainPublishedBoundarySignaturePurity", "DomainPublishedReadModelShape", "DomainPublishedOwnershipBoundary"))
-        verificationSources(listOf("src"), listOf("domain/**/*.java"))
+        verificationSources(listOf("."), listOf("src/domain/**/*.java"))
         buildHarnessArchitectureRules(listOf("saltmarcher.architecture.domain.published.DomainPublishedTopologyRules"))
         buildHarnessDocumentationCoverageSpecs(listOf("domainPublished"))
         buildHarnessTopologyTask("domainPublishedTopologyCheck")
@@ -394,7 +399,7 @@ fun standardEnforcementBundleDescriptors(): List<EnforcementBundleDescriptor> = 
     bundle("domainPort", 15) {
         selectorTask("Internal selector for the focused Domain Port enforcement bundle.")
         errorProneCheckers(listOf("DomainPortRoleBoundary"))
-        verificationSources(listOf("src"), listOf("domain/**/*.java"))
+        verificationSources(listOf("."), listOf("src/domain/**/*.java"))
         buildHarnessArchitectureRules(listOf("saltmarcher.architecture.domain.port.DomainPortTopologyRules"))
         buildHarnessDocumentationCoverageSpecs(listOf("domainPort"))
         buildHarnessTopologyTask("domainPortTopologyCheck")
@@ -413,7 +418,7 @@ fun standardEnforcementBundleDescriptors(): List<EnforcementBundleDescriptor> = 
     bundle("domainModel", 16) {
         selectorTask("Internal selector for the dedicated Domain Model enforcement bundle.")
         errorProneCheckers(listOf("DomainModelRoleBoundary"))
-        verificationSources(listOf("src"), listOf("domain/**/*.java"))
+        verificationSources(listOf("."), listOf("src/domain/**/*.java"))
         buildHarnessArchitectureRules(listOf("saltmarcher.architecture.domain.model.DomainModelTopologyRules"))
         buildHarnessDocumentationCoverageSpecs(listOf("domainModel"))
         buildHarnessTopologyTask("domainModelTopologyCheck")
@@ -432,7 +437,7 @@ fun standardEnforcementBundleDescriptors(): List<EnforcementBundleDescriptor> = 
     bundle("domainHelper", 17) {
         selectorTask("Internal selector for the dedicated Domain Helper enforcement bundle.")
         errorProneCheckers(listOf("DomainHelperRoleBoundary"))
-        verificationSources(listOf("src"), listOf("domain/**/*.java"))
+        verificationSources(listOf("."), listOf("src/domain/**/*.java"))
         buildHarnessArchitectureRules(listOf("saltmarcher.architecture.domain.helper.DomainHelperTopologyRules"))
         buildHarnessDocumentationCoverageSpecs(listOf("domainHelper"))
         buildHarnessTopologyTask("domainHelperTopologyCheck")
@@ -485,7 +490,7 @@ fun standardEnforcementBundleDescriptors(): List<EnforcementBundleDescriptor> = 
     bundle("domainConstants", 18) {
         selectorTask("Internal selector for the dedicated Domain Constants enforcement bundle.")
         errorProneCheckers(listOf("DomainConstantsRoleBoundary"))
-        verificationSources(listOf("src"), listOf("domain/**/*.java"))
+        verificationSources(listOf("."), listOf("src/domain/**/*.java"))
         buildHarnessArchitectureRules(listOf("saltmarcher.architecture.domain.constants.DomainConstantsTopologyRules"))
         buildHarnessDocumentationCoverageSpecs(listOf("domainConstants"))
         buildHarnessTopologyTask("domainConstantsTopologyCheck")
@@ -493,8 +498,8 @@ fun standardEnforcementBundleDescriptors(): List<EnforcementBundleDescriptor> = 
     },
     bundle("domainRepository", 19) {
         selectorTask("Internal selector for the dedicated Domain Repository enforcement bundle.")
-        errorProneCheckers(listOf("DomainRepositoryRoleBoundary"))
-        verificationSources(listOf("src"), listOf("domain/**/*.java"))
+        errorProneCheckers(listOf("DomainRepositoryRoleBoundary", "DomainRepositoryPublishedStateBoundary"))
+        verificationSources(listOf("."), listOf("src/domain/**/*.java"))
         buildHarnessArchitectureRules(listOf("saltmarcher.architecture.domain.repository.DomainRepositoryTopologyRules"))
         buildHarnessDocumentationCoverageSpecs(listOf("domainRepository"))
         buildHarnessTopologyTask("domainRepositoryTopologyCheck")

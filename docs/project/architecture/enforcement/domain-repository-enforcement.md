@@ -33,6 +33,7 @@ Unified focused bundle entrypoint:
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
 | `domain-repository-no-src-data-type-leaks` | Review-Owned | every repository under `src/domain/**` | none | none | Repositories do not expose `src.data/**` types or foreign published carriers through signatures or broader role concerns. |
+| `domain-repository-no-same-context-published-state-channel` | Enforced | every repository under `src/domain/**` | domain-repository bundle Error Prone `DomainRepositoryPublishedStateBoundary` | `./gradlew compileJava` and `./gradlew checkDomainEnforcement` | Repositories do not replace same-context `published/*Model` readback with `publish*` methods or `Object` payload channels. |
 
 ### Communication Contract
 
@@ -45,3 +46,4 @@ Unified focused bundle entrypoint:
 - [Domain Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/domain-layer.md:1)
 - [Data Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/data-layer.md:1)
 - [Domain Port Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/domain-port-enforcement.md:1)
+- [Spring Modulith Fundamentals](/home/aaron/Schreibtisch/projects/references/architecture-patterns/sessionplanner-gate-model/spring-modulith-fundamentals.md:1)
