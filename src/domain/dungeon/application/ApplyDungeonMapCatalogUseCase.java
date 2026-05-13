@@ -32,21 +32,16 @@ public final class ApplyDungeonMapCatalogUseCase {
     }
 
     public void createMap(String mapName) {
-        publishedStateRepository.publishMapCatalogMutation(
-                DungeonPublishedStateRepository.CatalogMutationKind.CREATED,
-                createDungeonMapUseCase.execute(mapName).mapId());
+        publishedStateRepository.publishMapCreated(createDungeonMapUseCase.execute(mapName).mapId());
     }
 
     public void renameMap(@Nullable DungeonMapIdentity mapId, String mapName) {
-        publishedStateRepository.publishMapCatalogMutation(
-                DungeonPublishedStateRepository.CatalogMutationKind.RENAMED,
+        publishedStateRepository.publishMapRenamed(
                 renameDungeonMapUseCase.execute(effectiveId(mapId), mapName).mapId());
     }
 
     public void deleteMap(@Nullable DungeonMapIdentity mapId) {
-        publishedStateRepository.publishMapCatalogMutation(
-                DungeonPublishedStateRepository.CatalogMutationKind.DELETED,
-                deleteDungeonMapUseCase.execute(effectiveId(mapId)));
+        publishedStateRepository.publishMapDeleted(deleteDungeonMapUseCase.execute(effectiveId(mapId)));
     }
 
     private static DungeonMapIdentity effectiveId(@Nullable DungeonMapIdentity mapId) {

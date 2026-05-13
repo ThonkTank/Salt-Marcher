@@ -30,6 +30,11 @@ public final class DataServiceContributionConstructionPurityChecker extends BugC
             return Description.NO_MATCH;
         }
         String featureName = rootMatcher.group(1);
+        if (!DataServiceContributionArchitectureSupport.isServiceCompositionOwner(tree, featureName)) {
+            return Description.NO_MATCH;
+        }
+        String compositionOwner = packageName + "."
+                + DataServiceContributionArchitectureSupport.topLevelSimpleName(tree);
 
         List<String> violations = new ArrayList<>();
         new TreePathScanner<Void, Void>() {
@@ -39,11 +44,16 @@ public final class DataServiceContributionConstructionPurityChecker extends BugC
                 if (symbol == null) {
                     return super.visitMethodInvocation(methodInvocation, unused);
                 }
-                if ("register".contentEquals(symbol.getSimpleName())
+                if (isServiceRegistryRegistration(symbol)
                         && SERVICE_REGISTRY_BUILDER.equals(ownerTypeName(symbol))) {
                     return super.visitMethodInvocation(methodInvocation, unused);
                 }
                 String ownerTypeName = ownerTypeName(symbol);
+                if (isAllowedCompositionOwnerCall(ownerTypeName, packageName, compositionOwner)
+                        || isAllowedPublishedStateCarrierCall(ownerTypeName, featureName)
+                        || !isForbiddenRootCall(ownerTypeName, featureName)) {
+                    return super.visitMethodInvocation(methodInvocation, unused);
+                }
                 if (isForbiddenRootCall(ownerTypeName, featureName)) {
                     violations.add(methodInvocation + " -> " + ownerTypeName);
                 }
@@ -77,6 +87,34 @@ public final class DataServiceContributionConstructionPurityChecker extends BugC
                 || ownerTypeName.startsWith("java.net.http.")
                 || ownerTypeName.startsWith("okhttp3.")
                 || ownerTypeName.startsWith("retrofit2.");
+    }
+
+    private static boolean isServiceRegistryRegistration(Symbol symbol) {
+        return "register".contentEquals(symbol.getSimpleName())
+                || "registerFactory".contentEquals(symbol.getSimpleName());
+    }
+
+    private static boolean isAllowedCompositionOwnerCall(
+            String ownerTypeName,
+            String packageName,
+            String compositionOwner) {
+        if (ownerTypeName == null) {
+            return false;
+        }
+        String samePackagePrefix = packageName + ".";
+        String simpleOwnerName = ownerTypeName.startsWith(samePackagePrefix)
+                ? ownerTypeName.substring(samePackagePrefix.length())
+                : ownerTypeName;
+        return ownerTypeName.equals(compositionOwner)
+                || ownerTypeName.startsWith(compositionOwner + "$")
+                || ownerTypeName.startsWith(compositionOwner + ".")
+                || simpleOwnerName.endsWith("ServiceAssembly")
+                || simpleOwnerName.contains("ServiceAssembly$");
+    }
+
+    private static boolean isAllowedPublishedStateCarrierCall(String ownerTypeName, String featureName) {
+        return ownerTypeName.startsWith("src.data." + featureName + ".state.")
+                && ownerTypeName.endsWith("PublishedStateCarrier");
     }
 
     private static String ownerTypeName(Symbol symbol) {

@@ -1,10 +1,8 @@
 package src.data.dungeon.repository;
 
 import java.util.List;
-import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.application.SearchDungeonMapsUseCase;
 import src.domain.dungeon.model.map.model.DungeonMapIdentity;
-import src.domain.dungeon.model.map.repository.DungeonPublishedStateRepository;
 import src.domain.dungeon.published.DungeonMapCatalogResponse;
 import src.domain.dungeon.published.DungeonMapSummary;
 
@@ -17,11 +15,16 @@ final class DungeonPublishedMapCatalogProjector {
                 .toList());
     }
 
-    DungeonMapCatalogResponse mutation(
-            DungeonPublishedStateRepository.CatalogMutationKind mutationKind,
-            @Nullable DungeonMapIdentity mapId
-    ) {
-        return new DungeonMapCatalogResponse.MapMutation(mutationKind(mutationKind), DungeonPublishedStateValues.id(mapId));
+    DungeonMapCatalogResponse created(DungeonMapIdentity mapId) {
+        return mutation(DungeonMapCatalogResponse.MutationKind.CREATED, mapId);
+    }
+
+    DungeonMapCatalogResponse renamed(DungeonMapIdentity mapId) {
+        return mutation(DungeonMapCatalogResponse.MutationKind.RENAMED, mapId);
+    }
+
+    DungeonMapCatalogResponse deleted(DungeonMapIdentity mapId) {
+        return mutation(DungeonMapCatalogResponse.MutationKind.DELETED, mapId);
     }
 
     private static DungeonMapSummary summary(SearchDungeonMapsUseCase.MapSummary summary) {
@@ -31,13 +34,10 @@ final class DungeonPublishedMapCatalogProjector {
                 DungeonPublishedStateValues.revision(summary.revision()));
     }
 
-    private static DungeonMapCatalogResponse.MutationKind mutationKind(
-            DungeonPublishedStateRepository.CatalogMutationKind mutationKind
+    private static DungeonMapCatalogResponse mutation(
+            DungeonMapCatalogResponse.MutationKind mutationKind,
+            DungeonMapIdentity mapId
     ) {
-        return switch (mutationKind) {
-            case CREATED -> DungeonMapCatalogResponse.MutationKind.CREATED;
-            case RENAMED -> DungeonMapCatalogResponse.MutationKind.RENAMED;
-            case DELETED -> DungeonMapCatalogResponse.MutationKind.DELETED;
-        };
+        return new DungeonMapCatalogResponse.MapMutation(mutationKind, DungeonPublishedStateValues.id(mapId));
     }
 }

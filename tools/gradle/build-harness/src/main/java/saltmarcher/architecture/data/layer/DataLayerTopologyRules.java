@@ -47,9 +47,11 @@ public final class DataLayerTopologyRules implements ArchitectureRule {
 
         if (segments.size() == 4) {
             String feature = segments.get(2);
-            if (!isFeatureFileName(feature, sourceFile.fileName(), "ServiceContribution")) {
+            if (!isFeatureFileName(feature, sourceFile.fileName(), "ServiceContribution")
+                    && !isFeatureFileName(feature, sourceFile.fileName(), "ServiceAssembly")) {
                 violations.add(sourceFile.relativePath(), "data-root-service-contribution-only",
-                        "Only <PascalFeatureName>ServiceContribution.java may live directly under src/data/<feature>/.");
+                        "Only <PascalFeatureName>ServiceContribution.java and its package-local"
+                                + " <PascalFeatureName>ServiceAssembly.java may live directly under src/data/<feature>/.");
             }
             return;
         }

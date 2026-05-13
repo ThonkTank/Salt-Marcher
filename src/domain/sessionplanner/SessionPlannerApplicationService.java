@@ -4,7 +4,6 @@ import java.util.Objects;
 import src.domain.sessionplanner.model.session.usecase.CreateSessionPlanUseCase;
 import src.domain.sessionplanner.published.SessionPlannerActionCommand;
 
-@SuppressWarnings("DomainApplicationServiceRoleBoundary")
 public final class SessionPlannerApplicationService {
 
     private static final String COMMAND_PARAMETER = "command";

@@ -2,16 +2,19 @@ Status: Active
 Owner: SaltMarcher Team
 Last Reviewed: 2026-04-29
 Source of Truth: Complete invariant catalog for the `*ServiceContribution`
-runtime-composition role at data feature roots under `src/data/**`.
+runtime-composition role and its optional owner-local `*ServiceAssembly`
+collaborator at data feature roots under `src/data/**`.
 
 # Data ServiceContribution Enforcement
 
 ## Goal
 
 This document owns the complete architecture-enforcement catalog for the
-data-layer `*ServiceContribution` role itself.
+data-layer `*ServiceContribution` role itself and the narrow owner-local
+`*ServiceAssembly` collaborator it may delegate registration wiring to.
 
-It answers three questions for every data-root `*ServiceContribution.java`:
+It answers three questions for every data-root `*ServiceContribution.java` and
+optional same-feature `*ServiceAssembly.java`:
 
 - what the role MUST contain
 - what the role MUST NOT contain
@@ -47,17 +50,17 @@ Unified focused bundle entrypoint:
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
 | `data-service-contribution-no-source-mechanics` | Review-Owned | every data-root `*ServiceContribution.java` under `src/data/**` | none | none | A data service contribution does not reference narrow concrete source APIs such as JDBC, file, HTTP-client, or filesystem packages. |
-| `data-service-contribution-construction-purity` | Enforced | every data-root `*ServiceContribution.java` under `src/data/**` | data-service-contribution bundle Error Prone `DataServiceContributionConstructionPurity` | `./gradlew compileJava` and `./gradlew checkDataEnforcement` | A data service contribution performs constructor wiring and runtime registration only; direct repository/query/gateway/model/mapper/schema method calls and direct source-mechanics calls stay behind adapters. |
+| `data-service-contribution-construction-purity` | Enforced | every data-root `*ServiceContribution.java` and same-feature `*ServiceAssembly.java` under `src/data/**` | data-service-contribution bundle Error Prone `DataServiceContributionConstructionPurity` | `./gradlew compileJava` and `./gradlew checkDataEnforcement` | A data service contribution and its optional owner-local assembly perform constructor wiring and runtime registration only; direct repository/query/gateway/model/mapper/schema method calls and direct source-mechanics calls stay behind adapters. The only owner-local helper call allowed from that root is a same-feature `state/*PublishedStateCarrier` that initializes a published-state repository/model carrier for registration. |
 | `data-service-contribution-no-hidden-business-or-runtime-workflow` | Review-Owned | every data-root `*ServiceContribution.java` under `src/data/**` | none | none | A mechanically legal composition root still does not hide business rules, persistence orchestration, mapping logic, source-query behavior, or a second backend workflow surface inside registration lambdas or factory assembly code. |
 
 ### Communication Contract
 
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
-| `data-service-contribution-shell-runtime-seam-subset` | Enforced | every direct shell dependency from a data-root `*ServiceContribution.java` under `src/data/**` | data-service-contribution bundle Error Prone `DataServiceContributionShellApiAllowlist` | `./gradlew compileJava` and `./gradlew checkDataEnforcement` | A data service contribution communicates directly only through the documented shell runtime seam subset for the role: `shell.api.ServiceContribution` and `shell.api.ServiceRegistry`. It does not depend on `ShellRuntimeContext`, other shell API families, or shell host internals. |
-| `data-service-contribution-register-export-shape` | Enforced | every direct `shell.api.ServiceRegistry.Builder.register(...)` export from a data-root `*ServiceContribution.java` under `src/data/**` | data-service-contribution bundle Error Prone `DataServiceContributionRegisterExportShape` | `./gradlew compileJava` and `./gradlew checkDataEnforcement` | A data service contribution exports direct `register(...)` capabilities only as same-feature root domain `*ApplicationService` command services or same-feature `published/*Model` readback services. It does not export repositories, queries, gateways, mappers, model/schema types, or foreign-feature services through that direct registration path. |
-| `data-service-contribution-factory-export-shape` | Enforced | every runtime capability exported through `shell.api.ServiceRegistry.Builder.registerFactory(...)` from a data-root `*ServiceContribution.java` under `src/data/**` | data-service-contribution bundle Error Prone `DataServiceContributionRegisterExportShape` | `./gradlew compileJava` and `./gradlew checkDataEnforcement` | A data service contribution keeps the same root-boundary export rule for `registerFactory(...)`: exported capability keys stay same-feature root `*ApplicationService` command services or same-feature `published/*Model` readback services and do not become repository, query, gateway, mapper, model/schema, or foreign-feature runtime surfaces. |
-| `data-service-contribution-composition-collaborator-assembly-only` | Review-Owned | every same-feature collaborator that a data-root `*ServiceContribution.java` constructs or wires directly | none | none | A data service contribution may assemble same-feature concrete adapters, ports, and helper collaborators only as composition input for root application-service registration. It does not turn those collaborators into a second direct runtime boundary or a reusable public service surface of the role itself. |
+| `data-service-contribution-shell-runtime-seam-subset` | Enforced | every direct shell dependency from a data-root `*ServiceContribution.java` or same-feature `*ServiceAssembly.java` under `src/data/**` | data-service-contribution bundle Error Prone `DataServiceContributionShellApiAllowlist` | `./gradlew compileJava` and `./gradlew checkDataEnforcement` | A data service contribution and its optional owner-local assembly communicate directly only through the documented shell runtime seam subset for the role: `shell.api.ServiceContribution` and `shell.api.ServiceRegistry`. They do not depend on `ShellRuntimeContext`, other shell API families, or shell host internals. |
+| `data-service-contribution-register-export-shape` | Enforced | every direct `shell.api.ServiceRegistry.Builder.register(...)` export from a data-root `*ServiceContribution.java` or same-feature `*ServiceAssembly.java` under `src/data/**` | data-service-contribution bundle Error Prone `DataServiceContributionRegisterExportShape` | `./gradlew compileJava` and `./gradlew checkDataEnforcement` | A data service contribution and its optional owner-local assembly export direct `register(...)` capabilities only as same-feature root domain `*ApplicationService` command services or same-feature `published/*Model` readback services. They do not export repositories, queries, gateways, mappers, model/schema types, or foreign-feature services through that direct registration path. |
+| `data-service-contribution-factory-export-shape` | Enforced | every runtime capability exported through `shell.api.ServiceRegistry.Builder.registerFactory(...)` from a data-root `*ServiceContribution.java` or same-feature `*ServiceAssembly.java` under `src/data/**` | data-service-contribution bundle Error Prone `DataServiceContributionRegisterExportShape` | `./gradlew compileJava` and `./gradlew checkDataEnforcement` | A data service contribution and its optional owner-local assembly keep the same root-boundary export rule for `registerFactory(...)`: exported capability keys stay same-feature root `*ApplicationService` command services or same-feature `published/*Model` readback services and do not become repository, query, gateway, mapper, model/schema, or foreign-feature runtime surfaces. |
+| `data-service-contribution-composition-collaborator-assembly-only` | Review-Owned | every same-feature collaborator that a data-root `*ServiceContribution.java` or same-feature `*ServiceAssembly.java` constructs or wires directly | none | none | A data service contribution may delegate bulky same-feature constructor wiring to one owner-local assembly. That assembly may assemble same-feature concrete adapters, ports, and helper collaborators only as composition input for root application-service registration. A same-feature `state/*PublishedStateCarrier` may own lazy published-state repository/model initialization, but it is not a discovery root, repository adapter API, or reusable service surface. |
 
 ## References
 
@@ -65,3 +68,6 @@ Unified focused bundle entrypoint:
 - [Layering Architecture Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/layering-architecture.md:1)
 - [Shell Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/shell-layer.md:1)
 - [Data Layer Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/data-layer-enforcement.md:1)
+- [Modular Monolith ProcessingModule Example](/home/aaron/Schreibtisch/projects/references/architecture-patterns/sessionplanner-gate-model/modular-monolith-processing-module.md:1)
+- [Spring Modulith Fundamentals](/home/aaron/Schreibtisch/projects/references/architecture-patterns/sessionplanner-gate-model/spring-modulith-fundamentals.md:1)
+- [Spring Modulith Verification](/home/aaron/Schreibtisch/projects/references/architecture-patterns/sessionplanner-gate-model/spring-modulith-verification.md:1)

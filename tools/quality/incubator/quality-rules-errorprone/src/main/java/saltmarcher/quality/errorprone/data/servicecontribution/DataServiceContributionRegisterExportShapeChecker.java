@@ -37,6 +37,9 @@ public final class DataServiceContributionRegisterExportShapeChecker extends Bug
         }
 
         String feature = packageMatcher.group(1);
+        if (!DataServiceContributionArchitectureSupport.isServiceCompositionOwner(tree, feature)) {
+            return Description.NO_MATCH;
+        }
         String expectedService = "src.domain." + feature + ".*ApplicationService or src.domain."
                 + feature + ".published.*Model";
         List<String> violations = new ArrayList<>();

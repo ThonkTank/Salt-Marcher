@@ -6,7 +6,6 @@ import src.domain.sessionplanner.model.session.usecase.SetSessionRestGapUseCase;
 import src.domain.sessionplanner.published.ClearSessionRestGapCommand;
 import src.domain.sessionplanner.published.SetSessionRestGapCommand;
 
-@SuppressWarnings("DomainApplicationServiceRoleBoundary")
 public final class SessionPlannerRestApplicationService {
 
     private static final String COMMAND_PARAMETER = "command";

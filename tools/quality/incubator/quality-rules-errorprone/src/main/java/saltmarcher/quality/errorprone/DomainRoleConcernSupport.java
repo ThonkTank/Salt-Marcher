@@ -3,6 +3,10 @@ package saltmarcher.quality.errorprone;
 import com.google.errorprone.util.ASTHelpers;
 import com.sun.source.tree.ClassTree;
 import com.sun.source.tree.CompilationUnitTree;
+import com.sun.source.tree.IdentifierTree;
+import com.sun.source.tree.ImportTree;
+import com.sun.source.tree.MemberSelectTree;
+import com.sun.source.tree.MethodInvocationTree;
 import com.sun.source.tree.MethodTree;
 import com.sun.source.tree.Tree;
 import com.sun.source.tree.VariableTree;
@@ -50,6 +54,7 @@ final class DomainRoleConcernSupport {
 
     private record ApplicationServiceCarrierScanContext(
             Symbol.MethodSymbol currentMethod,
+            Symbol legalRootParameter,
             boolean insideLegalRootParameterType
     ) {
     }
@@ -374,17 +379,50 @@ final class DomainRoleConcernSupport {
         new TreeScanner<Void, ApplicationServiceCarrierScanContext>() {
             @Override
             public Void scan(Tree currentTree, ApplicationServiceCarrierScanContext context) {
-                if (currentTree != null
-                        && !isInsideLegalRootParameterType(context)
-                        && !(currentTree instanceof MethodTree)
-                        && !isLegalRootParameterVariable(currentTree, context)) {
-                    addApplicationServicePublishedCarrierViolations(
-                            sourceRole,
-                            DataArchitectureSupport.collectReferencedTypes(currentTree),
-                            "type use " + currentTree.getKind(),
-                            violations);
-                }
                 return super.scan(currentTree, context);
+            }
+
+            @Override
+            public Void visitImport(ImportTree importTree, ApplicationServiceCarrierScanContext context) {
+                return null;
+            }
+
+            @Override
+            public Void visitMethodInvocation(
+                    MethodInvocationTree methodInvocation,
+                    ApplicationServiceCarrierScanContext context) {
+                if (isLegalRootParameterBoundaryRead(methodInvocation, context)) {
+                    return null;
+                }
+                return super.visitMethodInvocation(methodInvocation, context);
+            }
+
+            @Override
+            public Void visitMemberSelect(
+                    MemberSelectTree memberSelect,
+                    ApplicationServiceCarrierScanContext context) {
+                if (isLegalRootParameterBoundaryRead(memberSelect, context)) {
+                    return null;
+                }
+                return super.visitMemberSelect(memberSelect, context);
+            }
+
+            @Override
+            public Void visitIdentifier(
+                    IdentifierTree identifierTree,
+                    ApplicationServiceCarrierScanContext context) {
+                if (!isInsideLegalRootParameterType(context)) {
+                    Symbol symbol = ASTHelpers.getSymbol(identifierTree);
+                    if (symbol != null
+                            && !isLegalRootParameterSymbol(symbol, context)) {
+                        addApplicationServicePublishedCarrierViolations(
+                                sourceRole,
+                                symbol.asType(),
+                                "type use " + identifierTree.getKind(),
+                                violations);
+                    }
+                }
+                return super.visitIdentifier(identifierTree, context);
             }
 
             @Override
@@ -408,7 +446,10 @@ final class DomainRoleConcernSupport {
                                 "method type parameter bound " + methodSymbol.getSimpleName(), violations);
                     }
                 }
-                return super.visitMethod(methodTree, new ApplicationServiceCarrierScanContext(methodSymbol, false));
+                return super.visitMethod(methodTree, new ApplicationServiceCarrierScanContext(
+                        methodSymbol,
+                        legalRootParameter(methodSymbol),
+                        false));
             }
 
             @Override
@@ -422,7 +463,10 @@ final class DomainRoleConcernSupport {
                     boolean legalRootParameter = isLegalApplicationServicePublishedCarrierParameter(
                             symbol, currentMethod);
                     if (legalRootParameter) {
-                        scan(variableTree.getType(), new ApplicationServiceCarrierScanContext(currentMethod, true));
+                        scan(variableTree.getType(), new ApplicationServiceCarrierScanContext(
+                                currentMethod,
+                                symbol,
+                                true));
                         scan(variableTree.getInitializer(), context);
                         return null;
                     }
@@ -435,7 +479,7 @@ final class DomainRoleConcernSupport {
     }
 
     private static ApplicationServiceCarrierScanContext nullContext() {
-        return new ApplicationServiceCarrierScanContext(null, false);
+        return new ApplicationServiceCarrierScanContext(null, null, false);
     }
 
     private static boolean isInsideLegalRootParameterType(ApplicationServiceCarrierScanContext context) {
@@ -451,6 +495,68 @@ final class DomainRoleConcernSupport {
         Symbol symbol = ASTHelpers.getSymbol(variableTree);
         Symbol.MethodSymbol currentMethod = context == null ? null : context.currentMethod();
         return symbol != null && isLegalApplicationServicePublishedCarrierParameter(symbol, currentMethod);
+    }
+
+    private static boolean isLegalRootParameterSymbol(
+            Symbol symbol,
+            ApplicationServiceCarrierScanContext context) {
+        return context != null
+                && context.legalRootParameter() != null
+                && symbol == context.legalRootParameter();
+    }
+
+    private static boolean isLegalRootParameterBoundaryRead(
+            Tree currentTree,
+            ApplicationServiceCarrierScanContext context) {
+        if (context == null || context.legalRootParameter() == null) {
+            return false;
+        }
+        if (currentTree instanceof MethodInvocationTree methodInvocation) {
+            return isRequireNonNullOnLegalRootParameter(methodInvocation, context.legalRootParameter())
+                    || isRootedInLegalRootParameter(methodInvocation.getMethodSelect(), context.legalRootParameter());
+        }
+        if (currentTree instanceof MemberSelectTree memberSelect) {
+            return isRootedInLegalRootParameter(memberSelect.getExpression(), context.legalRootParameter());
+        }
+        return false;
+    }
+
+    private static boolean isRequireNonNullOnLegalRootParameter(
+            MethodInvocationTree methodInvocation,
+            Symbol legalRootParameter) {
+        Symbol symbol = ASTHelpers.getSymbol(methodInvocation);
+        if (symbol == null
+                || !"requireNonNull".contentEquals(symbol.getSimpleName())
+                || !"java.util.Objects".equals(ownerTypeName(symbol))
+                || methodInvocation.getArguments().isEmpty()) {
+            return false;
+        }
+        return ASTHelpers.getSymbol(methodInvocation.getArguments().getFirst()) == legalRootParameter;
+    }
+
+    private static boolean isRootedInLegalRootParameter(Tree tree, Symbol legalRootParameter) {
+        if (tree instanceof IdentifierTree identifierTree) {
+            return ASTHelpers.getSymbol(identifierTree) == legalRootParameter;
+        }
+        if (tree instanceof MemberSelectTree memberSelectTree) {
+            return isRootedInLegalRootParameter(memberSelectTree.getExpression(), legalRootParameter);
+        }
+        if (tree instanceof MethodInvocationTree methodInvocationTree) {
+            return isRootedInLegalRootParameter(methodInvocationTree.getMethodSelect(), legalRootParameter);
+        }
+        return false;
+    }
+
+    private static Symbol legalRootParameter(Symbol.MethodSymbol currentMethod) {
+        if (currentMethod == null
+                || currentMethod.isConstructor()
+                || currentMethod.getParameters().size() != 1) {
+            return null;
+        }
+        Symbol parameter = currentMethod.getParameters().getFirst();
+        return isLegalApplicationServicePublishedCarrierParameter(parameter, currentMethod)
+                ? parameter
+                : null;
     }
 
     private static String applicationServiceVariablePosition(
@@ -482,6 +588,13 @@ final class DomainRoleConcernSupport {
         }
         Set<Modifier> modifiers = currentMethod.getModifiers();
         return modifiers.contains(Modifier.PUBLIC) || modifiers.contains(Modifier.PROTECTED);
+    }
+
+    private static String ownerTypeName(Symbol symbol) {
+        if (symbol.owner instanceof Symbol.ClassSymbol classSymbol) {
+            return classSymbol.getQualifiedName().toString();
+        }
+        return null;
     }
 
     private static void addApplicationServicePublishedCarrierViolations(

@@ -29,6 +29,10 @@ public final class DataServiceContributionShellApiAllowlistChecker extends BugCh
             return Description.NO_MATCH;
         }
 
+        String featureName = rootMatcher.group(1);
+        if (!DataServiceContributionArchitectureSupport.isServiceCompositionOwner(tree, featureName)) {
+            return Description.NO_MATCH;
+        }
         String packageName = rootMatcher.group();
         Set<String> forbiddenReferences = new LinkedHashSet<>();
         for (String referencedType : DataServiceContributionArchitectureSupport.collectReferencedTypes(tree)) {

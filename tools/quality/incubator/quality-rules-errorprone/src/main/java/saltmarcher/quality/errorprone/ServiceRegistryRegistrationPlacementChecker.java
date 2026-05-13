@@ -5,8 +5,10 @@ import com.google.errorprone.VisitorState;
 import com.google.errorprone.bugpatterns.BugChecker;
 import com.google.errorprone.matchers.Description;
 import com.google.errorprone.util.ASTHelpers;
+import com.sun.source.tree.ClassTree;
 import com.sun.source.tree.CompilationUnitTree;
 import com.sun.source.tree.MethodInvocationTree;
+import com.sun.source.util.TreeScanner;
 import com.sun.source.util.TreePathScanner;
 import com.sun.tools.javac.code.Symbol;
 import java.util.ArrayList;
@@ -24,8 +26,12 @@ public final class ServiceRegistryRegistrationPlacementChecker extends BugChecke
     @Override
     public Description matchCompilationUnit(CompilationUnitTree tree, VisitorState state) {
         String packageName = DataArchitectureSupport.packageName(tree);
-        if (DataArchitectureSupport.DATA_ROOT_PACKAGE.matcher(packageName).matches()) {
-            return Description.NO_MATCH;
+        var rootMatcher = DataArchitectureSupport.DATA_ROOT_PACKAGE.matcher(packageName);
+        if (rootMatcher.matches()) {
+            String featureName = rootMatcher.group(1);
+            if (isDataRootCompositionOwner(tree, featureName)) {
+                return Description.NO_MATCH;
+            }
         }
 
         List<String> registrations = new ArrayList<>();
@@ -34,7 +40,7 @@ public final class ServiceRegistryRegistrationPlacementChecker extends BugChecke
             public Void visitMethodInvocation(MethodInvocationTree methodInvocation, Void unused) {
                 Symbol symbol = ASTHelpers.getSymbol(methodInvocation);
                 if (symbol != null
-                        && "register".contentEquals(symbol.getSimpleName())
+                        && isRegistrationMethod(symbol)
                         && SERVICE_REGISTRY_BUILDER.equals(ownerTypeName(symbol))) {
                     registrations.add(methodInvocation.toString());
                 }
@@ -49,8 +55,34 @@ public final class ServiceRegistryRegistrationPlacementChecker extends BugChecke
                 .setMessage("Package '" + packageName
                         + "' registers services directly in shell.api.ServiceRegistry.Builder."
                         + " Runtime service registration belongs only in the data feature composition adapter at src/data/<feature>/<Feature>ServiceContribution.java."
+                        + " or its package-local <Feature>ServiceAssembly.java."
                         + " Found: " + String.join(", ", registrations))
                 .build();
+    }
+
+    private static boolean isDataRootCompositionOwner(CompilationUnitTree tree, String featureName) {
+        String simpleName = topLevelSimpleName(tree);
+        return simpleName.endsWith("ServiceContribution")
+                || simpleName.endsWith("ServiceAssembly");
+    }
+
+    private static String topLevelSimpleName(CompilationUnitTree tree) {
+        ClassTree[] result = {null};
+        new TreeScanner<Void, Void>() {
+            @Override
+            public Void visitClass(ClassTree classTree, Void unused) {
+                if (result[0] == null) {
+                    result[0] = classTree;
+                }
+                return null;
+            }
+        }.scan(tree, null);
+        return result[0] == null ? "" : result[0].getSimpleName().toString();
+    }
+
+    private static boolean isRegistrationMethod(Symbol symbol) {
+        return "register".contentEquals(symbol.getSimpleName())
+                || "registerFactory".contentEquals(symbol.getSimpleName());
     }
 
     private static String ownerTypeName(Symbol symbol) {

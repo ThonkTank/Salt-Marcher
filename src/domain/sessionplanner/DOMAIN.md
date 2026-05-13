@@ -36,10 +36,11 @@ Target state:
 
 ## Application Boundary
 
-Application Services: SessionPlannerApplicationService,
-SessionPlannerParticipantApplicationService,
-SessionPlannerEncounterApplicationService, SessionPlannerRestApplicationService,
-and SessionPlannerLootApplicationService
+Application Service: SessionPlannerApplicationService
+Application Service: SessionPlannerParticipantApplicationService
+Application Service: SessionPlannerEncounterApplicationService
+Application Service: SessionPlannerRestApplicationService
+Application Service: SessionPlannerLootApplicationService
 
 The root application services coordinate active-party composition reads,
 party-based adventuring-day calculations, saved encounter-plan budget reads

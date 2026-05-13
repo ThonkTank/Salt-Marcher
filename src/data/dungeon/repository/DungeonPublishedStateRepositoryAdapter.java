@@ -80,8 +80,18 @@ public final class DungeonPublishedStateRepositoryAdapter implements DungeonPubl
     }
 
     @Override
-    public void publishMapCatalogMutation(CatalogMutationKind mutationKind, DungeonMapIdentity mapId) {
-        mapCatalog.publish(mapCatalogProjector.mutation(mutationKind, mapId));
+    public void publishMapCreated(DungeonMapIdentity mapId) {
+        mapCatalog.publish(mapCatalogProjector.created(mapId));
+    }
+
+    @Override
+    public void publishMapRenamed(DungeonMapIdentity mapId) {
+        mapCatalog.publish(mapCatalogProjector.renamed(mapId));
+    }
+
+    @Override
+    public void publishMapDeleted(DungeonMapIdentity mapId) {
+        mapCatalog.publish(mapCatalogProjector.deleted(mapId));
     }
 
     @Override

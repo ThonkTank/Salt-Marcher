@@ -4,12 +4,6 @@ import src.domain.dungeon.model.map.model.DungeonMapIdentity;
 
 public interface DungeonPublishedStateRepository {
 
-    enum CatalogMutationKind {
-        CREATED,
-        RENAMED,
-        DELETED
-    }
-
     void publishAuthoredSnapshot(Object snapshot);
 
     void publishAuthoredInspector(Object snapshot);
@@ -18,7 +12,11 @@ public interface DungeonPublishedStateRepository {
 
     void publishMapCatalog(Object maps);
 
-    void publishMapCatalogMutation(CatalogMutationKind mutationKind, DungeonMapIdentity mapId);
+    void publishMapCreated(DungeonMapIdentity mapId);
+
+    void publishMapRenamed(DungeonMapIdentity mapId);
+
+    void publishMapDeleted(DungeonMapIdentity mapId);
 
     void publishTravelSurface(Object surface);
 

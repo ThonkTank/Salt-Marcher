@@ -6,7 +6,6 @@ import src.domain.sessionplanner.model.session.usecase.RemoveSessionLootPlacehol
 import src.domain.sessionplanner.published.RemoveSessionLootPlaceholderCommand;
 import src.domain.sessionplanner.published.SessionPlannerActionCommand;
 
-@SuppressWarnings("DomainApplicationServiceRoleBoundary")
 public final class SessionPlannerLootApplicationService {
 
     private static final String COMMAND_PARAMETER = "command";

@@ -80,7 +80,10 @@ real source, mapping, or persistence complexity.
   `ServiceContribution`, `ServiceRegistry`, and
   `ShellRuntimeContext.services()`. It is a composition seam. Its current
   `src/data/<feature>/` placement allows concrete adapter assembly, but the
-  role is runtime composition rather than persistence or source adaptation
+  role is runtime composition rather than persistence or source adaptation. A
+  feature root may add one package-local `<Feature>ServiceAssembly.java` only
+  to keep that composition wiring readable; it is not a second discovery root,
+  service surface, or adapter role.
 
 ## Role Boundaries
 
@@ -94,6 +97,17 @@ the root of one data feature.
 - it keeps feature discovery passive and generic
 - it does not own business rules, persistence mechanics, mapping rules, or
   source queries
+
+### `<PascalFeatureName>ServiceAssembly.java`
+
+The service assembly is an optional package-local collaborator for a large
+service contribution.
+
+- it is constructed only by the same-feature `*ServiceContribution`
+- it owns constructor wiring and `ServiceRegistry` registration grouping only
+- it does not implement `ServiceContribution`
+- it does not own business rules, persistence mechanics, source queries,
+  mapping rules, public backend APIs, or reusable factories
 
 ### `repository/`
 
@@ -131,6 +145,7 @@ The allowed physical data buckets remain:
 src/data/
   <feature>/
     <PascalFeatureName>ServiceContribution.java
+    <PascalFeatureName>ServiceAssembly.java
     repository/
     query/
     gateway/
@@ -169,8 +184,13 @@ The canonical data flow is:
 
 Additional rules:
 
-- `*ServiceContribution` is the only runtime composition root currently placed
-  in a data feature
+- `*ServiceContribution` is the only runtime composition discovery root
+  currently placed in a data feature; an optional same-feature
+  `*ServiceAssembly` may decompose that root's registration wiring but must not
+  become discoverable on its own
+- a same-feature `state/*PublishedStateCarrier` may own lazy published-state
+  repository/model initialization for that root, but it must not become a
+  repository adapter API, discovery root, or reusable backend service surface
 - that registration root is not a public client-facing backend boundary
 - data features must not require routine bootstrap edits or shell-owned
   feature-specific wiring
@@ -193,3 +213,5 @@ Additional rules:
 - [Data Mapper Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/data-mapper-enforcement.md:1)
 - [Data Persistencecore Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/data-persistencecore-enforcement.md:1)
 - [Quality Platforms Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/verification/quality-platforms.md:1)
+- [Modular Monolith ProcessingModule Example](/home/aaron/Schreibtisch/projects/references/architecture-patterns/sessionplanner-gate-model/modular-monolith-processing-module.md:1)
+- [Spring Modulith Verification](/home/aaron/Schreibtisch/projects/references/architecture-patterns/sessionplanner-gate-model/spring-modulith-verification.md:1)

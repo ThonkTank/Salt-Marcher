@@ -5,7 +5,6 @@ import src.domain.sessionplanner.model.session.usecase.AddSessionParticipantUseC
 import src.domain.sessionplanner.model.session.usecase.RemoveSessionParticipantUseCase;
 import src.domain.sessionplanner.published.SessionPlannerParticipantCommand;
 
-@SuppressWarnings("DomainApplicationServiceRoleBoundary")
 public final class SessionPlannerParticipantApplicationService {
 
     private static final String COMMAND_PARAMETER = "command";
