@@ -51,10 +51,10 @@ public final class LoadAdventuringDaySummaryUseCase {
             case 1 -> PartyAdventuringDayBudgetHelper.afterSecondShortRest(level);
             default -> totalBudget;
         };
-        RestCadenceMilestone nextMilestone = switch (character.progress().shortRestsTakenSinceLongRest()) {
-            case 0 -> RestCadenceMilestone.SHORT_REST_ONE;
-            case 1 -> RestCadenceMilestone.SHORT_REST_TWO;
-            default -> RestCadenceMilestone.LONG_REST;
+        int nextMilestone = switch (character.progress().shortRestsTakenSinceLongRest()) {
+            case 0 -> RestCadence.SHORT_REST_ONE;
+            case 1 -> RestCadence.SHORT_REST_TWO;
+            default -> RestCadence.LONG_REST;
         };
         int xpSinceLongRest = character.progress().xpSinceLongRest();
         int xpDelta = targetXp - xpSinceLongRest;
@@ -64,15 +64,15 @@ public final class LoadAdventuringDaySummaryUseCase {
                 xpSinceLongRest);
     }
 
-    private RestCadenceUrgency determineUrgency(RestCadenceMilestone milestone, int xpDelta, int level) {
+    private int determineUrgency(int milestone, int xpDelta, int level) {
         if (xpDelta <= 0) {
-            return RestCadenceUrgency.OVERDUE;
+            return RestCadence.OVERDUE;
         }
-        int segmentSize = milestone == RestCadenceMilestone.LONG_REST
+        int segmentSize = milestone == RestCadence.LONG_REST
                 ? PartyAdventuringDayBudgetHelper.finalSegment(level)
                 : PartyAdventuringDayBudgetHelper.perThird(level);
         int soonThreshold = Math.max(1, (int) Math.round(segmentSize * 0.25));
-        return xpDelta <= soonThreshold ? RestCadenceUrgency.SOON : RestCadenceUrgency.NORMAL;
+        return xpDelta <= soonThreshold ? RestCadence.SOON : RestCadence.NORMAL;
     }
 
     private static final class SummaryAccumulator {
@@ -90,7 +90,7 @@ public final class LoadAdventuringDaySummaryUseCase {
         }
 
         private void include(CharacterRestCadence cadence) {
-            if (cadence.status().nextMilestone() != RestCadenceMilestone.LONG_REST) {
+            if (!cadence.status().longRestMilestone()) {
                 remainingToShortRest += Math.max(0, cadence.status().xpDelta());
                 shortRestPendingCount++;
             }
@@ -127,27 +127,53 @@ public final class LoadAdventuringDaySummaryUseCase {
     ) {
     }
 
-    public record RestCadence(
-            Long characterId,
-            RestCadenceMilestone nextMilestone,
-            int xpDelta,
-            RestCadenceUrgency urgency
-    ) {
-        public RestCadence {
-            nextMilestone = nextMilestone == null ? RestCadenceMilestone.LONG_REST : nextMilestone;
-            urgency = urgency == null ? RestCadenceUrgency.NORMAL : urgency;
+    public static final class RestCadence {
+
+        public static final int SHORT_REST_ONE = 1;
+        public static final int SHORT_REST_TWO = 2;
+        public static final int LONG_REST = 3;
+        public static final int NORMAL = 1;
+        public static final int SOON = 2;
+        public static final int OVERDUE = 3;
+
+        private final Long characterId;
+        private final int nextMilestone;
+        private final int xpDelta;
+        private final int urgency;
+
+        private RestCadence(Long characterId, int nextMilestone, int xpDelta, int urgency) {
+            this.characterId = characterId;
+            this.nextMilestone = normalizeMilestone(nextMilestone);
+            this.xpDelta = xpDelta;
+            this.urgency = normalizeUrgency(urgency);
         }
-    }
 
-    public enum RestCadenceMilestone {
-        SHORT_REST_ONE,
-        SHORT_REST_TWO,
-        LONG_REST
-    }
+        public Long characterId() {
+            return characterId;
+        }
 
-    public enum RestCadenceUrgency {
-        NORMAL,
-        SOON,
-        OVERDUE
+        public int nextMilestone() {
+            return nextMilestone;
+        }
+
+        public int xpDelta() {
+            return xpDelta;
+        }
+
+        public int urgency() {
+            return urgency;
+        }
+
+        boolean longRestMilestone() {
+            return nextMilestone == LONG_REST;
+        }
+
+        private static int normalizeMilestone(int value) {
+            return value == SHORT_REST_ONE || value == SHORT_REST_TWO ? value : LONG_REST;
+        }
+
+        private static int normalizeUrgency(int value) {
+            return value == SOON || value == OVERDUE ? value : NORMAL;
+        }
     }
 }

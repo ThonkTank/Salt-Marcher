@@ -228,7 +228,11 @@ public final class PartyBoundaryProjector {
 
     private static RestCadenceStatus mapRestCadenceStatus(LoadAdventuringDaySummaryUseCase.RestCadence status) {
         if (status == null) {
-            return new RestCadenceStatus(null, RestMilestone.LONG_REST, 0, RestCadenceUrgency.NORMAL);
+            return new RestCadenceStatus(
+                    null,
+                    RestMilestone.valueOf("LONG_REST"),
+                    0,
+                    RestCadenceUrgency.valueOf("NORMAL"));
         }
         return new RestCadenceStatus(
                 status.characterId(),
@@ -309,24 +313,24 @@ public final class PartyBoundaryProjector {
     }
 
     private static RestMilestone toPublishedRestMilestone(
-            LoadAdventuringDaySummaryUseCase.RestCadenceMilestone milestone
+            int milestone
     ) {
-        if (milestone == LoadAdventuringDaySummaryUseCase.RestCadenceMilestone.SHORT_REST_ONE) {
+        if (milestone == LoadAdventuringDaySummaryUseCase.RestCadence.SHORT_REST_ONE) {
             return RestMilestone.SHORT_REST_ONE;
         }
-        if (milestone == LoadAdventuringDaySummaryUseCase.RestCadenceMilestone.SHORT_REST_TWO) {
+        if (milestone == LoadAdventuringDaySummaryUseCase.RestCadence.SHORT_REST_TWO) {
             return RestMilestone.SHORT_REST_TWO;
         }
         return RestMilestone.LONG_REST;
     }
 
     private static RestCadenceUrgency toPublishedRestCadenceUrgency(
-            LoadAdventuringDaySummaryUseCase.RestCadenceUrgency urgency
+            int urgency
     ) {
-        if (urgency == LoadAdventuringDaySummaryUseCase.RestCadenceUrgency.OVERDUE) {
+        if (urgency == LoadAdventuringDaySummaryUseCase.RestCadence.OVERDUE) {
             return RestCadenceUrgency.OVERDUE;
         }
-        if (urgency == LoadAdventuringDaySummaryUseCase.RestCadenceUrgency.SOON) {
+        if (urgency == LoadAdventuringDaySummaryUseCase.RestCadence.SOON) {
             return RestCadenceUrgency.SOON;
         }
         return RestCadenceUrgency.NORMAL;

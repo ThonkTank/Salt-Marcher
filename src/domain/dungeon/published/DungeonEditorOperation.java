@@ -67,6 +67,10 @@ public sealed interface DungeonEditorOperation permits
         PAINT,
         DELETE;
 
+        public static RectangleAction fromDeleteMode(boolean deleteMode) {
+            return deleteMode ? DELETE : PAINT;
+        }
+
         public boolean deletesRoomCells() {
             return this == DELETE;
         }

@@ -1,20 +1,18 @@
 package src.domain.encounter.model.session.model;
 
-import static src.domain.encounter.model.session.model.EncounterSessionValues.*;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import src.domain.encounter.model.generation.model.EncounterGenerationInputs;
 import src.domain.encounter.model.generation.model.EncounterGenerationRequest;
+import src.domain.encounter.model.session.model.EncounterSessionValues.GeneratedEncounterData;
+import src.domain.encounter.model.session.model.EncounterSessionValues.GenerationResultData;
 
 final class EncounterSessionGeneration {
 
     private static final String NO_PARTY_STATUS = "Die aktive Party hat keine Mitglieder.";
     private static final String GENERATION_FAILURE_STATUS = "Encounter konnte nicht generiert werden.";
     private static final String HISTORY_CLEARED_STATUS = "Generator-Historie geleert.";
-    private static final int DEFAULT_GENERATION_ALTERNATIVE_COUNT = 5;
-    private static final int SINGLE_ALTERNATIVE_COUNT = 1;
 
     private final List<GeneratedEncounterData> generatedAlternatives = new ArrayList<>();
     private EncounterGenerationInputs builderInputs = EncounterGenerationInputs.empty();
@@ -40,7 +38,10 @@ final class EncounterSessionGeneration {
             context.setStatus(NO_PARTY_STATUS);
             return;
         }
-        GenerationResultData result = access.generate(request.orElseGet(this::generationRequest));
+        EncounterGenerationRequest generation = request.isPresent()
+                ? request.orElseThrow()
+                : EncounterSessionGenerationRequest.create(builderInputs);
+        GenerationResultData result = access.generate(generation);
         if (!result.success() || result.alternatives().isEmpty()) {
             clearGeneratedEncounterState();
             generatedAdvisories = List.of();
@@ -52,7 +53,7 @@ final class EncounterSessionGeneration {
         generationHistoryPresent = true;
         selectedAlternativeIndex = 0;
         applyGeneratedEncounter(generatedAlternatives.getFirst(), roster);
-        context.setStatus(generationSuccessText(result));
+        context.setStatus(EncounterSessionGenerationMessages.successText(result));
     }
 
     void clearGenerationHistory(EncounterSessionContext context) {
@@ -95,14 +96,8 @@ final class EncounterSessionGeneration {
         return builderInputs;
     }
 
-    String generatedTitle() {
-        return generatedTitle;
-    }
-
-    BuilderStateData builderState(EncounterSessionContext context, EncounterSessionRosterMutation roster) {
-        return EncounterSessionGenerationProjection.builderState(
-                context,
-                roster,
+    EncounterSessionGenerationState state() {
+        return new EncounterSessionGenerationState(
                 builderInputs,
                 generatedAdvisories,
                 generatedAdjustedXp,
@@ -130,28 +125,4 @@ final class EncounterSessionGeneration {
         generatedAdvisories = generated.advisoryMessages();
     }
 
-    private EncounterGenerationRequest generationRequest() {
-        return new EncounterGenerationRequest(
-                builderInputs,
-                DEFAULT_GENERATION_ALTERNATIVE_COUNT,
-                Math.max(0L, System.nanoTime()),
-                List.of(),
-                List.of());
-    }
-
-    private static String generationSuccessText(GenerationResultData result) {
-        StringBuilder text = new StringBuilder(result.alternatives().size() + " Encounter-Optionen generiert.");
-        if (result.diagnostics().isPresent()) {
-            GenerationDiagnosticsData diagnostics = result.diagnostics().orElseThrow();
-            text.append(" Ziel: ")
-                    .append(diagnostics.difficultyLabel())
-                    .append(", Tuning: ")
-                    .append(diagnostics.tuningLabel())
-                    .append('.');
-        }
-        if (result.fallbackUsed()) {
-            text.append(" Fallback verwendet.");
-        }
-        return text.toString();
-    }
 }

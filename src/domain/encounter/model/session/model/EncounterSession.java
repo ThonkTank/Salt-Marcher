@@ -105,23 +105,23 @@ public final class EncounterSession {
         handlers.put(EncounterSessionCommand.Action.GENERATE, (session, command, access) ->
                 session.builder.generate(access, command.generation(), session.context));
         handlers.put(EncounterSessionCommand.Action.SAVE_CURRENT_PLAN, (session, command, access) ->
-                session.builder.saveCurrentPlan(access, session.context));
+                session.builder.applySavedPlanCommand(command, access, session.context, session::resetCombatState));
         handlers.put(EncounterSessionCommand.Action.OPEN_SAVED_PLAN, (session, command, access) ->
-                session.builder.openSavedPlan(access, command.planId(), session.context, session::resetCombatState));
+                session.builder.applySavedPlanCommand(command, access, session.context, session::resetCombatState));
         handlers.put(EncounterSessionCommand.Action.CLEAR_GENERATION_HISTORY, (session, command, access) ->
-                session.builder.clearGenerationHistory(session.context));
+                session.builder.applyGenerationCommand(command, session.context));
         handlers.put(EncounterSessionCommand.Action.SHIFT_ALTERNATIVE, (session, command, access) ->
-                session.builder.shiftGeneratedAlternative(command.delta()));
+                session.builder.applyGenerationCommand(command, session.context));
         handlers.put(EncounterSessionCommand.Action.ADD_CREATURE, (session, command, access) ->
                 session.addCreature(access, command.creatureId()));
         handlers.put(EncounterSessionCommand.Action.INCREMENT_CREATURE, (session, command, access) ->
-                session.builder.incrementCreature(command.creatureId(), session.context));
+                session.builder.mutateCreature(command, session.context));
         handlers.put(EncounterSessionCommand.Action.DECREMENT_CREATURE, (session, command, access) ->
-                session.builder.decrementCreature(command.creatureId(), session.context));
+                session.builder.mutateCreature(command, session.context));
         handlers.put(EncounterSessionCommand.Action.REMOVE_CREATURE, (session, command, access) ->
-                session.builder.removeCreature(command.creatureId(), session.context));
+                session.builder.mutateCreature(command, session.context));
         handlers.put(EncounterSessionCommand.Action.UNDO_REMOVE, (session, command, access) ->
-                session.builder.undoRemove(command.token(), session.context));
+                session.builder.mutateCreature(command, session.context));
         handlers.put(EncounterSessionCommand.Action.OPEN_INITIATIVE, (session, command, access) ->
                 session.combatInitiative.open(session.context, session.builder.roster()));
         handlers.put(EncounterSessionCommand.Action.BACK_TO_BUILDER, (session, command, access) ->

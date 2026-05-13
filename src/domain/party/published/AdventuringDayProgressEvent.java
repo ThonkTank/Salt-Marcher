@@ -10,6 +10,6 @@ public record AdventuringDayProgressEvent(
 ) {
 
     public AdventuringDayProgressEvent {
-        type = type == null ? AdventuringDayProgressEventType.LONG_REST : type;
+        type = type == null ? AdventuringDayProgressEventType.valueOf("LONG_REST") : type;
     }
 }

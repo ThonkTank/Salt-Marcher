@@ -1,7 +1,5 @@
 package src.domain.encounter.model.session.model;
 
-import java.util.List;
-import src.domain.encounter.model.generation.model.EncounterGenerationInputs;
 import src.domain.encounter.model.session.model.EncounterSessionValues.BuilderStateData;
 import src.domain.encounter.model.session.model.EncounterSessionValues.BudgetData;
 import src.domain.encounter.model.session.model.EncounterSessionValues.DifficultySummaryData;
@@ -17,31 +15,24 @@ final class EncounterSessionGenerationProjection {
 
     static BuilderStateData builderState(
             EncounterSessionContext context,
-            EncounterSessionRosterMutation roster,
-            EncounterGenerationInputs builderInputs,
-            List<String> generatedAdvisories,
-            int generatedAdjustedXp,
-            String generatedDifficulty,
-            String generatedTitle,
-            int selectedAlternativeIndex,
-            int alternativeCount,
-            boolean generationHistoryPresent
+            EncounterSessionRosterState roster,
+            EncounterSessionGenerationState generation
     ) {
-        int adjustedXp = generatedAdjustedXp > 0 ? generatedAdjustedXp : roster.totalXp();
-        boolean multipleAlternatives = alternativeCount > SINGLE_ALTERNATIVE_COUNT;
+        int adjustedXp = generation.generatedAdjustedXp() > 0 ? generation.generatedAdjustedXp() : totalXp(roster);
+        boolean multipleAlternatives = generation.alternativeCount() > SINGLE_ALTERNATIVE_COUNT;
         return new BuilderStateData(
                 context.activeParty(),
                 roster.creatures(),
-                titleLabel(generatedTitle, selectedAlternativeIndex, alternativeCount, roster.isEmpty()),
-                difficulty(context, roster.isEmpty(), adjustedXp, generatedDifficulty),
-                builderInputs,
-                generatedAdvisories,
+                titleLabel(generation, roster.creatures().isEmpty()),
+                difficulty(context, roster.creatures().isEmpty(), adjustedXp, generation.generatedDifficulty()),
+                generation.builderInputs(),
+                generation.generatedAdvisories(),
                 context.savedPlans(),
-                !roster.isEmpty() && context.hasActiveParty(),
+                !roster.creatures().isEmpty() && context.hasActiveParty(),
                 multipleAlternatives,
                 multipleAlternatives,
-                !roster.isEmpty(),
-                generationHistoryPresent || alternativeCount > 0,
+                !roster.creatures().isEmpty(),
+                generation.generationHistoryPresent() || generation.alternativeCount() > 0,
                 roster.pendingUndo());
     }
 
@@ -64,14 +55,19 @@ final class EncounterSessionGenerationProjection {
                 generatedDifficulty.isBlank() ? evaluateDifficulty(adjustedXp, currentBudget) : generatedDifficulty);
     }
 
-    private static String titleLabel(String generatedTitle, int selectedAlternativeIndex, int alternativeCount, boolean emptyRoster) {
-        if (generatedTitle.isBlank()) {
+    private static String titleLabel(EncounterSessionGenerationState generation, boolean emptyRoster) {
+        if (generation.generatedTitle().isBlank()) {
             return emptyRoster ? "" : DEFAULT_MANUAL_TITLE;
         }
-        if (alternativeCount <= SINGLE_ALTERNATIVE_COUNT) {
-            return generatedTitle;
+        if (generation.alternativeCount() <= SINGLE_ALTERNATIVE_COUNT) {
+            return generation.generatedTitle();
         }
-        return generatedTitle + " (" + (selectedAlternativeIndex + 1) + "/" + alternativeCount + ")";
+        return generation.generatedTitle()
+                + " ("
+                + (generation.selectedAlternativeIndex() + 1)
+                + "/"
+                + generation.alternativeCount()
+                + ")";
     }
 
     private static String evaluateDifficulty(int adjustedXp, BudgetData budget) {
@@ -85,5 +81,13 @@ final class EncounterSessionGenerationProjection {
             return "Medium";
         }
         return adjustedXp <= 0 ? "" : "Easy";
+    }
+
+    private static int totalXp(EncounterSessionRosterState roster) {
+        int total = 0;
+        for (EncounterSessionValues.EncounterCreatureData creature : roster.creatures()) {
+            total += creature.totalXp();
+        }
+        return total;
     }
 }

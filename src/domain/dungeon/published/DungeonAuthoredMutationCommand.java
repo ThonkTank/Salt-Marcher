@@ -19,6 +19,10 @@ public sealed interface DungeonAuthoredMutationCommand permits
 
     enum Action {
         PREVIEW,
-        APPLY
+        APPLY;
+
+        public boolean isPreview() {
+            return this == PREVIEW;
+        }
     }
 }

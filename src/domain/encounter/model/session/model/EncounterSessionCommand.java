@@ -62,6 +62,14 @@ public record EncounterSessionCommand(
                 false);
     }
 
+    boolean opensSavedPlan() {
+        return action == Action.OPEN_SAVED_PLAN;
+    }
+
+    boolean shiftsGeneratedAlternative() {
+        return action == Action.SHIFT_ALTERNATIVE;
+    }
+
     public enum Action {
         REFRESH,
         UPDATE_BUILDER_INPUTS,

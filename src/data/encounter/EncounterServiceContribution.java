@@ -124,11 +124,12 @@ public final class EncounterServiceContribution implements ServiceContribution {
                     new src.domain.encounter.model.session.repository.EncounterSessionRepository(
                             party,
                             creatures,
-                            generator,
-                            loadBudgetUseCase,
-                            savePlanUseCase,
-                            loadSavedPlanUseCase,
-                            listSavedPlansUseCase));
+                            new src.domain.encounter.model.session.repository.EncounterSessionUseCaseAdaptersRepository(
+                                    generator,
+                                    loadBudgetUseCase,
+                                    savePlanUseCase,
+                                    loadSavedPlanUseCase,
+                                    listSavedPlansUseCase)));
         }
     }
 }

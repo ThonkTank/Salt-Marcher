@@ -5,11 +5,10 @@ import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.map.model.DungeonDerivedState;
 import src.domain.dungeon.model.map.model.DungeonMap;
-import src.domain.dungeon.model.map.model.DungeonMapCorridorOps;
 import src.domain.dungeon.model.map.model.DungeonMapIdentity;
 import src.domain.dungeon.model.map.model.DungeonMapOperationFeedbackRules;
-import src.domain.dungeon.model.map.model.DungeonMapTopologyOps;
 import src.domain.dungeon.model.map.repository.DungeonMapRepository;
+import src.domain.dungeon.published.DungeonEditorOperation;
 
 /**
  * Owns the fixed dungeon editor mutation pipeline.
@@ -52,13 +51,13 @@ public final class ApplyDungeonEditorOperationUseCase {
                 "publishDungeonEditorHandles");
     }
 
-    public OperationResultData execute(DungeonEditorOperationInstructionUseCase.Instruction operation) {
+    public OperationResultData execute(@Nullable DungeonEditorOperation operation) {
         return execute(null, operation);
     }
 
     public OperationResultData execute(
             @Nullable DungeonMapIdentity mapId,
-            DungeonEditorOperationInstructionUseCase.Instruction operation
+            @Nullable DungeonEditorOperation operation
     ) {
         DungeonMap current = currentMap(mapId);
         DungeonMap mutated = applyOperation(current, operation);
@@ -72,7 +71,7 @@ public final class ApplyDungeonEditorOperationUseCase {
 
     public OperationResultData preview(
             @Nullable DungeonMapIdentity mapId,
-            DungeonEditorOperationInstructionUseCase.Instruction operation
+            @Nullable DungeonEditorOperation operation
     ) {
         DungeonMap current = currentMap(mapId);
         DungeonMap mutated = applyOperation(current, operation);
@@ -96,54 +95,8 @@ public final class ApplyDungeonEditorOperationUseCase {
 
     private static DungeonMap applyOperation(
             DungeonMap current,
-            DungeonEditorOperationInstructionUseCase.Instruction operation
+            @Nullable DungeonEditorOperation operation
     ) {
-        if (operation == null) {
-            return current;
-        }
-        return switch (operation) {
-            case DungeonEditorOperationInstructionUseCase.Identity ignored -> current;
-            case DungeonEditorOperationInstructionUseCase.MoveTopologyElement move -> DungeonMapTopologyOps.moveTopologyElement(
-                    current,
-                    move.ref(),
-                    move.deltaQ(),
-                    move.deltaR(),
-                    move.deltaLevel());
-            case DungeonEditorOperationInstructionUseCase.MoveEditorHandle move -> DungeonMapTopologyOps.moveEditorHandle(
-                    current,
-                    move.handle(),
-                    move.deltaQ(),
-                    move.deltaR(),
-                    move.deltaLevel());
-            case DungeonEditorOperationInstructionUseCase.MoveBoundaryStretch move -> DungeonMapTopologyOps.moveBoundaryStretch(
-                    current,
-                    move.clusterId(),
-                    move.sourceEdges(),
-                    move.deltaQ(),
-                    move.deltaR(),
-                    move.deltaLevel());
-            case DungeonEditorOperationInstructionUseCase.MoveRoomAnchor move ->
-                    DungeonMapTopologyOps.moveRoomAnchor(current, move.deltaQ(), move.deltaR());
-            case DungeonEditorOperationInstructionUseCase.RoomRectangle rectangle -> rectangle.deletesRoomCells()
-                    ? DungeonMapTopologyOps.deleteRoomRectangle(current, rectangle.start(), rectangle.end())
-                    : DungeonMapTopologyOps.paintRoomRectangle(current, rectangle.start(), rectangle.end());
-            case DungeonEditorOperationInstructionUseCase.EditClusterBoundaries edit ->
-                    DungeonMapTopologyOps.editClusterBoundaries(
-                            current,
-                            edit.clusterId(),
-                            edit.edges(),
-                            edit.kind(),
-                            edit.deleteBoundary());
-            case DungeonEditorOperationInstructionUseCase.CreateCorridor create ->
-                    DungeonMapCorridorOps.createCorridor(current, create.start(), create.end());
-            case DungeonEditorOperationInstructionUseCase.ExtendCorridor extend ->
-                    DungeonMapCorridorOps.extendCorridor(current, extend.corridorId(), extend.endpoint());
-            case DungeonEditorOperationInstructionUseCase.MergeCorridors merge ->
-                    DungeonMapCorridorOps.mergeCorridors(current, merge.corridorId(), merge.mergedCorridorId());
-            case DungeonEditorOperationInstructionUseCase.DeleteCorridor delete ->
-                    DungeonMapCorridorOps.deleteCorridor(current, delete.corridorId());
-            case DungeonEditorOperationInstructionUseCase.SaveRoomNarration save ->
-                    DungeonMapTopologyOps.saveRoomNarration(current, save.roomId(), save.narration());
-        };
+        return DungeonEditorOperationMutationUseCase.apply(current, operation);
     }
 }

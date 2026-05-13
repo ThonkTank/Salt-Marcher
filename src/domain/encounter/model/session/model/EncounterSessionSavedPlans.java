@@ -5,6 +5,7 @@ import static src.domain.encounter.model.session.model.EncounterSessionValues.Mo
 import java.util.ArrayList;
 import java.util.List;
 import java.util.OptionalLong;
+import src.domain.encounter.model.session.model.EncounterSessionValues.CreatureDetailData;
 import src.domain.encounter.model.plan.model.EncounterPlan;
 import src.domain.encounter.model.plan.model.EncounterPlanCreature;
 import src.domain.encounter.model.session.model.EncounterSessionValues.EncounterCreatureData;
@@ -38,9 +39,7 @@ final class EncounterSessionSavedPlans {
                 activeSavedPlanId.orElse(0L),
                 saveName(generatedTitle, roster.isEmpty()),
                 generatedTitle,
-                roster.stream()
-                        .map(creature -> new EncounterPlanCreature(creature.creatureId(), creature.count()))
-                        .toList()));
+                planCreatures(roster)));
         if (!result.success()) {
             context.setStatus(result.message().isBlank() ? SAVE_FAILURE_STATUS : result.message());
             context.refreshSavedPlans(access);
@@ -56,7 +55,7 @@ final class EncounterSessionSavedPlans {
             EncounterSession.SessionRepository access,
             long planId,
             EncounterSessionContext context,
-            Runnable resetCombatState,
+            EncounterSessionCombatReset resetCombatState,
             EncounterSessionRosterMutation roster,
             EncounterSessionGeneration generation
     ) {
@@ -70,7 +69,7 @@ final class EncounterSessionSavedPlans {
         roster.replaceWithGenerated(savedPlanRoster(access, plan));
         generation.openSavedPlan(plan.generatedLabel().isBlank() ? plan.name() : plan.generatedLabel());
         activeSavedPlanId = OptionalLong.of(plan.id());
-        resetCombatState.run();
+        resetCombatState.resetCombatState();
         context.enterMode(Mode.BUILDER, plan.name() + " geoeffnet.");
         context.refreshSavedPlans(access);
     }
@@ -78,10 +77,20 @@ final class EncounterSessionSavedPlans {
     private static List<EncounterCreatureData> savedPlanRoster(EncounterSession.SessionRepository access, EncounterPlan plan) {
         List<EncounterCreatureData> loadedRoster = new ArrayList<>();
         for (EncounterPlanCreature creature : plan.creatures()) {
-            access.loadCreature(creature.creatureId())
-                    .ifPresent(detail -> loadedRoster.add(EncounterSessionCreatureRows.savedPlan(detail, creature.quantity())));
+            CreatureDetailData detail = access.loadCreature(creature.creatureId()).orElse(null);
+            if (detail != null) {
+                loadedRoster.add(EncounterSessionCreatureRows.savedPlan(detail, creature.quantity()));
+            }
         }
         return loadedRoster;
+    }
+
+    private static List<EncounterPlanCreature> planCreatures(List<EncounterCreatureData> roster) {
+        List<EncounterPlanCreature> creatures = new ArrayList<>();
+        for (EncounterCreatureData creature : roster) {
+            creatures.add(new EncounterPlanCreature(creature.creatureId(), creature.count()));
+        }
+        return creatures;
     }
 
     private static String saveName(String generatedTitle, boolean emptyRoster) {

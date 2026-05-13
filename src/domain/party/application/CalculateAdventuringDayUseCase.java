@@ -306,11 +306,35 @@ public final class CalculateAdventuringDayUseCase {
             boolean partialDay) {
     }
 
-    public record LevelProgress(
-            int startLevel,
-            int endLevel,
-            int characterCount,
-            int levelUps) {
+    public static final class LevelProgress {
+
+        private final int startLevel;
+        private final int endLevel;
+        private final int characterCount;
+        private final int levelUps;
+
+        private LevelProgress(int startLevel, int endLevel, int characterCount, int levelUps) {
+            this.startLevel = startLevel;
+            this.endLevel = endLevel;
+            this.characterCount = characterCount;
+            this.levelUps = levelUps;
+        }
+
+        public int startLevel() {
+            return startLevel;
+        }
+
+        public int endLevel() {
+            return endLevel;
+        }
+
+        public int characterCount() {
+            return characterCount;
+        }
+
+        public int levelUps() {
+            return levelUps;
+        }
     }
 
     public static final class ProgressEventType {

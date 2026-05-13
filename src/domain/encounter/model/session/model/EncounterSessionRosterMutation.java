@@ -48,10 +48,27 @@ final class EncounterSessionRosterMutation {
         for (int index = 0; index < roster.size(); index++) {
             EncounterCreatureData creature = roster.get(index);
             if (creature.creatureId() == creatureId) {
-                return decrementRosterEntry(index, creature, context);
+                if (creature.count() == MINIMUM_CREATURE_COUNT) {
+                    context.setStatus(creature.name() + " bleibt mindestens einmal im Roster.");
+                    return false;
+                }
+                pendingUndo = Optional.empty();
+                roster.set(index, creature.withCount(creature.count() - 1, MAX_CREATURES_PER_SLOT));
+                context.setStatus(creature.name() + " Anzahl angepasst.");
+                return true;
             }
         }
         return false;
+    }
+
+    boolean mutateCreature(EncounterSessionCommand command, EncounterSessionContext context) {
+        return switch (command.action()) {
+            case INCREMENT_CREATURE -> incrementCreature(command.creatureId(), context);
+            case DECREMENT_CREATURE -> decrementCreature(command.creatureId(), context);
+            case REMOVE_CREATURE -> removeCreature(command.creatureId(), context);
+            case UNDO_REMOVE -> undoRemove(command.token(), context);
+            default -> false;
+        };
     }
 
     boolean removeCreature(long creatureId, EncounterSessionContext context) {
@@ -86,34 +103,11 @@ final class EncounterSessionRosterMutation {
         pendingUndo = Optional.empty();
     }
 
-    List<EncounterCreatureData> creatures() {
-        return List.copyOf(roster);
-    }
-
-    boolean isEmpty() {
-        return roster.isEmpty();
-    }
-
-    int totalXp() {
-        return roster.stream().mapToInt(EncounterCreatureData::totalXp).sum();
-    }
-
-    Optional<RemovedRosterEntryData> pendingUndo() {
-        return pendingUndo;
+    EncounterSessionRosterState snapshot() {
+        return new EncounterSessionRosterState(roster, pendingUndo);
     }
 
     void clearPendingUndo() {
         pendingUndo = Optional.empty();
-    }
-
-    private boolean decrementRosterEntry(int index, EncounterCreatureData creature, EncounterSessionContext context) {
-        if (creature.count() == MINIMUM_CREATURE_COUNT) {
-            context.setStatus(creature.name() + " bleibt mindestens einmal im Roster.");
-            return false;
-        }
-        pendingUndo = Optional.empty();
-        roster.set(index, creature.withCount(creature.count() - 1, MAX_CREATURES_PER_SLOT));
-        context.setStatus(creature.name() + " Anzahl angepasst.");
-        return true;
     }
 }

@@ -10,7 +10,7 @@ public record RestCadenceStatus(
 ) {
 
     public RestCadenceStatus {
-        nextMilestone = nextMilestone == null ? RestMilestone.LONG_REST : nextMilestone;
-        urgency = urgency == null ? RestCadenceUrgency.NORMAL : urgency;
+        nextMilestone = nextMilestone == null ? RestMilestone.valueOf("LONG_REST") : nextMilestone;
+        urgency = urgency == null ? RestCadenceUrgency.valueOf("NORMAL") : urgency;
     }
 }

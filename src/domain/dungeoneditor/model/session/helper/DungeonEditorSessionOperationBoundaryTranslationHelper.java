@@ -47,9 +47,7 @@ public final class DungeonEditorSessionOperationBoundaryTranslationHelper {
             return null;
         }
         return new DungeonEditorOperation.RoomRectangle(
-                room.deleteMode()
-                        ? DungeonEditorOperation.RectangleAction.DELETE
-                        : DungeonEditorOperation.RectangleAction.PAINT,
+                DungeonEditorOperation.RectangleAction.fromDeleteMode(room.deleteMode()),
                 DungeonEditorWorkspaceCellBoundaryTranslationHelper.toDomainCell(room.start()),
                 DungeonEditorWorkspaceCellBoundaryTranslationHelper.toDomainCell(room.end()));
     }

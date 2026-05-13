@@ -28,54 +28,38 @@ final class EncounterSessionBuilder {
         generation.generate(access, request, context, roster);
     }
 
-    void saveCurrentPlan(EncounterSession.SessionRepository access, EncounterSessionContext context) {
-        savedPlans.saveCurrentPlan(access, context, roster.creatures(), generation.generatedTitle());
-    }
-
-    void openSavedPlan(
+    void applySavedPlanCommand(
+            EncounterSessionCommand command,
             EncounterSession.SessionRepository access,
-            long planId,
             EncounterSessionContext context,
-            Runnable resetCombatState
+            EncounterSessionCombatReset resetCombatState
     ) {
-        savedPlans.openSavedPlan(access, planId, context, resetCombatState, roster, generation);
+        if (command.opensSavedPlan()) {
+            savedPlans.openSavedPlan(access, command.planId(), context, resetCombatState, roster, generation);
+            return;
+        }
+        savedPlans.saveCurrentPlan(access, context, roster.snapshot().creatures(), generation.state().generatedTitle());
     }
 
-    void clearGenerationHistory(EncounterSessionContext context) {
+    void applyGenerationCommand(EncounterSessionCommand command, EncounterSessionContext context) {
+        if (command.shiftsGeneratedAlternative()) {
+            generation.shiftGeneratedAlternative(command.delta(), roster);
+            return;
+        }
         generation.clearGenerationHistory(context);
-    }
-
-    void shiftGeneratedAlternative(int delta) {
-        generation.shiftGeneratedAlternative(delta, roster);
     }
 
     void addCreature(CreatureDetailData creature, EncounterSessionContext context) {
         if (roster.addCreature(creature, context)) {
-            clearGeneratedSelection();
+            savedPlans.clearActivePlan();
+            generation.clearGeneratedSelection();
         }
     }
 
-    void incrementCreature(long creatureId, EncounterSessionContext context) {
-        if (roster.incrementCreature(creatureId, context)) {
-            clearGeneratedSelection();
-        }
-    }
-
-    void decrementCreature(long creatureId, EncounterSessionContext context) {
-        if (roster.decrementCreature(creatureId, context)) {
-            clearGeneratedSelection();
-        }
-    }
-
-    void removeCreature(long creatureId, EncounterSessionContext context) {
-        if (roster.removeCreature(creatureId, context)) {
-            clearGeneratedSelection();
-        }
-    }
-
-    void undoRemove(long token, EncounterSessionContext context) {
-        if (roster.undoRemove(token, context)) {
-            clearGeneratedSelection();
+    void mutateCreature(EncounterSessionCommand command, EncounterSessionContext context) {
+        if (roster.mutateCreature(command, context)) {
+            savedPlans.clearActivePlan();
+            generation.clearGeneratedSelection();
         }
     }
 
@@ -84,15 +68,10 @@ final class EncounterSessionBuilder {
     }
 
     List<EncounterCreatureData> roster() {
-        return roster.creatures();
+        return roster.snapshot().creatures();
     }
 
     BuilderStateData builderState(EncounterSessionContext context) {
-        return generation.builderState(context, roster);
-    }
-
-    private void clearGeneratedSelection() {
-        savedPlans.clearActivePlan();
-        generation.clearGeneratedSelection();
+        return EncounterSessionGenerationProjection.builderState(context, roster.snapshot(), generation.state());
     }
 }
