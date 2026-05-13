@@ -628,7 +628,7 @@ final class ToolCatalog {
         return SESSION_TOOLS_BY_LABEL.getOrDefault(selectedToolLabel, DungeonEditorSessionValues.Tool.SELECT);
     }
 
-    static ToolPalette paletteFor(@Nullable DungeonEditorContributionModel.ToolFamily family) {
+    static ToolPalette paletteFor(DungeonEditorContributionModel.ToolFamily family) {
         return family == null ? ToolPalette.empty() : PALETTES.getOrDefault(family, ToolPalette.empty());
     }
 

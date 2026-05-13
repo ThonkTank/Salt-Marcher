@@ -36,7 +36,7 @@ final class DungeonEditorBinder {
         controls.bind(controlsContentModel);
         state.bind(contributionModel);
         main.onViewInputEvent(intentHandler::consume);
-        controls.onViewInputEvent(intentHandler::consume);
+        controls.onDungeonEditorControlsInputEvent(intentHandler::consume);
         state.onViewInputEvent(intentHandler::consume);
         contributionModel.controlsProjectionProperty().addListener((ignored, before, after) ->
                 controlsContentModel.apply(after));

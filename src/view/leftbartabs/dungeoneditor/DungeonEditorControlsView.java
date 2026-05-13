@@ -41,7 +41,7 @@ public final class DungeonEditorControlsView extends DungeonControlPanelView {
         getChildren().setAll(mapControls.row(), projectionControls.row(), toolControls.row());
     }
 
-    public void onViewInputEvent(Consumer<DungeonEditorControlsViewInputEvent> handler) {
+    public void onDungeonEditorControlsInputEvent(Consumer<DungeonEditorControlsViewInputEvent> handler) {
         viewInputEventHandler = handler == null ? ignored -> { } : handler;
     }
 
