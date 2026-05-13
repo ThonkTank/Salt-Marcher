@@ -286,7 +286,7 @@ in the Domain enforcement documents.
   rest placement, placeholders, and selection state while consuming party and
   encounter public boundaries.
 
-## Context Relationships
+## Context Relationships <!-- mechanical-domain-dependencies: encounter=creatures,encountertable,party; dungeoneditor=dungeon; travel=dungeon,party; sessionplanner=encounter,party -->
 
 - `party`: `Party Character State Context`; publishes roster, membership, XP,
   rest cadence, adventuring-day facts, and character travel-position facts to

@@ -32,7 +32,11 @@ public final class DomainPublishedReadbackSeamBoundaryChecker extends BugChecker
             return Description.NO_MATCH;
         }
         TypeElement typeElement = ASTHelpers.getSymbol(tree);
-        if (typeElement == null || typeElement.getNestingKind().isNested()) {
+        if (typeElement == null) {
+            return Description.NO_MATCH;
+        }
+        if (typeElement.getNestingKind().isNested()
+                && !typeElement.getModifiers().contains(Modifier.PUBLIC)) {
             return Description.NO_MATCH;
         }
         if (isPublishedModelHandle(packageName, typeElement)) {
@@ -64,6 +68,7 @@ public final class DomainPublishedReadbackSeamBoundaryChecker extends BugChecker
 
     private static boolean isPublishedModelHandle(String packageName, TypeElement typeElement) {
         return PUBLISHED_MODEL_PACKAGE.matcher(packageName).matches()
+                && !typeElement.getNestingKind().isNested()
                 && typeElement.getSimpleName().toString().endsWith("Model");
     }
 }

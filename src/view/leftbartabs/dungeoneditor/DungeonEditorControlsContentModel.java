@@ -1,5 +1,7 @@
 package src.view.leftbartabs.dungeoneditor;
 
+import src.view.slotcontent.controls.dungeoncontrol.DungeonControlPanelContentModel;
+
 final class DungeonEditorControlsContentModel {
 
     private final DungeonEditorMapControlsContentModel mapControls = new DungeonEditorMapControlsContentModel();
@@ -37,11 +39,50 @@ final class DungeonEditorControlsContentModel {
                 busy,
                 hasMap);
         projectionControls.showOverlaySettings(
-                DungeonEditorProjectionControlsView.toSettings(resolvedProjection.overlayProjection()),
+                toSettings(resolvedProjection.overlayProjection()),
                 busy);
         projectionControls.showViewMode(resolvedProjection.viewModeLabel());
         toolControls.showTool(resolvedProjection.selectedToolLabel());
         mapControls.showMapEditor(resolvedProjection.mapEditorUiState());
         toolControls.showToolPalette(resolvedProjection.toolPaletteUiState());
+    }
+
+    private static DungeonControlPanelContentModel.OverlaySettings toSettings(
+            DungeonEditorContributionModel.OverlayProjection settings
+    ) {
+        return new DungeonControlPanelContentModel.OverlaySettings(
+                OverlayModeKey.fromModelKey(settings.modeKey()).overlayMode(),
+                settings.levelRange(),
+                settings.opacity(),
+                settings.selectedLevels());
+    }
+
+    private enum OverlayModeKey {
+        OFF(DungeonControlPanelContentModel.Mode.OFF),
+        NEARBY(DungeonControlPanelContentModel.Mode.NEARBY),
+        SELECTED(DungeonControlPanelContentModel.Mode.SELECTED);
+
+        private final DungeonControlPanelContentModel.Mode overlayMode;
+
+        OverlayModeKey(DungeonControlPanelContentModel.Mode overlayMode) {
+            this.overlayMode = overlayMode;
+        }
+
+        private DungeonControlPanelContentModel.Mode overlayMode() {
+            return overlayMode;
+        }
+
+        private static OverlayModeKey fromModelKey(String modelKey) {
+            for (OverlayModeKey value : values()) {
+                if (value.matches(modelKey)) {
+                    return value;
+                }
+            }
+            return OFF;
+        }
+
+        private boolean matches(String modelKey) {
+            return modelKey != null && name().equalsIgnoreCase(modelKey);
+        }
     }
 }

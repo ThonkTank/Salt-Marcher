@@ -194,9 +194,8 @@ public final class CatalogControlsView extends VBox {
             getStyleClass().add("control-separator");
         }
     }
-}
 
-final class CatalogFilterStripView extends VBox {
+    private static final class CatalogFilterStripView extends VBox {
 
     private static final String CLEAR_LABEL = "Leeren";
     private static final String SEARCH_KEY = "search";
@@ -441,9 +440,9 @@ final class CatalogFilterStripView extends VBox {
             setOnAction(event -> action.run());
         }
     }
-}
+    }
 
-final class CatalogFilterChipsView extends FlowPane {
+    private static final class CatalogFilterChipsView extends FlowPane {
 
     private final Consumer<String> removeChipAction;
 
@@ -480,9 +479,9 @@ final class CatalogFilterChipsView extends FlowPane {
             setOnAction(event -> removeChipAction.accept(chip.key()));
         }
     }
-}
+    }
 
-final class CatalogCrRangeView extends HBox {
+    private static final class CatalogCrRangeView extends HBox {
 
     private static final String CHALLENGE_RATING_LABEL = "CR";
     private static final String DEFAULT_MINIMUM = "0";
@@ -596,9 +595,9 @@ final class CatalogCrRangeView extends HBox {
             setMinWidth(20);
         }
     }
-}
+    }
 
-final class CatalogEncounterTuningView extends VBox {
+    private static final class CatalogEncounterTuningView extends VBox {
 
     private static final double DEFAULT_DIFFICULTY_SLIDER_VALUE = 2.0;
     private static final double DEFAULT_BALANCE_SLIDER_VALUE = 3.0;
@@ -889,9 +888,9 @@ final class CatalogEncounterTuningView extends VBox {
             setPrefWidth(56);
         }
     }
-}
+    }
 
-final class CatalogEncounterTablePickerView extends Button {
+    private static final class CatalogEncounterTablePickerView extends Button {
 
     private static final String DEFAULT_TRIGGER_TEXT = "Tabelle ▾";
     private static final String EMPTY_LABEL = "Keine Encounter-Tabellen gefunden";
@@ -1175,9 +1174,9 @@ final class CatalogEncounterTablePickerView extends Button {
             setOnAction(event -> selectionAction.accept(table.tableId(), isSelected()));
         }
     }
-}
+    }
 
-final class CatalogSearchableFilterView extends Button {
+    private static final class CatalogSearchableFilterView extends Button {
 
     private static final int SEARCH_FIELD_THRESHOLD = 6;
     private static final String CLOSED_SUFFIX = " ▾";
@@ -1463,5 +1462,6 @@ final class CatalogSearchableFilterView extends Button {
             setPrefWidth(200);
             setMinWidth(160);
         }
+    }
     }
 }
