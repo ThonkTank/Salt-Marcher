@@ -36,9 +36,9 @@ than one smell scoreboard. PMD retains generic source-smell families such as
 `TooManyFields`, and `UselessOverridingMethod`; generic ArchUnit suites retain
 cycle and broad dependency-direction blockers; `checkNoDeadCode` retains
 whole-program production reachability; CKJM retains hotspot and regression
-reporting; and the focused layering bundles retain role-aware relay and sprawl
-graph diagnostics that generic smell tools cannot classify by SaltMarcher role
-semantics.
+reporting; and jQAssistant backs the focused graph diagnostics for role-aware
+relay, reuse direction, and sprawl rules that generic smell tools cannot
+classify by SaltMarcher role semantics.
 
 For unused-code hygiene, the active mechanical scope is split by proof route:
 `compileJava` owns `UnusedLabel`, `UnusedMethod`, `UnusedNestedClass`, and

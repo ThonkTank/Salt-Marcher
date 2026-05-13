@@ -107,6 +107,10 @@ tasks.named("check") {
     dependsOn(checkRewriteNearMisses)
 }
 
+tasks.named("production-handoff") {
+    dependsOn(checkRewriteNearMisses)
+}
+
 spotbugs {
     ignoreFailures = false
     effort = Effort.MAX

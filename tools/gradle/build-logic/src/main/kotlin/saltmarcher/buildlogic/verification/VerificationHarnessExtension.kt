@@ -15,6 +15,7 @@ import org.gradle.api.tasks.testing.Test
 import org.gradle.kotlin.dsl.named
 import org.gradle.kotlin.dsl.register
 import org.gradle.language.base.plugins.LifecycleBasePlugin
+import saltmarcher.buildlogic.enforcement.EnforcementJqassistantTask
 import saltmarcher.buildlogic.enforcement.EnforcementUtilityTaskKind
 import saltmarcher.buildlogic.enforcement.EnforcementBundlesExtension
 import saltmarcher.buildlogic.tasks.CheckCentralizedStylesheetsTask
@@ -31,6 +32,7 @@ internal open class VerificationHarnessExtension(
     private val sourceRoots: FileCollection,
     private val sourceJavaRoots: FileCollection,
     private val commonFocusedArchunitSupportIncludes: List<String>,
+    private val jqassistantTaskRegistrar: JqassistantTaskRegistrar,
     private val configureCommonErrorProneOptions: JavaCompile.() -> Unit
 ) {
     private fun compileJavaTaskName(sourceSetName: String): String =
@@ -111,6 +113,20 @@ internal open class VerificationHarnessExtension(
             }
         }
     }
+
+    fun registerJqassistantTask(
+        bundleId: String,
+        taskSpec: EnforcementJqassistantTask
+    ) = jqassistantTaskRegistrar.registerTaskPair(
+        bundleId = bundleId,
+        taskSpec = taskSpec,
+        mainClassesDirectory = project.tasks.named<JavaCompile>("compileJava").flatMap(JavaCompile::getDestinationDirectory),
+        sourceRoots = project.files(taskSpec.sourceRoots).asFileTree.matching {
+            taskSpec.sourceIncludes.forEach(::include)
+            exclude("**/build/**")
+        },
+        dependsOnTasks = listOf(project.tasks.named("classes"))
+    ).analyzeTask
 
     fun registerUtilityVerificationTask(
         taskName: String,

@@ -101,7 +101,7 @@ Where current gates lag that owner, the row names that drift explicitly.
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
 | `view-layer-slotcontent-genuine-reuse-diagnostic` | Candidate | every future reusable `slotcontent/**` unit under `src/view/**` | none | none | The quality stack could emit a dedicated blocker when a mechanically legal `slotcontent/**` unit is actually feature-specific and not genuinely reusable. |
-| `view-layer-reuse-direction-mechanization` | Candidate | every future dependency or inheritance edge between contribution-specific units, reusable `slotcontent/**`, and `slotcontent/primitives/**` | none | none | The architecture stack could block reverse or sideways reuse edges directly instead of keeping the one-way reuse direction review-owned. |
+| `view-layer-reuse-direction-mechanization` | Enforced | every compiled dependency edge between contribution-specific units, reusable `slotcontent/**`, and `slotcontent/primitives/**` | view-layer bundle jQAssistant `ViewLayerReuseDirection` | `./gradlew checkViewEnforcement` | Reusable `slotcontent/**` code does not depend back upward into feature-specific view roots, and primitive reusable code does not depend upward into feature-specific or non-primitive reusable units. |
 
 ## Review-Owned
 

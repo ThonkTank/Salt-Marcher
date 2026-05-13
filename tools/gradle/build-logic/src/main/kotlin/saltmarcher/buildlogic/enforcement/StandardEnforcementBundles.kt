@@ -12,6 +12,7 @@ private class EnforcementBundleBuilder(
     private val buildHarnessTasks = mutableListOf<BuildHarnessTaskSpec>()
     private val errorProneCheckers = linkedSetOf<String>()
     private var archunit: EnforcementArchunitTask? = null
+    private var jqassistant: EnforcementJqassistantTask? = null
     private val utilityTasks = mutableListOf<EnforcementUtilityTaskSpec>()
     private var verificationSourceRoots: List<String> = emptyList()
     private var verificationSourceIncludes: List<String> = emptyList()
@@ -44,6 +45,24 @@ private class EnforcementBundleBuilder(
             description = description,
             sourceIncludes = sourceIncludes,
             includePatterns = includePatterns
+        )
+    }
+
+    fun jqassistant(
+        taskName: String,
+        description: String,
+        sourceConfigPath: String,
+        rulesDirPath: String,
+        sourceRoots: List<String>,
+        sourceIncludes: List<String>
+    ) {
+        jqassistant = EnforcementJqassistantTask(
+            taskName = taskName,
+            description = description,
+            sourceConfigPath = sourceConfigPath,
+            rulesDirPath = rulesDirPath,
+            sourceRoots = sourceRoots,
+            sourceIncludes = sourceIncludes
         )
     }
 
@@ -100,6 +119,7 @@ private class EnforcementBundleBuilder(
         buildHarnessTasks = buildHarnessTasks.toList(),
         errorProneCheckers = errorProneCheckers.toList(),
         archunit = archunit,
+        jqassistant = jqassistant,
         utilityTasks = utilityTasks.toList(),
         verificationSourceRoots = verificationSourceRoots,
         verificationSourceIncludes = verificationSourceIncludes
@@ -217,6 +237,14 @@ fun standardEnforcementBundleDescriptors(): List<EnforcementBundleDescriptor> = 
             "checkViewLayerEnforcement",
             listOf("saltmarcher.architecture.view.ViewTopologyPerimeterRules", "saltmarcher.architecture.view.ViewLayerTopologyRules")
         )
+        jqassistant(
+            taskName = "jqassistantAnalyzeViewLayerEnforcement",
+            description = "Analyze View layer reuse direction constraints with jQAssistant.",
+            sourceConfigPath = "tools/quality/view-layer-enforcement/jqassistant/config.yml",
+            rulesDirPath = "tools/quality/view-layer-enforcement/jqassistant/rules",
+            sourceRoots = listOf("src"),
+            sourceIncludes = listOf("view/**/*.java")
+        )
     },
     focusedViewBundle(FocusedViewBundleSpec(
         bundleId = "view",
@@ -288,6 +316,14 @@ fun standardEnforcementBundleDescriptors(): List<EnforcementBundleDescriptor> = 
         buildHarnessDocumentationCoverageSpecs(listOf("layeringArchitecture"))
         buildHarnessTopologyTask("layeringArchitectureTopologyCheck")
         buildHarnessDocumentationTask("layeringArchitectureDocumentationEnforcementCheck")
+        jqassistant(
+            taskName = "jqassistantAnalyzeLayeringArchitectureEnforcement",
+            description = "Analyze cross-layer boundary, relay, and sprawl graph diagnostics with jQAssistant.",
+            sourceConfigPath = "tools/quality/layering-architecture-enforcement/jqassistant/config.yml",
+            rulesDirPath = "tools/quality/layering-architecture-enforcement/jqassistant/rules",
+            sourceRoots = listOf("bootstrap", "shell", "src"),
+            sourceIncludes = listOf("**/*.java")
+        )
     },
     bundle("shellAppShell", 11) {
         selectorTask("Internal selector for the dedicated AppShell lifecycle-hook ownership bundle.")

@@ -1,12 +1,14 @@
 package src.domain.party.published;
 
+import org.jspecify.annotations.Nullable;
+
 public record CreateCharacterCommand(CharacterDraft draft, MembershipState membership) {
 
-    public String createDraftName() {
+    public @Nullable String createDraftName() {
         return draft == null ? null : draft.name();
     }
 
-    public String createDraftPlayerName() {
+    public @Nullable String createDraftPlayerName() {
         return draft == null ? null : draft.playerName();
     }
 

@@ -49,7 +49,8 @@ internal fun Project.configureQualityConventions() {
         toolConfigurations = toolConfigurations
     )
     registerQualityConventionHarness(
-        environment = environment
+        environment = environment,
+        toolConfigurations = toolConfigurations
     )
     registerQualityConventionPackagingTasks(environment)
 }

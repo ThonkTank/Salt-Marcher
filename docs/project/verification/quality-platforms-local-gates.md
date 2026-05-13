@@ -177,9 +177,10 @@ report does not block the build.
 
 Broader architecture-sprawl signals are therefore intentionally split. Generic
 source smells stay with PMD, cycle blockers stay with the generic and focused
-ArchUnit suites, and whole-program dead-code reachability stays with
-`checkNoDeadCode`. The former jQAssistant relay-only and sprawl surfaces are
-retired from the public blocker path.
+ArchUnit suites, whole-program dead-code reachability stays with
+`checkNoDeadCode`, and jQAssistant owns the graph diagnostics for relay stacks,
+reuse direction, and role or feature sprawl behind the focused architecture
+surfaces.
 
 Focused PMD, SpotBugs, CPD, Lizard, and CKJM entrypoints must stay independent
 of the closed-world View topology owner behind `checkViewEnforcement`; they may

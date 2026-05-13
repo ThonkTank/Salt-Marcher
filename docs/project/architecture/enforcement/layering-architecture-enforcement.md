@@ -76,16 +76,17 @@ Focused bundle entrypoint:
 
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
-| `layering-explicit-cross-layer-public-boundary-diagnostic` | Candidate | every future change that adds or removes one documented cross-layer boundary family | none | none | The architecture stack could emit a dedicated blocker when a boundary family disappears or a new one appears, instead of inferring that drift from several neighboring owner docs. |
-| `layering-thin-role-relay-stack-diagnostic` | Candidate | every root `*ApplicationService`, `application/*UseCase`, `*Binder`, `*IntentHandler`, and `*ServiceContribution` surface that relays through at least one deeper relay-only owner | none | none | Thin adapter and orchestration roles that currently form a multi-hop relay stack are reported for review without turning intentional thinness itself into a blocker. |
-| `layering-role-hub-sprawl-candidate` | Candidate | every root `*ApplicationService`, `application/*UseCase`, domain `repository/**`, domain `port/**`, `*Binder`, `*IntentHandler`, and `*ServiceContribution` role | none | none | Role-bearing tactical owners that fan out into too many foreign production owners or foreign feature scopes are reported for review before they harden into coordination hubs. |
-| `layering-cross-feature-sprawl-candidate` | Candidate | every compiled `src/domain/<context>/**` or `src/data/<feature>/**` production type that contributes to broad acyclic foreign-feature coupling | none | none | Domain and data feature scopes that couple too broadly across foreign feature scopes are reported even when the graph has not yet become cyclic. |
-| `layering-public-boundary-breadth-candidate` | Candidate | every public root `*ApplicationService` and public data `*ServiceContribution` type | none | none | Broad public backend or runtime registration roots with too many collaborators or too wide a callable surface are reported for review before they become hard-to-split coordination shells. |
+| `layering-explicit-cross-layer-public-boundary-diagnostic` | Enforced | every compiled cross-layer dependency edge in active production code | layering-architecture bundle jQAssistant `LayeringCrossLayerPublicBoundaryDependency` | `./gradlew checkLayeringEnforcement` | Cross-layer source dependencies stay on the documented inward-facing boundary families instead of opening hidden direct layer shortcuts. |
+| `layering-thin-role-relay-stack-diagnostic` | Enforced | every root `*ApplicationService`, `application/*UseCase`, `*Binder`, `*IntentHandler`, and `*ServiceContribution` surface with a direct dependency edge into another thin role family | layering-architecture bundle jQAssistant `LayeringThinRoleRelayStackDiagnostic` | `./gradlew checkLayeringEnforcement` | Thin adapter and orchestration roles do not form direct multi-role relay stacks without an intervening substantive owner. |
+| `layering-role-hub-sprawl-candidate` | Enforced | every root `*ApplicationService`, `application/*UseCase`, domain `repository/**`, domain `port/**`, `*Binder`, `*IntentHandler`, and `*ServiceContribution` role | layering-architecture bundle jQAssistant `LayeringRoleHubSprawlCandidate` | `./gradlew checkLayeringEnforcement` | Role-bearing tactical owners do not fan out into twelve or more distinct role-bearing production collaborators. |
+| `layering-cross-feature-sprawl-candidate` | Enforced | every compiled `src/domain/<context>/**` or `src/data/<feature>/**` production type that depends on foreign domain/data feature scopes | layering-architecture bundle jQAssistant `LayeringCrossFeatureSprawlCandidate` | `./gradlew checkLayeringEnforcement` | Domain and data types do not couple to four or more foreign domain/data feature scopes. |
+| `layering-public-boundary-breadth-candidate` | Enforced | every public root `*ApplicationService` and public data `*ServiceContribution` type | layering-architecture bundle jQAssistant `LayeringPublicBoundaryBreadthCandidate` | `./gradlew checkLayeringEnforcement` | Broad backend and runtime registration roots do not accumulate eighteen or more distinct production collaborators. |
 
-The former relay-only and sprawl-specific jQAssistant diagnostics are retired
-from the public verification surface. Review of relay-chain thinness and
-sprawl breadth now stays outside the blocker path until those concerns gain a
-new owner on the remaining Error Prone, ArchUnit, or build-harness stack.
+The relay-chain and sprawl diagnostics are owned by jQAssistant because they
+query compiled dependency graphs across role and feature relationships. Error
+Prone, ArchUnit, and the build-harness stack remain the owners for
+compiler-local symbol rules, simple dependency and cycle rules, and source-tree
+topology rules.
 
 ## References
 

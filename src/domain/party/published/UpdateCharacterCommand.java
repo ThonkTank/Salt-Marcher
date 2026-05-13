@@ -1,12 +1,14 @@
 package src.domain.party.published;
 
+import org.jspecify.annotations.Nullable;
+
 public record UpdateCharacterCommand(long id, CharacterDraft draft) {
 
-    public String updateDraftName() {
+    public @Nullable String updateDraftName() {
         return draft == null ? null : draft.name();
     }
 
-    public String updateDraftPlayerName() {
+    public @Nullable String updateDraftPlayerName() {
         return draft == null ? null : draft.playerName();
     }
 

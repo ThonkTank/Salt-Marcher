@@ -101,6 +101,10 @@ internal fun Project.configureVerificationCore() {
             )
         }
 
+        descriptor.jqassistant?.let { jqassistant ->
+            aggregateDependencies += verificationHarness.registerJqassistantTask(bundleId, jqassistant)
+        }
+
         aggregateDependencies.addAll(
             descriptor.buildHarnessTasks.map { task ->
                 gradle.includedBuild("build-harness").task(":${task.taskName}")

@@ -10,6 +10,15 @@ data class EnforcementArchunitTask(
     val includePatterns: List<String>
 )
 
+data class EnforcementJqassistantTask(
+    val taskName: String,
+    val description: String,
+    val sourceConfigPath: String,
+    val rulesDirPath: String,
+    val sourceRoots: List<String>,
+    val sourceIncludes: List<String>
+)
+
 enum class EnforcementUtilityTaskKind {
     VIEW_FXML_RESOURCES,
     CENTRALIZED_STYLESHEETS,
@@ -46,6 +55,7 @@ data class EnforcementBundleDescriptor(
     val buildHarnessTasks: List<BuildHarnessTaskSpec>,
     val errorProneCheckers: List<String>,
     val archunit: EnforcementArchunitTask?,
+    val jqassistant: EnforcementJqassistantTask?,
     val utilityTasks: List<EnforcementUtilityTaskSpec>,
     val verificationSourceRoots: List<String>,
     val verificationSourceIncludes: List<String>
@@ -181,6 +191,23 @@ private fun EnforcementBundleDescriptor.validated(): EnforcementBundleDescriptor
     utilityTasks.forEach { task ->
         require(task.taskName.isNotBlank()) {
             "Enforcement bundle '$bundleId' declares a utility task with a blank taskName."
+        }
+    }
+    jqassistant?.let { task ->
+        require(task.taskName.isNotBlank()) {
+            "Enforcement bundle '$bundleId' declares a jQAssistant task with a blank taskName."
+        }
+        require(task.sourceConfigPath.isNotBlank()) {
+            "Enforcement bundle '$bundleId' jQAssistant task '${task.taskName}' must declare sourceConfigPath."
+        }
+        require(task.rulesDirPath.isNotBlank()) {
+            "Enforcement bundle '$bundleId' jQAssistant task '${task.taskName}' must declare rulesDirPath."
+        }
+        require(task.sourceRoots.isNotEmpty()) {
+            "Enforcement bundle '$bundleId' jQAssistant task '${task.taskName}' must declare sourceRoots."
+        }
+        require(task.sourceIncludes.isNotEmpty()) {
+            "Enforcement bundle '$bundleId' jQAssistant task '${task.taskName}' must declare sourceIncludes."
         }
     }
 

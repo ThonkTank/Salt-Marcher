@@ -633,11 +633,21 @@ public final class DocumentationCoverageCatalog {
                             row("layering-data-reaches-domain-only-through-public-boundaries-and-repositories", "Enforced Elsewhere",
                                     List.of("data-service-contribution-register-export-shape", "domain-repository-role-shape"),
                                     List.of("./gradlew compileJava", "./gradlew checkDomainEnforcement")),
-                            row("layering-explicit-cross-layer-public-boundary-diagnostic", "Candidate"),
-                            row("layering-thin-role-relay-stack-diagnostic", "Candidate"),
-                            row("layering-role-hub-sprawl-candidate", "Candidate"),
-                            row("layering-cross-feature-sprawl-candidate", "Candidate"),
-                            row("layering-public-boundary-breadth-candidate", "Candidate")))));
+                            row("layering-explicit-cross-layer-public-boundary-diagnostic", "Enforced",
+                                    List.of("LayeringCrossLayerPublicBoundaryDependency"),
+                                    List.of("./gradlew checkLayeringEnforcement")),
+                            row("layering-thin-role-relay-stack-diagnostic", "Enforced",
+                                    List.of("LayeringThinRoleRelayStackDiagnostic"),
+                                    List.of("./gradlew checkLayeringEnforcement")),
+                            row("layering-role-hub-sprawl-candidate", "Enforced",
+                                    List.of("LayeringRoleHubSprawlCandidate"),
+                                    List.of("./gradlew checkLayeringEnforcement")),
+                            row("layering-cross-feature-sprawl-candidate", "Enforced",
+                                    List.of("LayeringCrossFeatureSprawlCandidate"),
+                                    List.of("./gradlew checkLayeringEnforcement")),
+                            row("layering-public-boundary-breadth-candidate", "Enforced",
+                                    List.of("LayeringPublicBoundaryBreadthCandidate"),
+                                    List.of("./gradlew checkLayeringEnforcement"))))));
 
     private DocumentationCoverageCatalog() {
     }

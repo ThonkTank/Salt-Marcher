@@ -1,0 +1,60 @@
+<jqassistant-rules xmlns="http://schema.jqassistant.org/rule/v2.9"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://schema.jqassistant.org/rule/v2.9 https://jqassistant.github.io/jqassistant/current/schema/jqassistant-rule-v2.9.xsd">
+
+    <group id="saltmarcher:view-layer-enforcement" severity="blocker">
+        <includeConstraint refId="saltmarcher:ViewLayerReuseDirection"/>
+    </group>
+
+    <concept id="saltmarcher:ViewReuseType">
+        <description>Annotates View-layer types by reusable topology tier.</description>
+        <cypher><![CDATA[
+            MATCH (type:Java:Type)
+            WHERE type.fqn =~ 'src\\.view\\..*'
+            WITH type, split(type.fqn, '.') AS segments
+            SET
+              type:SaltMarcher:ViewReuseType,
+              type.reuseTier = CASE
+                WHEN size(segments) >= 4 AND segments[2] = 'slotcontent' AND segments[3] = 'primitives' THEN 'PRIMITIVE'
+                WHEN size(segments) >= 3 AND segments[2] = 'slotcontent' THEN 'REUSABLE'
+                WHEN size(segments) >= 4 AND segments[2] IN ['leftbartabs', 'statetabs', 'dropdowns'] THEN 'FEATURE'
+                ELSE 'OTHER'
+              END,
+              type.relativePath = CASE
+                WHEN type.sourceFileName IS NULL OR type.sourceFileName = ''
+                  THEN replace(type.fqn, '.', '/') + '.java'
+                WHEN type.name IS NULL
+                  OR type.name = ''
+                  OR NOT type.fqn ENDS WITH '.' + type.name
+                  THEN replace(type.fqn, '.', '/') + '.java'
+                ELSE replace(substring(type.fqn, 0, size(type.fqn) - size(type.name) - 1), '.', '/') + '/' + type.sourceFileName
+              END
+            RETURN type AS ViewReuseType
+        ]]></cypher>
+    </concept>
+
+    <constraint id="saltmarcher:ViewLayerReuseDirection">
+        <requiresConcept refId="saltmarcher:ViewReuseType"/>
+        <description>Reusable View code must not depend back upward into feature-specific or less reusable tiers.</description>
+        <cypher><![CDATA[
+            MATCH (source:Java:Type:SaltMarcher:ViewReuseType)-[:DEPENDS_ON]->(target:Java:Type:SaltMarcher:ViewReuseType)
+            WHERE
+              (
+                source.reuseTier = 'REUSABLE'
+                AND target.reuseTier = 'FEATURE'
+              )
+              OR (
+                source.reuseTier = 'PRIMITIVE'
+                AND target.reuseTier IN ['FEATURE', 'REUSABLE']
+              )
+            RETURN DISTINCT
+              source.relativePath AS Source,
+              target.relativePath AS Target,
+              'FEATURE -> REUSABLE -> PRIMITIVE only' AS ExpectedDirection,
+              source.reuseTier + ' -> ' + target.reuseTier AS ActualDirection,
+              'View-layer reuse dependencies must point from feature-specific roots toward reusable slotcontent and then primitives.' AS Details
+            ORDER BY Source, Target
+        ]]></cypher>
+        <report primaryColumn="Source" keyColumns="Source, Target, ActualDirection"/>
+    </constraint>
+</jqassistant-rules>
