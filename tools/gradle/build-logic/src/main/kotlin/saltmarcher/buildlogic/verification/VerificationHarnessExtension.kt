@@ -19,7 +19,6 @@ import org.gradle.language.base.plugins.LifecycleBasePlugin
 import saltmarcher.buildlogic.enforcement.EnforcementBundleDescriptor
 import saltmarcher.buildlogic.enforcement.EnforcementJqassistantTask
 import saltmarcher.buildlogic.enforcement.EnforcementUtilityTaskKind
-import saltmarcher.buildlogic.enforcement.focusedVerificationCompileTaskName
 import saltmarcher.buildlogic.tasks.CheckCentralizedStylesheetsTask
 import saltmarcher.buildlogic.tasks.CheckDefinedStyleClassSelectorsTask
 import saltmarcher.buildlogic.tasks.CheckManualNodeStylingTask
@@ -39,15 +38,6 @@ internal open class VerificationHarnessExtension(
         "compile${sourceSetName.replaceFirstChar(Char::uppercaseChar)}Java"
 
     private fun classesTaskName(sourceSetName: String): String = "${sourceSetName}Classes"
-
-    fun registerFocusedVerificationCompileAlias(
-        bundleId: String,
-        coalescedCompileTask: TaskProvider<JavaCompile>
-    ): TaskProvider<Task> = project.tasks.register(focusedVerificationCompileTaskName(bundleId)) {
-        group = LifecycleBasePlugin.VERIFICATION_GROUP
-        description = "Alias for the coalesced focused verification compile used by '$bundleId'."
-        dependsOn(coalescedCompileTask)
-    }
 
     fun registerFocusedVerificationCompileTask(
         sliceKey: FocusedVerificationSliceKey,

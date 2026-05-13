@@ -3,7 +3,6 @@ package saltmarcher.buildlogic.settings
 import java.io.File
 import org.gradle.api.Plugin
 import org.gradle.api.initialization.Settings
-import saltmarcher.buildlogic.enforcement.focusedVerificationCompileTaskName
 import saltmarcher.buildlogic.enforcement.standardEnforcementBundleCatalog
 import saltmarcher.buildlogic.enforcement.standardVerificationSurfaceCatalog
 
@@ -24,17 +23,11 @@ class SaltmarcherRootSettingsPlugin : Plugin<Settings> {
             .toSet()
         val broadBuildTaskNames = standardBroadBuildTaskNames()
         val internalSelectorTaskToBundleId = bundleCatalog.selectorTaskToBundleId
-        val focusedCompileTaskToBundleId = bundleCatalog.descriptorsById.values
-            .filter { descriptor -> descriptor.requiresFocusedCompile() }
-            .associate { descriptor ->
-                focusedVerificationCompileTaskName(descriptor.bundleId) to descriptor.bundleId
-            }
         val publicSurfaceTaskNames = publicVerificationSurfaceCatalog.taskToBundleIds.keys
         val requestedBundleIds = requestedTaskNames
             .flatMap { taskName ->
                 publicVerificationSurfaceCatalog.taskToBundleIds[taskName]
                     ?: internalSelectorTaskToBundleId[taskName]?.let(::listOf)
-                    ?: focusedCompileTaskToBundleId[taskName]?.let(::listOf)
                     ?: emptyList()
             }
             .distinct()
@@ -43,7 +36,6 @@ class SaltmarcherRootSettingsPlugin : Plugin<Settings> {
             requestedTaskNames.none { taskName -> taskName in broadBuildTaskNames } &&
             requestedTaskNames.all { taskName ->
                 taskName in internalSelectorTaskToBundleId.keys ||
-                    taskName in focusedCompileTaskToBundleId.keys ||
                     taskName in publicSurfaceTaskNames
             }
         val activeEnforcementBundleIds = if (focusedEnforcementBundleMode) {

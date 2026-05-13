@@ -71,9 +71,6 @@ data class EnforcementBundleDescriptor(
         ?: error("Unknown build-harness task '$taskName' for enforcement bundle '$bundleId'.")
 }
 
-fun focusedVerificationCompileTaskName(bundleId: String): String =
-    "compile${bundleId.replaceFirstChar(Char::uppercaseChar)}VerificationJava"
-
 data class EnforcementBundleCatalog(
     val descriptorsById: Map<String, EnforcementBundleDescriptor>
 ) {

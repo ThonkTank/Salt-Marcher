@@ -173,10 +173,6 @@ private fun registerFocusedCompileTasksByBundleId(
             focusedCompileDescription(sliceBundleIds, sliceCheckerNames)
         )
         sliceDescriptors.map { descriptor ->
-            verificationHarness.registerFocusedVerificationCompileAlias(
-                descriptor.bundleId,
-                coalescedCompileTask
-            )
             descriptor.bundleId to coalescedCompileTask
         }
     }

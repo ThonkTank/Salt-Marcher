@@ -190,7 +190,7 @@ private fun Project.verificationErrorProneRequested(environment: QualityConventi
             taskName == "checkArchitecture" ||
             taskName == "production-handoff" ||
             (taskName.startsWith("check") && taskName.endsWith("Enforcement")) ||
-            (taskName.startsWith("compile") && taskName.endsWith("VerificationJava")) ||
+            (taskName.startsWith("compileFocusedVerification") && taskName.endsWith("Java")) ||
             (taskName.startsWith("verify") && taskName.endsWith("Bundle"))
     }
 }
