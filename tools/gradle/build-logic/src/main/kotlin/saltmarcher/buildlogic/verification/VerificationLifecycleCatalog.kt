@@ -32,7 +32,6 @@ internal fun standardVerificationLifecycleCatalog(): VerificationLifecycleCatalo
         verificationLifecycleOwner("lizard-main", "lizardMain"),
         verificationLifecycleOwner("compiled-artifact-hygiene", "checkNoCompiledArtifactsInSource"),
         verificationLifecycleOwner("dead-code", "checkNoDeadCode"),
-        verificationLifecycleOwner("pmd-strict-main", "pmdStrictMain"),
         verificationLifecycleOwner("ckjm-main", "ckjmMain")
     )
     val dependencyTaskNames = sharedHygieneOwners.map(VerificationLifecycleOwnerSpec::taskName)

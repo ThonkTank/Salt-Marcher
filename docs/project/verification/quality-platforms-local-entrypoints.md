@@ -37,7 +37,8 @@ owners separately.
 
 `pmdMain` and `spotbugsMain` are central blocking gates and may also be run as
 focused direct entrypoints. `pmdStrictMain` remains the focused text-first PMD
-entrypoint for the same blocking ruleset.
+entrypoint, but derives its report from the `pmdMain` XML result instead of
+running a second PMD scan.
 
 ## Public Handoff Routes
 

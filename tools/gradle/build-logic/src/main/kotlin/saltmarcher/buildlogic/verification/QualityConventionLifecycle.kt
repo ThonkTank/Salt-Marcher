@@ -73,27 +73,20 @@ internal fun Project.registerQualityConventionLifecycleTasks(
 
     tasks.register<PmdSourceCheckTask>("pmdStrictMain") {
         group = LifecycleBasePlugin.VERIFICATION_GROUP
-        description = "Run strict PMD source-smell checks against production Java sources."
-        dependsOn(gradle.includedBuild("quality-rules").task(":jar"))
+        description = "Derive the text-first PMD source-smell report from the pmdMain XML report."
+        dependsOn(tasks.named("pmdMain"))
         projectRoot.set(layout.projectDirectory)
-        sourceRoots.from(
-            layout.projectDirectory.dir("bootstrap"),
-            layout.projectDirectory.dir("shell"),
-            layout.projectDirectory.dir("src")
-        )
-        toolClasspath.from(toolConfigurations.pmdCli)
-        auxClasspath.from(configurations.named("compileClasspath"))
-        rulesetFiles.from(
-            layout.projectDirectory.file("tools/quality/config/pmd/complexity-ruleset.xml"),
-            layout.projectDirectory.file("tools/quality/config/pmd/law-of-demeter-ruleset.xml")
-        )
+        xmlReportFile.set(layout.buildDirectory.file("reports/pmd/main.xml"))
         reportFile.set(layout.buildDirectory.file("reports/pmd/main-strict.txt"))
     }
 
     tasks.named<Pmd>("pmdMain") {
+        dependsOn(gradle.includedBuild("quality-rules").task(":jar"))
         source = verificationLayout.sourceJavaRoots.asFileTree
         include("**/*.java")
         classpath = files(configurations.named("compileClasspath"))
+        ignoreFailures = true
+        finalizedBy(tasks.named("pmdStrictMain"))
     }
 
     tasks.named<Pmd>("pmdTest") {

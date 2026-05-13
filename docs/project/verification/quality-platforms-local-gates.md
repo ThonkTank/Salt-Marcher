@@ -49,7 +49,7 @@ full architecture harness through `check`.
 
 | Platform | Status | Entrypoint | Current policy |
 | --- | --- | --- | --- |
-| PMD non-architecture smells | `Blocking Local Gate` | `./gradlew pmdMain`, `./gradlew pmdStrictMain` | Runs `tools/quality/config/pmd/complexity-ruleset.xml` on production Java sources. `pmdMain` is the central blocking gate; `pmdStrictMain` is the text-first direct entrypoint for the same ruleset. PMD owns non-architecture smell policy plus `UnusedAssignment`, including generic source-smell families such as `LawOfDemeter`, `GodClass`, `CouplingBetweenObjects`, `TooManyMethods`, `TooManyFields`, and `UselessOverridingMethod`; focused Error Prone verification compiles own `UnusedLabel`, `UnusedMethod`, `UnusedNestedClass`, and `UnusedVariable` where those checkers are part of the selected enforcement surface. |
+| PMD non-architecture smells | `Blocking Local Gate` | `./gradlew pmdMain`, `./gradlew pmdStrictMain` | `pmdMain` runs `tools/quality/config/pmd/complexity-ruleset.xml` and `tools/quality/config/pmd/law-of-demeter-ruleset.xml` once on production Java sources and writes the XML/HTML PMD reports. `pmdStrictMain` derives the text-first `build/reports/pmd/main-strict.txt` report from `pmdMain`'s XML result instead of running PMD again. PMD owns non-architecture smell policy plus `UnusedAssignment`, including generic source-smell families such as `LawOfDemeter`, `GodClass`, `CouplingBetweenObjects`, `TooManyMethods`, `TooManyFields`, and `UselessOverridingMethod`; focused Error Prone verification compiles own `UnusedLabel`, `UnusedMethod`, `UnusedNestedClass`, and `UnusedVariable` where those checkers are part of the selected enforcement surface. |
 | OpenRewrite near-miss checks | `Blocking Local Gate` | `./gradlew checkRewriteNearMisses`, `./gradlew rewriteDryRun` | Runs the active `saltmarcher.rewrite.NearMissChecks` recipe set from `rewrite.yml` in dry-run mode. The gate blocks when OpenRewrite would change code or mark configured search results; it does not mutate tracked sources. The current scope covers redundant casts, known redundant Java call chains, and DTO-overfetching search recipes for configured carrier packages. It is a near-miss quality gate, not a proof of redundant `A -> B -> D` carrier-converter chains. |
 | Dead code reachability | `Blocking Local Gate` | `./gradlew checkNoDeadCode` | Runs the verification-core whole-program reachability analysis for compiled production declarations: files, top-level types, secondary top-level types, nested and named local types, constructors, methods, and fields. Structural roots currently include the configured JavaFX launcher and preloader classes, exact concrete shell contribution roots matching `ShellViewDiscovery`, exact concrete data service contribution roots matching `ServiceContributionDiscovery`, merged FXML controller resources, `META-INF/services` providers, and the explicit fallback rules in `tools/quality/config/deadcode/keep-rules.pro`. Non-constant runtime reflection is only supported through explicit keep rules. |
 | SpotBugs plus FindSecBugs | `Blocking Local Gate` | `./gradlew spotbugsMain` | Runs bytecode bug and security-smell analysis with SpotBugs effort `MAX` and confidence `MEDIUM`. |
@@ -91,9 +91,10 @@ dry-run changes or search markers. `rewriteRun` is not part of the blocking
 path because it mutates source files.
 
 `pmdMain` is wired into the shared `check` / `production-handoff` lifecycle
-catalog and fails the local handoff build on violations. `pmdStrictMain` uses
-the same ruleset and also fails as part of that shared lifecycle or when run
-directly. `pmdTest` is disabled; PMD
+catalog as the single PMD scanner for this surface. It writes XML and HTML
+reports, then finalizes through `pmdStrictMain`, which derives the text report
+and fails the direct or aggregate invocation when the XML report contains PMD
+violations or analysis diagnostics. `pmdTest` is disabled; PMD
 non-architecture smell policy applies to production source roots, not
 architecture test sources.
 
