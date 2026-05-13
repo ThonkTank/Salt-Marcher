@@ -46,7 +46,7 @@ public final class PartyTravelHeading {
 
     @Override
     public boolean equals(Object other) {
-        return this == other || other instanceof PartyTravelHeading heading && name.equals(heading.name);
+        return this == other || (other instanceof PartyTravelHeading heading && name.equals(heading.name));
     }
 
     @Override

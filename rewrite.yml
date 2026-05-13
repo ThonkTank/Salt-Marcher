@@ -1,0 +1,41 @@
+---
+type: specs.openrewrite.org/v1beta/recipe
+name: saltmarcher.rewrite.NearMissChecks
+displayName: SaltMarcher near-miss quality checks
+description: Blocking near-miss checks for redundant casts, known redundant call chains, and DTO overfetching candidates.
+recipeList:
+  - org.openrewrite.staticanalysis.RemoveRedundantTypeCast
+  - org.openrewrite.staticanalysis.UseMapContainsKey
+  - saltmarcher.rewrite.FindDomainPublishedDtoOverfetching
+  - saltmarcher.rewrite.FindDataModelDtoOverfetching
+  - saltmarcher.rewrite.FindShellApiDtoOverfetching
+---
+type: specs.openrewrite.org/v1beta/recipe
+name: saltmarcher.rewrite.FindDomainPublishedDtoOverfetching
+displayName: Find domain published DTO overfetching
+description: Finds domain published carrier parameters where JavaBean-style DTO access uses only one data element.
+recipeList:
+  - org.openrewrite.java.migrate.search.FindDataUsedOnDto:
+      dtoType: src.domain..published.*
+  - org.openrewrite.java.migrate.search.FindDtoOverfetching:
+      dtoType: src.domain..published.*
+---
+type: specs.openrewrite.org/v1beta/recipe
+name: saltmarcher.rewrite.FindDataModelDtoOverfetching
+displayName: Find data model DTO overfetching
+description: Finds data model carrier parameters where JavaBean-style DTO access uses only one data element.
+recipeList:
+  - org.openrewrite.java.migrate.search.FindDataUsedOnDto:
+      dtoType: src.data..model.*
+  - org.openrewrite.java.migrate.search.FindDtoOverfetching:
+      dtoType: src.data..model.*
+---
+type: specs.openrewrite.org/v1beta/recipe
+name: saltmarcher.rewrite.FindShellApiDtoOverfetching
+displayName: Find shell API DTO overfetching
+description: Finds shell API carrier parameters where JavaBean-style DTO access uses only one data element.
+recipeList:
+  - org.openrewrite.java.migrate.search.FindDataUsedOnDto:
+      dtoType: shell.api.*
+  - org.openrewrite.java.migrate.search.FindDtoOverfetching:
+      dtoType: shell.api.*

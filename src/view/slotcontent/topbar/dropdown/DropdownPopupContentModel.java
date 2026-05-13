@@ -17,22 +17,18 @@ public final class DropdownPopupContentModel {
         return popupState.get();
     }
 
-    public void showPresentation(
-            @Nullable String triggerText,
-            @Nullable String closedAccessibleText,
-            @Nullable String openAccessibleText,
-            @Nullable String tooltipText,
-            boolean mnemonicParsing,
-            double popupWidth
-    ) {
+    public void showPresentation(PopupPresentation presentation) {
+        PopupPresentation safePresentation = presentation == null
+                ? PopupPresentation.initial()
+                : presentation;
         PopupState current = popupState.get();
         popupState.set(new PopupState(
-                safe(triggerText),
-                safe(closedAccessibleText),
-                safe(openAccessibleText),
-                safe(tooltipText),
-                mnemonicParsing,
-                Math.max(0.0, popupWidth),
+                safePresentation.triggerText(),
+                safePresentation.closedAccessibleText(),
+                safePresentation.openAccessibleText(),
+                safePresentation.tooltipText(),
+                safePresentation.mnemonicParsing(),
+                safePresentation.popupWidth(),
                 current.open()));
     }
 
@@ -55,6 +51,28 @@ public final class DropdownPopupContentModel {
 
     private static String safe(@Nullable String value) {
         return value == null ? "" : value;
+    }
+
+    public record PopupPresentation(
+            String triggerText,
+            String closedAccessibleText,
+            String openAccessibleText,
+            String tooltipText,
+            boolean mnemonicParsing,
+            double popupWidth
+    ) {
+
+        public PopupPresentation {
+            triggerText = safe(triggerText);
+            closedAccessibleText = safe(closedAccessibleText);
+            openAccessibleText = safe(openAccessibleText);
+            tooltipText = safe(tooltipText);
+            popupWidth = Math.max(0.0, popupWidth);
+        }
+
+        static PopupPresentation initial() {
+            return new PopupPresentation("", "", "", "", false, 320.0);
+        }
     }
 
     public record PopupState(

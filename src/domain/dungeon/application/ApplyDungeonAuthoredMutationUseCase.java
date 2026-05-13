@@ -2,10 +2,9 @@ package src.domain.dungeon.application;
 
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
+import src.domain.dungeon.application.ApplyDungeonEditorOperationUseCase.Mutation;
 import src.domain.dungeon.model.map.model.DungeonMapIdentity;
 import src.domain.dungeon.model.map.repository.DungeonPublishedStateRepository;
-import src.domain.dungeon.published.DungeonEditorOperation;
-import src.domain.dungeon.published.DungeonMapId;
 
 public final class ApplyDungeonAuthoredMutationUseCase {
 
@@ -22,22 +21,18 @@ public final class ApplyDungeonAuthoredMutationUseCase {
     }
 
     public void apply(
-            @Nullable DungeonMapId mapId,
-            @Nullable DungeonEditorOperation operation
+            @Nullable DungeonMapIdentity mapId,
+            @Nullable Mutation operation
     ) {
         publishedStateRepository.publishAuthoredMutation(
-                applyDungeonEditorOperationUseCase.execute(mapIdentity(mapId), operation));
+                applyDungeonEditorOperationUseCase.execute(mapId, operation));
     }
 
     public void preview(
-            @Nullable DungeonMapId mapId,
-            @Nullable DungeonEditorOperation operation
+            @Nullable DungeonMapIdentity mapId,
+            @Nullable Mutation operation
     ) {
         publishedStateRepository.publishAuthoredMutation(
-                applyDungeonEditorOperationUseCase.preview(mapIdentity(mapId), operation));
-    }
-
-    private static DungeonMapIdentity mapIdentity(@Nullable DungeonMapId mapId) {
-        return new DungeonMapIdentity(mapId == null ? 1L : mapId.value());
+                applyDungeonEditorOperationUseCase.preview(mapId, operation));
     }
 }

@@ -62,6 +62,8 @@
 
     <rule ref="category/java/design.xml/GodClass" />
 
+    <rule ref="category/java/design.xml/DataClass" />
+
     <rule ref="category/java/design.xml/AbstractClassWithoutAnyMethod" />
 
     <rule ref="category/java/design.xml/AvoidRethrowingException" />

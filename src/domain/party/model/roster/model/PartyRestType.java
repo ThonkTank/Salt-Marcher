@@ -25,7 +25,7 @@ public final class PartyRestType {
 
     @Override
     public boolean equals(Object other) {
-        return this == other || other instanceof PartyRestType restType && name.equals(restType.name);
+        return this == other || (other instanceof PartyRestType restType && name.equals(restType.name));
     }
 
     @Override

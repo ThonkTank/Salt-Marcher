@@ -95,13 +95,13 @@ final class PartyTopBarBinder {
             String triggerText
     ) {
         String safeTriggerText = triggerText == null ? "" : triggerText;
-        popupContentModel.showPresentation(
+        popupContentModel.showPresentation(new DropdownPopupContentModel.PopupPresentation(
                 safeTriggerText,
                 safeTriggerText.replace("_", ""),
                 PartyTopBarView.OPEN_ACCESSIBLE_TEXT,
                 PartyTopBarView.TOOLTIP_TEXT,
                 true,
-                PartyTopBarView.POPUP_WIDTH);
+                PartyTopBarView.POPUP_WIDTH));
     }
 
     private record Binding(Node topBar) implements ShellBinding {

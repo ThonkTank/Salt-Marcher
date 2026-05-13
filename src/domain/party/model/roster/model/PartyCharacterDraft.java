@@ -3,6 +3,7 @@ package src.domain.party.model.roster.model;
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 
+@SuppressWarnings("PMD.DataClass")
 public final class PartyCharacterDraft {
 
     private final String name;

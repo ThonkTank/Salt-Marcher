@@ -35,7 +35,7 @@ public final class PartyDungeonTravelLocationKind {
     @Override
     public boolean equals(Object other) {
         return this == other
-                || other instanceof PartyDungeonTravelLocationKind locationKind && name.equals(locationKind.name);
+                || (other instanceof PartyDungeonTravelLocationKind locationKind && name.equals(locationKind.name));
     }
 
     @Override

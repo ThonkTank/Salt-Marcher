@@ -72,7 +72,7 @@ final class CatalogEncounterTablePickerView extends Button {
                     this::handleSelectionChange,
                     this::handleClearAll);
             if (!popupContentModel.isOpen()) {
-                popupContentModel.showBelow();
+                popupContentModel.showBelow(2.0, false);
             }
             return;
         }

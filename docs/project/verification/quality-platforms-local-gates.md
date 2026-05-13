@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-05-10
+Last Reviewed: 2026-05-13
 Source of Truth: Detailed local gate inventory for SaltMarcher quality
 platforms.
 
@@ -82,6 +82,7 @@ independent from the separate closed-world topology owner while ensuring
 | Platform | Status | Entrypoint | Current policy |
 | --- | --- | --- | --- |
 | PMD non-architecture smells | `Blocking Local Gate` | `./gradlew pmdMain`, `./gradlew pmdStrictMain` | Runs `tools/quality/config/pmd/complexity-ruleset.xml` on production Java sources. `pmdMain` is the central blocking gate; `pmdStrictMain` is the text-first direct entrypoint for the same ruleset. PMD owns non-architecture smell policy plus `UnusedAssignment`, including generic source-smell families such as `LawOfDemeter`, `GodClass`, `CouplingBetweenObjects`, `TooManyMethods`, `TooManyFields`, and `UselessOverridingMethod`; `compileJava` owns `UnusedLabel`, `UnusedMethod`, `UnusedNestedClass`, and `UnusedVariable`. |
+| OpenRewrite near-miss checks | `Blocking Local Gate` | `./gradlew checkRewriteNearMisses`, `./gradlew rewriteDryRun` | Runs the active `saltmarcher.rewrite.NearMissChecks` recipe set from `rewrite.yml` in dry-run mode. The gate blocks when OpenRewrite would change code or mark configured search results; it does not mutate tracked sources. The current scope covers redundant casts, known redundant Java call chains, and DTO-overfetching search recipes for configured carrier packages. It is a near-miss quality gate, not a proof of redundant `A -> B -> D` carrier-converter chains. |
 | Dead code reachability | `Blocking Local Gate` | `./gradlew checkNoDeadCode` | Runs the verification-core whole-program reachability analysis for compiled production declarations: files, top-level types, secondary top-level types, nested and named local types, constructors, methods, and fields. Structural roots currently include the configured JavaFX launcher and preloader classes, exact concrete shell contribution roots matching `ShellViewDiscovery`, exact concrete data service contribution roots matching `ServiceContributionDiscovery`, merged FXML controller resources, `META-INF/services` providers, and the explicit fallback rules in `tools/quality/config/deadcode/keep-rules.pro`. Non-constant runtime reflection is only supported through explicit keep rules. |
 | SpotBugs plus FindSecBugs | `Blocking Local Gate` | `./gradlew spotbugsMain` | Runs bytecode bug and security-smell analysis with SpotBugs effort `MAX` and confidence `MEDIUM`. |
 | CPD | `Blocking Local Gate` | `./gradlew cpdMain` | Runs PMD CPD for Java with `minimumTokens = 100`, matching PMD's documented Java example value, and writes its report under the active worktree's normal `build/reports/cpd/` surface. |
@@ -102,14 +103,20 @@ records a stricter project value:
 - Class NCSS count: `1500`
 - Excessive parameter list minimum: `10`
 
-The same PMD ruleset enables PMD's default thresholds and rule defaults for the
+The same PMD ruleset enables PMD's `DataClass` rule and PMD's default
+thresholds and rule defaults for the
 explicitly listed Java quickstart rules plus stricter source-smell rules for
 exception handling, resource handling, unnecessary suppressions, magic
 literals, low-branch switches, mutable static state, public members on
 non-public types, null sentinels, and local naming/style hygiene. The rule file
 must list individual rules explicitly rather than importing whole PMD
 categories. PMD default thresholds also remain active for explicitly enabled
-rules such as `TooManyFields` (`15`) and `TooManyMethods` (`10`).
+rules such as `DataClass`, `TooManyFields` (`15`), and `TooManyMethods` (`10`).
+
+`checkRewriteNearMisses` is wired into the central `check` aggregate through
+OpenRewrite `rewriteDryRun` and fails the local handoff build when the active
+near-miss recipe set produces dry-run changes or search markers. `rewriteRun`
+is not part of the blocking path because it mutates source files.
 
 `pmdMain` is wired into the central `check` aggregate and fails the local
 handoff build on violations. `pmdStrictMain` uses the same ruleset and also

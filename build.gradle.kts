@@ -15,6 +15,7 @@ plugins {
     application
     pmd
     id("com.github.spotbugs") version "6.5.0"
+    id("org.openrewrite.rewrite") version "7.32.2"
     id("saltmarcher.quality-conventions")
     id("saltmarcher.verification-core")
     id("org.openjfx.javafxplugin") version "0.1.0"
@@ -69,6 +70,8 @@ sourceSets {
 dependencies {
     implementation("org.jspecify:jspecify:1.0.0")
     implementation("org.xerial:sqlite-jdbc:3.46.1.3")
+    rewrite("org.openrewrite.recipe:rewrite-static-analysis:2.34.0")
+    rewrite("org.openrewrite.recipe:rewrite-migrate-java:3.34.1")
     pmd("net.sourceforge.pmd:pmd-ant:7.23.0")
     pmd("net.sourceforge.pmd:pmd-java:7.23.0")
     pmd("saltmarcher.quality:quality-rules:1.0-SNAPSHOT")
@@ -85,6 +88,23 @@ pmd {
     isIgnoreFailures = false
     ruleSets = listOf()
     ruleSetFiles = files(complexityRulesetFile, lawOfDemeterRulesetFile)
+}
+
+rewrite {
+    activeRecipe("saltmarcher.rewrite.NearMissChecks")
+    configFile = layout.projectDirectory.file("rewrite.yml").asFile
+    setExportDatatables(true)
+    failOnDryRunResults = true
+}
+
+val checkRewriteNearMisses by tasks.registering {
+    group = LifecycleBasePlugin.VERIFICATION_GROUP
+    description = "Run blocking OpenRewrite near-miss checks in dry-run mode."
+    dependsOn(tasks.named("rewriteDryRun"))
+}
+
+tasks.named("check") {
+    dependsOn(checkRewriteNearMisses)
 }
 
 spotbugs {

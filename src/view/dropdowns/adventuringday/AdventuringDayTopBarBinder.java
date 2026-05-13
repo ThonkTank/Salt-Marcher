@@ -74,13 +74,13 @@ final class AdventuringDayTopBarBinder {
             String triggerText
     ) {
         String safeTriggerText = triggerText == null ? "" : triggerText;
-        popupContentModel.showPresentation(
+        popupContentModel.showPresentation(new DropdownPopupContentModel.PopupPresentation(
                 safeTriggerText,
                 safeTriggerText,
                 safeTriggerText,
                 AdventuringDayTopBarView.TOOLTIP_TEXT,
                 false,
-                AdventuringDayTopBarView.POPUP_WIDTH);
+                AdventuringDayTopBarView.POPUP_WIDTH));
     }
 
     private record Binding(Node topBar) implements ShellBinding {

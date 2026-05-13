@@ -65,7 +65,7 @@ final class CatalogSearchableFilterView extends javafx.scene.control.Button {
             popupContent.render(options, selectedValues, safeProjection.dropdownState().searchQuery());
             if (safeProjection.dropdownState().open()) {
                 if (!popupContentModel.isOpen()) {
-                    popupContentModel.showBelow();
+                    popupContentModel.showBelow(2.0, false);
                 }
             } else if (popupContentModel.isOpen()) {
                 popupContentModel.hide();
@@ -131,7 +131,7 @@ final class CatalogSearchableFilterView extends javafx.scene.control.Button {
             popupContentModel.hide();
         } else {
             popupContent.render(options, selectedValues, popupContent.query());
-            popupContentModel.showBelow();
+            popupContentModel.showBelow(2.0, false);
         }
         updateTriggerText();
         if (onInteraction != null) {

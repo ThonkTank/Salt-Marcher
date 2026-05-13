@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-05-11
+Last Reviewed: 2026-05-13
 Source of Truth: Quality-platform operating model, status vocabulary,
 verification policy, and architecture-harness relationship for SaltMarcher
 quality gates.
@@ -25,7 +25,8 @@ architecture rule ownership, rule status, or rule-shape classification.
 
 This standard covers quality-platform operation for active application code and
 build-owned repository surfaces: compiler hygiene, PMD non-architecture smells,
-duplicate-code detection, cyclomatic-complexity analysis, OO metrics,
+duplicate-code detection, OpenRewrite dry-run near-miss checks,
+cyclomatic-complexity analysis, OO metrics,
 repository-wide resource/artifact/packaging validation, GitHub Actions,
 branch-protection expectations, SonarCloud, and CodeScene.
 
@@ -200,8 +201,9 @@ documentation surface.
 It combines:
 
 - assemble and `test`
-- the quality-hygiene blocker path through PMD, SpotBugs, CPD, Lizard,
-  compiled-artifact hygiene, and whole-program dead-code reachability
+- the quality-hygiene blocker path through PMD, OpenRewrite dry-run
+  near-miss checks, SpotBugs, CPD, Lizard, compiled-artifact hygiene, and
+  whole-program dead-code reachability
 - the public `checkArchitecture` aggregate
 
 `check` remains the central local build-health aggregate. Its architecture

@@ -2,6 +2,7 @@ package src.domain.party;
 
 import java.util.List;
 import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 import src.domain.party.application.AdjustPartyXpUseCase;
 import src.domain.party.application.AwardPartyXpUseCase;
 import src.domain.party.application.CalculateAdventuringDayUseCase;
@@ -15,7 +16,6 @@ import src.domain.party.application.UpdateCharacterUseCase;
 /**
  * Public backend facade for party management.
  */
-@SuppressWarnings("PMD.CouplingBetweenObjects")
 public final class PartyApplicationService {
 
     private final CreateCharacterUseCase createCharacterUseCase;
@@ -52,23 +52,31 @@ public final class PartyApplicationService {
     }
 
     public void createCharacter(src.domain.party.published.CreateCharacterCommand command) {
+        if (command == null) {
+            createCharacterUseCase.execute(null, null, 0, 0, 0, "RESERVE");
+            return;
+        }
         createCharacterUseCase.execute(
-                command == null || command.draft() == null ? null : command.draft().name(),
-                command == null || command.draft() == null ? null : command.draft().playerName(),
-                command == null || command.draft() == null ? 0 : command.draft().level(),
-                command == null || command.draft() == null ? 0 : command.draft().passivePerception(),
-                command == null || command.draft() == null ? 0 : command.draft().armorClass(),
-                command == null || command.membership() == null ? "RESERVE" : command.membership().name());
+                command.createDraftName(),
+                command.createDraftPlayerName(),
+                command.createDraftLevel(),
+                command.createDraftPassivePerception(),
+                command.createDraftArmorClass(),
+                command.membershipName());
     }
 
     public void updateCharacter(src.domain.party.published.UpdateCharacterCommand command) {
+        if (command == null) {
+            updateCharacterUseCase.execute(0L, null, null, 0, 0, 0);
+            return;
+        }
         updateCharacterUseCase.execute(
-                command == null ? 0L : command.id(),
-                command == null || command.draft() == null ? null : command.draft().name(),
-                command == null || command.draft() == null ? null : command.draft().playerName(),
-                command == null || command.draft() == null ? 0 : command.draft().level(),
-                command == null || command.draft() == null ? 0 : command.draft().passivePerception(),
-                command == null || command.draft() == null ? 0 : command.draft().armorClass());
+                command.id(),
+                command.updateDraftName(),
+                command.updateDraftPlayerName(),
+                command.updateDraftLevel(),
+                command.updateDraftPassivePerception(),
+                command.updateDraftArmorClass());
     }
 
     public void deleteCharacter(src.domain.party.published.DeleteCharacterCommand command) {
@@ -76,9 +84,13 @@ public final class PartyApplicationService {
     }
 
     public void setMembership(src.domain.party.published.SetPartyMembershipCommand command) {
+        if (command == null) {
+            setPartyMembershipUseCase.execute(0L, "RESERVE");
+            return;
+        }
         setPartyMembershipUseCase.execute(
-                command == null ? 0L : command.id(),
-                command == null || command.membership() == null ? "RESERVE" : command.membership().name());
+                command.id(),
+                command.membershipName());
     }
 
     public void awardXp(src.domain.party.published.AwardPartyXpCommand command) {
@@ -94,20 +106,24 @@ public final class PartyApplicationService {
     }
 
     public void performRest(src.domain.party.published.PerformPartyRestCommand command) {
-        performPartyRestUseCase.execute(command == null || command.restType() == null ? "SHORT_REST" : command.restType().name());
+        performPartyRestUseCase.execute(command == null ? "SHORT_REST" : command.restTypeName());
     }
 
     public void moveCharacters(src.domain.party.published.MovePartyCharactersCommand command) {
+        if (command == null) {
+            movePartyCharactersUseCase.execute(List.of(), "", 0L, 0L, "", 0L, List.of(0, 0, 0), "", true);
+            return;
+        }
         movePartyCharactersUseCase.execute(
-                ids(command == null ? null : command.characterIds()),
-                command == null ? "" : command.targetTravelSpace(),
-                command == null ? 0L : command.targetMapId(),
-                command == null ? 0L : command.targetOverworldTileId(),
-                command == null ? "" : command.targetDungeonLocationKind(),
-                command == null ? 0L : command.targetDungeonOwnerId(),
-                command == null ? List.of(0, 0, 0) : command.targetDungeonTile(),
-                command == null ? "" : command.targetDungeonHeading(),
-                command == null || command.attachToPartyToken());
+                ids(command.characterIds()),
+                command.targetTravelSpace(),
+                command.targetMapId(),
+                command.targetOverworldTileId(),
+                command.targetDungeonLocationKind(),
+                command.targetDungeonOwnerId(),
+                command.targetDungeonTile(),
+                command.targetDungeonHeading(),
+                command.attachToPartyToken());
     }
 
     public void calculateAdventuringDay(src.domain.party.published.CalculateAdventuringDayCommand command) {
@@ -116,11 +132,11 @@ public final class PartyApplicationService {
                 command == null ? 0 : command.totalGroupXp());
     }
 
-    private static List<Long> ids(List<Long> ids) {
+    private static List<Long> ids(@Nullable List<Long> ids) {
         return ids == null ? List.of() : List.copyOf(ids);
     }
 
-    private static List<Integer> levels(List<Integer> levels) {
+    private static List<Integer> levels(@Nullable List<Integer> levels) {
         return levels == null ? List.of() : List.copyOf(levels);
     }
 }

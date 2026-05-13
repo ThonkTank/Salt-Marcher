@@ -55,32 +55,12 @@ public final class ProgressMeterContentModel {
         configurePopup("", 1, List.of());
     }
 
-    public void showPopup() {
+    public void applyPopupInteraction(PopupInteraction interaction) {
+        PopupInteraction safeInteraction = interaction == null
+                ? PopupInteraction.hide()
+                : interaction;
         MeterState current = meterState.get();
-        if (current.popupActions().isEmpty()) {
-            return;
-        }
-        meterState.set(current.withPopupState(true, current.initialAmount()));
-    }
-
-    public void hidePopup() {
-        MeterState current = meterState.get();
-        meterState.set(current.withPopupState(false, current.amountDraft()));
-    }
-
-    public void decreaseAmount() {
-        MeterState current = meterState.get();
-        meterState.set(current.withPopupState(current.popupOpen(), Math.max(1, current.amountDraft() - 1)));
-    }
-
-    public void increaseAmount() {
-        MeterState current = meterState.get();
-        meterState.set(current.withPopupState(current.popupOpen(), current.amountDraft() + 1));
-    }
-
-    public void updateAmountDraft(String rawAmount) {
-        MeterState current = meterState.get();
-        meterState.set(current.withPopupState(current.popupOpen(), parse(rawAmount, current.amountDraft())));
+        meterState.set(safeInteraction.apply(current));
     }
 
     public record MeterDisplay(
@@ -108,16 +88,67 @@ public final class ProgressMeterContentModel {
         return Math.max(0.0, Math.min(1.0, fraction));
     }
 
-    private static int parse(@Nullable String rawAmount, int fallback) {
-        try {
-            return Math.max(1, Integer.parseInt(safe(rawAmount)));
-        } catch (NumberFormatException exception) {
-            return Math.max(1, fallback);
-        }
-    }
-
     private static String safe(@Nullable String value) {
         return value == null ? "" : value;
+    }
+
+    public record PopupInteraction(
+            Kind kind,
+            String rawAmount
+    ) {
+
+        public PopupInteraction {
+            kind = kind == null ? Kind.HIDE : kind;
+            rawAmount = safe(rawAmount);
+        }
+
+        public static PopupInteraction show() {
+            return new PopupInteraction(Kind.SHOW, "");
+        }
+
+        public static PopupInteraction hide() {
+            return new PopupInteraction(Kind.HIDE, "");
+        }
+
+        public static PopupInteraction decrease() {
+            return new PopupInteraction(Kind.DECREASE, "");
+        }
+
+        public static PopupInteraction increase() {
+            return new PopupInteraction(Kind.INCREASE, "");
+        }
+
+        public static PopupInteraction amountDraft(@Nullable String rawAmount) {
+            return new PopupInteraction(Kind.AMOUNT_DRAFT, rawAmount);
+        }
+
+        private MeterState apply(MeterState current) {
+            return switch (kind) {
+                case SHOW -> current.popupActions().isEmpty()
+                        ? current
+                        : current.withPopupState(true, current.initialAmount());
+                case HIDE -> current.withPopupState(false, current.amountDraft());
+                case DECREASE -> current.withPopupState(current.popupOpen(), Math.max(1, current.amountDraft() - 1));
+                case INCREASE -> current.withPopupState(current.popupOpen(), current.amountDraft() + 1);
+                case AMOUNT_DRAFT -> current.withPopupState(current.popupOpen(), parse(rawAmount, current.amountDraft()));
+            };
+        }
+
+        private static int parse(@Nullable String rawAmount, int fallback) {
+            try {
+                return Math.max(1, Integer.parseInt(safe(rawAmount)));
+            } catch (NumberFormatException exception) {
+                return Math.max(1, fallback);
+            }
+        }
+
+        public enum Kind {
+            SHOW,
+            HIDE,
+            DECREASE,
+            INCREASE,
+            AMOUNT_DRAFT
+        }
     }
 
     public record MeterState(

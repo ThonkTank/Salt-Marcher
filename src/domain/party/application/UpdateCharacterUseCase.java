@@ -61,7 +61,7 @@ public final class UpdateCharacterUseCase {
     }
 
     private void publish(PartyMutationStatus status) {
-        if (status == PartyMutationStatus.SUCCESS) {
+        if (PartyMutationStatus.SUCCESS.equals(status)) {
             publishedStateRepository.publishRepositoryBackedState();
         }
         publishedStateRepository.publishMutationStatus(status);

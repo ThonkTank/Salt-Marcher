@@ -21,28 +21,8 @@ public final class AnchoredPopupContentModel {
         return popupState.get().open();
     }
 
-    public void showBelow() {
-        showBelow(2.0, false);
-    }
-
-    public void showBelow(double yOffset) {
-        showBelow(yOffset, false);
-    }
-
     public void showBelow(double yOffset, boolean focusAfterShown) {
         popupState.set(new PopupState(true, Placement.BELOW, yOffset, 0.0, focusRequestId(focusAfterShown), focusAfterShown));
-    }
-
-    public void toggleBelow(double yOffset, boolean focusAfterShown) {
-        if (isOpen()) {
-            hide();
-            return;
-        }
-        showBelow(yOffset, focusAfterShown);
-    }
-
-    public void showTrailing(double popupWidth) {
-        showTrailing(popupWidth, false);
     }
 
     public void showTrailing(double popupWidth, boolean focusAfterShown) {
@@ -53,14 +33,6 @@ public final class AnchoredPopupContentModel {
                 Math.max(0.0, popupWidth),
                 focusRequestId(focusAfterShown),
                 focusAfterShown));
-    }
-
-    public void toggleTrailing(double popupWidth, boolean focusAfterShown) {
-        if (isOpen()) {
-            hide();
-            return;
-        }
-        showTrailing(popupWidth, focusAfterShown);
     }
 
     public void hide() {

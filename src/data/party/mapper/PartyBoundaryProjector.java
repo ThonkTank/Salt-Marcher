@@ -301,7 +301,7 @@ public final class PartyBoundaryProjector {
     }
 
     private static MembershipState toMembershipState(PartyMembership membership) {
-        return membership == PartyMembership.ACTIVE ? MembershipState.ACTIVE : MembershipState.RESERVE;
+        return PartyMembership.ACTIVE.equals(membership) ? MembershipState.ACTIVE : MembershipState.RESERVE;
     }
 
     private static PartyDungeonTravelLocationKind toPublishedDungeonLocationKind(

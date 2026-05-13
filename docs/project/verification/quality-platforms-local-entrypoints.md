@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-05-11
+Last Reviewed: 2026-05-13
 Source of Truth: Aggregate entrypoints, staged handoff routing, and concurrent
 local invocation policy for SaltMarcher quality platforms.
 
@@ -25,6 +25,7 @@ the single central aggregate for repository-owned blocking Gradle checks.
 - the public architecture aggregate `checkArchitecture`
 - repository and resource policy checks
 - PMD source-smell detection through `pmdMain`
+- OpenRewrite dry-run near-miss checks through `checkRewriteNearMisses`
 - SpotBugs plus FindSecBugs through `spotbugsMain`
 - duplicate-code detection through `cpdMain`
 - cyclomatic-complexity detection through `lizardMain`
@@ -102,7 +103,8 @@ The same rule applies to internal build-harness topology tasks whose technical
 names still begin with `check*`.
 
 Focused investigation entrypoints are `compileJava`, `pmdMain`,
-`pmdStrictMain`, `spotbugsMain`, `cpdMain`, `lizardMain`, `ckjmMain`,
+`pmdStrictMain`, `checkRewriteNearMisses`, `rewriteDryRun`, `spotbugsMain`,
+`cpdMain`, `lizardMain`, `ckjmMain`,
 repository/resource policy checks, `checkArchitecture`, the canonical
 `check*Enforcement` layer surfaces, and `checkDocumentationEnforcement`, each
 run through `./gradlew <task> --console=plain`.

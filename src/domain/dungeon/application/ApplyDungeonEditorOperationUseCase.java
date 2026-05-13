@@ -8,7 +8,6 @@ import src.domain.dungeon.model.map.model.DungeonMap;
 import src.domain.dungeon.model.map.model.DungeonMapIdentity;
 import src.domain.dungeon.model.map.model.DungeonMapOperationFeedbackRules;
 import src.domain.dungeon.model.map.repository.DungeonMapRepository;
-import src.domain.dungeon.published.DungeonEditorOperation;
 
 /**
  * Owns the fixed dungeon editor mutation pipeline.
@@ -27,6 +26,11 @@ public final class ApplyDungeonEditorOperationUseCase {
             validationMessages = validationMessages == null ? List.of() : List.copyOf(validationMessages);
             reactionMessages = reactionMessages == null ? List.of() : List.copyOf(reactionMessages);
         }
+    }
+
+    @FunctionalInterface
+    public interface Mutation {
+        DungeonMap apply(DungeonMap current);
     }
 
     private final LoadDungeonMapUseCase loadDungeonMap;
@@ -51,13 +55,13 @@ public final class ApplyDungeonEditorOperationUseCase {
                 "publishDungeonEditorHandles");
     }
 
-    public OperationResultData execute(@Nullable DungeonEditorOperation operation) {
+    public OperationResultData execute(@Nullable Mutation operation) {
         return execute(null, operation);
     }
 
     public OperationResultData execute(
             @Nullable DungeonMapIdentity mapId,
-            @Nullable DungeonEditorOperation operation
+            @Nullable Mutation operation
     ) {
         DungeonMap current = currentMap(mapId);
         DungeonMap mutated = applyOperation(current, operation);
@@ -71,7 +75,7 @@ public final class ApplyDungeonEditorOperationUseCase {
 
     public OperationResultData preview(
             @Nullable DungeonMapIdentity mapId,
-            @Nullable DungeonEditorOperation operation
+            @Nullable Mutation operation
     ) {
         DungeonMap current = currentMap(mapId);
         DungeonMap mutated = applyOperation(current, operation);
@@ -95,8 +99,8 @@ public final class ApplyDungeonEditorOperationUseCase {
 
     private static DungeonMap applyOperation(
             DungeonMap current,
-            @Nullable DungeonEditorOperation operation
+            @Nullable Mutation operation
     ) {
-        return DungeonEditorOperationMutationUseCase.apply(current, operation);
+        return operation == null ? current : operation.apply(current);
     }
 }
