@@ -188,9 +188,10 @@ Additional rules:
   currently placed in a data feature; an optional same-feature
   `*ServiceAssembly` may decompose that root's registration wiring but must not
   become discoverable on its own
-- a same-feature `state/*PublishedStateCarrier` may own lazy published-state
-  repository/model initialization for that root, but it must not become a
-  repository adapter API, discovery root, or reusable backend service surface
+- lazy published-state repository/model initialization belongs inside the
+  same-feature `*ServiceAssembly` when the composition root needs it; it must
+  not create an additional data bucket, discovery root, repository adapter API,
+  or reusable backend service surface
 - that registration root is not a public client-facing backend boundary
 - data features must not require routine bootstrap edits or shell-owned
   feature-specific wiring

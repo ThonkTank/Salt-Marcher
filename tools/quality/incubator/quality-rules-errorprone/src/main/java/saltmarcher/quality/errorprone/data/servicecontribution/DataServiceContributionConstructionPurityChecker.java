@@ -50,7 +50,6 @@ public final class DataServiceContributionConstructionPurityChecker extends BugC
                 }
                 String ownerTypeName = ownerTypeName(symbol);
                 if (isAllowedCompositionOwnerCall(ownerTypeName, packageName, compositionOwner)
-                        || isAllowedPublishedStateCarrierCall(ownerTypeName, featureName)
                         || !isForbiddenRootCall(ownerTypeName, featureName)) {
                     return super.visitMethodInvocation(methodInvocation, unused);
                 }
@@ -110,11 +109,6 @@ public final class DataServiceContributionConstructionPurityChecker extends BugC
                 || ownerTypeName.startsWith(compositionOwner + ".")
                 || simpleOwnerName.endsWith("ServiceAssembly")
                 || simpleOwnerName.contains("ServiceAssembly$");
-    }
-
-    private static boolean isAllowedPublishedStateCarrierCall(String ownerTypeName, String featureName) {
-        return ownerTypeName.startsWith("src.data." + featureName + ".state.")
-                && ownerTypeName.endsWith("PublishedStateCarrier");
     }
 
     private static String ownerTypeName(Symbol symbol) {
