@@ -20,68 +20,36 @@ Aggregate entrypoints and local worktree invocation policy live in
 
 `./gradlew compileJava` is a `Blocking Local Gate`.
 
-It owns Java compilation and compiler-integrated hygiene checks on production
-source roots `bootstrap/`, `shell/`, and `src/`.
+It owns Java compilation on production source roots `bootstrap/`, `shell/`,
+and `src/`. Root `compileJava` does not enable Error Prone, NullAway,
+project-local Error Prone checkers, architecture checkers, tests, or quality
+gates.
 
-The build enables `Error Prone`, `NullAway`, and project-local Error Prone
-checks during `compileJava`. Architecture-specific Error Prone checks are
-classified by the architecture harness. Non-architecture compiler hygiene
-checks currently promoted to errors are:
-
-- `EqualsNull`
-- `NullAway`
-- `ReferenceEquality`
-- `StringCaseLocaleUsage`
-- `StringSplitter`
-- `UnusedLabel`
-- `UnusedMethod`
-- `UnusedNestedClass`
-- `UnusedVariable`
-
-`compileJava` is the mechanical owner for local unused declaration hygiene:
-unused private methods, unused nested classes, unused private or
-effectively-private fields, unused parameters on private or effectively-private
-methods, unused labels, and unused local variables block compilation. This is
-intentionally local-only coverage. It does not claim whole-repository
-reachability for top-level types or public APIs.
-
-The compile-wide Error Prone baseline already excludes warnings in generated
-code. Outside that narrow generated-code carveout, unused false positives must
-be handled with explicit local intent such as deletion, a narrowly justified
-suppression, or an equally narrow keep marker when reflection or framework
-wiring makes the declaration mechanically unused but semantically live. The
-project does not treat blanket unused-check disablement as an acceptable
-steady-state policy.
-
-`compileJava` does not run the dedicated topology or whole-program dead-code
-bundles. Passive `View` graph and FXML analysis enter local quality through
-`checkViewEnforcement`, while the canonical Domain, Data, Shell, Bootstrap,
-Styling, and Layering entrypoints are `checkDomainEnforcement`,
-`checkDataEnforcement`, `checkShellEnforcement`,
+Compiler-backed verification that needs Error Prone runs through focused
+verification compiles behind the public `check*Enforcement` layer surfaces and
+the `production-handoff` route. Passive `View` graph and FXML analysis enter
+local quality through `checkViewEnforcement`, while the canonical Domain,
+Data, Shell, Bootstrap, Styling, and Layering entrypoints are
+`checkDomainEnforcement`, `checkDataEnforcement`, `checkShellEnforcement`,
 `checkBootstrapEnforcement`, `checkStylingEnforcement`, and
 `checkLayeringEnforcement`. Whole-program compiled dead-code analysis enters
 through `checkNoDeadCode`. Internal bundle tasks may still exist as technical
 implementation surfaces beneath those layer entrypoints, but they are not part
-of the public verification API. That also applies when an internal build-harness
-topology task still carries a technical `check*` name such as
+of the public verification API. That also applies when an internal
+build-harness topology task still carries a technical `check*` name such as
 `checkViewLayerEnforcement`; the public command remains
-`checkViewEnforcement`. The
-technical owner split behind the public View route is now only the
-build-harness View topology core plus the shared Error Prone View core under
-`tools/quality/incubator/quality-rules-errorprone/**`.
-The compile/FXML/topology paths are wired into the central `check` aggregate
-through the named architecture aggregates. Passive-`View` direct-render
-styling placement stays compiler-backed through `compileJava` and also enters
-the central `check` aggregate explicitly through
-`checkStylingEnforcement`. This keeps focused compilation verification
-independent from the separate closed-world topology owner while ensuring
-`build` still runs the full architecture harness through `check`.
+`checkViewEnforcement`. The technical owner split behind the public View route
+is now only the build-harness View topology core plus the shared Error Prone
+View core under `tools/quality/incubator/quality-rules-errorprone/**`.
+Focused compile, FXML, and topology paths are wired into the central `check`
+aggregate through the named architecture aggregates so `build` still runs the
+full architecture harness through `check`.
 
 ### Complexity, Duplication, And Metrics
 
 | Platform | Status | Entrypoint | Current policy |
 | --- | --- | --- | --- |
-| PMD non-architecture smells | `Blocking Local Gate` | `./gradlew pmdMain`, `./gradlew pmdStrictMain` | Runs `tools/quality/config/pmd/complexity-ruleset.xml` on production Java sources. `pmdMain` is the central blocking gate; `pmdStrictMain` is the text-first direct entrypoint for the same ruleset. PMD owns non-architecture smell policy plus `UnusedAssignment`, including generic source-smell families such as `LawOfDemeter`, `GodClass`, `CouplingBetweenObjects`, `TooManyMethods`, `TooManyFields`, and `UselessOverridingMethod`; `compileJava` owns `UnusedLabel`, `UnusedMethod`, `UnusedNestedClass`, and `UnusedVariable`. |
+| PMD non-architecture smells | `Blocking Local Gate` | `./gradlew pmdMain`, `./gradlew pmdStrictMain` | Runs `tools/quality/config/pmd/complexity-ruleset.xml` on production Java sources. `pmdMain` is the central blocking gate; `pmdStrictMain` is the text-first direct entrypoint for the same ruleset. PMD owns non-architecture smell policy plus `UnusedAssignment`, including generic source-smell families such as `LawOfDemeter`, `GodClass`, `CouplingBetweenObjects`, `TooManyMethods`, `TooManyFields`, and `UselessOverridingMethod`; focused Error Prone verification compiles own `UnusedLabel`, `UnusedMethod`, `UnusedNestedClass`, and `UnusedVariable` where those checkers are part of the selected enforcement surface. |
 | OpenRewrite near-miss checks | `Blocking Local Gate` | `./gradlew checkRewriteNearMisses`, `./gradlew rewriteDryRun` | Runs the active `saltmarcher.rewrite.NearMissChecks` recipe set from `rewrite.yml` in dry-run mode. The gate blocks when OpenRewrite would change code or mark configured search results; it does not mutate tracked sources. The current scope covers redundant casts, known redundant Java call chains, and DTO-overfetching search recipes for configured carrier packages. It is a near-miss quality gate, not a proof of redundant `A -> B -> D` carrier-converter chains. |
 | Dead code reachability | `Blocking Local Gate` | `./gradlew checkNoDeadCode` | Runs the verification-core whole-program reachability analysis for compiled production declarations: files, top-level types, secondary top-level types, nested and named local types, constructors, methods, and fields. Structural roots currently include the configured JavaFX launcher and preloader classes, exact concrete shell contribution roots matching `ShellViewDiscovery`, exact concrete data service contribution roots matching `ServiceContributionDiscovery`, merged FXML controller resources, `META-INF/services` providers, and the explicit fallback rules in `tools/quality/config/deadcode/keep-rules.pro`. Non-constant runtime reflection is only supported through explicit keep rules. |
 | SpotBugs plus FindSecBugs | `Blocking Local Gate` | `./gradlew spotbugsMain` | Runs bytecode bug and security-smell analysis with SpotBugs effort `MAX` and confidence `MEDIUM`. |
@@ -194,8 +162,9 @@ only whole-program dead-code hygiene gate in the central quality path.
 Checkstyle metrics and Semgrep are deferred unless current tooling cannot
 express a concrete rule.
 
-Architecture blockers now run only through compile-blocking Error Prone,
-ArchUnit, and the external build harness.
+Architecture blockers now run only through focused Error Prone verification
+compiles, ArchUnit, and the external build harness behind the public
+architecture and enforcement surfaces.
 
 ### Repository And Resource Policy
 

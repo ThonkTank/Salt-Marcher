@@ -150,10 +150,13 @@ internal fun Project.registerQualityConventionDependencies(
     toolConfigurations: QualityConventionToolConfigurations,
     environment: QualityConventionEnvironment
 ) {
+    val verificationErrorProneRequested = verificationErrorProneRequested(environment)
     dependencies {
         add("errorprone", "com.google.errorprone:error_prone_core:2.48.0")
         add("errorprone", "com.uber.nullaway:nullaway:0.13.1")
-        add("errorprone", "saltmarcher.quality:quality-rules-errorprone:1.0-SNAPSHOT")
+        if (verificationErrorProneRequested) {
+            add("errorprone", "saltmarcher.quality:quality-rules-errorprone:1.0-SNAPSHOT")
+        }
         add(toolConfigurations.cpdCli.name, "net.sourceforge.pmd:pmd-cli:7.23.0")
         add(toolConfigurations.cpdCli.name, "net.sourceforge.pmd:pmd-java:7.23.0")
         add(toolConfigurations.pmdCli.name, "net.sourceforge.pmd:pmd-cli:7.23.0")
@@ -168,6 +171,27 @@ internal fun Project.registerQualityConventionDependencies(
             toolConfigurations.jqassistantDistribution.name,
             "com.buschmais.jqassistant.cli:jqassistant-commandline-neo4jv5:${environment.jqassistantVersion}:distribution@zip"
         )
+    }
+}
+
+private fun Project.verificationErrorProneRequested(environment: QualityConventionEnvironment): Boolean {
+    if (environment.focusedEnforcementBundleMode) {
+        return true
+    }
+    val requestedTaskNames = gradle.startParameter.taskNames
+        .map { taskName -> taskName.substringAfterLast(":") }
+        .toSet()
+    if (requestedTaskNames.isEmpty()) {
+        return true
+    }
+    return requestedTaskNames.any { taskName ->
+        taskName == "build" ||
+            taskName == "check" ||
+            taskName == "checkArchitecture" ||
+            taskName == "production-handoff" ||
+            (taskName.startsWith("check") && taskName.endsWith("Enforcement")) ||
+            (taskName.startsWith("compile") && taskName.endsWith("VerificationJava")) ||
+            (taskName.startsWith("verify") && taskName.endsWith("Bundle"))
     }
 }
 

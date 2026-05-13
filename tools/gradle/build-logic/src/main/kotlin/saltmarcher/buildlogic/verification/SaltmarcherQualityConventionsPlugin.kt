@@ -5,7 +5,6 @@ import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.tasks.compile.JavaCompile
 import org.gradle.kotlin.dsl.getByType
-import org.gradle.kotlin.dsl.named
 import org.gradle.kotlin.dsl.withType
 import saltmarcher.buildlogic.enforcement.EnforcementBundlesExtension
 
@@ -25,23 +24,6 @@ internal fun Project.configureQualityConventions() {
 
     tasks.withType<JavaCompile>().configureEach {
         options.errorprone.enabled.set(false)
-    }
-
-    tasks.named<JavaCompile>("compileJava") {
-        applyCommonErrorProneOptions(this)
-        options.errorprone.error("UnusedLabel")
-        options.errorprone.error("UnusedMethod")
-        options.errorprone.error("UnusedNestedClass")
-        options.errorprone.error("UnusedVariable")
-        if (!environment.focusedEnforcementBundleMode) {
-            options.errorprone.error("DomainApplicationServiceApiShape")
-            options.errorprone.error("DomainApplicationServiceRoleBoundary")
-            options.errorprone.error("DomainModuleFieldPurity")
-            options.errorprone.error("DomainPublicBoundarySignaturePurity")
-            options.errorprone.error("DomainPublicConcreteTypeShape")
-            options.errorprone.error("ServiceRegistryRegistrationPlacement")
-            options.errorprone.error("ViewContributionShellApiAllowlist")
-        }
     }
 
     registerQualityConventionLifecycleTasks(

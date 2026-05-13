@@ -41,9 +41,10 @@ relay, reuse direction, and sprawl rules that generic smell tools cannot
 classify by SaltMarcher role semantics.
 
 For unused-code hygiene, the active mechanical scope is split by proof route:
-`compileJava` owns `UnusedLabel`, `UnusedMethod`, `UnusedNestedClass`, and
-`UnusedVariable` for local declarations, PMD retains `UnusedAssignment` beside
-the broader smell policy, and `checkNoDeadCode` owns whole-program
+focused Error Prone verification compiles behind the public `check*Enforcement`
+surfaces own local declaration checks such as `UnusedLabel`, `UnusedMethod`,
+`UnusedNestedClass`, and `UnusedVariable`, PMD retains `UnusedAssignment`
+beside the broader smell policy, and `checkNoDeadCode` owns whole-program
 reachability for compiled production declarations: files, top-level types,
 secondary top-level types, nested and named local types, constructors,
 methods, and fields. The combined mechanical surface therefore covers
@@ -54,8 +55,8 @@ abstract, and interface declarations.
 
 Unused-code false positives are handled by narrow, explicit structural roots
 or narrow local keep roots instead of weakening the blocking gates. Generated
-code is excluded through the shared Error Prone configuration, while
-whole-program reachability derives its live roots mechanically from the
+code is excluded through the focused Error Prone verification configuration,
+while whole-program reachability derives its live roots mechanically from the
 configured JavaFX launcher and preloader classes, exact concrete shell
 contribution roots matching `ShellViewDiscovery`, exact concrete data service
 contribution roots matching `ServiceContributionDiscovery`, merged FXML
@@ -161,8 +162,6 @@ rule.
 Operationally, architecture checks enter local quality through a small public
 surface set:
 
-- `compileJava`
-  runs compiler-integrated Error Prone architecture checks.
 - `checkViewEnforcement`
   runs the canonical View enforcement surface.
 - `checkDomainEnforcement`

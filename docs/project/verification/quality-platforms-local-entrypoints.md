@@ -21,7 +21,7 @@ the single central aggregate for repository-owned blocking Gradle checks.
 
 `check` includes:
 
-- Java compiler hygiene through `compileJava`
+- Java compilation through `compileJava`
 - the public architecture aggregate `checkArchitecture`
 - repository and resource policy checks
 - PMD source-smell detection through `pmdMain`

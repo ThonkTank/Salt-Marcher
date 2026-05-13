@@ -2,13 +2,11 @@ package saltmarcher.buildlogic.verification
 
 import org.gradle.api.Plugin
 import org.gradle.api.Project
-import org.gradle.api.plugins.ExtensionAware
 import org.gradle.api.tasks.compile.JavaCompile
 import org.gradle.api.tasks.TaskProvider
 import org.gradle.kotlin.dsl.getByType
 import org.gradle.kotlin.dsl.named
 import org.gradle.kotlin.dsl.register
-import org.gradle.kotlin.dsl.withGroovyBuilder
 import org.gradle.language.base.plugins.LifecycleBasePlugin
 import saltmarcher.buildlogic.enforcement.EnforcementBundleDescriptor
 import saltmarcher.buildlogic.enforcement.EnforcementBundlesExtension
@@ -24,7 +22,6 @@ class SaltmarcherVerificationCorePlugin : Plugin<Project> {
 internal fun Project.configureVerificationCore() {
     val enforcementBundles = extensions.getByType(EnforcementBundlesExtension::class.java)
     val activeEnforcementBundleIds = enforcementBundles.activeEnforcementBundleIds
-    val focusedEnforcementBundleMode = enforcementBundles.focusedEnforcementBundleMode
     val verificationHarness = extensions.getByType<VerificationHarnessExtension>()
     val verificationSurfaceCatalog = standardVerificationSurfaceCatalog(enforcementBundles.catalog)
     val publicVerificationSurfaceNames = verificationSurfaceCatalog.surfacesInOrder
@@ -33,20 +30,6 @@ internal fun Project.configureVerificationCore() {
     fun descriptor(bundleId: String): EnforcementBundleDescriptor = enforcementBundles.descriptor(bundleId)
 
     fun defaultBundleDisplayName(bundleId: String): String = bundleId.replaceFirstChar(Char::uppercaseChar)
-
-    fun configureMainCompileErrorProneChecks(checkerNames: List<String>) {
-        if (checkerNames.isEmpty()) {
-            return
-        }
-        tasks.named<JavaCompile>("compileJava") {
-            val errorproneOptions = (options as ExtensionAware).extensions.getByName("errorprone")
-            errorproneOptions.withGroovyBuilder {
-                checkerNames.forEach { checkName ->
-                    "error"(checkName)
-                }
-            }
-        }
-    }
 
     val focusedCompileTasksByBundleId = registerFocusedCompileTasksByBundleId(
         activeEnforcementBundleIds.map(::descriptor),
@@ -59,12 +42,9 @@ internal fun Project.configureVerificationCore() {
         val checkerNames = descriptor.errorProneCheckers
         val bundleDisplayName = defaultBundleDisplayName(bundleId)
 
-        configureMainCompileErrorProneChecks(checkerNames)
-
         val selectedCompileJava = if (descriptor.requiresFocusedCompile()) {
-            val compileTask = focusedCompileTasksByBundleId[bundleId]
+            focusedCompileTasksByBundleId[bundleId]
                 ?: error("Missing coalesced focused compile task for enforcement bundle '$bundleId'.")
-            if (focusedEnforcementBundleMode) compileTask else tasks.named<JavaCompile>("compileJava")
         } else {
             null
         }
