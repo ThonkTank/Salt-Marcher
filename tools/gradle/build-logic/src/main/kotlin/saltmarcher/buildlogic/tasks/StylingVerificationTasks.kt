@@ -27,6 +27,26 @@ private val methodDeclarationPattern = Regex(
 private val methodCallPattern = Regex("""(?<![\w$])([A-Za-z_][A-Za-z0-9_]*)\s*\(""")
 private const val styleClassMarker = "getStyleClass()"
 private val styleClassMethods = setOf("add", "addAll", "setAll")
+private val inlineStyleCallPattern = Regex("""(?<![\w$])setStyle\s*\(""")
+private val newInsetsPattern = Regex("""new\s+Insets\s*\(""")
+private val manualLayoutSetterPattern = Regex("""(?<![\w$])(?:setPadding|setSpacing|setHgap|setVgap)\s*\(""")
+private val manualSizeSetterPattern = Regex(
+    """(?:(?<receiver>[A-Za-z_][A-Za-z0-9_]*)\s*\.\s*)?(?<method>set(?:Min|Pref|Max)(?:Width|Height))\s*\((?<argument>[^)]*)\)"""
+)
+private val allowedLayoutSentinels = setOf(
+    "0",
+    "0.0",
+    "0.0d",
+    "0.0D",
+    "Double.MAX_VALUE",
+    "java.lang.Double.MAX_VALUE",
+    "Region.USE_PREF_SIZE",
+    "Region.USE_COMPUTED_SIZE",
+    "javafx.scene.layout.Region.USE_PREF_SIZE",
+    "javafx.scene.layout.Region.USE_COMPUTED_SIZE",
+    "USE_PREF_SIZE",
+    "USE_COMPUTED_SIZE"
+)
 
 private data class StyleClassUsage(
     val selectors: Set<String>,
@@ -49,6 +69,12 @@ private data class MethodKey(
 private data class CallDefinition(
     val key: MethodKey,
     val arguments: List<String>
+)
+
+private data class ManualNodeStylingViolation(
+    val file: File,
+    val lineNumber: Int,
+    val detail: String
 )
 
 @CacheableTask
@@ -193,9 +219,82 @@ abstract class CheckDefinedStyleClassSelectorsTask : DefaultTask() {
     }
 }
 
+@CacheableTask
+abstract class CheckManualNodeStylingTask : DefaultTask() {
+
+    @get:InputFiles
+    @get:PathSensitive(PathSensitivity.RELATIVE)
+    abstract val javaSourceFiles: ConfigurableFileCollection
+
+    @get:OutputFile
+    abstract val successMarker: RegularFileProperty
+
+    @TaskAction
+    fun verify() {
+        val violations = javaSourceFiles.files.asSequence()
+            .filter { file -> file.isFile && file.extension == "java" }
+            .flatMap(::manualNodeStylingViolations)
+            .toList()
+
+        if (violations.isNotEmpty()) {
+            val details = violations.joinToString(separator = "\n") { violation ->
+                " - ${violation.file.invariantSeparatorsPath()}:${violation.lineNumber} -> ${violation.detail}"
+            }
+            throw VerificationException(
+                "Ordinary JavaFX node styling must use centralized selectors in resources/salt-marcher.css.\n" +
+                    "Remove setStyle(...) backchannels and passive-View local Insets, padding, spacing, gap, or fixed visual size setters.\n" +
+                    "Table-column sizing and layout-growth sentinels may remain in Java when they express control mechanics.\n" +
+                    "Violations:\n$details"
+            )
+        }
+
+        writeSuccessMarker(successMarker.get().asFile)
+    }
+}
+
 private fun writeSuccessMarker(markerFile: File) {
     markerFile.parentFile.mkdirs()
     markerFile.writeText("passed\n")
+}
+
+private fun manualNodeStylingViolations(file: File): List<ManualNodeStylingViolation> {
+    val path = file.invariantSeparatorsPath()
+    val passiveViewSource = path.startsWith("src/view/") && path.endsWith("View.java")
+    val violations = mutableListOf<ManualNodeStylingViolation>()
+    file.readLines().forEachIndexed { index, line ->
+        val lineNumber = index + 1
+        if (inlineStyleCallPattern.containsMatchIn(line)) {
+            violations += ManualNodeStylingViolation(file, lineNumber, "inline style backchannel setStyle(...)")
+        }
+        if (!passiveViewSource) {
+            return@forEachIndexed
+        }
+        if (newInsetsPattern.containsMatchIn(line)) {
+            violations += ManualNodeStylingViolation(file, lineNumber, "manual layout value new Insets(...)")
+        }
+        if (manualLayoutSetterPattern.containsMatchIn(line)) {
+            violations += ManualNodeStylingViolation(file, lineNumber, "manual layout setter")
+        }
+        manualSizeSetterPattern.findAll(line)
+            .filterNot(::isAllowedManualSizeSetter)
+            .forEach { match ->
+                violations += ManualNodeStylingViolation(
+                    file,
+                    lineNumber,
+                    "manual size setter ${match.groups["method"]?.value ?: "set*Size"}(...)"
+                )
+            }
+    }
+    return violations
+}
+
+private fun isAllowedManualSizeSetter(match: MatchResult): Boolean {
+    val receiver = match.groups["receiver"]?.value.orEmpty()
+    if (receiver.contains("column", ignoreCase = true)) {
+        return true
+    }
+    val argument = match.groups["argument"]?.value.orEmpty().trim()
+    return argument in allowedLayoutSentinels
 }
 
 private fun extractStyleClassLiterals(

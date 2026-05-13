@@ -58,8 +58,9 @@ The current blocking proof surfaces are `checkStylingEnforcement`,
 aggregates the centralized stylesheet-owner, stylesheet-file,
 selector-resolution, broad `ViewProgrammaticStyling` compile surfaces, and the
 passive-`View` direct-render styling placement proof. Its compile-side
-`ViewManualNodeStyling` rule blocks `setStyle(...)` and passive-`View` manual
-ordinary-node layout styling. Its direct-render
+`ViewManualNodeStyling` rule and typed `checkManualNodeStyling` task block
+`setStyle(...)` and passive-`View` manual ordinary-node layout styling. Its
+direct-render
 `ViewDirectRenderStylingPlacement` compiler rule, which also blocks
 `compileJava`, proves only that local JavaFX paint/font/stroke style values
 appear in passive `View` code solely inside the documented direct-render

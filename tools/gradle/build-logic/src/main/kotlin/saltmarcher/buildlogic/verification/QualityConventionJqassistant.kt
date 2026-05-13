@@ -29,10 +29,8 @@ internal fun org.gradle.api.Project.registerQualityConventionHarness(
     ).joinToString(" ")
     val harness = VerificationHarnessExtension(
         project = this,
-        enforcementBundles = environment.enforcementBundles,
         sourceSets = verificationLayout.sourceSets,
         mainSourceSet = verificationLayout.mainSourceSet,
-        sourceRoots = verificationLayout.sourceRoots,
         sourceJavaRoots = verificationLayout.sourceJavaRoots,
         commonFocusedArchunitSupportIncludes = verificationLayout.commonFocusedArchunitSupportIncludes,
         jqassistantTaskRegistrar = JqassistantTaskRegistrar(
@@ -40,8 +38,7 @@ internal fun org.gradle.api.Project.registerQualityConventionHarness(
             cliFile = jqassistantCliFile,
             jvmOpens = jqassistantJvmOpens,
             installJqassistant = installJqassistant
-        ),
-        configureCommonErrorProneOptions = { applyCommonErrorProneOptions(this) }
+        )
     )
     extensions.add(VerificationHarnessExtension::class.java, "saltmarcherVerificationHarness", harness)
     return harness

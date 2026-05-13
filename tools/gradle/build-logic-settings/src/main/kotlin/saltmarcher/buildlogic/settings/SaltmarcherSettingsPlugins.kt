@@ -3,6 +3,7 @@ package saltmarcher.buildlogic.settings
 import java.io.File
 import org.gradle.api.Plugin
 import org.gradle.api.initialization.Settings
+import saltmarcher.buildlogic.enforcement.focusedVerificationCompileTaskName
 import saltmarcher.buildlogic.enforcement.standardEnforcementBundleCatalog
 import saltmarcher.buildlogic.enforcement.standardVerificationSurfaceCatalog
 
@@ -26,7 +27,7 @@ class SaltmarcherRootSettingsPlugin : Plugin<Settings> {
         val focusedCompileTaskToBundleId = bundleCatalog.descriptorsById.values
             .filter { descriptor -> descriptor.requiresFocusedCompile() }
             .associate { descriptor ->
-                focusedCompileTaskName(descriptor.bundleId) to descriptor.bundleId
+                focusedVerificationCompileTaskName(descriptor.bundleId) to descriptor.bundleId
             }
         val publicSurfaceTaskNames = publicVerificationSurfaceCatalog.taskToBundleIds.keys
         val requestedBundleIds = requestedTaskNames
@@ -79,9 +80,6 @@ private fun standardBroadBuildTaskNames(): Set<String> = setOf(
     "run",
     "test"
 )
-
-private fun focusedCompileTaskName(bundleId: String): String =
-    "compile${bundleId.replaceFirstChar(Char::uppercaseChar)}VerificationJava"
 
 private fun findRepositoryRoot(startDirectory: File): File {
     return generateSequence(startDirectory.canonicalFile) { directory -> directory.parentFile }

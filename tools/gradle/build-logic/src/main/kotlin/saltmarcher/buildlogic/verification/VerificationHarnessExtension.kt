@@ -19,33 +19,26 @@ import org.gradle.language.base.plugins.LifecycleBasePlugin
 import saltmarcher.buildlogic.enforcement.EnforcementBundleDescriptor
 import saltmarcher.buildlogic.enforcement.EnforcementJqassistantTask
 import saltmarcher.buildlogic.enforcement.EnforcementUtilityTaskKind
-import saltmarcher.buildlogic.enforcement.EnforcementBundlesExtension
+import saltmarcher.buildlogic.enforcement.focusedVerificationCompileTaskName
 import saltmarcher.buildlogic.tasks.CheckCentralizedStylesheetsTask
 import saltmarcher.buildlogic.tasks.CheckDefinedStyleClassSelectorsTask
+import saltmarcher.buildlogic.tasks.CheckManualNodeStylingTask
 import saltmarcher.buildlogic.tasks.CheckStylingCentralStylesheetOwnerTask
 import saltmarcher.buildlogic.tasks.CheckViewFxmlResourcesTask
 import saltmarcher.buildlogic.tasks.MainClassesSystemPropertyProvider
 
 internal open class VerificationHarnessExtension(
     private val project: Project,
-    private val enforcementBundles: EnforcementBundlesExtension,
     private val sourceSets: SourceSetContainer,
     private val mainSourceSet: SourceSet,
-    private val sourceRoots: FileCollection,
     private val sourceJavaRoots: FileCollection,
     private val commonFocusedArchunitSupportIncludes: List<String>,
-    private val jqassistantTaskRegistrar: JqassistantTaskRegistrar,
-    private val configureCommonErrorProneOptions: JavaCompile.() -> Unit
+    private val jqassistantTaskRegistrar: JqassistantTaskRegistrar
 ) {
     private fun compileJavaTaskName(sourceSetName: String): String =
         "compile${sourceSetName.replaceFirstChar(Char::uppercaseChar)}Java"
 
     private fun classesTaskName(sourceSetName: String): String = "${sourceSetName}Classes"
-
-    fun focusedVerificationSliceKey(bundleId: String): FocusedVerificationSliceKey {
-        val descriptor = enforcementBundles.descriptor(bundleId)
-        return FocusedVerificationSliceKey.from(descriptor)
-    }
 
     fun registerFocusedVerificationCompileAlias(
         bundleId: String,
@@ -58,7 +51,6 @@ internal open class VerificationHarnessExtension(
 
     fun registerFocusedVerificationCompileTask(
         sliceKey: FocusedVerificationSliceKey,
-        bundleIds: List<String>,
         checkerNames: List<String>,
         taskDescription: String
     ): TaskProvider<JavaCompile> {
@@ -91,7 +83,7 @@ internal open class VerificationHarnessExtension(
                 options.compilerArgs.add("-XDaddTypeAnnotationsToSymbol=true")
                 checkerNames.forEach(options.errorprone::error)
             }
-            inputs.property("focusedVerificationBundleIds", bundleIds.joinToString(","))
+            inputs.property("focusedVerificationCheckerNames", checkerNames.joinToString(","))
         }
     }
 
@@ -207,6 +199,17 @@ internal open class VerificationHarnessExtension(
             )
             successMarker.set(project.layout.buildDirectory.file("verification-markers/$taskName/success.marker"))
         }
+        EnforcementUtilityTaskKind.MANUAL_NODE_STYLING -> project.tasks.register<CheckManualNodeStylingTask>(taskName) {
+            group = LifecycleBasePlugin.VERIFICATION_GROUP
+            description = "Fail if active code uses inline style backchannels or passive Views use manual node layout styling."
+            javaSourceFiles.from(
+                project.files("bootstrap", "shell", "src").asFileTree.matching {
+                    include("**/*.java")
+                    exclude("**/build/**")
+                }
+            )
+            successMarker.set(project.layout.buildDirectory.file("verification-markers/$taskName/success.marker"))
+        }
     }
 }
 
@@ -260,6 +263,3 @@ internal data class FocusedVerificationSliceKey(
         }
     }
 }
-
-internal fun focusedVerificationCompileTaskName(bundleId: String): String =
-    "compile${bundleId.replaceFirstChar(Char::uppercaseChar)}VerificationJava"

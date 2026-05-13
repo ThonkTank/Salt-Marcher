@@ -4,6 +4,7 @@ import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.plugins.ExtensionAware
 import org.gradle.api.tasks.compile.JavaCompile
+import org.gradle.api.tasks.TaskProvider
 import org.gradle.kotlin.dsl.getByType
 import org.gradle.kotlin.dsl.named
 import org.gradle.kotlin.dsl.register
@@ -47,39 +48,10 @@ internal fun Project.configureVerificationCore() {
         }
     }
 
-    val focusedCompileTasksByBundleId = activeEnforcementBundleIds
-        .map(::descriptor)
-        .filter(EnforcementBundleDescriptor::requiresFocusedCompile)
-        .groupBy { bundleDescriptor -> verificationHarness.focusedVerificationSliceKey(bundleDescriptor.bundleId) }
-        .flatMap { (sliceKey, sliceDescriptors) ->
-            val sliceBundleIds = sliceDescriptors
-                .map(EnforcementBundleDescriptor::bundleId)
-                .sorted()
-            val sliceCheckerNames = sliceDescriptors
-                .flatMap(EnforcementBundleDescriptor::errorProneCheckers)
-                .distinct()
-                .sorted()
-            val sliceDisplayName = sliceBundleIds.joinToString(", ")
-            val compileDescription = if (sliceCheckerNames.isEmpty()) {
-                "Compile the coalesced focused verification slice for $sliceDisplayName."
-            } else {
-                "Compile the coalesced focused verification slice for $sliceDisplayName with the dedicated Error Prone checks enabled."
-            }
-            val coalescedCompileTask = verificationHarness.registerFocusedVerificationCompileTask(
-                sliceKey,
-                sliceBundleIds,
-                sliceCheckerNames,
-                compileDescription
-            )
-            sliceDescriptors.map { descriptor ->
-                verificationHarness.registerFocusedVerificationCompileAlias(
-                    descriptor.bundleId,
-                    coalescedCompileTask
-                )
-                descriptor.bundleId to coalescedCompileTask
-            }
-        }
-        .toMap()
+    val focusedCompileTasksByBundleId = registerFocusedCompileTasksByBundleId(
+        activeEnforcementBundleIds.map(::descriptor),
+        verificationHarness
+    )
 
     fun registerStandardBundle(bundleId: String) {
         val descriptor = descriptor(bundleId)
@@ -199,4 +171,45 @@ internal fun Project.configureVerificationCore() {
         dependsOn("pmdStrictMain")
     }
 
+}
+
+private fun registerFocusedCompileTasksByBundleId(
+    descriptors: List<EnforcementBundleDescriptor>,
+    verificationHarness: VerificationHarnessExtension
+): Map<String, TaskProvider<JavaCompile>> = descriptors
+    .filter(EnforcementBundleDescriptor::requiresFocusedCompile)
+    .groupBy(FocusedVerificationSliceKey::from)
+    .flatMap { (sliceKey, sliceDescriptors) ->
+        val sliceBundleIds = sliceDescriptors
+            .map(EnforcementBundleDescriptor::bundleId)
+            .sorted()
+        val sliceCheckerNames = sliceDescriptors
+            .flatMap(EnforcementBundleDescriptor::errorProneCheckers)
+            .distinct()
+            .sorted()
+        val coalescedCompileTask = verificationHarness.registerFocusedVerificationCompileTask(
+            sliceKey,
+            sliceCheckerNames,
+            focusedCompileDescription(sliceBundleIds, sliceCheckerNames)
+        )
+        sliceDescriptors.map { descriptor ->
+            verificationHarness.registerFocusedVerificationCompileAlias(
+                descriptor.bundleId,
+                coalescedCompileTask
+            )
+            descriptor.bundleId to coalescedCompileTask
+        }
+    }
+    .toMap()
+
+private fun focusedCompileDescription(
+    bundleIds: List<String>,
+    checkerNames: List<String>
+): String {
+    val sliceDisplayName = bundleIds.joinToString(", ")
+    return if (checkerNames.isEmpty()) {
+        "Compile the coalesced focused verification slice for $sliceDisplayName."
+    } else {
+        "Compile the coalesced focused verification slice for $sliceDisplayName with the dedicated Error Prone checks enabled."
+    }
 }

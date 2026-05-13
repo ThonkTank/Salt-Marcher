@@ -296,6 +296,7 @@ fun standardEnforcementBundleDescriptors(): List<EnforcementBundleDescriptor> = 
         utilityTask("checkCentralizedStylesheets", EnforcementUtilityTaskKind.CENTRALIZED_STYLESHEETS)
         utilityTask("checkStylingCentralStylesheetOwner", EnforcementUtilityTaskKind.STYLING_CENTRAL_STYLESHEET_OWNER)
         utilityTask("checkDefinedStyleClassSelectors", EnforcementUtilityTaskKind.DEFINED_STYLE_CLASS_SELECTORS)
+        utilityTask("checkManualNodeStyling", EnforcementUtilityTaskKind.MANUAL_NODE_STYLING)
     },
     bundle("stylingView", 9) {
         selectorTask("Internal selector for the passive View direct-render styling enforcement bundle.")

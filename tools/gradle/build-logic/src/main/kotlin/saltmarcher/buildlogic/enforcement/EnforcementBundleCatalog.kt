@@ -23,7 +23,8 @@ enum class EnforcementUtilityTaskKind {
     VIEW_FXML_RESOURCES,
     CENTRALIZED_STYLESHEETS,
     STYLING_CENTRAL_STYLESHEET_OWNER,
-    DEFINED_STYLE_CLASS_SELECTORS
+    DEFINED_STYLE_CLASS_SELECTORS,
+    MANUAL_NODE_STYLING
 }
 
 data class EnforcementUtilityTaskSpec(
@@ -69,6 +70,9 @@ data class EnforcementBundleDescriptor(
         .firstOrNull { task -> task.taskName == taskName }
         ?: error("Unknown build-harness task '$taskName' for enforcement bundle '$bundleId'.")
 }
+
+fun focusedVerificationCompileTaskName(bundleId: String): String =
+    "compile${bundleId.replaceFirstChar(Char::uppercaseChar)}VerificationJava"
 
 data class EnforcementBundleCatalog(
     val descriptorsById: Map<String, EnforcementBundleDescriptor>
