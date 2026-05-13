@@ -4,36 +4,6 @@ set -euo pipefail
 readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 readonly HEARTBEAT_SECONDS=30
-declare -a DIAGNOSTIC_CONTINUE_TASK_NAMES=(
-  checkNoDeadCode
-  checkArchitecture
-  production-handoff
-  checkDocumentationEnforcement
-  checkViewEnforcement
-  checkDomainEnforcement
-  checkDataEnforcement
-  checkShellEnforcement
-  checkBootstrapEnforcement
-  checkStylingEnforcement
-  checkLayeringEnforcement
-  pmdMain
-  pmdStrictMain
-  spotbugsMain
-  ckjmMain
-  cpdMain
-  lizardMain
-  checkCentralizedStylesheets
-  checkDefinedStyleClassSelectors
-  checkStylingCentralStylesheetOwner
-  checkNoCompiledArtifactsInSource
-  checkDesktopPackagingInputs
-)
-declare -a DIAGNOSTIC_CONTINUE_TASK_PATTERNS=(
-  'check*Enforcement'
-  '*ArchitectureTest'
-  '*TopologyCheck'
-  'pmd*Enforcement'
-)
 
 usage() {
     cat <<'EOF'
@@ -105,29 +75,6 @@ contains_continue_flag() {
     local arg
     for arg in "$@"; do
         if [[ "$arg" == "--continue" ]]; then
-            return 0
-        fi
-    done
-    return 1
-}
-
-is_diagnostic_continue_task() {
-    local task_name="$1"
-    local candidate pattern
-
-    for candidate in "${DIAGNOSTIC_CONTINUE_TASK_NAMES[@]}"; do
-        [[ "$task_name" == "$candidate" ]] && return 0
-    done
-    for pattern in "${DIAGNOSTIC_CONTINUE_TASK_PATTERNS[@]}"; do
-        [[ "$task_name" == $pattern ]] && return 0
-    done
-    return 1
-}
-
-should_enable_continue() {
-    local task_name
-    for task_name in "$@"; do
-        if is_diagnostic_continue_task "$task_name"; then
             return 0
         fi
     done
@@ -224,7 +171,7 @@ mkdir -p "$log_dir"
 declare -a gradle_cmd=(./gradlew)
 gradle_cmd+=("${tasks[@]}")
 gradle_cmd+=(--console=plain)
-if should_enable_continue "${tasks[@]}" && ! contains_continue_flag "${extra_args[@]}"; then
+if ! contains_continue_flag "${extra_args[@]}"; then
     gradle_cmd+=(--continue)
 fi
 if [[ ${#extra_args[@]} -gt 0 ]]; then

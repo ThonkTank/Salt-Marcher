@@ -45,20 +45,20 @@ know bundle member tasks, internal rule lists, or architecture-rule ownership.
 one same-named Gradle lifecycle task. `tools/gradle/run-observable-gradle.sh`
 remains a generic runtime wrapper for one Gradle invocation.
 
-Runtime wrappers own their invocation defaults for console mode. When callers
-pass those same Gradle built-in flags again through the wrapper extra-args
-channel, the runtime wrapper sanitizes and logs the duplicate wrapper-owned
-flags instead of forwarding conflicting built-in options to Gradle. Daemon
-selection now follows Gradle's normal behavior unless the caller explicitly
-passes `--daemon` or `--no-daemon`.
-Runtime wrappers also own `--continue` policy for public gate entrypoints so
-failure aggregation is an explicit runtime decision instead of a hidden
-convention-plugin mutation.
-The staged production handoff now defaults to continue-on-failure through the
-runtime wrapper so the canonical handoff route reports the broad current
-failure set in one run. The wrapper still owns that policy rather than the
-verification core itself, and direct raw Gradle use of the public surface does
-not inherit wrapper defaults automatically.
+Runtime wrappers own their invocation defaults for console mode and
+wrapper-based failure aggregation. When callers pass those same Gradle built-in
+flags again through the wrapper extra-args channel, the runtime wrapper
+sanitizes and logs the duplicate wrapper-owned flags instead of forwarding
+conflicting built-in options to Gradle. Daemon selection now follows Gradle's
+normal behavior unless the caller explicitly passes `--daemon` or
+`--no-daemon`.
+`tools/gradle/run-observable-gradle.sh` defaults wrapper-based runs to Gradle
+`--continue` so long handoff and investigation runs report the full current
+failure set. This policy is global to the runtime wrapper and MUST NOT be
+computed from private task names, bundle member tasks, topology-task patterns,
+PMD enforcement patterns, internal rule lists, or architecture-rule ownership.
+Direct raw Gradle use of the same public surfaces does not inherit wrapper
+defaults automatically.
 
 ### 2. Verification Core
 

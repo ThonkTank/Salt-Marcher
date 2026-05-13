@@ -112,15 +112,17 @@ run through `./gradlew <task> --console=plain`.
 ## Runtime Wrapper Policy
 
 For wrapper-based local runs, failure aggregation across independent gates is a
-runtime-wrapper concern. `tools/gradle/run-observable-gradle.sh` may add
-Gradle `--continue` for diagnostic entrypoints so the build reports the full
-current failure set without moving that policy into the convention-plugin
-layer.
+runtime-wrapper concern. `tools/gradle/run-observable-gradle.sh` adds Gradle
+`--continue` to wrapper-based runs so long handoff and investigation runs
+report the full current failure set without moving that policy into the
+convention-plugin layer or reconstructing private task families in shell.
 
-By default, `production-handoff` now runs with Gradle `--continue` at the
-staged-handoff level so the canonical implementation-handoff route reports the
-broader current failure set in one run. The staged handoff still fails overall
-when any blocking dependency fails.
+By default, `production-handoff` inherits that wrapper-level `--continue`
+behavior through the staged handoff route, so the canonical
+implementation-handoff route reports the broader current failure set in one
+run. The staged handoff still fails overall when any blocking dependency fails.
+Direct raw `./gradlew` invocations remain explicit and only aggregate failures
+when the caller passes `--continue`.
 
 Additional Gradle investigation flags may be passed after `--`, but runtime
 wrappers own invocation defaults such as `--console=plain`. If callers pass
@@ -170,8 +172,8 @@ parallel safety by rewriting Gradle cache or build directories.
 
 Callers may still pass investigation-oriented extra args such as
 `--rerun-tasks`, `--stacktrace`, `--info`, or `--scan`, while runtime wrappers
-continue to own their invocation defaults and default diagnostic `--continue`
-policy.
+continue to own their invocation defaults and global wrapper-based
+`--continue` policy.
 
 This does not make bytecode-dependent entrypoints source-only. `spotbugsMain`,
 `ckjmMain`, and the public layer surfaces still require current compiled
