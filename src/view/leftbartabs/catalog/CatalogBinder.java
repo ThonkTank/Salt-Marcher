@@ -40,11 +40,11 @@ final class CatalogBinder {
         CatalogContributionModel presentationModel = new CatalogContributionModel();
         CatalogIntentHandler intentHandler =
                 new CatalogIntentHandler(presentationModel, services.creatures(), services.encounters());
-        CatalogControlsView controls = new CatalogControlsView(presentationModel);
+        CatalogControlsView controls = new CatalogControlsView(presentationModel.controlsContentModel());
         CatalogMainView main = new CatalogMainView();
 
         bindControls(intentHandler, controls);
-        bindMain(main, presentationModel, intentHandler);
+        bindMain(main, presentationModel.mainContentModel(), intentHandler);
         presentationModel.creatureDetailSelectionProperty().addListener((obs, before, after) -> {
             if (after == null || after.longValue() <= 0L) {
                 return;
@@ -80,10 +80,10 @@ final class CatalogBinder {
 
     private static void bindMain(
             CatalogMainView main,
-            CatalogContributionModel presentationModel,
+            CatalogMainContentModel contentModel,
             CatalogIntentHandler intentHandler
     ) {
-        main.bind(presentationModel);
+        main.bind(contentModel);
         main.onViewInputEvent(intentHandler::consume);
     }
 

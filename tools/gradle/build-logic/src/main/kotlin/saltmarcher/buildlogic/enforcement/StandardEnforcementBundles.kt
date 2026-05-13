@@ -348,7 +348,9 @@ fun standardEnforcementBundleDescriptors(): List<EnforcementBundleDescriptor> = 
         errorProneCheckers(listOf("DomainForbiddenInfrastructureDependency", "DomainModuleNoPublishedCarrierDependency", "DomainSourceTopologyPerimeter"))
         verificationSources(listOf("."), listOf("src/domain/**/*.java"))
         archunit("domainLayerArchitectureTest", "Run only the Domain Layer-focused architecture test suite.", focusedArchunitIncludes, listOf("architecture/domain/layer/**"))
-        buildHarnessArchitectureRules(listOf("saltmarcher.architecture.domain.layer.DomainLayerTopologyRules"))
+        buildHarnessArchitectureRules(listOf(
+            "saltmarcher.architecture.domain.layer.DomainLayerTopologyRules",
+            "saltmarcher.architecture.domain.layer.DomainModuleBoundaryRules"))
         buildHarnessDocumentationCoverageSpecs(listOf("domainLayer"))
         buildHarnessTopologyTask("domainLayerTopologyCheck")
         buildHarnessDocumentationTask("domainLayerDocumentationEnforcementCheck")
@@ -389,7 +391,12 @@ fun standardEnforcementBundleDescriptors(): List<EnforcementBundleDescriptor> = 
     },
     bundle("domainPublished", 14) {
         selectorTask("Internal selector for the dedicated Domain Published enforcement bundle.")
-        errorProneCheckers(listOf("DomainPublishedCarrierShape", "DomainPublishedBoundarySignaturePurity", "DomainPublishedReadModelShape", "DomainPublishedOwnershipBoundary"))
+        errorProneCheckers(listOf(
+            "DomainPublishedCarrierShape",
+            "DomainPublishedBoundarySignaturePurity",
+            "DomainPublishedReadModelShape",
+            "DomainPublishedReadbackSeamBoundary",
+            "DomainPublishedOwnershipBoundary"))
         verificationSources(listOf("."), listOf("src/domain/**/*.java"))
         buildHarnessArchitectureRules(listOf("saltmarcher.architecture.domain.published.DomainPublishedTopologyRules"))
         buildHarnessDocumentationCoverageSpecs(listOf("domainPublished"))

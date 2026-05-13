@@ -5,8 +5,6 @@ import java.util.List;
 import java.util.Locale;
 import javafx.beans.property.ReadOnlyLongProperty;
 import javafx.beans.property.ReadOnlyLongWrapper;
-import javafx.beans.property.ReadOnlyObjectProperty;
-import javafx.beans.property.ReadOnlyObjectWrapper;
 import org.jspecify.annotations.Nullable;
 import src.domain.creatures.published.CreatureCatalogPage;
 import src.domain.creatures.published.CreatureCatalogPageResult;
@@ -80,10 +78,8 @@ public final class CatalogContributionModel {
             new PreviewLabel(3.0, "3 Typen"),
             new PreviewLabel(4.0, "4 Typen"));
 
-    private final ReadOnlyObjectWrapper<MainProjection> mainProjection =
-            new ReadOnlyObjectWrapper<>(MainProjection.initial());
-    private final ReadOnlyObjectWrapper<ControlsProjection> controlsProjection =
-            new ReadOnlyObjectWrapper<>(ControlsProjection.initial());
+    private final CatalogMainContentModel mainContentModel = new CatalogMainContentModel();
+    private final CatalogControlsContentModel controlsContentModel = new CatalogControlsContentModel();
     private final ReadOnlyLongWrapper creatureDetailSelection = new ReadOnlyLongWrapper(0L);
     private final ProjectionState state = new ProjectionState();
 
@@ -92,12 +88,12 @@ public final class CatalogContributionModel {
         refreshMainProjection();
     }
 
-    ReadOnlyObjectProperty<MainProjection> mainProjectionProperty() {
-        return mainProjection.getReadOnlyProperty();
+    CatalogMainContentModel mainContentModel() {
+        return mainContentModel;
     }
 
-    ReadOnlyObjectProperty<ControlsProjection> controlsProjectionProperty() {
-        return controlsProjection.getReadOnlyProperty();
+    CatalogControlsContentModel controlsContentModel() {
+        return controlsContentModel;
     }
 
     ReadOnlyLongProperty creatureDetailSelectionProperty() {
@@ -163,11 +159,11 @@ public final class CatalogContributionModel {
     }
 
     private void refreshControlsProjection() {
-        controlsProjection.set(state.controlsProjection());
+        controlsContentModel.applyProjection(state.controlsProjection());
     }
 
     private void refreshMainProjection() {
-        mainProjection.set(state.mainProjection());
+        mainContentModel.applyProjection(state.mainProjection());
     }
 
     private static CreatureFilters mergedFilters(LocalFilterState local, ControlsState controls) {

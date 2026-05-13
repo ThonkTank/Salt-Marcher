@@ -71,12 +71,12 @@ public final class CatalogMainView extends BorderPane {
         setBottom(new PaginationBar(previousButton, pageLabel, nextButton));
     }
 
-    public void bind(CatalogContributionModel contributionModel) {
-        if (contributionModel == null) {
+    public void bind(CatalogMainContentModel contentModel) {
+        if (contentModel == null) {
             return;
         }
-        applyProjection(contributionModel.mainProjectionProperty().get());
-        contributionModel.mainProjectionProperty().addListener((obs, before, after) -> applyProjection(after));
+        applyProjection(contentModel.projectionProperty().get());
+        contentModel.projectionProperty().addListener((obs, before, after) -> applyProjection(after));
     }
 
     public void onViewInputEvent(Consumer<CatalogMainViewInputEvent> handler) {
