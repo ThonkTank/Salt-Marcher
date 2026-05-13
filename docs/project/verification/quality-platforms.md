@@ -203,10 +203,13 @@ It combines:
 - the quality-hygiene blocker path through PMD, OpenRewrite dry-run
   near-miss checks, SpotBugs, CPD, Lizard, compiled-artifact hygiene, and
   whole-program dead-code reachability
+- CKJM hotspot and regression reporting
 - the public `checkArchitecture` aggregate
 
 `check` remains the central local build-health aggregate. Its architecture
-coverage comes through the public `checkArchitecture` aggregate.
+coverage comes through the public `checkArchitecture` aggregate. `check` and
+`production-handoff` consume the same typed verification lifecycle catalog for
+shared root-owned hygiene and reporting owners.
 `checkDocumentationEnforcement` remains intentionally separate so
 documentation-only work has a smaller proof route.
 

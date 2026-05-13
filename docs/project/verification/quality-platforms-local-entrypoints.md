@@ -31,6 +31,10 @@ the single central aggregate for repository-owned blocking Gradle checks.
 - cyclomatic-complexity detection through `lizardMain`
 - OO-metric regression reporting through `ckjmMain`
 
+The shared owner list behind `check` is the same typed verification lifecycle
+catalog used by `production-handoff`; root build scripts must not add those
+owners separately.
+
 `pmdMain` and `spotbugsMain` are central blocking gates and may also be run as
 focused direct entrypoints. `pmdStrictMain` remains the focused text-first PMD
 entrypoint for the same blocking ruleset.
@@ -41,8 +45,9 @@ entrypoint for the same blocking ruleset.
 implementation-handoff route required by `AGENTS.md` for production-code
 changes. The wrapper is runtime-only: it forwards the canonical surface name to
 one same-named Gradle lifecycle task, and the verification core expands
-`production-handoff` directly to assemble, `test`, the quality-hygiene tool
-owners, and `checkArchitecture` inside Gradle.
+`production-handoff` directly through the same typed lifecycle catalog used by
+`check`: assemble, `test`, `checkArchitecture`, the quality-hygiene tool
+owners, and CKJM reporting inside Gradle.
 
 For check-only implementation work limited to concrete enforcement packages or
 verification-only wiring under `tools/**`, `build.gradle.kts`, or
@@ -68,7 +73,8 @@ Architecture-focused and handoff public entrypoints are:
   surfaces, `architectureTest`, and `:build-harness:architectureCheck`.
 - `tools/gradle/run-staged-verification.sh production-handoff`
   Aggregates the public production-code handoff route through assemble,
-  `test`, the quality-hygiene tool owners, and `checkArchitecture`.
+  `test`, `checkArchitecture`, the quality-hygiene tool owners, and CKJM
+  reporting.
 - `./gradlew checkDocumentationEnforcement --console=plain`
   Aggregates focused Markdown-backed architecture and enforcement-document
   coverage through `:build-harness:documentationEnforcementCheck`.

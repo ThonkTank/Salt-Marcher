@@ -103,14 +103,6 @@ val checkRewriteNearMisses by tasks.registering {
     dependsOn(tasks.named("rewriteDryRun"))
 }
 
-tasks.named("check") {
-    dependsOn(checkRewriteNearMisses)
-}
-
-tasks.named("production-handoff") {
-    dependsOn(checkRewriteNearMisses)
-}
-
 spotbugs {
     ignoreFailures = false
     effort = Effort.MAX

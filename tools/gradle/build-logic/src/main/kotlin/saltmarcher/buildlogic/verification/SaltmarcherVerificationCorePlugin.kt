@@ -24,6 +24,7 @@ internal fun Project.configureVerificationCore() {
     val activeEnforcementBundleIds = enforcementBundles.activeEnforcementBundleIds
     val verificationHarness = extensions.getByType<VerificationHarnessExtension>()
     val verificationSurfaceCatalog = standardVerificationSurfaceCatalog(enforcementBundles.catalog)
+    val verificationLifecycleCatalog = standardVerificationLifecycleCatalog()
     val publicVerificationSurfaceNames = verificationSurfaceCatalog.surfacesInOrder
         .map { surface -> surface.publicTaskName }
 
@@ -136,19 +137,11 @@ internal fun Project.configureVerificationCore() {
         dependsOn("installDesktopApp")
     }
 
-    tasks.register("production-handoff") {
+    val productionHandoffSurface = verificationLifecycleCatalog.surface("production-handoff")
+    tasks.register(productionHandoffSurface.publicTaskName) {
         group = LifecycleBasePlugin.VERIFICATION_GROUP
-        description = "Run the public production handoff surface through the small verification API and internal quality owners."
-        dependsOn("assemble")
-        dependsOn("test")
-        dependsOn(checkArchitecture)
-        dependsOn("pmdMain")
-        dependsOn("spotbugsMain")
-        dependsOn("cpdMain")
-        dependsOn("lizardMain")
-        dependsOn("checkNoCompiledArtifactsInSource")
-        dependsOn("checkNoDeadCode")
-        dependsOn("pmdStrictMain")
+        description = productionHandoffSurface.description
+        productionHandoffSurface.dependencyTaskNames.forEach(::dependsOn)
     }
 
 }

@@ -85,6 +85,10 @@ enforcement bundles and not a second public API.
 The verification core owns the mapping from a public surface to its underlying
 Gradle dependencies. Root build scripts MUST consume this core instead of
 reconstructing the surface model themselves.
+The shared root-owned hygiene owners behind `check` and `production-handoff`
+are declared in one typed verification lifecycle catalog. `check` and
+`production-handoff` MUST consume that catalog instead of attaching shared
+owners from separate plugin or root-build locations.
 
 ### 3. Bundle Owners
 

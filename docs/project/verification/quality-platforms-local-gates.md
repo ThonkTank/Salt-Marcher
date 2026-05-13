@@ -55,7 +55,7 @@ full architecture harness through `check`.
 | SpotBugs plus FindSecBugs | `Blocking Local Gate` | `./gradlew spotbugsMain` | Runs bytecode bug and security-smell analysis with SpotBugs effort `MAX` and confidence `MEDIUM`. |
 | CPD | `Blocking Local Gate` | `./gradlew cpdMain` | Runs PMD CPD for Java with `minimumTokens = 100`, matching PMD's documented Java example value, and writes its report under the active worktree's normal `build/reports/cpd/` surface. |
 | Lizard | `Blocking Local Gate` | `./gradlew lizardMain` | Runs pinned `lizard==1.21.3` for Java with max cyclomatic complexity `15`, matching Lizard's default warning threshold, and writes its report under the active worktree's normal `build/reports/lizard/` surface. |
-| CKJM ext | `Informational Report` | `./gradlew ckjmMain` | Runs on freshly compiled production classes and writes `main.txt` plus `summary.md` under the active worktree's normal `build/reports/ckjm/` surface without blocking local build or install handoff. |
+| CKJM ext | `Informational Report` | `./gradlew ckjmMain` | Runs on freshly compiled production classes and writes `main.txt` plus `summary.md` under the active worktree's normal `build/reports/ckjm/` surface. It is included in the shared `check` / `production-handoff` lifecycle catalog for report visibility, but CKJM hotspot findings remain warnings rather than blocker failures. |
 
 PMD non-architecture reports use explicit metric thresholds. These thresholds
 must stay at or below PMD's documented defaults unless the standard explicitly
@@ -84,15 +84,16 @@ rules such as `DataClass`, `TooManyFields` (`15`), and `TooManyMethods` (`10`).
 `src/data/**/model/*PersistenceSchema.java`, `src/data/**/model/*Record.java`,
 and `src/domain/**/published/**` source files.
 
-`checkRewriteNearMisses` is wired into the central `check` aggregate through
-OpenRewrite `rewriteDryRun` and fails the local handoff build when the active
-near-miss recipe set produces dry-run changes or search markers. `rewriteRun`
-is not part of the blocking path because it mutates source files.
+`checkRewriteNearMisses` is wired into the shared `check` /
+`production-handoff` lifecycle catalog through OpenRewrite `rewriteDryRun` and
+fails the local handoff build when the active near-miss recipe set produces
+dry-run changes or search markers. `rewriteRun` is not part of the blocking
+path because it mutates source files.
 
-`pmdMain` is wired into the central `check` aggregate and fails the local
-handoff build on violations. `pmdStrictMain` uses the same ruleset and also
-fails when run directly, but it remains a focused direct entrypoint instead of
-an additional aggregate dependency. `pmdTest` is disabled; PMD
+`pmdMain` is wired into the shared `check` / `production-handoff` lifecycle
+catalog and fails the local handoff build on violations. `pmdStrictMain` uses
+the same ruleset and also fails as part of that shared lifecycle or when run
+directly. `pmdTest` is disabled; PMD
 non-architecture smell policy applies to production source roots, not
 architecture test sources.
 
@@ -108,7 +109,8 @@ SpotBugs uses the official Gradle plugin with `findsecbugs-plugin` enabled,
 effort `MAX`, and confidence `MEDIUM`. `MAX` is the strongest analysis effort;
 `MEDIUM` keeps the normal medium-confidence report level instead of weakening
 the report to high-confidence-only findings. `spotbugsMain` is active in the
-central `check` aggregate and blocks the local build on reported findings.
+shared `check` / `production-handoff` lifecycle catalog and blocks the local
+build on reported findings.
 `spotbugsTest` is disabled because behavior-coupled automated tests are not
 part of the project strategy.
 

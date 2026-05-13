@@ -33,6 +33,7 @@ internal fun Project.registerQualityConventionLifecycleTasks(
     val ckjmBaselineFile = layout.projectDirectory.file("tools/quality/config/ckjm/baseline.tsv")
     val ckjmReportFile = layout.buildDirectory.file("reports/ckjm/main.txt")
     val ckjmSummaryFile = layout.buildDirectory.file("reports/ckjm/summary.md")
+    val verificationLifecycleCatalog = standardVerificationLifecycleCatalog()
 
     tasks.named<JavaCompile>("compileJava") {
         dependsOn(resetMainJavaClassesOutput)
@@ -48,7 +49,7 @@ internal fun Project.registerQualityConventionLifecycleTasks(
         pythonCommand.set("python3")
     }
 
-    val lizardMain = tasks.register<LizardCheckTask>("lizardMain") {
+    tasks.register<LizardCheckTask>("lizardMain") {
         group = LifecycleBasePlugin.VERIFICATION_GROUP
         description = "Run Lizard complexity checks against production Java sources."
         dependsOn(setupLizard)
@@ -60,7 +61,7 @@ internal fun Project.registerQualityConventionLifecycleTasks(
         reportFile.set(layout.buildDirectory.file("reports/lizard/main.txt"))
     }
 
-    val cpdMain = tasks.register<CpdCheckTask>("cpdMain") {
+    tasks.register<CpdCheckTask>("cpdMain") {
         group = LifecycleBasePlugin.VERIFICATION_GROUP
         description = "Run PMD CPD duplicate-code checks against production Java sources."
         projectRoot.set(layout.projectDirectory)
@@ -70,7 +71,7 @@ internal fun Project.registerQualityConventionLifecycleTasks(
         reportFile.set(cpdReportFile)
     }
 
-    val pmdStrictMain = tasks.register<PmdSourceCheckTask>("pmdStrictMain") {
+    tasks.register<PmdSourceCheckTask>("pmdStrictMain") {
         group = LifecycleBasePlugin.VERIFICATION_GROUP
         description = "Run strict PMD source-smell checks against production Java sources."
         dependsOn(gradle.includedBuild("quality-rules").task(":jar"))
@@ -99,7 +100,7 @@ internal fun Project.registerQualityConventionLifecycleTasks(
         enabled = false
     }
 
-    val ckjmMain = tasks.register<CkjmReportTask>("ckjmMain") {
+    tasks.register<CkjmReportTask>("ckjmMain") {
         group = LifecycleBasePlugin.VERIFICATION_GROUP
         description = "Run CKJM ext OO metrics against compiled production classes and write reports."
         dependsOn(tasks.named("classes"))
@@ -112,7 +113,7 @@ internal fun Project.registerQualityConventionLifecycleTasks(
         summaryFile.set(ckjmSummaryFile)
     }
 
-    val checkNoCompiledArtifactsInSource = tasks.register<CheckNoCompiledArtifactsTask>("checkNoCompiledArtifactsInSource") {
+    tasks.register<CheckNoCompiledArtifactsTask>("checkNoCompiledArtifactsInSource") {
         group = LifecycleBasePlugin.VERIFICATION_GROUP
         description = "Fail if compiled .class artifacts are present in bootstrap/, shell/ or src/."
         projectRoot.set(layout.projectDirectory)
@@ -120,7 +121,7 @@ internal fun Project.registerQualityConventionLifecycleTasks(
         successMarker.set(layout.buildDirectory.file("verification-markers/checkNoCompiledArtifactsInSource/success.marker"))
     }
 
-    val checkNoDeadCode = tasks.register<CheckNoDeadCodeTask>("checkNoDeadCode") {
+    tasks.register<CheckNoDeadCodeTask>("checkNoDeadCode") {
         group = LifecycleBasePlugin.VERIFICATION_GROUP
         description = "Fail if production code contains unreachable files, types, methods, constructors, or fields."
         dependsOn(tasks.named("classes"))
@@ -141,18 +142,10 @@ internal fun Project.registerQualityConventionLifecycleTasks(
         successMarker.set(layout.buildDirectory.file("verification-markers/checkNoDeadCode/success.marker"))
     }
 
-    val check = tasks.named("check") {
-        dependsOn("assemble")
-        dependsOn("test")
-        dependsOn("checkArchitecture")
-        dependsOn(tasks.named("pmdMain"))
-        dependsOn(tasks.named("spotbugsMain"))
-        dependsOn(cpdMain)
-        dependsOn(lizardMain)
-        dependsOn(checkNoCompiledArtifactsInSource)
-        dependsOn(checkNoDeadCode)
-        dependsOn(pmdStrictMain)
-        dependsOn(ckjmMain)
+    tasks.named("check") {
+        verificationLifecycleCatalog.surface("check")
+            .dependencyTaskNames
+            .forEach(::dependsOn)
     }
 
     tasks.withType<Pmd>().configureEach {
