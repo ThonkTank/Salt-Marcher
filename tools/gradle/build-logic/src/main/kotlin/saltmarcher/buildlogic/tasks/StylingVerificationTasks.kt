@@ -259,7 +259,7 @@ private fun writeSuccessMarker(markerFile: File) {
 
 private fun manualNodeStylingViolations(file: File): List<ManualNodeStylingViolation> {
     val path = file.invariantSeparatorsPath()
-    val passiveViewSource = path.startsWith("src/view/") && path.endsWith("View.java")
+    val passiveViewSource = path.contains("/src/view/") && path.endsWith("View.java")
     val violations = mutableListOf<ManualNodeStylingViolation>()
     file.readLines().forEachIndexed { index, line ->
         val lineNumber = index + 1

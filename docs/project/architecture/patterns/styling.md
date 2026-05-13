@@ -53,20 +53,19 @@ direct-render exception and its remaining non-CSS semantics.
 The current blocking proof surfaces are `checkStylingEnforcement`,
 `checkStylingCentralStylesheetOwner`, `checkCentralizedStylesheets`,
 `checkDefinedStyleClassSelectors`, `checkDesktopPackagingInputs`,
-`compileJava`, and `check`.
+`checkManualNodeStyling`, and `check`.
 `checkStylingEnforcement` is the canonical public styling entrypoint. It
 aggregates the centralized stylesheet-owner, stylesheet-file,
 selector-resolution, broad `ViewProgrammaticStyling` compile surfaces, and the
-passive-`View` direct-render styling placement proof. Its compile-side
-`ViewManualNodeStyling` rule and typed `checkManualNodeStyling` task block
-`setStyle(...)` and passive-`View` manual ordinary-node layout styling. Its
-direct-render
-`ViewDirectRenderStylingPlacement` compiler rule, which also blocks
-`compileJava`, proves only that local JavaFX paint/font/stroke style values
-appear in passive `View` code solely inside the documented direct-render
-exception. The remaining passive-`View` direct-render-value derivation and "no
-local visual system" semantics remain review-owned until the repository adopts
-a dedicated central-token or equivalent non-CSS proof surface.
+passive-`View` direct-render styling placement proof. Its typed
+`checkManualNodeStyling` task blocks `setStyle(...)` and passive-`View` manual
+ordinary-node layout styling. Its direct-render
+`ViewDirectRenderStylingPlacement` compiler rule proves only that local JavaFX
+paint/font/stroke style values appear in passive `View` code solely inside the
+documented direct-render exception. The remaining passive-`View`
+direct-render-value derivation and "no local visual system" semantics remain
+review-owned until the repository adopts a dedicated central-token or
+equivalent non-CSS proof surface.
 
 ## References
 
