@@ -24,6 +24,7 @@ final class DungeonEditorBinder {
         DungeonEditorApplicationService editor = runtimeContext.services().require(DungeonEditorApplicationService.class);
         DungeonEditorModel editorModel = editor.loadEditor(new LoadDungeonEditorQuery(null));
         DungeonEditorContributionModel contributionModel = new DungeonEditorContributionModel();
+        DungeonEditorControlsContentModel controlsContentModel = new DungeonEditorControlsContentModel();
         DungeonMapContentModel mapContentModel = new DungeonMapContentModel("Dungeon workspace", true);
         DungeonEditorIntentHandler intentHandler =
                 new DungeonEditorIntentHandler(contributionModel, mapContentModel.mapCanvasContentModel(), editor);
@@ -32,11 +33,14 @@ final class DungeonEditorBinder {
         DungeonEditorStateView state = new DungeonEditorStateView();
 
         main.bind(mapContentModel);
-        controls.bind(contributionModel);
+        controls.bind(controlsContentModel);
         state.bind(contributionModel);
         main.onViewInputEvent(intentHandler::consume);
-        controls.onDungeonEditorControlsInputEvent(intentHandler::consume);
+        controls.onViewInputEvent(intentHandler::consume);
         state.onViewInputEvent(intentHandler::consume);
+        contributionModel.controlsProjectionProperty().addListener((ignored, before, after) ->
+                controlsContentModel.apply(after));
+        controlsContentModel.apply(contributionModel.controlsProjectionProperty().get());
         editorModel.subscribe(snapshot -> applySnapshot(snapshot, contributionModel, mapContentModel));
         applySnapshot(editorModel.current(), contributionModel, mapContentModel);
         return new Binding(controls, main, state);

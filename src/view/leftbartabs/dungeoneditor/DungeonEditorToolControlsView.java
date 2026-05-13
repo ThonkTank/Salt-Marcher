@@ -74,7 +74,20 @@ final class DungeonEditorToolControlsView {
         return row;
     }
 
-    void showTool(String tool) {
+    void bind(DungeonEditorToolControlsContentModel contentModel) {
+        contentModel.toolProjectionProperty().addListener((ignored, before, after) -> showProjection(after));
+        showProjection(contentModel.toolProjectionProperty().get());
+    }
+
+    private void showProjection(DungeonEditorToolControlsContentModel.ToolProjection projection) {
+        DungeonEditorToolControlsContentModel.ToolProjection safeProjection = projection == null
+                ? DungeonEditorToolControlsContentModel.ToolProjection.initial()
+                : projection;
+        showTool(safeProjection.selectedTool());
+        toolPalettePopup.show(safeProjection.toolPaletteUiState());
+    }
+
+    private void showTool(String tool) {
         String selectedTool = normalizeTool(tool);
         selectButton.setSelected(DungeonEditorControlsView.SELECT_TOOL.equals(selectedTool));
         markSelected(roomButton, matchesTool(selectedTool, DungeonEditorControlsView.ROOM_PAINT_TOOL, DungeonEditorControlsView.ROOM_DELETE_TOOL));
@@ -83,10 +96,6 @@ final class DungeonEditorToolControlsView {
         markSelected(corridorButton, matchesTool(selectedTool, DungeonEditorControlsView.CORRIDOR_CREATE_TOOL, DungeonEditorControlsView.CORRIDOR_DELETE_TOOL));
         markSelected(stairButton, matchesTool(selectedTool, DungeonEditorControlsView.STAIR_CREATE_TOOL, DungeonEditorControlsView.STAIR_DELETE_TOOL));
         markSelected(transitionButton, matchesTool(selectedTool, DungeonEditorControlsView.TRANSITION_CREATE_TOOL, DungeonEditorControlsView.TRANSITION_DELETE_TOOL));
-    }
-
-    void showToolPalette(DungeonEditorContributionModel.ToolPaletteUiState toolPaletteUiState) {
-        toolPalettePopup.show(toolPaletteUiState);
     }
 
     @Nullable Button anchorFor(DungeonEditorContributionModel.ToolFamily family) {

@@ -66,17 +66,23 @@ final class DungeonEditorProjectionControlsView {
         return row;
     }
 
-    void showLevels(int activeLevel, boolean busy, boolean navigationEnabled) {
-        levelLabel.setText("Ebene z=" + activeLevel);
-        previousLevelButton.setDisable(busy || !navigationEnabled);
-        nextLevelButton.setDisable(busy || !navigationEnabled);
+    void bind(DungeonEditorProjectionControlsContentModel contentModel) {
+        contentModel.projectionProperty().addListener((ignored, before, after) -> showProjection(after));
+        showProjection(contentModel.projectionProperty().get());
     }
 
-    void showOverlaySettings(DungeonControlPanelContentModel.OverlaySettings settings, boolean disabled) {
-        panelView.contentModel().showOverlaySettings(settings, disabled);
+    private void showProjection(DungeonEditorProjectionControlsContentModel.ProjectionState projection) {
+        DungeonEditorProjectionControlsContentModel.ProjectionState safeProjection = projection == null
+                ? DungeonEditorProjectionControlsContentModel.ProjectionState.initial()
+                : projection;
+        levelLabel.setText("Ebene z=" + safeProjection.activeLevel());
+        previousLevelButton.setDisable(safeProjection.busy() || !safeProjection.navigationEnabled());
+        nextLevelButton.setDisable(safeProjection.busy() || !safeProjection.navigationEnabled());
+        panelView.contentModel().showOverlaySettings(safeProjection.overlaySettings(), safeProjection.overlayDisabled());
+        showViewMode(safeProjection.viewMode());
     }
 
-    void showViewMode(String viewMode) {
+    private void showViewMode(String viewMode) {
         DungeonEditorControlsListeners.withDetachedToggleUpdate(viewModeGroup, viewModeListener, () -> {
             graphButton.setSelected(VIEW_GRAPH.equals(viewMode));
             gridButton.setSelected(!VIEW_GRAPH.equals(viewMode));

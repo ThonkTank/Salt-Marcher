@@ -14,12 +14,12 @@ import javafx.util.StringConverter;
 
 final class DungeonEditorMapControlsView {
 
-    private final ComboBox<DungeonEditorControlsView.MapItem> mapSelector = new ComboBox<>();
+    private final ComboBox<DungeonEditorMapControlsContentModel.MapItem> mapSelector = new ComboBox<>();
     private final SplitMenuButton mapActionButton = new SplitMenuButton();
     private final MenuItem editMapItem = new MenuItem("Dungeon bearbeiten");
     private final MenuItem deleteMapItem = new MenuItem("Dungeon löschen");
     private final Label statusLabel = new Label();
-    private final ChangeListener<DungeonEditorControlsView.MapItem> selectionListener =
+    private final ChangeListener<DungeonEditorMapControlsContentModel.MapItem> selectionListener =
             (ignored, before, after) -> handleSelectionChanged(after);
     private final DungeonEditorMapEditorPopupView mapEditorPopup;
     private final HBox row;
@@ -29,12 +29,12 @@ final class DungeonEditorMapControlsView {
         this.events = events;
         mapSelector.setConverter(new StringConverter<>() {
             @Override
-            public String toString(DungeonEditorControlsView.MapItem item) {
+            public String toString(DungeonEditorMapControlsContentModel.MapItem item) {
                 return item == null ? "" : item.mapName();
             }
 
             @Override
-            public DungeonEditorControlsView.MapItem fromString(String string) {
+            public DungeonEditorMapControlsContentModel.MapItem fromString(String string) {
                 return null;
             }
         });
@@ -69,28 +69,38 @@ final class DungeonEditorMapControlsView {
         return row;
     }
 
-    void showMaps(List<DungeonEditorControlsView.MapItem> maps, String selectedKey, boolean busy, String statusText) {
-        List<DungeonEditorControlsView.MapItem> safeMaps = maps == null ? List.of() : List.copyOf(maps);
+    void bind(DungeonEditorMapControlsContentModel contentModel) {
+        contentModel.mapProjectionProperty().addListener((ignored, before, after) -> showMaps(after));
+        contentModel.mapEditorProperty().addListener((ignored, before, after) -> showMapEditor(after));
+        showMaps(contentModel.mapProjectionProperty().get());
+        showMapEditor(contentModel.mapEditorProperty().get());
+    }
+
+    private void showMaps(DungeonEditorMapControlsContentModel.MapProjection projection) {
+        DungeonEditorMapControlsContentModel.MapProjection safeProjection = projection == null
+                ? DungeonEditorMapControlsContentModel.MapProjection.empty()
+                : projection;
+        List<DungeonEditorMapControlsContentModel.MapItem> safeMaps = safeProjection.maps();
         DungeonEditorControlsListeners.withDetachedSelectionUpdate(mapSelector, selectionListener, () -> {
             DungeonEditorControlsFxAccess.setItems(mapSelector, safeMaps);
-            DungeonEditorControlsFxAccess.select(mapSelector, resolveSelected(safeMaps, selectedKey));
+            DungeonEditorControlsFxAccess.select(mapSelector, resolveSelected(safeMaps, safeProjection.selectedKey()));
         });
-        mapSelector.setDisable(busy || safeMaps.isEmpty());
-        mapActionButton.setDisable(busy);
+        mapSelector.setDisable(safeProjection.busy() || safeMaps.isEmpty());
+        mapActionButton.setDisable(safeProjection.busy());
         boolean selectionMissing = DungeonEditorControlsFxAccess.selectedItem(mapSelector) == null;
-        editMapItem.setDisable(busy || selectionMissing);
-        deleteMapItem.setDisable(busy || selectionMissing);
-        String resolvedStatus = statusText == null ? "" : statusText;
+        editMapItem.setDisable(safeProjection.busy() || selectionMissing);
+        deleteMapItem.setDisable(safeProjection.busy() || selectionMissing);
+        String resolvedStatus = safeProjection.statusText();
         statusLabel.setText(resolvedStatus);
         statusLabel.setVisible(!resolvedStatus.isBlank());
         statusLabel.setManaged(!resolvedStatus.isBlank());
     }
 
-    void showMapEditor(DungeonEditorContributionModel.MapEditorUiState mapEditorUiState) {
+    private void showMapEditor(DungeonEditorContributionModel.MapEditorUiState mapEditorUiState) {
         mapEditorPopup.show(mapEditorUiState);
     }
 
-    private void handleSelectionChanged(DungeonEditorControlsView.MapItem selectedMap) {
+    private void handleSelectionChanged(DungeonEditorMapControlsContentModel.MapItem selectedMap) {
         boolean hasSelection = selectedMap != null;
         editMapItem.setDisable(!hasSelection);
         deleteMapItem.setDisable(!hasSelection);
@@ -99,11 +109,11 @@ final class DungeonEditorMapControlsView {
         }
     }
 
-    private DungeonEditorControlsView.MapItem resolveSelected(
-            List<DungeonEditorControlsView.MapItem> maps,
+    private DungeonEditorMapControlsContentModel.MapItem resolveSelected(
+            List<DungeonEditorMapControlsContentModel.MapItem> maps,
             String selectedKey
     ) {
-        DungeonEditorControlsView.MapItem selectedMap = maps.stream()
+        DungeonEditorMapControlsContentModel.MapItem selectedMap = maps.stream()
                 .filter(item -> Objects.equals(item.key(), selectedKey))
                 .findFirst()
                 .orElse(null);

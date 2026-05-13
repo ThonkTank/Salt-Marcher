@@ -41,41 +41,17 @@ public final class DungeonEditorControlsView extends DungeonControlPanelView {
         getChildren().setAll(mapControls.row(), projectionControls.row(), toolControls.row());
     }
 
-    public void onDungeonEditorControlsInputEvent(Consumer<DungeonEditorControlsViewInputEvent> handler) {
+    public void onViewInputEvent(Consumer<DungeonEditorControlsViewInputEvent> handler) {
         viewInputEventHandler = handler == null ? ignored -> { } : handler;
     }
 
-    public void bind(DungeonEditorContributionModel contributionModel) {
-        if (contributionModel == null) {
+    public void bind(DungeonEditorControlsContentModel contentModel) {
+        if (contentModel == null) {
             return;
         }
-        contributionModel.controlsProjectionProperty().addListener((ignored, before, after) -> showProjection(after));
-        showProjection(contributionModel.controlsProjectionProperty().get());
-    }
-
-
-    private void showProjection(DungeonEditorContributionModel.ControlsProjection projection) {
-        DungeonEditorContributionModel.ControlsProjection resolvedProjection = projection == null
-                ? DungeonEditorContributionModel.ControlsProjection.initial()
-                : projection;
-        boolean hasMap = !resolvedProjection.selectedMapKey().isBlank();
-        boolean busy = resolvedProjection.busy();
-        mapControls.showMaps(
-                resolvedProjection.mapEntries().stream()
-                        .map(MapItem::from)
-                        .toList(),
-                resolvedProjection.selectedMapKey(),
-                busy,
-                resolvedProjection.statusText());
-        projectionControls.showLevels(
-                resolvedProjection.projectionLevel(),
-                busy,
-                hasMap);
-        projectionControls.showOverlaySettings(DungeonEditorProjectionControlsView.toSettings(resolvedProjection.overlayProjection()), busy);
-        projectionControls.showViewMode(resolvedProjection.viewModeLabel());
-        toolControls.showTool(resolvedProjection.selectedToolLabel());
-        mapControls.showMapEditor(resolvedProjection.mapEditorUiState());
-        toolControls.showToolPalette(resolvedProjection.toolPaletteUiState());
+        mapControls.bind(contentModel.mapControlsContentModel());
+        projectionControls.bind(contentModel.projectionControlsContentModel());
+        toolControls.bind(contentModel.toolControlsContentModel());
     }
 
     private void handleDungeonControlInput(DungeonControlPanelViewInputEvent event) {
@@ -105,24 +81,4 @@ public final class DungeonEditorControlsView extends DungeonControlPanelView {
         return sectionLabel(text);
     }
 
-    public record MapItem(
-            String key,
-            long mapId,
-            String mapName,
-            long revision
-    ) {
-        public MapItem {
-            key = key == null ? "" : key;
-            mapName = mapName == null || mapName.isBlank() ? "Dungeon Map" : mapName;
-            revision = Math.max(0L, revision);
-        }
-
-        static MapItem from(DungeonEditorContributionModel.MapListEntry selection) {
-            return new MapItem(
-                    selection.key(),
-                    selection.mapIdValue(),
-                    selection.mapName(),
-                    selection.revision());
-        }
-    }
 }

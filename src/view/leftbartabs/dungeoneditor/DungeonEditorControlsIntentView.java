@@ -225,3 +225,26 @@ final class ControlsIntent {
                         selectedLevels)));
     }
 }
+
+final class LevelText {
+
+    private LevelText() {
+    }
+
+    static List<Integer> parseLevels(@Nullable String raw) {
+        if (raw == null || raw.isBlank()) {
+            return List.of();
+        }
+        try {
+            return java.util.Arrays.stream(raw.split(","))
+                    .map(String::trim)
+                    .filter(part -> !part.isBlank())
+                    .map(Integer::parseInt)
+                    .sorted()
+                    .distinct()
+                    .toList();
+        } catch (NumberFormatException exception) {
+            return List.of();
+        }
+    }
+}
