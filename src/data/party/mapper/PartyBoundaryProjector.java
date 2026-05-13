@@ -167,12 +167,16 @@ public final class PartyBoundaryProjector {
         if (status == null) {
             return MutationStatus.STORAGE_ERROR;
         }
-        return switch (status) {
-            case SUCCESS -> MutationStatus.SUCCESS;
-            case NOT_FOUND -> MutationStatus.NOT_FOUND;
-            case INVALID_INPUT -> MutationStatus.INVALID_INPUT;
-            case STORAGE_ERROR -> MutationStatus.STORAGE_ERROR;
-        };
+        if (PartyMutationStatus.SUCCESS.equals(status)) {
+            return MutationStatus.SUCCESS;
+        }
+        if (PartyMutationStatus.NOT_FOUND.equals(status)) {
+            return MutationStatus.NOT_FOUND;
+        }
+        if (PartyMutationStatus.INVALID_INPUT.equals(status)) {
+            return MutationStatus.INVALID_INPUT;
+        }
+        return MutationStatus.STORAGE_ERROR;
     }
 
     private static PartyMemberSummary mapSummary(PartyCharacter character) {

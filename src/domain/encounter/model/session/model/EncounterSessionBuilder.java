@@ -28,17 +28,16 @@ final class EncounterSessionBuilder {
         generation.generate(access, request, context, roster);
     }
 
-    void applySavedPlanCommand(
+    boolean applySavedPlanCommand(
             EncounterSessionCommand command,
             EncounterSession.SessionRepository access,
-            EncounterSessionContext context,
-            EncounterSessionCombatReset resetCombatState
+            EncounterSessionContext context
     ) {
         if (command.opensSavedPlan()) {
-            savedPlans.openSavedPlan(access, command.planId(), context, resetCombatState, roster, generation);
-            return;
+            return savedPlans.openSavedPlan(access, command.planId(), context, roster, generation);
         }
         savedPlans.saveCurrentPlan(access, context, roster.snapshot().creatures(), generation.state().generatedTitle());
+        return false;
     }
 
     void applyGenerationCommand(EncounterSessionCommand command, EncounterSessionContext context) {

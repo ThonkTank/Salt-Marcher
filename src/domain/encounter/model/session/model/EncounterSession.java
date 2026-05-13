@@ -105,9 +105,12 @@ public final class EncounterSession {
         handlers.put(EncounterSessionCommand.Action.GENERATE, (session, command, access) ->
                 session.builder.generate(access, command.generation(), session.context));
         handlers.put(EncounterSessionCommand.Action.SAVE_CURRENT_PLAN, (session, command, access) ->
-                session.builder.applySavedPlanCommand(command, access, session.context, session::resetCombatState));
-        handlers.put(EncounterSessionCommand.Action.OPEN_SAVED_PLAN, (session, command, access) ->
-                session.builder.applySavedPlanCommand(command, access, session.context, session::resetCombatState));
+                session.builder.applySavedPlanCommand(command, access, session.context));
+        handlers.put(EncounterSessionCommand.Action.OPEN_SAVED_PLAN, (session, command, access) -> {
+            if (session.builder.applySavedPlanCommand(command, access, session.context)) {
+                session.resetCombatState();
+            }
+        });
         handlers.put(EncounterSessionCommand.Action.CLEAR_GENERATION_HISTORY, (session, command, access) ->
                 session.builder.applyGenerationCommand(command, session.context));
         handlers.put(EncounterSessionCommand.Action.SHIFT_ALTERNATIVE, (session, command, access) ->

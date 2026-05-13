@@ -51,11 +51,10 @@ final class EncounterSessionSavedPlans {
         context.refreshSavedPlans(access);
     }
 
-    void openSavedPlan(
+    boolean openSavedPlan(
             EncounterSession.SessionRepository access,
             long planId,
             EncounterSessionContext context,
-            EncounterSessionCombatReset resetCombatState,
             EncounterSessionRosterMutation roster,
             EncounterSessionGeneration generation
     ) {
@@ -63,15 +62,15 @@ final class EncounterSessionSavedPlans {
         if (!result.success()) {
             context.setStatus(result.message().isBlank() ? OPEN_FAILURE_STATUS : result.message());
             context.refreshSavedPlans(access);
-            return;
+            return false;
         }
         EncounterPlan plan = result.plan().orElseThrow();
         roster.replaceWithGenerated(savedPlanRoster(access, plan));
         generation.openSavedPlan(plan.generatedLabel().isBlank() ? plan.name() : plan.generatedLabel());
         activeSavedPlanId = OptionalLong.of(plan.id());
-        resetCombatState.resetCombatState();
         context.enterMode(Mode.BUILDER, plan.name() + " geoeffnet.");
         context.refreshSavedPlans(access);
+        return true;
     }
 
     private static List<EncounterCreatureData> savedPlanRoster(EncounterSession.SessionRepository access, EncounterPlan plan) {
