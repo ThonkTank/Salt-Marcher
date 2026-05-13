@@ -62,7 +62,14 @@
 
     <rule ref="category/java/design.xml/GodClass" />
 
-    <rule ref="category/java/design.xml/DataClass" />
+    <rule name="DataClass"
+          language="java"
+          since="6.0.0"
+          message="The class ''{0}'' is suspected to be a Data Class (WOC={1}, NOPA={2}, NOAM={3}, WMC={4})"
+          class="saltmarcher.quality.pmd.hygiene.RoleAwareDataClassRule"
+          externalInfoUrl="https://docs.pmd-code.org/pmd-doc-7.23.0/pmd_rules_java_design.html#dataclass">
+        <priority>3</priority>
+    </rule>
 
     <rule ref="category/java/design.xml/AbstractClassWithoutAnyMethod" />
 

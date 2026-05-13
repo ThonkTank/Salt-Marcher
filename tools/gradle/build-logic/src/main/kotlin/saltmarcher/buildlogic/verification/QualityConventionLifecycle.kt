@@ -73,6 +73,7 @@ internal fun Project.registerQualityConventionLifecycleTasks(
     val pmdStrictMain = tasks.register<PmdSourceCheckTask>("pmdStrictMain") {
         group = LifecycleBasePlugin.VERIFICATION_GROUP
         description = "Run strict PMD source-smell checks against production Java sources."
+        dependsOn(gradle.includedBuild("quality-rules").task(":jar"))
         projectRoot.set(layout.projectDirectory)
         sourceRoots.from(
             layout.projectDirectory.dir("bootstrap"),

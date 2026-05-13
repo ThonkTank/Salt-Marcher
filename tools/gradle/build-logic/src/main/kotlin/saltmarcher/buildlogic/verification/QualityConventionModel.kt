@@ -158,6 +158,7 @@ internal fun Project.registerQualityConventionDependencies(
         add(toolConfigurations.cpdCli.name, "net.sourceforge.pmd:pmd-java:7.23.0")
         add(toolConfigurations.pmdCli.name, "net.sourceforge.pmd:pmd-cli:7.23.0")
         add(toolConfigurations.pmdCli.name, "net.sourceforge.pmd:pmd-java:7.23.0")
+        add(toolConfigurations.pmdCli.name, "saltmarcher.quality:quality-rules:1.0-SNAPSHOT")
         add(toolConfigurations.ckjmToolClasspath.name, "gr.spinellis.ckjm:ckjm_ext:2.10")
         add(toolConfigurations.ckjmToolClasspath.name, "org.apache.bcel:bcel:6.11.0")
         add(toolConfigurations.ckjmToolClasspath.name, "org.apache.ant:ant:1.10.15")

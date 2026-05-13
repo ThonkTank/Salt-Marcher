@@ -248,6 +248,18 @@ public final class SaltMarcherSourceFacts {
         return startsWith("src", "data") && segments.size() >= 5 && segments.get(3).equals("model");
     }
 
+    public boolean isDataPersistenceSchemaSource() {
+        return isDataModel() && isExpectedPersistenceSchemaFileName();
+    }
+
+    public boolean isDataSourceModelRecordSource() {
+        return isDataModel() && simpleName.endsWith("Record");
+    }
+
+    public boolean isDomainPublishedSource() {
+        return isDomainSource() && segments.size() >= 5 && segments.get(3).equals("published");
+    }
+
     public String featureName() {
         if (startsWith("src", "view") || startsWith("src", "domain") || startsWith("src", "data")) {
             if (startsWith("src", "view") && segments.size() >= 4) {

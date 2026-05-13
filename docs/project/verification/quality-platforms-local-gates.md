@@ -103,8 +103,8 @@ records a stricter project value:
 - Class NCSS count: `1500`
 - Excessive parameter list minimum: `10`
 
-The same PMD ruleset enables PMD's `DataClass` rule and PMD's default
-thresholds and rule defaults for the
+The same PMD ruleset enables SaltMarcher's role-aware `DataClass` rule and
+PMD's default thresholds and rule defaults for the
 explicitly listed Java quickstart rules plus stricter source-smell rules for
 exception handling, resource handling, unnecessary suppressions, magic
 literals, low-branch switches, mutable static state, public members on
@@ -112,6 +112,9 @@ non-public types, null sentinels, and local naming/style hygiene. The rule file
 must list individual rules explicitly rather than importing whole PMD
 categories. PMD default thresholds also remain active for explicitly enabled
 rules such as `DataClass`, `TooManyFields` (`15`), and `TooManyMethods` (`10`).
+`DataClass` remains blocking but ignores expected passive carriers for
+`src/data/**/model/*PersistenceSchema.java`, `src/data/**/model/*Record.java`,
+and `src/domain/**/published/**` source files.
 
 `checkRewriteNearMisses` is wired into the central `check` aggregate through
 OpenRewrite `rewriteDryRun` and fails the local handoff build when the active
