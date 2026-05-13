@@ -69,10 +69,6 @@ fun buildHarnessInputs(taskName: String) = when {
     )
 }
 
-fun activeBuildHarnessArchitectureRuleClasses() = activeEnforcementBundleIds
-    .flatMap { bundleId -> enforcementBundles.descriptor(bundleId).buildHarnessArchitectureRuleClasses }
-    .distinct()
-
 fun activeBuildHarnessDocumentationRuleClasses() = activeEnforcementBundleIds
     .flatMap { bundleId -> enforcementBundles.descriptor(bundleId).buildHarnessDocumentationRuleClasses }
     .distinct()
@@ -159,13 +155,12 @@ if (!focusedEnforcementBundleMode) {
 
 tasks.register<RepoVerificationMainTask>("architectureCheck") {
     group = LifecycleBasePlugin.VERIFICATION_GROUP
-    description = "Checks repository layout, package-path alignment, and documented root-entrypoint presence."
+    description = "Checks root and residual architecture rules not owned by focused enforcement surfaces."
     dependsOn(tasks.named(mainSourceSet.classesTaskName))
     runtimeClasspath.from(mainSourceSet.output)
     runtimeClasspath.from(mainSourceSet.runtimeClasspath)
     verificationMainClass.set("saltmarcher.architecture.ArchitectureCheckMain")
     repoRootPath.set(repoRootDir.absolutePath)
-    verificationArgs.set(activeBuildHarnessArchitectureRuleClasses())
     verificationInputs.from(
         repoInputTree(
             listOf(
