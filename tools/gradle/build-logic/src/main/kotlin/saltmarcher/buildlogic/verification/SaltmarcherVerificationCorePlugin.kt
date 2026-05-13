@@ -47,6 +47,40 @@ internal fun Project.configureVerificationCore() {
         }
     }
 
+    val focusedCompileTasksByBundleId = activeEnforcementBundleIds
+        .map(::descriptor)
+        .filter(EnforcementBundleDescriptor::requiresFocusedCompile)
+        .groupBy { bundleDescriptor -> verificationHarness.focusedVerificationSliceKey(bundleDescriptor.bundleId) }
+        .flatMap { (sliceKey, sliceDescriptors) ->
+            val sliceBundleIds = sliceDescriptors
+                .map(EnforcementBundleDescriptor::bundleId)
+                .sorted()
+            val sliceCheckerNames = sliceDescriptors
+                .flatMap(EnforcementBundleDescriptor::errorProneCheckers)
+                .distinct()
+                .sorted()
+            val sliceDisplayName = sliceBundleIds.joinToString(", ")
+            val compileDescription = if (sliceCheckerNames.isEmpty()) {
+                "Compile the coalesced focused verification slice for $sliceDisplayName."
+            } else {
+                "Compile the coalesced focused verification slice for $sliceDisplayName with the dedicated Error Prone checks enabled."
+            }
+            val coalescedCompileTask = verificationHarness.registerFocusedVerificationCompileTask(
+                sliceKey,
+                sliceBundleIds,
+                sliceCheckerNames,
+                compileDescription
+            )
+            sliceDescriptors.map { descriptor ->
+                verificationHarness.registerFocusedVerificationCompileAlias(
+                    descriptor.bundleId,
+                    coalescedCompileTask
+                )
+                descriptor.bundleId to coalescedCompileTask
+            }
+        }
+        .toMap()
+
     fun registerStandardBundle(bundleId: String) {
         val descriptor = descriptor(bundleId)
         val selectorTaskName = descriptor.selectorTaskName
@@ -56,12 +90,8 @@ internal fun Project.configureVerificationCore() {
         configureMainCompileErrorProneChecks(checkerNames)
 
         val selectedCompileJava = if (descriptor.requiresFocusedCompile()) {
-            val compileDescription = if (checkerNames.isEmpty()) {
-                "Compile only the $bundleDisplayName verification slice."
-            } else {
-                "Compile only the $bundleDisplayName verification slice with the dedicated Error Prone checks enabled."
-            }
-            val compileTask = verificationHarness.registerFocusedVerificationCompileTask(bundleId, checkerNames, compileDescription)
+            val compileTask = focusedCompileTasksByBundleId[bundleId]
+                ?: error("Missing coalesced focused compile task for enforcement bundle '$bundleId'.")
             if (focusedEnforcementBundleMode) compileTask else tasks.named<JavaCompile>("compileJava")
         } else {
             null

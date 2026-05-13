@@ -1,5 +1,6 @@
 package saltmarcher.buildlogic.verification
 
+import java.security.MessageDigest
 import net.ltgt.gradle.errorprone.errorprone
 import org.gradle.api.Project
 import org.gradle.api.Task
@@ -15,6 +16,7 @@ import org.gradle.api.tasks.testing.Test
 import org.gradle.kotlin.dsl.named
 import org.gradle.kotlin.dsl.register
 import org.gradle.language.base.plugins.LifecycleBasePlugin
+import saltmarcher.buildlogic.enforcement.EnforcementBundleDescriptor
 import saltmarcher.buildlogic.enforcement.EnforcementJqassistantTask
 import saltmarcher.buildlogic.enforcement.EnforcementUtilityTaskKind
 import saltmarcher.buildlogic.enforcement.EnforcementBundlesExtension
@@ -40,19 +42,29 @@ internal open class VerificationHarnessExtension(
 
     private fun classesTaskName(sourceSetName: String): String = "${sourceSetName}Classes"
 
-    fun registerFocusedVerificationCompileTask(
+    fun focusedVerificationSliceKey(bundleId: String): FocusedVerificationSliceKey {
+        val descriptor = enforcementBundles.descriptor(bundleId)
+        return FocusedVerificationSliceKey.from(descriptor)
+    }
+
+    fun registerFocusedVerificationCompileAlias(
         bundleId: String,
+        coalescedCompileTask: TaskProvider<JavaCompile>
+    ): TaskProvider<Task> = project.tasks.register(focusedVerificationCompileTaskName(bundleId)) {
+        group = LifecycleBasePlugin.VERIFICATION_GROUP
+        description = "Alias for the coalesced focused verification compile used by '$bundleId'."
+        dependsOn(coalescedCompileTask)
+    }
+
+    fun registerFocusedVerificationCompileTask(
+        sliceKey: FocusedVerificationSliceKey,
+        bundleIds: List<String>,
         checkerNames: List<String>,
         taskDescription: String
     ): TaskProvider<JavaCompile> {
-        val descriptor = enforcementBundles.descriptor(bundleId)
-        val roots = descriptor.verificationSourceRoots.ifEmpty {
-            error("Missing verificationSourceRoots metadata for enforcement bundle '$bundleId'.")
-        }
-        val includes = descriptor.verificationSourceIncludes.ifEmpty {
-            error("Missing verificationSourceIncludes metadata for enforcement bundle '$bundleId'.")
-        }
-        val sourceSetName = "${bundleId.replaceFirstChar(Char::lowercaseChar)}Verification"
+        val sourceSetName = "focusedVerification${sliceKey.sliceId}"
+        val roots = sliceKey.verificationSourceRoots
+        val includes = sliceKey.verificationSourceIncludes
         sourceSets.register(sourceSetName) {
             java.setSrcDirs(roots)
             includes.forEach(java::include)
@@ -68,7 +80,7 @@ internal open class VerificationHarnessExtension(
                 exclude("**/build/**")
             })
             options.sourcepath = sourceJavaRoots
-            destinationDirectory.set(project.layout.buildDirectory.dir("classes/java/verification/$bundleId"))
+            destinationDirectory.set(project.layout.buildDirectory.dir("classes/java/verification/${sliceKey.sliceId}"))
             if (checkerNames.isEmpty()) {
                 options.errorprone.enabled.set(false)
             } else {
@@ -79,6 +91,7 @@ internal open class VerificationHarnessExtension(
                 options.compilerArgs.add("-XDaddTypeAnnotationsToSymbol=true")
                 checkerNames.forEach(options.errorprone::error)
             }
+            inputs.property("focusedVerificationBundleIds", bundleIds.joinToString(","))
         }
     }
 
@@ -196,3 +209,57 @@ internal open class VerificationHarnessExtension(
         }
     }
 }
+
+internal data class FocusedVerificationSliceKey(
+    val verificationSourceRoots: List<String>,
+    val verificationSourceIncludes: List<String>,
+    val compileClasspathOwner: String
+) {
+    val sliceId: String = "Slice${stableHash(verificationSourceRoots, verificationSourceIncludes, compileClasspathOwner)}"
+
+    companion object {
+        private const val MAIN_COMPILE_CLASSPATH_OWNER = "mainCompileClasspath"
+
+        fun from(descriptor: EnforcementBundleDescriptor): FocusedVerificationSliceKey {
+            val roots = descriptor.verificationSourceRoots.normalized("verificationSourceRoots", descriptor.bundleId)
+            val includes = descriptor.verificationSourceIncludes.normalized("verificationSourceIncludes", descriptor.bundleId)
+            return FocusedVerificationSliceKey(
+                verificationSourceRoots = roots,
+                verificationSourceIncludes = includes,
+                compileClasspathOwner = MAIN_COMPILE_CLASSPATH_OWNER
+            )
+        }
+
+        private fun List<String>.normalized(metadataName: String, bundleId: String): List<String> {
+            val normalized = map { value ->
+                value.trim()
+                    .replace('\\', '/')
+                    .removePrefix("./")
+                    .removeSuffix("/")
+            }.filter(String::isNotEmpty)
+                .distinct()
+                .sorted()
+            return normalized.ifEmpty {
+                error("Missing $metadataName metadata for enforcement bundle '$bundleId'.")
+            }
+        }
+
+        private fun stableHash(
+            roots: List<String>,
+            includes: List<String>,
+            compileClasspathOwner: String
+        ): String {
+            val digest = MessageDigest.getInstance("SHA-256")
+            roots.forEach { digest.update("root:$it\n".toByteArray()) }
+            includes.forEach { digest.update("include:$it\n".toByteArray()) }
+            digest.update("classpath:$compileClasspathOwner\n".toByteArray())
+            return digest.digest()
+                .take(6)
+                .joinToString("") { byte -> "%02x".format(byte) }
+                .replaceFirstChar(Char::uppercaseChar)
+        }
+    }
+}
+
+internal fun focusedVerificationCompileTaskName(bundleId: String): String =
+    "compile${bundleId.replaceFirstChar(Char::uppercaseChar)}VerificationJava"
