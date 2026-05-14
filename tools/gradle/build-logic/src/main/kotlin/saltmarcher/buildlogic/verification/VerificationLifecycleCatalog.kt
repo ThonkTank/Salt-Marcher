@@ -26,31 +26,35 @@ internal data class VerificationLifecycleCatalog(
 }
 
 internal enum class VerificationLifecyclePhase {
-    INTEGRITY,
-    QUALITY
+    COMPILE_INTEGRITY,
+    STRUCTURE,
+    HYGIENE
 }
 
 internal fun standardVerificationLifecycleCatalog(): VerificationLifecycleCatalog {
-    val integrityOwners = listOf(
-        verificationLifecycleOwner("classes", "classes", VerificationLifecyclePhase.INTEGRITY),
-        verificationLifecycleOwner("compile-test-java", "compileTestJava", VerificationLifecyclePhase.INTEGRITY)
+    val compileIntegrityOwners = listOf(
+        verificationLifecycleOwner("compile-java", "compileJava", VerificationLifecyclePhase.COMPILE_INTEGRITY),
+        verificationLifecycleOwner("compile-test-java", "compileTestJava", VerificationLifecyclePhase.COMPILE_INTEGRITY)
     )
-    val qualityOwners = listOf(
-        verificationLifecycleOwner("assemble", "assemble", VerificationLifecyclePhase.QUALITY),
-        verificationLifecycleOwner("pmd-main", "pmdMain", VerificationLifecyclePhase.QUALITY),
-        verificationLifecycleOwner("near-miss-hygiene", "checkRewriteNearMisses", VerificationLifecyclePhase.QUALITY),
-        verificationLifecycleOwner("spotbugs-main", "spotbugsMain", VerificationLifecyclePhase.QUALITY),
-        verificationLifecycleOwner("cpd-main", "cpdMain", VerificationLifecyclePhase.QUALITY),
-        verificationLifecycleOwner("lizard-main", "lizardMain", VerificationLifecyclePhase.QUALITY),
+    val structureOwners = listOf(
+        verificationLifecycleOwner("architecture-test", "architectureTest", VerificationLifecyclePhase.STRUCTURE)
+    )
+    val hygieneOwners = listOf(
+        verificationLifecycleOwner("assemble", "assemble", VerificationLifecyclePhase.HYGIENE),
+        verificationLifecycleOwner("pmd-main", "pmdMain", VerificationLifecyclePhase.HYGIENE),
+        verificationLifecycleOwner("near-miss-hygiene", "checkRewriteNearMisses", VerificationLifecyclePhase.HYGIENE),
+        verificationLifecycleOwner("spotbugs-main", "spotbugsMain", VerificationLifecyclePhase.HYGIENE),
+        verificationLifecycleOwner("cpd-main", "cpdMain", VerificationLifecyclePhase.HYGIENE),
+        verificationLifecycleOwner("lizard-main", "lizardMain", VerificationLifecyclePhase.HYGIENE),
         verificationLifecycleOwner(
             "compiled-artifact-hygiene",
             "checkNoCompiledArtifactsInSource",
-            VerificationLifecyclePhase.QUALITY
+            VerificationLifecyclePhase.HYGIENE
         ),
-        verificationLifecycleOwner("dead-code", "checkNoDeadCode", VerificationLifecyclePhase.QUALITY),
-        verificationLifecycleOwner("ckjm-main", "ckjmMain", VerificationLifecyclePhase.QUALITY)
+        verificationLifecycleOwner("dead-code", "checkNoDeadCode", VerificationLifecyclePhase.HYGIENE),
+        verificationLifecycleOwner("ckjm-main", "ckjmMain", VerificationLifecyclePhase.HYGIENE)
     )
-    val owners = integrityOwners + qualityOwners
+    val owners = compileIntegrityOwners + structureOwners + hygieneOwners
     val dependencyTaskNames = owners.map(VerificationLifecycleOwnerSpec::taskName)
     val checkSurface = verificationLifecycleSurface(
         surfaceId = "check",

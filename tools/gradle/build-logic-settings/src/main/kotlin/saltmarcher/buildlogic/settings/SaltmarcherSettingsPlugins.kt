@@ -98,8 +98,9 @@ private fun standardBroadBuildTaskNames(): Set<String> = setOf(
     "installDesktopApp",
     "installDist",
     "jar",
-    "productionHandoffIntegrity",
-    "productionHandoffQuality",
+    "productionHandoffCompileIntegrity",
+    "productionHandoffHygiene",
+    "productionHandoffStructure",
     "production-handoff",
     "run",
     "test"
@@ -137,7 +138,8 @@ private fun verificationRequestScope(
     discoveryBuildRequest: Boolean
 ): VerificationRequestScope {
     val broadProductionRequest = requestedTaskNames.any(::isAllBundleVerificationTaskName)
-    val productionHandoffIntegrityRequest = requestedTaskNames.any(::isProductionHandoffIntegrityTaskName)
+    val productionHandoffCompileIntegrityRequest = requestedTaskNames.any(::isProductionHandoffCompileIntegrityTaskName)
+    val productionHandoffStructureRequest = requestedTaskNames.any(::isProductionHandoffStructureTaskName)
     val documentationRequest = requestedTaskNames.any(::isDocumentationTaskName)
     val focusedEnforcementRequest = requestedTaskNames.any(::isFocusedEnforcementTaskName)
     val sourceHygieneRequest = requestedTaskNames.any(::isQualityRulesTaskName)
@@ -156,9 +158,9 @@ private fun verificationRequestScope(
         descriptorEngineSources.any { descriptor -> descriptor.jqassistant != null }
 
     return VerificationRequestScope(
-        includeBuildHarness = discoveryBuildRequest || productionHandoffIntegrityRequest || buildHarnessRequest,
-        includeQualityRules = discoveryBuildRequest || productionHandoffIntegrityRequest || broadProductionRequest || sourceHygieneRequest,
-        includeQualityRulesErrorProne = discoveryBuildRequest || productionHandoffIntegrityRequest || errorProneRequest,
+        includeBuildHarness = discoveryBuildRequest || productionHandoffCompileIntegrityRequest || productionHandoffStructureRequest || buildHarnessRequest,
+        includeQualityRules = discoveryBuildRequest || productionHandoffCompileIntegrityRequest || broadProductionRequest || sourceHygieneRequest,
+        includeQualityRulesErrorProne = discoveryBuildRequest || productionHandoffCompileIntegrityRequest || errorProneRequest,
         includeJqassistant = discoveryBuildRequest || jqassistantRequest,
         discoveryBuildRequest = discoveryBuildRequest
     )
@@ -175,12 +177,15 @@ private fun isDiscoveryTaskName(taskName: String): Boolean =
 
 private fun isAllBundleVerificationTaskName(taskName: String): Boolean =
     taskName == "production-handoff" ||
-        taskName == "productionHandoffQuality" ||
+        taskName == "productionHandoffHygiene" ||
         taskName == "check" ||
         taskName == "build"
 
-private fun isProductionHandoffIntegrityTaskName(taskName: String): Boolean =
-    taskName == "productionHandoffIntegrity"
+private fun isProductionHandoffCompileIntegrityTaskName(taskName: String): Boolean =
+    taskName == "productionHandoffCompileIntegrity"
+
+private fun isProductionHandoffStructureTaskName(taskName: String): Boolean =
+    taskName == "productionHandoffStructure"
 
 private fun isDocumentationTaskName(taskName: String): Boolean =
     taskName == "checkDocumentationEnforcement" ||

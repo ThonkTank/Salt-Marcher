@@ -44,7 +44,8 @@ production-handoff phase task names. They MUST NOT know bundle member tasks,
 internal rule lists, or architecture-rule ownership.
 `tools/gradle/run-staged-verification.sh` routes the canonical
 `production-handoff` surface through the Gradle-owned
-`productionHandoffIntegrity` and `productionHandoffQuality` phase tasks.
+`productionHandoffCompileIntegrity`, `productionHandoffStructure`, and
+`productionHandoffHygiene` phase tasks.
 Other staged surfaces forward to one same-named Gradle lifecycle task.
 `tools/gradle/run-observable-gradle.sh` remains a generic runtime wrapper for
 one Gradle invocation.
@@ -61,11 +62,11 @@ normal behavior unless the caller explicitly passes `--daemon` or
 failure set. Callers that need first-failure diagnosis MAY pass wrapper option
 `--fail-fast`; the wrapper then omits its default `--continue` and rejects a
 contradictory extra Gradle `--continue`. The staged `production-handoff` route
-always runs its integrity phase fail-fast before running the aggregating quality
-phase. This policy is global to the runtime wrapper and staged surface routing;
-it MUST NOT be computed from private bundle member tasks, topology-task
-patterns, PMD enforcement patterns, internal rule lists, or architecture-rule
-ownership.
+always runs its compile-integrity phase and structure phase fail-fast before
+running the aggregating hygiene phase. This policy is global to the runtime
+wrapper and staged surface routing; it MUST NOT be computed from private bundle
+member tasks, topology-task patterns, PMD enforcement patterns, internal rule
+lists, or architecture-rule ownership.
 Direct raw Gradle use of the same public surfaces does not inherit wrapper
 defaults automatically.
 
@@ -90,9 +91,10 @@ The verification core owns the mapping from a public surface to its underlying
 Gradle dependencies. Root build scripts MUST consume this core instead of
 reconstructing the surface model themselves.
 The shared root-owned owners behind `production-handoff` are declared in one
-typed verification lifecycle catalog and split into two phases:
-`productionHandoffIntegrity` for compile and harness integrity, and
-`productionHandoffQuality` for aggregating hygiene, architecture, bundle, and
+typed verification lifecycle catalog and split into three phases:
+`productionHandoffCompileIntegrity` for compile and included-build integrity,
+`productionHandoffStructure` for architecture and build-harness structure
+checks, and `productionHandoffHygiene` for aggregating hygiene, bundle, and
 reporting checks. `production-handoff` MUST consume those phase tasks instead
 of attaching shared owners from separate plugin or root-build locations.
 `check` MAY remain the conventional Gradle build-health aggregate, but it must

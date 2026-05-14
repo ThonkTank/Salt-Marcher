@@ -162,10 +162,10 @@ internal fun Project.configureVerificationCore() {
     }
 
     val productionHandoffSurface = verificationLifecycleCatalog.surface("production-handoff")
-    val productionHandoffIntegrity = tasks.register("productionHandoffIntegrity") {
+    val productionHandoffCompileIntegrity = tasks.register("productionHandoffCompileIntegrity") {
         group = LifecycleBasePlugin.VERIFICATION_GROUP
-        description = "Run the fail-fast compile and harness integrity phase for production handoff."
-        verificationLifecycleCatalog.ownerTaskNames(VerificationLifecyclePhase.INTEGRITY).forEach(::dependsOn)
+        description = "Run the fail-fast compile integrity phase for production handoff."
+        verificationLifecycleCatalog.ownerTaskNames(VerificationLifecyclePhase.COMPILE_INTEGRITY).forEach(::dependsOn)
         if (includeBuildHarness) {
             dependsOn(gradle.includedBuild("build-harness").task(":classes"))
         }
@@ -177,26 +177,32 @@ internal fun Project.configureVerificationCore() {
         }
     }
 
-    val productionHandoffQuality = tasks.register("productionHandoffQuality") {
+    val productionHandoffStructure = tasks.register("productionHandoffStructure") {
         group = LifecycleBasePlugin.VERIFICATION_GROUP
-        description = "Run the aggregating quality and architecture phase for production handoff."
-        dependsOn(productionHandoffIntegrity)
-        verificationLifecycleCatalog.ownerTaskNames(VerificationLifecyclePhase.QUALITY).forEach(::dependsOn)
-        dependsOn("architectureTest")
-        activeEnforcementBundleIds
-            .map(::descriptor)
-            .map(EnforcementBundleDescriptor::selectorTaskName)
-            .forEach(::dependsOn)
+        description = "Run the fail-fast architecture and build-harness structure phase for production handoff."
+        dependsOn(productionHandoffCompileIntegrity)
+        verificationLifecycleCatalog.ownerTaskNames(VerificationLifecyclePhase.STRUCTURE).forEach(::dependsOn)
         if (includeBuildHarness) {
             dependsOn(gradle.includedBuild("build-harness").task(":allBuildHarnessTopologyCheck"))
             dependsOn(gradle.includedBuild("build-harness").task(":architectureCheck"))
         }
     }
 
+    val productionHandoffHygiene = tasks.register("productionHandoffHygiene") {
+        group = LifecycleBasePlugin.VERIFICATION_GROUP
+        description = "Run the aggregating hygiene, reporting, and bundle phase for production handoff."
+        dependsOn(productionHandoffStructure)
+        verificationLifecycleCatalog.ownerTaskNames(VerificationLifecyclePhase.HYGIENE).forEach(::dependsOn)
+        activeEnforcementBundleIds
+            .map(::descriptor)
+            .map(EnforcementBundleDescriptor::selectorTaskName)
+            .forEach(::dependsOn)
+    }
+
     tasks.register(productionHandoffSurface.publicTaskName) {
         group = LifecycleBasePlugin.VERIFICATION_GROUP
         description = productionHandoffSurface.description
-        dependsOn(productionHandoffQuality)
+        dependsOn(productionHandoffHygiene)
     }
 
 }
