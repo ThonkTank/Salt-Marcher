@@ -24,12 +24,11 @@ It owns Java compilation on production source roots `bootstrap/`, `shell/`,
 and `src/`. Root `compileJava` does not enable Error Prone, NullAway,
 project-local Error Prone checkers, architecture checkers, tests, or quality
 gates.
-Before compilation, verification-core runs targeted stale-bytecode cleanup for
-the main Java classes directory. The cleanup removes class files only for
-production Java sources whose source file disappeared or whose source content
-changed, plus first-run orphaned class files without a current source owner.
-It must not blanket-delete the full `compileJava` output directory, so
-unchanged `compileJava` runs can still use Gradle's normal up-to-date behavior.
+Main production sources are modeled through Gradle's `main` source set, so
+`compileJava` owns the main Java class output directory and relies on Gradle's
+normal incremental compilation and stale-output cleanup for that source set.
+SaltMarcher must not add a separate pre-compile cleanup task that mutates the
+`compileJava` classes directory outside Gradle's source-set output model.
 
 Compiler-backed verification that needs Error Prone runs through focused
 verification compiles behind the public `check*Enforcement` layer surfaces and
