@@ -3,6 +3,7 @@ package src.view.leftbartabs.sessionplanner;
 import java.util.Map;
 import java.util.Objects;
 import javafx.scene.Node;
+import shell.api.ServiceRegistry;
 import shell.api.ShellBinding;
 import shell.api.ShellRuntimeContext;
 import shell.api.ShellSlot;
@@ -25,24 +26,25 @@ final class SessionPlannerBinder {
     }
 
     ShellBinding bind() {
+        ServiceRegistry services = runtimeContext.services();
         SessionPlannerApplicationService planner =
-                runtimeContext.services().require(SessionPlannerApplicationService.class);
+                services.require(SessionPlannerApplicationService.class);
         SessionPlannerParticipantApplicationService participants =
-                runtimeContext.services().require(SessionPlannerParticipantApplicationService.class);
+                services.require(SessionPlannerParticipantApplicationService.class);
         SessionPlannerEncounterApplicationService encounters =
-                runtimeContext.services().require(SessionPlannerEncounterApplicationService.class);
+                services.require(SessionPlannerEncounterApplicationService.class);
         SessionPlannerRestApplicationService rests =
-                runtimeContext.services().require(SessionPlannerRestApplicationService.class);
+                services.require(SessionPlannerRestApplicationService.class);
         SessionPlannerLootApplicationService loot =
-                runtimeContext.services().require(SessionPlannerLootApplicationService.class);
+                services.require(SessionPlannerLootApplicationService.class);
         SessionPlannerCurrentSessionModel sessionModel =
-                runtimeContext.services().require(SessionPlannerCurrentSessionModel.class);
+                services.require(SessionPlannerCurrentSessionModel.class);
         SessionPlannerParticipantsModel participantsModel =
-                runtimeContext.services().require(SessionPlannerParticipantsModel.class);
+                services.require(SessionPlannerParticipantsModel.class);
         SessionPlannerEncountersModel encountersModel =
-                runtimeContext.services().require(SessionPlannerEncountersModel.class);
+                services.require(SessionPlannerEncountersModel.class);
         SessionPlannerStatePanelModel statePanelModel =
-                runtimeContext.services().require(SessionPlannerStatePanelModel.class);
+                services.require(SessionPlannerStatePanelModel.class);
         SessionPlannerContributionModel contributionModel = new SessionPlannerContributionModel();
         SessionPlannerIntentHandler intentHandler = new SessionPlannerIntentHandler(
                 planner,
