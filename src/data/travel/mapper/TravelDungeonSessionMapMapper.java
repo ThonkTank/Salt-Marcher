@@ -1,4 +1,4 @@
-package src.data.travel.repository;
+package src.data.travel.mapper;
 
 import java.util.List;
 import org.jspecify.annotations.Nullable;
@@ -9,12 +9,12 @@ import src.domain.dungeon.published.DungeonFeatureSnapshot;
 import src.domain.dungeon.published.DungeonMapSnapshot;
 import src.domain.travel.application.ApplyTravelDungeonSessionUseCase;
 
-final class TravelDungeonSessionMapMapper {
+public final class TravelDungeonSessionMapMapper {
 
     private TravelDungeonSessionMapMapper() {
     }
 
-    static ApplyTravelDungeonSessionUseCase.MapData toInternalMap(@Nullable DungeonMapSnapshot map) {
+    public static ApplyTravelDungeonSessionUseCase.MapData toInternalMap(@Nullable DungeonMapSnapshot map) {
         DungeonMapSnapshot safeMap = map == null ? DungeonMapSnapshot.empty() : map;
         return new ApplyTravelDungeonSessionUseCase.MapData(
                 ApplyTravelDungeonSessionUseCase.GridTopology.fromName(safeMap.topology().name()),

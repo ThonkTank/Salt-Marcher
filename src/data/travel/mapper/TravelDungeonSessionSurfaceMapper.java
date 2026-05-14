@@ -1,4 +1,4 @@
-package src.data.travel.repository;
+package src.data.travel.mapper;
 
 import java.util.List;
 import org.jspecify.annotations.Nullable;
@@ -13,12 +13,12 @@ import src.domain.dungeon.published.DungeonTravelPosition;
 import src.domain.dungeon.published.DungeonTravelSurfaceSnapshot;
 import src.domain.travel.application.ApplyTravelDungeonSessionUseCase;
 
-final class TravelDungeonSessionSurfaceMapper {
+public final class TravelDungeonSessionSurfaceMapper {
 
     private TravelDungeonSessionSurfaceMapper() {
     }
 
-    static ApplyTravelDungeonSessionUseCase.SurfaceData toInternalSurface(
+    public static ApplyTravelDungeonSessionUseCase.SurfaceData toInternalSurface(
             @Nullable DungeonTravelSurfaceSnapshot surface
     ) {
         if (surface == null) {
@@ -39,7 +39,7 @@ final class TravelDungeonSessionSurfaceMapper {
                 surface.actions().stream().map(TravelDungeonSessionSurfaceMapper::toInternalAction).toList());
     }
 
-    static ApplyTravelDungeonSessionUseCase.MoveResultData toInternalMoveResult(
+    public static ApplyTravelDungeonSessionUseCase.MoveResultData toInternalMoveResult(
             @Nullable DungeonTravelMoveResult result
     ) {
         if (result == null) {
@@ -60,7 +60,7 @@ final class TravelDungeonSessionSurfaceMapper {
                 externalTarget);
     }
 
-    static @Nullable DungeonTravelPosition toDungeonPosition(
+    public static @Nullable DungeonTravelPosition toDungeonPosition(
             ApplyTravelDungeonSessionUseCase.@Nullable PositionData position
     ) {
         if (position == null) {

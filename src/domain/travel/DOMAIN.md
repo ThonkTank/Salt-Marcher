@@ -67,7 +67,8 @@ Core invariants:
 - projection level is session-local
 - current runtime workspace state is rebuilt from dungeon truth plus party
   position
-- party and dungeon carrier translation happens only at the root boundary
+- party and dungeon carrier translation happens in the outer data adapter
+  before same-context application data reaches the use case
 - no separate `travel` persistence store is introduced
 
 ## Ephemeral Policy Rationale
