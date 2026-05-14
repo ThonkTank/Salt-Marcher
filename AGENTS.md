@@ -109,6 +109,20 @@ document exists.
   guidance. Other docs may only route or summarize; they must not become a
   second source of view-layer truth.
 
+## Local Code Visualization Tools
+
+- Live UML is installed as the VS Code extension `bitlab.live-uml` and can be
+  used as an exploratory aid for Java control-flow and sequence-diagram text.
+- Agents may reuse the extension's local parser/generator from
+  `/home/aaron/.vscode/extensions/bitlab.live-uml-*/core.js` to produce
+  PlantUML text for selected Java methods without depending on the VS Code
+  webview.
+- Treat Live UML output as `Candidate` context only. It is useful for reading a
+  method, but it is not an architecture owner, verification gate, dependency
+  source of truth, or substitute for Java language-server call hierarchy.
+- Do not commit generated Live UML diagrams or PlantUML snippets unless the
+  user explicitly asks for a repo-tracked artifact.
+
 ## SaltMarcher Verification
 
 - After each completed implementation pass that changes production code, rerun
