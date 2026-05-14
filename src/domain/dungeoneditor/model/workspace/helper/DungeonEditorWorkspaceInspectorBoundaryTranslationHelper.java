@@ -11,7 +11,7 @@ public final class DungeonEditorWorkspaceInspectorBoundaryTranslationHelper {
     private DungeonEditorWorkspaceInspectorBoundaryTranslationHelper() {
     }
 
-    static DungeonEditorWorkspaceValues.@Nullable Inspector toWorkspaceInspector(
+    public static DungeonEditorWorkspaceValues.@Nullable Inspector toWorkspaceInspector(
             @Nullable DungeonInspectorSnapshot inspector
     ) {
         if (inspector == null) {

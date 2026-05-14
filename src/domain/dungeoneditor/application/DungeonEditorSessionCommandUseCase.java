@@ -1,25 +1,28 @@
 package src.domain.dungeoneditor.application;
 
-import java.util.function.Function;
 import org.jspecify.annotations.Nullable;
-import src.domain.dungeon.published.DungeonAuthoredMutationCommand;
-import src.domain.dungeon.published.DungeonAuthoredMutationResult;
-import src.domain.dungeon.published.DungeonMapCatalogCommand;
-import src.domain.dungeon.published.DungeonMapCatalogResponse;
 import src.domain.dungeoneditor.model.session.model.DungeonEditorSession;
 import src.domain.dungeoneditor.model.session.model.DungeonEditorSessionCommand;
+import src.domain.dungeoneditor.model.session.port.DungeonEditorDungeonPort;
+import src.domain.dungeoneditor.model.session.repository.DungeonEditorDungeonRepository;
 
 final class DungeonEditorSessionCommandUseCase {
     private final DungeonEditorSessionCatalogUseCase catalogWorkflow;
     private final DungeonEditorSessionInteractionUseCase interactionWorkflow;
 
     DungeonEditorSessionCommandUseCase(
-            Function<DungeonMapCatalogCommand, DungeonMapCatalogResponse> catalog,
-            Function<DungeonAuthoredMutationCommand, DungeonAuthoredMutationResult> mutateAuthored,
+            DungeonEditorDungeonRepository dungeonRepository,
+            DungeonEditorDungeonPort dungeonPort,
             BuildDungeonEditorSnapshotUseCase snapshotBuilder
     ) {
-        this.interactionWorkflow = new DungeonEditorSessionInteractionUseCase(mutateAuthored, snapshotBuilder);
-        this.catalogWorkflow = new DungeonEditorSessionCatalogUseCase(catalog, interactionWorkflow);
+        this.interactionWorkflow = new DungeonEditorSessionInteractionUseCase(
+                dungeonRepository,
+                dungeonPort,
+                snapshotBuilder);
+        this.catalogWorkflow = new DungeonEditorSessionCatalogUseCase(
+                dungeonRepository,
+                dungeonPort,
+                interactionWorkflow);
     }
 
     DungeonEditorSession apply(DungeonEditorSession session, @Nullable DungeonEditorSessionCommand command) {

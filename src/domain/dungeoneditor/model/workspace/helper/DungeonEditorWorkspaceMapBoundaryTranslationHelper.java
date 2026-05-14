@@ -30,7 +30,7 @@ public final class DungeonEditorWorkspaceMapBoundaryTranslationHelper {
                         map.revision());
     }
 
-    static DungeonEditorWorkspaceValues.MapSnapshot toWorkspaceMapSnapshot(@Nullable DungeonMapSnapshot map) {
+    public static DungeonEditorWorkspaceValues.MapSnapshot toWorkspaceMapSnapshot(@Nullable DungeonMapSnapshot map) {
         DungeonMapSnapshot safeMap = map == null ? DungeonMapSnapshot.empty() : map;
         return new DungeonEditorWorkspaceValues.MapSnapshot(
                 DungeonEditorWorkspaceSnapshotBoundaryTranslationHelper.toWorkspaceTopology(safeMap.topology()),
@@ -42,7 +42,7 @@ public final class DungeonEditorWorkspaceMapBoundaryTranslationHelper {
                 safeMap.editorHandles().stream().map(DungeonEditorWorkspaceSnapshotBoundaryTranslationHelper::toWorkspaceHandle).toList());
     }
 
-    static DungeonEditorWorkspaceValues.@Nullable MapSnapshot toWorkspacePreviewMap(@Nullable DungeonSnapshot snapshot) {
+    public static DungeonEditorWorkspaceValues.@Nullable MapSnapshot toWorkspacePreviewMap(@Nullable DungeonSnapshot snapshot) {
         return snapshot == null ? null : toWorkspaceMapSnapshot(snapshot.map());
     }
 }

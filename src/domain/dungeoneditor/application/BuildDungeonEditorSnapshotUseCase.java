@@ -1,55 +1,50 @@
 package src.domain.dungeoneditor.application;
 
 import java.util.List;
-import java.util.function.Function;
 import org.jspecify.annotations.Nullable;
-import src.domain.dungeon.published.DungeonAuthoredMutationCommand;
-import src.domain.dungeon.published.DungeonAuthoredMutationResult;
-import src.domain.dungeon.published.DungeonAuthoredReadCommand;
-import src.domain.dungeon.published.DungeonAuthoredReadResult;
-import src.domain.dungeon.published.DungeonMapCatalogCommand;
-import src.domain.dungeon.published.DungeonMapCatalogResponse;
 import src.domain.dungeoneditor.model.session.helper.DungeonEditorSnapshotProjectionLevelProjectionHelper;
 import src.domain.dungeoneditor.model.session.helper.DungeonEditorSnapshotSelectionProjectionHelper;
 import src.domain.dungeoneditor.model.session.helper.DungeonEditorSnapshotStateProjectionHelper;
+import src.domain.dungeoneditor.model.session.model.DungeonEditorDungeonFacts;
 import src.domain.dungeoneditor.model.session.model.DungeonEditorSession;
 import src.domain.dungeoneditor.model.session.model.DungeonEditorSessionSnapshot;
-import src.domain.dungeoneditor.model.workspace.helper.DungeonEditorSnapshotSurfaceRuntimeReaderHelper;
+import src.domain.dungeoneditor.model.session.port.DungeonEditorDungeonPort;
+import src.domain.dungeoneditor.model.session.repository.DungeonEditorDungeonRepository;
 import src.domain.dungeoneditor.model.workspace.model.DungeonEditorWorkspaceValues.MapId;
 import src.domain.dungeoneditor.model.workspace.model.DungeonEditorWorkspaceValues.MapSnapshot;
 import src.domain.dungeoneditor.model.workspace.model.DungeonEditorWorkspaceValues.MapSummary;
 
 final class BuildDungeonEditorSnapshotUseCase {
-    private final Function<DungeonMapCatalogCommand, DungeonMapCatalogResponse> catalog;
-    private final DungeonEditorSnapshotSurfaceRuntimeReaderHelper surfaceRuntimeAccess;
+    private final DungeonEditorDungeonRepository dungeonRepository;
+    private final DungeonEditorDungeonPort dungeonPort;
 
     BuildDungeonEditorSnapshotUseCase(
-            Function<DungeonMapCatalogCommand, DungeonMapCatalogResponse> catalog,
-            Function<DungeonAuthoredMutationCommand, DungeonAuthoredMutationResult> mutateAuthored,
-            Function<DungeonAuthoredReadCommand, DungeonAuthoredReadResult> loadAuthored
+            DungeonEditorDungeonRepository dungeonRepository,
+            DungeonEditorDungeonPort dungeonPort
     ) {
-        this.catalog = catalog;
-        this.surfaceRuntimeAccess = new DungeonEditorSnapshotSurfaceRuntimeReaderHelper(mutateAuthored, loadAuthored);
+        this.dungeonRepository = dungeonRepository;
+        this.dungeonPort = dungeonPort;
     }
 
     DungeonEditorSessionSnapshot.SnapshotData execute(@Nullable DungeonEditorSession state) {
         DungeonEditorSession safeState = DungeonEditorSnapshotStateProjectionHelper.safeState(state);
+        dungeonRepository.searchMaps("");
         List<MapSummary> maps = DungeonEditorSnapshotSelectionProjectionHelper.mapSummaries(
-                catalog.apply(new DungeonMapCatalogCommand.Search("")));
+                dungeonPort.currentFacts(null, safeState.selection(), safeState.preview()).maps());
         @Nullable MapId resolvedMapId = DungeonEditorSnapshotSelectionProjectionHelper.resolveSelectedMapId(
                 safeState.selectedMapId(),
                 maps);
-        DungeonEditorSessionSnapshot.SurfaceData surface = surfaceRuntimeAccess.loadCurrentSurface(
+        requestSurfaceFacts(resolvedMapId, safeState);
+        DungeonEditorDungeonFacts surfaceFacts = dungeonPort.currentFacts(
                 resolvedMapId,
                 safeState.selection(),
                 safeState.preview());
+        DungeonEditorSessionSnapshot.SurfaceData surface = surfaceFacts.surface();
         int clampedProjectionLevel = DungeonEditorSnapshotProjectionLevelProjectionHelper.clampProjectionLevel(
                 surface,
                 safeState.projectionLevel());
         String nextStatus = safeState.statusText().isBlank()
-                ? ApplyDungeonEditorSessionUseCase.statusFromMessages(surfaceRuntimeAccess.previewMessages(
-                        resolvedMapId,
-                        safeState.preview()))
+                ? surfaceFacts.previewStatusText()
                 : safeState.statusText();
         return new DungeonEditorSessionSnapshot.SnapshotData(
                 maps,
@@ -67,6 +62,19 @@ final class BuildDungeonEditorSnapshotUseCase {
     @Nullable MapSnapshot loadCommittedSnapshot(
             @Nullable MapId mapId
     ) {
-        return surfaceRuntimeAccess.loadCommittedSnapshot(mapId);
+        dungeonRepository.loadMap(mapId);
+        return dungeonPort.committedFacts(mapId).committedSnapshot();
+    }
+
+    private void requestSurfaceFacts(@Nullable MapId mapId, DungeonEditorSession state) {
+        dungeonRepository.loadMap(mapId);
+        if (mapId != null) {
+            dungeonRepository.describeSelection(
+                    mapId,
+                    state.selection().topologyRef(),
+                    state.selection().clusterId(),
+                    state.selection().clusterSelection());
+            dungeonRepository.previewOperation(mapId, state.preview());
+        }
     }
 }

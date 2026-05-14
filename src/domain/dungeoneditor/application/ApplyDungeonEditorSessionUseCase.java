@@ -1,18 +1,13 @@
 package src.domain.dungeoneditor.application;
 
-import java.util.function.Function;
 import org.jspecify.annotations.Nullable;
-import src.domain.dungeon.published.DungeonAuthoredMutationCommand;
-import src.domain.dungeon.published.DungeonAuthoredMutationResult;
-import src.domain.dungeon.published.DungeonAuthoredReadCommand;
-import src.domain.dungeon.published.DungeonAuthoredReadResult;
-import src.domain.dungeon.published.DungeonMapCatalogCommand;
-import src.domain.dungeon.published.DungeonMapCatalogResponse;
 import src.domain.dungeon.published.DungeonMapId;
 import src.domain.dungeon.published.DungeonOperationResult;
 import src.domain.dungeoneditor.model.session.model.DungeonEditorSession;
 import src.domain.dungeoneditor.model.session.model.DungeonEditorSessionCommand;
 import src.domain.dungeoneditor.model.session.model.DungeonEditorSessionSnapshot;
+import src.domain.dungeoneditor.model.session.port.DungeonEditorDungeonPort;
+import src.domain.dungeoneditor.model.session.repository.DungeonEditorDungeonRepository;
 import src.domain.dungeoneditor.model.workspace.helper.DungeonEditorWorkspaceMapBoundaryTranslationHelper;
 import src.domain.dungeoneditor.model.workspace.model.DungeonEditorWorkspaceValues;
 
@@ -22,12 +17,11 @@ public final class ApplyDungeonEditorSessionUseCase {
     private DungeonEditorSession session = DungeonEditorSession.empty();
 
     public ApplyDungeonEditorSessionUseCase(
-            Function<DungeonMapCatalogCommand, DungeonMapCatalogResponse> catalog,
-            Function<DungeonAuthoredMutationCommand, DungeonAuthoredMutationResult> mutateAuthored,
-            Function<DungeonAuthoredReadCommand, DungeonAuthoredReadResult> loadAuthored
+            DungeonEditorDungeonRepository dungeonRepository,
+            DungeonEditorDungeonPort dungeonPort
     ) {
-        this.snapshotBuilder = new BuildDungeonEditorSnapshotUseCase(catalog, mutateAuthored, loadAuthored);
-        this.commandWorkflow = new DungeonEditorSessionCommandUseCase(catalog, mutateAuthored, snapshotBuilder);
+        this.snapshotBuilder = new BuildDungeonEditorSnapshotUseCase(dungeonRepository, dungeonPort);
+        this.commandWorkflow = new DungeonEditorSessionCommandUseCase(dungeonRepository, dungeonPort, snapshotBuilder);
     }
 
     public void primeSelectedMap(@Nullable DungeonMapId mapId) {
@@ -45,20 +39,6 @@ public final class ApplyDungeonEditorSessionUseCase {
         session = session.withSelectedMap(snapshot.selectedMapId())
                 .withProjectionLevel(snapshot.projectionLevel());
         return snapshot;
-    }
-
-    static DungeonMapId requireMutationMapId(@Nullable DungeonMapCatalogResponse response) {
-        if (response instanceof DungeonMapCatalogResponse.MapMutation mutation) {
-            return mutation.mapId();
-        }
-        throw new IllegalStateException("Dungeon-Katalog-Antwort enthielt keine Mutation.");
-    }
-
-    static @Nullable DungeonOperationResult requireOperationResult(@Nullable DungeonAuthoredMutationResult result) {
-        if (result instanceof DungeonAuthoredMutationResult.Operation operation) {
-            return operation.result();
-        }
-        return null;
     }
 
     static DungeonMapId requireMapId(DungeonEditorWorkspaceValues.@Nullable MapId mapId) {
