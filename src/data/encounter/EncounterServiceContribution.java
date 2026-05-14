@@ -65,17 +65,21 @@ public final class EncounterServiceContribution implements ServiceContribution {
                 src.domain.encounter.model.reference.repository.EncounterCreatureRepository creatures,
                 src.domain.encounter.model.reference.repository.EncounterTableCandidateRepository encounterTables
         ) {
-            src.domain.encounter.application.LoadEncounterBudgetUseCase loadBudgetUseCase =
-                    new src.domain.encounter.application.LoadEncounterBudgetUseCase(party);
-            src.domain.encounter.application.SaveEncounterPlanUseCase savePlanUseCase =
-                    new src.domain.encounter.application.SaveEncounterPlanUseCase(encounterPlans);
-            src.domain.encounter.application.LoadSavedEncounterPlanUseCase loadSavedPlanUseCase =
-                    new src.domain.encounter.application.LoadSavedEncounterPlanUseCase(encounterPlans);
-            src.domain.encounter.application.ListSavedEncounterPlansUseCase listSavedPlansUseCase =
-                    new src.domain.encounter.application.ListSavedEncounterPlansUseCase(encounterPlans);
-            src.domain.encounter.application.LoadEncounterPlanBudgetUseCase loadPlanBudgetUseCase =
-                    new src.domain.encounter.application.LoadEncounterPlanBudgetUseCase(encounterPlans, party, creatures);
-            src.domain.encounter.application.ApplyEncounterSessionUseCase applySessionUseCase = createApplySessionUseCase(
+            src.domain.encounter.model.session.usecase.LoadEncounterBudgetUseCase loadBudgetUseCase =
+                    new src.domain.encounter.model.session.usecase.LoadEncounterBudgetUseCase(party);
+            src.domain.encounter.model.plan.usecase.SaveEncounterPlanUseCase savePlanUseCase =
+                    new src.domain.encounter.model.plan.usecase.SaveEncounterPlanUseCase(encounterPlans);
+            src.domain.encounter.model.plan.usecase.LoadSavedEncounterPlanUseCase loadSavedPlanUseCase =
+                    new src.domain.encounter.model.plan.usecase.LoadSavedEncounterPlanUseCase(encounterPlans);
+            src.domain.encounter.model.plan.usecase.ListSavedEncounterPlansUseCase listSavedPlansUseCase =
+                    new src.domain.encounter.model.plan.usecase.ListSavedEncounterPlansUseCase(encounterPlans);
+            src.domain.encounter.model.plan.usecase.LoadEncounterPlanBudgetUseCase loadPlanBudgetUseCase =
+                    new src.domain.encounter.model.plan.usecase.LoadEncounterPlanBudgetUseCase(
+                            encounterPlans,
+                            party,
+                            creatures);
+            src.domain.encounter.model.session.usecase.ApplyEncounterSessionUseCase applySessionUseCase =
+                    createApplySessionUseCase(
                     party,
                     creatures,
                     encounterTables,
@@ -83,16 +87,16 @@ public final class EncounterServiceContribution implements ServiceContribution {
                     loadSavedPlanUseCase,
                     listSavedPlansUseCase,
                     loadBudgetUseCase);
-            src.domain.encounter.application.PublishEncounterSessionUseCase publishSessionUseCase =
-                    new src.domain.encounter.application.PublishEncounterSessionUseCase(
+            src.domain.encounter.model.session.usecase.PublishEncounterSessionUseCase publishSessionUseCase =
+                    new src.domain.encounter.model.session.usecase.PublishEncounterSessionUseCase(
                             sessionPublishedStateRepository,
                             loadBudgetUseCase);
-            src.domain.encounter.application.PublishEncounterSavedPlansUseCase publishSavedPlansUseCase =
-                    new src.domain.encounter.application.PublishEncounterSavedPlansUseCase(
+            src.domain.encounter.model.plan.usecase.PublishEncounterSavedPlansUseCase publishSavedPlansUseCase =
+                    new src.domain.encounter.model.plan.usecase.PublishEncounterSavedPlansUseCase(
                             planPublishedStateRepository,
                             listSavedPlansUseCase);
-            src.domain.encounter.application.PublishEncounterPlanBudgetUseCase publishPlanBudgetUseCase =
-                    new src.domain.encounter.application.PublishEncounterPlanBudgetUseCase(
+            src.domain.encounter.model.plan.usecase.PublishEncounterPlanBudgetUseCase publishPlanBudgetUseCase =
+                    new src.domain.encounter.model.plan.usecase.PublishEncounterPlanBudgetUseCase(
                             planPublishedStateRepository,
                             loadPlanBudgetUseCase);
             publishSessionUseCase.execute(applySessionUseCase.session());
@@ -103,24 +107,24 @@ public final class EncounterServiceContribution implements ServiceContribution {
                             applySessionUseCase,
                             publishSessionUseCase,
                             publishSavedPlansUseCase),
-                    new src.domain.encounter.application.UpdateEncounterBuilderInputsUseCase(
+                    new src.domain.encounter.model.session.usecase.UpdateEncounterBuilderInputsUseCase(
                             applySessionUseCase,
                             publishSessionUseCase),
                     publishPlanBudgetUseCase);
         }
 
-        private static src.domain.encounter.application.ApplyEncounterSessionUseCase createApplySessionUseCase(
+        private static src.domain.encounter.model.session.usecase.ApplyEncounterSessionUseCase createApplySessionUseCase(
                 src.domain.encounter.model.session.repository.EncounterPartyFactsRepository party,
                 src.domain.encounter.model.reference.repository.EncounterCreatureRepository creatures,
                 src.domain.encounter.model.reference.repository.EncounterTableCandidateRepository encounterTables,
-                src.domain.encounter.application.SaveEncounterPlanUseCase savePlanUseCase,
-                src.domain.encounter.application.LoadSavedEncounterPlanUseCase loadSavedPlanUseCase,
-                src.domain.encounter.application.ListSavedEncounterPlansUseCase listSavedPlansUseCase,
-                src.domain.encounter.application.LoadEncounterBudgetUseCase loadBudgetUseCase
+                src.domain.encounter.model.plan.usecase.SaveEncounterPlanUseCase savePlanUseCase,
+                src.domain.encounter.model.plan.usecase.LoadSavedEncounterPlanUseCase loadSavedPlanUseCase,
+                src.domain.encounter.model.plan.usecase.ListSavedEncounterPlansUseCase listSavedPlansUseCase,
+                src.domain.encounter.model.session.usecase.LoadEncounterBudgetUseCase loadBudgetUseCase
         ) {
             src.domain.encounter.application.EncounterGenerationUseCase generator =
                     new src.domain.encounter.application.EncounterGenerationUseCase(party, creatures, encounterTables);
-            return new src.domain.encounter.application.ApplyEncounterSessionUseCase(
+            return new src.domain.encounter.model.session.usecase.ApplyEncounterSessionUseCase(
                     new src.domain.encounter.model.session.repository.EncounterSessionRepository(
                             party,
                             creatures,
