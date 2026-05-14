@@ -21,9 +21,11 @@ public final class SessionPlannerLootMainView extends VBox {
         getChildren().add(lootSection());
     }
 
-    public void show(MainProjection projection) {
-        MainProjection safeProjection = projection == null ? MainProjection.empty() : projection;
-        List<MainProjection.LootModel> safe = safeProjection.lootPlaceholders();
+    private void show(SessionPlannerLootMainContentModel.Projection projection) {
+        SessionPlannerLootMainContentModel.Projection safeProjection = projection == null
+                ? SessionPlannerLootMainContentModel.Projection.empty()
+                : projection;
+        List<SessionPlannerLootMainContentModel.Projection.LootModel> safe = safeProjection.lootPlaceholders();
         if (safe.isEmpty()) {
             lootBox.showEmpty(new StyledLabel("Keine Loot-Platzhalter angelegt.", "text-secondary", "session-planner-empty"));
             return;
@@ -35,12 +37,12 @@ public final class SessionPlannerLootMainView extends VBox {
         viewInputEventHandler = handler == null ? ignored -> { } : handler;
     }
 
-    public void bind(SessionPlannerContributionModel contributionModel) {
-        if (contributionModel == null) {
+    public void bind(SessionPlannerLootMainContentModel contentModel) {
+        if (contentModel == null) {
             return;
         }
-        contributionModel.mainProjectionProperty().addListener((ignored, before, after) -> show(after));
-        show(contributionModel.mainProjectionProperty().get());
+        contentModel.projectionProperty().addListener((ignored, before, after) -> show(after));
+        show(contentModel.projectionProperty().get());
     }
 
     private VBox lootSection() {
@@ -56,7 +58,7 @@ public final class SessionPlannerLootMainView extends VBox {
         return new VBox(8, row, lootBox);
     }
 
-    private HBox lootCard(MainProjection.LootModel loot) {
+    private HBox lootCard(SessionPlannerLootMainContentModel.Projection.LootModel loot) {
         Label label = new Label(loot.label());
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);

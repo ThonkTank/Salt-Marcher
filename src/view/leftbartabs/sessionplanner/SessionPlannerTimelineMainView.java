@@ -29,16 +29,18 @@ public final class SessionPlannerTimelineMainView extends VBox {
         viewInputEventHandler = handler == null ? ignored -> { } : handler;
     }
 
-    public void bind(SessionPlannerContributionModel contributionModel) {
-        if (contributionModel == null) {
+    public void bind(SessionPlannerTimelineMainContentModel contentModel) {
+        if (contentModel == null) {
             return;
         }
-        contributionModel.mainProjectionProperty().addListener((ignored, before, after) -> show(after));
-        show(contributionModel.mainProjectionProperty().get());
+        contentModel.projectionProperty().addListener((ignored, before, after) -> show(after));
+        show(contentModel.projectionProperty().get());
     }
 
-    private void show(MainProjection projection) {
-        MainProjection safe = projection == null ? MainProjection.empty() : projection;
+    private void show(SessionPlannerTimelineMainContentModel.Projection projection) {
+        SessionPlannerTimelineMainContentModel.Projection safe = projection == null
+                ? SessionPlannerTimelineMainContentModel.Projection.empty()
+                : projection;
         timelineSection.show(safe.encounters(), safe.restGaps(), this::publish);
     }
 
@@ -56,8 +58,8 @@ public final class SessionPlannerTimelineMainView extends VBox {
         }
 
         private void show(
-                List<MainProjection.EncounterModel> encounters,
-                List<MainProjection.RestGapModel> gaps,
+                List<SessionPlannerTimelineMainContentModel.Projection.EncounterModel> encounters,
+                List<SessionPlannerTimelineMainContentModel.Projection.RestGapModel> gaps,
                 Consumer<SessionPlannerTimelineMainViewInputEvent> publisher
         ) {
             rows.show(encounters, gaps, publisher);
@@ -73,8 +75,8 @@ public final class SessionPlannerTimelineMainView extends VBox {
         }
 
         private void show(
-                List<MainProjection.EncounterModel> encounters,
-                List<MainProjection.RestGapModel> gaps,
+                List<SessionPlannerTimelineMainContentModel.Projection.EncounterModel> encounters,
+                List<SessionPlannerTimelineMainContentModel.Projection.RestGapModel> gaps,
                 Consumer<SessionPlannerTimelineMainViewInputEvent> publisher
         ) {
             getChildren().clear();
@@ -83,7 +85,7 @@ public final class SessionPlannerTimelineMainView extends VBox {
                 return;
             }
             for (int index = 0; index < encounters.size(); index++) {
-                MainProjection.EncounterModel encounter = encounters.get(index);
+                SessionPlannerTimelineMainContentModel.Projection.EncounterModel encounter = encounters.get(index);
                 getChildren().add(new EncounterCard(encounter, index + 1, publisher));
                 if (index < gaps.size()) {
                     getChildren().add(new RestGapCard(gaps.get(index), index + 1, index + 2, publisher));
@@ -95,7 +97,7 @@ public final class SessionPlannerTimelineMainView extends VBox {
     private static final class EncounterCard extends VBox {
 
         private EncounterCard(
-                MainProjection.EncounterModel encounter,
+                SessionPlannerTimelineMainContentModel.Projection.EncounterModel encounter,
                 int position,
                 Consumer<SessionPlannerTimelineMainViewInputEvent> publisher
         ) {
@@ -171,7 +173,9 @@ public final class SessionPlannerTimelineMainView extends VBox {
             setPadding(new Insets(10));
         }
 
-        private static String generatedLabelSuffix(MainProjection.EncounterModel encounter) {
+        private static String generatedLabelSuffix(
+                SessionPlannerTimelineMainContentModel.Projection.EncounterModel encounter
+        ) {
             return encounter.generatedLabel().isBlank() ? "" : " · " + encounter.generatedLabel();
         }
     }
@@ -179,7 +183,7 @@ public final class SessionPlannerTimelineMainView extends VBox {
     private static final class RestGapCard extends VBox {
 
         private RestGapCard(
-                MainProjection.RestGapModel gap,
+                SessionPlannerTimelineMainContentModel.Projection.RestGapModel gap,
                 int leftEncounter,
                 int rightEncounter,
                 Consumer<SessionPlannerTimelineMainViewInputEvent> publisher
@@ -300,7 +304,7 @@ public final class SessionPlannerTimelineMainView extends VBox {
     }
 
     private static SessionPlannerTimelineMainViewInputEvent allocationEvent(
-            MainProjection.EncounterModel encounter,
+            SessionPlannerTimelineMainContentModel.Projection.EncounterModel encounter,
             BigDecimal allocationDelta
     ) {
         return new SessionPlannerTimelineMainViewInputEvent(
