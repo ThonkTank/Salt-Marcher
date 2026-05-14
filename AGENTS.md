@@ -137,11 +137,14 @@ document exists.
 - After each completed implementation pass that changes non-documentation
   production-code checks, enforcement packages, build-harness rules,
   Error Prone rules, quality-rules wiring, enforcement-bundle wiring, or
-  verification-only Gradle wiring, rerun
+  verification-only Gradle wiring, rerun the smallest affected package,
+  bundle, or layer-surface task from the repository root before handoff.
+  If the pass changes shared production-code routing, broad verification-core
+  lifecycle wiring, or the public production-code surface itself, rerun
   `tools/gradle/run-staged-verification.sh production-handoff` from the
-  repository root before handoff. Focused package, bundle, or layer-surface
-  tasks may still be used for diagnosis, but they are not separate handoff
-  proof entries.
+  repository root as the handoff proof. Focused tasks remain technical proof
+  surfaces for their owning package; they do not replace production-handoff
+  when the shared production surface changed.
 - After each completed documentation-only pass limited to `AGENTS.md`,
   `docs/**`, `src/domain/**/DOMAIN.md`, or Markdown files under
   `tools/quality/**`, rerun
@@ -171,11 +174,11 @@ document exists.
 - For long verification runs where silent execution makes agent-side
   observation unreliable, prefer `tools/gradle/run-observable-gradle.sh`
   instead of shell loops over many separate `./gradlew` invocations. Use
-  `tools/gradle/run-staged-verification.sh` for the public staged handoff
-  surfaces and pass the corresponding focused task list explicitly only when
-  you intentionally bypass that stage layer. The canonical public proof
+  `tools/gradle/run-staged-verification.sh` for the public production-code
+  handoff surface and pass focused task names explicitly only for focused
+  package, bundle, or layer-surface proof. The canonical public proof
   entrypoints are now `tools/gradle/run-staged-verification.sh
-  production-handoff` for production-code checks and
+  production-handoff` for production-code handoff and
   `./gradlew checkDocumentationEnforcement` for documentation checks.
 - `CODEX_THREAD_ID` and `SALTMARCHER_GRADLE_ISOLATION_ID` remain trace labels
   only when a caller explicitly exports them; they are not part of the local

@@ -60,7 +60,7 @@ full architecture harness through `check`.
 | SpotBugs plus FindSecBugs | `Blocking Local Gate` | `./gradlew spotbugsMain` | Runs bytecode bug and security-smell analysis with SpotBugs effort `MAX` and confidence `MEDIUM`. |
 | CPD | `Blocking Local Gate` | `./gradlew cpdMain` | Runs PMD CPD for Java with `minimumTokens = 100`, matching PMD's documented Java example value, and writes its report under the active worktree's normal `build/reports/cpd/` surface. |
 | Lizard | `Blocking Local Gate` | `./gradlew lizardMain` | Runs pinned `lizard==1.21.3` for Java with max cyclomatic complexity `15`, matching Lizard's default warning threshold, and writes its report under the active worktree's normal `build/reports/lizard/` surface. |
-| CKJM ext | `Informational Report` | `./gradlew ckjmMain` | Runs on freshly compiled production classes and writes `main.txt` plus `summary.md` under the active worktree's normal `build/reports/ckjm/` surface. It is included in the shared `check` / `production-handoff` lifecycle catalog for report visibility, but CKJM hotspot findings remain warnings rather than blocker failures. |
+| CKJM ext | `Informational Report` | `./gradlew ckjmMain` | Runs on freshly compiled production classes and writes `main.txt` plus `summary.md` under the active worktree's normal `build/reports/ckjm/` surface. CKJM is a direct report entrypoint and CI artifact source, not a dependency of the blocking `check` / `production-handoff` lifecycle catalog. CKJM hotspot findings remain warnings rather than blocker failures. |
 
 PMD non-architecture reports use explicit metric thresholds. These thresholds
 must stay at or below PMD's documented defaults unless the standard explicitly

@@ -2,6 +2,7 @@ package saltmarcher.buildlogic.verification
 
 import org.gradle.api.Plugin
 import org.gradle.api.Project
+import org.gradle.api.Task
 import org.gradle.api.tasks.compile.JavaCompile
 import org.gradle.api.tasks.TaskProvider
 import org.gradle.kotlin.dsl.getByType
@@ -12,6 +13,10 @@ import saltmarcher.buildlogic.enforcement.BuildHarnessTaskKind
 import saltmarcher.buildlogic.enforcement.EnforcementBundleDescriptor
 import saltmarcher.buildlogic.enforcement.EnforcementBundlesExtension
 import saltmarcher.buildlogic.enforcement.standardEnforcementDiagnosticSurfaceCatalog
+import saltmarcher.buildlogic.shared.ProductionHandoffCompileIntegrityTaskName
+import saltmarcher.buildlogic.shared.ProductionHandoffHygieneTaskName
+import saltmarcher.buildlogic.shared.ProductionHandoffStructureTaskName
+import saltmarcher.buildlogic.shared.ProductionHandoffSurfaceId
 
 class SaltmarcherVerificationCorePlugin : Plugin<Project> {
     override fun apply(project: Project) {
@@ -161,8 +166,8 @@ internal fun Project.configureVerificationCore() {
         dependsOn("installDesktopApp")
     }
 
-    val productionHandoffSurface = verificationLifecycleCatalog.surface("production-handoff")
-    val productionHandoffCompileIntegrity = tasks.register("productionHandoffCompileIntegrity") {
+    val productionHandoffSurface = verificationLifecycleCatalog.surface(ProductionHandoffSurfaceId)
+    val productionHandoffCompileIntegrity = tasks.register(ProductionHandoffCompileIntegrityTaskName) {
         group = LifecycleBasePlugin.VERIFICATION_GROUP
         description = "Run the fail-fast compile integrity phase for production handoff."
         verificationLifecycleCatalog.ownerTaskNames(VerificationLifecyclePhase.COMPILE_INTEGRITY).forEach(::dependsOn)
@@ -177,7 +182,7 @@ internal fun Project.configureVerificationCore() {
         }
     }
 
-    val productionHandoffStructure = tasks.register("productionHandoffStructure") {
+    val productionHandoffStructure = tasks.register(ProductionHandoffStructureTaskName) {
         group = LifecycleBasePlugin.VERIFICATION_GROUP
         description = "Run the fail-fast architecture and build-harness structure phase for production handoff."
         dependsOn(productionHandoffCompileIntegrity)
@@ -188,7 +193,7 @@ internal fun Project.configureVerificationCore() {
         }
     }
 
-    val productionHandoffHygiene = tasks.register("productionHandoffHygiene") {
+    val productionHandoffHygiene = tasks.register(ProductionHandoffHygieneTaskName) {
         group = LifecycleBasePlugin.VERIFICATION_GROUP
         description = "Run the aggregating hygiene, reporting, and bundle phase for production handoff."
         dependsOn(productionHandoffStructure)
@@ -198,6 +203,14 @@ internal fun Project.configureVerificationCore() {
             .map(EnforcementBundleDescriptor::selectorTaskName)
             .forEach(::dependsOn)
     }
+    configureProductionHandoffHygieneBarriers(
+        productionHandoffStructure,
+        productionHandoffHygiene,
+        verificationLifecycleCatalog.ownerTaskNames(VerificationLifecyclePhase.HYGIENE) +
+            activeEnforcementBundleIds
+                .map(::descriptor)
+                .map(EnforcementBundleDescriptor::selectorTaskName)
+    )
 
     tasks.register(productionHandoffSurface.publicTaskName) {
         group = LifecycleBasePlugin.VERIFICATION_GROUP
@@ -213,6 +226,21 @@ private fun systemBoolean(name: String, defaultValue: Boolean): Boolean =
         ?.takeIf(String::isNotEmpty)
         ?.toBooleanStrictOrNull()
         ?: defaultValue
+
+private fun Project.configureProductionHandoffHygieneBarriers(
+    structureTask: TaskProvider<Task>,
+    hygieneTask: TaskProvider<Task>,
+    hygieneDependencyTaskNames: List<String>
+) {
+    hygieneDependencyTaskNames.distinct().forEach { taskName ->
+        tasks.named(taskName).configure {
+            mustRunAfter(structureTask)
+            onlyIf("production handoff structure phase completed successfully") {
+                !gradle.taskGraph.hasTask(hygieneTask.get()) || structureTask.get().state.failure == null
+            }
+        }
+    }
+}
 
 private fun registerFocusedCompileTasksByBundleId(
     descriptors: List<EnforcementBundleDescriptor>,

@@ -76,14 +76,7 @@ run_surface() {
     echo
 
     if [[ "$surface" == "production-handoff" ]]; then
-        echo "[staged-verification] Phase: productionHandoffCompileIntegrity"
-        run_observable_gradle true productionHandoffCompileIntegrity
-        echo
-        echo "[staged-verification] Phase: productionHandoffStructure"
-        run_observable_gradle true productionHandoffStructure
-        echo
-        echo "[staged-verification] Phase: productionHandoffHygiene"
-        run_observable_gradle false productionHandoffHygiene
+        run_observable_gradle "$fail_fast" production-handoff
         return
     fi
 

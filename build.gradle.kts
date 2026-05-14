@@ -133,7 +133,6 @@ tasks.test {
     exclude("architecture/**")
 }
 
-val architectureRulesetFile = layout.projectDirectory.file("tools/quality/config/pmd/architecture-ruleset.xml")
 val mainJavaClassesDir = tasks.named<JavaCompile>("compileJava").flatMap { task -> task.destinationDirectory }
 
 val architectureTest by tasks.registering(Test::class) {
@@ -158,22 +157,5 @@ val architectureTest by tasks.registering(Test::class) {
     exclude("architecture/view/viewlayer/**")
     jvmArgumentProviders += objects.newInstance(MainClassesSystemPropertyProvider::class.java).apply {
         mainClassesDirectory.set(mainJavaClassesDir)
-    }
-}
-
-val pmdArchitectureMain by tasks.registering(Pmd::class) {
-    group = LifecycleBasePlugin.VERIFICATION_GROUP
-    description = "Run SaltMarcher source-level architecture rules against production Java sources."
-
-    ignoreFailures = false
-    ruleSets = listOf()
-    ruleSetFiles = files(architectureRulesetFile)
-    source = files("bootstrap", "shell", "src").asFileTree
-    include("**/*.java")
-    classpath = files()
-
-    reports {
-        html.required.set(true)
-        xml.required.set(true)
     }
 }

@@ -43,8 +43,9 @@ Runtime wrappers MAY know canonical verification surface names and the
 production-handoff phase task names. They MUST NOT know bundle member tasks,
 internal rule lists, or architecture-rule ownership.
 `tools/gradle/run-staged-verification.sh` routes the canonical
-`production-handoff` surface through the Gradle-owned
-`productionHandoffCompileIntegrity`, `productionHandoffStructure`, and
+`production-handoff` surface to the Gradle-owned `production-handoff`
+lifecycle task. The verification core routes that lifecycle task through the
+internal `productionHandoffCompileIntegrity`, `productionHandoffStructure`, and
 `productionHandoffHygiene` phase tasks.
 Other staged surfaces forward to one same-named Gradle lifecycle task.
 `tools/gradle/run-observable-gradle.sh` remains a generic runtime wrapper for
@@ -61,12 +62,12 @@ normal behavior unless the caller explicitly passes `--daemon` or
 `--continue` so long handoff and investigation runs report the full current
 failure set. Callers that need first-failure diagnosis MAY pass wrapper option
 `--fail-fast`; the wrapper then omits its default `--continue` and rejects a
-contradictory extra Gradle `--continue`. The staged `production-handoff` route
-always runs its compile-integrity phase and structure phase fail-fast before
-running the aggregating hygiene phase. This policy is global to the runtime
-wrapper and staged surface routing; it MUST NOT be computed from private bundle
-member tasks, topology-task patterns, PMD enforcement patterns, internal rule
-lists, or architecture-rule ownership.
+contradictory extra Gradle `--continue`. The `production-handoff` lifecycle
+keeps compile integrity, structure, and hygiene as Gradle-owned phase tasks, and
+hygiene owners are ordered behind a successful structure phase. This policy is
+global to the runtime wrapper and staged surface routing; it MUST NOT be
+computed from private bundle member tasks, topology-task patterns, PMD
+enforcement patterns, internal rule lists, or architecture-rule ownership.
 Direct raw Gradle use of the same public surfaces does not inherit wrapper
 defaults automatically.
 

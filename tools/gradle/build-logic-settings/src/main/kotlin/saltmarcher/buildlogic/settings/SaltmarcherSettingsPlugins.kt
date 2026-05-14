@@ -9,6 +9,11 @@ import saltmarcher.buildlogic.enforcement.EnforcementBundleDescriptor
 import saltmarcher.buildlogic.enforcement.EnforcementDiagnosticSurfaceCatalog
 import saltmarcher.buildlogic.enforcement.standardEnforcementBundleCatalog
 import saltmarcher.buildlogic.enforcement.standardEnforcementDiagnosticSurfaceCatalog
+import saltmarcher.buildlogic.shared.CheckTaskName
+import saltmarcher.buildlogic.shared.ProductionHandoffCompileIntegrityTaskName
+import saltmarcher.buildlogic.shared.ProductionHandoffHygieneTaskName
+import saltmarcher.buildlogic.shared.ProductionHandoffStructureTaskName
+import saltmarcher.buildlogic.shared.ProductionHandoffTaskName
 
 class SaltmarcherRootSettingsPlugin : Plugin<Settings> {
     override fun apply(settings: Settings) {
@@ -87,10 +92,14 @@ class SaltmarcherRootSettingsPlugin : Plugin<Settings> {
 private fun includeSaltmarcherBuild(settings: Settings, relativePath: String) = settings.includeBuild(relativePath)
 
 private fun standardBroadBuildTaskNames(): Set<String> = setOf(
+    ProductionHandoffTaskName,
+    CheckTaskName,
+    ProductionHandoffCompileIntegrityTaskName,
+    ProductionHandoffHygieneTaskName,
+    ProductionHandoffStructureTaskName,
     "assemble",
     "architectureTest",
     "build",
-    "check",
     "checkNoDeadCode",
     "classes",
     "compileJava",
@@ -98,10 +107,6 @@ private fun standardBroadBuildTaskNames(): Set<String> = setOf(
     "installDesktopApp",
     "installDist",
     "jar",
-    "productionHandoffCompileIntegrity",
-    "productionHandoffHygiene",
-    "productionHandoffStructure",
-    "production-handoff",
     "run",
     "test"
 )
@@ -176,16 +181,16 @@ private fun isDiscoveryTaskName(taskName: String): Boolean =
         taskName.startsWith("help")
 
 private fun isAllBundleVerificationTaskName(taskName: String): Boolean =
-    taskName == "production-handoff" ||
-        taskName == "productionHandoffHygiene" ||
-        taskName == "check" ||
+    taskName == ProductionHandoffTaskName ||
+        taskName == ProductionHandoffHygieneTaskName ||
+        taskName == CheckTaskName ||
         taskName == "build"
 
 private fun isProductionHandoffCompileIntegrityTaskName(taskName: String): Boolean =
-    taskName == "productionHandoffCompileIntegrity"
+    taskName == ProductionHandoffCompileIntegrityTaskName
 
 private fun isProductionHandoffStructureTaskName(taskName: String): Boolean =
-    taskName == "productionHandoffStructure"
+    taskName == ProductionHandoffStructureTaskName
 
 private fun isDocumentationTaskName(taskName: String): Boolean =
     taskName == "checkDocumentationEnforcement" ||

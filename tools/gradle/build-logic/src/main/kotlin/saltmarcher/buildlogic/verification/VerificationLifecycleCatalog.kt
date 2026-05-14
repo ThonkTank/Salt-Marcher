@@ -1,5 +1,10 @@
 package saltmarcher.buildlogic.verification
 
+import saltmarcher.buildlogic.shared.CheckSurfaceId
+import saltmarcher.buildlogic.shared.CheckTaskName
+import saltmarcher.buildlogic.shared.ProductionHandoffSurfaceId
+import saltmarcher.buildlogic.shared.ProductionHandoffTaskName
+
 internal data class VerificationLifecycleOwnerSpec(
     val ownerId: String,
     val taskName: String,
@@ -52,19 +57,18 @@ internal fun standardVerificationLifecycleCatalog(): VerificationLifecycleCatalo
             VerificationLifecyclePhase.HYGIENE
         ),
         verificationLifecycleOwner("dead-code", "checkNoDeadCode", VerificationLifecyclePhase.HYGIENE),
-        verificationLifecycleOwner("ckjm-main", "ckjmMain", VerificationLifecyclePhase.HYGIENE)
     )
     val owners = compileIntegrityOwners + structureOwners + hygieneOwners
     val dependencyTaskNames = owners.map(VerificationLifecycleOwnerSpec::taskName)
     val checkSurface = verificationLifecycleSurface(
-        surfaceId = "check",
-        publicTaskName = "check",
+        surfaceId = CheckSurfaceId,
+        publicTaskName = CheckTaskName,
         description = "Run the central local build-health aggregate.",
-        dependencyTaskNames = listOf("production-handoff")
+        dependencyTaskNames = listOf(ProductionHandoffTaskName)
     )
     val productionHandoffSurface = verificationLifecycleSurface(
-        surfaceId = "production-handoff",
-        publicTaskName = "production-handoff",
+        surfaceId = ProductionHandoffSurfaceId,
+        publicTaskName = ProductionHandoffTaskName,
         description = "Run the public production-code handoff surface through the verification core and internal quality owners.",
         dependencyTaskNames = dependencyTaskNames
     )

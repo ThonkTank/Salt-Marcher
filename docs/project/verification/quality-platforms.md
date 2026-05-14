@@ -198,7 +198,10 @@ It combines:
 - the quality-hygiene blocker path through PMD, first-party near-miss hygiene
   checks, SpotBugs, CPD, Lizard, compiled-artifact hygiene, and
   whole-program dead-code reachability
-- CKJM hotspot and regression reporting
+
+CKJM hotspot and regression reporting remains an informational report surface
+through direct `ckjmMain` runs and CI artifact upload. It is not part of the
+blocking production-code handoff aggregate.
 
 `check` remains the central local build-health aggregate. Its architecture
 coverage comes by depending on `production-handoff`; it must not reconstruct a

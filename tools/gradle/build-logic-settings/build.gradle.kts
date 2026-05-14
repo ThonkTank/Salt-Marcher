@@ -20,6 +20,7 @@ kotlin {
     jvmToolchain(21)
     sourceSets.named("main") {
         kotlin.srcDir("../build-logic/src/main/kotlin/saltmarcher/buildlogic/enforcement")
+        kotlin.srcDir("../build-logic/src/main/kotlin/saltmarcher/buildlogic/shared")
     }
 }
 

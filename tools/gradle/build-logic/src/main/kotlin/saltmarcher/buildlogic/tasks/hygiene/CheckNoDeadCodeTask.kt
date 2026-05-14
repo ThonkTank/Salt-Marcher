@@ -804,14 +804,29 @@ private class ContributionTypeInspector(
     private val classLoader: URLClassLoader
 ) {
     fun isConcreteShellContribution(binaryName: String): Boolean =
-        isConcreteContribution(binaryName, "shell.api.ShellContribution")
+        isConcreteContribution(binaryName, shellContributionType)
 
     fun isConcreteServiceContribution(binaryName: String): Boolean =
-        isConcreteContribution(binaryName, "shell.api.ServiceContribution")
+        isConcreteContribution(binaryName, serviceContributionType)
 
-    private fun isConcreteContribution(binaryName: String, contractTypeName: String): Boolean {
+    private val shellContributionType: Class<*>? = loadContractType("shell.api.ShellContribution")
+    private val serviceContributionType: Class<*>? = loadContractType("shell.api.ServiceContribution")
+
+    private fun loadContractType(contractTypeName: String): Class<*>? {
         return try {
-            val contractType = Class.forName(contractTypeName, false, classLoader)
+            Class.forName(contractTypeName, false, classLoader)
+        } catch (_: ReflectiveOperationException) {
+            null
+        } catch (_: LinkageError) {
+            null
+        }
+    }
+
+    private fun isConcreteContribution(binaryName: String, contractType: Class<*>?): Boolean {
+        if (contractType == null) {
+            return false
+        }
+        return try {
             val rawType = Class.forName(binaryName, false, classLoader)
             contractType.isAssignableFrom(rawType)
                     && !rawType.isInterface
