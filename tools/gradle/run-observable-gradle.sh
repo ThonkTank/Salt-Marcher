@@ -8,11 +8,15 @@ readonly HEARTBEAT_SECONDS=30
 usage() {
     cat <<'EOF'
 Usage:
-  tools/gradle/run-observable-gradle.sh <gradle-task> [<gradle-task> ...] [-- <extra-gradle-args>]
+  tools/gradle/run-observable-gradle.sh [--fail-fast] <gradle-task> [<gradle-task> ...] [-- <extra-gradle-args>]
 
 Examples:
   tools/gradle/run-observable-gradle.sh checkDataEnforcement
+  tools/gradle/run-observable-gradle.sh --fail-fast compileJava
   tools/gradle/run-observable-gradle.sh checkDomainEnforcement checkDataEnforcement -- --rerun-tasks
+
+Options:
+  --fail-fast  Do not add wrapper-owned Gradle --continue.
 
 Reserved wrapper-owned args are ignored when passed through <extra-gradle-args>:
   --console, --project-dir
@@ -135,11 +139,17 @@ fi
 
 declare -a tasks=()
 declare -a extra_args=()
+fail_fast=false
 while [[ $# -gt 0 ]]; do
     if [[ "$1" == "--" ]]; then
         shift
         extra_args=("$@")
         break
+    fi
+    if [[ "$1" == "--fail-fast" ]]; then
+        fail_fast=true
+        shift
+        continue
     fi
     tasks+=("$1")
     shift
@@ -158,6 +168,11 @@ else
     FILTERED_WRAPPER_OWNED_ARGS=()
 fi
 
+if [[ "$fail_fast" == true ]] && contains_continue_flag "${extra_args[@]}"; then
+    echo "[observable-gradle] --fail-fast cannot be combined with Gradle --continue." >&2
+    exit 64
+fi
+
 cd "$REPO_ROOT"
 
 readonly task_display="${tasks[*]}"
@@ -171,7 +186,7 @@ mkdir -p "$log_dir"
 declare -a gradle_cmd=(./gradlew)
 gradle_cmd+=("${tasks[@]}")
 gradle_cmd+=(--console=plain)
-if ! contains_continue_flag "${extra_args[@]}"; then
+if [[ "$fail_fast" == false ]] && ! contains_continue_flag "${extra_args[@]}"; then
     gradle_cmd+=(--continue)
 fi
 if [[ ${#extra_args[@]} -gt 0 ]]; then
@@ -182,6 +197,11 @@ echo "[observable-gradle] Repo root: $REPO_ROOT"
 echo "[observable-gradle] Tasks: $task_display"
 if [[ ${#extra_args[@]} -gt 0 ]]; then
     echo "[observable-gradle] Extra args: ${extra_args[*]}"
+fi
+if [[ "$fail_fast" == true ]]; then
+    echo "[observable-gradle] Failure aggregation: fail-fast"
+else
+    echo "[observable-gradle] Failure aggregation: --continue"
 fi
 if [[ ${#FILTERED_WRAPPER_OWNED_ARGS[@]} -gt 0 ]]; then
     echo "[observable-gradle] Ignored wrapper-owned args: ${FILTERED_WRAPPER_OWNED_ARGS[*]}"
@@ -196,6 +216,11 @@ start_epoch="$(date +%s)"
     echo "[observable-gradle] Tasks: $task_display"
     if [[ ${#extra_args[@]} -gt 0 ]]; then
         echo "[observable-gradle] Extra args: ${extra_args[*]}"
+    fi
+    if [[ "$fail_fast" == true ]]; then
+        echo "[observable-gradle] Failure aggregation: fail-fast"
+    else
+        echo "[observable-gradle] Failure aggregation: --continue"
     fi
     if [[ ${#FILTERED_WRAPPER_OWNED_ARGS[@]} -gt 0 ]]; then
         echo "[observable-gradle] Ignored wrapper-owned args: ${FILTERED_WRAPPER_OWNED_ARGS[*]}"

@@ -123,11 +123,17 @@ runtime-wrapper concern. `tools/gradle/run-observable-gradle.sh` adds Gradle
 `--continue` to wrapper-based runs so long handoff and investigation runs
 report the full current failure set without moving that policy into the
 convention-plugin layer or reconstructing private task families in shell.
+Callers that need first-failure diagnosis may pass wrapper option
+`--fail-fast` before the task or staged surface name; the wrapper then omits
+its default `--continue` and rejects a contradictory extra Gradle `--continue`.
 
 By default, `production-handoff` inherits that wrapper-level `--continue`
 behavior through the staged handoff route, so the canonical
 implementation-handoff route reports the broader current failure set in one
 run. The staged handoff still fails overall when any blocking dependency fails.
+`tools/gradle/run-staged-verification.sh --fail-fast production-handoff`
+preserves the same public staged surface while opting out of wrapper-level
+failure aggregation for local diagnosis.
 Direct raw `./gradlew` invocations remain explicit and only aggregate failures
 when the caller passes `--continue`.
 
@@ -181,7 +187,8 @@ parallel safety by rewriting Gradle cache or build directories.
 Callers may still pass investigation-oriented extra args such as
 `--rerun-tasks`, `--stacktrace`, `--info`, or `--scan`, while runtime wrappers
 continue to own their invocation defaults and global wrapper-based
-`--continue` policy.
+`--continue` default. `--fail-fast` remains a wrapper option, not a Gradle
+extra argument.
 
 This does not make bytecode-dependent entrypoints source-only. `spotbugsMain`,
 `ckjmMain`, and the public layer surfaces still require current compiled

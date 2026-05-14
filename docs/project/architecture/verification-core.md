@@ -54,9 +54,12 @@ normal behavior unless the caller explicitly passes `--daemon` or
 `--no-daemon`.
 `tools/gradle/run-observable-gradle.sh` defaults wrapper-based runs to Gradle
 `--continue` so long handoff and investigation runs report the full current
-failure set. This policy is global to the runtime wrapper and MUST NOT be
-computed from private task names, bundle member tasks, topology-task patterns,
-PMD enforcement patterns, internal rule lists, or architecture-rule ownership.
+failure set. Callers that need first-failure diagnosis MAY pass wrapper option
+`--fail-fast`; the wrapper then omits its default `--continue` and rejects a
+contradictory extra Gradle `--continue`. This policy is global to the runtime
+wrapper and MUST NOT be computed from private task names, bundle member tasks,
+topology-task patterns, PMD enforcement patterns, internal rule lists, or
+architecture-rule ownership.
 Direct raw Gradle use of the same public surfaces does not inherit wrapper
 defaults automatically.
 

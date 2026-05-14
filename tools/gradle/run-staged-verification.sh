@@ -7,11 +7,14 @@ readonly REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 usage() {
     cat <<'EOF'
 Usage:
-  tools/gradle/run-staged-verification.sh <surface> [<surface> ...] [-- <extra-gradle-args>]
+  tools/gradle/run-staged-verification.sh [--fail-fast] <surface> [<surface> ...] [-- <extra-gradle-args>]
 
 Supported entrypoints:
   production-handoff
   desktop-install
+
+Options:
+  --fail-fast  Do not add wrapper-owned Gradle --continue.
 
 Extra Gradle args are forwarded for additional investigation flags such as
 --rerun-tasks or --stacktrace. Wrapper-owned runtime flags such as `--console`
@@ -33,11 +36,17 @@ is_supported_surface() {
 
 declare -a requested_surfaces=()
 declare -a extra_args=()
+fail_fast=false
 while [[ $# -gt 0 ]]; do
     if [[ "$1" == "--" ]]; then
         shift
         extra_args=("$@")
         break
+    fi
+    if [[ "$1" == "--fail-fast" ]]; then
+        fail_fast=true
+        shift
+        continue
     fi
     requested_surfaces+=("$1")
     shift
@@ -64,7 +73,13 @@ run_surface() {
         cd "$REPO_ROOT"
         export SALTMARCHER_GRADLE_STAGE="$surface"
         if [[ ${#extra_args[@]} -gt 0 ]]; then
-            "$REPO_ROOT/tools/gradle/run-observable-gradle.sh" "$surface" -- "${extra_args[@]}"
+            if [[ "$fail_fast" == true ]]; then
+                "$REPO_ROOT/tools/gradle/run-observable-gradle.sh" --fail-fast "$surface" -- "${extra_args[@]}"
+            else
+                "$REPO_ROOT/tools/gradle/run-observable-gradle.sh" "$surface" -- "${extra_args[@]}"
+            fi
+        elif [[ "$fail_fast" == true ]]; then
+            "$REPO_ROOT/tools/gradle/run-observable-gradle.sh" --fail-fast "$surface"
         else
             "$REPO_ROOT/tools/gradle/run-observable-gradle.sh" "$surface"
         fi
