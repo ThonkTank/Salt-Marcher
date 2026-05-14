@@ -129,9 +129,7 @@ internal fun Project.registerQualityConventionLifecycleTasks(
     }
 
     tasks.named("check") {
-        verificationLifecycleCatalog.surface("check")
-            .dependencyTaskNames
-            .forEach(::dependsOn)
+        setDependsOn(verificationLifecycleCatalog.surface("check").dependencyTaskNames)
     }
 
     tasks.withType<Pmd>().configureEach {
