@@ -7,7 +7,7 @@ readonly REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 usage() {
     cat <<'EOF'
 Usage:
-  tools/gradle/run-staged-verification.sh [--fail-fast] <surface> [<surface> ...] [-- <extra-gradle-args>]
+  tools/gradle/run-staged-verification.sh [--fail-fast] <surface> [-- <extra-gradle-args>]
 
 Supported entrypoints:
   production-handoff
@@ -57,14 +57,20 @@ if [[ ${#requested_surfaces[@]} -eq 0 ]]; then
     exit 64
 fi
 
+if [[ ${#requested_surfaces[@]} -gt 1 ]]; then
+    echo "[staged-verification] Expected exactly one entrypoint, got ${#requested_surfaces[@]}" >&2
+    usage >&2
+    exit 64
+fi
+
+if ! is_supported_surface "${requested_surfaces[0]}"; then
+    echo "[staged-verification] Unsupported entrypoint: ${requested_surfaces[0]}" >&2
+    usage >&2
+    exit 64
+fi
+
 run_surface() {
     local surface="$1"
-
-    if ! is_supported_surface "$surface"; then
-        echo "[staged-verification] Unsupported entrypoint: $surface" >&2
-        usage >&2
-        exit 64
-    fi
 
     echo "[staged-verification] Surface: $surface"
     echo
