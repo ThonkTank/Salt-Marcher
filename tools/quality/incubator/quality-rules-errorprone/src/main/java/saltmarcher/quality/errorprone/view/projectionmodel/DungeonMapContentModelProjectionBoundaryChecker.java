@@ -13,24 +13,15 @@ import saltmarcher.quality.errorprone.view.ViewSourceDescriptor;
 
 @BugPattern(
         name = "DungeonMapContentModelProjectionBoundary",
-        summary = "DungeonMapContentModel must consume runtime-context map projection carriers instead of raw dungeon editor or travel surface families.",
+        summary = "DungeonMapContentModel must own map facts-to-render preparation instead of consuming Travel render-ready projection carriers.",
         severity = BugPattern.SeverityLevel.ERROR)
 public final class DungeonMapContentModelProjectionBoundaryChecker extends BugChecker
         implements BugChecker.CompilationUnitTreeMatcher {
 
     private static final Set<String> FORBIDDEN_PREFIXES = Set.of(
-            "src.domain.dungeon.published.DungeonSnapshot",
-            "src.domain.dungeon.published.DungeonMapSnapshot",
-            "src.domain.dungeon.published.DungeonAreaSnapshot",
-            "src.domain.dungeon.published.DungeonBoundarySnapshot",
-            "src.domain.dungeon.published.DungeonFeatureSnapshot",
-            "src.domain.dungeon.published.DungeonEditorHandleSnapshot",
-            "src.domain.dungeon.published.DungeonEditorSurface",
-            "src.domain.dungeon.published.DungeonEditorMapSnapshot",
-            "src.domain.dungeon.published.DungeonEditorPreview",
-            "src.domain.dungeon.published.TravelDungeonSurface",
-            "src.domain.dungeon.published.TravelDungeonMapSnapshot",
-            "src.domain.dungeon.published.TravelDungeonPosition");
+            "src.domain.dungeon.published.TravelDungeonMapProjectionSnapshot",
+            "src.domain.dungeon.model.travel.model.session.helper.TravelDungeonMapProjectionHelper",
+            "src.domain.dungeon.model.travel.model.session.helper.TravelDungeonMapProjectionValueHelper");
 
     @Override
     public Description matchCompilationUnit(CompilationUnitTree tree, VisitorState state) {
@@ -51,9 +42,8 @@ public final class DungeonMapContentModelProjectionBoundaryChecker extends BugCh
             return Description.NO_MATCH;
         }
         return buildDescription(tree)
-                .setMessage("DungeonMapContentModel must read only from the runtime-context map projection carriers"
-                        + " (DungeonEditorMapProjectionSnapshot or TravelDungeonMapProjectionSnapshot)"
-                        + " instead of raw map surface families. Forbidden references: "
+                .setMessage("DungeonMapContentModel must derive Travel map render state from Dungeon read-side facts"
+                        + " instead of consuming a Travel render-ready projection carrier. Forbidden references: "
                         + String.join(", ", violations))
                 .build();
     }
