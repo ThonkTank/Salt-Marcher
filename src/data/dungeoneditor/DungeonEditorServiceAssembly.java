@@ -148,6 +148,7 @@ final class DungeonEditorServiceAssembly {
         }
     }
 
+    @SuppressWarnings("PMD.TooManyMethods")
     private static final class ApplicationDungeonEditorDungeonPort implements DungeonEditorDungeonPort {
 
         private DungeonMapCatalogResponse currentCatalog;
