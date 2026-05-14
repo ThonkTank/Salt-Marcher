@@ -299,12 +299,10 @@ Rules:
 - `creatures`: Reference Catalog Context.
 - `encounter`: Roster Truth Context.
 - `encountertable`: Reference Catalog Context.
-- `dungeon`: Authored World-Space Context.
-- `dungeoneditor`: Generation Policy Context.
-- `travel`: Generation Policy Context.
+- `dungeon`: Authored World-Space Context with editor-runtime and travel-runtime model families.
 - `sessionplanner`: Roster Truth Context.
 
-## Context Relationships <!-- mechanical-domain-dependencies: encounter=creatures,encountertable,party; dungeoneditor=dungeon; travel=dungeon,party; sessionplanner=encounter,party -->
+## Context Relationships <!-- mechanical-domain-dependencies: encounter=creatures,encountertable,party; sessionplanner=encounter,party -->
 
 - `party`: `Party Character State Context`; publishes roster, membership, XP,
   rest cadence, adventuring-day facts, and character travel-position facts to
@@ -319,17 +317,13 @@ Rules:
   snapshots through layered data access and publishes table summaries and
   weighted candidate rows.
 - `dungeon`: `Authored World-Space Context`; owns authored world-space truth
-  independently of party, creatures, and encounter. Runtime travel composition
-  belongs in `travel`, and runtime editor composition belongs in
-  `dungeoneditor`.
-- `dungeoneditor`: `Generation Policy Context`; consumes `dungeon` published
-  state through own ports to build one transient runtime editor workspace for
-  selection, tool policy, preview state, overlay state, projection level, and
-  pointer interpretation.
-- `travel`: `Generation Policy Context`; consumes `party` and `dungeon`
-  published state through own ports to build one transient runtime travel
-  workspace for traversal, overlay state, projection level, and overworld
-  fallback handling.
+  independently of party, creatures, and encounter. Runtime editor and travel
+  composition are dungeon model families over the same authored map facts.
+  Editor session state, preview, selection, overlay, projection level, pointer
+  interpretation, travel overlay, travel projection level, and overworld
+  fallback remain transient runtime state and never become authored dungeon
+  persistence. Party-owned travel position reaches dungeon runtime travel only
+  through outer repository adaptation, not by making party truth dungeon-owned.
 - `sessionplanner`: `Roster Truth Context`; consumes `party` and `encounter`
   published state through own ports to persist one session plan for participant
   references, encounter order, allocations, rest placement, placeholders, and

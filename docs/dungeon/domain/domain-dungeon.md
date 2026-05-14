@@ -11,13 +11,13 @@ invariants.
 Context Role: Authored World-Space Context
 Context Name: Dungeon
 
-- `dungeon` owns authored dungeon map truth
+- `dungeon` owns authored dungeon map truth plus transient runtime editor and
+  travel model families over that same map truth
 - `DungeonMap` is the aggregate root for one authored map
 - authored committed snapshots, authored operation results, authored selection
   inspectors, and raw travel surfaces are projections over the same authored
   dungeon write model
-- runtime editor-session policy and render-oriented display models are not
-  dungeon-owned output
+- render-oriented display models are not dungeon-owned output
 
 ## Published Language
 
@@ -45,10 +45,9 @@ Current state:
   corridor-side endpoints by stable topology ref
 - generic corridor-tool clicks are resolved into authored doors or authored
   corridor anchors before the aggregate commits a corridor mutation
-- runtime editor-session composition now lives in the separate
-  `dungeoneditor` context
+- runtime editor-session composition lives in `dungeon/model/editor/**`
 - runtime travel derives from committed authored truth plus party-owned runtime
-  state through the separate `travel` context
+  state in `dungeon/model/travel/**`
 - search and write-model persistence are separate outbound contracts
 
 Target state:
@@ -72,10 +71,9 @@ Derived state must not become a second source of truth. This includes:
 - render overlays
 - runtime party position
 
-Application-owned session state may exist outside the authored write model when
-it is not persisted as dungeon truth, but that state is owned by a separate
-generation-policy context such as `dungeoneditor` or `travel`, not by
-`dungeon`.
+Application-owned editor and travel session state may exist outside the
+authored write model when it is not persisted as dungeon truth. That state is
+owned by explicit dungeon model families, not by separate domain contexts.
 
 ## Aggregate Model
 
@@ -110,6 +108,8 @@ Active root boundaries:
 - `DungeonAuthoredApplicationService`
 - `DungeonCatalogApplicationService`
 - `DungeonTravelApplicationService`
+- `DungeonEditorApplicationService`
+- `DungeonTravelRuntimeApplicationService`
 
 ## Invariants
 
@@ -127,16 +127,17 @@ Active root boundaries:
 
 - `dungeon` publishes authored `DungeonSnapshot`,
   `DungeonOperationResult`, `DungeonInspectorSnapshot`, raw travel surfaces,
-  and travel-action results rooted in authored dungeon truth
-- `dungeoneditor` owns runtime editor-session composition that combines
-  authored dungeon facts with session-local selection, tool, preview, overlay,
-  and projection state
-- `travel` owns runtime session composition that combines those raw dungeon
-  facts with party-owned position state
-- `dungeon` does not own editor selection, tool, overlay, projection, preview,
-  or pointer-interpretation session state
-- `dungeon` does not own overlay settings, projection level, refresh cycle, or
-  overworld fallback state for the interactive travel workspace
+  editor runtime snapshots, travel runtime snapshots, and travel-action
+  results rooted in authored dungeon truth
+- `dungeon/model/editor/**` owns runtime editor-session composition that
+  combines authored dungeon facts with session-local selection, tool, preview,
+  overlay, projection level, and pointer interpretation
+- `dungeon/model/travel/**` owns runtime travel-session composition that
+  combines raw dungeon facts with party-owned position state
+- `dungeon` does not own party roster truth or persisted party travel position
+- `dungeon` does not publish render-ready cells, edges, labels, markers,
+  graph nodes, or graph links for the map canvas; those are view-owned
+  ContentModel projections
 
 ## References
 

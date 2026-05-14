@@ -40,13 +40,14 @@ Published dungeon carriers must not own:
 Application Service: DungeonAuthoredApplicationService
 Application Service: DungeonCatalogApplicationService
 Application Service: DungeonTravelApplicationService
+Application Service: DungeonEditorApplicationService
+Application Service: DungeonTravelRuntimeApplicationService
 
 `application/` coordinates authored dungeon load, mutate, save, search, and
 raw travel-surface queries through the domain-owned ports. The root
 application-service family maps authored dungeon truth and derived results
-into `published/` carriers without moving runtime editor-session policy,
-render ownership, or party-aware runtime travel session state into the
-dungeon model.
+into `published/` carriers while editor runtime and travel runtime stay in
+explicit dungeon model families. Render ownership stays in the view layer.
 
 ## Aggregate Model
 
@@ -80,14 +81,13 @@ Core invariants:
 - `dungeon` publishes authored `DungeonSnapshot`,
   `DungeonOperationResult`, `DungeonInspectorSnapshot`, raw travel surfaces,
   and travel-action results rooted in authored dungeon truth
-- `dungeoneditor` owns runtime editor-session composition that combines authored
-  dungeon facts with session-local selection, tool, preview, and overlay state
-- `travel` owns runtime session composition that combines those raw dungeon
-  facts with party-owned position state
-- `dungeon` does not own editor selection, tool, overlay, projection, preview,
-  or pointer-interpretation session state
-- `dungeon` does not own overlay settings, projection level, refresh cycle, or
-  overworld fallback state for the interactive travel workspace
+- `dungeon/model/editor/**` owns runtime editor-session composition that
+  combines authored dungeon facts with session-local selection, tool, preview,
+  overlay, projection level, and pointer interpretation
+- `dungeon/model/travel/**` owns runtime session composition that combines raw
+  dungeon facts with party-owned position state
+- `dungeon` does not own party roster truth or persisted party travel position
+- `dungeon` does not publish render-ready map-canvas primitives
 
 ## Consistency Model
 
