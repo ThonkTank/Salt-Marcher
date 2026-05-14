@@ -176,9 +176,13 @@ surface set:
   runs the canonical Styling enforcement surface.
 - `checkLayeringEnforcement`
   runs the canonical Layering enforcement surface.
+- `productionHarness`
+  runs all current non-documentation harness checks for production source,
+  compiled production classes, production topology, layer boundaries, role
+  placement, and generic architecture behavior.
 - `checkArchitecture`
-  runs the small public architecture aggregate over the canonical layer
-  surfaces plus the internal generic architecture owners.
+  runs the focused architecture investigation alias through
+  `productionHarness`.
 - `checkDocumentationEnforcement`
   runs the dedicated Markdown-backed architecture and enforcement-document
   coverage path through root documentation rules plus coalesced per-surface
@@ -197,23 +201,23 @@ published as role-local proof tasks. Build-harness bundle metadata must not
 require historic role-local `check*` names unless a separate explicit utility
 gate owns that name.
 `production-handoff` is the only public broad
-implementation-handoff aggregate above `checkArchitecture` and the
-documentation surface.
+implementation-handoff aggregate above `productionHarness`; the documentation
+surface stays separate.
 
 `production-handoff` is the public aggregate for production-code verification.
 It combines:
 
 - assemble
+- the production-code harness aggregate `productionHarness`
 - the quality-hygiene blocker path through PMD, OpenRewrite dry-run
   near-miss checks, SpotBugs, CPD, Lizard, compiled-artifact hygiene, and
   whole-program dead-code reachability
 - CKJM hotspot and regression reporting
-- the public `checkArchitecture` aggregate
 
 `check` remains the central local build-health aggregate. Its architecture
-coverage comes through the public `checkArchitecture` aggregate. `check` and
-`production-handoff` consume the same typed verification lifecycle catalog for
-shared root-owned hygiene and reporting owners.
+coverage comes through `productionHarness`. `check` and `production-handoff`
+consume the same typed verification lifecycle catalog for shared root-owned
+hygiene and reporting owners.
 `checkDocumentationEnforcement` remains intentionally separate so
 documentation-only work has a smaller proof route.
 

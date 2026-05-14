@@ -22,7 +22,7 @@ the single central aggregate for repository-owned blocking Gradle checks.
 `check` includes:
 
 - Java compilation through `compileJava`
-- the public architecture aggregate `checkArchitecture`
+- the production-code harness aggregate `productionHarness`
 - repository and resource policy checks
 - PMD source-smell detection through `pmdMain`
 - OpenRewrite dry-run near-miss checks through `checkRewriteNearMisses`
@@ -47,7 +47,7 @@ implementation-handoff route required by `AGENTS.md` for production-code
 changes. The wrapper is runtime-only: it forwards the canonical surface name to
 one same-named Gradle lifecycle task, and the verification core expands
 `production-handoff` directly through the same typed lifecycle catalog used by
-`check`: assemble, `checkArchitecture`, the quality-hygiene tool owners, and
+`check`: assemble, `productionHarness`, the quality-hygiene tool owners, and
 CKJM reporting inside Gradle.
 
 For check-only implementation work limited to concrete enforcement packages or
@@ -70,11 +70,11 @@ reported.
 Architecture-focused and handoff public entrypoints are:
 
 - `./gradlew checkArchitecture --console=plain`
-  Aggregates the public architecture surface through the canonical layer
-  surfaces, `architectureTest`, and `:build-harness:architectureCheck`.
+  Runs the focused architecture investigation alias through
+  `productionHarness`.
 - `tools/gradle/run-staged-verification.sh production-handoff`
   Aggregates the public production-code handoff route through assemble,
-  `checkArchitecture`, the quality-hygiene tool owners, and CKJM
+  `productionHarness`, the quality-hygiene tool owners, and CKJM
   reporting.
 - `./gradlew checkDocumentationEnforcement --console=plain`
   Aggregates focused Markdown-backed architecture and enforcement-document
@@ -115,9 +115,10 @@ as utility gates.
 Focused investigation entrypoints are `compileJava`, `pmdMain`,
 `pmdStrictMain`, `checkRewriteNearMisses`, `rewriteDryRun`, `spotbugsMain`,
 `cpdMain`, `lizardMain`, `ckjmMain`,
-repository/resource policy checks, `checkArchitecture`, the canonical
-`check*Enforcement` layer surfaces, and `checkDocumentationEnforcement`, each
-run through `./gradlew <task> --console=plain`.
+repository/resource policy checks, `productionHarness`, `checkArchitecture`,
+the canonical `check*Enforcement` layer surfaces, and
+`checkDocumentationEnforcement`, each run through
+`./gradlew <task> --console=plain`.
 
 ## Runtime Wrapper Policy
 

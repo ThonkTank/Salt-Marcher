@@ -138,12 +138,18 @@ internal fun Project.configureVerificationCore() {
             .forEach(::dependsOn)
     }
 
-    val checkArchitecture = tasks.register("checkArchitecture") {
+    val productionHarness = tasks.register("productionHarness") {
         group = LifecycleBasePlugin.VERIFICATION_GROUP
-        description = "Run the public architecture aggregate through the canonical layer surfaces and internal architecture owners."
+        description = "Run the production-code harness checks through canonical layer surfaces and internal architecture owners."
         dependsOn("architectureTest")
         dependsOn(gradle.includedBuild("build-harness").task(":architectureCheck"))
         publicVerificationSurfaceNames.forEach(::dependsOn)
+    }
+
+    tasks.register("checkArchitecture") {
+        group = LifecycleBasePlugin.VERIFICATION_GROUP
+        description = "Run the focused architecture investigation aggregate through the production harness."
+        dependsOn(productionHarness)
     }
 
     tasks.register("desktop-install") {

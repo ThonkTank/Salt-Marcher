@@ -68,6 +68,7 @@ private fun standardBroadBuildTaskNames(): Set<String> = setOf(
     "installDesktopApp",
     "installDist",
     "jar",
+    "productionHarness",
     "production-handoff",
     "run",
     "test"

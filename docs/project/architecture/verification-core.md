@@ -74,7 +74,8 @@ Mechanically enforced public verification surfaces are:
   `checkDomainEnforcement`, `checkDataEnforcement`,
   `checkShellEnforcement`, `checkBootstrapEnforcement`,
   `checkStylingEnforcement`, and `checkLayeringEnforcement`
-- public architecture aggregate: `checkArchitecture`
+- production-code harness aggregate: `productionHarness`
+- focused architecture investigation aggregate: `checkArchitecture`
 - focused documentation surface: `checkDocumentationEnforcement`
 - broad handoff surface: `production-handoff`
 
@@ -82,7 +83,7 @@ Mechanically enforced public verification surfaces are:
 verification surface. Root-owned hygiene and architecture tasks such as
 `checkNoDeadCode`, `architectureTest`, and
 `:build-harness:architectureCheck` remain internal dependencies behind
-`checkArchitecture`, `production-handoff`, and `check`; they are not focused
+`productionHarness`, `production-handoff`, and `check`; they are not focused
 enforcement bundles and not a second public API.
 
 The verification core owns the mapping from a public surface to its underlying
@@ -92,6 +93,13 @@ The shared root-owned hygiene owners behind `check` and `production-handoff`
 are declared in one typed verification lifecycle catalog. `check` and
 `production-handoff` MUST consume that catalog instead of attaching shared
 owners from separate plugin or root-build locations.
+All current harness checks that inspect production source, compiled production
+classes, production topology, layer boundaries, role placement, or generic
+architecture behavior and are not documentation checks belong behind
+`productionHarness`. `production-handoff` MUST depend on that lifecycle owner
+directly. `checkArchitecture` MAY remain as an investigation alias for the same
+non-documentation harness surface, but it MUST NOT be the canonical owner that
+makes production-code harness coverage enter `production-handoff`.
 
 ### 3. Bundle Owners
 
@@ -143,7 +151,8 @@ Allowed dependency direction is strictly inward:
 
 - runtime wrappers -> public verification surface names plus the
   `desktop-install` convenience entrypoint only
-- verification core -> public layer surfaces, `checkArchitecture`,
+- verification core -> public layer surfaces, `productionHarness`,
+  `checkArchitecture`,
   `production-handoff`, included-build entrypoints, and enforcement specs
 - bundle owners -> private rule tasks and typed proof wiring
 - rule implementation -> concrete source files, compiled classes, documentation
