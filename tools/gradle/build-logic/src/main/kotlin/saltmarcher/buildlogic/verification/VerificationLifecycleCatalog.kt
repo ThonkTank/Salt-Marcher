@@ -24,7 +24,7 @@ internal fun standardVerificationLifecycleCatalog(): VerificationLifecycleCatalo
     val sharedHygieneOwners = listOf(
         verificationLifecycleOwner("assemble", "assemble"),
         verificationLifecycleOwner("pmd-main", "pmdMain"),
-        verificationLifecycleOwner("openrewrite-near-miss", "checkRewriteNearMisses"),
+        verificationLifecycleOwner("near-miss-hygiene", "checkRewriteNearMisses"),
         verificationLifecycleOwner("spotbugs-main", "spotbugsMain"),
         verificationLifecycleOwner("cpd-main", "cpdMain"),
         verificationLifecycleOwner("lizard-main", "lizardMain"),

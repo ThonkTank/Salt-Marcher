@@ -6,8 +6,8 @@ import org.gradle.kotlin.dsl.the
 import saltmarcher.buildlogic.enforcement.BuildHarnessTaskKind
 import saltmarcher.buildlogic.enforcement.BuildHarnessTaskSpec
 import saltmarcher.buildlogic.enforcement.EnforcementBundlesExtension
-import saltmarcher.buildlogic.enforcement.VerificationSurfaceSpec
-import saltmarcher.buildlogic.enforcement.standardVerificationSurfaceCatalog
+import saltmarcher.buildlogic.enforcement.EnforcementDiagnosticSurfaceSpec
+import saltmarcher.buildlogic.enforcement.standardEnforcementDiagnosticSurfaceCatalog
 import saltmarcher.buildlogic.tasks.RepoVerificationMainTask
 
 plugins {
@@ -28,7 +28,7 @@ val repoRootDir = System.getProperty("saltmarcher.repoRootDir")
 val enforcementBundles = extensions.getByType(EnforcementBundlesExtension::class.java)
 val focusedEnforcementBundleMode = enforcementBundles.focusedEnforcementBundleMode
 val activeEnforcementBundleIds = enforcementBundles.activeEnforcementBundleIds
-val verificationSurfaceCatalog = standardVerificationSurfaceCatalog(enforcementBundles.catalog)
+val diagnosticSurfaceCatalog = standardEnforcementDiagnosticSurfaceCatalog(enforcementBundles.catalog)
 
 val sourceSets = the<SourceSetContainer>()
 
@@ -87,7 +87,7 @@ fun documentationVerificationArgs(
 }
 
 fun buildHarnessSurfaceTaskSpec(
-    surface: VerificationSurfaceSpec,
+    surface: EnforcementDiagnosticSurfaceSpec,
     kind: BuildHarnessTaskKind
 ): BuildHarnessTaskSpec? {
     val activeSurfaceBundleIds = surface.bundleIds.filter(activeEnforcementBundleIds::contains)
@@ -155,7 +155,7 @@ registerBuildHarnessTask(
     allBuildHarnessTopologyTaskSpec()
 )
 
-verificationSurfaceCatalog.surfacesInOrder.forEach { surface ->
+diagnosticSurfaceCatalog.surfacesInOrder.forEach { surface ->
     listOf(BuildHarnessTaskKind.TOPOLOGY, BuildHarnessTaskKind.DOCUMENTATION)
         .mapNotNull { kind -> buildHarnessSurfaceTaskSpec(surface, kind) }
         .forEach { taskSpec ->

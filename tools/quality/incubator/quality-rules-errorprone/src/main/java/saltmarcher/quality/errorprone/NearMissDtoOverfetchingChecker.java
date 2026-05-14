@@ -69,7 +69,7 @@ public final class NearMissDtoOverfetchingChecker extends BugChecker
                 Symbol symbol = ASTHelpers.getSymbol(invocation);
                 if (symbol instanceof Symbol.MethodSymbol methodSymbol
                         && invocation.getArguments().isEmpty()
-                        && !"getClass".contentEquals(methodSymbol.getSimpleName())
+                        && isJavaBeanAccessorName(methodSymbol.getSimpleName().toString())
                         && isInvocationOnParameter(invocation, parameterSymbol)) {
                     accessorNames.add(methodSymbol.getSimpleName().toString());
                 }
@@ -77,6 +77,11 @@ public final class NearMissDtoOverfetchingChecker extends BugChecker
             }
         }.scan(tree.getBody(), null);
         return accessorNames;
+    }
+
+    private static boolean isJavaBeanAccessorName(String methodName) {
+        return (methodName.startsWith("get") && methodName.length() > 3 && !"getClass".equals(methodName))
+                || (methodName.startsWith("is") && methodName.length() > 2);
     }
 
     private static boolean isInvocationOnParameter(MethodInvocationTree invocation, Symbol parameterSymbol) {

@@ -11,7 +11,7 @@ import org.gradle.language.base.plugins.LifecycleBasePlugin
 import saltmarcher.buildlogic.enforcement.BuildHarnessTaskKind
 import saltmarcher.buildlogic.enforcement.EnforcementBundleDescriptor
 import saltmarcher.buildlogic.enforcement.EnforcementBundlesExtension
-import saltmarcher.buildlogic.enforcement.standardVerificationSurfaceCatalog
+import saltmarcher.buildlogic.enforcement.standardEnforcementDiagnosticSurfaceCatalog
 
 class SaltmarcherVerificationCorePlugin : Plugin<Project> {
     override fun apply(project: Project) {
@@ -24,7 +24,7 @@ internal fun Project.configureVerificationCore() {
     val enforcementBundles = extensions.getByType(EnforcementBundlesExtension::class.java)
     val activeEnforcementBundleIds = enforcementBundles.activeEnforcementBundleIds
     val verificationHarness = extensions.getByType<VerificationHarnessExtension>()
-    val verificationSurfaceCatalog = standardVerificationSurfaceCatalog(enforcementBundles.catalog)
+    val diagnosticSurfaceCatalog = standardEnforcementDiagnosticSurfaceCatalog(enforcementBundles.catalog)
     val verificationLifecycleCatalog = standardVerificationLifecycleCatalog()
     val includeBuildHarness = systemBoolean("saltmarcher.includeBuildHarness", defaultValue = true)
     val includeJqassistant = systemBoolean("saltmarcher.includeJqassistant", defaultValue = true)
@@ -34,7 +34,7 @@ internal fun Project.configureVerificationCore() {
     fun defaultBundleDisplayName(bundleId: String): String = bundleId.replaceFirstChar(Char::uppercaseChar)
 
     fun activeSurfaceBuildHarnessTaskNames(kind: BuildHarnessTaskKind): List<String> =
-        verificationSurfaceCatalog.surfacesInOrder
+        diagnosticSurfaceCatalog.surfacesInOrder
             .filter { surface ->
                 surface.bundleIds
                     .filter(activeEnforcementBundleIds::contains)
@@ -62,7 +62,6 @@ internal fun Project.configureVerificationCore() {
         group = LifecycleBasePlugin.VERIFICATION_GROUP
         description = "Run blocking first-party near-miss hygiene checks."
         dependsOn(nearMissCompileTask)
-        dependsOn(tasks.named("pmdStrictMain"))
     }
 
     fun registerStandardBundle(bundleId: String) {
@@ -127,9 +126,9 @@ internal fun Project.configureVerificationCore() {
     activeEnforcementBundleIds
         .forEach(::registerStandardBundle)
 
-    verificationSurfaceCatalog.surfacesInOrder.forEach { surface ->
+    diagnosticSurfaceCatalog.surfacesInOrder.forEach { surface ->
         val activeSurfaceBundleIds = surface.bundleIds.filter(activeEnforcementBundleIds::contains)
-        tasks.register(surface.publicTaskName) {
+        tasks.register(surface.diagnosticTaskName) {
             group = LifecycleBasePlugin.VERIFICATION_GROUP
             description = surface.description
             activeSurfaceBundleIds

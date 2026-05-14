@@ -5,7 +5,7 @@ import org.gradle.api.Plugin
 import org.gradle.api.initialization.Settings
 import saltmarcher.buildlogic.enforcement.EnforcementBundleDescriptor
 import saltmarcher.buildlogic.enforcement.standardEnforcementBundleCatalog
-import saltmarcher.buildlogic.enforcement.standardVerificationSurfaceCatalog
+import saltmarcher.buildlogic.enforcement.standardEnforcementDiagnosticSurfaceCatalog
 
 class SaltmarcherRootSettingsPlugin : Plugin<Settings> {
     override fun apply(settings: Settings) {
@@ -21,10 +21,10 @@ class SaltmarcherRootSettingsPlugin : Plugin<Settings> {
             .map { taskName -> taskName.substringAfterLast(":") }
             .toSet()
         val bundleCatalog = standardEnforcementBundleCatalog()
-        val publicVerificationSurfaceCatalog = standardVerificationSurfaceCatalog(bundleCatalog)
+        val diagnosticSurfaceCatalog = standardEnforcementDiagnosticSurfaceCatalog(bundleCatalog)
         val broadBuildTaskNames = standardBroadBuildTaskNames()
         val internalSelectorTaskToBundleId = bundleCatalog.selectorTaskToBundleId
-        val publicSurfaceTaskNames = publicVerificationSurfaceCatalog.taskToBundleIds.keys
+        val diagnosticSurfaceTaskNames = diagnosticSurfaceCatalog.diagnosticTaskToBundleIds.keys
         val discoveryBuildRequest = requestedTaskNames.isEmpty() ||
             requestedTaskNames.any(::isDiscoveryTaskName)
         val allBundleVerificationRequest = discoveryBuildRequest ||
@@ -33,7 +33,7 @@ class SaltmarcherRootSettingsPlugin : Plugin<Settings> {
             requestedTaskNames.any(::isFocusedCompileTaskName)
         val requestedBundleIds = requestedTaskNames
             .flatMap { taskName ->
-                publicVerificationSurfaceCatalog.taskToBundleIds[taskName]
+                diagnosticSurfaceCatalog.diagnosticTaskToBundleIds[taskName]
                     ?: internalSelectorTaskToBundleId[taskName]?.let(::listOf)
                     ?: emptyList()
             }
@@ -43,7 +43,7 @@ class SaltmarcherRootSettingsPlugin : Plugin<Settings> {
             requestedTaskNames.none { taskName -> taskName in broadBuildTaskNames } &&
             requestedTaskNames.all { taskName ->
                 taskName in internalSelectorTaskToBundleId.keys ||
-                    taskName in publicSurfaceTaskNames
+                    taskName in diagnosticSurfaceTaskNames
         }
         val activeEnforcementBundleIds = if (focusedEnforcementBundleMode) {
             bundleCatalog.expandedBundleIds(requestedBundleIds)
@@ -113,11 +113,12 @@ private fun verificationRequestScope(
     val broadProductionRequest = requestedTaskNames.any(::isAllBundleVerificationTaskName)
     val documentationRequest = requestedTaskNames.any(::isDocumentationTaskName)
     val focusedEnforcementRequest = requestedTaskNames.any(::isFocusedEnforcementTaskName)
-    val pmdOrRewriteRequest = requestedTaskNames.any(::isQualityRulesTaskName)
+    val sourceHygieneRequest = requestedTaskNames.any(::isQualityRulesTaskName)
     val descriptorBackedRequest = broadProductionRequest || focusedEnforcementRequest
     val descriptorEngineSources = activeDescriptors.takeIf { descriptorBackedRequest }.orEmpty()
     val errorProneRequest = broadProductionRequest ||
         descriptorEngineSources.any { descriptor -> descriptor.errorProneCheckers.isNotEmpty() } ||
+        requestedTaskNames.any(::isNearMissTaskName) ||
         requestedTaskNames.any(::isFocusedCompileTaskName)
     val buildHarnessRequest = broadProductionRequest ||
         documentationRequest ||
@@ -129,7 +130,7 @@ private fun verificationRequestScope(
 
     return VerificationRequestScope(
         includeBuildHarness = discoveryBuildRequest || buildHarnessRequest,
-        includeQualityRules = discoveryBuildRequest || broadProductionRequest || pmdOrRewriteRequest,
+        includeQualityRules = discoveryBuildRequest || broadProductionRequest || sourceHygieneRequest,
         includeQualityRulesErrorProne = discoveryBuildRequest || errorProneRequest,
         includeJqassistant = discoveryBuildRequest || jqassistantRequest,
         discoveryBuildRequest = discoveryBuildRequest
@@ -161,7 +162,11 @@ private fun isFocusedEnforcementTaskName(taskName: String): Boolean =
 
 private fun isQualityRulesTaskName(taskName: String): Boolean =
     taskName == "pmdMain" ||
-        taskName == "pmdStrictMain"
+        taskName == "pmdStrictMain" ||
+        isNearMissTaskName(taskName)
+
+private fun isNearMissTaskName(taskName: String): Boolean =
+    taskName == "checkRewriteNearMisses"
 
 private fun isFocusedCompileTaskName(taskName: String): Boolean =
     taskName.startsWith("compileFocusedVerification") && taskName.endsWith("Java")

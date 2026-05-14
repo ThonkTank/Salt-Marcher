@@ -1,8 +1,8 @@
 package saltmarcher.buildlogic.enforcement
 
-data class VerificationSurfaceSpec(
+data class EnforcementDiagnosticSurfaceSpec(
     val surfaceId: String,
-    val publicTaskName: String,
+    val diagnosticTaskName: String,
     val description: String,
     val bundleIds: List<String>
 ) {
@@ -15,42 +15,42 @@ data class VerificationSurfaceSpec(
     }
 }
 
-data class VerificationSurfaceCatalog(
-    val specsById: Map<String, VerificationSurfaceSpec>
+data class EnforcementDiagnosticSurfaceCatalog(
+    val specsById: Map<String, EnforcementDiagnosticSurfaceSpec>
 ) {
-    val surfacesInOrder: List<VerificationSurfaceSpec> = specsById.values.toList()
+    val surfacesInOrder: List<EnforcementDiagnosticSurfaceSpec> = specsById.values.toList()
 
-    val taskToBundleIds: Map<String, List<String>> = surfacesInOrder.associate { spec ->
-        spec.publicTaskName to spec.bundleIds
+    val diagnosticTaskToBundleIds: Map<String, List<String>> = surfacesInOrder.associate { spec ->
+        spec.diagnosticTaskName to spec.bundleIds
     }
 
-    fun surface(surfaceId: String): VerificationSurfaceSpec = specsById[surfaceId]
-        ?: error("Unknown verification surface '$surfaceId'.")
+    fun surface(surfaceId: String): EnforcementDiagnosticSurfaceSpec = specsById[surfaceId]
+        ?: error("Unknown enforcement diagnostic surface '$surfaceId'.")
 
-    fun surfacesForBundle(bundleId: String): List<VerificationSurfaceSpec> = surfacesInOrder
+    fun surfacesForBundle(bundleId: String): List<EnforcementDiagnosticSurfaceSpec> = surfacesInOrder
         .filter { spec -> bundleId in spec.bundleIds }
 }
 
-private fun verificationSurface(
+private fun enforcementDiagnosticSurface(
     surfaceId: String,
-    publicTaskName: String,
+    diagnosticTaskName: String,
     description: String,
     bundleIds: List<String>
-): VerificationSurfaceSpec = VerificationSurfaceSpec(
+): EnforcementDiagnosticSurfaceSpec = EnforcementDiagnosticSurfaceSpec(
     surfaceId = surfaceId,
-    publicTaskName = publicTaskName,
+    diagnosticTaskName = diagnosticTaskName,
     description = description,
     bundleIds = bundleIds
 )
 
-fun standardVerificationSurfaceCatalog(
+fun standardEnforcementDiagnosticSurfaceCatalog(
     bundleCatalog: EnforcementBundleCatalog = standardEnforcementBundleCatalog()
-): VerificationSurfaceCatalog {
+): EnforcementDiagnosticSurfaceCatalog {
     val specs = listOf(
-        verificationSurface(
+        enforcementDiagnosticSurface(
             surfaceId = "view",
-            publicTaskName = "checkViewEnforcement",
-            description = "Run the canonical View enforcement surface.",
+            diagnosticTaskName = "checkViewEnforcement",
+            description = "Run the focused View enforcement diagnostic surface.",
             bundleIds = listOf(
                 "viewLayer",
                 "view",
@@ -62,34 +62,34 @@ fun standardVerificationSurfaceCatalog(
                 "viewIntentHandler"
             )
         ),
-        verificationSurface(
+        enforcementDiagnosticSurface(
             surfaceId = "styling",
-            publicTaskName = "checkStylingEnforcement",
-            description = "Run the canonical Styling enforcement surface.",
+            diagnosticTaskName = "checkStylingEnforcement",
+            description = "Run the focused Styling enforcement diagnostic surface.",
             bundleIds = listOf("stylingLayer", "stylingView")
         ),
-        verificationSurface(
+        enforcementDiagnosticSurface(
             surfaceId = "shell",
-            publicTaskName = "checkShellEnforcement",
-            description = "Run the canonical Shell enforcement surface.",
+            diagnosticTaskName = "checkShellEnforcement",
+            description = "Run the focused Shell enforcement diagnostic surface.",
             bundleIds = listOf("shellAppShell", "shellLayer")
         ),
-        verificationSurface(
+        enforcementDiagnosticSurface(
             surfaceId = "bootstrap",
-            publicTaskName = "checkBootstrapEnforcement",
-            description = "Run the canonical Bootstrap enforcement surface.",
+            diagnosticTaskName = "checkBootstrapEnforcement",
+            description = "Run the focused Bootstrap enforcement diagnostic surface.",
             bundleIds = listOf("bootstrapAppBootstrap", "bootstrapLayer")
         ),
-        verificationSurface(
+        enforcementDiagnosticSurface(
             surfaceId = "layering",
-            publicTaskName = "checkLayeringEnforcement",
-            description = "Run the canonical Layering enforcement surface.",
+            diagnosticTaskName = "checkLayeringEnforcement",
+            description = "Run the focused Layering enforcement diagnostic surface.",
             bundleIds = listOf("layeringArchitecture")
         ),
-        verificationSurface(
+        enforcementDiagnosticSurface(
             surfaceId = "domain",
-            publicTaskName = "checkDomainEnforcement",
-            description = "Run the canonical Domain enforcement surface.",
+            diagnosticTaskName = "checkDomainEnforcement",
+            description = "Run the focused Domain enforcement diagnostic surface.",
             bundleIds = listOf(
                 "domainContext",
                 "domainLayer",
@@ -103,10 +103,10 @@ fun standardVerificationSurfaceCatalog(
                 "domainRepository"
             )
         ),
-        verificationSurface(
+        enforcementDiagnosticSurface(
             surfaceId = "data",
-            publicTaskName = "checkDataEnforcement",
-            description = "Run the canonical Data enforcement surface.",
+            diagnosticTaskName = "checkDataEnforcement",
+            description = "Run the focused Data enforcement diagnostic surface.",
             bundleIds = listOf(
                 "dataLayer",
                 "dataModel",
@@ -123,15 +123,15 @@ fun standardVerificationSurfaceCatalog(
     val bundleIds = bundleCatalog.descriptorsById.keys
     specs.forEach { spec ->
         require(spec.bundleIds.isNotEmpty()) {
-            "Verification surface '${spec.surfaceId}' must declare at least one bundle."
+            "Enforcement diagnostic surface '${spec.surfaceId}' must declare at least one bundle."
         }
         val unknownBundleIds = spec.bundleIds.filterNot(bundleIds::contains)
         require(unknownBundleIds.isEmpty()) {
-            "Verification surface '${spec.surfaceId}' references unknown bundle ids: ${unknownBundleIds.joinToString()}."
+            "Enforcement diagnostic surface '${spec.surfaceId}' references unknown bundle ids: ${unknownBundleIds.joinToString()}."
         }
     }
 
-    return VerificationSurfaceCatalog(
-        specs.associateBy(VerificationSurfaceSpec::surfaceId)
+    return EnforcementDiagnosticSurfaceCatalog(
+        specs.associateBy(EnforcementDiagnosticSurfaceSpec::surfaceId)
     )
 }

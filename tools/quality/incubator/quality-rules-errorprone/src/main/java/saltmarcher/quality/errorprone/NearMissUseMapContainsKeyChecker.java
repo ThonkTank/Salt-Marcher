@@ -7,7 +7,6 @@ import com.google.errorprone.matchers.Description;
 import com.google.errorprone.util.ASTHelpers;
 import com.sun.source.tree.BinaryTree;
 import com.sun.source.tree.ExpressionTree;
-import com.sun.source.tree.Kind;
 import com.sun.source.tree.MethodInvocationTree;
 import com.sun.source.tree.Tree;
 import com.sun.tools.javac.code.Symbol;
@@ -22,7 +21,7 @@ public final class NearMissUseMapContainsKeyChecker extends BugChecker
 
     @Override
     public Description matchBinary(BinaryTree tree, VisitorState state) {
-        if (tree.getKind() != Kind.EQUAL_TO && tree.getKind() != Kind.NOT_EQUAL_TO) {
+        if (tree.getKind() != Tree.Kind.EQUAL_TO && tree.getKind() != Tree.Kind.NOT_EQUAL_TO) {
             return Description.NO_MATCH;
         }
         if (!isNullLiteral(tree.getLeftOperand()) && !isNullLiteral(tree.getRightOperand())) {
@@ -40,7 +39,7 @@ public final class NearMissUseMapContainsKeyChecker extends BugChecker
     }
 
     private static boolean isNullLiteral(Tree tree) {
-        return tree != null && tree.getKind() == Kind.NULL_LITERAL;
+        return tree != null && tree.getKind() == Tree.Kind.NULL_LITERAL;
     }
 
     private static boolean isMapGetInvocation(Tree tree, VisitorState state) {

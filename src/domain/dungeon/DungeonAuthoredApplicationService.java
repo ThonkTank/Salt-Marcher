@@ -160,7 +160,7 @@ public final class DungeonAuthoredApplicationService {
     }
 
     private static DungeonClusterBoundaryKind domainBoundaryKind(DungeonBoundaryKind kind) {
-        return kind != null && kind.isDoor() ? DungeonClusterBoundaryKind.DOOR : DungeonClusterBoundaryKind.WALL;
+        return kind == DungeonBoundaryKind.DOOR ? DungeonClusterBoundaryKind.DOOR : DungeonClusterBoundaryKind.WALL;
     }
 
     private static DungeonCorridorEndpoint corridorEndpoint(DungeonEditorOperation.CorridorEndpoint endpoint) {
