@@ -199,7 +199,7 @@ documentation surface.
 `production-handoff` is the public aggregate for production-code verification.
 It combines:
 
-- assemble
+- assemble and `test`
 - the quality-hygiene blocker path through PMD, OpenRewrite dry-run
   near-miss checks, SpotBugs, CPD, Lizard, compiled-artifact hygiene, and
   whole-program dead-code reachability

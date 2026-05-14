@@ -73,7 +73,7 @@ Architecture-focused and handoff public entrypoints are:
   Aggregates the public architecture surface through the canonical layer
   surfaces, `architectureTest`, and `:build-harness:architectureCheck`.
 - `tools/gradle/run-staged-verification.sh production-handoff`
-  Aggregates the public production-code handoff route through assemble,
+  Aggregates the public production-code handoff route through assemble, `test`,
   `checkArchitecture`, the quality-hygiene tool owners, and CKJM
   reporting.
 - `./gradlew checkDocumentationEnforcement --console=plain`

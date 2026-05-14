@@ -47,10 +47,11 @@ Any work on covered surfaces must use that skill first.
 ## Specialist Review Repertoire
 
 SaltMarcher uses the global review specialists as reusable review repertoire
-instead of copying them into the repository. These skills are optional
-specialist lenses that can accompany the mandatory repo-owned
-`adversarial-review`; they do not replace it, create new gates, or change the
-verification route required by `AGENTS.md`.
+instead of copying them into the repository. These skills are conditional
+read-only specialist lenses routed by `AGENTS.md` when a pass carries matching
+performance, code-quality, or architectural risk. They accompany the mandatory
+repo-owned `adversarial-review`; they do not replace it, create new gates, or
+change the verification route required by `AGENTS.md`.
 
 - Use `/home/aaron/.codex/skills/local/claude-agents/review-performance/`
   when a change touches hot paths, rendering, startup, storage or network I/O,
