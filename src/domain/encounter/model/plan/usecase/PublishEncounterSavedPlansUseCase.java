@@ -1,4 +1,4 @@
-package src.domain.encounter.application;
+package src.domain.encounter.model.plan.usecase;
 
 import org.jspecify.annotations.Nullable;
 import src.domain.encounter.model.plan.model.SavedEncounterPlansLoadResult;

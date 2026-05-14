@@ -1,4 +1,4 @@
-package src.domain.encounter.application;
+package src.domain.encounter.model.session.usecase;
 
 import java.util.List;
 import org.jspecify.annotations.Nullable;

@@ -1,4 +1,4 @@
-package src.domain.encounter.application;
+package src.domain.encounter.model.session.usecase;
 
 import org.jspecify.annotations.Nullable;
 import src.domain.encounter.model.generation.model.EncounterGenerationInputs;
