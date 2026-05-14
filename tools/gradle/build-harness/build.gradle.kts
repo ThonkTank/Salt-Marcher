@@ -107,7 +107,6 @@ fun buildHarnessSurfaceTaskSpec(
     }
 
     return BuildHarnessTaskSpec(
-        taskName = surface.buildHarnessTaskName(kind),
         kind = kind,
         ruleClasses = taskSpecs.flatMap(BuildHarnessTaskSpec::ruleClasses).distinct(),
         coverageSpecIds = taskSpecs.flatMap(BuildHarnessTaskSpec::coverageSpecIds).distinct()
@@ -115,14 +114,14 @@ fun buildHarnessSurfaceTaskSpec(
 }
 
 fun registerBuildHarnessTask(
+    taskName: String,
     bundleLabel: String,
     taskSpec: BuildHarnessTaskSpec
 ) {
-    val taskName = taskSpec.taskName
     val isDocumentationTask = taskSpec.kind == BuildHarnessTaskKind.DOCUMENTATION
     val description = when {
         isDocumentationTask -> "Run only the $bundleLabel enforcement documentation-coverage rules."
-        taskName.endsWith("TopologyCheck") -> "Run only the $bundleLabel build-harness topology rules."
+        taskSpec.kind == BuildHarnessTaskKind.TOPOLOGY -> "Run only the $bundleLabel build-harness topology rules."
         else -> "Run only the focused $bundleLabel build-harness rules."
     }
 
@@ -152,7 +151,11 @@ verificationSurfaceCatalog.surfacesInOrder.forEach { surface ->
     listOf(BuildHarnessTaskKind.TOPOLOGY, BuildHarnessTaskKind.DOCUMENTATION)
         .mapNotNull { kind -> buildHarnessSurfaceTaskSpec(surface, kind) }
         .forEach { taskSpec ->
-            registerBuildHarnessTask("${humanizeBundleLabel(surface.surfaceId)} surface", taskSpec)
+            registerBuildHarnessTask(
+                surface.buildHarnessTaskName(taskSpec.kind),
+                "${humanizeBundleLabel(surface.surfaceId)} surface",
+                taskSpec
+            )
         }
 }
 
@@ -162,9 +165,9 @@ if (!focusedEnforcementBundleMode) {
         "saltmarcher.architecture.documentation.domain.DomainDocumentationRules"
     )
     registerBuildHarnessTask(
+        "documentationEnforcementCheck",
         "documentation",
         BuildHarnessTaskSpec(
-            taskName = "documentationEnforcementCheck",
             kind = BuildHarnessTaskKind.DOCUMENTATION,
             ruleClasses = documentationRootRuleClasses + activeBuildHarnessDocumentationRuleClasses(),
             coverageSpecIds = activeBuildHarnessDocumentationCoverageSpecIds()

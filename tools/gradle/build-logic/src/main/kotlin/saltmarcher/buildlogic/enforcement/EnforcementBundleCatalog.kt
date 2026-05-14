@@ -38,7 +38,6 @@ enum class BuildHarnessTaskKind {
 }
 
 data class BuildHarnessTaskSpec(
-    val taskName: String,
     val kind: BuildHarnessTaskKind,
     val ruleClasses: List<String> = emptyList(),
     val coverageSpecIds: List<String> = emptyList()
@@ -66,9 +65,6 @@ data class EnforcementBundleDescriptor(
     fun requiresFocusedCompile(): Boolean =
         errorProneCheckers.isNotEmpty() || archunit != null
 
-    fun buildHarnessTask(taskName: String): BuildHarnessTaskSpec = buildHarnessTasks
-        .firstOrNull { task -> task.taskName == taskName }
-        ?: error("Unknown build-harness task '$taskName' for enforcement bundle '$bundleId'.")
 }
 
 data class EnforcementBundleCatalog(
@@ -176,15 +172,12 @@ private fun EnforcementBundleDescriptor.validated(): EnforcementBundleDescriptor
         "Enforcement bundle '$bundleId' must declare selectorTaskDescription."
     }
     buildHarnessTasks.forEach { task ->
-        require(task.taskName.isNotBlank()) {
-            "Enforcement bundle '$bundleId' declares a build-harness task with a blank taskName."
-        }
         when (task.kind) {
             BuildHarnessTaskKind.TOPOLOGY -> require(task.ruleClasses.isNotEmpty()) {
-                "Enforcement bundle '$bundleId' topology task '${task.taskName}' must declare ruleClasses."
+                "Enforcement bundle '$bundleId' topology build-harness spec must declare ruleClasses."
             }
             BuildHarnessTaskKind.DOCUMENTATION -> require(task.ruleClasses.isNotEmpty() || task.coverageSpecIds.isNotEmpty()) {
-                "Enforcement bundle '$bundleId' documentation task '${task.taskName}' must declare ruleClasses or coverageSpecIds."
+                "Enforcement bundle '$bundleId' documentation build-harness spec must declare ruleClasses or coverageSpecIds."
             }
         }
     }
