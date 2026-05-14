@@ -34,10 +34,6 @@ abstract class AbstractJqassistantTask : DefaultTask() {
 
     @get:InputDirectory
     @get:PathSensitive(PathSensitivity.RELATIVE)
-    abstract val rulesDirectory: DirectoryProperty
-
-    @get:InputDirectory
-    @get:PathSensitive(PathSensitivity.RELATIVE)
     abstract val mainClassesDirectory: DirectoryProperty
 
     @get:InputFiles
@@ -47,16 +43,28 @@ abstract class AbstractJqassistantTask : DefaultTask() {
     @get:Input
     abstract val jvmOpens: Property<String>
 
-    @get:Input
-    abstract val ruleGroups: ListProperty<String>
-
     @get:Internal
     abstract val projectRoot: DirectoryProperty
 
     @get:Inject
     protected abstract val execOperations: ExecOperations
 
-    protected fun materializeConfig(storeRootOverride: File, reportRootOverride: File?): File {
+    protected fun materializeScanConfig(storeRootOverride: File): File =
+        materializeConfig(storeRootOverride, null, null, emptyList())
+
+    protected fun materializeAnalyzeConfig(
+        storeRootOverride: File,
+        reportRootOverride: File,
+        rulesDirectory: File,
+        ruleGroups: List<String>
+    ): File = materializeConfig(storeRootOverride, reportRootOverride, rulesDirectory, ruleGroups)
+
+    private fun materializeConfig(
+        storeRootOverride: File,
+        reportRootOverride: File?,
+        rulesDirectoryOverride: File?,
+        ruleGroupsOverride: List<String>
+    ): File {
         val projectRootPath = projectRoot.get().asFile.toPath()
         val scanEntries = buildList {
             add("java:classpath::${projectRootPath.relativeInvariantPath(mainClassesDirectory.get().asFile)}")
@@ -79,22 +87,24 @@ abstract class AbstractJqassistantTask : DefaultTask() {
                 appendLine("    include:")
                 appendLine("      files:")
                 scanEntries.forEach { entry -> appendLine("        - $entry") }
-                appendLine("  analyze:")
-                appendLine("    rule:")
-                appendLine("      directory: ${projectRootPath.relativeInvariantPath(rulesDirectory.get().asFile)}")
-                appendLine("    baseline:")
-                appendLine("      enabled: false")
-                appendLine("    report:")
-                appendLine("      continue-on-failure: false")
-                appendLine("      fail-on-severity: BLOCKER")
-                appendLine("      properties:")
-                appendLine("        xml.report.file: ${reportRoot.resolve("jqassistant-report.xml").absoluteInvariantPath()}")
-                appendLine("        xml.report.transform-to-html: false")
-                appendLine("        junit.report.directory: ${reportRoot.resolve("junit").absoluteInvariantPath()}")
-                appendLine("        junit.report.failureSeverity: BLOCKER")
-                appendLine("        junit.report.errorSeverity: BLOCKER")
-                appendLine("    groups:")
-                ruleGroups.get().forEach { group -> appendLine("      - $group") }
+                if (rulesDirectoryOverride != null) {
+                    appendLine("  analyze:")
+                    appendLine("    rule:")
+                    appendLine("      directory: ${projectRootPath.relativeInvariantPath(rulesDirectoryOverride)}")
+                    appendLine("    baseline:")
+                    appendLine("      enabled: false")
+                    appendLine("    report:")
+                    appendLine("      continue-on-failure: false")
+                    appendLine("      fail-on-severity: BLOCKER")
+                    appendLine("      properties:")
+                    appendLine("        xml.report.file: ${reportRoot.resolve("jqassistant-report.xml").absoluteInvariantPath()}")
+                    appendLine("        xml.report.transform-to-html: false")
+                    appendLine("        junit.report.directory: ${reportRoot.resolve("junit").absoluteInvariantPath()}")
+                    appendLine("        junit.report.failureSeverity: BLOCKER")
+                    appendLine("        junit.report.errorSeverity: BLOCKER")
+                    appendLine("    groups:")
+                    ruleGroupsOverride.forEach { group -> appendLine("      - $group") }
+                }
             }
         )
         return generatedConfig.toFile()
@@ -128,7 +138,7 @@ abstract class JqassistantScanTask : AbstractJqassistantTask() {
     fun scan() {
         val storeDir = storeDirectory.get().asFile
         Files.createDirectories(storeDir.toPath().parent)
-        val configFile = materializeConfig(storeDir, null)
+        val configFile = materializeScanConfig(storeDir)
         runJqassistant(configFile, "scan")
     }
 }
@@ -139,6 +149,13 @@ abstract class JqassistantAnalyzeTask : AbstractJqassistantTask() {
     @get:InputDirectory
     @get:PathSensitive(PathSensitivity.RELATIVE)
     abstract val storeDirectory: DirectoryProperty
+
+    @get:InputDirectory
+    @get:PathSensitive(PathSensitivity.RELATIVE)
+    abstract val rulesDirectory: DirectoryProperty
+
+    @get:Input
+    abstract val ruleGroups: ListProperty<String>
 
     @get:OutputDirectory
     abstract val reportsDirectory: DirectoryProperty
@@ -152,7 +169,12 @@ abstract class JqassistantAnalyzeTask : AbstractJqassistantTask() {
                 .forEach(Files::deleteIfExists)
         }
         Files.createDirectories(reportsDir.toPath().resolve("junit"))
-        val configFile = materializeConfig(storeDirectory.get().asFile, reportsDir)
+        val configFile = materializeAnalyzeConfig(
+            storeDirectory.get().asFile,
+            reportsDir,
+            rulesDirectory.get().asFile,
+            ruleGroups.get()
+        )
         runJqassistant(configFile, "analyze")
     }
 }

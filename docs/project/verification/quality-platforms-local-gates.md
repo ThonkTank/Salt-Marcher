@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-05-13
+Last Reviewed: 2026-05-14
 Source of Truth: Detailed local gate inventory for SaltMarcher quality
 platforms.
 
@@ -159,6 +159,10 @@ ArchUnit suites, whole-program dead-code reachability stays with
 `checkNoDeadCode`, and jQAssistant owns the graph diagnostics for relay stacks,
 reuse direction, and role or feature sprawl behind the focused architecture
 surfaces.
+jQAssistant scan tasks own the classpath and source-root inputs that build the
+local graph store. Analyze tasks own rule directories, analyze groups, and
+reports, so rule-only changes rerun analysis against the existing local store
+instead of forcing a new scan.
 
 Focused PMD, SpotBugs, CPD, Lizard, and CKJM entrypoints must stay independent
 of the closed-world View topology owner behind `checkViewEnforcement`; they may

@@ -122,6 +122,7 @@ public record SourceFile(
             case "data" -> {
                 if (segments.size() == 4) {
                     yield isFeatureFileName(extractFeatureName(segments), fileName, "ServiceContribution")
+                            || isFeatureFileName(extractFeatureName(segments), fileName, "ServiceAssembly")
                             ? SourceKind.DATA_ROOT
                             : SourceKind.UNKNOWN;
                 }

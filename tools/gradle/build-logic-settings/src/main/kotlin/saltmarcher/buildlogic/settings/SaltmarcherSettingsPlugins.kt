@@ -3,7 +3,10 @@ package saltmarcher.buildlogic.settings
 import java.io.File
 import org.gradle.api.Plugin
 import org.gradle.api.initialization.Settings
+import saltmarcher.buildlogic.enforcement.BuildHarnessTaskKind
+import saltmarcher.buildlogic.enforcement.EnforcementBundleCatalog
 import saltmarcher.buildlogic.enforcement.EnforcementBundleDescriptor
+import saltmarcher.buildlogic.enforcement.EnforcementDiagnosticSurfaceCatalog
 import saltmarcher.buildlogic.enforcement.standardEnforcementBundleCatalog
 import saltmarcher.buildlogic.enforcement.standardEnforcementDiagnosticSurfaceCatalog
 
@@ -25,6 +28,7 @@ class SaltmarcherRootSettingsPlugin : Plugin<Settings> {
         val broadBuildTaskNames = standardBroadBuildTaskNames()
         val internalSelectorTaskToBundleId = bundleCatalog.selectorTaskToBundleId
         val diagnosticSurfaceTaskNames = diagnosticSurfaceCatalog.diagnosticTaskToBundleIds.keys
+        val buildHarnessTaskToBundleIds = buildHarnessTaskToBundleIds(diagnosticSurfaceCatalog, bundleCatalog)
         val discoveryBuildRequest = requestedTaskNames.isEmpty() ||
             requestedTaskNames.any(::isDiscoveryTaskName)
         val allBundleVerificationRequest = discoveryBuildRequest ||
@@ -35,6 +39,7 @@ class SaltmarcherRootSettingsPlugin : Plugin<Settings> {
             .flatMap { taskName ->
                 diagnosticSurfaceCatalog.diagnosticTaskToBundleIds[taskName]
                     ?: internalSelectorTaskToBundleId[taskName]?.let(::listOf)
+                    ?: buildHarnessTaskToBundleIds[taskName]
                     ?: emptyList()
             }
             .distinct()
@@ -43,7 +48,8 @@ class SaltmarcherRootSettingsPlugin : Plugin<Settings> {
             requestedTaskNames.none { taskName -> taskName in broadBuildTaskNames } &&
             requestedTaskNames.all { taskName ->
                 taskName in internalSelectorTaskToBundleId.keys ||
-                    taskName in diagnosticSurfaceTaskNames
+                    taskName in diagnosticSurfaceTaskNames ||
+                    taskName in buildHarnessTaskToBundleIds.keys
         }
         val activeEnforcementBundleIds = if (focusedEnforcementBundleMode) {
             bundleCatalog.expandedBundleIds(requestedBundleIds)
@@ -96,6 +102,24 @@ private fun standardBroadBuildTaskNames(): Set<String> = setOf(
     "run",
     "test"
 )
+
+private fun buildHarnessTaskToBundleIds(
+    diagnosticSurfaceCatalog: EnforcementDiagnosticSurfaceCatalog,
+    bundleCatalog: EnforcementBundleCatalog
+): Map<String, List<String>> {
+    val taskToBundleIds = linkedMapOf<String, List<String>>()
+    diagnosticSurfaceCatalog.surfacesInOrder.forEach { surface ->
+        BuildHarnessTaskKind.values().forEach { kind ->
+            taskToBundleIds[surface.buildHarnessTaskName(kind)] = surface.bundleIds
+        }
+    }
+    taskToBundleIds["allBuildHarnessTopologyCheck"] = bundleCatalog.bundleIdsInOrder.filter { bundleId ->
+        bundleCatalog.descriptor(bundleId).buildHarnessTasks.any { task ->
+            task.kind == BuildHarnessTaskKind.TOPOLOGY
+        }
+    }
+    return taskToBundleIds
+}
 
 private data class VerificationRequestScope(
     val includeBuildHarness: Boolean,

@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-05-13
+Last Reviewed: 2026-05-14
 Source of Truth: Aggregate entrypoints, staged handoff routing, and concurrent
 local invocation policy for SaltMarcher quality platforms.
 
@@ -78,6 +78,11 @@ Build-harness topology and documentation metadata is coalesced by layer surface
 and rule kind before Gradle execution; role-local owner metadata names are not
 public or runnable proof entrypoints unless this document explicitly lists them
 as utility gates.
+Direct `:build-harness:*BuildHarness*Check`,
+`:build-harness:allBuildHarnessTopologyCheck`, and
+`:build-harness:architectureCheck` requests are engine-local diagnostics only.
+They may be useful when repairing the harness itself, but they do not replace
+the public production-handoff or documentation-enforcement proof routes.
 
 Focused investigation entrypoints are `compileJava`, `pmdMain`,
 `pmdStrictMain`, `checkRewriteNearMisses`, `spotbugsMain`,
@@ -151,6 +156,10 @@ focused task graph includes only the build-harness, quality-rules,
 quality-rules-errorprone included builds, plus jQAssistant task registration,
 that the selected surface can actually consume. This graph pruning does not
 change the public proof route or the checks behind a requested surface.
+Direct build-harness diagnostics participate in the same focused-selection
+mechanism: the settings plugin activates the matching layer-surface bundles, or
+all topology-owning bundles for `allBuildHarnessTopologyCheck`, before the
+included build registers the requested task.
 
 `./gradlew` now uses Gradle's normal daemon behavior unless the caller
 explicitly passes `--daemon` or `--no-daemon`.
@@ -173,6 +182,9 @@ their prerequisite failed.
 Local blocking Gradle gates may finish `UP-TO-DATE` or `FROM-CACHE` when their
 declared inputs and outputs are unchanged. That reuse comes from normal Gradle
 behavior inside the active worktree.
+Local jQAssistant store reuse is deliberately up-to-date reuse, not a remote
+build-cache contract: scan tasks own bytecode/source scan inputs, while analyze
+tasks own rule directories, rule groups, and reports.
 Focused, documentation, and broad dry-run investigation may also use Gradle's
 configuration cache when the selected graph is compatible. Broad
 `production-handoff` must report configuration-cache store and reuse literally

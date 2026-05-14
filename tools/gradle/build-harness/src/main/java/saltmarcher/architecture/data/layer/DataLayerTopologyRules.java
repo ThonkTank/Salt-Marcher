@@ -22,7 +22,8 @@ public final class DataLayerTopologyRules implements ArchitectureRule {
         TreeMap<String, List<SourceFile>> rootsByFeature = new TreeMap<>();
         for (SourceFile sourceFile : sourceFiles) {
             validateDataLayout(sourceFile, violations);
-            if (sourceFile.kind() == SourceKind.DATA_ROOT) {
+            if (sourceFile.kind() == SourceKind.DATA_ROOT
+                    && isFeatureFileName(sourceFile.featureName(), sourceFile.fileName(), "ServiceContribution")) {
                 rootsByFeature.computeIfAbsent(sourceFile.featureName(), ignored -> new ArrayList<>()).add(sourceFile);
             }
         }

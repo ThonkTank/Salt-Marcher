@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-05-10
+Last Reviewed: 2026-05-14
 Source of Truth: Verification-surface ownership, layer boundaries, and public
 verification-entry architecture for SaltMarcher build logic.
 
@@ -98,6 +98,11 @@ architecture behavior and are not documentation checks belong behind
 production-code surface, not separate public owners or alternate handoff
 entries. Layer-surface topology tasks remain focused diagnostic dependencies of
 their matching technical layer surfaces.
+Direct raw requests for those internal build-harness topology or documentation
+tasks MAY be used for engine-local diagnosis. The settings plugin must translate
+such direct task names to the same active bundle ids as the owning layer surface
+or coalesced all-topology route, so a direct included-build diagnostic does not
+fall back to an empty or unrelated rule graph.
 
 ### 3. Bundle Owners
 
@@ -170,18 +175,18 @@ Forbidden shortcuts:
 ## Focused Surface Propagation
 
 Focused verification selection is computed from requested production-handoff,
-technical layer-surface, or bundle-selector task names during root settings
-evaluation by the `saltmarcher.settings` plugin from
-`tools/gradle/build-logic-settings`. Technical layer surfaces expand to their
-owning bundle ids there, and direct internal bundle-selector task requests are
-still translated to the same bundle-id set. Those selector tasks stay
-technical implementation seams, not a second public verification API. The
-settings plugin also classifies the requested surface into the engines that
-the task graph can consume. Focused surfaces MUST NOT include build-harness,
-quality-rules, or Error Prone included builds, and MUST NOT register
-jQAssistant engine tasks, unless the selected surface or active bundle
-descriptors require that engine. The build publishes three focused-selection
-facts to the included builds:
+technical layer-surface, direct build-harness diagnostic, or bundle-selector
+task names during root settings evaluation by the `saltmarcher.settings` plugin
+from `tools/gradle/build-logic-settings`. Technical layer surfaces and direct
+build-harness diagnostics expand to their owning bundle ids there, and direct
+internal bundle-selector task requests are still translated to the same
+bundle-id set. Those selector and diagnostic tasks stay technical
+implementation seams, not a second public verification API. The settings plugin
+also classifies the requested surface into the engines that the task graph can
+consume. Focused surfaces MUST NOT include build-harness, quality-rules, or
+Error Prone included builds, and MUST NOT register jQAssistant engine tasks,
+unless the selected surface or active bundle descriptors require that engine.
+The build publishes three focused-selection facts to the included builds:
 
 - `saltmarcher.repoRootDir`
 - `saltmarcher.focusedEnforcementBundleMode`
@@ -248,6 +253,11 @@ normal Gradle up-to-date and build-cache behavior instead of forcing fresh
 execution every run. Successful unchanged verification results may be reused;
 this does not relax blocker semantics because changed or previously failing
 runs still execute their owning gates.
+Bytecode graph scanners that materialize checkout-specific stores, such as
+jQAssistant, SHOULD remain local up-to-date tasks rather than remote-cacheable
+tasks. Their scan tasks must declare only bytecode/source scan inputs, while
+rule directories and analyze groups belong to the analyze task so rule-only
+edits do not force a fresh store rebuild.
 That rule now also covers the remaining root-owned verification surfaces such
 as `spotbugsMain`, `checkNoCompiledArtifactsInSource`,
 `checkDesktopPackagingInputs`, and `:build-harness:architectureCheck`; they
