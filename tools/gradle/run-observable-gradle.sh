@@ -168,7 +168,8 @@ else
     FILTERED_WRAPPER_OWNED_ARGS=()
 fi
 
-if [[ "$fail_fast" == true ]] && contains_continue_flag "${extra_args[@]}"; then
+if [[ "$fail_fast" == true ]] &&
+    { contains_continue_flag "${tasks[@]}" || contains_continue_flag "${extra_args[@]}"; }; then
     echo "[observable-gradle] --fail-fast cannot be combined with Gradle --continue." >&2
     exit 64
 fi
