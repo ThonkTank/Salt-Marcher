@@ -57,8 +57,6 @@ internal class JqassistantTaskRegistrar(
             dependsOn(scanTask)
             cliFile.set(this@JqassistantTaskRegistrar.cliFile)
             this.rulesDirectory.set(rulesDirectory)
-            this.mainClassesDirectory.set(mainClassesDirectory)
-            this.sourceRoots.from(sourceRoots)
             this.jvmOpens.set(this@JqassistantTaskRegistrar.jvmOpens)
             this.ruleGroups.set(ruleGroups)
             projectRoot.set(project.layout.projectDirectory)

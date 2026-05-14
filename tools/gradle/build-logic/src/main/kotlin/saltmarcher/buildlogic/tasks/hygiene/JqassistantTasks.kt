@@ -32,14 +32,6 @@ abstract class AbstractJqassistantTask : DefaultTask() {
     @get:PathSensitive(PathSensitivity.NONE)
     abstract val cliFile: RegularFileProperty
 
-    @get:InputDirectory
-    @get:PathSensitive(PathSensitivity.RELATIVE)
-    abstract val mainClassesDirectory: DirectoryProperty
-
-    @get:InputFiles
-    @get:PathSensitive(PathSensitivity.RELATIVE)
-    abstract val sourceRoots: ConfigurableFileCollection
-
     @get:Input
     abstract val jvmOpens: Property<String>
 
@@ -49,27 +41,34 @@ abstract class AbstractJqassistantTask : DefaultTask() {
     @get:Inject
     protected abstract val execOperations: ExecOperations
 
-    protected fun materializeScanConfig(storeRootOverride: File): File =
-        materializeConfig(storeRootOverride, null, null, emptyList())
+    protected fun materializeScanConfig(
+        storeRootOverride: File,
+        mainClassesDirectory: File,
+        sourceRoots: Set<File>
+    ): File = materializeConfig(storeRootOverride, mainClassesDirectory, sourceRoots, null, null, emptyList())
 
     protected fun materializeAnalyzeConfig(
         storeRootOverride: File,
         reportRootOverride: File,
         rulesDirectory: File,
         ruleGroups: List<String>
-    ): File = materializeConfig(storeRootOverride, reportRootOverride, rulesDirectory, ruleGroups)
+    ): File = materializeConfig(storeRootOverride, null, emptySet(), reportRootOverride, rulesDirectory, ruleGroups)
 
     private fun materializeConfig(
         storeRootOverride: File,
+        mainClassesDirectory: File?,
+        sourceRoots: Set<File>,
         reportRootOverride: File?,
         rulesDirectoryOverride: File?,
         ruleGroupsOverride: List<String>
     ): File {
         val projectRootPath = projectRoot.get().asFile.toPath()
-        val scanEntries = buildList {
-            add("java:classpath::${projectRootPath.relativeInvariantPath(mainClassesDirectory.get().asFile)}")
-            addAll(sourceRoots.files.map(projectRootPath::relativeInvariantPath).sorted())
-        }
+        val scanEntries = mainClassesDirectory?.let { classesDirectory ->
+            buildList {
+                add("java:classpath::${projectRootPath.relativeInvariantPath(classesDirectory)}")
+                addAll(sourceRoots.map(projectRootPath::relativeInvariantPath).sorted())
+            }
+        }.orEmpty()
         val reportRoot = reportRootOverride?.toPath() ?: temporaryDir.toPath().resolve("reports")
         val generatedConfig = temporaryDir.toPath().resolve("jqassistant-config.yml")
         Files.createDirectories(generatedConfig.parent)
@@ -81,12 +80,14 @@ abstract class AbstractJqassistantTask : DefaultTask() {
                 appendLine("jqassistant:")
                 appendLine("  store:")
                 appendLine("    uri: file:${projectRootPath.relativeInvariantPath(storeRootOverride)}")
-                appendLine("  scan:")
-                appendLine("    reset: true")
-                appendLine("    continue-on-error: false")
-                appendLine("    include:")
-                appendLine("      files:")
-                scanEntries.forEach { entry -> appendLine("        - $entry") }
+                if (scanEntries.isNotEmpty()) {
+                    appendLine("  scan:")
+                    appendLine("    reset: true")
+                    appendLine("    continue-on-error: false")
+                    appendLine("    include:")
+                    appendLine("      files:")
+                    scanEntries.forEach { entry -> appendLine("        - $entry") }
+                }
                 if (rulesDirectoryOverride != null) {
                     appendLine("  analyze:")
                     appendLine("    rule:")
@@ -131,6 +132,14 @@ abstract class AbstractJqassistantTask : DefaultTask() {
 @DisableCachingByDefault(because = "jQAssistant's Neo4j store materializes checkout-specific source paths.")
 abstract class JqassistantScanTask : AbstractJqassistantTask() {
 
+    @get:InputDirectory
+    @get:PathSensitive(PathSensitivity.RELATIVE)
+    abstract val mainClassesDirectory: DirectoryProperty
+
+    @get:InputFiles
+    @get:PathSensitive(PathSensitivity.RELATIVE)
+    abstract val sourceRoots: ConfigurableFileCollection
+
     @get:OutputDirectory
     abstract val storeDirectory: DirectoryProperty
 
@@ -138,7 +147,7 @@ abstract class JqassistantScanTask : AbstractJqassistantTask() {
     fun scan() {
         val storeDir = storeDirectory.get().asFile
         Files.createDirectories(storeDir.toPath().parent)
-        val configFile = materializeScanConfig(storeDir)
+        val configFile = materializeScanConfig(storeDir, mainClassesDirectory.get().asFile, sourceRoots.files)
         runJqassistant(configFile, "scan")
     }
 }
