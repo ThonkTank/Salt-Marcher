@@ -8,6 +8,7 @@ import org.gradle.kotlin.dsl.getByType
 import org.gradle.kotlin.dsl.named
 import org.gradle.kotlin.dsl.register
 import org.gradle.language.base.plugins.LifecycleBasePlugin
+import saltmarcher.buildlogic.enforcement.BuildHarnessTaskKind
 import saltmarcher.buildlogic.enforcement.EnforcementBundleDescriptor
 import saltmarcher.buildlogic.enforcement.EnforcementBundlesExtension
 import saltmarcher.buildlogic.enforcement.standardVerificationSurfaceCatalog
@@ -89,9 +90,9 @@ internal fun Project.configureVerificationCore() {
         }
 
         aggregateDependencies.addAll(
-            descriptor.buildHarnessTasks.map { task ->
-                gradle.includedBuild("build-harness").task(":${task.taskName}")
-            }
+            descriptor.buildHarnessTasks
+                .filterNot { task -> task.kind == BuildHarnessTaskKind.DOCUMENTATION }
+                .map { task -> gradle.includedBuild("build-harness").task(":${task.taskName}") }
         )
 
         tasks.register(selectorTaskName) {
