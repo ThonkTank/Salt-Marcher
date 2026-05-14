@@ -33,6 +33,16 @@ internal fun Project.configureVerificationCore() {
 
     fun defaultBundleDisplayName(bundleId: String): String = bundleId.replaceFirstChar(Char::uppercaseChar)
 
+    fun activeSurfaceBuildHarnessTaskNames(kind: BuildHarnessTaskKind): List<String> =
+        verificationSurfaceCatalog.surfacesInOrder
+            .filter { surface ->
+                surface.bundleIds
+                    .filter(activeEnforcementBundleIds::contains)
+                    .map(::descriptor)
+                    .any { descriptor -> descriptor.buildHarnessTasks.any { task -> task.kind == kind } }
+            }
+            .map { surface -> surface.buildHarnessTaskName(kind) }
+
     val focusedCompileTasksByBundleId = registerFocusedCompileTasksByBundleId(
         activeEnforcementBundleIds.map(::descriptor),
         verificationHarness
@@ -123,6 +133,9 @@ internal fun Project.configureVerificationCore() {
         group = LifecycleBasePlugin.VERIFICATION_GROUP
         description = "Run all Markdown-backed architecture and enforcement documentation checks through the verification core."
         dependsOn(gradle.includedBuild("build-harness").task(":documentationEnforcementCheck"))
+        activeSurfaceBuildHarnessTaskNames(BuildHarnessTaskKind.DOCUMENTATION)
+            .map { taskName -> gradle.includedBuild("build-harness").task(":$taskName") }
+            .forEach(::dependsOn)
     }
 
     val checkArchitecture = tasks.register("checkArchitecture") {

@@ -78,7 +78,8 @@ Architecture-focused and handoff public entrypoints are:
   reporting.
 - `./gradlew checkDocumentationEnforcement --console=plain`
   Aggregates focused Markdown-backed architecture and enforcement-document
-  coverage through `:build-harness:documentationEnforcementCheck`.
+  coverage through `:build-harness:documentationEnforcementCheck` plus the
+  coalesced per-surface documentation tasks registered inside build-harness.
 - `./gradlew checkViewEnforcement --console=plain`
   Aggregates the canonical View enforcement surface through the closed-world
   View topology owner plus the shared Error Prone View core.

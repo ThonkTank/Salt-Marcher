@@ -119,6 +119,10 @@ declared report-only sibling surfaces. Build-harness owner metadata is
 coalesced by the verification core into one internal task per public
 surface/kind before Gradle execution; role-local owner splits MUST NOT create
 one runnable build-harness JVM scan per owner document.
+The public `checkDocumentationEnforcement` surface consumes the root
+documentation check plus the coalesced per-surface documentation tasks; those
+surface tasks remain private dependencies and MUST NOT become public
+documentation proof entrypoints.
 
 Root-owned hygiene gates that are not bundle-specific MUST stay registered in
 the verification core itself. They MUST NOT be back-ported into fake
@@ -190,20 +194,23 @@ through typed registry providers rather than by matching task names at
 configuration time. Bundle-owned verification tasks remain implementation
 details behind those surfaces unless a task is explicitly documented here or in
 `quality-platforms-local-entrypoints.md` as a public focused utility gate.
-Physical bundle metadata may keep historic task-name fields for diagnostics and
-ownership, but those names are metadata unless the verification core registers
-them as a public surface or an explicit utility gate.
-The remaining root-owned build-harness optional rules are now registry-driven
-as well: bundles contribute root `architectureCheck` and
-`documentationEnforcementCheck` rule classes and documentation-coverage spec
-ids through explicit `buildHarnessArchitectureRuleClasses`,
-`buildHarnessDocumentationRuleClasses`, and
-`buildHarnessDocumentationCoverageSpecIds` metadata instead of hidden
-bundle README inventories, or hardcoded
-optional-class tables in the owning checkers. Focused build-harness tasks
-should execute through the generic `ArchitectureCheckMain` or
-`DocumentationCheckMain` paths with task-local rule-class lists or coverage
-spec ids instead of one bundle-specific Java launcher per focused task.
+Physical build-harness bundle metadata MUST NOT require historic role-local
+task-name fields. Build-harness task names are owned by canonical public
+surfaces, except for explicit root or utility gates registered by the
+verification core.
+The remaining root-owned build-harness optional architecture rules are now
+registry-driven as well: bundles contribute root `architectureCheck` rule
+classes through explicit `buildHarnessArchitectureRuleClasses` metadata
+instead of hidden bundle README inventories or hardcoded optional-class tables
+in the owning checkers. Documentation metadata uses
+`buildHarnessDocumentationRuleClasses` and
+`buildHarnessDocumentationCoverageSpecIds` for the coalesced per-surface
+documentation tasks behind `checkDocumentationEnforcement`; root
+`documentationEnforcementCheck` stays limited to root documentation rules.
+Focused build-harness tasks should execute through the generic
+`ArchitectureCheckMain` or `DocumentationCheckMain` paths with task-local
+rule-class lists or coverage spec ids instead of one bundle-specific Java
+launcher per focused task.
 `build-harness:processResources` is therefore expected to stay `NO-SOURCE` in
 steady-state wrapper runs.
 Error Prone checker discovery is likewise centralized: the host

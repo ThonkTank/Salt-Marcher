@@ -72,14 +72,6 @@ fun buildHarnessInputs(kind: BuildHarnessTaskKind) = when (kind) {
     )
 }
 
-fun activeBuildHarnessDocumentationRuleClasses() = activeEnforcementBundleIds
-    .flatMap { bundleId -> enforcementBundles.descriptor(bundleId).buildHarnessDocumentationRuleClasses }
-    .distinct()
-
-fun activeBuildHarnessDocumentationCoverageSpecIds() = activeEnforcementBundleIds
-    .flatMap { bundleId -> enforcementBundles.descriptor(bundleId).buildHarnessDocumentationCoverageSpecIds }
-    .distinct()
-
 fun documentationVerificationArgs(
     ruleClasses: List<String>,
     coverageSpecIds: List<String>
@@ -169,8 +161,7 @@ if (!focusedEnforcementBundleMode) {
         "documentation",
         BuildHarnessTaskSpec(
             kind = BuildHarnessTaskKind.DOCUMENTATION,
-            ruleClasses = documentationRootRuleClasses + activeBuildHarnessDocumentationRuleClasses(),
-            coverageSpecIds = activeBuildHarnessDocumentationCoverageSpecIds()
+            ruleClasses = documentationRootRuleClasses
         )
     )
 }

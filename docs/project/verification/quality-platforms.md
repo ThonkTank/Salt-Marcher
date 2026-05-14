@@ -181,7 +181,8 @@ surface set:
   surfaces plus the internal generic architecture owners.
 - `checkDocumentationEnforcement`
   runs the dedicated Markdown-backed architecture and enforcement-document
-  coverage path and stays intentionally outside `check` and `build`.
+  coverage path through root documentation rules plus coalesced per-surface
+  documentation tasks, and stays intentionally outside `check` and `build`.
 - `production-handoff`
   runs the canonical broad production-code handoff route.
 
@@ -190,9 +191,12 @@ are no longer part of the public verification contract. Internal
 `verify*Bundle` selector tasks are allowed as typed harness seams, but they are
 not public proof entrypoints and must not be used as the canonical routing
 surface in owner docs. Build-harness role metadata is coalesced behind the
-canonical layer surfaces before execution, so historic role-local `check*`
-names are metadata or diagnostics unless explicitly documented as a public
-utility gate. `production-handoff` is the only public broad
+canonical layer surfaces before execution. Documentation metadata is also
+coalesced behind the public `checkDocumentationEnforcement` surface rather than
+published as role-local proof tasks. Build-harness bundle metadata must not
+require historic role-local `check*` names unless a separate explicit utility
+gate owns that name.
+`production-handoff` is the only public broad
 implementation-handoff aggregate above `checkArchitecture` and the
 documentation surface.
 
