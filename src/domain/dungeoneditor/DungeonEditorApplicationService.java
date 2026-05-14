@@ -64,7 +64,7 @@ public final class DungeonEditorApplicationService {
         return editorModel;
     }
 
-    public DungeonEditorSnapshot applyEditorSession(DungeonEditorSessionCommand command) {
+    public void applyEditorSession(DungeonEditorSessionCommand command) {
         applyDungeonEditorSessionUseCase.apply(command == null ? new DungeonEditorSessionCommand(
                 DungeonEditorSessionCommand.Action.INTERPRET_MAIN_VIEW,
                 null,
@@ -77,7 +77,6 @@ public final class DungeonEditorApplicationService {
                 null) : command);
         DungeonEditorSnapshot snapshot = currentEditorSnapshot();
         notifyEditorListeners(snapshot);
-        return snapshot;
     }
 
     private DungeonEditorSnapshot currentEditorSnapshot() {

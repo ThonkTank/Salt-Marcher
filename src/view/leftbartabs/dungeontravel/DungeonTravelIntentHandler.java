@@ -13,6 +13,7 @@ final class DungeonTravelIntentHandler {
 
     private static final double ZOOM_IN_FACTOR = 1.1;
     private static final double ZOOM_OUT_FACTOR = 1.0 / ZOOM_IN_FACTOR;
+    private static final double SCROLL_DELTA_IDLE = 0.0;
 
     private final DungeonTravelContributionModel presentationModel;
     private final MapCanvasContentModel mapCanvasContentModel;
@@ -103,12 +104,12 @@ final class DungeonTravelIntentHandler {
             }
             if (event.interaction().isScroll()
                     && !event.modifiers().controlDown()) {
-                if (event.scrollDeltaY() > 0.0) {
+                if (event.scrollDeltaY() > SCROLL_DELTA_IDLE) {
                     mapCanvasContentModel.zoomAround(
                             event.position().canvasX(),
                             event.position().canvasY(),
                             ZOOM_IN_FACTOR);
-                } else if (event.scrollDeltaY() < 0.0) {
+                } else if (event.scrollDeltaY() < SCROLL_DELTA_IDLE) {
                     mapCanvasContentModel.zoomAround(
                             event.position().canvasX(),
                             event.position().canvasY(),

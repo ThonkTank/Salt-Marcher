@@ -43,7 +43,7 @@ public final class TravelApplicationService {
         return dungeonTravelModel;
     }
 
-    public TravelDungeonSnapshot applyDungeonTravelSession(ApplyTravelDungeonSessionCommand command) {
+    public void applyDungeonTravelSession(ApplyTravelDungeonSessionCommand command) {
         ApplyTravelDungeonSessionCommand effectiveCommand = command == null
                 ? new ApplyTravelDungeonSessionCommand(
                 ApplyTravelDungeonSessionCommand.Action.REFRESH,
@@ -68,7 +68,6 @@ public final class TravelApplicationService {
         }
         TravelDungeonSnapshot snapshot = currentDungeonTravelSnapshot();
         notifyDungeonTravelListeners(snapshot);
-        return snapshot;
     }
 
     private TravelDungeonSnapshot currentDungeonTravelSnapshot() {
