@@ -3,13 +3,13 @@ package saltmarcher.buildlogic.verification
 import org.gradle.api.Project
 import java.io.File
 import org.gradle.api.plugins.quality.Pmd
-import org.gradle.api.tasks.Delete
 import org.gradle.api.tasks.compile.JavaCompile
 import org.gradle.kotlin.dsl.named
 import org.gradle.kotlin.dsl.register
 import org.gradle.kotlin.dsl.withType
 import org.gradle.language.base.plugins.LifecycleBasePlugin
 import saltmarcher.buildlogic.tasks.CheckNoCompiledArtifactsTask
+import saltmarcher.buildlogic.tasks.hygiene.CleanStaleMainJavaClassesTask
 import saltmarcher.buildlogic.tasks.hygiene.CkjmReportTask
 import saltmarcher.buildlogic.tasks.hygiene.CheckNoDeadCodeTask
 import saltmarcher.buildlogic.tasks.hygiene.CpdCheckTask
@@ -22,9 +22,16 @@ internal fun Project.registerQualityConventionLifecycleTasks(
     toolConfigurations: QualityConventionToolConfigurations
 ){
     val verificationLayout = environment.verificationLayout
-    val resetMainJavaClassesOutput = tasks.register<Delete>("resetMainJavaClassesOutput") {
-        description = "Remove compiled main classes before recompilation so deleted sources cannot survive as stale bytecode."
-        delete(verificationLayout.mainJavaClassesDir)
+    val cleanStaleMainJavaClasses = tasks.register<CleanStaleMainJavaClassesTask>("cleanStaleMainJavaClasses") {
+        description = "Remove compiled main classes only when their owning Java source was removed or changed."
+        projectRoot.set(layout.projectDirectory)
+        compiledClassesDirectory.set(verificationLayout.mainJavaClassesDir)
+        sourceFiles.from(
+            verificationLayout.sourceJavaRoots.asFileTree.matching {
+                include("**/*.java")
+            }
+        )
+        snapshotFile.set(layout.buildDirectory.file("verification-state/main-java-classes/sources.tsv"))
     }
     val lizardRequirementsFile = layout.projectDirectory.file("tools/quality/config/lizard/requirements.txt")
     val lizardVenvDir = layout.projectDirectory.dir(".gradle/shared-tools/lizard/venv")
@@ -36,7 +43,7 @@ internal fun Project.registerQualityConventionLifecycleTasks(
     val verificationLifecycleCatalog = standardVerificationLifecycleCatalog()
 
     tasks.named<JavaCompile>("compileJava") {
-        dependsOn(resetMainJavaClassesOutput)
+        dependsOn(cleanStaleMainJavaClasses)
     }
 
     val setupLizard = tasks.register<SetupLizardTask>("setupLizard") {
