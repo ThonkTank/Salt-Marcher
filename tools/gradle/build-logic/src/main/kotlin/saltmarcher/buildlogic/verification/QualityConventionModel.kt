@@ -187,27 +187,7 @@ internal fun Project.registerQualityConventionDependencies(
 }
 
 private fun Project.verificationErrorProneRequested(environment: QualityConventionEnvironment): Boolean {
-    if (!environment.includeQualityRulesErrorProne) {
-        return false
-    }
-    if (environment.focusedEnforcementBundleMode) {
-        return true
-    }
-    val requestedTaskNames = gradle.startParameter.taskNames
-        .map { taskName -> taskName.substringAfterLast(":") }
-        .toSet()
-    if (requestedTaskNames.isEmpty()) {
-        return true
-    }
-    return requestedTaskNames.any { taskName ->
-            taskName == "build" ||
-            taskName == "check" ||
-            taskName == "checkRewriteNearMisses" ||
-            taskName == "production-handoff" ||
-            (taskName.startsWith("check") && taskName.endsWith("Enforcement")) ||
-            (taskName.startsWith("compileFocusedVerification") && taskName.endsWith("Java")) ||
-            (taskName.startsWith("verify") && taskName.endsWith("Bundle"))
-    }
+    return environment.includeQualityRulesErrorProne
 }
 
 private fun systemBoolean(name: String, defaultValue: Boolean): Boolean =

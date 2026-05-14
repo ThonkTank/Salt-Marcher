@@ -162,10 +162,26 @@ internal fun Project.configureVerificationCore() {
     }
 
     val productionHandoffSurface = verificationLifecycleCatalog.surface("production-handoff")
-    tasks.register(productionHandoffSurface.publicTaskName) {
+    val productionHandoffIntegrity = tasks.register("productionHandoffIntegrity") {
         group = LifecycleBasePlugin.VERIFICATION_GROUP
-        description = productionHandoffSurface.description
-        productionHandoffSurface.dependencyTaskNames.forEach(::dependsOn)
+        description = "Run the fail-fast compile and harness integrity phase for production handoff."
+        verificationLifecycleCatalog.ownerTaskNames(VerificationLifecyclePhase.INTEGRITY).forEach(::dependsOn)
+        if (includeBuildHarness) {
+            dependsOn(gradle.includedBuild("build-harness").task(":classes"))
+        }
+        if (systemBoolean("saltmarcher.includeQualityRules", defaultValue = true)) {
+            dependsOn(gradle.includedBuild("quality-rules").task(":jar"))
+        }
+        if (systemBoolean("saltmarcher.includeQualityRulesErrorProne", defaultValue = true)) {
+            dependsOn(gradle.includedBuild("quality-rules-errorprone").task(":jar"))
+        }
+    }
+
+    val productionHandoffQuality = tasks.register("productionHandoffQuality") {
+        group = LifecycleBasePlugin.VERIFICATION_GROUP
+        description = "Run the aggregating quality and architecture phase for production handoff."
+        dependsOn(productionHandoffIntegrity)
+        verificationLifecycleCatalog.ownerTaskNames(VerificationLifecyclePhase.QUALITY).forEach(::dependsOn)
         dependsOn("architectureTest")
         activeEnforcementBundleIds
             .map(::descriptor)
@@ -175,6 +191,12 @@ internal fun Project.configureVerificationCore() {
             dependsOn(gradle.includedBuild("build-harness").task(":allBuildHarnessTopologyCheck"))
             dependsOn(gradle.includedBuild("build-harness").task(":architectureCheck"))
         }
+    }
+
+    tasks.register(productionHandoffSurface.publicTaskName) {
+        group = LifecycleBasePlugin.VERIFICATION_GROUP
+        description = productionHandoffSurface.description
+        dependsOn(productionHandoffQuality)
     }
 
 }

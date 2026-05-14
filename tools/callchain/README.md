@@ -12,8 +12,6 @@ tools/callchain/setup-joern.sh
 The default install root is `build/callchain/joern`. Set `JOERN_HOME` when
 using a different Joern CLI directory.
 
-Graph rendering requires Graphviz `dot`.
-
 ## Index
 
 ```bash
@@ -30,12 +28,12 @@ JOERN_HOME=build/callchain/joern/joern-cli \
   src.domain.travel.TravelApplicationService#applyDungeonTravelSession
 ```
 
-Outputs are written under `build/callchain/out/<selector>/`:
+Text-first outputs are written under `build/callchain/out/<selector>/`:
 
-- `callers.svg`
-- `callees.svg`
-- `both.svg`
-- matching `.dot` files
+- `callchain.txt`
+- `callers.txt`
+- `callees.txt`
+- matching `.dot` files for optional external rendering
 - `candidates.tsv`
 - `summary.txt`
 

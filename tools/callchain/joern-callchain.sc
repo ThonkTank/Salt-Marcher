@@ -30,20 +30,6 @@ import scala.collection.mutable
   def visible(method: Method): Boolean =
     includeNonProject || projectMethod(method)
 
-  def methodSource(method: Method): String = {
-    val file = Option(method.filename).getOrElse("")
-    val line = method.lineNumber.map(_.toString).getOrElse("")
-    if (file.nonEmpty && line.nonEmpty) s"$file:$line"
-    else if (file.nonEmpty) file
-    else ""
-  }
-
-  def methodLabel(method: Method): String = {
-    val source = methodSource(method)
-    val base = Option(method.fullName).getOrElse(method.name)
-    if (source.isEmpty) base else s"$base\\n$source"
-  }
-
   val normalized = normalizeSelector(selector)
   val candidates = cpg.method
     .filter { method =>
@@ -124,6 +110,9 @@ import scala.collection.mutable
   writeText(outputRoot.resolve("callees.dot"), dotGraph("callees", rootFullName, calleeEdges, allMethodsByFullName, "out"))
   writeText(outputRoot.resolve("callers.dot"), dotGraph("callers", rootFullName, callerEdges, allMethodsByFullName, "in"))
   writeText(outputRoot.resolve("both.dot"), dotGraph("both", rootFullName, bothEdges, allMethodsByFullName, "both"))
+  writeText(outputRoot.resolve("callees.txt"), textGraph("Callees", rootFullName, calleeEdges, allMethodsByFullName))
+  writeText(outputRoot.resolve("callers.txt"), textGraph("Callers", rootFullName, callerEdges, allMethodsByFullName))
+  writeText(outputRoot.resolve("callchain.txt"), combinedText(rootFullName, calleeEdges, callerEdges, allMethodsByFullName, maxDepth, includeNonProject))
   writeText(outputRoot.resolve("summary.txt"), summary(rootFullName, calleeEdges, callerEdges, maxDepth, includeNonProject))
 }
 
@@ -144,6 +133,20 @@ def summary(
      |- Reflection, JavaFX event dispatch, ServiceLoader discovery, and runtime listener registration are not complete proof surfaces.
      |- Joern call edges are the authoritative input for this generated diagram; inspect source when a dynamic seam matters.
      |""".stripMargin
+
+def methodSource(method: Method): String = {
+  val file = Option(method.filename).getOrElse("")
+  val line = method.lineNumber.map(_.toString).getOrElse("")
+  if (file.nonEmpty && line.nonEmpty) s"$file:$line"
+  else if (file.nonEmpty) file
+  else ""
+}
+
+def methodLabel(method: Method): String = {
+  val source = methodSource(method)
+  val base = Option(method.fullName).getOrElse(method.name)
+  if (source.isEmpty) base else s"$base\\n$source"
+}
 
 def dotGraph(
     name: String,
@@ -179,14 +182,79 @@ def dotGraph(
   builder.toString()
 }
 
+def combinedText(
+    rootFullName: String,
+    calleeEdges: Set[(String, String)],
+    callerEdges: Set[(String, String)],
+    methods: Map[String, Method],
+    maxDepth: Int,
+    includeNonProject: Boolean
+): String =
+  s"""Root: $rootFullName
+     |Depth: $maxDepth
+     |Include external: $includeNonProject
+     |
+     |${textGraph("Callees", rootFullName, calleeEdges, methods)}
+     |
+     |${textGraph("Callers", rootFullName, callerEdges, methods)}
+     |
+     |Static-analysis limits:
+     |- Reflection, JavaFX event dispatch, ServiceLoader discovery, and runtime listener registration are not complete proof surfaces.
+     |- Joern call edges are the authoritative input for this generated text; inspect source when a dynamic seam matters.
+     |""".stripMargin
+
+def textGraph(
+    title: String,
+    rootFullName: String,
+    edges: Set[(String, String)],
+    methods: Map[String, Method]
+): String = {
+  val outgoing = edges.groupBy(_._1).view.mapValues(_.map(_._2).toList.sorted).toMap
+  val builder = new StringBuilder
+  builder.append(title).append("\n")
+  builder.append("=".repeat(title.length)).append("\n")
+  appendTree(builder, rootFullName, outgoing, methods, 0, Set.empty)
+  if (edges.isEmpty) {
+    builder.append("  (no project call edges found)\n")
+  }
+  builder.toString()
+}
+
+def appendTree(
+    builder: StringBuilder,
+    current: String,
+    outgoing: Map[String, List[String]],
+    methods: Map[String, Method],
+    level: Int,
+    seen: Set[String]
+): Unit = {
+  val indent = "  " * level
+  val method = methods.get(current)
+  val source = method.map(methodSource).getOrElse("")
+  builder.append(indent).append("- ").append(current)
+  if (source.nonEmpty) {
+    builder.append(" [").append(source).append("]")
+  }
+  if (seen.contains(current)) {
+    builder.append(" (cycle)")
+  }
+  builder.append("\n")
+  if (!seen.contains(current)) {
+    outgoing.getOrElse(current, Nil).foreach { next =>
+      appendTree(builder, next, outgoing, methods, level + 1, seen + current)
+    }
+  }
+}
+
 def writeText(path: Path, text: String): Unit =
   Files.write(path, text.getBytes(StandardCharsets.UTF_8))
 
 def quoteId(value: String): String =
   quote(value)
 
-def quote(value: String): String =
+def quote(value: String): String = {
   "\"" + value
     .replace("\\", "\\\\")
     .replace("\"", "\\\"")
     .replace("\n", "\\n") + "\""
+}

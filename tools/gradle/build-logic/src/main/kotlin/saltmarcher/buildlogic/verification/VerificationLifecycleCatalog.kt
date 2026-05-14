@@ -2,7 +2,8 @@ package saltmarcher.buildlogic.verification
 
 internal data class VerificationLifecycleOwnerSpec(
     val ownerId: String,
-    val taskName: String
+    val taskName: String,
+    val phase: VerificationLifecyclePhase
 )
 
 internal data class VerificationLifecycleSurfaceSpec(
@@ -18,21 +19,39 @@ internal data class VerificationLifecycleCatalog(
 ) {
     fun surface(surfaceId: String): VerificationLifecycleSurfaceSpec = surfacesById[surfaceId]
         ?: error("Unknown verification lifecycle surface '$surfaceId'.")
+
+    fun ownerTaskNames(phase: VerificationLifecyclePhase): List<String> = ownersInOrder
+        .filter { owner -> owner.phase == phase }
+        .map(VerificationLifecycleOwnerSpec::taskName)
+}
+
+internal enum class VerificationLifecyclePhase {
+    INTEGRITY,
+    QUALITY
 }
 
 internal fun standardVerificationLifecycleCatalog(): VerificationLifecycleCatalog {
-    val sharedHygieneOwners = listOf(
-        verificationLifecycleOwner("assemble", "assemble"),
-        verificationLifecycleOwner("pmd-main", "pmdMain"),
-        verificationLifecycleOwner("near-miss-hygiene", "checkRewriteNearMisses"),
-        verificationLifecycleOwner("spotbugs-main", "spotbugsMain"),
-        verificationLifecycleOwner("cpd-main", "cpdMain"),
-        verificationLifecycleOwner("lizard-main", "lizardMain"),
-        verificationLifecycleOwner("compiled-artifact-hygiene", "checkNoCompiledArtifactsInSource"),
-        verificationLifecycleOwner("dead-code", "checkNoDeadCode"),
-        verificationLifecycleOwner("ckjm-main", "ckjmMain")
+    val integrityOwners = listOf(
+        verificationLifecycleOwner("classes", "classes", VerificationLifecyclePhase.INTEGRITY),
+        verificationLifecycleOwner("compile-test-java", "compileTestJava", VerificationLifecyclePhase.INTEGRITY)
     )
-    val dependencyTaskNames = sharedHygieneOwners.map(VerificationLifecycleOwnerSpec::taskName)
+    val qualityOwners = listOf(
+        verificationLifecycleOwner("assemble", "assemble", VerificationLifecyclePhase.QUALITY),
+        verificationLifecycleOwner("pmd-main", "pmdMain", VerificationLifecyclePhase.QUALITY),
+        verificationLifecycleOwner("near-miss-hygiene", "checkRewriteNearMisses", VerificationLifecyclePhase.QUALITY),
+        verificationLifecycleOwner("spotbugs-main", "spotbugsMain", VerificationLifecyclePhase.QUALITY),
+        verificationLifecycleOwner("cpd-main", "cpdMain", VerificationLifecyclePhase.QUALITY),
+        verificationLifecycleOwner("lizard-main", "lizardMain", VerificationLifecyclePhase.QUALITY),
+        verificationLifecycleOwner(
+            "compiled-artifact-hygiene",
+            "checkNoCompiledArtifactsInSource",
+            VerificationLifecyclePhase.QUALITY
+        ),
+        verificationLifecycleOwner("dead-code", "checkNoDeadCode", VerificationLifecyclePhase.QUALITY),
+        verificationLifecycleOwner("ckjm-main", "ckjmMain", VerificationLifecyclePhase.QUALITY)
+    )
+    val owners = integrityOwners + qualityOwners
+    val dependencyTaskNames = owners.map(VerificationLifecycleOwnerSpec::taskName)
     val checkSurface = verificationLifecycleSurface(
         surfaceId = "check",
         publicTaskName = "check",
@@ -47,7 +66,7 @@ internal fun standardVerificationLifecycleCatalog(): VerificationLifecycleCatalo
     )
 
     return VerificationLifecycleCatalog(
-        ownersInOrder = sharedHygieneOwners,
+        ownersInOrder = owners,
         surfacesById = listOf(checkSurface, productionHandoffSurface)
             .associateBy(VerificationLifecycleSurfaceSpec::surfaceId)
     )
@@ -55,10 +74,12 @@ internal fun standardVerificationLifecycleCatalog(): VerificationLifecycleCatalo
 
 private fun verificationLifecycleOwner(
     ownerId: String,
-    taskName: String
+    taskName: String,
+    phase: VerificationLifecyclePhase
 ): VerificationLifecycleOwnerSpec = VerificationLifecycleOwnerSpec(
     ownerId = ownerId,
-    taskName = taskName
+    taskName = taskName,
+    phase = phase
 )
 
 private fun verificationLifecycleSurface(

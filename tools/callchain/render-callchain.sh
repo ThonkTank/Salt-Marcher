@@ -26,10 +26,10 @@ Examples:
   tools/callchain/render-callchain.sh --depth 4 DungeonTravelIntentHandler#consume
 
 Output:
-  build/callchain/out/<selector>/callers.svg
-  build/callchain/out/<selector>/callees.svg
-  build/callchain/out/<selector>/both.svg
-  Matching DOT and candidate files live beside the SVG files.
+  build/callchain/out/<selector>/callchain.txt
+  build/callchain/out/<selector>/callers.txt
+  build/callchain/out/<selector>/callees.txt
+  DOT files are written beside the text files for optional external rendering.
 EOF
 }
 
@@ -130,30 +130,14 @@ if [[ -z "$out_dir" ]]; then
 fi
 mkdir -p "$out_dir"
 
-"$joern" --script "$SCRIPT_DIR/joern-callchain.sc" \
-    --param "cpgFile=$CPG_FILE" \
-    --param "selector=$selector" \
-    --param "outDir=$out_dir" \
-    --param "depth=$depth" \
-    --param "includeExternal=$include_external"
+(
+    cd "$BUILD_ROOT"
+    "$joern" --script "$SCRIPT_DIR/joern-callchain.sc" \
+        --param "cpgFile=$CPG_FILE" \
+        --param "selector=$selector" \
+        --param "outDir=$out_dir" \
+        --param "depth=$depth" \
+        --param "includeExternal=$include_external"
+)
 
-render_svg() {
-    local input_dot="$1"
-    local output_svg="$2"
-    if command -v dot >/dev/null 2>&1; then
-        dot -Tsvg "$input_dot" -o "$output_svg"
-        return 0
-    fi
-    if command -v python3 >/dev/null 2>&1; then
-        python3 "$SCRIPT_DIR/simple-dot-svg.py" "$input_dot" "$output_svg"
-        return 0
-    fi
-    printf 'Neither Graphviz dot nor python3 is available; DOT remains at %s\n' "$input_dot" >&2
-    return 1
-}
-
-render_svg "$out_dir/callers.dot" "$out_dir/callers.svg"
-render_svg "$out_dir/callees.dot" "$out_dir/callees.svg"
-render_svg "$out_dir/both.dot" "$out_dir/both.svg"
-
-printf 'Rendered callchain diagrams under %s\n' "$out_dir"
+printf 'Rendered callchain text under %s\n' "$out_dir"

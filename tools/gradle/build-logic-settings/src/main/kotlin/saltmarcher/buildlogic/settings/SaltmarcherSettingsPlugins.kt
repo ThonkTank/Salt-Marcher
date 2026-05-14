@@ -98,6 +98,8 @@ private fun standardBroadBuildTaskNames(): Set<String> = setOf(
     "installDesktopApp",
     "installDist",
     "jar",
+    "productionHandoffIntegrity",
+    "productionHandoffQuality",
     "production-handoff",
     "run",
     "test"
@@ -135,6 +137,7 @@ private fun verificationRequestScope(
     discoveryBuildRequest: Boolean
 ): VerificationRequestScope {
     val broadProductionRequest = requestedTaskNames.any(::isAllBundleVerificationTaskName)
+    val productionHandoffIntegrityRequest = requestedTaskNames.any(::isProductionHandoffIntegrityTaskName)
     val documentationRequest = requestedTaskNames.any(::isDocumentationTaskName)
     val focusedEnforcementRequest = requestedTaskNames.any(::isFocusedEnforcementTaskName)
     val sourceHygieneRequest = requestedTaskNames.any(::isQualityRulesTaskName)
@@ -153,9 +156,9 @@ private fun verificationRequestScope(
         descriptorEngineSources.any { descriptor -> descriptor.jqassistant != null }
 
     return VerificationRequestScope(
-        includeBuildHarness = discoveryBuildRequest || buildHarnessRequest,
-        includeQualityRules = discoveryBuildRequest || broadProductionRequest || sourceHygieneRequest,
-        includeQualityRulesErrorProne = discoveryBuildRequest || errorProneRequest,
+        includeBuildHarness = discoveryBuildRequest || productionHandoffIntegrityRequest || buildHarnessRequest,
+        includeQualityRules = discoveryBuildRequest || productionHandoffIntegrityRequest || broadProductionRequest || sourceHygieneRequest,
+        includeQualityRulesErrorProne = discoveryBuildRequest || productionHandoffIntegrityRequest || errorProneRequest,
         includeJqassistant = discoveryBuildRequest || jqassistantRequest,
         discoveryBuildRequest = discoveryBuildRequest
     )
@@ -172,8 +175,12 @@ private fun isDiscoveryTaskName(taskName: String): Boolean =
 
 private fun isAllBundleVerificationTaskName(taskName: String): Boolean =
     taskName == "production-handoff" ||
+        taskName == "productionHandoffQuality" ||
         taskName == "check" ||
         taskName == "build"
+
+private fun isProductionHandoffIntegrityTaskName(taskName: String): Boolean =
+    taskName == "productionHandoffIntegrity"
 
 private fun isDocumentationTaskName(taskName: String): Boolean =
     taskName == "checkDocumentationEnforcement" ||

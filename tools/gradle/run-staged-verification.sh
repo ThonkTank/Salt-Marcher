@@ -75,18 +75,34 @@ run_surface() {
     echo "[staged-verification] Surface: $surface"
     echo
 
+    if [[ "$surface" == "production-handoff" ]]; then
+        echo "[staged-verification] Phase: productionHandoffIntegrity"
+        run_observable_gradle true productionHandoffIntegrity
+        echo
+        echo "[staged-verification] Phase: productionHandoffQuality"
+        run_observable_gradle false productionHandoffQuality
+        return
+    fi
+
+    run_observable_gradle "$fail_fast" "$surface"
+}
+
+run_observable_gradle() {
+    local phase_fail_fast="$1"
+    local task_name="$2"
+
     (
         cd "$REPO_ROOT"
         if [[ ${#extra_args[@]} -gt 0 ]]; then
-            if [[ "$fail_fast" == true ]]; then
-                "$REPO_ROOT/tools/gradle/run-observable-gradle.sh" --fail-fast "$surface" -- "${extra_args[@]}"
+            if [[ "$phase_fail_fast" == true ]]; then
+                "$REPO_ROOT/tools/gradle/run-observable-gradle.sh" --fail-fast "$task_name" -- "${extra_args[@]}"
             else
-                "$REPO_ROOT/tools/gradle/run-observable-gradle.sh" "$surface" -- "${extra_args[@]}"
+                "$REPO_ROOT/tools/gradle/run-observable-gradle.sh" "$task_name" -- "${extra_args[@]}"
             fi
-        elif [[ "$fail_fast" == true ]]; then
-            "$REPO_ROOT/tools/gradle/run-observable-gradle.sh" --fail-fast "$surface"
+        elif [[ "$phase_fail_fast" == true ]]; then
+            "$REPO_ROOT/tools/gradle/run-observable-gradle.sh" --fail-fast "$task_name"
         else
-            "$REPO_ROOT/tools/gradle/run-observable-gradle.sh" "$surface"
+            "$REPO_ROOT/tools/gradle/run-observable-gradle.sh" "$task_name"
         fi
     )
 }
