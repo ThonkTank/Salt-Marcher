@@ -36,6 +36,8 @@ public final class DungeonMapContentModel {
     private final MapCanvasContentModel mapCanvasContentModel;
     private DungeonMapRenderState renderState;
 
+    // Public ContentModel API
+
     public DungeonMapContentModel(String placeholderTitle, boolean editorMode) {
         this.placeholderTitle = normalizePlaceholderTitle(placeholderTitle);
         renderState = DungeonMapRenderState.empty(this.placeholderTitle, editorMode);
@@ -90,6 +92,8 @@ public final class DungeonMapContentModel {
                 ? "Dungeon Map"
                 : placeholderTitle;
     }
+
+    // Scene assembly
 
     private record SceneBuckets(
             List<MapCanvasPolygonPrimitive> surfaces,
@@ -340,6 +344,8 @@ public final class DungeonMapContentModel {
             }
         }
     }
+
+    // Hit, geometry, and style helpers
 
     private static final class HitAreaProjector {
 
@@ -829,546 +835,8 @@ public final class DungeonMapContentModel {
     }
 }
 
-record DungeonMapRenderState(
-        String title,
-        boolean projectionAvailable,
-        int width,
-        int height,
-        DungeonMapRenderState.Topology topology,
-        DungeonMapRenderState.ViewMode viewMode,
-        DungeonMapRenderState.LevelOverlaySettings overlaySettings,
-        int projectionLevel,
-        boolean editorMode,
-        String selectedTool,
-        String emptyMessage,
-        List<DungeonMapRenderState.Cell> cells,
-        List<DungeonMapRenderState.Edge> edges,
-        List<DungeonMapRenderState.Label> labels,
-        List<DungeonMapRenderState.Marker> markers,
-        List<DungeonMapRenderState.GraphNode> graphNodes,
-        List<DungeonMapRenderState.GraphLink> graphLinks,
-        DungeonMapRenderState.PartyToken partyToken
-) {
 
-    static final String SELECT_TOOL_LABEL = "Auswahl";
-    private static final String EMPTY_KIND = "EMPTY";
-
-    DungeonMapRenderState {
-        title = normalizeTitle(title);
-        width = Math.max(0, width);
-        height = Math.max(0, height);
-        topology = topology == null ? Topology.SQUARE : topology;
-        viewMode = viewMode == null ? ViewMode.GRID : viewMode;
-        overlaySettings = overlaySettings == null ? LevelOverlaySettings.defaults() : overlaySettings;
-        selectedTool = normalizeTool(selectedTool);
-        emptyMessage = normalizeEmptyMessage(emptyMessage, projectionAvailable);
-        cells = immutableList(cells);
-        edges = immutableList(edges);
-        labels = immutableList(labels);
-        markers = immutableList(markers);
-        graphNodes = immutableList(graphNodes);
-        graphLinks = immutableList(graphLinks);
-    }
-
-    String subtitle() {
-        if (!projectionAvailable) {
-            return "";
-        }
-        return width + " x " + height + " grid · z=" + projectionLevel;
-    }
-
-    String modeLabel() {
-        return viewMode.label();
-    }
-
-    boolean isGraphView() {
-        return viewMode == ViewMode.GRAPH;
-    }
-
-    src.view.slotcontent.primitives.mapcanvas.MapCanvasContentModel.ViewMode sceneViewMode() {
-        return isGraphView()
-                ? src.view.slotcontent.primitives.mapcanvas.MapCanvasContentModel.ViewMode.graph()
-                : src.view.slotcontent.primitives.mapcanvas.MapCanvasContentModel.ViewMode.grid();
-    }
-
-    String statusLabel() {
-        return editorMode ? selectedTool : "Token auf der Karte ziehen";
-    }
-
-    String summaryLabel() {
-        if (!projectionAvailable) {
-            return "";
-        }
-        return cells.size() + " cells, " + edges.size() + " edges · " + overlaySettings.mode().label();
-    }
-
-    boolean mapLoaded() {
-        return !(cells.isEmpty()
-                && edges.isEmpty()
-                && labels.isEmpty()
-                && markers.isEmpty()
-                && graphNodes.isEmpty());
-    }
-
-    String overlayMessage() {
-        return mapLoaded() ? "" : emptyMessage;
-    }
-
-    DungeonMapRenderState withViewMode(ViewMode nextViewMode) {
-        return new DungeonMapRenderState(
-                title,
-                projectionAvailable,
-                width,
-                height,
-                topology,
-                nextViewMode == null ? ViewMode.GRID : nextViewMode,
-                overlaySettings,
-                projectionLevel,
-                editorMode,
-                selectedTool,
-                emptyMessage,
-                cells,
-                edges,
-                labels,
-                markers,
-                graphNodes,
-                graphLinks,
-                partyToken);
-    }
-
-    DungeonMapRenderState withOverlaySettings(LevelOverlaySettings nextOverlaySettings) {
-        return new DungeonMapRenderState(
-                title,
-                projectionAvailable,
-                width,
-                height,
-                topology,
-                viewMode,
-                nextOverlaySettings == null ? LevelOverlaySettings.off() : nextOverlaySettings,
-                projectionLevel,
-                editorMode,
-                selectedTool,
-                emptyMessage,
-                cells,
-                edges,
-                labels,
-                markers,
-                graphNodes,
-                graphLinks,
-                partyToken);
-    }
-
-    DungeonMapRenderState withProjectionLevel(int nextProjectionLevel) {
-        return new DungeonMapRenderState(
-                title,
-                projectionAvailable,
-                width,
-                height,
-                topology,
-                viewMode,
-                overlaySettings,
-                nextProjectionLevel,
-                editorMode,
-                selectedTool,
-                emptyMessage,
-                cells,
-                edges,
-                labels,
-                markers,
-                graphNodes,
-                graphLinks,
-                partyToken);
-    }
-
-    DungeonMapRenderState withSelectedTool(String nextSelectedTool) {
-        return new DungeonMapRenderState(
-                title,
-                projectionAvailable,
-                width,
-                height,
-                topology,
-                viewMode,
-                overlaySettings,
-                projectionLevel,
-                editorMode,
-                normalizeTool(nextSelectedTool),
-                emptyMessage,
-                cells,
-                edges,
-                labels,
-                markers,
-                graphNodes,
-                graphLinks,
-                partyToken);
-    }
-
-    static DungeonMapRenderState empty(String title, boolean editorMode) {
-        return new DungeonMapRenderState(
-                title,
-                false,
-                0,
-                0,
-                Topology.SQUARE,
-                ViewMode.GRID,
-                LevelOverlaySettings.off(),
-                0,
-                editorMode,
-                SELECT_TOOL_LABEL,
-                "No dungeon map loaded.",
-                List.of(),
-                List.of(),
-                List.of(),
-                List.of(),
-                List.of(),
-                List.of(),
-                null);
-    }
-
-    enum Topology {
-        SQUARE,
-        HEX;
-
-        static Topology fromPublished(DungeonTopologyKind topologyKind) {
-            return topologyKind == DungeonTopologyKind.HEX ? HEX : SQUARE;
-        }
-    }
-
-    enum ViewMode {
-        GRID("Grid"),
-        GRAPH("Graph");
-
-        private final String label;
-
-        ViewMode(String label) {
-            this.label = label;
-        }
-
-        String label() {
-            return label;
-        }
-
-        static ViewMode grid() {
-            return GRID;
-        }
-
-        static ViewMode fromEditor(DungeonEditorViewMode viewMode) {
-            return viewMode == DungeonEditorViewMode.GRAPH ? GRAPH : GRID;
-        }
-    }
-
-    enum OverlayMode {
-        OFF("Overlay: Aus"),
-        NEARBY("Overlay: Nachbarn"),
-        SELECTED("Overlay: Auswahl");
-
-        private final String label;
-
-        OverlayMode(String label) {
-            this.label = label;
-        }
-
-        String label() {
-            return label;
-        }
-
-        static OverlayMode fromKey(String modeKey) {
-            return switch (upper(modeKey)) {
-                case "NEARBY" -> NEARBY;
-                case "SELECTED" -> SELECTED;
-                default -> OFF;
-            };
-        }
-    }
-
-    enum CellKind {
-        ROOM,
-        CORRIDOR,
-        STAIR,
-        TRANSITION;
-
-        static CellKind fromKey(String kindKey) {
-            return switch (upper(kindKey)) {
-                case "CORRIDOR" -> CORRIDOR;
-                case "STAIR" -> STAIR;
-                case "TRANSITION" -> TRANSITION;
-                default -> ROOM;
-            };
-        }
-    }
-
-    enum EdgeKind {
-        WALL,
-        DOOR;
-
-        static EdgeKind fromKey(String kindKey) {
-            return "DOOR".equalsIgnoreCase(kindKey) ? DOOR : WALL;
-        }
-    }
-
-    enum MarkerKind {
-        DOOR,
-        STAIR,
-        TRANSITION,
-        WAYPOINT,
-        CLUSTER;
-
-        static MarkerKind fromKey(String kindKey) {
-            return switch (upper(kindKey)) {
-                case "STAIR" -> STAIR;
-                case "TRANSITION" -> TRANSITION;
-                case "WAYPOINT" -> WAYPOINT;
-                case "CLUSTER" -> CLUSTER;
-                default -> DOOR;
-            };
-        }
-    }
-
-    enum Heading {
-        NORTH(0.0, -1.0),
-        EAST(1.0, 0.0),
-        SOUTH(0.0, 1.0),
-        WEST(-1.0, 0.0);
-
-        private final double dx;
-        private final double dy;
-
-        Heading(double dx, double dy) {
-            this.dx = dx;
-            this.dy = dy;
-        }
-
-        double dx() {
-            return dx;
-        }
-
-        double dy() {
-            return dy;
-        }
-
-        static Heading fromName(String headingName) {
-            return switch (upper(headingName)) {
-                case "NORTH" -> NORTH;
-                case "EAST" -> EAST;
-                case "WEST" -> WEST;
-                default -> SOUTH;
-            };
-        }
-    }
-
-    record LevelOverlaySettings(
-            DungeonMapRenderState.OverlayMode mode,
-            int levelRange,
-            double opacity,
-            List<Integer> selectedLevels
-    ) {
-
-        private static final int DEFAULT_LEVEL_RANGE = 2;
-        private static final int MAX_LEVEL_RANGE = 6;
-        private static final double DEFAULT_OPACITY = 0.35;
-
-        LevelOverlaySettings {
-            mode = mode == null ? OverlayMode.OFF : mode;
-            levelRange = Math.max(1, Math.min(MAX_LEVEL_RANGE, levelRange));
-            opacity = Math.max(0.05, Math.min(0.95, opacity));
-            selectedLevels = selectedLevels == null
-                    ? List.of()
-                    : selectedLevels.stream()
-                            .filter(Objects::nonNull)
-                            .distinct()
-                            .sorted()
-                            .toList();
-        }
-
-        @Override
-        public List<Integer> selectedLevels() {
-            return immutableList(selectedLevels);
-        }
-
-        boolean selectsLevel(int level) {
-            return selectedLevels().contains(level);
-        }
-
-        static LevelOverlaySettings defaults() {
-            return new LevelOverlaySettings(OverlayMode.NEARBY, DEFAULT_LEVEL_RANGE, DEFAULT_OPACITY, List.of());
-        }
-
-        static LevelOverlaySettings off() {
-            return new LevelOverlaySettings(OverlayMode.OFF, DEFAULT_LEVEL_RANGE, DEFAULT_OPACITY, List.of());
-        }
-    }
-
-    record TopologyRef(String kind, long id) {
-
-        TopologyRef {
-            kind = kind == null || kind.isBlank() ? EMPTY_KIND : kind.trim();
-            id = Math.max(0L, id);
-        }
-
-        boolean isEmpty() {
-            return id <= 0L || EMPTY_KIND.equals(kind);
-        }
-
-        static TopologyRef empty() {
-            return new TopologyRef(EMPTY_KIND, 0L);
-        }
-    }
-
-    record MarkerHandle(
-            String kind,
-            DungeonMapRenderState.TopologyRef topologyRef,
-            long ownerId,
-            long clusterId,
-            long corridorId,
-            long roomId,
-            int index,
-            int q,
-            int r,
-            int level,
-            String direction
-    ) {
-
-        MarkerHandle {
-            kind = kind == null || kind.isBlank() ? EMPTY_KIND : kind.trim();
-            topologyRef = topologyRef == null ? TopologyRef.empty() : topologyRef;
-            ownerId = Math.max(0L, ownerId);
-            clusterId = Math.max(0L, clusterId);
-            corridorId = Math.max(0L, corridorId);
-            roomId = Math.max(0L, roomId);
-            index = Math.max(0, index);
-            direction = direction == null ? "" : direction.trim();
-        }
-    }
-
-    record Cell(
-            int q,
-            int r,
-            int z,
-            String label,
-            DungeonMapRenderState.CellKind kind,
-            long ownerId,
-            long clusterId,
-            DungeonMapRenderState.TopologyRef topologyRef,
-            boolean selected,
-            boolean overlay,
-            boolean preview,
-            boolean destructivePreview
-    ) {
-
-        Cell {
-            label = label == null ? "" : label;
-            kind = kind == null ? CellKind.ROOM : kind;
-            topologyRef = topologyRef == null ? TopologyRef.empty() : topologyRef;
-        }
-    }
-
-    record Edge(
-            double startQ,
-            double startR,
-            double endQ,
-            double endR,
-            int z,
-            DungeonMapRenderState.EdgeKind kind,
-            String label,
-            long ownerId,
-            DungeonMapRenderState.TopologyRef topologyRef,
-            boolean selected,
-            boolean preview
-    ) {
-
-        Edge {
-            kind = kind == null ? EdgeKind.WALL : kind;
-            label = label == null ? "" : label;
-            topologyRef = topologyRef == null ? TopologyRef.empty() : topologyRef;
-        }
-
-        boolean isDoor() {
-            return kind == EdgeKind.DOOR;
-        }
-    }
-
-    record Label(
-            String label,
-            double q,
-            double r,
-            int z,
-            long ownerId,
-            long clusterId,
-            DungeonMapRenderState.TopologyRef topologyRef,
-            boolean selected,
-            boolean preview
-    ) {
-
-        Label {
-            label = label == null ? "" : label;
-            topologyRef = topologyRef == null ? TopologyRef.empty() : topologyRef;
-        }
-    }
-
-    record Marker(
-            String label,
-            double q,
-            double r,
-            int z,
-            DungeonMapRenderState.MarkerKind kind,
-            boolean selected,
-            DungeonMapRenderState.MarkerHandle handle,
-            boolean preview
-    ) {
-
-        Marker {
-            label = label == null ? "" : label;
-            kind = kind == null ? MarkerKind.DOOR : kind;
-            handle = handle == null
-                    ? new MarkerHandle(EMPTY_KIND, TopologyRef.empty(), 0L, 0L, 0L, 0L, 0, 0, 0, 0, "")
-                    : handle;
-        }
-
-        boolean isDoorMarker() {
-            return kind == MarkerKind.DOOR;
-        }
-    }
-
-    record GraphNode(long id, long clusterId, String label, double q, double r, boolean selected) {
-
-        GraphNode {
-            label = label == null || label.isBlank() ? "Room" : label;
-        }
-    }
-
-    record GraphLink(long fromId, long toId, boolean selected) {
-    }
-
-    record PartyToken(double q, double r, int z, DungeonMapRenderState.Heading heading, boolean visible) {
-
-        PartyToken {
-            heading = heading == null ? Heading.SOUTH : heading;
-        }
-    }
-
-    private static String normalizeTitle(String title) {
-        return title == null || title.isBlank() ? "Dungeon Map" : title.trim();
-    }
-
-    private static String normalizeTool(String selectedTool) {
-        return selectedTool == null || selectedTool.isBlank() ? SELECT_TOOL_LABEL : selectedTool;
-    }
-
-    private static String normalizeEmptyMessage(String emptyMessage, boolean projectionAvailable) {
-        if (emptyMessage != null && !emptyMessage.isBlank()) {
-            return emptyMessage;
-        }
-        return projectionAvailable ? "No dungeon map geometry available." : "No dungeon map loaded.";
-    }
-
-    private static <T> List<T> immutableList(@Nullable List<T> values) {
-        return values == null ? List.of() : List.copyOf(values);
-    }
-
-    private static String upper(String value) {
-        return value == null ? "" : value.trim().toUpperCase(Locale.ROOT);
-    }
-}
-
+// Snapshot-to-render-state mapping
 final class DungeonMapSnapshotMapper {
 
     private static final Map<DungeonEditorTool, String> TOOL_LABELS = createToolLabels();
@@ -1968,5 +1436,546 @@ final class DungeonMapTravelProjectionAccess {
                             TravelDungeonMapProjectionSnapshot.PartyTokenProjection::visible));
 
     private DungeonMapTravelProjectionAccess() {
+    }
+}
+
+// Render-state values
+record DungeonMapRenderState(
+        String title,
+        boolean projectionAvailable,
+        int width,
+        int height,
+        DungeonMapRenderState.Topology topology,
+        DungeonMapRenderState.ViewMode viewMode,
+        DungeonMapRenderState.LevelOverlaySettings overlaySettings,
+        int projectionLevel,
+        boolean editorMode,
+        String selectedTool,
+        String emptyMessage,
+        List<DungeonMapRenderState.Cell> cells,
+        List<DungeonMapRenderState.Edge> edges,
+        List<DungeonMapRenderState.Label> labels,
+        List<DungeonMapRenderState.Marker> markers,
+        List<DungeonMapRenderState.GraphNode> graphNodes,
+        List<DungeonMapRenderState.GraphLink> graphLinks,
+        DungeonMapRenderState.PartyToken partyToken
+) {
+
+    static final String SELECT_TOOL_LABEL = "Auswahl";
+    private static final String EMPTY_KIND = "EMPTY";
+
+    DungeonMapRenderState {
+        title = normalizeTitle(title);
+        width = Math.max(0, width);
+        height = Math.max(0, height);
+        topology = topology == null ? Topology.SQUARE : topology;
+        viewMode = viewMode == null ? ViewMode.GRID : viewMode;
+        overlaySettings = overlaySettings == null ? LevelOverlaySettings.defaults() : overlaySettings;
+        selectedTool = normalizeTool(selectedTool);
+        emptyMessage = normalizeEmptyMessage(emptyMessage, projectionAvailable);
+        cells = immutableList(cells);
+        edges = immutableList(edges);
+        labels = immutableList(labels);
+        markers = immutableList(markers);
+        graphNodes = immutableList(graphNodes);
+        graphLinks = immutableList(graphLinks);
+    }
+
+    String subtitle() {
+        if (!projectionAvailable) {
+            return "";
+        }
+        return width + " x " + height + " grid · z=" + projectionLevel;
+    }
+
+    String modeLabel() {
+        return viewMode.label();
+    }
+
+    boolean isGraphView() {
+        return viewMode == ViewMode.GRAPH;
+    }
+
+    src.view.slotcontent.primitives.mapcanvas.MapCanvasContentModel.ViewMode sceneViewMode() {
+        return isGraphView()
+                ? src.view.slotcontent.primitives.mapcanvas.MapCanvasContentModel.ViewMode.graph()
+                : src.view.slotcontent.primitives.mapcanvas.MapCanvasContentModel.ViewMode.grid();
+    }
+
+    String statusLabel() {
+        return editorMode ? selectedTool : "Token auf der Karte ziehen";
+    }
+
+    String summaryLabel() {
+        if (!projectionAvailable) {
+            return "";
+        }
+        return cells.size() + " cells, " + edges.size() + " edges · " + overlaySettings.mode().label();
+    }
+
+    boolean mapLoaded() {
+        return !(cells.isEmpty()
+                && edges.isEmpty()
+                && labels.isEmpty()
+                && markers.isEmpty()
+                && graphNodes.isEmpty());
+    }
+
+    String overlayMessage() {
+        return mapLoaded() ? "" : emptyMessage;
+    }
+
+    DungeonMapRenderState withViewMode(ViewMode nextViewMode) {
+        return new DungeonMapRenderState(
+                title,
+                projectionAvailable,
+                width,
+                height,
+                topology,
+                nextViewMode == null ? ViewMode.GRID : nextViewMode,
+                overlaySettings,
+                projectionLevel,
+                editorMode,
+                selectedTool,
+                emptyMessage,
+                cells,
+                edges,
+                labels,
+                markers,
+                graphNodes,
+                graphLinks,
+                partyToken);
+    }
+
+    DungeonMapRenderState withOverlaySettings(LevelOverlaySettings nextOverlaySettings) {
+        return new DungeonMapRenderState(
+                title,
+                projectionAvailable,
+                width,
+                height,
+                topology,
+                viewMode,
+                nextOverlaySettings == null ? LevelOverlaySettings.off() : nextOverlaySettings,
+                projectionLevel,
+                editorMode,
+                selectedTool,
+                emptyMessage,
+                cells,
+                edges,
+                labels,
+                markers,
+                graphNodes,
+                graphLinks,
+                partyToken);
+    }
+
+    DungeonMapRenderState withProjectionLevel(int nextProjectionLevel) {
+        return new DungeonMapRenderState(
+                title,
+                projectionAvailable,
+                width,
+                height,
+                topology,
+                viewMode,
+                overlaySettings,
+                nextProjectionLevel,
+                editorMode,
+                selectedTool,
+                emptyMessage,
+                cells,
+                edges,
+                labels,
+                markers,
+                graphNodes,
+                graphLinks,
+                partyToken);
+    }
+
+    DungeonMapRenderState withSelectedTool(String nextSelectedTool) {
+        return new DungeonMapRenderState(
+                title,
+                projectionAvailable,
+                width,
+                height,
+                topology,
+                viewMode,
+                overlaySettings,
+                projectionLevel,
+                editorMode,
+                normalizeTool(nextSelectedTool),
+                emptyMessage,
+                cells,
+                edges,
+                labels,
+                markers,
+                graphNodes,
+                graphLinks,
+                partyToken);
+    }
+
+    static DungeonMapRenderState empty(String title, boolean editorMode) {
+        return new DungeonMapRenderState(
+                title,
+                false,
+                0,
+                0,
+                Topology.SQUARE,
+                ViewMode.GRID,
+                LevelOverlaySettings.off(),
+                0,
+                editorMode,
+                SELECT_TOOL_LABEL,
+                "No dungeon map loaded.",
+                List.of(),
+                List.of(),
+                List.of(),
+                List.of(),
+                List.of(),
+                List.of(),
+                null);
+    }
+
+    enum Topology {
+        SQUARE,
+        HEX;
+
+        static Topology fromPublished(DungeonTopologyKind topologyKind) {
+            return topologyKind == DungeonTopologyKind.HEX ? HEX : SQUARE;
+        }
+    }
+
+    enum ViewMode {
+        GRID("Grid"),
+        GRAPH("Graph");
+
+        private final String label;
+
+        ViewMode(String label) {
+            this.label = label;
+        }
+
+        String label() {
+            return label;
+        }
+
+        static ViewMode grid() {
+            return GRID;
+        }
+
+        static ViewMode fromEditor(DungeonEditorViewMode viewMode) {
+            return viewMode == DungeonEditorViewMode.GRAPH ? GRAPH : GRID;
+        }
+    }
+
+    enum OverlayMode {
+        OFF("Overlay: Aus"),
+        NEARBY("Overlay: Nachbarn"),
+        SELECTED("Overlay: Auswahl");
+
+        private final String label;
+
+        OverlayMode(String label) {
+            this.label = label;
+        }
+
+        String label() {
+            return label;
+        }
+
+        static OverlayMode fromKey(String modeKey) {
+            return switch (upper(modeKey)) {
+                case "NEARBY" -> NEARBY;
+                case "SELECTED" -> SELECTED;
+                default -> OFF;
+            };
+        }
+    }
+
+    enum CellKind {
+        ROOM,
+        CORRIDOR,
+        STAIR,
+        TRANSITION;
+
+        static CellKind fromKey(String kindKey) {
+            return switch (upper(kindKey)) {
+                case "CORRIDOR" -> CORRIDOR;
+                case "STAIR" -> STAIR;
+                case "TRANSITION" -> TRANSITION;
+                default -> ROOM;
+            };
+        }
+    }
+
+    enum EdgeKind {
+        WALL,
+        DOOR;
+
+        static EdgeKind fromKey(String kindKey) {
+            return "DOOR".equalsIgnoreCase(kindKey) ? DOOR : WALL;
+        }
+    }
+
+    enum MarkerKind {
+        DOOR,
+        STAIR,
+        TRANSITION,
+        WAYPOINT,
+        CLUSTER;
+
+        static MarkerKind fromKey(String kindKey) {
+            return switch (upper(kindKey)) {
+                case "STAIR" -> STAIR;
+                case "TRANSITION" -> TRANSITION;
+                case "WAYPOINT" -> WAYPOINT;
+                case "CLUSTER" -> CLUSTER;
+                default -> DOOR;
+            };
+        }
+    }
+
+    enum Heading {
+        NORTH(0.0, -1.0),
+        EAST(1.0, 0.0),
+        SOUTH(0.0, 1.0),
+        WEST(-1.0, 0.0);
+
+        private final double dx;
+        private final double dy;
+
+        Heading(double dx, double dy) {
+            this.dx = dx;
+            this.dy = dy;
+        }
+
+        double dx() {
+            return dx;
+        }
+
+        double dy() {
+            return dy;
+        }
+
+        static Heading fromName(String headingName) {
+            return switch (upper(headingName)) {
+                case "NORTH" -> NORTH;
+                case "EAST" -> EAST;
+                case "WEST" -> WEST;
+                default -> SOUTH;
+            };
+        }
+    }
+
+    record LevelOverlaySettings(
+            DungeonMapRenderState.OverlayMode mode,
+            int levelRange,
+            double opacity,
+            List<Integer> selectedLevels
+    ) {
+
+        private static final int DEFAULT_LEVEL_RANGE = 2;
+        private static final int MAX_LEVEL_RANGE = 6;
+        private static final double DEFAULT_OPACITY = 0.35;
+
+        LevelOverlaySettings {
+            mode = mode == null ? OverlayMode.OFF : mode;
+            levelRange = Math.max(1, Math.min(MAX_LEVEL_RANGE, levelRange));
+            opacity = Math.max(0.05, Math.min(0.95, opacity));
+            selectedLevels = selectedLevels == null
+                    ? List.of()
+                    : selectedLevels.stream()
+                            .filter(Objects::nonNull)
+                            .distinct()
+                            .sorted()
+                            .toList();
+        }
+
+        @Override
+        public List<Integer> selectedLevels() {
+            return immutableList(selectedLevels);
+        }
+
+        boolean selectsLevel(int level) {
+            return selectedLevels().contains(level);
+        }
+
+        static LevelOverlaySettings defaults() {
+            return new LevelOverlaySettings(OverlayMode.NEARBY, DEFAULT_LEVEL_RANGE, DEFAULT_OPACITY, List.of());
+        }
+
+        static LevelOverlaySettings off() {
+            return new LevelOverlaySettings(OverlayMode.OFF, DEFAULT_LEVEL_RANGE, DEFAULT_OPACITY, List.of());
+        }
+    }
+
+    record TopologyRef(String kind, long id) {
+
+        TopologyRef {
+            kind = kind == null || kind.isBlank() ? EMPTY_KIND : kind.trim();
+            id = Math.max(0L, id);
+        }
+
+        boolean isEmpty() {
+            return id <= 0L || EMPTY_KIND.equals(kind);
+        }
+
+        static TopologyRef empty() {
+            return new TopologyRef(EMPTY_KIND, 0L);
+        }
+    }
+
+    record MarkerHandle(
+            String kind,
+            DungeonMapRenderState.TopologyRef topologyRef,
+            long ownerId,
+            long clusterId,
+            long corridorId,
+            long roomId,
+            int index,
+            int q,
+            int r,
+            int level,
+            String direction
+    ) {
+
+        MarkerHandle {
+            kind = kind == null || kind.isBlank() ? EMPTY_KIND : kind.trim();
+            topologyRef = topologyRef == null ? TopologyRef.empty() : topologyRef;
+            ownerId = Math.max(0L, ownerId);
+            clusterId = Math.max(0L, clusterId);
+            corridorId = Math.max(0L, corridorId);
+            roomId = Math.max(0L, roomId);
+            index = Math.max(0, index);
+            direction = direction == null ? "" : direction.trim();
+        }
+    }
+
+    record Cell(
+            int q,
+            int r,
+            int z,
+            String label,
+            DungeonMapRenderState.CellKind kind,
+            long ownerId,
+            long clusterId,
+            DungeonMapRenderState.TopologyRef topologyRef,
+            boolean selected,
+            boolean overlay,
+            boolean preview,
+            boolean destructivePreview
+    ) {
+
+        Cell {
+            label = label == null ? "" : label;
+            kind = kind == null ? CellKind.ROOM : kind;
+            topologyRef = topologyRef == null ? TopologyRef.empty() : topologyRef;
+        }
+    }
+
+    record Edge(
+            double startQ,
+            double startR,
+            double endQ,
+            double endR,
+            int z,
+            DungeonMapRenderState.EdgeKind kind,
+            String label,
+            long ownerId,
+            DungeonMapRenderState.TopologyRef topologyRef,
+            boolean selected,
+            boolean preview
+    ) {
+
+        Edge {
+            kind = kind == null ? EdgeKind.WALL : kind;
+            label = label == null ? "" : label;
+            topologyRef = topologyRef == null ? TopologyRef.empty() : topologyRef;
+        }
+
+        boolean isDoor() {
+            return kind == EdgeKind.DOOR;
+        }
+    }
+
+    record Label(
+            String label,
+            double q,
+            double r,
+            int z,
+            long ownerId,
+            long clusterId,
+            DungeonMapRenderState.TopologyRef topologyRef,
+            boolean selected,
+            boolean preview
+    ) {
+
+        Label {
+            label = label == null ? "" : label;
+            topologyRef = topologyRef == null ? TopologyRef.empty() : topologyRef;
+        }
+    }
+
+    record Marker(
+            String label,
+            double q,
+            double r,
+            int z,
+            DungeonMapRenderState.MarkerKind kind,
+            boolean selected,
+            DungeonMapRenderState.MarkerHandle handle,
+            boolean preview
+    ) {
+
+        Marker {
+            label = label == null ? "" : label;
+            kind = kind == null ? MarkerKind.DOOR : kind;
+            handle = handle == null
+                    ? new MarkerHandle(EMPTY_KIND, TopologyRef.empty(), 0L, 0L, 0L, 0L, 0, 0, 0, 0, "")
+                    : handle;
+        }
+
+        boolean isDoorMarker() {
+            return kind == MarkerKind.DOOR;
+        }
+    }
+
+    record GraphNode(long id, long clusterId, String label, double q, double r, boolean selected) {
+
+        GraphNode {
+            label = label == null || label.isBlank() ? "Room" : label;
+        }
+    }
+
+    record GraphLink(long fromId, long toId, boolean selected) {
+    }
+
+    record PartyToken(double q, double r, int z, DungeonMapRenderState.Heading heading, boolean visible) {
+
+        PartyToken {
+            heading = heading == null ? Heading.SOUTH : heading;
+        }
+    }
+
+    private static String normalizeTitle(String title) {
+        return title == null || title.isBlank() ? "Dungeon Map" : title.trim();
+    }
+
+    private static String normalizeTool(String selectedTool) {
+        return selectedTool == null || selectedTool.isBlank() ? SELECT_TOOL_LABEL : selectedTool;
+    }
+
+    private static String normalizeEmptyMessage(String emptyMessage, boolean projectionAvailable) {
+        if (emptyMessage != null && !emptyMessage.isBlank()) {
+            return emptyMessage;
+        }
+        return projectionAvailable ? "No dungeon map geometry available." : "No dungeon map loaded.";
+    }
+
+    private static <T> List<T> immutableList(@Nullable List<T> values) {
+        return values == null ? List.of() : List.copyOf(values);
+    }
+
+    private static String upper(String value) {
+        return value == null ? "" : value.trim().toUpperCase(Locale.ROOT);
     }
 }

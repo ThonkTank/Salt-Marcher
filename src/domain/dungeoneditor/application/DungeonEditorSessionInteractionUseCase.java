@@ -1,28 +1,27 @@
 package src.domain.dungeoneditor.application;
 
-import java.util.function.Function;
 import org.jspecify.annotations.Nullable;
-import src.domain.dungeon.published.DungeonAuthoredMutationCommand;
-import src.domain.dungeon.published.DungeonAuthoredMutationResult;
-import src.domain.dungeon.published.DungeonEditorOperation;
-import src.domain.dungeon.published.DungeonOperationResult;
 import src.domain.dungeoneditor.model.interaction.model.DungeonEditorMainViewEffect;
-import src.domain.dungeoneditor.model.session.helper.DungeonEditorSessionOperationBoundaryTranslationHelper;
+import src.domain.dungeoneditor.model.session.model.DungeonEditorDungeonFacts;
 import src.domain.dungeoneditor.model.session.model.DungeonEditorSession;
 import src.domain.dungeoneditor.model.session.model.DungeonEditorSessionCommand;
-import src.domain.dungeoneditor.model.workspace.helper.DungeonEditorWorkspaceInspectorBoundaryTranslationHelper;
+import src.domain.dungeoneditor.model.session.port.DungeonEditorDungeonPort;
+import src.domain.dungeoneditor.model.session.repository.DungeonEditorDungeonRepository;
 import src.domain.dungeoneditor.model.workspace.model.DungeonEditorWorkspaceValues;
 
 final class DungeonEditorSessionInteractionUseCase {
-    private final Function<DungeonAuthoredMutationCommand, DungeonAuthoredMutationResult> mutateAuthored;
+    private final DungeonEditorDungeonRepository dungeonRepository;
+    private final DungeonEditorDungeonPort dungeonPort;
     private final BuildDungeonEditorSnapshotUseCase snapshotBuilder;
     private final InterpretDungeonEditorMainViewInputUseCase mainViewInterpreter = new InterpretDungeonEditorMainViewInputUseCase();
 
     DungeonEditorSessionInteractionUseCase(
-            Function<DungeonAuthoredMutationCommand, DungeonAuthoredMutationResult> mutateAuthored,
+            DungeonEditorDungeonRepository dungeonRepository,
+            DungeonEditorDungeonPort dungeonPort,
             BuildDungeonEditorSnapshotUseCase snapshotBuilder
     ) {
-        this.mutateAuthored = mutateAuthored;
+        this.dungeonRepository = dungeonRepository;
+        this.dungeonPort = dungeonPort;
         this.snapshotBuilder = snapshotBuilder;
     }
 
@@ -47,17 +46,11 @@ final class DungeonEditorSessionInteractionUseCase {
         if (roomNarration == null || !DungeonEditorWorkspaceValues.hasId(roomNarration.roomId())) {
             return session;
         }
-        DungeonOperationResult result = ApplyDungeonEditorSessionUseCase.requireOperationResult(mutateAuthored.apply(
-                new DungeonAuthoredMutationCommand.Operation(
-                        DungeonAuthoredMutationCommand.Action.APPLY,
-                        ApplyDungeonEditorSessionUseCase.requireMapId(session.selectedMapId()),
-                        new DungeonEditorOperation.SaveRoomNarration(
-                                roomNarration.roomId(),
-                                roomNarration.visualDescription(),
-                                roomNarration.exits().stream()
-                                        .map(DungeonEditorWorkspaceInspectorBoundaryTranslationHelper::toDomainRoomExit)
-                                        .toList()))));
-        return session.clearPreview().withStatusText(ApplyDungeonEditorSessionUseCase.statusFromMessages(result));
+        dungeonRepository.saveRoomNarration(session.selectedMapId(), roomNarration);
+        return session.clearPreview().withStatusText(dungeonPort.currentFacts(
+                session.selectedMapId(),
+                session.selection(),
+                session.preview()).mutationStatusText());
     }
 
     private DungeonEditorSession applyMainViewInput(
@@ -114,11 +107,11 @@ final class DungeonEditorSessionInteractionUseCase {
         if (effect.applyPreview() == null) {
             return nextSession;
         }
-        DungeonOperationResult result = ApplyDungeonEditorSessionUseCase.requireOperationResult(mutateAuthored.apply(
-                new DungeonAuthoredMutationCommand.Operation(
-                        DungeonAuthoredMutationCommand.Action.APPLY,
-                        ApplyDungeonEditorSessionUseCase.requireMapId(nextSession.selectedMapId()),
-                        DungeonEditorSessionOperationBoundaryTranslationHelper.toDungeonOperation(effect.applyPreview()))));
-        return nextSession.clearPreview().withStatusText(ApplyDungeonEditorSessionUseCase.statusFromMessages(result));
+        dungeonRepository.applyOperation(nextSession.selectedMapId(), effect.applyPreview());
+        DungeonEditorDungeonFacts facts = dungeonPort.currentFacts(
+                nextSession.selectedMapId(),
+                nextSession.selection(),
+                nextSession.preview());
+        return nextSession.clearPreview().withStatusText(facts.mutationStatusText());
     }
 }

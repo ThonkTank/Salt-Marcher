@@ -2,11 +2,6 @@ package src.data.dungeoneditor;
 
 import shell.api.ServiceContribution;
 import shell.api.ServiceRegistry;
-import src.domain.dungeon.DungeonAuthoredApplicationService;
-import src.domain.dungeon.DungeonCatalogApplicationService;
-import src.domain.dungeon.published.DungeonAuthoredMutationModel;
-import src.domain.dungeon.published.DungeonAuthoredReadModel;
-import src.domain.dungeon.published.DungeonMapCatalogModel;
 import src.domain.dungeoneditor.DungeonEditorApplicationService;
 
 public final class DungeonEditorServiceContribution implements ServiceContribution {
@@ -17,13 +12,9 @@ public final class DungeonEditorServiceContribution implements ServiceContributi
 
     @Override
     public void register(ServiceRegistry.Builder services) {
+        DungeonEditorServiceAssembly assembly = new DungeonEditorServiceAssembly();
         services.registerFactory(
                 DungeonEditorApplicationService.class,
-                registry -> new DungeonEditorApplicationService(
-                        registry.require(DungeonCatalogApplicationService.class),
-                        registry.require(DungeonAuthoredApplicationService.class),
-                        registry.require(DungeonMapCatalogModel.class),
-                        registry.require(DungeonAuthoredMutationModel.class),
-                        registry.require(DungeonAuthoredReadModel.class)));
+                assembly::create);
     }
 }

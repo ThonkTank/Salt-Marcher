@@ -1,23 +1,24 @@
 package src.domain.dungeoneditor.application;
 
-import java.util.function.Function;
-import src.domain.dungeon.published.DungeonAuthoredReadCommand;
-import src.domain.dungeon.published.DungeonMapCatalogCommand;
-import src.domain.dungeon.published.DungeonMapCatalogResponse;
-import src.domain.dungeoneditor.model.workspace.helper.DungeonEditorWorkspaceMapBoundaryTranslationHelper;
+import src.domain.dungeoneditor.model.session.model.DungeonEditorDungeonFacts;
 import src.domain.dungeoneditor.model.session.model.DungeonEditorSession;
 import src.domain.dungeoneditor.model.session.model.DungeonEditorSessionCommand;
+import src.domain.dungeoneditor.model.session.port.DungeonEditorDungeonPort;
+import src.domain.dungeoneditor.model.session.repository.DungeonEditorDungeonRepository;
 import src.domain.dungeoneditor.model.workspace.model.DungeonEditorWorkspaceValues;
 
 final class DungeonEditorSessionCatalogUseCase {
-    private final Function<DungeonMapCatalogCommand, DungeonMapCatalogResponse> catalog;
+    private final DungeonEditorDungeonRepository dungeonRepository;
+    private final DungeonEditorDungeonPort dungeonPort;
     private final DungeonEditorSessionInteractionUseCase interactionWorkflow;
 
     DungeonEditorSessionCatalogUseCase(
-            Function<DungeonMapCatalogCommand, DungeonMapCatalogResponse> catalog,
+            DungeonEditorDungeonRepository dungeonRepository,
+            DungeonEditorDungeonPort dungeonPort,
             DungeonEditorSessionInteractionUseCase interactionWorkflow
     ) {
-        this.catalog = catalog;
+        this.dungeonRepository = dungeonRepository;
+        this.dungeonPort = dungeonPort;
         this.interactionWorkflow = interactionWorkflow;
     }
 
@@ -36,8 +37,12 @@ final class DungeonEditorSessionCatalogUseCase {
 
     private DungeonEditorSession applyCatalogMutation(DungeonEditorSession session, DungeonEditorSessionCommand command) {
         String mapName = command.mapName();
-        DungeonEditorWorkspaceValues.MapId nextMapId = DungeonEditorWorkspaceMapBoundaryTranslationHelper.toWorkspaceMapId(
-                ApplyDungeonEditorSessionUseCase.requireMutationMapId(catalog.apply(catalogCommand(command, mapName))));
+        applyCatalogCommand(command, mapName);
+        DungeonEditorDungeonFacts facts = dungeonPort.currentFacts(
+                session.selectedMapId(),
+                session.selection(),
+                session.preview());
+        DungeonEditorWorkspaceValues.MapId nextMapId = facts.mutationMapId();
         if (command.action().isDeleteMapAction()) {
             DungeonEditorSession nextSession = nextMapId != null && nextMapId.equals(session.selectedMapId())
                     ? session.withSelectedMap(null)
@@ -50,16 +55,16 @@ final class DungeonEditorSessionCatalogUseCase {
         return session.withSelectedMap(nextMapId).withStatusText("Dungeon-Map umbenannt.");
     }
 
-    private DungeonMapCatalogCommand catalogCommand(DungeonEditorSessionCommand command, String mapName) {
+    private void applyCatalogCommand(DungeonEditorSessionCommand command, String mapName) {
         if (command.action().isCreateMapAction()) {
-            return new DungeonMapCatalogCommand.CreateMap(mapName);
+            dungeonRepository.createMap(mapName);
+            return;
         }
         if (command.action().isRenameMapAction()) {
-            return new DungeonMapCatalogCommand.RenameMap(
-                    ApplyDungeonEditorSessionUseCase.requireMapId(command.mapId()),
-                    mapName);
+            dungeonRepository.renameMap(command.mapId(), mapName);
+            return;
         }
-        return new DungeonAuthoredReadCommand.MapSelection(ApplyDungeonEditorSessionUseCase.requireMapId(command.mapId()));
+        dungeonRepository.deleteMap(command.mapId());
     }
 
     private DungeonEditorSession applySessionSetting(DungeonEditorSession session, DungeonEditorSessionCommand command) {

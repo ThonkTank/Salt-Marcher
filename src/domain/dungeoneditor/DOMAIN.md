@@ -34,10 +34,11 @@ Published dungeon-editor carriers must not own:
 Application Service: DungeonEditorApplicationService
 
 `DungeonEditorApplicationService` is the only callable dungeon-editor backend
-boundary. It coordinates transient editor-session state through the foreign
-`DungeonAuthoredApplicationService` and `DungeonCatalogApplicationService`
-boundaries from `dungeon`. Binder and view code consume the runtime editor
-session through this boundary only; they do not own the session.
+boundary. It routes inbound editor commands into same-context session use-case
+work. That work triggers authored dungeon catalog/read/mutation workflows
+through the session-family repository role and consumes dungeon published
+readback through the session-family port role. Binder and view code consume the
+runtime editor session through this boundary only; they do not own the session.
 
 ## Commands And Invariants
 

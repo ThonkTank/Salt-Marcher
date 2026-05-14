@@ -29,8 +29,7 @@ final class BuildDungeonEditorSnapshotUseCase {
     DungeonEditorSessionSnapshot.SnapshotData execute(@Nullable DungeonEditorSession state) {
         DungeonEditorSession safeState = DungeonEditorSnapshotStateProjectionHelper.safeState(state);
         dungeonRepository.searchMaps("");
-        List<MapSummary> maps = DungeonEditorSnapshotSelectionProjectionHelper.mapSummaries(
-                dungeonPort.currentFacts(null, safeState.selection(), safeState.preview()).maps());
+        List<MapSummary> maps = dungeonPort.currentFacts(null, safeState.selection(), safeState.preview()).maps();
         @Nullable MapId resolvedMapId = DungeonEditorSnapshotSelectionProjectionHelper.resolveSelectedMapId(
                 safeState.selectedMapId(),
                 maps);

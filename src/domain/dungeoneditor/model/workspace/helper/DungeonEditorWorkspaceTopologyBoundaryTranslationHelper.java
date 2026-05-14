@@ -11,7 +11,7 @@ public final class DungeonEditorWorkspaceTopologyBoundaryTranslationHelper {
     private DungeonEditorWorkspaceTopologyBoundaryTranslationHelper() {
     }
 
-    static DungeonTopologyElementRef toDomainTopologyRef(DungeonEditorWorkspaceValues.TopologyElementRef ref) {
+    public static DungeonTopologyElementRef toDomainTopologyRef(DungeonEditorWorkspaceValues.TopologyElementRef ref) {
         DungeonEditorWorkspaceValues.TopologyElementRef safeRef = ref == null
                 ? DungeonEditorWorkspaceValues.TopologyElementRef.empty()
                 : ref;
