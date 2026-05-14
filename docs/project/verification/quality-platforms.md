@@ -180,6 +180,9 @@ proof entrypoints and must not be used as the canonical routing surface in
 owner docs. Build-harness role metadata is coalesced behind the production-code
 surface before execution: broad `production-handoff` runs active topology rules
 once, while technical layer surfaces keep focused topology diagnostics.
+Compile-backed Error Prone metadata follows the same operating split:
+`production-handoff` uses broader physical source-family compile slices, while
+focused enforcement diagnostics may keep finer bundle-derived slices.
 Documentation metadata is coalesced behind the public
 `checkDocumentationEnforcement` surface rather than published as role-local
 proof tasks. Build-harness bundle metadata must not require historic role-local

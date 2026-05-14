@@ -227,6 +227,20 @@ internal data class FocusedVerificationSliceKey(
             )
         }
 
+        fun from(groupId: String, descriptors: List<EnforcementBundleDescriptor>): FocusedVerificationSliceKey {
+            val roots = descriptors
+                .flatMap(EnforcementBundleDescriptor::verificationSourceRoots)
+                .normalized("verificationSourceRoots", groupId)
+            val includes = descriptors
+                .flatMap(EnforcementBundleDescriptor::verificationSourceIncludes)
+                .normalized("verificationSourceIncludes", groupId)
+            return FocusedVerificationSliceKey(
+                verificationSourceRoots = roots,
+                verificationSourceIncludes = includes,
+                compileClasspathOwner = MAIN_COMPILE_CLASSPATH_OWNER
+            )
+        }
+
         private fun List<String>.normalized(metadataName: String, bundleId: String): List<String> {
             val normalized = map { value ->
                 value.trim()

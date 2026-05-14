@@ -229,6 +229,10 @@ in the owning checkers. Documentation metadata uses
 `buildHarnessDocumentationCoverageSpecIds` for the coalesced per-surface
 documentation tasks behind `checkDocumentationEnforcement`; root
 `documentationEnforcementCheck` stays limited to root documentation rules.
+Error Prone focused compiles use two internal grouping modes: broad
+`production-handoff` coalesces compile-backed bundle descriptors by physical
+source family, while focused diagnostic surfaces keep descriptor-slice
+granularity so role-local failures remain attributable.
 Focused build-harness tasks should execute through the generic
 `ArchitectureCheckMain` or `DocumentationCheckMain` paths with task-local
 rule-class lists or coverage spec ids instead of one bundle-specific Java

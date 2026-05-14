@@ -45,7 +45,8 @@ internal fun Project.configureVerificationCore() {
 
     val focusedCompileTasksByBundleId = registerFocusedCompileTasksByBundleId(
         activeEnforcementBundleIds.map(::descriptor),
-        verificationHarness
+        verificationHarness,
+        focusedEnforcementBundleMode = enforcementBundles.focusedEnforcementBundleMode
     )
 
     fun registerStandardBundle(bundleId: String) {
@@ -172,37 +173,72 @@ private fun systemBoolean(name: String, defaultValue: Boolean): Boolean =
 
 private fun registerFocusedCompileTasksByBundleId(
     descriptors: List<EnforcementBundleDescriptor>,
-    verificationHarness: VerificationHarnessExtension
-): Map<String, TaskProvider<JavaCompile>> = descriptors
-    .filter(EnforcementBundleDescriptor::requiresFocusedCompile)
-    .groupBy(FocusedVerificationSliceKey::from)
-    .flatMap { (sliceKey, sliceDescriptors) ->
-        val sliceBundleIds = sliceDescriptors
-            .map(EnforcementBundleDescriptor::bundleId)
-            .sorted()
-        val sliceCheckerNames = sliceDescriptors
-            .flatMap(EnforcementBundleDescriptor::errorProneCheckers)
-            .distinct()
-            .sorted()
-        val coalescedCompileTask = verificationHarness.registerFocusedVerificationCompileTask(
-            sliceKey,
-            sliceCheckerNames,
-            focusedCompileDescription(sliceBundleIds, sliceCheckerNames)
-        )
-        sliceDescriptors.map { descriptor ->
-            descriptor.bundleId to coalescedCompileTask
-        }
+    verificationHarness: VerificationHarnessExtension,
+    focusedEnforcementBundleMode: Boolean
+): Map<String, TaskProvider<JavaCompile>> {
+    val compileBackedDescriptors = descriptors
+        .filter(EnforcementBundleDescriptor::requiresFocusedCompile)
+    val groupedDescriptors = if (focusedEnforcementBundleMode) {
+        compileBackedDescriptors
+            .groupBy(FocusedVerificationSliceKey::from)
+            .map { (sliceKey, sliceDescriptors) ->
+                FocusedCompileGroupKey(sliceKey.sliceId, sliceKey) to sliceDescriptors
+            }
+    } else {
+        compileBackedDescriptors
+            .groupBy(::productionCompileFamilyId)
+            .map { (familyId, familyDescriptors) ->
+                FocusedCompileGroupKey(
+                    familyId,
+                    FocusedVerificationSliceKey.from(familyId, familyDescriptors)
+                ) to familyDescriptors
+            }
     }
-    .toMap()
+
+    return groupedDescriptors
+        .flatMap { (groupKey, sliceDescriptors) ->
+            val sliceBundleIds = sliceDescriptors
+                .map(EnforcementBundleDescriptor::bundleId)
+                .sorted()
+            val sliceCheckerNames = sliceDescriptors
+                .flatMap(EnforcementBundleDescriptor::errorProneCheckers)
+                .distinct()
+                .sorted()
+            val coalescedCompileTask = verificationHarness.registerFocusedVerificationCompileTask(
+                groupKey.sliceKey,
+                sliceCheckerNames,
+                focusedCompileDescription(groupKey.groupId, sliceBundleIds, sliceCheckerNames)
+            )
+            sliceDescriptors.map { descriptor ->
+                descriptor.bundleId to coalescedCompileTask
+            }
+        }
+        .toMap()
+}
 
 private fun focusedCompileDescription(
+    groupId: String,
     bundleIds: List<String>,
     checkerNames: List<String>
 ): String {
     val sliceDisplayName = bundleIds.joinToString(", ")
     return if (checkerNames.isEmpty()) {
-        "Compile the coalesced focused verification slice for $sliceDisplayName."
+        "Compile the coalesced focused verification slice '$groupId' for $sliceDisplayName."
     } else {
-        "Compile the coalesced focused verification slice for $sliceDisplayName with the dedicated Error Prone checks enabled."
+        "Compile the coalesced focused verification slice '$groupId' for $sliceDisplayName with the dedicated Error Prone checks enabled."
     }
+}
+
+private data class FocusedCompileGroupKey(
+    val groupId: String,
+    val sliceKey: FocusedVerificationSliceKey
+)
+
+private fun productionCompileFamilyId(descriptor: EnforcementBundleDescriptor): String = when {
+    descriptor.bundleId.startsWith("view") || descriptor.bundleId.startsWith("styling") -> "view-ui"
+    descriptor.bundleId.startsWith("domain") -> "domain"
+    descriptor.bundleId.startsWith("data") -> "data"
+    descriptor.bundleId.startsWith("shell") -> "shell"
+    descriptor.bundleId.startsWith("bootstrap") -> "bootstrap"
+    else -> descriptor.bundleId
 }
