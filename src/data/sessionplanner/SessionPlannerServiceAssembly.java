@@ -71,6 +71,7 @@ final class SessionPlannerServiceAssembly {
 
         private final SessionPlanRepository repository;
         private final PublishedStateServiceAssembly publishedState;
+        private final AtomicReference<UseCaseRuntime> runtime = new AtomicReference<>();
 
         private ApplicationServicesServiceAssembly(
                 SessionPlanRepository repository,
@@ -149,6 +150,17 @@ final class SessionPlannerServiceAssembly {
         }
 
         private UseCaseRuntime runtime(ServiceRegistry services) {
+            UseCaseRuntime existing = runtime.get();
+            if (existing != null) {
+                return existing;
+            }
+            UseCaseRuntime candidate = runtimeCandidate(services);
+            return runtime.compareAndSet(null, candidate)
+                    ? candidate
+                    : Objects.requireNonNull(runtime.get(), "runtime");
+        }
+
+        private UseCaseRuntime runtimeCandidate(ServiceRegistry services) {
             SessionPlannerPartyFactsQueryAdapter partyFacts = new SessionPlannerPartyFactsQueryAdapter(
                     services.require(ActivePartyModel.class),
                     services.require(AdventuringDayCalculationModel.class));
