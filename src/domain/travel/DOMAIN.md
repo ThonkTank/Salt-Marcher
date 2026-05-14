@@ -33,16 +33,19 @@ Published travel carriers must not own:
 Application Service: TravelApplicationService
 
 `TravelApplicationService` is the only callable travel backend boundary. It
-coordinates runtime dungeon-travel session state through same-context
-`travel/application/*UseCase` work. Binder and view code consume the runtime
-session through this boundary only; they do not own the session.
+routes runtime dungeon-travel session commands into same-context use-case work.
+Binder and view code consume the runtime session through this boundary only;
+they do not own the session.
 
 The root boundary owns only inbound command/query intake and same-context
 use-case routing. Runtime session orchestration lives below that boundary in
-`travel/application/*UseCase` code. Concrete party and dungeon adapters are
-assembled outside the domain and satisfy the use case through same-context
-application data only. Same-context outward state and feedback return only
-through read-side `travel.published/*Model` handles.
+`travel/application/*UseCase` code, while one-family session operations live
+under `travel/model/session/usecase/`. Mutable runtime session state belongs to
+`travel/model/session/model/TravelDungeonSession` and its semantically named
+session model carriers, not to the root use case. Concrete party and dungeon
+adapters are assembled outside the domain and satisfy domain-owned repositories
+through same-context session model data only. Same-context outward state and
+feedback return only through read-side `travel.published/*Model` handles.
 
 ## Commands And Invariants
 
@@ -65,10 +68,11 @@ Core invariants:
 
 - overlay settings are session-local
 - projection level is session-local
+- requested dungeon position and current loaded surface are session-local
 - current runtime workspace state is rebuilt from dungeon truth plus party
   position
 - party and dungeon carrier translation happens in the outer data adapter
-  before same-context application data reaches the use case
+  before same-context session model data reaches the use case
 - no separate `travel` persistence store is introduced
 
 ## Ephemeral Policy Rationale

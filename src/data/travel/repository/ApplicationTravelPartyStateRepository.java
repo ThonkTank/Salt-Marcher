@@ -20,7 +20,12 @@ import src.domain.party.published.PartyTravelPositionsModel;
 import src.domain.party.published.PartyTravelPositionsResult;
 import src.domain.party.published.PartyTravelTile;
 import src.domain.party.published.ReadStatus;
-import src.domain.travel.application.ApplyTravelDungeonSessionUseCase;
+import src.domain.travel.model.session.model.TravelDungeonActiveState.ActiveTravelStateData;
+import src.domain.travel.model.session.model.TravelDungeonActiveState.PartyLocationData;
+import src.domain.travel.model.session.model.TravelDungeonSessionMovement.OverworldTargetData;
+import src.domain.travel.model.session.model.TravelDungeonSessionSurface.CellData;
+import src.domain.travel.model.session.model.TravelDungeonSessionSurface.PositionData;
+import src.domain.travel.model.session.model.TravelDungeonSessionValues.LocationKind;
 import src.domain.travel.model.session.repository.TravelPartyStateRepository;
 
 public final class ApplicationTravelPartyStateRepository implements TravelPartyStateRepository {
@@ -43,7 +48,7 @@ public final class ApplicationTravelPartyStateRepository implements TravelPartyS
     }
 
     @Override
-    public ApplyTravelDungeonSessionUseCase.ActiveTravelStateData loadActiveTravelState() {
+    public ActiveTravelStateData loadActiveTravelState() {
         ActivePartyResult activeParty = activePartyModel.current();
         List<Long> activeCharacterIds = activeParty.status() == ReadStatus.SUCCESS
                 ? activeParty.members().stream()
@@ -55,16 +60,13 @@ public final class ApplicationTravelPartyStateRepository implements TravelPartyS
         List<Long> travelCharacterIds = travelPositions.status() == ReadStatus.SUCCESS
                 ? attachedCharacterIds(travelPositions.positions(), activeCharacterIds)
                 : activeCharacterIds;
-        return new ApplyTravelDungeonSessionUseCase.ActiveTravelStateData(
+        return new ActiveTravelStateData(
                 travelCharacterIds,
                 toInternalPartyLocation(travelPositions.partyTokenLocation()));
     }
 
     @Override
-    public void saveDungeonPosition(
-            ApplyTravelDungeonSessionUseCase.PositionData position,
-            List<Long> characterIds
-    ) {
+    public void saveDungeonPosition(PositionData position, List<Long> characterIds) {
         if (position == null || characterIds == null || characterIds.isEmpty()) {
             return;
         }
@@ -72,7 +74,7 @@ public final class ApplicationTravelPartyStateRepository implements TravelPartyS
                 characterIds,
                 new PartyDungeonTravelLocationSnapshot(
                         position.mapId(),
-                        position.locationKind() == ApplyTravelDungeonSessionUseCase.LocationKind.TRANSITION
+                        position.locationKind() == LocationKind.TRANSITION
                                 ? PartyDungeonTravelLocationKind.TRANSITION
                                 : PartyDungeonTravelLocationKind.TILE,
                         position.ownerId(),
@@ -82,10 +84,7 @@ public final class ApplicationTravelPartyStateRepository implements TravelPartyS
     }
 
     @Override
-    public boolean saveOverworldPosition(
-            ApplyTravelDungeonSessionUseCase.OverworldTargetData target,
-            List<Long> characterIds
-    ) {
+    public boolean saveOverworldPosition(OverworldTargetData target, List<Long> characterIds) {
         if (target == null || characterIds == null || characterIds.isEmpty()) {
             return false;
         }
@@ -107,16 +106,14 @@ public final class ApplicationTravelPartyStateRepository implements TravelPartyS
         return attachedIds.isEmpty() ? fallbackIds : attachedIds;
     }
 
-    private static ApplyTravelDungeonSessionUseCase.@Nullable PartyLocationData toInternalPartyLocation(
-            @Nullable PartyTravelLocationSnapshot location
-    ) {
+    private static @Nullable PartyLocationData toInternalPartyLocation(@Nullable PartyTravelLocationSnapshot location) {
         if (location instanceof PartyDungeonTravelLocationSnapshot dungeonLocation) {
-            return new ApplyTravelDungeonSessionUseCase.PartyLocationData(
-                    new ApplyTravelDungeonSessionUseCase.PositionData(
+            return new PartyLocationData(
+                    new PositionData(
                             dungeonLocation.mapId(),
-                            ApplyTravelDungeonSessionUseCase.LocationKind.valueOf(dungeonLocation.locationKind().name()),
+                            LocationKind.valueOf(dungeonLocation.locationKind().name()),
                             dungeonLocation.ownerId(),
-                            new ApplyTravelDungeonSessionUseCase.CellData(
+                            new CellData(
                                     dungeonLocation.tile().q(),
                                     dungeonLocation.tile().r(),
                                     dungeonLocation.tile().level()),
@@ -125,7 +122,7 @@ public final class ApplicationTravelPartyStateRepository implements TravelPartyS
                     false);
         }
         if (location instanceof PartyOverworldTravelLocationSnapshot overworldLocation) {
-            return new ApplyTravelDungeonSessionUseCase.PartyLocationData(
+            return new PartyLocationData(
                     null,
                     overworldLocation.tileId(),
                     true);

@@ -10,10 +10,15 @@ import src.domain.dungeon.published.DungeonTravelMoveResult;
 import src.domain.dungeon.published.DungeonTravelModel;
 import src.domain.dungeon.published.DungeonTravelResponse;
 import src.domain.dungeon.published.DungeonTravelSurfaceSnapshot;
-import src.domain.travel.application.ApplyTravelDungeonSessionUseCase;
+import src.domain.travel.model.session.model.TravelDungeonActiveState.ActiveTravelStateData;
+import src.domain.travel.model.session.model.TravelDungeonSessionMovement.MoveResultData;
+import src.domain.travel.model.session.model.TravelDungeonSessionMovement.OverworldTargetData;
+import src.domain.travel.model.session.model.TravelDungeonSessionSurface.PositionData;
+import src.domain.travel.model.session.model.TravelDungeonSessionSurface.SurfaceData;
+import src.domain.travel.model.session.repository.TravelDungeonSessionRepository;
 
 public final class ApplicationTravelDungeonSessionRepository
-        implements ApplyTravelDungeonSessionUseCase.SessionRepository {
+        implements TravelDungeonSessionRepository {
 
     private final ApplicationTravelPartyStateRepository partyStateRepository;
     private final DungeonTravelApplicationService dungeonTravelApplicationService;
@@ -31,22 +36,20 @@ public final class ApplicationTravelDungeonSessionRepository
     }
 
     @Override
-    public ApplyTravelDungeonSessionUseCase.ActiveTravelStateData loadActiveTravelState() {
+    public ActiveTravelStateData loadActiveTravelState() {
         return partyStateRepository.loadActiveTravelState();
     }
 
     @Override
-    public ApplyTravelDungeonSessionUseCase.SurfaceData loadDungeonSurface(
-            ApplyTravelDungeonSessionUseCase.@Nullable PositionData position
-    ) {
+    public SurfaceData loadDungeonSurface(@Nullable PositionData position) {
         dungeonTravelApplicationService.travel(new DungeonTravelCommand.LoadSurface(
                 TravelDungeonSessionSurfaceMapper.toDungeonPosition(position)));
         return TravelDungeonSessionSurfaceMapper.toInternalSurface(surfaceResponse(dungeonTravelModel.current()));
     }
 
     @Override
-    public ApplyTravelDungeonSessionUseCase.MoveResultData moveDungeonAction(
-            ApplyTravelDungeonSessionUseCase.@Nullable PositionData position,
+    public MoveResultData moveDungeonAction(
+            @Nullable PositionData position,
             String actionId
     ) {
         dungeonTravelApplicationService.travel(new DungeonTravelCommand.MoveAction(
@@ -56,15 +59,12 @@ public final class ApplicationTravelDungeonSessionRepository
     }
 
     @Override
-    public void saveDungeonPosition(ApplyTravelDungeonSessionUseCase.PositionData position, List<Long> characterIds) {
+    public void saveDungeonPosition(PositionData position, List<Long> characterIds) {
         partyStateRepository.saveDungeonPosition(position, characterIds);
     }
 
     @Override
-    public boolean saveOverworldPosition(
-            ApplyTravelDungeonSessionUseCase.OverworldTargetData target,
-            List<Long> characterIds
-    ) {
+    public boolean saveOverworldPosition(OverworldTargetData target, List<Long> characterIds) {
         return partyStateRepository.saveOverworldPosition(target, characterIds);
     }
 

@@ -7,17 +7,25 @@ import src.domain.dungeon.published.DungeonBoundarySnapshot;
 import src.domain.dungeon.published.DungeonCellRef;
 import src.domain.dungeon.published.DungeonFeatureSnapshot;
 import src.domain.dungeon.published.DungeonMapSnapshot;
-import src.domain.travel.application.ApplyTravelDungeonSessionUseCase;
+import src.domain.travel.model.session.model.TravelDungeonSessionSurface.AreaData;
+import src.domain.travel.model.session.model.TravelDungeonSessionSurface.BoundaryData;
+import src.domain.travel.model.session.model.TravelDungeonSessionSurface.CellData;
+import src.domain.travel.model.session.model.TravelDungeonSessionSurface.EdgeData;
+import src.domain.travel.model.session.model.TravelDungeonSessionSurface.FeatureData;
+import src.domain.travel.model.session.model.TravelDungeonSessionSurface.MapData;
+import src.domain.travel.model.session.model.TravelDungeonSessionValues.AreaKind;
+import src.domain.travel.model.session.model.TravelDungeonSessionValues.FeatureKind;
+import src.domain.travel.model.session.model.TravelDungeonSessionValues.GridTopology;
 
 public final class TravelDungeonSessionMapMapper {
 
     private TravelDungeonSessionMapMapper() {
     }
 
-    public static ApplyTravelDungeonSessionUseCase.MapData toInternalMap(@Nullable DungeonMapSnapshot map) {
+    public static MapData toInternalMap(@Nullable DungeonMapSnapshot map) {
         DungeonMapSnapshot safeMap = map == null ? DungeonMapSnapshot.empty() : map;
-        return new ApplyTravelDungeonSessionUseCase.MapData(
-                ApplyTravelDungeonSessionUseCase.GridTopology.fromName(safeMap.topology().name()),
+        return new MapData(
+                GridTopology.fromName(safeMap.topology().name()),
                 safeMap.width(),
                 safeMap.height(),
                 safeMap.areas().stream().map(TravelDungeonSessionMapMapper::toInternalArea).toList(),
@@ -25,56 +33,52 @@ public final class TravelDungeonSessionMapMapper {
                 safeMap.features().stream().map(TravelDungeonSessionMapMapper::toInternalFeature).toList());
     }
 
-    private static ApplyTravelDungeonSessionUseCase.AreaData toInternalArea(@Nullable DungeonAreaSnapshot area) {
+    private static AreaData toInternalArea(@Nullable DungeonAreaSnapshot area) {
         if (area == null) {
-            return new ApplyTravelDungeonSessionUseCase.AreaData(
-                    ApplyTravelDungeonSessionUseCase.AreaKind.ROOM,
+            return new AreaData(
+                    AreaKind.ROOM,
                     1L,
                     "ROOM",
                     List.of());
         }
-        return new ApplyTravelDungeonSessionUseCase.AreaData(
-                ApplyTravelDungeonSessionUseCase.AreaKind.valueOf(area.kind().name()),
+        return new AreaData(
+                AreaKind.valueOf(area.kind().name()),
                 area.id(),
                 area.label(),
                 area.cells().stream().map(TravelDungeonSessionMapMapper::toInternalCell).toList());
     }
 
-    private static ApplyTravelDungeonSessionUseCase.BoundaryData toInternalBoundary(
-            @Nullable DungeonBoundarySnapshot boundary
-    ) {
+    private static BoundaryData toInternalBoundary(@Nullable DungeonBoundarySnapshot boundary) {
         if (boundary == null) {
-            return new ApplyTravelDungeonSessionUseCase.BoundaryData(
+            return new BoundaryData(
                     false,
                     1L,
                     "wall",
-                    new ApplyTravelDungeonSessionUseCase.EdgeData(
-                            new ApplyTravelDungeonSessionUseCase.CellData(0, 0, 0),
-                            new ApplyTravelDungeonSessionUseCase.CellData(0, 0, 0)));
+                    new EdgeData(
+                            new CellData(0, 0, 0),
+                            new CellData(0, 0, 0)));
         }
-        return new ApplyTravelDungeonSessionUseCase.BoundaryData(
+        return new BoundaryData(
                 "door".equalsIgnoreCase(boundary.kind()),
                 boundary.id(),
                 boundary.label(),
-                new ApplyTravelDungeonSessionUseCase.EdgeData(
+                new EdgeData(
                         toInternalCell(boundary.edge().from()),
                         toInternalCell(boundary.edge().to())));
     }
 
-    private static ApplyTravelDungeonSessionUseCase.FeatureData toInternalFeature(
-            @Nullable DungeonFeatureSnapshot feature
-    ) {
+    private static FeatureData toInternalFeature(@Nullable DungeonFeatureSnapshot feature) {
         if (feature == null) {
-            return new ApplyTravelDungeonSessionUseCase.FeatureData(
-                    ApplyTravelDungeonSessionUseCase.FeatureKind.STAIR,
+            return new FeatureData(
+                    FeatureKind.STAIR,
                     1L,
                     "STAIR",
                     List.of(),
                     "",
                     "");
         }
-        return new ApplyTravelDungeonSessionUseCase.FeatureData(
-                ApplyTravelDungeonSessionUseCase.FeatureKind.valueOf(feature.kind().name()),
+        return new FeatureData(
+                FeatureKind.valueOf(feature.kind().name()),
                 feature.id(),
                 feature.label(),
                 feature.cells().stream().map(TravelDungeonSessionMapMapper::toInternalCell).toList(),
@@ -82,8 +86,8 @@ public final class TravelDungeonSessionMapMapper {
                 feature.destinationLabel());
     }
 
-    private static ApplyTravelDungeonSessionUseCase.CellData toInternalCell(@Nullable DungeonCellRef cell) {
-        return new ApplyTravelDungeonSessionUseCase.CellData(
+    private static CellData toInternalCell(@Nullable DungeonCellRef cell) {
+        return new CellData(
                 cell == null ? 0 : cell.q(),
                 cell == null ? 0 : cell.r(),
                 cell == null ? 0 : cell.level());

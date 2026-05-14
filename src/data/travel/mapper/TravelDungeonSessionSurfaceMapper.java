@@ -11,21 +11,28 @@ import src.domain.dungeon.published.DungeonTravelLocationKind;
 import src.domain.dungeon.published.DungeonTravelMoveResult;
 import src.domain.dungeon.published.DungeonTravelPosition;
 import src.domain.dungeon.published.DungeonTravelSurfaceSnapshot;
-import src.domain.travel.application.ApplyTravelDungeonSessionUseCase;
+import src.domain.travel.model.session.model.TravelDungeonSessionMovement.MoveResultData;
+import src.domain.travel.model.session.model.TravelDungeonSessionMovement.MoveStatus;
+import src.domain.travel.model.session.model.TravelDungeonSessionMovement.OverworldTargetData;
+import src.domain.travel.model.session.model.TravelDungeonSessionSurface.AvailableAction;
+import src.domain.travel.model.session.model.TravelDungeonSessionSurface.CellData;
+import src.domain.travel.model.session.model.TravelDungeonSessionSurface.MapData;
+import src.domain.travel.model.session.model.TravelDungeonSessionSurface.PositionData;
+import src.domain.travel.model.session.model.TravelDungeonSessionSurface.SurfaceData;
+import src.domain.travel.model.session.model.TravelDungeonSessionValues.ContextKind;
+import src.domain.travel.model.session.model.TravelDungeonSessionValues.LocationKind;
 
 public final class TravelDungeonSessionSurfaceMapper {
 
     private TravelDungeonSessionSurfaceMapper() {
     }
 
-    public static ApplyTravelDungeonSessionUseCase.SurfaceData toInternalSurface(
-            @Nullable DungeonTravelSurfaceSnapshot surface
-    ) {
+    public static SurfaceData toInternalSurface(@Nullable DungeonTravelSurfaceSnapshot surface) {
         if (surface == null) {
             return outsideDungeonSurfaceData(0L);
         }
-        return new ApplyTravelDungeonSessionUseCase.SurfaceData(
-                ApplyTravelDungeonSessionUseCase.ContextKind.valueOf(surface.contextKind().name()),
+        return new SurfaceData(
+                ContextKind.valueOf(surface.contextKind().name()),
                 surface.mapName(),
                 surface.revision(),
                 TravelDungeonSessionMapMapper.toInternalMap(surface.map()),
@@ -39,30 +46,26 @@ public final class TravelDungeonSessionSurfaceMapper {
                 surface.actions().stream().map(TravelDungeonSessionSurfaceMapper::toInternalAction).toList());
     }
 
-    public static ApplyTravelDungeonSessionUseCase.MoveResultData toInternalMoveResult(
-            @Nullable DungeonTravelMoveResult result
-    ) {
+    public static MoveResultData toInternalMoveResult(@Nullable DungeonTravelMoveResult result) {
         if (result == null) {
-            return new ApplyTravelDungeonSessionUseCase.MoveResultData(
-                    ApplyTravelDungeonSessionUseCase.MoveStatus.NO_MAP,
+            return new MoveResultData(
+                    MoveStatus.NO_MAP,
                     outsideDungeonSurfaceData(0L),
                     null);
         }
-        ApplyTravelDungeonSessionUseCase.OverworldTargetData externalTarget =
+        OverworldTargetData externalTarget =
                 result.externalTarget() instanceof DungeonTravelExternalTarget.OverworldTile overworld
-                        ? new ApplyTravelDungeonSessionUseCase.OverworldTargetData(
+                        ? new OverworldTargetData(
                         overworld.mapId(),
                         overworld.tileId())
                         : null;
-        return new ApplyTravelDungeonSessionUseCase.MoveResultData(
-                ApplyTravelDungeonSessionUseCase.MoveStatus.valueOf(result.status().name()),
+        return new MoveResultData(
+                MoveStatus.valueOf(result.status().name()),
                 toInternalSurface(result.surface()),
                 externalTarget);
     }
 
-    public static @Nullable DungeonTravelPosition toDungeonPosition(
-            ApplyTravelDungeonSessionUseCase.@Nullable PositionData position
-    ) {
+    public static @Nullable DungeonTravelPosition toDungeonPosition(@Nullable PositionData position) {
         if (position == null) {
             return null;
         }
@@ -74,42 +77,38 @@ public final class TravelDungeonSessionSurfaceMapper {
                 toDungeonHeading(position.headingToken()));
     }
 
-    private static ApplyTravelDungeonSessionUseCase.AvailableAction toInternalAction(
-            @Nullable DungeonTravelActionSnapshot action
-    ) {
-        return new ApplyTravelDungeonSessionUseCase.AvailableAction(
+    private static AvailableAction toInternalAction(@Nullable DungeonTravelActionSnapshot action) {
+        return new AvailableAction(
                 action == null ? "" : action.actionId(),
                 action == null ? "" : action.displayLabel(),
                 action == null ? "" : action.description());
     }
 
-    private static ApplyTravelDungeonSessionUseCase.PositionData toInternalPosition(
-            @Nullable DungeonTravelPosition position
-    ) {
-        return new ApplyTravelDungeonSessionUseCase.PositionData(
+    private static PositionData toInternalPosition(@Nullable DungeonTravelPosition position) {
+        return new PositionData(
                 position == null ? 1L : position.mapId().value(),
                 position == null
-                        ? ApplyTravelDungeonSessionUseCase.LocationKind.TILE
-                        : ApplyTravelDungeonSessionUseCase.LocationKind.valueOf(position.locationKind().name()),
+                        ? LocationKind.TILE
+                        : LocationKind.valueOf(position.locationKind().name()),
                 position == null ? 0L : position.ownerId(),
-                new ApplyTravelDungeonSessionUseCase.CellData(
+                new CellData(
                         position == null ? 0 : position.tile().q(),
                         position == null ? 0 : position.tile().r(),
                         position == null ? 0 : position.tile().level()),
                 position == null ? "SOUTH" : position.heading().name());
     }
 
-    private static ApplyTravelDungeonSessionUseCase.SurfaceData outsideDungeonSurfaceData(long tileId) {
-        return new ApplyTravelDungeonSessionUseCase.SurfaceData(
-                ApplyTravelDungeonSessionUseCase.ContextKind.OVERWORLD,
+    private static SurfaceData outsideDungeonSurfaceData(long tileId) {
+        return new SurfaceData(
+                ContextKind.OVERWORLD,
                 "Overworld",
                 0,
-                ApplyTravelDungeonSessionUseCase.MapData.empty(),
-                new ApplyTravelDungeonSessionUseCase.PositionData(
+                MapData.empty(),
+                new PositionData(
                         1L,
-                        ApplyTravelDungeonSessionUseCase.LocationKind.TILE,
+                        LocationKind.TILE,
                         0L,
-                        new ApplyTravelDungeonSessionUseCase.CellData(0, 0, 0),
+                        new CellData(0, 0, 0),
                         "SOUTH"),
                 "Overworld",
                 "Overworld-Feld " + tileId,

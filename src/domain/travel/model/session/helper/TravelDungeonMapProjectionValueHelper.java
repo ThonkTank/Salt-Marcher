@@ -3,7 +3,14 @@ package src.domain.travel.model.session.helper;
 import java.util.Locale;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.published.DungeonTopologyKind;
-import src.domain.travel.application.ApplyTravelDungeonSessionUseCase;
+import src.domain.travel.model.session.model.TravelDungeonSessionSurface.AreaData;
+import src.domain.travel.model.session.model.TravelDungeonSessionSurface.BoundaryData;
+import src.domain.travel.model.session.model.TravelDungeonSessionSurface.CellData;
+import src.domain.travel.model.session.model.TravelDungeonSessionSurface.EdgeData;
+import src.domain.travel.model.session.model.TravelDungeonSessionSurface.FeatureData;
+import src.domain.travel.model.session.model.TravelDungeonSessionValues.AreaKind;
+import src.domain.travel.model.session.model.TravelDungeonSessionValues.FeatureKind;
+import src.domain.travel.model.session.model.TravelDungeonSessionValues.GridTopology;
 import src.domain.travel.published.TravelDungeonMapProjectionSnapshot;
 
 public final class TravelDungeonMapProjectionValueHelper {
@@ -12,15 +19,15 @@ public final class TravelDungeonMapProjectionValueHelper {
     }
 
     public static TravelDungeonMapProjectionSnapshot.CellProjection cell(
-            ApplyTravelDungeonSessionUseCase.AreaData area,
-            ApplyTravelDungeonSessionUseCase.CellData cell
+            AreaData area,
+            CellData cell
     ) {
         return new TravelDungeonMapProjectionSnapshot.CellProjection(
                 cell.q(),
                 cell.r(),
                 cell.level(),
                 area.label(),
-                area.kind() == ApplyTravelDungeonSessionUseCase.AreaKind.CORRIDOR
+                area.kind() == AreaKind.CORRIDOR
                         ? TravelDungeonMapProjectionSnapshot.CellKind.CORRIDOR
                         : TravelDungeonMapProjectionSnapshot.CellKind.ROOM,
                 area.id(),
@@ -33,15 +40,15 @@ public final class TravelDungeonMapProjectionValueHelper {
     }
 
     public static TravelDungeonMapProjectionSnapshot.CellProjection featureCell(
-            ApplyTravelDungeonSessionUseCase.FeatureData feature,
-            ApplyTravelDungeonSessionUseCase.CellData cell
+            FeatureData feature,
+            CellData cell
     ) {
         return new TravelDungeonMapProjectionSnapshot.CellProjection(
                 cell.q(),
                 cell.r(),
                 cell.level(),
                 feature.label(),
-                feature.kind() == ApplyTravelDungeonSessionUseCase.FeatureKind.TRANSITION
+                feature.kind() == FeatureKind.TRANSITION
                         ? TravelDungeonMapProjectionSnapshot.CellKind.TRANSITION
                         : TravelDungeonMapProjectionSnapshot.CellKind.STAIR,
                 feature.id(),
@@ -54,9 +61,9 @@ public final class TravelDungeonMapProjectionValueHelper {
     }
 
     public static TravelDungeonMapProjectionSnapshot.EdgeProjection edge(
-            ApplyTravelDungeonSessionUseCase.BoundaryData boundary
+            BoundaryData boundary
     ) {
-        ApplyTravelDungeonSessionUseCase.EdgeData edge = boundary.edge();
+        EdgeData edge = boundary.edge();
         return new TravelDungeonMapProjectionSnapshot.EdgeProjection(
                 edge.from().q(),
                 edge.from().r(),
@@ -72,13 +79,13 @@ public final class TravelDungeonMapProjectionValueHelper {
     }
 
     public static TravelDungeonMapProjectionSnapshot.MarkerProjection featureMarker(
-            ApplyTravelDungeonSessionUseCase.FeatureData feature,
+            FeatureData feature,
             double centerQ,
             double centerR,
             int level,
             TravelDungeonMapProjectionSnapshot.TopologyRef topologyRef
     ) {
-        boolean transition = feature.kind() == ApplyTravelDungeonSessionUseCase.FeatureKind.TRANSITION;
+        boolean transition = feature.kind() == FeatureKind.TRANSITION;
         return new TravelDungeonMapProjectionSnapshot.MarkerProjection(
                 transition ? "->" : "z",
                 centerQ,
@@ -103,7 +110,7 @@ public final class TravelDungeonMapProjectionValueHelper {
                 false);
     }
 
-    public static DungeonTopologyKind topology(ApplyTravelDungeonSessionUseCase.GridTopology topology) {
+    public static DungeonTopologyKind topology(GridTopology topology) {
         return topology != null && topology.isHex()
                 ? DungeonTopologyKind.HEX
                 : DungeonTopologyKind.SQUARE;
@@ -118,18 +125,18 @@ public final class TravelDungeonMapProjectionValueHelper {
     }
 
     public static TravelDungeonMapProjectionSnapshot.TopologyRef areaTopologyRef(
-            ApplyTravelDungeonSessionUseCase.AreaData area
+            AreaData area
     ) {
         return new TravelDungeonMapProjectionSnapshot.TopologyRef(
-                area.kind() == ApplyTravelDungeonSessionUseCase.AreaKind.CORRIDOR ? "CORRIDOR" : "ROOM",
+                area.kind() == AreaKind.CORRIDOR ? "CORRIDOR" : "ROOM",
                 area.id());
     }
 
     public static TravelDungeonMapProjectionSnapshot.TopologyRef featureTopologyRef(
-            ApplyTravelDungeonSessionUseCase.FeatureData feature
+            FeatureData feature
     ) {
         return new TravelDungeonMapProjectionSnapshot.TopologyRef(
-                feature.kind() == ApplyTravelDungeonSessionUseCase.FeatureKind.TRANSITION ? "TRANSITION" : "STAIR",
+                feature.kind() == FeatureKind.TRANSITION ? "TRANSITION" : "STAIR",
                 feature.id());
     }
 

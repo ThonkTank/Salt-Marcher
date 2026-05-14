@@ -4,7 +4,13 @@ import java.util.ArrayList;
 import java.util.List;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.published.DungeonMapProjectionContent;
-import src.domain.travel.application.ApplyTravelDungeonSessionUseCase;
+import src.domain.travel.model.session.model.TravelDungeonSessionSurface.AreaData;
+import src.domain.travel.model.session.model.TravelDungeonSessionSurface.BoundaryData;
+import src.domain.travel.model.session.model.TravelDungeonSessionSurface.FeatureData;
+import src.domain.travel.model.session.model.TravelDungeonSessionSurface.MapData;
+import src.domain.travel.model.session.model.TravelDungeonSessionSurface.PositionData;
+import src.domain.travel.model.session.model.TravelDungeonSessionSurface.SurfaceData;
+import src.domain.travel.model.session.model.TravelDungeonSessionValues.ContextKind;
 import src.domain.travel.published.TravelDungeonMapProjectionSnapshot;
 
 public final class TravelDungeonMapProjectionHelper {
@@ -12,14 +18,12 @@ public final class TravelDungeonMapProjectionHelper {
     private TravelDungeonMapProjectionHelper() {
     }
 
-    public static @Nullable TravelDungeonMapProjectionSnapshot projection(
-            ApplyTravelDungeonSessionUseCase.@Nullable SurfaceData surface
-    ) {
-        if (surface == null || surface.contextKind() != ApplyTravelDungeonSessionUseCase.ContextKind.DUNGEON) {
+    public static @Nullable TravelDungeonMapProjectionSnapshot projection(@Nullable SurfaceData surface) {
+        if (surface == null || surface.contextKind() != ContextKind.DUNGEON) {
             return null;
         }
         ProjectionAccumulator projection = assemble(surface.map());
-        ApplyTravelDungeonSessionUseCase.MapData map = surface.map();
+        MapData map = surface.map();
         return new TravelDungeonMapProjectionSnapshot(
                 surface.mapName(),
                 TravelDungeonMapProjectionValueHelper.topology(map.topology()),
@@ -35,7 +39,7 @@ public final class TravelDungeonMapProjectionHelper {
                 partyToken(surface.position()));
     }
 
-    private static ProjectionAccumulator assemble(ApplyTravelDungeonSessionUseCase.MapData map) {
+    private static ProjectionAccumulator assemble(MapData map) {
         ProjectionAccumulator projection = new ProjectionAccumulator(
                 new ArrayList<>(),
                 new ArrayList<>(),
@@ -51,11 +55,11 @@ public final class TravelDungeonMapProjectionHelper {
     }
 
     private static void renderAreas(
-            ApplyTravelDungeonSessionUseCase.MapData map,
+            MapData map,
             List<TravelDungeonMapProjectionSnapshot.CellProjection> cells,
             List<TravelDungeonMapProjectionSnapshot.GraphNodeProjection> graphNodes
     ) {
-        for (ApplyTravelDungeonSessionUseCase.AreaData area : map.areas()) {
+        for (AreaData area : map.areas()) {
             List<TravelDungeonMapProjectionSnapshot.CellProjection> areaCells = area.cells().stream()
                     .map(cell -> TravelDungeonMapProjectionValueHelper.cell(area, cell))
                     .toList();
@@ -75,21 +79,21 @@ public final class TravelDungeonMapProjectionHelper {
     }
 
     private static void renderBoundaries(
-            ApplyTravelDungeonSessionUseCase.MapData map,
+            MapData map,
             List<TravelDungeonMapProjectionSnapshot.EdgeProjection> edges
     ) {
-        for (ApplyTravelDungeonSessionUseCase.BoundaryData boundary : map.boundaries()) {
+        for (BoundaryData boundary : map.boundaries()) {
             edges.add(TravelDungeonMapProjectionValueHelper.edge(boundary));
         }
     }
 
     private static void renderFeatures(
-            ApplyTravelDungeonSessionUseCase.MapData map,
+            MapData map,
             List<TravelDungeonMapProjectionSnapshot.CellProjection> cells,
             List<TravelDungeonMapProjectionSnapshot.LabelProjection> labels,
             List<TravelDungeonMapProjectionSnapshot.MarkerProjection> markers
     ) {
-        for (ApplyTravelDungeonSessionUseCase.FeatureData feature : map.features()) {
+        for (FeatureData feature : map.features()) {
             List<TravelDungeonMapProjectionSnapshot.CellProjection> featureCells = feature.cells().stream()
                     .map(cell -> TravelDungeonMapProjectionValueHelper.featureCell(feature, cell))
                     .toList();
@@ -136,7 +140,7 @@ public final class TravelDungeonMapProjectionHelper {
     }
 
     private static TravelDungeonMapProjectionSnapshot.@Nullable PartyTokenProjection partyToken(
-            ApplyTravelDungeonSessionUseCase.@Nullable PositionData position
+            @Nullable PositionData position
     ) {
         if (position == null) {
             return null;
