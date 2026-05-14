@@ -2,13 +2,13 @@ package src.domain.encounter;
 
 import java.util.Objects;
 import src.domain.encounter.application.ApplyEncounterStateUseCase;
-import src.domain.encounter.application.PublishEncounterPlanBudgetUseCase;
-import src.domain.encounter.application.UpdateEncounterBuilderInputsUseCase;
 import src.domain.encounter.model.generation.model.EncounterGenerationInputs;
 import src.domain.encounter.model.generation.model.EncounterRequestedDifficulty;
 import src.domain.encounter.model.generation.model.EncounterTuningIntent;
+import src.domain.encounter.model.plan.usecase.PublishEncounterPlanBudgetUseCase;
 import src.domain.encounter.model.session.model.EncounterInitiativeInput;
 import src.domain.encounter.model.session.model.EncounterSessionCommand;
+import src.domain.encounter.model.session.usecase.UpdateEncounterBuilderInputsUseCase;
 import src.domain.encounter.published.ApplyEncounterStateCommand;
 import src.domain.encounter.published.EncounterBuilderInputs;
 import src.domain.encounter.published.RefreshEncounterPlanBudgetCommand;

@@ -4,17 +4,17 @@ import java.util.List;
 import java.util.Optional;
 import org.jspecify.annotations.Nullable;
 import src.domain.encounter.application.EncounterGenerationUseCase;
-import src.domain.encounter.application.ListSavedEncounterPlansUseCase;
-import src.domain.encounter.application.LoadEncounterBudgetUseCase;
-import src.domain.encounter.application.LoadSavedEncounterPlanUseCase;
-import src.domain.encounter.application.SaveEncounterPlanUseCase;
 import src.domain.encounter.model.generation.model.EncounterGenerationRequest;
 import src.domain.encounter.model.plan.model.EncounterPlan;
 import src.domain.encounter.model.plan.model.SavedEncounterPlansLoadResult;
+import src.domain.encounter.model.plan.usecase.ListSavedEncounterPlansUseCase;
+import src.domain.encounter.model.plan.usecase.LoadSavedEncounterPlanUseCase;
+import src.domain.encounter.model.plan.usecase.SaveEncounterPlanUseCase;
 import src.domain.encounter.model.session.model.EncounterSessionValues.BudgetData;
 import src.domain.encounter.model.session.model.EncounterSessionValues.GenerationResultData;
 import src.domain.encounter.model.session.model.EncounterSessionValues.ListPlansOutcome;
 import src.domain.encounter.model.session.model.EncounterSessionValues.PlanOutcome;
+import src.domain.encounter.model.session.usecase.LoadEncounterBudgetUseCase;
 
 public final class EncounterSessionUseCaseAdaptersRepository {
 

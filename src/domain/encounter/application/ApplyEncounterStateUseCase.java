@@ -1,8 +1,11 @@
 package src.domain.encounter.application;
 
 import org.jspecify.annotations.Nullable;
+import src.domain.encounter.model.plan.usecase.PublishEncounterSavedPlansUseCase;
 import src.domain.encounter.model.session.model.EncounterSession;
 import src.domain.encounter.model.session.model.EncounterSessionCommand;
+import src.domain.encounter.model.session.usecase.ApplyEncounterSessionUseCase;
+import src.domain.encounter.model.session.usecase.PublishEncounterSessionUseCase;
 
 public final class ApplyEncounterStateUseCase {
 
