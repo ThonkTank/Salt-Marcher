@@ -5,7 +5,15 @@ data class VerificationSurfaceSpec(
     val publicTaskName: String,
     val description: String,
     val bundleIds: List<String>
-)
+) {
+    fun buildHarnessTaskName(kind: BuildHarnessTaskKind): String {
+        val suffix = when (kind) {
+            BuildHarnessTaskKind.TOPOLOGY -> "TopologyCheck"
+            BuildHarnessTaskKind.DOCUMENTATION -> "DocumentationCheck"
+        }
+        return "${surfaceId.replaceFirstChar(Char::lowercaseChar)}BuildHarness$suffix"
+    }
+}
 
 data class VerificationSurfaceCatalog(
     val specsById: Map<String, VerificationSurfaceSpec>
@@ -18,6 +26,9 @@ data class VerificationSurfaceCatalog(
 
     fun surface(surfaceId: String): VerificationSurfaceSpec = specsById[surfaceId]
         ?: error("Unknown verification surface '$surfaceId'.")
+
+    fun surfacesForBundle(bundleId: String): List<VerificationSurfaceSpec> = surfacesInOrder
+        .filter { spec -> bundleId in spec.bundleIds }
 }
 
 private fun verificationSurface(

@@ -89,11 +89,12 @@ internal fun Project.configureVerificationCore() {
             aggregateDependencies += verificationHarness.registerJqassistantTask(bundleId, jqassistant)
         }
 
-        aggregateDependencies.addAll(
-            descriptor.buildHarnessTasks
-                .filterNot { task -> task.kind == BuildHarnessTaskKind.DOCUMENTATION }
-                .map { task -> gradle.includedBuild("build-harness").task(":${task.taskName}") }
-        )
+        if (descriptor.buildHarnessTasks.any { task -> task.kind == BuildHarnessTaskKind.TOPOLOGY }) {
+            aggregateDependencies.addAll(
+                verificationSurfaceCatalog.surfacesForBundle(bundleId)
+                    .map { surface -> gradle.includedBuild("build-harness").task(":${surface.buildHarnessTaskName(BuildHarnessTaskKind.TOPOLOGY)}") }
+            )
+        }
 
         tasks.register(selectorTaskName) {
             description = descriptor.selectorTaskDescription.ifBlank {

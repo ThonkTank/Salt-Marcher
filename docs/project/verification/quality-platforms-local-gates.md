@@ -38,14 +38,14 @@ Data, Shell, Bootstrap, Styling, and Layering entrypoints are
 `checkDomainEnforcement`, `checkDataEnforcement`, `checkShellEnforcement`,
 `checkBootstrapEnforcement`, `checkStylingEnforcement`, and
 `checkLayeringEnforcement`. Whole-program compiled dead-code analysis enters
-through `checkNoDeadCode`. Internal bundle tasks may still exist as technical
-implementation surfaces beneath those layer entrypoints, but they are not part
-of the public verification API. That also applies when an internal
-build-harness topology task still carries a technical `check*` name such as
-`checkViewLayerEnforcement`; the public command remains
-`checkViewEnforcement`. The technical owner split behind the public View route
-is now only the build-harness View topology core plus the shared Error Prone
-View core under `tools/quality/incubator/quality-rules-errorprone/**`.
+through `checkNoDeadCode`. Internal bundle selector tasks may still exist as
+technical implementation surfaces beneath those layer entrypoints, but they are
+not part of the public verification API. Build-harness owner metadata is
+coalesced into one internal task per layer surface and rule kind before
+execution; role-local owner splits do not create public or runnable proof
+routes by themselves. The technical owner split behind the public View route is
+now only the build-harness View topology core plus the shared Error Prone View
+core under `tools/quality/incubator/quality-rules-errorprone/**`.
 Focused compile, FXML, and topology paths are wired into the central `check`
 aggregate through the named architecture aggregates so `build` still runs the
 full architecture harness through `check`.

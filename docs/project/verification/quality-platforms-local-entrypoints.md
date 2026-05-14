@@ -106,8 +106,10 @@ Architecture-focused and handoff public entrypoints are:
 Internal `verify*Bundle` selector tasks may still exist for typed harness
 selection and internal ownership routing, but they are not public proof
 entrypoints and must not replace the canonical layer-surface commands above.
-The same rule applies to internal build-harness topology tasks whose technical
-names still begin with `check*`.
+Build-harness topology and documentation metadata is coalesced by layer surface
+and rule kind before Gradle execution; role-local owner metadata names are not
+public or runnable proof entrypoints unless this document explicitly lists them
+as utility gates.
 
 Focused investigation entrypoints are `compileJava`, `pmdMain`,
 `pmdStrictMain`, `checkRewriteNearMisses`, `rewriteDryRun`, `spotbugsMain`,

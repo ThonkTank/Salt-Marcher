@@ -186,13 +186,13 @@ surface set:
   runs the canonical broad production-code handoff route.
 
 The public API stops there. Role-specific or bundle-specific enforcement tasks
-are no longer part of the public verification contract. They may still exist as
-technical implementation tasks behind those layer surfaces, but they are not
-documented public entrypoints and must not be used as the canonical routing
-surface in owner docs. Internal `verify*Bundle` selector tasks are allowed as
-typed harness seams, and internal build-harness topology tasks may still keep
-technical `check*` names such as `checkViewLayerEnforcement`, but they remain
-explicitly non-public. `production-handoff` is the only public broad
+are no longer part of the public verification contract. Internal
+`verify*Bundle` selector tasks are allowed as typed harness seams, but they are
+not public proof entrypoints and must not be used as the canonical routing
+surface in owner docs. Build-harness role metadata is coalesced behind the
+canonical layer surfaces before execution, so historic role-local `check*`
+names are metadata or diagnostics unless explicitly documented as a public
+utility gate. `production-handoff` is the only public broad
 implementation-handoff aggregate above `checkArchitecture` and the
 documentation surface.
 

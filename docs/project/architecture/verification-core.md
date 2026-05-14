@@ -112,10 +112,13 @@ Physical module layout and owner-document splits therefore do not need to map
 and the two-owner View model stay unchanged.
 
 Bundle owners MAY know their private ArchUnit, Error Prone, or build-harness
-tasks. They MUST NOT depend on shell wrappers.
-They communicate with the verification core only through stable typed registry
-metadata, their internal bundle-selector tasks, their bundle-local lifecycle
-tasks, and any explicitly declared report-only sibling surfaces.
+rule metadata. They MUST NOT depend on shell wrappers. They communicate with the
+verification core only through stable typed registry metadata, their internal
+bundle-selector tasks, their bundle-local lifecycle tasks, and any explicitly
+declared report-only sibling surfaces. Build-harness owner metadata is
+coalesced by the verification core into one internal task per public
+surface/kind before Gradle execution; role-local owner splits MUST NOT create
+one runnable build-harness JVM scan per owner document.
 
 Root-owned hygiene gates that are not bundle-specific MUST stay registered in
 the verification core itself. They MUST NOT be back-ported into fake
@@ -173,10 +176,12 @@ settings-owned selection facts were published.
 Included builds own their technical registration from typed registry metadata
 and explicit engine-owned hosts such as build-harness rule classes, Error
 Prone checker lists, ArchUnit include patterns, and generic
-documentation-coverage spec ids or custom-task kinds. Harness wiring MUST NOT
-rely on bundle-derived filesystem scans, parallel families of tiny launcher
-mains, or `*-host.gradle.kts` scripts as a second source of truth for the same
-metadata.
+documentation-coverage spec ids or custom-task kinds. Build-harness
+registration groups active bundle metadata by canonical public surface and
+rule kind before registering tasks. Harness wiring MUST NOT rely on
+bundle-derived filesystem scans, parallel families of tiny launcher mains,
+role-local build-harness launcher tasks, or `*-host.gradle.kts` scripts as a
+second source of truth for the same metadata.
 Shared verification task registration inside `tools/gradle/build-logic` should
 flow through typed plugin or extension APIs rather than through untyped
 `extra[...]` function exports between precompiled script plugins.
@@ -185,6 +190,9 @@ through typed registry providers rather than by matching task names at
 configuration time. Bundle-owned verification tasks remain implementation
 details behind those surfaces unless a task is explicitly documented here or in
 `quality-platforms-local-entrypoints.md` as a public focused utility gate.
+Physical bundle metadata may keep historic task-name fields for diagnostics and
+ownership, but those names are metadata unless the verification core registers
+them as a public surface or an explicit utility gate.
 The remaining root-owned build-harness optional rules are now registry-driven
 as well: bundles contribute root `architectureCheck` and
 `documentationEnforcementCheck` rule classes and documentation-coverage spec

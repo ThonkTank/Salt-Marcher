@@ -6,6 +6,8 @@ import org.gradle.kotlin.dsl.the
 import saltmarcher.buildlogic.enforcement.BuildHarnessTaskKind
 import saltmarcher.buildlogic.enforcement.BuildHarnessTaskSpec
 import saltmarcher.buildlogic.enforcement.EnforcementBundlesExtension
+import saltmarcher.buildlogic.enforcement.VerificationSurfaceSpec
+import saltmarcher.buildlogic.enforcement.standardVerificationSurfaceCatalog
 import saltmarcher.buildlogic.tasks.RepoVerificationMainTask
 
 plugins {
@@ -26,6 +28,7 @@ val repoRootDir = System.getProperty("saltmarcher.repoRootDir")
 val enforcementBundles = extensions.getByType(EnforcementBundlesExtension::class.java)
 val focusedEnforcementBundleMode = enforcementBundles.focusedEnforcementBundleMode
 val activeEnforcementBundleIds = enforcementBundles.activeEnforcementBundleIds
+val verificationSurfaceCatalog = standardVerificationSurfaceCatalog(enforcementBundles.catalog)
 
 val sourceSets = the<SourceSetContainer>()
 
@@ -48,8 +51,8 @@ fun repoInputTree(includePatterns: List<String>) = fileTree(repoRootDir) {
     includePatterns.forEach(::include)
 }
 
-fun buildHarnessInputs(taskName: String) = when {
-    taskName.endsWith("DocumentationEnforcementCheck") -> repoInputTree(
+fun buildHarnessInputs(kind: BuildHarnessTaskKind) = when (kind) {
+    BuildHarnessTaskKind.DOCUMENTATION -> repoInputTree(
         listOf(
             "AGENTS.md",
             "docs/**",
@@ -58,7 +61,7 @@ fun buildHarnessInputs(taskName: String) = when {
             "tools/gradle/build-logic/src/main/kotlin/saltmarcher/buildlogic/enforcement/**"
         )
     )
-    else -> repoInputTree(
+    BuildHarnessTaskKind.TOPOLOGY -> repoInputTree(
         listOf(
             "api/**",
             "bootstrap/**",
@@ -91,6 +94,26 @@ fun documentationVerificationArgs(
     }
 }
 
+fun buildHarnessSurfaceTaskSpec(
+    surface: VerificationSurfaceSpec,
+    kind: BuildHarnessTaskKind
+): BuildHarnessTaskSpec? {
+    val activeSurfaceBundleIds = surface.bundleIds.filter(activeEnforcementBundleIds::contains)
+    val taskSpecs = activeSurfaceBundleIds
+        .flatMap { bundleId -> enforcementBundles.descriptor(bundleId).buildHarnessTasks }
+        .filter { taskSpec -> taskSpec.kind == kind }
+    if (taskSpecs.isEmpty()) {
+        return null
+    }
+
+    return BuildHarnessTaskSpec(
+        taskName = surface.buildHarnessTaskName(kind),
+        kind = kind,
+        ruleClasses = taskSpecs.flatMap(BuildHarnessTaskSpec::ruleClasses).distinct(),
+        coverageSpecIds = taskSpecs.flatMap(BuildHarnessTaskSpec::coverageSpecIds).distinct()
+    )
+}
+
 fun registerBuildHarnessTask(
     bundleLabel: String,
     taskSpec: BuildHarnessTaskSpec
@@ -120,20 +143,16 @@ fun registerBuildHarnessTask(
             isDocumentationTask -> verificationArgs.set(documentationVerificationArgs(taskSpec.ruleClasses, taskSpec.coverageSpecIds))
             taskSpec.ruleClasses.isNotEmpty() -> verificationArgs.set(listOf("--only-rules") + taskSpec.ruleClasses)
         }
-        verificationInputs.from(buildHarnessInputs(taskName))
+        verificationInputs.from(buildHarnessInputs(taskSpec.kind))
         successMarker.set(layout.buildDirectory.file("verification-markers/$taskName/success.marker"))
     }
 }
 
-activeEnforcementBundleIds.forEach { bundleId ->
-    val bundleLabel = humanizeBundleLabel(bundleId)
-    val descriptor = enforcementBundles.descriptor(bundleId)
-    descriptor.buildHarnessTasks
+verificationSurfaceCatalog.surfacesInOrder.forEach { surface ->
+    listOf(BuildHarnessTaskKind.TOPOLOGY, BuildHarnessTaskKind.DOCUMENTATION)
+        .mapNotNull { kind -> buildHarnessSurfaceTaskSpec(surface, kind) }
         .forEach { taskSpec ->
-            registerBuildHarnessTask(
-                bundleLabel,
-                taskSpec
-            )
+            registerBuildHarnessTask("${humanizeBundleLabel(surface.surfaceId)} surface", taskSpec)
         }
 }
 
