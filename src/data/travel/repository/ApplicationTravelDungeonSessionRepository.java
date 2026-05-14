@@ -1,4 +1,4 @@
-package src.domain.travel.model.session.repository;
+package src.data.travel.repository;
 
 import java.util.List;
 import java.util.Objects;
@@ -10,16 +10,16 @@ import src.domain.dungeon.published.DungeonTravelModel;
 import src.domain.dungeon.published.DungeonTravelResponse;
 import src.domain.dungeon.published.DungeonTravelSurfaceSnapshot;
 import src.domain.travel.application.ApplyTravelDungeonSessionUseCase;
-import src.domain.travel.model.session.helper.TravelDungeonSurfaceHelper;
 
-public final class TravelDungeonSessionRepository implements ApplyTravelDungeonSessionUseCase.SessionRepository {
+public final class ApplicationTravelDungeonSessionRepository
+        implements ApplyTravelDungeonSessionUseCase.SessionRepository {
 
-    private final TravelPartyStateRepository partyStateRepository;
+    private final ApplicationTravelPartyStateRepository partyStateRepository;
     private final DungeonTravelApplicationService dungeonTravelApplicationService;
     private final DungeonTravelModel dungeonTravelModel;
 
-    public TravelDungeonSessionRepository(
-            TravelPartyStateRepository partyStateRepository,
+    public ApplicationTravelDungeonSessionRepository(
+            ApplicationTravelPartyStateRepository partyStateRepository,
             DungeonTravelApplicationService dungeonTravelApplicationService,
             DungeonTravelModel dungeonTravelModel
     ) {
@@ -39,8 +39,8 @@ public final class TravelDungeonSessionRepository implements ApplyTravelDungeonS
             ApplyTravelDungeonSessionUseCase.@Nullable PositionData position
     ) {
         dungeonTravelApplicationService.travel(new DungeonTravelCommand.LoadSurface(
-                TravelDungeonSurfaceHelper.toDungeonPosition(position)));
-        return TravelDungeonSurfaceHelper.toInternalSurface(surfaceResponse(dungeonTravelModel.current()));
+                TravelDungeonSessionSurfaceMapper.toDungeonPosition(position)));
+        return TravelDungeonSessionSurfaceMapper.toInternalSurface(surfaceResponse(dungeonTravelModel.current()));
     }
 
     @Override
@@ -49,9 +49,9 @@ public final class TravelDungeonSessionRepository implements ApplyTravelDungeonS
             String actionId
     ) {
         dungeonTravelApplicationService.travel(new DungeonTravelCommand.MoveAction(
-                TravelDungeonSurfaceHelper.toDungeonPosition(position),
+                TravelDungeonSessionSurfaceMapper.toDungeonPosition(position),
                 actionId));
-        return TravelDungeonSurfaceHelper.toInternalMoveResult(moveResponse(dungeonTravelModel.current()));
+        return TravelDungeonSessionSurfaceMapper.toInternalMoveResult(moveResponse(dungeonTravelModel.current()));
     }
 
     @Override

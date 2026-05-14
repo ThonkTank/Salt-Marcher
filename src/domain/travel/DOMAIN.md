@@ -33,16 +33,16 @@ Published travel carriers must not own:
 Application Service: TravelApplicationService
 
 `TravelApplicationService` is the only callable travel backend boundary. It
-coordinates runtime dungeon-travel session state through foreign root
-application services from `party` and `dungeon`. Binder and view code consume
-the runtime session through this boundary only; they do not own the session.
+coordinates runtime dungeon-travel session state through same-context
+`travel/application/*UseCase` work. Binder and view code consume the runtime
+session through this boundary only; they do not own the session.
 
-The root boundary owns only inbound command/query intake and foreign
-published-carrier translation into internal workflow types. Runtime session
-orchestration lives below that boundary in `travel/application/*UseCase` code
-and does not consume `travel.published/**`, `party.published/**`, or
-`dungeon.published/**` carriers directly. Same-context outward state and
-feedback return only through read-side `travel.published/*Model` handles.
+The root boundary owns only inbound command/query intake and same-context
+use-case routing. Runtime session orchestration lives below that boundary in
+`travel/application/*UseCase` code. Concrete party and dungeon adapters are
+assembled outside the domain and satisfy the use case through same-context
+application data only. Same-context outward state and feedback return only
+through read-side `travel.published/*Model` handles.
 
 ## Commands And Invariants
 

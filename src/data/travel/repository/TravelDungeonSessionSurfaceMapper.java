@@ -1,22 +1,24 @@
-package src.domain.travel.model.session.helper;
+package src.data.travel.repository;
 
 import java.util.List;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.published.DungeonCellRef;
+import src.domain.dungeon.published.DungeonMapId;
 import src.domain.dungeon.published.DungeonTravelActionSnapshot;
 import src.domain.dungeon.published.DungeonTravelExternalTarget;
 import src.domain.dungeon.published.DungeonTravelHeading;
+import src.domain.dungeon.published.DungeonTravelLocationKind;
 import src.domain.dungeon.published.DungeonTravelMoveResult;
 import src.domain.dungeon.published.DungeonTravelPosition;
 import src.domain.dungeon.published.DungeonTravelSurfaceSnapshot;
 import src.domain.travel.application.ApplyTravelDungeonSessionUseCase;
 
-public final class TravelDungeonSurfaceHelper {
+final class TravelDungeonSessionSurfaceMapper {
 
-    private TravelDungeonSurfaceHelper() {
+    private TravelDungeonSessionSurfaceMapper() {
     }
 
-    public static ApplyTravelDungeonSessionUseCase.SurfaceData toInternalSurface(
+    static ApplyTravelDungeonSessionUseCase.SurfaceData toInternalSurface(
             @Nullable DungeonTravelSurfaceSnapshot surface
     ) {
         if (surface == null) {
@@ -26,7 +28,7 @@ public final class TravelDungeonSurfaceHelper {
                 ApplyTravelDungeonSessionUseCase.ContextKind.valueOf(surface.contextKind().name()),
                 surface.mapName(),
                 surface.revision(),
-                TravelDungeonMapDataHelper.toInternalMap(surface.map()),
+                TravelDungeonSessionMapMapper.toInternalMap(surface.map()),
                 toInternalPosition(surface.position()),
                 surface.surfaceTitle(),
                 surface.areaLabel(),
@@ -34,10 +36,10 @@ public final class TravelDungeonSurfaceHelper {
                 surface.headingLabel(),
                 surface.statusLabel(),
                 surface.visualDescription(),
-                surface.actions().stream().map(TravelDungeonSurfaceHelper::toInternalAction).toList());
+                surface.actions().stream().map(TravelDungeonSessionSurfaceMapper::toInternalAction).toList());
     }
 
-    public static ApplyTravelDungeonSessionUseCase.MoveResultData toInternalMoveResult(
+    static ApplyTravelDungeonSessionUseCase.MoveResultData toInternalMoveResult(
             @Nullable DungeonTravelMoveResult result
     ) {
         if (result == null) {
@@ -58,7 +60,21 @@ public final class TravelDungeonSurfaceHelper {
                 externalTarget);
     }
 
-    public static ApplyTravelDungeonSessionUseCase.AvailableAction toInternalAction(
+    static @Nullable DungeonTravelPosition toDungeonPosition(
+            ApplyTravelDungeonSessionUseCase.@Nullable PositionData position
+    ) {
+        if (position == null) {
+            return null;
+        }
+        return new DungeonTravelPosition(
+                new DungeonMapId(position.mapId()),
+                DungeonTravelLocationKind.valueOf(position.locationKind().name()),
+                position.ownerId(),
+                new DungeonCellRef(position.tile().q(), position.tile().r(), position.tile().level()),
+                toDungeonHeading(position.headingToken()));
+    }
+
+    private static ApplyTravelDungeonSessionUseCase.AvailableAction toInternalAction(
             @Nullable DungeonTravelActionSnapshot action
     ) {
         return new ApplyTravelDungeonSessionUseCase.AvailableAction(
@@ -67,7 +83,9 @@ public final class TravelDungeonSurfaceHelper {
                 action == null ? "" : action.description());
     }
 
-    public static ApplyTravelDungeonSessionUseCase.PositionData toInternalPosition(@Nullable DungeonTravelPosition position) {
+    private static ApplyTravelDungeonSessionUseCase.PositionData toInternalPosition(
+            @Nullable DungeonTravelPosition position
+    ) {
         return new ApplyTravelDungeonSessionUseCase.PositionData(
                 position == null ? 1L : position.mapId().value(),
                 position == null
@@ -81,21 +99,7 @@ public final class TravelDungeonSurfaceHelper {
                 position == null ? "SOUTH" : position.heading().name());
     }
 
-    public static @Nullable DungeonTravelPosition toDungeonPosition(
-            ApplyTravelDungeonSessionUseCase.@Nullable PositionData position
-    ) {
-        if (position == null) {
-            return null;
-        }
-        return new DungeonTravelPosition(
-                new src.domain.dungeon.published.DungeonMapId(position.mapId()),
-                src.domain.dungeon.published.DungeonTravelLocationKind.valueOf(position.locationKind().name()),
-                position.ownerId(),
-                new DungeonCellRef(position.tile().q(), position.tile().r(), position.tile().level()),
-                toDungeonHeading(position.headingToken()));
-    }
-
-    public static ApplyTravelDungeonSessionUseCase.SurfaceData outsideDungeonSurfaceData(long tileId) {
+    private static ApplyTravelDungeonSessionUseCase.SurfaceData outsideDungeonSurfaceData(long tileId) {
         return new ApplyTravelDungeonSessionUseCase.SurfaceData(
                 ApplyTravelDungeonSessionUseCase.ContextKind.OVERWORLD,
                 "Overworld",

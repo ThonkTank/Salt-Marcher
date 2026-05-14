@@ -4,16 +4,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
-import src.domain.dungeon.DungeonTravelApplicationService;
 import src.domain.travel.application.ApplyTravelDungeonSessionUseCase;
-import src.domain.travel.model.session.repository.TravelDungeonSessionRepository;
 import src.domain.travel.model.session.helper.TravelDungeonSnapshotHelper;
 import src.domain.travel.published.ApplyTravelDungeonSessionCommand;
 import src.domain.travel.published.LoadTravelDungeonQuery;
 import src.domain.travel.published.TravelDungeonModel;
 import src.domain.travel.published.TravelDungeonSnapshot;
 import src.domain.travel.published.TravelOverlaySettings;
-import src.domain.travel.model.session.repository.TravelPartyStateRepository;
 
 /**
  * Public backend facade for runtime travel composition.
@@ -26,16 +23,9 @@ public final class TravelApplicationService {
             this::currentDungeonTravelSnapshot,
             this::subscribeDungeonTravelListener);
 
-    public TravelApplicationService(
-            TravelPartyStateRepository partyStateRepository,
-            DungeonTravelApplicationService dungeonTravelApplicationService,
-            src.domain.dungeon.published.DungeonTravelModel dungeonTravelReadModel
-    ) {
-        this.applyTravelDungeonSessionUseCase = new ApplyTravelDungeonSessionUseCase(
-                new TravelDungeonSessionRepository(
-                        partyStateRepository,
-                        dungeonTravelApplicationService,
-                        Objects.requireNonNull(dungeonTravelReadModel, "dungeonTravelReadModel")));
+    public TravelApplicationService(ApplyTravelDungeonSessionUseCase applyTravelDungeonSessionUseCase) {
+        this.applyTravelDungeonSessionUseCase =
+                Objects.requireNonNull(applyTravelDungeonSessionUseCase, "applyTravelDungeonSessionUseCase");
     }
 
     public TravelDungeonModel loadDungeonTravel(LoadTravelDungeonQuery query) {
