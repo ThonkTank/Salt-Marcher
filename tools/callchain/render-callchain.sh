@@ -129,15 +129,35 @@ if [[ -z "$out_dir" ]]; then
     out_dir="$BUILD_ROOT/out/$(sanitize_segment "$selector")"
 fi
 mkdir -p "$out_dir"
+log_file="$out_dir/joern.log"
+rm -f \
+    "$out_dir/callchain.txt" \
+    "$out_dir/callers.txt" \
+    "$out_dir/callees.txt" \
+    "$out_dir/summary.txt" \
+    "$out_dir/joern.log" \
+    "$out_dir/candidates.tsv" \
+    "$out_dir/callers.dot" \
+    "$out_dir/callees.dot" \
+    "$out_dir/both.dot" \
+    "$out_dir/callers.svg" \
+    "$out_dir/callees.svg" \
+    "$out_dir/both.svg"
 
-(
+if ! (
     cd "$BUILD_ROOT"
     "$joern" --script "$SCRIPT_DIR/joern-callchain.sc" \
         --param "cpgFile=$CPG_FILE" \
         --param "selector=$selector" \
         --param "outDir=$out_dir" \
         --param "depth=$depth" \
-        --param "includeExternal=$include_external"
-)
+        --param "includeExternal=$include_external" \
+        >"$log_file" 2>&1
+); then
+    printf 'Joern callchain rendering failed. Log tail from %s:\n' "$log_file" >&2
+    tail -80 "$log_file" >&2 || true
+    exit 1
+fi
 
 printf 'Rendered callchain text under %s\n' "$out_dir"
+printf 'Joern log: %s\n' "$log_file"

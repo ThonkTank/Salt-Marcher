@@ -293,12 +293,16 @@ Rules:
   `*RuntimeAccess`, `*RuntimeAdapter`, `*Policy`, `*Service`, `*Factory`,
   `*Aggregate`, `*Entity`, and `*Specification` are forbidden
 
-## Current Mechanical Drift
+## Context Roles
 
-`checkDomainEnforcement` and `compileJava` now block the target root/model
-topology, declared root services, reserved role suffix placement, and direct
-role-file forms. Detailed gate ownership and remaining review-owned gaps live
-in the Domain enforcement documents.
+- `party`: Party Character State Context.
+- `creatures`: Reference Catalog Context.
+- `encounter`: Roster Truth Context.
+- `encountertable`: Reference Catalog Context.
+- `dungeon`: Authored World-Space Context.
+- `dungeoneditor`: Generation Policy Context.
+- `travel`: Generation Policy Context.
+- `sessionplanner`: Roster Truth Context.
 
 ## Context Relationships <!-- mechanical-domain-dependencies: encounter=creatures,encountertable,party; dungeoneditor=dungeon; travel=dungeon,party; sessionplanner=encounter,party -->
 
@@ -330,14 +334,6 @@ in the Domain enforcement documents.
   published state through own ports to persist one session plan for participant
   references, encounter order, allocations, rest placement, placeholders, and
   selected encounter context.
-
-## Domain Document Contract
-
-Every active `src/domain/<context>/DOMAIN.md` remains a binding context
-contract with context role, context name, application-service markers,
-published language, application boundary, and ubiquitous language sections.
-Authored and generation-policy context-specific required sections are enforced
-by the domain-context documentation rules.
 
 ## References
 
