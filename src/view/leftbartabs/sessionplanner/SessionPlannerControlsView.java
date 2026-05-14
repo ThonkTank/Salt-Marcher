@@ -81,8 +81,10 @@ public final class SessionPlannerControlsView extends ScrollPane {
         setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
     }
 
-    public void show(ControlsProjection projection) {
-        ControlsProjection safe = projection == null ? ControlsProjection.empty() : projection;
+    private void show(SessionPlannerControlsContentModel.Projection projection) {
+        SessionPlannerControlsContentModel.Projection safe = projection == null
+                ? SessionPlannerControlsContentModel.Projection.empty()
+                : projection;
         statusLabel.setText(safe.statusText());
         sessionSection.show(safe.session());
         partyHeadlineLabel.setText(safe.party().headline());
@@ -100,12 +102,12 @@ public final class SessionPlannerControlsView extends ScrollPane {
         viewInputEventHandler = handler == null ? ignored -> { } : handler;
     }
 
-    public void bind(SessionPlannerContributionModel contributionModel) {
-        if (contributionModel == null) {
+    public void bind(SessionPlannerControlsContentModel contentModel) {
+        if (contentModel == null) {
             return;
         }
-        contributionModel.controlsProjectionProperty().addListener((ignored, before, after) -> show(after));
-        show(contributionModel.controlsProjectionProperty().get());
+        contentModel.projectionProperty().addListener((ignored, before, after) -> show(after));
+        show(contentModel.projectionProperty().get());
     }
 
     private static final class SessionSection {
@@ -147,7 +149,7 @@ public final class SessionPlannerControlsView extends ScrollPane {
             encounterDaysRequested = handler == null ? ignored -> { } : handler;
         }
 
-        private void show(ControlsProjection.SessionModel model) {
+        private void show(SessionPlannerControlsContentModel.Projection.SessionModel model) {
             sessionIdLabel.setText("Session #" + Math.max(0L, model.sessionId()));
             selectionLabel.setText(model.selectionText());
             encounterDaysField.setText(model.encounterDaysText());
@@ -173,7 +175,7 @@ public final class SessionPlannerControlsView extends ScrollPane {
             actionRequested = handler == null ? ignored -> { } : handler;
         }
 
-        private void showMembers(List<ControlsProjection.PartyMemberModel> members) {
+        private void showMembers(List<SessionPlannerControlsContentModel.Projection.PartyMemberModel> members) {
             if (members.isEmpty()) {
                 rows.showSingle(Factory.createLabel(
                         "Keine aktiven Party-Mitglieder verfuegbar.",
@@ -187,7 +189,7 @@ public final class SessionPlannerControlsView extends ScrollPane {
                     .toList());
         }
 
-        private Node memberRow(ControlsProjection.PartyMemberModel member) {
+        private Node memberRow(SessionPlannerControlsContentModel.Projection.PartyMemberModel member) {
             Button addButton = Factory.createButton(
                     member.alreadyInSession() ? "Schon in Session" : "Hinzufuegen",
                     event -> actionRequested.accept(member.characterId()),
@@ -222,7 +224,9 @@ public final class SessionPlannerControlsView extends ScrollPane {
             removeRequested = handler == null ? ignored -> { } : handler;
         }
 
-        private void showParticipants(List<ControlsProjection.SessionParticipantModel> participants) {
+        private void showParticipants(
+                List<SessionPlannerControlsContentModel.Projection.SessionParticipantModel> participants
+        ) {
             if (participants.isEmpty()) {
                 rows.showSingle(Factory.createLabel(
                         "Noch keine Teilnehmer in dieser Session.",
@@ -236,7 +240,7 @@ public final class SessionPlannerControlsView extends ScrollPane {
                     .toList());
         }
 
-        private Node participantRow(ControlsProjection.SessionParticipantModel participant) {
+        private Node participantRow(SessionPlannerControlsContentModel.Projection.SessionParticipantModel participant) {
             Button removeButton = Factory.createButton(
                     "Entfernen",
                     event -> removeRequested.accept(participant.characterId()),
@@ -275,7 +279,7 @@ public final class SessionPlannerControlsView extends ScrollPane {
         }
 
         @SuppressWarnings(PMD_LAW_OF_DEMETER)
-        private void show(ControlsProjection.BudgetModel model) {
+        private void show(SessionPlannerControlsContentModel.Projection.BudgetModel model) {
             totalBudgetLabel.setText("Budget " + model.totalBudgetText() + XP_SUFFIX);
             plannedXpLabel.setText("Geplant " + model.plannedXpText() + XP_SUFFIX);
             remainingXpLabel.setText(model.overBudget()
@@ -311,12 +315,12 @@ public final class SessionPlannerControlsView extends ScrollPane {
         }
 
         @SuppressWarnings(PMD_LAW_OF_DEMETER)
-        private void showPlans(List<ControlsProjection.AvailablePlanModel> plans) {
+        private void showPlans(List<SessionPlannerControlsContentModel.Projection.AvailablePlanModel> plans) {
             ObservableList<Node> children = plansBox.getChildren();
             children.setAll(planNodes(plans));
         }
 
-        private List<Node> planNodes(List<ControlsProjection.AvailablePlanModel> plans) {
+        private List<Node> planNodes(List<SessionPlannerControlsContentModel.Projection.AvailablePlanModel> plans) {
             if (plans.isEmpty()) {
                 return List.of(Factory.createLabel(
                         "Keine gespeicherten Encounter-Plaene.",
@@ -330,7 +334,7 @@ public final class SessionPlannerControlsView extends ScrollPane {
         }
 
         @SuppressWarnings(PMD_LAW_OF_DEMETER)
-        private Node planCard(ControlsProjection.AvailablePlanModel plan) {
+        private Node planCard(SessionPlannerControlsContentModel.Projection.AvailablePlanModel plan) {
             VBox card = new VBox(4);
             ObservableList<Node> children = card.getChildren();
             Button importButton = Factory.createButton(
