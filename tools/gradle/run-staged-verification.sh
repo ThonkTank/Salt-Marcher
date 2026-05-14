@@ -71,7 +71,6 @@ run_surface() {
 
     (
         cd "$REPO_ROOT"
-        export SALTMARCHER_GRADLE_STAGE="$surface"
         if [[ ${#extra_args[@]} -gt 0 ]]; then
             if [[ "$fail_fast" == true ]]; then
                 "$REPO_ROOT/tools/gradle/run-observable-gradle.sh" --fail-fast "$surface" -- "${extra_args[@]}"
