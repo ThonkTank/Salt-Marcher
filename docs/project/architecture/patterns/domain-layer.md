@@ -300,35 +300,6 @@ topology, declared root services, reserved role suffix placement, and direct
 role-file forms. Detailed gate ownership and remaining review-owned gaps live
 in the Domain enforcement documents.
 
-## Context Roles
-
-- `party`: `Context Role: Party Character State Context`. Owns roster truth,
-  membership, XP progression, rest cadence, adventuring-day policy, and
-  character-specific runtime travel state.
-- `creatures`: `Context Role: Reference Catalog Context`. Exports imported
-  creature catalog lookup language and reference profiles. It does not own
-  encounter ranking, choice, or creature lifecycle truth.
-- `encounter`: `Context Role: Roster Truth Context`. Owns saved encounter-plan
-  roster truth while consuming party, creatures, and encounter-table published
-  language for encounter-generation policy.
-- `encountertable`: `Context Role: Reference Catalog Context`. Publishes
-  authored encounter-table membership as read-only generator input without
-  owning creature truth, table mutation policy, or encounter-generation
-  policy.
-- `dungeon`: `Context Role: Authored World-Space Context`. Owns authored
-  dungeon world-space truth, map topology, spaces, connections, stable
-  identity, and mutation rules.
-- `dungeoneditor`: `Context Role: Generation Policy Context`. Owns transient
-  runtime editor-session composition derived from `dungeon` public boundaries
-  without owning authored map persistence.
-- `travel`: `Context Role: Generation Policy Context`. Owns transient runtime
-  travel-session composition derived from dungeon and party public boundaries
-  without owning authored map persistence or party roster truth.
-- `sessionplanner`: `Context Role: Roster Truth Context`. Owns authored
-  session-planning truth for participant references, encounter allocations,
-  rest placement, placeholders, and selection state while consuming party and
-  encounter public boundaries.
-
 ## Context Relationships <!-- mechanical-domain-dependencies: encounter=creatures,encountertable,party; dungeoneditor=dungeon; travel=dungeon,party; sessionplanner=encounter,party -->
 
 - `party`: `Party Character State Context`; publishes roster, membership, XP,
@@ -363,28 +334,10 @@ in the Domain enforcement documents.
 ## Domain Document Contract
 
 Every active `src/domain/<context>/DOMAIN.md` remains a binding context
-contract.
-
-Each active context MUST include:
-
-- `## Context Role`
-- `Context Name: <PascalContext>`
-- one or more `Application Service: <TypeName>` markers in
-  `## Application Boundary`
-- `## Published Language`
-- `## Application Boundary`
-- `## Ubiquitous Language`
-
-Authored contexts MUST additionally include:
-
-- `## Aggregate Model`
-- `## Commands And Invariants`
-- `## Consistency Model`
-
-Generation-policy contexts MUST additionally include:
-
-- `## Commands And Invariants`
-- `## Consistency Model`
+contract with context role, context name, application-service markers,
+published language, application boundary, and ubiquitous language sections.
+Authored and generation-policy context-specific required sections are enforced
+by the domain-context documentation rules.
 
 ## References
 
