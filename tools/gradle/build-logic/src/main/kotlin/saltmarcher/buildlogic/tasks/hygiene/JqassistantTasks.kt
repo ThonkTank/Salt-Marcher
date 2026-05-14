@@ -11,7 +11,6 @@ import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.Property
-import org.gradle.api.tasks.CacheableTask
 import org.gradle.api.tasks.Classpath
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputDirectory
@@ -24,6 +23,7 @@ import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.TaskAction
 import org.gradle.api.tasks.VerificationException
 import org.gradle.process.ExecOperations
+import org.gradle.work.DisableCachingByDefault
 import javax.inject.Inject
 
 abstract class AbstractJqassistantTask : DefaultTask() {
@@ -118,7 +118,7 @@ abstract class AbstractJqassistantTask : DefaultTask() {
     }
 }
 
-@CacheableTask
+@DisableCachingByDefault(because = "jQAssistant's Neo4j store materializes checkout-specific source paths.")
 abstract class JqassistantScanTask : AbstractJqassistantTask() {
 
     @get:OutputDirectory
@@ -133,7 +133,7 @@ abstract class JqassistantScanTask : AbstractJqassistantTask() {
     }
 }
 
-@CacheableTask
+@DisableCachingByDefault(because = "jQAssistant's Neo4j store materializes checkout-specific source paths.")
 abstract class JqassistantAnalyzeTask : AbstractJqassistantTask() {
 
     @get:InputDirectory
