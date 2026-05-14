@@ -24,16 +24,18 @@ public final class SessionPlannerStateView extends ScrollPane {
         setContent(content);
     }
 
-    public void bind(SessionPlannerContributionModel contributionModel) {
-        if (contributionModel == null) {
+    public void bind(SessionPlannerStateContentModel contentModel) {
+        if (contentModel == null) {
             return;
         }
-        contributionModel.stateProjectionProperty().addListener((ignored, before, after) -> show(after));
-        show(contributionModel.stateProjectionProperty().get());
+        contentModel.projectionProperty().addListener((ignored, before, after) -> show(after));
+        show(contentModel.projectionProperty().get());
     }
 
-    private void show(StateProjection projection) {
-        StateProjection safe = projection == null ? StateProjection.empty() : projection;
+    private void show(SessionPlannerStateContentModel.Projection projection) {
+        SessionPlannerStateContentModel.Projection safe = projection == null
+                ? SessionPlannerStateContentModel.Projection.empty()
+                : projection;
         encounterTitleLabel.setText(safe.selectedEncounterTitle());
         encounterDetailLabel.setText(safe.selectedEncounterDetail());
         encounterXpLabel.setText(safe.selectedEncounterXpSummary());

@@ -2,7 +2,10 @@ package src.view.leftbartabs.sessionplanner;
 
 import java.util.Map;
 import java.util.Objects;
+import javafx.geometry.Insets;
 import javafx.scene.Node;
+import javafx.scene.control.ScrollPane;
+import javafx.scene.layout.VBox;
 import shell.api.ServiceRegistry;
 import shell.api.ShellBinding;
 import shell.api.ShellRuntimeContext;
@@ -45,7 +48,15 @@ final class SessionPlannerBinder {
                 services.require(SessionPlannerEncountersModel.class);
         SessionPlannerStatePanelModel statePanelModel =
                 services.require(SessionPlannerStatePanelModel.class);
-        SessionPlannerContributionModel contributionModel = new SessionPlannerContributionModel();
+        SessionPlannerControlsContentModel controlsContentModel = new SessionPlannerControlsContentModel();
+        SessionPlannerTimelineMainContentModel timelineMainContentModel = new SessionPlannerTimelineMainContentModel();
+        SessionPlannerLootMainContentModel lootMainContentModel = new SessionPlannerLootMainContentModel();
+        SessionPlannerStateContentModel stateContentModel = new SessionPlannerStateContentModel();
+        SessionPlannerContributionModel contributionModel = new SessionPlannerContributionModel(
+                controlsContentModel,
+                timelineMainContentModel,
+                lootMainContentModel,
+                stateContentModel);
         SessionPlannerIntentHandler intentHandler = new SessionPlannerIntentHandler(
                 planner,
                 participants,
@@ -55,13 +66,13 @@ final class SessionPlannerBinder {
         SessionPlannerControlsView controlsView = new SessionPlannerControlsView();
         SessionPlannerTimelineMainView timelineView = new SessionPlannerTimelineMainView();
         SessionPlannerLootMainView lootView = new SessionPlannerLootMainView();
-        SessionPlannerMainView mainView = new SessionPlannerMainView(timelineView, lootView);
+        Node main = mainSlot(timelineView, lootView);
         SessionPlannerStateView stateView = new SessionPlannerStateView();
 
-        controlsView.bind(contributionModel);
-        timelineView.bind(contributionModel);
-        lootView.bind(contributionModel);
-        stateView.bind(contributionModel);
+        controlsView.bind(controlsContentModel);
+        timelineView.bind(timelineMainContentModel);
+        lootView.bind(lootMainContentModel);
+        stateView.bind(stateContentModel);
         controlsView.onViewInputEvent(intentHandler::consume);
         timelineView.onViewInputEvent(intentHandler::consume);
         lootView.onViewInputEvent(intentHandler::consume);
@@ -74,7 +85,21 @@ final class SessionPlannerBinder {
         contributionModel.applyParticipants(participantsModel.current());
         contributionModel.applyEncounters(encountersModel.current());
         contributionModel.applyStatePanel(statePanelModel.current());
-        return new Binding(controlsView, mainView, stateView);
+        return new Binding(controlsView, main, stateView);
+    }
+
+    private static Node mainSlot(
+            SessionPlannerTimelineMainView timelineView,
+            SessionPlannerLootMainView lootView
+    ) {
+        VBox content = new VBox(16, timelineView, lootView);
+        content.getStyleClass().add("session-planner-main");
+        content.setPadding(new Insets(10));
+        ScrollPane scrollPane = new ScrollPane(content);
+        scrollPane.getStyleClass().add("session-planner-main-scroll");
+        scrollPane.setFitToWidth(true);
+        scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        return scrollPane;
     }
 
     private record Binding(
