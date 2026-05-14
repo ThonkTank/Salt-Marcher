@@ -4,7 +4,9 @@ import com.google.errorprone.BugPattern;
 import com.google.errorprone.VisitorState;
 import com.google.errorprone.bugpatterns.BugChecker;
 import com.google.errorprone.matchers.Description;
+import com.sun.source.tree.ClassTree;
 import com.sun.source.tree.CompilationUnitTree;
+import com.sun.source.util.TreeScanner;
 import java.util.Set;
 import java.util.TreeSet;
 
@@ -49,10 +51,11 @@ public final class DomainForbiddenInfrastructureDependencyChecker extends BugChe
         if (!packageName.startsWith("src.domain.")) {
             return Description.NO_MATCH;
         }
+        boolean serviceCompositionRoot = isDomainServiceCompositionRoot(packageName, tree);
 
         TreeSet<String> forbiddenReferences = new TreeSet<>();
         for (String referencedType : DataArchitectureSupport.collectReferencedTypes(tree)) {
-            if (isForbiddenReference(referencedType)) {
+            if (isForbiddenReference(referencedType, serviceCompositionRoot)) {
                 forbiddenReferences.add(referencedType);
             }
         }
@@ -68,8 +71,11 @@ public final class DomainForbiddenInfrastructureDependencyChecker extends BugChe
                 .build();
     }
 
-    private static boolean isForbiddenReference(String referencedType) {
+    private static boolean isForbiddenReference(String referencedType, boolean serviceCompositionRoot) {
         if (referencedType == null || referencedType.isBlank()) {
+            return false;
+        }
+        if (serviceCompositionRoot && isAllowedCompositionShellReference(referencedType)) {
             return false;
         }
         if (FORBIDDEN_TYPES.contains(referencedType)) {
@@ -81,5 +87,33 @@ public final class DomainForbiddenInfrastructureDependencyChecker extends BugChe
             }
         }
         return false;
+    }
+
+    private static boolean isDomainServiceCompositionRoot(String packageName, CompilationUnitTree tree) {
+        if (!packageName.matches("^src\\.domain\\.[^.]+$")) {
+            return false;
+        }
+        String simpleName = topLevelSimpleName(tree);
+        return simpleName.endsWith("ServiceContribution") || simpleName.endsWith("ServiceAssembly");
+    }
+
+    private static String topLevelSimpleName(CompilationUnitTree tree) {
+        ClassTree[] result = {null};
+        new TreeScanner<Void, Void>() {
+            @Override
+            public Void visitClass(ClassTree classTree, Void unused) {
+                if (result[0] == null) {
+                    result[0] = classTree;
+                }
+                return null;
+            }
+        }.scan(tree, null);
+        return result[0] == null ? "" : result[0].getSimpleName().toString();
+    }
+
+    private static boolean isAllowedCompositionShellReference(String referencedType) {
+        return "shell.api.ServiceContribution".equals(referencedType)
+                || "shell.api.ServiceRegistry".equals(referencedType)
+                || referencedType.startsWith("shell.api.ServiceRegistry.");
     }
 }

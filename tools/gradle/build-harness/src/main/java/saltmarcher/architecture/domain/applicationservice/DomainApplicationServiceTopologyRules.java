@@ -5,6 +5,7 @@ import saltmarcher.architecture.ArchitectureContext;
 import saltmarcher.architecture.ArchitectureRule;
 import saltmarcher.architecture.SourceFile;
 import saltmarcher.architecture.ViolationSink;
+import saltmarcher.architecture.domain.DomainRoleTopologySupport;
 
 public final class DomainApplicationServiceTopologyRules implements ArchitectureRule {
 
@@ -33,9 +34,10 @@ public final class DomainApplicationServiceTopologyRules implements Architecture
         }
 
         if (segments.size() == 4) {
-            if (!sourceFile.fileName().endsWith("ApplicationService.java")) {
+            if (!sourceFile.fileName().endsWith("ApplicationService.java")
+                    && !DomainRoleTopologySupport.isDomainRootServiceComposition(sourceFile)) {
                 violations.add(sourceFile.relativePath(), "domain-applicationservice-root-presence",
-                        "Only direct *ApplicationService.java root files may live under src/domain/<context>/.");
+                        "Only direct *ApplicationService.java root files and service-composition roots may live under src/domain/<context>/.");
             }
             return;
         }

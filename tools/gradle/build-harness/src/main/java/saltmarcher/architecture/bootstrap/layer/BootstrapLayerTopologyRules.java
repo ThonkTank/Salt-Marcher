@@ -95,11 +95,12 @@ public final class BootstrapLayerTopologyRules implements ArchitectureRule {
     private void validateServiceContributionDiscoveryRoots(List<SourceFile> sourceFiles, ViolationSink violations) {
         TreeMap<String, List<SourceFile>> rootClassesByFeature = new TreeMap<>();
         for (SourceFile sourceFile : sourceFiles) {
-            if (!sourceFile.relativePath().startsWith("src/data/")
+            if (!(sourceFile.relativePath().startsWith("src/data/")
+                    || sourceFile.relativePath().startsWith("src/domain/"))
                     || !sourceFile.fileName().endsWith("ServiceContribution.java")) {
                 continue;
             }
-            if (sourceFile.kind() != SourceKind.DATA_ROOT) {
+            if (sourceFile.kind() != SourceKind.DATA_ROOT && sourceFile.kind() != SourceKind.DOMAIN_ROOT) {
                 String ruleId = sourceFile.relativePath().contains("/repository/")
                         || sourceFile.relativePath().contains("/query/")
                         || sourceFile.relativePath().contains("/gateway/")
@@ -108,7 +109,7 @@ public final class BootstrapLayerTopologyRules implements ArchitectureRule {
                         ? "bootstrap-no-feature-internal-entrypoint-discovery"
                         : "bootstrap-data-service-discovery-root-set";
                 violations.add(sourceFile.relativePath(), ruleId,
-                        "Bootstrap discovers only src/data/<feature>/<Feature>ServiceContribution.java root entrypoints for backend runtime registration.");
+                        "Bootstrap discovers only root src/data/<feature>/<Feature>ServiceContribution.java or src/domain/<context>/<Context>ServiceContribution.java entrypoints for backend runtime registration.");
                 continue;
             }
             rootClassesByFeature.computeIfAbsent(sourceFile.featureName(), ignored -> new ArrayList<>()).add(sourceFile);

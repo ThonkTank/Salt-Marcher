@@ -10,13 +10,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
-/**
- * Discovers feature-owned service contributions from {@code src.data.<feature>} root classes.
- */
 final class ServiceContributionDiscovery {
 
     private static final String DATA_ROOT = "src/data";
     private static final String DATA_PACKAGE_PREFIX = "src.data.";
+    private static final String DOMAIN_ROOT = "src/domain";
+    private static final String DOMAIN_PACKAGE_PREFIX = "src.domain.";
     private static final String CONTRIBUTION_SUFFIX = "ServiceContribution";
     private static final int REQUIRED_ROOT_CLASS_COUNT = 1;
     private final ContributionRootClassScanner rootClassScanner = new ContributionRootClassScanner();
@@ -26,10 +25,15 @@ final class ServiceContributionDiscovery {
         if (classLoader == null) {
             classLoader = ServiceContributionDiscovery.class.getClassLoader();
         }
-        Map<String, List<String>> rootClassesByFeature = new TreeMap<>(
-                rootClassScanner.discoverRootClasses(classLoader, DATA_ROOT, DATA_PACKAGE_PREFIX));
         List<ServiceContribution> contributions = new ArrayList<>();
-        for (String className : resolveContributionClasses(rootClassesByFeature).values()) {
+        List<String> contributionClasses = new ArrayList<>();
+        contributionClasses.addAll(resolveContributionClasses(
+                rootClassScanner.discoverRootClasses(classLoader, DATA_ROOT, DATA_PACKAGE_PREFIX),
+                true).values());
+        contributionClasses.addAll(resolveContributionClasses(
+                rootClassScanner.discoverRootClasses(classLoader, DOMAIN_ROOT, DOMAIN_PACKAGE_PREFIX),
+                false).values());
+        for (String className : contributionClasses) {
             ServiceContribution contribution = instantiateContribution(classLoader, className);
             if (contribution != null) {
                 contributions.add(contribution);
@@ -38,7 +42,10 @@ final class ServiceContributionDiscovery {
         return contributions;
     }
 
-    private Map<String, String> resolveContributionClasses(Map<String, List<String>> rootClassesByFeature) {
+    private Map<String, String> resolveContributionClasses(
+            Map<String, List<String>> rootClassesByFeature,
+            boolean contributionRequired
+    ) {
         Map<String, String> resolved = new TreeMap<>();
         for (Map.Entry<String, List<String>> entry : rootClassesByFeature.entrySet()) {
             String featureName = entry.getKey();
@@ -46,13 +53,11 @@ final class ServiceContributionDiscovery {
             List<String> matchingClasses = rootClasses.stream()
                     .filter(className -> className.endsWith(CONTRIBUTION_SUFFIX))
                     .toList();
+            if (matchingClasses.isEmpty() && !contributionRequired) {
+                continue;
+            }
             if (matchingClasses.size() != REQUIRED_ROOT_CLASS_COUNT) {
                 throw invalidContribution(featureName, rootClasses);
-            }
-            if (rootClasses.size() != REQUIRED_ROOT_CLASS_COUNT) {
-                throw new IllegalStateException("Data feature '" + featureName
-                        + "' must expose exactly one root class under src/data/" + featureName + "/. "
-                        + "Expected only '" + matchingClasses.getFirst() + "' but found: " + rootClasses);
             }
             resolved.put(featureName, matchingClasses.getFirst());
         }
@@ -60,9 +65,9 @@ final class ServiceContributionDiscovery {
     }
 
     private IllegalStateException invalidContribution(String featureName, List<String> rootClasses) {
-        return new IllegalStateException("Data feature '" + featureName
+        return new IllegalStateException("Backend feature '" + featureName
                 + "' must expose exactly one root service contribution class ending with '" + CONTRIBUTION_SUFFIX
-                + "' under src/data/" + featureName + "/. Found: " + rootClasses);
+                + "' under src/data/" + featureName + "/ or src/domain/" + featureName + "/. Found: " + rootClasses);
     }
 
     private @Nullable ServiceContribution instantiateContribution(ClassLoader classLoader, String className) {

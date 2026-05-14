@@ -20,8 +20,9 @@ second business model, public backend layer, or policy language beside
   between domain-owned repository abstractions and technology-specific adapter
   implementations
 - the target domain model uses `Repository` as the outbound domain role for
-  foreign domain writes and layered data access; data code satisfies those
-  abstractions without leaking `src.data/**` types back into the domain layer
+  foreign domain writes and layered data access. Data code satisfies only the
+  source-backed part of those abstractions without leaking `src.data/**` types
+  back into the domain layer
 - data package names are adapter implementation roles, not a second
   architecture model. They exist to keep source mechanics out of the domain
 - `repository/` is the current package for write-model port adapters
@@ -40,7 +41,7 @@ The standard data concepts are deliberately small:
 
 | Concept | Meaning |
 | --- | --- |
-| Composition Adapter | The root that builds concrete adapters and registers the root domain application service. |
+| Composition Adapter | The root that builds concrete source adapters and registers source-backed capabilities needed by domain services. |
 | Port Adapter | A concrete implementation of one domain port or a tightly related port group. |
 | Source Adapter | Code that confronts one concrete source family such as SQLite, a file, an import format, or a remote API. |
 | Source Model | Source-local records, payload DTOs, schema declarations, table names, and field names. |
@@ -78,25 +79,24 @@ real source, mapping, or persistence complexity.
   stay in their owning feature
 - the shell-owned runtime capability registration path uses
   `ServiceContribution`, `ServiceRegistry`, and
-  `ShellRuntimeContext.services()`. It is a composition seam. Its current
-  `src/data/<feature>/` placement allows concrete adapter assembly, but the
-  role is runtime composition rather than persistence or source adaptation. A
-  feature root may add one package-local `<Feature>ServiceAssembly.java` only
-  to keep that composition wiring readable; it is not a second discovery root,
-  service surface, or adapter role.
+  `ShellRuntimeContext.services()`. Data uses that seam only when concrete
+  source or persistence adapters must be registered. Same-context domain
+  application-service and published-model assembly belongs to
+  `src/domain/<context>/<Context>ServiceContribution.java`.
 
 ## Role Boundaries
 
 ### `<PascalFeatureName>ServiceContribution.java`
 
-The service contribution is the runtime composition adapter currently placed at
-the root of one data feature.
+The service contribution is the source-adapter runtime composition root for one
+data feature.
 
-- it builds concrete port adapters and registers the same-feature root domain
-  application service into the shell-owned service registry
+- it builds concrete source-backed adapters and registers source-backed
+  capabilities needed by the owning domain context
 - it keeps feature discovery passive and generic
-- it does not own business rules, persistence mechanics, mapping rules, or
-  source queries
+- it does not assemble same-context domain application services or published
+  models
+- it does not own business rules, mapping rules, or source queries
 
 ### `<PascalFeatureName>ServiceAssembly.java`
 
@@ -107,7 +107,8 @@ service contribution.
 - it owns constructor wiring and `ServiceRegistry` registration grouping only
 - it does not implement `ServiceContribution`
 - it does not own business rules, persistence mechanics, source queries,
-  mapping rules, public backend APIs, or reusable factories
+  mapping rules, public backend APIs, domain service assembly, or reusable
+  factories
 
 ### `repository/`
 
@@ -169,17 +170,19 @@ Additional rules:
 
 The canonical data flow is:
 
-1. shell discovery loads one feature's `*ServiceContribution`
-2. the contribution assembles and registers the same-feature root application
-   service into the shell-owned backend service registry, `ServiceRegistry`
-3. view Binders obtain that root application service through
+1. shell discovery loads data source-adapter `*ServiceContribution` roots and
+   domain service `*ServiceContribution` roots
+2. data contributions register source-backed adapters when needed
+3. domain contributions assemble and register same-context root application
+   services and published models into `ServiceRegistry`
+4. view Binders obtain those root application services through
    `ShellRuntimeContext.services()` as composition input for active roots
-4. a data port adapter satisfies one same-feature domain-owned port
-5. internal source adapters talk to SQLite, files, remote services, or other
+5. a data port adapter satisfies one same-feature domain-owned source port
+6. internal source adapters talk to SQLite, files, remote services, or other
    concrete sources
-6. repository or query adapters return only domain-owned internal
+7. repository or query adapters return only domain-owned internal
    domain/application types
-7. `mapper/` and `model/` keep source-local shapes from leaking into the
+8. `mapper/` and `model/` keep source-local shapes from leaking into the
    domain core
 
 Additional rules:
@@ -188,10 +191,8 @@ Additional rules:
   currently placed in a data feature; an optional same-feature
   `*ServiceAssembly` may decompose that root's registration wiring but must not
   become discoverable on its own
-- lazy published-state repository/model initialization belongs inside the
-  same-feature `*ServiceAssembly` when the composition root needs it; it must
-  not create an additional data bucket, discovery root, repository adapter API,
-  or reusable backend service surface
+- lazy published-state domain service/model initialization belongs inside the
+  same-context domain `*ServiceAssembly`, not in data
 - that registration root is not a public client-facing backend boundary
 - data features must not require routine bootstrap edits or shell-owned
   feature-specific wiring

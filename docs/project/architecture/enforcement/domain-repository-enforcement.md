@@ -32,14 +32,14 @@ Unified focused bundle entrypoint:
 
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
-| `domain-repository-no-src-data-type-leaks` | Review-Owned | every repository under `src/domain/**` | none | none | Repositories do not expose `src.data/**` types or foreign published carriers through signatures or broader role concerns. |
+| `domain-repository-no-src-data-type-leaks` | Review-Owned | every repository under `src/domain/**` | none | none | Repositories do not expose `src.data/**` types or foreign published carriers through same-context signatures or broader role concerns. Foreign published non-`*Model` carriers may be used internally when needed to call foreign root services. |
 | `domain-repository-no-same-context-published-state-channel` | Enforced | every repository under `src/domain/**` | domain-repository bundle Error Prone `DomainRepositoryPublishedStateBoundary` | `./gradlew compileJava` and `./gradlew checkDomainEnforcement` | Repositories do not replace same-context `published/*Model` readback with `publish*` methods or `Object` payload channels. |
 
 ### Communication Contract
 
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
-| `domain-repository-foreign-applicationservice-routing-only` | Enforced | every domain repository under `src/domain/**` | domain-repository bundle Error Prone `DomainRepositoryRoleBoundary` | `./gradlew checkDomainEnforcement` | Repositories do not reference forbidden domain roles, known outer-layer types, or executable protocol types. This does not prove that each outbound call is semantically necessary or correctly named. |
+| `domain-repository-foreign-applicationservice-routing-only` | Enforced | every domain repository under `src/domain/**` | domain-repository bundle Error Prone `DomainRepositoryRoleBoundary` | `./gradlew checkDomainEnforcement` | Repositories do not reference forbidden domain roles, known outer-layer types, executable protocol types, or foreign published models. They may reference foreign root services and foreign published non-`*Model` command/result/value carriers needed for those outbound calls. This does not prove that each outbound call is semantically necessary or correctly named. |
 
 ## References
 

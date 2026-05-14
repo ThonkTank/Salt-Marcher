@@ -9,10 +9,11 @@ Source of Truth: Binding domain-layer pattern, role ownership, communication sea
 
 SaltMarcher treats `src/domain/**` as the application core. Domain code owns
 business meaning, current work state, workflow orchestration, published domain
-language, and the cross-context coordination seams below the view layer. It
-does not own UI translation, shell registration, persistence mechanics,
-data-source records, runtime service composition, SQL, filesystem, network, or
-framework concerns.
+language, cross-context coordination seams, and same-context backend service
+assembly below the view layer. It does not own UI translation, persistence
+mechanics, data-source records, SQL, filesystem, network, or framework
+concerns. Runtime service composition is legal only in direct context-root
+`*ServiceContribution` and optional `*ServiceAssembly` files.
 
 This document is the sole architectural source of truth for `src/domain/**`.
 The repo-owned `tools/quality/skills/domain-layer/SKILL.md` operationalizes
@@ -42,6 +43,10 @@ Target state:
   state
 - `Repository` is the outbound domain role for foreign domain writes and
   layered data access
+- `ServiceContribution` is the direct context-root runtime discovery role for
+  registering same-context domain services
+- `ServiceAssembly` is the optional direct context-root constructor-wiring
+  collaborator for one same-context `ServiceContribution`
 
 ## Role Family
 
@@ -57,6 +62,8 @@ The closed architectural role family is:
 | `Published` | Outward communication surface for commands and observable state. |
 | `Port` | Inbound listener on foreign published state. |
 | `Repository` | Outbound trigger for foreign domain work and layered data access. |
+| `ServiceContribution` | Context-root runtime discovery and registration role. |
+| `ServiceAssembly` | Optional context-root constructor-wiring collaborator. |
 
 Any topology outside this closed role family is illegal.
 
@@ -83,8 +90,9 @@ Any topology outside this closed role family is illegal.
   arbitrary use cases
 - foreign-domain publications are consumed through same-context `Port`
   listeners, not by polling foreign internals
-- domain code does not depend on `bootstrap/**`, `shell/**`, `src/view/**`,
-  `src/data/**`, JavaFX, SQL, filesystem, network, or runtime composition APIs
+- domain code does not depend on `bootstrap/**`, `src/view/**`, `src/data/**`,
+  JavaFX, SQL, filesystem, network, or runtime composition APIs outside the
+  narrow direct-root `ServiceContribution`/`ServiceAssembly` exception
 
 ## Canonical Flows
 
@@ -98,6 +106,11 @@ Published`
 `own Repository -> foreign ApplicationService -> foreign UseCase -> foreign
 Model -> foreign Published -> own Port -> own UseCase -> own Model -> own
 Published`
+
+### Backend Registration
+
+`bootstrap discovery -> context ServiceContribution -> context ServiceAssembly
+-> family ApplicationService / published Model registration`
 
 ## Role Contracts
 
@@ -192,14 +205,41 @@ Published`
 
 - domain-owned outbound collaborator
 - may trigger foreign family `ApplicationService` calls
+- may construct foreign published non-`*Model` command/result/value carriers
+  needed by those foreign root services
 - may perform layered data access through outer adapters
 - returns only same-context internal domain/application types; never `src.data`
   types or foreign published carriers
 - may depend only on foreign root `ApplicationService`, same-context `Model`,
-  same-context `Constants`, same-context repository-local types, and passive
-  platform types
+  foreign published non-`*Model` command/result/value carriers, same-context
+  `Constants`, same-context repository-local types, and passive platform types
 - does not own long-lived current state, published handles, port intake, or
   callback/listener seams; that remains in `Model`
+
+### `*ServiceContribution.java`
+
+- direct root file under `src/domain/<context>/`
+- named `<Context>ServiceContribution.java`
+- `public final` top-level class with a public no-arg constructor
+- implements `shell.api.ServiceContribution` as the narrow bootstrap discovery
+  seam
+- registers same-context domain root services and same-context published-model
+  handles into `ServiceRegistry`
+- does not own business policy, persistence mechanics, source queries, mapping
+  rules, or reusable factories
+
+### `*ServiceAssembly.java`
+
+- optional direct root file under `src/domain/<context>/`
+- named `<Context>ServiceAssembly.java`
+- package-private constructor-wiring collaborator used only by the same-context
+  `ServiceContribution`
+- may require foreign public domain services and published models from
+  `ServiceRegistry` to construct same-context repositories, ports, use cases,
+  application services, and published models
+- does not implement `ServiceContribution` and does not own business policy,
+  persistence mechanics, source queries, mapping rules, public backend APIs, or
+  reusable factories
 
 ## Domain Topology
 
@@ -208,6 +248,8 @@ Target topology:
 ```text
 src/domain/<context>/
   <Context><Family>ApplicationService.java
+  <Context>ServiceContribution.java
+  <Context>ServiceAssembly.java
   published/
   application/
     *UseCase.java
@@ -240,7 +282,8 @@ Rules:
   only non-model subordinate role buckets under a model family
 - non-model role buckets stay direct-file only
 - direct root Java files under `src/domain/<context>/` are limited to
-  `*ApplicationService.java`
+  `*ApplicationService.java`, `*ServiceContribution.java`, and optional
+  `*ServiceAssembly.java`
 - direct Java files under named model families are forbidden; Java files belong
   in an explicit role package
 - reserved role suffixes are path-owned: `*ApplicationService`, `*UseCase`,

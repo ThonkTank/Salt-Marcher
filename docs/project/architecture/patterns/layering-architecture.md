@@ -42,7 +42,8 @@ Responsibilities:
   presentation state surface; the internal role split is owned only by the
   View Layer Standard
 - `src/domain/**` owns business meaning, internal models, published language,
-  family application services, repositories, and ports
+  family application services, repositories, ports, and same-context domain
+  service assembly roots
 - `src/data/**` owns concrete adapters, source mechanics, persistence,
   transport, and translation between domain-facing contracts and external
   sources
@@ -63,6 +64,8 @@ they still own a real boundary responsibility:
 - root domain `<PascalContext>ApplicationService`
 - domain `application/*UseCase`
 - data `*ServiceContribution`
+- domain `*ServiceContribution`
+- domain `*ServiceAssembly`
 
 ### Passive Or State-Only Roles
 
@@ -98,7 +101,8 @@ Source-code dependencies point inward:
 1. `bootstrap -> shell`
 2. `view -> shell public contracts + documented domain public boundaries`
 3. `data -> domain public boundaries and domain-owned repositories`
-4. `domain -> no outer layer`
+4. `domain -> no outer layer`, except direct-root domain service-composition
+   files may use the narrow shell runtime registration seam
 
 Additional rules:
 
@@ -122,6 +126,9 @@ The only intentional public boundaries across layers are:
 - view `*Binder` roots as runtime composition adapters
 - domain family `*ApplicationService` roots as the public backend boundary
   below the view layer
+- domain `*ServiceContribution` roots and optional `*ServiceAssembly`
+  collaborators as shell-facing service registration adapters for same-context
+  domain services
 - `src/domain/<context>/published/**` as carrier-only published language used
   at the root domain boundary
 - domain-owned repository abstractions declared under the domain layer
@@ -130,10 +137,13 @@ The only intentional public boundaries across layers are:
 
 ### Registration
 
-1. `bootstrap/` discovers and registers data `*ServiceContribution` roots
-2. `bootstrap/` constructs the shell with the populated `ServiceRegistry`
-3. `bootstrap/` discovers and registers view `*Contribution` roots
-4. routine feature addition must not require feature-specific bootstrap wiring
+1. `bootstrap/` discovers and registers data source-adapter
+   `*ServiceContribution` roots
+2. `bootstrap/` discovers and registers domain service `*ServiceContribution`
+   roots
+3. `bootstrap/` constructs the shell with the populated `ServiceRegistry`
+4. `bootstrap/` discovers and registers view `*Contribution` roots
+5. routine feature addition must not require feature-specific bootstrap wiring
 
 ### Presentation Mutation
 
@@ -150,7 +160,9 @@ Forbidden shortcuts:
   or naming ceremony around an otherwise unchanged collaborator
 - `src/view/**` reaching directly into `src/data/**`
 - view-layer code bypassing its documented shell or domain public boundaries
-- `src/domain/**` depending on `bootstrap`, `shell`, `src/view`, or `src/data`
+- `src/domain/**` depending on `bootstrap`, `src/view`, or `src/data`
+- `src/domain/**` depending on `shell` outside direct-root
+  `*ServiceContribution` and `*ServiceAssembly` composition files
 - `shell/**` owning feature logic
 - `bootstrap/**` owning feature-specific business or presentation logic
 

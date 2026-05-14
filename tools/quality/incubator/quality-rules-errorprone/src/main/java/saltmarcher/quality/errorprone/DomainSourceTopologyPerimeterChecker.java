@@ -103,8 +103,9 @@ public final class DomainSourceTopologyPerimeterChecker extends BugChecker
         }
 
         if (segments.size() == 4) {
-            if (!sourceFileName.endsWith("ApplicationService.java")) {
-                violations.add("direct root domain files must be *ApplicationService.java only");
+            if (!sourceFileName.endsWith("ApplicationService.java")
+                    && !isServiceCompositionRoot(sourceFileName)) {
+                violations.add("direct root domain files must be *ApplicationService.java or service-composition roots only");
             }
             return;
         }
@@ -208,6 +209,10 @@ public final class DomainSourceTopologyPerimeterChecker extends BugChecker
             if (segments.size() != 4) {
                 violations.add("reserved role suffix ApplicationService may appear only as a direct root file under src/domain/<context>/");
             }
+        } else if (isServiceCompositionRoot(sourceFileName)) {
+            if (segments.size() != 4) {
+                violations.add("service-composition roots may appear only as direct root files under src/domain/<context>/");
+            }
         } else if (sourceFileName.endsWith("UseCase.java")) {
             if (!isRootApplicationUseCase(segments) && !isModelRoleDirectFile(segments, "usecase")) {
                 violations.add("reserved role suffix UseCase may appear only under application/ or model/<family>/usecase/");
@@ -240,7 +245,7 @@ public final class DomainSourceTopologyPerimeterChecker extends BugChecker
     }
 
     private static void validateLegacyRoleSuffixRejection(String sourceFileName, Set<String> violations) {
-        if (sourceFileName.endsWith("ApplicationService.java")) {
+        if (sourceFileName.endsWith("ApplicationService.java") || isServiceCompositionRoot(sourceFileName)) {
             return;
         }
         for (String legacySuffix : LEGACY_ROLE_SUFFIXES) {
@@ -249,6 +254,11 @@ public final class DomainSourceTopologyPerimeterChecker extends BugChecker
                 return;
             }
         }
+    }
+
+    private static boolean isServiceCompositionRoot(String sourceFileName) {
+        return sourceFileName.endsWith("ServiceContribution.java")
+                || sourceFileName.endsWith("ServiceAssembly.java");
     }
 
     private static ClassTree topLevelClass(CompilationUnitTree tree) {

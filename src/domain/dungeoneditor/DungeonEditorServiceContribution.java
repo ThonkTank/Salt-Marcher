@@ -1,8 +1,7 @@
-package src.data.dungeoneditor;
+package src.domain.dungeoneditor;
 
 import shell.api.ServiceContribution;
 import shell.api.ServiceRegistry;
-import src.domain.dungeoneditor.DungeonEditorApplicationService;
 
 public final class DungeonEditorServiceContribution implements ServiceContribution {
 

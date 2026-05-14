@@ -15,12 +15,12 @@ Usage:
 Builds or reuses the Joern CPG used by render-callchain.sh.
 
 Environment:
-  JOERN_HOME           Directory containing joern and joern-parse.
+  JOERN_HOME           Directory containing joern and javasrc2cpg.
   CALLCHAIN_CPG_FILE  Override the CPG output path.
 
 Examples:
   tools/callchain/setup-joern.sh
-  JOERN_HOME=build/callchain/joern/joern/joern-cli tools/callchain/index.sh --refresh
+  JOERN_HOME=build/callchain/joern/joern-cli tools/callchain/index.sh --refresh
 EOF
 }
 
@@ -34,7 +34,7 @@ joern_bin() {
         command -v "$name"
         return 0
     fi
-    local build_local="$BUILD_ROOT/joern/joern/joern-cli/$name"
+    local build_local="$BUILD_ROOT/joern/joern-cli/$name"
     if [[ -x "$build_local" ]]; then
         printf '%s\n' "$build_local"
         return 0
@@ -67,9 +67,9 @@ if [[ -f "$CPG_FILE" && "$refresh" == false ]]; then
     exit 0
 fi
 
-joern_parse="$(joern_bin joern-parse)" || {
+javasrc2cpg="$(joern_bin javasrc2cpg)" || {
     cat >&2 <<'EOF'
-joern-parse not found.
+javasrc2cpg not found.
 Run tools/callchain/setup-joern.sh or set JOERN_HOME to a Joern CLI directory.
 EOF
     exit 1
@@ -83,5 +83,5 @@ cp -a "$REPO_ROOT/src" "$SOURCE_ROOT/src"
 
 rm -f "$CPG_FILE"
 printf 'Indexing SaltMarcher sources with Joern...\n'
-"$joern_parse" "$SOURCE_ROOT" --output "$CPG_FILE" --enable-file-content
+"$javasrc2cpg" "$SOURCE_ROOT" --output "$CPG_FILE"
 printf 'Wrote CPG: %s\n' "$CPG_FILE"

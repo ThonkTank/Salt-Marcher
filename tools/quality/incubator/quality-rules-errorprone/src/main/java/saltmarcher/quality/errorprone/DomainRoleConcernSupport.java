@@ -311,7 +311,8 @@ final class DomainRoleConcernSupport {
         return isSameFeatureModelRoleType(referencedType, sourceRole.feature(), "model")
                 || isSameFeatureModelRoleType(referencedType, sourceRole.feature(), "constants")
                 || isSameFeatureModelRoleType(referencedType, sourceRole.feature(), "repository")
-                || isForeignRootApplicationServiceType(referencedType, sourceRole.feature());
+                || isForeignRootApplicationServiceType(referencedType, sourceRole.feature())
+                || isForeignPublishedNonModelType(referencedType, sourceRole.feature());
     }
 
     private static boolean isSameFeatureUseCaseType(String referencedType, String feature) {
@@ -335,6 +336,11 @@ final class DomainRoleConcernSupport {
     private static boolean isForeignPublishedType(String referencedType, String sourceFeature) {
         Matcher matcher = DOMAIN_PUBLISHED_TYPE.matcher(referencedType);
         return matcher.matches() && !sourceFeature.equals(matcher.group(1));
+    }
+
+    private static boolean isForeignPublishedNonModelType(String referencedType, String sourceFeature) {
+        return isForeignPublishedType(referencedType, sourceFeature)
+                && !DOMAIN_PUBLISHED_MODEL_TYPE.matcher(referencedType).matches();
     }
 
     private static boolean isForeignRootApplicationServiceType(String referencedType, String sourceFeature) {

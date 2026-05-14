@@ -17,7 +17,7 @@ Graph rendering requires Graphviz `dot`.
 ## Index
 
 ```bash
-JOERN_HOME=build/callchain/joern/joern/joern-cli tools/callchain/index.sh --refresh
+JOERN_HOME=build/callchain/joern/joern-cli tools/callchain/index.sh --refresh
 ```
 
 The CPG is written to `build/callchain/saltmarcher-cpg.bin.zip`.
@@ -25,7 +25,7 @@ The CPG is written to `build/callchain/saltmarcher-cpg.bin.zip`.
 ## Render
 
 ```bash
-JOERN_HOME=build/callchain/joern/joern/joern-cli \
+JOERN_HOME=build/callchain/joern/joern-cli \
   tools/callchain/render-callchain.sh \
   src.domain.travel.TravelApplicationService#applyDungeonTravelSession
 ```

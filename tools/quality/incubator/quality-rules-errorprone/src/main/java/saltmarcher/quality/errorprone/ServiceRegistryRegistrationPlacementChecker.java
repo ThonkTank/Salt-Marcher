@@ -13,6 +13,7 @@ import com.sun.source.util.TreePathScanner;
 import com.sun.tools.javac.code.Symbol;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Pattern;
 
 @BugPattern(
         name = "ServiceRegistryRegistrationPlacement",
@@ -26,10 +27,17 @@ public final class ServiceRegistryRegistrationPlacementChecker extends BugChecke
     @Override
     public Description matchCompilationUnit(CompilationUnitTree tree, VisitorState state) {
         String packageName = DataArchitectureSupport.packageName(tree);
-        var rootMatcher = DataArchitectureSupport.DATA_ROOT_PACKAGE.matcher(packageName);
-        if (rootMatcher.matches()) {
-            String featureName = rootMatcher.group(1);
-            if (isDataRootCompositionOwner(tree, featureName)) {
+        var dataRootMatcher = DataArchitectureSupport.DATA_ROOT_PACKAGE.matcher(packageName);
+        if (dataRootMatcher.matches()) {
+            String featureName = dataRootMatcher.group(1);
+            if (isServiceCompositionOwner(tree, featureName)) {
+                return Description.NO_MATCH;
+            }
+        }
+        var domainRootMatcher = Pattern.compile("^src\\.domain\\.([^.]+)$").matcher(packageName);
+        if (domainRootMatcher.matches()) {
+            String featureName = domainRootMatcher.group(1);
+            if (isServiceCompositionOwner(tree, featureName)) {
                 return Description.NO_MATCH;
             }
         }
@@ -54,13 +62,12 @@ public final class ServiceRegistryRegistrationPlacementChecker extends BugChecke
         return buildDescription(tree)
                 .setMessage("Package '" + packageName
                         + "' registers services directly in shell.api.ServiceRegistry.Builder."
-                        + " Runtime service registration belongs only in the data feature composition adapter at src/data/<feature>/<Feature>ServiceContribution.java."
-                        + " or its package-local <Feature>ServiceAssembly.java."
+                        + " Runtime service registration belongs only in domain or data feature composition roots."
                         + " Found: " + String.join(", ", registrations))
                 .build();
     }
 
-    private static boolean isDataRootCompositionOwner(CompilationUnitTree tree, String featureName) {
+    private static boolean isServiceCompositionOwner(CompilationUnitTree tree, String featureName) {
         String simpleName = topLevelSimpleName(tree);
         return simpleName.endsWith("ServiceContribution")
                 || simpleName.endsWith("ServiceAssembly");

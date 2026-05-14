@@ -50,7 +50,7 @@ joern_bin() {
         command -v "$name"
         return 0
     fi
-    local build_local="$BUILD_ROOT/joern/joern/joern-cli/$name"
+    local build_local="$BUILD_ROOT/joern/joern-cli/$name"
     if [[ -x "$build_local" ]]; then
         printf '%s\n' "$build_local"
         return 0
@@ -125,14 +125,6 @@ EOF
     exit 1
 }
 
-if ! command -v dot >/dev/null 2>&1; then
-    cat >&2 <<'EOF'
-Graphviz dot is required to render SVG diagrams.
-Install Graphviz or inspect the generated DOT files directly.
-EOF
-    exit 1
-fi
-
 if [[ -z "$out_dir" ]]; then
     out_dir="$BUILD_ROOT/out/$(sanitize_segment "$selector")"
 fi
@@ -145,8 +137,23 @@ mkdir -p "$out_dir"
     --param "depth=$depth" \
     --param "includeExternal=$include_external"
 
-dot -Tsvg "$out_dir/callers.dot" -o "$out_dir/callers.svg"
-dot -Tsvg "$out_dir/callees.dot" -o "$out_dir/callees.svg"
-dot -Tsvg "$out_dir/both.dot" -o "$out_dir/both.svg"
+render_svg() {
+    local input_dot="$1"
+    local output_svg="$2"
+    if command -v dot >/dev/null 2>&1; then
+        dot -Tsvg "$input_dot" -o "$output_svg"
+        return 0
+    fi
+    if command -v python3 >/dev/null 2>&1; then
+        python3 "$SCRIPT_DIR/simple-dot-svg.py" "$input_dot" "$output_svg"
+        return 0
+    fi
+    printf 'Neither Graphviz dot nor python3 is available; DOT remains at %s\n' "$input_dot" >&2
+    return 1
+}
+
+render_svg "$out_dir/callers.dot" "$out_dir/callers.svg"
+render_svg "$out_dir/callees.dot" "$out_dir/callees.svg"
+render_svg "$out_dir/both.dot" "$out_dir/both.svg"
 
 printf 'Rendered callchain diagrams under %s\n' "$out_dir"

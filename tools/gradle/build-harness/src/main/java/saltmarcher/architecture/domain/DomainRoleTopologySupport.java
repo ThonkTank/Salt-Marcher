@@ -65,6 +65,15 @@ public final class DomainRoleTopologySupport {
         return isDomainRootFile(segments) && fileName.endsWith("ApplicationService.java");
     }
 
+    public static boolean isDomainRootServiceComposition(SourceFile sourceFile) {
+        return isDomainRootServiceComposition(sourceFile.relativeSegments(), sourceFile.fileName());
+    }
+
+    public static boolean isDomainRootServiceComposition(List<String> segments, String fileName) {
+        return isDomainRootFile(segments)
+                && (fileName.endsWith("ServiceContribution.java") || fileName.endsWith("ServiceAssembly.java"));
+    }
+
     public static Optional<String> domainBucket(List<String> segments) {
         if (!isDomainSource(segments) || segments.size() < 5) {
             return Optional.empty();

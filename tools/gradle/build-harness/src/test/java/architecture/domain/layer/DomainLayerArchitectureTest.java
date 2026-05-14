@@ -1,7 +1,6 @@
 package architecture.domain.layer;
 
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
-import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 
 import architecture.AnalyzeMainClasses;
 import com.tngtech.archunit.core.domain.Dependency;
@@ -20,12 +19,10 @@ public final class DomainLayerArchitectureTest {
 
     @ArchTest
     static final ArchRule domainMustStayIndependentFromOuterLayers =
-            noClasses()
+            classes()
                     .that()
                     .resideInAPackage("src.domain..")
-                    .should()
-                    .dependOnClassesThat()
-                    .resideInAnyPackage("src.view..", "shell..", "bootstrap..", "src.data..");
+                    .should(dependOnlyOnAllowedOuterLayerPackages());
 
     @ArchTest
     static final ArchRule domainFeaturesMustOnlyUseForeignFeatureApis =
@@ -225,7 +222,29 @@ public final class DomainLayerArchitectureTest {
         return isSameFeatureModelRolePackage(targetPackage, sourceFeature, "model")
                 || isSameFeatureModelRolePackage(targetPackage, sourceFeature, "constants")
                 || isSameFeatureModelRolePackage(targetPackage, sourceFeature, "repository")
-                || isForeignRootPackage(targetPackage, sourceFeature);
+                || isForeignRootPackage(targetPackage, sourceFeature)
+                || isForeignPublishedPackage(targetPackage, sourceFeature);
+    }
+
+    private static ArchCondition<JavaClass> dependOnlyOnAllowedOuterLayerPackages() {
+        return new ArchCondition<>("stay independent from outer layers except domain service-composition shell seam") {
+            @Override
+            public void check(JavaClass item, ConditionEvents events) {
+                for (Dependency dependency : item.getDirectDependenciesFromSelf()) {
+                    JavaClass target = dependency.getTargetClass();
+                    String targetPackage = target.getPackageName();
+                    if (!isOuterLayerPackage(targetPackage)) {
+                        continue;
+                    }
+                    if (isDomainServiceCompositionRoot(item) && isAllowedShellCompositionPackage(targetPackage)) {
+                        continue;
+                    }
+                    events.add(SimpleConditionEvent.violated(
+                            item,
+                            item.getName() + " depends on outer-layer type " + target.getName()));
+                }
+            }
+        };
     }
 
     private static String domainFeatureName(String packageName) {
@@ -283,6 +302,24 @@ public final class DomainLayerArchitectureTest {
         return targetFeature != null
                 && !targetFeature.equals(sourceFeature)
                 && packageName.equals("src.domain." + targetFeature);
+    }
+
+    private static boolean isOuterLayerPackage(String packageName) {
+        return packageName.startsWith("src.view.")
+                || packageName.startsWith("shell.")
+                || packageName.startsWith("bootstrap.")
+                || packageName.startsWith("src.data.");
+    }
+
+    private static boolean isAllowedShellCompositionPackage(String packageName) {
+        return packageName.equals("shell.api") || packageName.startsWith("shell.api.");
+    }
+
+    private static boolean isDomainServiceCompositionRoot(JavaClass item) {
+        String packageName = item.getPackageName();
+        String simpleName = item.getSimpleName();
+        return packageName.matches("^src\\.domain\\.[^.]+$")
+                && (simpleName.endsWith("ServiceContribution") || simpleName.endsWith("ServiceAssembly"));
     }
 
     @FunctionalInterface

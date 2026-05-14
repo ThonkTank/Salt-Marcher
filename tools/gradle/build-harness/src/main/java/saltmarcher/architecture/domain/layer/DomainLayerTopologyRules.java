@@ -59,9 +59,10 @@ public final class DomainLayerTopologyRules implements ArchitectureRule {
         }
 
         if (DomainRoleTopologySupport.isDomainRootFile(segments)) {
-            if (!DomainRoleTopologySupport.isDomainRootApplicationService(sourceFile)) {
+            if (!DomainRoleTopologySupport.isDomainRootApplicationService(sourceFile)
+                    && !DomainRoleTopologySupport.isDomainRootServiceComposition(sourceFile)) {
                 violations.add(sourceFile.relativePath(), "domain-layer-root-direct-file-role-allowlist",
-                        "Direct root domain files under src/domain/<context>/ must be *ApplicationService.java only.");
+                        "Direct root domain files under src/domain/<context>/ must be *ApplicationService.java or service-composition roots only.");
             }
             return;
         }
