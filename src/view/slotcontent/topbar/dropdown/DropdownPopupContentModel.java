@@ -44,10 +44,6 @@ public final class DropdownPopupContentModel {
         popupState.set(popupState.get().withOpen(false));
     }
 
-    public void popupHidden() {
-        close();
-    }
-
     private static String safe(@Nullable String value) {
         return value == null ? "" : value;
     }
