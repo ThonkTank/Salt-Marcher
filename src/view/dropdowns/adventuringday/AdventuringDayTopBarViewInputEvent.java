@@ -3,7 +3,7 @@ package src.view.dropdowns.adventuringday;
 import java.util.List;
 
 public record AdventuringDayTopBarViewInputEvent(
-        boolean popupOpening,
+        boolean popupCloseRequested,
         boolean useActivePartyRequested,
         boolean addRowRequested,
         boolean clearRequested,

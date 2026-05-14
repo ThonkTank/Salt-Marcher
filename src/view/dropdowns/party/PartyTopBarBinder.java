@@ -25,8 +25,12 @@ final class PartyTopBarBinder {
         PartyApplicationService party = runtimeContext.services().require(PartyApplicationService.class);
         EncounterApplicationService encounters = runtimeContext.services().require(EncounterApplicationService.class);
         PartyTopBarContributionModel presentationModel = new PartyTopBarContributionModel();
-        PartyTopBarIntentHandler intentHandler = new PartyTopBarIntentHandler(presentationModel, party, encounters);
         DropdownPopupContentModel popupContentModel = new DropdownPopupContentModel();
+        PartyTopBarIntentHandler intentHandler = new PartyTopBarIntentHandler(
+                presentationModel,
+                popupContentModel,
+                party,
+                encounters);
         PartyRosterTopBarView rosterView = new PartyRosterTopBarView();
         PartyEditorTopBarView editorView = new PartyEditorTopBarView();
         PartyTopBarView topBarView = new PartyTopBarView(popupContentModel, rosterView, editorView);
@@ -50,6 +54,7 @@ final class PartyTopBarBinder {
             editorView.showEditor(editorModel);
         });
         topBarView.onViewInputEvent(intentHandler::consume);
+        topBarView.dropdownPopupView().onViewInputEvent(intentHandler::consume);
         rosterView.onViewInputEvent(intentHandler::consume);
         editorView.onViewInputEvent(intentHandler::consume);
         snapshotModel.subscribe(snapshot ->

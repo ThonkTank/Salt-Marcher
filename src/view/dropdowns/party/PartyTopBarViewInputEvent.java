@@ -1,4 +1,4 @@
 package src.view.dropdowns.party;
 
-public record PartyTopBarViewInputEvent() {
+public record PartyTopBarViewInputEvent(boolean popupCloseRequested) {
 }

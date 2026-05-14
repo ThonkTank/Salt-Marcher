@@ -40,7 +40,6 @@ public final class AdventuringDayTopBarView extends HBox {
     private static final String STYLE_TEXT_SECONDARY = "text-secondary";
     static final String TOOLTIP_TEXT = "Adventuring-Day-Rechner öffnen";
 
-    private final DropdownPopupContentModel popupContentModel;
     private final DropdownPopupView popupView;
     private final CalculatorPane calculatorPane = new CalculatorPane(
             (useActivePartyRequested, addRowRequested, clearRequested) ->
@@ -48,16 +47,10 @@ public final class AdventuringDayTopBarView extends HBox {
     private Consumer<AdventuringDayTopBarViewInputEvent> viewInputEventHandler = ignored -> { };
 
     AdventuringDayTopBarView(DropdownPopupContentModel popupContentModel) {
-        this.popupContentModel = popupContentModel;
         setSpacing(8);
         setPadding(new Insets(4, 0, 4, 8));
         popupView = new DropdownPopupView(buildPanel());
-        popupView.bind(this.popupContentModel);
-        popupView.onViewInputEvent(event -> {
-            if (event.popupOpening()) {
-                publish(true, false, false, false);
-            }
-        });
+        popupView.bind(popupContentModel);
         getChildren().add(popupView);
     }
 
@@ -78,13 +71,17 @@ public final class AdventuringDayTopBarView extends HBox {
         viewInputEventHandler = handler == null ? ignored -> { } : handler;
     }
 
+    DropdownPopupView dropdownPopupView() {
+        return popupView;
+    }
+
     private DialogSurfaceView buildPanel() {
         Label headerLabel = new Label("ADVENTURING DAY");
         addStyleClass(headerLabel, "title-large");
         Button closeButton = new Button("×");
         addStyleClass(closeButton, STYLE_COMPACT);
         closeButton.setAccessibleText("Adventuring-Day-Rechner schliessen");
-        closeButton.setOnAction(event -> popupContentModel.close());
+        closeButton.setOnAction(event -> publish(true, false, false, false));
         Region spacer = new Region();
         setAlwaysHgrow(spacer);
         HBox header = new HBox(6, headerLabel, spacer, closeButton);
@@ -110,7 +107,7 @@ public final class AdventuringDayTopBarView extends HBox {
     }
 
     private void publish(
-            boolean popupOpening,
+            boolean popupCloseRequested,
             boolean useActivePartyRequested,
             boolean addRowRequested,
             boolean clearRequested
@@ -119,7 +116,7 @@ public final class AdventuringDayTopBarView extends HBox {
         boolean progressModeSelected = calculatorPane.progressModeSelected();
         String totalGroupXpText = calculatorPane.totalGroupXpText();
         viewInputEventHandler.accept(new AdventuringDayTopBarViewInputEvent(
-                popupOpening,
+                popupCloseRequested,
                 useActivePartyRequested,
                 addRowRequested,
                 clearRequested,

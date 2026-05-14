@@ -29,11 +29,13 @@ final class AdventuringDayTopBarBinder {
         AdventuringDayCalculationModel calculationModel =
                 runtimeContext.services().require(AdventuringDayCalculationModel.class);
         AdventuringDayTopBarContributionModel presentationModel = new AdventuringDayTopBarContributionModel();
-        AdventuringDayTopBarIntentHandler intentHandler = new AdventuringDayTopBarIntentHandler(presentationModel, party);
         DropdownPopupContentModel popupContentModel = new DropdownPopupContentModel();
+        AdventuringDayTopBarIntentHandler intentHandler =
+                new AdventuringDayTopBarIntentHandler(presentationModel, popupContentModel, party);
         AdventuringDayTopBarView view = new AdventuringDayTopBarView(popupContentModel);
         applyPopupPresentation(popupContentModel, presentationModel.triggerTextProperty().getValue());
         view.onViewInputEvent(intentHandler::consume);
+        view.dropdownPopupView().onViewInputEvent(intentHandler::consume);
         view.showPanel(presentationModel.panelProperty().getValue());
         presentationModel.triggerTextProperty().addListener((ignored, before, after) ->
                 applyPopupPresentation(popupContentModel, after));

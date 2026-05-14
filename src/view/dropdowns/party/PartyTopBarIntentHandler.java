@@ -13,6 +13,8 @@ import src.domain.party.published.PerformPartyRestCommand;
 import src.domain.party.published.RestType;
 import src.domain.party.published.SetPartyMembershipCommand;
 import src.domain.party.published.UpdateCharacterCommand;
+import src.view.slotcontent.topbar.dropdown.DropdownPopupContentModel;
+import src.view.slotcontent.topbar.dropdown.DropdownPopupViewInputEvent;
 
 @SuppressWarnings({
         "PMD.GodClass",
@@ -23,21 +25,36 @@ final class PartyTopBarIntentHandler {
     private static final String CHARACTER_NOT_FOUND = "Charakter konnte nicht gefunden werden.";
 
     private final PartyTopBarContributionModel presentationModel;
+    private final DropdownPopupContentModel popupContentModel;
     private final PartyApplicationService party;
     private final EncounterApplicationService encounters;
 
     PartyTopBarIntentHandler(
             PartyTopBarContributionModel presentationModel,
+            DropdownPopupContentModel popupContentModel,
             PartyApplicationService party,
             EncounterApplicationService encounters
     ) {
         this.presentationModel = Objects.requireNonNull(presentationModel, "presentationModel");
+        this.popupContentModel = Objects.requireNonNull(popupContentModel, "popupContentModel");
         this.party = Objects.requireNonNull(party, "party");
         this.encounters = Objects.requireNonNull(encounters, "encounters");
     }
 
     void consume(PartyTopBarViewInputEvent event) {
-        // Popup toggling currently needs no local state mutation.
+        if (event != null && event.popupCloseRequested()) {
+            popupContentModel.close();
+        }
+    }
+
+    void consume(DropdownPopupViewInputEvent event) {
+        if (event == null) {
+            return;
+        }
+        switch (event.interaction()) {
+            case REQUEST_OPEN -> popupContentModel.open();
+            case REQUEST_CLOSE, HIDDEN -> popupContentModel.close();
+        }
     }
 
     @SuppressWarnings("PMD.CyclomaticComplexity")

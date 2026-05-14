@@ -36,16 +36,15 @@ public final class DropdownPopupContentModel {
         return popupState.get().open();
     }
 
-    public void toggleOpen() {
-        PopupState current = popupState.get();
-        popupState.set(current.withOpen(!current.open()));
+    public void open() {
+        popupState.set(popupState.get().withOpen(true));
     }
 
     public void close() {
         popupState.set(popupState.get().withOpen(false));
     }
 
-    void popupHidden() {
+    public void popupHidden() {
         close();
     }
 

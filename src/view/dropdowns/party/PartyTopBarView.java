@@ -19,7 +19,6 @@ public final class PartyTopBarView extends HBox {
     static final String OPEN_ACCESSIBLE_TEXT = "Party-Panel geöffnet, Escape zum Schließen";
     static final String TOOLTIP_TEXT = "Party-Panel öffnen (Alt+P)";
 
-    private final DropdownPopupContentModel popupContentModel;
     private final DropdownPopupView popupView;
     private Consumer<PartyTopBarViewInputEvent> viewInputEventHandler = ignored -> { };
 
@@ -28,21 +27,19 @@ public final class PartyTopBarView extends HBox {
             PartyRosterTopBarView rosterView,
             PartyEditorTopBarView editorView
     ) {
-        this.popupContentModel = popupContentModel;
         setSpacing(8);
         setPadding(new Insets(4, 8, 4, 8));
         popupView = new DropdownPopupView(buildPanel(rosterView, editorView));
-        popupView.bind(this.popupContentModel);
-        popupView.onViewInputEvent(event -> {
-            if (event.popupOpening()) {
-                viewInputEventHandler.accept(new PartyTopBarViewInputEvent());
-            }
-        });
+        popupView.bind(popupContentModel);
         getChildren().add(popupView);
     }
 
     public void onViewInputEvent(Consumer<PartyTopBarViewInputEvent> handler) {
         viewInputEventHandler = handler == null ? ignored -> { } : handler;
+    }
+
+    DropdownPopupView dropdownPopupView() {
+        return popupView;
     }
 
     private VBox buildPanel(
@@ -52,7 +49,7 @@ public final class PartyTopBarView extends HBox {
         Button closeButton = new Button("x");
         addStyleClass(closeButton, "compact");
         closeButton.setAccessibleText("Party-Panel schließen");
-        closeButton.setOnAction(event -> popupContentModel.close());
+        closeButton.setOnAction(event -> viewInputEventHandler.accept(new PartyTopBarViewInputEvent(true)));
         Region headerSpacer = new Region();
         setHgrow(headerSpacer, Priority.ALWAYS);
         Label headerLabel = new Label("PARTY");
