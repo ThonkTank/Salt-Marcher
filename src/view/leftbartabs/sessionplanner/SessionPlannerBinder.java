@@ -77,14 +77,16 @@ final class SessionPlannerBinder {
         timelineView.onViewInputEvent(intentHandler::consume);
         lootView.onViewInputEvent(intentHandler::consume);
 
-        sessionModel.subscribe(contributionModel::applySession);
-        participantsModel.subscribe(contributionModel::applyParticipants);
-        encountersModel.subscribe(contributionModel::applyEncounters);
-        statePanelModel.subscribe(contributionModel::applyStatePanel);
-        contributionModel.applySession(sessionModel.current());
-        contributionModel.applyParticipants(participantsModel.current());
-        contributionModel.applyEncounters(encountersModel.current());
-        contributionModel.applyStatePanel(statePanelModel.current());
+        sessionModel.subscribe(contributionModel.controlsContentModel()::applySession);
+        participantsModel.subscribe(contributionModel.controlsContentModel()::applyParticipants);
+        encountersModel.subscribe(contributionModel.timelineMainContentModel()::applyEncounters);
+        encountersModel.subscribe(contributionModel.lootMainContentModel()::applyEncounters);
+        statePanelModel.subscribe(contributionModel.stateContentModel()::applyStatePanel);
+        contributionModel.controlsContentModel().applySession(sessionModel.current());
+        contributionModel.controlsContentModel().applyParticipants(participantsModel.current());
+        contributionModel.timelineMainContentModel().applyEncounters(encountersModel.current());
+        contributionModel.lootMainContentModel().applyEncounters(encountersModel.current());
+        contributionModel.stateContentModel().applyStatePanel(statePanelModel.current());
         return new Binding(controlsView, main, stateView);
     }
 

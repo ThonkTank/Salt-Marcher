@@ -14,16 +14,25 @@ public final class SessionPlannerControlsContentModel {
 
     private final ReadOnlyObjectWrapper<Projection> projection =
             new ReadOnlyObjectWrapper<>(Projection.empty());
+    private SessionPlannerSessionSnapshot sessionSnapshot = SessionPlannerSessionSnapshot.empty("");
+    private SessionPlannerParticipantsProjection participantsProjection = SessionPlannerParticipantsProjection.empty();
 
     ReadOnlyObjectProperty<Projection> projectionProperty() {
         return projection.getReadOnlyProperty();
     }
 
-    void applyReadback(
-            SessionPlannerSessionSnapshot snapshot,
-            SessionPlannerParticipantsProjection participantsProjection
-    ) {
-        projection.set(Projection.from(snapshot, participantsProjection));
+    void applySession(SessionPlannerSessionSnapshot snapshot) {
+        sessionSnapshot = snapshot == null ? SessionPlannerSessionSnapshot.empty("") : snapshot;
+        refreshProjection();
+    }
+
+    void applyParticipants(SessionPlannerParticipantsProjection projection) {
+        participantsProjection = projection == null ? SessionPlannerParticipantsProjection.empty() : projection;
+        refreshProjection();
+    }
+
+    private void refreshProjection() {
+        projection.set(Projection.from(sessionSnapshot, participantsProjection));
     }
 
     record Projection(

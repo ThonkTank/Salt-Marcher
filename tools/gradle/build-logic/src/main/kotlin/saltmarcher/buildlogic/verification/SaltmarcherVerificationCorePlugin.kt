@@ -204,8 +204,13 @@ internal fun Project.configureVerificationCore() {
             .forEach(::dependsOn)
     }
     configureProductionHandoffHygieneBarriers(
-        productionHandoffStructure,
         productionHandoffHygiene,
+        verificationLifecycleCatalog.ownerTaskNames(VerificationLifecyclePhase.COMPILE_INTEGRITY) +
+            verificationLifecycleCatalog.ownerTaskNames(VerificationLifecyclePhase.STRUCTURE) +
+            listOf(
+                ProductionHandoffCompileIntegrityTaskName,
+                ProductionHandoffStructureTaskName
+            ),
         verificationLifecycleCatalog.ownerTaskNames(VerificationLifecyclePhase.HYGIENE) +
             activeEnforcementBundleIds
                 .map(::descriptor)
@@ -228,15 +233,19 @@ private fun systemBoolean(name: String, defaultValue: Boolean): Boolean =
         ?: defaultValue
 
 private fun Project.configureProductionHandoffHygieneBarriers(
-    structureTask: TaskProvider<Task>,
     hygieneTask: TaskProvider<Task>,
+    barrierTaskNames: List<String>,
     hygieneDependencyTaskNames: List<String>
 ) {
+    val distinctBarrierTaskNames = barrierTaskNames.distinct()
     hygieneDependencyTaskNames.distinct().forEach { taskName ->
         tasks.named(taskName).configure {
-            mustRunAfter(structureTask)
-            onlyIf("production handoff structure phase completed successfully") {
-                !gradle.taskGraph.hasTask(hygieneTask.get()) || structureTask.get().state.failure == null
+            mustRunAfter(distinctBarrierTaskNames)
+            onlyIf("production handoff compile and structure phases completed successfully") {
+                !gradle.taskGraph.hasTask(hygieneTask.get()) ||
+                    distinctBarrierTaskNames
+                        .mapNotNull(tasks::findByName)
+                        .all { barrierTask -> barrierTask.state.failure == null }
             }
         }
     }

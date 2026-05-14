@@ -4,7 +4,7 @@ import org.jspecify.annotations.Nullable;
 
 public record TravelDungeonSnapshot(
         @Nullable TravelDungeonWorkspaceState workspaceState,
-        @Nullable TravelDungeonMapProjectionSnapshot mapProjection,
+        @Nullable DungeonTravelSurfaceSnapshot travelSurface,
         TravelOverlaySettings overlaySettings,
         int projectionLevel
 ) {

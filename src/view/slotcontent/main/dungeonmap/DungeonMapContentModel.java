@@ -13,14 +13,23 @@ import java.util.function.ToDoubleFunction;
 import java.util.function.ToIntFunction;
 import java.util.function.ToLongFunction;
 import org.jspecify.annotations.Nullable;
-import src.domain.dungeon.published.DungeonTopologyKind;
+import src.domain.dungeon.published.DungeonAreaKind;
+import src.domain.dungeon.published.DungeonAreaSnapshot;
+import src.domain.dungeon.published.DungeonBoundarySnapshot;
+import src.domain.dungeon.published.DungeonCellRef;
 import src.domain.dungeon.published.DungeonEditorHandleRef;
 import src.domain.dungeon.published.DungeonEditorMapProjectionSnapshot;
 import src.domain.dungeon.published.DungeonEditorOverlaySettings;
 import src.domain.dungeon.published.DungeonEditorSnapshot;
 import src.domain.dungeon.published.DungeonEditorTool;
 import src.domain.dungeon.published.DungeonEditorViewMode;
-import src.domain.dungeon.published.TravelDungeonMapProjectionSnapshot;
+import src.domain.dungeon.published.DungeonFeatureKind;
+import src.domain.dungeon.published.DungeonFeatureSnapshot;
+import src.domain.dungeon.published.DungeonMapSnapshot;
+import src.domain.dungeon.published.DungeonTopologyElementRef;
+import src.domain.dungeon.published.DungeonTopologyKind;
+import src.domain.dungeon.published.DungeonTravelHeading;
+import src.domain.dungeon.published.DungeonTravelSurfaceSnapshot;
 import src.domain.dungeon.published.TravelDungeonSnapshot;
 import src.domain.dungeon.published.TravelOverlaySettings;
 import src.view.slotcontent.primitives.mapcanvas.MapCanvasContentModel;
@@ -863,11 +872,9 @@ final class DungeonMapSnapshotMapper {
         TravelDungeonSnapshot safeSnapshot = snapshot == null
                 ? TravelDungeonSnapshot.empty()
                 : snapshot;
-        DungeonMapRenderState baseState = mapProjection(
+        DungeonMapRenderState baseState = DungeonMapTravelFactsProjector.mapTravelSurface(
                 placeholderTitle,
-                safeSnapshot.mapProjection(),
-                false,
-                DungeonMapTravelProjectionAccess.ACCESS);
+                safeSnapshot.travelSurface());
         return baseState.withOverlaySettings(toOverlaySettings(safeSnapshot.overlaySettings()))
                 .withProjectionLevel(safeSnapshot.projectionLevel())
                 .withSelectedTool(DungeonMapRenderState.SELECT_TOOL_LABEL);
@@ -951,6 +958,224 @@ final class DungeonMapSnapshotMapper {
         labels.put(DungeonEditorTool.TRANSITION_CREATE, "Übergang erstellen");
         labels.put(DungeonEditorTool.TRANSITION_DELETE, "Übergang löschen");
         return labels;
+    }
+}
+
+final class DungeonMapTravelFactsProjector {
+
+    private DungeonMapTravelFactsProjector() {
+    }
+
+    static DungeonMapRenderState mapTravelSurface(
+            String placeholderTitle,
+            @Nullable DungeonTravelSurfaceSnapshot surface
+    ) {
+        if (surface == null) {
+            return DungeonMapRenderState.empty(placeholderTitle, false);
+        }
+        DungeonMapSnapshot map = surface.map();
+        List<DungeonMapRenderState.GraphNode> graphNodes = graphNodes(map.areas());
+        return new DungeonMapRenderState(
+                surface.mapName(),
+                true,
+                map.width(),
+                map.height(),
+                DungeonMapRenderState.Topology.fromPublished(map.topology()),
+                DungeonMapRenderState.ViewMode.grid(),
+                DungeonMapRenderState.LevelOverlaySettings.off(),
+                0,
+                false,
+                DungeonMapRenderState.SELECT_TOOL_LABEL,
+                "No dungeon map geometry available.",
+                cells(map),
+                edges(map.boundaries()),
+                labels(map.features()),
+                markers(map.features()),
+                graphNodes,
+                fallbackGraphLinks(graphNodes),
+                partyToken(surface));
+    }
+
+    private static List<DungeonMapRenderState.Cell> cells(DungeonMapSnapshot map) {
+        List<DungeonMapRenderState.Cell> cells = new ArrayList<>();
+        for (DungeonAreaSnapshot area : map.areas()) {
+            for (DungeonCellRef cell : area.cells()) {
+                cells.add(new DungeonMapRenderState.Cell(
+                        cell.q(),
+                        cell.r(),
+                        cell.level(),
+                        area.label(),
+                        area.kind() == DungeonAreaKind.CORRIDOR
+                                ? DungeonMapRenderState.CellKind.CORRIDOR
+                                : DungeonMapRenderState.CellKind.ROOM,
+                        area.id(),
+                        area.clusterId(),
+                        topologyRef(area.topologyRef()),
+                        false,
+                        false,
+                        false,
+                        false));
+            }
+        }
+        for (DungeonFeatureSnapshot feature : map.features()) {
+            for (DungeonCellRef cell : feature.cells()) {
+                cells.add(new DungeonMapRenderState.Cell(
+                        cell.q(),
+                        cell.r(),
+                        cell.level(),
+                        feature.label(),
+                        feature.kind() == DungeonFeatureKind.TRANSITION
+                                ? DungeonMapRenderState.CellKind.TRANSITION
+                                : DungeonMapRenderState.CellKind.STAIR,
+                        feature.id(),
+                        0L,
+                        topologyRef(feature.topologyRef()),
+                        false,
+                        false,
+                        false,
+                        false));
+            }
+        }
+        return List.copyOf(cells);
+    }
+
+    private static List<DungeonMapRenderState.Edge> edges(List<DungeonBoundarySnapshot> boundaries) {
+        List<DungeonMapRenderState.Edge> edges = new ArrayList<>();
+        for (DungeonBoundarySnapshot boundary : boundaries) {
+            edges.add(new DungeonMapRenderState.Edge(
+                    boundary.edge().from().q(),
+                    boundary.edge().from().r(),
+                    boundary.edge().to().q(),
+                    boundary.edge().to().r(),
+                    boundary.edge().from().level(),
+                    "door".equalsIgnoreCase(boundary.kind())
+                            ? DungeonMapRenderState.EdgeKind.DOOR
+                            : DungeonMapRenderState.EdgeKind.WALL,
+                    boundary.label(),
+                    boundary.id(),
+                    topologyRef(boundary.topologyRef()),
+                    false,
+                    false));
+        }
+        return List.copyOf(edges);
+    }
+
+    private static List<DungeonMapRenderState.Label> labels(List<DungeonFeatureSnapshot> features) {
+        List<DungeonMapRenderState.Label> labels = new ArrayList<>();
+        for (DungeonFeatureSnapshot feature : features) {
+            CellCenter center = centerOf(feature.cells());
+            labels.add(new DungeonMapRenderState.Label(
+                    feature.label(),
+                    center.q(),
+                    center.r(),
+                    center.level(),
+                    feature.id(),
+                    0L,
+                    topologyRef(feature.topologyRef()),
+                    false,
+                    false));
+        }
+        return List.copyOf(labels);
+    }
+
+    private static List<DungeonMapRenderState.Marker> markers(List<DungeonFeatureSnapshot> features) {
+        List<DungeonMapRenderState.Marker> markers = new ArrayList<>();
+        for (DungeonFeatureSnapshot feature : features) {
+            CellCenter center = centerOf(feature.cells());
+            boolean transition = feature.kind() == DungeonFeatureKind.TRANSITION;
+            markers.add(new DungeonMapRenderState.Marker(
+                    transition ? "->" : "z",
+                    center.q(),
+                    center.r(),
+                    center.level(),
+                    transition ? DungeonMapRenderState.MarkerKind.WAYPOINT : DungeonMapRenderState.MarkerKind.STAIR,
+                    false,
+                    new DungeonMapRenderState.MarkerHandle(
+                            transition ? "CORRIDOR_WAYPOINT" : "STAIR_ANCHOR",
+                            topologyRef(feature.topologyRef()),
+                            feature.id(),
+                            0L,
+                            0L,
+                            0L,
+                            0,
+                            (int) Math.floor(center.q()),
+                            (int) Math.floor(center.r()),
+                            center.level(),
+                            ""),
+                    false));
+        }
+        return List.copyOf(markers);
+    }
+
+    private static List<DungeonMapRenderState.GraphNode> graphNodes(List<DungeonAreaSnapshot> areas) {
+        List<DungeonMapRenderState.GraphNode> nodes = new ArrayList<>();
+        for (DungeonAreaSnapshot area : areas) {
+            if (area.cells().isEmpty()) {
+                continue;
+            }
+            CellCenter center = centerOf(area.cells());
+            nodes.add(new DungeonMapRenderState.GraphNode(
+                    area.id(),
+                    area.clusterId(),
+                    area.label(),
+                    center.q(),
+                    center.r(),
+                    false));
+        }
+        return List.copyOf(nodes);
+    }
+
+    private static List<DungeonMapRenderState.GraphLink> fallbackGraphLinks(
+            List<DungeonMapRenderState.GraphNode> nodes
+    ) {
+        if (nodes.size() <= 1) {
+            return List.of();
+        }
+        List<DungeonMapRenderState.GraphLink> links = new ArrayList<>();
+        for (int index = 1; index < nodes.size(); index++) {
+            links.add(new DungeonMapRenderState.GraphLink(nodes.get(index - 1).id(), nodes.get(index).id(), false));
+        }
+        return List.copyOf(links);
+    }
+
+    private static DungeonMapRenderState.PartyToken partyToken(DungeonTravelSurfaceSnapshot surface) {
+        if (surface.position() == null) {
+            return null;
+        }
+        DungeonCellRef tile = surface.position().tile();
+        return new DungeonMapRenderState.PartyToken(
+                tile.q() + 0.5,
+                tile.r() + 0.5,
+                tile.level(),
+                heading(surface.position().heading()),
+                true);
+    }
+
+    private static DungeonMapRenderState.Heading heading(DungeonTravelHeading heading) {
+        return DungeonMapRenderState.Heading.fromName(heading == null ? "SOUTH" : heading.name());
+    }
+
+    private static DungeonMapRenderState.TopologyRef topologyRef(DungeonTopologyElementRef ref) {
+        return ref == null
+                ? DungeonMapRenderState.TopologyRef.empty()
+                : new DungeonMapRenderState.TopologyRef(ref.kind().name(), ref.id());
+    }
+
+    private static CellCenter centerOf(List<DungeonCellRef> cells) {
+        if (cells == null || cells.isEmpty()) {
+            return new CellCenter(0.5, 0.5, 0);
+        }
+        double q = 0.0;
+        double r = 0.0;
+        int level = cells.getFirst().level();
+        for (DungeonCellRef cell : cells) {
+            q += cell.q() + 0.5;
+            r += cell.r() + 0.5;
+        }
+        return new CellCenter(q / cells.size(), r / cells.size(), level);
+    }
+
+    private record CellCenter(double q, double r, int level) {
     }
 }
 
@@ -1331,111 +1556,6 @@ final class DungeonMapEditorProjectionAccess {
                     null);
 
     private DungeonMapEditorProjectionAccess() {
-    }
-}
-
-final class DungeonMapTravelProjectionAccess {
-
-    static final DungeonMapProjectionElements.ProjectionAccess<
-            TravelDungeonMapProjectionSnapshot,
-            TravelDungeonMapProjectionSnapshot.CellProjection,
-            TravelDungeonMapProjectionSnapshot.EdgeProjection,
-            TravelDungeonMapProjectionSnapshot.LabelProjection,
-            TravelDungeonMapProjectionSnapshot.MarkerProjection,
-            TravelDungeonMapProjectionSnapshot.GraphNodeProjection,
-            TravelDungeonMapProjectionSnapshot.GraphLinkProjection,
-            TravelDungeonMapProjectionSnapshot.PartyTokenProjection> ACCESS =
-            new DungeonMapProjectionElements.ProjectionAccess<>(
-                    TravelDungeonMapProjectionSnapshot::mapName,
-                    TravelDungeonMapProjectionSnapshot::width,
-                    TravelDungeonMapProjectionSnapshot::height,
-                    projection -> DungeonMapRenderState.Topology.fromPublished(projection.topology()),
-                    projection -> projection.content().cells(),
-                    new DungeonMapProjectionElements.CellReader<>(
-                            TravelDungeonMapProjectionSnapshot.CellProjection::q,
-                            TravelDungeonMapProjectionSnapshot.CellProjection::r,
-                            TravelDungeonMapProjectionSnapshot.CellProjection::level,
-                            TravelDungeonMapProjectionSnapshot.CellProjection::label,
-                            cell -> cell.kind().name(),
-                            TravelDungeonMapProjectionSnapshot.CellProjection::ownerId,
-                            TravelDungeonMapProjectionSnapshot.CellProjection::clusterId,
-                            cell -> cell.topologyRef().kind(),
-                            cell -> cell.topologyRef().id(),
-                            TravelDungeonMapProjectionSnapshot.CellProjection::selected,
-                            TravelDungeonMapProjectionSnapshot.CellProjection::overlay,
-                            TravelDungeonMapProjectionSnapshot.CellProjection::preview,
-                            TravelDungeonMapProjectionSnapshot.CellProjection::destructivePreview),
-                    projection -> projection.content().edges(),
-                    new DungeonMapProjectionElements.EdgeReader<>(
-                            TravelDungeonMapProjectionSnapshot.EdgeProjection::startQ,
-                            TravelDungeonMapProjectionSnapshot.EdgeProjection::startR,
-                            TravelDungeonMapProjectionSnapshot.EdgeProjection::endQ,
-                            TravelDungeonMapProjectionSnapshot.EdgeProjection::endR,
-                            TravelDungeonMapProjectionSnapshot.EdgeProjection::level,
-                            edge -> edge.kind().name(),
-                            TravelDungeonMapProjectionSnapshot.EdgeProjection::label,
-                            TravelDungeonMapProjectionSnapshot.EdgeProjection::ownerId,
-                            edge -> edge.topologyRef().kind(),
-                            edge -> edge.topologyRef().id(),
-                            TravelDungeonMapProjectionSnapshot.EdgeProjection::selected,
-                            TravelDungeonMapProjectionSnapshot.EdgeProjection::preview),
-                    projection -> projection.content().labels(),
-                    new DungeonMapProjectionElements.LabelReader<>(
-                            TravelDungeonMapProjectionSnapshot.LabelProjection::label,
-                            TravelDungeonMapProjectionSnapshot.LabelProjection::q,
-                            TravelDungeonMapProjectionSnapshot.LabelProjection::r,
-                            TravelDungeonMapProjectionSnapshot.LabelProjection::level,
-                            TravelDungeonMapProjectionSnapshot.LabelProjection::ownerId,
-                            TravelDungeonMapProjectionSnapshot.LabelProjection::clusterId,
-                            label -> label.topologyRef().kind(),
-                            label -> label.topologyRef().id(),
-                            TravelDungeonMapProjectionSnapshot.LabelProjection::selected,
-                            TravelDungeonMapProjectionSnapshot.LabelProjection::preview),
-                    projection -> projection.content().markers(),
-                    new DungeonMapProjectionElements.MarkerReader<>(
-                            TravelDungeonMapProjectionSnapshot.MarkerProjection::label,
-                            TravelDungeonMapProjectionSnapshot.MarkerProjection::q,
-                            TravelDungeonMapProjectionSnapshot.MarkerProjection::r,
-                            TravelDungeonMapProjectionSnapshot.MarkerProjection::level,
-                            marker -> marker.kind().name(),
-                            TravelDungeonMapProjectionSnapshot.MarkerProjection::selected,
-                            TravelDungeonMapProjectionSnapshot.MarkerProjection::handle,
-                            new DungeonMapProjectionElements.MarkerHandleReader<>(
-                                    TravelDungeonMapProjectionSnapshot.MarkerHandle::kind,
-                                    handle -> handle.topologyRef().kind(),
-                                    handle -> handle.topologyRef().id(),
-                                    TravelDungeonMapProjectionSnapshot.MarkerHandle::ownerId,
-                                    TravelDungeonMapProjectionSnapshot.MarkerHandle::clusterId,
-                                    TravelDungeonMapProjectionSnapshot.MarkerHandle::corridorId,
-                                    TravelDungeonMapProjectionSnapshot.MarkerHandle::roomId,
-                                    TravelDungeonMapProjectionSnapshot.MarkerHandle::index,
-                                    TravelDungeonMapProjectionSnapshot.MarkerHandle::q,
-                                    TravelDungeonMapProjectionSnapshot.MarkerHandle::r,
-                                    TravelDungeonMapProjectionSnapshot.MarkerHandle::level,
-                                    TravelDungeonMapProjectionSnapshot.MarkerHandle::direction),
-                            TravelDungeonMapProjectionSnapshot.MarkerProjection::preview),
-                    projection -> projection.content().graphNodes(),
-                    new DungeonMapProjectionElements.GraphNodeReader<>(
-                            TravelDungeonMapProjectionSnapshot.GraphNodeProjection::id,
-                            TravelDungeonMapProjectionSnapshot.GraphNodeProjection::clusterId,
-                            TravelDungeonMapProjectionSnapshot.GraphNodeProjection::label,
-                            TravelDungeonMapProjectionSnapshot.GraphNodeProjection::q,
-                            TravelDungeonMapProjectionSnapshot.GraphNodeProjection::r,
-                            TravelDungeonMapProjectionSnapshot.GraphNodeProjection::selected),
-                    projection -> projection.content().graphLinks(),
-                    new DungeonMapProjectionElements.GraphLinkReader<>(
-                            TravelDungeonMapProjectionSnapshot.GraphLinkProjection::fromId,
-                            TravelDungeonMapProjectionSnapshot.GraphLinkProjection::toId,
-                            TravelDungeonMapProjectionSnapshot.GraphLinkProjection::selected),
-                    TravelDungeonMapProjectionSnapshot::partyToken,
-                    new DungeonMapProjectionElements.PartyTokenReader<>(
-                            TravelDungeonMapProjectionSnapshot.PartyTokenProjection::q,
-                            TravelDungeonMapProjectionSnapshot.PartyTokenProjection::r,
-                            TravelDungeonMapProjectionSnapshot.PartyTokenProjection::level,
-                            token -> token.heading().name(),
-                            TravelDungeonMapProjectionSnapshot.PartyTokenProjection::visible));
-
-    private DungeonMapTravelProjectionAccess() {
     }
 }
 
