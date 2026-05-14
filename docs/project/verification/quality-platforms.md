@@ -25,7 +25,7 @@ architecture rule ownership, rule status, or rule-shape classification.
 
 This standard covers quality-platform operation for active application code and
 build-owned repository surfaces: compiler hygiene, PMD non-architecture smells,
-duplicate-code detection, OpenRewrite dry-run near-miss checks,
+duplicate-code detection, first-party near-miss hygiene checks,
 cyclomatic-complexity analysis, OO metrics,
 repository-wide resource/artifact/packaging validation, GitHub Actions,
 branch-protection expectations, SonarCloud, and CodeScene.
@@ -195,8 +195,8 @@ It combines:
 
 - assemble
 - all non-documentation production-code harness checks
-- the quality-hygiene blocker path through PMD, OpenRewrite dry-run
-  near-miss checks, SpotBugs, CPD, Lizard, compiled-artifact hygiene, and
+- the quality-hygiene blocker path through PMD, first-party near-miss hygiene
+  checks, SpotBugs, CPD, Lizard, compiled-artifact hygiene, and
   whole-program dead-code reachability
 - CKJM hotspot and regression reporting
 
@@ -257,7 +257,6 @@ enforced, the enforcement document is the canonical classification.
 - [GitHub Pull Request Code Scanning Alerts](/home/aaron/Schreibtisch/projects/references/continuous-refactoring/github-code-scanning-pr-alerts.md:1)
 - [Dependabot Version Updates](/home/aaron/Schreibtisch/projects/references/continuous-refactoring/github-dependabot-version-updates.md:1)
 - [Dependabot Options Reference](/home/aaron/Schreibtisch/projects/references/continuous-refactoring/github-dependabot-options.md:1)
-- [OpenRewrite Gradle Plugin Configuration](/home/aaron/Schreibtisch/projects/references/continuous-refactoring/openrewrite-gradle-plugin-configuration.md:1)
 - [OpenAI Codex Refactor Your Codebase](/home/aaron/Schreibtisch/projects/references/continuous-refactoring/openai-codex-refactor-your-codebase.md:1)
 - [OpenAI Codex Worktrees](/home/aaron/Schreibtisch/projects/references/continuous-refactoring/openai-codex-worktrees.md:1)
 - [Adversarial Review Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/adversarial-review/SKILL.md:1)

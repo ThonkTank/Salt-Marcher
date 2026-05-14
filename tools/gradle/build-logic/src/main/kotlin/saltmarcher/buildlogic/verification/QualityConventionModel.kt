@@ -200,8 +200,9 @@ private fun Project.verificationErrorProneRequested(environment: QualityConventi
         return true
     }
     return requestedTaskNames.any { taskName ->
-        taskName == "build" ||
+            taskName == "build" ||
             taskName == "check" ||
+            taskName == "checkRewriteNearMisses" ||
             taskName == "production-handoff" ||
             (taskName.startsWith("check") && taskName.endsWith("Enforcement")) ||
             (taskName.startsWith("compileFocusedVerification") && taskName.endsWith("Java")) ||

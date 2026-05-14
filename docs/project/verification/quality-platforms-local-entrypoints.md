@@ -80,7 +80,7 @@ public or runnable proof entrypoints unless this document explicitly lists them
 as utility gates.
 
 Focused investigation entrypoints are `compileJava`, `pmdMain`,
-`pmdStrictMain`, `checkRewriteNearMisses`, `rewriteDryRun`, `spotbugsMain`,
+`pmdStrictMain`, `checkRewriteNearMisses`, `spotbugsMain`,
 `cpdMain`, `lizardMain`, `ckjmMain`,
 repository/resource policy checks, technical `check*Enforcement` layer
 surfaces, and `checkDocumentationEnforcement`, each run through
@@ -173,11 +173,10 @@ their prerequisite failed.
 Local blocking Gradle gates may finish `UP-TO-DATE` or `FROM-CACHE` when their
 declared inputs and outputs are unchanged. That reuse comes from normal Gradle
 behavior inside the active worktree.
-Focused and documentation dry-run investigation may also use Gradle's
+Focused, documentation, and broad dry-run investigation may also use Gradle's
 configuration cache when the selected graph is compatible. Broad
-`production-handoff` remains uncached while OpenRewrite's `rewriteDryRun`
-prevents configuration-cache storage; callers must report that as a
-third-party task compatibility limit rather than as a weakened handoff route.
+`production-handoff` must report configuration-cache store and reuse literally
+instead of assuming reuse from the wrapper.
 
 ## References
 

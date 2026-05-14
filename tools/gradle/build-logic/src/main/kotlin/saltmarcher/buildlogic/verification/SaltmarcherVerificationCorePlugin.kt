@@ -48,6 +48,22 @@ internal fun Project.configureVerificationCore() {
         verificationHarness,
         focusedEnforcementBundleMode = enforcementBundles.focusedEnforcementBundleMode
     )
+    val nearMissCompileTask = verificationHarness.registerFocusedVerificationCompileTask(
+        FocusedVerificationSliceKey(
+            verificationSourceRoots = listOf("bootstrap", "shell", "src"),
+            verificationSourceIncludes = listOf("**/*.java"),
+            compileClasspathOwner = "mainCompileClasspath"
+        ),
+        listOf("NearMissDtoOverfetching", "NearMissUseMapContainsKey"),
+        "Compile production sources with cache-compatible near-miss hygiene checks enabled."
+    )
+
+    tasks.register("checkRewriteNearMisses") {
+        group = LifecycleBasePlugin.VERIFICATION_GROUP
+        description = "Run blocking first-party near-miss hygiene checks."
+        dependsOn(nearMissCompileTask)
+        dependsOn(tasks.named("pmdStrictMain"))
+    }
 
     fun registerStandardBundle(bundleId: String) {
         val descriptor = descriptor(bundleId)

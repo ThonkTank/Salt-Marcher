@@ -275,13 +275,11 @@ The verification architecture forbids new `allprojects`, `subprojects`,
 The wrapper must not globally force `--no-configuration-cache`. Configuration
 cache compatibility should be earned inside the actual task graph and surfaced
 through normal Gradle behavior, not through a second same-worktree isolation
-layer. Focused and documentation surfaces may use Gradle configuration-cache
-reuse when their task graph is compatible. Broad `production-handoff` must not
-claim configuration-cache reuse while third-party tasks such as OpenRewrite's
-`rewriteDryRun` prevent cache storage; the uncached graph still remains the
-public handoff path. Parallel local safety now comes from linked git worktrees
-on separate branches, not from wrapper-managed cache or build-directory
-rewriting.
+layer. Focused, documentation, and broad dry-run surfaces may use Gradle
+configuration-cache reuse when their task graph is compatible, and handoff
+claims must report the literal store or reuse result. Parallel local safety now
+comes from linked git worktrees on separate branches, not from wrapper-managed
+cache or build-directory rewriting.
 
 ## References
 
