@@ -44,6 +44,30 @@ Any work on covered surfaces must use that skill first.
 - The governing workflow lives in the global `SKILL.md`.
 - `agents/openai.yaml` must not become a second source of truth for workflow.
 
+## Specialist Review Repertoire
+
+SaltMarcher uses the global review specialists as reusable review repertoire
+instead of copying them into the repository. These skills are optional
+specialist lenses that can accompany the mandatory repo-owned
+`adversarial-review`; they do not replace it, create new gates, or change the
+verification route required by `AGENTS.md`.
+
+- Use `/home/aaron/.codex/skills/local/claude-agents/review-performance/`
+  when a change touches hot paths, rendering, startup, storage or network I/O,
+  data volume, caching, threading, memory behavior, or other performance-risk
+  surfaces.
+- Use `/home/aaron/.codex/skills/local/claude-agents/review-quality/` when a
+  change needs a code-level maintainability review for smells, accidental
+  complexity, duplication, naming, readability, or unnecessary indirection.
+- Use `/home/aaron/.codex/skills/local/claude-agents/review-architecture/`
+  when a change touches dependency direction, layer boundaries, public APIs,
+  data ownership, persistence shape, cross-cutting mechanisms, or architectural
+  pattern drift.
+
+Do not create repo-local copies of these global review skills unless the user
+explicitly asks for a SaltMarcher-owned fork with separate maintenance
+responsibility.
+
 ## Verification Path
 
 - Covered Markdown-only instruction changes that stay inside the documentation
@@ -82,6 +106,8 @@ When a covered artifact changes, reviewers must check:
 - Did the change introduce duplicate or conflicting truth across covered
   surfaces?
 - Does the chosen verification path match the actual changed surfaces?
+- Did any specialist review skill used for the pass remain a read-only review
+  lens instead of becoming a competing repo-owned workflow?
 
 Covered instruction changes also follow the repo-wide adversarial review route
 in `AGENTS.md`. The repo-owned
@@ -97,3 +123,6 @@ above.
 - [Layering Architecture Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/layering-architecture.md:1)
 - [Global Agent Instruction Engineering Skill](/home/aaron/.codex/skills/local/agent-instruction-engineering/SKILL.md:1)
 - [Adversarial Review Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/adversarial-review/SKILL.md:1)
+- [Global Performance Review Skill](/home/aaron/.codex/skills/local/claude-agents/review-performance/SKILL.md:1)
+- [Global Code Quality Review Skill](/home/aaron/.codex/skills/local/claude-agents/review-quality/SKILL.md:1)
+- [Global Architecture Review Skill](/home/aaron/.codex/skills/local/claude-agents/review-architecture/SKILL.md:1)

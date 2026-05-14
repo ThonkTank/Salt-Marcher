@@ -61,6 +61,13 @@ document exists.
 - Work that uses external sources or local source evidence for decisions must
   use the global `source-references` skill and follow
   `docs/project/verification/source-references.md`.
+- Use the global `review-performance`, `review-quality`, and
+  `review-architecture` specialist skills as read-only review lenses when a
+  pass carries performance, code-quality, or architectural risk. The routing
+  policy lives in `docs/project/architecture/agent-instructions.md`; these
+  specialist skills do not replace the mandatory repo-owned
+  `adversarial-review` and must not be copied into SaltMarcher without an
+  explicit user request.
 - Work that plans, implements, refactors, or reviews a SaltMarcher repo-tracked
   change must use the repo-owned `context-hygiene` skill before relying on
   nearby files as precedent. The skill is a routing and context-budget rule; it
