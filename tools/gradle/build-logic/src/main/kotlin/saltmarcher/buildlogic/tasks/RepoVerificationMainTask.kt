@@ -1,9 +1,9 @@
 package saltmarcher.buildlogic.tasks
 
-import java.io.File
 import java.nio.file.Files
 import org.gradle.api.DefaultTask
 import org.gradle.api.file.ConfigurableFileCollection
+import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.Property
@@ -11,6 +11,7 @@ import org.gradle.api.tasks.CacheableTask
 import org.gradle.api.tasks.Classpath
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputFiles
+import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.OutputFile
 import org.gradle.api.tasks.PathSensitive
 import org.gradle.api.tasks.PathSensitivity
@@ -27,8 +28,8 @@ abstract class RepoVerificationMainTask : DefaultTask() {
     @get:Input
     abstract val verificationMainClass: Property<String>
 
-    @get:Input
-    abstract val repoRootPath: Property<String>
+    @get:Internal
+    abstract val repoRootDirectory: DirectoryProperty
 
     @get:Input
     abstract val verificationArgs: ListProperty<String>
@@ -54,10 +55,11 @@ abstract class RepoVerificationMainTask : DefaultTask() {
         Files.deleteIfExists(markerPath)
 
         execOperations.javaexec {
-            workingDir = File(repoRootPath.get())
+            val repoRoot = repoRootDirectory.get().asFile
+            workingDir = repoRoot
             classpath = runtimeClasspath
             mainClass.set(verificationMainClass)
-            args(repoRootPath.get())
+            args(repoRoot.absolutePath)
             args(verificationArgs.get())
         }
 

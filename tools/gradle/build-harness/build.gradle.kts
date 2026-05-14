@@ -139,7 +139,7 @@ fun registerBuildHarnessTask(
                 else -> "saltmarcher.architecture.ArchitectureCheckMain"
             }
         )
-        repoRootPath.set(repoRootDir.absolutePath)
+        repoRootDirectory.set(layout.dir(providers.provider { repoRootDir }))
         when {
             isDocumentationTask -> verificationArgs.set(documentationVerificationArgs(taskSpec.ruleClasses, taskSpec.coverageSpecIds))
             taskSpec.kind == BuildHarnessTaskKind.TOPOLOGY -> verificationArgs.set(listOf("--only-rules") + taskSpec.ruleClasses)
@@ -189,7 +189,7 @@ tasks.register<RepoVerificationMainTask>("architectureCheck") {
     runtimeClasspath.from(mainSourceSet.output)
     runtimeClasspath.from(mainSourceSet.runtimeClasspath)
     verificationMainClass.set("saltmarcher.architecture.ArchitectureCheckMain")
-    repoRootPath.set(repoRootDir.absolutePath)
+    repoRootDirectory.set(layout.dir(providers.provider { repoRootDir }))
     verificationInputs.from(
         repoInputTree(
             listOf(

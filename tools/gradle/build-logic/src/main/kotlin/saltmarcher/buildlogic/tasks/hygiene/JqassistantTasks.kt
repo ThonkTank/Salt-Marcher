@@ -3,6 +3,7 @@ package saltmarcher.buildlogic.tasks.hygiene
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.nio.file.Files
+import java.nio.file.Path
 import java.util.Comparator
 import org.gradle.api.DefaultTask
 import org.gradle.api.file.ConfigurableFileCollection
@@ -56,9 +57,10 @@ abstract class AbstractJqassistantTask : DefaultTask() {
     protected abstract val execOperations: ExecOperations
 
     protected fun materializeConfig(storeRootOverride: File, reportRootOverride: File?): File {
+        val projectRootPath = projectRoot.get().asFile.toPath()
         val scanEntries = buildList {
-            add("java:classpath::${mainClassesDirectory.get().asFile.absoluteInvariantPath()}")
-            addAll(sourceRoots.files.map(File::absoluteInvariantPath).sorted())
+            add("java:classpath::${projectRootPath.relativeInvariantPath(mainClassesDirectory.get().asFile)}")
+            addAll(sourceRoots.files.map(projectRootPath::relativeInvariantPath).sorted())
         }
         val reportRoot = reportRootOverride?.toPath() ?: temporaryDir.toPath().resolve("reports")
         val generatedConfig = temporaryDir.toPath().resolve("jqassistant-config.yml")
@@ -70,7 +72,7 @@ abstract class AbstractJqassistantTask : DefaultTask() {
                 appendLine()
                 appendLine("jqassistant:")
                 appendLine("  store:")
-                appendLine("    uri: file:${storeRootOverride.absoluteInvariantPath()}")
+                appendLine("    uri: file:${projectRootPath.relativeInvariantPath(storeRootOverride)}")
                 appendLine("  scan:")
                 appendLine("    reset: true")
                 appendLine("    continue-on-error: false")
@@ -79,7 +81,7 @@ abstract class AbstractJqassistantTask : DefaultTask() {
                 scanEntries.forEach { entry -> appendLine("        - $entry") }
                 appendLine("  analyze:")
                 appendLine("    rule:")
-                appendLine("      directory: ${rulesDirectory.get().asFile.absoluteInvariantPath()}")
+                appendLine("      directory: ${projectRootPath.relativeInvariantPath(rulesDirectory.get().asFile)}")
                 appendLine("    baseline:")
                 appendLine("      enabled: false")
                 appendLine("    report:")
@@ -157,4 +159,5 @@ abstract class JqassistantAnalyzeTask : AbstractJqassistantTask() {
 
 private fun java.nio.file.Path.absoluteInvariantPath(): String = toAbsolutePath().toString().replace('\\', '/')
 
-private fun File.absoluteInvariantPath(): String = absolutePath.replace(File.separatorChar, '/')
+private fun Path.relativeInvariantPath(file: File): String =
+    relativize(file.toPath()).toString().replace(File.separatorChar, '/')
