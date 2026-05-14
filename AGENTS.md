@@ -111,17 +111,21 @@ document exists.
 
 ## Local Code Visualization Tools
 
-- Live UML is installed as the VS Code extension `bitlab.live-uml` and can be
-  used as an exploratory aid for Java control-flow and sequence-diagram text.
-- Agents may reuse the extension's local parser/generator from
-  `/home/aaron/.vscode/extensions/bitlab.live-uml-*/core.js` to produce
-  PlantUML text for selected Java methods without depending on the VS Code
-  webview.
-- Treat Live UML output as `Candidate` context only. It is useful for reading a
-  method, but it is not an architecture owner, verification gate, dependency
-  source of truth, or substitute for Java language-server call hierarchy.
-- Do not commit generated Live UML diagrams or PlantUML snippets unless the
-  user explicitly asks for a repo-tracked artifact.
+- `tools/callchain/` is the repo-local ad-hoc tool for method-level Java
+  callchains. Use it when a task needs caller/callee context for a selected
+  method and static-analysis evidence is useful.
+- Run `tools/callchain/setup-joern.sh` once when Joern is missing,
+  `tools/callchain/index.sh --refresh` after source changes, and
+  `tools/callchain/render-callchain.sh [--depth <n>] <method-selector>` for
+  per-method text output. Generated output stays under `build/callchain/**`.
+- Treat callchain output as `Candidate` context only. It is static-analysis
+  evidence, not an architecture owner, verification gate, dependency source of
+  truth, Java language-server call hierarchy, or runtime trace.
+- Check reflection, JavaFX event dispatch, ServiceLoader discovery, and runtime
+  listener registration against source or canonical owner docs when they matter.
+- Do not commit generated callchain output, Joern workspaces, CPGs, DOT files,
+  or rendered diagrams unless the user explicitly asks for a repo-tracked
+  artifact.
 
 ## SaltMarcher Verification
 
@@ -195,6 +199,7 @@ document exists.
 - [Global Agent Instruction Engineering Skill](/home/aaron/.codex/skills/local/agent-instruction-engineering/SKILL.md:1)
 - [Context Hygiene Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/agent-context.md:1)
 - [Context Hygiene Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/context-hygiene/SKILL.md:1)
+- [Callchain Tool](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/callchain/README.md:1)
 - [Continuous Refactoring Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/continuous-refactoring/SKILL.md:1)
 - [Adversarial Review Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/adversarial-review/SKILL.md:1)
 - [Domain Layer Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/domain-layer/SKILL.md:1)
