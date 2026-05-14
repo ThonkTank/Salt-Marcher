@@ -20,13 +20,13 @@ import src.domain.party.published.PartyTravelPositionsModel;
 import src.domain.party.published.PartyTravelPositionsResult;
 import src.domain.party.published.PartyTravelTile;
 import src.domain.party.published.ReadStatus;
-import src.domain.travel.model.session.model.TravelDungeonActiveState.ActiveTravelStateData;
-import src.domain.travel.model.session.model.TravelDungeonActiveState.PartyLocationData;
-import src.domain.travel.model.session.model.TravelDungeonSessionMovement.OverworldTargetData;
-import src.domain.travel.model.session.model.TravelDungeonSessionSurface.CellData;
-import src.domain.travel.model.session.model.TravelDungeonSessionSurface.PositionData;
-import src.domain.travel.model.session.model.TravelDungeonSessionValues.LocationKind;
-import src.domain.travel.model.session.repository.TravelPartyStateRepository;
+import src.domain.dungeon.model.travel.model.session.model.TravelDungeonActiveState.ActiveTravelStateData;
+import src.domain.dungeon.model.travel.model.session.model.TravelDungeonActiveState.PartyLocationData;
+import src.domain.dungeon.model.travel.model.session.model.TravelDungeonSessionMovement.OverworldTargetData;
+import src.domain.dungeon.model.travel.model.session.model.TravelDungeonSessionSurface.CellData;
+import src.domain.dungeon.model.travel.model.session.model.TravelDungeonSessionSurface.PositionData;
+import src.domain.dungeon.model.travel.model.session.model.TravelDungeonSessionValues.LocationKind;
+import src.domain.dungeon.model.travel.model.session.repository.TravelPartyStateRepository;
 
 public final class ApplicationTravelPartyStateRepository implements TravelPartyStateRepository {
 

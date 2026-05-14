@@ -2,9 +2,9 @@ package src.view.leftbartabs.dungeontravel;
 
 import java.util.List;
 import java.util.Objects;
-import src.domain.travel.TravelApplicationService;
-import src.domain.travel.published.ApplyTravelDungeonSessionCommand;
-import src.domain.travel.published.TravelOverlaySettings;
+import src.domain.dungeon.DungeonTravelRuntimeApplicationService;
+import src.domain.dungeon.published.ApplyTravelDungeonSessionCommand;
+import src.domain.dungeon.published.TravelOverlaySettings;
 import src.view.slotcontent.main.dungeonmap.DungeonMapViewInputEvent;
 import src.view.slotcontent.primitives.mapcanvas.MapCanvasContentModel;
 import src.view.slotcontent.primitives.mapcanvas.MapCanvasViewInputEvent;
@@ -17,12 +17,12 @@ final class DungeonTravelIntentHandler {
 
     private final DungeonTravelContributionModel presentationModel;
     private final MapCanvasContentModel mapCanvasContentModel;
-    private final TravelApplicationService travel;
+    private final DungeonTravelRuntimeApplicationService travel;
 
     DungeonTravelIntentHandler(
             DungeonTravelContributionModel presentationModel,
             MapCanvasContentModel mapCanvasContentModel,
-            TravelApplicationService travel
+            DungeonTravelRuntimeApplicationService travel
     ) {
         this.presentationModel = Objects.requireNonNull(presentationModel, "presentationModel");
         this.mapCanvasContentModel = Objects.requireNonNull(mapCanvasContentModel, "mapCanvasContentModel");

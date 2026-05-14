@@ -2,10 +2,10 @@ package src.view.leftbartabs.dungeoneditor;
 
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
-import src.domain.dungeoneditor.DungeonEditorApplicationService;
-import src.domain.dungeoneditor.model.session.model.DungeonEditorSessionCommand;
-import src.domain.dungeoneditor.model.session.model.DungeonEditorSessionValues;
-import src.domain.dungeoneditor.model.workspace.model.DungeonEditorWorkspaceValues;
+import src.domain.dungeon.DungeonEditorApplicationService;
+import src.domain.dungeon.model.editor.model.session.model.DungeonEditorSessionCommand;
+import src.domain.dungeon.model.editor.model.session.model.DungeonEditorSessionValues;
+import src.domain.dungeon.model.editor.model.workspace.model.DungeonEditorWorkspaceValues;
 import src.view.slotcontent.main.dungeonmap.DungeonMapViewInputEvent;
 import src.view.slotcontent.primitives.mapcanvas.MapCanvasContentModel;
 

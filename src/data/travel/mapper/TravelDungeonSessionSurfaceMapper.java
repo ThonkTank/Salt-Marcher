@@ -11,16 +11,16 @@ import src.domain.dungeon.published.DungeonTravelLocationKind;
 import src.domain.dungeon.published.DungeonTravelMoveResult;
 import src.domain.dungeon.published.DungeonTravelPosition;
 import src.domain.dungeon.published.DungeonTravelSurfaceSnapshot;
-import src.domain.travel.model.session.model.TravelDungeonSessionMovement.MoveResultData;
-import src.domain.travel.model.session.model.TravelDungeonSessionMovement.MoveStatus;
-import src.domain.travel.model.session.model.TravelDungeonSessionMovement.OverworldTargetData;
-import src.domain.travel.model.session.model.TravelDungeonSessionSurface.AvailableAction;
-import src.domain.travel.model.session.model.TravelDungeonSessionSurface.CellData;
-import src.domain.travel.model.session.model.TravelDungeonSessionSurface.MapData;
-import src.domain.travel.model.session.model.TravelDungeonSessionSurface.PositionData;
-import src.domain.travel.model.session.model.TravelDungeonSessionSurface.SurfaceData;
-import src.domain.travel.model.session.model.TravelDungeonSessionValues.ContextKind;
-import src.domain.travel.model.session.model.TravelDungeonSessionValues.LocationKind;
+import src.domain.dungeon.model.travel.model.session.model.TravelDungeonSessionMovement.MoveResultData;
+import src.domain.dungeon.model.travel.model.session.model.TravelDungeonSessionMovement.MoveStatus;
+import src.domain.dungeon.model.travel.model.session.model.TravelDungeonSessionMovement.OverworldTargetData;
+import src.domain.dungeon.model.travel.model.session.model.TravelDungeonSessionSurface.AvailableAction;
+import src.domain.dungeon.model.travel.model.session.model.TravelDungeonSessionSurface.CellData;
+import src.domain.dungeon.model.travel.model.session.model.TravelDungeonSessionSurface.MapData;
+import src.domain.dungeon.model.travel.model.session.model.TravelDungeonSessionSurface.PositionData;
+import src.domain.dungeon.model.travel.model.session.model.TravelDungeonSessionSurface.SurfaceData;
+import src.domain.dungeon.model.travel.model.session.model.TravelDungeonSessionValues.ContextKind;
+import src.domain.dungeon.model.travel.model.session.model.TravelDungeonSessionValues.LocationKind;
 
 public final class TravelDungeonSessionSurfaceMapper {
 

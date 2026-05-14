@@ -22,7 +22,7 @@ Selectors:
   Fully qualified method name, Joern fullName fragment, or Type#method.
 
 Examples:
-  tools/callchain/render-callchain.sh src.domain.travel.TravelApplicationService#applyDungeonTravelSession
+  tools/callchain/render-callchain.sh src.domain.dungeon.DungeonTravelRuntimeApplicationService#applyDungeonTravelSession
   tools/callchain/render-callchain.sh --depth 4 DungeonTravelIntentHandler#consume
 
 Output:

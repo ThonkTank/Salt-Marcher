@@ -2,8 +2,8 @@ package src.view.leftbartabs.dungeoneditor;
 
 import java.util.List;
 import org.jspecify.annotations.Nullable;
-import src.domain.dungeoneditor.published.DungeonEditorInspectorSnapshot;
-import src.domain.dungeoneditor.published.DungeonEditorPreview;
+import src.domain.dungeon.published.DungeonEditorInspectorSnapshot;
+import src.domain.dungeon.published.DungeonEditorPreview;
 import src.view.leftbartabs.dungeoneditor.DungeonEditorContributionModel.OverlayProjection;
 import src.view.leftbartabs.dungeoneditor.DungeonEditorContributionModel.RoomExitNarrationProjection;
 import src.view.leftbartabs.dungeoneditor.DungeonEditorContributionModel.RoomNarrationCardProjection;

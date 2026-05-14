@@ -6,9 +6,9 @@ import javafx.scene.Node;
 import shell.api.ShellBinding;
 import shell.api.ShellRuntimeContext;
 import shell.api.ShellSlot;
-import src.domain.dungeoneditor.DungeonEditorApplicationService;
-import src.domain.dungeoneditor.published.DungeonEditorModel;
-import src.domain.dungeoneditor.published.LoadDungeonEditorQuery;
+import src.domain.dungeon.DungeonEditorApplicationService;
+import src.domain.dungeon.published.DungeonEditorModel;
+import src.domain.dungeon.published.LoadDungeonEditorQuery;
 import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel;
 import src.view.slotcontent.main.dungeonmap.DungeonMapView;
 
@@ -47,7 +47,7 @@ final class DungeonEditorBinder {
     }
 
     private static void applySnapshot(
-            src.domain.dungeoneditor.published.DungeonEditorSnapshot snapshot,
+            src.domain.dungeon.published.DungeonEditorSnapshot snapshot,
             DungeonEditorContributionModel contributionModel,
             DungeonMapContentModel mapContentModel
     ) {

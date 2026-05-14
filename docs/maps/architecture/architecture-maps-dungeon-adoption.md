@@ -49,7 +49,7 @@ invariants.
   boundaries
 - `DungeonEditorApplicationService` is the only callable runtime
   dungeon-editor backend boundary
-- `TravelApplicationService` is the only callable runtime dungeon-travel
+- `DungeonTravelRuntimeApplicationService` is the only callable runtime dungeon-travel
   backend boundary
 - dungeon `published/**` owns dungeon-native authored carriers and raw travel
   surface carriers
@@ -64,7 +64,7 @@ invariants.
 
 ### Surface Read
 
-`Dungeon*Binder -> DungeonEditorApplicationService or TravelApplicationService -> dungeoneditor or travel published/*Model -> Dungeon*Snapshot -> DungeonEditorMapProjectionSnapshot or TravelDungeonMapProjectionSnapshot -> DungeonMapContentModel -> MapRenderScene -> DungeonMapMainView -> Dungeon*MainView`
+`Dungeon*Binder -> DungeonEditorApplicationService or DungeonTravelRuntimeApplicationService -> dungeoneditor or travel published/*Model -> Dungeon*Snapshot -> DungeonEditorMapProjectionSnapshot or TravelDungeonMapProjectionSnapshot -> DungeonMapContentModel -> MapRenderScene -> DungeonMapMainView -> Dungeon*MainView`
 
 For the editor workspace, `DungeonEditorApplicationService` composes that
 runtime snapshot from authored dungeon family seams such as
@@ -81,7 +81,7 @@ the boundary wrapper and commit semantics.
 
 ### Travel Action
 
-`Dungeon*MainView or travel controls -> DungeonTravelBinder wiring -> same-root DungeonTravelIntentHandler -> DungeonTravelStatePublishedEvent -> DungeonTravelBinder -> TravelApplicationService -> TravelDungeonModel -> TravelDungeonSnapshot -> TravelDungeonMapProjectionSnapshot -> DungeonMapContentModel -> MapRenderScene -> DungeonMapMainView -> Dungeon*MainView`
+`Dungeon*MainView or travel controls -> DungeonTravelBinder wiring -> same-root DungeonTravelIntentHandler -> DungeonTravelStatePublishedEvent -> DungeonTravelBinder -> DungeonTravelRuntimeApplicationService -> TravelDungeonModel -> TravelDungeonSnapshot -> TravelDungeonMapProjectionSnapshot -> DungeonMapContentModel -> MapRenderScene -> DungeonMapMainView -> Dungeon*MainView`
 
 Direct token drag is adapter-side travel action resolution, not a second
 backend movement path.

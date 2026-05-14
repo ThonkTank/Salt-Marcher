@@ -5,9 +5,9 @@ import java.util.List;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import org.jspecify.annotations.Nullable;
-import src.domain.dungeoneditor.published.DungeonEditorCell;
-import src.domain.dungeoneditor.published.DungeonEditorMapSnapshot;
-import src.domain.dungeoneditor.published.DungeonEditorSurface;
+import src.domain.dungeon.published.DungeonEditorCell;
+import src.domain.dungeon.published.DungeonEditorMapSnapshot;
+import src.domain.dungeon.published.DungeonEditorSurface;
 
 final class SurfaceLevels {
 

@@ -1,7 +1,7 @@
 package src.view.leftbartabs.dungeoneditor;
 
 import org.jspecify.annotations.Nullable;
-import src.domain.dungeoneditor.model.session.model.DungeonEditorSessionCommand;
+import src.domain.dungeon.model.editor.model.session.model.DungeonEditorSessionCommand;
 import src.view.slotcontent.primitives.mapcanvas.MapCanvasContentModel;
 import src.view.slotcontent.primitives.mapcanvas.MapCanvasViewInputEvent;
 

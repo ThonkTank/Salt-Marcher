@@ -14,15 +14,15 @@ import java.util.function.ToIntFunction;
 import java.util.function.ToLongFunction;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.published.DungeonTopologyKind;
-import src.domain.dungeoneditor.published.DungeonEditorHandleRef;
-import src.domain.dungeoneditor.published.DungeonEditorMapProjectionSnapshot;
-import src.domain.dungeoneditor.published.DungeonEditorOverlaySettings;
-import src.domain.dungeoneditor.published.DungeonEditorSnapshot;
-import src.domain.dungeoneditor.published.DungeonEditorTool;
-import src.domain.dungeoneditor.published.DungeonEditorViewMode;
-import src.domain.travel.published.TravelDungeonMapProjectionSnapshot;
-import src.domain.travel.published.TravelDungeonSnapshot;
-import src.domain.travel.published.TravelOverlaySettings;
+import src.domain.dungeon.published.DungeonEditorHandleRef;
+import src.domain.dungeon.published.DungeonEditorMapProjectionSnapshot;
+import src.domain.dungeon.published.DungeonEditorOverlaySettings;
+import src.domain.dungeon.published.DungeonEditorSnapshot;
+import src.domain.dungeon.published.DungeonEditorTool;
+import src.domain.dungeon.published.DungeonEditorViewMode;
+import src.domain.dungeon.published.TravelDungeonMapProjectionSnapshot;
+import src.domain.dungeon.published.TravelDungeonSnapshot;
+import src.domain.dungeon.published.TravelOverlaySettings;
 import src.view.slotcontent.primitives.mapcanvas.MapCanvasContentModel;
 import src.view.slotcontent.primitives.mapcanvas.MapCanvasViewInputEvent;
 import static src.view.slotcontent.primitives.mapcanvas.MapCanvasContentModel.*;
@@ -1301,8 +1301,8 @@ final class DungeonMapEditorProjectionAccess {
                             DungeonEditorMapProjectionSnapshot.MarkerProjection::selected,
                             DungeonEditorMapProjectionSnapshot.MarkerProjection::handleRef,
                             new DungeonMapProjectionElements.MarkerHandleReader<>(
-                                    DungeonEditorHandleRef::kind,
-                                    handle -> handle.topologyRef().kind(),
+                                    handle -> handle.kind().name(),
+                                    handle -> handle.topologyRef().kind().name(),
                                     handle -> handle.topologyRef().id(),
                                     DungeonEditorHandleRef::ownerId,
                                     DungeonEditorHandleRef::clusterId,

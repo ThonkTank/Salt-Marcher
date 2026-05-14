@@ -25,12 +25,12 @@ public final class DungeonMapContentModelProjectionBoundaryChecker extends BugCh
             "src.domain.dungeon.published.DungeonBoundarySnapshot",
             "src.domain.dungeon.published.DungeonFeatureSnapshot",
             "src.domain.dungeon.published.DungeonEditorHandleSnapshot",
-            "src.domain.dungeoneditor.published.DungeonEditorSurface",
-            "src.domain.dungeoneditor.published.DungeonEditorMapSnapshot",
-            "src.domain.dungeoneditor.published.DungeonEditorPreview",
-            "src.domain.travel.published.TravelDungeonSurface",
-            "src.domain.travel.published.TravelDungeonMapSnapshot",
-            "src.domain.travel.published.TravelDungeonPosition");
+            "src.domain.dungeon.published.DungeonEditorSurface",
+            "src.domain.dungeon.published.DungeonEditorMapSnapshot",
+            "src.domain.dungeon.published.DungeonEditorPreview",
+            "src.domain.dungeon.published.TravelDungeonSurface",
+            "src.domain.dungeon.published.TravelDungeonMapSnapshot",
+            "src.domain.dungeon.published.TravelDungeonPosition");
 
     @Override
     public Description matchCompilationUnit(CompilationUnitTree tree, VisitorState state) {

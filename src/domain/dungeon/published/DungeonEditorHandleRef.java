@@ -23,4 +23,17 @@ public record DungeonEditorHandleRef(
         cell = cell == null ? new DungeonCellRef(0, 0, 0) : cell;
         direction = direction == null ? "" : direction.trim();
     }
+
+    public static DungeonEditorHandleRef empty() {
+        return new DungeonEditorHandleRef(
+                DungeonEditorHandleKind.CLUSTER_LABEL,
+                DungeonTopologyElementRef.empty(),
+                0L,
+                0L,
+                0L,
+                0L,
+                0,
+                new DungeonCellRef(0, 0, 0),
+                "");
+    }
 }

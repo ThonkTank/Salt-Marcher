@@ -30,7 +30,7 @@ Published travel carriers must not own:
 
 ## Application Boundary
 
-`TravelApplicationService` is the only callable travel backend boundary. It
+`DungeonTravelRuntimeApplicationService` is the only callable travel backend boundary. It
 coordinates runtime dungeon-travel session state through same-context
 `travel/application/*UseCase` work.
 

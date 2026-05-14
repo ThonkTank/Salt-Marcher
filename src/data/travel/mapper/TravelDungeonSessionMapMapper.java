@@ -7,15 +7,15 @@ import src.domain.dungeon.published.DungeonBoundarySnapshot;
 import src.domain.dungeon.published.DungeonCellRef;
 import src.domain.dungeon.published.DungeonFeatureSnapshot;
 import src.domain.dungeon.published.DungeonMapSnapshot;
-import src.domain.travel.model.session.model.TravelDungeonSessionSurface.AreaData;
-import src.domain.travel.model.session.model.TravelDungeonSessionSurface.BoundaryData;
-import src.domain.travel.model.session.model.TravelDungeonSessionSurface.CellData;
-import src.domain.travel.model.session.model.TravelDungeonSessionSurface.EdgeData;
-import src.domain.travel.model.session.model.TravelDungeonSessionSurface.FeatureData;
-import src.domain.travel.model.session.model.TravelDungeonSessionSurface.MapData;
-import src.domain.travel.model.session.model.TravelDungeonSessionValues.AreaKind;
-import src.domain.travel.model.session.model.TravelDungeonSessionValues.FeatureKind;
-import src.domain.travel.model.session.model.TravelDungeonSessionValues.GridTopology;
+import src.domain.dungeon.model.travel.model.session.model.TravelDungeonSessionSurface.AreaData;
+import src.domain.dungeon.model.travel.model.session.model.TravelDungeonSessionSurface.BoundaryData;
+import src.domain.dungeon.model.travel.model.session.model.TravelDungeonSessionSurface.CellData;
+import src.domain.dungeon.model.travel.model.session.model.TravelDungeonSessionSurface.EdgeData;
+import src.domain.dungeon.model.travel.model.session.model.TravelDungeonSessionSurface.FeatureData;
+import src.domain.dungeon.model.travel.model.session.model.TravelDungeonSessionSurface.MapData;
+import src.domain.dungeon.model.travel.model.session.model.TravelDungeonSessionValues.AreaKind;
+import src.domain.dungeon.model.travel.model.session.model.TravelDungeonSessionValues.FeatureKind;
+import src.domain.dungeon.model.travel.model.session.model.TravelDungeonSessionValues.GridTopology;
 
 public final class TravelDungeonSessionMapMapper {
 

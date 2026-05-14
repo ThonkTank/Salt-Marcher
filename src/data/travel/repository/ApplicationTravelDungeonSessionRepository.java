@@ -10,28 +10,28 @@ import src.domain.dungeon.published.DungeonTravelMoveResult;
 import src.domain.dungeon.published.DungeonTravelModel;
 import src.domain.dungeon.published.DungeonTravelResponse;
 import src.domain.dungeon.published.DungeonTravelSurfaceSnapshot;
-import src.domain.travel.model.session.model.TravelDungeonActiveState.ActiveTravelStateData;
-import src.domain.travel.model.session.model.TravelDungeonSessionMovement.MoveResultData;
-import src.domain.travel.model.session.model.TravelDungeonSessionMovement.OverworldTargetData;
-import src.domain.travel.model.session.model.TravelDungeonSessionSurface.PositionData;
-import src.domain.travel.model.session.model.TravelDungeonSessionSurface.SurfaceData;
-import src.domain.travel.model.session.repository.TravelDungeonSessionRepository;
+import src.domain.dungeon.model.travel.model.session.model.TravelDungeonActiveState.ActiveTravelStateData;
+import src.domain.dungeon.model.travel.model.session.model.TravelDungeonSessionMovement.MoveResultData;
+import src.domain.dungeon.model.travel.model.session.model.TravelDungeonSessionMovement.OverworldTargetData;
+import src.domain.dungeon.model.travel.model.session.model.TravelDungeonSessionSurface.PositionData;
+import src.domain.dungeon.model.travel.model.session.model.TravelDungeonSessionSurface.SurfaceData;
+import src.domain.dungeon.model.travel.model.session.repository.TravelDungeonSessionRepository;
 
 public final class ApplicationTravelDungeonSessionRepository
         implements TravelDungeonSessionRepository {
 
     private final ApplicationTravelPartyStateRepository partyStateRepository;
-    private final DungeonTravelApplicationService dungeonTravelApplicationService;
+    private final DungeonTravelApplicationService dungeonDungeonTravelRuntimeApplicationService;
     private final DungeonTravelModel dungeonTravelModel;
 
     public ApplicationTravelDungeonSessionRepository(
             ApplicationTravelPartyStateRepository partyStateRepository,
-            DungeonTravelApplicationService dungeonTravelApplicationService,
+            DungeonTravelApplicationService dungeonDungeonTravelRuntimeApplicationService,
             DungeonTravelModel dungeonTravelModel
     ) {
         this.partyStateRepository = Objects.requireNonNull(partyStateRepository, "partyStateRepository");
-        this.dungeonTravelApplicationService =
-                Objects.requireNonNull(dungeonTravelApplicationService, "dungeonTravelApplicationService");
+        this.dungeonDungeonTravelRuntimeApplicationService =
+                Objects.requireNonNull(dungeonDungeonTravelRuntimeApplicationService, "dungeonDungeonTravelRuntimeApplicationService");
         this.dungeonTravelModel = Objects.requireNonNull(dungeonTravelModel, "dungeonTravelModel");
     }
 
@@ -42,7 +42,7 @@ public final class ApplicationTravelDungeonSessionRepository
 
     @Override
     public SurfaceData loadDungeonSurface(@Nullable PositionData position) {
-        dungeonTravelApplicationService.travel(new DungeonTravelCommand.LoadSurface(
+        dungeonDungeonTravelRuntimeApplicationService.travel(new DungeonTravelCommand.LoadSurface(
                 TravelDungeonSessionSurfaceMapper.toDungeonPosition(position)));
         return TravelDungeonSessionSurfaceMapper.toInternalSurface(surfaceResponse(dungeonTravelModel.current()));
     }
@@ -52,7 +52,7 @@ public final class ApplicationTravelDungeonSessionRepository
             @Nullable PositionData position,
             String actionId
     ) {
-        dungeonTravelApplicationService.travel(new DungeonTravelCommand.MoveAction(
+        dungeonDungeonTravelRuntimeApplicationService.travel(new DungeonTravelCommand.MoveAction(
                 TravelDungeonSessionSurfaceMapper.toDungeonPosition(position),
                 actionId));
         return TravelDungeonSessionSurfaceMapper.toInternalMoveResult(moveResponse(dungeonTravelModel.current()));

@@ -8,12 +8,12 @@ import java.util.stream.Collectors;
 import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import org.jspecify.annotations.Nullable;
-import src.domain.dungeoneditor.model.session.model.DungeonEditorSessionValues;
-import src.domain.dungeoneditor.published.DungeonEditorMapId;
-import src.domain.dungeoneditor.published.DungeonEditorOverlaySettings;
-import src.domain.dungeoneditor.published.DungeonEditorSnapshot;
-import src.domain.dungeoneditor.published.DungeonEditorTool;
-import src.domain.dungeoneditor.published.DungeonEditorViewMode;
+import src.domain.dungeon.model.editor.model.session.model.DungeonEditorSessionValues;
+import src.domain.dungeon.published.DungeonEditorMapId;
+import src.domain.dungeon.published.DungeonEditorOverlaySettings;
+import src.domain.dungeon.published.DungeonEditorSnapshot;
+import src.domain.dungeon.published.DungeonEditorTool;
+import src.domain.dungeon.published.DungeonEditorViewMode;
 
 public final class DungeonEditorContributionModel {
 

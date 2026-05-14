@@ -3,8 +3,8 @@ package src.view.leftbartabs.dungeoneditor;
 import java.util.ArrayList;
 import java.util.List;
 import org.jspecify.annotations.Nullable;
-import src.domain.dungeoneditor.model.session.model.DungeonEditorSessionCommand;
-import src.domain.dungeoneditor.model.workspace.model.DungeonEditorWorkspaceValues;
+import src.domain.dungeon.model.editor.model.session.model.DungeonEditorSessionCommand;
+import src.domain.dungeon.model.editor.model.workspace.model.DungeonEditorWorkspaceValues;
 
 final class StateSaveIntent {
 

@@ -6,10 +6,10 @@ import javafx.scene.Node;
 import shell.api.ShellBinding;
 import shell.api.ShellRuntimeContext;
 import shell.api.ShellSlot;
-import src.domain.travel.TravelApplicationService;
-import src.domain.travel.published.LoadTravelDungeonQuery;
-import src.domain.travel.published.TravelDungeonModel;
-import src.domain.travel.published.TravelDungeonSnapshot;
+import src.domain.dungeon.DungeonTravelRuntimeApplicationService;
+import src.domain.dungeon.published.LoadTravelDungeonQuery;
+import src.domain.dungeon.published.TravelDungeonModel;
+import src.domain.dungeon.published.TravelDungeonSnapshot;
 import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel;
 import src.view.slotcontent.main.dungeonmap.DungeonMapView;
 
@@ -22,7 +22,7 @@ final class DungeonTravelBinder {
     }
 
     ShellBinding bind() {
-        TravelApplicationService travel = runtimeContext.services().require(TravelApplicationService.class);
+        DungeonTravelRuntimeApplicationService travel = runtimeContext.services().require(DungeonTravelRuntimeApplicationService.class);
         TravelDungeonModel travelModel = travel.loadDungeonTravel(new LoadTravelDungeonQuery());
         DungeonTravelContributionModel contributionModel = new DungeonTravelContributionModel();
         DungeonMapContentModel mapContentModel = new DungeonMapContentModel("Travel workspace", false);

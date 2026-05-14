@@ -7,10 +7,10 @@ import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.ReadOnlyStringProperty;
 import javafx.beans.property.ReadOnlyStringWrapper;
-import src.domain.travel.published.TravelDungeonAction;
-import src.domain.travel.published.TravelDungeonSnapshot;
-import src.domain.travel.published.TravelDungeonWorkspaceState;
-import src.domain.travel.published.TravelOverlaySettings;
+import src.domain.dungeon.published.TravelDungeonAction;
+import src.domain.dungeon.published.TravelDungeonSnapshot;
+import src.domain.dungeon.published.TravelDungeonWorkspaceState;
+import src.domain.dungeon.published.TravelOverlaySettings;
 
 public final class DungeonTravelContributionModel {
 
