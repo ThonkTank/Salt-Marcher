@@ -23,8 +23,7 @@ public final class DropdownPopupView extends HBox {
         anchoredPopupView.bind(anchoredPopupContentModel);
         anchoredPopupView.onViewInputEvent(event -> {
             if (event.interaction().isHidden()) {
-                viewInputEventHandler.accept(new DropdownPopupViewInputEvent(
-                        DropdownPopupViewInputEvent.Interaction.HIDDEN));
+                viewInputEventHandler.accept(DropdownPopupViewInputEvent.hidden());
             }
         });
         triggerButton.setOnAction(event -> togglePopup());
@@ -47,10 +46,9 @@ public final class DropdownPopupView extends HBox {
     }
 
     private void togglePopup() {
-        DropdownPopupViewInputEvent.Interaction interaction = contentModel.isOpen()
-                ? DropdownPopupViewInputEvent.Interaction.REQUEST_CLOSE
-                : DropdownPopupViewInputEvent.Interaction.REQUEST_OPEN;
-        viewInputEventHandler.accept(new DropdownPopupViewInputEvent(interaction));
+        viewInputEventHandler.accept(contentModel.isOpen()
+                ? DropdownPopupViewInputEvent.requestClose()
+                : DropdownPopupViewInputEvent.requestOpen());
     }
 
     private void applyPopupState(DropdownPopupContentModel.PopupState popupState) {

@@ -49,9 +49,12 @@ final class AdventuringDayTopBarIntentHandler {
         if (event == null) {
             return;
         }
-        switch (event.interaction()) {
-            case REQUEST_OPEN -> popupContentModel.open();
-            case REQUEST_CLOSE, HIDDEN -> popupContentModel.close();
+        if (event.requestsOpen()) {
+            popupContentModel.open();
+            return;
+        }
+        if (event.requestsClose() || event.isHidden()) {
+            popupContentModel.close();
         }
     }
 }
