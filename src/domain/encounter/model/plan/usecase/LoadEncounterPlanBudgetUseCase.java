@@ -1,4 +1,4 @@
-package src.domain.encounter.application;
+package src.domain.encounter.model.plan.usecase;
 
 import java.util.List;
 import java.util.Objects;
