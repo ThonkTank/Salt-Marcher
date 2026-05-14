@@ -92,10 +92,12 @@ reconstructing a second production-code check graph.
 All current harness checks that inspect production source, compiled production
 classes, production topology, layer boundaries, role placement, or generic
 architecture behavior and are not documentation checks belong behind
-`production-handoff` directly. `architectureTest`,
-`:build-harness:architectureCheck`, and canonical layer-surface tasks are
-technical dependencies of that one production-code surface, not separate public
-owners or alternate handoff entries.
+`production-handoff` directly. `architectureTest`, the coalesced
+`:build-harness:allBuildHarnessTopologyCheck`, and
+`:build-harness:architectureCheck` are technical dependencies of that one
+production-code surface, not separate public owners or alternate handoff
+entries. Layer-surface topology tasks remain focused diagnostic dependencies of
+their matching technical layer surfaces.
 
 ### 3. Bundle Owners
 
@@ -120,9 +122,11 @@ rule metadata. They MUST NOT depend on shell wrappers. They communicate with the
 verification core only through stable typed registry metadata, their internal
 bundle-selector tasks, their bundle-local lifecycle tasks, and any explicitly
 declared report-only sibling surfaces. Build-harness owner metadata is
-coalesced by the verification core into technical layer-surface tasks before
-Gradle execution; role-local owner splits MUST NOT create one runnable
-build-harness JVM scan per owner document.
+coalesced by the verification core before Gradle execution: broad
+`production-handoff` runs active topology rules once through one build-harness
+task, while technical layer surfaces keep one focused topology task for
+diagnosis. Role-local owner splits MUST NOT create one runnable build-harness
+JVM scan per owner document.
 The public `checkDocumentationEnforcement` surface consumes the root
 documentation check plus the coalesced per-surface documentation tasks; those
 surface tasks remain private dependencies and MUST NOT become public
@@ -172,11 +176,22 @@ evaluation by the `saltmarcher.settings` plugin from
 owning bundle ids there, and direct internal bundle-selector task requests are
 still translated to the same bundle-id set. Those selector tasks stay
 technical implementation seams, not a second public verification API. The
-build publishes only three focused-selection facts to the included builds:
+settings plugin also classifies the requested surface into the engines that
+the task graph can consume. Focused surfaces MUST NOT include build-harness,
+quality-rules, or Error Prone included builds, and MUST NOT register
+jQAssistant engine tasks, unless the selected surface or active bundle
+descriptors require that engine. The build publishes three focused-selection
+facts to the included builds:
 
 - `saltmarcher.repoRootDir`
 - `saltmarcher.focusedEnforcementBundleMode`
 - `saltmarcher.activeEnforcementBundleIds`
+
+The root build also publishes internal request-scope booleans for
+build-harness, quality-rules, quality-rules-errorprone included builds,
+jQAssistant task registration, and discovery requests. Those booleans are
+graph-pruning facts, not public verification surfaces and not proof-strength
+modifiers.
 
 Included builds consume those facts and MUST NOT reconstruct the root repo
 state from alternative checkout-relative guessing when the propagated repo root
@@ -203,8 +218,8 @@ documented here or in `quality-platforms-local-entrypoints.md` as a public
 focused utility gate.
 Physical build-harness bundle metadata MUST NOT require historic role-local
 task-name fields. Build-harness task names are owned by technical layer
-surfaces, except for explicit root or utility gates registered by the
-verification core.
+surfaces, except for the coalesced all-topology task and explicit root or
+utility gates registered by the verification core.
 The remaining root-owned build-harness optional architecture rules are now
 registry-driven as well: bundles contribute root `architectureCheck` rule
 classes through explicit `buildHarnessArchitectureRuleClasses` metadata
@@ -245,14 +260,24 @@ inside the same standard bundle registration path.
 Harness wiring MUST use lazy task APIs such as `register`, `named`,
 `configureEach`, and `TaskProvider`.
 
+Request-aware wiring MAY omit unrelated included builds and engine task
+registration for a focused invocation. This is configuration-graph pruning
+only: if a public surface names a check as part of its proof route, that check
+must still be present when that surface is requested.
+
 The verification architecture forbids new `allprojects`, `subprojects`,
 `create`, `getByName`, `whenTaskAdded`, `TaskExecutionListener`, or
 `buildFinished` usage in harness wiring.
 The wrapper must not globally force `--no-configuration-cache`. Configuration
 cache compatibility should be earned inside the actual task graph and surfaced
 through normal Gradle behavior, not through a second same-worktree isolation
-layer. Parallel local safety now comes from linked git worktrees on separate
-branches, not from wrapper-managed cache or build-directory rewriting.
+layer. Focused and documentation surfaces may use Gradle configuration-cache
+reuse when their task graph is compatible. Broad `production-handoff` must not
+claim configuration-cache reuse while third-party tasks such as OpenRewrite's
+`rewriteDryRun` prevent cache storage; the uncached graph still remains the
+public handoff path. Parallel local safety now comes from linked git worktrees
+on separate branches, not from wrapper-managed cache or build-directory
+rewriting.
 
 ## References
 

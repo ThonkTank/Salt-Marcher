@@ -1,6 +1,7 @@
 package saltmarcher.buildlogic.verification
 
 import org.gradle.api.tasks.Sync
+import org.gradle.api.tasks.TaskProvider
 import org.gradle.kotlin.dsl.register
 import org.gradle.language.base.plugins.LifecycleBasePlugin
 
@@ -10,13 +11,17 @@ internal fun org.gradle.api.Project.registerQualityConventionHarness(
 ): VerificationHarnessExtension {
     val verificationLayout = environment.verificationLayout
     val jqassistantInstallDir = layout.buildDirectory.dir("tools/jqassistant")
-    val installJqassistant = tasks.register<Sync>("installJqassistant") {
-        group = LifecycleBasePlugin.VERIFICATION_GROUP
-        description = "Install the jQAssistant command-line distribution into the build directory."
-        from({
-            toolConfigurations.jqassistantDistribution.get().resolve().map { zipTree(it) }
-        })
-        into(jqassistantInstallDir)
+    val installJqassistant: TaskProvider<Sync>? = if (environment.includeJqassistant) {
+        tasks.register<Sync>("installJqassistant") {
+            group = LifecycleBasePlugin.VERIFICATION_GROUP
+            description = "Install the jQAssistant command-line distribution into the build directory."
+            from({
+                toolConfigurations.jqassistantDistribution.get().resolve().map { zipTree(it) }
+            })
+            into(jqassistantInstallDir)
+        }
+    } else {
+        null
     }
     val jqassistantCliFile = jqassistantInstallDir.map { installDir ->
         installDir.file("jqassistant-commandline-neo4jv5-${environment.jqassistantVersion}/bin/jqassistant")
@@ -33,6 +38,7 @@ internal fun org.gradle.api.Project.registerQualityConventionHarness(
         mainSourceSet = verificationLayout.mainSourceSet,
         sourceJavaRoots = verificationLayout.sourceJavaRoots,
         commonFocusedArchunitSupportIncludes = verificationLayout.commonFocusedArchunitSupportIncludes,
+        includeQualityRulesErrorProne = environment.includeQualityRulesErrorProne,
         jqassistantTaskRegistrar = JqassistantTaskRegistrar(
             project = this,
             cliFile = jqassistantCliFile,

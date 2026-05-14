@@ -178,7 +178,9 @@ Internal `verify*Bundle` selector tasks and technical layer-surface tasks are
 allowed as typed harness seams and focused diagnostics, but they are not public
 proof entrypoints and must not be used as the canonical routing surface in
 owner docs. Build-harness role metadata is coalesced behind the production-code
-surface before execution. Documentation metadata is coalesced behind the public
+surface before execution: broad `production-handoff` runs active topology rules
+once, while technical layer surfaces keep focused topology diagnostics.
+Documentation metadata is coalesced behind the public
 `checkDocumentationEnforcement` surface rather than published as role-local
 proof tasks. Build-harness bundle metadata must not require historic role-local
 `check*` names unless a separate explicit utility gate owns that name.

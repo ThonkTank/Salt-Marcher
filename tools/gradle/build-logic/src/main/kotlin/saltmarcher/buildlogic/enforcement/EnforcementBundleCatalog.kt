@@ -143,7 +143,6 @@ fun loadEnforcementBundlesExtension(rootDir: File): EnforcementBundlesExtension 
         ?.split(',')
         ?.map(String::trim)
         ?.filter(String::isNotEmpty)
-        ?.takeIf(List<String>::isNotEmpty)
 
     require(!focusedEnforcementBundleMode || propagatedActiveBundleIds != null) {
         "Focused enforcement bundle mode requires propagated active bundle ids from the settings plugin."

@@ -26,8 +26,8 @@ internal fun Project.configureVerificationCore() {
     val verificationHarness = extensions.getByType<VerificationHarnessExtension>()
     val verificationSurfaceCatalog = standardVerificationSurfaceCatalog(enforcementBundles.catalog)
     val verificationLifecycleCatalog = standardVerificationLifecycleCatalog()
-    val publicVerificationSurfaceNames = verificationSurfaceCatalog.surfacesInOrder
-        .map { surface -> surface.publicTaskName }
+    val includeBuildHarness = systemBoolean("saltmarcher.includeBuildHarness", defaultValue = true)
+    val includeJqassistant = systemBoolean("saltmarcher.includeJqassistant", defaultValue = true)
 
     fun descriptor(bundleId: String): EnforcementBundleDescriptor = enforcementBundles.descriptor(bundleId)
 
@@ -95,15 +95,8 @@ internal fun Project.configureVerificationCore() {
             )
         }
 
-        descriptor.jqassistant?.let { jqassistant ->
+        descriptor.jqassistant?.takeIf { includeJqassistant }?.let { jqassistant ->
             aggregateDependencies += verificationHarness.registerJqassistantTask(bundleId, jqassistant)
-        }
-
-        if (descriptor.buildHarnessTasks.any { task -> task.kind == BuildHarnessTaskKind.TOPOLOGY }) {
-            aggregateDependencies.addAll(
-                verificationSurfaceCatalog.surfacesForBundle(bundleId)
-                    .map { surface -> gradle.includedBuild("build-harness").task(":${surface.buildHarnessTaskName(BuildHarnessTaskKind.TOPOLOGY)}") }
-            )
         }
 
         tasks.register(selectorTaskName) {
@@ -126,16 +119,24 @@ internal fun Project.configureVerificationCore() {
                 .map(::descriptor)
                 .map(EnforcementBundleDescriptor::selectorTaskName)
                 .forEach(::dependsOn)
+            if (includeBuildHarness && activeSurfaceBundleIds
+                    .map(::descriptor)
+                    .any { descriptor -> descriptor.buildHarnessTasks.any { task -> task.kind == BuildHarnessTaskKind.TOPOLOGY } }
+            ) {
+                dependsOn(gradle.includedBuild("build-harness").task(":${surface.buildHarnessTaskName(BuildHarnessTaskKind.TOPOLOGY)}"))
+            }
         }
     }
 
     val checkDocumentationEnforcement = tasks.register("checkDocumentationEnforcement") {
         group = LifecycleBasePlugin.VERIFICATION_GROUP
         description = "Run all Markdown-backed architecture and enforcement documentation checks through the verification core."
-        dependsOn(gradle.includedBuild("build-harness").task(":documentationEnforcementCheck"))
-        activeSurfaceBuildHarnessTaskNames(BuildHarnessTaskKind.DOCUMENTATION)
-            .map { taskName -> gradle.includedBuild("build-harness").task(":$taskName") }
-            .forEach(::dependsOn)
+        if (includeBuildHarness) {
+            dependsOn(gradle.includedBuild("build-harness").task(":documentationEnforcementCheck"))
+            activeSurfaceBuildHarnessTaskNames(BuildHarnessTaskKind.DOCUMENTATION)
+                .map { taskName -> gradle.includedBuild("build-harness").task(":$taskName") }
+                .forEach(::dependsOn)
+        }
     }
 
     tasks.register("desktop-install") {
@@ -150,11 +151,24 @@ internal fun Project.configureVerificationCore() {
         description = productionHandoffSurface.description
         productionHandoffSurface.dependencyTaskNames.forEach(::dependsOn)
         dependsOn("architectureTest")
-        dependsOn(gradle.includedBuild("build-harness").task(":architectureCheck"))
-        publicVerificationSurfaceNames.forEach(::dependsOn)
+        activeEnforcementBundleIds
+            .map(::descriptor)
+            .map(EnforcementBundleDescriptor::selectorTaskName)
+            .forEach(::dependsOn)
+        if (includeBuildHarness) {
+            dependsOn(gradle.includedBuild("build-harness").task(":allBuildHarnessTopologyCheck"))
+            dependsOn(gradle.includedBuild("build-harness").task(":architectureCheck"))
+        }
     }
 
 }
+
+private fun systemBoolean(name: String, defaultValue: Boolean): Boolean =
+    System.getProperty(name)
+        ?.trim()
+        ?.takeIf(String::isNotEmpty)
+        ?.toBooleanStrictOrNull()
+        ?: defaultValue
 
 private fun registerFocusedCompileTasksByBundleId(
     descriptors: List<EnforcementBundleDescriptor>,

@@ -146,7 +146,11 @@ The verification core still computes focused bundle selection during settings
 evaluation and still registers the same technical layer surfaces,
 `checkDocumentationEnforcement`, and staged lifecycle tasks. The included
 builds and bundle descriptors are resolved directly from the active worktree
-layout.
+layout. Settings evaluation also publishes request-scope engine facts so a
+focused task graph includes only the build-harness, quality-rules,
+quality-rules-errorprone included builds, plus jQAssistant task registration,
+that the selected surface can actually consume. This graph pruning does not
+change the public proof route or the checks behind a requested surface.
 
 `./gradlew` now uses Gradle's normal daemon behavior unless the caller
 explicitly passes `--daemon` or `--no-daemon`.
@@ -169,6 +173,11 @@ their prerequisite failed.
 Local blocking Gradle gates may finish `UP-TO-DATE` or `FROM-CACHE` when their
 declared inputs and outputs are unchanged. That reuse comes from normal Gradle
 behavior inside the active worktree.
+Focused and documentation dry-run investigation may also use Gradle's
+configuration cache when the selected graph is compatible. Broad
+`production-handoff` remains uncached while OpenRewrite's `rewriteDryRun`
+prevents configuration-cache storage; callers must report that as a
+third-party task compatibility limit rather than as a weakened handoff route.
 
 ## References
 

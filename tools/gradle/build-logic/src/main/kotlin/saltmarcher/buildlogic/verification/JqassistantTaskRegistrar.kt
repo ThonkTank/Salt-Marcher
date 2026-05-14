@@ -7,6 +7,7 @@ import org.gradle.api.file.FileCollection
 import org.gradle.api.file.RegularFile
 import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.TaskProvider
+import org.gradle.api.tasks.Sync
 import org.gradle.kotlin.dsl.register
 import org.gradle.language.base.plugins.LifecycleBasePlugin
 import saltmarcher.buildlogic.enforcement.EnforcementJqassistantTask
@@ -22,7 +23,7 @@ internal class JqassistantTaskRegistrar(
     private val project: Project,
     private val cliFile: Provider<RegularFile>,
     private val jvmOpens: String,
-    private val installJqassistant: TaskProvider<*>
+    private val installJqassistant: TaskProvider<Sync>?
 ) {
     fun registerTaskPair(
         bundleId: String,
@@ -39,7 +40,9 @@ internal class JqassistantTaskRegistrar(
         val scanTask = project.tasks.register<JqassistantScanTask>(scanTaskName) {
             group = LifecycleBasePlugin.VERIFICATION_GROUP
             description = "Scan SaltMarcher classes and source roots for ${taskSpec.description}"
-            dependsOn(installJqassistant)
+            dependsOn(requireNotNull(installJqassistant) {
+                "jQAssistant verification tasks require the jQAssistant install task."
+            })
             dependsOn(dependsOnTasks)
             cliFile.set(this@JqassistantTaskRegistrar.cliFile)
             this.rulesDirectory.set(rulesDirectory)

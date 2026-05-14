@@ -74,7 +74,9 @@ internal fun Project.registerQualityConventionLifecycleTasks(
     }
 
     pmdMain.configure {
-        dependsOn(gradle.includedBuild("quality-rules").task(":jar"))
+        if (environment.includeQualityRules) {
+            dependsOn(gradle.includedBuild("quality-rules").task(":jar"))
+        }
         source = verificationLayout.sourceJavaRoots.asFileTree
         include("**/*.java")
         classpath = files(configurations.named("compileClasspath"))

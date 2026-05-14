@@ -48,6 +48,11 @@ internal data class QualityConventionPackagingMetadata(
 internal data class QualityConventionEnvironment(
     val enforcementBundles: EnforcementBundlesExtension,
     val focusedEnforcementBundleMode: Boolean,
+    val includeBuildHarness: Boolean,
+    val includeQualityRules: Boolean,
+    val includeQualityRulesErrorProne: Boolean,
+    val includeJqassistant: Boolean,
+    val discoveryBuildRequest: Boolean,
     val verificationLayout: QualityConventionVerificationLayout,
     val packagingMetadata: QualityConventionPackagingMetadata,
     val jqassistantVersion: String
@@ -103,6 +108,11 @@ internal fun Project.createQualityConventionEnvironment(
     return QualityConventionEnvironment(
         enforcementBundles = enforcementBundles,
         focusedEnforcementBundleMode = enforcementBundles.focusedEnforcementBundleMode,
+        includeBuildHarness = systemBoolean("saltmarcher.includeBuildHarness", defaultValue = true),
+        includeQualityRules = systemBoolean("saltmarcher.includeQualityRules", defaultValue = true),
+        includeQualityRulesErrorProne = systemBoolean("saltmarcher.includeQualityRulesErrorProne", defaultValue = true),
+        includeJqassistant = systemBoolean("saltmarcher.includeJqassistant", defaultValue = true),
+        discoveryBuildRequest = systemBoolean("saltmarcher.discoveryBuildRequest", defaultValue = true),
         verificationLayout = QualityConventionVerificationLayout(
             sourceSets = sourceSets,
             mainSourceSet = mainSourceSet,
@@ -161,7 +171,9 @@ internal fun Project.registerQualityConventionDependencies(
         add(toolConfigurations.cpdCli.name, "net.sourceforge.pmd:pmd-java:7.23.0")
         add(toolConfigurations.pmdCli.name, "net.sourceforge.pmd:pmd-cli:7.23.0")
         add(toolConfigurations.pmdCli.name, "net.sourceforge.pmd:pmd-java:7.23.0")
-        add(toolConfigurations.pmdCli.name, "saltmarcher.quality:quality-rules:1.0-SNAPSHOT")
+        if (environment.includeQualityRules) {
+            add(toolConfigurations.pmdCli.name, "saltmarcher.quality:quality-rules:1.0-SNAPSHOT")
+        }
         add(toolConfigurations.ckjmToolClasspath.name, "gr.spinellis.ckjm:ckjm_ext:2.10")
         add(toolConfigurations.ckjmToolClasspath.name, "org.apache.bcel:bcel:6.11.0")
         add(toolConfigurations.ckjmToolClasspath.name, "org.apache.ant:ant:1.10.15")
@@ -175,6 +187,9 @@ internal fun Project.registerQualityConventionDependencies(
 }
 
 private fun Project.verificationErrorProneRequested(environment: QualityConventionEnvironment): Boolean {
+    if (!environment.includeQualityRulesErrorProne) {
+        return false
+    }
     if (environment.focusedEnforcementBundleMode) {
         return true
     }
@@ -193,6 +208,13 @@ private fun Project.verificationErrorProneRequested(environment: QualityConventi
             (taskName.startsWith("verify") && taskName.endsWith("Bundle"))
     }
 }
+
+private fun systemBoolean(name: String, defaultValue: Boolean): Boolean =
+    System.getProperty(name)
+        ?.trim()
+        ?.takeIf(String::isNotEmpty)
+        ?.toBooleanStrictOrNull()
+        ?: defaultValue
 
 internal fun Project.applyCommonErrorProneOptions(task: JavaCompile) {
     with(task) {

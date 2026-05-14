@@ -32,6 +32,7 @@ internal open class VerificationHarnessExtension(
     private val mainSourceSet: SourceSet,
     private val sourceJavaRoots: FileCollection,
     private val commonFocusedArchunitSupportIncludes: List<String>,
+    private val includeQualityRulesErrorProne: Boolean,
     private val jqassistantTaskRegistrar: JqassistantTaskRegistrar
 ) {
     private fun compileJavaTaskName(sourceSetName: String): String =
@@ -66,6 +67,9 @@ internal open class VerificationHarnessExtension(
             if (checkerNames.isEmpty()) {
                 options.errorprone.enabled.set(false)
             } else {
+                require(includeQualityRulesErrorProne) {
+                    "Focused Error Prone verification requires the quality-rules-errorprone included build."
+                }
                 dependsOn(project.gradle.includedBuild("quality-rules-errorprone").task(":jar"))
                 options.errorprone.enabled.set(true)
                 options.errorprone.disableWarningsInGeneratedCode.set(true)

@@ -105,6 +105,16 @@ fun buildHarnessSurfaceTaskSpec(
     )
 }
 
+fun allBuildHarnessTopologyTaskSpec(): BuildHarnessTaskSpec {
+    val taskSpecs = activeEnforcementBundleIds
+        .flatMap { bundleId -> enforcementBundles.descriptor(bundleId).buildHarnessTasks }
+        .filter { taskSpec -> taskSpec.kind == BuildHarnessTaskKind.TOPOLOGY }
+    return BuildHarnessTaskSpec(
+        kind = BuildHarnessTaskKind.TOPOLOGY,
+        ruleClasses = taskSpecs.flatMap(BuildHarnessTaskSpec::ruleClasses).distinct()
+    )
+}
+
 fun registerBuildHarnessTask(
     taskName: String,
     bundleLabel: String,
@@ -132,12 +142,18 @@ fun registerBuildHarnessTask(
         repoRootPath.set(repoRootDir.absolutePath)
         when {
             isDocumentationTask -> verificationArgs.set(documentationVerificationArgs(taskSpec.ruleClasses, taskSpec.coverageSpecIds))
-            taskSpec.ruleClasses.isNotEmpty() -> verificationArgs.set(listOf("--only-rules") + taskSpec.ruleClasses)
+            taskSpec.kind == BuildHarnessTaskKind.TOPOLOGY -> verificationArgs.set(listOf("--only-rules") + taskSpec.ruleClasses)
         }
         verificationInputs.from(buildHarnessInputs(taskSpec.kind))
         successMarker.set(layout.buildDirectory.file("verification-markers/$taskName/success.marker"))
     }
 }
+
+registerBuildHarnessTask(
+    "allBuildHarnessTopologyCheck",
+    "all active surfaces",
+    allBuildHarnessTopologyTaskSpec()
+)
 
 verificationSurfaceCatalog.surfacesInOrder.forEach { surface ->
     listOf(BuildHarnessTaskKind.TOPOLOGY, BuildHarnessTaskKind.DOCUMENTATION)
