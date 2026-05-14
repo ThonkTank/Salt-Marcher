@@ -12,6 +12,7 @@ import src.domain.party.published.AdventuringDaySummaryModel;
 import src.domain.party.published.PartyMutationModel;
 import src.domain.party.published.PartySnapshotModel;
 import src.view.slotcontent.topbar.dropdown.DropdownPopupContentModel;
+import src.view.slotcontent.topbar.dropdown.DropdownPopupView;
 
 final class PartyTopBarBinder {
 
@@ -33,7 +34,9 @@ final class PartyTopBarBinder {
                 encounters);
         PartyRosterTopBarView rosterView = new PartyRosterTopBarView();
         PartyEditorTopBarView editorView = new PartyEditorTopBarView();
-        PartyTopBarView topBarView = new PartyTopBarView(popupContentModel, rosterView, editorView);
+        PartyTopBarView panelView = new PartyTopBarView(rosterView, editorView);
+        DropdownPopupView topBarView = new DropdownPopupView(panelView);
+        topBarView.bind(popupContentModel);
         PartySnapshotModel snapshotModel = runtimeContext.services().require(PartySnapshotModel.class);
         AdventuringDaySummaryModel summaryModel = runtimeContext.services().require(AdventuringDaySummaryModel.class);
         PartyMutationModel mutationModel = runtimeContext.services().require(PartyMutationModel.class);
@@ -53,8 +56,8 @@ final class PartyTopBarBinder {
             rosterView.showPanel(toRosterContent(after));
             editorView.showEditor(editorModel);
         });
+        panelView.onViewInputEvent(intentHandler::consume);
         topBarView.onViewInputEvent(intentHandler::consume);
-        topBarView.dropdownPopupView().onViewInputEvent(intentHandler::consume);
         rosterView.onViewInputEvent(intentHandler::consume);
         editorView.onViewInputEvent(intentHandler::consume);
         snapshotModel.subscribe(snapshot ->

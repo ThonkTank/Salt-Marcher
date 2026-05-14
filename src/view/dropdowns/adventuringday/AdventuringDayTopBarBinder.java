@@ -14,6 +14,7 @@ import src.domain.party.published.AdventuringDaySummary;
 import src.domain.party.published.AdventuringDaySummaryModel;
 import src.domain.party.published.ReadStatus;
 import src.view.slotcontent.topbar.dropdown.DropdownPopupContentModel;
+import src.view.slotcontent.topbar.dropdown.DropdownPopupView;
 
 final class AdventuringDayTopBarBinder {
 
@@ -32,14 +33,16 @@ final class AdventuringDayTopBarBinder {
         DropdownPopupContentModel popupContentModel = new DropdownPopupContentModel();
         AdventuringDayTopBarIntentHandler intentHandler =
                 new AdventuringDayTopBarIntentHandler(presentationModel, popupContentModel, party);
-        AdventuringDayTopBarView view = new AdventuringDayTopBarView(popupContentModel);
+        AdventuringDayTopBarView panelView = new AdventuringDayTopBarView();
+        DropdownPopupView view = new DropdownPopupView(panelView);
+        view.bind(popupContentModel);
         applyPopupPresentation(popupContentModel, presentationModel.triggerTextProperty().getValue());
+        panelView.onViewInputEvent(intentHandler::consume);
         view.onViewInputEvent(intentHandler::consume);
-        view.dropdownPopupView().onViewInputEvent(intentHandler::consume);
-        view.showPanel(presentationModel.panelProperty().getValue());
+        panelView.showPanel(presentationModel.panelProperty().getValue());
         presentationModel.triggerTextProperty().addListener((ignored, before, after) ->
                 applyPopupPresentation(popupContentModel, after));
-        presentationModel.panelProperty().addListener((ignored, before, after) -> view.showPanel(after));
+        presentationModel.panelProperty().addListener((ignored, before, after) -> panelView.showPanel(after));
         summaryModel.subscribe(result -> applySummary(presentationModel, result));
         calculationModel.subscribe(result -> presentationModel.applyCalculationResult(
                 result == null || result.calculation() == null

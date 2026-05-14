@@ -21,8 +21,6 @@ import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import src.view.slotcontent.primitives.dialog.DialogSurfaceContentModel;
 import src.view.slotcontent.primitives.dialog.DialogSurfaceView;
-import src.view.slotcontent.topbar.dropdown.DropdownPopupContentModel;
-import src.view.slotcontent.topbar.dropdown.DropdownPopupView;
 
 @SuppressWarnings({
         "PMD.CouplingBetweenObjects",
@@ -40,18 +38,15 @@ public final class AdventuringDayTopBarView extends HBox {
     private static final String STYLE_TEXT_SECONDARY = "text-secondary";
     static final String TOOLTIP_TEXT = "Adventuring-Day-Rechner öffnen";
 
-    private final DropdownPopupView popupView;
     private final CalculatorPane calculatorPane = new CalculatorPane(
             (useActivePartyRequested, addRowRequested, clearRequested) ->
                     publish(false, useActivePartyRequested, addRowRequested, clearRequested));
     private Consumer<AdventuringDayTopBarViewInputEvent> viewInputEventHandler = ignored -> { };
 
-    AdventuringDayTopBarView(DropdownPopupContentModel popupContentModel) {
+    AdventuringDayTopBarView() {
         setSpacing(8);
         setPadding(new Insets(4, 0, 4, 8));
-        popupView = new DropdownPopupView(buildPanel());
-        popupView.bind(popupContentModel);
-        getChildren().add(popupView);
+        getChildren().add(buildPanel());
     }
 
     void showPanel(AdventuringDayTopBarContributionModel.PanelModel panelModel) {
@@ -69,10 +64,6 @@ public final class AdventuringDayTopBarView extends HBox {
 
     void onViewInputEvent(Consumer<AdventuringDayTopBarViewInputEvent> handler) {
         viewInputEventHandler = handler == null ? ignored -> { } : handler;
-    }
-
-    DropdownPopupView dropdownPopupView() {
-        return popupView;
     }
 
     private DialogSurfaceView buildPanel() {

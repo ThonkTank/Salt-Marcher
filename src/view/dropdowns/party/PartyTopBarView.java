@@ -9,8 +9,6 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
-import src.view.slotcontent.topbar.dropdown.DropdownPopupContentModel;
-import src.view.slotcontent.topbar.dropdown.DropdownPopupView;
 
 @SuppressWarnings("PMD.LawOfDemeter")
 public final class PartyTopBarView extends HBox {
@@ -19,27 +17,19 @@ public final class PartyTopBarView extends HBox {
     static final String OPEN_ACCESSIBLE_TEXT = "Party-Panel geöffnet, Escape zum Schließen";
     static final String TOOLTIP_TEXT = "Party-Panel öffnen (Alt+P)";
 
-    private final DropdownPopupView popupView;
     private Consumer<PartyTopBarViewInputEvent> viewInputEventHandler = ignored -> { };
 
     public PartyTopBarView(
-            DropdownPopupContentModel popupContentModel,
             PartyRosterTopBarView rosterView,
             PartyEditorTopBarView editorView
     ) {
         setSpacing(8);
         setPadding(new Insets(4, 8, 4, 8));
-        popupView = new DropdownPopupView(buildPanel(rosterView, editorView));
-        popupView.bind(popupContentModel);
-        getChildren().add(popupView);
+        getChildren().add(buildPanel(rosterView, editorView));
     }
 
     public void onViewInputEvent(Consumer<PartyTopBarViewInputEvent> handler) {
         viewInputEventHandler = handler == null ? ignored -> { } : handler;
-    }
-
-    DropdownPopupView dropdownPopupView() {
-        return popupView;
     }
 
     private VBox buildPanel(
