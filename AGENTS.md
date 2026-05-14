@@ -130,26 +130,21 @@ document exists.
   repository root before handoff. If you are working inside `src/` or another
   subdirectory, set the command working directory to the repository root
   instead of using `../gradlew`.
-- After each completed implementation pass limited to one or more concrete
-  check or enforcement packages under `tools/quality/**`,
-  `tools/gradle/build-harness/**`,
-  `tools/quality/rules/quality-rules/**`,
-  `tools/quality/incubator/quality-rules-errorprone/**`,
-  `tools/quality/enforcement-bundles.gradle.kts`, or verification-only wiring
-  in `build.gradle.kts` / `settings.gradle.kts`, rerun only the corresponding
-  focused package or bundle task or tasks from the repository root before
-  handoff instead of the full build. If such a pass touches shared check
-  wiring, rerun the focused entrypoints for the actually affected packages; a
-  broader package wave must be explicit and does not automatically become a
-  full build.
+- After each completed implementation pass that changes non-documentation
+  production-code checks, enforcement packages, build-harness rules,
+  Error Prone rules, quality-rules wiring, enforcement-bundle wiring, or
+  verification-only Gradle wiring, rerun
+  `tools/gradle/run-staged-verification.sh production-handoff` from the
+  repository root before handoff. Focused package, bundle, or layer-surface
+  tasks may still be used for diagnosis, but they are not separate handoff
+  proof entries.
 - After each completed documentation-only pass limited to `AGENTS.md`,
   `docs/**`, `src/domain/**/DOMAIN.md`, or Markdown files under
   `tools/quality/**`, rerun
   `./gradlew checkDocumentationEnforcement --console=plain` from the repository
   root before handoff instead of the full build.
-- A pass without the required production-code full build, check-only
-  package/bundle rerun, or documentation-enforcement rerun is incomplete and
-  must remain WIP.
+- A pass without the required production-code handoff or
+  documentation-enforcement rerun is incomplete and must remain WIP.
 - A pass without the required `adversarial-review` subagent review is incomplete
   and must remain WIP. Handoffs must report the review outcome required by the
   skill. Do not create a separate review ledger, pull-request template, or
@@ -176,8 +171,8 @@ document exists.
   surfaces and pass the corresponding focused task list explicitly only when
   you intentionally bypass that stage layer. The canonical public proof
   entrypoints are now `tools/gradle/run-staged-verification.sh
-  production-handoff`, `./gradlew checkDocumentationEnforcement`, and
-  `./gradlew check*Enforcement`.
+  production-handoff` for production-code checks and
+  `./gradlew checkDocumentationEnforcement` for documentation checks.
 - `CODEX_THREAD_ID` and `SALTMARCHER_GRADLE_ISOLATION_ID` remain trace labels
   only when a caller explicitly exports them; they are not part of the local
   parallel-safety contract and the wrapper does not consume them anymore.

@@ -23,7 +23,6 @@ internal data class VerificationLifecycleCatalog(
 internal fun standardVerificationLifecycleCatalog(): VerificationLifecycleCatalog {
     val sharedHygieneOwners = listOf(
         verificationLifecycleOwner("assemble", "assemble"),
-        verificationLifecycleOwner("production-harness", "productionHarness"),
         verificationLifecycleOwner("pmd-main", "pmdMain"),
         verificationLifecycleOwner("openrewrite-near-miss", "checkRewriteNearMisses"),
         verificationLifecycleOwner("spotbugs-main", "spotbugsMain"),
@@ -38,12 +37,12 @@ internal fun standardVerificationLifecycleCatalog(): VerificationLifecycleCatalo
         surfaceId = "check",
         publicTaskName = "check",
         description = "Run the central local build-health aggregate.",
-        dependencyTaskNames = dependencyTaskNames
+        dependencyTaskNames = listOf("production-handoff")
     )
     val productionHandoffSurface = verificationLifecycleSurface(
         surfaceId = "production-handoff",
         publicTaskName = "production-handoff",
-        description = "Run the public production handoff surface through the small verification API and internal quality owners.",
+        description = "Run the public production-code handoff surface through the verification core and internal quality owners.",
         dependencyTaskNames = dependencyTaskNames
     )
 

@@ -41,9 +41,9 @@ relay, reuse direction, and sprawl rules that generic smell tools cannot
 classify by SaltMarcher role semantics.
 
 For unused-code hygiene, the active mechanical scope is split by proof route:
-focused Error Prone verification compiles behind the public `check*Enforcement`
-surfaces own local declaration checks such as `UnusedLabel`, `UnusedMethod`,
-`UnusedNestedClass`, and `UnusedVariable`, PMD retains `UnusedAssignment`
+focused Error Prone verification compiles behind the production-code handoff
+surface and owns local declaration checks such as `UnusedLabel`, `UnusedMethod`,
+`UnusedNestedClass`, and `UnusedVariable`; PMD retains `UnusedAssignment`
 beside the broader smell policy, and `checkNoDeadCode` owns whole-program
 reachability for compiled production declarations: files, top-level types,
 secondary top-level types, nested and named local types, constructors,
@@ -159,65 +159,47 @@ This standard describes how quality platforms are operated. The architecture
 enforcement documents define which engine owns which class of architecture
 rule.
 
-Operationally, architecture checks enter local quality through a small public
-surface set:
+Operationally, architecture checks enter local quality through two public
+surfaces:
 
-- `checkViewEnforcement`
-  runs the canonical View enforcement surface.
-- `checkDomainEnforcement`
-  runs the canonical Domain enforcement surface.
-- `checkDataEnforcement`
-  runs the canonical Data enforcement surface.
-- `checkShellEnforcement`
-  runs the canonical Shell enforcement surface.
-- `checkBootstrapEnforcement`
-  runs the canonical Bootstrap enforcement surface.
-- `checkStylingEnforcement`
-  runs the canonical Styling enforcement surface.
-- `checkLayeringEnforcement`
-  runs the canonical Layering enforcement surface.
-- `productionHarness`
-  runs all current non-documentation harness checks for production source,
-  compiled production classes, production topology, layer boundaries, role
-  placement, and generic architecture behavior.
-- `checkArchitecture`
-  runs the focused architecture investigation alias through
-  `productionHarness`.
 - `checkDocumentationEnforcement`
   runs the dedicated Markdown-backed architecture and enforcement-document
   coverage path through root documentation rules plus coalesced per-surface
   documentation tasks, and stays intentionally outside `check` and `build`.
 - `production-handoff`
-  runs the canonical broad production-code handoff route.
+  runs the canonical production-code route, including all current
+  non-documentation harness checks for production source, compiled production
+  classes, production topology, layer boundaries, role placement, and generic
+  architecture behavior.
 
-The public API stops there. Role-specific or bundle-specific enforcement tasks
-are no longer part of the public verification contract. Internal
-`verify*Bundle` selector tasks are allowed as typed harness seams, but they are
-not public proof entrypoints and must not be used as the canonical routing
-surface in owner docs. Build-harness role metadata is coalesced behind the
-canonical layer surfaces before execution. Documentation metadata is also
-coalesced behind the public `checkDocumentationEnforcement` surface rather than
-published as role-local proof tasks. Build-harness bundle metadata must not
-require historic role-local `check*` names unless a separate explicit utility
-gate owns that name.
+The public API stops there. Role-specific, bundle-specific, layer-surface, or
+architecture-test tasks are no longer part of the public verification contract.
+Internal `verify*Bundle` selector tasks and technical layer-surface tasks are
+allowed as typed harness seams and focused diagnostics, but they are not public
+proof entrypoints and must not be used as the canonical routing surface in
+owner docs. Build-harness role metadata is coalesced behind the production-code
+surface before execution. Documentation metadata is coalesced behind the public
+`checkDocumentationEnforcement` surface rather than published as role-local
+proof tasks. Build-harness bundle metadata must not require historic role-local
+`check*` names unless a separate explicit utility gate owns that name.
 `production-handoff` is the only public broad
-implementation-handoff aggregate above `productionHarness`; the documentation
-surface stays separate.
+implementation-handoff aggregate; the documentation surface stays separate.
 
 `production-handoff` is the public aggregate for production-code verification.
 It combines:
 
 - assemble
-- the production-code harness aggregate `productionHarness`
+- all non-documentation production-code harness checks
 - the quality-hygiene blocker path through PMD, OpenRewrite dry-run
   near-miss checks, SpotBugs, CPD, Lizard, compiled-artifact hygiene, and
   whole-program dead-code reachability
 - CKJM hotspot and regression reporting
 
 `check` remains the central local build-health aggregate. Its architecture
-coverage comes through `productionHarness`. `check` and `production-handoff`
-consume the same typed verification lifecycle catalog for shared root-owned
-hygiene and reporting owners.
+coverage comes by depending on `production-handoff`; it must not reconstruct a
+second production-code check graph. `production-handoff` consumes the typed
+verification lifecycle catalog for shared root-owned hygiene and reporting
+owners.
 `checkDocumentationEnforcement` remains intentionally separate so
 documentation-only work has a smaller proof route.
 
@@ -226,10 +208,10 @@ Default local proof routing by change type lives in
 `AGENTS.md`: production-code changes use
 `tools/gradle/run-staged-verification.sh production-handoff`,
 documentation-only changes use
-`./gradlew checkDocumentationEnforcement --console=plain`, and check-only
-changes use the corresponding focused package or layer-surface entrypoints. The
-existence of a broader aggregate does not make it the default proof route for
-documentation-only or check-only work.
+`./gradlew checkDocumentationEnforcement --console=plain`, and
+non-documentation check/enforcement changes use the same production-handoff
+route. Focused package or layer-surface tasks may still be used for diagnosis,
+but they are not separate handoff proof entries.
 
 Public verification-surface ownership is architecture-owned by
 [Verification Core Architecture](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/verification-core.md:1):

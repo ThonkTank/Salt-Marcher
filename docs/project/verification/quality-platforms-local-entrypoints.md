@@ -19,21 +19,12 @@ Individual local gate behavior lives in
 `./gradlew check --console=plain` is the local full build-health blocker and
 the single central aggregate for repository-owned blocking Gradle checks.
 
-`check` includes:
+`check` routes through `production-handoff`. It exists for Gradle convention
+compatibility; it must not reconstruct or own a second production check graph.
 
-- Java compilation through `compileJava`
-- the production-code harness aggregate `productionHarness`
-- repository and resource policy checks
-- PMD source-smell detection through `pmdMain`
-- OpenRewrite dry-run near-miss checks through `checkRewriteNearMisses`
-- SpotBugs plus FindSecBugs through `spotbugsMain`
-- duplicate-code detection through `cpdMain`
-- cyclomatic-complexity detection through `lizardMain`
-- OO-metric regression reporting through `ckjmMain`
-
-The shared owner list behind `check` is the same typed verification lifecycle
-catalog used by `production-handoff`; root build scripts must not add those
-owners separately.
+The shared owner list behind `production-handoff` lives in the typed
+verification lifecycle catalog; root build scripts must not add those owners
+separately.
 
 `pmdMain` and `spotbugsMain` are central blocking gates and may also be run as
 focused direct entrypoints. `pmdStrictMain` remains the focused text-first PMD
@@ -46,16 +37,16 @@ running a second PMD scan.
 implementation-handoff route required by `AGENTS.md` for production-code
 changes. The wrapper is runtime-only: it forwards the canonical surface name to
 one same-named Gradle lifecycle task, and the verification core expands
-`production-handoff` directly through the same typed lifecycle catalog used by
-`check`: assemble, `productionHarness`, the quality-hygiene tool owners, and
-CKJM reporting inside Gradle.
+`production-handoff` directly: assemble, all non-documentation harness checks
+over production code, the quality-hygiene tool owners, and CKJM reporting
+inside Gradle.
 
 For check-only implementation work limited to concrete enforcement packages or
 verification-only wiring under `tools/**`, `build.gradle.kts`, or
-`settings.gradle.kts`, the required handoff proof is the corresponding focused
-package task or canonical layer surface instead of the full build. When shared
-verification wiring changes but the pass stays check-only, rerun the focused
-entrypoints for the affected packages.
+`settings.gradle.kts`, the required handoff proof is the smallest task that
+exercises the affected package plus `production-handoff` when shared
+production-code routing changes. Focused package and layer-surface tasks remain
+technical diagnostics, not public proof owners.
 
 `./gradlew checkDocumentationEnforcement --console=plain` is the focused
 `Blocking Local Gate` for Markdown-backed architecture and enforcement
@@ -67,46 +58,22 @@ production-code handoff, check-only package/layer rerun, or
 documentation-enforcement rerun has completed, or a concrete blocker has been
 reported.
 
-Architecture-focused and handoff public entrypoints are:
+Public local proof entrypoints are:
 
-- `./gradlew checkArchitecture --console=plain`
-  Runs the focused architecture investigation alias through
-  `productionHarness`.
 - `tools/gradle/run-staged-verification.sh production-handoff`
   Aggregates the public production-code handoff route through assemble,
-  `productionHarness`, the quality-hygiene tool owners, and CKJM
-  reporting.
+  all non-documentation production-code harness checks, the quality-hygiene
+  tool owners, and CKJM reporting.
 - `./gradlew checkDocumentationEnforcement --console=plain`
   Aggregates focused Markdown-backed architecture and enforcement-document
   coverage through `:build-harness:documentationEnforcementCheck` plus the
   coalesced per-surface documentation tasks registered inside build-harness.
-- `./gradlew checkViewEnforcement --console=plain`
-  Aggregates the canonical View enforcement surface through the closed-world
-  View topology owner plus the shared Error Prone View core.
-- `./gradlew checkDomainEnforcement --console=plain`
-  Aggregates the canonical Domain enforcement surface through the Domain
-  Context, Layer, UseCase, ApplicationService, Published, Port, Model, Helper,
-  Constants, and Repository bundles.
-- `./gradlew checkDataEnforcement --console=plain`
-  Aggregates the canonical Data enforcement surface through the Data Layer,
-  Model, Gateway, Mapper, Persistencecore, Query, Repository, and
-  ServiceContribution bundles.
-- `./gradlew checkShellEnforcement --console=plain`
-  Aggregates the canonical Shell enforcement surface through the
-  `ShellRuntimeContext`, `AppShell`, and Shell Layer bundles.
-- `./gradlew checkBootstrapEnforcement --console=plain`
-  Aggregates the canonical Bootstrap enforcement surface through the
-  `AppBootstrap` and Bootstrap Layer bundles.
-- `./gradlew checkStylingEnforcement --console=plain`
-  Aggregates the canonical Styling enforcement surface through the
-  styling-layer and passive-`View` direct-render styling bundles.
-- `./gradlew checkLayeringEnforcement --console=plain`
-  Aggregates the canonical Layering enforcement surface through the blocker
-  Layering Architecture bundle.
-
 Internal `verify*Bundle` selector tasks may still exist for typed harness
 selection and internal ownership routing, but they are not public proof
-entrypoints and must not replace the canonical layer-surface commands above.
+entrypoints and must not replace the canonical production-handoff command
+above. Canonical layer-surface tasks such as `checkViewEnforcement` may still
+exist as technical diagnostics and focused local rerun points, but they are not
+separate public production-code proof owners.
 Build-harness topology and documentation metadata is coalesced by layer surface
 and rule kind before Gradle execution; role-local owner metadata names are not
 public or runnable proof entrypoints unless this document explicitly lists them
@@ -115,10 +82,10 @@ as utility gates.
 Focused investigation entrypoints are `compileJava`, `pmdMain`,
 `pmdStrictMain`, `checkRewriteNearMisses`, `rewriteDryRun`, `spotbugsMain`,
 `cpdMain`, `lizardMain`, `ckjmMain`,
-repository/resource policy checks, `productionHarness`, `checkArchitecture`,
-the canonical `check*Enforcement` layer surfaces, and
-`checkDocumentationEnforcement`, each run through
-`./gradlew <task> --console=plain`.
+repository/resource policy checks, technical `check*Enforcement` layer
+surfaces, and `checkDocumentationEnforcement`, each run through
+`./gradlew <task> --console=plain`. Investigation tasks are not alternate
+handoff entries.
 
 ## Runtime Wrapper Policy
 
@@ -176,7 +143,7 @@ wrapper-published plugin repositories, generated descriptor snapshots, or
 wrapper-owned retained-failure export surfaces.
 
 The verification core still computes focused bundle selection during settings
-evaluation and still registers the same public layer surfaces,
+evaluation and still registers the same technical layer surfaces,
 `checkDocumentationEnforcement`, and staged lifecycle tasks. The included
 builds and bundle descriptors are resolved directly from the active worktree
 layout.
@@ -195,7 +162,7 @@ continue to own their invocation defaults and global wrapper-based
 extra argument.
 
 This does not make bytecode-dependent entrypoints source-only. `spotbugsMain`,
-`ckjmMain`, and the public layer surfaces still require current compiled
+`ckjmMain`, and the technical layer surfaces still require current compiled
 classes; if `compileJava` fails, those entrypoints may be skipped because
 their prerequisite failed.
 

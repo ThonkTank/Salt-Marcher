@@ -70,36 +70,32 @@ verification surface model.
 
 Mechanically enforced public verification surfaces are:
 
-- canonical layer surfaces: `checkViewEnforcement`,
-  `checkDomainEnforcement`, `checkDataEnforcement`,
-  `checkShellEnforcement`, `checkBootstrapEnforcement`,
-  `checkStylingEnforcement`, and `checkLayeringEnforcement`
-- production-code harness aggregate: `productionHarness`
-- focused architecture investigation aggregate: `checkArchitecture`
-- focused documentation surface: `checkDocumentationEnforcement`
-- broad handoff surface: `production-handoff`
+- documentation surface: `checkDocumentationEnforcement`
+- production-code surface: `production-handoff`
 
 `desktop-install` remains a convenience installation entrypoint, not a public
 verification surface. Root-owned hygiene and architecture tasks such as
 `checkNoDeadCode`, `architectureTest`, and
 `:build-harness:architectureCheck` remain internal dependencies behind
-`productionHarness`, `production-handoff`, and `check`; they are not focused
-enforcement bundles and not a second public API.
+`production-handoff` and `check`; they are not focused enforcement bundles and
+not a second public API.
 
 The verification core owns the mapping from a public surface to its underlying
 Gradle dependencies. Root build scripts MUST consume this core instead of
 reconstructing the surface model themselves.
-The shared root-owned hygiene owners behind `check` and `production-handoff`
-are declared in one typed verification lifecycle catalog. `check` and
-`production-handoff` MUST consume that catalog instead of attaching shared
-owners from separate plugin or root-build locations.
+The shared root-owned hygiene owners behind `production-handoff` are declared
+in one typed verification lifecycle catalog. `production-handoff` MUST consume
+that catalog instead of attaching shared owners from separate plugin or
+root-build locations. `check` MAY remain the conventional Gradle build-health
+aggregate, but it must route through `production-handoff` instead of
+reconstructing a second production-code check graph.
 All current harness checks that inspect production source, compiled production
 classes, production topology, layer boundaries, role placement, or generic
 architecture behavior and are not documentation checks belong behind
-`productionHarness`. `production-handoff` MUST depend on that lifecycle owner
-directly. `checkArchitecture` MAY remain as an investigation alias for the same
-non-documentation harness surface, but it MUST NOT be the canonical owner that
-makes production-code harness coverage enter `production-handoff`.
+`production-handoff` directly. `architectureTest`,
+`:build-harness:architectureCheck`, and canonical layer-surface tasks are
+technical dependencies of that one production-code surface, not separate public
+owners or alternate handoff entries.
 
 ### 3. Bundle Owners
 
@@ -107,26 +103,26 @@ Each focused enforcement owner contributes one typed bundle descriptor to the
 central registry, not one physical `tools/quality/*-enforcement/` package and
 not one canonical public entrypoint. Standard bundles are registered centrally
 by the verification core from that registry, and the verification core then
-groups them behind the small layer-surface set. Bundles with small local
-extras such as stylesheet or FXML checks still register through the same
-standard verification-core path instead of through dedicated root plugins. The
-View model behind the public `checkViewEnforcement` surface has exactly two
-technical owners: the closed-world build-harness topology core and the shared
-Error Prone View core. The verification core MUST NOT open a second
-alternative View structure through extra public role-local entrypoints, a
-third shared core, or bundle-specific root-launcher families.
+groups them behind technical layer surfaces that feed `production-handoff`.
+Bundles with small local extras such as stylesheet or FXML checks still
+register through the same standard verification-core path instead of through
+dedicated root plugins. The View model behind the View layer-surface
+dependencies has exactly two technical owners: the closed-world build-harness
+topology core and the shared Error Prone View core. The verification core MUST
+NOT open a second alternative View structure through extra public role-local
+entrypoints, a third shared core, or bundle-specific root-launcher families.
 Physical module layout and owner-document splits therefore do not need to map
-1:1 to the internal technical owner shape as long as the public surface truth
-and the two-owner View model stay unchanged.
+1:1 to the internal technical owner shape as long as the production-handoff
+surface truth and the two-owner View model stay unchanged.
 
 Bundle owners MAY know their private ArchUnit, Error Prone, or build-harness
 rule metadata. They MUST NOT depend on shell wrappers. They communicate with the
 verification core only through stable typed registry metadata, their internal
 bundle-selector tasks, their bundle-local lifecycle tasks, and any explicitly
 declared report-only sibling surfaces. Build-harness owner metadata is
-coalesced by the verification core into one internal task per public
-surface/kind before Gradle execution; role-local owner splits MUST NOT create
-one runnable build-harness JVM scan per owner document.
+coalesced by the verification core into technical layer-surface tasks before
+Gradle execution; role-local owner splits MUST NOT create one runnable
+build-harness JVM scan per owner document.
 The public `checkDocumentationEnforcement` surface consumes the root
 documentation check plus the coalesced per-surface documentation tasks; those
 surface tasks remain private dependencies and MUST NOT become public
@@ -151,9 +147,9 @@ Allowed dependency direction is strictly inward:
 
 - runtime wrappers -> public verification surface names plus the
   `desktop-install` convenience entrypoint only
-- verification core -> public layer surfaces, `productionHarness`,
-  `checkArchitecture`,
-  `production-handoff`, included-build entrypoints, and enforcement specs
+- verification core -> `production-handoff`,
+  `checkDocumentationEnforcement`, included-build entrypoints, and
+  enforcement specs
 - bundle owners -> private rule tasks and typed proof wiring
 - rule implementation -> concrete source files, compiled classes, documentation
   inventories, and engine-local support code
@@ -169,9 +165,10 @@ Forbidden shortcuts:
 
 ## Focused Surface Propagation
 
-Focused verification selection is computed from the requested public task set
-during root settings evaluation by the `saltmarcher.settings` plugin from
-`tools/gradle/build-logic-settings`. Canonical layer surfaces expand to their
+Focused verification selection is computed from requested production-handoff,
+technical layer-surface, or bundle-selector task names during root settings
+evaluation by the `saltmarcher.settings` plugin from
+`tools/gradle/build-logic-settings`. Technical layer surfaces expand to their
 owning bundle ids there, and direct internal bundle-selector task requests are
 still translated to the same bundle-id set. Those selector tasks stay
 technical implementation seams, not a second public verification API. The
@@ -190,21 +187,22 @@ Included builds own their technical registration from typed registry metadata
 and explicit engine-owned hosts such as build-harness rule classes, Error
 Prone checker lists, ArchUnit include patterns, and generic
 documentation-coverage spec ids or custom-task kinds. Build-harness
-registration groups active bundle metadata by canonical public surface and
-rule kind before registering tasks. Harness wiring MUST NOT rely on
+registration groups active bundle metadata by technical layer surface and rule
+kind before registering tasks. Harness wiring MUST NOT rely on
 bundle-derived filesystem scans, parallel families of tiny launcher mains,
 role-local build-harness launcher tasks, or `*-host.gradle.kts` scripts as a
 second source of truth for the same metadata.
 Shared verification task registration inside `tools/gradle/build-logic` should
 flow through typed plugin or extension APIs rather than through untyped
 `extra[...]` function exports between precompiled script plugins.
-Public verification aggregates and canonical layer surfaces should register
-through typed registry providers rather than by matching task names at
-configuration time. Bundle-owned verification tasks remain implementation
-details behind those surfaces unless a task is explicitly documented here or in
-`quality-platforms-local-entrypoints.md` as a public focused utility gate.
+Production-handoff, documentation enforcement, and technical layer surfaces
+should register through typed registry providers rather than by matching task
+names at configuration time. Bundle-owned verification tasks remain
+implementation details behind those surfaces unless a task is explicitly
+documented here or in `quality-platforms-local-entrypoints.md` as a public
+focused utility gate.
 Physical build-harness bundle metadata MUST NOT require historic role-local
-task-name fields. Build-harness task names are owned by canonical public
+task-name fields. Build-harness task names are owned by technical layer
 surfaces, except for explicit root or utility gates registered by the
 verification core.
 The remaining root-owned build-harness optional architecture rules are now

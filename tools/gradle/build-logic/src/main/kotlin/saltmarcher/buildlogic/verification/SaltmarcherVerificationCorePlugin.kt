@@ -138,20 +138,6 @@ internal fun Project.configureVerificationCore() {
             .forEach(::dependsOn)
     }
 
-    val productionHarness = tasks.register("productionHarness") {
-        group = LifecycleBasePlugin.VERIFICATION_GROUP
-        description = "Run the production-code harness checks through canonical layer surfaces and internal architecture owners."
-        dependsOn("architectureTest")
-        dependsOn(gradle.includedBuild("build-harness").task(":architectureCheck"))
-        publicVerificationSurfaceNames.forEach(::dependsOn)
-    }
-
-    tasks.register("checkArchitecture") {
-        group = LifecycleBasePlugin.VERIFICATION_GROUP
-        description = "Run the focused architecture investigation aggregate through the production harness."
-        dependsOn(productionHarness)
-    }
-
     tasks.register("desktop-install") {
         group = LifecycleBasePlugin.VERIFICATION_GROUP
         description = "Run the convenience desktop installation path after a green local handoff."
@@ -163,6 +149,9 @@ internal fun Project.configureVerificationCore() {
         group = LifecycleBasePlugin.VERIFICATION_GROUP
         description = productionHandoffSurface.description
         productionHandoffSurface.dependencyTaskNames.forEach(::dependsOn)
+        dependsOn("architectureTest")
+        dependsOn(gradle.includedBuild("build-harness").task(":architectureCheck"))
+        publicVerificationSurfaceNames.forEach(::dependsOn)
     }
 
 }

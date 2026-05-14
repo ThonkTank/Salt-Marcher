@@ -60,7 +60,6 @@ private fun standardBroadBuildTaskNames(): Set<String> = setOf(
     "architectureTest",
     "build",
     "check",
-    "checkArchitecture",
     "checkNoDeadCode",
     "classes",
     "compileJava",
@@ -68,7 +67,6 @@ private fun standardBroadBuildTaskNames(): Set<String> = setOf(
     "installDesktopApp",
     "installDist",
     "jar",
-    "productionHarness",
     "production-handoff",
     "run",
     "test"
