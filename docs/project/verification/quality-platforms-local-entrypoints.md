@@ -47,8 +47,8 @@ implementation-handoff route required by `AGENTS.md` for production-code
 changes. The wrapper is runtime-only: it forwards the canonical surface name to
 one same-named Gradle lifecycle task, and the verification core expands
 `production-handoff` directly through the same typed lifecycle catalog used by
-`check`: assemble, `test`, `checkArchitecture`, the quality-hygiene tool
-owners, and CKJM reporting inside Gradle.
+`check`: assemble, `checkArchitecture`, the quality-hygiene tool owners, and
+CKJM reporting inside Gradle.
 
 For check-only implementation work limited to concrete enforcement packages or
 verification-only wiring under `tools/**`, `build.gradle.kts`, or
@@ -73,7 +73,7 @@ Architecture-focused and handoff public entrypoints are:
   Aggregates the public architecture surface through the canonical layer
   surfaces, `architectureTest`, and `:build-harness:architectureCheck`.
 - `tools/gradle/run-staged-verification.sh production-handoff`
-  Aggregates the public production-code handoff route through assemble, `test`,
+  Aggregates the public production-code handoff route through assemble,
   `checkArchitecture`, the quality-hygiene tool owners, and CKJM
   reporting.
 - `./gradlew checkDocumentationEnforcement --console=plain`

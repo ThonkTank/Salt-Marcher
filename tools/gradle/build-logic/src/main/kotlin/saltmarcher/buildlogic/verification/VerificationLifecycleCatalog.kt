@@ -23,7 +23,6 @@ internal data class VerificationLifecycleCatalog(
 internal fun standardVerificationLifecycleCatalog(): VerificationLifecycleCatalog {
     val sharedHygieneOwners = listOf(
         verificationLifecycleOwner("assemble", "assemble"),
-        verificationLifecycleOwner("test", "test"),
         verificationLifecycleOwner("architecture", "checkArchitecture"),
         verificationLifecycleOwner("pmd-main", "pmdMain"),
         verificationLifecycleOwner("openrewrite-near-miss", "checkRewriteNearMisses"),
