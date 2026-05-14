@@ -36,12 +36,12 @@ running a second PMD scan.
 `tools/gradle/run-staged-verification.sh production-handoff` is the default
 implementation-handoff route required by `AGENTS.md` for production-code
 changes. The wrapper is runtime-only: it routes the canonical surface name
-through the Gradle-owned `productionHandoffIntegrity` and
-`productionHandoffQuality` phase tasks. The verification core owns each phase:
-the integrity phase proves compile and harness integrity fail-fast, and the
-quality phase aggregates assemble, all non-documentation harness checks over
-production code, the quality-hygiene tool owners, and CKJM reporting inside
-Gradle.
+through the Gradle-owned `productionHandoffCompileIntegrity`,
+`productionHandoffStructure`, and `productionHandoffHygiene` phase tasks. The
+verification core owns each phase: compile integrity proves Java and
+included-build compilation fail-fast, structure proves architecture and
+build-harness topology fail-fast, and hygiene aggregates assemble, bundle
+selectors, quality-hygiene tool owners, and CKJM reporting inside Gradle.
 
 For check-only implementation work limited to concrete enforcement packages or
 verification-only wiring under `tools/**`, `build.gradle.kts`, or
@@ -63,8 +63,9 @@ reported.
 Public local proof entrypoints are:
 
 - `tools/gradle/run-staged-verification.sh production-handoff`
-  Runs `productionHandoffIntegrity` fail-fast and, only after it passes, runs
-  `productionHandoffQuality` with failure aggregation across the public
+  Runs `productionHandoffCompileIntegrity` fail-fast, then
+  `productionHandoffStructure` fail-fast, and only after both pass runs
+  `productionHandoffHygiene` with failure aggregation across the public
   production-code handoff checks.
 - `./gradlew checkDocumentationEnforcement --console=plain`
   Aggregates focused Markdown-backed architecture and enforcement-document
@@ -105,16 +106,17 @@ Callers that need first-failure diagnosis may pass wrapper option
 `--fail-fast` before the task or staged surface name; the wrapper then omits
 its default `--continue` and rejects a contradictory extra Gradle `--continue`.
 
-By default, `production-handoff` applies wrapper-level fail-fast behavior only
-to `productionHandoffIntegrity`. If that phase fails, the staged handoff stops
-before expensive quality and architecture tasks run against a broken type
-graph. After integrity passes, `productionHandoffQuality` inherits the normal
+By default, `production-handoff` applies wrapper-level fail-fast behavior to
+`productionHandoffCompileIntegrity` and `productionHandoffStructure`. If either
+phase fails, the staged handoff stops before expensive hygiene, reporting,
+packaging, bundle, or jQAssistant-backed tasks run against a broken structure.
+After both phases pass, `productionHandoffHygiene` inherits the normal
 wrapper-level `--continue` behavior so the canonical implementation-handoff
 route reports the broader current failure set. The staged handoff still fails
 overall when any blocking dependency fails. The command
 `tools/gradle/run-staged-verification.sh --fail-fast production-handoff`
-preserves the same public staged surface; the production quality phase still
-aggregates independent quality failures.
+preserves the same public staged surface; the production hygiene phase still
+aggregates independent hygiene failures.
 Direct raw `./gradlew` invocations remain explicit and only aggregate failures
 when the caller passes `--continue`.
 
