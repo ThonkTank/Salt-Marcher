@@ -8,7 +8,8 @@ import saltmarcher.buildlogic.shared.ProductionHandoffTaskName
 internal data class VerificationLifecycleOwnerSpec(
     val ownerId: String,
     val taskName: String,
-    val phase: VerificationLifecyclePhase
+    val phase: VerificationLifecyclePhase,
+    val dependencyTaskNames: List<String> = emptyList()
 )
 
 internal data class VerificationLifecycleSurfaceSpec(
@@ -28,6 +29,11 @@ internal data class VerificationLifecycleCatalog(
     fun ownerTaskNames(phase: VerificationLifecyclePhase): List<String> = ownersInOrder
         .filter { owner -> owner.phase == phase }
         .map(VerificationLifecycleOwnerSpec::taskName)
+
+    fun ownerDependencyTaskNames(phase: VerificationLifecyclePhase): List<String> = ownersInOrder
+        .filter { owner -> owner.phase == phase }
+        .flatMap { owner -> listOf(owner.taskName) + owner.dependencyTaskNames }
+        .distinct()
 }
 
 internal enum class VerificationLifecyclePhase {
@@ -45,8 +51,18 @@ internal fun standardVerificationLifecycleCatalog(): VerificationLifecycleCatalo
         verificationLifecycleOwner("architecture-test", "architectureTest", VerificationLifecyclePhase.STRUCTURE)
     )
     val hygieneOwners = listOf(
-        verificationLifecycleOwner("assemble", "assemble", VerificationLifecyclePhase.HYGIENE),
-        verificationLifecycleOwner("pmd-main", "pmdMain", VerificationLifecyclePhase.HYGIENE),
+        verificationLifecycleOwner(
+            "assemble",
+            "assemble",
+            VerificationLifecyclePhase.HYGIENE,
+            dependencyTaskNames = listOf("startScripts", "distTar", "distZip")
+        ),
+        verificationLifecycleOwner(
+            "pmd-strict-main",
+            "pmdStrictMain",
+            VerificationLifecyclePhase.HYGIENE,
+            dependencyTaskNames = listOf("pmdMain")
+        ),
         verificationLifecycleOwner("near-miss-hygiene", "checkRewriteNearMisses", VerificationLifecyclePhase.HYGIENE),
         verificationLifecycleOwner("spotbugs-main", "spotbugsMain", VerificationLifecyclePhase.HYGIENE),
         verificationLifecycleOwner("cpd-main", "cpdMain", VerificationLifecyclePhase.HYGIENE),
@@ -83,11 +99,13 @@ internal fun standardVerificationLifecycleCatalog(): VerificationLifecycleCatalo
 private fun verificationLifecycleOwner(
     ownerId: String,
     taskName: String,
-    phase: VerificationLifecyclePhase
+    phase: VerificationLifecyclePhase,
+    dependencyTaskNames: List<String> = emptyList()
 ): VerificationLifecycleOwnerSpec = VerificationLifecycleOwnerSpec(
     ownerId = ownerId,
     taskName = taskName,
-    phase = phase
+    phase = phase,
+    dependencyTaskNames = dependencyTaskNames
 )
 
 private fun verificationLifecycleSurface(
