@@ -124,7 +124,7 @@ internal open class VerificationHarnessExtension(
     fun registerJqassistantTask(
         bundleId: String,
         taskSpec: EnforcementJqassistantTask
-    ) = jqassistantTaskRegistrar.registerTaskPair(
+    ): JqassistantTaskPair = jqassistantTaskRegistrar.registerTaskPair(
         bundleId = bundleId,
         taskSpec = taskSpec,
         mainClassesDirectory = project.tasks.named<JavaCompile>("compileJava").flatMap(JavaCompile::getDestinationDirectory),
@@ -133,7 +133,7 @@ internal open class VerificationHarnessExtension(
             exclude("**/build/**")
         },
         dependsOnTasks = listOf(project.tasks.named("classes"))
-    ).analyzeTask
+    )
 
     fun registerUtilityVerificationTask(
         taskName: String,
