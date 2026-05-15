@@ -2,7 +2,6 @@ package saltmarcher.buildlogic.verification
 
 import org.gradle.api.DefaultTask
 import org.gradle.api.file.RegularFileProperty
-import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.OutputFile
 import org.gradle.api.tasks.TaskAction
@@ -30,18 +29,5 @@ abstract class WriteProductionHandoffMarkerTask : DefaultTask() {
         val marker = markerFile.asFile.get()
         marker.parentFile.mkdirs()
         marker.writeText("ok\n")
-    }
-}
-
-abstract class RequireProductionHandoffMarkerTask : DefaultTask() {
-    @get:InputFile
-    abstract val markerFile: RegularFileProperty
-
-    @TaskAction
-    fun requireMarker() {
-        val marker = markerFile.asFile.get()
-        require(marker.isFile) {
-            "Production handoff marker '${marker}' is missing."
-        }
     }
 }

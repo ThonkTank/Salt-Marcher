@@ -26,10 +26,11 @@ The shared owner list behind `production-handoff` lives in the typed
 verification lifecycle catalog; root build scripts must not add those owners
 separately.
 
-`pmdMain` and `spotbugsMain` are central blocking gates and may also be run as
-focused direct entrypoints. `pmdStrictMain` remains the focused text-first PMD
-entrypoint, but derives its report from the `pmdMain` XML result instead of
-running a second PMD scan.
+`pmdStrictMain` and `spotbugsMain` are central blocking gates and may also be
+run as focused direct entrypoints. `pmdStrictMain` derives its report from the
+`pmdMain` XML result instead of running a second PMD scan. `pmdMain` remains the
+direct XML/report producer and diagnostic PMD entrypoint; it is not a hidden
+finalizer owner for the production handoff.
 
 ## Public Handoff Routes
 
@@ -106,9 +107,9 @@ its default `--continue` and rejects a contradictory extra Gradle `--continue`.
 
 By default, wrapper-based `production-handoff` uses Gradle `--continue` so the
 canonical implementation-handoff route reports the broader current failure set.
-The verification core orders hygiene work behind the structure phase so hygiene
-owners do not execute after a failed structure phase. The staged handoff still
-fails overall when any blocking dependency fails. The command
+The verification core orders hygiene work behind marker-backed phase completion
+so hygiene owners do not execute after a failed structure phase. The staged
+handoff still fails overall when any blocking dependency fails. The command
 `tools/gradle/run-staged-verification.sh --fail-fast production-handoff`
 preserves the same public surface while omitting the wrapper's default
 `--continue`.

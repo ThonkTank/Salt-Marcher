@@ -8,7 +8,6 @@ import shell.api.ShellRuntimeContext;
 import shell.api.ShellSlot;
 import src.domain.dungeon.DungeonEditorApplicationService;
 import src.domain.dungeon.published.DungeonEditorModel;
-import src.domain.dungeon.published.LoadDungeonEditorQuery;
 import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel;
 import src.view.slotcontent.main.dungeonmap.DungeonMapView;
 
@@ -22,7 +21,7 @@ final class DungeonEditorBinder {
 
     ShellBinding bind() {
         DungeonEditorApplicationService editor = runtimeContext.services().require(DungeonEditorApplicationService.class);
-        DungeonEditorModel editorModel = editor.loadEditor(new LoadDungeonEditorQuery(null));
+        DungeonEditorModel editorModel = runtimeContext.services().require(DungeonEditorModel.class);
         DungeonEditorContributionModel contributionModel = new DungeonEditorContributionModel();
         DungeonEditorControlsContentModel controlsContentModel = new DungeonEditorControlsContentModel();
         DungeonMapContentModel mapContentModel = new DungeonMapContentModel("Dungeon workspace", true);

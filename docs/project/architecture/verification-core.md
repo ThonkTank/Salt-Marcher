@@ -64,10 +64,10 @@ failure set. Callers that need first-failure diagnosis MAY pass wrapper option
 `--fail-fast`; the wrapper then omits its default `--continue` and rejects a
 contradictory extra Gradle `--continue`. The `production-handoff` lifecycle
 keeps compile integrity, structure, and hygiene as Gradle-owned phase tasks, and
-hygiene owners are ordered behind a successful structure phase. This policy is
-global to the runtime wrapper and staged surface routing; it MUST NOT be
-computed from private bundle member tasks, topology-task patterns, PMD
-enforcement patterns, internal rule lists, or architecture-rule ownership.
+hygiene owners are ordered behind successful marker-backed phase completion.
+This policy is global to the runtime wrapper and staged surface routing; it
+MUST NOT be computed from private bundle member tasks, topology-task patterns,
+PMD enforcement patterns, internal rule lists, or architecture-rule ownership.
 Direct raw Gradle use of the same public surfaces does not inherit wrapper
 defaults automatically.
 
@@ -98,6 +98,9 @@ typed verification lifecycle catalog and split into three phases:
 checks, and `productionHandoffHygiene` for aggregating hygiene, bundle, and
 reporting checks. `production-handoff` MUST consume those phase tasks instead
 of attaching shared owners from separate plugin or root-build locations.
+Phase barriers MUST use configuration-cache-safe request facts and phase marker
+files rather than reading Gradle task graph state, task failures, skipped state,
+or project/task objects from hygiene `onlyIf` predicates.
 `check` MAY remain the conventional Gradle build-health aggregate, but it must
 route through `production-handoff` instead of reconstructing a second
 production-code check graph.
@@ -152,7 +155,11 @@ documentation proof entrypoints.
 
 Root-owned hygiene gates that are not bundle-specific MUST stay registered in
 the verification core itself. They MUST NOT be back-ported into fake
-focused bundles just to reuse the bundle registry.
+focused bundles just to reuse the bundle registry. Root-owned owners with
+report-producing leaf tasks, such as `pmdStrictMain` depending on `pmdMain` or
+`assemble` depending on distribution leaves, MUST declare those leaves in the
+typed lifecycle catalog instead of hiding them behind finalizers or local
+hard-coded barrier lists.
 
 ### 4. Rule Implementation
 

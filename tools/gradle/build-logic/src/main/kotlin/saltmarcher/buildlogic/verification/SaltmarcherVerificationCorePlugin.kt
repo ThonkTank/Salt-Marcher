@@ -2,7 +2,7 @@ package saltmarcher.buildlogic.verification
 
 import org.gradle.api.Plugin
 import org.gradle.api.Project
-import org.gradle.api.Task
+import org.gradle.api.file.RegularFile
 import org.gradle.api.tasks.compile.JavaCompile
 import org.gradle.api.tasks.TaskProvider
 import org.gradle.kotlin.dsl.getByType
@@ -69,11 +69,12 @@ internal fun Project.configureVerificationCore() {
         dependsOn(nearMissCompileTask)
     }
 
-    fun registerStandardBundle(bundleId: String) {
+    fun registerStandardBundle(bundleId: String): RegisteredEnforcementBundleTasks {
         val descriptor = descriptor(bundleId)
         val selectorTaskName = descriptor.selectorTaskName
         val checkerNames = descriptor.errorProneCheckers
         val bundleDisplayName = defaultBundleDisplayName(bundleId)
+        val leafTaskNames = mutableListOf<String>()
 
         val selectedCompileJava = if (descriptor.requiresFocusedCompile()) {
             focusedCompileTasksByBundleId[bundleId]
@@ -81,6 +82,7 @@ internal fun Project.configureVerificationCore() {
         } else {
             null
         }
+        selectedCompileJava?.let { compileTask -> leafTaskNames += compileTask.name }
 
         val aggregateDependencies = mutableListOf<Any>()
         aggregateDependencies.addAll(
@@ -107,17 +109,23 @@ internal fun Project.configureVerificationCore() {
                 archunit.includePatterns
             )
             aggregateDependencies += archunitTask
+            leafTaskNames += archunitTask.name
         }
 
         descriptor.utilityTasks.forEach { utilityTask ->
-            aggregateDependencies += verificationHarness.registerUtilityVerificationTask(
+            val utilityVerificationTask = verificationHarness.registerUtilityVerificationTask(
                 utilityTask.taskName,
                 utilityTask.kind
             )
+            aggregateDependencies += utilityVerificationTask
+            leafTaskNames += utilityVerificationTask.name
         }
 
         descriptor.jqassistant?.takeIf { includeJqassistant }?.let { jqassistant ->
-            aggregateDependencies += verificationHarness.registerJqassistantTask(bundleId, jqassistant)
+            val jqassistantTasks = verificationHarness.registerJqassistantTask(bundleId, jqassistant)
+            aggregateDependencies += jqassistantTasks.analyzeTask
+            leafTaskNames += jqassistantTasks.scanTask.name
+            leafTaskNames += jqassistantTasks.analyzeTask.name
         }
 
         tasks.register(selectorTaskName) {
@@ -126,10 +134,14 @@ internal fun Project.configureVerificationCore() {
             }
             aggregateDependencies.forEach(::dependsOn)
         }
+        return RegisteredEnforcementBundleTasks(
+            selectorTaskName = selectorTaskName,
+            leafTaskNames = leafTaskNames.distinct()
+        )
     }
 
-    activeEnforcementBundleIds
-        .forEach(::registerStandardBundle)
+    val registeredBundleTasks = activeEnforcementBundleIds
+        .map(::registerStandardBundle)
 
     diagnosticSurfaceCatalog.surfacesInOrder.forEach { surface ->
         val activeSurfaceBundleIds = surface.bundleIds.filter(activeEnforcementBundleIds::contains)
@@ -182,50 +194,76 @@ internal fun Project.configureVerificationCore() {
         }
     }
 
+    val productionHandoffMarkerLayout = productionHandoffMarkerLayout()
+    val resetProductionHandoffPhaseMarkers = tasks.register<ResetProductionHandoffMarkersTask>(
+        "resetProductionHandoffPhaseMarkers"
+    ) {
+        group = LifecycleBasePlugin.VERIFICATION_GROUP
+        description = "Clear production handoff phase-success markers before the fail-fast phases run."
+        compileIntegrityMarker.set(productionHandoffMarkerLayout.compileIntegrityMarker)
+        structureMarker.set(productionHandoffMarkerLayout.structureMarker)
+    }
+    productionHandoffCompileIntegrity.configure {
+        dependsOn(resetProductionHandoffPhaseMarkers)
+    }
+    val markProductionHandoffCompileIntegrity = tasks.register<WriteProductionHandoffMarkerTask>(
+        "markProductionHandoffCompileIntegrity"
+    ) {
+        group = LifecycleBasePlugin.VERIFICATION_GROUP
+        description = "Record that the production handoff compile-integrity phase completed successfully."
+        dependsOn(productionHandoffCompileIntegrity)
+        mustRunAfter(resetProductionHandoffPhaseMarkers)
+        markerFile.set(productionHandoffMarkerLayout.compileIntegrityMarker)
+    }
+
     val productionHandoffStructure = tasks.register(ProductionHandoffStructureTaskName) {
         group = LifecycleBasePlugin.VERIFICATION_GROUP
         description = "Run the fail-fast architecture and build-harness structure phase for production handoff."
-        dependsOn(productionHandoffCompileIntegrity)
+        dependsOn(markProductionHandoffCompileIntegrity)
         verificationLifecycleCatalog.ownerTaskNames(VerificationLifecyclePhase.STRUCTURE).forEach(::dependsOn)
         if (includeBuildHarness) {
             dependsOn(gradle.includedBuild("build-harness").task(":allBuildHarnessTopologyCheck"))
             dependsOn(gradle.includedBuild("build-harness").task(":architectureCheck"))
         }
     }
+    val markProductionHandoffStructure = tasks.register<WriteProductionHandoffMarkerTask>(
+        "markProductionHandoffStructure"
+    ) {
+        group = LifecycleBasePlugin.VERIFICATION_GROUP
+        description = "Record that the production handoff structure phase completed successfully."
+        dependsOn(productionHandoffStructure)
+        mustRunAfter(markProductionHandoffCompileIntegrity)
+        markerFile.set(productionHandoffMarkerLayout.structureMarker)
+    }
 
     val productionHandoffHygiene = tasks.register(ProductionHandoffHygieneTaskName) {
         group = LifecycleBasePlugin.VERIFICATION_GROUP
         description = "Run the aggregating hygiene, reporting, and bundle phase for production handoff."
-        dependsOn(productionHandoffStructure)
+        dependsOn(markProductionHandoffStructure)
         verificationLifecycleCatalog.ownerTaskNames(VerificationLifecyclePhase.HYGIENE).forEach(::dependsOn)
-        activeEnforcementBundleIds
-            .map(::descriptor)
-            .map(EnforcementBundleDescriptor::selectorTaskName)
+        registeredBundleTasks
+            .map(RegisteredEnforcementBundleTasks::selectorTaskName)
             .forEach(::dependsOn)
     }
-    val activeDescriptors = activeEnforcementBundleIds.map(::descriptor)
     val productionHandoffHygieneDependencyTaskNames =
-        verificationLifecycleCatalog.ownerTaskNames(VerificationLifecyclePhase.HYGIENE) +
-            activeDescriptors.map(EnforcementBundleDescriptor::selectorTaskName) +
-            focusedCompileTasksByBundleId.values.map { taskProvider -> taskProvider.name } +
+        verificationLifecycleCatalog.ownerDependencyTaskNames(VerificationLifecyclePhase.HYGIENE) +
+            registeredBundleTasks.map(RegisteredEnforcementBundleTasks::selectorTaskName) +
+            registeredBundleTasks.flatMap(RegisteredEnforcementBundleTasks::leafTaskNames) +
             nearMissCompileTask.name +
-            activeDescriptors.flatMap(::productionHandoffBundleLeafTaskNames) +
-            listOf(
-                "pmdStrictMain",
-                "startScripts",
-                "distTar",
-                "distZip"
-            )
+            focusedCompileTasksByBundleId.values.map { taskProvider -> taskProvider.name }
 
     configureProductionHandoffHygieneBarriers(
-        productionHandoffHygiene,
         verificationLifecycleCatalog.ownerTaskNames(VerificationLifecyclePhase.COMPILE_INTEGRITY) +
             verificationLifecycleCatalog.ownerTaskNames(VerificationLifecyclePhase.STRUCTURE) +
             listOf(
                 ProductionHandoffCompileIntegrityTaskName,
-                ProductionHandoffStructureTaskName
+                ProductionHandoffStructureTaskName,
+                markProductionHandoffCompileIntegrity.name,
+                markProductionHandoffStructure.name
             ),
-        productionHandoffHygieneDependencyTaskNames
+        productionHandoffHygieneDependencyTaskNames,
+        productionHandoffRequested = productionHandoffRequested(),
+        phaseCompletionMarker = productionHandoffMarkerLayout.structureMarker.get().asFile
     )
 
     tasks.register(productionHandoffSurface.publicTaskName) {
@@ -244,44 +282,52 @@ private fun systemBoolean(name: String, defaultValue: Boolean): Boolean =
         ?: defaultValue
 
 private fun Project.configureProductionHandoffHygieneBarriers(
-    hygieneTask: TaskProvider<Task>,
     barrierTaskNames: List<String>,
-    hygieneDependencyTaskNames: List<String>
+    hygieneDependencyTaskNames: List<String>,
+    productionHandoffRequested: Boolean,
+    phaseCompletionMarker: java.io.File
 ) {
     val distinctBarrierTaskNames = barrierTaskNames.distinct()
-    val phaseCompletionTaskNames = listOf(
-        ProductionHandoffCompileIntegrityTaskName,
-        ProductionHandoffStructureTaskName
-    )
     hygieneDependencyTaskNames.distinct().forEach { taskName ->
         tasks.matching { task -> task.name == taskName }.configureEach {
             mustRunAfter(distinctBarrierTaskNames)
             onlyIf("production handoff compile and structure phases completed successfully") {
-                !gradle.taskGraph.hasTask(hygieneTask.get()) ||
-                    (
-                        distinctBarrierTaskNames
-                            .mapNotNull(tasks::findByName)
-                            .all { barrierTask -> barrierTask.state.failure == null } &&
-                            phaseCompletionTaskNames
-                                .mapNotNull(tasks::findByName)
-                                .all { phaseTask -> !phaseTask.state.skipped }
-                    )
+                !productionHandoffRequested || phaseCompletionMarker.isFile
             }
         }
     }
 }
 
-private fun productionHandoffBundleLeafTaskNames(descriptor: EnforcementBundleDescriptor): List<String> =
-    buildList {
-        descriptor.archunit?.taskName?.let(::add)
-        descriptor.jqassistant?.taskName?.let { analyzeTaskName ->
-            add(analyzeTaskName.replaceFirst("Analyze", "Scan"))
-            add(analyzeTaskName)
-        }
-        descriptor.utilityTasks
-            .map { utilityTask -> utilityTask.taskName }
-            .forEach(::add)
-    }
+private fun Project.productionHandoffRequested(): Boolean {
+    val requestedSurfaceNames = setOf(
+        ProductionHandoffSurfaceId,
+        ProductionHandoffCompileIntegrityTaskName,
+        ProductionHandoffStructureTaskName,
+        ProductionHandoffHygieneTaskName,
+        "production-handoff",
+        "check",
+        "build"
+    )
+    return gradle.startParameter.taskNames
+        .map { taskName -> taskName.substringAfterLast(':') }
+        .any(requestedSurfaceNames::contains)
+}
+
+private fun Project.productionHandoffMarkerLayout(): ProductionHandoffMarkerLayout =
+    ProductionHandoffMarkerLayout(
+        compileIntegrityMarker = layout.buildDirectory.file("verification-markers/production-handoff/compile-integrity.marker"),
+        structureMarker = layout.buildDirectory.file("verification-markers/production-handoff/structure.marker")
+    )
+
+private data class ProductionHandoffMarkerLayout(
+    val compileIntegrityMarker: org.gradle.api.provider.Provider<RegularFile>,
+    val structureMarker: org.gradle.api.provider.Provider<RegularFile>
+)
+
+private data class RegisteredEnforcementBundleTasks(
+    val selectorTaskName: String,
+    val leafTaskNames: List<String>
+)
 
 private fun registerFocusedCompileTasksByBundleId(
     descriptors: List<EnforcementBundleDescriptor>,

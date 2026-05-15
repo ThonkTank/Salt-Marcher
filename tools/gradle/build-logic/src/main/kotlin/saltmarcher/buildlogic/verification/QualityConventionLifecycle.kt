@@ -81,7 +81,6 @@ internal fun Project.registerQualityConventionLifecycleTasks(
         include("**/*.java")
         classpath = files(configurations.named("compileClasspath"))
         ignoreFailures = true
-        finalizedBy(pmdStrictMain)
     }
 
     tasks.named<Pmd>("pmdTest") {

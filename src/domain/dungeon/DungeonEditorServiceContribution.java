@@ -15,5 +15,8 @@ public final class DungeonEditorServiceContribution implements ServiceContributi
         services.registerFactory(
                 DungeonEditorApplicationService.class,
                 assembly::create);
+        services.registerFactory(
+                src.domain.dungeon.published.DungeonEditorModel.class,
+                assembly::createEditorModel);
     }
 }

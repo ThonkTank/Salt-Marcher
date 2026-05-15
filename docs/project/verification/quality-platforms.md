@@ -195,9 +195,9 @@ It combines:
 
 - assemble
 - all non-documentation production-code harness checks
-- the quality-hygiene blocker path through PMD, first-party near-miss hygiene
-  checks, SpotBugs, CPD, Lizard, compiled-artifact hygiene, and
-  whole-program dead-code reachability
+- the quality-hygiene blocker path through `pmdStrictMain`, first-party
+  near-miss hygiene checks, SpotBugs, CPD, Lizard, compiled-artifact hygiene,
+  and whole-program dead-code reachability
 
 CKJM hotspot and regression reporting remains an informational report surface
 through direct `ckjmMain` runs and CI artifact upload. It is not part of the
@@ -208,6 +208,9 @@ coverage comes by depending on `production-handoff`; it must not reconstruct a
 second production-code check graph. `production-handoff` consumes the typed
 verification lifecycle catalog for shared root-owned hygiene and reporting
 owners.
+PMD XML production remains owned by `pmdMain`; the blocking text-first PMD
+handoff owner is `pmdStrictMain`, declared explicitly in the lifecycle catalog
+instead of attached as a hidden finalizer.
 `checkDocumentationEnforcement` remains intentionally separate so
 documentation-only work has a smaller proof route.
 
