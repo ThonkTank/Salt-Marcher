@@ -87,7 +87,9 @@ Bootstrap:
 Bootstrap:
 
 - scans `src/data/<feature>/` root classes
-- expects exactly one root class whose name ends with `ServiceContribution`
+- scans `src/domain/<context>/` root classes
+- expects at most one root class per discovery scope whose name ends with
+  `ServiceContribution`
 - expects that class to implement `shell.api.ServiceContribution`
 - expects a public no-arg constructor
 - registers exported capabilities into the shared shell service registry
@@ -95,7 +97,10 @@ Bootstrap:
 Bootstrap must not discover or register feature-internal view or data roles
 such as `*Binder`, `*View`, `*ContributionModel`, `*ContentModel`,
 `*IntentHandler`, `repository/`, `query/`, `gateway/`, `model/`, or `mapper/`
-as bootstrap entrypoints.
+as bootstrap entrypoints. Data roots and same-named domain roots are separate
+discovery scopes: data roots register source-backed capabilities first, then
+domain roots may assemble same-context services and readback models from the
+populated registry.
 
 ## Instantiation Rules
 

@@ -3,7 +3,6 @@ package src.data.encounter.repository;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import src.data.creatures.query.SqliteCreatureCatalogQueryAdapter;
 import src.domain.creatures.model.catalog.model.CreatureCatalogData;
 import src.domain.creatures.model.catalog.port.CreatureCatalogPort;
 import src.domain.encounter.model.generation.helper.EncounterCandidateProfileHelper;
@@ -21,11 +20,7 @@ public final class ApplicationEncounterCreatureRepository implements EncounterCr
 
     private final CreatureCatalogPort creatureCatalogLookup;
 
-    public ApplicationEncounterCreatureRepository() {
-        this(new SqliteCreatureCatalogQueryAdapter());
-    }
-
-    ApplicationEncounterCreatureRepository(CreatureCatalogPort creatureCatalogLookup) {
+    public ApplicationEncounterCreatureRepository(CreatureCatalogPort creatureCatalogLookup) {
         this.creatureCatalogLookup = Objects.requireNonNull(creatureCatalogLookup, "creatureCatalogLookup");
     }
 

@@ -7,9 +7,9 @@ import src.domain.dungeon.DungeonCatalogApplicationService;
 import src.domain.dungeon.published.DungeonAuthoredMutationModel;
 import src.domain.dungeon.published.DungeonAuthoredReadModel;
 import src.domain.dungeon.published.DungeonMapCatalogModel;
-import src.domain.dungeon.model.editor.application.ApplyDungeonEditorSessionUseCase;
-import src.domain.dungeon.model.editor.model.session.port.DungeonEditorDungeonPort;
-import src.domain.dungeon.model.editor.model.session.repository.DungeonEditorDungeonRepository;
+import src.domain.dungeon.model.editor.usecase.ApplyDungeonEditorSessionUseCase;
+import src.domain.dungeon.model.editor.port.DungeonEditorDungeonPort;
+import src.domain.dungeon.model.editor.repository.DungeonEditorDungeonRepository;
 
 final class DungeonEditorServiceAssembly {
 

@@ -101,7 +101,9 @@ topology.
 
 Application services coordinate load, mutate, save, search, and raw travel
 surface queries through these ports. Party-aware runtime travel-session
-composition belongs to the separate `travel` context, not to `dungeon`.
+composition belongs to the `dungeon/model/travel/**` family and consumes party
+position through explicit seams; dungeon still does not own party roster truth
+or persisted party travel position.
 
 Active root boundaries:
 

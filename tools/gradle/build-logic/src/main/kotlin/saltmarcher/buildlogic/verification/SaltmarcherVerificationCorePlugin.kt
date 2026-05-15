@@ -203,6 +203,20 @@ internal fun Project.configureVerificationCore() {
             .map(EnforcementBundleDescriptor::selectorTaskName)
             .forEach(::dependsOn)
     }
+    val activeDescriptors = activeEnforcementBundleIds.map(::descriptor)
+    val productionHandoffHygieneDependencyTaskNames =
+        verificationLifecycleCatalog.ownerTaskNames(VerificationLifecyclePhase.HYGIENE) +
+            activeDescriptors.map(EnforcementBundleDescriptor::selectorTaskName) +
+            focusedCompileTasksByBundleId.values.map { taskProvider -> taskProvider.name } +
+            nearMissCompileTask.name +
+            activeDescriptors.flatMap(::productionHandoffBundleLeafTaskNames) +
+            listOf(
+                "pmdStrictMain",
+                "startScripts",
+                "distTar",
+                "distZip"
+            )
+
     configureProductionHandoffHygieneBarriers(
         productionHandoffHygiene,
         verificationLifecycleCatalog.ownerTaskNames(VerificationLifecyclePhase.COMPILE_INTEGRITY) +
@@ -211,10 +225,7 @@ internal fun Project.configureVerificationCore() {
                 ProductionHandoffCompileIntegrityTaskName,
                 ProductionHandoffStructureTaskName
             ),
-        verificationLifecycleCatalog.ownerTaskNames(VerificationLifecyclePhase.HYGIENE) +
-            activeEnforcementBundleIds
-                .map(::descriptor)
-                .map(EnforcementBundleDescriptor::selectorTaskName)
+        productionHandoffHygieneDependencyTaskNames
     )
 
     tasks.register(productionHandoffSurface.publicTaskName) {
@@ -238,18 +249,39 @@ private fun Project.configureProductionHandoffHygieneBarriers(
     hygieneDependencyTaskNames: List<String>
 ) {
     val distinctBarrierTaskNames = barrierTaskNames.distinct()
+    val phaseCompletionTaskNames = listOf(
+        ProductionHandoffCompileIntegrityTaskName,
+        ProductionHandoffStructureTaskName
+    )
     hygieneDependencyTaskNames.distinct().forEach { taskName ->
-        tasks.named(taskName).configure {
+        tasks.matching { task -> task.name == taskName }.configureEach {
             mustRunAfter(distinctBarrierTaskNames)
             onlyIf("production handoff compile and structure phases completed successfully") {
                 !gradle.taskGraph.hasTask(hygieneTask.get()) ||
-                    distinctBarrierTaskNames
-                        .mapNotNull(tasks::findByName)
-                        .all { barrierTask -> barrierTask.state.failure == null }
+                    (
+                        distinctBarrierTaskNames
+                            .mapNotNull(tasks::findByName)
+                            .all { barrierTask -> barrierTask.state.failure == null } &&
+                            phaseCompletionTaskNames
+                                .mapNotNull(tasks::findByName)
+                                .all { phaseTask -> !phaseTask.state.skipped }
+                    )
             }
         }
     }
 }
+
+private fun productionHandoffBundleLeafTaskNames(descriptor: EnforcementBundleDescriptor): List<String> =
+    buildList {
+        descriptor.archunit?.taskName?.let(::add)
+        descriptor.jqassistant?.taskName?.let { analyzeTaskName ->
+            add(analyzeTaskName.replaceFirst("Analyze", "Scan"))
+            add(analyzeTaskName)
+        }
+        descriptor.utilityTasks
+            .map { utilityTask -> utilityTask.taskName }
+            .forEach(::add)
+    }
 
 private fun registerFocusedCompileTasksByBundleId(
     descriptors: List<EnforcementBundleDescriptor>,

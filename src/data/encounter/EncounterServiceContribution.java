@@ -7,6 +7,7 @@ import src.data.encounter.repository.ApplicationEncounterTableCandidateRepositor
 import src.data.encounter.repository.ApplicationEncounterPartyFactsRepository;
 import src.data.encounter.repository.EncounterPublishedStateRepositoryAdapter;
 import src.data.encounter.repository.SqliteEncounterPlanRepository;
+import src.domain.creatures.model.catalog.port.CreatureCatalogPort;
 import src.domain.encounter.EncounterApplicationService;
 import src.domain.encounter.model.plan.repository.EncounterPlanRepository;
 import src.domain.encounter.published.EncounterBuilderInputsModel;
@@ -46,7 +47,7 @@ public final class EncounterServiceContribution implements ServiceContribution {
                                 services.require(ActivePartyCompositionModel.class),
                                 services.require(AdventuringDaySummaryModel.class),
                                 services.require(PartyMutationModel.class)),
-                        new ApplicationEncounterCreatureRepository(),
+                        new ApplicationEncounterCreatureRepository(services.require(CreatureCatalogPort.class)),
                         new ApplicationEncounterTableCandidateRepository()));
         builder.register(EncounterStateModel.class, publishedState.stateModel);
         builder.register(EncounterBuilderInputsModel.class, publishedState.builderInputsModel);

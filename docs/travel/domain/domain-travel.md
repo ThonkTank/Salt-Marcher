@@ -1,25 +1,27 @@
 Status: Draft
 Owner: SaltMarcher Team
 Last Reviewed: 2026-05-03
-Source of Truth: Runtime travel composition, session ownership, and domain
-boundary of the `travel` context.
+Source of Truth: Historical runtime travel composition notes. Canonical
+current ownership lives in the dungeon domain context.
 
 # Travel Domain Model
 
 ## Context Role
 
-Context Role: Generation Policy Context
+Context Role: Historical Generation Policy Notes
 Context Name: Travel
 
-- `travel` owns runtime travel-session composition
-- `travel` combines authored `dungeon` truth with party-owned travel position
-- `travel` does not own authored map persistence and does not own party roster
-  truth
+- `dungeon/model/travel/**` owns runtime travel-session composition
+- travel runtime combines authored `dungeon` truth with party-owned travel
+  position
+- travel runtime does not own authored map persistence and does not own party
+  roster truth
 
 ## Published Language
 
-`published/` owns the runtime-travel boundary for active workspaces, workflow
-commands, workspace-state readback, and map-projection snapshots.
+`dungeon/published/` owns the runtime-travel boundary for active workspaces,
+workflow commands, workspace-state readback, travel-surface facts, and overlay
+settings.
 
 Published travel carriers must not own:
 
@@ -30,17 +32,17 @@ Published travel carriers must not own:
 
 ## Application Boundary
 
-`DungeonTravelRuntimeApplicationService` is the only callable travel backend boundary. It
-coordinates runtime dungeon-travel session state through same-context
-`travel/application/*UseCase` work.
+`DungeonTravelRuntimeApplicationService` is the callable travel backend
+boundary. It coordinates runtime dungeon-travel session state through
+same-context `dungeon/model/travel/usecase/*UseCase` work.
 
 The root boundary owns inbound command/query intake and same-context use-case
 routing. Runtime session orchestration lives below that boundary in
-`travel/application/*UseCase` code. Concrete party and dungeon adapters are
-assembled outside the domain and satisfy the use case through same-context
-application data only. Raw authored dungeon travel families stay
-dungeon-owned; `travel` publishes only its own read-side model handles and the
-passive payloads hanging from them.
+`dungeon/model/travel/usecase/*UseCase` code. Concrete party and dungeon
+adapters are assembled outside the domain and satisfy the use case through
+same-context application data only. Raw authored dungeon travel families stay
+dungeon-owned; dungeon travel publishes read-side model handles, passive
+travel-surface payloads, and overlay settings only.
 
 ## Commands And Invariants
 
@@ -83,6 +85,6 @@ instead of being absorbed into this generation-policy context.
 - `TravelDungeonSnapshot`: current runtime dungeon-travel session readback
 - `TravelDungeonWorkspaceState`: projected runtime workspace state for one
   current position
-- `TravelDungeonMapProjectionSnapshot`: projection-only map payload for shared
-  map rendering consumers
+- `DungeonTravelSurfaceSnapshot`: authored dungeon traversal facts for the
+  current travel session; render-state projection remains view-owned
 - `TravelOverlaySettings`: session-local overlay projection controls

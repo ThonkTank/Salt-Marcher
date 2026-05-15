@@ -11,7 +11,7 @@ import src.domain.party.PartyApplicationService;
 import src.domain.party.published.ActivePartyModel;
 import src.domain.party.published.PartyMutationModel;
 import src.domain.party.published.PartyTravelPositionsModel;
-import src.domain.dungeon.model.travel.application.ApplyTravelDungeonSessionUseCase;
+import src.domain.dungeon.model.travel.usecase.ApplyTravelDungeonSessionUseCase;
 
 public final class TravelServiceContribution implements ServiceContribution {
 

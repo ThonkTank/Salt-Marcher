@@ -15,7 +15,7 @@ import src.domain.dungeon.model.travel.model.session.model.TravelDungeonSessionM
 import src.domain.dungeon.model.travel.model.session.model.TravelDungeonSessionMovement.OverworldTargetData;
 import src.domain.dungeon.model.travel.model.session.model.TravelDungeonSessionSurface.PositionData;
 import src.domain.dungeon.model.travel.model.session.model.TravelDungeonSessionSurface.SurfaceData;
-import src.domain.dungeon.model.travel.model.session.repository.TravelDungeonSessionRepository;
+import src.domain.dungeon.model.travel.repository.TravelDungeonSessionRepository;
 
 public final class ApplicationTravelDungeonSessionRepository
         implements TravelDungeonSessionRepository {

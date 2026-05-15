@@ -20,8 +20,8 @@ public final class DungeonMapContentModelProjectionBoundaryChecker extends BugCh
 
     private static final Set<String> FORBIDDEN_PREFIXES = Set.of(
             "src.domain.dungeon.published.TravelDungeonMapProjectionSnapshot",
-            "src.domain.dungeon.model.travel.model.session.helper.TravelDungeonMapProjectionHelper",
-            "src.domain.dungeon.model.travel.model.session.helper.TravelDungeonMapProjectionValueHelper");
+            "src.domain.dungeon.model.travel.helper.TravelDungeonMapProjectionHelper",
+            "src.domain.dungeon.model.travel.helper.TravelDungeonMapProjectionValueHelper");
 
     @Override
     public Description matchCompilationUnit(CompilationUnitTree tree, VisitorState state) {

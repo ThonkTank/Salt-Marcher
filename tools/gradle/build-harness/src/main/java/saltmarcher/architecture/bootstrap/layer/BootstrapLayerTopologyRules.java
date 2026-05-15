@@ -93,7 +93,7 @@ public final class BootstrapLayerTopologyRules implements ArchitectureRule {
     }
 
     private void validateServiceContributionDiscoveryRoots(List<SourceFile> sourceFiles, ViolationSink violations) {
-        TreeMap<String, List<SourceFile>> rootClassesByFeature = new TreeMap<>();
+        TreeMap<String, List<SourceFile>> rootClassesByDiscoveryScope = new TreeMap<>();
         for (SourceFile sourceFile : sourceFiles) {
             if (!(sourceFile.relativePath().startsWith("src/data/")
                     || sourceFile.relativePath().startsWith("src/domain/"))
@@ -112,11 +112,12 @@ public final class BootstrapLayerTopologyRules implements ArchitectureRule {
                         "Bootstrap discovers only root src/data/<feature>/<Feature>ServiceContribution.java or src/domain/<context>/<Context>ServiceContribution.java entrypoints for backend runtime registration.");
                 continue;
             }
-            rootClassesByFeature.computeIfAbsent(sourceFile.featureName(), ignored -> new ArrayList<>()).add(sourceFile);
+            rootClassesByDiscoveryScope.computeIfAbsent(discoveryScope(sourceFile), ignored -> new ArrayList<>())
+                    .add(sourceFile);
             validateServiceContributionContract(sourceFile, violations);
         }
 
-        for (var entry : rootClassesByFeature.entrySet()) {
+        for (var entry : rootClassesByDiscoveryScope.entrySet()) {
             if (entry.getValue().size() <= 1) {
                 continue;
             }
@@ -124,9 +125,15 @@ public final class BootstrapLayerTopologyRules implements ArchitectureRule {
                     .map(SourceFile::relativePath)
                     .sorted()
                     .collect(Collectors.joining(", "));
-            violations.add("src/data/" + entry.getKey(), "bootstrap-data-service-discovery-root-set",
-                    "Bootstrap expects exactly one root service contribution class per data feature. Found: " + files);
+            violations.add(entry.getKey(), "bootstrap-data-service-discovery-root-set",
+                    "Bootstrap expects exactly one root service contribution class per discovery scope. Found: "
+                            + files);
         }
+    }
+
+    private static String discoveryScope(SourceFile sourceFile) {
+        String root = sourceFile.kind() == SourceKind.DOMAIN_ROOT ? "src/domain/" : "src/data/";
+        return root + sourceFile.featureName();
     }
 
     private void validateServiceContributionContract(SourceFile sourceFile, ViolationSink violations) {

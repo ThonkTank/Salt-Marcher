@@ -96,8 +96,9 @@ runtime capabilities through service contributions.
 - `src/view/statetabs/**` contributes global state tabs
 - `src/view/dropdowns/**` contributes top-bar dropdown windows through exactly
   one `*Contribution` per active root
-- `shell/api/ServiceContribution` lets outer composition adapters register
-  typed root application services into the shared shell service registry
+- `shell/api/ServiceContribution` lets data roots register source-backed
+  capabilities and domain roots register typed application services/readback
+  models into the shared shell service registry
 - `shell/api/ShellRuntimeContext` provides shell-owned shared services such as
   runtime-capability lookup, details/history publishing, and per-shell runtime
   sessions

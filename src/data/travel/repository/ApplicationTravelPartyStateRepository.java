@@ -26,7 +26,7 @@ import src.domain.dungeon.model.travel.model.session.model.TravelDungeonSessionM
 import src.domain.dungeon.model.travel.model.session.model.TravelDungeonSessionSurface.CellData;
 import src.domain.dungeon.model.travel.model.session.model.TravelDungeonSessionSurface.PositionData;
 import src.domain.dungeon.model.travel.model.session.model.TravelDungeonSessionValues.LocationKind;
-import src.domain.dungeon.model.travel.model.session.repository.TravelPartyStateRepository;
+import src.domain.dungeon.model.travel.repository.TravelPartyStateRepository;
 
 public final class ApplicationTravelPartyStateRepository implements TravelPartyStateRepository {
 

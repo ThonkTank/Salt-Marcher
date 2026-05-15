@@ -1,0 +1,58 @@
+package src.domain.dungeon.model.travel.usecase;
+
+import java.util.List;
+import java.util.SortedSet;
+import java.util.TreeSet;
+import org.jspecify.annotations.Nullable;
+import src.domain.dungeon.model.travel.model.session.model.TravelDungeonSessionSurface.MapData;
+import src.domain.dungeon.model.travel.model.session.model.TravelDungeonSessionSurface.SurfaceData;
+import src.domain.dungeon.model.travel.model.session.model.TravelDungeonSessionValues.ContextKind;
+
+public final class StabilizeTravelDungeonProjectionUseCase {
+
+    public ProjectionLevelState stabilize(
+            @Nullable SurfaceData currentSurface,
+            int projectionLevel,
+            boolean projectionLevelInitialized
+    ) {
+        if (currentSurface == null) {
+            return new ProjectionLevelState(projectionLevel, projectionLevelInitialized);
+        }
+        int effectiveProjectionLevel = projectionLevel;
+        boolean initialized = projectionLevelInitialized;
+        if (!initialized) {
+            effectiveProjectionLevel = defaultProjectionLevel(currentSurface, effectiveProjectionLevel);
+            initialized = true;
+        }
+        effectiveProjectionLevel = clampProjectionLevel(currentSurface, effectiveProjectionLevel);
+        return new ProjectionLevelState(effectiveProjectionLevel, initialized);
+    }
+
+    private static int defaultProjectionLevel(SurfaceData surface, int fallbackLevel) {
+        return surface.contextKind() == ContextKind.DUNGEON
+                ? surface.position().tile().level()
+                : fallbackLevel;
+    }
+
+    private static int clampProjectionLevel(SurfaceData surface, int fallbackLevel) {
+        List<Integer> levels = levelsFrom(surface, fallbackLevel);
+        if (levels.isEmpty()) {
+            return fallbackLevel;
+        }
+        return Math.max(levels.getFirst(), Math.min(levels.getLast(), fallbackLevel));
+    }
+
+    private static List<Integer> levelsFrom(SurfaceData surface, int fallbackLevel) {
+        SortedSet<Integer> levels = new TreeSet<>();
+        MapData map = surface.map();
+        map.areas().forEach(area -> area.cells().forEach(cell -> levels.add(cell.level())));
+        map.features().forEach(feature -> feature.cells().forEach(cell -> levels.add(cell.level())));
+        if (levels.isEmpty()) {
+            levels.add(fallbackLevel);
+        }
+        return List.copyOf(levels);
+    }
+
+    public record ProjectionLevelState(int level, boolean initialized) {
+    }
+}

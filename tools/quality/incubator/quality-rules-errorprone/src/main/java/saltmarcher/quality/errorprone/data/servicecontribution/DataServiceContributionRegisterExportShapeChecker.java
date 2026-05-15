@@ -19,7 +19,7 @@ import javax.lang.model.type.TypeMirror;
 
 @BugPattern(
         name = "DataServiceContributionRegisterExportShape",
-        summary = "Data ServiceContribution roots may export only same-feature ApplicationServices and published/*Model readback services.",
+        summary = "Data ServiceContribution roots may export source-backed domain ports and legacy same-feature domain services.",
         severity = BugPattern.SeverityLevel.ERROR)
 public final class DataServiceContributionRegisterExportShapeChecker extends BugChecker
         implements BugChecker.CompilationUnitTreeMatcher {
@@ -40,8 +40,8 @@ public final class DataServiceContributionRegisterExportShapeChecker extends Bug
         if (!DataServiceContributionArchitectureSupport.isServiceCompositionOwner(tree, feature)) {
             return Description.NO_MATCH;
         }
-        String expectedService = "src.domain." + feature + ".*ApplicationService or src.domain."
-                + feature + ".published.*Model";
+        String expectedService = "src.domain." + feature + ".model.*.port.*Port, src.domain."
+                + feature + ".*ApplicationService, or src.domain." + feature + ".published.*Model";
         List<String> violations = new ArrayList<>();
         new TreePathScanner<Void, Void>() {
             @Override
@@ -103,8 +103,19 @@ public final class DataServiceContributionRegisterExportShapeChecker extends Bug
     }
 
     private static boolean isAllowedServiceKey(String serviceKey, String feature) {
-        return isSameFeatureRootApplicationService(serviceKey, feature)
+        return isSameFeatureDomainPort(serviceKey, feature)
+                || isSameFeatureRootApplicationService(serviceKey, feature)
                 || isSameFeaturePublishedModel(serviceKey, feature);
+    }
+
+    private static boolean isSameFeatureDomainPort(String serviceKey, String feature) {
+        String expectedPrefix = "src.domain." + feature + ".model.";
+        if (!serviceKey.startsWith(expectedPrefix) || !serviceKey.endsWith("Port")) {
+            return false;
+        }
+        String relativeName = serviceKey.substring(expectedPrefix.length());
+        String[] parts = relativeName.split("\\.");
+        return parts.length == 3 && "port".equals(parts[1]);
     }
 
     private static boolean isSameFeatureRootApplicationService(String serviceKey, String feature) {
