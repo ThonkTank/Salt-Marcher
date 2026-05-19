@@ -49,21 +49,28 @@ Any work on covered surfaces must use that skill first.
 SaltMarcher uses the global review specialists as reusable review repertoire
 instead of copying them into the repository. These skills are conditional
 read-only specialist lenses routed by `AGENTS.md` when a pass carries matching
-performance, code-quality, or architectural risk. They accompany the mandatory
-repo-owned `adversarial-review`; they do not replace it, create new gates, or
-change the verification route required by `AGENTS.md`.
+performance, code-quality, or architectural risk. They supplement the mandatory
+repo-owned adversarial review route; they do not replace it, create new gates,
+or change the verification route required by `AGENTS.md`.
 
-- Use `/home/aaron/.codex/skills/local/claude-agents/review-performance/`
+- Use `/home/aaron/.codex/skills/local/review-performance/`
   when a change touches hot paths, rendering, startup, storage or network I/O,
   data volume, caching, threading, memory behavior, or other performance-risk
   surfaces.
-- Use `/home/aaron/.codex/skills/local/claude-agents/review-quality/` when a
+- Use `/home/aaron/.codex/skills/local/review-quality/` when a
   change needs a code-level maintainability review for smells, accidental
   complexity, duplication, naming, readability, or unnecessary indirection.
-- Use `/home/aaron/.codex/skills/local/claude-agents/review-architecture/`
+- Use `/home/aaron/.codex/skills/local/review-architecture/`
   when a change touches dependency direction, layer boundaries, public APIs,
   data ownership, persistence shape, cross-cutting mechanisms, or architectural
   pattern drift.
+
+The repo-owned adversarial review route is split by role:
+
+- `tools/quality/skills/adversarial-review/SKILL.md` is the caller-facing
+  setup and waiting protocol for the implementing agent.
+- `tools/quality/skills/adversarial-review-agent/SKILL.md` is the read-only
+  review method for the independent review subagent.
 
 Do not create repo-local copies of these global review skills unless the user
 explicitly asks for a SaltMarcher-owned fork with separate maintenance
@@ -111,10 +118,10 @@ When a covered artifact changes, reviewers must check:
   lens instead of becoming a competing repo-owned workflow?
 
 Covered instruction changes also follow the repo-wide adversarial review route
-in `AGENTS.md`. The repo-owned
-`tools/quality/skills/adversarial-review/SKILL.md` owns the mandatory review
-protocol. This standard adds only the instruction-specific review questions
-above.
+in `AGENTS.md`. The repo-owned `adversarial-review` skill owns caller setup and
+waiting; the repo-owned `adversarial-review-agent` skill owns the independent
+review method. This standard adds only the instruction-specific review
+questions above.
 
 ## References
 
@@ -123,7 +130,8 @@ above.
 - [Agent Context Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/agent-context.md:1)
 - [Layering Architecture Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/layering-architecture.md:1)
 - [Global Agent Instruction Engineering Skill](/home/aaron/.codex/skills/local/agent-instruction-engineering/SKILL.md:1)
-- [Adversarial Review Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/adversarial-review/SKILL.md:1)
-- [Global Performance Review Skill](/home/aaron/.codex/skills/local/claude-agents/review-performance/SKILL.md:1)
-- [Global Code Quality Review Skill](/home/aaron/.codex/skills/local/claude-agents/review-quality/SKILL.md:1)
-- [Global Architecture Review Skill](/home/aaron/.codex/skills/local/claude-agents/review-architecture/SKILL.md:1)
+- [Adversarial Review Caller Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/adversarial-review/SKILL.md:1)
+- [Adversarial Review Agent Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/adversarial-review-agent/SKILL.md:1)
+- [Global Performance Review Skill](/home/aaron/.codex/skills/local/review-performance/SKILL.md:1)
+- [Global Code Quality Review Skill](/home/aaron/.codex/skills/local/review-quality/SKILL.md:1)
+- [Global Architecture Review Skill](/home/aaron/.codex/skills/local/review-architecture/SKILL.md:1)

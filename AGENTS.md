@@ -65,9 +65,9 @@ document exists.
   `review-architecture` specialist skills as read-only review lenses when a
   pass carries performance, code-quality, or architectural risk. The routing
   policy lives in `docs/project/architecture/agent-instructions.md`; these
-  specialist skills do not replace the mandatory repo-owned
-  `adversarial-review` and must not be copied into SaltMarcher without an
-  explicit user request.
+  specialist skills do not replace the mandatory repo-owned adversarial review
+  route and must not be copied into SaltMarcher without an explicit user
+  request.
 - Work that plans, implements, refactors, or reviews a SaltMarcher repo-tracked
   change must use the repo-owned `context-hygiene` skill before relying on
   nearby files as precedent. The skill is a routing and context-budget rule; it
@@ -78,12 +78,13 @@ document exists.
   inside the normal development pass; it does not authorize new gates or
   repo-wide cleanup waves by itself.
 - Every repo-tracked implementation pass must receive an adversarial review
-  from a separate subagent using the repo-owned `adversarial-review` skill at
-  the end of implementation, alongside the handoff sequence. Run that review
-  after the implementation diff exists and regardless of whether verification
-  is green, the pass is still WIP, or a stable commit/publication is planned.
-  `tools/quality/skills/adversarial-review/SKILL.md` owns the mandatory review
-  protocol; this file only routes to it. Agent-facing instruction changes must
+  from a separate subagent at the end of implementation, alongside the handoff
+  sequence. The implementing agent must use the repo-owned
+  `adversarial-review` caller skill to start and wait for that review. The
+  review subagent must use the repo-owned `adversarial-review-agent` skill to
+  perform the review. Run that review after the implementation diff exists and
+  regardless of whether verification is green, the pass is still WIP, or a
+  stable commit/publication is planned. Agent-facing instruction changes must
   still use `agent-instruction-engineering` before that review. A pass with
   unresolved blocking review findings remains WIP.
 - A running required `adversarial-review` is not failed, optional, or
@@ -204,7 +205,8 @@ document exists.
 - [Context Hygiene Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/context-hygiene/SKILL.md:1)
 - [Callchain Tool](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/callchain/README.md:1)
 - [Continuous Refactoring Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/continuous-refactoring/SKILL.md:1)
-- [Adversarial Review Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/adversarial-review/SKILL.md:1)
+- [Adversarial Review Caller Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/adversarial-review/SKILL.md:1)
+- [Adversarial Review Agent Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/adversarial-review-agent/SKILL.md:1)
 - [Domain Layer Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/domain-layer/SKILL.md:1)
 - [View Layer MVVM Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/view-layer-mvvm/SKILL.md:1)
 - [View Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/view-layer.md:1)

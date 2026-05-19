@@ -144,8 +144,10 @@ It also follows the repo-wide adversarial review route at the end of each
 repo-tracked implementation pass, after the diff exists and before final
 handoff or any commit/publication decision. That review runs even when
 verification is red or the pass remains WIP. The review protocol is owned by
-`tools/quality/skills/adversarial-review/SKILL.md`, not by this quality-platform
-standard.
+the repo-owned caller skill
+`tools/quality/skills/adversarial-review/SKILL.md` and the repo-owned review
+subagent skill `tools/quality/skills/adversarial-review-agent/SKILL.md`, not by
+this quality-platform standard.
 
 This follows the external workflow references mirrored under
 `/home/aaron/Schreibtisch/projects/references/continuous-refactoring/`:
@@ -265,4 +267,5 @@ enforced, the enforcement document is the canonical classification.
 - [Dependabot Options Reference](/home/aaron/Schreibtisch/projects/references/continuous-refactoring/github-dependabot-options.md:1)
 - [OpenAI Codex Refactor Your Codebase](/home/aaron/Schreibtisch/projects/references/continuous-refactoring/openai-codex-refactor-your-codebase.md:1)
 - [OpenAI Codex Worktrees](/home/aaron/Schreibtisch/projects/references/continuous-refactoring/openai-codex-worktrees.md:1)
-- [Adversarial Review Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/adversarial-review/SKILL.md:1)
+- [Adversarial Review Caller Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/adversarial-review/SKILL.md:1)
+- [Adversarial Review Agent Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/adversarial-review-agent/SKILL.md:1)

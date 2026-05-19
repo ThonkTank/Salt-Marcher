@@ -102,7 +102,9 @@ place:
   required on `pull_request`.
 - Keep human GitHub approval reviews optional unless the team later decides
   otherwise; SaltMarcher's mandatory local review route is owned by
-  `tools/quality/skills/adversarial-review/SKILL.md`.
+  `tools/quality/skills/adversarial-review/SKILL.md` for caller setup and
+  `tools/quality/skills/adversarial-review-agent/SKILL.md` for the independent
+  review method.
 - Require `quality-platforms / production-handoff`.
 - Require `quality-platforms / sonarcloud`.
 - Require `quality-platforms / codescene`.
@@ -115,7 +117,8 @@ place:
 The quality platforms do not replace review judgment.
 
 - completed repo-tracked change passes follow the local adversarial review
-  route owned by `tools/quality/skills/adversarial-review/SKILL.md`
+  route owned by `tools/quality/skills/adversarial-review/SKILL.md` and
+  `tools/quality/skills/adversarial-review-agent/SKILL.md`
 - documentation ownership, source-of-truth conflicts, and same-change
   documentation updates remain review responsibilities
 - `AGENTS.md` defines the default local verification scope mechanically by
@@ -137,4 +140,5 @@ The quality platforms do not replace review judgment.
 
 - [Quality Platforms Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/verification/quality-platforms.md:1)
 - [.github/workflows/quality-platforms.yml](/home/aaron/Schreibtisch/projects/SaltMarcher/.github/workflows/quality-platforms.yml:1)
-- [Adversarial Review Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/adversarial-review/SKILL.md:1)
+- [Adversarial Review Caller Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/adversarial-review/SKILL.md:1)
+- [Adversarial Review Agent Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/adversarial-review-agent/SKILL.md:1)

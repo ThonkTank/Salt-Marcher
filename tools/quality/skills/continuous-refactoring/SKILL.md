@@ -59,11 +59,14 @@ manifests:
 10. Run the required SaltMarcher verification surface for the actual changed
     files and keep the literal result available for review.
 11. At the end of implementation, run the repo-wide adversarial review route
-    through the repo-owned `tools/quality/skills/adversarial-review/SKILL.md`
-    after the diff exists and after the verification attempt has a literal
-    result, even when verification is red or the pass remains WIP.
-12. Resolve review findings according to that skill before final handoff or
-    any commit/publication decision.
+    through the repo-owned caller skill
+    `tools/quality/skills/adversarial-review/SKILL.md` after the diff exists
+    and after the verification attempt has a literal result, even when
+    verification is red or the pass remains WIP.
+12. Ensure the independent review subagent uses
+    `tools/quality/skills/adversarial-review-agent/SKILL.md`, then resolve
+    review findings according to the caller skill before final handoff or any
+    commit/publication decision.
 
 ## Evidence Sources
 
@@ -110,7 +113,7 @@ Every covered handoff must report one of these exact statuses:
   the current pass.
 
 Every covered handoff must also report the adversarial review outcome required
-by the repo-owned review skill. Do not add a separate changelog, pull-request
+by the repo-owned caller skill. Do not add a separate changelog, pull-request
 template, or review-ledger file solely for this evidence; normal commit
 history, handoff text, and memories carry the history.
 
@@ -129,4 +132,5 @@ not claim that global debt is solved because a scoped pass is clean.
 - [OpenRewrite Gradle Plugin Configuration](/home/aaron/Schreibtisch/projects/references/continuous-refactoring/openrewrite-gradle-plugin-configuration.md)
 - [OpenAI Codex Refactor Your Codebase](/home/aaron/Schreibtisch/projects/references/continuous-refactoring/openai-codex-refactor-your-codebase.md)
 - [OpenAI Codex Worktrees](/home/aaron/Schreibtisch/projects/references/continuous-refactoring/openai-codex-worktrees.md)
-- [Adversarial Review Skill](../adversarial-review/SKILL.md)
+- [Adversarial Review Caller Skill](../adversarial-review/SKILL.md)
+- [Adversarial Review Agent Skill](../adversarial-review-agent/SKILL.md)
