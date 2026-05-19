@@ -121,9 +121,8 @@ manual testing for behavior verification.
 - use manual testing for workflow behavior, desktop interaction, UI judgment,
   and product acceptance
 - `./gradlew test` is not a general-purpose home for behavior-regression suites
-- require the repo-wide adversarial review route at the end of every
-  repo-tracked implementation pass, after the diff exists and regardless of
-  WIP or verification status; this is a workflow obligation, not a new
+- require the repo-wide adversarial review route for repo-tracked
+  implementation passes; this is a workflow obligation, not a new
   compile/build/check gate
 
 ## Continuous Refactoring Relationship
@@ -137,17 +136,8 @@ quality evidence is considered inside the normal development pass.
 The proof strength remains owned by the existing gates named in this standard.
 PMD, CPD, Lizard, SpotBugs, compiler hygiene, and dead-code reachability keep
 their current blocking status; CKJM remains an informational report. The
-continuous-refactoring workflow only requires agents to inspect and report
-touched-scope findings, perform small behavior-preserving local cleanup, and
-split larger refactors or dependency upgrades into separate reviewable passes.
-It also follows the repo-wide adversarial review route at the end of each
-repo-tracked implementation pass, after the diff exists and before final
-handoff or any commit/publication decision. That review runs even when
-verification is red or the pass remains WIP. The review protocol is owned by
-the repo-owned caller skill
-`tools/quality/skills/adversarial-review/SKILL.md` and the repo-owned review
-subagent skill `tools/quality/skills/adversarial-review-agent/SKILL.md`, not by
-this quality-platform standard.
+continuous-refactoring and adversarial-review workflows are owned by their
+repo-owned skills, not by this quality-platform standard.
 
 This follows the external workflow references mirrored under
 `/home/aaron/Schreibtisch/projects/references/continuous-refactoring/`:

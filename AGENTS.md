@@ -61,13 +61,10 @@ document exists.
 - Work that uses external sources or local source evidence for decisions must
   use the global `source-references` skill and follow
   `docs/project/verification/source-references.md`.
-- Use the global `review-performance`, `review-quality`, and
-  `review-architecture` specialist skills as read-only review lenses when a
-  pass carries performance, code-quality, or architectural risk. The routing
-  policy lives in `docs/project/architecture/agent-instructions.md`; these
-  specialist skills do not replace the mandatory repo-owned adversarial review
-  route and must not be copied into SaltMarcher without an explicit user
-  request.
+- Global review-specialist routing lives in
+  `docs/project/architecture/agent-instructions.md` and in the repo-owned
+  adversarial review skills; do not copy those skills into SaltMarcher without
+  an explicit user request.
 - Work that plans, implements, refactors, or reviews a SaltMarcher repo-tracked
   change must use the repo-owned `context-hygiene` skill before relying on
   nearby files as precedent. The skill is a routing and context-budget rule; it
@@ -77,21 +74,14 @@ document exists.
   refactoring, or reviewing. The skill is a workflow rule for keeping cleanup
   inside the normal development pass; it does not authorize new gates or
   repo-wide cleanup waves by itself.
-- Every repo-tracked implementation pass must receive an adversarial review
-  from a separate subagent at the end of implementation, alongside the handoff
-  sequence. The implementing agent must use the repo-owned
-  `adversarial-review` caller skill to start and wait for that review. The
-  review subagent must use the repo-owned `adversarial-review-agent` skill to
-  perform the review. Run that review after the implementation diff exists and
-  regardless of whether verification is green, the pass is still WIP, or a
-  stable commit/publication is planned. Agent-facing instruction changes must
-  still use `agent-instruction-engineering` before that review. A pass with
-  unresolved blocking review findings remains WIP.
-- A running required `adversarial-review` is not failed, optional, or
-  replaceable because it is slow or silent. Unless the subagent or tool returns
-  an explicit failure signal, wait for completion. A pass without a completed
-  review remains WIP and must not receive final handoff, commit, or publication
-  claims.
+- Every repo-tracked implementation pass must receive the repo-owned
+  adversarial review. The implementing agent must read
+  `tools/quality/skills/adversarial-review/SKILL.md` before starting that step;
+  the review subagent must read
+  `tools/quality/skills/adversarial-review-agent/SKILL.md` before reviewing.
+  Agent-facing instruction changes must still use
+  `agent-instruction-engineering` before that review. A pass without the
+  required completed review remains WIP.
 - Work under `src/domain/**` must use the repo-owned `domain-layer` skill and
   follow the canonical domain-layer standard before changes are made or
   reviewed.
@@ -153,15 +143,6 @@ document exists.
   root before handoff instead of the full build.
 - A pass without the required production-code handoff or
   documentation-enforcement rerun is incomplete and must remain WIP.
-- A pass without the required `adversarial-review` subagent review is incomplete
-  and must remain WIP. Handoffs must report the review outcome required by the
-  skill. Do not create a separate review ledger, pull-request template, or
-  changelog entry only to record this; normal commit history, handoff text, and
-  memories carry the history.
-- Waiting time, missing interim output, or impatience from the implementing
-  agent is not a review failure signal. If the required review is still running,
-  the implementing agent must stay silent or provide only non-final status until
-  the review completes.
 - Parallel agent implementation work must not share one live checkout. Each
   agent must work in its own linked git worktree on its own branch, preferably
   under `build/codex-worktrees/<topic>/` or a temporary external worktree when

@@ -58,15 +58,8 @@ manifests:
    combines them with product work.
 10. Run the required SaltMarcher verification surface for the actual changed
     files and keep the literal result available for review.
-11. At the end of implementation, run the repo-wide adversarial review route
-    through the repo-owned caller skill
-    `tools/quality/skills/adversarial-review/SKILL.md` after the diff exists
-    and after the verification attempt has a literal result, even when
-    verification is red or the pass remains WIP.
-12. Ensure the independent review subagent uses
-    `tools/quality/skills/adversarial-review-agent/SKILL.md`, then resolve
-    review findings according to the caller skill before final handoff or any
-    commit/publication decision.
+11. Before starting the adversarial review step, read and follow the repo-owned
+    caller skill `tools/quality/skills/adversarial-review/SKILL.md`.
 
 ## Evidence Sources
 
@@ -113,9 +106,7 @@ Every covered handoff must report one of these exact statuses:
   the current pass.
 
 Every covered handoff must also report the adversarial review outcome required
-by the repo-owned caller skill. Do not add a separate changelog, pull-request
-template, or review-ledger file solely for this evidence; normal commit
-history, handoff text, and memories carry the history.
+by the repo-owned caller skill.
 
 Also report out-of-scope blockers discovered while running required gates. Do
 not claim that global debt is solved because a scoped pass is clean.

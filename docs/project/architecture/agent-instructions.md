@@ -44,37 +44,18 @@ Any work on covered surfaces must use that skill first.
 - The governing workflow lives in the global `SKILL.md`.
 - `agents/openai.yaml` must not become a second source of truth for workflow.
 
-## Specialist Review Repertoire
+## Review Skill Routing
 
-SaltMarcher uses the global review specialists as reusable review repertoire
-instead of copying them into the repository. These skills are conditional
-read-only specialist lenses routed by `AGENTS.md` when a pass carries matching
-performance, code-quality, or architectural risk. They supplement the mandatory
-repo-owned adversarial review route; they do not replace it, create new gates,
-or change the verification route required by `AGENTS.md`.
+SaltMarcher keeps review instructions in skills, not in this standard.
 
-- Use `/home/aaron/.codex/skills/local/review-performance/`
-  when a change touches hot paths, rendering, startup, storage or network I/O,
-  data volume, caching, threading, memory behavior, or other performance-risk
-  surfaces.
-- Use `/home/aaron/.codex/skills/local/review-quality/` when a
-  change needs a code-level maintainability review for smells, accidental
-  complexity, duplication, naming, readability, or unnecessary indirection.
-- Use `/home/aaron/.codex/skills/local/review-architecture/`
-  when a change touches dependency direction, layer boundaries, public APIs,
-  data ownership, persistence shape, cross-cutting mechanisms, or architectural
-  pattern drift.
-
-The repo-owned adversarial review route is split by role:
-
-- `tools/quality/skills/adversarial-review/SKILL.md` is the caller-facing
-  setup and waiting protocol for the implementing agent.
-- `tools/quality/skills/adversarial-review-agent/SKILL.md` is the read-only
-  review method for the independent review subagent.
-
-Do not create repo-local copies of these global review skills unless the user
-explicitly asks for a SaltMarcher-owned fork with separate maintenance
-responsibility.
+- Implementing agents read
+  `tools/quality/skills/adversarial-review/SKILL.md` before starting the
+  mandatory adversarial review step.
+- Review subagents read
+  `tools/quality/skills/adversarial-review-agent/SKILL.md` before reviewing.
+- The global review specialist skills remain external supplementary lenses; do
+  not create repo-local copies unless the user explicitly asks for a
+  SaltMarcher-owned fork.
 
 ## Verification Path
 
@@ -116,12 +97,6 @@ When a covered artifact changes, reviewers must check:
 - Does the chosen verification path match the actual changed surfaces?
 - Did any specialist review skill used for the pass remain a read-only review
   lens instead of becoming a competing repo-owned workflow?
-
-Covered instruction changes also follow the repo-wide adversarial review route
-in `AGENTS.md`. The repo-owned `adversarial-review` skill owns caller setup and
-waiting; the repo-owned `adversarial-review-agent` skill owns the independent
-review method. This standard adds only the instruction-specific review
-questions above.
 
 ## References
 

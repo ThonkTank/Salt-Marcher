@@ -101,10 +101,7 @@ place:
   enabled, require the same quality-platform jobs on `merge_group` that are
   required on `pull_request`.
 - Keep human GitHub approval reviews optional unless the team later decides
-  otherwise; SaltMarcher's mandatory local review route is owned by
-  `tools/quality/skills/adversarial-review/SKILL.md` for caller setup and
-  `tools/quality/skills/adversarial-review-agent/SKILL.md` for the independent
-  review method.
+  otherwise.
 - Require `quality-platforms / production-handoff`.
 - Require `quality-platforms / sonarcloud`.
 - Require `quality-platforms / codescene`.
@@ -117,8 +114,7 @@ place:
 The quality platforms do not replace review judgment.
 
 - completed repo-tracked change passes follow the local adversarial review
-  route owned by `tools/quality/skills/adversarial-review/SKILL.md` and
-  `tools/quality/skills/adversarial-review-agent/SKILL.md`
+  route owned by the repo-owned adversarial review skills
 - documentation ownership, source-of-truth conflicts, and same-change
   documentation updates remain review responsibilities
 - `AGENTS.md` defines the default local verification scope mechanically by
