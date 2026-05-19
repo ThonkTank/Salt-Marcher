@@ -7,8 +7,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import org.jspecify.annotations.Nullable;
-import src.domain.party.model.roster.helper.PartyAdventuringDayBudgetHelper;
-import src.domain.party.model.roster.helper.PartyLevelProgressionHelper;
+import src.domain.party.model.roster.model.PartyAdventuringDayBudget;
+import src.domain.party.model.roster.model.PartyCharacterProgress;
 import src.domain.party.model.roster.repository.PartyPublishedStateRepository;
 
 public final class CalculateAdventuringDayUseCase {
@@ -46,7 +46,7 @@ public final class CalculateAdventuringDayUseCase {
         }
         int totalXp = 0;
         for (Integer level : levels) {
-            totalXp += PartyAdventuringDayBudgetHelper.perCharacter(level);
+            totalXp += PartyAdventuringDayBudget.forLevel(level).perCharacter();
         }
         int perThirdXp = (int) Math.round(totalXp / 3.0);
         return new Budget(
@@ -159,10 +159,10 @@ public final class CalculateAdventuringDayUseCase {
     }
 
     private static int levelAfterAwardedXp(int startLevel, int perCharacterAwardedXp) {
-        int totalXp = PartyLevelProgressionHelper.minimumXpForLevel(startLevel);
+        int totalXp = PartyCharacterProgress.minimumXpForLevel(startLevel);
         int level = startLevel;
         while (level < 20
-                && totalXp + perCharacterAwardedXp >= PartyLevelProgressionHelper.minimumXpForLevel(level + 1)) {
+                && totalXp + perCharacterAwardedXp >= PartyCharacterProgress.minimumXpForLevel(level + 1)) {
             level++;
         }
         return level;
@@ -182,8 +182,8 @@ public final class CalculateAdventuringDayUseCase {
         for (int i = 0; i < currentLevels.length; i++) {
             while (currentLevels[i] < 20) {
                 int nextLevel = currentLevels[i] + 1;
-                int breakpoint = (PartyLevelProgressionHelper.minimumXpForLevel(nextLevel)
-                        - PartyLevelProgressionHelper.minimumXpForLevel(startLevels[i])) * partySize;
+                int breakpoint = (PartyCharacterProgress.minimumXpForLevel(nextLevel)
+                        - PartyCharacterProgress.minimumXpForLevel(startLevels[i])) * partySize;
                 if (breakpoint <= dayStartXp) {
                     currentLevels[i] = nextLevel;
                     continue;
@@ -216,7 +216,7 @@ public final class CalculateAdventuringDayUseCase {
         List<Integer> normalized = new ArrayList<>();
         for (Integer level : levels) {
             if (level != null) {
-                normalized.add(PartyLevelProgressionHelper.clampLevel(level));
+                normalized.add(PartyCharacterProgress.clampLevel(level));
             }
         }
         return List.copyOf(normalized);

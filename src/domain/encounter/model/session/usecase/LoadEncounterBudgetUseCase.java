@@ -2,13 +2,14 @@ package src.domain.encounter.model.session.usecase;
 
 import java.util.Objects;
 import src.domain.encounter.model.generation.helper.EncounterDifficultyMathHelper;
+import src.domain.encounter.model.generation.model.EncounterBudgetSummary;
 import src.domain.encounter.model.session.repository.EncounterPartyFactsRepository;
 
 public final class LoadEncounterBudgetUseCase {
 
     private final EncounterPartyFactsRepository party;
-    private static final EncounterDifficultyMathHelper.BudgetSummary EMPTY_BUDGET =
-            new EncounterDifficultyMathHelper.BudgetSummary(java.util.List.of(), 1, 0, 0, 0, 0, 0, 0, 0);
+    private static final EncounterBudgetSummary EMPTY_BUDGET =
+            new EncounterBudgetSummary(java.util.List.of(), 1, 0, 0, 0, 0, 0, 0, 0);
 
     public LoadEncounterBudgetUseCase(EncounterPartyFactsRepository party) {
         this.party = Objects.requireNonNull(party, "party");
@@ -22,7 +23,7 @@ public final class LoadEncounterBudgetUseCase {
         if (facts.status().isNoActiveParty()) {
             return Result.noActiveParty();
         }
-        EncounterDifficultyMathHelper.BudgetSummary summary = EncounterDifficultyMathHelper.summarizeBudget(
+        EncounterBudgetSummary summary = EncounterDifficultyMathHelper.summarizeBudget(
                 facts.activePartyLevels(),
                 facts.consumedDailyXp(),
                 facts.totalBudgetXp());
@@ -31,7 +32,7 @@ public final class LoadEncounterBudgetUseCase {
 
     public record Result(
             EncounterPartyFactsRepository.Status status,
-            EncounterDifficultyMathHelper.BudgetSummary budget,
+            EncounterBudgetSummary budget,
             String message
     ) {
 
@@ -40,7 +41,7 @@ public final class LoadEncounterBudgetUseCase {
             message = message == null ? "" : message;
         }
 
-        static Result success(EncounterDifficultyMathHelper.BudgetSummary budget) {
+        static Result success(EncounterBudgetSummary budget) {
             return new Result(EncounterPartyFactsRepository.Status.successStatus(), budget, "");
         }
 

@@ -3,7 +3,7 @@ package src.data.encounter.repository;
 import java.util.List;
 import java.util.Objects;
 import src.domain.encounter.model.session.repository.EncounterPartyFactsRepository;
-import src.domain.encounter.model.session.model.EncounterSessionValues.PartyMemberData;
+import src.domain.encounter.model.session.model.PartyMemberData;
 import src.domain.party.PartyApplicationService;
 import src.domain.party.published.ActivePartyCompositionModel;
 import src.domain.party.published.ActivePartyCompositionResult;

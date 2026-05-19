@@ -1,6 +1,5 @@
 package src.domain.encounter.model.session.model;
 
-import static src.domain.encounter.model.session.model.EncounterSessionValues.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -40,6 +39,16 @@ final class EncounterSessionContext {
 
     Optional<BudgetData> budget() {
         return budget;
+    }
+
+    List<PartyMemberData> missingCombatPartyMembers(CombatProjectionData projection) {
+        List<String> activePcIds = projection.cards().stream()
+                .filter(CombatCardData::playerCharacter)
+                .map(CombatCardData::id)
+                .toList();
+        return activeParty.stream()
+                .filter(member -> !activePcIds.contains(member.id()))
+                .toList();
     }
 
     int mode() {

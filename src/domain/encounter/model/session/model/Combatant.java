@@ -1,6 +1,6 @@
 package src.domain.encounter.model.session.model;
 
-import static src.domain.encounter.model.session.model.EncounterSessionValues.CombatantKind;
+import src.domain.encounter.model.session.model.CombatantKind;
 
 public record Combatant(
         String id,

@@ -46,6 +46,16 @@ public final class PartyCharacterDraft {
         return armorClass;
     }
 
+    public boolean isValid() {
+        return !name.isEmpty()
+                && level >= 1
+                && level <= 20
+                && passivePerception >= 1
+                && passivePerception <= 99
+                && armorClass >= 1
+                && armorClass <= 99;
+    }
+
     @Override
     public boolean equals(Object other) {
         if (this == other) {

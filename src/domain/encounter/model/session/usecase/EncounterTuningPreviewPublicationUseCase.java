@@ -3,6 +3,8 @@ package src.domain.encounter.model.session.usecase;
 import java.util.List;
 import org.jspecify.annotations.Nullable;
 import src.domain.encounter.model.generation.helper.EncounterDifficultyMathHelper;
+import src.domain.encounter.model.generation.model.EncounterBudgetSummary;
+import src.domain.encounter.model.generation.model.EncounterDifficultyThresholds;
 import src.domain.encounter.model.generation.model.EncounterRequestedDifficulty;
 import src.domain.encounter.model.session.model.EncounterTuningPreviewData;
 import src.domain.encounter.model.session.repository.EncounterPartyFactsRepository;
@@ -70,7 +72,7 @@ final class EncounterTuningPreviewPublicationUseCase {
         };
     }
 
-    private static EncounterTuningPreviewData tuningPreviewLabels(EncounterDifficultyMathHelper.BudgetSummary budget) {
+    private static EncounterTuningPreviewData tuningPreviewLabels(EncounterBudgetSummary budget) {
         int averageLevel = budget == null ? 1 : Math.max(1, Math.min(20, budget.averagePartyLevel()));
         int partySize = budget == null || budget.activePartyLevels().isEmpty()
                 ? 1
@@ -116,7 +118,7 @@ final class EncounterTuningPreviewPublicationUseCase {
             int averageLevel,
             int partySize
     ) {
-        EncounterDifficultyMathHelper.Thresholds thresholds = thresholdsForAverageParty(averageLevel, partySize);
+        EncounterDifficultyThresholds thresholds = thresholdsForAverageParty(averageLevel, partySize);
         int deadly125 = (int) Math.round(thresholds.deadly() * 1.25);
         EncounterRequestedDifficulty effectiveBand = band == null ? EncounterRequestedDifficulty.MEDIUM : band;
         if (effectiveBand == EncounterRequestedDifficulty.EASY) {
@@ -131,7 +133,7 @@ final class EncounterTuningPreviewPublicationUseCase {
         return new DifficultyPreviewRange(thresholds.medium(), Math.max(thresholds.medium(), thresholds.hard() - 1));
     }
 
-    private static EncounterDifficultyMathHelper.Thresholds thresholdsForAverageParty(int averageLevel, int partySize) {
+    private static EncounterDifficultyThresholds thresholdsForAverageParty(int averageLevel, int partySize) {
         int level = Math.max(1, Math.min(20, averageLevel));
         int size = Math.max(1, partySize);
         List<Integer> partyLevels = new java.util.ArrayList<>(size);
@@ -141,8 +143,8 @@ final class EncounterTuningPreviewPublicationUseCase {
         return EncounterDifficultyMathHelper.thresholdsFor(partyLevels);
     }
 
-    private static EncounterDifficultyMathHelper.BudgetSummary emptyBudgetSummary() {
-        return new EncounterDifficultyMathHelper.BudgetSummary(List.of(), 1, 0, 0, 0, 0, 0, 0, 0);
+    private static EncounterBudgetSummary emptyBudgetSummary() {
+        return new EncounterBudgetSummary(List.of(), 1, 0, 0, 0, 0, 0, 0, 0);
     }
 
     private record DifficultyPreviewRange(int lowerAdjustedXp, int upperAdjustedXp) {

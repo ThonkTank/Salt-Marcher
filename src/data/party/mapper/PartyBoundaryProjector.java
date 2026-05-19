@@ -40,8 +40,8 @@ import src.domain.party.published.ReadStatus;
 import src.domain.party.published.RestCadenceUrgency;
 import src.domain.party.published.RestCadenceStatus;
 import src.domain.party.published.RestMilestone;
-import src.domain.party.model.roster.helper.PartyLevelProgressionHelper;
 import src.domain.party.model.roster.model.PartyCharacter;
+import src.domain.party.model.roster.model.PartyCharacterProgress;
 import src.domain.party.model.roster.model.PartyMembership;
 import src.domain.party.model.roster.model.PartyMutationStatus;
 import src.domain.party.model.roster.model.PartyTravelLocation;
@@ -193,10 +193,10 @@ public final class PartyBoundaryProjector {
                 character.identity().playerName(),
                 character.progress().level(),
                 character.progress().currentXp(),
-                PartyLevelProgressionHelper.minimumXpForLevel(character.progress().level()),
-                PartyLevelProgressionHelper.nextLevelXp(character.progress().level()),
-                PartyLevelProgressionHelper.xpToNextLevel(character.progress().level(), character.progress().currentXp()),
-                PartyLevelProgressionHelper.readyToLevel(character.progress().level(), character.progress().currentXp()),
+                PartyCharacterProgress.minimumXpForLevel(character.progress().level()),
+                PartyCharacterProgress.nextLevelXp(character.progress().level()),
+                PartyCharacterProgress.xpToNextLevel(character.progress().level(), character.progress().currentXp()),
+                PartyCharacterProgress.readyToLevel(character.progress().level(), character.progress().currentXp()),
                 character.combat().passivePerception(),
                 character.combat().armorClass(),
                 character.progress().xpSinceShortRest(),

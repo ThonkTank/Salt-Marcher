@@ -1,7 +1,5 @@
 package src.domain.encounter.model.generation.model;
 
-import src.domain.encounter.model.generation.helper.EncounterDifficultyMathHelper;
-
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -10,7 +8,7 @@ import java.util.Map;
 
 public record EncounterDraftBuildRequest(
         EncounterDifficultyIntent targetDifficulty,
-        EncounterDifficultyMathHelper.Thresholds thresholds,
+        EncounterDifficultyThresholds thresholds,
         int partySize,
         EncounterTuningIntent tuning,
         Collection<EncounterCandidateProfile> lockedProfiles,

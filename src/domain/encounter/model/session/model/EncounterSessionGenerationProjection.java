@@ -1,8 +1,8 @@
 package src.domain.encounter.model.session.model;
 
-import src.domain.encounter.model.session.model.EncounterSessionValues.BuilderStateData;
-import src.domain.encounter.model.session.model.EncounterSessionValues.BudgetData;
-import src.domain.encounter.model.session.model.EncounterSessionValues.DifficultySummaryData;
+import src.domain.encounter.model.session.model.BuilderStateData;
+import src.domain.encounter.model.session.model.BudgetData;
+import src.domain.encounter.model.session.model.DifficultySummaryData;
 
 final class EncounterSessionGenerationProjection {
 
@@ -85,7 +85,7 @@ final class EncounterSessionGenerationProjection {
 
     private static int totalXp(EncounterSessionRosterState roster) {
         int total = 0;
-        for (EncounterSessionValues.EncounterCreatureData creature : roster.creatures()) {
+        for (EncounterCreatureData creature : roster.creatures()) {
             total += creature.totalXp();
         }
         return total;

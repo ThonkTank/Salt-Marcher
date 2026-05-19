@@ -5,6 +5,7 @@ import java.util.Objects;
 import java.util.Optional;
 import src.domain.encounter.model.generation.helper.EncounterDifficultyMathHelper;
 import src.domain.encounter.model.generation.helper.EncounterDifficultyTargetHelper;
+import src.domain.encounter.model.generation.model.EncounterDifficultyThresholds;
 import src.domain.encounter.model.plan.model.EncounterPlan;
 import src.domain.encounter.model.plan.model.EncounterPlanBudgetLoadResult;
 import src.domain.encounter.model.plan.model.EncounterPlanBudgetSummaryData;
@@ -50,7 +51,7 @@ public final class LoadEncounterPlanBudgetUseCase {
         EncounterPlan plan = maybePlan.get();
         int totalBaseXp = totalBaseXp(plan.creatures());
         int creatureCount = plan.creatureCount();
-        EncounterDifficultyMathHelper.Thresholds thresholds = EncounterDifficultyMathHelper.thresholdsFor(activeLevels);
+        EncounterDifficultyThresholds thresholds = EncounterDifficultyMathHelper.thresholdsFor(activeLevels);
         double multiplier = EncounterDifficultyTargetHelper.multiplierFor(creatureCount, activeLevels.size());
         int adjustedXp = (int) Math.round(totalBaseXp * multiplier);
         return EncounterPlanBudgetLoadResult.success(new EncounterPlanBudgetSummaryData(
@@ -77,7 +78,7 @@ public final class LoadEncounterPlanBudgetUseCase {
         return total;
     }
 
-    private static String difficultyLabel(int adjustedXp, EncounterDifficultyMathHelper.Thresholds thresholds) {
+    private static String difficultyLabel(int adjustedXp, EncounterDifficultyThresholds thresholds) {
         if (adjustedXp >= thresholds.deadly()) {
             return "Deadly";
         }

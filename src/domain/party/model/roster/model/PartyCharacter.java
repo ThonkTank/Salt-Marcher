@@ -42,4 +42,45 @@ public record PartyCharacter(
         this.membership = Objects.requireNonNullElse(membership, PartyMembership.RESERVE);
         this.travel = travel == null ? PartyCharacterTravelState.attachedWithoutLocation() : travel;
     }
+
+    public static PartyCharacter fromDraft(long id, PartyCharacterDraft draft, PartyMembership membership) {
+        return new PartyCharacter(
+                id,
+                new PartyCharacterIdentity(draft.name(), draft.playerName()),
+                PartyCharacterProgress.startingAtLevel(draft.level()),
+                new PartyCharacterCombatProfile(draft.passivePerception(), draft.armorClass()),
+                membership);
+    }
+
+    public PartyCharacter withDraft(PartyCharacterDraft draft) {
+        return new PartyCharacter(
+                id,
+                new PartyCharacterIdentity(draft.name(), draft.playerName()),
+                progress.withLevel(draft.level()),
+                new PartyCharacterCombatProfile(draft.passivePerception(), draft.armorClass()),
+                membership,
+                travel);
+    }
+
+    public PartyCharacter withMembership(PartyMembership nextMembership) {
+        return new PartyCharacter(id, identity, progress, combat, nextMembership, travel);
+    }
+
+    public PartyCharacter withAdjustedXp(int xpDelta) {
+        return new PartyCharacter(id, identity, progress.adjustXp(xpDelta), combat, membership, travel);
+    }
+
+    public PartyCharacter withRest(PartyRestType restType) {
+        return new PartyCharacter(id, identity, progress.afterRest(restType), combat, membership, travel);
+    }
+
+    public PartyCharacter withTravel(PartyTravelLocation location, boolean attachToPartyToken) {
+        return new PartyCharacter(
+                id,
+                identity,
+                progress,
+                combat,
+                membership,
+                new PartyCharacterTravelState(location, attachToPartyToken));
+    }
 }

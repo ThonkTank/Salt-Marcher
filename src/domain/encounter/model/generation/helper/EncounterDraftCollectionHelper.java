@@ -5,7 +5,6 @@ import src.domain.encounter.model.generation.model.EncounterCandidateProfile;
 import src.domain.encounter.model.generation.model.EncounterDraft;
 import src.domain.encounter.model.generation.model.EncounterDraftBuildRequest;
 import src.domain.encounter.model.generation.model.EncounterDraftComposition;
-import src.domain.encounter.model.generation.model.EncounterDraftKey;
 
 final class EncounterDraftCollectionHelper {
 
@@ -20,7 +19,7 @@ final class EncounterDraftCollectionHelper {
     ) {
         EncounterDraftComposition composition = EncounterDraftComposition.from(counts, profiles);
         for (EncounterDraft draft : EncounterDraftCreationHelper.create(composition, request)) {
-            drafts.put(EncounterDraftKey.normalized(draft.entries()), draft);
+            drafts.put(draft.canonicalKey(), draft);
         }
     }
 }

@@ -6,13 +6,13 @@ import src.domain.encounter.model.generation.model.EncounterGenerationRequest;
 import src.domain.encounter.model.plan.model.EncounterPlan;
 import src.domain.encounter.model.reference.repository.EncounterCreatureRepository;
 import src.domain.encounter.model.session.model.EncounterSession;
-import src.domain.encounter.model.session.model.EncounterSessionValues.AwardXpOutcome;
-import src.domain.encounter.model.session.model.EncounterSessionValues.BudgetData;
-import src.domain.encounter.model.session.model.EncounterSessionValues.CreatureDetailData;
-import src.domain.encounter.model.session.model.EncounterSessionValues.GenerationResultData;
-import src.domain.encounter.model.session.model.EncounterSessionValues.ListPlansOutcome;
-import src.domain.encounter.model.session.model.EncounterSessionValues.PartyMemberData;
-import src.domain.encounter.model.session.model.EncounterSessionValues.PlanOutcome;
+import src.domain.encounter.model.session.model.AwardXpOutcome;
+import src.domain.encounter.model.session.model.BudgetData;
+import src.domain.encounter.model.session.model.CreatureDetailData;
+import src.domain.encounter.model.session.model.GenerationResultData;
+import src.domain.encounter.model.session.model.ListPlansOutcome;
+import src.domain.encounter.model.session.model.PartyMemberData;
+import src.domain.encounter.model.session.model.PlanOutcome;
 
 public final class EncounterSessionRepository implements EncounterSession.SessionRepository {
 

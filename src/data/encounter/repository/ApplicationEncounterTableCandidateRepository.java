@@ -3,7 +3,6 @@ package src.data.encounter.repository;
 import java.util.List;
 import java.util.Objects;
 import src.data.encountertable.query.SqliteEncounterTableCatalogAdapter;
-import src.domain.encounter.model.generation.helper.EncounterCandidateProfileHelper;
 import src.domain.encounter.model.generation.model.EncounterCandidateProfile;
 import src.domain.encounter.model.generation.model.EncounterCreatureFacts;
 import src.domain.encounter.model.reference.model.EncounterTableCandidateCriteria;
@@ -36,7 +35,7 @@ public final class ApplicationEncounterTableCandidateRepository implements Encou
         }
         int effectiveMaximumXp = safeCriteria.maximumXp() <= 0 ? Integer.MAX_VALUE : safeCriteria.maximumXp();
         return encounterTableCatalog.loadGenerationCandidates(normalizedTableIds, effectiveMaximumXp).stream()
-                .map(candidate -> EncounterCandidateProfileHelper.fromFacts(
+                .map(candidate -> EncounterCandidateProfile.fromFacts(
                         new EncounterCreatureFacts(
                                 candidate.creatureId(),
                                 candidate.name(),

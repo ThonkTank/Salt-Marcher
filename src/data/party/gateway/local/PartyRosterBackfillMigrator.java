@@ -1,6 +1,8 @@
 package src.data.party.gateway.local;
 
 import src.data.party.model.PartyPersistenceSchema;
+import src.domain.party.model.roster.model.PartyAdventuringDayBudget;
+import src.domain.party.model.roster.model.PartyCharacterProgress;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -10,54 +12,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 final class PartyRosterBackfillMigrator {
-
-    private static final int MAX_LEVEL = 20;
-    private static final int[] XP_THRESHOLDS = {
-            0,
-            0,
-            300,
-            900,
-            2_700,
-            6_500,
-            14_000,
-            23_000,
-            34_000,
-            48_000,
-            64_000,
-            85_000,
-            100_000,
-            120_000,
-            140_000,
-            165_000,
-            195_000,
-            225_000,
-            265_000,
-            305_000,
-            355_000
-    };
-    private static final int[] ADVENTURING_DAY_BUDGETS = {
-            0,
-            300,
-            600,
-            1_200,
-            1_700,
-            3_500,
-            4_000,
-            5_000,
-            6_000,
-            7_500,
-            9_000,
-            10_500,
-            11_500,
-            13_500,
-            15_000,
-            18_000,
-            20_000,
-            25_000,
-            27_000,
-            30_000,
-            40_000
-    };
 
     private static final String SELECT_LEVEL_AND_CURRENT_XP_SQL =
             "SELECT id, level, current_xp FROM " + PartyPersistenceSchema.PLAYER_CHARACTERS.name();
@@ -76,7 +30,7 @@ final class PartyRosterBackfillMigrator {
              ResultSet resultSet = statement.executeQuery()) {
             while (resultSet.next()) {
                 int normalizedXp = Math.max(
-                        minimumXpForLevel(resultSet.getInt("level")),
+                        PartyCharacterProgress.minimumXpForLevel(resultSet.getInt("level")),
                         resultSet.getInt("current_xp"));
                 if (normalizedXp != resultSet.getInt("current_xp")) {
                     updates.add(new IntColumnUpdate(resultSet.getLong("id"), normalizedXp));
@@ -135,28 +89,13 @@ final class PartyRosterBackfillMigrator {
         if (safeLongRestXp == 0 || safeLongRestXp == safeShortRestXp) {
             return 0;
         }
-        int perThirdBudget = perThirdBudget(level);
-        int secondThreshold = secondShortRestThreshold(level);
+        PartyAdventuringDayBudget budget = PartyAdventuringDayBudget.forLevel(level);
+        int perThirdBudget = budget.perThird();
+        int secondThreshold = budget.afterSecondShortRest();
         if (safeLongRestXp >= secondThreshold && safeShortRestXp < perThirdBudget) {
             return 2;
         }
         return 1;
-    }
-
-    private static int minimumXpForLevel(int level) {
-        return XP_THRESHOLDS[clampLevel(level)];
-    }
-
-    private static int perThirdBudget(int level) {
-        return Math.max(0, (int) Math.round(ADVENTURING_DAY_BUDGETS[clampLevel(level)] / 3.0));
-    }
-
-    private static int secondShortRestThreshold(int level) {
-        return Math.max(0, (int) Math.round(ADVENTURING_DAY_BUDGETS[clampLevel(level)] * 2.0 / 3.0));
-    }
-
-    private static int clampLevel(int level) {
-        return Math.max(1, Math.min(MAX_LEVEL, level));
     }
 
     private record IntColumnUpdate(long id, int value) {

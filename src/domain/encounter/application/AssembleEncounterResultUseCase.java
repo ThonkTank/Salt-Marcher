@@ -38,7 +38,7 @@ final class AssembleEncounterResultUseCase {
                         entry.challengeRating(),
                         entry.xp(),
                         entry.quantity(),
-                        classification.role(),
+                        classification.role().label(),
                         classification.tags()));
             }
             encounters.add(new EncounterGenerationUseCase.GeneratedAlternative(

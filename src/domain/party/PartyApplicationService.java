@@ -12,6 +12,11 @@ import src.domain.party.application.MovePartyCharactersUseCase;
 import src.domain.party.application.PerformPartyRestUseCase;
 import src.domain.party.application.SetPartyMembershipUseCase;
 import src.domain.party.application.UpdateCharacterUseCase;
+import src.domain.party.published.PartyTravelLocationSnapshot;
+import src.domain.party.model.roster.model.PartyDungeonTravelLocationKind;
+import src.domain.party.model.roster.model.PartyTravelHeading;
+import src.domain.party.model.roster.model.PartyTravelLocation;
+import src.domain.party.model.roster.model.PartyTravelTile;
 
 /**
  * Public backend facade for party management.
@@ -111,18 +116,12 @@ public final class PartyApplicationService {
 
     public void moveCharacters(src.domain.party.published.MovePartyCharactersCommand command) {
         if (command == null) {
-            movePartyCharactersUseCase.execute(List.of(), "", 0L, 0L, "", 0L, List.of(0, 0, 0), "", true);
+            movePartyCharactersUseCase.execute(List.of(), null, true);
             return;
         }
         movePartyCharactersUseCase.execute(
                 ids(command.characterIds()),
-                command.targetTravelSpace(),
-                command.targetMapId(),
-                command.targetOverworldTileId(),
-                command.targetDungeonLocationKind(),
-                command.targetDungeonOwnerId(),
-                command.targetDungeonTile(),
-                command.targetDungeonHeading(),
+                travelLocation(command.target()),
                 command.attachToPartyToken());
     }
 
@@ -138,5 +137,20 @@ public final class PartyApplicationService {
 
     private static List<Integer> levels(@Nullable List<Integer> levels) {
         return levels == null ? List.of() : List.copyOf(levels);
+    }
+
+    private static @Nullable PartyTravelLocation travelLocation(@Nullable PartyTravelLocationSnapshot target) {
+        if (target instanceof src.domain.party.published.PartyDungeonTravelLocationSnapshot dungeon) {
+            return PartyTravelLocation.dungeon(
+                    dungeon.mapId(),
+                    PartyDungeonTravelLocationKind.valueOf(dungeon.locationKind().name()),
+                    dungeon.ownerId(),
+                    new PartyTravelTile(dungeon.tile().q(), dungeon.tile().r(), dungeon.tile().level()),
+                    PartyTravelHeading.valueOf(dungeon.heading().name()));
+        }
+        if (target instanceof src.domain.party.published.PartyOverworldTravelLocationSnapshot overworld) {
+            return PartyTravelLocation.overworld(overworld.mapId(), overworld.tileId());
+        }
+        return null;
     }
 }

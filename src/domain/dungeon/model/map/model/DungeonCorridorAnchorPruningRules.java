@@ -16,8 +16,7 @@ public final class DungeonCorridorAnchorPruningRules {
         AnchorUsage usage = AnchorUsage.from(corridors);
         List<DungeonCorridor> result = new ArrayList<>();
         for (DungeonCorridor corridor : corridors == null ? List.<DungeonCorridor>of() : corridors) {
-            result.add(DungeonCorridorOps.withBindings(
-                    corridor,
+            result.add(corridor.withBindings(
                     corridor.bindings()
                             .replaceAnchorBindings(keptBindings(corridor, usage))
                             .replaceAnchorRefs(keptRefs(corridor, usage))));

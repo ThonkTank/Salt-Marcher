@@ -10,10 +10,10 @@ import src.domain.encounter.model.plan.model.SavedEncounterPlansLoadResult;
 import src.domain.encounter.model.plan.usecase.ListSavedEncounterPlansUseCase;
 import src.domain.encounter.model.plan.usecase.LoadSavedEncounterPlanUseCase;
 import src.domain.encounter.model.plan.usecase.SaveEncounterPlanUseCase;
-import src.domain.encounter.model.session.model.EncounterSessionValues.BudgetData;
-import src.domain.encounter.model.session.model.EncounterSessionValues.GenerationResultData;
-import src.domain.encounter.model.session.model.EncounterSessionValues.ListPlansOutcome;
-import src.domain.encounter.model.session.model.EncounterSessionValues.PlanOutcome;
+import src.domain.encounter.model.session.model.BudgetData;
+import src.domain.encounter.model.session.model.GenerationResultData;
+import src.domain.encounter.model.session.model.ListPlansOutcome;
+import src.domain.encounter.model.session.model.PlanOutcome;
 import src.domain.encounter.model.session.usecase.LoadEncounterBudgetUseCase;
 
 public final class EncounterSessionUseCaseAdaptersRepository {

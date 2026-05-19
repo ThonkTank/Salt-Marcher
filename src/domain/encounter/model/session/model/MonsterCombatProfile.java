@@ -1,8 +1,8 @@
 package src.domain.encounter.model.session.model;
 
 import java.util.Locale;
-import src.domain.encounter.model.session.model.EncounterSessionValues.CreatureDetailData;
-import src.domain.encounter.model.session.model.EncounterSessionValues.EncounterCreatureData;
+import src.domain.encounter.model.session.model.CreatureDetailData;
+import src.domain.encounter.model.session.model.EncounterCreatureData;
 
 public record MonsterCombatProfile(
         long creatureId,

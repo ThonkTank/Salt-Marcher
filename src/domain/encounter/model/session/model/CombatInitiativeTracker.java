@@ -1,9 +1,9 @@
 package src.domain.encounter.model.session.model;
 
-import static src.domain.encounter.model.session.model.EncounterSessionValues.*;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 final class CombatInitiativeTracker {
 
@@ -44,7 +44,7 @@ final class CombatInitiativeTracker {
                     : creature.name();
             pendingRows.add(new InitiativeEntryData(
                     creature.id(),
-                    label + " (" + CombatSessionSupport.signed(creature.initiativeBonus()) + ")",
+                    label + " (" + signed(creature.initiativeBonus()) + ")",
                     CombatantKind.MONSTER,
                     rolled));
         }
@@ -62,8 +62,8 @@ final class CombatInitiativeTracker {
     ) {
         combatRoster.clear();
         int fallbackIndex = 0;
-        for (EncounterInitiativeInput input : CombatSessionSupport.safeInitiatives(initiatives)) {
-            InitiativeEntryData entry = CombatSessionSupport.initiativeEntry(pendingRows, input.id()).orElse(null);
+        for (EncounterInitiativeInput input : safeInitiatives(initiatives)) {
+            InitiativeEntryData entry = initiativeEntry(pendingRows, input.id()).orElse(null);
             if (entry == null) {
                 continue;
             }
@@ -71,12 +71,12 @@ final class CombatInitiativeTracker {
                 fallbackIndex = combatRosterBuilder.addPlayer(
                         combatRoster,
                         entry.id(),
-                        CombatSessionSupport.nameOnly(entry.label()),
+                        nameOnly(entry.label()),
                         input.initiative(),
                         fallbackIndex);
                 continue;
             }
-            EncounterCreatureData creature = CombatSessionSupport.rosterCreature(roster, entry.id()).orElse(null);
+            EncounterCreatureData creature = rosterCreature(roster, entry.id()).orElse(null);
             if (creature == null) {
                 continue;
             }
@@ -89,5 +89,32 @@ final class CombatInitiativeTracker {
 
     List<InitiativeEntryData> entries() {
         return List.copyOf(pendingRows);
+    }
+
+    private static Optional<InitiativeEntryData> initiativeEntry(List<InitiativeEntryData> entries, String id) {
+        return entries.stream()
+                .filter(entry -> entry.id().equals(id))
+                .findFirst();
+    }
+
+    private static Optional<EncounterCreatureData> rosterCreature(List<EncounterCreatureData> roster, String id) {
+        return roster.stream()
+                .filter(entry -> entry.id().equals(id))
+                .findFirst();
+    }
+
+    private static List<EncounterInitiativeInput> safeInitiatives(
+            List<EncounterInitiativeInput> initiatives
+    ) {
+        return initiatives == null ? List.of() : List.copyOf(initiatives);
+    }
+
+    private static String nameOnly(String label) {
+        int detailStart = label.indexOf(" (");
+        return detailStart < 0 ? label : label.substring(0, detailStart);
+    }
+
+    private static String signed(int value) {
+        return value >= 0 ? "+" + value : String.valueOf(value);
     }
 }

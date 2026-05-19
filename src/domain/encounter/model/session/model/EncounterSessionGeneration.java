@@ -5,8 +5,8 @@ import java.util.List;
 import java.util.Optional;
 import src.domain.encounter.model.generation.model.EncounterGenerationInputs;
 import src.domain.encounter.model.generation.model.EncounterGenerationRequest;
-import src.domain.encounter.model.session.model.EncounterSessionValues.GeneratedEncounterData;
-import src.domain.encounter.model.session.model.EncounterSessionValues.GenerationResultData;
+import src.domain.encounter.model.session.model.GeneratedEncounterData;
+import src.domain.encounter.model.session.model.GenerationResultData;
 
 final class EncounterSessionGeneration {
 

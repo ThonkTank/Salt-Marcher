@@ -5,7 +5,6 @@ import java.util.Objects;
 import java.util.Optional;
 import src.domain.creatures.model.catalog.model.CreatureCatalogData;
 import src.domain.creatures.model.catalog.port.CreatureCatalogPort;
-import src.domain.encounter.model.generation.helper.EncounterCandidateProfileHelper;
 import src.domain.encounter.model.generation.model.EncounterCandidateProfile;
 import src.domain.encounter.model.generation.model.EncounterCreatureFacts;
 import src.domain.encounter.model.reference.model.EncounterCreatureCandidateCriteria;
@@ -63,7 +62,7 @@ public final class ApplicationEncounterCreatureRepository implements EncounterCr
     }
 
     private static EncounterCandidateProfile toProfile(CreatureCatalogData.EncounterCandidateProfile candidate) {
-        return EncounterCandidateProfileHelper.fromFacts(new EncounterCreatureFacts(
+        return EncounterCandidateProfile.fromFacts(new EncounterCreatureFacts(
                 candidate.id(),
                 candidate.name(),
                 candidate.creatureType(),

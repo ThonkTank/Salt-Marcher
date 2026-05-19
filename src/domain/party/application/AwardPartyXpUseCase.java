@@ -2,9 +2,9 @@ package src.domain.party.application;
 
 import java.util.List;
 import java.util.Objects;
-import src.domain.party.model.roster.helper.PartyRosterXpAllocationHelper;
 import src.domain.party.model.roster.model.PartyMutationStatus;
 import src.domain.party.model.roster.model.PartyRoster;
+import src.domain.party.model.roster.model.PartyRosterMutation;
 import src.domain.party.model.roster.repository.PartyPublishedStateRepository;
 import src.domain.party.model.roster.repository.PartyRosterRepository;
 
@@ -12,7 +12,6 @@ public final class AwardPartyXpUseCase {
 
     private final PartyRosterRepository repository;
     private final PartyPublishedStateRepository publishedStateRepository;
-    private final PartyRosterXpAllocationHelper xpAllocator = new PartyRosterXpAllocationHelper();
 
     public AwardPartyXpUseCase(
             PartyRosterRepository repository,
@@ -33,15 +32,11 @@ public final class AwardPartyXpUseCase {
 
     private PartyMutationStatus award(List<Long> ids, int xpPerCharacter) {
         PartyRoster roster = repository.load();
-        PartyRosterXpAllocationHelper.Result result = xpAllocator.apply(roster.characters(), ids, xpPerCharacter);
-        if (!result.validRequest()) {
-            return PartyMutationStatus.INVALID_INPUT;
+        PartyRosterMutation mutation = roster.adjustXp(ids, xpPerCharacter);
+        if (mutation.successful()) {
+            repository.save(mutation.roster());
         }
-        if (!result.updatedAny()) {
-            return PartyMutationStatus.NOT_FOUND;
-        }
-        repository.save(roster.withCharacters(result.characters()));
-        return PartyMutationStatus.SUCCESS;
+        return mutation.status();
     }
 
     private void publish(PartyMutationStatus status) {

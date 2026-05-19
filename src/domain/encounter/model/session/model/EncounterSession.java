@@ -7,18 +7,23 @@ import java.util.Optional;
 import src.domain.encounter.model.generation.model.EncounterGenerationInputs;
 import src.domain.encounter.model.generation.model.EncounterGenerationRequest;
 import src.domain.encounter.model.plan.model.EncounterPlan;
-import src.domain.encounter.model.session.model.EncounterSessionValues.AwardXpOutcome;
-import src.domain.encounter.model.session.model.EncounterSessionValues.BudgetData;
-import src.domain.encounter.model.session.model.EncounterSessionValues.CombatProjectionData;
-import src.domain.encounter.model.session.model.EncounterSessionValues.CreatureDetailData;
-import src.domain.encounter.model.session.model.EncounterSessionValues.GenerationResultData;
-import src.domain.encounter.model.session.model.EncounterSessionValues.ListPlansOutcome;
-import src.domain.encounter.model.session.model.EncounterSessionValues.PartyMemberData;
-import src.domain.encounter.model.session.model.EncounterSessionValues.PlanOutcome;
+import src.domain.encounter.model.session.model.AwardXpOutcome;
+import src.domain.encounter.model.session.model.BudgetData;
+import src.domain.encounter.model.session.model.CombatProjectionData;
+import src.domain.encounter.model.session.model.CreatureDetailData;
+import src.domain.encounter.model.session.model.GenerationResultData;
+import src.domain.encounter.model.session.model.ListPlansOutcome;
+import src.domain.encounter.model.session.model.PartyMemberData;
+import src.domain.encounter.model.session.model.PlanOutcome;
 
 public final class EncounterSession {
 
     private static final Map<EncounterSessionCommand.Action, SessionCommandHandler> HANDLERS = createHandlers();
+    private static final String CREATURE_LOAD_FAILURE_STATUS = "Kreatur konnte nicht geladen werden.";
+    private static final String PARTY_MEMBER_LOAD_FAILURE_STATUS = "SC konnte nicht geladen werden.";
+    private static final String REINFORCEMENT_CREATURE_ROLE = "Reinforcement";
+    private static final String RESULTS_READY_STATUS = "Kampfergebnis bereit.";
+    private static final String RETURNED_TO_BUILDER_STATUS = "Kampfergebnis geschlossen. Combat Planner bereit.";
 
     public interface SessionRepository {
 
@@ -67,32 +72,88 @@ public final class EncounterSession {
                 builder.builderState(context),
                 combatInitiative.entries(),
                 combatProjection,
-                CombatSessionSupport.missingCombatPartyMembers(context.activeParty(), combatProjection),
+                context.missingCombatPartyMembers(combatProjection),
                 combatResolution.resultState());
     }
 
     private void addCreature(SessionRepository access, long creatureId) {
         Optional<CreatureDetailData> detail = access.loadCreature(creatureId);
         if (detail.isEmpty()) {
-            context.setStatus("Kreatur konnte nicht geladen werden.");
+            context.setStatus(CREATURE_LOAD_FAILURE_STATUS);
             return;
         }
         CreatureDetailData creature = detail.orElseThrow();
-        if (src.domain.encounter.model.session.model.EncounterSessionValues.Mode.isCombatMode(context.mode())) {
-            CombatRosterRuntimeSupport.addReinforcement(
-                    creature,
-                    context,
-                    combatRoster,
-                    combatRosterBuilder,
-                    combatTurnTracker,
-                    combatTurns);
+        if (Mode.isCombatMode(context.mode())) {
+            addReinforcement(creature);
             return;
         }
         builder.addCreature(creature, context);
     }
 
     private void resetCombatState() {
-        CombatSessionLifecycleSupport.reset(combatRoster, combatInitiative, combatTurnTracker, combatResolution);
+        combatRoster.clear();
+        combatInitiative.reset();
+        combatTurnTracker.reset();
+        combatResolution.reset();
+    }
+
+    private void addPartyMemberToCombat(long partyMemberId, int initiative) {
+        if (context.mode() != Mode.COMBAT) {
+            return;
+        }
+        PartyMemberData member = partyMember(partyMemberId).orElse(null);
+        if (member == null) {
+            context.setStatus(PARTY_MEMBER_LOAD_FAILURE_STATUS);
+            return;
+        }
+        String activeTurnId = combatTurnTracker.activeTurnId(combatTurns, combatRoster);
+        boolean added = combatRosterBuilder.addPlayerToRunningCombat(combatRoster, member.id(), member.name(), initiative);
+        combatTurnTracker.restore(combatTurns, combatRoster, activeTurnId);
+        context.setStatus(added
+                ? member.name() + " betritt den laufenden Kampf."
+                : member.name() + " ist bereits im Kampf.");
+    }
+
+    private Optional<PartyMemberData> partyMember(long id) {
+        return context.activeParty().stream()
+                .filter(entry -> entry.numericId() == id)
+                .findFirst();
+    }
+
+    private void addReinforcement(CreatureDetailData creature) {
+        String activeTurnId = combatTurnTracker.activeTurnId(combatTurns, combatRoster);
+        String displayName = combatRosterBuilder.addReinforcement(
+                combatRoster,
+                creature,
+                REINFORCEMENT_CREATURE_ROLE,
+                CombatRosterBuilder.defaultMonsterInitiative(creature.initiativeBonus()));
+        combatTurnTracker.restore(combatTurns, combatRoster, activeTurnId);
+        context.setStatus(displayName + " betritt den laufenden Kampf.");
+    }
+
+    private void endCombat() {
+        combatResolution.endCombat(
+                combatRosterMutations,
+                combatRoster,
+                context.activeParty().size(),
+                !context.activeParty().isEmpty());
+        context.enterMode(Mode.RESULTS, RESULTS_READY_STATUS);
+    }
+
+    private void returnToBuilderAfterResults() {
+        resetCombatState();
+        context.enterMode(Mode.BUILDER, RETURNED_TO_BUILDER_STATUS);
+    }
+
+    private void mutateHp(String combatantId, int amount, boolean healing) {
+        if (!combatRosterMutations.mutateHp(
+                combatRoster,
+                combatTurns.turnEntry(combatRoster.combatants(), combatantId),
+                Math.max(0, amount),
+                healing)) {
+            return;
+        }
+        combatTurnTracker.restore(combatTurns, combatRoster, combatTurnTracker.activeTurnId(combatTurns, combatRoster));
     }
 
     private static Map<EncounterSessionCommand.Action, SessionCommandHandler> createHandlers() {
@@ -129,7 +190,7 @@ public final class EncounterSession {
                 session.combatInitiative.open(session.context, session.builder.roster()));
         handlers.put(EncounterSessionCommand.Action.BACK_TO_BUILDER, (session, command, access) ->
                 session.context.enterMode(
-                        src.domain.encounter.model.session.model.EncounterSessionValues.Mode.BUILDER,
+                        Mode.BUILDER,
                         "Zurueck zur Encounter-Erstellung."));
         handlers.put(EncounterSessionCommand.Action.CONFIRM_INITIATIVE, (session, command, access) ->
                 session.combatInitiative.confirm(
@@ -148,41 +209,20 @@ public final class EncounterSession {
                         session.combatTurns.turnEntry(session.combatRoster.combatants(), command.combatantId()),
                         command.initiative()));
         handlers.put(EncounterSessionCommand.Action.ADD_PARTY_MEMBER_TO_COMBAT, (session, command, access) ->
-                CombatRosterRuntimeSupport.addPartyMemberToCombat(
+                session.addPartyMemberToCombat(
                         command.partyMemberId(),
-                        command.initiative(),
-                        session.context.activeParty(),
-                        session.context,
-                        session.combatRoster,
-                        session.combatRosterBuilder,
-                        session.combatTurnTracker,
-                        session.combatTurns));
+                        command.initiative()));
         handlers.put(EncounterSessionCommand.Action.END_COMBAT, (session, command, access) ->
-                CombatSessionLifecycleSupport.endCombat(
-                        session.combatRosterMutations,
-                        session.combatRoster,
-                        session.combatResolution,
-                        session.context.activeParty().size(),
-                        !session.context.activeParty().isEmpty(),
-                        session.context));
+                session.endCombat());
         handlers.put(EncounterSessionCommand.Action.AWARD_XP, (session, command, access) ->
                 session.combatResolution.awardXp(access, session.context));
         handlers.put(EncounterSessionCommand.Action.RETURN_TO_BUILDER_AFTER_RESULTS, (session, command, access) ->
-                CombatSessionLifecycleSupport.returnToBuilder(
-                        session.combatRoster,
-                        session.combatInitiative,
-                        session.combatTurnTracker,
-                        session.combatResolution,
-                        session.context));
+                session.returnToBuilderAfterResults());
         handlers.put(EncounterSessionCommand.Action.MUTATE_HP, (session, command, access) ->
-                CombatSessionLifecycleSupport.mutateHp(
+                session.mutateHp(
                         command.combatantId(),
                         command.amount(),
-                        command.healing(),
-                        session.combatRosterMutations,
-                        session.combatRoster,
-                        session.combatTurns,
-                        session.combatTurnTracker));
+                        command.healing()));
         return Map.copyOf(handlers);
     }
 

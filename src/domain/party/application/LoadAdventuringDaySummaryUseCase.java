@@ -1,11 +1,10 @@
 package src.domain.party.application;
 
-import src.domain.party.model.roster.helper.PartyAdventuringDayBudgetHelper;
-import src.domain.party.model.roster.model.PartyCharacter;
-import src.domain.party.model.roster.repository.PartyRosterRepository;
-
 import java.util.ArrayList;
 import java.util.List;
+import src.domain.party.model.roster.model.PartyAdventuringDayBudget;
+import src.domain.party.model.roster.model.PartyCharacter;
+import src.domain.party.model.roster.repository.PartyRosterRepository;
 
 public final class LoadAdventuringDaySummaryUseCase {
 
@@ -45,10 +44,11 @@ public final class LoadAdventuringDaySummaryUseCase {
 
     private CharacterRestCadence restCadenceFor(PartyCharacter character) {
         int level = character.progress().level();
-        int totalBudget = PartyAdventuringDayBudgetHelper.perCharacter(level);
+        PartyAdventuringDayBudget budget = PartyAdventuringDayBudget.forLevel(level);
+        int totalBudget = budget.perCharacter();
         int targetXp = switch (character.progress().shortRestsTakenSinceLongRest()) {
-            case 0 -> PartyAdventuringDayBudgetHelper.afterFirstShortRest(level);
-            case 1 -> PartyAdventuringDayBudgetHelper.afterSecondShortRest(level);
+            case 0 -> budget.afterFirstShortRest();
+            case 1 -> budget.afterSecondShortRest();
             default -> totalBudget;
         };
         int nextMilestone = switch (character.progress().shortRestsTakenSinceLongRest()) {
@@ -68,9 +68,8 @@ public final class LoadAdventuringDaySummaryUseCase {
         if (xpDelta <= 0) {
             return RestCadence.OVERDUE;
         }
-        int segmentSize = milestone == RestCadence.LONG_REST
-                ? PartyAdventuringDayBudgetHelper.finalSegment(level)
-                : PartyAdventuringDayBudgetHelper.perThird(level);
+        PartyAdventuringDayBudget budget = PartyAdventuringDayBudget.forLevel(level);
+        int segmentSize = milestone == RestCadence.LONG_REST ? budget.finalSegment() : budget.perThird();
         int soonThreshold = Math.max(1, (int) Math.round(segmentSize * 0.25));
         return xpDelta <= soonThreshold ? RestCadence.SOON : RestCadence.NORMAL;
     }

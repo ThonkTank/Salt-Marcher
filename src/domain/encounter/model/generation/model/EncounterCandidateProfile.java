@@ -4,13 +4,26 @@ public final class EncounterCandidateProfile {
 
     private final EncounterCreatureFacts facts;
     private final EncounterCandidateCombatStats combatStats;
-    private final String role;
+    private final EncounterRole role;
     private final int selectionWeight;
+
+    public static EncounterCandidateProfile fromFacts(EncounterCreatureFacts candidate) {
+        return fromFacts(candidate, 1);
+    }
+
+    public static EncounterCandidateProfile fromFacts(EncounterCreatureFacts candidate, int selectionWeight) {
+        EncounterRole role = EncounterRoleClassification.classify(candidate).role();
+        return new EncounterCandidateProfile(
+                candidate,
+                EncounterCandidateCombatStats.fromFacts(candidate),
+                role,
+                selectionWeight);
+    }
 
     public EncounterCandidateProfile(
             EncounterCreatureFacts facts,
             EncounterCandidateCombatStats combatStats,
-            String role
+            EncounterRole role
     ) {
         this(facts, combatStats, role, 1);
     }
@@ -18,12 +31,12 @@ public final class EncounterCandidateProfile {
     public EncounterCandidateProfile(
             EncounterCreatureFacts facts,
             EncounterCandidateCombatStats combatStats,
-            String role,
+            EncounterRole role,
             int selectionWeight
     ) {
         this.facts = facts;
         this.combatStats = combatStats;
-        this.role = role;
+        this.role = role == null ? EncounterRole.STANDARD : role;
         this.selectionWeight = Math.max(1, Math.min(10, selectionWeight));
     }
 
@@ -39,8 +52,12 @@ public final class EncounterCandidateProfile {
         return facts.name();
     }
 
-    public String role() {
+    public EncounterRole role() {
         return role;
+    }
+
+    public String roleLabel() {
+        return role.label();
     }
 
     public EncounterCreatureFacts facts() {

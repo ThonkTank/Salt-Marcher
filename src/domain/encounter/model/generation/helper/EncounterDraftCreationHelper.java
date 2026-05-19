@@ -6,10 +6,7 @@ import src.domain.encounter.model.generation.model.EncounterDraft;
 import src.domain.encounter.model.generation.model.EncounterDraftBuildRequest;
 import src.domain.encounter.model.generation.model.EncounterDraftComposition;
 import src.domain.encounter.model.generation.model.EncounterDraftCompositionStats;
-import src.domain.encounter.model.generation.model.EncounterDraftEntries;
-import src.domain.encounter.model.generation.model.EncounterDraftEntry;
 import src.domain.encounter.model.generation.model.EncounterDraftMetrics;
-import src.domain.encounter.model.generation.model.EncounterDraftTitle;
 import src.domain.encounter.model.generation.model.EncounterDraftXpProfile;
 
 final class EncounterDraftCreationHelper {
@@ -45,12 +42,10 @@ final class EncounterDraftCreationHelper {
                         xpProfile,
                         request.tuning(),
                         request.partySize())));
-        List<EncounterDraftEntry> entries = EncounterDraftEntries.sorted(composition.entries());
-        return List.of(new EncounterDraft(
-                EncounterDraftTitle.from(entries),
+        return List.of(EncounterDraft.create(
                 achievedDifficulty,
                 metrics(composition.stats(), xpProfile, score),
-                entries));
+                composition.entries()));
     }
 
     private static EncounterDraftXpProfile xpProfile(

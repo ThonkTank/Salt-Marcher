@@ -3,15 +3,15 @@ package src.domain.encounter.model.session.repository;
 import java.util.Optional;
 import org.jspecify.annotations.Nullable;
 import src.domain.encounter.application.EncounterGenerationUseCase;
-import src.domain.encounter.model.generation.helper.EncounterDifficultyMathHelper;
+import src.domain.encounter.model.generation.model.EncounterBudgetSummary;
 import src.domain.encounter.model.generation.model.EncounterDifficultyIntent;
 import src.domain.encounter.model.generation.model.EncounterGenerationDiagnosticsData;
 import src.domain.encounter.model.generation.model.EncounterTuningIntent;
 import src.domain.encounter.model.reference.repository.EncounterCreatureRepository;
-import src.domain.encounter.model.session.model.EncounterSessionValues.BudgetData;
-import src.domain.encounter.model.session.model.EncounterSessionValues.CreatureDetailData;
-import src.domain.encounter.model.session.model.EncounterSessionValues.GeneratedEncounterData;
-import src.domain.encounter.model.session.model.EncounterSessionValues.GenerationDiagnosticsData;
+import src.domain.encounter.model.session.model.BudgetData;
+import src.domain.encounter.model.session.model.CreatureDetailData;
+import src.domain.encounter.model.session.model.GeneratedEncounterData;
+import src.domain.encounter.model.session.model.GenerationDiagnosticsData;
 
 final class EncounterSessionDataMapperRepository {
 
@@ -47,7 +47,7 @@ final class EncounterSessionDataMapperRepository {
         return creatures.toCreatureDetail(creatureId);
     }
 
-    BudgetData toSessionBudget(EncounterDifficultyMathHelper.BudgetSummary budget) {
+    BudgetData toSessionBudget(EncounterBudgetSummary budget) {
         return new BudgetData(
                 budget.activePartyLevels(),
                 budget.averagePartyLevel(),

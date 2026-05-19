@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 import src.domain.encounter.model.generation.model.EncounterCandidateProfile;
 import src.domain.encounter.model.generation.model.EncounterDifficultyIntent;
+import src.domain.encounter.model.generation.model.EncounterDifficultyThresholds;
 
 public final class EncounterSearchPoolHelper {
 
@@ -17,7 +18,7 @@ public final class EncounterSearchPoolHelper {
 
     public static List<EncounterCandidateProfile> build(
             List<EncounterCandidateProfile> unlockedProfiles,
-            EncounterDifficultyMathHelper.Thresholds thresholds,
+            EncounterDifficultyThresholds thresholds,
             EncounterDifficultyIntent targetDifficulty
     ) {
         int targetXp = EncounterDifficultyTargetHelper.targetAdjustedXp(targetDifficulty, thresholds);
@@ -32,9 +33,19 @@ public final class EncounterSearchPoolHelper {
             int targetXp
     ) {
         return profiles.stream()
-                .sorted(Comparator.comparingInt(profile -> EncounterCandidateProfileHelper.componentDistance(profile, targetXp)))
+                .sorted(Comparator.comparingInt(profile -> componentDistance(profile, targetXp)))
                 .limit(FIT_POOL_LIMIT)
                 .toList();
+    }
+
+    private static int componentDistance(EncounterCandidateProfile profile, int targetXp) {
+        int half = Math.max(1, targetXp / 2);
+        int third = Math.max(1, targetXp / 3);
+        return Math.min(
+                Math.abs(profile.xp() - targetXp),
+                Math.min(
+                        Math.abs(profile.xp() - half),
+                        Math.abs(profile.xp() - third)));
     }
 
     private static List<EncounterCandidateProfile> lowestXp(List<EncounterCandidateProfile> profiles) {

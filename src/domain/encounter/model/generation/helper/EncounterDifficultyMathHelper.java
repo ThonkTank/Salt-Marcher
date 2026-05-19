@@ -1,6 +1,8 @@
 package src.domain.encounter.model.generation.helper;
 
 import java.util.List;
+import src.domain.encounter.model.generation.model.EncounterBudgetSummary;
+import src.domain.encounter.model.generation.model.EncounterDifficultyThresholds;
 
 public final class EncounterDifficultyMathHelper {
 
@@ -103,7 +105,7 @@ public final class EncounterDifficultyMathHelper {
     private EncounterDifficultyMathHelper() {
     }
 
-    public static Thresholds thresholdsFor(List<Integer> partyLevels) {
+    public static EncounterDifficultyThresholds thresholdsFor(List<Integer> partyLevels) {
         int easy = 0;
         int medium = 0;
         int hard = 0;
@@ -115,18 +117,18 @@ public final class EncounterDifficultyMathHelper {
             hard += HARD_THRESHOLDS[level];
             deadly += DEADLY_THRESHOLDS[level];
         }
-        return new Thresholds(easy, medium, hard, deadly);
+        return new EncounterDifficultyThresholds(easy, medium, hard, deadly);
     }
 
-    public static BudgetSummary summarizeBudget(
+    public static EncounterBudgetSummary summarizeBudget(
             List<Integer> partyLevels,
             int consumedDailyXp,
             int dailyBudgetXp
     ) {
-        Thresholds thresholds = thresholdsFor(partyLevels);
+        EncounterDifficultyThresholds thresholds = thresholdsFor(partyLevels);
         int consumedXp = Math.max(0, consumedDailyXp);
         int budgetXp = Math.max(0, dailyBudgetXp);
-        return new BudgetSummary(
+        return new EncounterBudgetSummary(
                 partyLevels,
                 averageLevel(partyLevels),
                 thresholds.easy(),
@@ -153,27 +155,4 @@ public final class EncounterDifficultyMathHelper {
         return Math.max(1, Math.min(20, rawLevel));
     }
 
-    public record Thresholds(
-            int easy,
-            int medium,
-            int hard,
-            int deadly
-    ) {
-    }
-
-    public record BudgetSummary(
-            List<Integer> activePartyLevels,
-            int averagePartyLevel,
-            int easyThreshold,
-            int mediumThreshold,
-            int hardThreshold,
-            int deadlyThreshold,
-            int dailyBudgetXp,
-            int consumedDailyXp,
-            int remainingDailyXp
-    ) {
-        public BudgetSummary {
-            activePartyLevels = activePartyLevels == null ? List.of() : List.copyOf(activePartyLevels);
-        }
-    }
 }

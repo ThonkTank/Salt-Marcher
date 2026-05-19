@@ -9,10 +9,10 @@ import java.util.Set;
 import org.jspecify.annotations.Nullable;
 import src.domain.encounter.model.generation.helper.EncounterDraftAssemblyHelper;
 import src.domain.encounter.model.generation.helper.EncounterAutoTuningHelper;
-import src.domain.encounter.model.generation.helper.EncounterCandidateProfileHelper;
 import src.domain.encounter.model.generation.helper.EncounterDifficultyMathHelper;
 import src.domain.encounter.model.generation.helper.EncounterDifficultyTargetHelper;
 import src.domain.encounter.model.generation.model.EncounterCandidateProfile;
+import src.domain.encounter.model.generation.model.EncounterDifficultyThresholds;
 import src.domain.encounter.model.generation.model.EncounterDraft;
 import src.domain.encounter.model.generation.model.EncounterGenerationAttempt;
 import src.domain.encounter.model.generation.model.EncounterGenerationDiagnosticsData;
@@ -45,7 +45,7 @@ final class PrepareEncounterGenerationUseCase {
         if (!partyLoad.success()) {
             return partyLoad.failure();
         }
-        EncounterDifficultyMathHelper.Thresholds thresholds = partyLoad.requireThresholds();
+        EncounterDifficultyThresholds thresholds = partyLoad.requireThresholds();
 
         LockedCreatures lockedCreatures = loadLockedCreatures(creatures, request);
         if (!lockedCreatures.success()) {
@@ -85,7 +85,7 @@ final class PrepareEncounterGenerationUseCase {
 
     private static GenerationSearchResult generateDrafts(
             EncounterGenerationRequest request,
-            EncounterDifficultyMathHelper.Thresholds thresholds,
+            EncounterDifficultyThresholds thresholds,
             int partySize,
             LockedCreatures lockedCreatures,
             List<EncounterCandidateProfile> unlockedProfiles
@@ -142,7 +142,7 @@ final class PrepareEncounterGenerationUseCase {
             return PartyLoadResult.failure("No active party is available.");
         }
         List<Integer> partyLevels = facts.activePartyLevels();
-        EncounterDifficultyMathHelper.Thresholds thresholds = EncounterDifficultyMathHelper.thresholdsFor(partyLevels);
+        EncounterDifficultyThresholds thresholds = EncounterDifficultyMathHelper.thresholdsFor(partyLevels);
         return PartyLoadResult.success(thresholds, partyLevels.size());
     }
 
@@ -162,7 +162,7 @@ final class PrepareEncounterGenerationUseCase {
             EncounterCreatureRepository creatures,
             @Nullable EncounterTableCandidateRepository encounterTables,
             EncounterGenerationRequest request,
-            EncounterDifficultyMathHelper.Thresholds thresholds,
+            EncounterDifficultyThresholds thresholds,
             Set<Long> lockedCreatureIds,
             int searchLimit
     ) {
@@ -187,7 +187,7 @@ final class PrepareEncounterGenerationUseCase {
     private static CandidateLoadResult loadTableCandidates(
             @Nullable EncounterTableCandidateRepository encounterTables,
             EncounterGenerationRequest request,
-            EncounterDifficultyMathHelper.Thresholds thresholds,
+            EncounterDifficultyThresholds thresholds,
             Set<Long> excludedCreatureIds,
             Set<Long> lockedCreatureIds
     ) {
@@ -221,14 +221,14 @@ final class PrepareEncounterGenerationUseCase {
         Map<Long, EncounterCandidateProfile> profiles = new LinkedHashMap<>();
         for (Long creatureId : lockedQuantities.keySet()) {
             creatures.loadCreature(creatureId)
-                    .ifPresent(reference -> profiles.put(creatureId, EncounterCandidateProfileHelper.fromFacts(reference.toFacts())));
+                    .ifPresent(reference -> profiles.put(creatureId, EncounterCandidateProfile.fromFacts(reference.toFacts())));
         }
         return profiles;
     }
 
     private record PartyLoadResult(
             boolean success,
-            EncounterDifficultyMathHelper.@Nullable Thresholds thresholds,
+            @Nullable EncounterDifficultyThresholds thresholds,
             int partySize,
             String message
     ) {
@@ -237,7 +237,7 @@ final class PrepareEncounterGenerationUseCase {
             return EncounterGenerationPreparationUseCase.failure(message);
         }
 
-        private EncounterDifficultyMathHelper.Thresholds requireThresholds() {
+        private EncounterDifficultyThresholds requireThresholds() {
             if (thresholds == null) {
                 throw new IllegalStateException("Party thresholds missing for successful load.");
             }
@@ -245,7 +245,7 @@ final class PrepareEncounterGenerationUseCase {
         }
 
         private static PartyLoadResult success(
-                EncounterDifficultyMathHelper.Thresholds thresholds,
+                EncounterDifficultyThresholds thresholds,
                 int partySize
         ) {
             return new PartyLoadResult(true, thresholds, partySize, "");

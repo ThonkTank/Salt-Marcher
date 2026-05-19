@@ -2,16 +2,11 @@ package src.domain.party.application;
 
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
-import src.domain.party.model.roster.helper.PartyCharacterDraftValidationHelper;
-import src.domain.party.model.roster.helper.PartyLevelProgressionHelper;
-import src.domain.party.model.roster.model.PartyCharacter;
-import src.domain.party.model.roster.model.PartyCharacterCombatProfile;
 import src.domain.party.model.roster.model.PartyCharacterDraft;
-import src.domain.party.model.roster.model.PartyCharacterIdentity;
-import src.domain.party.model.roster.model.PartyCharacterProgress;
 import src.domain.party.model.roster.model.PartyMembership;
 import src.domain.party.model.roster.model.PartyMutationStatus;
 import src.domain.party.model.roster.model.PartyRoster;
+import src.domain.party.model.roster.model.PartyRosterMutation;
 import src.domain.party.model.roster.repository.PartyPublishedStateRepository;
 import src.domain.party.model.roster.repository.PartyRosterRepository;
 
@@ -21,7 +16,6 @@ public final class CreateCharacterUseCase {
 
     private final PartyRosterRepository repository;
     private final PartyPublishedStateRepository publishedStateRepository;
-    private final PartyCharacterDraftValidationHelper draftValidator = new PartyCharacterDraftValidationHelper();
 
     public CreateCharacterUseCase(
             PartyRosterRepository repository,
@@ -55,22 +49,11 @@ public final class CreateCharacterUseCase {
 
     private PartyMutationStatus create(PartyCharacterDraft draft, PartyMembership membership) {
         PartyRoster roster = repository.load();
-        if (!draftValidator.isValid(draft)) {
-            return PartyMutationStatus.INVALID_INPUT;
+        PartyRosterMutation mutation = roster.createCharacter(draft, membership);
+        if (mutation.successful()) {
+            repository.save(mutation.roster());
         }
-        PartyCharacter character = new PartyCharacter(
-                roster.nextCharacterId(),
-                new PartyCharacterIdentity(draft.name(), draft.playerName()),
-                new PartyCharacterProgress(
-                        draft.level(),
-                        PartyLevelProgressionHelper.minimumXpForLevel(draft.level()),
-                        0,
-                        0,
-                        0),
-                new PartyCharacterCombatProfile(draft.passivePerception(), draft.armorClass()),
-                membership);
-        repository.save(roster.withCreatedCharacter(character));
-        return PartyMutationStatus.SUCCESS;
+        return mutation.status();
     }
 
     private void publish(PartyMutationStatus status) {

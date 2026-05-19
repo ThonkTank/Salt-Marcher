@@ -3,9 +3,9 @@ package src.domain.encounter.model.session.model;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import src.domain.encounter.model.session.model.EncounterSessionValues.CreatureDetailData;
-import src.domain.encounter.model.session.model.EncounterSessionValues.EncounterCreatureData;
-import src.domain.encounter.model.session.model.EncounterSessionValues.RemovedRosterEntryData;
+import src.domain.encounter.model.session.model.CreatureDetailData;
+import src.domain.encounter.model.session.model.EncounterCreatureData;
+import src.domain.encounter.model.session.model.RemovedRosterEntryData;
 
 final class EncounterSessionRosterMutation {
 

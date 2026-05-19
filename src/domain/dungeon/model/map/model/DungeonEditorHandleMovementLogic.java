@@ -101,7 +101,7 @@ public final class DungeonEditorHandleMovementLogic {
                     anchors.add(anchor);
                 }
             }
-            movedCorridors.add(DungeonCorridorOps.withBindings(corridor, corridor.bindings().replaceAnchorBindings(anchors)));
+            movedCorridors.add(corridor.withBindings(corridor.bindings().replaceAnchorBindings(anchors)));
         }
         return changed
                 ? copyWithConnections(

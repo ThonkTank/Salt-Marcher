@@ -83,7 +83,7 @@ public final class DungeonCorridorEndpointResolutionLogic {
         List<DungeonCorridor> updatedCorridors = new ArrayList<>();
         for (DungeonCorridor corridor : dungeonMap.connections().corridors()) {
             updatedCorridors.add(corridor.corridorId() == host.corridorId()
-                    ? DungeonCorridorOps.withAnchorBinding(corridor, created)
+                    ? corridor.withAnchorBinding(created)
                     : corridor);
         }
         DungeonMap mapped = CONNECTION_NORMALIZATION_SERVICE.copyWithConnections(
@@ -179,10 +179,10 @@ public final class DungeonCorridorEndpointResolutionLogic {
         public DungeonCorridor applyTo(DungeonCorridor corridor) {
             DungeonCorridor updated = corridor;
             if (doorBinding != null) {
-                updated = DungeonCorridorOps.withDoorBinding(updated, doorBinding);
+                updated = updated.withDoorBinding(doorBinding);
             }
             if (anchorRef != null && anchorRef.present()) {
-                updated = DungeonCorridorOps.withAnchorRef(updated, anchorRef);
+                updated = updated.withAnchorRef(anchorRef);
             }
             return updated;
         }

@@ -1,7 +1,7 @@
 package src.domain.encounter.model.session.repository;
 
 import java.util.List;
-import src.domain.encounter.model.session.model.EncounterSessionValues.PartyMemberData;
+import src.domain.encounter.model.session.model.PartyMemberData;
 
 public interface EncounterPartyFactsRepository {
 

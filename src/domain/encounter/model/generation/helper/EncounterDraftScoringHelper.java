@@ -2,10 +2,11 @@ package src.domain.encounter.model.generation.helper;
 
 import java.util.Set;
 import src.domain.encounter.model.generation.model.EncounterDifficultyIntent;
+import src.domain.encounter.model.generation.model.EncounterDifficultyThresholds;
 import src.domain.encounter.model.generation.model.EncounterDraftComposition;
 import src.domain.encounter.model.generation.model.EncounterDraftEntry;
 import src.domain.encounter.model.generation.model.EncounterDraftXpProfile;
-import src.domain.encounter.model.generation.model.EncounterRoleNames;
+import src.domain.encounter.model.generation.model.EncounterRole;
 import src.domain.encounter.model.generation.model.EncounterTuningIntent;
 
 public final class EncounterDraftScoringHelper {
@@ -41,7 +42,7 @@ public final class EncounterDraftScoringHelper {
     public record ScoreContext(
             EncounterDifficultyIntent targetDifficulty,
             EncounterDifficultyIntent achievedDifficulty,
-            EncounterDifficultyMathHelper.Thresholds thresholds,
+            EncounterDifficultyThresholds thresholds,
             EncounterDraftXpProfile xpProfile,
             EncounterTuningIntent tuning,
             int partySize
@@ -55,7 +56,7 @@ public final class EncounterDraftScoringHelper {
     private static int scoreTargetBand(
             EncounterDifficultyIntent targetDifficulty,
             int adjustedXp,
-            EncounterDifficultyMathHelper.Thresholds thresholds,
+            EncounterDifficultyThresholds thresholds,
             int targetAdjustedXp
     ) {
         int minXp = EncounterDifficultyTargetHelper.minAdjustedXp(targetDifficulty, thresholds);
@@ -80,12 +81,12 @@ public final class EncounterDraftScoringHelper {
         };
     }
 
-    private static int scoreRoleSynergy(Set<String> roles) {
+    private static int scoreRoleSynergy(Set<EncounterRole> roles) {
         int score = roles.size() * 25;
-        if (roles.contains(EncounterRoleNames.BOSS) && roles.size() > 1) {
+        if (roles.contains(EncounterRole.BOSS) && roles.size() > 1) {
             score += 90;
         }
-        if (roles.contains(EncounterRoleNames.BRUTE) && roles.contains(EncounterRoleNames.SKIRMISHER)) {
+        if (roles.contains(EncounterRole.BRUTE) && roles.contains(EncounterRole.SKIRMISHER)) {
             score += 70;
         }
         return score;
@@ -119,7 +120,7 @@ public final class EncounterDraftScoringHelper {
         if (entry.quantity() > LARGE_QUANTITY_STACK) {
             score -= (entry.quantity() - LARGE_QUANTITY_STACK) * 35;
         }
-        if (EncounterRoleNames.MINION.equals(entry.role()) && creatureCount <= 2) {
+        if (EncounterRole.MINION == entry.role() && creatureCount <= 2) {
             score -= 40;
         }
         return score;

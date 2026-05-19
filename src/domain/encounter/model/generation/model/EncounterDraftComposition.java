@@ -11,7 +11,7 @@ public record EncounterDraftComposition(
         boolean valid,
         List<EncounterDraftEntry> entries,
         EncounterDraftCompositionStats stats,
-        Set<String> roles
+        Set<EncounterRole> roles
 ) {
     public EncounterDraftComposition {
         entries = entries == null ? List.of() : List.copyOf(entries);
@@ -24,7 +24,7 @@ public record EncounterDraftComposition(
     }
 
     @Override
-    public Set<String> roles() {
+    public Set<EncounterRole> roles() {
         return immutableRoles(roles);
     }
 
@@ -70,7 +70,7 @@ public record EncounterDraftComposition(
     private static final class EncounterDraftCompositionAccumulator {
 
         private final List<EncounterDraftEntry> entries = new ArrayList<>();
-        private final Set<String> roles = new LinkedHashSet<>();
+        private final Set<EncounterRole> roles = new LinkedHashSet<>();
         private int totalBaseXp;
         private int creatureCount;
         private int bossCount;
@@ -79,7 +79,7 @@ public record EncounterDraftComposition(
             int quantity = Math.max(1, requestedQuantity);
             creatureCount += quantity;
             totalBaseXp += profile.xp() * quantity;
-            if (EncounterRoleNames.BOSS.equals(profile.role())) {
+            if (EncounterRole.BOSS == profile.role()) {
                 bossCount += quantity;
             }
             roles.add(profile.role());
@@ -94,12 +94,12 @@ public record EncounterDraftComposition(
             return new EncounterDraftCompositionStats(totalBaseXp, creatureCount, bossCount);
         }
 
-        private Set<String> roles() {
+        private Set<EncounterRole> roles() {
             return immutableRoles(roles);
         }
     }
 
-    private static Set<String> immutableRoles(Set<String> roles) {
+    private static Set<EncounterRole> immutableRoles(Set<EncounterRole> roles) {
         return roles == null
                 ? Set.of()
                 : Collections.unmodifiableSet(new LinkedHashSet<>(roles));

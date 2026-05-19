@@ -21,8 +21,12 @@ public record EncounterDraftEntry(
         return profile.xp();
     }
 
-    public String role() {
+    public EncounterRole role() {
         return profile.role();
+    }
+
+    public String roleLabel() {
+        return profile.roleLabel();
     }
 
     public int selectionWeight() {

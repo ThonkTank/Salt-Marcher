@@ -1,12 +1,10 @@
 package src.domain.party.application;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Objects;
-import src.domain.party.model.roster.model.PartyCharacter;
 import src.domain.party.model.roster.model.PartyMutationStatus;
 import src.domain.party.model.roster.model.PartyRestType;
 import src.domain.party.model.roster.model.PartyRoster;
+import src.domain.party.model.roster.model.PartyRosterMutation;
 import src.domain.party.model.roster.repository.PartyPublishedStateRepository;
 import src.domain.party.model.roster.repository.PartyRosterRepository;
 
@@ -36,22 +34,11 @@ public final class PerformPartyRestUseCase {
 
     private PartyMutationStatus perform(PartyRestType restType) {
         PartyRoster roster = repository.load();
-        List<PartyCharacter> nextCharacters = new ArrayList<>(roster.characters().size());
-        for (PartyCharacter character : roster.characters()) {
-            nextCharacters.add(character.membership().isActive() ? restedCharacter(character, restType) : character);
+        PartyRosterMutation mutation = roster.performRest(restType);
+        if (mutation.successful()) {
+            repository.save(mutation.roster());
         }
-        repository.save(roster.withCharacters(nextCharacters));
-        return PartyMutationStatus.SUCCESS;
-    }
-
-    private static PartyCharacter restedCharacter(PartyCharacter character, PartyRestType restType) {
-        return new PartyCharacter(
-                character.id(),
-                character.identity(),
-                character.progress().afterRest(restType),
-                character.combat(),
-                character.membership(),
-                character.travel());
+        return mutation.status();
     }
 
     private void publish(PartyMutationStatus status) {

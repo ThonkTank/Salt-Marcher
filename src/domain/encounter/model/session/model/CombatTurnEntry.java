@@ -1,7 +1,7 @@
 package src.domain.encounter.model.session.model;
 
 import java.util.List;
-import src.domain.encounter.model.session.model.EncounterSessionValues.CombatCardData;
+import src.domain.encounter.model.session.model.CombatCardData;
 
 public record CombatTurnEntry(
         String id,

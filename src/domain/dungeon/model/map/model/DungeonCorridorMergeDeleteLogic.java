@@ -26,7 +26,7 @@ final class DungeonCorridorMergeDeleteLogic {
         if (kept == null || merged == null) {
             return dungeonMap;
         }
-        DungeonCorridor updated = DungeonCorridorOps.mergeKeepingThis(kept, merged);
+        DungeonCorridor updated = kept.mergeKeepingThis(merged);
         return CONNECTION_NORMALIZATION_SERVICE.copyWithConnections(
                 dungeonMap,
                 new ConnectionCatalog(
@@ -82,7 +82,7 @@ final class DungeonCorridorMergeDeleteLogic {
         List<DungeonStair> nextStairs = new ArrayList<>();
         for (DungeonStair stair : dungeonMap.connections().stairs()) {
             nextStairs.add(stairMovedFromMergedCorridor(stair, mergedCorridorId)
-                    ? DungeonStairOps.withCorridorId(stair, corridorId)
+                    ? stair.withCorridorId(corridorId)
                     : stair);
         }
         return nextStairs;

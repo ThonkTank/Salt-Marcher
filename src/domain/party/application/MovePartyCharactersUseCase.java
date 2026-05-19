@@ -2,25 +2,17 @@ package src.domain.party.application;
 
 import java.util.List;
 import java.util.Objects;
-import org.jspecify.annotations.Nullable;
-import src.domain.party.model.roster.helper.PartyRosterMutationHelper;
-import src.domain.party.model.roster.model.PartyDungeonTravelLocationKind;
 import src.domain.party.model.roster.model.PartyMutationStatus;
 import src.domain.party.model.roster.model.PartyRoster;
-import src.domain.party.model.roster.model.PartyTravelHeading;
+import src.domain.party.model.roster.model.PartyRosterMutation;
 import src.domain.party.model.roster.model.PartyTravelLocation;
-import src.domain.party.model.roster.model.PartyTravelTile;
 import src.domain.party.model.roster.repository.PartyPublishedStateRepository;
 import src.domain.party.model.roster.repository.PartyRosterRepository;
 
 public final class MovePartyCharactersUseCase {
 
-    private static final String DUNGEON_SPACE = "DUNGEON";
-    private static final String OVERWORLD_SPACE = "OVERWORLD";
-
     private final PartyRosterRepository repository;
     private final PartyPublishedStateRepository publishedStateRepository;
-    private final PartyRosterMutationHelper mutations = new PartyRosterMutationHelper();
 
     public MovePartyCharactersUseCase(
             PartyRosterRepository repository,
@@ -32,20 +24,11 @@ public final class MovePartyCharactersUseCase {
 
     public void execute(
             List<Long> characterIds,
-            String travelSpace,
-            long mapId,
-            long tileId,
-            String dungeonLocationKind,
-            long ownerId,
-            List<Integer> dungeonTile,
-            String heading,
+            PartyTravelLocation location,
             boolean attachToPartyToken
     ) {
         try {
-            PartyMutationStatus status = move(
-                    characterIds,
-                    location(travelSpace, mapId, tileId, dungeonLocationKind, ownerId, dungeonTile, heading),
-                    attachToPartyToken);
+            PartyMutationStatus status = move(characterIds, location, attachToPartyToken);
             publish(status);
         } catch (IllegalStateException exception) {
             publishedStateRepository.publishStorageErrorMutation();
@@ -54,20 +37,15 @@ public final class MovePartyCharactersUseCase {
 
     private PartyMutationStatus move(
             List<Long> characterIds,
-            @Nullable PartyTravelLocation location,
+            PartyTravelLocation location,
             boolean attachToPartyToken
     ) {
-        if (location == null) {
-            return PartyMutationStatus.INVALID_INPUT;
-        }
         PartyRoster roster = repository.load();
-        List<src.domain.party.model.roster.model.PartyCharacter> nextCharacters =
-                mutations.moveCharacters(roster.characters(), characterIds, location, attachToPartyToken);
-        if (nextCharacters.isEmpty()) {
-            return PartyMutationStatus.NOT_FOUND;
+        PartyRosterMutation mutation = roster.moveCharacters(characterIds, location, attachToPartyToken);
+        if (mutation.successful()) {
+            repository.save(mutation.roster());
         }
-        repository.save(roster.withCharacters(nextCharacters));
-        return PartyMutationStatus.SUCCESS;
+        return mutation.status();
     }
 
     private void publish(PartyMutationStatus status) {
@@ -75,35 +53,5 @@ public final class MovePartyCharactersUseCase {
             publishedStateRepository.publishRepositoryBackedState();
         }
         publishedStateRepository.publishMutationStatus(status);
-    }
-
-    private static @Nullable PartyTravelLocation location(
-            String travelSpace,
-            long mapId,
-            long tileId,
-            String dungeonLocationKind,
-            long ownerId,
-            List<Integer> dungeonTile,
-            String heading
-    ) {
-        if (DUNGEON_SPACE.equals(travelSpace)) {
-            return PartyTravelLocation.dungeon(
-                    mapId,
-                    PartyDungeonTravelLocationKind.parse(dungeonLocationKind),
-                    ownerId,
-                    new PartyTravelTile(tileValue(dungeonTile, 0), tileValue(dungeonTile, 1), tileValue(dungeonTile, 2)),
-                    PartyTravelHeading.parse(heading));
-        }
-        if (OVERWORLD_SPACE.equals(travelSpace)) {
-            return PartyTravelLocation.overworld(mapId, tileId);
-        }
-        return null;
-    }
-
-    private static int tileValue(List<Integer> dungeonTile, int index) {
-        if (dungeonTile == null || dungeonTile.size() <= index || dungeonTile.get(index) == null) {
-            return 0;
-        }
-        return dungeonTile.get(index);
     }
 }

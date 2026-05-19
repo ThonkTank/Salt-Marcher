@@ -1,10 +1,10 @@
 package src.domain.encounter.model.session.model;
 
 import java.util.List;
-import src.domain.encounter.model.session.model.EncounterSessionValues.AwardXpOutcome;
-import src.domain.encounter.model.session.model.EncounterSessionValues.PartyMemberData;
-import src.domain.encounter.model.session.model.EncounterSessionValues.ResultEnemyData;
-import src.domain.encounter.model.session.model.EncounterSessionValues.ResultStateData;
+import src.domain.encounter.model.session.model.AwardXpOutcome;
+import src.domain.encounter.model.session.model.PartyMemberData;
+import src.domain.encounter.model.session.model.ResultEnemyData;
+import src.domain.encounter.model.session.model.ResultStateData;
 
 final class CombatResolutionTracker {
 

@@ -4,7 +4,9 @@ import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 
 public final class DungeonStair {
 
@@ -63,6 +65,53 @@ public final class DungeonStair {
 
     public @Nullable Long corridorId() {
         return geometry.corridorId();
+    }
+
+    public Set<DungeonCell> occupiedCells() {
+        Set<DungeonCell> result = new LinkedHashSet<>(path());
+        for (DungeonStairExit exit : exits()) {
+            result.add(exit.position());
+        }
+        return Set.copyOf(result);
+    }
+
+    public Set<Integer> reachableLevels() {
+        Set<Integer> result = new LinkedHashSet<>();
+        for (DungeonCell cell : occupiedCells()) {
+            if (cell != null) {
+                result.add(cell.level());
+            }
+        }
+        return Set.copyOf(result);
+    }
+
+    public List<DungeonStairExit> exitsAtLevel(int level) {
+        List<DungeonStairExit> result = new ArrayList<>();
+        for (DungeonStairExit exit : exits()) {
+            if (exit != null && exit.position().level() == level) {
+                result.add(exit);
+            }
+        }
+        return List.copyOf(result);
+    }
+
+    public boolean isReadable() {
+        return !occupiedCells().isEmpty();
+    }
+
+    public DungeonStair withCorridorId(@Nullable Long nextCorridorId) {
+        return new DungeonStair(
+                stairId,
+                mapId,
+                name,
+                new Geometry(
+                        shape(),
+                        direction(),
+                        dimension1(),
+                        dimension2(),
+                        path(),
+                        exits(),
+                        nextCorridorId));
     }
 
     public record Geometry(

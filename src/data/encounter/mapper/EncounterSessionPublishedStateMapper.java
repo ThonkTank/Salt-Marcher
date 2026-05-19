@@ -2,15 +2,14 @@ package src.data.encounter.mapper;
 
 import java.util.List;
 import src.domain.encounter.model.generation.model.EncounterGenerationInputs;
+import src.domain.encounter.model.session.model.BuilderStateData;
+import src.domain.encounter.model.session.model.CombatProjectionData;
 import src.domain.encounter.model.session.model.EncounterSessionPublicationData;
 import src.domain.encounter.model.session.model.EncounterSessionSnapshotData;
-import src.domain.encounter.model.session.model.EncounterSessionValues;
-import src.domain.encounter.model.session.model.EncounterSessionValues.BuilderStateData;
-import src.domain.encounter.model.session.model.EncounterSessionValues.CombatProjectionData;
-import src.domain.encounter.model.session.model.EncounterSessionValues.Mode;
-import src.domain.encounter.model.session.model.EncounterSessionValues.PartyMemberData;
-import src.domain.encounter.model.session.model.EncounterSessionValues.ResultStateData;
 import src.domain.encounter.model.session.model.EncounterTuningPreviewData;
+import src.domain.encounter.model.session.model.Mode;
+import src.domain.encounter.model.session.model.PartyMemberData;
+import src.domain.encounter.model.session.model.ResultStateData;
 import src.domain.encounter.published.EncounterBuilderInputs;
 import src.domain.encounter.published.EncounterStateSnapshot;
 import src.domain.encounter.published.EncounterTuningPreviewResult;
@@ -65,7 +64,7 @@ public final class EncounterSessionPublishedStateMapper {
     }
 
     private static EncounterStateSnapshot.BuilderPane toPublishedBuilderPane(BuilderStateData builderState) {
-        BuilderStateData safeState = builderState == null ? EncounterSessionValues.emptyBuilderState() : builderState;
+        BuilderStateData safeState = builderState == null ? BuilderStateData.empty() : builderState;
         return new EncounterStateSnapshot.BuilderPane(
                 partySummary(safeState),
                 safeState.templateLabel(),

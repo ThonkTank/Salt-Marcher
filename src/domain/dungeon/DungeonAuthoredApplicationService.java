@@ -13,8 +13,6 @@ import src.domain.dungeon.model.map.model.DungeonEdgeDirection;
 import src.domain.dungeon.model.map.model.DungeonEditorHandle;
 import src.domain.dungeon.model.map.model.DungeonEditorHandleType;
 import src.domain.dungeon.model.map.model.DungeonMapIdentity;
-import src.domain.dungeon.model.map.model.DungeonMapCorridorOps;
-import src.domain.dungeon.model.map.model.DungeonMapTopologyOps;
 import src.domain.dungeon.model.map.model.DungeonRoomExitDescription;
 import src.domain.dungeon.model.map.model.DungeonRoomNarration;
 import src.domain.dungeon.model.map.model.DungeonTopologyElementKind;
@@ -79,56 +77,47 @@ public final class DungeonAuthoredApplicationService {
     private static ApplyDungeonEditorOperationUseCase.Mutation operationMutation(DungeonEditorOperation operation) {
         return switch (operation) {
             case null -> current -> current;
-            case DungeonEditorOperation.MoveTopologyElement move -> current -> DungeonMapTopologyOps.moveTopologyElement(
-                    current,
+            case DungeonEditorOperation.MoveTopologyElement move -> current -> current.moveTopologyElement(
                     domainTopologyRef(move.ref()),
                     move.deltaQ(),
                     move.deltaR(),
                     move.deltaLevel());
-            case DungeonEditorOperation.MoveEditorHandle move -> current -> DungeonMapTopologyOps.moveEditorHandle(
-                    current,
+            case DungeonEditorOperation.MoveEditorHandle move -> current -> current.moveEditorHandle(
                     domainHandle(move.ref()),
                     move.deltaQ(),
                     move.deltaR(),
                     move.deltaLevel());
-            case DungeonEditorOperation.MoveBoundaryStretch move -> current -> DungeonMapTopologyOps.moveBoundaryStretch(
-                    current,
+            case DungeonEditorOperation.MoveBoundaryStretch move -> current -> current.moveBoundaryStretch(
                     move.clusterId(),
                     move.sourceEdges().stream().map(DungeonAuthoredApplicationService::domainEdge).toList(),
                     move.deltaQ(),
                     move.deltaR(),
                     move.deltaLevel());
             case DungeonEditorOperation.MoveRoomAnchor move ->
-                    current -> DungeonMapTopologyOps.moveRoomAnchor(current, move.deltaQ(), move.deltaR());
+                    current -> current.moveRoomAnchor(move.deltaQ(), move.deltaR());
             case DungeonEditorOperation.RoomRectangle rectangle -> rectangle.action().deletesRoomCells()
-                    ? current -> DungeonMapTopologyOps.deleteRoomRectangle(
-                    current,
+                    ? current -> current.deleteRoomRectangle(
                     domainCell(rectangle.start()),
                     domainCell(rectangle.end()))
-                    : current -> DungeonMapTopologyOps.paintRoomRectangle(
-                    current,
+                    : current -> current.paintRoomRectangle(
                     domainCell(rectangle.start()),
                     domainCell(rectangle.end()));
-            case DungeonEditorOperation.EditClusterBoundaries edit -> current -> DungeonMapTopologyOps.editClusterBoundaries(
-                    current,
+            case DungeonEditorOperation.EditClusterBoundaries edit -> current -> current.editClusterBoundaries(
                     edit.clusterId(),
                     edit.edges().stream().map(DungeonAuthoredApplicationService::domainEdge).toList(),
                     domainBoundaryKind(edit.kind()),
                     edit.deleteBoundary());
-            case DungeonEditorOperation.CreateCorridor create -> current -> DungeonMapCorridorOps.createCorridor(
-                    current,
+            case DungeonEditorOperation.CreateCorridor create -> current -> current.createCorridor(
                     corridorEndpoint(create.start()),
                     corridorEndpoint(create.end()));
-            case DungeonEditorOperation.ExtendCorridor extend -> current -> DungeonMapCorridorOps.extendCorridor(
-                    current,
+            case DungeonEditorOperation.ExtendCorridor extend -> current -> current.extendCorridor(
                     extend.corridorId(),
                     corridorRoomEndpoint(extend.endpoint()));
             case DungeonEditorOperation.MergeCorridors merge ->
-                    current -> DungeonMapCorridorOps.mergeCorridors(current, merge.corridorId(), merge.mergedCorridorId());
+                    current -> current.mergeCorridors(merge.corridorId(), merge.mergedCorridorId());
             case DungeonEditorOperation.DeleteCorridor delete ->
-                    current -> DungeonMapCorridorOps.deleteCorridor(current, delete.corridorId());
-            case DungeonEditorOperation.SaveRoomNarration save -> current -> DungeonMapTopologyOps.saveRoomNarration(
-                    current,
+                    current -> current.deleteCorridor(delete.corridorId());
+            case DungeonEditorOperation.SaveRoomNarration save -> current -> current.saveRoomNarration(
                     save.roomId(),
                     roomNarration(save));
         };

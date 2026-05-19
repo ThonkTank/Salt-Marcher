@@ -25,7 +25,7 @@ public final class DungeonCorridorReadProjection {
         Map<DungeonTopologyRef, DungeonCorridorAnchorBinding> anchorsByRef =
                 ENDPOINT_RESOLVER.anchorBindingsByRef(corridors);
         for (DungeonCorridor corridor : corridors == null ? List.<DungeonCorridor>of() : corridors) {
-            if (corridor == null || !DungeonCorridorOps.isReadable(corridor)) {
+            if (corridor == null || !corridor.isReadable()) {
                 continue;
             }
             List<DungeonCorridorEndpointResolver.CorridorEndpoint> endpoints = ENDPOINT_RESOLVER.corridorEndpoints(

@@ -46,6 +46,105 @@ public final class DungeonCorridor {
         return bindings;
     }
 
+    public boolean isReadable() {
+        return endpointCount() >= 2 || !bindings.waypoints().isEmpty();
+    }
+
+    public boolean connectsRoom(long roomId) {
+        return roomId > 0L && roomIds.contains(roomId);
+    }
+
+    public DungeonCorridor withAddedRoom(long roomId) {
+        if (roomId <= 0L || roomIds.contains(roomId)) {
+            return this;
+        }
+        List<Long> updated = new java.util.ArrayList<>(roomIds);
+        updated.add(roomId);
+        return new DungeonCorridor(
+                corridorId,
+                mapId,
+                level,
+                updated,
+                bindings.sanitizedForRooms(updated));
+    }
+
+    public DungeonCorridor withoutRoom(long roomId) {
+        if (roomId <= 0L || !roomIds.contains(roomId)) {
+            return this;
+        }
+        List<Long> updated = new java.util.ArrayList<>();
+        for (Long existing : roomIds) {
+            if (existing != null && existing != roomId) {
+                updated.add(existing);
+            }
+        }
+        return new DungeonCorridor(
+                corridorId,
+                mapId,
+                level,
+                updated,
+                bindings.withoutDoorBinding(roomId));
+    }
+
+    public DungeonCorridor withDoorBinding(DungeonCorridorDoorBinding binding) {
+        if (binding == null) {
+            return this;
+        }
+        DungeonCorridor updated = connectsRoom(binding.roomId()) ? this : withAddedRoom(binding.roomId());
+        return new DungeonCorridor(
+                updated.corridorId,
+                updated.mapId,
+                updated.level,
+                updated.roomIds,
+                updated.bindings.withDoorBinding(binding));
+    }
+
+    public DungeonCorridor withAnchorBinding(DungeonCorridorAnchorBinding binding) {
+        if (binding == null) {
+            return this;
+        }
+        return new DungeonCorridor(
+                corridorId,
+                mapId,
+                level,
+                roomIds,
+                bindings.withAnchorBinding(binding));
+    }
+
+    public DungeonCorridor withAnchorRef(DungeonCorridorAnchorRef ref) {
+        if (ref == null || !ref.present()) {
+            return this;
+        }
+        return new DungeonCorridor(
+                corridorId,
+                mapId,
+                level,
+                roomIds,
+                bindings.withAnchorRef(ref));
+    }
+
+    public DungeonCorridor withBindings(DungeonCorridorBindings nextBindings) {
+        return new DungeonCorridor(corridorId, mapId, level, roomIds, nextBindings);
+    }
+
+    public DungeonCorridor mergeKeepingThis(DungeonCorridor other) {
+        if (other == null || equals(other)) {
+            return this;
+        }
+        List<Long> mergedInput = new java.util.ArrayList<>(roomIds);
+        mergedInput.addAll(other.roomIds());
+        return new DungeonCorridor(
+                corridorId,
+                mapId,
+                level,
+                mergedInput,
+                bindings.mergedKeepingThis(other.bindings(), mergedInput));
+    }
+
+    public int endpointCount() {
+        return bindings.doorBindings().size() + bindings.anchorRefs().size();
+    }
+
     private static List<Long> normalizeRoomIds(List<Long> roomIds) {
         java.util.Set<Long> result = new LinkedHashSet<>();
         for (Long roomId : roomIds == null ? List.<Long>of() : roomIds) {

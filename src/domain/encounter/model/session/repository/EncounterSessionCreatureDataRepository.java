@@ -5,8 +5,8 @@ import java.util.Optional;
 import src.domain.encounter.model.generation.model.GeneratedEncounterCreatureData;
 import src.domain.encounter.model.reference.model.EncounterCreatureReference;
 import src.domain.encounter.model.reference.repository.EncounterCreatureRepository;
-import src.domain.encounter.model.session.model.EncounterSessionValues.CreatureDetailData;
-import src.domain.encounter.model.session.model.EncounterSessionValues.EncounterCreatureData;
+import src.domain.encounter.model.session.model.CreatureDetailData;
+import src.domain.encounter.model.session.model.EncounterCreatureData;
 
 final class EncounterSessionCreatureDataRepository {
 

@@ -21,14 +21,14 @@ public final class DungeonFeatureReadProjection {
             List<DungeonStair> stairs
     ) {
         for (DungeonStair stair : stairs == null ? List.<DungeonStair>of() : stairs) {
-            if (stair == null || !DungeonStairOps.isReadable(stair)) {
+            if (stair == null || !stair.isReadable()) {
                 continue;
             }
             features.add(new DungeonFeatureFacts(
                     DungeonFeatureType.STAIR,
                     stair.stairId(),
                     stair.name(),
-                    DungeonCellOrdering.sortedCells(DungeonStairOps.occupiedCells(stair)),
+                    DungeonCellOrdering.sortedCells(stair.occupiedCells()),
                     stairDescription(stair),
                     stairDestinationLabel(stair)));
             if (stair.corridorId() != null) {

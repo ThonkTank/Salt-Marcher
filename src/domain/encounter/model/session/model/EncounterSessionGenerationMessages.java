@@ -1,7 +1,7 @@
 package src.domain.encounter.model.session.model;
 
-import src.domain.encounter.model.session.model.EncounterSessionValues.GenerationDiagnosticsData;
-import src.domain.encounter.model.session.model.EncounterSessionValues.GenerationResultData;
+import src.domain.encounter.model.session.model.GenerationDiagnosticsData;
+import src.domain.encounter.model.session.model.GenerationResultData;
 
 final class EncounterSessionGenerationMessages {
 

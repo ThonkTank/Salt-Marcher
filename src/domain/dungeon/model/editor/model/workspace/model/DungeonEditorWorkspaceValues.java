@@ -296,6 +296,52 @@ public final class DungeonEditorWorkspaceValues {
             return to;
         }
 
+        public List<Cell> touchingCells() {
+            if (from == null || to == null || from.level() != to.level()) {
+                return List.of();
+            }
+            if (from.r() == to.r()) {
+                return horizontalTouchingCells(from, to);
+            }
+            if (from.q() == to.q()) {
+                return verticalTouchingCells(from, to);
+            }
+            return List.of();
+        }
+
+        public boolean touchesAnyCell(List<Cell> cells) {
+            for (Cell touchingCell : touchingCells()) {
+                for (Cell cell : cells == null ? List.<Cell>of() : cells) {
+                    if (touchingCell.equals(cell)) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        private static List<Cell> horizontalTouchingCells(Cell from, Cell to) {
+            int minQ = Math.min(from.q(), to.q());
+            int maxQ = Math.max(from.q(), to.q());
+            List<Cell> result = new java.util.ArrayList<>();
+            for (int q = minQ; q < maxQ; q++) {
+                result.add(new Cell(q, from.r() - 1, from.level()));
+                result.add(new Cell(q, from.r(), from.level()));
+            }
+            return List.copyOf(result);
+        }
+
+        private static List<Cell> verticalTouchingCells(Cell from, Cell to) {
+            int minR = Math.min(from.r(), to.r());
+            int maxR = Math.max(from.r(), to.r());
+            List<Cell> result = new java.util.ArrayList<>();
+            for (int r = minR; r < maxR; r++) {
+                result.add(new Cell(from.q() - 1, r, from.level()));
+                result.add(new Cell(from.q(), r, from.level()));
+            }
+            return List.copyOf(result);
+        }
+
         @Override
         public boolean equals(Object other) {
             if (this == other) {

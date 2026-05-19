@@ -1,9 +1,9 @@
 package src.domain.party.application;
 
 import java.util.Objects;
-import src.domain.party.model.roster.helper.PartyRosterMutationHelper;
 import src.domain.party.model.roster.model.PartyMutationStatus;
 import src.domain.party.model.roster.model.PartyRoster;
+import src.domain.party.model.roster.model.PartyRosterMutation;
 import src.domain.party.model.roster.repository.PartyPublishedStateRepository;
 import src.domain.party.model.roster.repository.PartyRosterRepository;
 
@@ -11,7 +11,6 @@ public final class DeleteCharacterUseCase {
 
     private final PartyRosterRepository repository;
     private final PartyPublishedStateRepository publishedStateRepository;
-    private final PartyRosterMutationHelper mutations = new PartyRosterMutationHelper();
 
     public DeleteCharacterUseCase(
             PartyRosterRepository repository,
@@ -32,13 +31,11 @@ public final class DeleteCharacterUseCase {
 
     private PartyMutationStatus delete(long id) {
         PartyRoster roster = repository.load();
-        java.util.List<src.domain.party.model.roster.model.PartyCharacter> nextCharacters =
-                mutations.remove(roster.characters(), id);
-        if (nextCharacters.isEmpty()) {
-            return PartyMutationStatus.NOT_FOUND;
+        PartyRosterMutation mutation = roster.deleteCharacter(id);
+        if (mutation.successful()) {
+            repository.save(mutation.roster());
         }
-        repository.save(roster.withCharacters(nextCharacters));
-        return PartyMutationStatus.SUCCESS;
+        return mutation.status();
     }
 
     private void publish(PartyMutationStatus status) {

@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import src.domain.encounter.model.generation.model.EncounterCandidateProfile;
 import src.domain.encounter.model.generation.model.EncounterDifficultyIntent;
+import src.domain.encounter.model.generation.model.EncounterDifficultyThresholds;
 import src.domain.encounter.model.generation.model.EncounterDraft;
 import src.domain.encounter.model.generation.model.EncounterDraftBuildRequest;
 import src.domain.encounter.model.generation.model.EncounterTuningIntent;
@@ -33,7 +34,7 @@ public final class EncounterDraftAssemblyHelper {
 
     public record EncounterDraftRequest(
             EncounterDifficultyIntent targetDifficulty,
-            EncounterDifficultyMathHelper.Thresholds thresholds,
+            EncounterDifficultyThresholds thresholds,
             int partySize,
             EncounterTuningIntent tuning,
             Collection<EncounterCandidateProfile> lockedProfiles,
