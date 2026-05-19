@@ -135,9 +135,10 @@ quality evidence is considered inside the normal development pass.
 
 The proof strength remains owned by the existing gates named in this standard.
 PMD, CPD, Lizard, SpotBugs, compiler hygiene, and dead-code reachability keep
-their current blocking status; CKJM remains an informational report. The
-continuous-refactoring and adversarial-review workflows are owned by their
-repo-owned skills, not by this quality-platform standard.
+their current blocking status; CKJM remains an informational report.
+Continuous-refactoring remains owned by its repo-owned skill, and
+adversarial-review is owned by the global adversarial review skills. Neither
+workflow is owned by this quality-platform standard.
 
 This follows the external workflow references mirrored under
 `/home/aaron/Schreibtisch/projects/references/continuous-refactoring/`:
@@ -263,5 +264,5 @@ enforced, the enforcement document is the canonical classification.
 - [Dependabot Options Reference](/home/aaron/Schreibtisch/projects/references/continuous-refactoring/github-dependabot-options.md:1)
 - [OpenAI Codex Refactor Your Codebase](/home/aaron/Schreibtisch/projects/references/continuous-refactoring/openai-codex-refactor-your-codebase.md:1)
 - [OpenAI Codex Worktrees](/home/aaron/Schreibtisch/projects/references/continuous-refactoring/openai-codex-worktrees.md:1)
-- [Adversarial Review Caller Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/adversarial-review/SKILL.md:1)
-- [Adversarial Review Agent Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/adversarial-review-agent/SKILL.md:1)
+- [Global Adversarial Review Caller Skill](/home/aaron/.codex/skills/local/adversarial-review/SKILL.md:1)
+- [Global Adversarial Review Agent Skill](/home/aaron/.codex/skills/local/adversarial-review-agent/SKILL.md:1)

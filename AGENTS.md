@@ -62,9 +62,9 @@ document exists.
   use the global `source-references` skill and follow
   `docs/project/verification/source-references.md`.
 - Global review-specialist routing lives in
-  `docs/project/architecture/agent-instructions.md` and in the repo-owned
-  adversarial review skills; do not copy those skills into SaltMarcher without
-  an explicit user request.
+  `docs/project/architecture/agent-instructions.md` and in the global
+  `review-overview` / adversarial review skills; do not create
+  SaltMarcher-local copies without an explicit user request.
 - Work that plans, implements, refactors, or reviews a SaltMarcher repo-tracked
   change must use the repo-owned `context-hygiene` skill before relying on
   nearby files as precedent. The skill is a routing and context-budget rule; it
@@ -76,14 +76,17 @@ document exists.
   refactoring, or reviewing. The skill is a workflow rule for keeping cleanup
   inside the normal development pass; it does not authorize new gates or
   repo-wide cleanup waves by itself.
-- Every repo-tracked implementation pass must receive the repo-owned
-  adversarial review. The implementing agent must read
-  `tools/quality/skills/adversarial-review/SKILL.md` before starting that step;
-  the review subagent must read
-  `tools/quality/skills/adversarial-review-agent/SKILL.md` before reviewing.
+- Every repo-tracked implementation pass must receive a risk-based review panel.
+  The implementing agent must use the global
+  `/home/aaron/.codex/skills/local/adversarial-review/SKILL.md`, launch exactly
+  one Overview subagent that uses
+  `/home/aaron/.codex/skills/local/review-overview/SKILL.md`, wait for its panel
+  plan, and then launch the specialist review subagents from that plan. Every
+  Overview or specialist review subagent must first use the global
+  `/home/aaron/.codex/skills/local/adversarial-review-agent/SKILL.md`.
   Agent-facing instruction changes must still use
   `agent-instruction-engineering` before that review. A pass without the
-  required completed review remains WIP.
+  required completed Overview and review panel remains WIP.
 - Work under `src/domain/**` must use the repo-owned `domain-layer` skill and
   follow the canonical domain-layer standard before changes are made or
   reviewed.
@@ -179,8 +182,9 @@ document exists.
 - [Context Hygiene Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/context-hygiene/SKILL.md:1)
 - [Repo Tools Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/repo-tools/SKILL.md:1)
 - [Continuous Refactoring Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/continuous-refactoring/SKILL.md:1)
-- [Adversarial Review Caller Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/adversarial-review/SKILL.md:1)
-- [Adversarial Review Agent Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/adversarial-review-agent/SKILL.md:1)
+- [Global Review Overview Skill](/home/aaron/.codex/skills/local/review-overview/SKILL.md:1)
+- [Global Adversarial Review Caller Skill](/home/aaron/.codex/skills/local/adversarial-review/SKILL.md:1)
+- [Global Adversarial Review Agent Skill](/home/aaron/.codex/skills/local/adversarial-review-agent/SKILL.md:1)
 - [Domain Layer Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/domain-layer/SKILL.md:1)
 - [View Layer MVVM Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/view-layer-mvvm/SKILL.md:1)
 - [View Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/view-layer.md:1)

@@ -113,8 +113,8 @@ place:
 
 The quality platforms do not replace review judgment.
 
-- completed repo-tracked change passes follow the local adversarial review
-  route owned by the repo-owned adversarial review skills
+- completed repo-tracked change passes follow the SaltMarcher adversarial
+  review route through the global adversarial review skills
 - documentation ownership, source-of-truth conflicts, and same-change
   documentation updates remain review responsibilities
 - `AGENTS.md` defines the default local verification scope mechanically by
@@ -136,5 +136,5 @@ The quality platforms do not replace review judgment.
 
 - [Quality Platforms Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/verification/quality-platforms.md:1)
 - [.github/workflows/quality-platforms.yml](/home/aaron/Schreibtisch/projects/SaltMarcher/.github/workflows/quality-platforms.yml:1)
-- [Adversarial Review Caller Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/adversarial-review/SKILL.md:1)
-- [Adversarial Review Agent Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/adversarial-review-agent/SKILL.md:1)
+- [Global Adversarial Review Caller Skill](/home/aaron/.codex/skills/local/adversarial-review/SKILL.md:1)
+- [Global Adversarial Review Agent Skill](/home/aaron/.codex/skills/local/adversarial-review-agent/SKILL.md:1)

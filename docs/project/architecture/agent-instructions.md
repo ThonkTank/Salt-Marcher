@@ -46,13 +46,25 @@ Any work on covered surfaces must use that skill first.
 
 ## Review Skill Routing
 
-SaltMarcher keeps review instructions in skills, not in this standard.
+SaltMarcher keeps review instructions in global skills, not in this standard.
 
 - Implementing agents read
-  `tools/quality/skills/adversarial-review/SKILL.md` before starting the
-  mandatory adversarial review step.
-- Review subagents read
-  `tools/quality/skills/adversarial-review-agent/SKILL.md` before reviewing.
+  `/home/aaron/.codex/skills/local/adversarial-review/SKILL.md` before
+  starting the mandatory adversarial review step.
+- For implementation handoff, the implementing agent must launch one Overview
+  subagent that reads
+  `/home/aaron/.codex/skills/local/adversarial-review-agent/SKILL.md` first and
+  then applies `/home/aaron/.codex/skills/local/review-overview/SKILL.md`.
+- The Overview subagent returns the reviewability decision, responsibility
+  slices, required specialist skills, and ready-to-send reviewer briefs. It must
+  not launch other subagents.
+- The implementing agent waits for the Overview result, then launches the
+  specialist review panel from that result. If the Overview result says the
+  change is not reviewable, the pass remains WIP until the named blocker is
+  fixed and Overview is rerun.
+- Specialist review subagents read
+  `/home/aaron/.codex/skills/local/adversarial-review-agent/SKILL.md` before
+  reviewing.
 - The global review specialist skills remain external supplementary lenses; do
   not create repo-local copies unless the user explicitly asks for a
   SaltMarcher-owned fork.
@@ -95,6 +107,8 @@ When a covered artifact changes, reviewers must check:
 - Did the change introduce duplicate or conflicting truth across covered
   surfaces?
 - Does the chosen verification path match the actual changed surfaces?
+- Did the implementing agent obtain and follow a global `review-overview` panel
+  plan before launching specialist review subagents?
 - Did any specialist review skill used for the pass remain a read-only review
   lens instead of becoming a competing repo-owned workflow?
 
@@ -105,8 +119,9 @@ When a covered artifact changes, reviewers must check:
 - [Agent Context Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/agent-context.md:1)
 - [Layering Architecture Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/layering-architecture.md:1)
 - [Global Agent Instruction Engineering Skill](/home/aaron/.codex/skills/local/agent-instruction-engineering/SKILL.md:1)
-- [Adversarial Review Caller Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/adversarial-review/SKILL.md:1)
-- [Adversarial Review Agent Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/adversarial-review-agent/SKILL.md:1)
+- [Global Review Overview Skill](/home/aaron/.codex/skills/local/review-overview/SKILL.md:1)
+- [Global Adversarial Review Caller Skill](/home/aaron/.codex/skills/local/adversarial-review/SKILL.md:1)
+- [Global Adversarial Review Agent Skill](/home/aaron/.codex/skills/local/adversarial-review-agent/SKILL.md:1)
 - [Global Performance Review Skill](/home/aaron/.codex/skills/local/review-performance/SKILL.md:1)
 - [Global Code Quality Review Skill](/home/aaron/.codex/skills/local/review-quality/SKILL.md:1)
 - [Global Architecture Review Skill](/home/aaron/.codex/skills/local/review-architecture/SKILL.md:1)

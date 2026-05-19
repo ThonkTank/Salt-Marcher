@@ -58,8 +58,10 @@ manifests:
    combines them with product work.
 10. Run the required SaltMarcher verification surface for the actual changed
     files and keep the literal result available for review.
-11. Before starting the adversarial review step, read and follow the repo-owned
-    caller skill `tools/quality/skills/adversarial-review/SKILL.md`.
+11. Before starting the review step, read and follow the global caller skill
+    `/home/aaron/.codex/skills/local/adversarial-review/SKILL.md`; it requires a
+    main-agent-launched `review-overview` pass before specialist reviewers are
+    launched.
 
 ## Evidence Sources
 
@@ -106,7 +108,7 @@ Every covered handoff must report one of these exact statuses:
   the current pass.
 
 Every covered handoff must also report the adversarial review outcome required
-by the repo-owned caller skill.
+by the global adversarial-review caller skill.
 
 Also report out-of-scope blockers discovered while running required gates. Do
 not claim that global debt is solved because a scoped pass is clean.
@@ -123,5 +125,6 @@ not claim that global debt is solved because a scoped pass is clean.
 - [OpenRewrite Gradle Plugin Configuration](/home/aaron/Schreibtisch/projects/references/continuous-refactoring/openrewrite-gradle-plugin-configuration.md)
 - [OpenAI Codex Refactor Your Codebase](/home/aaron/Schreibtisch/projects/references/continuous-refactoring/openai-codex-refactor-your-codebase.md)
 - [OpenAI Codex Worktrees](/home/aaron/Schreibtisch/projects/references/continuous-refactoring/openai-codex-worktrees.md)
-- [Adversarial Review Caller Skill](../adversarial-review/SKILL.md)
-- [Adversarial Review Agent Skill](../adversarial-review-agent/SKILL.md)
+- [Global Review Overview Skill](/home/aaron/.codex/skills/local/review-overview/SKILL.md)
+- [Global Adversarial Review Caller Skill](/home/aaron/.codex/skills/local/adversarial-review/SKILL.md)
+- [Global Adversarial Review Agent Skill](/home/aaron/.codex/skills/local/adversarial-review-agent/SKILL.md)
