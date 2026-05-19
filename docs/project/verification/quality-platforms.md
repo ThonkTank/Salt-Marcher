@@ -181,6 +181,10 @@ proof tasks. Build-harness bundle metadata must not require historic role-local
 `check*` names unless a separate explicit utility gate owns that name.
 `production-handoff` is the only public broad
 implementation-handoff aggregate; the documentation surface stays separate.
+`focused-handoff` is `Mechanically Enforced` only for the reported non-empty
+package or resource scope and the engine surfaces that actually ran with
+focused inputs. It does not prove global production readiness and does not
+replace `production-handoff` where broad production-code handoff is required.
 
 `production-handoff` is the public aggregate for production-code verification.
 It combines:
@@ -213,8 +217,10 @@ Default local proof routing by change type lives in
 documentation-only changes use
 `./gradlew checkDocumentationEnforcement --console=plain`, and
 non-documentation check/enforcement changes use the same production-handoff
-route. Focused package or layer-surface tasks may still be used for diagnosis,
-but they are not separate handoff proof entries.
+route when they affect shared production-code routing or lifecycle behavior.
+Focused routes are allowed for targeted package/resource work after non-empty
+input validation, but handoff claims must report the selected scope and the
+engine-specific surfaces that actually ran.
 
 Public verification-surface ownership is architecture-owned by
 [Verification Core Architecture](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/verification-core.md:1):

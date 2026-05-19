@@ -45,10 +45,38 @@ quality-hygiene tool owners inside Gradle.
 
 For check-only implementation work limited to concrete enforcement packages or
 verification-only wiring under `tools/**`, `build.gradle.kts`, or
-`settings.gradle.kts`, the required handoff proof is the smallest task that
-exercises the affected package plus `production-handoff` when shared
-production-code routing changes. Focused package and layer-surface tasks remain
-technical diagnostics, not public proof owners.
+`settings.gradle.kts`, the narrow local proof route is the documented
+`focused-handoff` wrapper entrypoint when the affected scope can be represented
+as package or resource paths. Shared production-code routing changes still add
+the required `production-handoff` route. Focused package and layer-surface
+tasks remain technical diagnostics, not public proof owners.
+
+`tools/gradle/run-staged-verification.sh focused-handoff --path
+<repo-package-or-resource-dir> [--area <area>]` is the package-focused local
+development route for scoped implementation work. Additional `--path` values
+MAY be supplied for the same focused run. Use it as a fast local proof for
+concrete packages or resource directories during scoped check/enforcement or
+product-adjacent work when the affected surface is narrow enough to be
+validated by the selected focused engines.
+
+Focused paths are repo-relative package or resource directories such as
+`src/domain/encounter` or `src/view/sessionplanner`; ambiguous roots require
+explicit `--area <area>`. The optional `--with compile-integrity` step runs the
+normal broad compile integrity checks separately before the focused surfaces so
+the focused task graph stays eligible for existing bundle selection.
+
+`focused-handoff` is not a replacement for `production-handoff`, not the proof
+route for shared verification-core lifecycle or routing changes, and not enough
+for public production-code handoff claims. Production-code changes and shared
+verification routing/lifecycle changes still need the broader
+`production-handoff` route when `AGENTS.md` requires it.
+
+The Gradle verification core treats an empty focused scope as a failure:
+nonexistent paths, files instead of directories, area/path mismatches, and
+directories without selected-surface inputs must fail instead of producing a
+green no-op run. Handoff text for `focused-handoff` MUST report the literal
+paths, selected area, engine surfaces that ran, and any broad supplemental
+steps such as `--with compile-integrity`.
 
 `./gradlew checkDocumentationEnforcement --console=plain` is the focused
 `Blocking Local Gate` for Markdown-backed architecture and enforcement
@@ -87,12 +115,11 @@ They may be useful when repairing the harness itself, but they do not replace
 the public production-handoff or documentation-enforcement proof routes.
 
 Focused investigation entrypoints are `compileJava`, `pmdMain`,
-`pmdStrictMain`, `checkRewriteNearMisses`, `spotbugsMain`,
-`cpdMain`, `lizardMain`, `ckjmMain`,
-repository/resource policy checks, technical `check*Enforcement` layer
-surfaces, and `checkDocumentationEnforcement`, each run through
-`./gradlew <task> --console=plain`. Investigation tasks are not alternate
-handoff entries.
+`pmdStrictMain`, `checkRewriteNearMisses`, `spotbugsMain`, `cpdMain`,
+`lizardMain`, `ckjmMain`, repository/resource policy checks, technical
+`check*Enforcement` layer surfaces, `checkDocumentationEnforcement`, and the
+wrapper-only `focused-handoff` route, each run through its documented command
+shape. Investigation tasks are not alternate production-handoff entries.
 
 ## Runtime Wrapper Policy
 

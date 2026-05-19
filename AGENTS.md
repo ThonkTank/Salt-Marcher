@@ -112,14 +112,21 @@ document exists.
 - After each completed implementation pass that changes non-documentation
   production-code checks, enforcement packages, build-harness rules,
   Error Prone rules, quality-rules wiring, enforcement-bundle wiring, or
-  verification-only Gradle wiring, rerun the smallest affected package,
-  bundle, or layer-surface task from the repository root before handoff.
-  If the pass changes shared production-code routing, broad verification-core
-  lifecycle wiring, or the public production-code surface itself, rerun
+  verification-only Gradle wiring, use the smallest applicable documented
+  wrapper route from the repository root before handoff. If the pass changes
+  shared production-code routing, broad verification-core lifecycle wiring, or
+  the public production-code surface itself, rerun
   `tools/gradle/run-staged-verification.sh production-handoff` from the
-  repository root as the handoff proof. Focused tasks remain technical proof
-  surfaces for their owning package; they do not replace production-handoff
-  when the shared production surface changed.
+  repository root as the handoff proof.
+- For package-limited production-adjacent or check/enforcement-package work,
+  use `tools/gradle/run-staged-verification.sh focused-handoff --path
+  <repo-package-or-resource-dir> [--area <area>]` first as the narrow local
+  proof. For check/enforcement-package-only changes, that focused route may be
+  the smallest local proof when the handoff reports the literal scope, selected
+  area, engine surfaces, and result. Production-code changes and shared
+  verification-core routing or lifecycle changes still require
+  `tools/gradle/run-staged-verification.sh production-handoff` before final
+  handoff.
 - After each completed documentation-only pass limited to `AGENTS.md`,
   `docs/**`, `src/domain/**/DOMAIN.md`, or Markdown files under
   `tools/quality/**`, rerun
@@ -140,12 +147,14 @@ document exists.
 - For long verification runs where silent execution makes agent-side
   observation unreliable, prefer `tools/gradle/run-observable-gradle.sh`
   instead of shell loops over many separate `./gradlew` invocations. Use
-  `tools/gradle/run-staged-verification.sh` for the public production-code
-  handoff surface and pass focused task names explicitly only for focused
-  package, bundle, or layer-surface proof. The canonical public proof
-  entrypoints are now `tools/gradle/run-staged-verification.sh
-  production-handoff` for production-code handoff and
-  `./gradlew checkDocumentationEnforcement` for documentation checks.
+  `tools/gradle/run-staged-verification.sh production-handoff` for the public
+  production-code handoff surface and
+  `tools/gradle/run-staged-verification.sh focused-handoff --path
+  <repo-package-or-resource-dir> [--area <area>]` for package-focused local
+  proof. The canonical public proof entrypoints are
+  `tools/gradle/run-staged-verification.sh production-handoff` for
+  production-code handoff and `./gradlew checkDocumentationEnforcement` for
+  documentation checks.
 - `CODEX_THREAD_ID` and `SALTMARCHER_GRADLE_ISOLATION_ID` remain trace labels
   only when a caller explicitly exports them; they are not part of the local
   parallel-safety contract and the wrapper does not consume them anymore.

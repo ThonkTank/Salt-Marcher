@@ -40,14 +40,20 @@ SaltMarcher verification is split into four layers.
 user-facing command ergonomics.
 
 Runtime wrappers MAY know canonical verification surface names and the
-production-handoff phase task names. They MUST NOT know bundle member tasks,
-internal rule lists, or architecture-rule ownership.
+production-handoff phase task names. They MAY know `focused-handoff` as a
+named local entrypoint, but area selection, task resolution, engine selection,
+and path-to-input validation belong to the verification core. Runtime wrappers
+MUST NOT know bundle member tasks, internal rule lists, or architecture-rule
+ownership.
 `tools/gradle/run-staged-verification.sh` routes the canonical
 `production-handoff` surface to the Gradle-owned `production-handoff`
 lifecycle task. The verification core routes that lifecycle task through the
 internal `productionHandoffCompileIntegrity`, `productionHandoffStructure`, and
 `productionHandoffHygiene` phase tasks.
 Other staged surfaces forward to one same-named Gradle lifecycle task.
+`focused-handoff` is different: it normalizes repo-relative path arguments and
+forwards focus intent to Gradle, while the verification core decides which
+diagnostic surface and engine inputs are actually active.
 `tools/gradle/run-observable-gradle.sh` remains a generic runtime wrapper for
 one Gradle invocation.
 
@@ -217,6 +223,12 @@ build-harness, quality-rules, quality-rules-errorprone included builds,
 jQAssistant task registration, and discovery requests. Those booleans are
 graph-pruning facts, not public verification surfaces and not proof-strength
 modifiers.
+Focused path requests MUST be non-empty, repo-relative directories that exist
+inside the active checkout, match the selected or inferred area, and contain at
+least one input consumed by the selected focused surface. A path that is
+missing, absolute, glob-shaped, outside the selected area's source roots, a
+file, or a directory with no selected-surface inputs is an invalid focused
+scope and MUST fail instead of producing a green no-op result.
 
 Included builds consume those facts and MUST NOT reconstruct the root repo
 state from alternative checkout-relative guessing when the propagated repo root
@@ -241,6 +253,13 @@ names at configuration time. Bundle-owned verification tasks remain
 implementation details behind those surfaces unless a task is explicitly
 documented here or in `quality-platforms-local-entrypoints.md` as a public
 focused utility gate.
+Error Prone, ArchUnit, jQAssistant, and build-harness work may be described as
+package-focused only when the actual engine inputs are filtered for the focused
+scope. For source engines, that means source roots/includes or exclusion
+patterns are focus-aware. For classpath or bytecode engines, that means class
+directories, imported classes, scan roots, rule groups, or equivalent engine
+inputs are narrowed before the engine claims focused proof. Configuration graph
+pruning alone does not make a broad engine scan package-focused.
 Physical build-harness bundle metadata MUST NOT require historic role-local
 task-name fields. Build-harness task names are owned by technical layer
 surfaces, except for the coalesced all-topology task and explicit root or
