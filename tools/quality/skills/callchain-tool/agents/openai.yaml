@@ -1,0 +1,7 @@
+interface:
+  display_name: "Callchain Tool"
+  short_description: "Use SaltMarcher's Joern-backed Java method callchain tool"
+  default_prompt: "Use $callchain-tool before setup, indexing, rendering, interpreting, or citing tools/callchain output, or when caller/callee context, callchains, Joern, or method-level static-analysis context are relevant."
+
+policy:
+  allow_implicit_invocation: true

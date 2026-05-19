@@ -3,6 +3,9 @@
 This directory owns an ad-hoc developer tool for method-level callchain
 diagrams. It is not a Gradle gate and it does not define architecture truth.
 
+Agents must read `tools/quality/skills/callchain-tool/SKILL.md` before setup,
+indexing, rendering, interpreting, or citing this tool's output.
+
 ## Setup
 
 ```bash
@@ -40,8 +43,8 @@ Text-first outputs are written under `build/callchain/out/<selector>/`:
 Use `--depth <n>` to control transitive expansion, `--include-external` to keep
 non-project methods, and `--refresh` after source changes.
 
-## Limits
+## Agent Workflow
 
-The diagrams are static-analysis evidence, not a runtime trace. Reflection,
-JavaFX event dispatch, ServiceLoader discovery, and listener registration may
-need source-level interpretation beside the generated graph.
+Detailed agent workflow, selector guidance, refresh rules, evidence strength,
+and handoff templates live in
+`tools/quality/skills/callchain-tool/SKILL.md`.

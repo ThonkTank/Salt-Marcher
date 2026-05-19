@@ -69,6 +69,8 @@ document exists.
   change must use the repo-owned `context-hygiene` skill before relying on
   nearby files as precedent. The skill is a routing and context-budget rule; it
   does not authorize new gates or broad documentation rewrites by itself.
+- Work that plans, implements, refactors, or reviews a SaltMarcher repo-tracked
+  change must use the repo-owned `repo-tools` skill before starting that work.
 - Production-code, check/enforcement, and dependency work must use the
   repo-owned `continuous-refactoring` skill before planning, implementing,
   refactoring, or reviewing. The skill is a workflow rule for keeping cleanup
@@ -99,24 +101,6 @@ document exists.
   `tools/quality/skills/view-layer-mvvm/SKILL.md` is the sole operative agent
   guidance. Other docs may only route or summarize; they must not become a
   second source of view-layer truth.
-
-## Local Code Visualization Tools
-
-- `tools/callchain/` is the repo-local ad-hoc tool for method-level Java
-  callchains. Use it when a task needs caller/callee context for a selected
-  method and static-analysis evidence is useful.
-- Run `tools/callchain/setup-joern.sh` once when Joern is missing,
-  `tools/callchain/index.sh --refresh` after source changes, and
-  `tools/callchain/render-callchain.sh [--depth <n>] <method-selector>` for
-  per-method text output. Generated output stays under `build/callchain/**`.
-- Treat callchain output as `Candidate` context only. It is static-analysis
-  evidence, not an architecture owner, verification gate, dependency source of
-  truth, Java language-server call hierarchy, or runtime trace.
-- Check reflection, JavaFX event dispatch, ServiceLoader discovery, and runtime
-  listener registration against source or canonical owner docs when they matter.
-- Do not commit generated callchain output, Joern workspaces, CPGs, DOT files,
-  or rendered diagrams unless the user explicitly asks for a repo-tracked
-  artifact.
 
 ## SaltMarcher Verification
 
@@ -184,7 +168,7 @@ document exists.
 - [Global Agent Instruction Engineering Skill](/home/aaron/.codex/skills/local/agent-instruction-engineering/SKILL.md:1)
 - [Context Hygiene Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/agent-context.md:1)
 - [Context Hygiene Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/context-hygiene/SKILL.md:1)
-- [Callchain Tool](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/callchain/README.md:1)
+- [Repo Tools Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/repo-tools/SKILL.md:1)
 - [Continuous Refactoring Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/continuous-refactoring/SKILL.md:1)
 - [Adversarial Review Caller Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/adversarial-review/SKILL.md:1)
 - [Adversarial Review Agent Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/adversarial-review-agent/SKILL.md:1)

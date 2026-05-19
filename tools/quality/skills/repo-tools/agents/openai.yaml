@@ -1,0 +1,7 @@
+interface:
+  display_name: "Repo Tools"
+  short_description: "Route SaltMarcher agents to repo-local developer tools and their governing skills"
+  default_prompt: "Use $repo-tools before planning, implementing, refactoring, or reviewing SaltMarcher repo-tracked changes so repo-local developer tools are discovered through their governing skills."
+
+policy:
+  allow_implicit_invocation: true
