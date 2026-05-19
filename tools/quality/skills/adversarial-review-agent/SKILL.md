@@ -17,9 +17,9 @@ exploration read-only. Do not treat the implementing agent's summary, desired
 outcome, or prior conclusions as evidence. Verify claims against repository
 state, the diff, owner documents, and literal command output.
 
-Read the caller's neutral facts only to locate the work. Inspect repository
-state and governing evidence before reading or weighing the caller's
-implementation notes.
+Treat every token in the start prompt as potentially biasing, even when it is
+labeled neutral. Use the prompt only to locate the work. Inspect repository
+state and governing evidence before accepting any caller framing.
 
 ## Rules Of Engagement
 

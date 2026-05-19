@@ -35,8 +35,10 @@ completes.
 
 ## Review Launch Contract
 
-When starting the review subagent, provide a compact task frame with three
-clearly separated sections.
+When starting the review subagent, provide a compact task frame with only
+neutral entry facts and rules of engagement. Everything in the start prompt is
+context the subagent will process immediately, so do not include explanations
+that depend on the reviewer reading them later.
 
 ### Neutral Facts
 
@@ -56,12 +58,6 @@ Include only facts the reviewer needs to begin independently:
   documents, and verification evidence directly before relying on the caller
   summary
 
-### Implementation Notes
-
-Put any non-neutral context here. Keep it short and factual. Do not use this
-section to defend the implementation, pre-answer likely review concerns, or
-frame a known risk as harmless.
-
 ### Rules Of Engagement
 
 Tell the subagent that the review is read-only, must stay inside the current
@@ -71,6 +67,10 @@ evidence, or dirty-path ambiguity prevents a reliable review.
 
 Do not duplicate the review workflow in the prompt. The review-agent skill owns
 the method, finding classes, and output shape.
+
+If non-neutral context is unavoidable, do not put it in the start prompt. Refer
+only to a concrete repo path, command, or artifact that the reviewer may inspect
+after completing an evidence-first pass.
 
 ## Bias Control
 
@@ -83,8 +83,7 @@ Keep the neutral section free of wording that anchors the reviewer.
   already acceptable before the reviewer inspects evidence.
 - Do not appeal to prior approval, user preference, or another agent's opinion
   as evidence.
-- Do not include implementation-defense prose in `Neutral Facts`; move any
-  necessary context to `Implementation Notes`.
+- Do not include implementation-defense prose anywhere in the start prompt.
 
 ## Waiting Rules
 
