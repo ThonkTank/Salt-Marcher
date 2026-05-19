@@ -17,6 +17,24 @@ exploration read-only. Do not treat the implementing agent's summary, desired
 outcome, or prior conclusions as evidence. Verify claims against repository
 state, the diff, owner documents, and literal command output.
 
+Read the caller's neutral facts only to locate the work. Inspect repository
+state and governing evidence before reading or weighing the caller's
+implementation notes.
+
+## Rules Of Engagement
+
+- Keep the review read-only. Do not edit files, stage changes, commit, push, or
+  run formatters.
+- Stay inside the current task scope. Report separate-owner or broader
+  migration concerns as `Separate Slice` unless they make this handoff
+  misleading.
+- Do not take over implementation design. Recommend the smallest required fix
+  needed to explain a finding.
+- Treat unclear scope, missing verification evidence, and dirty-path ambiguity
+  as reviewability problems when they prevent a reliable review.
+- Use technical facts, owner documents, repository state, and literal command
+  output over caller framing or preference.
+
 ## Required Inputs
 
 If the prompt omits any of these, infer them from the checkout before asking:
@@ -32,25 +50,31 @@ and targeted file reads.
 
 ## Review Workflow
 
-1. Identify the changed surface: production code, check/enforcement package,
+1. Inspect `git status --short --branch`, `git diff`, and any provided literal
+   verification output before accepting the caller's characterization.
+2. Identify the changed surface: production code, check/enforcement package,
    documentation, agent instruction, dependency/configuration, or mixed.
-2. Read the nearest governing owner before judging the diff:
+3. Read the nearest governing owner before judging the diff:
    `AGENTS.md`, the relevant `docs/project/**` standard, the touched
    `SKILL.md`, and layer skills for touched `src/domain/**` or `src/view/**`.
-3. Check whether the implementing agent used the required skills and the
+4. Check whether the implementing agent used the required skills and the
    required verification route for the touched surface.
-4. Look for contradictions between changed instruction surfaces, overclaimed
+5. Determine whether the diff is reviewable as one pass. If mixed ownership,
+   missing proof, or dirty-path separation makes reliable review impossible,
+   classify that as `Must Fix Before Handoff`.
+6. Look for contradictions between changed instruction surfaces, overclaimed
    enforcement, accidental new gates, hidden PR/changelog/review-ledger
    surfaces, scope drift, unowned source-of-truth creation, and deferred work
    that should block the current pass.
-5. Compare verification claims with literal command output. If the required
+7. Compare verification claims with literal command output. If the required
    gate did not run, failed, or was replaced by a weaker command, classify that
    accurately.
-6. Apply specialist review lenses when the changed surface benefits from them:
-   use the global `review-performance` skill for realistic performance risk,
+8. Select any specialist review lenses required by the changed surface: use the
+   global `review-performance` skill for realistic performance risk,
    `review-quality` for code-level maintainability risk, and
    `review-architecture` for dependency, boundary, public API, data ownership,
-   persistence, or architecture-pattern risk.
+   persistence, or architecture-pattern risk. State which lenses were selected
+   or skipped and why.
 
 The global review skills are supplementary read-only lenses. They do not
 replace this skill, create new SaltMarcher gates, or become repo-local
@@ -81,21 +105,26 @@ Lead with findings ordered by severity. Use this shape:
 
 ```text
 Must Fix Before Handoff
-- path:line - issue and required fix
+- path:line - issue, evidence, and required fix
 
 Should Fix In This Pass
-- path:line - issue and recommended fix
+- path:line - issue, evidence, and recommended fix
 
 Separate Slice
-- issue and why it is separate
+- issue, evidence, and why it is separate
 
 False Positive / Review-Owned
-- reviewed concern and why it does not block
+- reviewed concern, evidence, and why it does not block
 ```
 
-If there are no findings in a section, write `None`. End with the exact
-verification evidence you checked and any residual risk. Do not include praise,
-implementation plans, or broad summaries unless needed to explain a finding.
+If there are no findings in a section, write `None`. End with:
+
+- exact verification evidence checked
+- specialist lenses selected or skipped
+- residual risk
+
+Do not include praise, implementation plans, or broad summaries unless needed
+to explain a finding.
 
 ## References
 

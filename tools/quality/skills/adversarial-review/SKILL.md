@@ -33,23 +33,58 @@ Start the review only after:
 Do not start final handoff, commit, or publication claims before the review
 completes.
 
-## Review Prompt Contract
+## Review Launch Contract
 
-When starting the review subagent, provide a compact task frame:
+When starting the review subagent, provide a compact task frame with three
+clearly separated sections.
+
+### Neutral Facts
+
+Include only facts the reviewer needs to begin independently:
 
 - task goal
-- changed paths you believe are agent-owned
+- exact changed paths you believe are agent-owned
 - known pre-existing dirty paths that are not part of this pass
-- verification commands run and their literal results
-- known blockers or intentionally deferred slices
+- nearest owner documents or skills that constrain the touched surface
+- verification commands run and their literal results, or the blocker that
+  prevented the required command
+- known blockers or intentionally deferred slices, stated as
+  `path/scope/status/evidence` facts
 - instruction that the subagent must read and follow
   `tools/quality/skills/adversarial-review-agent/SKILL.md`
 - instruction that the subagent must inspect `git status`, `git diff`, owner
-  documents, and verification evidence directly instead of trusting the
-  caller summary
+  documents, and verification evidence directly before relying on the caller
+  summary
+
+### Implementation Notes
+
+Put any non-neutral context here. Keep it short and factual. Do not use this
+section to defend the implementation, pre-answer likely review concerns, or
+frame a known risk as harmless.
+
+### Rules Of Engagement
+
+Tell the subagent that the review is read-only, must stay inside the current
+task scope, and must classify findings with the review-agent skill's finding
+classes. The subagent must report when unclear scope, missing verification
+evidence, or dirty-path ambiguity prevents a reliable review.
 
 Do not duplicate the review workflow in the prompt. The review-agent skill owns
 the method, finding classes, and output shape.
+
+## Bias Control
+
+Keep the neutral section free of wording that anchors the reviewer.
+
+- Do not self-grade the change as clean, safe, simple, complete, or already
+  reviewed.
+- Do not tell the reviewer which finding outcome you expect.
+- Do not describe a concern as probably unrelated, probably false positive, or
+  already acceptable before the reviewer inspects evidence.
+- Do not appeal to prior approval, user preference, or another agent's opinion
+  as evidence.
+- Do not include implementation-defense prose in `Neutral Facts`; move any
+  necessary context to `Implementation Notes`.
 
 ## Waiting Rules
 
