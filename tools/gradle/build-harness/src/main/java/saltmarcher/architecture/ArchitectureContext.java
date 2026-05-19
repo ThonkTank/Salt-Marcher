@@ -18,6 +18,7 @@ import saltmarcher.architecture.domain.DomainRoleTopologySupport;
 
 public final class ArchitectureContext {
 
+    private static final String FOCUSED_VERIFICATION_PATHS_PROPERTY = "saltmarcher.focusedVerificationPaths";
     private static final Set<String> IGNORED_REPOSITORY_SCAN_SEGMENTS =
             Set.of(".codex", ".git", ".gradle", "build");
     private static final Pattern DOMAIN_CONTEXT_NAME_MARKER_PATTERN =
@@ -26,10 +27,12 @@ public final class ArchitectureContext {
             Pattern.compile("(?m)^\\s*Application Service:\\s+([A-Z][A-Za-z0-9_]*)\\s*$");
 
     private final Path repoRoot;
+    private final List<String> focusedSourcePathPrefixes;
     private List<SourceFile> sourceFiles;
 
     public ArchitectureContext(Path repoRoot) {
         this.repoRoot = repoRoot;
+        this.focusedSourcePathPrefixes = focusedSourcePathPrefixes();
     }
 
     public Path repoRoot() {
@@ -49,6 +52,9 @@ public final class ArchitectureContext {
                 .map(SourceFile::featureName)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toCollection(TreeSet::new));
+        if (!focusedSourcePathPrefixes.isEmpty()) {
+            return features;
+        }
         Path domainRoot = repoRoot.resolve("src/domain");
         if (!Files.isDirectory(domainRoot)) {
             return features;
@@ -170,6 +176,7 @@ public final class ArchitectureContext {
             try (Stream<Path> stream = Files.walk(root)) {
                 stream.filter(Files::isRegularFile)
                         .filter(path -> path.getFileName().toString().endsWith(".java"))
+                        .filter(this::isFocusedSourcePath)
                         .forEach(path -> {
                             try {
                                 files.add(SourceFile.parse(repoRoot, path));
@@ -190,6 +197,45 @@ public final class ArchitectureContext {
 
     private String contextPath(Path path) {
         return relativize(path);
+    }
+
+    private boolean isFocusedSourcePath(Path path) {
+        if (focusedSourcePathPrefixes.isEmpty()) {
+            return true;
+        }
+        String relativePath = relativize(path);
+        return focusedSourcePathPrefixes.stream().anyMatch(prefix ->
+                relativePath.equals(prefix) || relativePath.startsWith(prefix + "/"));
+    }
+
+    private static List<String> focusedSourcePathPrefixes() {
+        String rawPaths = System.getProperty(FOCUSED_VERIFICATION_PATHS_PROPERTY, "");
+        if (rawPaths.isBlank()) {
+            return List.of();
+        }
+        return Arrays.stream(rawPaths.split(","))
+                .map(String::trim)
+                .map(path -> path.replace('\\', '/'))
+                .map(path -> path.startsWith("./") ? path.substring(2) : path)
+                .map(path -> path.endsWith("/") ? path.substring(0, path.length() - 1) : path)
+                .filter(path -> !path.isBlank())
+                .peek(ArchitectureContext::requireSafeFocusedPath)
+                .distinct()
+                .sorted()
+                .toList();
+    }
+
+    private static void requireSafeFocusedPath(String path) {
+        boolean unsafe = path.startsWith("/")
+                || Arrays.asList(path.split("/")).contains("..")
+                || path.contains("*")
+                || path.contains("?")
+                || path.contains("[")
+                || path.contains("]");
+        if (unsafe) {
+            throw new IllegalArgumentException(
+                    "Focused verification paths must be repo-relative paths without '..' or glob syntax.");
+        }
     }
 
     private static List<String> declaredDomainContextNames(String content) {

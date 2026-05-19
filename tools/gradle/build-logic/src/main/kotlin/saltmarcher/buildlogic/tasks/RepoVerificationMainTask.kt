@@ -59,6 +59,9 @@ abstract class RepoVerificationMainTask : DefaultTask() {
             workingDir = repoRoot
             classpath = runtimeClasspath
             mainClass.set(verificationMainClass)
+            System.getProperty("saltmarcher.focusedVerificationPaths")
+                ?.takeIf(String::isNotBlank)
+                ?.let { focusedPaths -> systemProperty("saltmarcher.focusedVerificationPaths", focusedPaths) }
             args(repoRoot.absolutePath)
             args(verificationArgs.get())
         }

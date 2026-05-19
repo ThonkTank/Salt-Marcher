@@ -24,6 +24,13 @@ java {
 val repoRootDir = System.getProperty("saltmarcher.repoRootDir")
     ?.let(::File)
     ?: projectDir.parentFile.parentFile.parentFile
+val focusedVerificationPaths = System.getProperty("saltmarcher.focusedVerificationPaths")
+    ?.split(",")
+    .orEmpty()
+    .map(String::trim)
+    .map { path -> path.replace('\\', '/').removePrefix("./").removeSuffix("/") }
+    .filter(String::isNotEmpty)
+    .distinct()
 
 val enforcementBundles = extensions.getByType(EnforcementBundlesExtension::class.java)
 val focusedEnforcementBundleMode = enforcementBundles.focusedEnforcementBundleMode
@@ -51,6 +58,10 @@ fun repoInputTree(includePatterns: List<String>) = fileTree(repoRootDir) {
     includePatterns.forEach(::include)
 }
 
+fun focusedRepoInputPatterns(): List<String> = focusedVerificationPaths.flatMap { path ->
+    listOf(path, "$path/**")
+}
+
 fun buildHarnessInputs(kind: BuildHarnessTaskKind) = when (kind) {
     BuildHarnessTaskKind.DOCUMENTATION -> repoInputTree(
         listOf(
@@ -62,13 +73,14 @@ fun buildHarnessInputs(kind: BuildHarnessTaskKind) = when (kind) {
         )
     )
     BuildHarnessTaskKind.TOPOLOGY -> repoInputTree(
-        listOf(
-            "api/**",
-            "bootstrap/**",
-            "shell/**",
-            "src/**",
-            "tools/gradle/build-logic/src/main/kotlin/saltmarcher/buildlogic/enforcement/**"
-        )
+        focusedRepoInputPatterns().ifEmpty {
+            listOf(
+                "api/**",
+                "bootstrap/**",
+                "shell/**",
+                "src/**"
+            )
+        } + listOf("tools/gradle/build-logic/src/main/kotlin/saltmarcher/buildlogic/enforcement/**")
     )
 }
 

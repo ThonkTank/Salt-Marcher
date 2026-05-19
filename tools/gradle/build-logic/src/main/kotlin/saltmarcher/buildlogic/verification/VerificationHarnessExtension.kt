@@ -57,8 +57,9 @@ internal open class VerificationHarnessExtension(
             group = LifecycleBasePlugin.VERIFICATION_GROUP
             description = taskDescription
             setSource(project.files(roots).asFileTree.matching {
-                includes.forEach(::include)
-                exclude("**/build/**")
+                FocusedVerificationPaths.configureDefaultSourceFilter(this, includes)
+            }.matching {
+                FocusedVerificationPaths.configureFocusedSourceFilter(this, roots)
             })
             options.sourcepath = project.files()
             destinationDirectory.set(project.layout.buildDirectory.dir("classes/java/verification/${sliceKey.sliceId}"))
@@ -73,9 +74,13 @@ internal open class VerificationHarnessExtension(
                 options.errorprone.disableWarningsInGeneratedCode.set(true)
                 options.errorprone.disableAllChecks.set(true)
                 options.compilerArgs.add("-XDaddTypeAnnotationsToSymbol=true")
+                FocusedVerificationPaths.errorProneExcludedPathsPattern()?.let { excludedPathsPattern ->
+                    options.compilerArgs.add("-XepExcludedPaths:$excludedPathsPattern")
+                }
                 checkerNames.forEach(options.errorprone::error)
             }
             inputs.property("focusedVerificationCheckerNames", checkerNames.joinToString(","))
+            inputs.property("focusedVerificationPaths", FocusedVerificationPaths.propertyInput())
         }
     }
 
@@ -127,8 +132,9 @@ internal open class VerificationHarnessExtension(
         taskSpec = taskSpec,
         mainClassesDirectory = project.tasks.named<JavaCompile>("compileJava").flatMap(JavaCompile::getDestinationDirectory),
         sourceRoots = project.files(taskSpec.sourceRoots).asFileTree.matching {
-            taskSpec.sourceIncludes.forEach(::include)
-            exclude("**/build/**")
+            FocusedVerificationPaths.configureDefaultSourceFilter(this, taskSpec.sourceIncludes)
+        }.matching {
+            FocusedVerificationPaths.configureFocusedSourceFilter(this, taskSpec.sourceRoots)
         },
         dependsOnTasks = listOf(project.tasks.named("classes"))
     )
@@ -143,11 +149,10 @@ internal open class VerificationHarnessExtension(
             projectRoot.set(project.layout.projectDirectory)
             verificationInputs.from(
                 project.layout.projectDirectory.asFileTree.matching {
-                    include("resources/**")
-                    include("shell/**")
-                    include("src/**")
+                    FocusedVerificationPaths.configureDefaultSourceFilter(this, listOf("resources/**", "shell/**", "src/**"))
+                }.matching {
+                    FocusedVerificationPaths.configureFocusedSourceFilter(this, listOf(""))
                     exclude("**/.gradle/**")
-                    exclude("**/build/**")
                     exclude("**/.git/**")
                 }
             )
@@ -185,8 +190,9 @@ internal open class VerificationHarnessExtension(
             )
             javaSourceFiles.from(
                 project.files("bootstrap", "shell", "src").asFileTree.matching {
-                    include("**/*.java")
-                    exclude("**/build/**")
+                    FocusedVerificationPaths.configureDefaultSourceFilter(this, listOf("**/*.java"))
+                }.matching {
+                    FocusedVerificationPaths.configureFocusedSourceFilter(this, listOf("bootstrap", "shell", "src"))
                 }
             )
             successMarker.set(project.layout.buildDirectory.file("verification-markers/$taskName/success.marker"))
@@ -196,8 +202,9 @@ internal open class VerificationHarnessExtension(
             description = "Fail if active code uses inline style backchannels or passive Views use manual node layout styling."
             javaSourceFiles.from(
                 project.files("bootstrap", "shell", "src").asFileTree.matching {
-                    include("**/*.java")
-                    exclude("**/build/**")
+                    FocusedVerificationPaths.configureDefaultSourceFilter(this, listOf("**/*.java"))
+                }.matching {
+                    FocusedVerificationPaths.configureFocusedSourceFilter(this, listOf("bootstrap", "shell", "src"))
                 }
             )
             successMarker.set(project.layout.buildDirectory.file("verification-markers/$taskName/success.marker"))
