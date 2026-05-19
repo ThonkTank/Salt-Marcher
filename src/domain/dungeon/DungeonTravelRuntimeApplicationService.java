@@ -34,27 +34,21 @@ public final class DungeonTravelRuntimeApplicationService {
     }
 
     public void applyDungeonTravelSession(ApplyTravelDungeonSessionCommand command) {
-        ApplyTravelDungeonSessionCommand effectiveCommand = command == null
-                ? new ApplyTravelDungeonSessionCommand(
-                ApplyTravelDungeonSessionCommand.Action.REFRESH,
-                "",
-                0,
-                TravelOverlaySettings.defaults())
-                : command;
-        switch (effectiveCommand.action()) {
+        Objects.requireNonNull(command, "command");
+        switch (command.action()) {
             case REFRESH -> applyTravelDungeonSessionUseCase.refresh();
-            case ACTION -> applyTravelDungeonSessionUseCase.move(effectiveCommand.actionId());
+            case ACTION -> applyTravelDungeonSessionUseCase.move(command.actionId());
             case SET_PROJECTION_LEVEL ->
-                    applyTravelDungeonSessionUseCase.setProjectionLevel(effectiveCommand.projectionLevel());
+                    applyTravelDungeonSessionUseCase.setProjectionLevel(command.projectionLevel());
             case SET_OVERLAY -> {
-                TravelOverlaySettings overlaySettings = effectiveCommand.overlaySettings();
+                TravelOverlaySettings overlaySettings = command.overlaySettings();
                 applyTravelDungeonSessionUseCase.setOverlay(
                         overlaySettings.modeKey(),
                         overlaySettings.levelRange(),
                         overlaySettings.opacity(),
                         overlaySettings.selectedLevels());
             }
-            default -> throw new IllegalStateException("Unsupported travel action: " + effectiveCommand.action());
+            default -> throw new IllegalStateException("Unsupported travel action: " + command.action());
         }
         TravelDungeonSnapshot snapshot = currentDungeonTravelSnapshot();
         notifyDungeonTravelListeners(snapshot);

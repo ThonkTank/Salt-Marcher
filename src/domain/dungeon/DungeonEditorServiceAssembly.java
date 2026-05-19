@@ -6,10 +6,12 @@ import java.util.Objects;
 import java.util.function.Consumer;
 import shell.api.ServiceRegistry;
 import src.domain.dungeon.model.editor.helper.DungeonEditorSnapshotProjectionHelper;
+import src.domain.dungeon.model.editor.model.session.model.DungeonEditorSessionCommand;
 import src.domain.dungeon.model.editor.model.session.model.DungeonEditorSessionSnapshot;
 import src.domain.dungeon.model.editor.port.DungeonEditorDungeonPort;
 import src.domain.dungeon.model.editor.repository.DungeonEditorDungeonRepository;
 import src.domain.dungeon.model.editor.usecase.ApplyDungeonEditorSessionUseCase;
+import src.domain.dungeon.model.editor.usecase.DungeonEditorSessionWorkflowUseCase;
 import src.domain.dungeon.published.DungeonAuthoredMutationModel;
 import src.domain.dungeon.published.DungeonAuthoredReadModel;
 import src.domain.dungeon.published.DungeonEditorModel;
@@ -29,17 +31,36 @@ final class DungeonEditorServiceAssembly {
                 services.require(DungeonMapCatalogModel.class),
                 services.require(DungeonAuthoredReadModel.class),
                 services.require(DungeonAuthoredMutationModel.class));
-        ApplyDungeonEditorSessionUseCase useCase = new ApplyDungeonEditorSessionUseCase(
+        DungeonEditorSessionWorkflowUseCase workflowUseCase = new DungeonEditorSessionWorkflowUseCase(
                 dungeonRepository,
-                dungeonPort,
-                publishedState::publish);
-        useCase.publishSnapshot();
+                dungeonPort);
+        ApplyDungeonEditorSessionUseCase useCase = new PublishedApplyUseCase(workflowUseCase, publishedState);
+        publishedState.publishEditorSnapshot(workflowUseCase.apply(null));
         return new DungeonEditorApplicationService(useCase);
     }
 
     DungeonEditorModel createEditorModel(ServiceRegistry registry) {
         Objects.requireNonNull(registry, "registry");
         return publishedState.editorModel;
+    }
+
+    private static final class PublishedApplyUseCase implements ApplyDungeonEditorSessionUseCase {
+
+        private final DungeonEditorSessionWorkflowUseCase workflowUseCase;
+        private final PublishedState publishedState;
+
+        private PublishedApplyUseCase(
+                DungeonEditorSessionWorkflowUseCase workflowUseCase,
+                PublishedState publishedState
+        ) {
+            this.workflowUseCase = Objects.requireNonNull(workflowUseCase, "workflowUseCase");
+            this.publishedState = Objects.requireNonNull(publishedState, "publishedState");
+        }
+
+        @Override
+        public void apply(DungeonEditorSessionCommand command) {
+            publishedState.publishEditorSnapshot(workflowUseCase.apply(command));
+        }
     }
 
     private static final class PublishedState {
@@ -50,7 +71,7 @@ final class DungeonEditorServiceAssembly {
                 this::subscribe);
         private DungeonEditorSnapshot current = DungeonEditorSnapshot.empty("");
 
-        private void publish(DungeonEditorSessionSnapshot.SnapshotData snapshot) {
+        private void publishEditorSnapshot(DungeonEditorSessionSnapshot.SnapshotData snapshot) {
             current = DungeonEditorSnapshotProjectionHelper.toPublishedSnapshot(snapshot);
             for (Consumer<DungeonEditorSnapshot> listener : List.copyOf(listeners)) {
                 listener.accept(current);

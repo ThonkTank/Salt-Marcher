@@ -14,6 +14,6 @@ public final class DungeonEditorApplicationService {
     }
 
     public void applyEditorSession(DungeonEditorSessionCommand command) {
-        applyDungeonEditorSessionUseCase.apply(command);
+        applyDungeonEditorSessionUseCase.apply(Objects.requireNonNull(command, "command"));
     }
 }
