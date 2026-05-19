@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-05-11
+Last Reviewed: 2026-05-19
 Source of Truth: Detailed CI job policy, external service setup, branch
 protection expectations, and review governance for SaltMarcher quality
 platforms.
@@ -109,6 +109,61 @@ place:
   treat CKJM hotspot regressions as merge blockers unless a later ADR promotes
   them back to blocking status.
 
+### Branch Protection Readback
+
+The branch-protection bullets above are `Intended Policy`. They are not proof
+that GitHub currently blocks merges. Live required-check conformity is
+`Qualified` only after a read-only GitHub API readback proves the protected
+branch, active rulesets, or both require the documented blocking checks for the
+stated repository, branch, actor, and timestamp. Pull-request requirements,
+direct-push restrictions, auto-merge, and merge-queue setup must be recorded as
+observed repository configuration before they are claimed, but they are not
+qualified by the required-check comparison alone.
+
+Use the official GitHub REST surfaces for readback:
+
+```bash
+gh api repos/ThonkTank/Salt-Marcher/branches/main/protection
+gh api --paginate 'repos/ThonkTank/Salt-Marcher/rules/branches/main?per_page=100'
+gh api --paginate 'repos/ThonkTank/Salt-Marcher/rulesets?targets=branch&per_page=100'
+```
+
+The readback must record:
+
+- repository, branch, timestamp, and authenticated actor, or the exact
+  authentication failure
+- queried endpoints, whether each returned successfully, and whether every
+  paginated rules response was exhausted
+- classic branch-protection required status checks from
+  `required_status_checks.contexts` and `required_status_checks.checks`
+- active branch rules from `rules/branches/main`, including required status
+  checks when present
+- branch-targeted repository rulesets, including `enforcement`, ref-name
+  conditions, bypass actors visible to the authenticated actor, and
+  required-status-check rules
+- comparison result against the intended required blockers:
+  `quality-platforms / production-handoff`,
+  `quality-platforms / sonarcloud`, and `quality-platforms / codescene`
+
+Readback status uses this vocabulary:
+
+- `Qualified`: the API readback succeeded and shows `main` requires exactly the
+  intended blocking checks through classic branch protection, active rulesets,
+  or both. A classic branch-protection `404` is acceptable only when the
+  paginated active-rules and branch-rulesets readback proves the intended
+  required checks through active rulesets.
+- `Not Qualified`: readback was not run, authentication failed, required rules
+  pagination was not exhausted, all applicable required-check endpoints were
+  unavailable, or the required-check set differs.
+- `Stricter Drift`: live GitHub also requires
+  `quality-platforms / ckjm-report` or another report-only check. Do not claim
+  conformity unless this document is intentionally changed to make that check a
+  merge blocker.
+
+Do not claim "CI blocks merge" or "branch protection is configured" from this
+document alone. Without a fresh API readback, state only that SaltMarcher
+intends the listed GitHub checks to be required.
+
 ## Review Governance
 
 The quality platforms do not replace review judgment.
@@ -136,5 +191,7 @@ The quality platforms do not replace review judgment.
 
 - [Quality Platforms Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/verification/quality-platforms.md:1)
 - [.github/workflows/quality-platforms.yml](/home/aaron/Schreibtisch/projects/SaltMarcher/.github/workflows/quality-platforms.yml:1)
+- [GitHub Protected Branches REST Reference](/home/aaron/Schreibtisch/projects/references/quality-platforms/github-rest-branch-protection.md:1)
+- [GitHub Repository Rules REST Reference](/home/aaron/Schreibtisch/projects/references/quality-platforms/github-rest-repository-rules.md:1)
 - [Global Adversarial Review Caller Skill](/home/aaron/.codex/skills/local/adversarial-review/SKILL.md:1)
 - [Global Adversarial Review Agent Skill](/home/aaron/.codex/skills/local/adversarial-review-agent/SKILL.md:1)
