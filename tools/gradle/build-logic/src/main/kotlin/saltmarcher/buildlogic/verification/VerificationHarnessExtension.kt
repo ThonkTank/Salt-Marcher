@@ -58,6 +58,8 @@ internal open class VerificationHarnessExtension(
             description = taskDescription
             setSource(project.files(roots).asFileTree.matching {
                 FocusedVerificationPaths.configureDefaultSourceFilter(this, includes)
+            }.matching {
+                FocusedVerificationPaths.configureFocusedSourceFilter(this, roots)
             })
             options.sourcepath = project.files()
             destinationDirectory.set(project.layout.buildDirectory.dir("classes/java/verification/${sliceKey.sliceId}"))
