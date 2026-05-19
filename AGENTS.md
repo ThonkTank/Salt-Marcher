@@ -138,15 +138,23 @@ After each completed implementation pass, rerun `./gradlew build` and then `./gr
 
 Follow Conventional Commits: `feat: add encounter recovery filter`, `refactor(ui): simplify shell navigation`. Keep each commit focused on one concern. Call out schema, crawler, or backup-format impacts explicitly. Do not hide unrelated cleanup inside a convenience commit.
 
-Start-of-task protocol for every implementation request:
-1. Inspect the worktree for pre-existing local modifications.
-2. Commit those existing modifications.
-3. Push them to `main`.
-4. Only then begin the newly requested change.
+Post-work commit protocol for every implementation request:
+1. Inspect the worktree for pre-existing local modifications before editing.
+2. Treat those modifications as the current working base.
+3. Do the requested work and run the required verification.
+4. Commit and push only the work you introduced.
 
-This is mandatory, not advisory. The presence of pre-existing local modifications is not a reason to pause and ask whether you should commit them; it is the trigger to perform steps 2 and 3 before starting the new task. Do not reinterpret this rule into "never commit/push existing changes" or "wait for approval because the tree is dirty". The required default action is: inspect, commit, push, then proceed.
+This is mandatory, not advisory. Do not make a start-of-task commit merely
+because the tree is dirty, and do not sweep pre-existing changes into your
+post-work commit. Use a WIP commit when the work, verification, or review is
+not release-ready; use a release-quality commit only for a fully verified,
+handoff-ready result.
 
-Only stop and surface a blocker when you hit a concrete obstacle that prevents the protocol itself from being completed safely, for example merge conflicts, missing push credentials, sandbox restrictions that require explicit approval, or suspected secrets in the pending changes. "There are already modified files" is not a blocker; it is the condition the protocol exists to handle.
+Only stop and surface a blocker when a concrete obstacle prevents scoped
+post-work commit handling safely, for example inseparable hunks, suspected
+secrets in pending changes, missing push credentials, or sandbox restrictions
+that require explicit approval. "There are already modified files" is not a
+blocker; it is the working base for the requested change.
 
 ## Security
 
