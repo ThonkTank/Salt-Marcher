@@ -30,7 +30,6 @@ internal open class VerificationHarnessExtension(
     private val project: Project,
     private val sourceSets: SourceSetContainer,
     private val mainSourceSet: SourceSet,
-    private val sourceJavaRoots: FileCollection,
     private val commonFocusedArchunitSupportIncludes: List<String>,
     private val includeQualityRulesErrorProne: Boolean,
     private val jqassistantTaskRegistrar: JqassistantTaskRegistrar
@@ -49,8 +48,8 @@ internal open class VerificationHarnessExtension(
         val roots = sliceKey.verificationSourceRoots
         val includes = sliceKey.verificationSourceIncludes
         sourceSets.register(sourceSetName) {
-            java.setSrcDirs(roots)
-            includes.forEach(java::include)
+            java.setSrcDirs(listOf("."))
+            rootedIncludes(roots, includes).forEach(java::include)
             resources.setSrcDirs(emptyList<String>())
             compileClasspath += mainSourceSet.compileClasspath
             runtimeClasspath += output + compileClasspath
@@ -62,7 +61,7 @@ internal open class VerificationHarnessExtension(
                 includes.forEach(::include)
                 exclude("**/build/**")
             })
-            options.sourcepath = sourceJavaRoots
+            options.sourcepath = project.files()
             destinationDirectory.set(project.layout.buildDirectory.dir("classes/java/verification/${sliceKey.sliceId}"))
             if (checkerNames.isEmpty()) {
                 options.errorprone.enabled.set(false)
@@ -80,6 +79,11 @@ internal open class VerificationHarnessExtension(
             inputs.property("focusedVerificationCheckerNames", checkerNames.joinToString(","))
         }
     }
+
+    private fun rootedIncludes(roots: List<String>, includes: List<String>): List<String> =
+        roots.flatMap { root ->
+            includes.map { include -> "${root.trimEnd('/')}/$include" }
+        }
 
     fun registerFocusedArchunitTestTask(
         bundleId: String,

@@ -53,7 +53,8 @@ javafx {
 sourceSets {
     main {
         java {
-            setSrcDirs(listOf("bootstrap", "shell", "src"))
+            setSrcDirs(listOf("."))
+            include("bootstrap/**/*.java", "shell/**/*.java", "src/**/*.java")
         }
         resources {
             setSrcDirs(listOf("resources"))

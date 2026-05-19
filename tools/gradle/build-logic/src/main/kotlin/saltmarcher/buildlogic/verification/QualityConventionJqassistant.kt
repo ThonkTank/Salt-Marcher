@@ -36,7 +36,6 @@ internal fun org.gradle.api.Project.registerQualityConventionHarness(
         project = this,
         sourceSets = verificationLayout.sourceSets,
         mainSourceSet = verificationLayout.mainSourceSet,
-        sourceJavaRoots = verificationLayout.sourceJavaRoots,
         commonFocusedArchunitSupportIncludes = verificationLayout.commonFocusedArchunitSupportIncludes,
         includeQualityRulesErrorProne = environment.includeQualityRulesErrorProne,
         jqassistantTaskRegistrar = JqassistantTaskRegistrar(
