@@ -126,7 +126,12 @@ public final class LoadAdventuringDaySummaryUseCase {
     ) {
     }
 
-    public static final class RestCadence {
+    public record RestCadence(
+            Long characterId,
+            int nextMilestone,
+            int xpDelta,
+            int urgency
+    ) {
 
         public static final int SHORT_REST_ONE = 1;
         public static final int SHORT_REST_TWO = 2;
@@ -135,44 +140,15 @@ public final class LoadAdventuringDaySummaryUseCase {
         public static final int SOON = 2;
         public static final int OVERDUE = 3;
 
-        private final Long characterId;
-        private final int nextMilestone;
-        private final int xpDelta;
-        private final int urgency;
-
-        private RestCadence(Long characterId, int nextMilestone, int xpDelta, int urgency) {
-            this.characterId = characterId;
-            this.nextMilestone = normalizeMilestone(nextMilestone);
-            this.xpDelta = xpDelta;
-            this.urgency = normalizeUrgency(urgency);
-        }
-
-        public Long characterId() {
-            return characterId;
-        }
-
-        public int nextMilestone() {
-            return nextMilestone;
-        }
-
-        public int xpDelta() {
-            return xpDelta;
-        }
-
-        public int urgency() {
-            return urgency;
+        public RestCadence {
+            nextMilestone = nextMilestone == SHORT_REST_ONE || nextMilestone == SHORT_REST_TWO
+                    ? nextMilestone
+                    : LONG_REST;
+            urgency = urgency == SOON || urgency == OVERDUE ? urgency : NORMAL;
         }
 
         boolean longRestMilestone() {
             return nextMilestone == LONG_REST;
-        }
-
-        private static int normalizeMilestone(int value) {
-            return value == SHORT_REST_ONE || value == SHORT_REST_TWO ? value : LONG_REST;
-        }
-
-        private static int normalizeUrgency(int value) {
-            return value == SOON || value == OVERDUE ? value : NORMAL;
         }
     }
 }

@@ -100,13 +100,13 @@ public final class PartyApplicationService {
 
     public void awardXp(src.domain.party.published.AwardPartyXpCommand command) {
         awardPartyXpUseCase.execute(
-                ids(command == null ? null : command.ids()),
+                CommandInputs.copyOrEmpty(command == null ? null : command.ids()),
                 command == null ? 0 : command.xpPerCharacter());
     }
 
     public void adjustXp(src.domain.party.published.AdjustPartyXpCommand command) {
         adjustPartyXpUseCase.execute(
-                ids(command == null ? null : command.ids()),
+                CommandInputs.copyOrEmpty(command == null ? null : command.ids()),
                 command == null ? 0 : command.xpDelta());
     }
 
@@ -120,37 +120,39 @@ public final class PartyApplicationService {
             return;
         }
         movePartyCharactersUseCase.execute(
-                ids(command.characterIds()),
-                travelLocation(command.target()),
+                CommandInputs.copyOrEmpty(command.characterIds()),
+                CommandInputs.travelLocation(command.target()),
                 command.attachToPartyToken());
     }
 
     public void calculateAdventuringDay(src.domain.party.published.CalculateAdventuringDayCommand command) {
         calculateAdventuringDayUseCase.publish(
-                levels(command == null ? null : command.levels()),
+                CommandInputs.copyOrEmpty(command == null ? null : command.levels()),
                 command == null ? 0 : command.totalGroupXp());
     }
 
-    private static List<Long> ids(@Nullable List<Long> ids) {
-        return ids == null ? List.of() : List.copyOf(ids);
-    }
+    private static final class CommandInputs {
 
-    private static List<Integer> levels(@Nullable List<Integer> levels) {
-        return levels == null ? List.of() : List.copyOf(levels);
-    }
+        private CommandInputs() {
+        }
 
-    private static @Nullable PartyTravelLocation travelLocation(@Nullable PartyTravelLocationSnapshot target) {
-        if (target instanceof src.domain.party.published.PartyDungeonTravelLocationSnapshot dungeon) {
-            return PartyTravelLocation.dungeon(
-                    dungeon.mapId(),
-                    PartyDungeonTravelLocationKind.valueOf(dungeon.locationKind().name()),
-                    dungeon.ownerId(),
-                    new PartyTravelTile(dungeon.tile().q(), dungeon.tile().r(), dungeon.tile().level()),
-                    PartyTravelHeading.valueOf(dungeon.heading().name()));
+        private static <T> List<T> copyOrEmpty(@Nullable List<T> values) {
+            return values == null ? List.of() : List.copyOf(values);
         }
-        if (target instanceof src.domain.party.published.PartyOverworldTravelLocationSnapshot overworld) {
-            return PartyTravelLocation.overworld(overworld.mapId(), overworld.tileId());
+
+        private static @Nullable PartyTravelLocation travelLocation(@Nullable PartyTravelLocationSnapshot target) {
+            if (target instanceof src.domain.party.published.PartyDungeonTravelLocationSnapshot dungeon) {
+                return PartyTravelLocation.dungeon(
+                        dungeon.mapId(),
+                        PartyDungeonTravelLocationKind.valueOf(dungeon.locationKind().name()),
+                        dungeon.ownerId(),
+                        new PartyTravelTile(dungeon.tile().q(), dungeon.tile().r(), dungeon.tile().level()),
+                        PartyTravelHeading.valueOf(dungeon.heading().name()));
+            }
+            if (target instanceof src.domain.party.published.PartyOverworldTravelLocationSnapshot overworld) {
+                return PartyTravelLocation.overworld(overworld.mapId(), overworld.tileId());
+            }
+            return null;
         }
-        return null;
     }
 }

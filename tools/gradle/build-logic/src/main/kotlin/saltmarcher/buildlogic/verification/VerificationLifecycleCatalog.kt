@@ -66,7 +66,12 @@ internal fun standardVerificationLifecycleCatalog(): VerificationLifecycleCatalo
         verificationLifecycleOwner("near-miss-hygiene", "checkRewriteNearMisses", VerificationLifecyclePhase.HYGIENE),
         verificationLifecycleOwner("spotbugs-main", "spotbugsMain", VerificationLifecyclePhase.HYGIENE),
         verificationLifecycleOwner("cpd-main", "cpdMain", VerificationLifecyclePhase.HYGIENE),
-        verificationLifecycleOwner("lizard-main", "lizardMain", VerificationLifecyclePhase.HYGIENE),
+        verificationLifecycleOwner(
+            "lizard-main",
+            "lizardMain",
+            VerificationLifecyclePhase.HYGIENE,
+            dependencyTaskNames = listOf("setupLizard")
+        ),
         verificationLifecycleOwner(
             "compiled-artifact-hygiene",
             "checkNoCompiledArtifactsInSource",
