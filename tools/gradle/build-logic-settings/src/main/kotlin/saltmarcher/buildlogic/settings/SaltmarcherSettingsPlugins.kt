@@ -143,7 +143,6 @@ private fun verificationRequestScope(
     discoveryBuildRequest: Boolean
 ): VerificationRequestScope {
     val broadProductionRequest = requestedTaskNames.any(::isAllBundleVerificationTaskName)
-    val productionHandoffCompileIntegrityRequest = requestedTaskNames.any(::isProductionHandoffCompileIntegrityTaskName)
     val productionHandoffStructureRequest = requestedTaskNames.any(::isProductionHandoffStructureTaskName)
     val documentationRequest = requestedTaskNames.any(::isDocumentationTaskName)
     val focusedEnforcementRequest = requestedTaskNames.any(::isFocusedEnforcementTaskName)
@@ -163,9 +162,9 @@ private fun verificationRequestScope(
         descriptorEngineSources.any { descriptor -> descriptor.jqassistant != null }
 
     return VerificationRequestScope(
-        includeBuildHarness = discoveryBuildRequest || productionHandoffCompileIntegrityRequest || productionHandoffStructureRequest || buildHarnessRequest,
-        includeQualityRules = discoveryBuildRequest || productionHandoffCompileIntegrityRequest || broadProductionRequest || sourceHygieneRequest,
-        includeQualityRulesErrorProne = discoveryBuildRequest || productionHandoffCompileIntegrityRequest || errorProneRequest,
+        includeBuildHarness = discoveryBuildRequest || productionHandoffStructureRequest || buildHarnessRequest,
+        includeQualityRules = discoveryBuildRequest || broadProductionRequest || sourceHygieneRequest,
+        includeQualityRulesErrorProne = discoveryBuildRequest || errorProneRequest,
         includeJqassistant = discoveryBuildRequest || jqassistantRequest,
         discoveryBuildRequest = discoveryBuildRequest
     )
@@ -185,9 +184,6 @@ private fun isAllBundleVerificationTaskName(taskName: String): Boolean =
         taskName == ProductionHandoffHygieneTaskName ||
         taskName == CheckTaskName ||
         taskName == "build"
-
-private fun isProductionHandoffCompileIntegrityTaskName(taskName: String): Boolean =
-    taskName == ProductionHandoffCompileIntegrityTaskName
 
 private fun isProductionHandoffStructureTaskName(taskName: String): Boolean =
     taskName == ProductionHandoffStructureTaskName

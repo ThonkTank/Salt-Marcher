@@ -5,7 +5,6 @@ import net.ltgt.gradle.errorprone.errorprone
 import org.gradle.api.Project
 import org.gradle.api.Task
 import org.gradle.api.file.Directory
-import org.gradle.api.file.FileCollection
 import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.SourceSet
@@ -48,8 +47,8 @@ internal open class VerificationHarnessExtension(
         val roots = sliceKey.verificationSourceRoots
         val includes = sliceKey.verificationSourceIncludes
         sourceSets.register(sourceSetName) {
-            java.setSrcDirs(listOf("."))
-            rootedIncludes(roots, includes).forEach(java::include)
+            java.setSrcDirs(roots)
+            includes.forEach(java::include)
             resources.setSrcDirs(emptyList<String>())
             compileClasspath += mainSourceSet.compileClasspath
             runtimeClasspath += output + compileClasspath
@@ -79,11 +78,6 @@ internal open class VerificationHarnessExtension(
             inputs.property("focusedVerificationCheckerNames", checkerNames.joinToString(","))
         }
     }
-
-    private fun rootedIncludes(roots: List<String>, includes: List<String>): List<String> =
-        roots.flatMap { root ->
-            includes.map { include -> "${root.trimEnd('/')}/$include" }
-        }
 
     fun registerFocusedArchunitTestTask(
         bundleId: String,

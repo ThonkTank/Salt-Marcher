@@ -53,20 +53,24 @@ internal fun Project.configureVerificationCore() {
         verificationHarness,
         focusedEnforcementBundleMode = enforcementBundles.focusedEnforcementBundleMode
     )
-    val nearMissCompileTask = verificationHarness.registerFocusedVerificationCompileTask(
-        FocusedVerificationSliceKey(
-            verificationSourceRoots = listOf("bootstrap", "shell", "src"),
-            verificationSourceIncludes = listOf("**/*.java"),
-            compileClasspathOwner = "mainCompileClasspath"
-        ),
-        listOf("NearMissDtoOverfetching", "NearMissUseMapContainsKey"),
-        "Compile production sources with cache-compatible near-miss hygiene checks enabled."
-    )
+    val nearMissCompileTask = if (nearMissVerificationRequested()) {
+        verificationHarness.registerFocusedVerificationCompileTask(
+            FocusedVerificationSliceKey(
+                verificationSourceRoots = listOf("bootstrap", "shell", "src"),
+                verificationSourceIncludes = listOf("**/*.java"),
+                compileClasspathOwner = "mainCompileClasspath"
+            ),
+            listOf("NearMissDtoOverfetching", "NearMissUseMapContainsKey"),
+            "Compile production sources with cache-compatible near-miss hygiene checks enabled."
+        )
+    } else {
+        null
+    }
 
     tasks.register("checkRewriteNearMisses") {
         group = LifecycleBasePlugin.VERIFICATION_GROUP
         description = "Run blocking first-party near-miss hygiene checks."
-        dependsOn(nearMissCompileTask)
+        nearMissCompileTask?.let { task -> dependsOn(task) }
     }
 
     fun registerStandardBundle(bundleId: String): RegisteredEnforcementBundleTasks {
@@ -183,15 +187,6 @@ internal fun Project.configureVerificationCore() {
         group = LifecycleBasePlugin.VERIFICATION_GROUP
         description = "Run the fail-fast compile integrity phase for production handoff."
         verificationLifecycleCatalog.ownerTaskNames(VerificationLifecyclePhase.COMPILE_INTEGRITY).forEach(::dependsOn)
-        if (includeBuildHarness) {
-            dependsOn(gradle.includedBuild("build-harness").task(":classes"))
-        }
-        if (systemBoolean("saltmarcher.includeQualityRules", defaultValue = true)) {
-            dependsOn(gradle.includedBuild("quality-rules").task(":jar"))
-        }
-        if (systemBoolean("saltmarcher.includeQualityRulesErrorProne", defaultValue = true)) {
-            dependsOn(gradle.includedBuild("quality-rules-errorprone").task(":jar"))
-        }
     }
 
     val productionHandoffMarkerLayout = productionHandoffMarkerLayout()
@@ -249,7 +244,7 @@ internal fun Project.configureVerificationCore() {
         verificationLifecycleCatalog.ownerDependencyTaskNames(VerificationLifecyclePhase.HYGIENE) +
             registeredBundleTasks.map(RegisteredEnforcementBundleTasks::selectorTaskName) +
             registeredBundleTasks.flatMap(RegisteredEnforcementBundleTasks::leafTaskNames) +
-            nearMissCompileTask.name +
+            listOfNotNull(nearMissCompileTask?.name) +
             focusedCompileTasksByBundleId.values.map { taskProvider -> taskProvider.name }
 
     configureProductionHandoffHygieneBarriers(
@@ -311,6 +306,21 @@ private fun Project.productionHandoffRequested(): Boolean {
     return gradle.startParameter.taskNames
         .map { taskName -> taskName.substringAfterLast(':') }
         .any(requestedSurfaceNames::contains)
+}
+
+private fun Project.nearMissVerificationRequested(): Boolean {
+    val requestedTaskNames = gradle.startParameter.taskNames
+        .map { taskName -> taskName.substringAfterLast(':') }
+        .toSet()
+    val requestedSurfaceNames = setOf(
+        ProductionHandoffSurfaceId,
+        ProductionHandoffHygieneTaskName,
+        "production-handoff",
+        "check",
+        "build",
+        "checkRewriteNearMisses"
+    )
+    return requestedTaskNames.any(requestedSurfaceNames::contains)
 }
 
 private fun Project.productionHandoffMarkerLayout(): ProductionHandoffMarkerLayout =
