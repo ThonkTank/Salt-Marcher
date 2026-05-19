@@ -13,7 +13,7 @@ this file adds a stricter SaltMarcher-specific rule.
 
 Before changing repo-tracked files in SaltMarcher:
 
-1. Follow the workspace preflight and dirty-baseline rules in
+1. Follow the workspace preflight and post-work commit rules in
    `/home/aaron/Schreibtisch/projects/AGENTS.md`.
 2. Classify the touched surface: production code, check/enforcement package,
    documentation, agent instruction, source-backed decision, or a combination.
