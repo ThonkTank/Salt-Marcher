@@ -3,14 +3,24 @@ package src.view.leftbartabs.dungeoneditor;
 import java.util.List;
 import java.util.Objects;
 import javafx.beans.value.ChangeListener;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.scene.Node;
+import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.MenuItem;
 import javafx.scene.control.SplitMenuButton;
+import javafx.scene.control.TextField;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
+import javafx.scene.layout.VBox;
 import javafx.util.StringConverter;
+import src.view.slotcontent.primitives.dialog.DialogSurfaceContentModel;
+import src.view.slotcontent.primitives.dialog.DialogSurfaceView;
+import src.view.slotcontent.primitives.popup.AnchoredPopupContentModel;
+import src.view.slotcontent.primitives.popup.AnchoredPopupView;
 
 final class DungeonEditorMapControlsView {
 
@@ -21,7 +31,7 @@ final class DungeonEditorMapControlsView {
     private final Label statusLabel = new Label();
     private final ChangeListener<DungeonEditorMapControlsContentModel.MapItem> selectionListener =
             (ignored, before, after) -> handleSelectionChanged(after);
-    private final DungeonEditorMapEditorPopupView mapEditorPopup;
+    private final DungeonEditorMapEditorPopup mapEditorPopup;
     private final HBox row;
     private final DungeonEditorControlsEvents events;
 
@@ -40,6 +50,8 @@ final class DungeonEditorMapControlsView {
         });
         mapSelector.setMaxWidth(Double.MAX_VALUE);
         mapSelector.setMinWidth(0.0);
+        mapSelector.setPromptText("Dungeon auswählen");
+        mapSelector.setAccessibleText("Dungeon auswählen");
         DungeonEditorControlsListeners.onSelectedItemChanged(mapSelector, selectionListener);
 
         mapActionButton.setText("Neu");
@@ -47,10 +59,10 @@ final class DungeonEditorMapControlsView {
         DungeonEditorControlsFxAccess.addStyles(mapActionButton, "toolbar-action-button", "dungeon-toolbar-menu");
         mapActionButton.setMinWidth(Region.USE_PREF_SIZE);
 
-        mapEditorPopup = new DungeonEditorMapEditorPopupView(panelView, events, mapActionButton);
-        mapActionButton.setOnAction(event -> mapEditorPopup.publishInput(true, false, false, false, false, false));
-        editMapItem.setOnAction(event -> mapEditorPopup.publishInput(false, true, false, false, false, false));
-        deleteMapItem.setOnAction(event -> mapEditorPopup.publishInput(false, false, true, false, false, false));
+        mapEditorPopup = new DungeonEditorMapEditorPopup(panelView, events, mapActionButton);
+        mapActionButton.setOnAction(event -> mapEditorPopup.openCreate());
+        editMapItem.setOnAction(event -> mapEditorPopup.openRename());
+        deleteMapItem.setOnAction(event -> mapEditorPopup.openDelete());
         panelView.describeNode(mapActionButton, "Neuen Dungeon erstellen; weitere Dungeon-Aktionen im Menü");
 
         DungeonEditorControlsFxAccess.addStyle(statusLabel, "text-muted");
@@ -96,7 +108,7 @@ final class DungeonEditorMapControlsView {
         statusLabel.setManaged(!resolvedStatus.isBlank());
     }
 
-    private void showMapEditor(DungeonEditorContributionModel.MapEditorUiState mapEditorUiState) {
+    private void showMapEditor(DungeonEditorMapControlsContentModel.MapEditorUiState mapEditorUiState) {
         mapEditorPopup.show(mapEditorUiState);
     }
 
@@ -117,9 +129,171 @@ final class DungeonEditorMapControlsView {
                 .filter(item -> Objects.equals(item.key(), selectedKey))
                 .findFirst()
                 .orElse(null);
-        if (selectedMap != null || maps.isEmpty()) {
-            return selectedMap;
+        return selectedMap;
+    }
+}
+
+final class DungeonEditorMapEditorPopup {
+
+    private final AnchoredPopupContentModel popupContentModel = new AnchoredPopupContentModel();
+    private final Label titleLabel = new Label();
+    private final Label draftFieldLabel = new Label("Name");
+    private final TextField draftField = new TextField();
+    private final Label errorLabel = new Label();
+    private final Button cancelButton = new Button("Abbrechen");
+    private final Button saveButton = new Button("Speichern");
+    private final Button cancelDeleteButton = new Button("Abbrechen");
+    private final Button confirmDeleteButton = new Button("Löschen");
+    private final Label deleteLabel = new Label("Dungeon löschen?");
+    private final ChangeListener<String> draftListener = (ignored, before, after) -> handleDraftChanged();
+    private final DungeonEditorControlsGate hiddenGate = new DungeonEditorControlsGate();
+    private final HBox deleteConfirmRow;
+    private final HBox actionRow;
+    private final Node anchor;
+    private final DungeonEditorControlsEvents events;
+    private final AnchoredPopupView popup;
+
+    DungeonEditorMapEditorPopup(DungeonEditorControlsView panelView, DungeonEditorControlsEvents events, Node anchor) {
+        this.events = events;
+        this.anchor = anchor;
+        DungeonEditorControlsFxAccess.addStyle(titleLabel, "panel-title");
+        draftFieldLabel.setLabelFor(draftField);
+        draftField.setAccessibleText("Dungeon-Name");
+        DungeonEditorControlsFxAccess.addStyle(errorLabel, "text-warning");
+        errorLabel.setLabelFor(draftField);
+        errorLabel.setWrapText(true);
+        errorLabel.setManaged(false);
+        errorLabel.setVisible(false);
+
+        DungeonEditorControlsFxAccess.addStyle(deleteLabel, "text-warning");
+        deleteConfirmRow = new HBox(8, deleteLabel, panelView.rowSpacer(), cancelDeleteButton, confirmDeleteButton);
+        deleteConfirmRow.setVisible(false);
+        deleteConfirmRow.setManaged(false);
+
+        actionRow = new HBox(8, cancelButton, panelView.rowSpacer(), saveButton);
+        actionRow.setAlignment(Pos.CENTER_LEFT);
+
+        VBox body = new VBox(10, draftFieldLabel, draftField, errorLabel, deleteConfirmRow);
+        DialogSurfaceContentModel dialogContentModel = new DialogSurfaceContentModel();
+        DialogSurfaceView panel = new DialogSurfaceView(titleLabel, body, actionRow);
+        panel.bind(dialogContentModel);
+        dialogContentModel.showLayout(DialogSurfaceContentModel.BodyPolicy.FIXED, true, true);
+        panel.setPadding(new Insets(10));
+        DungeonEditorControlsFxAccess.addStyles(panel, "dropdown-window", "dropdown-form");
+        popup = new AnchoredPopupView(panel, () -> this.anchor, () -> draftField);
+        popup.bind(popupContentModel);
+        popup.onViewInputEvent(event -> {
+            if (event.interaction().isHidden()) {
+                handleHidden();
+            }
+        });
+
+        cancelButton.setOnAction(event -> dismiss());
+        cancelDeleteButton.setOnAction(event -> dismiss());
+        confirmDeleteButton.setOnAction(event -> confirmDelete());
+        saveButton.setOnAction(event -> submit());
+        draftField.setOnAction(event -> submit());
+        draftField.textProperty().addListener(draftListener);
+    }
+
+    void openCreate() {
+        events.openCreateMapEditor(currentDraftText());
+    }
+
+    void openRename() {
+        events.openRenameMapEditor(currentDraftText());
+    }
+
+    void openDelete() {
+        events.openDeleteMapEditor(currentDraftText());
+    }
+
+    private void dismiss() {
+        events.dismissMapEditor(currentDraftText());
+    }
+
+    private void submit() {
+        events.submitMapEditor(currentDraftText());
+    }
+
+    private void confirmDelete() {
+        events.confirmMapDelete(currentDraftText());
+    }
+
+    void show(DungeonEditorMapControlsContentModel.MapEditorUiState mapEditorUiState) {
+        DungeonEditorMapControlsContentModel.MapEditorUiState resolvedState = mapEditorUiState == null
+                ? DungeonEditorMapControlsContentModel.MapEditorUiState.hidden()
+                : mapEditorUiState;
+        boolean popupWasShowing = popupContentModel.isOpen();
+        titleLabel.setText(resolvedState.title());
+        DungeonEditorControlsListeners.withDetachedTextUpdate(draftField, draftListener, () ->
+                draftField.setText(resolvedState.draftName()));
+        draftField.setVisible(resolvedState.draftFieldVisible());
+        draftField.setManaged(resolvedState.draftFieldVisible());
+        actionRow.setVisible(resolvedState.actionRowVisible());
+        actionRow.setManaged(resolvedState.actionRowVisible());
+        saveButton.setVisible(resolvedState.submitVisible());
+        saveButton.setManaged(resolvedState.submitVisible());
+        saveButton.setText(resolvedState.submitLabel());
+        errorLabel.setText(resolvedState.errorText());
+        errorLabel.setVisible(!resolvedState.errorText().isBlank());
+        errorLabel.setManaged(!resolvedState.errorText().isBlank());
+        draftField.setAccessibleHelp(resolvedState.errorText().isBlank()
+                ? "Dungeon-Name"
+                : "Dungeon-Name. " + resolvedState.errorText());
+        deleteConfirmRow.setVisible(resolvedState.deleteConfirmationVisible());
+        deleteConfirmRow.setManaged(resolvedState.deleteConfirmationVisible());
+        exposeDeleteConfirmationContext(resolvedState);
+        if (!resolvedState.visible()) {
+            hidePopup();
+            return;
         }
-        return maps.getFirst();
+        if (!popupWasShowing) {
+            popupContentModel.showBelow(2.0, resolvedState.draftFieldVisible());
+        }
+        if (resolvedState.draftFieldVisible()) {
+            if (popupWasShowing) {
+                draftField.requestFocus();
+            }
+            if (!popupWasShowing) {
+                draftField.selectAll();
+            }
+            return;
+        }
+        if (resolvedState.deleteConfirmationVisible()) {
+            cancelDeleteButton.requestFocus();
+        }
+    }
+
+    private void handleDraftChanged() {
+        events.mapEditorDraftChanged(currentDraftText());
+    }
+
+    private void handleHidden() {
+        if (!hiddenGate.enabled()) {
+            dismiss();
+        }
+    }
+
+    private void hidePopup() {
+        if (popupContentModel.isOpen()) {
+            hiddenGate.runSuppressed(popupContentModel::hide);
+        }
+    }
+
+    private String currentDraftText() {
+        String draftText = draftField.getText();
+        return draftText == null ? "" : draftText;
+    }
+
+    private void exposeDeleteConfirmationContext(DungeonEditorMapControlsContentModel.MapEditorUiState state) {
+        if (!state.deleteConfirmationVisible()) {
+            deleteConfirmRow.setAccessibleText("");
+            deleteConfirmRow.setAccessibleHelp("");
+            return;
+        }
+        String context = state.title().isBlank() ? "Dungeon löschen?" : state.title();
+        deleteConfirmRow.setAccessibleText(context + ". " + deleteLabel.getText());
+        deleteConfirmRow.setAccessibleHelp("Abbrechen oder Löschen auswählen.");
     }
 }

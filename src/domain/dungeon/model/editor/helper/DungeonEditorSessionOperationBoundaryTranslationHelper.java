@@ -81,10 +81,10 @@ public final class DungeonEditorSessionOperationBoundaryTranslationHelper {
     private static @Nullable DungeonEditorOperation corridorDeleteOperation(
             DungeonEditorSessionValues.Preview preview
     ) {
-        if (!(preview instanceof DungeonEditorSessionValues.CorridorDeletePreview corridor)) {
+        if (!(preview instanceof DungeonEditorSessionValues.DeleteCorridorPreview corridorDelete)) {
             return null;
         }
-        return new DungeonEditorOperation.DeleteCorridor(corridor.corridorId());
+        return new DungeonEditorOperation.DeleteCorridor(corridorDelete.corridorId());
     }
 
     private static @Nullable DungeonEditorOperation moveHandleOperation(

@@ -4,6 +4,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.jspecify.annotations.Nullable;
+import src.domain.dungeon.model.map.model.DungeonTopologyRef;
 import src.domain.dungeon.model.editor.model.workspace.model.DungeonEditorWorkspaceValues;
 
 public final class DungeonEditorProjectionIndexProjectionHelper {
@@ -54,9 +55,9 @@ public final class DungeonEditorProjectionIndexProjectionHelper {
         return null;
     }
 
-    public static String topologyKey(DungeonEditorWorkspaceValues.@Nullable TopologyElementRef topologyRef) {
-        DungeonEditorWorkspaceValues.TopologyElementRef safeRef = topologyRef == null
-                ? DungeonEditorWorkspaceValues.TopologyElementRef.empty()
+    public static String topologyKey(@Nullable DungeonTopologyRef topologyRef) {
+        DungeonTopologyRef safeRef = topologyRef == null
+                ? DungeonTopologyRef.empty()
                 : topologyRef;
         return safeRef.kind().name() + ":" + safeRef.id();
     }

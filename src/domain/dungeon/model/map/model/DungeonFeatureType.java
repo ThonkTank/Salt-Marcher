@@ -18,6 +18,10 @@ public final class DungeonFeatureType {
         return name;
     }
 
+    public boolean isTransition() {
+        return this == TRANSITION;
+    }
+
     @Override
     public String toString() {
         return name;

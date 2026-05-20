@@ -37,7 +37,7 @@ final class DungeonEditorToolControlsView {
         ToggleGroup toolGroup = new ToggleGroup();
         selectButton.setToggleGroup(toolGroup);
         selectButton.setSelected(true);
-        selectButton.setOnAction(event -> events.toolSelected(DungeonEditorControlsView.SELECT_TOOL));
+        selectButton.setOnAction(event -> events.toolSelected(ToolCatalog.SELECT_TOOL_KEY));
         panelView.describeNode(selectButton, "Auswahlwerkzeug aktivieren");
         panelView.describeNode(roomButton, "Raumwerkzeug waehlen");
         panelView.describeNode(wallButton, "Wandwerkzeug waehlen");
@@ -46,27 +46,17 @@ final class DungeonEditorToolControlsView {
         panelView.describeNode(stairButton, "Treppenwerkzeug waehlen");
         panelView.describeNode(transitionButton, "Übergangswerkzeug wählen");
 
-        roomButton.setOnAction(event -> events.toolFamilySelected(
-                DungeonEditorControlsViewInputEvent.ToolFamily.ROOM,
-                DungeonEditorControlsView.ROOM_PAINT_TOOL));
-        wallButton.setOnAction(event -> events.toolFamilySelected(
-                DungeonEditorControlsViewInputEvent.ToolFamily.WALL,
-                DungeonEditorControlsView.WALL_CREATE_TOOL));
-        doorButton.setOnAction(event -> events.toolFamilySelected(
-                DungeonEditorControlsViewInputEvent.ToolFamily.DOOR,
-                DungeonEditorControlsView.DOOR_CREATE_TOOL));
-        corridorButton.setOnAction(event -> events.toolFamilySelected(
-                DungeonEditorControlsViewInputEvent.ToolFamily.CORRIDOR,
-                DungeonEditorControlsView.CORRIDOR_CREATE_TOOL));
-        stairButton.setOnAction(event -> events.toolFamilySelected(
-                DungeonEditorControlsViewInputEvent.ToolFamily.STAIR,
-                DungeonEditorControlsView.STAIR_CREATE_TOOL));
-        transitionButton.setOnAction(event -> events.toolFamilySelected(
-                DungeonEditorControlsViewInputEvent.ToolFamily.TRANSITION,
-                DungeonEditorControlsView.TRANSITION_CREATE_TOOL));
+        roomButton.setOnAction(event -> events.roomToolFamilySelected(ToolCatalog.ROOM_PAINT_TOOL_KEY));
+        wallButton.setOnAction(event -> events.wallToolFamilySelected(ToolCatalog.WALL_CREATE_TOOL_KEY));
+        doorButton.setOnAction(event -> events.doorToolFamilySelected(ToolCatalog.DOOR_CREATE_TOOL_KEY));
+        corridorButton.setOnAction(event -> events.corridorToolFamilySelected(ToolCatalog.CORRIDOR_CREATE_TOOL_KEY));
+        stairButton.setVisible(false);
+        stairButton.setManaged(false);
+        transitionButton.setVisible(false);
+        transitionButton.setManaged(false);
 
         row = panelView.controlsRow(selectButton, roomButton, wallButton, doorButton,
-                corridorButton, stairButton, transitionButton);
+                corridorButton);
         DungeonEditorControlsFxAccess.addStyle(row, "dungeon-control-tool-row");
     }
 
@@ -94,11 +84,9 @@ final class DungeonEditorToolControlsView {
         markSelected(wallButton, matchesTool(selectedTool, DungeonEditorControlsView.WALL_CREATE_TOOL, DungeonEditorControlsView.WALL_DELETE_TOOL));
         markSelected(doorButton, matchesTool(selectedTool, DungeonEditorControlsView.DOOR_CREATE_TOOL, DungeonEditorControlsView.DOOR_DELETE_TOOL));
         markSelected(corridorButton, matchesTool(selectedTool, DungeonEditorControlsView.CORRIDOR_CREATE_TOOL, DungeonEditorControlsView.CORRIDOR_DELETE_TOOL));
-        markSelected(stairButton, matchesTool(selectedTool, DungeonEditorControlsView.STAIR_CREATE_TOOL, DungeonEditorControlsView.STAIR_DELETE_TOOL));
-        markSelected(transitionButton, matchesTool(selectedTool, DungeonEditorControlsView.TRANSITION_CREATE_TOOL, DungeonEditorControlsView.TRANSITION_DELETE_TOOL));
     }
 
-    @Nullable Button anchorFor(DungeonEditorContributionModel.ToolFamily family) {
+    @Nullable Button anchorFor(DungeonEditorToolControlsContentModel.ToolFamily family) {
         if (family == null) {
             return null;
         }
@@ -107,8 +95,7 @@ final class DungeonEditorToolControlsView {
             case WALL -> wallButton;
             case DOOR -> doorButton;
             case CORRIDOR -> corridorButton;
-            case STAIR -> stairButton;
-            case TRANSITION -> transitionButton;
+            case STAIR, TRANSITION -> null;
             case NONE -> null;
         };
     }
@@ -127,11 +114,7 @@ final class DungeonEditorToolControlsView {
                 || DungeonEditorControlsView.DOOR_CREATE_TOOL.equals(tool)
                 || DungeonEditorControlsView.DOOR_DELETE_TOOL.equals(tool)
                 || DungeonEditorControlsView.CORRIDOR_CREATE_TOOL.equals(tool)
-                || DungeonEditorControlsView.CORRIDOR_DELETE_TOOL.equals(tool)
-                || DungeonEditorControlsView.STAIR_CREATE_TOOL.equals(tool)
-                || DungeonEditorControlsView.STAIR_DELETE_TOOL.equals(tool)
-                || DungeonEditorControlsView.TRANSITION_CREATE_TOOL.equals(tool)
-                || DungeonEditorControlsView.TRANSITION_DELETE_TOOL.equals(tool);
+                || DungeonEditorControlsView.CORRIDOR_DELETE_TOOL.equals(tool);
     }
 
     private static boolean matchesTool(String selectedTool, String primaryLabel, String secondaryLabel) {
@@ -143,9 +126,13 @@ final class DungeonEditorToolControlsView {
             if (!DungeonEditorControlsFxAccess.hasStyle(button, STYLE_SELECTED)) {
                 DungeonEditorControlsFxAccess.addStyle(button, STYLE_SELECTED);
             }
+            button.setAccessibleText(button.getText() + " aktiv");
+            button.setAccessibleHelp("Aktive Werkzeugfamilie");
             return;
         }
         DungeonEditorControlsFxAccess.removeStyle(button, STYLE_SELECTED);
+        button.setAccessibleText(button.getText() + " inaktiv");
+        button.setAccessibleHelp("Werkzeugfamilie wählen");
     }
 
     private static ToggleButton createToolToggle(String text) {
@@ -189,14 +176,14 @@ final class DungeonEditorToolPalettePopupView {
         });
     }
 
-    void show(DungeonEditorContributionModel.ToolPaletteUiState toolPaletteUiState) {
-        DungeonEditorContributionModel.ToolPaletteUiState resolvedState = toolPaletteUiState == null
-                ? DungeonEditorContributionModel.ToolPaletteUiState.closed()
+    void show(DungeonEditorToolControlsContentModel.ToolPaletteUiState toolPaletteUiState) {
+        DungeonEditorToolControlsContentModel.ToolPaletteUiState resolvedState = toolPaletteUiState == null
+                ? DungeonEditorToolControlsContentModel.ToolPaletteUiState.closed()
                 : toolPaletteUiState;
         primaryToolOption.setText(resolvedState.primaryToolLabel());
         secondaryToolOption.setText(resolvedState.secondaryToolLabel());
-        primaryToolOption.setOnAction(event -> events.toolSelected(resolvedState.primaryToolLabel()));
-        secondaryToolOption.setOnAction(event -> events.toolSelected(resolvedState.secondaryToolLabel()));
+        primaryToolOption.setOnAction(event -> events.toolSelected(resolvedState.primaryToolKey()));
+        secondaryToolOption.setOnAction(event -> events.toolSelected(resolvedState.secondaryToolKey()));
         if (!resolvedState.visible()) {
             hidePopup();
             return;

@@ -1,9 +1,13 @@
 package src.domain.dungeon.application;
 
+import java.util.List;
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
+import src.domain.dungeon.model.map.helper.DungeonMapCatalogPublishedProjectionHelper;
 import src.domain.dungeon.model.map.model.DungeonMapIdentity;
 import src.domain.dungeon.model.map.repository.DungeonPublishedStateRepository;
+import src.domain.dungeon.published.DungeonMapCatalogResponse;
+import src.domain.dungeon.published.DungeonMapSummary;
 
 public final class ApplyDungeonMapCatalogUseCase {
 
@@ -12,6 +16,8 @@ public final class ApplyDungeonMapCatalogUseCase {
     private final RenameDungeonMapUseCase renameDungeonMapUseCase;
     private final DeleteDungeonMapUseCase deleteDungeonMapUseCase;
     private final DungeonPublishedStateRepository publishedStateRepository;
+    private final DungeonMapCatalogPublishedProjectionHelper projectionHelper =
+            new DungeonMapCatalogPublishedProjectionHelper();
 
     public ApplyDungeonMapCatalogUseCase(
             SearchDungeonMapsUseCase searchDungeonMapsUseCase,
@@ -28,7 +34,7 @@ public final class ApplyDungeonMapCatalogUseCase {
     }
 
     public void search(String query) {
-        publishedStateRepository.publishMapCatalog(searchDungeonMapsUseCase.execute(query));
+        publishedStateRepository.publishMapCatalog(catalog(searchDungeonMapsUseCase.execute(query)));
     }
 
     public void createMap(String mapName) {
@@ -46,5 +52,15 @@ public final class ApplyDungeonMapCatalogUseCase {
 
     private static DungeonMapIdentity effectiveId(@Nullable DungeonMapIdentity mapId) {
         return mapId == null ? new DungeonMapIdentity(1L) : mapId;
+    }
+
+    private DungeonMapCatalogResponse catalog(List<SearchDungeonMapsUseCase.MapSummary> maps) {
+        return projectionHelper.catalog(maps.stream()
+                .map(this::summary)
+                .toList());
+    }
+
+    private DungeonMapSummary summary(SearchDungeonMapsUseCase.MapSummary map) {
+        return projectionHelper.summary(map.mapId(), map.mapName(), map.revision());
     }
 }

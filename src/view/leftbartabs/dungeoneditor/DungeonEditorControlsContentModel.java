@@ -43,8 +43,6 @@ final class DungeonEditorControlsContentModel {
                 busy);
         projectionControls.showViewMode(resolvedProjection.viewModeLabel());
         toolControls.showTool(resolvedProjection.selectedToolLabel());
-        mapControls.showMapEditor(resolvedProjection.mapEditorUiState());
-        toolControls.showToolPalette(resolvedProjection.toolPaletteUiState());
     }
 
     private static DungeonControlPanelContentModel.OverlaySettings toSettings(

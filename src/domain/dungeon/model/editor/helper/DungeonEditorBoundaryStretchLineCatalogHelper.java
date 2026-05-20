@@ -3,8 +3,8 @@ package src.domain.dungeon.model.editor.helper;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
-import src.domain.dungeon.model.editor.model.interaction.model.DungeonEditorMainViewInteractionValues.BoundaryStretchOrientation;
 import src.domain.dungeon.model.editor.model.workspace.model.DungeonEditorWorkspaceValues;
+import src.domain.dungeon.model.map.model.DungeonBoundaryStretchValueTypes.StretchOrientation;
 
 public final class DungeonEditorBoundaryStretchLineCatalogHelper {
 
@@ -12,7 +12,7 @@ public final class DungeonEditorBoundaryStretchLineCatalogHelper {
             DungeonEditorWorkspaceValues.MapSnapshot snapshot,
             Set<DungeonEditorWorkspaceValues.Cell> clusterCells,
             DungeonEditorWorkspaceValues.Edge clickedEdge,
-            BoundaryStretchOrientation orientation,
+            StretchOrientation orientation,
             boolean outer
     ) {
         Map<Integer, DungeonEditorWorkspaceValues.Edge> edgesByVariable = new LinkedHashMap<>();
@@ -48,7 +48,7 @@ public final class DungeonEditorBoundaryStretchLineCatalogHelper {
             DungeonEditorWorkspaceValues.Edge edge,
             Set<DungeonEditorWorkspaceValues.Cell> clusterCells,
             int level,
-            BoundaryStretchOrientation orientation,
+            StretchOrientation orientation,
             int fixedCoordinate,
             boolean outer
     ) {
@@ -101,27 +101,27 @@ public final class DungeonEditorBoundaryStretchLineCatalogHelper {
     }
 
     private static boolean sameOrientation(
-            BoundaryStretchOrientation orientation,
+            StretchOrientation orientation,
             DungeonEditorWorkspaceValues.Edge edge
     ) {
-        if (orientation == BoundaryStretchOrientation.HORIZONTAL) {
+        if (orientation == StretchOrientation.HORIZONTAL) {
             return edge.from().r() == edge.to().r();
         }
         return edge.from().q() == edge.to().q();
     }
 
     private static int fixedCoordinate(
-            BoundaryStretchOrientation orientation,
+            StretchOrientation orientation,
             DungeonEditorWorkspaceValues.Edge edge
     ) {
-        return orientation == BoundaryStretchOrientation.VERTICAL ? edge.from().q() : edge.from().r();
+        return orientation == StretchOrientation.VERTICAL ? edge.from().q() : edge.from().r();
     }
 
     private static int variableCoordinate(
-            BoundaryStretchOrientation orientation,
+            StretchOrientation orientation,
             DungeonEditorWorkspaceValues.Edge edge
     ) {
-        return orientation == BoundaryStretchOrientation.VERTICAL
+        return orientation == StretchOrientation.VERTICAL
                 ? Math.min(edge.from().r(), edge.to().r())
                 : Math.min(edge.from().q(), edge.to().q());
     }

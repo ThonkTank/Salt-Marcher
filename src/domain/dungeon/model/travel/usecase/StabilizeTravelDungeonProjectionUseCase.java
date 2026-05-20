@@ -6,7 +6,6 @@ import java.util.TreeSet;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.travel.model.session.model.TravelDungeonSessionSurface.MapData;
 import src.domain.dungeon.model.travel.model.session.model.TravelDungeonSessionSurface.SurfaceData;
-import src.domain.dungeon.model.travel.model.session.model.TravelDungeonSessionValues.ContextKind;
 
 public final class StabilizeTravelDungeonProjectionUseCase {
 
@@ -29,7 +28,7 @@ public final class StabilizeTravelDungeonProjectionUseCase {
     }
 
     private static int defaultProjectionLevel(SurfaceData surface, int fallbackLevel) {
-        return surface.contextKind() == ContextKind.DUNGEON
+        return surface.contextKind().isDungeon()
                 ? surface.position().tile().level()
                 : fallbackLevel;
     }

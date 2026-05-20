@@ -1,6 +1,11 @@
 package src.view.slotcontent.primitives.mapcanvas;
 
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Objects;
 import javafx.beans.property.ReadOnlyDoubleProperty;
 import javafx.beans.property.ReadOnlyDoubleWrapper;
 import javafx.beans.property.ReadOnlyObjectProperty;
@@ -17,6 +22,8 @@ public final class MapCanvasContentModel {
     private static final double ZERO_LENGTH = 0.0;
     private static final double MIN_HIT_TOLERANCE = 0.22;
     private static final double HIT_TOLERANCE_PIXELS = 7.0;
+    private static final double HIT_BUCKET_SIZE_SCENE = 4.0;
+    private static final double MAX_HIT_INDEX_TOLERANCE = HIT_TOLERANCE_PIXELS / (BASE_GRID * MIN_ZOOM);
     private static final int MIN_POLYLINE_POINTS = 2;
 
     private final String defaultTitle;
@@ -68,23 +75,101 @@ public final class MapCanvasContentModel {
 
     public record CanvasState(
             RenderScene renderScene,
-            Viewport viewport
+            Viewport viewport,
+            HitIndex hitIndex
     ) {
 
         private static CanvasState initial(RenderScene renderScene) {
-            return new CanvasState(renderScene, Viewport.initial());
+            return new CanvasState(renderScene, Viewport.initial(), HitIndex.from(renderScene.hitAreas()));
         }
 
         private CanvasState withRenderScene(RenderScene nextRenderScene) {
-            return new CanvasState(nextRenderScene, viewport);
+            return new CanvasState(nextRenderScene, viewport, HitIndex.from(nextRenderScene.hitAreas()));
         }
 
         private CanvasState withViewport(Viewport nextViewport) {
-            return new CanvasState(renderScene, nextViewport);
+            return new CanvasState(renderScene, nextViewport, hitIndex);
         }
 
         private @Nullable CanvasHit hitAt(double sceneX, double sceneY) {
-            return renderScene.hitAt(sceneX, sceneY, viewport.gridSize());
+            return hitIndex.hitAt(sceneX, sceneY, viewport.gridSize());
+        }
+    }
+
+    public record KeyboardTarget(
+            boolean visible,
+            double sceneX,
+            double sceneY,
+            @Nullable CanvasHit hit,
+            String accessibleText,
+            String accessibleHelp,
+            String accessibleValue
+    ) {
+
+        private static final KeyboardTarget HIDDEN = new KeyboardTarget(
+                false,
+                0.0,
+                0.0,
+                null,
+                "Dungeon map",
+                "Arrow keys move the map focus. Enter or Space activates the current target.",
+                "No keyboard target.");
+
+        public static KeyboardTarget hidden() {
+            return HIDDEN;
+        }
+
+        static KeyboardTarget visible(KeyboardTarget current, double sceneX, double sceneY, @Nullable CanvasHit hit) {
+            String value = current.visible()
+                    && sameRoundedPosition(current, sceneX, sceneY)
+                    && sameHit(current.hit(), hit)
+                    ? current.accessibleValue()
+                    : targetValue(sceneX, sceneY, hit);
+            return new KeyboardTarget(
+                    true,
+                    sceneX,
+                    sceneY,
+                    hit,
+                    "Dungeon map keyboard target",
+                    "Arrow keys move the map focus. Enter or Space activates the current target.",
+                    value);
+        }
+
+        private static String targetValue(double sceneX, double sceneY, @Nullable CanvasHit hit) {
+            String location = "Scene " + roundedTenths(sceneX) + ", " + roundedTenths(sceneY);
+            if (hit == null || hit.hitRef().isBlank()) {
+                return location + "; no target.";
+            }
+            return location + "; " + hit.primitive().name().toLowerCase(Locale.ROOT)
+                    + " " + hit.hitRef() + ".";
+        }
+
+        private static boolean sameRoundedPosition(KeyboardTarget current, double sceneX, double sceneY) {
+            return roundedTenthsValue(current.sceneX()) == roundedTenthsValue(sceneX)
+                    && roundedTenthsValue(current.sceneY()) == roundedTenthsValue(sceneY);
+        }
+
+        private static boolean sameHit(@Nullable CanvasHit before, @Nullable CanvasHit after) {
+            if (before == after) {
+                return true;
+            }
+            if (before == null || after == null) {
+                return false;
+            }
+            return before.primitive() == after.primitive()
+                    && Objects.equals(before.hitRef(), after.hitRef())
+                    && Objects.equals(before.selectionRef(), after.selectionRef());
+        }
+
+        private static String roundedTenths(double value) {
+            long rounded = roundedTenthsValue(value);
+            String sign = rounded < 0 ? "-" : "";
+            long absolute = Math.abs(rounded);
+            return sign + absolute / 10L + "." + absolute % 10L;
+        }
+
+        private static long roundedTenthsValue(double value) {
+            return Math.round(value * 10.0);
         }
     }
 
@@ -249,19 +334,6 @@ public final class MapCanvasContentModel {
             return viewMode == ViewMode.GRID;
         }
 
-        private @Nullable CanvasHit hitAt(double sceneX, double sceneY, double gridSize) {
-            double tolerance = Math.max(HIT_TOLERANCE_PIXELS / gridSize, MIN_HIT_TOLERANCE);
-            for (HitArea hitArea : hitAreas) {
-                if (hitArea.matches(sceneX, sceneY, tolerance)) {
-                    return new CanvasHit(
-                            hitArea.hitRef(),
-                            hitArea.primitive(),
-                            hitArea.selectionRef().isBlank() ? null : hitArea.selectionRef());
-                }
-            }
-            return null;
-        }
-
         private static String normalizeTitle(@Nullable String title) {
             return title == null || title.isBlank() ? "Map" : title;
         }
@@ -383,6 +455,8 @@ public final class MapCanvasContentModel {
 
         String selectionRef();
 
+        HitBounds bounds();
+
         boolean matches(double sceneX, double sceneY, double tolerance);
     }
 
@@ -398,6 +472,11 @@ public final class MapCanvasContentModel {
             primitive = MapCanvasViewInputEvent.defaultPrimitive(primitive);
             selectionRef = selectionRef == null ? "" : selectionRef;
             polygon = copyOf(polygon);
+        }
+
+        @Override
+        public HitBounds bounds() {
+            return HitBounds.from(polygon);
         }
 
         @Override
@@ -421,10 +500,125 @@ public final class MapCanvasContentModel {
         }
 
         @Override
+        public HitBounds bounds() {
+            return HitBounds.from(polyline);
+        }
+
+        @Override
         public boolean matches(double sceneX, double sceneY, double tolerance) {
             return !hitRef.isBlank()
                     && polyline.size() >= MIN_POLYLINE_POINTS
                     && Geometry.distanceToPolyline(sceneX, sceneY, polyline) <= tolerance;
+        }
+    }
+
+    private record HitIndex(Map<Long, List<HitCandidate>> buckets) {
+
+        private static HitIndex from(List<HitArea> hitAreas) {
+            if (hitAreas.isEmpty()) {
+                return new HitIndex(Map.of());
+            }
+            Map<Long, List<HitCandidate>> nextBuckets = new LinkedHashMap<>();
+            for (HitArea hitArea : hitAreas) {
+                if (hitArea.hitRef().isBlank()) {
+                    continue;
+                }
+                HitCandidate candidate = HitCandidate.from(hitArea);
+                HitBounds bounds = hitArea.bounds().expand(MAX_HIT_INDEX_TOLERANCE);
+                int minBucketX = bucket(bounds.minX());
+                int maxBucketX = bucket(bounds.maxX());
+                int minBucketY = bucket(bounds.minY());
+                int maxBucketY = bucket(bounds.maxY());
+                for (int bucketX = minBucketX; bucketX <= maxBucketX; bucketX++) {
+                    for (int bucketY = minBucketY; bucketY <= maxBucketY; bucketY++) {
+                        nextBuckets.computeIfAbsent(key(bucketX, bucketY), ignored -> new ArrayList<>()).add(candidate);
+                    }
+                }
+            }
+            return new HitIndex(copyBuckets(nextBuckets));
+        }
+
+        private @Nullable CanvasHit hitAt(double sceneX, double sceneY, double gridSize) {
+            List<HitCandidate> candidates = buckets.get(key(bucket(sceneX), bucket(sceneY)));
+            if (candidates == null) {
+                return null;
+            }
+            double tolerance = Math.max(HIT_TOLERANCE_PIXELS / gridSize, MIN_HIT_TOLERANCE);
+            for (HitCandidate candidate : candidates) {
+                if (candidate.matches(sceneX, sceneY, tolerance)) {
+                    return candidate.hit();
+                }
+            }
+            return null;
+        }
+
+        private static int bucket(double sceneCoordinate) {
+            return (int) Math.floor(sceneCoordinate / HIT_BUCKET_SIZE_SCENE);
+        }
+
+        private static long key(int bucketX, int bucketY) {
+            return ((long) bucketX << Integer.SIZE) ^ (bucketY & 0xffff_ffffL);
+        }
+
+        private static Map<Long, List<HitCandidate>> copyBuckets(Map<Long, List<HitCandidate>> buckets) {
+            Map<Long, List<HitCandidate>> result = new LinkedHashMap<>();
+            for (Map.Entry<Long, List<HitCandidate>> entry : buckets.entrySet()) {
+                result.put(entry.getKey(), List.copyOf(entry.getValue()));
+            }
+            return Map.copyOf(result);
+        }
+    }
+
+    private record HitCandidate(HitArea area, CanvasHit hit, HitBounds bounds) {
+
+        private static HitCandidate from(HitArea area) {
+            return new HitCandidate(
+                    area,
+                    new CanvasHit(
+                            area.hitRef(),
+                            area.primitive(),
+                            area.selectionRef().isBlank() ? null : area.selectionRef()),
+                    area.bounds());
+        }
+
+        private boolean matches(double sceneX, double sceneY, double tolerance) {
+            return bounds.contains(sceneX, sceneY, tolerance)
+                    && area.matches(sceneX, sceneY, tolerance);
+        }
+    }
+
+    private record HitBounds(double minX, double minY, double maxX, double maxY) {
+
+        private static HitBounds from(List<MapCanvasPoint> points) {
+            if (points.isEmpty()) {
+                return new HitBounds(0.0, 0.0, 0.0, 0.0);
+            }
+            double minX = Double.POSITIVE_INFINITY;
+            double minY = Double.POSITIVE_INFINITY;
+            double maxX = Double.NEGATIVE_INFINITY;
+            double maxY = Double.NEGATIVE_INFINITY;
+            for (MapCanvasPoint point : points) {
+                minX = Math.min(minX, point.x());
+                minY = Math.min(minY, point.y());
+                maxX = Math.max(maxX, point.x());
+                maxY = Math.max(maxY, point.y());
+            }
+            return new HitBounds(minX, minY, maxX, maxY);
+        }
+
+        private HitBounds expand(double amount) {
+            return new HitBounds(minX - amount, minY - amount, maxX + amount, maxY + amount);
+        }
+
+        private boolean contains(double sceneX, double sceneY) {
+            return sceneX >= minX && sceneX <= maxX && sceneY >= minY && sceneY <= maxY;
+        }
+
+        private boolean contains(double sceneX, double sceneY, double tolerance) {
+            return sceneX >= minX - tolerance
+                    && sceneX <= maxX + tolerance
+                    && sceneY >= minY - tolerance
+                    && sceneY <= maxY + tolerance;
         }
     }
 

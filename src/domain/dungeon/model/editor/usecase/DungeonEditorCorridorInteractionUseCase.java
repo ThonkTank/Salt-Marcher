@@ -30,7 +30,7 @@ final class DungeonEditorCorridorInteractionUseCase {
                 return new DungeonEditorMainViewInterpretation(
                         nextState,
                         DungeonEditorMainViewEffect.applyWithStatus(
-                                new DungeonEditorSessionValues.CorridorDeletePreview(corridorId),
+                                new DungeonEditorSessionValues.DeleteCorridorPreview(corridorId),
                                 ""));
             }
             return new DungeonEditorMainViewInterpretation(nextState, DungeonEditorMainViewEffect.clearedSelection());
@@ -71,7 +71,7 @@ final class DungeonEditorCorridorInteractionUseCase {
                 return DungeonEditorMainViewEffect.clearPreviewIfNeeded(true);
             }
             return DungeonEditorMainViewEffect.preview(
-                    new DungeonEditorSessionValues.CorridorDeletePreview(target.deleteCorridorId()));
+                    new DungeonEditorSessionValues.DeleteCorridorPreview(target.deleteCorridorId()));
         }
         if (!state.corridorDraft().present()) {
             return DungeonEditorMainViewEffect.clearPreviewIfNeeded(true);

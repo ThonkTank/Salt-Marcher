@@ -81,9 +81,8 @@ public final class DungeonEditorProjectionPreviewProjectionHelper {
             List<DungeonEditorMapProjectionSnapshot.EdgeProjection> edges,
             DungeonEditorSessionValues.ClusterBoundariesPreview boundaryEdges
     ) {
-        DungeonEditorMapProjectionSnapshot.EdgeKind kind = boundaryEdges.boundaryKind().isDoor()
-                ? DungeonEditorMapProjectionSnapshot.EdgeKind.DOOR
-                : DungeonEditorMapProjectionSnapshot.EdgeKind.WALL;
+        src.domain.dungeon.published.DungeonBoundaryKind kind =
+                DungeonEditorWorkspaceTopologyBoundaryTranslationHelper.toDomainBoundaryKind(boundaryEdges.boundaryKind());
         for (DungeonEditorWorkspaceValues.Edge edge : boundaryEdges.edges()) {
             if (edge == null || edge.from() == null || edge.to() == null) {
                 continue;

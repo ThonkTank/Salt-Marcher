@@ -1,6 +1,7 @@
 package src.domain.dungeon.model.editor.helper;
 
 import org.jspecify.annotations.Nullable;
+import src.domain.dungeon.model.map.model.DungeonEditorHandleType;
 import src.domain.dungeon.published.DungeonEditorHandleKind;
 import src.domain.dungeon.published.DungeonEditorHandleRef;
 import src.domain.dungeon.model.editor.model.workspace.model.DungeonEditorWorkspaceValues;
@@ -41,29 +42,23 @@ public final class DungeonEditorWorkspaceHandleBoundaryTranslationHelper {
                         ref.direction());
     }
 
-    private static DungeonEditorWorkspaceValues.HandleKind toWorkspaceHandleKind(@Nullable DungeonEditorHandleKind kind) {
+    private static DungeonEditorHandleType toWorkspaceHandleKind(@Nullable DungeonEditorHandleKind kind) {
         if (kind == null) {
-            return DungeonEditorWorkspaceValues.HandleKind.CLUSTER_LABEL;
+            return DungeonEditorHandleType.CLUSTER_LABEL;
         }
         return switch (kind) {
-            case CLUSTER_LABEL -> DungeonEditorWorkspaceValues.HandleKind.CLUSTER_LABEL;
-            case DOOR -> DungeonEditorWorkspaceValues.HandleKind.DOOR;
-            case CORRIDOR_ANCHOR -> DungeonEditorWorkspaceValues.HandleKind.CORRIDOR_ANCHOR;
-            case CORRIDOR_WAYPOINT -> DungeonEditorWorkspaceValues.HandleKind.CORRIDOR_WAYPOINT;
-            case STAIR_ANCHOR -> DungeonEditorWorkspaceValues.HandleKind.STAIR_ANCHOR;
+            case CLUSTER_LABEL -> DungeonEditorHandleType.CLUSTER_LABEL;
+            case DOOR -> DungeonEditorHandleType.DOOR;
+            case CORRIDOR_ANCHOR -> DungeonEditorHandleType.CORRIDOR_ANCHOR;
+            case CORRIDOR_WAYPOINT -> DungeonEditorHandleType.CORRIDOR_WAYPOINT;
+            case STAIR_ANCHOR -> DungeonEditorHandleType.STAIR_ANCHOR;
         };
     }
 
-    private static DungeonEditorHandleKind toDomainHandleKind(DungeonEditorWorkspaceValues.HandleKind kind) {
-        DungeonEditorWorkspaceValues.HandleKind safeKind = kind == null
-                ? DungeonEditorWorkspaceValues.HandleKind.CLUSTER_LABEL
+    private static DungeonEditorHandleKind toDomainHandleKind(DungeonEditorHandleType kind) {
+        DungeonEditorHandleType safeKind = kind == null
+                ? DungeonEditorHandleType.CLUSTER_LABEL
                 : kind;
-        return switch (safeKind) {
-            case CLUSTER_LABEL -> DungeonEditorHandleKind.CLUSTER_LABEL;
-            case DOOR -> DungeonEditorHandleKind.DOOR;
-            case CORRIDOR_ANCHOR -> DungeonEditorHandleKind.CORRIDOR_ANCHOR;
-            case CORRIDOR_WAYPOINT -> DungeonEditorHandleKind.CORRIDOR_WAYPOINT;
-            case STAIR_ANCHOR -> DungeonEditorHandleKind.STAIR_ANCHOR;
-        };
+        return DungeonEditorHandleKind.valueOf(safeKind.name());
     }
 }

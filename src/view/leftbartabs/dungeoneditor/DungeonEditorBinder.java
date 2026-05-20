@@ -7,7 +7,12 @@ import shell.api.ShellBinding;
 import shell.api.ShellRuntimeContext;
 import shell.api.ShellSlot;
 import src.domain.dungeon.DungeonEditorApplicationService;
-import src.domain.dungeon.published.DungeonEditorModel;
+import src.domain.dungeon.published.DungeonEditorControlsModel;
+import src.domain.dungeon.published.DungeonEditorControlsSnapshot;
+import src.domain.dungeon.published.DungeonEditorMapSurfaceModel;
+import src.domain.dungeon.published.DungeonEditorMapSurfaceSnapshot;
+import src.domain.dungeon.published.DungeonEditorStateModel;
+import src.domain.dungeon.published.DungeonEditorStateSnapshot;
 import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel;
 import src.view.slotcontent.main.dungeonmap.DungeonMapView;
 
@@ -21,37 +26,62 @@ final class DungeonEditorBinder {
 
     ShellBinding bind() {
         DungeonEditorApplicationService editor = runtimeContext.services().require(DungeonEditorApplicationService.class);
-        DungeonEditorModel editorModel = runtimeContext.services().require(DungeonEditorModel.class);
-        DungeonEditorContributionModel contributionModel = new DungeonEditorContributionModel();
+        DungeonEditorControlsModel controlsModel = runtimeContext.services().require(DungeonEditorControlsModel.class);
+        DungeonEditorMapSurfaceModel mapSurfaceModel = runtimeContext.services().require(DungeonEditorMapSurfaceModel.class);
+        DungeonEditorStateModel stateModel = runtimeContext.services().require(DungeonEditorStateModel.class);
         DungeonEditorControlsContentModel controlsContentModel = new DungeonEditorControlsContentModel();
+        DungeonEditorStateContentModel stateContentModel = new DungeonEditorStateContentModel();
+        DungeonEditorContributionModel contributionModel = new DungeonEditorContributionModel(stateContentModel);
         DungeonMapContentModel mapContentModel = new DungeonMapContentModel("Dungeon workspace", true);
         DungeonEditorIntentHandler intentHandler =
-                new DungeonEditorIntentHandler(contributionModel, mapContentModel.mapCanvasContentModel(), editor);
+                new DungeonEditorIntentHandler(
+                        contributionModel,
+                        controlsContentModel.mapControlsContentModel(),
+                        controlsContentModel.toolControlsContentModel(),
+                        stateContentModel,
+                        mapContentModel,
+                        editor);
         DungeonEditorControlsView controls = new DungeonEditorControlsView();
         DungeonMapView main = new DungeonMapView();
         DungeonEditorStateView state = new DungeonEditorStateView();
 
         main.bind(mapContentModel);
         controls.bind(controlsContentModel);
-        state.bind(contributionModel);
+        state.bind(stateContentModel);
         main.onViewInputEvent(intentHandler::consume);
         controls.onDungeonEditorControlsInputEvent(intentHandler::consume);
         state.onViewInputEvent(intentHandler::consume);
         contributionModel.controlsProjectionProperty().addListener((ignored, before, after) ->
                 controlsContentModel.apply(after));
         controlsContentModel.apply(contributionModel.controlsProjectionProperty().get());
-        editorModel.subscribe(snapshot -> applySnapshot(snapshot, contributionModel, mapContentModel));
-        applySnapshot(editorModel.current(), contributionModel, mapContentModel);
+        controlsModel.subscribe(snapshot -> applyControls(snapshot, contributionModel));
+        mapSurfaceModel.subscribe(snapshot -> applyMapSurface(snapshot, mapContentModel));
+        stateModel.subscribe(snapshot -> applyState(snapshot, contributionModel));
+        applyControls(controlsModel.current(), contributionModel);
+        applyMapSurface(mapSurfaceModel.current(), mapContentModel);
+        applyState(stateModel.current(), contributionModel);
         return new Binding(controls, main, state);
     }
 
-    private static void applySnapshot(
-            src.domain.dungeon.published.DungeonEditorSnapshot snapshot,
-            DungeonEditorContributionModel contributionModel,
+    private static void applyControls(
+            DungeonEditorControlsSnapshot snapshot,
+            DungeonEditorContributionModel contributionModel
+    ) {
+        contributionModel.applyControls(snapshot);
+    }
+
+    private static void applyMapSurface(
+            DungeonEditorMapSurfaceSnapshot snapshot,
             DungeonMapContentModel mapContentModel
     ) {
-        contributionModel.apply(snapshot);
-        mapContentModel.applyEditorSnapshot(snapshot);
+        mapContentModel.applyEditorSurfaceSnapshot(snapshot);
+    }
+
+    private static void applyState(
+            DungeonEditorStateSnapshot snapshot,
+            DungeonEditorContributionModel contributionModel
+    ) {
+        contributionModel.applyState(snapshot);
     }
 
     private record Binding(

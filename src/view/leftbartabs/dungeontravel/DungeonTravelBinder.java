@@ -7,7 +7,6 @@ import shell.api.ShellBinding;
 import shell.api.ShellRuntimeContext;
 import shell.api.ShellSlot;
 import src.domain.dungeon.DungeonTravelRuntimeApplicationService;
-import src.domain.dungeon.published.LoadTravelDungeonQuery;
 import src.domain.dungeon.published.TravelDungeonModel;
 import src.domain.dungeon.published.TravelDungeonSnapshot;
 import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel;
@@ -23,8 +22,10 @@ final class DungeonTravelBinder {
 
     ShellBinding bind() {
         DungeonTravelRuntimeApplicationService travel = runtimeContext.services().require(DungeonTravelRuntimeApplicationService.class);
-        TravelDungeonModel travelModel = travel.loadDungeonTravel(new LoadTravelDungeonQuery());
+        TravelDungeonModel travelModel = runtimeContext.services().require(TravelDungeonModel.class);
         DungeonTravelContributionModel contributionModel = new DungeonTravelContributionModel();
+        DungeonTravelControlsContentModel controlsContentModel = new DungeonTravelControlsContentModel();
+        DungeonTravelStateContentModel stateContentModel = new DungeonTravelStateContentModel();
         DungeonMapContentModel mapContentModel = new DungeonMapContentModel("Travel workspace", false);
         DungeonTravelIntentHandler intentHandler =
                 new DungeonTravelIntentHandler(contributionModel, mapContentModel.mapCanvasContentModel(), travel);
@@ -32,16 +33,18 @@ final class DungeonTravelBinder {
         DungeonMapView main = new DungeonMapView();
         DungeonTravelStateView state = new DungeonTravelStateView();
         main.bind(mapContentModel);
-        controls.bind(contributionModel);
-        state.bind(contributionModel);
+        controlsContentModel.bindTo(contributionModel);
+        stateContentModel.bindTo(contributionModel);
+        controls.bind(controlsContentModel);
+        state.bind(stateContentModel);
         controls.onTravelControlsInputEvent(intentHandler::consume);
         main.onViewInputEvent(intentHandler::consume);
         mapContentModel.mapCanvasContentModel().zoomProperty().addListener((ignored, before, after) ->
-                controls.showZoom(after.doubleValue()));
+                controlsContentModel.showZoom(after.doubleValue()));
         state.onViewInputEvent(intentHandler::consume);
         travelModel.subscribe(snapshot -> applySnapshot(snapshot, contributionModel, mapContentModel));
         applySnapshot(travelModel.current(), contributionModel, mapContentModel);
-        controls.showZoom(mapContentModel.mapCanvasContentModel().currentViewport().zoom());
+        controlsContentModel.showZoom(mapContentModel.mapCanvasContentModel().currentViewport().zoom());
         return new Binding(controls, main, state);
     }
 

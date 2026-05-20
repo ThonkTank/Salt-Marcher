@@ -59,18 +59,20 @@ public final class DungeonTravelControlsView extends DungeonControlPanelView {
         contentModel().showOverlaySettings(settings, disabled);
     }
 
-    public void bind(DungeonTravelContributionModel contributionModel) {
-        if (contributionModel == null) {
+    public void bind(DungeonTravelControlsContentModel travelContentModel) {
+        if (travelContentModel == null) {
             return;
         }
-        contributionModel.mapNameProperty().addListener((ignored, before, after) -> showMapName(after));
-        contributionModel.overlaySettingsProperty().addListener((ignored, before, after) ->
+        travelContentModel.mapNameProperty().addListener((ignored, before, after) -> showMapName(after));
+        travelContentModel.overlaySettingsProperty().addListener((ignored, before, after) ->
                 showOverlaySettings(OverlaySettingsAdapter.toOverlaySettings(after), false));
-        contributionModel.projectionLevelProperty().addListener((ignored, before, after) ->
+        travelContentModel.projectionLevelProperty().addListener((ignored, before, after) ->
                 showLevels(after.intValue(), false, true));
-        showMapName(contributionModel.mapNameProperty().get());
-        showOverlaySettings(OverlaySettingsAdapter.toOverlaySettings(contributionModel.overlaySettingsProperty().get()), false);
-        showLevels(contributionModel.projectionLevelProperty().get(), false, true);
+        travelContentModel.zoomProperty().addListener((ignored, before, after) -> showZoom(after.doubleValue()));
+        showMapName(travelContentModel.mapNameProperty().get());
+        showOverlaySettings(OverlaySettingsAdapter.toOverlaySettings(travelContentModel.overlaySettingsProperty().get()), false);
+        showLevels(travelContentModel.projectionLevelProperty().get(), false, true);
+        showZoom(travelContentModel.zoomProperty().get());
     }
 
     private void configureControls() {

@@ -16,48 +16,12 @@ final class InterpretDungeonEditorMainViewPressUseCase {
     private final DungeonEditorCorridorInteractionUseCase corridor = new DungeonEditorCorridorInteractionUseCase();
     private final DungeonEditorBoundaryStretchHelper boundaryStretch = new DungeonEditorBoundaryStretchHelper();
 
-    DungeonEditorMainViewInterpretation interpret(
+    DungeonEditorMainViewInterpretation interpretSelection(
             PointerState input,
             DungeonEditorWorkspaceValues.MapSnapshot snapshot,
             DungeonEditorSessionValues.Selection currentSelection,
-            DungeonEditorSessionValues.Tool selectedTool,
             InteractionState state
     ) {
-        if (boundaryToolSelected(selectedTool)) {
-            DungeonEditorMainViewInterpretation boundaryInterpretation =
-                    boundaryDraft.press(input, snapshot, currentSelection, selectedTool, state);
-            if (!boundaryInterpretation.effect().isNoop()) {
-                InteractionState nextState = boundaryInterpretation.nextState()
-                        .withDragSession(DragSession.none())
-                        .withPaintSession(PaintSession.none());
-                return new DungeonEditorMainViewInterpretation(nextState, boundaryInterpretation.effect());
-            }
-        }
-        if (corridorToolSelected(selectedTool)) {
-            InteractionState nextState = state
-                    .withDragSession(DragSession.none())
-                    .withPaintSession(PaintSession.none())
-                    .withBoundaryStretchSession(BoundaryStretchSession.none());
-            return corridor.press(input, snapshot, selectedTool, nextState);
-        }
-        if (roomPaintToolSelected(selectedTool)) {
-            PaintSession paintSession = new PaintSession(
-                    input.q(),
-                    input.r(),
-                    input.q(),
-                    input.r(),
-                    input.level(),
-                    selectedTool.deleteMode(),
-                    true);
-            InteractionState nextState = state
-                    .withPaintSession(paintSession)
-                    .withDragSession(DragSession.none())
-                    .withBoundaryStretchSession(BoundaryStretchSession.none());
-            return new DungeonEditorMainViewInterpretation(nextState, DungeonEditorMainViewEffect.preview(paintSession.preview()));
-        }
-        if (!selectionToolSelected(selectedTool)) {
-            return new DungeonEditorMainViewInterpretation(state.clear(), DungeonEditorMainViewEffect.none());
-        }
         BoundaryStretchSession nextStretchSession = boundaryStretch.start(input, snapshot, currentSelection);
         if (nextStretchSession != null) {
             InteractionState nextState = state
@@ -78,19 +42,54 @@ final class InterpretDungeonEditorMainViewPressUseCase {
         return new DungeonEditorMainViewInterpretation(state.clear(), DungeonEditorMainViewEffect.clearedSelection());
     }
 
-    private static boolean selectionToolSelected(DungeonEditorSessionValues.Tool selectedTool) {
-        return selectedTool != null && selectedTool.isSelectionTool();
+    DungeonEditorMainViewInterpretation interpretBoundary(
+            PointerState input,
+            DungeonEditorWorkspaceValues.MapSnapshot snapshot,
+            DungeonEditorSessionValues.Selection currentSelection,
+            DungeonEditorSessionValues.Tool boundaryTool,
+            InteractionState state
+    ) {
+        DungeonEditorMainViewInterpretation boundaryInterpretation =
+                boundaryDraft.press(input, snapshot, currentSelection, boundaryTool, state);
+        if (boundaryInterpretation.effect().isNoop()) {
+            return boundaryInterpretation;
+        }
+        InteractionState nextState = boundaryInterpretation.nextState()
+                .withDragSession(DragSession.none())
+                .withPaintSession(PaintSession.none());
+        return new DungeonEditorMainViewInterpretation(nextState, boundaryInterpretation.effect());
     }
 
-    private static boolean boundaryToolSelected(DungeonEditorSessionValues.Tool selectedTool) {
-        return selectedTool != null && selectedTool.isBoundaryTool();
+    DungeonEditorMainViewInterpretation interpretCorridor(
+            PointerState input,
+            DungeonEditorWorkspaceValues.MapSnapshot snapshot,
+            DungeonEditorSessionValues.Tool corridorTool,
+            InteractionState state
+    ) {
+        InteractionState nextState = state
+                .withDragSession(DragSession.none())
+                .withPaintSession(PaintSession.none())
+                .withBoundaryStretchSession(BoundaryStretchSession.none());
+        return corridor.press(input, snapshot, corridorTool, nextState);
     }
 
-    private static boolean corridorToolSelected(DungeonEditorSessionValues.Tool selectedTool) {
-        return selectedTool != null && selectedTool.isCorridorTool();
-    }
-
-    private static boolean roomPaintToolSelected(DungeonEditorSessionValues.Tool selectedTool) {
-        return selectedTool != null && selectedTool.isRoomPaintTool();
+    DungeonEditorMainViewInterpretation interpretRoom(
+            PointerState input,
+            DungeonEditorSessionValues.Tool roomTool,
+            InteractionState state
+    ) {
+        PaintSession paintSession = new PaintSession(
+                input.q(),
+                input.r(),
+                input.q(),
+                input.r(),
+                input.level(),
+                roomTool.deleteMode(),
+                true);
+        InteractionState nextState = state
+                .withPaintSession(paintSession)
+                .withDragSession(DragSession.none())
+                .withBoundaryStretchSession(BoundaryStretchSession.none());
+        return new DungeonEditorMainViewInterpretation(nextState, DungeonEditorMainViewEffect.preview(paintSession.preview()));
     }
 }

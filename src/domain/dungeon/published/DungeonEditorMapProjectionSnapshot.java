@@ -76,7 +76,7 @@ public record DungeonEditorMapProjectionSnapshot(
             double endQ,
             double endR,
             int level,
-            EdgeKind kind,
+            DungeonBoundaryKind kind,
             String label,
             long ownerId,
             DungeonEditorTopologyElementRef topologyRef,
@@ -85,16 +85,11 @@ public record DungeonEditorMapProjectionSnapshot(
     ) {
 
         public EdgeProjection {
-            kind = kind == null ? EdgeKind.WALL : kind;
+            kind = kind == null ? DungeonBoundaryKind.WALL : kind;
             label = label == null ? "" : label;
             ownerId = Math.max(0L, ownerId);
             topologyRef = topologyRef == null ? DungeonEditorTopologyElementRef.empty() : topologyRef;
         }
-    }
-
-    public enum EdgeKind {
-        WALL,
-        DOOR
     }
 
     public record LabelProjection(
@@ -149,18 +144,11 @@ public record DungeonEditorMapProjectionSnapshot(
         }
     }
 
-    public enum Heading {
-        NORTH,
-        EAST,
-        SOUTH,
-        WEST
-    }
-
     public record PartyTokenProjection(
             double q,
             double r,
             int level,
-            Heading heading,
+            DungeonTravelHeading heading,
             boolean visible
     ) {
 
@@ -201,8 +189,8 @@ public record DungeonEditorMapProjectionSnapshot(
         return label == null || label.isBlank() ? "Room" : label;
     }
 
-    private static Heading defaultHeading(@Nullable Heading heading) {
-        return heading == null ? Heading.SOUTH : heading;
+    private static DungeonTravelHeading defaultHeading(@Nullable DungeonTravelHeading heading) {
+        return heading == null ? DungeonTravelHeading.SOUTH : heading;
     }
 
 }

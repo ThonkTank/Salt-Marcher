@@ -5,10 +5,10 @@ public sealed interface DungeonTravelExternalTarget
 
     record OverworldTile(
             long mapId,
-            long tileId
+        long tileId
     ) implements DungeonTravelExternalTarget {
         public OverworldTile {
-            mapId = Math.max(0L, mapId);
+            mapId = Math.max(1L, mapId);
             tileId = Math.max(0L, tileId);
         }
     }

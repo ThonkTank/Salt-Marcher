@@ -6,13 +6,13 @@ import java.util.Map;
 import java.util.Set;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.editor.model.interaction.model.DungeonEditorMainViewInteractionValues;
-import src.domain.dungeon.model.editor.model.interaction.model.DungeonEditorMainViewInteractionValues.BoundaryStretchOrientation;
 import src.domain.dungeon.model.editor.model.interaction.model.DungeonEditorMainViewInteractionValues.BoundaryStretchSession;
 import src.domain.dungeon.model.editor.model.interaction.model.DungeonEditorMainViewInteractionValues.BoundaryStretchSide;
 import src.domain.dungeon.model.editor.model.interaction.model.DungeonEditorMainViewInteractionValues.BoundaryTarget;
 import src.domain.dungeon.model.editor.model.interaction.model.DungeonEditorMainViewInteractionValues.PointerState;
 import src.domain.dungeon.model.editor.model.session.model.DungeonEditorSessionValues;
 import src.domain.dungeon.model.editor.model.workspace.model.DungeonEditorWorkspaceValues;
+import src.domain.dungeon.model.map.model.DungeonBoundaryStretchValueTypes.StretchOrientation;
 
 public final class DungeonEditorBoundaryStretchHelper {
     public @Nullable BoundaryStretchSession start(
@@ -25,7 +25,7 @@ public final class DungeonEditorBoundaryStretchHelper {
         if (input == null || !input.primaryButtonDown() || boundaryTarget == null || !boundaryTarget.present()) {
             return null;
         }
-        BoundaryStretchOrientation orientation = BoundaryStretchOrientation.from(boundaryTarget);
+        StretchOrientation orientation = orientation(boundaryTarget);
         if (orientation == null) {
             return null;
         }
@@ -57,7 +57,7 @@ public final class DungeonEditorBoundaryStretchHelper {
             DungeonEditorWorkspaceValues.MapSnapshot snapshot,
             long clusterId,
             BoundaryTarget boundaryTarget,
-            BoundaryStretchOrientation orientation
+            StretchOrientation orientation
     ) {
         DungeonEditorBoundaryStretchLineCatalogHelper lineCatalog = new DungeonEditorBoundaryStretchLineCatalogHelper();
         if (snapshot == null || !boundaryTarget.present()) {
@@ -98,7 +98,7 @@ public final class DungeonEditorBoundaryStretchHelper {
                     DungeonEditorSessionValues.emptyHandleRef());
         }
         return new DungeonEditorSessionValues.Selection(
-                new DungeonEditorWorkspaceValues.TopologyElementRef(
+                new src.domain.dungeon.model.map.model.DungeonTopologyRef(
                         DungeonEditorMainViewInteractionValues.toTopologyKind(boundaryTarget.topologyRefKind()),
                         boundaryTarget.topologyRefId()),
                 clusterId,
@@ -134,7 +134,7 @@ public final class DungeonEditorBoundaryStretchHelper {
     private static List<DungeonEditorWorkspaceValues.Edge> contiguousEdges(
             Map<Integer, DungeonEditorWorkspaceValues.Edge> edgesByVariable,
             DungeonEditorWorkspaceValues.Edge clickedEdge,
-            BoundaryStretchOrientation orientation
+            StretchOrientation orientation
     ) {
         int min = variableCoordinate(orientation, clickedEdge);
         int max = min;
@@ -155,12 +155,25 @@ public final class DungeonEditorBoundaryStretchHelper {
     }
 
     private static int variableCoordinate(
-            BoundaryStretchOrientation orientation,
+            StretchOrientation orientation,
             DungeonEditorWorkspaceValues.Edge edge
     ) {
-        return orientation == BoundaryStretchOrientation.VERTICAL
+        return orientation == StretchOrientation.VERTICAL
                 ? Math.min(edge.from().r(), edge.to().r())
                 : Math.min(edge.from().q(), edge.to().q());
+    }
+
+    private static @Nullable StretchOrientation orientation(BoundaryTarget boundaryTarget) {
+        if (boundaryTarget == null || !boundaryTarget.present()) {
+            return null;
+        }
+        if (boundaryTarget.start().q() == boundaryTarget.end().q()) {
+            return StretchOrientation.VERTICAL;
+        }
+        if (boundaryTarget.start().r() == boundaryTarget.end().r()) {
+            return StretchOrientation.HORIZONTAL;
+        }
+        return null;
     }
 
     private static Set<DungeonEditorWorkspaceValues.Cell> clusterCells(

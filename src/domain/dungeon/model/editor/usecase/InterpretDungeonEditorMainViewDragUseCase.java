@@ -12,29 +12,16 @@ import src.domain.dungeon.model.editor.model.workspace.model.DungeonEditorWorksp
 final class InterpretDungeonEditorMainViewDragUseCase {
     private final DungeonEditorBoundaryDraftUseCase boundaryDraft = new DungeonEditorBoundaryDraftUseCase();
 
-    DungeonEditorMainViewInterpretation interpret(
+    DungeonEditorMainViewInterpretation interpretSelection(
             PointerState input,
-            DungeonEditorWorkspaceValues.MapSnapshot snapshot,
-            DungeonEditorSessionValues.Tool selectedTool,
             InteractionState state
     ) {
-        if (!input.primaryButtonDown()) {
-            return new DungeonEditorMainViewInterpretation(state, DungeonEditorMainViewEffect.none());
-        }
         if (state.boundaryStretchSession().present()) {
             var nextStretchSession = state.boundaryStretchSession().withCurrentPointer(input.q(), input.r());
             InteractionState nextState = state.withBoundaryStretchSession(nextStretchSession);
             return new DungeonEditorMainViewInterpretation(nextState, previewFromStretch(nextStretchSession));
         }
-        if (boundaryToolSelected(selectedTool)) {
-            return new DungeonEditorMainViewInterpretation(state, boundaryDraft.preview(input, snapshot, selectedTool, state));
-        }
-        if (state.paintSession().present() && roomPaintToolSelected(selectedTool)) {
-            PaintSession paintSession = state.paintSession().withEnd(input.q(), input.r());
-            InteractionState nextState = state.withPaintSession(paintSession);
-            return new DungeonEditorMainViewInterpretation(nextState, DungeonEditorMainViewEffect.preview(paintSession.preview()));
-        }
-        if (!selectionToolSelected(selectedTool) || !state.dragSession().present()) {
+        if (!state.dragSession().present()) {
             return new DungeonEditorMainViewInterpretation(state, DungeonEditorMainViewEffect.clearPreviewIfNeeded(false));
         }
         DragSession nextDragSession = state.dragSession().withCurrentPointer(input.q(), input.r());
@@ -43,6 +30,33 @@ final class InterpretDungeonEditorMainViewDragUseCase {
                 ? DungeonEditorMainViewEffect.preview(nextDragSession.moveHandlePreview())
                 : DungeonEditorMainViewEffect.clearPreviewIfNeeded(true);
         return new DungeonEditorMainViewInterpretation(nextState, effect);
+    }
+
+    DungeonEditorMainViewInterpretation interpretBoundary(
+            PointerState input,
+            DungeonEditorWorkspaceValues.MapSnapshot snapshot,
+            DungeonEditorSessionValues.Tool boundaryTool,
+            InteractionState state
+    ) {
+        if (!input.primaryButtonDown()) {
+            return new DungeonEditorMainViewInterpretation(state, DungeonEditorMainViewEffect.none());
+        }
+        return new DungeonEditorMainViewInterpretation(state, boundaryDraft.preview(input, snapshot, boundaryTool, state));
+    }
+
+    DungeonEditorMainViewInterpretation interpretRoom(
+            PointerState input,
+            InteractionState state
+    ) {
+        if (!input.primaryButtonDown()) {
+            return new DungeonEditorMainViewInterpretation(state, DungeonEditorMainViewEffect.none());
+        }
+        if (!state.paintSession().present()) {
+            return new DungeonEditorMainViewInterpretation(state, DungeonEditorMainViewEffect.clearPreviewIfNeeded(false));
+        }
+        PaintSession paintSession = state.paintSession().withEnd(input.q(), input.r());
+        InteractionState nextState = state.withPaintSession(paintSession);
+        return new DungeonEditorMainViewInterpretation(nextState, DungeonEditorMainViewEffect.preview(paintSession.preview()));
     }
 
     private static DungeonEditorMainViewEffect previewFromStretch(
@@ -54,15 +68,4 @@ final class InterpretDungeonEditorMainViewDragUseCase {
         return DungeonEditorMainViewEffect.preview(stretchSession.preview());
     }
 
-    private static boolean selectionToolSelected(DungeonEditorSessionValues.Tool selectedTool) {
-        return selectedTool != null && selectedTool.isSelectionTool();
-    }
-
-    private static boolean boundaryToolSelected(DungeonEditorSessionValues.Tool selectedTool) {
-        return selectedTool != null && selectedTool.isBoundaryTool();
-    }
-
-    private static boolean roomPaintToolSelected(DungeonEditorSessionValues.Tool selectedTool) {
-        return selectedTool != null && selectedTool.isRoomPaintTool();
-    }
 }

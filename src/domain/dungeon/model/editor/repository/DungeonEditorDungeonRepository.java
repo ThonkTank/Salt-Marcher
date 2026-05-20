@@ -4,20 +4,21 @@ import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.DungeonAuthoredApplicationService;
 import src.domain.dungeon.DungeonCatalogApplicationService;
+import src.domain.dungeon.published.DeleteDungeonMapCommand;
 import src.domain.dungeon.published.DungeonAuthoredMutationCommand;
 import src.domain.dungeon.published.DungeonAuthoredReadCommand;
 import src.domain.dungeon.published.DungeonEditorOperation;
 import src.domain.dungeon.published.DungeonMapCatalogCommand;
 import src.domain.dungeon.published.DungeonMapId;
 import src.domain.dungeon.model.editor.helper.DungeonEditorSessionOperationBoundaryTranslationHelper;
-import src.domain.dungeon.model.editor.model.session.model.DungeonEditorSessionCommand;
+import src.domain.dungeon.model.editor.model.session.model.DungeonEditorRoomNarrationInput;
 import src.domain.dungeon.model.editor.model.session.model.DungeonEditorSessionValues;
 import src.domain.dungeon.model.editor.helper.DungeonEditorWorkspaceInspectorBoundaryTranslationHelper;
 import src.domain.dungeon.model.editor.helper.DungeonEditorWorkspaceMapBoundaryTranslationHelper;
 import src.domain.dungeon.model.editor.helper.DungeonEditorWorkspaceTopologyBoundaryTranslationHelper;
 import src.domain.dungeon.model.editor.model.workspace.model.DungeonEditorWorkspaceValues;
 import src.domain.dungeon.model.editor.model.workspace.model.DungeonEditorWorkspaceValues.MapId;
-import src.domain.dungeon.model.editor.model.workspace.model.DungeonEditorWorkspaceValues.TopologyElementRef;
+import src.domain.dungeon.model.map.model.DungeonTopologyRef;
 
 public final class DungeonEditorDungeonRepository {
 
@@ -45,7 +46,7 @@ public final class DungeonEditorDungeonRepository {
     }
 
     public void deleteMap(@Nullable MapId mapId) {
-        catalogService.catalog(new DungeonAuthoredReadCommand.MapSelection(domainMapId(mapId)));
+        catalogService.catalog(new DeleteDungeonMapCommand(domainMapId(mapId)));
     }
 
     public void loadMap(@Nullable MapId mapId) {
@@ -56,11 +57,11 @@ public final class DungeonEditorDungeonRepository {
 
     public void describeSelection(
             @Nullable MapId mapId,
-            TopologyElementRef topologyRef,
+            DungeonTopologyRef topologyRef,
             long clusterId,
             boolean clusterSelection
     ) {
-        if (mapId == null || (TopologyElementRef.empty().equals(topologyRef) && !clusterSelection)) {
+        if (mapId == null || (!topologyRef.present() && !clusterSelection)) {
             return;
         }
         authoredService.refreshAuthored(new DungeonAuthoredReadCommand.DescribeSelection(
@@ -78,7 +79,7 @@ public final class DungeonEditorDungeonRepository {
         applyMutation(DungeonAuthoredMutationCommand.Action.APPLY, mapId, preview);
     }
 
-    public void saveRoomNarration(@Nullable MapId mapId, DungeonEditorSessionCommand.RoomNarrationInput roomNarration) {
+    public void saveRoomNarration(@Nullable MapId mapId, DungeonEditorRoomNarrationInput roomNarration) {
         if (mapId == null || roomNarration == null || !DungeonEditorWorkspaceValues.hasId(roomNarration.roomId())) {
             return;
         }

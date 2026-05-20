@@ -27,6 +27,10 @@ public final class DungeonEditorHandleType {
         return name;
     }
 
+    public boolean isClusterLabel() {
+        return this == CLUSTER_LABEL;
+    }
+
     @Override
     public String toString() {
         return name;

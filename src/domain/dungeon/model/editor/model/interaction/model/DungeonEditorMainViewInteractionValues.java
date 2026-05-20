@@ -11,6 +11,10 @@ import src.domain.dungeon.model.editor.model.interaction.model.DungeonEditorInte
 import src.domain.dungeon.model.editor.model.interaction.model.DungeonEditorInteractionValues.VertexTarget;
 import src.domain.dungeon.model.editor.model.session.model.DungeonEditorSessionValues;
 import src.domain.dungeon.model.editor.model.workspace.model.DungeonEditorWorkspaceValues;
+import src.domain.dungeon.model.map.model.DungeonBoundaryStretchValueTypes.StretchOrientation;
+import src.domain.dungeon.model.map.model.DungeonEditorHandleType;
+import src.domain.dungeon.model.map.model.DungeonTopologyElementKind;
+import src.domain.dungeon.model.map.model.DungeonTopologyRef;
 
 public final class DungeonEditorMainViewInteractionValues {
 
@@ -25,8 +29,8 @@ public final class DungeonEditorMainViewInteractionValues {
     private DungeonEditorMainViewInteractionValues() {
     }
 
-    public static DungeonEditorWorkspaceValues.TopologyElementKind toTopologyKind(@Nullable String kind) {
-        return DungeonEditorWorkspaceValues.TopologyElementKind.fromName(kind == null ? EMPTY_KIND : kind);
+    public static DungeonTopologyElementKind toTopologyKind(@Nullable String kind) {
+        return DungeonTopologyElementKind.valueOf(kind == null ? EMPTY_KIND : kind);
     }
 
     public record InteractionState(
@@ -148,8 +152,10 @@ public final class DungeonEditorMainViewInteractionValues {
 
         public DungeonEditorWorkspaceValues.HandleRef toWorkspaceHandleRef() {
             return new DungeonEditorWorkspaceValues.HandleRef(
-                    DungeonEditorWorkspaceValues.HandleKind.fromName(kind),
-                    new DungeonEditorWorkspaceValues.TopologyElementRef(toTopologyKind(topologyRefKind), topologyRefId),
+                    DungeonEditorHandleType.valueOf(kind),
+                    new DungeonTopologyRef(
+                            toTopologyKind(topologyRefKind),
+                            topologyRefId),
                     ownerId,
                     clusterId,
                     corridorId,
@@ -240,7 +246,7 @@ public final class DungeonEditorMainViewInteractionValues {
 
         public DungeonEditorSessionValues.Selection toSelection() {
             return new DungeonEditorSessionValues.Selection(
-                    new DungeonEditorWorkspaceValues.TopologyElementRef(toTopologyKind(topologyRefKind), topologyRefId),
+                    new DungeonTopologyRef(toTopologyKind(topologyRefKind), topologyRefId),
                     clusterId,
                     clusterSelection(),
                     dragHandleRef());
@@ -344,8 +350,10 @@ public final class DungeonEditorMainViewInteractionValues {
                 return selection.handleRef();
             }
             return new DungeonEditorWorkspaceValues.HandleRef(
-                    DungeonEditorWorkspaceValues.HandleKind.CLUSTER_LABEL,
-                    selection.topologyRef(),
+                    DungeonEditorHandleType.CLUSTER_LABEL,
+                    new DungeonTopologyRef(
+                            selection.topologyRef().kind(),
+                            selection.topologyRef().id()),
                     0L,
                     selection.clusterId(),
                     0L,
@@ -353,24 +361,6 @@ public final class DungeonEditorMainViewInteractionValues {
                     0,
                     DungeonEditorWorkspaceValues.Cell.empty(),
                     "");
-        }
-    }
-
-    public enum BoundaryStretchOrientation {
-        HORIZONTAL,
-        VERTICAL;
-
-        public static @Nullable BoundaryStretchOrientation from(BoundaryTarget boundaryTarget) {
-            if (boundaryTarget == null || !boundaryTarget.present()) {
-                return null;
-            }
-            if (boundaryTarget.start().q() == boundaryTarget.end().q()) {
-                return VERTICAL;
-            }
-            if (boundaryTarget.start().r() == boundaryTarget.end().r()) {
-                return HORIZONTAL;
-            }
-            return null;
         }
     }
 
@@ -394,7 +384,7 @@ public final class DungeonEditorMainViewInteractionValues {
             DungeonEditorSessionValues.Selection selection,
             long clusterId,
             List<DungeonEditorWorkspaceValues.Edge> sourceEdges,
-            BoundaryStretchOrientation orientation,
+            StretchOrientation orientation,
             int pressQ,
             int pressR,
             int pressLevel,
@@ -405,7 +395,7 @@ public final class DungeonEditorMainViewInteractionValues {
         public BoundaryStretchSession {
             selection = selection == null ? DungeonEditorSessionValues.Selection.empty() : selection;
             sourceEdges = sourceEdges == null ? List.of() : List.copyOf(sourceEdges);
-            orientation = orientation == null ? BoundaryStretchOrientation.VERTICAL : orientation;
+            orientation = orientation == null ? StretchOrientation.VERTICAL : orientation;
         }
 
         public static BoundaryStretchSession none() {
@@ -413,7 +403,7 @@ public final class DungeonEditorMainViewInteractionValues {
                     DungeonEditorSessionValues.Selection.empty(),
                     0L,
                     List.of(),
-                    BoundaryStretchOrientation.VERTICAL,
+                    StretchOrientation.VERTICAL,
                     0,
                     0,
                     0,
@@ -437,11 +427,11 @@ public final class DungeonEditorMainViewInteractionValues {
         }
 
         public int deltaQ() {
-            return orientation == BoundaryStretchOrientation.VERTICAL ? currentQ - pressQ : 0;
+            return orientation == StretchOrientation.VERTICAL ? currentQ - pressQ : 0;
         }
 
         public int deltaR() {
-            return orientation == BoundaryStretchOrientation.HORIZONTAL ? currentR - pressR : 0;
+            return orientation == StretchOrientation.HORIZONTAL ? currentR - pressR : 0;
         }
 
         public int deltaLevel() {
@@ -515,7 +505,7 @@ public final class DungeonEditorMainViewInteractionValues {
                     new DungeonEditorWorkspaceValues.CorridorAnchorEndpoint(
                             0L,
                             DungeonEditorWorkspaceValues.Cell.empty(),
-                            DungeonEditorWorkspaceValues.TopologyElementRef.empty()));
+                            DungeonTopologyRef.empty()));
         }
 
         record EndpointTarget(

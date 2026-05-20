@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.editor.model.workspace.model.DungeonEditorWorkspaceValues;
+import src.domain.dungeon.model.map.model.DungeonTopologyRef;
 
 public final class DungeonEditorSessionValues {
 
@@ -214,20 +215,20 @@ public final class DungeonEditorSessionValues {
     }
 
     public record Selection(
-            DungeonEditorWorkspaceValues.TopologyElementRef topologyRef,
+            DungeonTopologyRef topologyRef,
             long clusterId,
             boolean clusterSelection,
             DungeonEditorWorkspaceValues.HandleRef handleRef
     ) {
         public Selection {
-            topologyRef = topologyRef == null ? DungeonEditorWorkspaceValues.TopologyElementRef.empty() : topologyRef;
+            topologyRef = topologyRef == null ? DungeonTopologyRef.empty() : topologyRef;
             clusterId = Math.max(0L, clusterId);
             handleRef = handleRef == null ? emptyHandleRef() : handleRef;
         }
 
         public static Selection empty() {
             return new Selection(
-                    DungeonEditorWorkspaceValues.TopologyElementRef.empty(),
+                    DungeonTopologyRef.empty(),
                     0L,
                     false,
                     emptyHandleRef());
@@ -238,7 +239,7 @@ public final class DungeonEditorSessionValues {
             RoomRectanglePreview,
             ClusterBoundariesPreview,
             CorridorCreatePreview,
-            CorridorDeletePreview,
+            DeleteCorridorPreview,
             MoveHandlePreview,
             MoveBoundaryStretchPreview {
 
@@ -333,9 +334,15 @@ public final class DungeonEditorSessionValues {
     ) implements Preview {
     }
 
-    public record CorridorDeletePreview(long corridorId) implements Preview {
-        public CorridorDeletePreview {
-            corridorId = Math.max(0L, corridorId);
+    public static final class DeleteCorridorPreview implements Preview {
+        private final long corridorId;
+
+        public DeleteCorridorPreview(long corridorId) {
+            this.corridorId = Math.max(0L, corridorId);
+        }
+
+        public long corridorId() {
+            return corridorId;
         }
     }
 

@@ -4,7 +4,7 @@ public sealed interface DungeonMapCatalogCommand permits
         DungeonMapCatalogCommand.Search,
         DungeonMapCatalogCommand.CreateMap,
         DungeonMapCatalogCommand.RenameMap,
-        DungeonAuthoredReadCommand.MapSelection {
+        DeleteDungeonMapCommand {
 
     record Search(String query) implements DungeonMapCatalogCommand {
 

@@ -7,7 +7,7 @@ public record DungeonEditorSurface(
         int revision,
         DungeonEditorMapSnapshot map,
         @Nullable DungeonEditorMapSnapshot previewMap,
-        @Nullable DungeonEditorInspectorSnapshot inspector
+        @Nullable DungeonInspectorSnapshot inspector
 ) {
 
     public DungeonEditorSurface {

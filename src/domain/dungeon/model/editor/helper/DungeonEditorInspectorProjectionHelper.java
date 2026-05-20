@@ -2,7 +2,8 @@ package src.domain.dungeon.model.editor.helper;
 
 import java.util.List;
 import org.jspecify.annotations.Nullable;
-import src.domain.dungeon.published.DungeonEditorInspectorSnapshot;
+import src.domain.dungeon.published.DungeonCellRef;
+import src.domain.dungeon.published.DungeonInspectorSnapshot;
 import src.domain.dungeon.model.editor.model.workspace.model.DungeonEditorWorkspaceValues;
 
 public final class DungeonEditorInspectorProjectionHelper {
@@ -10,33 +11,33 @@ public final class DungeonEditorInspectorProjectionHelper {
     private DungeonEditorInspectorProjectionHelper() {
     }
 
-    public static @Nullable DungeonEditorInspectorSnapshot toPublishedInspector(
+    public static @Nullable DungeonInspectorSnapshot toPublishedInspector(
             DungeonEditorWorkspaceValues.@Nullable Inspector inspector
     ) {
         if (inspector == null) {
             return null;
         }
-        return new DungeonEditorInspectorSnapshot(
+        return new DungeonInspectorSnapshot(
                 inspector.title(),
                 inspector.summary(),
                 inspector.facts(),
                 inspector.roomNarrations().stream().map(DungeonEditorInspectorProjectionHelper::toPublishedRoomNarrationCard).toList());
     }
 
-    private static DungeonEditorInspectorSnapshot.RoomNarrationCard toPublishedRoomNarrationCard(
+    private static DungeonInspectorSnapshot.RoomNarrationCard toPublishedRoomNarrationCard(
             DungeonEditorWorkspaceValues.@Nullable RoomNarrationCard card
     ) {
         DungeonEditorWorkspaceValues.RoomNarrationCard safeCard = card == null
                 ? new DungeonEditorWorkspaceValues.RoomNarrationCard(0L, "Raum", "", List.of())
                 : card;
-        return new DungeonEditorInspectorSnapshot.RoomNarrationCard(
+        return new DungeonInspectorSnapshot.RoomNarrationCard(
                 safeCard.roomId(),
                 safeCard.roomName(),
                 safeCard.visualDescription(),
                 safeCard.exits().stream().map(DungeonEditorInspectorProjectionHelper::toPublishedRoomExit).toList());
     }
 
-    private static DungeonEditorInspectorSnapshot.RoomExitNarration toPublishedRoomExit(
+    private static DungeonInspectorSnapshot.RoomExitNarration toPublishedRoomExit(
             DungeonEditorWorkspaceValues.@Nullable RoomExitNarration exit
     ) {
         DungeonEditorWorkspaceValues.RoomExitNarration safeExit = exit == null
@@ -46,10 +47,14 @@ public final class DungeonEditorInspectorProjectionHelper {
                         "",
                         "")
                 : exit;
-        return new DungeonEditorInspectorSnapshot.RoomExitNarration(
+        return new DungeonInspectorSnapshot.RoomExitNarration(
                 safeExit.label(),
-                DungeonEditorPublishedValueProjectionHelper.toPublishedCell(safeExit.cell()),
+                toPublishedCell(safeExit.cell()),
                 safeExit.direction(),
                 safeExit.description());
+    }
+
+    private static DungeonCellRef toPublishedCell(DungeonEditorWorkspaceValues.Cell cell) {
+        return cell == null ? new DungeonCellRef(0, 0, 0) : new DungeonCellRef(cell.q(), cell.r(), cell.level());
     }
 }

@@ -18,6 +18,10 @@ public final class DungeonTopology {
         return name;
     }
 
+    public boolean isHex() {
+        return this == HEX;
+    }
+
     @Override
     public String toString() {
         return name;

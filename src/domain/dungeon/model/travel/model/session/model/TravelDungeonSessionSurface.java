@@ -3,10 +3,12 @@ package src.domain.dungeon.model.travel.model.session.model;
 import java.util.List;
 import java.util.Locale;
 import org.jspecify.annotations.Nullable;
-import src.domain.dungeon.model.travel.model.session.model.TravelDungeonSessionValues.AreaKind;
+import src.domain.dungeon.model.map.model.DungeonAreaType;
+import src.domain.dungeon.model.map.model.DungeonCell;
+import src.domain.dungeon.model.map.model.DungeonEdge;
+import src.domain.dungeon.model.map.model.DungeonFeatureType;
+import src.domain.dungeon.model.map.model.DungeonTopology;
 import src.domain.dungeon.model.travel.model.session.model.TravelDungeonSessionValues.ContextKind;
-import src.domain.dungeon.model.travel.model.session.model.TravelDungeonSessionValues.FeatureKind;
-import src.domain.dungeon.model.travel.model.session.model.TravelDungeonSessionValues.GridTopology;
 import src.domain.dungeon.model.travel.model.session.model.TravelDungeonSessionValues.LocationKind;
 
 public final class TravelDungeonSessionSurface {
@@ -24,7 +26,7 @@ public final class TravelDungeonSessionSurface {
                         1L,
                         LocationKind.TILE,
                         0L,
-                        new CellData(0, 0, 0),
+                        new DungeonCell(0, 0, 0),
                         "SOUTH"),
                 "Overworld",
                 "Overworld-Feld " + tileId,
@@ -55,7 +57,7 @@ public final class TravelDungeonSessionSurface {
             revision = Math.max(0, revision);
             map = map == null ? MapData.empty() : map;
             position = position == null
-                    ? new PositionData(1L, LocationKind.TILE, 0L, new CellData(0, 0, 0), "SOUTH")
+                    ? new PositionData(1L, LocationKind.TILE, 0L, new DungeonCell(0, 0, 0), "SOUTH")
                     : position;
             surfaceTitle = surfaceTitle == null || surfaceTitle.isBlank() ? mapName : surfaceTitle.trim();
             areaLabel = areaLabel == null || areaLabel.isBlank() ? "Kein Standort" : areaLabel.trim();
@@ -76,14 +78,14 @@ public final class TravelDungeonSessionSurface {
             long mapId,
             LocationKind locationKind,
             long ownerId,
-            CellData tile,
+            DungeonCell tile,
             String headingToken
     ) {
         public PositionData {
             mapId = Math.max(1L, mapId);
             locationKind = locationKind == null ? LocationKind.TILE : locationKind;
             ownerId = Math.max(0L, ownerId);
-            tile = tile == null ? new CellData(0, 0, 0) : tile;
+            tile = tile == null ? new DungeonCell(0, 0, 0) : tile;
             headingToken = normalizeHeadingToken(headingToken);
         }
 
@@ -98,7 +100,7 @@ public final class TravelDungeonSessionSurface {
     }
 
     public record MapData(
-            GridTopology topology,
+            DungeonTopology topology,
             int width,
             int height,
             List<AreaData> areas,
@@ -106,7 +108,7 @@ public final class TravelDungeonSessionSurface {
             List<FeatureData> features
     ) {
         public MapData {
-            topology = topology == null ? GridTopology.SQUARE : topology;
+            topology = topology == null ? DungeonTopology.SQUARE : topology;
             width = Math.max(1, width);
             height = Math.max(1, height);
             areas = areas == null ? List.of() : List.copyOf(areas);
@@ -115,7 +117,7 @@ public final class TravelDungeonSessionSurface {
         }
 
         public static MapData empty() {
-            return new MapData(GridTopology.SQUARE, 1, 1, List.of(), List.of(), List.of());
+            return new MapData(DungeonTopology.SQUARE, 1, 1, List.of(), List.of(), List.of());
         }
 
         @Override
@@ -135,20 +137,20 @@ public final class TravelDungeonSessionSurface {
     }
 
     public record AreaData(
-            AreaKind kind,
+            DungeonAreaType kind,
             long id,
             String label,
-            List<CellData> cells
+            List<DungeonCell> cells
     ) {
         public AreaData {
-            kind = kind == null ? AreaKind.ROOM : kind;
+            kind = kind == null ? DungeonAreaType.ROOM : kind;
             id = Math.max(1L, id);
             label = label == null || label.isBlank() ? kind.name() : label.trim();
             cells = cells == null ? List.of() : List.copyOf(cells);
         }
 
         @Override
-        public List<CellData> cells() {
+        public List<DungeonCell> cells() {
             return List.copyOf(cells);
         }
     }
@@ -157,25 +159,25 @@ public final class TravelDungeonSessionSurface {
             boolean doorBoundary,
             long id,
             String label,
-            EdgeData edge
+            DungeonEdge edge
     ) {
         public BoundaryData {
             id = Math.max(1L, id);
             label = label == null || label.isBlank() ? (doorBoundary ? "door" : "wall") : label.trim();
-            edge = edge == null ? new EdgeData(new CellData(0, 0, 0), new CellData(0, 0, 0)) : edge;
+            edge = edge == null ? new DungeonEdge(new DungeonCell(0, 0, 0), new DungeonCell(0, 0, 0)) : edge;
         }
     }
 
     public record FeatureData(
-            FeatureKind kind,
+            DungeonFeatureType kind,
             long id,
             String label,
-            List<CellData> cells,
+            List<DungeonCell> cells,
             String description,
             String destinationLabel
     ) {
         public FeatureData {
-            kind = kind == null ? FeatureKind.STAIR : kind;
+            kind = kind == null ? DungeonFeatureType.STAIR : kind;
             id = Math.max(1L, id);
             label = label == null || label.isBlank() ? kind.name() : label.trim();
             cells = cells == null ? List.of() : List.copyOf(cells);
@@ -184,7 +186,7 @@ public final class TravelDungeonSessionSurface {
         }
 
         @Override
-        public List<CellData> cells() {
+        public List<DungeonCell> cells() {
             return List.copyOf(cells);
         }
     }
@@ -201,13 +203,4 @@ public final class TravelDungeonSessionSurface {
         }
     }
 
-    public record EdgeData(CellData from, CellData to) {
-        public EdgeData {
-            from = from == null ? new CellData(0, 0, 0) : from;
-            to = to == null ? from : to;
-        }
-    }
-
-    public record CellData(int q, int r, int level) {
-    }
 }

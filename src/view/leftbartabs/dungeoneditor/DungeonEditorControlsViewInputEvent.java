@@ -3,96 +3,115 @@ package src.view.leftbartabs.dungeoneditor;
 import org.jspecify.annotations.Nullable;
 
 public record DungeonEditorControlsViewInputEvent(
-        @Nullable MapSelectionInput mapSelection,
-        @Nullable MapEditorInput mapEditor,
-        String viewModeKey,
-        @Nullable ToolInput toolInput,
-        int projectionLevelShift,
-        @Nullable OverlayInput overlay
+        MapSnapshot map,
+        ToolSnapshot tool,
+        ProjectionSnapshot projection,
+        OverlaySnapshot overlay
 ) {
 
     public DungeonEditorControlsViewInputEvent(
-            @Nullable MapSelectionInput mapSelection,
-            @Nullable MapEditorInput mapEditor,
-            @Nullable String viewModeKey,
-            @Nullable ToolInput toolInput,
-            int projectionLevelShift,
-            @Nullable OverlayInput overlay
+            @Nullable MapSnapshot map,
+            @Nullable ToolSnapshot tool,
+            @Nullable ProjectionSnapshot projection,
+            @Nullable OverlaySnapshot overlay
     ) {
-        this.mapSelection = mapSelection;
-        this.mapEditor = mapEditor;
-        this.viewModeKey = normalizedOptionalTextOrEmpty(viewModeKey);
-        this.toolInput = toolInput;
-        this.projectionLevelShift = projectionLevelShift;
-        this.overlay = overlay;
+        this.map = map == null ? new MapSnapshot(0L, null, false, false, false, false, false, false, false) : map;
+        this.tool = tool == null ? new ToolSnapshot(null, null, false) : tool;
+        this.projection = projection == null ? new ProjectionSnapshot(null, 0) : projection;
+        this.overlay = overlay == null ? new OverlaySnapshot(null, 0, 0.0, null) : overlay;
     }
 
-    @Override
-    public @Nullable String viewModeKey() {
-        return emptyToNull(viewModeKey);
-    }
-
-    enum ToolFamily {
-        ROOM,
-        WALL,
-        DOOR,
-        CORRIDOR,
-        STAIR,
-        TRANSITION
-    }
-
-    public record MapSelectionInput(long selectedMapIdValue) {
-        public MapSelectionInput {
-            selectedMapIdValue = Math.max(0L, selectedMapIdValue);
-        }
-    }
-
-    public record MapEditorInput(
-            boolean openCreateRequested,
-            boolean openRenameRequested,
-            boolean openDeleteRequested,
-            boolean dismissRequested,
-            boolean submitRequested,
-            boolean confirmDeleteRequested,
-            String draftName
+    public record MapSnapshot(
+            long selectedMapIdValue,
+            String editorDraftName,
+            boolean editorInputObserved,
+            boolean createControlActivated,
+            boolean renameControlActivated,
+            boolean deleteControlActivated,
+            boolean dismissControlActivated,
+            boolean submitControlActivated,
+            boolean confirmDeleteControlActivated
     ) {
-        public MapEditorInput {
-            draftName = draftName == null ? "" : draftName.strip();
-        }
-    }
-
-    public record ToolInput(
-            @Nullable ToolFamily requestedFamily,
-            String selectedToolLabel,
-            boolean dismissRequested
-    ) {
-        public ToolInput(
-                @Nullable ToolFamily requestedFamily,
-                @Nullable String selectedToolLabel,
-                boolean dismissRequested
+        public MapSnapshot(
+                long selectedMapIdValue,
+                @Nullable String editorDraftName,
+                boolean editorInputObserved,
+                boolean createControlActivated,
+                boolean renameControlActivated,
+                boolean deleteControlActivated,
+                boolean dismissControlActivated,
+                boolean submitControlActivated,
+                boolean confirmDeleteControlActivated
         ) {
-            this.requestedFamily = requestedFamily;
-            this.selectedToolLabel = normalizedOptionalTextOrEmpty(selectedToolLabel);
-            this.dismissRequested = dismissRequested;
+            this.selectedMapIdValue = Math.max(0L, selectedMapIdValue);
+            this.editorDraftName = editorDraftName == null ? "" : editorDraftName;
+            this.editorInputObserved = editorInputObserved;
+            this.createControlActivated = createControlActivated;
+            this.renameControlActivated = renameControlActivated;
+            this.deleteControlActivated = deleteControlActivated;
+            this.dismissControlActivated = dismissControlActivated;
+            this.submitControlActivated = submitControlActivated;
+            this.confirmDeleteControlActivated = confirmDeleteControlActivated;
+        }
+    }
+
+    public record ToolSnapshot(
+            String requestedFamilyKey,
+            String selectedToolKey,
+            boolean dismissControlActivated
+    ) {
+        public ToolSnapshot(
+                @Nullable String requestedFamilyKey,
+                @Nullable String selectedToolKey,
+                boolean dismissControlActivated
+        ) {
+            this.requestedFamilyKey = normalizedOptionalTextOrEmpty(requestedFamilyKey);
+            this.selectedToolKey = normalizedOptionalTextOrEmpty(selectedToolKey);
+            this.dismissControlActivated = dismissControlActivated;
         }
 
         @Override
-        public @Nullable String selectedToolLabel() {
-            return emptyToNull(selectedToolLabel);
+        public @Nullable String requestedFamilyKey() {
+            return emptyToNull(requestedFamilyKey);
+        }
+
+        @Override
+        public @Nullable String selectedToolKey() {
+            return emptyToNull(selectedToolKey);
         }
     }
 
-    public record OverlayInput(
+    public record ProjectionSnapshot(
+            String viewModeKey,
+            int levelShift
+    ) {
+        public ProjectionSnapshot(@Nullable String viewModeKey, int levelShift) {
+            this.viewModeKey = normalizedOptionalTextOrEmpty(viewModeKey);
+            this.levelShift = levelShift;
+        }
+
+        @Override
+        public @Nullable String viewModeKey() {
+            return emptyToNull(viewModeKey);
+        }
+    }
+
+    public record OverlaySnapshot(
             String modeKey,
             int levelRange,
             double opacity,
             String selectedLevelsText
     ) {
-        public OverlayInput {
-            modeKey = modeKey == null ? "" : modeKey;
-            levelRange = Math.max(0, levelRange);
-            opacity = Math.max(0.0, Math.min(1.0, opacity));
-            selectedLevelsText = selectedLevelsText == null ? "" : selectedLevelsText.strip();
+        public OverlaySnapshot(
+                @Nullable String modeKey,
+                int levelRange,
+                double opacity,
+                @Nullable String selectedLevelsText
+        ) {
+            this.modeKey = modeKey == null ? "" : modeKey;
+            this.levelRange = Math.max(0, levelRange);
+            this.opacity = Math.max(0.0, Math.min(1.0, opacity));
+            this.selectedLevelsText = selectedLevelsText == null ? "" : selectedLevelsText.strip();
         }
     }
 

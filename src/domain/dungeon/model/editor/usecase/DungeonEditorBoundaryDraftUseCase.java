@@ -31,7 +31,7 @@ final class DungeonEditorBoundaryDraftUseCase {
             InteractionState state
     ) {
         if (selectedTool.isDoorTool()) {
-            return new DungeonEditorMainViewInterpretation(state, applyDoorBoundaryPress(input, snapshot, selectedTool));
+            return armDoorBoundary(input, snapshot, selectedTool, state);
         }
         var vertex = input.vertexTarget();
         if (!vertexPresent(vertex)) {
@@ -87,24 +87,86 @@ final class DungeonEditorBoundaryDraftUseCase {
                 state.boundaryDraft().deleteMode()));
     }
 
-    private DungeonEditorMainViewEffect applyDoorBoundaryPress(
+    DungeonEditorMainViewInterpretation release(
             PointerState input,
             DungeonEditorWorkspaceValues.MapSnapshot snapshot,
-            DungeonEditorSessionValues.Tool selectedTool
+            DungeonEditorSessionValues.Tool selectedTool,
+            InteractionState state
     ) {
-        if (!input.primaryButtonDown()) {
-            return DungeonEditorMainViewEffect.none();
+        if (!selectedTool.isDoorTool()) {
+            return new DungeonEditorMainViewInterpretation(state, DungeonEditorMainViewEffect.clearPreviewIfNeeded(false));
+        }
+        InteractionState nextState = state.withBoundaryDraft(BoundaryDraft.none());
+        if (!state.boundaryDraft().present() || input == null) {
+            return new DungeonEditorMainViewInterpretation(nextState, DungeonEditorMainViewEffect.clearPreviewIfNeeded(true));
+        }
+        BoundaryTarget boundary = input.boundaryTarget();
+        boolean deleteMode = selectedTool.deleteMode();
+        if (!doorBoundaryMatchesDraft(boundary, snapshot, deleteMode, state.boundaryDraft())) {
+            return new DungeonEditorMainViewInterpretation(nextState, DungeonEditorMainViewEffect.clearPreviewIfNeeded(true));
+        }
+        return new DungeonEditorMainViewInterpretation(nextState, DungeonEditorMainViewEffect.apply(
+                doorPreview(boundary, snapshot, deleteMode)));
+    }
+
+    private DungeonEditorMainViewInterpretation armDoorBoundary(
+            PointerState input,
+            DungeonEditorWorkspaceValues.MapSnapshot snapshot,
+            DungeonEditorSessionValues.Tool selectedTool,
+            InteractionState state
+    ) {
+        if (input == null || !input.primaryButtonDown()) {
+            return new DungeonEditorMainViewInterpretation(state, DungeonEditorMainViewEffect.none());
         }
         BoundaryTarget boundary = input.boundaryTarget();
         boolean deleteMode = selectedTool.deleteMode();
         if (!roomTouchService.editableDoorBoundary(snapshot, boundary, deleteMode)) {
-            return DungeonEditorMainViewEffect.none();
+            return new DungeonEditorMainViewInterpretation(
+                    state.withBoundaryDraft(BoundaryDraft.none()),
+                    DungeonEditorMainViewEffect.clearPreviewIfNeeded(true));
         }
-        return DungeonEditorMainViewEffect.apply(new DungeonEditorSessionValues.ClusterBoundariesPreview(
+        InteractionState nextState = state.withBoundaryDraft(doorDraft(boundary, snapshot, deleteMode));
+        return new DungeonEditorMainViewInterpretation(nextState, DungeonEditorMainViewEffect.preview(
+                doorPreview(boundary, snapshot, deleteMode)));
+    }
+
+    private DungeonEditorSessionValues.ClusterBoundariesPreview doorPreview(
+            BoundaryTarget boundary,
+            DungeonEditorWorkspaceValues.MapSnapshot snapshot,
+            boolean deleteMode
+    ) {
+        return new DungeonEditorSessionValues.ClusterBoundariesPreview(
                 clusterResolver.resolveBoundaryClusterId(snapshot, boundary),
                 List.of(boundary.edgeRef()),
                 DungeonEditorWorkspaceValues.BoundaryKind.DOOR,
-                deleteMode));
+                deleteMode);
+    }
+
+    private BoundaryDraft doorDraft(
+            BoundaryTarget boundary,
+            DungeonEditorWorkspaceValues.MapSnapshot snapshot,
+            boolean deleteMode
+    ) {
+        EdgeKey edge = EdgeKey.from(boundary.edgeRef());
+        return new BoundaryDraft(
+                clusterResolver.resolveBoundaryClusterId(snapshot, boundary),
+                deleteMode,
+                edge.start(),
+                edge.end(),
+                Set.of(edge),
+                true);
+    }
+
+    private boolean doorBoundaryMatchesDraft(
+            BoundaryTarget boundary,
+            DungeonEditorWorkspaceValues.MapSnapshot snapshot,
+            boolean deleteMode,
+            BoundaryDraft draft
+    ) {
+        return roomTouchService.editableDoorBoundary(snapshot, boundary, deleteMode)
+                && draft.deleteMode() == deleteMode
+                && draft.clusterId() == clusterResolver.resolveBoundaryClusterId(snapshot, boundary)
+                && draft.previewEdges().contains(EdgeKey.from(boundary.edgeRef()));
     }
 
     private DungeonEditorMainViewInterpretation beginBoundaryDraft(

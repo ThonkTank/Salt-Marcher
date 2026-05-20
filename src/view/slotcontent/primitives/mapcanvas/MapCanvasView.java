@@ -1,12 +1,17 @@
 package src.view.slotcontent.primitives.mapcanvas;
 
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.AccessibleAttribute;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.Label;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.input.ScrollEvent;
@@ -29,21 +34,23 @@ public class MapCanvasView extends BorderPane {
     private static final String OVERLAY_NOTE_STYLE = "dungeon-map-overlay-note";
     private static final double DEFAULT_WIDTH = 960.0;
     private static final double DEFAULT_HEIGHT = 640.0;
-    private static final double BASE_GRID = 32.0;
-    private static final double DEFAULT_ZOOM = 1.0;
-    private static final double MIN_ZOOM = 0.1;
-    private static final double MAX_ZOOM = 4.0;
     private static final double ZOOM_STEP_FACTOR = 1.1;
     private static final double NO_DELTA = 0.0;
     private static final double MIN_CANVAS_SIZE = 1.0;
     private static final double MIN_GRID_PIXEL_SPACING = 10.0;
+    private static final double KEYBOARD_TARGET_RADIUS = 7.0;
+    private static final double KEYBOARD_TARGET_CROSSHAIR = 12.0;
+    private static final double KEYBOARD_SCENE_STEP = 1.0;
+    private static final double KEYBOARD_SCROLL_DELTA = 1.0;
     private static final double ROUNDED_BOX_ARC = 14.0;
     private static final double LABEL_BASELINE_RATIO = 0.69;
     private static final int MIN_POLYGON_POINTS = 3;
     private static final int MIN_POLYLINE_POINTS = 2;
     private static final int[] GRID_STEPS = {1, 5, 10, 25};
+    private static final Map<SceneColor, Color> FX_COLOR_CACHE = new ConcurrentHashMap<>();
 
     private MapCanvasContentModel contentModel = new MapCanvasContentModel(DEFAULT_TITLE);
+    private KeyboardTarget keyboardTarget = KeyboardTarget.hidden();
     private final SurfaceNodes surfaceNodes = new SurfaceNodes(this::redraw);
     private final Viewport viewport = new Viewport();
     private final MapSceneRenderer renderer = new MapSceneRenderer();
@@ -74,7 +81,44 @@ public class MapCanvasView extends BorderPane {
         CanvasBounds bounds = surfaceNodes.renderBounds();
         GraphicsContext gc = surfaceNodes.graphicsContext();
         renderer.render(gc, renderScene, viewport, bounds);
+        refreshKeyboardTargetHit();
+        redrawKeyboardTarget();
         OverlayPresenter.show(surfaceNodes.overlayMessage(), renderScene);
+    }
+
+    private KeyboardTarget showKeyboardTarget(double sceneX, double sceneY) {
+        keyboardTarget = KeyboardTarget.visible(keyboardTarget, sceneX, sceneY, contentModel.hitAt(sceneX, sceneY));
+        redrawKeyboardTarget();
+        return keyboardTarget;
+    }
+
+    private KeyboardTarget ensureKeyboardTarget(double sceneX, double sceneY) {
+        return keyboardTarget.visible() ? keyboardTarget : showKeyboardTarget(sceneX, sceneY);
+    }
+
+    private KeyboardTarget moveKeyboardTarget(double deltaSceneX, double deltaSceneY) {
+        if (!keyboardTarget.visible()) {
+            return showKeyboardTarget(deltaSceneX, deltaSceneY);
+        }
+        return showKeyboardTarget(keyboardTarget.sceneX() + deltaSceneX, keyboardTarget.sceneY() + deltaSceneY);
+    }
+
+    private void refreshKeyboardTargetHit() {
+        if (keyboardTarget.visible()) {
+            keyboardTarget = KeyboardTarget.visible(
+                    keyboardTarget,
+                    keyboardTarget.sceneX(),
+                    keyboardTarget.sceneY(),
+                    contentModel.hitAt(keyboardTarget.sceneX(), keyboardTarget.sceneY()));
+        }
+    }
+
+    private void redrawKeyboardTarget() {
+        CanvasBounds bounds = surfaceNodes.renderBounds();
+        GraphicsContext gc = surfaceNodes.keyboardTargetGraphicsContext();
+        gc.clearRect(0.0, 0.0, bounds.width(), bounds.height());
+        KeyboardTargetPainter.draw(gc, keyboardTarget, viewport);
+        surfaceNodes.showKeyboardTarget(keyboardTarget);
     }
 
     private record CanvasBounds(double width, double height) {
@@ -94,14 +138,33 @@ public class MapCanvasView extends BorderPane {
 
     private static final class CanvasLayer extends Pane {
 
+        private String accessibleValue = "No keyboard target.";
+
         private CanvasLayer() {
             setMinSize(0.0, 0.0);
             setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
             setFocusTraversable(true);
+            setAccessibleText("Dungeon map");
+            setAccessibleHelp("Arrow keys move the map focus. Enter or Space activates the current target.");
         }
 
-        private void installCanvas(Canvas canvas) {
-            getChildren().setAll(canvas);
+        private void installCanvas(Canvas canvas, Canvas keyboardTargetCanvas) {
+            getChildren().setAll(canvas, keyboardTargetCanvas);
+        }
+
+        private void showKeyboardTarget(KeyboardTarget target) {
+            KeyboardTarget safeTarget = target == null ? KeyboardTarget.hidden() : target;
+            setAccessibleText(safeTarget.accessibleText());
+            setAccessibleHelp(safeTarget.accessibleHelp());
+            accessibleValue = safeTarget.accessibleValue();
+        }
+
+        @Override
+        public Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
+            if (attribute == AccessibleAttribute.VALUE) {
+                return accessibleValue;
+            }
+            return super.queryAccessibleAttribute(attribute, parameters);
         }
     }
 
@@ -113,22 +176,36 @@ public class MapCanvasView extends BorderPane {
         }
     }
 
+    private static final class KeyboardTargetCanvas extends Canvas {
+
+        private KeyboardTargetCanvas() {
+            super(DEFAULT_WIDTH, DEFAULT_HEIGHT);
+            setMouseTransparent(true);
+        }
+    }
+
     private final class SurfaceNodes {
 
         private final SurfaceHost host = new SurfaceHost();
         private final CanvasLayer canvasLayer = new CanvasLayer();
         private final StyledCanvas canvas = new StyledCanvas();
+        private final KeyboardTargetCanvas keyboardTargetCanvas = new KeyboardTargetCanvas();
         private final OverlayMessage overlayMessage = new OverlayMessage();
 
         private SurfaceNodes(Runnable redrawAction) {
-            canvas.widthProperty().bind(canvasLayer.widthProperty());
-            canvas.heightProperty().bind(canvasLayer.heightProperty());
+            bindCanvasSize(canvas);
+            bindCanvasSize(keyboardTargetCanvas);
             canvas.widthProperty().addListener((ignored, before, after) -> redrawAction.run());
             canvas.heightProperty().addListener((ignored, before, after) -> redrawAction.run());
-            canvasLayer.installCanvas(canvas);
+            canvasLayer.installCanvas(canvas, keyboardTargetCanvas);
             host.installContent(canvasLayer, overlayMessage);
             StackPane.setAlignment(canvasLayer, Pos.TOP_LEFT);
             StackPane.setAlignment(overlayMessage, Pos.CENTER);
+        }
+
+        private void bindCanvasSize(Canvas targetCanvas) {
+            targetCanvas.widthProperty().bind(canvasLayer.widthProperty());
+            targetCanvas.heightProperty().bind(canvasLayer.heightProperty());
         }
 
         private StackPane host() {
@@ -143,12 +220,20 @@ public class MapCanvasView extends BorderPane {
             return canvas.getGraphicsContext2D();
         }
 
+        private GraphicsContext keyboardTargetGraphicsContext() {
+            return keyboardTargetCanvas.getGraphicsContext2D();
+        }
+
         private OverlayMessage overlayMessage() {
             return overlayMessage;
         }
 
         private void requestFocus() {
             canvasLayer.requestFocus();
+        }
+
+        private void showKeyboardTarget(KeyboardTarget target) {
+            canvasLayer.showKeyboardTarget(target);
         }
 
         private RenderScene currentScene(@Nullable RenderScene renderScene) {
@@ -190,6 +275,7 @@ public class MapCanvasView extends BorderPane {
             surfaceNodes.canvasLayer().addEventFilter(MouseEvent.MOUSE_MOVED, this::handleMouseMoved);
             surfaceNodes.canvasLayer().addEventFilter(MouseEvent.MOUSE_RELEASED, this::handleMouseReleased);
             surfaceNodes.canvasLayer().addEventFilter(ScrollEvent.SCROLL, this::handleScroll);
+            surfaceNodes.canvasLayer().addEventFilter(KeyEvent.KEY_PRESSED, this::handleKeyPressed);
         }
 
         private void handleMousePressed(MouseEvent event) {
@@ -209,7 +295,7 @@ public class MapCanvasView extends BorderPane {
                     event.consume();
                 }
                 case SECONDARY -> {
-                    emitViewInputEvent(event, MapCanvasViewInputEvent.Interaction.PRESS, 0.0, 0.0);
+                    showKeyboardTarget(event);
                     event.consume();
                 }
                 default -> {
@@ -259,7 +345,7 @@ public class MapCanvasView extends BorderPane {
                 return;
             }
             if (button == MouseButton.SECONDARY) {
-                emitViewInputEvent(event, MapCanvasViewInputEvent.Interaction.RELEASE, 0.0, 0.0);
+                showKeyboardTarget(event);
                 event.consume();
             }
         }
@@ -267,6 +353,28 @@ public class MapCanvasView extends BorderPane {
         private void handleScroll(ScrollEvent event) {
             emitScrollInputEvent(event);
             event.consume();
+        }
+
+        private void handleKeyPressed(KeyEvent event) {
+            KeyboardTarget target = ensureKeyboardTarget();
+            KeyCode code = event.getCode();
+            if (code == KeyCode.LEFT || code == KeyCode.RIGHT || code == KeyCode.UP || code == KeyCode.DOWN) {
+                target = moveKeyboardTarget(code);
+                emitKeyboardInputEvent(MapCanvasViewInputEvent.Interaction.MOVE, event, target, false, 0.0);
+                event.consume();
+                return;
+            }
+            if (code == KeyCode.ENTER || code == KeyCode.SPACE) {
+                emitKeyboardInputEvent(MapCanvasViewInputEvent.Interaction.PRESS, event, target, true, 0.0);
+                emitKeyboardInputEvent(MapCanvasViewInputEvent.Interaction.RELEASE, event, target, false, 0.0);
+                event.consume();
+                return;
+            }
+            if (code == KeyCode.PAGE_UP || code == KeyCode.PAGE_DOWN) {
+                double scrollDelta = code == KeyCode.PAGE_UP ? KEYBOARD_SCROLL_DELTA : -KEYBOARD_SCROLL_DELTA;
+                emitKeyboardInputEvent(MapCanvasViewInputEvent.Interaction.SCROLL, event, target, false, scrollDelta);
+                event.consume();
+            }
         }
 
         private void emitViewInputEvent(
@@ -277,6 +385,7 @@ public class MapCanvasView extends BorderPane {
         ) {
             double sceneX = viewport.screenToSceneX(event.getX());
             double sceneY = viewport.screenToSceneY(event.getY());
+            KeyboardTarget target = MapCanvasView.this.showKeyboardTarget(sceneX, sceneY);
             viewInputEventHandler.accept(new MapCanvasViewInputEvent(
                     interaction,
                     new MapCanvasViewInputEvent.CanvasButtons(
@@ -288,15 +397,39 @@ public class MapCanvasView extends BorderPane {
                             event.isShiftDown(),
                             event.isAltDown()),
                     new MapCanvasViewInputEvent.CanvasPosition(event.getX(), event.getY(), sceneX, sceneY),
-                    contentModel.hitAt(sceneX, sceneY),
+                    target.hit(),
                     NO_DELTA,
                     dragDeltaX,
                     dragDeltaY));
         }
 
+        private void emitKeyboardInputEvent(
+                MapCanvasViewInputEvent.Interaction interaction,
+                KeyEvent event,
+                KeyboardTarget target,
+                boolean primaryButtonDown,
+                double scrollDeltaY
+        ) {
+            double canvasX = viewport.sceneToScreenX(target.sceneX());
+            double canvasY = viewport.sceneToScreenY(target.sceneY());
+            viewInputEventHandler.accept(new MapCanvasViewInputEvent(
+                    interaction,
+                    new MapCanvasViewInputEvent.CanvasButtons(primaryButtonDown, false, false),
+                    new MapCanvasViewInputEvent.CanvasModifiers(
+                            event.isControlDown(),
+                            event.isShiftDown(),
+                            event.isAltDown()),
+                    new MapCanvasViewInputEvent.CanvasPosition(canvasX, canvasY, target.sceneX(), target.sceneY()),
+                    target.hit(),
+                    scrollDeltaY,
+                    0.0,
+                    0.0));
+        }
+
         private void emitScrollInputEvent(ScrollEvent event) {
             double sceneX = viewport.screenToSceneX(event.getX());
             double sceneY = viewport.screenToSceneY(event.getY());
+            KeyboardTarget target = MapCanvasView.this.showKeyboardTarget(sceneX, sceneY);
             viewInputEventHandler.accept(new MapCanvasViewInputEvent(
                     MapCanvasViewInputEvent.Interaction.SCROLL,
                     new MapCanvasViewInputEvent.CanvasButtons(false, false, false),
@@ -305,10 +438,33 @@ public class MapCanvasView extends BorderPane {
                             event.isShiftDown(),
                             event.isAltDown()),
                     new MapCanvasViewInputEvent.CanvasPosition(event.getX(), event.getY(), sceneX, sceneY),
-                    contentModel.hitAt(sceneX, sceneY),
+                    target.hit(),
                     event.getDeltaY(),
                     0.0,
                     0.0));
+        }
+
+        private KeyboardTarget ensureKeyboardTarget() {
+            CanvasBounds bounds = surfaceNodes.renderBounds();
+            return MapCanvasView.this.ensureKeyboardTarget(
+                    viewport.screenToSceneX(bounds.width() / 2.0),
+                    viewport.screenToSceneY(bounds.height() / 2.0));
+        }
+
+        private KeyboardTarget moveKeyboardTarget(KeyCode code) {
+            return switch (code) {
+                case LEFT -> MapCanvasView.this.moveKeyboardTarget(-KEYBOARD_SCENE_STEP, 0.0);
+                case RIGHT -> MapCanvasView.this.moveKeyboardTarget(KEYBOARD_SCENE_STEP, 0.0);
+                case UP -> MapCanvasView.this.moveKeyboardTarget(0.0, -KEYBOARD_SCENE_STEP);
+                case DOWN -> MapCanvasView.this.moveKeyboardTarget(0.0, KEYBOARD_SCENE_STEP);
+                default -> keyboardTarget;
+            };
+        }
+
+        private void showKeyboardTarget(MouseEvent event) {
+            MapCanvasView.this.showKeyboardTarget(
+                    viewport.screenToSceneX(event.getX()),
+                    viewport.screenToSceneY(event.getY()));
         }
     }
 
@@ -436,6 +592,9 @@ public class MapCanvasView extends BorderPane {
 
     private static final class ShapePainter {
 
+        private double[] xScratch = new double[0];
+        private double[] yScratch = new double[0];
+
         private void drawSurfaces(
                 GraphicsContext gc,
                 List<MapCanvasPolygonPrimitive> surfaces,
@@ -481,23 +640,30 @@ public class MapCanvasView extends BorderPane {
             if (points.size() < MIN_POLYGON_POINTS) {
                 return;
             }
-            double[] xPoints = new double[points.size()];
-            double[] yPoints = new double[points.size()];
+            ensureScratch(points.size());
             for (int index = 0; index < points.size(); index++) {
                 MapCanvasPoint point = points.get(index);
-                xPoints[index] = viewport.sceneToScreenX(point.x());
-                yPoints[index] = viewport.sceneToScreenY(point.y());
+                xScratch[index] = viewport.sceneToScreenX(point.x());
+                yScratch[index] = viewport.sceneToScreenY(point.y());
             }
             applyStyle(gc, style, viewport);
             Color fill = fxColor(style.fill());
             if (fill != null) {
-                gc.fillPolygon(xPoints, yPoints, xPoints.length);
+                gc.fillPolygon(xScratch, yScratch, points.size());
             }
             Color stroke = fxColor(style.stroke());
             if (stroke != null && style.strokeWidth() > 0.0) {
-                gc.strokePolygon(xPoints, yPoints, xPoints.length);
+                gc.strokePolygon(xScratch, yScratch, points.size());
             }
             gc.restore();
+        }
+
+        private void ensureScratch(int size) {
+            if (xScratch.length >= size) {
+                return;
+            }
+            xScratch = new double[size];
+            yScratch = new double[size];
         }
 
         private void drawPolyline(
@@ -675,11 +841,46 @@ public class MapCanvasView extends BorderPane {
         }
     }
 
+    private static final class KeyboardTargetPainter {
+
+        private static final Color TARGET_STROKE = color(0xff, 0xff, 0xff, 0.92);
+        private static final Color TARGET_SHADOW = color(0x10, 0x18, 0x20, 0.9);
+
+        private static void draw(GraphicsContext gc, @Nullable KeyboardTarget target, Viewport viewport) {
+            if (target == null || !target.visible()) {
+                return;
+            }
+            double x = viewport.sceneToScreenX(target.sceneX());
+            double y = viewport.sceneToScreenY(target.sceneY());
+            gc.save();
+            gc.setLineDashes();
+            gc.setLineWidth(3.5);
+            gc.setStroke(TARGET_SHADOW);
+            strokeTarget(gc, x, y);
+            gc.setLineWidth(1.6);
+            gc.setStroke(TARGET_STROKE);
+            strokeTarget(gc, x, y);
+            gc.restore();
+        }
+
+        private static void strokeTarget(GraphicsContext gc, double x, double y) {
+            gc.strokeOval(
+                    x - KEYBOARD_TARGET_RADIUS,
+                    y - KEYBOARD_TARGET_RADIUS,
+                    KEYBOARD_TARGET_RADIUS * 2.0,
+                    KEYBOARD_TARGET_RADIUS * 2.0);
+            gc.strokeLine(x - KEYBOARD_TARGET_CROSSHAIR, y, x + KEYBOARD_TARGET_CROSSHAIR, y);
+            gc.strokeLine(x, y - KEYBOARD_TARGET_CROSSHAIR, x, y + KEYBOARD_TARGET_CROSSHAIR);
+        }
+    }
+
     private static Color color(int red, int green, int blue, double opacity) {
         return new Color(red / 255.0, green / 255.0, blue / 255.0, opacity);
     }
 
     private static @Nullable Color fxColor(@Nullable SceneColor color) {
-        return color == null ? null : new Color(color.red(), color.green(), color.blue(), color.opacity());
+        return color == null ? null : FX_COLOR_CACHE.computeIfAbsent(
+                color,
+                value -> new Color(value.red(), value.green(), value.blue(), value.opacity()));
     }
 }

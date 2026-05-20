@@ -132,10 +132,7 @@ public final class DungeonEditorInteractionValues {
     }
 
     public static final class VertexKey {
-        private static final Comparator<VertexKey> ORDER = Comparator
-                .comparingInt(VertexKey::level)
-                .thenComparingInt(VertexKey::r)
-                .thenComparingInt(VertexKey::q);
+        private static final Comparator<VertexKey> ORDER = new VertexKeyOrder();
 
         private final int q;
         private final int r;
@@ -182,6 +179,18 @@ public final class DungeonEditorInteractionValues {
         @Override
         public String toString() {
             return "VertexKey[q=%d, r=%d, level=%d]".formatted(q, r, level);
+        }
+
+        private static final class VertexKeyOrder implements Comparator<VertexKey> {
+            @Override
+            public int compare(VertexKey left, VertexKey right) {
+                int levelOrder = Integer.compare(left.level, right.level);
+                if (levelOrder != 0) {
+                    return levelOrder;
+                }
+                int rowOrder = Integer.compare(left.r, right.r);
+                return rowOrder != 0 ? rowOrder : Integer.compare(left.q, right.q);
+            }
         }
     }
 

@@ -5,12 +5,11 @@ import src.domain.dungeon.model.travel.model.session.model.TravelDungeonSessionS
 import src.domain.dungeon.model.travel.model.session.model.TravelDungeonSessionSurface.AvailableAction;
 import src.domain.dungeon.model.travel.model.session.model.TravelDungeonSessionSurface.AreaData;
 import src.domain.dungeon.model.travel.model.session.model.TravelDungeonSessionSurface.BoundaryData;
-import src.domain.dungeon.model.travel.model.session.model.TravelDungeonSessionSurface.CellData;
 import src.domain.dungeon.model.travel.model.session.model.TravelDungeonSessionSurface.FeatureData;
 import src.domain.dungeon.model.travel.model.session.model.TravelDungeonSessionSurface.MapData;
 import src.domain.dungeon.model.travel.model.session.model.TravelDungeonSessionSurface.PositionData;
 import src.domain.dungeon.model.travel.model.session.model.TravelDungeonSessionSurface.SurfaceData;
-import src.domain.dungeon.model.travel.model.session.model.TravelDungeonSessionValues.ContextKind;
+import src.domain.dungeon.model.map.model.DungeonCell;
 import src.domain.dungeon.model.travel.model.session.model.TravelDungeonSessionValues.TravelOverlayState;
 import src.domain.dungeon.published.DungeonAreaKind;
 import src.domain.dungeon.published.DungeonAreaSnapshot;
@@ -32,7 +31,7 @@ import src.domain.dungeon.published.DungeonTravelSurfaceSnapshot;
 import src.domain.dungeon.published.TravelDungeonAction;
 import src.domain.dungeon.published.TravelDungeonSnapshot;
 import src.domain.dungeon.published.TravelDungeonWorkspaceState;
-import src.domain.dungeon.published.TravelOverlaySettings;
+import src.domain.dungeon.published.DungeonOverlaySettings;
 
 public final class TravelDungeonSnapshotHelper {
 
@@ -54,11 +53,11 @@ public final class TravelDungeonSnapshotHelper {
                 safeSnapshot.projectionLevel());
     }
 
-    private static TravelOverlaySettings toPublishedOverlay(TravelOverlayState overlayState) {
+    private static DungeonOverlaySettings toPublishedOverlay(TravelOverlayState overlayState) {
         TravelOverlayState safeOverlay = overlayState == null
                 ? TravelOverlayState.defaults()
                 : overlayState;
-        return new TravelOverlaySettings(
+        return new DungeonOverlaySettings(
                 safeOverlay.modeKey(),
                 safeOverlay.levelRange(),
                 safeOverlay.opacity(),
@@ -75,7 +74,7 @@ public final class TravelDungeonSnapshotHelper {
                 surface.tileLabel(),
                 surface.headingLabel(),
                 surface.statusLabel(),
-                surface.contextKind() == ContextKind.OVERWORLD,
+                surface.contextKind().isOverworld(),
                 surface.actions().stream().map(TravelDungeonSnapshotHelper::toPublishedAction).toList());
     }
 
@@ -101,7 +100,7 @@ public final class TravelDungeonSnapshotHelper {
     private static DungeonMapSnapshot toPublishedMap(MapData map) {
         MapData safeMap = map == null ? MapData.empty() : map;
         return new DungeonMapSnapshot(
-                safeMap.topology().isHex() ? DungeonTopologyKind.HEX : DungeonTopologyKind.SQUARE,
+                safeMap.topology() == null ? DungeonTopologyKind.SQUARE : DungeonTopologyKind.valueOf(safeMap.topology().name()),
                 safeMap.width(),
                 safeMap.height(),
                 safeMap.areas().stream().map(TravelDungeonSnapshotHelper::toPublishedArea).toList(),
@@ -137,13 +136,13 @@ public final class TravelDungeonSnapshotHelper {
                 feature.destinationLabel());
     }
 
-    private static DungeonCellRef toPublishedCell(CellData cell) {
+    private static DungeonCellRef toPublishedCell(DungeonCell cell) {
         return cell == null ? new DungeonCellRef(0, 0, 0) : new DungeonCellRef(cell.q(), cell.r(), cell.level());
     }
 
     private static DungeonTravelPosition toPublishedPosition(PositionData position) {
         PositionData safePosition = position == null
-                ? new PositionData(1L, null, 0L, new CellData(0, 0, 0), "SOUTH")
+                ? new PositionData(1L, null, 0L, new DungeonCell(0, 0, 0), "SOUTH")
                 : position;
         return new DungeonTravelPosition(
                 new DungeonMapId(safePosition.mapId()),

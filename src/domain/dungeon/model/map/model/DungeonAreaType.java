@@ -18,6 +18,14 @@ public final class DungeonAreaType {
         return name;
     }
 
+    public boolean isRoom() {
+        return this == ROOM;
+    }
+
+    public boolean isCorridor() {
+        return this == CORRIDOR;
+    }
+
     @Override
     public String toString() {
         return name;

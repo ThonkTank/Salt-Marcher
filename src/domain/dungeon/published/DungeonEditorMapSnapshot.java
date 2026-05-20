@@ -10,7 +10,7 @@ public record DungeonEditorMapSnapshot(
         List<Area> areas,
         List<Boundary> boundaries,
         List<Feature> features,
-        List<EditorHandle> editorHandles
+        List<DungeonEditorHandleSnapshot> editorHandles
 ) {
 
     public DungeonEditorMapSnapshot {
@@ -31,7 +31,7 @@ public record DungeonEditorMapSnapshot(
             String kind,
             long id,
             String label,
-            List<DungeonEditorCell> cells
+            List<DungeonCellRef> cells
     ) {
 
         public Area {
@@ -46,7 +46,7 @@ public record DungeonEditorMapSnapshot(
             String kind,
             long id,
             String label,
-            DungeonEditorEdge edge,
+            DungeonEdgeRef edge,
             DungeonEditorTopologyElementRef topologyRef
     ) {
 
@@ -55,7 +55,7 @@ public record DungeonEditorMapSnapshot(
             id = Math.max(1L, id);
             label = label == null || label.isBlank() ? kind : label.trim();
             edge = edge == null
-                    ? new DungeonEditorEdge(new DungeonEditorCell(0, 0, 0), new DungeonEditorCell(0, 0, 0))
+                    ? new DungeonEdgeRef(new DungeonCellRef(0, 0, 0), new DungeonCellRef(0, 0, 0))
                     : edge;
             topologyRef = topologyRef == null
                     ? new DungeonEditorTopologyElementRef(kind.toUpperCase(Locale.ROOT), id)
@@ -67,7 +67,7 @@ public record DungeonEditorMapSnapshot(
             String kind,
             long id,
             String label,
-            List<DungeonEditorCell> cells,
+            List<DungeonCellRef> cells,
             String description,
             String destinationLabel
     ) {
@@ -82,20 +82,7 @@ public record DungeonEditorMapSnapshot(
         }
     }
 
-    public record EditorHandle(
-            DungeonEditorHandleRef ref,
-            String label,
-            DungeonEditorCell cell
-    ) {
-
-        public EditorHandle {
-            ref = ref == null ? DungeonEditorHandleRef.empty() : ref;
-            label = label == null || label.isBlank() ? ref.kind().name() : label.trim();
-            cell = cell == null ? editorCell(ref.cell()) : cell;
-        }
-
-        private static DungeonEditorCell editorCell(DungeonCellRef cell) {
-            return cell == null ? new DungeonEditorCell(0, 0, 0) : new DungeonEditorCell(cell.q(), cell.r(), cell.level());
-        }
+    public List<DungeonEditorHandleSnapshot> editorHandles() {
+        return List.copyOf(editorHandles);
     }
 }

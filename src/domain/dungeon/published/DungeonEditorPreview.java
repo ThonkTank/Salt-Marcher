@@ -17,19 +17,19 @@ public sealed interface DungeonEditorPreview permits DungeonEditorPreview.NonePr
     }
 
     record RoomRectanglePreview(
-            DungeonEditorCell start,
-            DungeonEditorCell end,
+            DungeonCellRef start,
+            DungeonCellRef end,
             boolean deleteMode
     ) implements DungeonEditorPreview {
         public RoomRectanglePreview {
-            start = start == null ? new DungeonEditorCell(0, 0, 0) : start;
-            end = end == null ? new DungeonEditorCell(0, 0, 0) : end;
+            start = start == null ? new DungeonCellRef(0, 0, 0) : start;
+            end = end == null ? new DungeonCellRef(0, 0, 0) : end;
         }
     }
 
     record ClusterBoundariesPreview(
             long clusterId,
-            List<DungeonEditorEdge> edges,
+            List<DungeonEdgeRef> edges,
             String boundaryKind,
             boolean deleteMode
     ) implements DungeonEditorPreview {
@@ -53,7 +53,7 @@ public sealed interface DungeonEditorPreview permits DungeonEditorPreview.NonePr
 
     record MoveBoundaryStretchPreview(
             long clusterId,
-            List<DungeonEditorEdge> sourceEdges,
+            List<DungeonEdgeRef> sourceEdges,
             int deltaQ,
             int deltaR,
             int deltaLevel

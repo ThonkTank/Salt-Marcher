@@ -1,8 +1,8 @@
 package src.domain.dungeon.model.editor.helper;
 
 import org.jspecify.annotations.Nullable;
+import src.domain.dungeon.model.map.model.DungeonTopologyRef;
 import src.domain.dungeon.published.DungeonBoundaryKind;
-import src.domain.dungeon.published.DungeonTopologyElementKind;
 import src.domain.dungeon.published.DungeonTopologyElementRef;
 import src.domain.dungeon.model.editor.model.workspace.model.DungeonEditorWorkspaceValues;
 
@@ -11,19 +11,23 @@ public final class DungeonEditorWorkspaceTopologyBoundaryTranslationHelper {
     private DungeonEditorWorkspaceTopologyBoundaryTranslationHelper() {
     }
 
-    public static DungeonTopologyElementRef toDomainTopologyRef(DungeonEditorWorkspaceValues.TopologyElementRef ref) {
-        DungeonEditorWorkspaceValues.TopologyElementRef safeRef = ref == null
-                ? DungeonEditorWorkspaceValues.TopologyElementRef.empty()
+    public static DungeonTopologyElementRef toDomainTopologyRef(DungeonTopologyRef ref) {
+        DungeonTopologyRef safeRef = ref == null
+                ? DungeonTopologyRef.empty()
                 : ref;
         return new DungeonTopologyElementRef(toDomainTopologyKind(safeRef.kind()), safeRef.id());
     }
 
-    static DungeonEditorWorkspaceValues.TopologyElementRef toWorkspaceTopologyRef(
+    public static DungeonTopologyElementRef toDomainTopologyRef(DungeonTopologyElementRef ref) {
+        return ref == null ? DungeonTopologyElementRef.empty() : ref;
+    }
+
+    static DungeonTopologyRef toWorkspaceTopologyRef(
             @Nullable DungeonTopologyElementRef ref
     ) {
         return ref == null
-                ? DungeonEditorWorkspaceValues.TopologyElementRef.empty()
-                : new DungeonEditorWorkspaceValues.TopologyElementRef(
+                ? DungeonTopologyRef.empty()
+                : new DungeonTopologyRef(
                         toWorkspaceTopologyKind(ref.kind()),
                         ref.id());
     }
@@ -34,18 +38,19 @@ public final class DungeonEditorWorkspaceTopologyBoundaryTranslationHelper {
                 : DungeonBoundaryKind.WALL;
     }
 
-    private static DungeonEditorWorkspaceValues.TopologyElementKind toWorkspaceTopologyKind(
-            @Nullable DungeonTopologyElementKind kind
+    private static src.domain.dungeon.model.map.model.DungeonTopologyElementKind toWorkspaceTopologyKind(
+            src.domain.dungeon.published.@Nullable DungeonTopologyElementKind kind
     ) {
-        return DungeonEditorWorkspaceValues.TopologyElementKind.fromName(kind == null ? null : kind.name());
+        return src.domain.dungeon.model.map.model.DungeonTopologyElementKind.valueOf(
+                kind == null ? null : kind.name());
     }
 
-    private static DungeonTopologyElementKind toDomainTopologyKind(
-            DungeonEditorWorkspaceValues.TopologyElementKind kind
+    private static src.domain.dungeon.published.DungeonTopologyElementKind toDomainTopologyKind(
+            src.domain.dungeon.model.map.model.DungeonTopologyElementKind kind
     ) {
-        DungeonEditorWorkspaceValues.TopologyElementKind safeKind = kind == null
-                ? DungeonEditorWorkspaceValues.TopologyElementKind.EMPTY
+        src.domain.dungeon.model.map.model.DungeonTopologyElementKind safeKind = kind == null
+                ? src.domain.dungeon.model.map.model.DungeonTopologyElementKind.EMPTY
                 : kind;
-        return DungeonTopologyElementKind.valueOf(safeKind.name());
+        return src.domain.dungeon.published.DungeonTopologyElementKind.valueOf(safeKind.name());
     }
 }

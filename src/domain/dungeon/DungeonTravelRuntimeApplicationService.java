@@ -7,10 +7,9 @@ import java.util.function.Consumer;
 import src.domain.dungeon.model.travel.usecase.ApplyTravelDungeonSessionUseCase;
 import src.domain.dungeon.model.travel.helper.TravelDungeonSnapshotHelper;
 import src.domain.dungeon.published.ApplyTravelDungeonSessionCommand;
-import src.domain.dungeon.published.LoadTravelDungeonQuery;
 import src.domain.dungeon.published.TravelDungeonModel;
 import src.domain.dungeon.published.TravelDungeonSnapshot;
-import src.domain.dungeon.published.TravelOverlaySettings;
+import src.domain.dungeon.published.DungeonOverlaySettings;
 
 /**
  * Public backend facade for runtime travel composition.
@@ -28,8 +27,7 @@ public final class DungeonTravelRuntimeApplicationService {
                 Objects.requireNonNull(applyTravelDungeonSessionUseCase, "applyTravelDungeonSessionUseCase");
     }
 
-    public TravelDungeonModel loadDungeonTravel(LoadTravelDungeonQuery query) {
-        Objects.requireNonNullElse(query, new LoadTravelDungeonQuery());
+    TravelDungeonModel travelModel() {
         return dungeonTravelModel;
     }
 
@@ -41,7 +39,7 @@ public final class DungeonTravelRuntimeApplicationService {
             case SET_PROJECTION_LEVEL ->
                     applyTravelDungeonSessionUseCase.setProjectionLevel(command.projectionLevel());
             case SET_OVERLAY -> {
-                TravelOverlaySettings overlaySettings = command.overlaySettings();
+                DungeonOverlaySettings overlaySettings = command.overlaySettings();
                 applyTravelDungeonSessionUseCase.setOverlay(
                         overlaySettings.modeKey(),
                         overlaySettings.levelRange(),

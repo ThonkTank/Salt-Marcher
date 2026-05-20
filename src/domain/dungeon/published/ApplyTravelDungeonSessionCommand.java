@@ -4,13 +4,13 @@ public record ApplyTravelDungeonSessionCommand(
         Action action,
         String actionId,
         int projectionLevel,
-        TravelOverlaySettings overlaySettings
+        DungeonOverlaySettings overlaySettings
 ) {
 
     public ApplyTravelDungeonSessionCommand {
         action = action == null ? Action.REFRESH : action;
         actionId = actionId == null ? "" : actionId.trim();
-        overlaySettings = overlaySettings == null ? TravelOverlaySettings.defaults() : overlaySettings;
+        overlaySettings = overlaySettings == null ? DungeonOverlaySettings.defaults() : overlaySettings;
     }
 
     public enum Action {

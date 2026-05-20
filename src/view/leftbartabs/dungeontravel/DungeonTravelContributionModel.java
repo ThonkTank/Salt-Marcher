@@ -10,7 +10,7 @@ import javafx.beans.property.ReadOnlyStringWrapper;
 import src.domain.dungeon.published.TravelDungeonAction;
 import src.domain.dungeon.published.TravelDungeonSnapshot;
 import src.domain.dungeon.published.TravelDungeonWorkspaceState;
-import src.domain.dungeon.published.TravelOverlaySettings;
+import src.domain.dungeon.published.DungeonOverlaySettings;
 
 public final class DungeonTravelContributionModel {
 
@@ -138,9 +138,9 @@ public final class DungeonTravelContributionModel {
             return new OverlayProjection(OverlayMode.OFF, 2, 0.35, List.of());
         }
 
-        static OverlayProjection from(TravelOverlaySettings overlaySettings) {
-            TravelOverlaySettings safeOverlay =
-                    overlaySettings == null ? TravelOverlaySettings.defaults() : overlaySettings;
+        static OverlayProjection from(DungeonOverlaySettings overlaySettings) {
+            DungeonOverlaySettings safeOverlay =
+                    overlaySettings == null ? DungeonOverlaySettings.defaults() : overlaySettings;
             return new OverlayProjection(
                     OverlayMode.fromKey(safeOverlay.modeKey()),
                     safeOverlay.levelRange(),

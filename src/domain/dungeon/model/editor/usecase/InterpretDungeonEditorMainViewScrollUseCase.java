@@ -17,10 +17,19 @@ final class InterpretDungeonEditorMainViewScrollUseCase {
             @Nullable MapSnapshot snapshot,
             InteractionState state
     ) {
+        return interpretSelection(delta, projectionLevel, snapshot, state);
+    }
+
+    DungeonEditorMainViewInterpretation interpretSelection(
+            int delta,
+            int projectionLevel,
+            @Nullable MapSnapshot snapshot,
+            InteractionState state
+    ) {
         if (delta == 0 || state.boundaryStretchSession().present()) {
             return new DungeonEditorMainViewInterpretation(state, DungeonEditorMainViewEffect.none());
         }
-        if (!state.dragSession().present() || !selectionToolSelected(selectedTool) || snapshot == null) {
+        if (!state.dragSession().present() || snapshot == null) {
             return new DungeonEditorMainViewInterpretation(state, DungeonEditorMainViewEffect.projectionLevel(delta < 0 ? -1 : 1));
         }
         DragSession nextDragSession = state.dragSession().withCurrentLevel(projectionLevel + delta);
@@ -29,9 +38,5 @@ final class InterpretDungeonEditorMainViewScrollUseCase {
                 ? DungeonEditorMainViewEffect.preview(nextDragSession.moveHandlePreview())
                 : DungeonEditorMainViewEffect.clearPreviewIfNeeded(true);
         return new DungeonEditorMainViewInterpretation(nextState, effect);
-    }
-
-    private static boolean selectionToolSelected(DungeonEditorSessionValues.Tool selectedTool) {
-        return selectedTool != null && selectedTool.isSelectionTool();
     }
 }

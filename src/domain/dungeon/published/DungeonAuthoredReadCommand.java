@@ -4,7 +4,7 @@ public sealed interface DungeonAuthoredReadCommand permits
         DungeonAuthoredReadCommand.MapSelection,
         DungeonAuthoredReadCommand.DescribeSelection {
 
-    record MapSelection(DungeonMapId mapId) implements DungeonAuthoredReadCommand, DungeonMapCatalogCommand {
+    record MapSelection(DungeonMapId mapId) implements DungeonAuthoredReadCommand {
         public MapSelection() {
             this(new DungeonMapId(1L));
         }

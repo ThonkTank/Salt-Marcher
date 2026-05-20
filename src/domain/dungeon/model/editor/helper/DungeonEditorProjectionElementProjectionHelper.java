@@ -3,6 +3,7 @@ package src.domain.dungeon.model.editor.helper;
 import src.domain.dungeon.published.DungeonEditorMapProjectionSnapshot;
 import src.domain.dungeon.model.editor.model.session.model.DungeonEditorSessionValues;
 import src.domain.dungeon.model.editor.model.workspace.model.DungeonEditorWorkspaceValues;
+import src.domain.dungeon.model.map.model.DungeonEditorHandleType;
 
 public final class DungeonEditorProjectionElementProjectionHelper {
 
@@ -68,16 +69,13 @@ public final class DungeonEditorProjectionElementProjectionHelper {
             boolean selected
     ) {
         DungeonEditorWorkspaceValues.Edge edge = boundary.edge();
-        DungeonEditorMapProjectionSnapshot.EdgeKind kind = boundary.kind().isDoor()
-                ? DungeonEditorMapProjectionSnapshot.EdgeKind.DOOR
-                : DungeonEditorMapProjectionSnapshot.EdgeKind.WALL;
         return new DungeonEditorMapProjectionSnapshot.EdgeProjection(
                 edge.from().q() + deltaQ,
                 edge.from().r() + deltaR,
                 edge.to().q() + deltaQ,
                 edge.to().r() + deltaR,
                 edge.from().level() + deltaLevel,
-                kind,
+                DungeonEditorWorkspaceTopologyBoundaryTranslationHelper.toDomainBoundaryKind(boundary.kind()),
                 boundary.label(),
                 boundary.id(),
                 DungeonEditorProjectionPublishedBoundaryTranslationHelper.safeTopologyRef(boundary.topologyRef()),
@@ -145,22 +143,29 @@ public final class DungeonEditorProjectionElementProjectionHelper {
                 preview);
     }
 
-    public static DungeonEditorMapProjectionSnapshot.MarkerKind handleMarkerKind(DungeonEditorWorkspaceValues.HandleKind kind) {
-        return switch (kind) {
-            case DOOR -> DungeonEditorMapProjectionSnapshot.MarkerKind.DOOR;
-            case STAIR_ANCHOR -> DungeonEditorMapProjectionSnapshot.MarkerKind.STAIR;
-            case CORRIDOR_ANCHOR, CORRIDOR_WAYPOINT, CLUSTER_LABEL ->
-                    DungeonEditorMapProjectionSnapshot.MarkerKind.WAYPOINT;
-        };
+    public static DungeonEditorMapProjectionSnapshot.MarkerKind handleMarkerKind(DungeonEditorHandleType kind) {
+        if (kind == DungeonEditorHandleType.DOOR) {
+            return DungeonEditorMapProjectionSnapshot.MarkerKind.DOOR;
+        }
+        if (kind == DungeonEditorHandleType.STAIR_ANCHOR) {
+            return DungeonEditorMapProjectionSnapshot.MarkerKind.STAIR;
+        }
+        return DungeonEditorMapProjectionSnapshot.MarkerKind.WAYPOINT;
     }
 
-    public static String handleMarkerLabel(DungeonEditorWorkspaceValues.HandleKind kind) {
-        return switch (kind) {
-            case DOOR -> "D";
-            case STAIR_ANCHOR -> "z";
-            case CORRIDOR_ANCHOR -> "o";
-            case CORRIDOR_WAYPOINT -> "•";
-            case CLUSTER_LABEL -> "";
-        };
+    public static String handleMarkerLabel(DungeonEditorHandleType kind) {
+        if (kind == DungeonEditorHandleType.DOOR) {
+            return "D";
+        }
+        if (kind == DungeonEditorHandleType.STAIR_ANCHOR) {
+            return "z";
+        }
+        if (kind == DungeonEditorHandleType.CORRIDOR_ANCHOR) {
+            return "o";
+        }
+        if (kind == DungeonEditorHandleType.CORRIDOR_WAYPOINT) {
+            return "•";
+        }
+        return "";
     }
 }

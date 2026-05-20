@@ -1,9 +1,9 @@
 package src.domain.dungeon.model.editor.helper;
 
 import org.jspecify.annotations.Nullable;
+import src.domain.dungeon.model.map.model.DungeonTopologyRef;
 import src.domain.dungeon.published.DungeonCellRef;
-import src.domain.dungeon.published.DungeonEditorCell;
-import src.domain.dungeon.published.DungeonEditorEdge;
+import src.domain.dungeon.published.DungeonEdgeRef;
 import src.domain.dungeon.published.DungeonEditorHandleKind;
 import src.domain.dungeon.published.DungeonEditorHandleRef;
 import src.domain.dungeon.published.DungeonEditorTopologyElementRef;
@@ -17,7 +17,15 @@ public final class DungeonEditorPublishedValueProjectionHelper {
     }
 
     public static DungeonEditorTopologyElementRef toPublishedTopologyRef(
-            DungeonEditorWorkspaceValues.@Nullable TopologyElementRef ref
+            @Nullable DungeonTopologyRef ref
+    ) {
+        return ref == null
+                ? DungeonEditorTopologyElementRef.empty()
+                : new DungeonEditorTopologyElementRef(ref.kind().name(), ref.id());
+    }
+
+    public static DungeonEditorTopologyElementRef toPublishedTopologyRef(
+            @Nullable DungeonTopologyElementRef ref
     ) {
         return ref == null
                 ? DungeonEditorTopologyElementRef.empty()
@@ -43,7 +51,7 @@ public final class DungeonEditorPublishedValueProjectionHelper {
     }
 
     private static DungeonTopologyElementRef toDomainTopologyRef(
-            DungeonEditorWorkspaceValues.@Nullable TopologyElementRef ref
+            @Nullable DungeonTopologyRef ref
     ) {
         return ref == null
                 ? DungeonTopologyElementRef.empty()
@@ -54,14 +62,14 @@ public final class DungeonEditorPublishedValueProjectionHelper {
         return cell == null ? new DungeonCellRef(0, 0, 0) : new DungeonCellRef(cell.q(), cell.r(), cell.level());
     }
 
-    public static DungeonEditorCell toPublishedCell(DungeonEditorWorkspaceValues.@Nullable Cell cell) {
-        return cell == null ? new DungeonEditorCell(0, 0, 0) : new DungeonEditorCell(cell.q(), cell.r(), cell.level());
+    public static DungeonCellRef toPublishedCell(DungeonEditorWorkspaceValues.@Nullable Cell cell) {
+        return cell == null ? new DungeonCellRef(0, 0, 0) : new DungeonCellRef(cell.q(), cell.r(), cell.level());
     }
 
-    public static DungeonEditorEdge toPublishedEdge(DungeonEditorWorkspaceValues.@Nullable Edge edge) {
+    public static DungeonEdgeRef toPublishedEdge(DungeonEditorWorkspaceValues.@Nullable Edge edge) {
         if (edge == null) {
-            return new DungeonEditorEdge(new DungeonEditorCell(0, 0, 0), new DungeonEditorCell(0, 0, 0));
+            return new DungeonEdgeRef(new DungeonCellRef(0, 0, 0), new DungeonCellRef(0, 0, 0));
         }
-        return new DungeonEditorEdge(toPublishedCell(edge.from()), toPublishedCell(edge.to()));
+        return new DungeonEdgeRef(toPublishedCell(edge.from()), toPublishedCell(edge.to()));
     }
 }

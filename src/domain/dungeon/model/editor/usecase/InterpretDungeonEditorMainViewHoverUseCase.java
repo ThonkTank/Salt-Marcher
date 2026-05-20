@@ -10,29 +10,31 @@ final class InterpretDungeonEditorMainViewHoverUseCase {
     private final DungeonEditorBoundaryDraftUseCase boundaryDraft = new DungeonEditorBoundaryDraftUseCase();
     private final DungeonEditorCorridorInteractionUseCase corridor = new DungeonEditorCorridorInteractionUseCase();
 
-    DungeonEditorMainViewEffect interpret(
+    DungeonEditorMainViewEffect interpretSelection(InteractionState state) {
+        return DungeonEditorMainViewEffect.clearPreviewIfNeeded(state.boundaryDraft().present() || state.corridorDraft().present());
+    }
+
+    DungeonEditorMainViewEffect interpretBoundary(
             PointerState input,
             DungeonEditorWorkspaceValues.MapSnapshot snapshot,
-            DungeonEditorSessionValues.Tool selectedTool,
+            DungeonEditorSessionValues.Tool boundaryTool,
             InteractionState state
     ) {
         if (input == null) {
             return DungeonEditorMainViewEffect.clearPreviewIfNeeded(state.boundaryDraft().present() || state.corridorDraft().present());
         }
-        if (boundaryToolSelected(selectedTool)) {
-            return boundaryDraft.preview(input, snapshot, selectedTool, state);
-        }
-        if (corridorToolSelected(selectedTool)) {
-            return corridor.preview(input, snapshot, selectedTool, state);
-        }
-        return DungeonEditorMainViewEffect.clearPreviewIfNeeded(state.boundaryDraft().present() || state.corridorDraft().present());
+        return boundaryDraft.preview(input, snapshot, boundaryTool, state);
     }
 
-    private static boolean boundaryToolSelected(DungeonEditorSessionValues.Tool selectedTool) {
-        return selectedTool != null && selectedTool.isBoundaryTool();
-    }
-
-    private static boolean corridorToolSelected(DungeonEditorSessionValues.Tool selectedTool) {
-        return selectedTool != null && selectedTool.isCorridorTool();
+    DungeonEditorMainViewEffect interpretCorridor(
+            PointerState input,
+            DungeonEditorWorkspaceValues.MapSnapshot snapshot,
+            DungeonEditorSessionValues.Tool corridorTool,
+            InteractionState state
+    ) {
+        if (input == null) {
+            return DungeonEditorMainViewEffect.clearPreviewIfNeeded(state.boundaryDraft().present() || state.corridorDraft().present());
+        }
+        return corridor.preview(input, snapshot, corridorTool, state);
     }
 }

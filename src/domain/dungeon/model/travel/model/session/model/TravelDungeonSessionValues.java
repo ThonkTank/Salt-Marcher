@@ -1,7 +1,6 @@
 package src.domain.dungeon.model.travel.model.session.model;
 
 import java.util.List;
-import org.jspecify.annotations.Nullable;
 
 public final class TravelDungeonSessionValues {
 
@@ -52,36 +51,99 @@ public final class TravelDungeonSessionValues {
         }
     }
 
-    public enum ContextKind {
-        DUNGEON,
-        OVERWORLD
-    }
-
     public enum LocationKind {
         TILE,
         TRANSITION
     }
 
-    public enum GridTopology {
-        SQUARE,
-        HEX;
+    public static final class ContextKind {
+        public static final ContextKind DUNGEON = new ContextKind("DUNGEON");
+        public static final ContextKind OVERWORLD = new ContextKind("OVERWORLD");
 
-        public static GridTopology fromName(@Nullable String topologyName) {
-            return "HEX".equalsIgnoreCase(topologyName) ? HEX : SQUARE;
+        private final String name;
+
+        private ContextKind(String name) {
+            this.name = name;
         }
 
-        public boolean isHex() {
-            return this == HEX;
+        public static ContextKind valueOf(String name) {
+            return "OVERWORLD".equals(name) ? OVERWORLD : DUNGEON;
+        }
+
+        public String name() {
+            return name;
+        }
+
+        public boolean isDungeon() {
+            return this == DUNGEON;
+        }
+
+        public boolean isOverworld() {
+            return this == OVERWORLD;
+        }
+
+        @Override
+        public String toString() {
+            return name;
         }
     }
 
-    public enum AreaKind {
-        ROOM,
-        CORRIDOR
+    public static final class MoveStatus {
+        public static final MoveStatus SUCCESS = new MoveStatus("SUCCESS");
+        public static final MoveStatus INVALID_ACTION = new MoveStatus("INVALID_ACTION");
+        public static final MoveStatus TARGET_UNAVAILABLE = new MoveStatus("TARGET_UNAVAILABLE");
+        public static final MoveStatus EXTERNAL_TARGET = new MoveStatus("EXTERNAL_TARGET");
+        public static final MoveStatus NO_MAP = new MoveStatus("NO_MAP");
+
+        private final String name;
+
+        private MoveStatus(String name) {
+            this.name = name;
+        }
+
+        public static MoveStatus valueOf(String name) {
+            return switch (name == null ? "" : name) {
+                case "SUCCESS" -> SUCCESS;
+                case "INVALID_ACTION" -> INVALID_ACTION;
+                case "TARGET_UNAVAILABLE" -> TARGET_UNAVAILABLE;
+                case "EXTERNAL_TARGET" -> EXTERNAL_TARGET;
+                default -> NO_MAP;
+            };
+        }
+
+        public String name() {
+            return name;
+        }
+
+        public boolean isSuccess() {
+            return this == SUCCESS;
+        }
+
+        public boolean isExternalTarget() {
+            return this == EXTERNAL_TARGET;
+        }
+
+        @Override
+        public String toString() {
+            return name;
+        }
     }
 
-    public enum FeatureKind {
-        STAIR,
-        TRANSITION
+    public static final class OverworldTarget {
+        private final long mapId;
+        private final long tileId;
+
+        public OverworldTarget(long mapId, long tileId) {
+            this.mapId = Math.max(1L, mapId);
+            this.tileId = Math.max(0L, tileId);
+        }
+
+        public long mapId() {
+            return mapId;
+        }
+
+        public long tileId() {
+            return tileId;
+        }
     }
 }

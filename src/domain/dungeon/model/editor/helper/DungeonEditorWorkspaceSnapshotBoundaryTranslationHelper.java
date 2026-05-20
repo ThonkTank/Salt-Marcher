@@ -2,9 +2,11 @@ package src.domain.dungeon.model.editor.helper;
 
 import java.util.List;
 import org.jspecify.annotations.Nullable;
-import src.domain.dungeon.published.DungeonFeatureKind;
+import src.domain.dungeon.model.map.model.DungeonAreaType;
+import src.domain.dungeon.model.map.model.DungeonFeatureType;
+import src.domain.dungeon.model.map.model.DungeonTopology;
+import src.domain.dungeon.model.map.model.DungeonTopologyRef;
 import src.domain.dungeon.published.DungeonFeatureSnapshot;
-import src.domain.dungeon.published.DungeonTopologyKind;
 import src.domain.dungeon.model.editor.model.workspace.model.DungeonEditorWorkspaceValues;
 
 public final class DungeonEditorWorkspaceSnapshotBoundaryTranslationHelper {
@@ -17,12 +19,12 @@ public final class DungeonEditorWorkspaceSnapshotBoundaryTranslationHelper {
     ) {
         return area == null
                 ? new DungeonEditorWorkspaceValues.Area(
-                        DungeonEditorWorkspaceValues.AreaKind.ROOM,
+                        DungeonAreaType.ROOM,
                         1L,
                         0L,
                         "ROOM",
                         List.of(),
-                        DungeonEditorWorkspaceValues.TopologyElementRef.empty())
+                        DungeonTopologyRef.empty())
                 : new DungeonEditorWorkspaceValues.Area(
                         toWorkspaceAreaKind(area.kind()),
                         area.id(),
@@ -43,7 +45,7 @@ public final class DungeonEditorWorkspaceSnapshotBoundaryTranslationHelper {
                         new DungeonEditorWorkspaceValues.Edge(
                                 DungeonEditorWorkspaceValues.Cell.empty(),
                                 DungeonEditorWorkspaceValues.Cell.empty()),
-                        DungeonEditorWorkspaceValues.TopologyElementRef.empty())
+                        DungeonTopologyRef.empty())
                 : new DungeonEditorWorkspaceValues.Boundary(
                         DungeonEditorWorkspaceValues.BoundaryKind.fromExternalKind(boundary.kind()),
                         boundary.id(),
@@ -55,13 +57,13 @@ public final class DungeonEditorWorkspaceSnapshotBoundaryTranslationHelper {
     static DungeonEditorWorkspaceValues.Feature toWorkspaceFeature(@Nullable DungeonFeatureSnapshot feature) {
         return feature == null
                 ? new DungeonEditorWorkspaceValues.Feature(
-                        DungeonEditorWorkspaceValues.FeatureKind.STAIR,
+                        DungeonFeatureType.STAIR,
                         1L,
                         "STAIR",
                         List.of(),
                         "",
                         "",
-                        DungeonEditorWorkspaceValues.TopologyElementRef.empty())
+                        DungeonTopologyRef.empty())
                 : new DungeonEditorWorkspaceValues.Feature(
                         toWorkspaceFeatureKind(feature.kind()),
                         feature.id(),
@@ -86,23 +88,27 @@ public final class DungeonEditorWorkspaceSnapshotBoundaryTranslationHelper {
                         DungeonEditorWorkspaceCellBoundaryTranslationHelper.toWorkspaceCell(handle.cell()));
     }
 
-    static DungeonEditorWorkspaceValues.TopologyKind toWorkspaceTopology(@Nullable DungeonTopologyKind topology) {
-        return topology == DungeonTopologyKind.HEX
-                ? DungeonEditorWorkspaceValues.TopologyKind.HEX
-                : DungeonEditorWorkspaceValues.TopologyKind.SQUARE;
+    static DungeonTopology toWorkspaceTopology(
+            src.domain.dungeon.published.@Nullable DungeonTopologyKind topology
+    ) {
+        return topology == src.domain.dungeon.published.DungeonTopologyKind.HEX
+                ? DungeonTopology.HEX
+                : DungeonTopology.SQUARE;
     }
 
-    private static DungeonEditorWorkspaceValues.AreaKind toWorkspaceAreaKind(
+    private static DungeonAreaType toWorkspaceAreaKind(
             src.domain.dungeon.published.@Nullable DungeonAreaKind kind
     ) {
         return kind == src.domain.dungeon.published.DungeonAreaKind.CORRIDOR
-                ? DungeonEditorWorkspaceValues.AreaKind.CORRIDOR
-                : DungeonEditorWorkspaceValues.AreaKind.ROOM;
+                ? DungeonAreaType.CORRIDOR
+                : DungeonAreaType.ROOM;
     }
 
-    private static DungeonEditorWorkspaceValues.FeatureKind toWorkspaceFeatureKind(@Nullable DungeonFeatureKind kind) {
-        return kind == DungeonFeatureKind.TRANSITION
-                ? DungeonEditorWorkspaceValues.FeatureKind.TRANSITION
-                : DungeonEditorWorkspaceValues.FeatureKind.STAIR;
+    private static DungeonFeatureType toWorkspaceFeatureKind(
+            src.domain.dungeon.published.@Nullable DungeonFeatureKind kind
+    ) {
+        return kind == src.domain.dungeon.published.DungeonFeatureKind.TRANSITION
+                ? DungeonFeatureType.TRANSITION
+                : DungeonFeatureType.STAIR;
     }
 }

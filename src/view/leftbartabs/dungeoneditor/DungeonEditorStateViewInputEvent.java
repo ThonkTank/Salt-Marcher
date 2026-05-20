@@ -5,7 +5,8 @@ import java.util.List;
 public record DungeonEditorStateViewInputEvent(
         long roomId,
         String visualDescription,
-        List<String> exitDescriptions
+        List<String> exitDescriptions,
+        boolean saveRequested
 ) {
 
     public DungeonEditorStateViewInputEvent {

@@ -12,6 +12,7 @@ import src.domain.dungeon.model.editor.model.interaction.model.DungeonEditorMain
 import src.domain.dungeon.model.editor.model.interaction.model.DungeonEditorMainViewInteractionValues.HitTarget;
 import src.domain.dungeon.model.editor.model.session.model.DungeonEditorSessionValues;
 import src.domain.dungeon.model.editor.model.workspace.model.DungeonEditorWorkspaceValues;
+import src.domain.dungeon.model.map.model.DungeonTopologyRef;
 
 public final class DungeonEditorRoomInteractionLookupHelper {
 
@@ -78,7 +79,7 @@ public final class DungeonEditorRoomInteractionLookupHelper {
 
     public DungeonEditorSessionValues.Selection selectionForBoundary(BoundaryTarget boundary, long clusterId) {
         return new DungeonEditorSessionValues.Selection(
-                new DungeonEditorWorkspaceValues.TopologyElementRef(
+                new DungeonTopologyRef(
                         DungeonEditorMainViewInteractionValues.toTopologyKind(boundary.topologyRefKind()),
                         boundary.topologyRefId()),
                 clusterId,

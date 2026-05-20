@@ -14,11 +14,11 @@ import src.domain.dungeon.model.editor.model.workspace.model.DungeonEditorWorksp
 import src.domain.dungeon.model.editor.model.workspace.model.DungeonEditorWorkspaceValues.MapSnapshot;
 import src.domain.dungeon.model.editor.model.workspace.model.DungeonEditorWorkspaceValues.MapSummary;
 
-final class BuildDungeonEditorSnapshotUseCase {
+public final class BuildDungeonEditorSnapshotUseCase {
     private final DungeonEditorDungeonRepository dungeonRepository;
     private final DungeonEditorDungeonPort dungeonPort;
 
-    BuildDungeonEditorSnapshotUseCase(
+    public BuildDungeonEditorSnapshotUseCase(
             DungeonEditorDungeonRepository dungeonRepository,
             DungeonEditorDungeonPort dungeonPort
     ) {
@@ -26,7 +26,7 @@ final class BuildDungeonEditorSnapshotUseCase {
         this.dungeonPort = dungeonPort;
     }
 
-    DungeonEditorSessionSnapshot.SnapshotData execute(@Nullable DungeonEditorSession state) {
+    public DungeonEditorSessionSnapshot.SnapshotData execute(@Nullable DungeonEditorSession state) {
         DungeonEditorSession safeState = DungeonEditorSnapshotStateProjectionHelper.safeState(state);
         dungeonRepository.searchMaps("");
         List<MapSummary> maps = dungeonPort.currentFacts(null, safeState.selection(), safeState.preview()).maps();
@@ -58,7 +58,7 @@ final class BuildDungeonEditorSnapshotUseCase {
                 nextStatus);
     }
 
-    @Nullable MapSnapshot loadCommittedSnapshot(
+    public @Nullable MapSnapshot loadCommittedSnapshot(
             @Nullable MapId mapId
     ) {
         dungeonRepository.loadMap(mapId);

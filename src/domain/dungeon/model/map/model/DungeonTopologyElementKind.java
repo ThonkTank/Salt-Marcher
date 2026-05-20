@@ -50,6 +50,14 @@ public final class DungeonTopologyElementKind {
         return name;
     }
 
+    public boolean isRoom() {
+        return this == ROOM;
+    }
+
+    public boolean isCorridor() {
+        return this == CORRIDOR;
+    }
+
     @Override
     public String toString() {
         return name;

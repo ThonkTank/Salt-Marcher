@@ -11,6 +11,8 @@ import src.domain.dungeon.model.editor.model.interaction.model.DungeonEditorMain
 import src.domain.dungeon.model.editor.model.interaction.model.DungeonEditorMainViewInteractionValues.PointerState;
 import src.domain.dungeon.model.editor.model.session.model.DungeonEditorSessionValues;
 import src.domain.dungeon.model.editor.model.workspace.model.DungeonEditorWorkspaceValues;
+import src.domain.dungeon.model.map.model.DungeonTopologyElementKind;
+import src.domain.dungeon.model.map.model.DungeonTopologyRef;
 
 public final class DungeonEditorCorridorTargetHelper {
     public @Nullable PendingCorridorTarget resolveCreateTarget(
@@ -62,8 +64,8 @@ public final class DungeonEditorCorridorTargetHelper {
                 DungeonEditorMainViewInteractionValues.ROOM_PREFIX + handleRef.roomId() + ":door:" + hit.topologyRefId(),
                 "Tür " + hit.topologyRefId(),
                 new DungeonEditorSessionValues.Selection(
-                        new DungeonEditorWorkspaceValues.TopologyElementRef(
-                                DungeonEditorWorkspaceValues.TopologyElementKind.DOOR,
+                        new DungeonTopologyRef(
+                                DungeonTopologyElementKind.DOOR,
                                 hit.topologyRefId()),
                         handleRef.clusterId(),
                         false,
@@ -74,8 +76,8 @@ public final class DungeonEditorCorridorTargetHelper {
                         handleRef.clusterId(),
                         handleRef.anchor().toWorkspaceCell(),
                         handleRef.direction(),
-                        new DungeonEditorWorkspaceValues.TopologyElementRef(
-                                DungeonEditorWorkspaceValues.TopologyElementKind.DOOR,
+                        new DungeonTopologyRef(
+                                DungeonTopologyElementKind.DOOR,
                                 hit.topologyRefId())));
     }
 
@@ -104,7 +106,7 @@ public final class DungeonEditorCorridorTargetHelper {
                         roomTouch.room().clusterId(),
                         roomTouch.roomCell(),
                         direction,
-                        new DungeonEditorWorkspaceValues.TopologyElementRef(
+                        new DungeonTopologyRef(
                                 DungeonEditorMainViewInteractionValues.toTopologyKind(boundary.topologyRefKind()),
                                 boundary.topologyRefId())));
     }
@@ -145,7 +147,7 @@ public final class DungeonEditorCorridorTargetHelper {
                         roomTouch.room().clusterId(),
                         roomTouch.roomCell(),
                         direction,
-                        DungeonEditorWorkspaceValues.TopologyElementRef.empty()));
+                        src.domain.dungeon.model.map.model.DungeonTopologyRef.empty()));
     }
 
     private static @Nullable PendingCorridorTarget explicitAnchorTarget(@Nullable HitTarget hit) {
@@ -160,8 +162,8 @@ public final class DungeonEditorCorridorTargetHelper {
                 "anchor:" + hit.topologyRefId(),
                 "Anker " + hit.topologyRefId(),
                 new DungeonEditorSessionValues.Selection(
-                        new DungeonEditorWorkspaceValues.TopologyElementRef(
-                                DungeonEditorWorkspaceValues.TopologyElementKind.CORRIDOR,
+                        new DungeonTopologyRef(
+                                DungeonTopologyElementKind.CORRIDOR,
                                 hostCorridorId),
                         0L,
                         false,
@@ -170,8 +172,8 @@ public final class DungeonEditorCorridorTargetHelper {
                 new DungeonEditorWorkspaceValues.CorridorAnchorEndpoint(
                         hostCorridorId,
                         hit.handleRef().anchor().toWorkspaceCell(),
-                        new DungeonEditorWorkspaceValues.TopologyElementRef(
-                                DungeonEditorWorkspaceValues.TopologyElementKind.CORRIDOR_ANCHOR,
+                        new DungeonTopologyRef(
+                                DungeonTopologyElementKind.CORRIDOR_ANCHOR,
                                 hit.topologyRefId())));
     }
 
@@ -184,7 +186,7 @@ public final class DungeonEditorCorridorTargetHelper {
             return null;
         }
         long corridorId = DungeonEditorWorkspaceValues.hasId(hit.topologyRefId())
-                && DungeonEditorWorkspaceValues.TopologyElementKind.fromName(hit.topologyRefKind()).isCorridor()
+                && DungeonTopologyElementKind.valueOf(hit.topologyRefKind()).isCorridor()
                 ? hit.topologyRefId()
                 : hit.kind() == HitKind.CORRIDOR ? hit.ownerId() : 0L;
         if (!DungeonEditorWorkspaceValues.hasId(corridorId)) {
@@ -194,8 +196,8 @@ public final class DungeonEditorCorridorTargetHelper {
                 "corridor:" + corridorId + ":" + input.q() + ":" + input.r() + ":" + input.level(),
                 "Korridor " + corridorId,
                 new DungeonEditorSessionValues.Selection(
-                        new DungeonEditorWorkspaceValues.TopologyElementRef(
-                                DungeonEditorWorkspaceValues.TopologyElementKind.CORRIDOR,
+                        new DungeonTopologyRef(
+                                DungeonTopologyElementKind.CORRIDOR,
                                 corridorId),
                         0L,
                         false,
@@ -204,7 +206,7 @@ public final class DungeonEditorCorridorTargetHelper {
                 new DungeonEditorWorkspaceValues.CorridorAnchorEndpoint(
                         corridorId,
                         new DungeonEditorWorkspaceValues.Cell(input.q(), input.r(), input.level()),
-                        DungeonEditorWorkspaceValues.TopologyElementRef.empty()));
+                        src.domain.dungeon.model.map.model.DungeonTopologyRef.empty()));
     }
 
     private @Nullable PendingCorridorTarget roomTarget(
@@ -236,6 +238,6 @@ public final class DungeonEditorCorridorTargetHelper {
                         room.clusterId(),
                         roomCell,
                         direction,
-                        DungeonEditorWorkspaceValues.TopologyElementRef.empty()));
+                        src.domain.dungeon.model.map.model.DungeonTopologyRef.empty()));
     }
 }

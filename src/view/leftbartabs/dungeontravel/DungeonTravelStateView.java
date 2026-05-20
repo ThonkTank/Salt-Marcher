@@ -35,13 +35,13 @@ public final class DungeonTravelStateView extends VBox {
         actions.showItems(items, viewInputEventHandler);
     }
 
-    public void bind(DungeonTravelContributionModel contributionModel) {
-        if (contributionModel == null) {
+    public void bind(DungeonTravelStateContentModel contentModel) {
+        if (contentModel == null) {
             return;
         }
-        stateTextProperty().bind(contributionModel.stateProperty());
-        contributionModel.actionsProperty().addListener((ignored, before, after) -> showActions(after));
-        showActions(contributionModel.actionsProperty().get());
+        stateTextProperty().bind(contentModel.stateProperty());
+        contentModel.actionsProperty().addListener((ignored, before, after) -> showActions(after));
+        showActions(contentModel.actionsProperty().get());
     }
 
     private static final class ActionItem {

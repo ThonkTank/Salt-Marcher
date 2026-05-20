@@ -2,9 +2,10 @@ package src.domain.dungeon.model.editor.helper;
 
 import java.util.List;
 import org.jspecify.annotations.Nullable;
-import src.domain.dungeon.published.DungeonEditorCell;
-import src.domain.dungeon.published.DungeonEditorEdge;
+import src.domain.dungeon.published.DungeonCellRef;
+import src.domain.dungeon.published.DungeonEdgeRef;
 import src.domain.dungeon.published.DungeonEditorHandleRef;
+import src.domain.dungeon.published.DungeonEditorHandleSnapshot;
 import src.domain.dungeon.published.DungeonEditorMapSnapshot;
 import src.domain.dungeon.published.DungeonEditorTopologyElementRef;
 import src.domain.dungeon.model.editor.model.workspace.model.DungeonEditorWorkspaceValues;
@@ -47,7 +48,7 @@ public final class DungeonEditorMapSnapshotProjectionHelper {
                     "boundary",
                     1L,
                     "boundary",
-                    new DungeonEditorEdge(new DungeonEditorCell(0, 0, 0), new DungeonEditorCell(0, 0, 0)),
+                    new DungeonEdgeRef(new DungeonCellRef(0, 0, 0), new DungeonCellRef(0, 0, 0)),
                     DungeonEditorTopologyElementRef.empty());
         }
         return new DungeonEditorMapSnapshot.Boundary(
@@ -73,18 +74,26 @@ public final class DungeonEditorMapSnapshotProjectionHelper {
                 feature.destinationLabel());
     }
 
-    private static DungeonEditorMapSnapshot.EditorHandle toPublishedEditorHandle(
+    private static DungeonEditorHandleSnapshot toPublishedEditorHandle(
             DungeonEditorWorkspaceValues.@Nullable Handle handle
     ) {
         if (handle == null) {
-            return new DungeonEditorMapSnapshot.EditorHandle(
+            return new DungeonEditorHandleSnapshot(
                     DungeonEditorHandleRef.empty(),
                     "CLUSTER_LABEL",
-                    new DungeonEditorCell(0, 0, 0));
+                    new DungeonCellRef(0, 0, 0));
         }
-        return new DungeonEditorMapSnapshot.EditorHandle(
+        return new DungeonEditorHandleSnapshot(
                 DungeonEditorPublishedValueProjectionHelper.toPublishedHandleRefOrEmpty(handle.ref()),
                 handle.label(),
-                DungeonEditorPublishedValueProjectionHelper.toPublishedCell(handle.cell()));
+                toPublishedCell(handle.cell()));
+    }
+
+    private static DungeonCellRef toPublishedCell(
+            DungeonEditorWorkspaceValues.@Nullable Cell cell
+    ) {
+        return cell == null
+                ? new DungeonCellRef(0, 0, 0)
+                : new DungeonCellRef(cell.q(), cell.r(), cell.level());
     }
 }

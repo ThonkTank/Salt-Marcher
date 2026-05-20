@@ -1,8 +1,8 @@
 package src.domain.dungeon.model.editor.helper;
 
 import org.jspecify.annotations.Nullable;
-import src.domain.dungeon.published.DungeonEditorMapId;
-import src.domain.dungeon.published.DungeonEditorMapSummary;
+import src.domain.dungeon.published.DungeonMapId;
+import src.domain.dungeon.published.DungeonMapSummary;
 import src.domain.dungeon.published.DungeonEditorSurface;
 import src.domain.dungeon.model.editor.model.session.model.DungeonEditorSessionSnapshot;
 import src.domain.dungeon.model.editor.model.workspace.model.DungeonEditorWorkspaceValues;
@@ -12,18 +12,18 @@ public final class DungeonEditorSurfaceProjectionHelper {
     private DungeonEditorSurfaceProjectionHelper() {
     }
 
-    public static DungeonEditorMapSummary toPublishedMapSummary(DungeonEditorWorkspaceValues.@Nullable MapSummary map) {
+    public static DungeonMapSummary toPublishedMapSummary(DungeonEditorWorkspaceValues.@Nullable MapSummary map) {
         DungeonEditorWorkspaceValues.MapSummary safeMap = map == null
                 ? new DungeonEditorWorkspaceValues.MapSummary(new DungeonEditorWorkspaceValues.MapId(1L), "Dungeon Map", 0L)
                 : map;
-        return new DungeonEditorMapSummary(
-                new DungeonEditorMapId(safeMap.mapId().value()),
+        return new DungeonMapSummary(
+                new DungeonMapId(safeMap.mapId().value()),
                 safeMap.mapName(),
                 safeMap.revision());
     }
 
-    public static @Nullable DungeonEditorMapId toPublishedMapId(DungeonEditorWorkspaceValues.@Nullable MapId mapId) {
-        return mapId == null ? null : new DungeonEditorMapId(mapId.value());
+    public static @Nullable DungeonMapId toPublishedMapId(DungeonEditorWorkspaceValues.@Nullable MapId mapId) {
+        return mapId == null ? null : new DungeonMapId(mapId.value());
     }
 
     public static @Nullable DungeonEditorSurface toPublishedSurface(

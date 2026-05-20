@@ -4,7 +4,7 @@ import java.util.List;
 import java.util.Objects;
 import src.domain.dungeon.DungeonTravelRuntimeApplicationService;
 import src.domain.dungeon.published.ApplyTravelDungeonSessionCommand;
-import src.domain.dungeon.published.TravelOverlaySettings;
+import src.domain.dungeon.published.DungeonOverlaySettings;
 import src.view.slotcontent.main.dungeonmap.DungeonMapViewInputEvent;
 import src.view.slotcontent.primitives.mapcanvas.MapCanvasContentModel;
 import src.view.slotcontent.primitives.mapcanvas.MapCanvasViewInputEvent;
@@ -49,14 +49,14 @@ final class DungeonTravelIntentHandler {
                     ApplyTravelDungeonSessionCommand.Action.SET_PROJECTION_LEVEL,
                     "",
                     presentationModel.currentProjectionLevel() + event.projectionLevelShift(),
-                    TravelOverlaySettings.defaults()));
+                    DungeonOverlaySettings.defaults()));
             return;
         }
         travel.applyDungeonTravelSession(new ApplyTravelDungeonSessionCommand(
                 ApplyTravelDungeonSessionCommand.Action.SET_OVERLAY,
                 "",
                 0,
-                new TravelOverlaySettings(
+                new DungeonOverlaySettings(
                         event.overlayModeKey(),
                         event.overlayRange(),
                         event.overlayOpacity(),
@@ -71,7 +71,7 @@ final class DungeonTravelIntentHandler {
                 ApplyTravelDungeonSessionCommand.Action.ACTION,
                 event.actionId(),
                 0,
-                TravelOverlaySettings.defaults()));
+                DungeonOverlaySettings.defaults()));
     }
 
     private static List<Integer> parseLevels(String rawLevelsText) {

@@ -12,6 +12,7 @@ import src.domain.dungeon.published.DungeonMapCatalogModel;
 import src.domain.dungeon.published.DungeonMapCatalogResponse;
 import src.domain.dungeon.published.DungeonOperationResult;
 import src.domain.dungeon.published.DungeonSnapshot;
+import src.domain.dungeon.published.DungeonTopologyElementRef;
 import src.domain.dungeon.model.editor.model.session.model.DungeonEditorDungeonFacts;
 import src.domain.dungeon.model.editor.model.session.model.DungeonEditorSessionSnapshot;
 import src.domain.dungeon.model.editor.model.session.model.DungeonEditorSessionValues;
@@ -24,10 +25,7 @@ import src.domain.dungeon.model.editor.model.workspace.model.DungeonEditorWorksp
 
 public final class DungeonEditorDungeonPort {
 
-    private DungeonMapCatalogResponse currentCatalog;
-    private @Nullable DungeonSnapshot currentCommittedSnapshot;
-    private @Nullable DungeonInspectorSnapshot currentInspector;
-    private DungeonAuthoredMutationResult currentMutation;
+    private final PublishedIntakeState state = new PublishedIntakeState();
 
     public DungeonEditorDungeonPort(
             DungeonMapCatalogModel catalogModel,
@@ -37,12 +35,12 @@ public final class DungeonEditorDungeonPort {
         DungeonMapCatalogModel catalog = Objects.requireNonNull(catalogModel, "catalogModel");
         DungeonAuthoredReadModel authoredRead = Objects.requireNonNull(authoredReadModel, "authoredReadModel");
         DungeonAuthoredMutationModel authoredMutation = Objects.requireNonNull(authoredMutationModel, "authoredMutationModel");
-        currentCatalog = catalog.current();
+        state.replaceCatalog(catalog.current());
         applyReadResult(authoredRead.current());
-        currentMutation = authoredMutation.current();
-        catalog.subscribe(response -> currentCatalog = response);
+        state.replaceMutation(authoredMutation.current());
+        catalog.subscribe(state::replaceCatalog);
         authoredRead.subscribe(this::applyReadResult);
-        authoredMutation.subscribe(result -> currentMutation = result);
+        authoredMutation.subscribe(state::replaceMutation);
     }
 
     public DungeonEditorDungeonFacts currentFacts(
@@ -65,7 +63,7 @@ public final class DungeonEditorDungeonPort {
         return new DungeonEditorDungeonFacts(
                 mapSummaries(),
                 mutationMapId(),
-                committedMap(currentCommittedSnapshot),
+                committedMap(state.committedSnapshot()),
                 currentSurface(mapId, selection, preview),
                 mutationStatusText(),
                 previewStatusText(preview));
@@ -76,15 +74,15 @@ public final class DungeonEditorDungeonPort {
             DungeonEditorSessionValues.Selection selection,
             DungeonEditorSessionValues.Preview preview
     ) {
-        if (mapId == null || currentCommittedSnapshot == null) {
+        if (mapId == null || state.committedSnapshot() == null) {
             return null;
         }
         MapSnapshot committedMap =
-                DungeonEditorWorkspaceMapBoundaryTranslationHelper.toWorkspaceMapSnapshot(currentCommittedSnapshot.map());
+                DungeonEditorWorkspaceMapBoundaryTranslationHelper.toWorkspaceMapSnapshot(state.committedSnapshot().map());
         MapSnapshot previewMap = previewMap(preview, committedMap);
         return new DungeonEditorSessionSnapshot.SurfaceData(
-                currentCommittedSnapshot.mapName(),
-                currentCommittedSnapshot.revision(),
+                state.committedSnapshot().mapName(),
+                state.committedSnapshot().revision(),
                 committedMap,
                 previewMap,
                 inspector(selection));
@@ -107,15 +105,15 @@ public final class DungeonEditorDungeonPort {
         DungeonEditorSessionValues.Selection safeSelection = selection == null
                 ? DungeonEditorSessionValues.Selection.empty()
                 : selection;
-        if (safeSelection.topologyRef().equals(DungeonEditorWorkspaceValues.TopologyElementRef.empty())
+        if (safeSelection.topologyRef().equals(DungeonTopologyElementRef.empty())
                 && !safeSelection.clusterSelection()) {
             return null;
         }
-        return DungeonEditorWorkspaceInspectorBoundaryTranslationHelper.toWorkspaceInspector(currentInspector);
+        return DungeonEditorWorkspaceInspectorBoundaryTranslationHelper.toWorkspaceInspector(state.inspector());
     }
 
     private List<MapSummary> mapSummaries() {
-        if (currentCatalog instanceof DungeonMapCatalogResponse.MapList mapList) {
+        if (state.catalog() instanceof DungeonMapCatalogResponse.MapList mapList) {
             return mapList.maps().stream()
                     .map(DungeonEditorWorkspaceMapBoundaryTranslationHelper::toWorkspaceMapSummary)
                     .toList();
@@ -124,7 +122,7 @@ public final class DungeonEditorDungeonPort {
     }
 
     private @Nullable MapId mutationMapId() {
-        if (currentCatalog instanceof DungeonMapCatalogResponse.MapMutation mutation) {
+        if (state.catalog() instanceof DungeonMapCatalogResponse.MapMutation mutation) {
             return DungeonEditorWorkspaceMapBoundaryTranslationHelper.toWorkspaceMapId(mutation.mapId());
         }
         return null;
@@ -139,7 +137,7 @@ public final class DungeonEditorDungeonPort {
     }
 
     private @Nullable DungeonOperationResult operationResult() {
-        if (currentMutation instanceof DungeonAuthoredMutationResult.Operation operation) {
+        if (state.mutation() instanceof DungeonAuthoredMutationResult.Operation operation) {
             return operation.result();
         }
         return null;
@@ -147,9 +145,9 @@ public final class DungeonEditorDungeonPort {
 
     private void applyReadResult(@Nullable DungeonAuthoredReadResult result) {
         if (result instanceof DungeonAuthoredReadResult.CommittedSnapshot committedSnapshot) {
-            currentCommittedSnapshot = committedSnapshot.snapshot();
+            state.replaceCommittedSnapshot(committedSnapshot.snapshot());
         } else if (result instanceof DungeonAuthoredReadResult.SelectionInspector selectionInspector) {
-            currentInspector = selectionInspector.inspector();
+            state.replaceInspector(selectionInspector.inspector());
         }
     }
 
@@ -168,5 +166,49 @@ public final class DungeonEditorDungeonPort {
             return result.validationMessages().getFirst();
         }
         return "";
+    }
+
+    private static final class PublishedIntakeState {
+        private DungeonMapCatalogResponse catalog;
+        private @Nullable DungeonSnapshot committedSnapshot;
+        private @Nullable DungeonInspectorSnapshot inspector;
+        private DungeonAuthoredMutationResult mutation;
+
+        private PublishedIntakeState() {
+            catalog = new DungeonMapCatalogResponse.MapList(List.of());
+            mutation = new DungeonAuthoredMutationResult.Operation(null);
+        }
+
+        private DungeonMapCatalogResponse catalog() {
+            return catalog;
+        }
+
+        private @Nullable DungeonSnapshot committedSnapshot() {
+            return committedSnapshot;
+        }
+
+        private @Nullable DungeonInspectorSnapshot inspector() {
+            return inspector;
+        }
+
+        private DungeonAuthoredMutationResult mutation() {
+            return mutation;
+        }
+
+        private void replaceCatalog(DungeonMapCatalogResponse catalog) {
+            this.catalog = catalog;
+        }
+
+        private void replaceCommittedSnapshot(@Nullable DungeonSnapshot committedSnapshot) {
+            this.committedSnapshot = committedSnapshot;
+        }
+
+        private void replaceInspector(@Nullable DungeonInspectorSnapshot inspector) {
+            this.inspector = inspector;
+        }
+
+        private void replaceMutation(DungeonAuthoredMutationResult mutation) {
+            this.mutation = mutation;
+        }
     }
 }
