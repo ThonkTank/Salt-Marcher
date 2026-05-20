@@ -62,25 +62,25 @@ public final class ApplyTravelDungeonSessionUseCase {
         };
     }
 
-    public SnapshotData refresh() {
+    private SnapshotData refresh() {
         session.applySurface(loadTravelDungeonSessionSurfaceUseCase.load(runtimeAccess, session.currentPosition()));
         stabilizeProjectionLevel();
         return snapshot();
     }
 
-    public SnapshotData move(String actionId) {
+    private SnapshotData move(String actionId) {
         session.applySurface(applyTravelDungeonMovementUseCase.move(runtimeAccess, session.currentPosition(), actionId));
         stabilizeProjectionLevel();
         return snapshot();
     }
 
-    public SnapshotData setProjectionLevel(int nextProjectionLevel) {
+    private SnapshotData setProjectionLevel(int nextProjectionLevel) {
         session.setProjectionLevel(nextProjectionLevel);
         stabilizeProjectionLevel();
         return snapshot();
     }
 
-    public SnapshotData setOverlay(String modeKey, int levelRange, double opacity, List<Integer> selectedLevels) {
+    private SnapshotData setOverlay(String modeKey, int levelRange, double opacity, List<Integer> selectedLevels) {
         session.setOverlay(modeKey, levelRange, opacity, selectedLevels);
         return snapshot();
     }

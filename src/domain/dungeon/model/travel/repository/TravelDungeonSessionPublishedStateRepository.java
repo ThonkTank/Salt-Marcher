@@ -4,5 +4,5 @@ import src.domain.dungeon.model.travel.model.session.model.TravelDungeonSessionS
 
 public interface TravelDungeonSessionPublishedStateRepository {
 
-    void recordCurrentSession(SnapshotData snapshot);
+    void publishCurrentSession(SnapshotData snapshot);
 }

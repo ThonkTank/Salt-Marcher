@@ -17,7 +17,7 @@ import javax.lang.model.element.VariableElement;
 
 @BugPattern(
         name = "DomainRepositoryPublishedStateBoundary",
-        summary = "Domain repositories must not replace same-context published read models with publish/Object channels.",
+        summary = "Domain repositories must not replace same-context published read models with generic publish/Object channels.",
         severity = BugPattern.SeverityLevel.ERROR)
 public final class DomainRepositoryPublishedStateBoundaryChecker extends BugChecker
         implements BugChecker.CompilationUnitTreeMatcher {
@@ -35,10 +35,12 @@ public final class DomainRepositoryPublishedStateBoundaryChecker extends BugChec
             return Description.NO_MATCH;
         }
 
+        String simpleName = topLevelClass.getSimpleName().toString();
+        boolean publishedStateRepository = simpleName.endsWith("PublishedStateRepository");
         List<String> violations = new ArrayList<>();
         for (Tree member : topLevelClass.getMembers()) {
             if (member instanceof MethodTree methodTree) {
-                collectMethodViolations(methodTree, violations);
+                collectMethodViolations(methodTree, publishedStateRepository, violations);
             }
         }
         if (violations.isEmpty()) {
@@ -48,17 +50,22 @@ public final class DomainRepositoryPublishedStateBoundaryChecker extends BugChec
                 .setMessage("Domain repository '" + topLevelClass.getSimpleName()
                         + "' violates the outbound repository contract: "
                         + String.join("; ", violations)
-                        + ". Same-context publication belongs in published/*Model handles, not repository publish/Object channels.")
+                        + ". Same-context publication belongs in typed *PublishedStateRepository sinks and "
+                        + "published/*Model handles, not generic repository publish/Object channels.")
                 .build();
     }
 
-    private static void collectMethodViolations(MethodTree methodTree, List<String> violations) {
+    private static void collectMethodViolations(
+            MethodTree methodTree,
+            boolean publishedStateRepository,
+            List<String> violations
+    ) {
         Symbol.MethodSymbol methodSymbol = ASTHelpers.getSymbol(methodTree);
         if (methodSymbol == null || methodSymbol.isConstructor()) {
             return;
         }
         String methodName = methodSymbol.getSimpleName().toString();
-        if (methodName.startsWith("publish")) {
+        if (!publishedStateRepository && methodName.startsWith("publish")) {
             violations.add("method " + methodName + "() uses publish naming");
         }
         if ("java.lang.Object".equals(methodSymbol.getReturnType().toString())) {

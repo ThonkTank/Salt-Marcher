@@ -80,7 +80,7 @@ final class DungeonTravelRuntimeServiceAssembly {
         }
 
         @Override
-        public void recordCurrentSession(SnapshotData snapshot) {
+        public void publishCurrentSession(SnapshotData snapshot) {
             currentSnapshot = toPublishedSnapshot(snapshot);
             initialized = true;
             for (Consumer<TravelDungeonSnapshot> listener : List.copyOf(listeners)) {

@@ -20,7 +20,7 @@ public final class DungeonTravelRuntimeApplicationService {
 
     public void applyDungeonTravelSession(ApplyTravelDungeonSessionCommand command) {
         Objects.requireNonNull(command, "command");
-        publishTravelDungeonSessionUseCase.applyCommand(
+        publishTravelDungeonSessionUseCase.execute(
                 command.actionToken(),
                 command.actionId(),
                 command.projectionLevel(),

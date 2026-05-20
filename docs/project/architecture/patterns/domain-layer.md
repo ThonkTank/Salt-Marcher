@@ -42,7 +42,8 @@ Target state:
 - `Port` is the inbound domain-internal listener role for foreign published
   state
 - `Repository` is the outbound domain role for foreign domain writes and
-  layered data access
+  layered data access; the narrow `*PublishedStateRepository` subtype is a
+  same-context publication sink, not a foreign-write repository
 - `ServiceContribution` is the direct context-root runtime discovery role for
   registering same-context domain services
 - `ServiceAssembly` is the optional direct context-root constructor-wiring
@@ -61,7 +62,7 @@ The closed architectural role family is:
 | `Model` | Internal dynamic work-state owner. |
 | `Published` | Outward communication surface for commands and observable state. |
 | `Port` | Inbound listener on foreign published state. |
-| `Repository` | Outbound trigger for foreign domain work and layered data access. |
+| `Repository` | Outbound trigger for foreign domain work, layered data access, or the narrow same-context `*PublishedStateRepository` publication-sink subtype. |
 | `ServiceContribution` | Context-root runtime discovery and registration role. |
 | `ServiceAssembly` | Optional context-root constructor-wiring collaborator. |
 
@@ -85,6 +86,10 @@ Any topology outside this closed role family is illegal.
 - same-context outward readback or feedback does not travel back as a direct
   `ApplicationService` return value; it is observed through same-context
   `published/*Model`
+- same-context publication may be handed from a `UseCase` to a
+  `*PublishedStateRepository` only when that sink accepts typed internal
+  model/usecase snapshots or publication records and updates same-context
+  `published/*Model` readback
 - foreign-domain writes are initiated through same-context `Repository`
   ownership, not by scattering foreign `ApplicationService` knowledge through
   arbitrary use cases
@@ -99,7 +104,12 @@ Any topology outside this closed role family is illegal.
 ### View Write
 
 `IntentHandler -> family ApplicationService -> one UseCase -> Model ->
-Published`
+PublishedStateRepository -> published/*Model`
+
+### Same-Context Publication Sink
+
+`UseCase typed snapshot/publication record -> *PublishedStateRepository ->
+runtime-owned PublishedState -> published/*Model current/subscribe fanout`
 
 ### Cross-Domain Write
 
@@ -142,9 +152,11 @@ Published`
 - may construct, load, edit, and persist `Model`
 - may collaborate only with same-context `Model`, model-family `UseCase`,
   `Helper`, `Constants`, `Port`, `Repository`, and foreign root `ApplicationService`
+- may call a same-context `*PublishedStateRepository` when publishing the typed
+  result of its one work operation is part of that operation's outward feedback
 - does not hide business-policy logic that belongs in `Helper` or subordinate
-  model roles, and it does not absorb published, root-boundary, callback, or
-  infrastructure concerns
+  model roles, and it does not absorb root-boundary, callback, infrastructure,
+  or public readback concerns
 
 ### `Helper`
 
@@ -208,13 +220,19 @@ Published`
 - may construct foreign published non-`*Model` command/result/value carriers
   needed by those foreign root services
 - may perform layered data access through outer adapters
+- may be the specialized same-context `*PublishedStateRepository` publication
+  sink subtype; that subtype accepts only typed internal model/usecase
+  snapshots or publication records and translates them into same-context
+  `published/*Model` readback
 - returns only same-context internal domain/application types; never `src.data`
   types or foreign published carriers
 - may depend only on foreign root `ApplicationService`, same-context `Model`,
   foreign published non-`*Model` command/result/value carriers, same-context
   `Constants`, same-context repository-local types, and passive platform types
-- does not own long-lived current state, published handles, port intake, or
-  callback/listener seams; that remains in `Model`
+- normal repositories do not own long-lived current state, published handles,
+  port intake, or callback/listener seams; that remains in `Model`
+- `*PublishedStateRepository` is not a generic publish channel, Object payload
+  channel, foreign-write repository, or replacement public readback API
 
 ### `*ServiceContribution.java`
 
@@ -237,9 +255,14 @@ Published`
 - may require foreign public domain services and published models from
   `ServiceRegistry` to construct same-context repositories, ports, use cases,
   application services, and published models
+- may host a private or package-private runtime-owned `PublishedState`
+  implementation for same-context `*PublishedStateRepository` when that type
+  only owns cache/listener fanout and mapping from typed internal publication
+  records to same-context `published/*Model`
 - does not implement `ServiceContribution` and does not own business policy,
-  persistence mechanics, source queries, mapping rules, public backend APIs, or
-  reusable factories
+  persistence mechanics, source queries, public backend APIs, or reusable
+  factories; any mapping it hosts is limited to the `PublishedState`
+  publication-sink exception above
 
 ## Domain Topology
 

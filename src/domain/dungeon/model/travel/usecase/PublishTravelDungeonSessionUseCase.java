@@ -19,7 +19,7 @@ public final class PublishTravelDungeonSessionUseCase {
         this.publishedStateRepository = Objects.requireNonNull(publishedStateRepository, "publishedStateRepository");
     }
 
-    public void applyCommand(
+    public void execute(
             String actionToken,
             String actionId,
             int projectionLevel,
@@ -36,6 +36,6 @@ public final class PublishTravelDungeonSessionUseCase {
                 overlayLevelRange,
                 overlayOpacity,
                 overlaySelectedLevels);
-        publishedStateRepository.recordCurrentSession(snapshot);
+        publishedStateRepository.publishCurrentSession(snapshot);
     }
 }
