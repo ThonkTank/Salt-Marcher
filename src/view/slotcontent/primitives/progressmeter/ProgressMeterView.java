@@ -2,6 +2,7 @@ package src.view.slotcontent.primitives.progressmeter;
 
 import java.util.function.Consumer;
 import javafx.application.Platform;
+import javafx.beans.value.ChangeListener;
 import javafx.geometry.Bounds;
 import javafx.geometry.Pos;
 import javafx.scene.AccessibleRole;
@@ -20,6 +21,9 @@ import javafx.scene.layout.StackPane;
 import javafx.stage.Popup;
 
 public final class ProgressMeterView extends StackPane {
+
+    private static final Object BOUND_MODEL_KEY = new Object();
+    private static final Object METER_STATE_LISTENER_KEY = new Object();
 
     private final HBox fillHost = new HBox();
     private final Region fill = new Region();
@@ -51,10 +55,16 @@ public final class ProgressMeterView extends StackPane {
     }
 
     public void bind(ProgressMeterContentModel contentModel) {
+        removeCurrentMeterStateListener();
         if (contentModel == null) {
+            applyUnboundMeterState();
             return;
         }
-        contentModel.meterStateProperty().addListener((ignored, before, after) -> applyMeterState(after));
+        ChangeListener<ProgressMeterContentModel.MeterState> listener =
+                (ignored, before, after) -> applyMeterState(after);
+        contentModel.meterStateProperty().addListener(listener);
+        getProperties().put(BOUND_MODEL_KEY, contentModel);
+        getProperties().put(METER_STATE_LISTENER_KEY, listener);
         applyMeterState(contentModel.currentMeterState());
     }
 
@@ -79,11 +89,24 @@ public final class ProgressMeterView extends StackPane {
         }
     }
 
+    private void applyUnboundMeterState() {
+        overlayText.setText("");
+        setAccessibleText("");
+        setAccessibleHelp("");
+        getStyleClass().removeIf(styleClass -> styleClass.startsWith("progress-meter-"));
+        fill.getStyleClass().removeIf(styleClass -> !"progress-meter-fill".equals(styleClass));
+        FxAccess.bindWidth(fill, this, 0.0);
+        installTooltip(false, "");
+        updateClickTarget(false);
+        hidePopup();
+    }
+
     private void updateClickTarget(boolean clickable) {
         getStyleClass().remove("clickable");
         setOnMouseClicked(null);
         setOnKeyPressed(null);
         setFocusTraversable(false);
+        setAccessibleRole(AccessibleRole.PROGRESS_INDICATOR);
         if (clickable) {
             getStyleClass().add("clickable");
             setOnMouseClicked(event -> showPopup());
@@ -94,6 +117,7 @@ public final class ProgressMeterView extends StackPane {
                 }
             });
             setFocusTraversable(true);
+            setAccessibleRole(AccessibleRole.BUTTON);
         }
     }
 
@@ -111,10 +135,10 @@ public final class ProgressMeterView extends StackPane {
         FxAccess.setPopupContent(popup, popupContent);
         popup.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
             if (event.getCode() == KeyCode.ESCAPE) {
+                hidePopupReturningFocus();
                 event.consume();
             }
         });
-        popup.setOnHidden(event -> requestFocus());
     }
 
     private void showPopup() {
@@ -136,10 +160,19 @@ public final class ProgressMeterView extends StackPane {
         }
     }
 
+    private void hidePopupReturningFocus() {
+        hidePopup();
+        Platform.runLater(this::requestFocus);
+    }
+
     private void installTooltip(ProgressMeterContentModel.MeterState meterState) {
+        installTooltip(meterState.hasTooltip(), meterState.tooltipText());
+    }
+
+    private void installTooltip(boolean hasTooltip, String tooltipText) {
         Tooltip.uninstall(this, installedTooltip);
-        if (meterState.hasTooltip()) {
-            installedTooltip = new Tooltip(meterState.tooltipText());
+        if (hasTooltip) {
+            installedTooltip = new Tooltip(tooltipText);
             Tooltip.install(this, installedTooltip);
         }
     }
@@ -164,7 +197,7 @@ public final class ProgressMeterView extends StackPane {
         Button defaultButton = null;
         for (ProgressMeterContentModel.PopupActionModel action : meterState.popupActions()) {
             Button button = new Button(action.label());
-            button.setAccessibleText(action.label());
+            button.setAccessibleText(accessibleActionText(action));
             if (!action.styleClass().isBlank()) {
                 FxAccess.addStyle(button, action.styleClass());
             }
@@ -184,14 +217,20 @@ public final class ProgressMeterView extends StackPane {
     }
 
     private void emitPopupAction(String actionId) {
+        String rawText = amountField.getText();
+        if (rawText.isBlank()) {
+            amountField.setText("1");
+            return;
+        }
         int amount;
         try {
-            amount = Math.max(1, Integer.parseInt(amountField.getText()));
+            amount = Math.max(1, Integer.parseInt(rawText));
         } catch (NumberFormatException exception) {
-            amount = 1;
+            amountField.setText("1");
+            return;
         }
         viewInputEventHandler.accept(new ProgressMeterViewInputEvent(actionId, amount));
-        hidePopup();
+        hidePopupReturningFocus();
     }
 
     private int rawAmount() {
@@ -207,7 +246,9 @@ public final class ProgressMeterView extends StackPane {
         FxAccess.addStyle(field, "text-field");
         FxAccess.addStyle(field, "progress-meter-amount-field");
         field.setPrefColumnCount(3);
-        field.setTextFormatter(new TextFormatter<>(change -> change.getText().matches("[0-9]*") ? change : null));
+        field.setTextFormatter(new TextFormatter<>(change -> change.getControlNewText().matches("[0-9]+")
+                ? change
+                : null));
         return field;
     }
 
@@ -215,6 +256,39 @@ public final class ProgressMeterView extends StackPane {
         Button button = new Button(text);
         FxAccess.addStyle(button, "spinner-btn");
         return button;
+    }
+
+    @SuppressWarnings("unchecked")
+    private void removeCurrentMeterStateListener() {
+        Object boundModel = getProperties().remove(BOUND_MODEL_KEY);
+        Object listener = getProperties().remove(METER_STATE_LISTENER_KEY);
+        if (boundModel instanceof ProgressMeterContentModel model
+                && listener instanceof ChangeListener<?> changeListener) {
+            model.meterStateProperty()
+                    .removeListener((ChangeListener<? super ProgressMeterContentModel.MeterState>) changeListener);
+        }
+    }
+
+    private static String accessibleActionText(ProgressMeterContentModel.PopupActionModel action) {
+        String label = safe(action.label());
+        if (hasWordCharacter(label)) {
+            return label;
+        }
+        String fromActionId = safe(action.actionId()).replaceAll("[\\s._:/\\\\-]+", " ").trim();
+        return fromActionId.isBlank() ? label : fromActionId;
+    }
+
+    private static boolean hasWordCharacter(String value) {
+        for (int index = 0; index < value.length(); index++) {
+            if (Character.isLetterOrDigit(value.charAt(index))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static String safe(String value) {
+        return value == null ? "" : value;
     }
 
     @SuppressWarnings("PMD.LawOfDemeter")
