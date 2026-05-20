@@ -11,6 +11,7 @@ import com.sun.source.util.TreeScanner;
 import com.sun.tools.javac.code.Symbol;
 import com.sun.tools.javac.code.Type;
 import java.util.LinkedHashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
 import javax.lang.model.element.Element;
@@ -42,12 +43,15 @@ public final class ViewArchitectureSupport {
     private static final Set<String> FORBIDDEN_VIEW_JDK_INFRASTRUCTURE_TYPES = Set.of(
             "java.lang.ClassLoader", "java.lang.Process", "java.lang.ProcessBuilder", "java.lang.Runtime",
             "java.lang.Thread", "java.lang.ThreadGroup", "java.util.Timer", "java.util.TimerTask");
-    private static final Set<String> PUBLISHED_WORK_VALUE_CARRIERS = Set.of(
-            "CharacterDraft", "DungeonBoundaryKind", "DungeonCellRef", "DungeonEditorBoundaryTargetRef",
-            "DungeonEditorHandleKind", "DungeonEditorHandleRef", "DungeonEditorPointerSample",
-            "DungeonEditorPointerTarget", "DungeonEditorTool", "DungeonEditorViewMode", "DungeonMapId",
-            "DungeonOverlaySettings", "DungeonTopologyElementKind", "DungeonTopologyElementRef",
-            "EncounterBuilderInputs", "MembershipState", "RestType", "SessionPlannerRestKind");
+    private static final Map<String, Set<String>> PUBLISHED_WORK_VALUE_CARRIERS_BY_CONTEXT = Map.of(
+            "dungeon", Set.of(
+                    "DungeonBoundaryKind", "DungeonCellRef", "DungeonEditorBoundaryTargetRef",
+                    "DungeonEditorHandleKind", "DungeonEditorHandleRef", "DungeonEditorPointerSample",
+                    "DungeonEditorPointerTarget", "DungeonEditorTool", "DungeonEditorViewMode", "DungeonMapId",
+                    "DungeonOverlaySettings", "DungeonTopologyElementKind", "DungeonTopologyElementRef"),
+            "encounter", Set.of("EncounterBuilderInputs"),
+            "party", Set.of("CharacterDraft", "MembershipState", "RestType"),
+            "sessionplanner", Set.of("SessionPlannerRestKind"));
 
     private ViewArchitectureSupport() {
     }
@@ -463,18 +467,26 @@ public final class ViewArchitectureSupport {
         return domainContexts;
     }
 
+    public static String applicationServiceDomainContextOfMethod(ExecutableElement methodElement) {
+        if (methodElement == null || methodElement.getEnclosingElement() == null) {
+            return "";
+        }
+        String ownerType = methodElement.getEnclosingElement().toString();
+        return applicationServiceDomainContext(ownerType);
+    }
+
     private static boolean isAllowedPublishedWorkRequestBoundary(Set<String> allowedDomainContexts, String referencedType) {
         String domainContext = publishedDomainContext(referencedType);
         return !domainContext.isBlank()
                 && allowedDomainContexts.contains(domainContext)
                 && referencedType != null
-                && isPublishedWorkRequestCarrier(referencedType);
+                && isPublishedWorkRequestCarrier(domainContext, referencedType);
     }
 
-    private static boolean isPublishedWorkRequestCarrier(String referencedType) {
+    private static boolean isPublishedWorkRequestCarrier(String domainContext, String referencedType) {
         String simpleName = simpleNameOfTopLevelType(referencedType);
         return simpleName.endsWith("Command")
-                || PUBLISHED_WORK_VALUE_CARRIERS.contains(simpleName);
+                || PUBLISHED_WORK_VALUE_CARRIERS_BY_CONTEXT.getOrDefault(domainContext, Set.of()).contains(simpleName);
     }
 
     private static String applicationServiceDomainContext(String referencedType) {

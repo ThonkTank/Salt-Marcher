@@ -154,13 +154,29 @@ public final class ViewIntentHandlerBoundaryCheckers {
         String sourceText = sourceText(tree, state);
         Set<String> forbiddenReferences = new LinkedHashSet<>();
         Set<String> referencedTypes = ViewArchitectureSupport.collectReferencedTypes(tree);
-        Set<String> allowedDomainContexts = ViewArchitectureSupport.domainContextsOfApplicationServices(referencedTypes);
+        Set<String> allowedDomainContexts = collectCalledApplicationServiceDomainContexts(tree);
         for (String referencedType : referencedTypes) {
             if (isForbiddenDependencyReference(referencedType, source, sourceText, allowedDomainContexts)) {
                 forbiddenReferences.add(referencedType);
             }
         }
         return forbiddenReferences;
+    }
+
+    private static Set<String> collectCalledApplicationServiceDomainContexts(CompilationUnitTree tree) {
+        Set<String> domainContexts = new LinkedHashSet<>();
+        new TreeScanner<Void, Void>() {
+            @Override
+            public Void visitMethodInvocation(MethodInvocationTree methodInvocationTree, Void unused) {
+                Symbol.MethodSymbol methodSymbol = ASTHelpers.getSymbol(methodInvocationTree);
+                String domainContext = ViewArchitectureSupport.applicationServiceDomainContextOfMethod(methodSymbol);
+                if (!domainContext.isBlank()) {
+                    domainContexts.add(domainContext);
+                }
+                return super.visitMethodInvocation(methodInvocationTree, unused);
+            }
+        }.scan(tree, null);
+        return domainContexts;
     }
 
     private static boolean isForbiddenDependencyReference(
