@@ -115,11 +115,10 @@ internal fun Project.registerQualityConventionLifecycleTasks(
         toolClasspath.from(toolConfigurations.proguardToolClasspath)
         compiledClassesDirectory.set(verificationLayout.mainJavaClassesDir)
         runtimeClasspath.from(configurations.named("runtimeClasspath"))
-        javaHomeJmodsDirectory.set(
-            layout.dir(
-                providers.provider { File(System.getProperty("java.home"), "jmods") }
-            )
-        )
+        val jmodsDirectory = File(System.getProperty("java.home"), "jmods")
+        if (jmodsDirectory.isDirectory) {
+            javaHomeJmodsDirectory.set(layout.dir(providers.provider { jmodsDirectory }))
+        }
         resourceRoots.from(layout.projectDirectory.dir("resources"))
         keepRulesFiles.from(layout.projectDirectory.file("tools/quality/config/deadcode/keep-rules.pro"))
         mainClassName.set(environment.packagingMetadata.mainClassNameProvider)

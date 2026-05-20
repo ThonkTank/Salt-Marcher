@@ -26,6 +26,7 @@ internal data class QualityConventionVerificationLayout(
     val sourceRoots: FileCollection,
     val sourceJavaRoots: FileCollection,
     val mainJavaClassesDir: Provider<Directory>,
+    val commonFocusedArchunitSupportSourceRoots: List<String>,
     val commonFocusedArchunitSupportIncludes: List<String>
 )
 
@@ -91,6 +92,7 @@ internal fun Project.createQualityConventionEnvironment(
     val sourceSets = the<SourceSetContainer>()
     val mainSourceSet = sourceSets["main"]
     val mainJavaClassesDir = tasks.named<JavaCompile>("compileJava").flatMap(JavaCompile::getDestinationDirectory)
+    val commonFocusedArchunitSupportSourceRoots = listOf("test")
     val commonFocusedArchunitSupportIncludes = listOf(
         "architecture/AnalyzeMainClasses.java",
         "architecture/MainSourceLocationProvider.java"
@@ -119,6 +121,7 @@ internal fun Project.createQualityConventionEnvironment(
             sourceRoots = sourceRoots,
             sourceJavaRoots = sourceJavaRoots,
             mainJavaClassesDir = mainJavaClassesDir,
+            commonFocusedArchunitSupportSourceRoots = commonFocusedArchunitSupportSourceRoots,
             commonFocusedArchunitSupportIncludes = commonFocusedArchunitSupportIncludes
         ),
         packagingMetadata = QualityConventionPackagingMetadata(
@@ -178,7 +181,7 @@ internal fun Project.registerQualityConventionDependencies(
         add(toolConfigurations.ckjmToolClasspath.name, "org.apache.bcel:bcel:6.11.0")
         add(toolConfigurations.ckjmToolClasspath.name, "org.apache.ant:ant:1.10.15")
         add(toolConfigurations.ckjmToolClasspath.name, "org.apache.commons:commons-math3:3.6.1")
-        add(toolConfigurations.proguardToolClasspath.name, "net.sf.proguard:proguard-base:6.0.3")
+        add(toolConfigurations.proguardToolClasspath.name, "com.guardsquare:proguard-base:7.9.1")
         add(
             toolConfigurations.jqassistantDistribution.name,
             "com.buschmais.jqassistant.cli:jqassistant-commandline-neo4jv5:${environment.jqassistantVersion}:distribution@zip"

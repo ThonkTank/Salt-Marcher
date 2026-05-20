@@ -46,6 +46,7 @@ abstract class CheckNoDeadCodeTask @Inject constructor(
     @get:Classpath
     abstract val runtimeClasspath: ConfigurableFileCollection
 
+    @get:Optional
     @get:InputDirectory
     @get:PathSensitive(PathSensitivity.RELATIVE)
     abstract val javaHomeJmodsDirectory: DirectoryProperty
@@ -80,6 +81,7 @@ abstract class CheckNoDeadCodeTask @Inject constructor(
         val classEntries = loadClassEntries(compiledRoot)
         val workDir = workingDirectory.get().asFile.toPath()
         val generatedKeepRulesFile = workDir.resolve("generated-keep-rules.pro")
+        val explicitKeepRulesFile = workDir.resolve("explicit-keep-rules.pro")
         val configFile = workDir.resolve("proguard-deadcode.pro")
         val usageFile = workDir.resolve("usage.txt")
         val outputJar = workDir.resolve("deadcode-out.jar")
@@ -87,11 +89,13 @@ abstract class CheckNoDeadCodeTask @Inject constructor(
         resetDirectory(workDir)
         Files.createDirectories(workDir)
         writeGeneratedKeepRules(generatedKeepRulesFile, classEntries)
+        writeValidatedExplicitKeepRules(explicitKeepRulesFile)
         writeProguardConfig(
             configFile = configFile,
             usageFile = usageFile,
             outputJar = outputJar,
-            generatedKeepRulesFile = generatedKeepRulesFile
+            generatedKeepRulesFile = generatedKeepRulesFile,
+            explicitKeepRulesFile = explicitKeepRulesFile
         )
         Files.deleteIfExists(successMarker.get().asFile.toPath())
 
@@ -99,7 +103,7 @@ abstract class CheckNoDeadCodeTask @Inject constructor(
             override fun execute(spec: JavaExecSpec) {
                 spec.classpath = toolClasspath
                 spec.mainClass.set("proguard.ProGuard")
-                spec.args(configFile.toString())
+                spec.args("@${configFile}")
             }
         })
 
@@ -124,14 +128,14 @@ abstract class CheckNoDeadCodeTask @Inject constructor(
         val explicitKeepFiles = keepRulesFiles.files.filter(File::isFile).sortedBy(File::invariantPath)
         val lines = buildList {
             add("# Generated structural dead-code roots.")
-            add("-keep class ${mainClassName.get()} {")
+            add("-keep class ${validatedBinaryName(mainClassName.get(), "main class")} {")
             add("    public <init>();")
             add("    public static void main(java.lang.String[]);")
             add("    public void init();")
             add("    public void start(javafx.stage.Stage);")
             add("    public void stop();")
             add("}")
-            add("-keep class ${preloaderClassName.get()} {")
+            add("-keep class ${validatedBinaryName(preloaderClassName.get(), "preloader class")} {")
             add("    public <init>();")
             add("    public void init();")
             add("    public void start(javafx.stage.Stage);")
@@ -180,15 +184,15 @@ abstract class CheckNoDeadCodeTask @Inject constructor(
         configFile: Path,
         usageFile: Path,
         outputJar: Path,
-        generatedKeepRulesFile: Path
+        generatedKeepRulesFile: Path,
+        explicitKeepRulesFile: Path
     ) {
-        val keepFiles = keepRulesFiles.files.filter(File::isFile).sortedBy(File::invariantPath)
         val runtimeJars = runtimeClasspath.files
             .asSequence()
             .filter(File::isFile)
             .sortedBy(File::invariantPath)
             .toList()
-        val jmods = javaHomeJmodsDirectory.get().asFile.listFiles()
+        val jmods = javaHomeJmodsDirectory.orNull?.asFile?.listFiles()
             ?.filter { file -> file.isFile && file.extension == "jmod" }
             ?.sortedBy(File::invariantPath)
             .orEmpty()
@@ -211,50 +215,123 @@ abstract class CheckNoDeadCodeTask @Inject constructor(
                 add("-libraryjars ${file.invariantPath()}")
             }
             add("-include ${generatedKeepRulesFile.toFile().invariantPath()}")
-            keepFiles.forEach { file ->
-                add("-include ${file.invariantPath()}")
-            }
+            add("-include ${explicitKeepRulesFile.toFile().invariantPath()}")
         }
         Files.writeString(configFile, lines.joinToString(separator = "\n", postfix = "\n"))
     }
 
-    private fun parseFindings(classEntries: List<ClassEntry>, usageFile: Path): DeadCodeFindings {
-        val lines = if (Files.isRegularFile(usageFile)) {
-            Files.readAllLines(usageFile)
-                .map(String::trim)
-                .filter(String::isNotEmpty)
-                .sorted()
-        } else {
-            emptyList()
+    private fun writeValidatedExplicitKeepRules(outputFile: Path) {
+        val keepFiles = keepRulesFiles.files.filter(File::isFile).sortedBy(File::invariantPath)
+        val lines = keepFiles.flatMap { keepFile -> validatedExplicitKeepRuleLines(keepFile) }
+        Files.writeString(outputFile, lines.joinToString(separator = "\n", postfix = "\n"))
+    }
+
+    private fun validatedExplicitKeepRuleLines(keepFile: File): List<String> {
+        var keepBlockDepth = 0
+        return keepFile.readLines().mapIndexedNotNull { index, rawLine ->
+            val line = rawLine.trim()
+            if (line.isBlank() || line.startsWith("#")) {
+                return@mapIndexedNotNull rawLine
+            }
+            if (keepBlockDepth > 0) {
+                require(!line.startsWith("-")) {
+                    "Invalid dead-code keep rule in ${keepFile.invariantPath()}:${index + 1}. " +
+                        "Nested ProGuard options are not allowed inside keep blocks."
+                }
+                rejectCatchAllKeepRule(line, keepFile, index)
+                keepBlockDepth += line.count { character -> character == '{' }
+                keepBlockDepth -= line.count { character -> character == '}' }
+                require(keepBlockDepth >= 0) {
+                    "Invalid dead-code keep rule in ${keepFile.invariantPath()}:${index + 1}. " +
+                        "Keep block closes before it opens."
+                }
+                return@mapIndexedNotNull rawLine
+            }
+            require(line.startsWith("-keep")) {
+                "Invalid dead-code keep rule in ${keepFile.invariantPath()}:${index + 1}. " +
+                    "Only ProGuard keep directives are allowed."
+            }
+            require(AllowedExplicitKeepRuleOptions.any { option -> line.startsWith(option) }) {
+                "Invalid dead-code keep rule in ${keepFile.invariantPath()}:${index + 1}. " +
+                    "Only approved keep directives are allowed."
+            }
+            rejectCatchAllKeepRule(line, keepFile, index)
+            keepBlockDepth += line.count { character -> character == '{' }
+            keepBlockDepth -= line.count { character -> character == '}' }
+            require(keepBlockDepth >= 0) {
+                "Invalid dead-code keep rule in ${keepFile.invariantPath()}:${index + 1}. " +
+                    "Keep block closes before it opens."
+            }
+            rawLine
+        }.also {
+            require(keepBlockDepth == 0) {
+                "Invalid dead-code keep rules in ${keepFile.invariantPath()}: keep block is not closed."
+            }
         }
+    }
+
+    private fun rejectCatchAllKeepRule(line: String, keepFile: File, index: Int) {
+        require(!CatchAllKeepTargetPattern.containsMatchIn(line) && !CatchAllKeepMemberPattern.containsMatchIn(line)) {
+            "Invalid dead-code keep rule in ${keepFile.invariantPath()}:${index + 1}. " +
+                "Catch-all keep rules are not allowed."
+        }
+    }
+
+    private fun parseFindings(classEntries: List<ClassEntry>, usageFile: Path): DeadCodeFindings {
         val classesByBinaryName = classEntries.associateBy(ClassEntry::binaryName)
         val deadTypes = mutableListOf<DeadType>()
         val deadConstructors = mutableListOf<DeadMember>()
         val deadMethods = mutableListOf<DeadMember>()
         val deadFields = mutableListOf<DeadMember>()
 
-        lines.forEach { line ->
-            if (':' !in line) {
-                val entry = classesByBinaryName[line] ?: return@forEach
-                deadTypes += DeadType(
-                    sourceRelativePath = entry.sourceRelativePath,
-                    name = entry.binaryName,
-                    declarationKind = entry.declarationKind,
-                    nestingKind = entry.nestingKind
-                )
-                return@forEach
-            }
-            val owner = line.substringBefore(':').trim()
-            val member = line.substringAfter(':').trim()
-            val entry = classesByBinaryName[owner] ?: return@forEach
-            if ('(' in member) {
-                when {
-                    member.startsWith("<init>(") -> deadConstructors += DeadMember(entry.sourceRelativePath, "$owner#$member")
-                    member.startsWith("<clinit>(") -> Unit
-                    else -> deadMethods += DeadMember(entry.sourceRelativePath, "$owner#$member")
+        var currentOwner: String? = null
+        if (Files.isRegularFile(usageFile)) {
+            Files.readAllLines(usageFile).forEach { rawLine ->
+                val line = rawLine.trim()
+                if (line.isBlank()) {
+                    return@forEach
                 }
-            } else {
-                deadFields += DeadMember(entry.sourceRelativePath, "$owner#$member")
+                val ownerHeader = line.removeSuffix(":").takeIf {
+                    !rawLine.first().isWhitespace() && line.endsWith(":")
+                }
+                if (ownerHeader != null) {
+                    currentOwner = ownerHeader
+                    return@forEach
+                }
+                if (!rawLine.first().isWhitespace() && ':' !in line) {
+                    currentOwner = null
+                    val entry = classesByBinaryName[line] ?: return@forEach
+                    deadTypes += DeadType(
+                        sourceRelativePath = entry.sourceRelativePath,
+                        name = entry.binaryName,
+                        declarationKind = entry.declarationKind,
+                        nestingKind = entry.nestingKind
+                    )
+                    return@forEach
+                }
+                val owner = currentOwner ?: line.substringBefore(':').trim()
+                val memberSource = if (currentOwner == null && ':' in line) {
+                    line.substringAfter(':')
+                } else {
+                    line
+                }
+                val member = normalizeProguardMember(memberSource)
+                if (member.isBlank()) {
+                    return@forEach
+                }
+                val entry = classesByBinaryName[owner] ?: return@forEach
+                if (isCompilerGeneratedMember(entry, member)) {
+                    return@forEach
+                }
+                if ('(' in member) {
+                    if (isConstructorMember(owner, member)) {
+                        deadConstructors += DeadMember(entry.sourceRelativePath, "$owner#$member")
+                    } else if (!member.startsWith("static {}")) {
+                        deadMethods += DeadMember(entry.sourceRelativePath, "$owner#$member")
+                    }
+                } else {
+                    deadFields += DeadMember(entry.sourceRelativePath, "$owner#$member")
+                }
             }
         }
 
@@ -274,6 +351,43 @@ abstract class CheckNoDeadCodeTask @Inject constructor(
             deadMethods = deadMethods.sortedWith(compareBy(DeadMember::sourceRelativePath, DeadMember::name)),
             deadFields = deadFields.sortedWith(compareBy(DeadMember::sourceRelativePath, DeadMember::name))
         )
+    }
+
+    private fun normalizeProguardMember(rawMember: String): String {
+        val trimmed = rawMember.trim()
+        val secondColon = trimmed.indexOf(':', startIndex = trimmed.indexOf(':') + 1)
+        return if (trimmed.firstOrNull()?.isDigit() == true && secondColon >= 0) {
+            trimmed.substring(secondColon + 1).trim()
+        } else {
+            trimmed
+        }
+    }
+
+    private fun isConstructorMember(owner: String, member: String): Boolean {
+        val signaturePrefix = member.substringBefore('(', missingDelimiterValue = "")
+        val memberName = signaturePrefix.substringAfterLast(' ')
+        val simpleOwnerName = owner.substringAfterLast('.').substringAfterLast('$')
+        return memberName == simpleOwnerName
+    }
+
+    private fun isCompilerGeneratedMember(entry: ClassEntry, member: String): Boolean {
+        return when (entry.declarationKind) {
+            DeclarationKind.RECORD -> isGeneratedRecordMember(member)
+            DeclarationKind.ENUM -> isGeneratedEnumMember(entry.binaryName, member)
+            else -> false
+        }
+    }
+
+    private fun isGeneratedRecordMember(member: String): Boolean {
+        return member == "public final java.lang.String toString()"
+                || member == "public final int hashCode()"
+                || member == "public final boolean equals(java.lang.Object)"
+    }
+
+    private fun isGeneratedEnumMember(owner: String, member: String): Boolean {
+        val simpleOwnerName = owner.substringAfterLast('.').substringAfterLast('$')
+        return member == "public static ${simpleOwnerName}[] values()"
+                || member == "public static ${simpleOwnerName} valueOf(java.lang.String)"
     }
 
     private fun writeReport(findings: DeadCodeFindings) {
@@ -343,13 +457,16 @@ abstract class CheckNoDeadCodeTask @Inject constructor(
                                     val value = reader.getAttributeValue(index) ?: continue
                                     val localName = reader.getAttributeLocalName(index)
                                     if (reader.getAttributePrefix(index) == "fx" && localName == "controller") {
-                                        controllerBinaryName = value
+                                        controllerBinaryName = validatedBinaryName(value, "${file.invariantPath()} fx:controller")
                                     }
                                     if (value.startsWith("#")) {
-                                        methods += value.removePrefix("#")
+                                        methods += validatedJavaIdentifier(
+                                            value.removePrefix("#"),
+                                            "${file.invariantPath()} event handler"
+                                        )
                                     }
                                     if (reader.getAttributePrefix(index) == "fx" && localName == "id") {
-                                        fields += value
+                                        fields += validatedJavaIdentifier(value, "${file.invariantPath()} fx:id")
                                     }
                                 }
                             }
@@ -392,9 +509,24 @@ abstract class CheckNoDeadCodeTask @Inject constructor(
                             .asSequence()
                             .map(String::trim)
                             .filter { line -> line.isNotEmpty() && !line.startsWith("#") }
+                            .map { line -> validatedBinaryName(line, "${file.invariantPath()} service provider") }
                     }
             }
             .toSortedSet()
+    }
+
+    private fun validatedBinaryName(value: String, context: String): String {
+        require(JavaBinaryNamePattern.matches(value)) {
+            "Invalid Java binary name in $context: '$value'."
+        }
+        return value
+    }
+
+    private fun validatedJavaIdentifier(value: String, context: String): String {
+        require(JavaIdentifierPattern.matches(value)) {
+            "Invalid Java identifier in $context: '$value'."
+        }
+        return value
     }
 
     private fun loadShellContributionRoots(
@@ -418,18 +550,11 @@ abstract class CheckNoDeadCodeTask @Inject constructor(
         return classEntries
             .asSequence()
             .filter(ClassEntry::isTopLevelClass)
-            .mapNotNull { entry ->
-                rootFeatureSegment(entry, "src.data")?.let { featureName -> featureName to entry }
-            }
-            .groupBy({ it.first }, { it.second })
-            .values
-            .mapNotNull { rootEntries ->
-                rootEntries.singleOrNull()
-                    ?.takeIf { entry -> isServiceContributionRoot(entry, inspector) }
-                    ?.binaryName
-            }
+            .filter { entry -> isServiceContributionRoot(entry, inspector) }
+            .map(ClassEntry::binaryName)
             .distinct()
             .sorted()
+            .toList()
     }
 
     private fun isShellContributionRoot(entry: ClassEntry, inspector: ContributionTypeInspector): Boolean {
@@ -440,6 +565,7 @@ abstract class CheckNoDeadCodeTask @Inject constructor(
 
     private fun isServiceContributionRoot(entry: ClassEntry, inspector: ContributionTypeInspector): Boolean =
         isContributionRoot(entry, inspector, "src.data", "ServiceContribution", ContributionKind.SERVICE)
+                || isContributionRoot(entry, inspector, "src.domain", "ServiceContribution", ContributionKind.SERVICE)
 
     private fun isContributionRoot(
         entry: ClassEntry,
@@ -845,6 +971,24 @@ private const val ACC_INTERFACE = 0x0200
 private const val ACC_ANNOTATION = 0x2000
 private const val ACC_ENUM = 0x4000
 private const val ACC_SYNTHETIC = 0x1000
+private val AllowedExplicitKeepRuleOptions = listOf(
+    "-keep ",
+    "-keep,",
+    "-keepclassmembers ",
+    "-keepclassmembers,",
+    "-keepclasseswithmembers ",
+    "-keepclasseswithmembers,",
+    "-keepnames ",
+    "-keepnames,",
+    "-keepclassmembernames ",
+    "-keepclassmembernames,",
+    "-keepclasseswithmembernames ",
+    "-keepclasseswithmembernames,"
+)
+private val CatchAllKeepTargetPattern = Regex("\\b(?:class|interface|enum|@interface)\\s+\\*\\*?(?:\\s|\\{|$)")
+private val CatchAllKeepMemberPattern = Regex("^(?:public |protected |private )?(?:static )?\\*\\s*;")
+private val JavaIdentifierPattern = Regex("[A-Za-z_$][A-Za-z0-9_$]*")
+private val JavaBinaryNamePattern = Regex("[A-Za-z_$][A-Za-z0-9_$]*(?:[.$][A-Za-z_$][A-Za-z0-9_$]*)*")
 
 private fun Path.invariantPath(): String = toString().replace(File.separatorChar, '/')
 
