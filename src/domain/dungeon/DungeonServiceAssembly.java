@@ -23,18 +23,8 @@ import src.domain.dungeon.model.map.model.DungeonTravelExternalTargetFacts;
 import src.domain.dungeon.model.map.model.DungeonTravelMoveFacts;
 import src.domain.dungeon.model.map.model.DungeonTravelPositionFacts;
 import src.domain.dungeon.model.map.model.DungeonTravelSurfaceFacts;
-import src.domain.dungeon.model.editor.helper.DungeonEditorSessionOperationBoundaryTranslationHelper;
 import src.domain.dungeon.model.editor.helper.DungeonEditorSnapshotProjectionHelper;
-import src.domain.dungeon.model.editor.helper.DungeonEditorWorkspaceInspectorBoundaryTranslationHelper;
-import src.domain.dungeon.model.editor.helper.DungeonEditorWorkspaceMapBoundaryTranslationHelper;
-import src.domain.dungeon.model.editor.helper.DungeonEditorWorkspaceTopologyBoundaryTranslationHelper;
-import src.domain.dungeon.model.editor.model.session.model.DungeonEditorRoomNarrationInput;
-import src.domain.dungeon.model.editor.model.session.model.DungeonEditorSessionSnapshot;
-import src.domain.dungeon.model.editor.model.session.model.DungeonEditorSessionValues;
 import src.domain.dungeon.model.editor.model.session.model.DungeonEditorSessionWorkflow;
-import src.domain.dungeon.model.editor.model.workspace.model.DungeonEditorWorkspaceValues;
-import src.domain.dungeon.model.editor.model.workspace.model.DungeonEditorWorkspaceValues.MapSnapshot;
-import src.domain.dungeon.model.editor.model.workspace.model.DungeonEditorWorkspaceValues.MapSummary;
 import src.domain.dungeon.model.editor.port.DungeonEditorDungeonPort;
 import src.domain.dungeon.model.editor.repository.DungeonEditorDungeonRepository;
 import src.domain.dungeon.model.editor.usecase.ApplyDungeonEditorCreateCorridorUseCase;
@@ -50,6 +40,7 @@ import src.domain.dungeon.model.editor.usecase.ApplyDungeonEditorSessionEffectUs
 import src.domain.dungeon.model.editor.usecase.BuildDungeonEditorSnapshotUseCase;
 import src.domain.dungeon.model.editor.usecase.CreateDungeonEditorMapUseCase;
 import src.domain.dungeon.model.editor.usecase.DeleteDungeonEditorMapUseCase;
+import src.domain.dungeon.model.editor.usecase.DungeonEditorDungeonRequestsUseCase;
 import src.domain.dungeon.model.editor.usecase.DungeonEditorSnapshotPublication;
 import src.domain.dungeon.model.editor.usecase.InterpretDungeonEditorMainViewInputUseCase;
 import src.domain.dungeon.model.editor.usecase.PublishDungeonEditorSnapshotUseCase;
@@ -60,6 +51,9 @@ import src.domain.dungeon.model.editor.usecase.SetDungeonEditorOverlayUseCase;
 import src.domain.dungeon.model.editor.usecase.SetDungeonEditorToolUseCase;
 import src.domain.dungeon.model.editor.usecase.SetDungeonEditorViewModeUseCase;
 import src.domain.dungeon.model.editor.usecase.ShiftDungeonEditorProjectionLevelUseCase;
+import src.domain.dungeon.model.editor.model.session.model.DungeonEditorDungeonState;
+import src.domain.dungeon.model.editor.model.session.model.DungeonEditorSessionSnapshot;
+import src.domain.dungeon.model.map.repository.DungeonAuthoredPublishedStateRepository;
 import src.domain.dungeon.model.map.repository.DungeonMapRepository;
 import src.domain.dungeon.model.map.usecase.AssembleDungeonSnapshotUseCase;
 import src.domain.dungeon.model.map.usecase.ApplyDungeonAuthoredMutationUseCase;
@@ -93,11 +87,8 @@ import src.domain.dungeon.model.travel.usecase.MoveDungeonTravelActionUseCase;
 import src.domain.dungeon.model.travel.usecase.PublishTravelDungeonSessionUseCase;
 import src.domain.dungeon.published.DungeonAreaKind;
 import src.domain.dungeon.published.DungeonAreaSnapshot;
-import src.domain.dungeon.published.DeleteDungeonMapCommand;
-import src.domain.dungeon.published.DungeonAuthoredMutationCommand;
 import src.domain.dungeon.published.DungeonAuthoredMutationModel;
 import src.domain.dungeon.published.DungeonAuthoredMutationResult;
-import src.domain.dungeon.published.DungeonAuthoredReadCommand;
 import src.domain.dungeon.published.DungeonAuthoredReadModel;
 import src.domain.dungeon.published.DungeonAuthoredReadResult;
 import src.domain.dungeon.published.DungeonBoundarySnapshot;
@@ -109,14 +100,12 @@ import src.domain.dungeon.published.DungeonEditorHandleRef;
 import src.domain.dungeon.published.DungeonEditorHandleSnapshot;
 import src.domain.dungeon.published.DungeonEditorMapSurfaceModel;
 import src.domain.dungeon.published.DungeonEditorMapSurfaceSnapshot;
-import src.domain.dungeon.published.DungeonEditorOperation;
 import src.domain.dungeon.published.DungeonEditorStateModel;
 import src.domain.dungeon.published.DungeonEditorStateSnapshot;
 import src.domain.dungeon.published.DungeonEdgeRef;
 import src.domain.dungeon.published.DungeonFeatureKind;
 import src.domain.dungeon.published.DungeonFeatureSnapshot;
 import src.domain.dungeon.published.DungeonInspectorSnapshot;
-import src.domain.dungeon.published.DungeonMapCatalogCommand;
 import src.domain.dungeon.published.DungeonMapCatalogModel;
 import src.domain.dungeon.published.DungeonMapCatalogResponse;
 import src.domain.dungeon.published.DungeonMapId;
@@ -225,16 +214,18 @@ final class DungeonServiceAssembly {
 
     DungeonEditorApplicationService createEditorApplicationService(ServiceRegistry registry) {
         ServiceRegistry services = Objects.requireNonNull(registry, "registry");
-        EditorDungeonRequests dungeonRequests = new EditorDungeonRequests(
-                services.require(DungeonCatalogApplicationService.class),
-                services.require(DungeonAuthoredApplicationService.class));
+        DungeonPublishedState publishedState = authoredPublishedState(services);
+        DungeonEditorDungeonState dungeonState = new DungeonEditorDungeonState();
+        DungeonEditorDungeonRequestsUseCase dungeonRequests = new DungeonEditorDungeonRequestsUseCase(
+                mapCatalogUseCase(services),
+                refreshDungeonAuthoredUseCase(services),
+                authoredMutationUseCase(services),
+                publishedState,
+                dungeonState);
         DungeonEditorDungeonRepository dungeonRepository = new DungeonEditorDungeonRepository(
                 dungeonRequests,
                 dungeonRequests);
-        DungeonEditorDungeonPort dungeonPort = new DungeonEditorDungeonPort(new EditorDungeonFactsSource(
-                services.require(DungeonMapCatalogModel.class),
-                services.require(DungeonAuthoredReadModel.class),
-                services.require(DungeonAuthoredMutationModel.class)));
+        DungeonEditorDungeonPort dungeonPort = new DungeonEditorDungeonPort(dungeonState);
         DungeonEditorSessionWorkflow workflow = new DungeonEditorSessionWorkflow();
         BuildDungeonEditorSnapshotUseCase snapshotBuilder = new BuildDungeonEditorSnapshotUseCase(
                 dungeonRepository,
@@ -331,287 +322,39 @@ final class DungeonServiceAssembly {
         return new LoadDungeonMapUseCase(registry.require(DungeonMapRepository.class));
     }
 
-    private static final class EditorDungeonRequests implements
-            DungeonEditorDungeonRepository.CatalogRequests,
-            DungeonEditorDungeonRepository.AuthoredRequests {
-
-        private final DungeonCatalogApplicationService catalogService;
-        private final DungeonAuthoredApplicationService authoredService;
-
-        private EditorDungeonRequests(
-                DungeonCatalogApplicationService catalogService,
-                DungeonAuthoredApplicationService authoredService
-        ) {
-            this.catalogService = Objects.requireNonNull(catalogService, "catalogService");
-            this.authoredService = Objects.requireNonNull(authoredService, "authoredService");
-        }
-
-        @Override
-        public void searchMaps(String query) {
-            catalogService.catalog(new DungeonMapCatalogCommand.Search(query));
-        }
-
-        @Override
-        public void createMap(String mapName) {
-            catalogService.catalog(new DungeonMapCatalogCommand.CreateMap(mapName));
-        }
-
-        @Override
-        public void renameMap(DungeonEditorWorkspaceValues.MapId mapId, String mapName) {
-            catalogService.catalog(new DungeonMapCatalogCommand.RenameMap(domainMapId(mapId), mapName));
-        }
-
-        @Override
-        public void deleteMap(DungeonEditorWorkspaceValues.MapId mapId) {
-            catalogService.catalog(new DeleteDungeonMapCommand(domainMapId(mapId)));
-        }
-
-        @Override
-        public void loadMap(DungeonEditorWorkspaceValues.MapId mapId) {
-            authoredService.refreshAuthored(new DungeonAuthoredReadCommand.MapSelection(domainMapId(mapId)));
-        }
-
-        @Override
-        public void describeSelection(
-                DungeonEditorWorkspaceValues.MapId mapId,
-                DungeonTopologyRef topologyRef,
-                long clusterId,
-                boolean clusterSelection
-        ) {
-            authoredService.refreshAuthored(new DungeonAuthoredReadCommand.DescribeSelection(
-                    domainMapId(mapId),
-                    DungeonEditorWorkspaceTopologyBoundaryTranslationHelper.toDomainTopologyRef(topologyRef),
-                    clusterId,
-                    clusterSelection));
-        }
-
-        @Override
-        public void previewOperation(
-                DungeonEditorWorkspaceValues.MapId mapId,
-                DungeonEditorSessionValues.Preview preview
-        ) {
-            applyMutation(DungeonAuthoredMutationCommand.Action.PREVIEW, mapId, preview);
-        }
-
-        @Override
-        public void applyOperation(
-                DungeonEditorWorkspaceValues.MapId mapId,
-                DungeonEditorSessionValues.Preview preview
-        ) {
-            applyMutation(DungeonAuthoredMutationCommand.Action.APPLY, mapId, preview);
-        }
-
-        @Override
-        public void saveRoomNarration(
-                DungeonEditorWorkspaceValues.MapId mapId,
-                DungeonEditorRoomNarrationInput roomNarration
-        ) {
-            authoredService.mutateAuthored(new DungeonAuthoredMutationCommand.Operation(
-                    DungeonAuthoredMutationCommand.Action.APPLY,
-                    domainMapId(mapId),
-                    new DungeonEditorOperation.SaveRoomNarration(
-                            roomNarration.roomId(),
-                            roomNarration.visualDescription(),
-                            roomNarration.exits().stream()
-                                    .map(DungeonEditorWorkspaceInspectorBoundaryTranslationHelper::toDomainRoomExit)
-                                    .toList())));
-        }
-
-        private void applyMutation(
-                DungeonAuthoredMutationCommand.Action action,
-                DungeonEditorWorkspaceValues.MapId mapId,
-                DungeonEditorSessionValues.Preview preview
-        ) {
-            DungeonEditorOperation operation =
-                    DungeonEditorSessionOperationBoundaryTranslationHelper.toDungeonOperation(preview);
-            if (operation != null) {
-                authoredService.mutateAuthored(new DungeonAuthoredMutationCommand.Operation(
-                        action,
-                        domainMapId(mapId),
-                        operation));
-            }
-        }
-
-        private static DungeonMapId domainMapId(DungeonEditorWorkspaceValues.MapId mapId) {
-            return Objects.requireNonNull(
-                    DungeonEditorWorkspaceMapBoundaryTranslationHelper.toDomainMapId(mapId),
-                    "domainMapId");
-        }
+    private static ApplyDungeonMapCatalogUseCase mapCatalogUseCase(ServiceRegistry registry) {
+        DungeonMapRepository repository = registry.require(DungeonMapRepository.class);
+        return new ApplyDungeonMapCatalogUseCase(
+                new SearchDungeonMapsUseCase(repository),
+                new CreateDungeonMapUseCase(repository),
+                new RenameDungeonMapUseCase(repository),
+                new DeleteDungeonMapUseCase(repository));
     }
 
-    private static final class EditorDungeonFactsSource implements DungeonEditorDungeonPort.DungeonFactsSource {
+    private static RefreshDungeonAuthoredUseCase refreshDungeonAuthoredUseCase(ServiceRegistry registry) {
+        LoadDungeonMapUseCase loadDungeonMapUseCase = loadDungeonMapUseCase(registry);
+        PublishDungeonEditorHandlesUseCase publishDungeonEditorHandlesUseCase = new PublishDungeonEditorHandlesUseCase();
+        BuildDungeonDerivedStateUseCase derive = new BuildDungeonDerivedStateUseCase();
+        AssembleDungeonSnapshotUseCase assembleDungeonSnapshotUseCase = new AssembleDungeonSnapshotUseCase(derive);
+        InspectDungeonSelectionUseCase inspectDungeonSelectionUseCase = new InspectDungeonSelectionUseCase(derive);
+        return new RefreshDungeonAuthoredUseCase(new LoadDungeonSnapshotUseCase(
+                loadDungeonMapUseCase,
+                assembleDungeonSnapshotUseCase,
+                publishDungeonEditorHandlesUseCase,
+                inspectDungeonSelectionUseCase));
+    }
 
-        private final PublishedIntakeState state = new PublishedIntakeState();
-
-        private EditorDungeonFactsSource(
-                DungeonMapCatalogModel catalogModel,
-                DungeonAuthoredReadModel authoredReadModel,
-                DungeonAuthoredMutationModel authoredMutationModel
-        ) {
-            DungeonMapCatalogModel catalog = Objects.requireNonNull(catalogModel, "catalogModel");
-            DungeonAuthoredReadModel authoredRead = Objects.requireNonNull(authoredReadModel, "authoredReadModel");
-            DungeonAuthoredMutationModel authoredMutation =
-                    Objects.requireNonNull(authoredMutationModel, "authoredMutationModel");
-            state.replaceCatalog(catalog.current());
-            applyReadResult(authoredRead.current());
-            state.replaceMutation(authoredMutation.current());
-            catalog.subscribe(state::replaceCatalog);
-            authoredRead.subscribe(this::applyReadResult);
-            authoredMutation.subscribe(state::replaceMutation);
-        }
-
-        @Override
-        public List<MapSummary> mapSummaries() {
-            if (state.catalog() instanceof DungeonMapCatalogResponse.MapList mapList) {
-                return mapList.maps().stream()
-                        .map(DungeonEditorWorkspaceMapBoundaryTranslationHelper::toWorkspaceMapSummary)
-                        .toList();
-            }
-            return List.of();
-        }
-
-        @Override
-        public DungeonEditorWorkspaceValues.@Nullable MapId mutationMapId() {
-            if (state.catalog() instanceof DungeonMapCatalogResponse.MapMutation mutation) {
-                return DungeonEditorWorkspaceMapBoundaryTranslationHelper.toWorkspaceMapId(mutation.mapId());
-            }
-            return null;
-        }
-
-        @Override
-        public @Nullable MapSnapshot committedSnapshot() {
-            DungeonSnapshot snapshot = state.committedSnapshot();
-            return snapshot == null ? null : DungeonEditorWorkspaceMapBoundaryTranslationHelper.toWorkspaceMapSnapshot(snapshot.map());
-        }
-
-        @Override
-        public DungeonEditorSessionSnapshot.@Nullable SurfaceData currentSurface(
-                DungeonEditorWorkspaceValues.@Nullable MapId mapId,
-                DungeonEditorSessionValues.Selection selection,
-                DungeonEditorSessionValues.Preview preview
-        ) {
-            DungeonSnapshot committedSnapshot = state.committedSnapshot();
-            if (mapId == null || committedSnapshot == null) {
-                return null;
-            }
-            MapSnapshot committedMap =
-                    DungeonEditorWorkspaceMapBoundaryTranslationHelper.toWorkspaceMapSnapshot(committedSnapshot.map());
-            MapSnapshot previewMap = previewMap(preview, committedMap);
-            return new DungeonEditorSessionSnapshot.SurfaceData(
-                    committedSnapshot.mapName(),
-                    committedSnapshot.revision(),
-                    committedMap,
-                    previewMap,
-                    inspector(selection));
-        }
-
-        @Override
-        public String mutationStatusText() {
-            return statusFromMessages(operationResult());
-        }
-
-        @Override
-        public String previewStatusText(DungeonEditorSessionValues.Preview preview) {
-            return preview == DungeonEditorSessionValues.Preview.none() ? "" : statusFromMessages(operationResult());
-        }
-
-        private @Nullable MapSnapshot previewMap(
-                DungeonEditorSessionValues.Preview preview,
-                MapSnapshot committedMap
-        ) {
-            DungeonOperationResult previewResult = operationResult();
-            MapSnapshot candidate = preview == DungeonEditorSessionValues.Preview.none() || previewResult == null
-                    ? null
-                    : DungeonEditorWorkspaceMapBoundaryTranslationHelper.toWorkspacePreviewMap(previewResult.snapshot());
-            return candidate != null && candidate.equals(committedMap) ? null : candidate;
-        }
-
-        private DungeonEditorWorkspaceValues.@Nullable Inspector inspector(
-                DungeonEditorSessionValues.Selection selection
-        ) {
-            DungeonEditorSessionValues.Selection safeSelection = selection == null
-                    ? DungeonEditorSessionValues.Selection.empty()
-                    : selection;
-            if (safeSelection.topologyRef().equals(DungeonTopologyElementRef.empty())
-                    && !safeSelection.clusterSelection()) {
-                return null;
-            }
-            return DungeonEditorWorkspaceInspectorBoundaryTranslationHelper.toWorkspaceInspector(state.inspector());
-        }
-
-        private @Nullable DungeonOperationResult operationResult() {
-            if (state.mutation() instanceof DungeonAuthoredMutationResult.Operation operation) {
-                return operation.result();
-            }
-            return null;
-        }
-
-        private void applyReadResult(@Nullable DungeonAuthoredReadResult result) {
-            if (result instanceof DungeonAuthoredReadResult.CommittedSnapshot committedSnapshot) {
-                state.replaceCommittedSnapshot(committedSnapshot.snapshot());
-            } else if (result instanceof DungeonAuthoredReadResult.SelectionInspector selectionInspector) {
-                state.replaceInspector(selectionInspector.inspector());
-            }
-        }
-
-        private static String statusFromMessages(@Nullable DungeonOperationResult result) {
-            if (result == null) {
-                return "";
-            }
-            if (!result.reactionMessages().isEmpty()) {
-                return result.reactionMessages().getFirst();
-            }
-            if (!result.validationMessages().isEmpty()) {
-                return result.validationMessages().getFirst();
-            }
-            return "";
-        }
-
-        private static final class PublishedIntakeState {
-            private DungeonMapCatalogResponse catalog;
-            private @Nullable DungeonSnapshot committedSnapshot;
-            private @Nullable DungeonInspectorSnapshot inspector;
-            private DungeonAuthoredMutationResult mutation;
-
-            private PublishedIntakeState() {
-                catalog = new DungeonMapCatalogResponse.MapList(List.of());
-                mutation = new DungeonAuthoredMutationResult.Operation(null);
-            }
-
-            private DungeonMapCatalogResponse catalog() {
-                return catalog;
-            }
-
-            private @Nullable DungeonSnapshot committedSnapshot() {
-                return committedSnapshot;
-            }
-
-            private @Nullable DungeonInspectorSnapshot inspector() {
-                return inspector;
-            }
-
-            private DungeonAuthoredMutationResult mutation() {
-                return mutation;
-            }
-
-            private void replaceCatalog(DungeonMapCatalogResponse catalog) {
-                this.catalog = catalog;
-            }
-
-            private void replaceCommittedSnapshot(
-                    @Nullable DungeonSnapshot committedSnapshot
-            ) {
-                this.committedSnapshot = committedSnapshot;
-            }
-
-            private void replaceInspector(@Nullable DungeonInspectorSnapshot inspector) {
-                this.inspector = inspector;
-            }
-
-            private void replaceMutation(DungeonAuthoredMutationResult mutation) {
-                this.mutation = mutation;
-            }
-        }
+    private static ApplyDungeonAuthoredMutationUseCase authoredMutationUseCase(ServiceRegistry registry) {
+        LoadDungeonMapUseCase loadDungeonMapUseCase = loadDungeonMapUseCase(registry);
+        PublishDungeonEditorHandlesUseCase publishDungeonEditorHandlesUseCase = new PublishDungeonEditorHandlesUseCase();
+        BuildDungeonDerivedStateUseCase derive = new BuildDungeonDerivedStateUseCase();
+        AssembleDungeonSnapshotUseCase assembleDungeonSnapshotUseCase = new AssembleDungeonSnapshotUseCase(derive);
+        return new ApplyDungeonAuthoredMutationUseCase(new ApplyDungeonEditorOperationUseCase(
+                loadDungeonMapUseCase,
+                registry.require(DungeonMapRepository.class),
+                derive,
+                assembleDungeonSnapshotUseCase,
+                publishDungeonEditorHandlesUseCase));
     }
 
     private TravelRuntimeComponent travelRuntimeComponent(ServiceRegistry registry) {
@@ -803,7 +546,8 @@ final class DungeonServiceAssembly {
     private static final class DungeonPublishedState implements
             DungeonAuthoredApplicationService.AuthoredPublication,
             DungeonCatalogApplicationService.CatalogPublication,
-            DungeonTravelApplicationService.TravelPublication {
+            DungeonTravelApplicationService.TravelPublication,
+            DungeonAuthoredPublishedStateRepository {
 
         private static final String DEFAULT_DUNGEON_NAME = "Dungeon";
 
@@ -846,6 +590,11 @@ final class DungeonServiceAssembly {
 
         @Override
         public void publishSnapshot(LoadDungeonSnapshotUseCase.DungeonSnapshotData snapshot) {
+            publishSnapshot(snapshotPublication(snapshot));
+        }
+
+        @Override
+        public void publishSnapshot(DungeonAuthoredPublishedStateRepository.SnapshotPublication snapshot) {
             if (snapshot != null) {
                 authoredRead.publish(new DungeonAuthoredReadResult.CommittedSnapshot(dungeonSnapshot(snapshot)));
             }
@@ -853,6 +602,11 @@ final class DungeonServiceAssembly {
 
         @Override
         public void publishInspector(LoadDungeonSnapshotUseCase.InspectorSnapshotData inspector) {
+            publishInspector(inspectorPublication(inspector));
+        }
+
+        @Override
+        public void publishInspector(DungeonAuthoredPublishedStateRepository.InspectorPublication inspector) {
             if (inspector != null) {
                 authoredRead.publish(new DungeonAuthoredReadResult.SelectionInspector(new DungeonInspectorSnapshot(
                         inspector.title(),
@@ -864,6 +618,11 @@ final class DungeonServiceAssembly {
 
         @Override
         public void publishMutation(ApplyDungeonEditorOperationUseCase.OperationResultData result) {
+            publishMutation(mutationPublication(result));
+        }
+
+        @Override
+        public void publishMutation(DungeonAuthoredPublishedStateRepository.MutationPublication result) {
             if (result != null) {
                 authoredMutation.publish(new DungeonAuthoredMutationResult.Operation(new DungeonOperationResult(
                         dungeonSnapshot(result.snapshot()),
@@ -874,6 +633,11 @@ final class DungeonServiceAssembly {
 
         @Override
         public void publishSearch(ApplyDungeonMapCatalogUseCase.MapCatalogResult result) {
+            publishSearch(catalogPublication(result));
+        }
+
+        @Override
+        public void publishSearch(DungeonAuthoredPublishedStateRepository.CatalogPublication result) {
             mapCatalog.publish(new DungeonMapCatalogResponse.MapList(result == null
                     ? List.of()
                     : result.maps().stream().map(DungeonPublishedState::summary).toList()));
@@ -961,8 +725,80 @@ final class DungeonServiceAssembly {
             return new DungeonMapCatalogResponse.MapMutation(kind, id(mapId));
         }
 
-        private static DungeonMapSummary summary(SearchDungeonMapsUseCase.MapSummary map) {
+        private static DungeonAuthoredPublishedStateRepository.CatalogPublication catalogPublication(
+                ApplyDungeonMapCatalogUseCase.MapCatalogResult result
+        ) {
+            return new DungeonAuthoredPublishedStateRepository.CatalogPublication(result == null
+                    ? List.of()
+                    : result.maps().stream().map(DungeonPublishedState::summaryPublication).toList());
+        }
+
+        private static DungeonAuthoredPublishedStateRepository.MapSummaryPublication summaryPublication(
+                SearchDungeonMapsUseCase.MapSummary mapSummary
+        ) {
+            return new DungeonAuthoredPublishedStateRepository.MapSummaryPublication(
+                    mapSummary.mapId(),
+                    mapSummary.mapName(),
+                    mapSummary.revision());
+        }
+
+        private static DungeonMapSummary summary(DungeonAuthoredPublishedStateRepository.MapSummaryPublication map) {
             return new DungeonMapSummary(id(map.mapId()), map.mapName(), revision(map.revision()));
+        }
+
+        private static DungeonAuthoredPublishedStateRepository.SnapshotPublication snapshotPublication(
+                LoadDungeonSnapshotUseCase.DungeonSnapshotData snapshot
+        ) {
+            return snapshot == null
+                    ? null
+                    : new DungeonAuthoredPublishedStateRepository.SnapshotPublication(
+                    snapshot.mapName(),
+                    snapshot.derived(),
+                    snapshot.editorHandles(),
+                    snapshot.revision());
+        }
+
+        private static DungeonAuthoredPublishedStateRepository.InspectorPublication inspectorPublication(
+                LoadDungeonSnapshotUseCase.InspectorSnapshotData inspector
+        ) {
+            return inspector == null
+                    ? null
+                    : new DungeonAuthoredPublishedStateRepository.InspectorPublication(
+                    inspector.title(),
+                    inspector.description(),
+                    inspector.facts(),
+                    inspector.roomNarrations().stream().map(DungeonPublishedState::roomNarrationPublication).toList());
+        }
+
+        private static DungeonAuthoredPublishedStateRepository.RoomNarrationPublication roomNarrationPublication(
+                LoadDungeonSnapshotUseCase.RoomNarrationData roomNarration
+        ) {
+            return new DungeonAuthoredPublishedStateRepository.RoomNarrationPublication(
+                    roomNarration.roomId(),
+                    roomNarration.roomName(),
+                    roomNarration.visualDescription(),
+                    roomNarration.exits().stream().map(DungeonPublishedState::roomExitPublication).toList());
+        }
+
+        private static DungeonAuthoredPublishedStateRepository.RoomExitNarrationPublication roomExitPublication(
+                LoadDungeonSnapshotUseCase.RoomExitNarrationData exit
+        ) {
+            return new DungeonAuthoredPublishedStateRepository.RoomExitNarrationPublication(
+                    exit.label(),
+                    exit.cell(),
+                    exit.direction(),
+                    exit.description());
+        }
+
+        private static DungeonAuthoredPublishedStateRepository.MutationPublication mutationPublication(
+                ApplyDungeonEditorOperationUseCase.OperationResultData result
+        ) {
+            return result == null
+                    ? null
+                    : new DungeonAuthoredPublishedStateRepository.MutationPublication(
+                    snapshotPublication(result.snapshot()),
+                    result.validationMessages(),
+                    result.reactionMessages());
         }
 
         private static List<DungeonInspectorSnapshot.RoomNarrationCard> roomNarrations(
@@ -983,7 +819,39 @@ final class DungeonServiceAssembly {
                     .toList();
         }
 
+        private static List<DungeonInspectorSnapshot.RoomNarrationCard> roomNarrations(
+                DungeonAuthoredPublishedStateRepository.InspectorPublication snapshot
+        ) {
+            return snapshot.roomNarrations().stream()
+                    .map(roomNarration -> new DungeonInspectorSnapshot.RoomNarrationCard(
+                            roomNarration.roomId(),
+                            roomNarration.roomName(),
+                            roomNarration.visualDescription(),
+                            roomNarration.exits().stream()
+                                    .map(exit -> new DungeonInspectorSnapshot.RoomExitNarration(
+                                            exit.label(),
+                                            cell(exit.cell()),
+                                            exit.direction().name(),
+                                            exit.description()))
+                                    .toList()))
+                    .toList();
+        }
+
         private static DungeonSnapshot dungeonSnapshot(LoadDungeonSnapshotUseCase.DungeonSnapshotData snapshot) {
+            if (snapshot == null) {
+                return defaultSnapshot();
+            }
+            DungeonDerivedState derived = snapshot.derived();
+            return new DungeonSnapshot(
+                    snapshot.mapName(),
+                    DungeonMapMode.EDITOR,
+                    mapSnapshot(derived.map(), snapshot.editorHandles()),
+                    derived.aggregates().stream().map(DungeonPublishedState::aggregateSummary).toList(),
+                    derived.relations().summaries(),
+                    revision(snapshot.revision()));
+        }
+
+        private static DungeonSnapshot dungeonSnapshot(DungeonAuthoredPublishedStateRepository.SnapshotPublication snapshot) {
             if (snapshot == null) {
                 return defaultSnapshot();
             }
