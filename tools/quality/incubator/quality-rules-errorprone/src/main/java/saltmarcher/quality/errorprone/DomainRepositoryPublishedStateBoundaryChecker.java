@@ -14,6 +14,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
 import javax.lang.model.element.VariableElement;
+import javax.lang.model.type.TypeKind;
+import javax.lang.model.type.TypeMirror;
 
 @BugPattern(
         name = "DomainRepositoryPublishedStateBoundary",
@@ -23,11 +25,22 @@ public final class DomainRepositoryPublishedStateBoundaryChecker extends BugChec
         implements BugChecker.CompilationUnitTreeMatcher {
 
     private static final Pattern REPOSITORY_PACKAGE =
-            Pattern.compile("^src\\.domain\\.[^.]+\\.model\\.[^.]+\\.repository$");
+            Pattern.compile("^src\\.domain\\.([^.]+)\\.model\\.([^.]+)\\.repository$");
+    private static final String OBJECT_TYPE = "java.lang.Object";
+    private static final List<String> FORBIDDEN_PUBLISHED_STATE_PAYLOAD_TYPES = List.of(
+            OBJECT_TYPE,
+            "java.lang.String",
+            "java.util.Collection",
+            "java.util.List",
+            "java.util.Map",
+            "java.util.Optional",
+            "java.util.Set");
 
     @Override
     public Description matchCompilationUnit(CompilationUnitTree tree, VisitorState state) {
-        if (!REPOSITORY_PACKAGE.matcher(DataArchitectureSupport.packageName(tree)).matches()) {
+        String packageName = DataArchitectureSupport.packageName(tree);
+        java.util.regex.Matcher packageMatcher = REPOSITORY_PACKAGE.matcher(packageName);
+        if (!packageMatcher.matches()) {
             return Description.NO_MATCH;
         }
         ClassTree topLevelClass = DomainRoleConcernSupport.topLevelClass(tree);
@@ -37,10 +50,15 @@ public final class DomainRepositoryPublishedStateBoundaryChecker extends BugChec
 
         String simpleName = topLevelClass.getSimpleName().toString();
         boolean publishedStateRepository = simpleName.endsWith("PublishedStateRepository");
+        RepositoryContext repositoryContext = new RepositoryContext(
+                packageMatcher.group(1),
+                packageMatcher.group(2),
+                packageName,
+                simpleName);
         List<String> violations = new ArrayList<>();
         for (Tree member : topLevelClass.getMembers()) {
             if (member instanceof MethodTree methodTree) {
-                collectMethodViolations(methodTree, publishedStateRepository, violations);
+                collectMethodViolations(methodTree, publishedStateRepository, repositoryContext, violations);
             }
         }
         if (violations.isEmpty()) {
@@ -58,6 +76,7 @@ public final class DomainRepositoryPublishedStateBoundaryChecker extends BugChec
     private static void collectMethodViolations(
             MethodTree methodTree,
             boolean publishedStateRepository,
+            RepositoryContext repositoryContext,
             List<String> violations
     ) {
         Symbol.MethodSymbol methodSymbol = ASTHelpers.getSymbol(methodTree);
@@ -65,17 +84,113 @@ public final class DomainRepositoryPublishedStateBoundaryChecker extends BugChec
             return;
         }
         String methodName = methodSymbol.getSimpleName().toString();
-        if (!publishedStateRepository && methodName.startsWith("publish")) {
+        boolean publishMethod = methodName.startsWith("publish");
+        if (!publishedStateRepository && publishMethod) {
             violations.add("method " + methodName + "() uses publish naming");
         }
-        if ("java.lang.Object".equals(methodSymbol.getReturnType().toString())) {
-            violations.add("method " + methodName + "() returns Object");
+        if (publishedStateRepository && publishMethod) {
+            collectPublishedStatePublishViolations(methodSymbol, repositoryContext, violations);
+        } else {
+            if (containsObjectChannel(methodSymbol.getReturnType())) {
+                violations.add("method " + methodName + "() returns forbidden signature type "
+                        + methodSymbol.getReturnType());
+            }
+            for (VariableElement parameter : methodSymbol.getParameters()) {
+                if (containsObjectChannel(parameter.asType())) {
+                    violations.add("method " + methodName + "() accepts forbidden signature type "
+                            + parameter.asType() + " parameter " + parameter.getSimpleName());
+                }
+            }
+        }
+    }
+
+    private static void collectPublishedStatePublishViolations(
+            Symbol.MethodSymbol methodSymbol,
+            RepositoryContext repositoryContext,
+            List<String> violations
+    ) {
+        String methodName = methodSymbol.getSimpleName().toString();
+        if (methodSymbol.getReturnType().getKind() != TypeKind.VOID) {
+            violations.add("method " + methodName + "() must return void");
+        }
+        if (methodSymbol.getParameters().isEmpty()) {
+            violations.add("method " + methodName + "() must accept a typed publication payload");
         }
         for (VariableElement parameter : methodSymbol.getParameters()) {
-            if ("java.lang.Object".equals(parameter.asType().toString())) {
-                violations.add("method " + methodName + "() accepts Object parameter "
-                        + parameter.getSimpleName());
+            TypeMirror parameterType = parameter.asType();
+            if (containsForbiddenPublishedStatePayload(parameterType)) {
+                violations.add("method " + methodName + "() accepts forbidden publication payload "
+                        + parameterType + " parameter " + parameter.getSimpleName());
+            } else if (!isAllowedPublishedStatePayload(parameterType, repositoryContext)) {
+                violations.add("method " + methodName + "() accepts non-internal publication payload "
+                        + parameterType + " parameter " + parameter.getSimpleName());
             }
+        }
+    }
+
+    private static boolean isAllowedPublishedStatePayload(TypeMirror type, RepositoryContext repositoryContext) {
+        String typeName = type.toString();
+        if (containsForbiddenPublishedStatePayload(type)) {
+            return false;
+        }
+        return typeName.startsWith(repositoryContext.modelPrefix())
+                || typeName.startsWith(repositoryContext.useCasePrefix())
+                || typeName.startsWith(repositoryContext.repositoryPrefix())
+                || typeName.startsWith(repositoryContext.repositoryNestedPrefix());
+    }
+
+    private static boolean containsObjectChannel(TypeMirror type) {
+        String typeName = type.toString();
+        return containsType(typeName, OBJECT_TYPE);
+    }
+
+    private static boolean containsForbiddenPublishedStatePayload(TypeMirror type) {
+        String typeName = type.toString();
+        if (typeName.contains(".published.")) {
+            return true;
+        }
+        for (String forbiddenType : FORBIDDEN_PUBLISHED_STATE_PAYLOAD_TYPES) {
+            if (containsType(typeName, forbiddenType)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean containsType(String typeName, String forbiddenType) {
+        return typeName.equals(forbiddenType)
+                || typeName.startsWith(forbiddenType + "<")
+                || typeName.contains("<" + forbiddenType)
+                || typeName.contains(", " + forbiddenType)
+                || typeName.contains("? extends " + forbiddenType)
+                || typeName.contains("? super " + forbiddenType);
+    }
+
+    private record RepositoryContext(
+            String context,
+            String family,
+            String packageName,
+            String simpleName
+    ) {
+
+        private String familyPrefix() {
+            return "src.domain." + context + ".model." + family;
+        }
+
+        private String modelPrefix() {
+            return familyPrefix() + ".model.";
+        }
+
+        private String useCasePrefix() {
+            return familyPrefix() + ".usecase.";
+        }
+
+        private String repositoryPrefix() {
+            return familyPrefix() + ".repository.";
+        }
+
+        private String repositoryNestedPrefix() {
+            return packageName + "." + simpleName + ".";
         }
     }
 }
