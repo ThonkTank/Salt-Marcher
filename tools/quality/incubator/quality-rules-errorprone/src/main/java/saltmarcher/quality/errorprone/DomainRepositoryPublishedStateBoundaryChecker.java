@@ -96,10 +96,11 @@ public final class DomainRepositoryPublishedStateBoundaryChecker extends BugChec
         String methodName = methodSymbol.getSimpleName().toString();
         boolean publishMethod = methodName.startsWith("publish");
         if (publishedStateRepository) {
+            if (!isPublicOrProtected(methodSymbol)) {
+                return;
+            }
             if (!publishMethod) {
-                if (isPublicOrProtected(methodSymbol)) {
-                    violations.add("public/protected method " + methodName + "() must use publish* naming");
-                }
+                violations.add("public/protected method " + methodName + "() must use publish* naming");
                 return;
             }
             collectPublishedStatePublishViolations(methodSymbol, repositoryContext, violations);
