@@ -2,63 +2,48 @@ package src.domain.dungeon.model.editor.repository;
 
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
-import src.domain.dungeon.DungeonAuthoredApplicationService;
-import src.domain.dungeon.DungeonCatalogApplicationService;
-import src.domain.dungeon.published.DeleteDungeonMapCommand;
-import src.domain.dungeon.published.DungeonAuthoredMutationCommand;
-import src.domain.dungeon.published.DungeonAuthoredReadCommand;
-import src.domain.dungeon.published.DungeonEditorOperation;
-import src.domain.dungeon.published.DungeonMapCatalogCommand;
-import src.domain.dungeon.published.DungeonMapId;
-import src.domain.dungeon.model.editor.helper.DungeonEditorSessionOperationBoundaryTranslationHelper;
 import src.domain.dungeon.model.editor.model.session.model.DungeonEditorRoomNarrationInput;
 import src.domain.dungeon.model.editor.model.session.model.DungeonEditorSessionValues;
-import src.domain.dungeon.model.editor.helper.DungeonEditorWorkspaceInspectorBoundaryTranslationHelper;
-import src.domain.dungeon.model.editor.helper.DungeonEditorWorkspaceMapBoundaryTranslationHelper;
-import src.domain.dungeon.model.editor.helper.DungeonEditorWorkspaceTopologyBoundaryTranslationHelper;
 import src.domain.dungeon.model.editor.model.workspace.model.DungeonEditorWorkspaceValues;
 import src.domain.dungeon.model.editor.model.workspace.model.DungeonEditorWorkspaceValues.MapId;
 import src.domain.dungeon.model.map.model.DungeonTopologyRef;
 
 public final class DungeonEditorDungeonRepository {
 
-    private final DungeonCatalogApplicationService catalogService;
-    private final DungeonAuthoredApplicationService authoredService;
+    private final CatalogRequests catalogRequests;
+    private final AuthoredRequests authoredRequests;
 
     public DungeonEditorDungeonRepository(
-            DungeonCatalogApplicationService catalogService,
-            DungeonAuthoredApplicationService authoredService
+            CatalogRequests catalogRequests,
+            AuthoredRequests authoredRequests
     ) {
-        this.catalogService = Objects.requireNonNull(catalogService, "catalogService");
-        this.authoredService = Objects.requireNonNull(authoredService, "authoredService");
+        this.catalogRequests = Objects.requireNonNull(catalogRequests, "catalogRequests");
+        this.authoredRequests = Objects.requireNonNull(authoredRequests, "authoredRequests");
     }
 
     public void searchMaps(String query) {
-        catalogService.catalog(new DungeonMapCatalogCommand.Search(query));
+        catalogRequests.searchMaps(query);
     }
 
     public void createMap(String mapName) {
-        catalogService.catalog(new DungeonMapCatalogCommand.CreateMap(mapName));
+        catalogRequests.createMap(mapName);
     }
 
     public void renameMap(@Nullable MapId mapId, String mapName) {
-        DungeonMapId domainId = domainMapId(mapId);
-        if (domainId != null) {
-            catalogService.catalog(new DungeonMapCatalogCommand.RenameMap(domainId, mapName));
+        if (mapId != null) {
+            catalogRequests.renameMap(mapId, mapName);
         }
     }
 
     public void deleteMap(@Nullable MapId mapId) {
-        DungeonMapId domainId = domainMapId(mapId);
-        if (domainId != null) {
-            catalogService.catalog(new DeleteDungeonMapCommand(domainId));
+        if (mapId != null) {
+            catalogRequests.deleteMap(mapId);
         }
     }
 
     public void loadMap(@Nullable MapId mapId) {
-        DungeonMapId domainId = domainMapId(mapId);
-        if (domainId != null) {
-            authoredService.refreshAuthored(new DungeonAuthoredReadCommand.MapSelection(domainId));
+        if (mapId != null) {
+            authoredRequests.loadMap(mapId);
         }
     }
 
@@ -71,54 +56,51 @@ public final class DungeonEditorDungeonRepository {
         if (mapId == null || (!topologyRef.present() && !clusterSelection)) {
             return;
         }
-        DungeonMapId domainId = domainMapId(mapId);
-        if (domainId == null) {
-            return;
-        }
-        authoredService.refreshAuthored(new DungeonAuthoredReadCommand.DescribeSelection(
-                domainId,
-                DungeonEditorWorkspaceTopologyBoundaryTranslationHelper.toDomainTopologyRef(topologyRef),
-                clusterId,
-                clusterSelection));
+        authoredRequests.describeSelection(mapId, topologyRef, clusterId, clusterSelection);
     }
 
     public void previewOperation(@Nullable MapId mapId, DungeonEditorSessionValues.Preview preview) {
-        applyMutation(DungeonAuthoredMutationCommand.Action.PREVIEW, mapId, preview);
+        if (mapId != null) {
+            authoredRequests.previewOperation(mapId, preview);
+        }
     }
 
     public void applyOperation(@Nullable MapId mapId, DungeonEditorSessionValues.Preview preview) {
-        applyMutation(DungeonAuthoredMutationCommand.Action.APPLY, mapId, preview);
+        if (mapId != null) {
+            authoredRequests.applyOperation(mapId, preview);
+        }
     }
 
     public void saveRoomNarration(@Nullable MapId mapId, DungeonEditorRoomNarrationInput roomNarration) {
-        DungeonMapId domainId = domainMapId(mapId);
-        if (domainId == null || roomNarration == null || !DungeonEditorWorkspaceValues.hasId(roomNarration.roomId())) {
+        if (mapId == null || roomNarration == null || !DungeonEditorWorkspaceValues.hasId(roomNarration.roomId())) {
             return;
         }
-        authoredService.mutateAuthored(new DungeonAuthoredMutationCommand.Operation(
-                DungeonAuthoredMutationCommand.Action.APPLY,
-                domainId,
-                new DungeonEditorOperation.SaveRoomNarration(
-                        roomNarration.roomId(),
-                        roomNarration.visualDescription(),
-                        roomNarration.exits().stream()
-                                .map(DungeonEditorWorkspaceInspectorBoundaryTranslationHelper::toDomainRoomExit)
-                                .toList())));
+        authoredRequests.saveRoomNarration(mapId, roomNarration);
     }
 
-    private void applyMutation(
-            DungeonAuthoredMutationCommand.Action action,
-            @Nullable MapId mapId,
-            DungeonEditorSessionValues.Preview preview
-    ) {
-        DungeonEditorOperation operation = DungeonEditorSessionOperationBoundaryTranslationHelper.toDungeonOperation(preview);
-        DungeonMapId domainId = domainMapId(mapId);
-        if (domainId != null && operation != null) {
-            authoredService.mutateAuthored(new DungeonAuthoredMutationCommand.Operation(action, domainId, operation));
-        }
+    public interface CatalogRequests {
+        void searchMaps(String query);
+
+        void createMap(String mapName);
+
+        void renameMap(MapId mapId, String mapName);
+
+        void deleteMap(MapId mapId);
     }
 
-    private static @Nullable DungeonMapId domainMapId(@Nullable MapId mapId) {
-        return DungeonEditorWorkspaceMapBoundaryTranslationHelper.toDomainMapId(mapId);
+    public interface AuthoredRequests {
+        void loadMap(MapId mapId);
+
+        void describeSelection(
+                MapId mapId,
+                DungeonTopologyRef topologyRef,
+                long clusterId,
+                boolean clusterSelection);
+
+        void previewOperation(MapId mapId, DungeonEditorSessionValues.Preview preview);
+
+        void applyOperation(MapId mapId, DungeonEditorSessionValues.Preview preview);
+
+        void saveRoomNarration(MapId mapId, DungeonEditorRoomNarrationInput roomNarration);
     }
 }
