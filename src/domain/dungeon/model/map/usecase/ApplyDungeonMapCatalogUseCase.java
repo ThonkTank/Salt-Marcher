@@ -1,4 +1,4 @@
-package src.domain.dungeon.application;
+package src.domain.dungeon.model.map.usecase;
 
 import java.util.List;
 import java.util.Objects;
@@ -6,10 +6,6 @@ import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.map.helper.DungeonMapCatalogPublishedProjectionHelper;
 import src.domain.dungeon.model.map.model.DungeonMapIdentity;
 import src.domain.dungeon.model.map.repository.DungeonPublishedStateRepository;
-import src.domain.dungeon.model.map.usecase.CreateDungeonMapUseCase;
-import src.domain.dungeon.model.map.usecase.DeleteDungeonMapUseCase;
-import src.domain.dungeon.model.map.usecase.RenameDungeonMapUseCase;
-import src.domain.dungeon.model.map.usecase.SearchDungeonMapsUseCase;
 import src.domain.dungeon.published.DungeonMapCatalogResponse;
 import src.domain.dungeon.published.DungeonMapSummary;
 

@@ -106,11 +106,20 @@ final class BuildDungeonRoomNarrationsUseCase {
                 link.source().label(),
                 endpoint.tile(),
                 direction,
-                room.narration().exitDescriptions().stream()
-                        .filter(exit -> matchesExitDescription(exit, endpoint.tile(), direction))
-                        .map(DungeonRoomExitDescription::description)
-                        .findFirst()
-                        .orElse("")));
+                matchingExitDescription(room, endpoint.tile(), direction)));
+    }
+
+    private static String matchingExitDescription(
+            DungeonRoom room,
+            DungeonCell roomCell,
+            DungeonEdgeDirection direction
+    ) {
+        for (DungeonRoomExitDescription exit : room.narration().exitDescriptions()) {
+            if (matchesExitDescription(exit, roomCell, direction)) {
+                return exit.description();
+            }
+        }
+        return "";
     }
 
     private static boolean matchesExitDescription(

@@ -6,9 +6,6 @@ import src.domain.dungeon.model.travel.model.session.model.TravelDungeonSession;
 import src.domain.dungeon.model.travel.model.session.model.TravelDungeonSessionSnapshot.SnapshotData;
 import src.domain.dungeon.model.travel.model.session.model.TravelDungeonSessionSurface.PositionData;
 import src.domain.dungeon.model.travel.repository.TravelDungeonSessionRepository;
-import src.domain.dungeon.model.travel.usecase.ApplyTravelDungeonMovementUseCase;
-import src.domain.dungeon.model.travel.usecase.LoadTravelDungeonSessionSurfaceUseCase;
-import src.domain.dungeon.model.travel.usecase.StabilizeTravelDungeonProjectionUseCase;
 
 public final class ApplyTravelDungeonSessionUseCase {
 

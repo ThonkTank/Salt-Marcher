@@ -1,4 +1,4 @@
-package src.domain.party;
+package src.domain.party.model.roster.repository;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -11,8 +11,6 @@ import src.domain.party.application.LoadAdventuringDaySummaryUseCase;
 import src.domain.party.application.LoadPartySnapshotUseCase;
 import src.domain.party.application.LoadPartyTravelPositionsUseCase;
 import src.domain.party.model.roster.model.PartyMutationStatus;
-import src.domain.party.model.roster.repository.PartyPublishedStateRepository;
-import src.domain.party.model.roster.repository.PartyRosterRepository;
 import src.domain.party.published.ActivePartyCompositionModel;
 import src.domain.party.published.ActivePartyCompositionResult;
 import src.domain.party.published.ActivePartyModel;
@@ -33,7 +31,7 @@ import src.domain.party.published.ReadStatus;
         "PMD.CouplingBetweenObjects",
         "PMD.TooManyMethods"
 })
-final class PartyPublishedStateRepositoryAdapter implements PartyPublishedStateRepository {
+public final class ApplicationPartyPublishedStateRepository implements PartyPublishedStateRepository {
 
     private static final String LISTENER_PARAMETER = "listener";
 
@@ -71,17 +69,19 @@ final class PartyPublishedStateRepositoryAdapter implements PartyPublishedStateR
     public final AdventuringDayCalculationModel adventuringDayCalculationModel = new AdventuringDayCalculationModel(
             this::currentAdventuringDayCalculation,
             this::subscribeAdventuringDayCalculationListener);
-    private PartySnapshotResult currentPartySnapshot = PartyBoundaryProjector.failedSnapshotResult();
-    private ActivePartyResult currentActiveParty = PartyBoundaryProjector.failedActivePartyResult();
+    private PartySnapshotResult currentPartySnapshot = PartyPublishedStateProjection.failedSnapshotResult();
+    private ActivePartyResult currentActiveParty = PartyPublishedStateProjection.failedActivePartyResult();
     private ActivePartyCompositionResult currentActivePartyComposition =
-            PartyBoundaryProjector.failedActivePartyCompositionResult();
-    private AdventuringDayResult currentAdventuringDaySummary = PartyBoundaryProjector.failedAdventuringDaySummaryResult();
-    private PartyTravelPositionsResult currentPartyTravelPositions = PartyBoundaryProjector.failedPartyTravelPositionsResult();
-    private MutationResult currentPartyMutation = PartyBoundaryProjector.defaultMutationResult();
+            PartyPublishedStateProjection.failedActivePartyCompositionResult();
+    private AdventuringDayResult currentAdventuringDaySummary =
+            PartyPublishedStateProjection.failedAdventuringDaySummaryResult();
+    private PartyTravelPositionsResult currentPartyTravelPositions =
+            PartyPublishedStateProjection.failedPartyTravelPositionsResult();
+    private MutationResult currentPartyMutation = PartyPublishedStateProjection.defaultMutationResult();
     private AdventuringDayCalculationResult currentAdventuringDayCalculation =
-            PartyBoundaryProjector.failedAdventuringDayCalculationResult();
+            PartyPublishedStateProjection.failedAdventuringDayCalculationResult();
 
-    public PartyPublishedStateRepositoryAdapter(PartyRosterRepository delegate) {
+    public ApplicationPartyPublishedStateRepository(PartyRosterRepository delegate) {
         PartyRosterRepository repository = Objects.requireNonNull(delegate, "delegate");
         this.loadPartySnapshotUseCase = new LoadPartySnapshotUseCase(repository);
         this.loadActivePartyUseCase = new LoadActivePartyUseCase(repository);
@@ -99,13 +99,13 @@ final class PartyPublishedStateRepositoryAdapter implements PartyPublishedStateR
 
     @Override
     public void publishMutationStatus(PartyMutationStatus status) {
-        currentPartyMutation = new MutationResult(PartyBoundaryProjector.mapMutationStatus(status));
+        currentPartyMutation = new MutationResult(PartyPublishedStateProjection.mapMutationStatus(status));
         notifyPartyMutationListeners(currentPartyMutation);
     }
 
     @Override
     public void publishStorageErrorMutation() {
-        currentPartyMutation = PartyBoundaryProjector.storageErrorMutationResult();
+        currentPartyMutation = PartyPublishedStateProjection.storageErrorMutationResult();
         notifyPartyMutationListeners(currentPartyMutation);
     }
 
@@ -134,41 +134,44 @@ final class PartyPublishedStateRepositoryAdapter implements PartyPublishedStateR
         try {
             return new PartySnapshotResult(
                     ReadStatus.SUCCESS,
-                    PartyBoundaryProjector.mapSnapshot(loadPartySnapshotUseCase.execute()));
+                    PartyPublishedStateProjection.mapSnapshot(loadPartySnapshotUseCase.execute()));
         } catch (IllegalStateException exception) {
-            return PartyBoundaryProjector.failedSnapshotResult();
+            return PartyPublishedStateProjection.failedSnapshotResult();
         }
     }
 
     private ActivePartyResult readActivePartyResult() {
         try {
-            return PartyBoundaryProjector.mapActivePartyResult(loadActivePartyUseCase.execute());
+            return PartyPublishedStateProjection.mapActivePartyResult(loadActivePartyUseCase.execute());
         } catch (IllegalStateException exception) {
-            return PartyBoundaryProjector.failedActivePartyResult();
+            return PartyPublishedStateProjection.failedActivePartyResult();
         }
     }
 
     private ActivePartyCompositionResult readActivePartyCompositionResult() {
         try {
-            return PartyBoundaryProjector.mapActivePartyCompositionResult(loadActivePartyCompositionUseCase.execute());
+            return PartyPublishedStateProjection.mapActivePartyCompositionResult(
+                    loadActivePartyCompositionUseCase.execute());
         } catch (IllegalStateException exception) {
-            return PartyBoundaryProjector.failedActivePartyCompositionResult();
+            return PartyPublishedStateProjection.failedActivePartyCompositionResult();
         }
     }
 
     private AdventuringDayResult readAdventuringDaySummaryResult() {
         try {
-            return PartyBoundaryProjector.mapAdventuringDaySummaryResult(loadAdventuringDaySummaryUseCase.execute());
+            return PartyPublishedStateProjection.mapAdventuringDaySummaryResult(
+                    loadAdventuringDaySummaryUseCase.execute());
         } catch (IllegalStateException exception) {
-            return PartyBoundaryProjector.failedAdventuringDaySummaryResult();
+            return PartyPublishedStateProjection.failedAdventuringDaySummaryResult();
         }
     }
 
     private PartyTravelPositionsResult readPartyTravelPositionsResult() {
         try {
-            return PartyBoundaryProjector.mapTravelPositionsResult(loadPartyTravelPositionsUseCase.execute(List.of()));
+            return PartyPublishedStateProjection.mapTravelPositionsResult(
+                    loadPartyTravelPositionsUseCase.execute(List.of()));
         } catch (IllegalStateException exception) {
-            return PartyBoundaryProjector.failedPartyTravelPositionsResult();
+            return PartyPublishedStateProjection.failedPartyTravelPositionsResult();
         }
     }
 
@@ -177,11 +180,11 @@ final class PartyPublishedStateRepositoryAdapter implements PartyPublishedStateR
             int totalGroupXp
     ) {
         try {
-            return PartyBoundaryProjector.mapAdventuringDayCalculationResult(calculateAdventuringDayUseCase.execute(
+            return PartyPublishedStateProjection.mapAdventuringDayCalculationResult(calculateAdventuringDayUseCase.execute(
                     levels == null ? List.of() : levels,
                     totalGroupXp));
         } catch (IllegalStateException exception) {
-            return PartyBoundaryProjector.mapAdventuringDayCalculationResult(
+            return PartyPublishedStateProjection.mapAdventuringDayCalculationResult(
                     calculateAdventuringDayUseCase.execute(List.of(), 0));
         }
     }

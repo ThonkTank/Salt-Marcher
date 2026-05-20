@@ -5,16 +5,19 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-public record TravelDungeonModel(
-        Supplier<TravelDungeonSnapshot> currentSupplier,
-        Function<Consumer<TravelDungeonSnapshot>, Runnable> subscribeAction
-) {
+public final class TravelDungeonModel {
 
-    public TravelDungeonModel {
-        currentSupplier = currentSupplier == null
+    private final Supplier<TravelDungeonSnapshot> currentSupplier;
+    private final Function<Consumer<TravelDungeonSnapshot>, Runnable> subscribeAction;
+
+    public TravelDungeonModel(
+            Supplier<TravelDungeonSnapshot> currentSupplier,
+            Function<Consumer<TravelDungeonSnapshot>, Runnable> subscribeAction
+    ) {
+        this.currentSupplier = currentSupplier == null
                 ? TravelDungeonSnapshot::empty
                 : currentSupplier;
-        subscribeAction = subscribeAction == null
+        this.subscribeAction = subscribeAction == null
                 ? listener -> () -> { }
                 : subscribeAction;
     }

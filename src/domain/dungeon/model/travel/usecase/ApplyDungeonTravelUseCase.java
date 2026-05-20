@@ -1,4 +1,4 @@
-package src.domain.dungeon.application;
+package src.domain.dungeon.model.travel.usecase;
 
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;

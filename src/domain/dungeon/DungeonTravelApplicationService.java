@@ -2,10 +2,10 @@ package src.domain.dungeon;
 
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
-import src.domain.dungeon.application.ApplyDungeonTravelUseCase;
 import src.domain.dungeon.model.map.model.DungeonCell;
 import src.domain.dungeon.model.map.model.DungeonMapIdentity;
 import src.domain.dungeon.model.map.model.DungeonTravelPositionFacts;
+import src.domain.dungeon.model.travel.usecase.ApplyDungeonTravelUseCase;
 import src.domain.dungeon.published.DungeonCellRef;
 import src.domain.dungeon.published.DungeonMapId;
 import src.domain.dungeon.published.DungeonTravelCommand;

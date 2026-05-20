@@ -24,7 +24,10 @@ public final class LoadDungeonMapUseCase {
 
     public DungeonMap execute(@Nullable DungeonMapIdentity mapId) {
         if (mapId != null) {
-            return repository.findById(mapId).orElseGet(this::execute);
+            java.util.Optional<DungeonMap> map = repository.findById(mapId);
+            if (map.isPresent()) {
+                return map.get();
+            }
         }
         return execute();
     }

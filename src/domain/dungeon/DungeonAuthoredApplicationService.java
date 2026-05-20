@@ -1,9 +1,9 @@
 package src.domain.dungeon;
 
 import java.util.Objects;
-import src.domain.dungeon.application.ApplyDungeonAuthoredMutationUseCase;
-import src.domain.dungeon.application.ApplyDungeonEditorOperationUseCase;
-import src.domain.dungeon.application.RefreshDungeonAuthoredUseCase;
+import src.domain.dungeon.model.map.usecase.ApplyDungeonEditorOperationUseCase;
+import src.domain.dungeon.model.map.usecase.ApplyDungeonAuthoredMutationUseCase;
+import src.domain.dungeon.model.map.usecase.RefreshDungeonAuthoredUseCase;
 import src.domain.dungeon.model.map.model.DungeonCell;
 import src.domain.dungeon.model.map.model.DungeonClusterBoundaryKind;
 import src.domain.dungeon.model.map.model.DungeonCorridorEndpoint;

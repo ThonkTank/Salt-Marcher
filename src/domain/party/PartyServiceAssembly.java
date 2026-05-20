@@ -13,6 +13,7 @@ import src.domain.party.application.SetPartyMembershipUseCase;
 import src.domain.party.application.UpdateCharacterUseCase;
 import src.domain.party.model.roster.repository.PartyPublishedStateRepository;
 import src.domain.party.model.roster.repository.PartyRosterRepository;
+import src.domain.party.model.roster.repository.ApplicationPartyPublishedStateRepository;
 import src.domain.party.published.ActivePartyCompositionModel;
 import src.domain.party.published.ActivePartyModel;
 import src.domain.party.published.AdventuringDayCalculationModel;
@@ -23,12 +24,12 @@ import src.domain.party.published.PartyTravelPositionsModel;
 
 final class PartyServiceAssembly {
 
-    private final AtomicReference<PartyPublishedStateRepositoryAdapter> publishedState =
+    private final AtomicReference<ApplicationPartyPublishedStateRepository> publishedState =
             new AtomicReference<>();
 
     PartyApplicationService createApplicationService(ServiceRegistry services) {
         PartyRosterRepository repository = services.require(PartyRosterRepository.class);
-        PartyPublishedStateRepositoryAdapter state = publishedState(services);
+        ApplicationPartyPublishedStateRepository state = publishedState(services);
         PartyPublishedStateRepository publishedStateRepository = state;
         return new PartyApplicationService(
                 new CreateCharacterUseCase(repository, publishedStateRepository),
@@ -70,13 +71,13 @@ final class PartyServiceAssembly {
         return publishedState(services).adventuringDayCalculationModel;
     }
 
-    private PartyPublishedStateRepositoryAdapter publishedState(ServiceRegistry services) {
-        PartyPublishedStateRepositoryAdapter existing = publishedState.get();
+    private ApplicationPartyPublishedStateRepository publishedState(ServiceRegistry services) {
+        ApplicationPartyPublishedStateRepository existing = publishedState.get();
         if (existing != null) {
             return existing;
         }
-        PartyPublishedStateRepositoryAdapter candidate =
-                new PartyPublishedStateRepositoryAdapter(services.require(PartyRosterRepository.class));
+        ApplicationPartyPublishedStateRepository candidate =
+                new ApplicationPartyPublishedStateRepository(services.require(PartyRosterRepository.class));
         return publishedState.compareAndSet(null, candidate)
                 ? candidate
                 : java.util.Objects.requireNonNull(publishedState.get(), "publishedState");

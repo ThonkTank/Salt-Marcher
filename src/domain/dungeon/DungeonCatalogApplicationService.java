@@ -2,8 +2,8 @@ package src.domain.dungeon;
 
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
-import src.domain.dungeon.application.ApplyDungeonMapCatalogUseCase;
 import src.domain.dungeon.model.map.model.DungeonMapIdentity;
+import src.domain.dungeon.model.map.usecase.ApplyDungeonMapCatalogUseCase;
 import src.domain.dungeon.published.DeleteDungeonMapCommand;
 import src.domain.dungeon.published.DungeonMapCatalogCommand;
 import src.domain.dungeon.published.DungeonMapId;

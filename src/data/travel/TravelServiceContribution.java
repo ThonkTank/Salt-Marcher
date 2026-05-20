@@ -5,8 +5,7 @@ import shell.api.ServiceRegistry;
 import src.data.travel.repository.ApplicationTravelDungeonSessionRepository;
 import src.data.travel.repository.ApplicationTravelPartyStateRepository;
 import src.domain.dungeon.DungeonTravelApplicationService;
-import src.domain.dungeon.DungeonTravelRuntimeApplicationService;
-import src.domain.dungeon.model.travel.usecase.ApplyTravelDungeonSessionUseCase;
+import src.domain.dungeon.model.travel.repository.TravelDungeonSessionRepository;
 import src.domain.dungeon.published.DungeonTravelModel;
 import src.domain.party.PartyApplicationService;
 import src.domain.party.published.ActivePartyModel;
@@ -22,12 +21,11 @@ public final class TravelServiceContribution implements ServiceContribution {
     @Override
     public void register(ServiceRegistry.Builder services) {
         services.registerFactory(
-                DungeonTravelRuntimeApplicationService.class,
-                registry -> new DungeonTravelRuntimeApplicationService(new ApplyTravelDungeonSessionUseCase(
-                        new ApplicationTravelDungeonSessionRepository(
-                                partyStateRepository(registry),
-                                registry.require(DungeonTravelApplicationService.class),
-                                registry.require(DungeonTravelModel.class)))));
+                TravelDungeonSessionRepository.class,
+                registry -> new ApplicationTravelDungeonSessionRepository(
+                        partyStateRepository(registry),
+                        registry.require(DungeonTravelApplicationService.class),
+                        registry.require(DungeonTravelModel.class)));
     }
 
     private static ApplicationTravelPartyStateRepository partyStateRepository(ServiceRegistry registry) {

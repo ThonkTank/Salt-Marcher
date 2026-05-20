@@ -174,9 +174,11 @@ public final class PublishDungeonEditorHandlesUseCase {
     }
 
     private static @Nullable DungeonRoomCluster cluster(DungeonMap dungeonMap, long clusterId) {
-        return dungeonMap.topology().roomClusters().stream()
-                .filter(candidate -> candidate.clusterId() == clusterId)
-                .findFirst()
-                .orElse(null);
+        for (DungeonRoomCluster candidate : dungeonMap.topology().roomClusters()) {
+            if (candidate.clusterId() == clusterId) {
+                return candidate;
+            }
+        }
+        return null;
     }
 }

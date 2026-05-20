@@ -44,8 +44,16 @@ public final class StabilizeTravelDungeonProjectionUseCase {
     private static List<Integer> levelsFrom(SurfaceData surface, int fallbackLevel) {
         SortedSet<Integer> levels = new TreeSet<>();
         MapData map = surface.map();
-        map.areas().forEach(area -> area.cells().forEach(cell -> levels.add(cell.level())));
-        map.features().forEach(feature -> feature.cells().forEach(cell -> levels.add(cell.level())));
+        for (var area : map.areas()) {
+            for (var cell : area.cells()) {
+                levels.add(cell.level());
+            }
+        }
+        for (var feature : map.features()) {
+            for (var cell : feature.cells()) {
+                levels.add(cell.level());
+            }
+        }
         if (levels.isEmpty()) {
             levels.add(fallbackLevel);
         }

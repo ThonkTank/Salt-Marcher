@@ -23,6 +23,7 @@ public final class DungeonServiceContribution implements ServiceContribution {
         services.registerFactory(DungeonAuthoredApplicationService.class, assembly::createAuthoredApplicationService);
         services.registerFactory(DungeonCatalogApplicationService.class, assembly::createCatalogApplicationService);
         services.registerFactory(DungeonTravelApplicationService.class, assembly::createTravelApplicationService);
+        services.registerFactory(DungeonTravelRuntimeApplicationService.class, assembly::createTravelRuntimeApplicationService);
         services.registerFactory(DungeonAuthoredReadModel.class, assembly::authoredReadModel);
         services.registerFactory(DungeonAuthoredMutationModel.class, assembly::authoredMutationModel);
         services.registerFactory(DungeonMapCatalogModel.class, assembly::mapCatalogModel);

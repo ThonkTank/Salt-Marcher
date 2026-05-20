@@ -1,4 +1,4 @@
-package src.domain.dungeon.application;
+package src.domain.dungeon.model.travel.usecase;
 
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
@@ -91,10 +91,7 @@ public final class MoveDungeonTravelActionUseCase {
         }
 
         private DungeonTravelMoveFacts move(String actionId) {
-            DungeonTravelActionFacts action = currentSurface.actions().stream()
-                    .filter(candidate -> candidate.actionId().equals(actionId))
-                    .findFirst()
-                    .orElse(null);
+            DungeonTravelActionFacts action = findAction(actionId);
             if (action == null) {
                 return moveResult(DungeonTravelMoveStatus.INVALID_ACTION, "Aktion ist nicht verfügbar.", currentSurface, null);
             }
@@ -102,6 +99,15 @@ public final class MoveDungeonTravelActionUseCase {
                 return moveTraversal(action);
             }
             return moveTransition(action);
+        }
+
+        private DungeonTravelActionFacts findAction(String actionId) {
+            for (DungeonTravelActionFacts candidate : currentSurface.actions()) {
+                if (candidate.actionId().equals(actionId)) {
+                    return candidate;
+                }
+            }
+            return null;
         }
 
         private DungeonTravelMoveFacts moveTraversal(DungeonTravelActionFacts action) {

@@ -1,13 +1,12 @@
-package src.domain.dungeon.application;
+package src.domain.dungeon.model.map.usecase;
 
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
-import src.domain.dungeon.application.ApplyDungeonEditorOperationUseCase.Mutation;
+import src.domain.dungeon.model.map.usecase.ApplyDungeonEditorOperationUseCase.Mutation;
 import src.domain.dungeon.model.map.helper.DungeonAuthoredPublishedProjectionHelper;
 import src.domain.dungeon.model.map.helper.DungeonPublishedMapSnapshotProjectionHelper;
 import src.domain.dungeon.model.map.model.DungeonMapIdentity;
 import src.domain.dungeon.model.map.repository.DungeonPublishedStateRepository;
-import src.domain.dungeon.model.map.usecase.LoadDungeonSnapshotUseCase;
 import src.domain.dungeon.published.DungeonAuthoredMutationResult;
 
 public final class ApplyDungeonAuthoredMutationUseCase {

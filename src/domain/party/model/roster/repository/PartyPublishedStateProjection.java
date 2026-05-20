@@ -1,4 +1,4 @@
-package src.domain.party;
+package src.domain.party.model.roster.repository;
 
 import java.util.List;
 import org.jspecify.annotations.Nullable;
@@ -55,9 +55,9 @@ import src.domain.party.published.RestMilestone;
         "PMD.CouplingBetweenObjects",
         "PMD.TooManyMethods"
 })
-final class PartyBoundaryProjector {
+final class PartyPublishedStateProjection {
 
-    private PartyBoundaryProjector() {
+    private PartyPublishedStateProjection() {
     }
 
     public static PartySnapshotResult failedSnapshotResult() {
@@ -103,8 +103,8 @@ final class PartyBoundaryProjector {
 
     public static PartySnapshot mapSnapshot(LoadPartySnapshotUseCase.PartySnapshotProjection projection) {
         return new PartySnapshot(
-                projection.activeMembers().stream().map(PartyBoundaryProjector::mapDetails).toList(),
-                projection.reserveMembers().stream().map(PartyBoundaryProjector::mapDetails).toList(),
+                projection.activeMembers().stream().map(PartyPublishedStateProjection::mapDetails).toList(),
+                projection.reserveMembers().stream().map(PartyPublishedStateProjection::mapDetails).toList(),
                 new PartySummary(
                         projection.activeMembers().size(),
                         projection.reserveMembers().size(),
@@ -114,7 +114,7 @@ final class PartyBoundaryProjector {
     public static ActivePartyResult mapActivePartyResult(List<PartyCharacter> activeMembers) {
         return new ActivePartyResult(
                 ReadStatus.SUCCESS,
-                activeMembers.stream().map(PartyBoundaryProjector::mapSummary).toList());
+                activeMembers.stream().map(PartyPublishedStateProjection::mapSummary).toList());
     }
 
     public static ActivePartyCompositionResult mapActivePartyCompositionResult(
@@ -138,7 +138,7 @@ final class PartyBoundaryProjector {
                         dayStatus.totalBudgetXp(),
                         dayStatus.consumedPercent(),
                         dayStatus.restCadenceStatuses().stream()
-                                .map(PartyBoundaryProjector::mapRestCadenceStatus)
+                                .map(PartyPublishedStateProjection::mapRestCadenceStatus)
                                 .toList()));
     }
 
@@ -146,7 +146,7 @@ final class PartyBoundaryProjector {
         return new PartyTravelPositionsResult(
                 ReadStatus.SUCCESS,
                 result.positions().stream()
-                        .map(PartyBoundaryProjector::mapTravelPosition)
+                        .map(PartyPublishedStateProjection::mapTravelPosition)
                         .toList(),
                 mapTravelLocation(result.partyTokenLocation()));
     }
@@ -269,10 +269,10 @@ final class PartyBoundaryProjector {
                 progress.shortRests(),
                 progress.longRests(),
                 progress.levelProgressions().stream()
-                        .map(PartyBoundaryProjector::mapLevelProgress)
+                        .map(PartyPublishedStateProjection::mapLevelProgress)
                         .toList(),
                 progress.events().stream()
-                        .map(PartyBoundaryProjector::mapProgressEvent)
+                        .map(PartyPublishedStateProjection::mapProgressEvent)
                         .toList());
     }
 
