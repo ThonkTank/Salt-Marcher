@@ -153,8 +153,10 @@ public final class ViewIntentHandlerBoundaryCheckers {
     ) {
         String sourceText = sourceText(tree, state);
         Set<String> forbiddenReferences = new LinkedHashSet<>();
-        for (String referencedType : ViewArchitectureSupport.collectReferencedTypes(tree)) {
-            if (isForbiddenDependencyReference(referencedType, source, sourceText)) {
+        Set<String> referencedTypes = ViewArchitectureSupport.collectReferencedTypes(tree);
+        Set<String> allowedDomainContexts = ViewArchitectureSupport.domainContextsOfApplicationServices(referencedTypes);
+        for (String referencedType : referencedTypes) {
+            if (isForbiddenDependencyReference(referencedType, source, sourceText, allowedDomainContexts)) {
                 forbiddenReferences.add(referencedType);
             }
         }
@@ -164,7 +166,8 @@ public final class ViewIntentHandlerBoundaryCheckers {
     private static boolean isForbiddenDependencyReference(
             String referencedType,
             ViewSourceDescriptor source,
-            String sourceText
+            String sourceText,
+            Set<String> allowedDomainContexts
     ) {
         if (referencedType == null || referencedType.isBlank()) {
             return false;
@@ -181,7 +184,7 @@ public final class ViewIntentHandlerBoundaryCheckers {
             return true;
         }
         if (referencedType.startsWith("src.domain.")) {
-            return !ViewArchitectureSupport.isAllowedIntentHandlerDomainBoundary(source.packageName(), referencedType);
+            return !ViewArchitectureSupport.isAllowedIntentHandlerDomainBoundary(allowedDomainContexts, referencedType);
         }
         ViewSourceDescriptor referencedSource = ViewSourceDescriptor.describeReferencedType(referencedType);
         if (!referencedSource.isRecognizedViewSource()) {

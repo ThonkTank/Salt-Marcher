@@ -42,6 +42,12 @@ public final class ViewArchitectureSupport {
     private static final Set<String> FORBIDDEN_VIEW_JDK_INFRASTRUCTURE_TYPES = Set.of(
             "java.lang.ClassLoader", "java.lang.Process", "java.lang.ProcessBuilder", "java.lang.Runtime",
             "java.lang.Thread", "java.lang.ThreadGroup", "java.util.Timer", "java.util.TimerTask");
+    private static final Set<String> PUBLISHED_WORK_VALUE_CARRIERS = Set.of(
+            "CharacterDraft", "DungeonBoundaryKind", "DungeonCellRef", "DungeonEditorBoundaryTargetRef",
+            "DungeonEditorHandleKind", "DungeonEditorHandleRef", "DungeonEditorPointerSample",
+            "DungeonEditorPointerTarget", "DungeonEditorTool", "DungeonEditorViewMode", "DungeonMapId",
+            "DungeonOverlaySettings", "DungeonTopologyElementKind", "DungeonTopologyElementRef",
+            "EncounterBuilderInputs", "MembershipState", "RestType", "SessionPlannerRestKind");
 
     private ViewArchitectureSupport() {
     }
@@ -139,9 +145,9 @@ public final class ViewArchitectureSupport {
                 && !isDomainWriteCarrier(referencedType);
     }
 
-    public static boolean isAllowedIntentHandlerDomainBoundary(String sourcePackageName, String referencedType) {
+    public static boolean isAllowedIntentHandlerDomainBoundary(Set<String> allowedDomainContexts, String referencedType) {
         return isApplicationServiceReference(referencedType)
-                || isSameFeaturePublishedBoundary(sourcePackageName, referencedType);
+                || isAllowedPublishedWorkRequestBoundary(allowedDomainContexts, referencedType);
     }
 
     public static boolean isApplicationServiceReference(String referencedType) {
@@ -446,40 +452,57 @@ public final class ViewArchitectureSupport {
         return referencedType.matches("^src\\.domain\\.[^.]+\\.published\\..*(Command|Query|Operation|Edit)(\\$.*)?$");
     }
 
-    private static boolean isSameFeaturePublishedBoundary(String sourcePackageName, String referencedType) {
-        String featureName = viewFeatureName(sourcePackageName);
-        return !featureName.isBlank()
+    public static Set<String> domainContextsOfApplicationServices(Set<String> referencedTypes) {
+        Set<String> domainContexts = new LinkedHashSet<>();
+        for (String referencedType : referencedTypes) {
+            String domainContext = applicationServiceDomainContext(referencedType);
+            if (!domainContext.isBlank()) {
+                domainContexts.add(domainContext);
+            }
+        }
+        return domainContexts;
+    }
+
+    private static boolean isAllowedPublishedWorkRequestBoundary(Set<String> allowedDomainContexts, String referencedType) {
+        String domainContext = publishedDomainContext(referencedType);
+        return !domainContext.isBlank()
+                && allowedDomainContexts.contains(domainContext)
                 && referencedType != null
-                && referencedType.startsWith("src.domain." + featureName + ".published.")
                 && isPublishedWorkRequestCarrier(referencedType);
     }
 
     private static boolean isPublishedWorkRequestCarrier(String referencedType) {
-        String simpleName = topLevelQualifiedTypeNameOf(referencedType);
-        int separator = simpleName.lastIndexOf('.');
-        if (separator >= 0) {
-            simpleName = simpleName.substring(separator + 1);
-        }
+        String simpleName = simpleNameOfTopLevelType(referencedType);
         return simpleName.endsWith("Command")
-                || simpleName.endsWith("Draft")
-                || simpleName.endsWith("Operation")
-                || simpleName.endsWith("Edit")
-                || simpleName.endsWith("State")
-                || simpleName.endsWith("Type");
+                || PUBLISHED_WORK_VALUE_CARRIERS.contains(simpleName);
     }
 
-    private static String viewFeatureName(String sourcePackageName) {
-        if (sourcePackageName == null || sourcePackageName.isBlank()) {
+    private static String applicationServiceDomainContext(String referencedType) {
+        if (!isApplicationServiceReference(referencedType)) {
             return "";
         }
-        String[] parts = sourcePackageName.split("\\.");
-        if (parts.length < 4 || !"src".equals(parts[0]) || !"view".equals(parts[1])) {
+        String[] parts = topLevelQualifiedTypeNameOf(referencedType).split("\\.");
+        return parts.length >= 3 ? parts[2] : "";
+    }
+
+    private static String publishedDomainContext(String referencedType) {
+        if (referencedType == null || referencedType.isBlank()) {
             return "";
         }
-        return switch (parts[2]) {
-            case "dropdowns", "leftbartabs", "statetabs" -> parts[3];
-            default -> "";
-        };
+        String[] parts = topLevelQualifiedTypeNameOf(referencedType).split("\\.");
+        if (parts.length < 5
+                || !"src".equals(parts[0])
+                || !"domain".equals(parts[1])
+                || !"published".equals(parts[3])) {
+            return "";
+        }
+        return parts[2];
+    }
+
+    private static String simpleNameOfTopLevelType(String referencedType) {
+        String simpleName = topLevelQualifiedTypeNameOf(referencedType);
+        int separator = simpleName.lastIndexOf('.');
+        return separator >= 0 ? simpleName.substring(separator + 1) : simpleName;
     }
 
     private static boolean isAllowedShellType(String referencedType, Set<String> allowedTypes) {

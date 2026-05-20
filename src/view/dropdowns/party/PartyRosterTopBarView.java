@@ -73,58 +73,18 @@ public final class PartyRosterTopBarView extends VBox {
         reserveSearchField.getStyleClass().add("party-search-field");
         reserveSearchField.setPromptText("Reserve durchsuchen");
         reserveSearchField.setAccessibleText("Reserve-Charaktere durchsuchen");
-        reserveSearchField.textProperty().addListener((ignored, before, after) -> publish(new PartyRosterTopBarViewInputEvent(
-                false,
-                false,
-                false,
-                0L,
-                0,
-                false,
-                false,
-                false,
-                true,
-                after)));
+        reserveSearchField.textProperty().addListener((ignored, before, after) -> publishReserveSearchChanged(after));
         restActionsPane.getStyleClass().add("party-rest-actions");
         shortRestButton.getStyleClass().add(STYLE_COMPACT);
         longRestButton.getStyleClass().add(STYLE_COMPACT);
         shortRestButton.setAccessibleText("Short Rest, fuer die aktive Party ausfuehren");
         longRestButton.setAccessibleText("Long Rest, fuer die aktive Party ausfuehren");
-        shortRestButton.setOnAction(event -> publish(new PartyRosterTopBarViewInputEvent(
-                false,
-                false,
-                false,
-                0L,
-                0,
-                false,
-                true,
-                false,
-                false,
-                "")));
-        longRestButton.setOnAction(event -> publish(new PartyRosterTopBarViewInputEvent(
-                false,
-                false,
-                false,
-                0L,
-                0,
-                false,
-                false,
-                true,
-                false,
-                "")));
+        shortRestButton.setOnAction(event -> publishShortRestRequested());
+        longRestButton.setOnAction(event -> publishLongRestRequested());
         restActionsPane.getChildren().addAll(shortRestButton, longRestButton);
         newCharacterButton.setMaxWidth(Double.MAX_VALUE);
         newCharacterButton.setAccessibleText("+ Neuer Charakter, neuen Charakter erstellen");
-        newCharacterButton.setOnAction(event -> publish(new PartyRosterTopBarViewInputEvent(
-                true,
-                false,
-                false,
-                0L,
-                0,
-                false,
-                false,
-                false,
-                false,
-                "")));
+        newCharacterButton.setOnAction(event -> publishCreateEditorRequested());
         summaryLabel.getStyleClass().add("party-summary");
         restSummaryLabel.getStyleClass().add("party-summary-rest");
         actionStatusLabel.setWrapText(true);
@@ -233,7 +193,7 @@ public final class PartyRosterTopBarView extends VBox {
                 actionsDisabled,
                 false);
         editButton.setUserData(member.id());
-        editButton.setOnAction(event -> publishMemberEvent(event, false, true, false, 0, false));
+        editButton.setOnAction(this::publishEditRequested);
 
         Button removeButton = actionButton(
                 "Entfernen",
@@ -243,7 +203,7 @@ public final class PartyRosterTopBarView extends VBox {
                 actionsDisabled,
                 false);
         removeButton.setUserData(member.id());
-        removeButton.setOnAction(event -> publishMemberEvent(event, false, false, false, 0, true));
+        removeButton.setOnAction(this::publishRemoveRequested);
 
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
@@ -279,47 +239,69 @@ public final class PartyRosterTopBarView extends VBox {
                 false);
         button.setMaxWidth(Double.MAX_VALUE);
         button.setUserData(member.id());
-        button.setOnAction(event -> publishMemberEvent(event, false, false, true, 0, false));
+        button.setOnAction(this::publishAddExistingRequested);
         return button;
     }
 
-    private void publishMemberEvent(
-            ActionEvent event,
-            boolean createEditorRequested,
-            boolean editEditorRequested,
-            boolean addExistingRequested,
-            int xpDelta,
-            boolean removeRequested
-    ) {
+    private void publishReserveSearchChanged(String reserveSearchText) {
+        publish(new PartyRosterTopBarViewInputEvent(
+                false,
+                false,
+                false,
+                0L,
+                0,
+                false,
+                false,
+                false,
+                true,
+                reserveSearchText));
+    }
+
+    private void publishShortRestRequested() {
+        publish(new PartyRosterTopBarViewInputEvent(
+                false, false, false, 0L, 0, false, true, false, false, ""));
+    }
+
+    private void publishLongRestRequested() {
+        publish(new PartyRosterTopBarViewInputEvent(
+                false, false, false, 0L, 0, false, false, true, false, ""));
+    }
+
+    private void publishCreateEditorRequested() {
+        publish(new PartyRosterTopBarViewInputEvent(
+                true, false, false, 0L, 0, false, false, false, false, ""));
+    }
+
+    private void publishEditRequested(ActionEvent event) {
         Object source = event.getSource();
         Object userData = source instanceof Node node ? node.getUserData() : null;
+        long memberId = userData instanceof Long id ? id : 0L;
         publish(new PartyRosterTopBarViewInputEvent(
-                createEditorRequested,
-                editEditorRequested,
-                addExistingRequested,
-                userData instanceof Long memberId ? memberId : 0L,
-                xpDelta,
-                removeRequested,
-                false,
-                false,
-                false,
-                ""));
+                false, true, false, memberId, 0, false, false, false, false, ""));
+    }
+
+    private void publishAddExistingRequested(ActionEvent event) {
+        Object source = event.getSource();
+        Object userData = source instanceof Node node ? node.getUserData() : null;
+        long memberId = userData instanceof Long id ? id : 0L;
+        publish(new PartyRosterTopBarViewInputEvent(
+                false, false, true, memberId, 0, false, false, false, false, ""));
+    }
+
+    private void publishRemoveRequested(ActionEvent event) {
+        Object source = event.getSource();
+        Object userData = source instanceof Node node ? node.getUserData() : null;
+        long memberId = userData instanceof Long id ? id : 0L;
+        publish(new PartyRosterTopBarViewInputEvent(
+                false, false, false, memberId, 0, true, false, false, false, ""));
     }
 
     private void publishXp(ActionEvent event, int xpDelta) {
         Object source = event.getSource();
         Object userData = source instanceof Node node ? node.getUserData() : null;
+        long memberId = userData instanceof Long id ? id : 0L;
         publish(new PartyRosterTopBarViewInputEvent(
-                false,
-                false,
-                false,
-                userData instanceof Long memberId ? memberId : 0L,
-                xpDelta,
-                false,
-                false,
-                false,
-                false,
-                ""));
+                false, false, false, memberId, xpDelta, false, false, false, false, ""));
     }
 
     private void publish(PartyRosterTopBarViewInputEvent event) {
