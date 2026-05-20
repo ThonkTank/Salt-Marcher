@@ -456,17 +456,6 @@ public final class ViewArchitectureSupport {
         return referencedType.matches("^src\\.domain\\.[^.]+\\.published\\..*(Command|Query|Operation|Edit)(\\$.*)?$");
     }
 
-    public static Set<String> domainContextsOfApplicationServices(Set<String> referencedTypes) {
-        Set<String> domainContexts = new LinkedHashSet<>();
-        for (String referencedType : referencedTypes) {
-            String domainContext = applicationServiceDomainContext(referencedType);
-            if (!domainContext.isBlank()) {
-                domainContexts.add(domainContext);
-            }
-        }
-        return domainContexts;
-    }
-
     public static String applicationServiceDomainContextOfMethod(ExecutableElement methodElement) {
         if (methodElement == null || methodElement.getEnclosingElement() == null) {
             return "";
