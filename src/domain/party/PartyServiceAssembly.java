@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 import org.jspecify.annotations.Nullable;
 import shell.api.ServiceRegistry;
 import src.domain.encounter.EncounterApplicationService;
@@ -30,7 +31,7 @@ final class PartyServiceAssembly {
         PublishedState state = publishedState(services);
         PartyPublishedStateRepository publishedStateRepository = state;
         PartyEncounterSessionRepository encounterSessionRepository =
-                new EncounterSessionRefresh(services.require(EncounterApplicationService.class));
+                new EncounterSessionRefresh(() -> services.require(EncounterApplicationService.class));
         return new PartyApplicationService(
                 new CreateCharacterUseCase(repository, publishedStateRepository, encounterSessionRepository),
                 new UpdateCharacterUseCase(repository, publishedStateRepository, encounterSessionRepository),
@@ -82,7 +83,7 @@ final class PartyServiceAssembly {
                 : Objects.requireNonNull(publishedState.get(), "publishedState");
     }
 
-    private record EncounterSessionRefresh(EncounterApplicationService encounters) implements PartyEncounterSessionRepository {
+    private record EncounterSessionRefresh(Supplier<EncounterApplicationService> encounters) implements PartyEncounterSessionRepository {
 
         private EncounterSessionRefresh {
             Objects.requireNonNull(encounters, "encounters");
@@ -90,18 +91,22 @@ final class PartyServiceAssembly {
 
         @Override
         public void refreshEncounterSession() {
-            encounters.applyState(new ApplyEncounterStateCommand(
-                    ApplyEncounterStateCommand.Action.REFRESH,
-                    0L,
-                    0L,
-                    0,
-                    0L,
-                    List.of(),
-                    "",
-                    0,
-                    0L,
-                    0,
-                    false));
+            try {
+                encounters.get().applyState(new ApplyEncounterStateCommand(
+                        ApplyEncounterStateCommand.Action.REFRESH,
+                        0L,
+                        0L,
+                        0,
+                        0L,
+                        List.of(),
+                        "",
+                        0,
+                        0L,
+                        0,
+                        false));
+            } catch (IllegalStateException ignored) {
+                // Party mutation success remains authoritative; encounter refresh will recover on later readback.
+            }
         }
     }
 

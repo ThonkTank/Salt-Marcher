@@ -151,8 +151,10 @@ public final class PartyRosterTopBarView extends VBox {
                 memberListPane.getChildren().add(memberRow(member, actionsDisabled));
             }
         }
-        if (content.reserveMembers().isEmpty()) {
+        if (content.allReserveMembers().isEmpty()) {
             reserveListPane.getChildren().add(messageLabel("Keine Reserve-Charaktere"));
+        } else if (content.reserveMembers().isEmpty()) {
+            reserveListPane.getChildren().add(messageLabel("Keine Treffer in der Reserve"));
         } else {
             for (PartyRosterTopBarContentModel.MemberModel member : content.reserveMembers()) {
                 reserveListPane.getChildren().add(reserveMemberButton(member, actionsDisabled));

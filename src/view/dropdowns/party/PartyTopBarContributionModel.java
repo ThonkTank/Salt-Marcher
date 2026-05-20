@@ -204,8 +204,11 @@ public final class PartyTopBarContributionModel {
                 restSummary(daySummary),
                 statusMessage,
                 statusError,
-                activeMembers.isEmpty(),
-                false));
+                mutationInFlight || activeMembers.isEmpty(),
+                mutationInFlight));
+        if (mutationInFlight) {
+            rosterContentModel.showPending("Speichere...");
+        }
         editorContentModel.showEditor(editorPanel);
     }
 
