@@ -11,8 +11,13 @@ final class DungeonTravelRuntimeServiceAssembly {
     private final TravelDungeonModel travelModel;
 
     DungeonTravelRuntimeServiceAssembly(TravelDungeonSessionRepository repository) {
-        applyUseCase = new ApplyTravelDungeonSessionUseCase(Objects.requireNonNull(repository, "repository"));
-        travelModel = new TravelDungeonModel(applyUseCase::snapshot);
+        DungeonTravelRuntimePublicationServiceAssembly publication =
+                new DungeonTravelRuntimePublicationServiceAssembly();
+        applyUseCase = new ApplyTravelDungeonSessionUseCase(
+                Objects.requireNonNull(repository, "repository"),
+                publication::publishSnapshot);
+        publication.connectSnapshotSource(applyUseCase::snapshot);
+        travelModel = publication.travelModel();
     }
 
     DungeonTravelRuntimeApplicationService applicationService() {
