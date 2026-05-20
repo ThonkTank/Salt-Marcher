@@ -18,8 +18,11 @@ publication-sink subtype.
 Technical diagnostic route:
 
 - `./gradlew checkDomainEnforcement --rerun-tasks --console=plain`
-- Package-focused handoff may use
-  `tools/gradle/run-staged-verification.sh focused-handoff --path tools/quality/incubator/quality-rules-errorprone/src/main/java/saltmarcher/quality/errorprone --area domain`.
+
+No package-focused handoff route is currently documented for the underlying
+Error Prone checker source package. The focused wrapper does not currently
+accept `tools/quality/incubator/quality-rules-errorprone/**`, and
+`compileJava` is not a proof route for this checker.
 
 ## Invariant Catalog
 
