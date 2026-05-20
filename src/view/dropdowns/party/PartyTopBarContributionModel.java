@@ -123,6 +123,11 @@ public final class PartyTopBarContributionModel {
     void applyLoadResult(PanelData data) {
         PartySnapshotResult snapshotResult = data == null ? null : data.snapshotResult();
         if (snapshotResult == null || snapshotResult.status() != ReadStatus.SUCCESS) {
+            if (mutationInFlight) {
+                rosterContentModel.showPending("Speichere...");
+                editorContentModel.showActionsDisabled(true);
+                return;
+            }
             applyStorageError(editorContentModel.currentEditorPanel());
             return;
         }
