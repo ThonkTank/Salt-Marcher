@@ -13,18 +13,13 @@ public final class ApplyTravelDungeonSessionUseCase {
 
     private final TravelDungeonSession session;
     private final TravelDungeonSessionRepository runtimeAccess;
-    private final SnapshotPublication snapshotPublication;
     private final LoadTravelDungeonSessionSurfaceUseCase loadTravelDungeonSessionSurfaceUseCase;
     private final ApplyTravelDungeonMovementUseCase applyTravelDungeonMovementUseCase;
     private final StabilizeTravelDungeonProjectionUseCase stabilizeTravelDungeonProjectionUseCase;
 
-    public ApplyTravelDungeonSessionUseCase(
-            TravelDungeonSessionRepository runtimeAccess,
-            SnapshotPublication snapshotPublication
-    ) {
+    public ApplyTravelDungeonSessionUseCase(TravelDungeonSessionRepository runtimeAccess) {
         this.session = new TravelDungeonSession();
-        this.runtimeAccess = runtimeAccess;
-        this.snapshotPublication = Objects.requireNonNull(snapshotPublication, "snapshotPublication");
+        this.runtimeAccess = Objects.requireNonNull(runtimeAccess, "runtimeAccess");
         loadTravelDungeonSessionSurfaceUseCase = new LoadTravelDungeonSessionSurfaceUseCase();
         applyTravelDungeonMovementUseCase = new ApplyTravelDungeonMovementUseCase();
         stabilizeTravelDungeonProjectionUseCase = new StabilizeTravelDungeonProjectionUseCase();
@@ -34,7 +29,7 @@ public final class ApplyTravelDungeonSessionUseCase {
         session.primeRequestedPosition(position);
     }
 
-    public void applyCommand(
+    public SnapshotData applyCommand(
             String actionToken,
             String actionId,
             int projectionLevel,
@@ -43,7 +38,7 @@ public final class ApplyTravelDungeonSessionUseCase {
             double overlayOpacity,
             List<Integer> overlaySelectedLevels
     ) {
-        apply(new TravelDungeonSessionCommand(
+        return apply(new TravelDungeonSessionCommand(
                 action(actionToken),
                 actionId,
                 projectionLevel,
@@ -70,24 +65,24 @@ public final class ApplyTravelDungeonSessionUseCase {
     public SnapshotData refresh() {
         session.applySurface(loadTravelDungeonSessionSurfaceUseCase.load(runtimeAccess, session.currentPosition()));
         stabilizeProjectionLevel();
-        return publish(snapshot());
+        return snapshot();
     }
 
     public SnapshotData move(String actionId) {
         session.applySurface(applyTravelDungeonMovementUseCase.move(runtimeAccess, session.currentPosition(), actionId));
         stabilizeProjectionLevel();
-        return publish(snapshot());
+        return snapshot();
     }
 
     public SnapshotData setProjectionLevel(int nextProjectionLevel) {
         session.setProjectionLevel(nextProjectionLevel);
         stabilizeProjectionLevel();
-        return publish(snapshot());
+        return snapshot();
     }
 
     public SnapshotData setOverlay(String modeKey, int levelRange, double opacity, List<Integer> selectedLevels) {
         session.setOverlay(modeKey, levelRange, opacity, selectedLevels);
-        return publish(snapshot());
+        return snapshot();
     }
 
     public SnapshotData snapshot() {
@@ -96,11 +91,6 @@ public final class ApplyTravelDungeonSessionUseCase {
         }
         stabilizeProjectionLevel();
         return session.snapshot();
-    }
-
-    private SnapshotData publish(SnapshotData snapshot) {
-        snapshotPublication.accept(snapshot);
-        return snapshot;
     }
 
     private void stabilizeProjectionLevel() {
@@ -121,10 +111,5 @@ public final class ApplyTravelDungeonSessionUseCase {
             case "SET_OVERLAY" -> TravelDungeonSessionCommand.Action.SET_OVERLAY;
             default -> throw new IllegalArgumentException("Unknown travel dungeon session action: " + token);
         };
-    }
-
-    @FunctionalInterface
-    public interface SnapshotPublication {
-        void accept(SnapshotData snapshot);
     }
 }

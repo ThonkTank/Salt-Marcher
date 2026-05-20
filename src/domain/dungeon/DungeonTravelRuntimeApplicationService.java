@@ -1,7 +1,7 @@
 package src.domain.dungeon;
 
 import java.util.Objects;
-import src.domain.dungeon.model.travel.usecase.ApplyTravelDungeonSessionUseCase;
+import src.domain.dungeon.model.travel.usecase.PublishTravelDungeonSessionUseCase;
 import src.domain.dungeon.published.ApplyTravelDungeonSessionCommand;
 
 /**
@@ -9,16 +9,18 @@ import src.domain.dungeon.published.ApplyTravelDungeonSessionCommand;
  */
 public final class DungeonTravelRuntimeApplicationService {
 
-    private final ApplyTravelDungeonSessionUseCase applyTravelDungeonSessionUseCase;
+    private final PublishTravelDungeonSessionUseCase publishTravelDungeonSessionUseCase;
 
-    public DungeonTravelRuntimeApplicationService(ApplyTravelDungeonSessionUseCase applyTravelDungeonSessionUseCase) {
-        this.applyTravelDungeonSessionUseCase =
-                Objects.requireNonNull(applyTravelDungeonSessionUseCase, "applyTravelDungeonSessionUseCase");
+    public DungeonTravelRuntimeApplicationService(
+            PublishTravelDungeonSessionUseCase publishTravelDungeonSessionUseCase
+    ) {
+        this.publishTravelDungeonSessionUseCase =
+                Objects.requireNonNull(publishTravelDungeonSessionUseCase, "publishTravelDungeonSessionUseCase");
     }
 
     public void applyDungeonTravelSession(ApplyTravelDungeonSessionCommand command) {
         Objects.requireNonNull(command, "command");
-        applyTravelDungeonSessionUseCase.applyCommand(
+        publishTravelDungeonSessionUseCase.applyCommand(
                 command.actionToken(),
                 command.actionId(),
                 command.projectionLevel(),
