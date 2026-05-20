@@ -85,21 +85,25 @@ public final class DomainRepositoryPublishedStateBoundaryChecker extends BugChec
         }
         String methodName = methodSymbol.getSimpleName().toString();
         boolean publishMethod = methodName.startsWith("publish");
+        if (publishedStateRepository) {
+            if (!publishMethod) {
+                violations.add("method " + methodName + "() must use publish* naming");
+                return;
+            }
+            collectPublishedStatePublishViolations(methodSymbol, repositoryContext, violations);
+            return;
+        }
         if (!publishedStateRepository && publishMethod) {
             violations.add("method " + methodName + "() uses publish naming");
         }
-        if (publishedStateRepository && publishMethod) {
-            collectPublishedStatePublishViolations(methodSymbol, repositoryContext, violations);
-        } else {
-            if (containsObjectChannel(methodSymbol.getReturnType())) {
-                violations.add("method " + methodName + "() returns forbidden signature type "
-                        + methodSymbol.getReturnType());
-            }
-            for (VariableElement parameter : methodSymbol.getParameters()) {
-                if (containsObjectChannel(parameter.asType())) {
-                    violations.add("method " + methodName + "() accepts forbidden signature type "
-                            + parameter.asType() + " parameter " + parameter.getSimpleName());
-                }
+        if (containsObjectChannel(methodSymbol.getReturnType())) {
+            violations.add("method " + methodName + "() returns forbidden signature type "
+                    + methodSymbol.getReturnType());
+        }
+        for (VariableElement parameter : methodSymbol.getParameters()) {
+            if (containsObjectChannel(parameter.asType())) {
+                violations.add("method " + methodName + "() accepts forbidden signature type "
+                        + parameter.asType() + " parameter " + parameter.getSimpleName());
             }
         }
     }

@@ -205,7 +205,7 @@ final class DungeonServiceAssembly {
     }
 
     TravelDungeonModel travelDungeonModel(ServiceRegistry registry) {
-        return travelRuntimeComponent(registry).assembly().travelModel();
+        return travelRuntimeComponent(registry).travelModel();
     }
 
     DungeonEditorApplicationService createEditorApplicationService(ServiceRegistry registry) {
@@ -319,11 +319,15 @@ final class DungeonServiceAssembly {
             return existing;
         }
         Objects.requireNonNull(registry, "registry");
-        TravelRuntimeAssembly assembly = new TravelRuntimeAssembly(
+        ApplyTravelDungeonSessionUseCase applyUseCase = new ApplyTravelDungeonSessionUseCase(
                 registry.require(TravelDungeonSessionRepository.class));
+        TravelRuntimeComponent.PublishedState publishedState = new TravelRuntimeComponent.PublishedState();
+        publishedState.publishCurrentSession(applyUseCase.snapshot());
+        PublishTravelDungeonSessionUseCase publishUseCase =
+                new PublishTravelDungeonSessionUseCase(applyUseCase, publishedState);
         TravelRuntimeComponent candidate = new TravelRuntimeComponent(
-                assembly.applicationService(),
-                assembly);
+                new DungeonTravelRuntimeApplicationService(publishUseCase),
+                publishedState.travelModel());
         return travelRuntime.compareAndSet(null, candidate)
                 ? candidate
                 : Objects.requireNonNull(travelRuntime.get(), "travelRuntime");
@@ -331,31 +335,8 @@ final class DungeonServiceAssembly {
 
     private record TravelRuntimeComponent(
             DungeonTravelRuntimeApplicationService service,
-            TravelRuntimeAssembly assembly
+            TravelDungeonModel travelModel
     ) {
-    }
-
-    private static final class TravelRuntimeAssembly {
-
-        private final PublishTravelDungeonSessionUseCase publishUseCase;
-        private final TravelDungeonModel travelModel;
-
-        private TravelRuntimeAssembly(TravelDungeonSessionRepository repository) {
-            ApplyTravelDungeonSessionUseCase applyUseCase =
-                    new ApplyTravelDungeonSessionUseCase(Objects.requireNonNull(repository, "repository"));
-            PublishedState publishedState = new PublishedState();
-            publishedState.publishCurrentSession(applyUseCase.snapshot());
-            publishUseCase = new PublishTravelDungeonSessionUseCase(applyUseCase, publishedState);
-            travelModel = publishedState.travelModel();
-        }
-
-        private DungeonTravelRuntimeApplicationService applicationService() {
-            return new DungeonTravelRuntimeApplicationService(publishUseCase);
-        }
-
-        private TravelDungeonModel travelModel() {
-            return travelModel;
-        }
 
         private static final class PublishedState implements TravelDungeonSessionPublishedStateRepository {
 
