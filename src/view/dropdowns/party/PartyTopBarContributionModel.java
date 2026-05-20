@@ -31,6 +31,7 @@ public final class PartyTopBarContributionModel {
     private final PartyEditorTopBarContentModel editorContentModel = new PartyEditorTopBarContentModel();
 
     private boolean mutationInFlight;
+    private boolean pendingHideEditorOnSuccess;
     private String pendingSuccessMessage = "";
 
     PartyTopBarContentModel topBarContentModel() {
@@ -46,13 +47,23 @@ public final class PartyTopBarContributionModel {
     }
 
     public boolean beginMutation(String successMessage) {
+        return beginMutation(successMessage, false);
+    }
+
+    public boolean beginEditorMutation(String successMessage) {
+        return beginMutation(successMessage, true);
+    }
+
+    private boolean beginMutation(String successMessage, boolean hideEditorOnSuccess) {
         if (mutationInFlight) {
             rejectMutation("Party-Aktion laeuft bereits.");
             return false;
         }
         mutationInFlight = true;
+        pendingHideEditorOnSuccess = hideEditorOnSuccess;
         pendingSuccessMessage = safe(successMessage);
         rosterContentModel.showPending("Speichere...");
+        editorContentModel.showActionsDisabled(true);
         return true;
     }
 
@@ -129,13 +140,16 @@ public final class PartyTopBarContributionModel {
 
     void applyMutationResult(MutationAndLoadResult result) {
         mutationInFlight = false;
+        boolean hideEditorOnSuccess = pendingHideEditorOnSuccess;
+        pendingHideEditorOnSuccess = false;
         String successMessage = pendingSuccessMessage;
         pendingSuccessMessage = "";
         MutationStatus status = result == null || result.mutationResult() == null
                 ? MutationStatus.STORAGE_ERROR
                 : result.mutationResult().status();
         if (status != MutationStatus.SUCCESS) {
-            rosterContentModel.showStatus(mutationMessage(status), true);
+            editorContentModel.showActionsDisabled(false);
+            rosterContentModel.showReadyStatus(mutationMessage(status), true);
             return;
         }
         PanelData data = result.panelData();
@@ -155,7 +169,9 @@ public final class PartyTopBarContributionModel {
                 data.dayResult(),
                 successMessage,
                 false,
-                PartyEditorTopBarContentModel.EditorPanelModel.hidden());
+                hideEditorOnSuccess
+                        ? PartyEditorTopBarContentModel.EditorPanelModel.hidden()
+                        : editorContentModel.currentEditorPanel().withActionsDisabled(false));
     }
 
     private void applySnapshot(
@@ -188,7 +204,7 @@ public final class PartyTopBarContributionModel {
                 activeMembers,
                 reserveMembers,
                 reserveMembers,
-                "",
+                rosterContentModel.reserveSearchText(),
                 summaryText(activeMembers, averageLevel),
                 restSummary(daySummary),
                 statusMessage,
@@ -200,6 +216,7 @@ public final class PartyTopBarContributionModel {
 
     void applyStorageError(PartyEditorTopBarContentModel.EditorPanelModel editorPanel) {
         mutationInFlight = false;
+        pendingHideEditorOnSuccess = false;
         pendingSuccessMessage = "";
         topBarContentModel.showTriggerText("Keine _Party ▼");
         rosterContentModel.showPanel(new PartyRosterTopBarContentModel.PanelContent(
@@ -209,14 +226,14 @@ public final class PartyTopBarContributionModel {
                 List.of(),
                 List.of(),
                 List.of(),
-                "",
+                rosterContentModel.reserveSearchText(),
                 "Keine Party-Mitglieder",
                 "",
                 "Party konnte nicht geladen werden.",
                 true,
                 true,
                 true));
-        editorContentModel.showEditor(editorPanel);
+        editorContentModel.showEditor(editorPanel.withActionsDisabled(false));
     }
 
     private static String mutationMessage(@Nullable MutationStatus status) {

@@ -20,6 +20,7 @@ public final class PartyEditorTopBarView extends VBox {
     private static final String LEVEL_PROMPT = "Level";
     private static final String PASSIVE_PERCEPTION_PROMPT = "Passive Perception";
     private static final String ARMOR_CLASS_PROMPT = "AC";
+    private static final String RENDERING_EDITOR_KEY = "partyEditorRendering";
 
     private final Label titleLabel = new Label();
     private final TextField nameField = textField(CHARACTER_NAME_PROMPT);
@@ -82,15 +83,29 @@ public final class PartyEditorTopBarView extends VBox {
         submitButton.setText(editingExisting ? "Speichern" : "Erstellen");
         revealDeleteButton.setVisible(visible && editingExisting);
         revealDeleteButton.setManaged(visible && editingExisting);
-        nameField.setText(content == null ? "" : content.memberName());
-        playerNameField.setText(content == null ? "" : content.playerName());
-        levelField.setText(content == null ? "1" : content.rawLevel());
-        passivePerceptionField.setText(content == null ? "10" : content.rawPassivePerception());
-        armorClassField.setText(content == null ? "10" : content.rawArmorClass());
+        getProperties().put(RENDERING_EDITOR_KEY, Boolean.TRUE);
+        try {
+            nameField.setText(content == null ? "" : content.memberName());
+            playerNameField.setText(content == null ? "" : content.playerName());
+            levelField.setText(content == null ? "1" : content.rawLevel());
+            passivePerceptionField.setText(content == null ? "10" : content.rawPassivePerception());
+            armorClassField.setText(content == null ? "10" : content.rawArmorClass());
+        } finally {
+            getProperties().remove(RENDERING_EDITOR_KEY);
+        }
         deleteMessageLabel.setText("\"" + safe(nameField.getText()).trim() + "\" wirklich dauerhaft loeschen?");
         deleteSection.setVisible(visible && content.deleteConfirmationVisible());
         deleteSection.setManaged(visible && content.deleteConfirmationVisible());
-        updateSubmitDisabled();
+        boolean actionsDisabled = content != null && content.actionsDisabled();
+        nameField.setDisable(actionsDisabled);
+        playerNameField.setDisable(actionsDisabled);
+        levelField.setDisable(actionsDisabled);
+        passivePerceptionField.setDisable(actionsDisabled);
+        armorClassField.setDisable(actionsDisabled);
+        revealDeleteButton.setDisable(actionsDisabled);
+        cancelButton.setDisable(actionsDisabled);
+        deleteSection.setDisable(actionsDisabled);
+        updateSubmitDisabled(actionsDisabled);
     }
 
     private void publish(
@@ -130,13 +145,23 @@ public final class PartyEditorTopBarView extends VBox {
     private void onDraftChanged() {
         updateSubmitDisabled();
         deleteMessageLabel.setText("\"" + safe(nameField.getText()).trim() + "\" wirklich dauerhaft loeschen?");
-        publish(false, false, false, false, false);
+        if (!isRenderingEditor()) {
+            publish(false, false, false, false, false);
+        }
     }
 
     private void updateSubmitDisabled() {
+        updateSubmitDisabled(false);
+    }
+
+    private void updateSubmitDisabled(boolean actionsDisabled) {
         boolean nameMissing = safe(nameField.getText()).isBlank();
-        submitButton.setDisable(nameMissing);
+        submitButton.setDisable(nameMissing || actionsDisabled);
         submitButton.setTooltip(nameMissing ? new Tooltip("Charaktername erforderlich.") : null);
+    }
+
+    private boolean isRenderingEditor() {
+        return Boolean.TRUE.equals(getProperties().get(RENDERING_EDITOR_KEY));
     }
 
     private GridPane formGrid() {

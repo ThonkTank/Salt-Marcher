@@ -29,8 +29,16 @@ public final class PartyRosterTopBarContentModel {
         showPanel(currentPanel().withStatus(status, error));
     }
 
+    void showReadyStatus(String status, boolean error) {
+        showPanel(currentPanel().withReadyStatus(status, error));
+    }
+
     void showReserveSearch(String searchText) {
         showPanel(currentPanel().withReserveSearch(searchText));
+    }
+
+    String reserveSearchText() {
+        return currentPanel().reserveSearchText();
     }
 
     @Nullable MemberModel findMember(long memberId) {
@@ -110,6 +118,23 @@ public final class PartyRosterTopBarContentModel {
                     error,
                     restActionsDisabled,
                     actionsDisabled);
+        }
+
+        PanelContent withReadyStatus(String status, boolean error) {
+            return new PanelContent(
+                    loading,
+                    storageError,
+                    storageMessage,
+                    activeMembers,
+                    allReserveMembers,
+                    reserveMembers,
+                    reserveSearchText,
+                    summaryText,
+                    restSummaryText,
+                    status,
+                    error,
+                    activeMembers.isEmpty(),
+                    false);
         }
 
         PanelContent withPending(String status) {

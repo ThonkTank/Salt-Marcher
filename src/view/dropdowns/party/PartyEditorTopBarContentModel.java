@@ -55,6 +55,10 @@ public final class PartyEditorTopBarContentModel {
                 rawArmorClass));
     }
 
+    void showActionsDisabled(boolean actionsDisabled) {
+        showEditor(currentEditorPanel().withActionsDisabled(actionsDisabled));
+    }
+
     private static String safe(String value) {
         return value == null ? "" : value;
     }
@@ -68,7 +72,8 @@ public final class PartyEditorTopBarContentModel {
             String rawLevel,
             String rawPassivePerception,
             String rawArmorClass,
-            boolean deleteConfirmationVisible
+            boolean deleteConfirmationVisible,
+            boolean actionsDisabled
     ) {
 
         public EditorPanelModel {
@@ -81,11 +86,11 @@ public final class PartyEditorTopBarContentModel {
         }
 
         static EditorPanelModel hidden() {
-            return new EditorPanelModel(false, false, 0L, "", "", "1", "10", "10", false);
+            return new EditorPanelModel(false, false, 0L, "", "", "1", "10", "10", false, false);
         }
 
         static EditorPanelModel createDraft() {
-            return new EditorPanelModel(true, false, 0L, "", "", "1", "10", "10", false);
+            return new EditorPanelModel(true, false, 0L, "", "", "1", "10", "10", false, false);
         }
 
         static EditorPanelModel editDraft(
@@ -105,6 +110,7 @@ public final class PartyEditorTopBarContentModel {
                     rawLevel,
                     rawPassivePerception,
                     rawArmorClass,
+                    false,
                     false);
         }
 
@@ -118,7 +124,8 @@ public final class PartyEditorTopBarContentModel {
                     this.rawLevel,
                     this.rawPassivePerception,
                     this.rawArmorClass,
-                    visible);
+                    visible,
+                    this.actionsDisabled);
         }
 
         EditorPanelModel withDraft(
@@ -137,7 +144,22 @@ public final class PartyEditorTopBarContentModel {
                     rawLevel,
                     rawPassivePerception,
                     rawArmorClass,
-                    this.deleteConfirmationVisible);
+                    false,
+                    this.actionsDisabled);
+        }
+
+        EditorPanelModel withActionsDisabled(boolean actionsDisabled) {
+            return new EditorPanelModel(
+                    this.visible,
+                    this.editingExisting,
+                    this.memberId,
+                    this.memberName,
+                    this.playerName,
+                    this.rawLevel,
+                    this.rawPassivePerception,
+                    this.rawArmorClass,
+                    this.deleteConfirmationVisible,
+                    actionsDisabled);
         }
     }
 }
