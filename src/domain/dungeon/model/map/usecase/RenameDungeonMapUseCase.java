@@ -1,6 +1,7 @@
 package src.domain.dungeon.model.map.usecase;
 
 import java.util.Objects;
+import java.util.Optional;
 import src.domain.dungeon.model.map.model.DungeonMap;
 import src.domain.dungeon.model.map.model.DungeonMapAuthoring;
 import src.domain.dungeon.model.map.model.DungeonMapIdentity;
@@ -30,8 +31,11 @@ public final class RenameDungeonMapUseCase {
     }
 
     public RenamedMap execute(DungeonMapIdentity mapIdentity, String requestedMapName) {
-        DungeonMap dungeonMap = repository.findById(mapIdentity)
-                .orElseThrow(() -> new IllegalArgumentException("Unknown dungeon map: " + mapIdentity.value()));
+        Optional<DungeonMap> foundMap = repository.findById(mapIdentity);
+        if (foundMap.isEmpty()) {
+            throw new IllegalArgumentException("Unknown dungeon map: " + mapIdentity.value());
+        }
+        DungeonMap dungeonMap = foundMap.get();
         DungeonMap renamed = repository.save(DungeonMapAuthoring.rename(dungeonMap, normalizeName(requestedMapName)));
         return new RenamedMap(renamed.metadata().mapId());
     }

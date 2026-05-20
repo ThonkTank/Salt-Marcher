@@ -1,6 +1,7 @@
 package src.domain.dungeon.model.map.usecase;
 
 import java.util.Objects;
+import java.util.Optional;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.map.model.DungeonMap;
 import src.domain.dungeon.model.map.model.DungeonMapAuthoring;
@@ -24,7 +25,7 @@ public final class LoadDungeonMapUseCase {
 
     public DungeonMap execute(@Nullable DungeonMapIdentity mapId) {
         if (mapId != null) {
-            java.util.Optional<DungeonMap> map = repository.findById(mapId);
+            Optional<DungeonMap> map = repository.findById(mapId);
             if (map.isPresent()) {
                 return map.get();
             }
@@ -34,8 +35,11 @@ public final class LoadDungeonMapUseCase {
 
     public DungeonMap require(DungeonMapIdentity mapId) {
         DungeonMapIdentity safeMapId = Objects.requireNonNull(mapId, "mapId");
-        return repository.findById(safeMapId)
-                .orElseThrow(() -> new IllegalArgumentException("Unknown dungeon map: " + safeMapId.value()));
+        Optional<DungeonMap> foundMap = repository.findById(safeMapId);
+        if (foundMap.isEmpty()) {
+            throw new IllegalArgumentException("Unknown dungeon map: " + safeMapId.value());
+        }
+        return foundMap.get();
     }
 
     private static DungeonMap emptyFallbackMap() {
