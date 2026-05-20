@@ -1,7 +1,6 @@
-package src.domain.dungeon.application;
+package src.domain.dungeon.model.map.usecase;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.map.model.DungeonMap;
@@ -38,10 +37,7 @@ public final class PublishDungeonEditorHandlesUseCase {
 
     private static void appendClusterLabelHandles(List<DungeonEditorHandleFacts> result, DungeonMap dungeonMap) {
         for (DungeonRoomCluster cluster : dungeonMap.topology().roomClusters()) {
-            List<DungeonRoom> rooms = dungeonMap.rooms().rooms().stream()
-                    .filter(room -> room.clusterId() == cluster.clusterId())
-                    .sorted(Comparator.comparingLong(DungeonRoom::roomId))
-                    .toList();
+            List<DungeonRoom> rooms = roomsForCluster(dungeonMap, cluster.clusterId());
             if (rooms.isEmpty()) {
                 continue;
             }
@@ -59,6 +55,21 @@ public final class PublishDungeonEditorHandlesUseCase {
                             DungeonEdgeDirection.NORTH),
                     room.name()));
         }
+    }
+
+    private static List<DungeonRoom> roomsForCluster(DungeonMap dungeonMap, long clusterId) {
+        List<DungeonRoom> rooms = new ArrayList<>();
+        for (DungeonRoom room : dungeonMap.rooms().rooms()) {
+            if (room.clusterId() == clusterId) {
+                rooms.add(room);
+            }
+        }
+        rooms.sort(PublishDungeonEditorHandlesUseCase::compareByRoomId);
+        return List.copyOf(rooms);
+    }
+
+    private static int compareByRoomId(DungeonRoom left, DungeonRoom right) {
+        return Long.compare(left.roomId(), right.roomId());
     }
 
     private static void appendDoorHandles(List<DungeonEditorHandleFacts> result, DungeonMap dungeonMap) {

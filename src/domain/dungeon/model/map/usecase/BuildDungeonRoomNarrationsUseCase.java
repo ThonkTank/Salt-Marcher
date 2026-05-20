@@ -1,6 +1,7 @@
-package src.domain.dungeon.application;
+package src.domain.dungeon.model.map.usecase;
 
 import java.util.Comparator;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -30,12 +31,13 @@ final class BuildDungeonRoomNarrationsUseCase {
         if (selectedRooms.isEmpty()) {
             return List.of();
         }
-        return selectedRooms.stream()
-                .sorted(Comparator
-                        .comparing(DungeonRoom::name, String.CASE_INSENSITIVE_ORDER)
-                        .thenComparingLong(DungeonRoom::roomId))
-                .map(room -> roomNarration(derived, room))
-                .toList();
+        List<DungeonRoom> sortedRooms = new ArrayList<>(selectedRooms);
+        sortedRooms.sort(BuildDungeonRoomNarrationsUseCase::compareRooms);
+        List<LoadDungeonSnapshotUseCase.RoomNarrationData> narrations = new ArrayList<>();
+        for (DungeonRoom room : sortedRooms) {
+            narrations.add(roomNarration(derived, room));
+        }
+        return List.copyOf(narrations);
     }
 
     private static List<DungeonRoom> selectedRooms(
@@ -45,14 +47,19 @@ final class BuildDungeonRoomNarrationsUseCase {
             boolean clusterSelection
     ) {
         if (clusterSelection && clusterId > 0L) {
-            return dungeonMap.rooms().rooms().stream()
-                    .filter(room -> room.clusterId() == clusterId)
-                    .toList();
+            List<DungeonRoom> rooms = new ArrayList<>();
+            for (DungeonRoom room : dungeonMap.rooms().rooms()) {
+                if (room.clusterId() == clusterId) {
+                    rooms.add(room);
+                }
+            }
+            return List.copyOf(rooms);
         }
         if (!isRoomSelection(topologyRef)) {
             return List.of();
         }
-        return dungeonMap.rooms().findRoom(topologyRef.id()).stream().toList();
+        DungeonRoom room = dungeonMap.rooms().findRoom(topologyRef.id()).orElse(null);
+        return room == null ? List.of() : List.of(room);
     }
 
     private static boolean isRoomSelection(DungeonTopologyRef topologyRef) {
@@ -65,21 +72,24 @@ final class BuildDungeonRoomNarrationsUseCase {
             DungeonDerivedState derived,
             DungeonRoom room
     ) {
-        Set<DungeonCell> roomCells = areaForRoom(derived, room.roomId())
-                .map(area -> Set.copyOf(area.cells()))
-                .orElseGet(Set::of);
+        Optional<DungeonAreaFacts> area = areaForRoom(derived, room.roomId());
+        Set<DungeonCell> roomCells = area.isPresent() ? Set.copyOf(area.get().cells()) : Set.of();
+        List<LoadDungeonSnapshotUseCase.RoomExitNarrationData> exits = new ArrayList<>();
+        for (DungeonTraversalLink link : derived.traversalLinks()) {
+            if (link.touches(roomCells)) {
+                LoadDungeonSnapshotUseCase.RoomExitNarrationData exit = exitNarration(room, link, roomCells)
+                        .orElse(null);
+                if (exit != null) {
+                    exits.add(exit);
+                }
+            }
+        }
+        exits.sort(BuildDungeonRoomNarrationsUseCase::compareExits);
         return new LoadDungeonSnapshotUseCase.RoomNarrationData(
                 room.roomId(),
                 room.name(),
                 room.narration().visualDescription(),
-                derived.traversalLinks().stream()
-                        .filter(link -> link.touches(roomCells))
-                        .flatMap(link -> exitNarration(room, link, roomCells).stream())
-                        .sorted(Comparator
-                                .comparing(LoadDungeonSnapshotUseCase.RoomExitNarrationData::label,
-                                        String.CASE_INSENSITIVE_ORDER)
-                                .thenComparing(exit -> exit.direction().name()))
-                        .toList());
+                exits);
     }
 
     private static Optional<LoadDungeonSnapshotUseCase.RoomExitNarrationData> exitNarration(
@@ -112,8 +122,30 @@ final class BuildDungeonRoomNarrationsUseCase {
     }
 
     private static Optional<DungeonAreaFacts> areaForRoom(DungeonDerivedState derived, long roomId) {
-        return derived.map().areas().stream()
-                .filter(area -> area.kind() == DungeonAreaType.ROOM && area.id() == roomId)
-                .findFirst();
+        for (DungeonAreaFacts area : derived.map().areas()) {
+            if (area.kind() == DungeonAreaType.ROOM && area.id() == roomId) {
+                return Optional.of(area);
+            }
+        }
+        return Optional.empty();
+    }
+
+    private static int compareRooms(DungeonRoom left, DungeonRoom right) {
+        int nameComparison = Comparator.nullsFirst(String.CASE_INSENSITIVE_ORDER).compare(left.name(), right.name());
+        if (nameComparison != 0) {
+            return nameComparison;
+        }
+        return Long.compare(left.roomId(), right.roomId());
+    }
+
+    private static int compareExits(
+            LoadDungeonSnapshotUseCase.RoomExitNarrationData left,
+            LoadDungeonSnapshotUseCase.RoomExitNarrationData right
+    ) {
+        int labelComparison = Comparator.nullsFirst(String.CASE_INSENSITIVE_ORDER).compare(left.label(), right.label());
+        if (labelComparison != 0) {
+            return labelComparison;
+        }
+        return left.direction().name().compareTo(right.direction().name());
     }
 }

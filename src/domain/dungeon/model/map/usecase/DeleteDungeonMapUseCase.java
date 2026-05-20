@@ -1,4 +1,4 @@
-package src.domain.dungeon.application;
+package src.domain.dungeon.model.map.usecase;
 
 import java.util.Objects;
 import src.domain.dungeon.model.map.model.DungeonMapIdentity;

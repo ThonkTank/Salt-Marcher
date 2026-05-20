@@ -7,6 +7,7 @@ import src.domain.dungeon.model.map.helper.DungeonAuthoredPublishedProjectionHel
 import src.domain.dungeon.model.map.helper.DungeonPublishedMapSnapshotProjectionHelper;
 import src.domain.dungeon.model.map.model.DungeonMapIdentity;
 import src.domain.dungeon.model.map.repository.DungeonPublishedStateRepository;
+import src.domain.dungeon.model.map.usecase.LoadDungeonSnapshotUseCase;
 import src.domain.dungeon.published.DungeonAuthoredMutationResult;
 
 public final class ApplyDungeonAuthoredMutationUseCase {

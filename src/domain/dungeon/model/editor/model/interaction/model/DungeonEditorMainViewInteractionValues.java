@@ -169,6 +169,7 @@ public final class DungeonEditorMainViewInteractionValues {
     public record BoundaryTarget(
             boolean present,
             String kind,
+            String key,
             long ownerId,
             long clusterId,
             String topologyRefKind,
@@ -178,6 +179,7 @@ public final class DungeonEditorMainViewInteractionValues {
     ) {
         public BoundaryTarget {
             kind = kind == null || kind.isBlank() ? WALL_KIND : kind;
+            key = key == null ? "" : key.strip();
             ownerId = Math.max(0L, ownerId);
             clusterId = Math.max(0L, clusterId);
             topologyRefKind = topologyRefKind == null || topologyRefKind.isBlank() ? EMPTY_KIND : topologyRefKind;
@@ -187,7 +189,7 @@ public final class DungeonEditorMainViewInteractionValues {
         }
 
         public static BoundaryTarget empty() {
-            return new BoundaryTarget(false, WALL_KIND, 0L, 0L, EMPTY_KIND, 0L, CellTarget.empty(), CellTarget.empty());
+            return new BoundaryTarget(false, WALL_KIND, "", 0L, 0L, EMPTY_KIND, 0L, CellTarget.empty(), CellTarget.empty());
         }
 
         public boolean doorKind() {

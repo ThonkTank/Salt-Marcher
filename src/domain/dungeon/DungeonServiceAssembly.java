@@ -3,26 +3,15 @@ package src.domain.dungeon;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import shell.api.ServiceRegistry;
 import src.domain.dungeon.application.ApplyDungeonAuthoredMutationUseCase;
 import src.domain.dungeon.application.ApplyDungeonEditorOperationUseCase;
 import src.domain.dungeon.application.ApplyDungeonMapCatalogUseCase;
 import src.domain.dungeon.application.ApplyDungeonTravelUseCase;
-import src.domain.dungeon.application.AssembleDungeonSnapshotUseCase;
-import src.domain.dungeon.application.BuildDungeonDerivedStateUseCase;
-import src.domain.dungeon.application.CreateDungeonMapUseCase;
-import src.domain.dungeon.application.DeleteDungeonMapUseCase;
-import src.domain.dungeon.application.InspectDungeonSelectionUseCase;
-import src.domain.dungeon.application.LoadDungeonMapUseCase;
-import src.domain.dungeon.application.LoadDungeonSnapshotUseCase;
 import src.domain.dungeon.application.LoadDungeonTravelSurfaceUseCase;
 import src.domain.dungeon.application.MoveDungeonTravelActionUseCase;
-import src.domain.dungeon.application.PublishDungeonEditorHandlesUseCase;
 import src.domain.dungeon.application.RefreshDungeonAuthoredUseCase;
-import src.domain.dungeon.application.RenameDungeonMapUseCase;
-import src.domain.dungeon.application.SearchDungeonMapsUseCase;
 import src.domain.dungeon.model.editor.helper.DungeonEditorSnapshotProjectionHelper;
 import src.domain.dungeon.model.editor.model.session.model.DungeonEditorSessionSnapshot;
 import src.domain.dungeon.model.editor.model.session.model.DungeonEditorSessionWorkflow;
@@ -53,9 +42,16 @@ import src.domain.dungeon.model.editor.usecase.SetDungeonEditorViewModeUseCase;
 import src.domain.dungeon.model.editor.usecase.ShiftDungeonEditorProjectionLevelUseCase;
 import src.domain.dungeon.model.map.repository.DungeonMapRepository;
 import src.domain.dungeon.model.map.repository.DungeonPublishedStateApplicationRepository;
-import src.domain.dungeon.model.travel.repository.ApplicationTravelDungeonSessionRepository;
-import src.domain.dungeon.model.travel.repository.TravelPartyStateRepository;
-import src.domain.dungeon.model.travel.usecase.ApplyTravelDungeonSessionUseCase;
+import src.domain.dungeon.model.map.usecase.AssembleDungeonSnapshotUseCase;
+import src.domain.dungeon.model.map.usecase.BuildDungeonDerivedStateUseCase;
+import src.domain.dungeon.model.map.usecase.CreateDungeonMapUseCase;
+import src.domain.dungeon.model.map.usecase.DeleteDungeonMapUseCase;
+import src.domain.dungeon.model.map.usecase.InspectDungeonSelectionUseCase;
+import src.domain.dungeon.model.map.usecase.LoadDungeonMapUseCase;
+import src.domain.dungeon.model.map.usecase.LoadDungeonSnapshotUseCase;
+import src.domain.dungeon.model.map.usecase.PublishDungeonEditorHandlesUseCase;
+import src.domain.dungeon.model.map.usecase.RenameDungeonMapUseCase;
+import src.domain.dungeon.model.map.usecase.SearchDungeonMapsUseCase;
 import src.domain.dungeon.published.DungeonAuthoredMutationModel;
 import src.domain.dungeon.published.DungeonAuthoredReadModel;
 import src.domain.dungeon.published.DungeonEditorControlsModel;
@@ -71,9 +67,8 @@ import src.domain.dungeon.published.TravelDungeonModel;
 final class DungeonServiceAssembly {
 
     private final PublishedState editorPublishedState = new PublishedState();
-    private final AtomicReference<DungeonPublishedStateApplicationRepository> authoredPublishedState =
-            new AtomicReference<>();
-    private final AtomicReference<DungeonTravelRuntimeApplicationService> travelRuntime = new AtomicReference<>();
+    private final java.util.concurrent.atomic.AtomicReference<DungeonPublishedStateApplicationRepository> authoredPublishedState =
+            new java.util.concurrent.atomic.AtomicReference<>();
 
     DungeonAuthoredApplicationService createAuthoredApplicationService(ServiceRegistry registry) {
         DungeonPublishedStateApplicationRepository publishedState = authoredPublishedState(registry);
@@ -119,23 +114,6 @@ final class DungeonServiceAssembly {
                 publishedState));
     }
 
-    DungeonTravelRuntimeApplicationService createTravelRuntimeApplicationService(ServiceRegistry registry) {
-        DungeonTravelRuntimeApplicationService existing = travelRuntime.get();
-        if (existing != null) {
-            return existing;
-        }
-        ApplicationTravelDungeonSessionRepository dungeonSessionRepository =
-                new ApplicationTravelDungeonSessionRepository(
-                        registry.require(TravelPartyStateRepository.class),
-                        registry.require(DungeonTravelApplicationService.class),
-                        registry.require(DungeonTravelModel.class));
-        DungeonTravelRuntimeApplicationService candidate = new DungeonTravelRuntimeApplicationService(
-                new ApplyTravelDungeonSessionUseCase(dungeonSessionRepository));
-        return travelRuntime.compareAndSet(null, candidate)
-                ? candidate
-                : Objects.requireNonNull(travelRuntime.get(), "travelRuntime");
-    }
-
     DungeonAuthoredReadModel authoredReadModel(ServiceRegistry registry) {
         return authoredPublishedState(registry).authoredReadModel();
     }
@@ -153,7 +131,7 @@ final class DungeonServiceAssembly {
     }
 
     TravelDungeonModel travelDungeonModel(ServiceRegistry registry) {
-        return createTravelRuntimeApplicationService(registry).travelModel();
+        return registry.require(DungeonTravelRuntimeApplicationService.class).travelModel();
     }
 
     DungeonEditorApplicationService createEditorApplicationService(ServiceRegistry registry) {

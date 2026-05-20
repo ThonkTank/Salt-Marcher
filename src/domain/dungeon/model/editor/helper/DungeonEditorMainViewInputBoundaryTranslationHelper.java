@@ -101,8 +101,9 @@ public final class DungeonEditorMainViewInputBoundaryTranslationHelper {
         BoundaryTarget boundaryTarget = new BoundaryTarget(
                 safeTarget.boundaryPresent(),
                 safeTarget.boundaryKind().name(),
+                safeTarget.boundaryKey(),
                 safeTarget.ownerId(),
-                0L,
+                safeTarget.clusterId(),
                 safeTarget.topologyRef().kind().name(),
                 safeTarget.topologyRef().id(),
                 toCellTarget(safeTarget.boundaryStart()),
@@ -110,14 +111,14 @@ public final class DungeonEditorMainViewInputBoundaryTranslationHelper {
         return new HitTarget(
                 HitKind.BOUNDARY,
                 boundaryTarget.ownerId(),
-                0L,
+                boundaryTarget.clusterId(),
                 boundaryTarget.topologyRefKind(),
                 boundaryTarget.topologyRefId(),
                 HandleTarget.clusterLabel(
                         boundaryTarget.topologyRefKind(),
                         boundaryTarget.topologyRefId(),
                         boundaryTarget.ownerId(),
-                        0L),
+                        boundaryTarget.clusterId()),
                 boundaryTarget);
     }
 

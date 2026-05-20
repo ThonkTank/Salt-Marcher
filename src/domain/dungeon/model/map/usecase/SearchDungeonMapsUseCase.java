@@ -1,5 +1,6 @@
-package src.domain.dungeon.application;
+package src.domain.dungeon.model.map.usecase;
 
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
@@ -47,12 +48,18 @@ public final class SearchDungeonMapsUseCase {
 
     public List<MapSummary> execute(String searchTerm) {
         String effectiveSearchTerm = searchTerm == null ? "" : searchTerm;
-        return repository.searchByName(effectiveSearchTerm).stream()
-                .map(map -> new MapSummary(
+        List<MapSummary> summaries = new ArrayList<>();
+        for (var map : repository.searchByName(effectiveSearchTerm)) {
+            summaries.add(new MapSummary(
                         map.metadata().mapId(),
                         map.metadata().mapName(),
-                        map.revision()))
-                .sorted(Comparator.comparing(MapSummary::mapName, String.CASE_INSENSITIVE_ORDER))
-                .toList();
+                        map.revision()));
+        }
+        summaries.sort(SearchDungeonMapsUseCase::compareByMapName);
+        return List.copyOf(summaries);
+    }
+
+    private static int compareByMapName(MapSummary left, MapSummary right) {
+        return Comparator.nullsFirst(String.CASE_INSENSITIVE_ORDER).compare(left.mapName(), right.mapName());
     }
 }

@@ -2,7 +2,6 @@ package src.domain.party;
 
 import shell.api.ServiceContribution;
 import shell.api.ServiceRegistry;
-import src.domain.dungeon.model.travel.repository.TravelPartyStateRepository;
 import src.domain.party.published.ActivePartyCompositionModel;
 import src.domain.party.published.ActivePartyModel;
 import src.domain.party.published.AdventuringDayCalculationModel;
@@ -28,6 +27,5 @@ public final class PartyServiceContribution implements ServiceContribution {
         services.registerFactory(PartyTravelPositionsModel.class, assembly::partyTravelPositionsModel);
         services.registerFactory(PartyMutationModel.class, assembly::partyMutationModel);
         services.registerFactory(AdventuringDayCalculationModel.class, assembly::adventuringDayCalculationModel);
-        services.registerFactory(TravelPartyStateRepository.class, assembly::travelPartyStateRepository);
     }
 }

@@ -5,6 +5,8 @@ import src.domain.dungeon.model.map.model.DungeonMap;
 import src.domain.dungeon.model.map.model.DungeonTravelSurfaceProjection;
 import src.domain.dungeon.model.map.model.DungeonTravelPositionFacts;
 import src.domain.dungeon.model.map.model.DungeonTravelSurfaceFacts;
+import src.domain.dungeon.model.map.usecase.BuildDungeonDerivedStateUseCase;
+import src.domain.dungeon.model.map.usecase.LoadDungeonMapUseCase;
 
 public final class LoadDungeonTravelSurfaceUseCase {
 

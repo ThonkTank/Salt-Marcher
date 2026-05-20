@@ -3,6 +3,12 @@ package src.data.travel.repository;
 import java.util.List;
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
+import src.domain.dungeon.model.map.model.DungeonCell;
+import src.domain.dungeon.model.travel.model.session.model.TravelDungeonActiveState.ActiveTravelStateData;
+import src.domain.dungeon.model.travel.model.session.model.TravelDungeonActiveState.PartyLocationData;
+import src.domain.dungeon.model.travel.model.session.model.TravelDungeonSessionSurface.PositionData;
+import src.domain.dungeon.model.travel.model.session.model.TravelDungeonSessionValues.LocationKind;
+import src.domain.dungeon.model.travel.model.session.model.TravelDungeonSessionValues.OverworldTarget;
 import src.domain.party.PartyApplicationService;
 import src.domain.party.published.ActivePartyModel;
 import src.domain.party.published.ActivePartyResult;
@@ -20,15 +26,8 @@ import src.domain.party.published.PartyTravelPositionsModel;
 import src.domain.party.published.PartyTravelPositionsResult;
 import src.domain.party.published.PartyTravelTile;
 import src.domain.party.published.ReadStatus;
-import src.domain.dungeon.model.travel.model.session.model.TravelDungeonActiveState.ActiveTravelStateData;
-import src.domain.dungeon.model.travel.model.session.model.TravelDungeonActiveState.PartyLocationData;
-import src.domain.dungeon.model.travel.model.session.model.TravelDungeonSessionMovement.OverworldTargetData;
-import src.domain.dungeon.model.travel.model.session.model.TravelDungeonSessionSurface.CellData;
-import src.domain.dungeon.model.travel.model.session.model.TravelDungeonSessionSurface.PositionData;
-import src.domain.dungeon.model.travel.model.session.model.TravelDungeonSessionValues.LocationKind;
-import src.domain.dungeon.model.travel.repository.TravelPartyStateRepository;
 
-public final class ApplicationTravelPartyStateRepository implements TravelPartyStateRepository {
+public final class ApplicationTravelPartyStateRepository {
 
     private final PartyApplicationService party;
     private final ActivePartyModel activePartyModel;
@@ -47,7 +46,6 @@ public final class ApplicationTravelPartyStateRepository implements TravelPartyS
         this.partyMutationModel = Objects.requireNonNull(partyMutationModel, "partyMutationModel");
     }
 
-    @Override
     public ActiveTravelStateData loadActiveTravelState() {
         ActivePartyResult activeParty = activePartyModel.current();
         List<Long> activeCharacterIds = activeParty.status() == ReadStatus.SUCCESS
@@ -65,7 +63,6 @@ public final class ApplicationTravelPartyStateRepository implements TravelPartyS
                 toInternalPartyLocation(travelPositions.partyTokenLocation()));
     }
 
-    @Override
     public void saveDungeonPosition(PositionData position, List<Long> characterIds) {
         if (position == null || characterIds == null || characterIds.isEmpty()) {
             return;
@@ -83,8 +80,7 @@ public final class ApplicationTravelPartyStateRepository implements TravelPartyS
                 true));
     }
 
-    @Override
-    public boolean saveOverworldPosition(OverworldTargetData target, List<Long> characterIds) {
+    public boolean saveOverworldPosition(OverworldTarget target, List<Long> characterIds) {
         if (target == null || characterIds == null || characterIds.isEmpty()) {
             return false;
         }
@@ -113,7 +109,7 @@ public final class ApplicationTravelPartyStateRepository implements TravelPartyS
                             dungeonLocation.mapId(),
                             LocationKind.valueOf(dungeonLocation.locationKind().name()),
                             dungeonLocation.ownerId(),
-                            new CellData(
+                            new DungeonCell(
                                     dungeonLocation.tile().q(),
                                     dungeonLocation.tile().r(),
                                     dungeonLocation.tile().level()),

@@ -4,7 +4,7 @@ import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.application.ApplyDungeonMapCatalogUseCase;
 import src.domain.dungeon.model.map.model.DungeonMapIdentity;
-import src.domain.dungeon.published.DungeonAuthoredReadCommand;
+import src.domain.dungeon.published.DeleteDungeonMapCommand;
 import src.domain.dungeon.published.DungeonMapCatalogCommand;
 import src.domain.dungeon.published.DungeonMapId;
 
@@ -34,7 +34,7 @@ public final class DungeonCatalogApplicationService {
             applyDungeonMapCatalogUseCase.renameMap(domainId(renameMap.mapId()), renameMap.mapName());
             return;
         }
-        DungeonAuthoredReadCommand.MapSelection deleteMap = (DungeonAuthoredReadCommand.MapSelection) safeCommand;
+        DeleteDungeonMapCommand deleteMap = (DeleteDungeonMapCommand) safeCommand;
         applyDungeonMapCatalogUseCase.deleteMap(domainId(deleteMap.mapId()));
     }
 

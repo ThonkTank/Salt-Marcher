@@ -1,4 +1,4 @@
-package src.domain.dungeon.application;
+package src.domain.dungeon.model.map.usecase;
 
 import src.domain.dungeon.model.map.model.DungeonMap;
 import src.domain.dungeon.model.map.model.DungeonDerivedStateProjection;

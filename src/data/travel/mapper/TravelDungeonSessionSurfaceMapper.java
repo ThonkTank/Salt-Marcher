@@ -2,6 +2,16 @@ package src.data.travel.mapper;
 
 import java.util.List;
 import org.jspecify.annotations.Nullable;
+import src.domain.dungeon.model.map.model.DungeonCell;
+import src.domain.dungeon.model.travel.model.session.model.TravelDungeonSessionMovement.MoveResultData;
+import src.domain.dungeon.model.travel.model.session.model.TravelDungeonSessionSurface.AvailableAction;
+import src.domain.dungeon.model.travel.model.session.model.TravelDungeonSessionSurface.MapData;
+import src.domain.dungeon.model.travel.model.session.model.TravelDungeonSessionSurface.PositionData;
+import src.domain.dungeon.model.travel.model.session.model.TravelDungeonSessionSurface.SurfaceData;
+import src.domain.dungeon.model.travel.model.session.model.TravelDungeonSessionValues.ContextKind;
+import src.domain.dungeon.model.travel.model.session.model.TravelDungeonSessionValues.LocationKind;
+import src.domain.dungeon.model.travel.model.session.model.TravelDungeonSessionValues.MoveStatus;
+import src.domain.dungeon.model.travel.model.session.model.TravelDungeonSessionValues.OverworldTarget;
 import src.domain.dungeon.published.DungeonCellRef;
 import src.domain.dungeon.published.DungeonMapId;
 import src.domain.dungeon.published.DungeonTravelActionSnapshot;
@@ -11,16 +21,6 @@ import src.domain.dungeon.published.DungeonTravelLocationKind;
 import src.domain.dungeon.published.DungeonTravelMoveResult;
 import src.domain.dungeon.published.DungeonTravelPosition;
 import src.domain.dungeon.published.DungeonTravelSurfaceSnapshot;
-import src.domain.dungeon.model.travel.model.session.model.TravelDungeonSessionMovement.MoveResultData;
-import src.domain.dungeon.model.travel.model.session.model.TravelDungeonSessionMovement.MoveStatus;
-import src.domain.dungeon.model.travel.model.session.model.TravelDungeonSessionMovement.OverworldTargetData;
-import src.domain.dungeon.model.travel.model.session.model.TravelDungeonSessionSurface.AvailableAction;
-import src.domain.dungeon.model.travel.model.session.model.TravelDungeonSessionSurface.CellData;
-import src.domain.dungeon.model.travel.model.session.model.TravelDungeonSessionSurface.MapData;
-import src.domain.dungeon.model.travel.model.session.model.TravelDungeonSessionSurface.PositionData;
-import src.domain.dungeon.model.travel.model.session.model.TravelDungeonSessionSurface.SurfaceData;
-import src.domain.dungeon.model.travel.model.session.model.TravelDungeonSessionValues.ContextKind;
-import src.domain.dungeon.model.travel.model.session.model.TravelDungeonSessionValues.LocationKind;
 
 public final class TravelDungeonSessionSurfaceMapper {
 
@@ -53,9 +53,9 @@ public final class TravelDungeonSessionSurfaceMapper {
                     outsideDungeonSurfaceData(0L),
                     null);
         }
-        OverworldTargetData externalTarget =
+        OverworldTarget externalTarget =
                 result.externalTarget() instanceof DungeonTravelExternalTarget.OverworldTile overworld
-                        ? new OverworldTargetData(
+                        ? new OverworldTarget(
                         overworld.mapId(),
                         overworld.tileId())
                         : null;
@@ -91,7 +91,7 @@ public final class TravelDungeonSessionSurfaceMapper {
                         ? LocationKind.TILE
                         : LocationKind.valueOf(position.locationKind().name()),
                 position == null ? 0L : position.ownerId(),
-                new CellData(
+                new DungeonCell(
                         position == null ? 0 : position.tile().q(),
                         position == null ? 0 : position.tile().r(),
                         position == null ? 0 : position.tile().level()),
@@ -108,7 +108,7 @@ public final class TravelDungeonSessionSurfaceMapper {
                         1L,
                         LocationKind.TILE,
                         0L,
-                        new CellData(0, 0, 0),
+                        new DungeonCell(0, 0, 0),
                         "SOUTH"),
                 "Overworld",
                 "Overworld-Feld " + tileId,

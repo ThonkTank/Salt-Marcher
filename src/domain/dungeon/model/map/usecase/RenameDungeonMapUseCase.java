@@ -1,4 +1,4 @@
-package src.domain.dungeon.application;
+package src.domain.dungeon.model.map.usecase;
 
 import java.util.Objects;
 import src.domain.dungeon.model.map.model.DungeonMap;
@@ -7,14 +7,14 @@ import src.domain.dungeon.model.map.model.DungeonMapIdentity;
 import src.domain.dungeon.model.map.repository.DungeonMapRepository;
 
 /**
- * Creates an empty authored dungeon map aggregate.
+ * Renames one authored dungeon map aggregate.
  */
-public final class CreateDungeonMapUseCase {
+public final class RenameDungeonMapUseCase {
 
-    public static final class CreatedMap {
+    public static final class RenamedMap {
         private final DungeonMapIdentity mapId;
 
-        public CreatedMap(DungeonMapIdentity mapId) {
+        public RenamedMap(DungeonMapIdentity mapId) {
             this.mapId = mapId;
         }
 
@@ -25,16 +25,15 @@ public final class CreateDungeonMapUseCase {
 
     private final DungeonMapRepository repository;
 
-    public CreateDungeonMapUseCase(DungeonMapRepository repository) {
+    public RenameDungeonMapUseCase(DungeonMapRepository repository) {
         this.repository = Objects.requireNonNull(repository, "repository");
     }
 
-    public CreatedMap execute(String requestedMapName) {
-        DungeonMapIdentity mapIdentity = repository.nextMapId();
-        String mapName = normalizeName(requestedMapName);
-        DungeonMap dungeonMap = DungeonMapAuthoring.empty(mapIdentity, mapName);
-        DungeonMap saved = repository.save(dungeonMap);
-        return new CreatedMap(saved.metadata().mapId());
+    public RenamedMap execute(DungeonMapIdentity mapIdentity, String requestedMapName) {
+        DungeonMap dungeonMap = repository.findById(mapIdentity)
+                .orElseThrow(() -> new IllegalArgumentException("Unknown dungeon map: " + mapIdentity.value()));
+        DungeonMap renamed = repository.save(DungeonMapAuthoring.rename(dungeonMap, normalizeName(requestedMapName)));
+        return new RenamedMap(renamed.metadata().mapId());
     }
 
     private String normalizeName(String requestedMapName) {

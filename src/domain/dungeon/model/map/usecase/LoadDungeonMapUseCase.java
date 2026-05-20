@@ -1,4 +1,4 @@
-package src.domain.dungeon.application;
+package src.domain.dungeon.model.map.usecase;
 
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
@@ -19,8 +19,7 @@ public final class LoadDungeonMapUseCase {
     }
 
     public DungeonMap execute() {
-        return repository.firstMap()
-                .orElseGet(LoadDungeonMapUseCase::emptyFallbackMap);
+        return repository.firstMap().orElse(emptyFallbackMap());
     }
 
     public DungeonMap execute(@Nullable DungeonMapIdentity mapId) {

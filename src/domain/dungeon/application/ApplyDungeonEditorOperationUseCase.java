@@ -8,6 +8,11 @@ import src.domain.dungeon.model.map.model.DungeonMap;
 import src.domain.dungeon.model.map.model.DungeonMapIdentity;
 import src.domain.dungeon.model.map.model.DungeonMapOperationFeedbackRules;
 import src.domain.dungeon.model.map.repository.DungeonMapRepository;
+import src.domain.dungeon.model.map.usecase.AssembleDungeonSnapshotUseCase;
+import src.domain.dungeon.model.map.usecase.BuildDungeonDerivedStateUseCase;
+import src.domain.dungeon.model.map.usecase.LoadDungeonMapUseCase;
+import src.domain.dungeon.model.map.usecase.LoadDungeonSnapshotUseCase;
+import src.domain.dungeon.model.map.usecase.PublishDungeonEditorHandlesUseCase;
 
 /**
  * Owns the fixed dungeon editor mutation pipeline.

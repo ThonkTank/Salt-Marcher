@@ -18,6 +18,8 @@ import src.domain.dungeon.model.map.model.DungeonTravelMoveStatus;
 import src.domain.dungeon.model.map.model.DungeonTravelPositionFacts;
 import src.domain.dungeon.model.map.model.DungeonTravelSurfaceFacts;
 import src.domain.dungeon.model.map.repository.DungeonMapRepository;
+import src.domain.dungeon.model.map.usecase.BuildDungeonDerivedStateUseCase;
+import src.domain.dungeon.model.map.usecase.LoadDungeonMapUseCase;
 
 public final class MoveDungeonTravelActionUseCase {
 
