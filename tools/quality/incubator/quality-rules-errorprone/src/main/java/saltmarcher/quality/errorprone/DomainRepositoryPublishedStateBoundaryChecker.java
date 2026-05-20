@@ -13,6 +13,7 @@ import com.sun.tools.javac.code.Symbol;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
+import javax.lang.model.element.Modifier;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
@@ -56,6 +57,9 @@ public final class DomainRepositoryPublishedStateBoundaryChecker extends BugChec
                 packageName,
                 simpleName);
         List<String> violations = new ArrayList<>();
+        if (publishedStateRepository) {
+            collectPublishedStateTypeViolations(topLevelClass, violations);
+        }
         for (Tree member : topLevelClass.getMembers()) {
             if (member instanceof MethodTree methodTree) {
                 collectMethodViolations(methodTree, publishedStateRepository, repositoryContext, violations);
@@ -73,6 +77,12 @@ public final class DomainRepositoryPublishedStateBoundaryChecker extends BugChec
                 .build();
     }
 
+    private static void collectPublishedStateTypeViolations(ClassTree topLevelClass, List<String> violations) {
+        if (topLevelClass.getExtendsClause() != null || !topLevelClass.getImplementsClause().isEmpty()) {
+            violations.add("published-state repository must not extend or implement another type");
+        }
+    }
+
     private static void collectMethodViolations(
             MethodTree methodTree,
             boolean publishedStateRepository,
@@ -87,7 +97,9 @@ public final class DomainRepositoryPublishedStateBoundaryChecker extends BugChec
         boolean publishMethod = methodName.startsWith("publish");
         if (publishedStateRepository) {
             if (!publishMethod) {
-                violations.add("method " + methodName + "() must use publish* naming");
+                if (isPublicOrProtected(methodSymbol)) {
+                    violations.add("public/protected method " + methodName + "() must use publish* naming");
+                }
                 return;
             }
             collectPublishedStatePublishViolations(methodSymbol, repositoryContext, violations);
@@ -106,6 +118,11 @@ public final class DomainRepositoryPublishedStateBoundaryChecker extends BugChec
                         + parameter.asType() + " parameter " + parameter.getSimpleName());
             }
         }
+    }
+
+    private static boolean isPublicOrProtected(Symbol.MethodSymbol methodSymbol) {
+        return methodSymbol.getModifiers().contains(Modifier.PUBLIC)
+                || methodSymbol.getModifiers().contains(Modifier.PROTECTED);
     }
 
     private static void collectPublishedStatePublishViolations(
