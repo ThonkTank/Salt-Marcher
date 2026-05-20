@@ -23,6 +23,7 @@ import src.domain.dungeon.model.map.model.DungeonFeatureFacts;
 import src.domain.dungeon.model.map.model.DungeonMapFacts;
 import src.domain.dungeon.model.map.model.DungeonMapIdentity;
 import src.domain.dungeon.model.map.model.DungeonTopology;
+import src.domain.dungeon.model.map.repository.DungeonAuthoredPublishedStateRepository;
 
 public final class DungeonEditorDungeonPort {
 
@@ -49,7 +50,7 @@ public final class DungeonEditorDungeonPort {
             DungeonEditorSessionValues.Selection selection,
             DungeonEditorSessionValues.Preview preview
     ) {
-        DungeonEditorDungeonState.MutationFacts mutation = state.mutation();
+        DungeonAuthoredPublishedStateRepository.MutationPublication mutation = state.mutation();
         return new DungeonEditorDungeonFacts(
                 mapSummaries(state.catalog()),
                 mapId(state.mutationMapId()),
@@ -59,25 +60,27 @@ public final class DungeonEditorDungeonPort {
                 preview == DungeonEditorSessionValues.Preview.none() ? "" : statusText(mutation));
     }
 
-    private static List<MapSummary> mapSummaries(DungeonEditorDungeonState.CatalogFacts catalog) {
+    private static List<MapSummary> mapSummaries(
+            DungeonAuthoredPublishedStateRepository.CatalogPublication catalog
+    ) {
         if (catalog == null) {
             return List.of();
         }
         List<MapSummary> result = new ArrayList<>();
-        for (DungeonEditorDungeonState.MapSummaryFacts map : catalog.maps()) {
+        for (DungeonAuthoredPublishedStateRepository.MapSummaryPublication map : catalog.maps()) {
             result.add(mapSummary(map));
         }
         return List.copyOf(result);
     }
 
-    private static MapSummary mapSummary(DungeonEditorDungeonState.MapSummaryFacts map) {
+    private static MapSummary mapSummary(DungeonAuthoredPublishedStateRepository.MapSummaryPublication map) {
         return map == null
                 ? new MapSummary(new MapId(1L), "Dungeon Map", 0L)
                 : new MapSummary(mapId(map.mapId()), map.mapName(), map.revision());
     }
 
     private static @Nullable MapSnapshot committedSnapshot(
-            DungeonEditorDungeonState.@Nullable SnapshotFacts snapshot
+            DungeonAuthoredPublishedStateRepository.@Nullable SnapshotPublication snapshot
     ) {
         return snapshot == null ? null : mapSnapshot(snapshot.derived(), snapshot.editorHandles());
     }
@@ -86,9 +89,9 @@ public final class DungeonEditorDungeonPort {
             @Nullable MapId mapId,
             DungeonEditorSessionValues.Selection selection,
             DungeonEditorSessionValues.Preview preview,
-            DungeonEditorDungeonState.@Nullable SnapshotFacts snapshot,
-            DungeonEditorDungeonState.@Nullable InspectorFacts inspector,
-            DungeonEditorDungeonState.@Nullable MutationFacts mutation
+            DungeonAuthoredPublishedStateRepository.@Nullable SnapshotPublication snapshot,
+            DungeonAuthoredPublishedStateRepository.@Nullable InspectorPublication inspector,
+            DungeonAuthoredPublishedStateRepository.@Nullable MutationPublication mutation
     ) {
         if (mapId == null || snapshot == null) {
             return null;
@@ -103,7 +106,7 @@ public final class DungeonEditorDungeonPort {
     }
 
     private static DungeonEditorWorkspaceValues.@Nullable Inspector inspector(
-            DungeonEditorDungeonState.@Nullable InspectorFacts inspector
+            DungeonAuthoredPublishedStateRepository.@Nullable InspectorPublication inspector
     ) {
         if (inspector == null) {
             return null;
@@ -116,7 +119,7 @@ public final class DungeonEditorDungeonPort {
     }
 
     private static DungeonEditorWorkspaceValues.RoomNarrationCard roomNarration(
-            DungeonEditorDungeonState.RoomNarrationFacts roomNarration
+            DungeonAuthoredPublishedStateRepository.RoomNarrationPublication roomNarration
     ) {
         return new DungeonEditorWorkspaceValues.RoomNarrationCard(
                 roomNarration.roomId(),
@@ -126,7 +129,7 @@ public final class DungeonEditorDungeonPort {
     }
 
     private static DungeonEditorWorkspaceValues.RoomExitNarration roomExit(
-            DungeonEditorDungeonState.RoomExitNarrationFacts exit
+            DungeonAuthoredPublishedStateRepository.RoomExitNarrationPublication exit
     ) {
         return new DungeonEditorWorkspaceValues.RoomExitNarration(
                 exit.label(),
@@ -138,7 +141,7 @@ public final class DungeonEditorDungeonPort {
     private static @Nullable MapSnapshot previewMap(
             DungeonEditorSessionValues.Preview preview,
             MapSnapshot committedMap,
-            DungeonEditorDungeonState.@Nullable MutationFacts mutation
+            DungeonAuthoredPublishedStateRepository.@Nullable MutationPublication mutation
     ) {
         MapSnapshot candidate = preview == DungeonEditorSessionValues.Preview.none() || mutation == null
                 ? null
@@ -186,20 +189,20 @@ public final class DungeonEditorDungeonPort {
     }
 
     private static List<DungeonEditorWorkspaceValues.RoomNarrationCard> roomNarrations(
-            List<DungeonEditorDungeonState.RoomNarrationFacts> roomNarrations
+            List<DungeonAuthoredPublishedStateRepository.RoomNarrationPublication> roomNarrations
     ) {
         List<DungeonEditorWorkspaceValues.RoomNarrationCard> result = new ArrayList<>();
-        for (DungeonEditorDungeonState.RoomNarrationFacts roomNarration : roomNarrations) {
+        for (DungeonAuthoredPublishedStateRepository.RoomNarrationPublication roomNarration : roomNarrations) {
             result.add(roomNarration(roomNarration));
         }
         return List.copyOf(result);
     }
 
     private static List<DungeonEditorWorkspaceValues.RoomExitNarration> roomExits(
-            List<DungeonEditorDungeonState.RoomExitNarrationFacts> exits
+            List<DungeonAuthoredPublishedStateRepository.RoomExitNarrationPublication> exits
     ) {
         List<DungeonEditorWorkspaceValues.RoomExitNarration> result = new ArrayList<>();
-        for (DungeonEditorDungeonState.RoomExitNarrationFacts exit : exits) {
+        for (DungeonAuthoredPublishedStateRepository.RoomExitNarrationPublication exit : exits) {
             result.add(roomExit(exit));
         }
         return List.copyOf(result);
@@ -297,7 +300,9 @@ public final class DungeonEditorDungeonPort {
         return mapId == null ? null : new MapId(mapId.value());
     }
 
-    private static String statusText(DungeonEditorDungeonState.@Nullable MutationFacts mutation) {
+    private static String statusText(
+            DungeonAuthoredPublishedStateRepository.@Nullable MutationPublication mutation
+    ) {
         if (mutation == null) {
             return "";
         }

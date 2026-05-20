@@ -58,7 +58,7 @@ public final class DungeonEditorDungeonRequestsUseCase implements
     public void searchMaps(String query) {
         DungeonAuthoredPublishedStateRepository.CatalogPublication catalog =
                 catalogPublication(catalogUseCase.search(query));
-        state.replaceCatalog(catalogFacts(catalog));
+        state.replaceCatalog(catalog);
         publishedStateRepository.publishSearch(catalog);
     }
 
@@ -87,7 +87,7 @@ public final class DungeonEditorDungeonRequestsUseCase implements
     public void loadMap(MapId mapId) {
         DungeonAuthoredPublishedStateRepository.SnapshotPublication snapshot =
                 snapshotPublication(refreshUseCase.refreshMap(domainMapId(mapId)));
-        state.replaceSnapshot(snapshotFacts(snapshot));
+        state.replaceSnapshot(snapshot);
         publishedStateRepository.publishSnapshot(snapshot);
     }
 
@@ -104,7 +104,7 @@ public final class DungeonEditorDungeonRequestsUseCase implements
                 topologyRef,
                 clusterId,
                 clusterSelection));
-        state.replaceInspector(inspectorFacts(inspector));
+        state.replaceInspector(inspector);
         publishedStateRepository.publishInspector(inspector);
     }
 
@@ -116,7 +116,7 @@ public final class DungeonEditorDungeonRequestsUseCase implements
                     mutationPublication(mutationUseCase.preview(
                     domainMapId(mapId),
                     mutation));
-            state.replaceMutation(mutationFacts(mutationPublication));
+            state.replaceMutation(mutationPublication);
             publishedStateRepository.publishMutation(mutationPublication);
         }
     }
@@ -129,7 +129,7 @@ public final class DungeonEditorDungeonRequestsUseCase implements
                     mutationPublication(mutationUseCase.apply(
                     domainMapId(mapId),
                     mutation));
-            state.replaceMutation(mutationFacts(mutationPublication));
+            state.replaceMutation(mutationPublication);
             publishedStateRepository.publishMutation(mutationPublication);
         }
     }
@@ -142,7 +142,7 @@ public final class DungeonEditorDungeonRequestsUseCase implements
                 current -> current.saveRoomNarration(
                         roomNarration.roomId(),
                         roomNarration(roomNarration))));
-        state.replaceMutation(mutationFacts(mutationPublication));
+        state.replaceMutation(mutationPublication);
         publishedStateRepository.publishMutation(mutationPublication);
     }
 
@@ -396,108 +396,6 @@ public final class DungeonEditorDungeonRequestsUseCase implements
                 ? null
                 : new DungeonAuthoredPublishedStateRepository.MutationPublication(
                         snapshotPublication(mutation.snapshot()),
-                        mutation.validationMessages(),
-                        mutation.reactionMessages());
-    }
-
-    private static DungeonEditorDungeonState.CatalogFacts catalogFacts(
-            DungeonAuthoredPublishedStateRepository.CatalogPublication catalog
-    ) {
-        return new DungeonEditorDungeonState.CatalogFacts(catalog == null
-                ? List.of()
-                : mapSummaryFacts(catalog.maps()));
-    }
-
-    private static List<DungeonEditorDungeonState.MapSummaryFacts> mapSummaryFacts(
-            List<DungeonAuthoredPublishedStateRepository.MapSummaryPublication> mapSummaries
-    ) {
-        List<DungeonEditorDungeonState.MapSummaryFacts> result = new ArrayList<>();
-        for (DungeonAuthoredPublishedStateRepository.MapSummaryPublication mapSummary : mapSummaries) {
-            result.add(mapSummaryFacts(mapSummary));
-        }
-        return List.copyOf(result);
-    }
-
-    private static DungeonEditorDungeonState.MapSummaryFacts mapSummaryFacts(
-            DungeonAuthoredPublishedStateRepository.MapSummaryPublication mapSummary
-    ) {
-        return new DungeonEditorDungeonState.MapSummaryFacts(
-                mapSummary.mapId(),
-                mapSummary.mapName(),
-                mapSummary.revision());
-    }
-
-    private static DungeonEditorDungeonState.SnapshotFacts snapshotFacts(
-            DungeonAuthoredPublishedStateRepository.SnapshotPublication snapshot
-    ) {
-        return snapshot == null
-                ? null
-                : new DungeonEditorDungeonState.SnapshotFacts(
-                        snapshot.mapName(),
-                        snapshot.derived(),
-                        snapshot.editorHandles(),
-                        snapshot.revision());
-    }
-
-    private static DungeonEditorDungeonState.InspectorFacts inspectorFacts(
-            DungeonAuthoredPublishedStateRepository.InspectorPublication inspector
-    ) {
-        return inspector == null
-                ? null
-                : new DungeonEditorDungeonState.InspectorFacts(
-                        inspector.title(),
-                        inspector.description(),
-                        inspector.facts(),
-                        roomNarrationFacts(inspector.roomNarrations()));
-    }
-
-    private static List<DungeonEditorDungeonState.RoomNarrationFacts> roomNarrationFacts(
-            List<DungeonAuthoredPublishedStateRepository.RoomNarrationPublication> roomNarrations
-    ) {
-        List<DungeonEditorDungeonState.RoomNarrationFacts> result = new ArrayList<>();
-        for (DungeonAuthoredPublishedStateRepository.RoomNarrationPublication roomNarration : roomNarrations) {
-            result.add(roomNarrationFacts(roomNarration));
-        }
-        return List.copyOf(result);
-    }
-
-    private static DungeonEditorDungeonState.RoomNarrationFacts roomNarrationFacts(
-            DungeonAuthoredPublishedStateRepository.RoomNarrationPublication roomNarration
-    ) {
-        return new DungeonEditorDungeonState.RoomNarrationFacts(
-                roomNarration.roomId(),
-                roomNarration.roomName(),
-                roomNarration.visualDescription(),
-                roomExitFacts(roomNarration.exits()));
-    }
-
-    private static List<DungeonEditorDungeonState.RoomExitNarrationFacts> roomExitFacts(
-            List<DungeonAuthoredPublishedStateRepository.RoomExitNarrationPublication> exits
-    ) {
-        List<DungeonEditorDungeonState.RoomExitNarrationFacts> result = new ArrayList<>();
-        for (DungeonAuthoredPublishedStateRepository.RoomExitNarrationPublication exit : exits) {
-            result.add(roomExitFacts(exit));
-        }
-        return List.copyOf(result);
-    }
-
-    private static DungeonEditorDungeonState.RoomExitNarrationFacts roomExitFacts(
-            DungeonAuthoredPublishedStateRepository.RoomExitNarrationPublication exit
-    ) {
-        return new DungeonEditorDungeonState.RoomExitNarrationFacts(
-                exit.label(),
-                exit.cell(),
-                exit.direction(),
-                exit.description());
-    }
-
-    private static DungeonEditorDungeonState.MutationFacts mutationFacts(
-            DungeonAuthoredPublishedStateRepository.MutationPublication mutation
-    ) {
-        return mutation == null
-                ? null
-                : new DungeonEditorDungeonState.MutationFacts(
-                        snapshotFacts(mutation.snapshot()),
                         mutation.validationMessages(),
                         mutation.reactionMessages());
     }

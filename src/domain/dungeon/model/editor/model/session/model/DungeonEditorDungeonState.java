@@ -2,17 +2,14 @@ package src.domain.dungeon.model.editor.model.session.model;
 
 import java.util.List;
 import org.jspecify.annotations.Nullable;
-import src.domain.dungeon.model.map.model.DungeonCell;
-import src.domain.dungeon.model.map.model.DungeonDerivedState;
-import src.domain.dungeon.model.map.model.DungeonEdgeDirection;
-import src.domain.dungeon.model.map.model.DungeonEditorHandleFacts;
 import src.domain.dungeon.model.map.model.DungeonMapIdentity;
+import src.domain.dungeon.model.map.repository.DungeonAuthoredPublishedStateRepository;
 
 public final class DungeonEditorDungeonState {
 
     private final MutableState mutable = new MutableState();
 
-    public CatalogFacts catalog() {
+    public DungeonAuthoredPublishedStateRepository.CatalogPublication catalog() {
         return mutable.catalog;
     }
 
@@ -20,105 +17,46 @@ public final class DungeonEditorDungeonState {
         return mutable.mutationMapId;
     }
 
-    public @Nullable SnapshotFacts snapshot() {
+    public DungeonAuthoredPublishedStateRepository.@Nullable SnapshotPublication snapshot() {
         return mutable.snapshot;
     }
 
-    public @Nullable InspectorFacts inspector() {
+    public DungeonAuthoredPublishedStateRepository.@Nullable InspectorPublication inspector() {
         return mutable.inspector;
     }
 
-    public @Nullable MutationFacts mutation() {
+    public DungeonAuthoredPublishedStateRepository.@Nullable MutationPublication mutation() {
         return mutable.mutation;
     }
 
-    public void replaceCatalog(CatalogFacts catalog) {
-        mutable.catalog = catalog == null ? new CatalogFacts(List.of()) : catalog;
+    public void replaceCatalog(DungeonAuthoredPublishedStateRepository.CatalogPublication catalog) {
+        mutable.catalog = catalog == null
+                ? new DungeonAuthoredPublishedStateRepository.CatalogPublication(List.of())
+                : catalog;
     }
 
     public void replaceMutationMapId(@Nullable DungeonMapIdentity mutationMapId) {
         mutable.mutationMapId = mutationMapId;
     }
 
-    public void replaceSnapshot(@Nullable SnapshotFacts snapshot) {
+    public void replaceSnapshot(DungeonAuthoredPublishedStateRepository.@Nullable SnapshotPublication snapshot) {
         mutable.snapshot = snapshot;
     }
 
-    public void replaceInspector(@Nullable InspectorFacts inspector) {
+    public void replaceInspector(DungeonAuthoredPublishedStateRepository.@Nullable InspectorPublication inspector) {
         mutable.inspector = inspector;
     }
 
-    public void replaceMutation(@Nullable MutationFacts mutation) {
+    public void replaceMutation(DungeonAuthoredPublishedStateRepository.@Nullable MutationPublication mutation) {
         mutable.mutation = mutation;
     }
 
     private static final class MutableState {
-        private CatalogFacts catalog = new CatalogFacts(List.of());
+        private DungeonAuthoredPublishedStateRepository.CatalogPublication catalog =
+                new DungeonAuthoredPublishedStateRepository.CatalogPublication(List.of());
         private @Nullable DungeonMapIdentity mutationMapId;
-        private @Nullable SnapshotFacts snapshot;
-        private @Nullable InspectorFacts inspector;
-        private @Nullable MutationFacts mutation;
-    }
-
-    public record CatalogFacts(List<MapSummaryFacts> maps) {
-        public CatalogFacts {
-            maps = maps == null ? List.of() : List.copyOf(maps);
-        }
-    }
-
-    public record MapSummaryFacts(DungeonMapIdentity mapId, String mapName, long revision) {
-    }
-
-    public record SnapshotFacts(
-            String mapName,
-            DungeonDerivedState derived,
-            List<DungeonEditorHandleFacts> editorHandles,
-            long revision
-    ) {
-        public SnapshotFacts {
-            editorHandles = editorHandles == null ? List.of() : List.copyOf(editorHandles);
-        }
-    }
-
-    public record InspectorFacts(
-            String title,
-            String description,
-            List<String> facts,
-            List<RoomNarrationFacts> roomNarrations
-    ) {
-        public InspectorFacts {
-            facts = facts == null ? List.of() : List.copyOf(facts);
-            roomNarrations = roomNarrations == null ? List.of() : List.copyOf(roomNarrations);
-        }
-    }
-
-    public record RoomNarrationFacts(
-            long roomId,
-            String roomName,
-            String visualDescription,
-            List<RoomExitNarrationFacts> exits
-    ) {
-        public RoomNarrationFacts {
-            exits = exits == null ? List.of() : List.copyOf(exits);
-        }
-    }
-
-    public record RoomExitNarrationFacts(
-            String label,
-            DungeonCell cell,
-            DungeonEdgeDirection direction,
-            String description
-    ) {
-    }
-
-    public record MutationFacts(
-            SnapshotFacts snapshot,
-            List<String> validationMessages,
-            List<String> reactionMessages
-    ) {
-        public MutationFacts {
-            validationMessages = validationMessages == null ? List.of() : List.copyOf(validationMessages);
-            reactionMessages = reactionMessages == null ? List.of() : List.copyOf(reactionMessages);
-        }
+        private DungeonAuthoredPublishedStateRepository.@Nullable SnapshotPublication snapshot;
+        private DungeonAuthoredPublishedStateRepository.@Nullable InspectorPublication inspector;
+        private DungeonAuthoredPublishedStateRepository.@Nullable MutationPublication mutation;
     }
 }
