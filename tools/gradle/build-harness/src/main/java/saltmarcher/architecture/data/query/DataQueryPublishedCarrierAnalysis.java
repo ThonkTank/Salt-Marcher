@@ -73,8 +73,7 @@ final class DataQueryPublishedCarrierAnalysis {
         }
 
         List<SourceFile> relevantSourceFiles = context.sourceFiles(new saltmarcher.architecture.ViolationSink()).stream()
-                .filter(sourceFile -> sourceFile.relativePath().startsWith("src/domain/")
-                        || sourceFile.relativePath().startsWith("src/data/"))
+                .filter(DataQueryPublishedCarrierAnalysis::isRuleRelevantSourceFile)
                 .toList();
         if (relevantSourceFiles.isEmpty()) {
             return DataQueryPublishedCarrierAnalysisReport.empty();
@@ -111,6 +110,15 @@ final class DataQueryPublishedCarrierAnalysis {
                     BLOCKER_RULE_ID,
                     "Could not run the data query foreign published payload surface analysis: " + exception.getMessage()));
         }
+    }
+
+    private static boolean isRuleRelevantSourceFile(SourceFile sourceFile) {
+        List<String> segments = sourceFile.relativeSegments();
+        if (segments.size() < 5 || !"src".equals(segments.get(0))) {
+            return false;
+        }
+        return "domain".equals(segments.get(1)) && "published".equals(segments.get(3))
+                || "data".equals(segments.get(1)) && "query".equals(segments.get(3));
     }
 
     private static Map<String, DataQueryPublishedCarrierMetadata> collectPublishedCarriers(
