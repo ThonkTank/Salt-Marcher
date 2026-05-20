@@ -10,26 +10,31 @@ import src.domain.dungeon.published.ApplyTravelDungeonSessionCommand;
 public final class DungeonTravelRuntimeApplicationService {
 
     private final ApplyTravelDungeonSessionUseCase applyTravelDungeonSessionUseCase;
+    private final TravelRuntimePublication publication;
 
-    public DungeonTravelRuntimeApplicationService(ApplyTravelDungeonSessionUseCase applyTravelDungeonSessionUseCase) {
+    public DungeonTravelRuntimeApplicationService(
+            ApplyTravelDungeonSessionUseCase applyTravelDungeonSessionUseCase,
+            TravelRuntimePublication publication
+    ) {
         this.applyTravelDungeonSessionUseCase =
                 Objects.requireNonNull(applyTravelDungeonSessionUseCase, "applyTravelDungeonSessionUseCase");
+        this.publication = Objects.requireNonNull(publication, "publication");
     }
 
     public void applyDungeonTravelSession(ApplyTravelDungeonSessionCommand command) {
         Objects.requireNonNull(command, "command");
-        applyTravelDungeonSessionUseCase.apply(new ApplyTravelDungeonSessionUseCase.SessionCommand(
-                switch (command.action()) {
-                    case REFRESH -> ApplyTravelDungeonSessionUseCase.SessionAction.REFRESH;
-                    case ACTION -> ApplyTravelDungeonSessionUseCase.SessionAction.ACTION;
-                    case SET_PROJECTION_LEVEL -> ApplyTravelDungeonSessionUseCase.SessionAction.SET_PROJECTION_LEVEL;
-                    case SET_OVERLAY -> ApplyTravelDungeonSessionUseCase.SessionAction.SET_OVERLAY;
-                },
+        applyTravelDungeonSessionUseCase.apply(
+                command.action().name(),
                 command.actionId(),
                 command.projectionLevel(),
                 command.overlaySettings().modeKey(),
                 command.overlaySettings().levelRange(),
                 command.overlaySettings().opacity(),
-                command.overlaySettings().selectedLevels()));
+                command.overlaySettings().selectedLevels());
+        publication.publishCurrentSession();
+    }
+
+    interface TravelRuntimePublication {
+        void publishCurrentSession();
     }
 }
