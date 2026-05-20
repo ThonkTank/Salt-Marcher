@@ -104,6 +104,22 @@ internal open class VerificationHarnessExtension(
         val hasFocusedSelection = FocusedVerificationPaths.hasSelection()
         val filterMainClasses = hasFocusedSelection &&
             FocusedVerificationPaths.selectionContainsPathUnderAnyRoot(mainClassFilterRoots)
+        val focusedMainClassSources = if (filterMainClasses) {
+            project.files(mainClassFilterRoots).asFileTree.matching {
+                FocusedVerificationPaths.configureDefaultSourceFilter(this, mainClassFilterIncludes)
+            }.matching {
+                FocusedVerificationPaths.configureFocusedCompileSourceFilter(
+                    this,
+                    mainClassFilterRoots,
+                    mainClassFilterIncludes
+                )
+            }
+        } else {
+            null
+        }
+        val focusedMainClassSourceFiles = focusedMainClassSources?.let { sourceTree ->
+            project.provider { sourceTree.files.filter { file -> file.isFile } }
+        }
         val mainClassesDirectory = if (filterMainClasses) {
             val focusedOutputKey = FocusedVerificationPaths.focusedOutputKey() ?: "focused"
             val focusedCompileTaskName =
@@ -113,16 +129,7 @@ internal open class VerificationHarnessExtension(
             val focusedCompileTask = project.tasks.register<JavaCompile>(focusedCompileTaskName) {
                 group = LifecycleBasePlugin.VERIFICATION_GROUP
                 description = "Compile package-focused production classes imported by $bundleId ArchUnit enforcement."
-                setSource(project.files(mainClassFilterRoots).asFileTree.matching {
-                    FocusedVerificationPaths.configureDefaultSourceFilter(this, mainClassFilterIncludes)
-                }.matching {
-                    FocusedVerificationPaths.configureFocusedCompileSourceFilter(
-                        this,
-                        mainClassFilterRoots,
-                        mainClassFilterIncludes
-                    )
-                }
-                )
+                setSource(focusedMainClassSources ?: project.files())
                 classpath = mainClassesSupportClasspath + mainSourceSet.compileClasspath
                 options.sourcepath = project.files()
                 destinationDirectory.set(focusedMainClassesDirectory)
@@ -151,7 +158,10 @@ internal open class VerificationHarnessExtension(
             description = taskDescription
             dependsOn(mainClassesDirectory.first)
             dependsOn(project.tasks.named(classesTaskName(sourceSetName)))
-            inputs.dir(mainClassesDirectory.second)
+            inputs.files(project.provider {
+                val directory = mainClassesDirectory.second.get().asFile
+                if (directory.isDirectory) listOf(directory) else emptyList()
+            })
                 .withPropertyName("mainClassesDirectory")
                 .withPathSensitivity(PathSensitivity.RELATIVE)
             inputPaths.forEachIndexed { index, inputPath ->
@@ -163,11 +173,22 @@ internal open class VerificationHarnessExtension(
             classpath = archunitRuntimeClasspath
             useJUnitPlatform()
             includePatterns.forEach(::include)
+            if (filterMainClasses) {
+                onlyIf("focused ArchUnit selection contains production sources and compiled classes") {
+                    focusedMainClassSourceFiles.orEmpty().isNotEmpty() &&
+                        mainClassesDirectory.second.get().asFile.containsClassFiles()
+                }
+            }
             jvmArgumentProviders += project.objects.newInstance(MainClassesSystemPropertyProvider::class.java).apply {
                 this.mainClassesDirectory.set(mainClassesDirectory.second)
             }
         }
     }
+
+    private fun Provider<List<java.io.File>>?.orEmpty(): List<java.io.File> = this?.get().orEmpty()
+
+    private fun java.io.File.containsClassFiles(): Boolean =
+        isDirectory && walkTopDown().any { file -> file.isFile && file.extension == "class" }
 
     private fun requireArchunitSources(
         bundleId: String,
