@@ -10,31 +10,21 @@ import src.domain.dungeon.published.ApplyTravelDungeonSessionCommand;
 public final class DungeonTravelRuntimeApplicationService {
 
     private final ApplyTravelDungeonSessionUseCase applyTravelDungeonSessionUseCase;
-    private final TravelRuntimePublication publication;
 
-    public DungeonTravelRuntimeApplicationService(
-            ApplyTravelDungeonSessionUseCase applyTravelDungeonSessionUseCase,
-            TravelRuntimePublication publication
-    ) {
+    public DungeonTravelRuntimeApplicationService(ApplyTravelDungeonSessionUseCase applyTravelDungeonSessionUseCase) {
         this.applyTravelDungeonSessionUseCase =
                 Objects.requireNonNull(applyTravelDungeonSessionUseCase, "applyTravelDungeonSessionUseCase");
-        this.publication = Objects.requireNonNull(publication, "publication");
     }
 
     public void applyDungeonTravelSession(ApplyTravelDungeonSessionCommand command) {
         Objects.requireNonNull(command, "command");
-        applyTravelDungeonSessionUseCase.apply(
-                command.action().name(),
+        applyTravelDungeonSessionUseCase.applyCommand(
+                command.actionToken(),
                 command.actionId(),
                 command.projectionLevel(),
                 command.overlaySettings().modeKey(),
                 command.overlaySettings().levelRange(),
                 command.overlaySettings().opacity(),
                 command.overlaySettings().selectedLevels());
-        publication.publishCurrentSession();
-    }
-
-    interface TravelRuntimePublication {
-        void publishCurrentSession();
     }
 }

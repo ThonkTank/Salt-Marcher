@@ -1,6 +1,7 @@
 package src.domain.dungeon.model.travel.model.session.model;
 
 import java.util.List;
+import java.util.Objects;
 
 public record TravelDungeonSessionCommand(
         Action action,
@@ -12,7 +13,7 @@ public record TravelDungeonSessionCommand(
         List<Integer> overlaySelectedLevels
 ) {
     public TravelDungeonSessionCommand {
-        action = action == null ? Action.REFRESH : action;
+        action = Objects.requireNonNull(action, "action");
         actionId = actionId == null ? "" : actionId.trim();
         overlayModeKey = overlayModeKey == null ? "" : overlayModeKey.trim();
         overlayLevelRange = Math.max(0, overlayLevelRange);
@@ -31,13 +32,5 @@ public record TravelDungeonSessionCommand(
         SET_PROJECTION_LEVEL,
         SET_OVERLAY;
 
-        public static Action fromName(String name) {
-            for (Action candidate : values()) {
-                if (candidate.name().equals(name)) {
-                    return candidate;
-                }
-            }
-            return REFRESH;
-        }
     }
 }

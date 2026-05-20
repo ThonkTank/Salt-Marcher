@@ -1,6 +1,7 @@
 package src.domain.dungeon.model.travel.usecase;
 
 import java.util.List;
+import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.travel.model.session.model.TravelDungeonSession;
 import src.domain.dungeon.model.travel.model.session.model.TravelDungeonSessionCommand;
@@ -28,8 +29,8 @@ public final class ApplyTravelDungeonSessionUseCase {
         session.primeRequestedPosition(position);
     }
 
-    public void apply(
-            String actionName,
+    public void applyCommand(
+            String actionToken,
             String actionId,
             int projectionLevel,
             String overlayModeKey,
@@ -38,7 +39,7 @@ public final class ApplyTravelDungeonSessionUseCase {
             List<Integer> overlaySelectedLevels
     ) {
         apply(new TravelDungeonSessionCommand(
-                TravelDungeonSessionCommand.Action.fromName(actionName),
+                action(actionToken),
                 actionId,
                 projectionLevel,
                 overlayModeKey,
@@ -47,18 +48,9 @@ public final class ApplyTravelDungeonSessionUseCase {
                 overlaySelectedLevels));
     }
 
-    public void apply(TravelDungeonSessionCommand command) {
-        TravelDungeonSessionCommand safeCommand = command == null
-                ? new TravelDungeonSessionCommand(
-                        TravelDungeonSessionCommand.Action.REFRESH,
-                        "",
-                        0,
-                        "",
-                        0,
-                        0.0,
-                        List.of())
-                : command;
-        switch (safeCommand.action()) {
+    private SnapshotData apply(TravelDungeonSessionCommand command) {
+        TravelDungeonSessionCommand safeCommand = Objects.requireNonNull(command, "command");
+        return switch (safeCommand.action()) {
             case REFRESH -> refresh();
             case ACTION -> move(safeCommand.actionId());
             case SET_PROJECTION_LEVEL -> setProjectionLevel(safeCommand.projectionLevel());
@@ -67,7 +59,7 @@ public final class ApplyTravelDungeonSessionUseCase {
                     safeCommand.overlayLevelRange(),
                     safeCommand.overlayOpacity(),
                     safeCommand.overlaySelectedLevels());
-        }
+        };
     }
 
     public SnapshotData refresh() {
@@ -108,5 +100,16 @@ public final class ApplyTravelDungeonSessionUseCase {
                         session.projectionLevel(),
                         session.projectionLevelInitialized());
         session.stabilizeProjectionLevel(projectionLevelState.level(), projectionLevelState.initialized());
+    }
+
+    private static TravelDungeonSessionCommand.Action action(String actionToken) {
+        String token = Objects.requireNonNull(actionToken, "actionToken").trim();
+        return switch (token) {
+            case "REFRESH" -> TravelDungeonSessionCommand.Action.REFRESH;
+            case "ACTION" -> TravelDungeonSessionCommand.Action.ACTION;
+            case "SET_PROJECTION_LEVEL" -> TravelDungeonSessionCommand.Action.SET_PROJECTION_LEVEL;
+            case "SET_OVERLAY" -> TravelDungeonSessionCommand.Action.SET_OVERLAY;
+            default -> throw new IllegalArgumentException("Unknown travel dungeon session action: " + token);
+        };
     }
 }
