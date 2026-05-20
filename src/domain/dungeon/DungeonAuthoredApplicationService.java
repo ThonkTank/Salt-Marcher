@@ -3,6 +3,7 @@ package src.domain.dungeon;
 import java.util.Objects;
 import src.domain.dungeon.model.map.usecase.ApplyDungeonEditorOperationUseCase;
 import src.domain.dungeon.model.map.usecase.ApplyDungeonAuthoredMutationUseCase;
+import src.domain.dungeon.model.map.usecase.LoadDungeonSnapshotUseCase;
 import src.domain.dungeon.model.map.usecase.RefreshDungeonAuthoredUseCase;
 import src.domain.dungeon.model.map.model.DungeonCell;
 import src.domain.dungeon.model.map.model.DungeonClusterBoundaryKind;
@@ -36,30 +37,33 @@ public final class DungeonAuthoredApplicationService {
 
     private final RefreshDungeonAuthoredUseCase refreshDungeonAuthoredUseCase;
     private final ApplyDungeonAuthoredMutationUseCase applyDungeonAuthoredMutationUseCase;
+    private final AuthoredPublication publication;
 
     public DungeonAuthoredApplicationService(
             RefreshDungeonAuthoredUseCase refreshDungeonAuthoredUseCase,
-            ApplyDungeonAuthoredMutationUseCase applyDungeonAuthoredMutationUseCase
+            ApplyDungeonAuthoredMutationUseCase applyDungeonAuthoredMutationUseCase,
+            AuthoredPublication publication
     ) {
         this.refreshDungeonAuthoredUseCase =
                 Objects.requireNonNull(refreshDungeonAuthoredUseCase, "refreshDungeonAuthoredUseCase");
         this.applyDungeonAuthoredMutationUseCase =
                 Objects.requireNonNull(applyDungeonAuthoredMutationUseCase, "applyDungeonAuthoredMutationUseCase");
+        this.publication = Objects.requireNonNull(publication, "publication");
     }
 
     public void refreshAuthored(DungeonAuthoredReadCommand command) {
         DungeonAuthoredReadCommand safeCommand = Objects.requireNonNull(command, "command");
         if (safeCommand instanceof DungeonAuthoredReadCommand.MapSelection mapSelection) {
-            refreshDungeonAuthoredUseCase.refreshMap(domainMapId(mapSelection.mapId()));
+            publication.publishSnapshot(refreshDungeonAuthoredUseCase.refreshMap(domainMapId(mapSelection.mapId())));
             return;
         }
         DungeonAuthoredReadCommand.DescribeSelection describeSelection =
                 (DungeonAuthoredReadCommand.DescribeSelection) safeCommand;
-        refreshDungeonAuthoredUseCase.describeSelection(
+        publication.publishInspector(refreshDungeonAuthoredUseCase.describeSelection(
                 domainMapId(describeSelection.mapId()),
                 domainTopologyRef(describeSelection.topologyRef()),
                 describeSelection.clusterId(),
-                describeSelection.clusterSelection());
+                describeSelection.clusterSelection()));
     }
 
     public void mutateAuthored(DungeonAuthoredMutationCommand command) {
@@ -68,10 +72,10 @@ public final class DungeonAuthoredApplicationService {
         DungeonMapIdentity mapId = domainMapId(operation.mapId());
         ApplyDungeonEditorOperationUseCase.Mutation mutation = operationMutation(operation.operation());
         if (operation.action().isPreview()) {
-            applyDungeonAuthoredMutationUseCase.preview(mapId, mutation);
+            publication.publishMutation(applyDungeonAuthoredMutationUseCase.preview(mapId, mutation));
             return;
         }
-        applyDungeonAuthoredMutationUseCase.apply(mapId, mutation);
+        publication.publishMutation(applyDungeonAuthoredMutationUseCase.apply(mapId, mutation));
     }
 
     private static ApplyDungeonEditorOperationUseCase.Mutation operationMutation(DungeonEditorOperation operation) {
@@ -234,5 +238,14 @@ public final class DungeonAuthoredApplicationService {
         return direction == null || direction.isBlank()
                 ? DungeonEdgeDirection.NORTH
                 : DungeonEdgeDirection.parse(direction);
+    }
+
+    interface AuthoredPublication {
+
+        void publishSnapshot(LoadDungeonSnapshotUseCase.DungeonSnapshotData snapshot);
+
+        void publishInspector(LoadDungeonSnapshotUseCase.InspectorSnapshotData inspector);
+
+        void publishMutation(ApplyDungeonEditorOperationUseCase.OperationResultData result);
     }
 }

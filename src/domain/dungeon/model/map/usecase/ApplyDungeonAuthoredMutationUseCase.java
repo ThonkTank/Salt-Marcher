@@ -3,52 +3,28 @@ package src.domain.dungeon.model.map.usecase;
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.map.usecase.ApplyDungeonEditorOperationUseCase.Mutation;
-import src.domain.dungeon.model.map.helper.DungeonAuthoredPublishedProjectionHelper;
-import src.domain.dungeon.model.map.helper.DungeonPublishedMapSnapshotProjectionHelper;
 import src.domain.dungeon.model.map.model.DungeonMapIdentity;
-import src.domain.dungeon.model.map.repository.DungeonPublishedStateRepository;
-import src.domain.dungeon.published.DungeonAuthoredMutationResult;
 
 public final class ApplyDungeonAuthoredMutationUseCase {
 
     private final ApplyDungeonEditorOperationUseCase applyDungeonEditorOperationUseCase;
-    private final DungeonPublishedStateRepository publishedStateRepository;
-    private final DungeonAuthoredPublishedProjectionHelper projectionHelper =
-            new DungeonAuthoredPublishedProjectionHelper(new DungeonPublishedMapSnapshotProjectionHelper());
 
-    public ApplyDungeonAuthoredMutationUseCase(
-            ApplyDungeonEditorOperationUseCase applyDungeonEditorOperationUseCase,
-            DungeonPublishedStateRepository publishedStateRepository
-    ) {
+    public ApplyDungeonAuthoredMutationUseCase(ApplyDungeonEditorOperationUseCase applyDungeonEditorOperationUseCase) {
         this.applyDungeonEditorOperationUseCase =
                 Objects.requireNonNull(applyDungeonEditorOperationUseCase, "applyDungeonEditorOperationUseCase");
-        this.publishedStateRepository = Objects.requireNonNull(publishedStateRepository, "publishedStateRepository");
     }
 
-    public void apply(
+    public ApplyDungeonEditorOperationUseCase.OperationResultData apply(
             @Nullable DungeonMapIdentity mapId,
             @Nullable Mutation operation
     ) {
-        publishedStateRepository.publishAuthoredMutation(
-                mutation(applyDungeonEditorOperationUseCase.execute(mapId, operation)));
+        return applyDungeonEditorOperationUseCase.execute(mapId, operation);
     }
 
-    public void preview(
+    public ApplyDungeonEditorOperationUseCase.OperationResultData preview(
             @Nullable DungeonMapIdentity mapId,
             @Nullable Mutation operation
     ) {
-        publishedStateRepository.publishAuthoredMutation(
-                mutation(applyDungeonEditorOperationUseCase.preview(mapId, operation)));
-    }
-
-    private DungeonAuthoredMutationResult mutation(ApplyDungeonEditorOperationUseCase.OperationResultData result) {
-        LoadDungeonSnapshotUseCase.DungeonSnapshotData snapshot = result.snapshot();
-        return projectionHelper.mutation(
-                snapshot.mapName(),
-                snapshot.derived(),
-                snapshot.editorHandles(),
-                snapshot.revision(),
-                result.validationMessages(),
-                result.reactionMessages());
+        return applyDungeonEditorOperationUseCase.preview(mapId, operation);
     }
 }

@@ -4,7 +4,9 @@ import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.map.model.DungeonCell;
 import src.domain.dungeon.model.map.model.DungeonMapIdentity;
+import src.domain.dungeon.model.map.model.DungeonTravelMoveFacts;
 import src.domain.dungeon.model.map.model.DungeonTravelPositionFacts;
+import src.domain.dungeon.model.map.model.DungeonTravelSurfaceFacts;
 import src.domain.dungeon.model.travel.usecase.ApplyDungeonTravelUseCase;
 import src.domain.dungeon.published.DungeonCellRef;
 import src.domain.dungeon.published.DungeonMapId;
@@ -17,19 +19,26 @@ import src.domain.dungeon.published.DungeonTravelPosition;
 public final class DungeonTravelApplicationService {
 
     private final ApplyDungeonTravelUseCase applyDungeonTravelUseCase;
+    private final TravelPublication publication;
 
-    public DungeonTravelApplicationService(ApplyDungeonTravelUseCase applyDungeonTravelUseCase) {
+    public DungeonTravelApplicationService(
+            ApplyDungeonTravelUseCase applyDungeonTravelUseCase,
+            TravelPublication publication
+    ) {
         this.applyDungeonTravelUseCase = Objects.requireNonNull(applyDungeonTravelUseCase, "applyDungeonTravelUseCase");
+        this.publication = Objects.requireNonNull(publication, "publication");
     }
 
     public void travel(DungeonTravelCommand command) {
         DungeonTravelCommand safeCommand = Objects.requireNonNull(command, "command");
         if (safeCommand instanceof DungeonTravelCommand.LoadSurface loadSurface) {
-            applyDungeonTravelUseCase.loadSurface(domainTravelPosition(loadSurface.position()));
+            publication.publishSurface(applyDungeonTravelUseCase.loadSurface(domainTravelPosition(loadSurface.position())));
             return;
         }
         DungeonTravelCommand.MoveAction moveAction = (DungeonTravelCommand.MoveAction) safeCommand;
-        applyDungeonTravelUseCase.move(domainTravelPosition(moveAction.position()), moveAction.actionId());
+        publication.publishMove(applyDungeonTravelUseCase.move(
+                domainTravelPosition(moveAction.position()),
+                moveAction.actionId()));
     }
 
     private static @Nullable DungeonTravelPositionFacts domainTravelPosition(@Nullable DungeonTravelPosition position) {
@@ -50,5 +59,12 @@ public final class DungeonTravelApplicationService {
 
     private static DungeonCell domainCell(@Nullable DungeonCellRef cell) {
         return cell == null ? new DungeonCell(0, 0, 0) : new DungeonCell(cell.q(), cell.r(), cell.level());
+    }
+
+    interface TravelPublication {
+
+        void publishSurface(DungeonTravelSurfaceFacts surface);
+
+        void publishMove(DungeonTravelMoveFacts move);
     }
 }
