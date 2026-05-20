@@ -2,6 +2,7 @@ package src.view.dropdowns.party;
 
 import java.util.Objects;
 import java.util.function.Consumer;
+import javafx.beans.value.ChangeListener;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
@@ -20,7 +21,6 @@ public final class PartyEditorTopBarView extends VBox {
     private static final String LEVEL_PROMPT = "Level";
     private static final String PASSIVE_PERCEPTION_PROMPT = "Passive Perception";
     private static final String ARMOR_CLASS_PROMPT = "AC";
-    private static final String RENDERING_EDITOR_KEY = "partyEditorRendering";
 
     private final Label titleLabel = new Label();
     private final TextField nameField = textField(CHARACTER_NAME_PROMPT);
@@ -33,6 +33,7 @@ public final class PartyEditorTopBarView extends VBox {
     private final Label deleteMessageLabel = new Label();
     private final Button cancelButton = new Button("Abbrechen");
     private final Button submitButton = new Button("Speichern");
+    private final ChangeListener<String> draftListener = (ignored, before, after) -> onDraftChanged();
     private Consumer<PartyEditorTopBarViewInputEvent> viewInputEventHandler = ignored -> { };
 
     public PartyEditorTopBarView() {
@@ -83,7 +84,7 @@ public final class PartyEditorTopBarView extends VBox {
         submitButton.setText(editingExisting ? "Speichern" : "Erstellen");
         revealDeleteButton.setVisible(visible && editingExisting);
         revealDeleteButton.setManaged(visible && editingExisting);
-        getProperties().put(RENDERING_EDITOR_KEY, Boolean.TRUE);
+        removeDraftListeners();
         try {
             nameField.setText(content == null ? "" : content.memberName());
             playerNameField.setText(content == null ? "" : content.playerName());
@@ -91,9 +92,10 @@ public final class PartyEditorTopBarView extends VBox {
             passivePerceptionField.setText(content == null ? "10" : content.rawPassivePerception());
             armorClassField.setText(content == null ? "10" : content.rawArmorClass());
         } finally {
-            getProperties().remove(RENDERING_EDITOR_KEY);
+            addDraftListeners();
         }
-        deleteMessageLabel.setText("\"" + safe(nameField.getText()).trim() + "\" wirklich dauerhaft loeschen?");
+        deleteMessageLabel.setText("\"" + safe(content == null ? "" : content.deleteTargetName()).trim()
+                + "\" wirklich dauerhaft loeschen?");
         deleteSection.setVisible(visible && content.deleteConfirmationVisible());
         deleteSection.setManaged(visible && content.deleteConfirmationVisible());
         boolean actionsDisabled = content != null && content.actionsDisabled();
@@ -130,11 +132,7 @@ public final class PartyEditorTopBarView extends VBox {
     }
 
     private void installDraftListeners() {
-        nameField.textProperty().addListener((ignored, before, after) -> onDraftChanged());
-        playerNameField.textProperty().addListener((ignored, before, after) -> onDraftChanged());
-        levelField.textProperty().addListener((ignored, before, after) -> onDraftChanged());
-        passivePerceptionField.textProperty().addListener((ignored, before, after) -> onDraftChanged());
-        armorClassField.textProperty().addListener((ignored, before, after) -> onDraftChanged());
+        addDraftListeners();
         nameField.setOnAction(event -> publish(false, true, false, false, false));
         playerNameField.setOnAction(event -> publish(false, true, false, false, false));
         levelField.setOnAction(event -> publish(false, true, false, false, false));
@@ -144,10 +142,7 @@ public final class PartyEditorTopBarView extends VBox {
 
     private void onDraftChanged() {
         updateSubmitDisabled();
-        deleteMessageLabel.setText("\"" + safe(nameField.getText()).trim() + "\" wirklich dauerhaft loeschen?");
-        if (!isRenderingEditor()) {
-            publish(false, false, false, false, false);
-        }
+        publish(false, false, false, false, false);
     }
 
     private void updateSubmitDisabled() {
@@ -160,8 +155,20 @@ public final class PartyEditorTopBarView extends VBox {
         submitButton.setTooltip(nameMissing ? new Tooltip("Charaktername erforderlich.") : null);
     }
 
-    private boolean isRenderingEditor() {
-        return Boolean.TRUE.equals(getProperties().get(RENDERING_EDITOR_KEY));
+    private void addDraftListeners() {
+        nameField.textProperty().addListener(draftListener);
+        playerNameField.textProperty().addListener(draftListener);
+        levelField.textProperty().addListener(draftListener);
+        passivePerceptionField.textProperty().addListener(draftListener);
+        armorClassField.textProperty().addListener(draftListener);
+    }
+
+    private void removeDraftListeners() {
+        nameField.textProperty().removeListener(draftListener);
+        playerNameField.textProperty().removeListener(draftListener);
+        levelField.textProperty().removeListener(draftListener);
+        passivePerceptionField.textProperty().removeListener(draftListener);
+        armorClassField.textProperty().removeListener(draftListener);
     }
 
     private GridPane formGrid() {

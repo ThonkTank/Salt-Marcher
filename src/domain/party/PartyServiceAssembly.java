@@ -7,8 +7,11 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import org.jspecify.annotations.Nullable;
 import shell.api.ServiceRegistry;
+import src.domain.encounter.EncounterApplicationService;
+import src.domain.encounter.published.ApplyEncounterStateCommand;
 import src.domain.party.application.*;
 import src.domain.party.model.roster.model.*;
+import src.domain.party.model.roster.repository.PartyEncounterSessionRepository;
 import src.domain.party.model.roster.repository.PartyPublishedStateRepository;
 import src.domain.party.model.roster.repository.PartyRosterRepository;
 import src.domain.party.published.*;
@@ -26,14 +29,16 @@ final class PartyServiceAssembly {
         PartyRosterRepository repository = services.require(PartyRosterRepository.class);
         PublishedState state = publishedState(services);
         PartyPublishedStateRepository publishedStateRepository = state;
+        PartyEncounterSessionRepository encounterSessionRepository =
+                new EncounterSessionRefresh(services.require(EncounterApplicationService.class));
         return new PartyApplicationService(
-                new CreateCharacterUseCase(repository, publishedStateRepository),
-                new UpdateCharacterUseCase(repository, publishedStateRepository),
-                new DeleteCharacterUseCase(repository, publishedStateRepository),
-                new SetPartyMembershipUseCase(repository, publishedStateRepository),
-                new AdjustPartyXpUseCase(repository, publishedStateRepository),
+                new CreateCharacterUseCase(repository, publishedStateRepository, encounterSessionRepository),
+                new UpdateCharacterUseCase(repository, publishedStateRepository, encounterSessionRepository),
+                new DeleteCharacterUseCase(repository, publishedStateRepository, encounterSessionRepository),
+                new SetPartyMembershipUseCase(repository, publishedStateRepository, encounterSessionRepository),
+                new AdjustPartyXpUseCase(repository, publishedStateRepository, encounterSessionRepository),
                 new AwardPartyXpUseCase(repository, publishedStateRepository),
-                new PerformPartyRestUseCase(repository, publishedStateRepository),
+                new PerformPartyRestUseCase(repository, publishedStateRepository, encounterSessionRepository),
                 new MovePartyCharactersUseCase(repository, publishedStateRepository),
                 new CalculateAdventuringDayUseCase(publishedStateRepository));
     }
@@ -75,6 +80,29 @@ final class PartyServiceAssembly {
         return publishedState.compareAndSet(null, candidate)
                 ? candidate
                 : Objects.requireNonNull(publishedState.get(), "publishedState");
+    }
+
+    private record EncounterSessionRefresh(EncounterApplicationService encounters) implements PartyEncounterSessionRepository {
+
+        private EncounterSessionRefresh {
+            Objects.requireNonNull(encounters, "encounters");
+        }
+
+        @Override
+        public void refreshEncounterSession() {
+            encounters.applyState(new ApplyEncounterStateCommand(
+                    ApplyEncounterStateCommand.Action.REFRESH,
+                    0L,
+                    0L,
+                    0,
+                    0L,
+                    List.of(),
+                    "",
+                    0,
+                    0L,
+                    0,
+                    false));
+        }
     }
 
     private static final class PublishedState implements PartyPublishedStateRepository {

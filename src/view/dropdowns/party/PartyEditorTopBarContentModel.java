@@ -68,6 +68,7 @@ public final class PartyEditorTopBarContentModel {
             boolean editingExisting,
             long memberId,
             String memberName,
+            String deleteTargetName,
             String playerName,
             String rawLevel,
             String rawPassivePerception,
@@ -79,6 +80,7 @@ public final class PartyEditorTopBarContentModel {
         public EditorPanelModel {
             memberId = Math.max(0L, memberId);
             memberName = safe(memberName);
+            deleteTargetName = safe(deleteTargetName);
             playerName = safe(playerName);
             rawLevel = safe(rawLevel);
             rawPassivePerception = safe(rawPassivePerception);
@@ -86,11 +88,11 @@ public final class PartyEditorTopBarContentModel {
         }
 
         static EditorPanelModel hidden() {
-            return new EditorPanelModel(false, false, 0L, "", "", "1", "10", "10", false, false);
+            return new EditorPanelModel(false, false, 0L, "", "", "", "1", "10", "10", false, false);
         }
 
         static EditorPanelModel createDraft() {
-            return new EditorPanelModel(true, false, 0L, "", "", "1", "10", "10", false, false);
+            return new EditorPanelModel(true, false, 0L, "", "", "", "1", "10", "10", false, false);
         }
 
         static EditorPanelModel editDraft(
@@ -106,6 +108,7 @@ public final class PartyEditorTopBarContentModel {
                     true,
                     memberId,
                     memberName,
+                    memberName,
                     playerName,
                     rawLevel,
                     rawPassivePerception,
@@ -120,6 +123,7 @@ public final class PartyEditorTopBarContentModel {
                     this.editingExisting,
                     this.memberId,
                     this.memberName,
+                    this.deleteTargetName,
                     this.playerName,
                     this.rawLevel,
                     this.rawPassivePerception,
@@ -140,6 +144,7 @@ public final class PartyEditorTopBarContentModel {
                     this.editingExisting,
                     this.memberId,
                     memberName,
+                    this.deleteTargetName,
                     playerName,
                     rawLevel,
                     rawPassivePerception,
@@ -154,6 +159,7 @@ public final class PartyEditorTopBarContentModel {
                     this.editingExisting,
                     this.memberId,
                     this.memberName,
+                    this.deleteTargetName,
                     this.playerName,
                     this.rawLevel,
                     this.rawPassivePerception,

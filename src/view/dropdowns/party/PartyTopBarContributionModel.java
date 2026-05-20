@@ -8,7 +8,6 @@ import java.util.stream.Collectors;
 import org.jspecify.annotations.Nullable;
 import src.domain.party.published.AdventuringDayResult;
 import src.domain.party.published.AdventuringDaySummary;
-import src.domain.party.published.MembershipState;
 import src.domain.party.published.MutationResult;
 import src.domain.party.published.MutationStatus;
 import src.domain.party.published.PartyMemberDetails;
@@ -17,14 +16,11 @@ import src.domain.party.published.PartySnapshotResult;
 import src.domain.party.published.PartySummary;
 import src.domain.party.published.ReadStatus;
 import src.domain.party.published.RestCadenceStatus;
-import src.domain.party.published.RestCadenceUrgency;
 
 @SuppressWarnings({
         "PMD.TooManyMethods"
 })
 public final class PartyTopBarContributionModel {
-
-    private static final int MAX_CHARACTER_LEVEL = 20;
 
     private final PartyTopBarContentModel topBarContentModel = new PartyTopBarContentModel();
     private final PartyRosterTopBarContentModel rosterContentModel = new PartyRosterTopBarContentModel();
@@ -187,10 +183,10 @@ public final class PartyTopBarContributionModel {
                 : dayResult.summary();
         Map<Long, RestCadenceStatus> restStatusByMemberId = restStatusByMemberId(daySummary);
         List<PartyRosterTopBarContentModel.MemberModel> activeMembers = safeMembers(safeSnapshot.activeMembers()).stream()
-                .map(member -> MemberProjectionSupport.toMemberModel(member, restStatusByMemberId.get(member.id())))
+                .map(member -> PartyRosterTopBarContentModel.memberModel(member, restStatusByMemberId.get(member.id())))
                 .toList();
         List<PartyRosterTopBarContentModel.MemberModel> reserveMembers = safeMembers(safeSnapshot.reserveMembers()).stream()
-                .map(member -> MemberProjectionSupport.toMemberModel(member, restStatusByMemberId.get(member.id())))
+                .map(member -> PartyRosterTopBarContentModel.memberModel(member, restStatusByMemberId.get(member.id())))
                 .toList();
         int activeCount = activeMembers.size();
         int averageLevel = safeSnapshot.summary() == null ? averageLevel(activeMembers) : safeSnapshot.summary().averageLevel();
@@ -202,7 +198,6 @@ public final class PartyTopBarContributionModel {
                 false,
                 "",
                 activeMembers,
-                reserveMembers,
                 reserveMembers,
                 rosterContentModel.reserveSearchText(),
                 summaryText(activeMembers, averageLevel),
@@ -223,7 +218,6 @@ public final class PartyTopBarContributionModel {
                 false,
                 true,
                 "Party konnte nicht geladen werden.",
-                List.of(),
                 List.of(),
                 List.of(),
                 rosterContentModel.reserveSearchText(),
@@ -316,104 +310,4 @@ public final class PartyTopBarContributionModel {
     ) {
     }
 
-    private record LevelProgressDisplay(String nextLevelLabel, String text) {
-    }
-
-    @SuppressWarnings("PMD.UnnecessaryConstructor")
-    private static final class MemberProjectionSupport {
-
-        private MemberProjectionSupport() {
-        }
-
-        private static PartyRosterTopBarContentModel.MemberModel toMemberModel(
-                @Nullable PartyMemberDetails member,
-                @Nullable RestCadenceStatus restStatus
-        ) {
-            PartyMemberDetails safeMember = member == null
-                    ? new PartyMemberDetails(0L, "", "", 1, 0, 0, 300, 300, false, 10, 10, 0, 0, 0,
-                    MembershipState.ACTIVE)
-                    : member;
-            String restText = safe(restStatusText(restStatus));
-            LevelProgressDisplay levelProgress = levelProgressDisplay(safeMember);
-            return new PartyRosterTopBarContentModel.MemberModel(
-                    safeMember.id(),
-                    safe(safeMember.name()),
-                    safe(safeMember.playerName()),
-                    safeMember.level(),
-                    safeMember.passivePerception(),
-                    safeMember.armorClass(),
-                    identityText(safeMember),
-                    combatText(safeMember),
-                    "Lv " + safeMember.level(),
-                    levelProgress.nextLevelLabel(),
-                    levelProgress.text(),
-                    restText,
-                    restUrgencyStyleClass(restStatus));
-        }
-
-        private static String identityText(PartyMemberDetails member) {
-            String name = safe(member.name()).trim();
-            String player = safe(member.playerName()).trim();
-            if (player.isBlank()) {
-                return name;
-            }
-            if (name.isBlank()) {
-                return player;
-            }
-            return name + " - " + player;
-        }
-
-        private static String combatText(PartyMemberDetails member) {
-            return "AC " + member.armorClass() + " | PP " + member.passivePerception();
-        }
-
-        private static LevelProgressDisplay levelProgressDisplay(PartyMemberDetails member) {
-            int currentXp = Math.max(0, member.currentXp());
-            int currentLevelXp = Math.max(0, member.currentLevelXp());
-            int nextLevelXp = Math.max(currentLevelXp, member.nextLevelXp());
-            if (member.level() >= MAX_CHARACTER_LEVEL || nextLevelXp <= currentLevelXp) {
-                return new LevelProgressDisplay("Max", formatProgressText(currentXp, currentXp, 100));
-            }
-            int span = Math.max(1, nextLevelXp - currentLevelXp);
-            int earnedInLevel = Math.max(0, currentXp - currentLevelXp);
-            double fraction = Math.max(0.0, Math.min(1.0, (double) earnedInLevel / span));
-            int percent = (int) Math.round(fraction * 100.0);
-            if (member.readyToLevel()) {
-                fraction = 1.0;
-                percent = 100;
-            }
-            return new LevelProgressDisplay(
-                    "Lv " + (member.level() + 1),
-                    formatProgressText(currentXp, nextLevelXp, percent));
-        }
-
-        private static String formatProgressText(int currentXp, int targetXp, int percent) {
-            return currentXp + "/" + Math.max(0, targetXp) + " XP (" + Math.max(0, Math.min(100, percent)) + "%)";
-        }
-
-        private static String restStatusText(@Nullable RestCadenceStatus status) {
-            if (status == null) {
-                return "";
-            }
-            return switch (status.nextMilestone()) {
-                case SHORT_REST_ONE -> "Short Rest 1";
-                case SHORT_REST_TWO -> "Short Rest 2";
-                case LONG_REST -> "Long Rest";
-            } + ": " + status.xpDelta() + " XP";
-        }
-
-        private static String restUrgencyStyleClass(@Nullable RestCadenceStatus status) {
-            if (status == null) {
-                return "";
-            }
-            RestCadenceUrgency urgency = status.urgency();
-            if (urgency == RestCadenceUrgency.OVERDUE) {
-                return "party-rest-chip-overdue";
-            }
-            if (urgency == RestCadenceUrgency.SOON) {
-                return "party-rest-chip-soon";
-            }
-            return "party-rest-chip-normal";
-        }
-    }
 }

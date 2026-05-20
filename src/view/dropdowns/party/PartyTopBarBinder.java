@@ -6,8 +6,6 @@ import javafx.scene.Node;
 import shell.api.ShellBinding;
 import shell.api.ShellRuntimeContext;
 import shell.api.ShellSlot;
-import src.domain.encounter.EncounterApplicationService;
-import src.domain.encounter.published.ApplyEncounterStateCommand;
 import src.domain.party.PartyApplicationService;
 import src.domain.party.published.AdventuringDaySummaryModel;
 import src.domain.party.published.PartyMutationModel;
@@ -27,12 +25,10 @@ final class PartyTopBarBinder {
         PartyTopBarContributionModel presentationModel = new PartyTopBarContributionModel();
         DropdownPopupContentModel popupContentModel = new DropdownPopupContentModel();
         PartyApplicationService partyService = runtimeContext.services().require(PartyApplicationService.class);
-        EncounterApplicationService encounterService = runtimeContext.services().require(EncounterApplicationService.class);
         PartyTopBarIntentHandler intentHandler = new PartyTopBarIntentHandler(
                 presentationModel,
                 popupContentModel,
-                partyService,
-                () -> refreshEncounterSession(encounterService));
+                partyService);
         PartyRosterTopBarView rosterView = new PartyRosterTopBarView();
         PartyEditorTopBarView editorView = new PartyEditorTopBarView();
         PartyTopBarView panelView = new PartyTopBarView(rosterView, editorView);
@@ -83,21 +79,6 @@ final class PartyTopBarBinder {
                 PartyTopBarView.TOOLTIP_TEXT,
                 true,
                 PartyTopBarView.POPUP_WIDTH));
-    }
-
-    private static void refreshEncounterSession(EncounterApplicationService encounterService) {
-        encounterService.applyState(new ApplyEncounterStateCommand(
-                ApplyEncounterStateCommand.Action.REFRESH,
-                0L,
-                0L,
-                0,
-                0L,
-                java.util.List.of(),
-                "",
-                0,
-                0L,
-                0,
-                false));
     }
 
     private record Binding(Node topBar) implements ShellBinding {
