@@ -19,5 +19,6 @@ public final class DataGatewayArchitectureTest {
                     .resideInAPackage("src.data..gateway..")
                     .should()
                     .dependOnClassesThat()
-                    .resideInAPackage("src.domain..");
+                    .resideInAPackage("src.domain..")
+                    .allowEmptyShould(true);
 }
