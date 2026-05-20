@@ -10,7 +10,7 @@ public record PartyEditorTopBarViewInputEvent(
 ) {
 
     public PartyEditorTopBarViewInputEvent {
-        draft = draft == null ? EditorDraft.empty() : draft;
+        draft = draft == null ? new EditorDraft("", "", "", "", "") : draft;
     }
 
     public record EditorDraft(
@@ -29,8 +29,5 @@ public record PartyEditorTopBarViewInputEvent(
             rawArmorClass = rawArmorClass == null ? "" : rawArmorClass;
         }
 
-        static EditorDraft empty() {
-            return new EditorDraft("", "", "", "", "");
-        }
     }
 }

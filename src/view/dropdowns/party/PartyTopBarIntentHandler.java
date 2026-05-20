@@ -1,8 +1,6 @@
 package src.view.dropdowns.party;
 
 import java.util.Objects;
-import src.domain.encounter.EncounterApplicationService;
-import src.domain.encounter.published.ApplyEncounterStateCommand;
 import src.domain.party.PartyApplicationService;
 import src.domain.party.published.AdjustPartyXpCommand;
 import src.domain.party.published.CharacterDraft;
@@ -27,18 +25,15 @@ final class PartyTopBarIntentHandler {
     private final PartyTopBarContributionModel presentationModel;
     private final DropdownPopupContentModel popupContentModel;
     private final PartyApplicationService party;
-    private final EncounterApplicationService encounters;
 
     PartyTopBarIntentHandler(
             PartyTopBarContributionModel presentationModel,
             DropdownPopupContentModel popupContentModel,
-            PartyApplicationService party,
-            EncounterApplicationService encounters
+            PartyApplicationService party
     ) {
         this.presentationModel = Objects.requireNonNull(presentationModel, "presentationModel");
         this.popupContentModel = Objects.requireNonNull(popupContentModel, "popupContentModel");
         this.party = Objects.requireNonNull(party, "party");
-        this.encounters = Objects.requireNonNull(encounters, "encounters");
     }
 
     void consume(PartyTopBarViewInputEvent event) {
@@ -65,6 +60,10 @@ final class PartyTopBarIntentHandler {
         if (event == null) {
             return;
         }
+        if (event.reserveSearchChanged()) {
+            presentationModel.updateReserveSearch(event.reserveSearchText());
+            return;
+        }
         if (event.createEditorRequested()) {
             presentationModel.openCreateEditor();
             return;
@@ -88,14 +87,12 @@ final class PartyTopBarIntentHandler {
             return;
         }
         if (event.shortRestRequested()) {
-            performRest(
-                    RestType.SHORT_REST,
+            performShortRest(
                     "Short Rest wurde für die aktive Party ausgeführt.");
             return;
         }
         if (event.longRestRequested()) {
-            performRest(
-                    RestType.LONG_REST,
+            performLongRest(
                     "Long Rest wurde für die aktive Party ausgeführt.");
         }
     }
@@ -104,13 +101,19 @@ final class PartyTopBarIntentHandler {
         if (event == null) {
             return;
         }
-        presentationModel.syncEditorDraft(event.draft());
+        PartyEditorTopBarViewInputEvent.EditorDraft draft = event.draft();
+        presentationModel.syncEditorDraft(
+                draft.name(),
+                draft.playerName(),
+                draft.rawLevel(),
+                draft.rawPassivePerception(),
+                draft.rawArmorClass());
         if (event.cancelRequested()) {
             presentationModel.cancelEditor();
             return;
         }
         if (event.submitRequested()) {
-            PartyTopBarContributionModel.EditorPanelModel editorPanel = presentationModel.currentEditorPanel();
+            PartyEditorTopBarContentModel.EditorPanelModel editorPanel = presentationModel.currentEditorPanel();
             if (editorPanel.editingExisting()) {
                 updateCharacter(editorPanel.memberId(), event.draft());
             } else {
@@ -127,7 +130,7 @@ final class PartyTopBarIntentHandler {
             return;
         }
         if (event.deleteConfirmed()) {
-            PartyTopBarContributionModel.EditorPanelModel editorPanel = presentationModel.currentEditorPanel();
+            PartyEditorTopBarContentModel.EditorPanelModel editorPanel = presentationModel.currentEditorPanel();
             deleteCharacter(editorPanel.memberId(), editorPanel.memberName());
         }
     }
@@ -143,7 +146,6 @@ final class PartyTopBarIntentHandler {
             return;
         }
         party.setMembership(new SetPartyMembershipCommand(memberId, MembershipState.ACTIVE));
-        refreshEncounterSession();
     }
 
     private void removeFromParty(long memberId) {
@@ -157,7 +159,6 @@ final class PartyTopBarIntentHandler {
             return;
         }
         party.setMembership(new SetPartyMembershipCommand(memberId, MembershipState.RESERVE));
-        refreshEncounterSession();
     }
 
     private void deleteCharacter(long memberId, String memberName) {
@@ -170,7 +171,6 @@ final class PartyTopBarIntentHandler {
             return;
         }
         party.deleteCharacter(new DeleteCharacterCommand(memberId));
-        refreshEncounterSession();
     }
 
     private void adjustXp(long memberId, int xpDelta) {
@@ -191,15 +191,20 @@ final class PartyTopBarIntentHandler {
             return;
         }
         party.adjustXp(new AdjustPartyXpCommand(java.util.List.of(memberId), xpDelta));
-        refreshEncounterSession();
     }
 
-    private void performRest(RestType restType, String successMessage) {
+    private void performShortRest(String successMessage) {
         if (!presentationModel.beginMutation(successMessage)) {
             return;
         }
-        party.performRest(new PerformPartyRestCommand(restType));
-        refreshEncounterSession();
+        party.performRest(new PerformPartyRestCommand(RestType.SHORT_REST));
+    }
+
+    private void performLongRest(String successMessage) {
+        if (!presentationModel.beginMutation(successMessage)) {
+            return;
+        }
+        party.performRest(new PerformPartyRestCommand(RestType.LONG_REST));
     }
 
     private void createCharacter(PartyEditorTopBarViewInputEvent.EditorDraft draft) {
@@ -221,7 +226,6 @@ final class PartyTopBarIntentHandler {
                         parsedDraft.passivePerception(),
                         parsedDraft.armorClass()),
                 MembershipState.ACTIVE));
-        refreshEncounterSession();
     }
 
     private void updateCharacter(long memberId, PartyEditorTopBarViewInputEvent.EditorDraft draft) {
@@ -247,47 +251,32 @@ final class PartyTopBarIntentHandler {
                         parsedDraft.level(),
                         parsedDraft.passivePerception(),
                         parsedDraft.armorClass())));
-        refreshEncounterSession();
-    }
-
-    private void refreshEncounterSession() {
-        encounters.applyState(new ApplyEncounterStateCommand(
-                ApplyEncounterStateCommand.Action.REFRESH,
-                0L,
-                0L,
-                0,
-                0L,
-                java.util.List.of(),
-                "",
-                0,
-                0L,
-                0,
-                false));
     }
 
     private static ParsedDraft parseDraft(PartyEditorTopBarViewInputEvent.EditorDraft draft) {
-        PartyEditorTopBarViewInputEvent.EditorDraft safeDraft = draft == null
-                ? PartyEditorTopBarViewInputEvent.EditorDraft.empty()
-                : draft;
-        String name = safe(safeDraft.name()).trim();
+        String name = safe(draft == null ? "" : draft.name()).trim();
         if (name.isEmpty()) {
             return ParsedDraft.invalid("Charaktername fehlt.");
         }
-        ParsedInteger level = parseInteger(safeDraft.rawLevel(), "Level", 1, 20);
+        ParsedInteger level = parseInteger(draft == null ? "" : draft.rawLevel(), "Level", 1, 20);
         if (!level.valid()) {
             return ParsedDraft.invalid(level.message());
         }
-        ParsedInteger passivePerception = parseInteger(safeDraft.rawPassivePerception(), "Passive Perception", 1, 99);
+        ParsedInteger passivePerception = parseInteger(
+                draft == null ? "" : draft.rawPassivePerception(),
+                "Passive Perception",
+                1,
+                99);
         if (!passivePerception.valid()) {
             return ParsedDraft.invalid(passivePerception.message());
         }
-        ParsedInteger armorClass = parseInteger(safeDraft.rawArmorClass(), "AC", 1, 99);
+        ParsedInteger armorClass = parseInteger(draft == null ? "" : draft.rawArmorClass(), "AC", 1, 99);
         if (!armorClass.valid()) {
             return ParsedDraft.invalid(armorClass.message());
         }
         return ParsedDraft.valid(
                 name,
-                safe(safeDraft.playerName()).trim(),
+                safe(draft == null ? "" : draft.playerName()).trim(),
                 level.value(),
                 passivePerception.value(),
                 armorClass.value());

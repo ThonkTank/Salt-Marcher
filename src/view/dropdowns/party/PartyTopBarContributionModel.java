@@ -5,10 +5,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import javafx.beans.property.ReadOnlyObjectProperty;
-import javafx.beans.property.ReadOnlyObjectWrapper;
-import javafx.beans.property.ReadOnlyStringProperty;
-import javafx.beans.property.ReadOnlyStringWrapper;
 import org.jspecify.annotations.Nullable;
 import src.domain.party.published.AdventuringDayResult;
 import src.domain.party.published.AdventuringDaySummary;
@@ -24,32 +20,29 @@ import src.domain.party.published.RestCadenceStatus;
 import src.domain.party.published.RestCadenceUrgency;
 
 @SuppressWarnings({
-        "PMD.CouplingBetweenObjects",
-        "PMD.GodClass",
         "PMD.TooManyMethods"
 })
 public final class PartyTopBarContributionModel {
 
-    private static final long NO_MEMBER_ID = 0L;
     private static final int MAX_CHARACTER_LEVEL = 20;
 
-    private final ReadOnlyStringWrapper triggerText = new ReadOnlyStringWrapper("Keine _Party ▼");
-    private final ReadOnlyObjectWrapper<PanelModel> panel =
-            new ReadOnlyObjectWrapper<>(PanelModel.loadingModel());
+    private final PartyTopBarContentModel topBarContentModel = new PartyTopBarContentModel();
+    private final PartyRosterTopBarContentModel rosterContentModel = new PartyRosterTopBarContentModel();
+    private final PartyEditorTopBarContentModel editorContentModel = new PartyEditorTopBarContentModel();
 
     private boolean mutationInFlight;
     private String pendingSuccessMessage = "";
 
-    public ReadOnlyStringProperty triggerTextProperty() {
-        return triggerText.getReadOnlyProperty();
+    PartyTopBarContentModel topBarContentModel() {
+        return topBarContentModel;
     }
 
-    public ReadOnlyObjectProperty<PanelModel> panelProperty() {
-        return panel.getReadOnlyProperty();
+    PartyRosterTopBarContentModel rosterContentModel() {
+        return rosterContentModel;
     }
 
-    public void refresh() {
-        panel.set(PanelModel.loadingModel());
+    PartyEditorTopBarContentModel editorContentModel() {
+        return editorContentModel;
     }
 
     public boolean beginMutation(String successMessage) {
@@ -59,77 +52,79 @@ public final class PartyTopBarContributionModel {
         }
         mutationInFlight = true;
         pendingSuccessMessage = safe(successMessage);
-        panel.set(safePanel().withPending("Speichere..."));
+        rosterContentModel.showPending("Speichere...");
         return true;
     }
 
     public void rejectMutation(String message) {
-        showStatus(message, true);
+        rosterContentModel.showStatus(message, true);
     }
 
     public void openCreateEditor() {
-        panel.set(safePanel().withEditor(EditorPanelModel.createDraft()));
+        editorContentModel.openCreateEditor();
     }
 
     public boolean openEditEditor(long memberId) {
-        @Nullable MemberModel member = findMember(memberId);
+        PartyRosterTopBarContentModel.MemberModel member = rosterContentModel.findMember(memberId);
         if (member == null) {
             return false;
         }
-        panel.set(safePanel().withEditor(EditorPanelModel.editDraft(
+        editorContentModel.showEditor(PartyEditorTopBarContentModel.EditorPanelModel.editDraft(
                 memberId,
                 member.name(),
                 member.playerName(),
                 Integer.toString(member.level()),
                 Integer.toString(member.passivePerception()),
-                Integer.toString(member.armorClass()))));
+                Integer.toString(member.armorClass())));
         return true;
     }
 
     public void cancelEditor() {
-        panel.set(safePanel().withEditor(EditorPanelModel.hidden()));
+        editorContentModel.cancelEditor();
     }
 
     public void requestDeleteConfirmation() {
-        panel.set(safePanel().withEditor(safePanel().editorPanel().withDeleteConfirmationVisible(true)));
+        editorContentModel.requestDeleteConfirmation();
     }
 
     public void cancelDeleteConfirmation() {
-        panel.set(safePanel().withEditor(safePanel().editorPanel().withDeleteConfirmationVisible(false)));
+        editorContentModel.cancelDeleteConfirmation();
     }
 
-    public void syncEditorDraft(PartyEditorTopBarViewInputEvent.EditorDraft draft) {
-        if (draft == null) {
-            return;
-        }
-        EditorPanelModel editorPanel = safePanel().editorPanel();
-        if (!editorPanel.visible()) {
-            return;
-        }
-        panel.set(safePanel().withEditor(editorPanel.withDraft(
-                draft.name(),
-                draft.playerName(),
-                draft.rawLevel(),
-                draft.rawPassivePerception(),
-                draft.rawArmorClass())));
+    public void syncEditorDraft(
+            String memberName,
+            String playerName,
+            String rawLevel,
+            String rawPassivePerception,
+            String rawArmorClass
+    ) {
+        editorContentModel.syncDraft(memberName, playerName, rawLevel, rawPassivePerception, rawArmorClass);
     }
 
-    public EditorPanelModel currentEditorPanel() {
-        return safePanel().editorPanel();
+    public void updateReserveSearch(String searchText) {
+        rosterContentModel.showReserveSearch(searchText);
+    }
+
+    public PartyEditorTopBarContentModel.EditorPanelModel currentEditorPanel() {
+        return editorContentModel.currentEditorPanel();
     }
 
     public String memberName(long memberId) {
-        @Nullable MemberModel member = findMember(memberId);
-        return member == null ? "" : member.name();
+        return rosterContentModel.memberName(memberId);
     }
 
     void applyLoadResult(PanelData data) {
         PartySnapshotResult snapshotResult = data == null ? null : data.snapshotResult();
         if (snapshotResult == null || snapshotResult.status() != ReadStatus.SUCCESS) {
-            applyStorageError(safePanel().editorPanel());
+            applyStorageError(editorContentModel.currentEditorPanel());
             return;
         }
-        applySnapshot(snapshotResult.snapshot(), data.dayResult(), "", false, safePanel().editorPanel());
+        applySnapshot(
+                snapshotResult.snapshot(),
+                data.dayResult(),
+                "",
+                false,
+                editorContentModel.currentEditorPanel());
     }
 
     void applyMutationResult(MutationAndLoadResult result) {
@@ -140,32 +135,27 @@ public final class PartyTopBarContributionModel {
                 ? MutationStatus.STORAGE_ERROR
                 : result.mutationResult().status();
         if (status != MutationStatus.SUCCESS) {
-            String message = mutationMessage(status);
-            showStatus(message, true);
+            rosterContentModel.showStatus(mutationMessage(status), true);
             return;
         }
         PanelData data = result.panelData();
         if (data == null) {
-            String message = "Party konnte nach der Änderung nicht neu geladen werden.";
-            applyStorageError(safePanel().editorPanel());
-            showStatus(message, true);
+            applyStorageError(editorContentModel.currentEditorPanel());
+            rosterContentModel.showStatus("Party konnte nach der Änderung nicht neu geladen werden.", true);
             return;
         }
         PartySnapshotResult snapshotResult = data.snapshotResult();
         if (snapshotResult == null || snapshotResult.status() != ReadStatus.SUCCESS) {
-            String message = "Party konnte nach der Änderung nicht neu geladen werden.";
-            applyStorageError(safePanel().editorPanel());
-            showStatus(message, true);
+            applyStorageError(editorContentModel.currentEditorPanel());
+            rosterContentModel.showStatus("Party konnte nach der Änderung nicht neu geladen werden.", true);
             return;
         }
-        applySnapshot(snapshotResult.snapshot(), data.dayResult(), successMessage, false, EditorPanelModel.hidden());
-    }
-
-    void applyMutationFailure() {
-        mutationInFlight = false;
-        pendingSuccessMessage = "";
-        String message = "Party-Aktion konnte nicht gespeichert werden.";
-        showStatus(message, true);
+        applySnapshot(
+                snapshotResult.snapshot(),
+                data.dayResult(),
+                successMessage,
+                false,
+                PartyEditorTopBarContentModel.EditorPanelModel.hidden());
     }
 
     private void applySnapshot(
@@ -173,82 +163,60 @@ public final class PartyTopBarContributionModel {
             @Nullable AdventuringDayResult dayResult,
             String statusMessage,
             boolean statusError,
-            EditorPanelModel editorPanel
+            PartyEditorTopBarContentModel.EditorPanelModel editorPanel
     ) {
         PartySnapshot safeSnapshot = snapshot == null ? emptySnapshot() : snapshot;
         @Nullable AdventuringDaySummary daySummary = dayResult == null || dayResult.status() != ReadStatus.SUCCESS
                 ? null
                 : dayResult.summary();
         Map<Long, RestCadenceStatus> restStatusByMemberId = restStatusByMemberId(daySummary);
-        List<MemberModel> activeMembers = safeMembers(safeSnapshot.activeMembers()).stream()
+        List<PartyRosterTopBarContentModel.MemberModel> activeMembers = safeMembers(safeSnapshot.activeMembers()).stream()
                 .map(member -> MemberProjectionSupport.toMemberModel(member, restStatusByMemberId.get(member.id())))
                 .toList();
-        List<MemberModel> reserveMembers = safeMembers(safeSnapshot.reserveMembers()).stream()
+        List<PartyRosterTopBarContentModel.MemberModel> reserveMembers = safeMembers(safeSnapshot.reserveMembers()).stream()
                 .map(member -> MemberProjectionSupport.toMemberModel(member, restStatusByMemberId.get(member.id())))
                 .toList();
         int activeCount = activeMembers.size();
         int averageLevel = safeSnapshot.summary() == null ? averageLevel(activeMembers) : safeSnapshot.summary().averageLevel();
-        triggerText.set(activeCount == 0
+        topBarContentModel.showTriggerText(activeCount == 0
                 ? "Keine _Party ▼"
                 : activeCount + " Charaktere, Ø Lv " + averageLevel + " ▼");
-        panel.set(new PanelModel(
+        rosterContentModel.showPanel(new PartyRosterTopBarContentModel.PanelContent(
                 false,
                 false,
                 "",
                 activeMembers,
                 reserveMembers,
+                reserveMembers,
+                "",
                 summaryText(activeMembers, averageLevel),
                 restSummary(daySummary),
                 statusMessage,
                 statusError,
                 activeMembers.isEmpty(),
-                false,
-                editorPanel));
+                false));
+        editorContentModel.showEditor(editorPanel);
     }
 
-    void applyStorageError(EditorPanelModel editorPanel) {
+    void applyStorageError(PartyEditorTopBarContentModel.EditorPanelModel editorPanel) {
         mutationInFlight = false;
         pendingSuccessMessage = "";
-        triggerText.set("Keine _Party ▼");
-        panel.set(new PanelModel(
+        topBarContentModel.showTriggerText("Keine _Party ▼");
+        rosterContentModel.showPanel(new PartyRosterTopBarContentModel.PanelContent(
                 false,
                 true,
                 "Party konnte nicht geladen werden.",
                 List.of(),
                 List.of(),
+                List.of(),
+                "",
                 "Keine Party-Mitglieder",
                 "",
                 "Party konnte nicht geladen werden.",
                 true,
                 true,
-                true,
-                editorPanel));
-    }
-
-    private void showStatus(String message, boolean error) {
-        panel.set(safePanel().withStatus(message, error));
-    }
-
-    private PanelModel safePanel() {
-        PanelModel current = panel.get();
-        return current == null ? PanelModel.loadingModel() : current;
-    }
-
-    private @Nullable MemberModel findMember(long memberId) {
-        if (memberId <= NO_MEMBER_ID) {
-            return null;
-        }
-        for (MemberModel member : safePanel().activeMembers()) {
-            if (member.id() != null && member.id() == memberId) {
-                return member;
-            }
-        }
-        for (MemberModel member : safePanel().reserveMembers()) {
-            if (member.id() != null && member.id() == memberId) {
-                return member;
-            }
-        }
-        return null;
+                true));
+        editorContentModel.showEditor(editorPanel);
     }
 
     private static String mutationMessage(@Nullable MutationStatus status) {
@@ -273,11 +241,17 @@ public final class PartyTopBarContributionModel {
                         (first, second) -> first));
     }
 
-    private static String summaryText(List<MemberModel> activeMembers, int averageLevel) {
+    private static String summaryText(
+            List<PartyRosterTopBarContentModel.MemberModel> activeMembers,
+            int averageLevel
+    ) {
         if (activeMembers.isEmpty()) {
             return "Keine Party-Mitglieder";
         }
-        double exactAverage = activeMembers.stream().mapToInt(MemberModel::level).average().orElse(1.0);
+        double exactAverage = activeMembers.stream()
+                .mapToInt(PartyRosterTopBarContentModel.MemberModel::level)
+                .average()
+                .orElse(1.0);
         return activeMembers.size() + " Charaktere  .  Schnitt Lv " + String.format(Locale.ROOT, "%.1f", exactAverage)
                 + "  .  Rundung " + averageLevel;
     }
@@ -295,11 +269,14 @@ public final class PartyTopBarContributionModel {
         return members == null ? List.of() : List.copyOf(members);
     }
 
-    private static int averageLevel(List<MemberModel> activeMembers) {
+    private static int averageLevel(List<PartyRosterTopBarContentModel.MemberModel> activeMembers) {
         if (activeMembers.isEmpty()) {
             return 1;
         }
-        return (int) Math.round(activeMembers.stream().mapToInt(MemberModel::level).average().orElse(1.0));
+        return (int) Math.round(activeMembers.stream()
+                .mapToInt(PartyRosterTopBarContentModel.MemberModel::level)
+                .average()
+                .orElse(1.0));
     }
 
     private static PartySnapshot emptySnapshot() {
@@ -308,212 +285,6 @@ public final class PartyTopBarContributionModel {
 
     private static String safe(@Nullable String value) {
         return value == null ? "" : value;
-    }
-
-    public record PanelModel(
-            boolean loading,
-            boolean storageError,
-            String storageMessage,
-            List<MemberModel> activeMembers,
-            List<MemberModel> reserveMembers,
-            String summaryText,
-            String restSummaryText,
-            String actionStatus,
-            boolean actionStatusError,
-            boolean restActionsDisabled,
-            boolean actionsDisabled,
-            EditorPanelModel editorPanel
-    ) {
-
-        public PanelModel {
-            storageMessage = safe(storageMessage);
-            activeMembers = activeMembers == null ? List.of() : List.copyOf(activeMembers);
-            reserveMembers = reserveMembers == null ? List.of() : List.copyOf(reserveMembers);
-            summaryText = safe(summaryText);
-            restSummaryText = safe(restSummaryText);
-            actionStatus = safe(actionStatus);
-            editorPanel = editorPanel == null ? EditorPanelModel.hidden() : editorPanel;
-        }
-
-        static PanelModel loadingModel() {
-            return new PanelModel(
-                    true,
-                    false,
-                    "",
-                    List.of(),
-                    List.of(),
-                    "Lade...",
-                    "",
-                    "",
-                    false,
-                    true,
-                    true,
-                    EditorPanelModel.hidden());
-        }
-
-        PanelModel withStatus(String status, boolean error) {
-            return new PanelModel(
-                    loading,
-                    storageError,
-                    storageMessage,
-                    activeMembers,
-                    reserveMembers,
-                    summaryText,
-                    restSummaryText,
-                    status,
-                    error,
-                    restActionsDisabled,
-                    actionsDisabled,
-                    editorPanel);
-        }
-
-        PanelModel withPending(String status) {
-            return new PanelModel(
-                    loading,
-                    storageError,
-                    storageMessage,
-                    activeMembers,
-                    reserveMembers,
-                    summaryText,
-                    restSummaryText,
-                    status,
-                    false,
-                    true,
-                    true,
-                    editorPanel);
-        }
-
-        PanelModel withEditor(EditorPanelModel nextEditorPanel) {
-            return new PanelModel(
-                    loading,
-                    storageError,
-                    storageMessage,
-                    activeMembers,
-                    reserveMembers,
-                    summaryText,
-                    restSummaryText,
-                    actionStatus,
-                    actionStatusError,
-                    restActionsDisabled,
-                    actionsDisabled,
-                    nextEditorPanel);
-        }
-    }
-
-    public record EditorPanelModel(
-            boolean visible,
-            boolean editingExisting,
-            long memberId,
-            String memberName,
-            String playerName,
-            String rawLevel,
-            String rawPassivePerception,
-            String rawArmorClass,
-            boolean deleteConfirmationVisible
-    ) {
-
-        public EditorPanelModel {
-            memberId = Math.max(0L, memberId);
-            memberName = safe(memberName);
-            playerName = safe(playerName);
-            rawLevel = safe(rawLevel);
-            rawPassivePerception = safe(rawPassivePerception);
-            rawArmorClass = safe(rawArmorClass);
-        }
-
-        static EditorPanelModel hidden() {
-            return new EditorPanelModel(false, false, 0L, "", "", "1", "10", "10", false);
-        }
-
-        static EditorPanelModel createDraft() {
-            return new EditorPanelModel(true, false, 0L, "", "", "1", "10", "10", false);
-        }
-
-        static EditorPanelModel editDraft(
-                long memberId,
-                String memberName,
-                String playerName,
-                String rawLevel,
-                String rawPassivePerception,
-                String rawArmorClass
-        ) {
-            return new EditorPanelModel(
-                    true,
-                    true,
-                    memberId,
-                    memberName,
-                    playerName,
-                    rawLevel,
-                    rawPassivePerception,
-                    rawArmorClass,
-                    false);
-        }
-
-        EditorPanelModel withDeleteConfirmationVisible(boolean visible) {
-            return new EditorPanelModel(
-                    this.visible,
-                    this.editingExisting,
-                    this.memberId,
-                    this.memberName,
-                    this.playerName,
-                    this.rawLevel,
-                    this.rawPassivePerception,
-                    this.rawArmorClass,
-                    visible);
-        }
-
-        EditorPanelModel withDraft(
-                String memberName,
-                String playerName,
-                String rawLevel,
-                String rawPassivePerception,
-                String rawArmorClass
-        ) {
-            return new EditorPanelModel(
-                    this.visible,
-                    this.editingExisting,
-                    this.memberId,
-                    memberName,
-                    playerName,
-                    rawLevel,
-                    rawPassivePerception,
-                    rawArmorClass,
-                    this.deleteConfirmationVisible);
-        }
-    }
-
-    public record MemberModel(
-            @Nullable Long id,
-            String name,
-            String playerName,
-            int level,
-            int currentXp,
-            int currentLevelXp,
-            int nextLevelXp,
-            int passivePerception,
-            int armorClass,
-            String levelLabel,
-            String nextLevelLabel,
-            String detailsText,
-            String progressionText,
-            String levelProgressText,
-            double levelProgressFraction,
-            String restText,
-            String restStyleClass
-    ) {
-
-        public MemberModel {
-            name = safe(name);
-            playerName = safe(playerName);
-            levelLabel = safe(levelLabel);
-            nextLevelLabel = safe(nextLevelLabel);
-            detailsText = safe(detailsText);
-            progressionText = safe(progressionText);
-            levelProgressText = safe(levelProgressText);
-            levelProgressFraction = Math.max(0.0, Math.min(1.0, levelProgressFraction));
-            restText = safe(restText);
-            restStyleClass = safe(restStyleClass);
-        }
     }
 
     record PanelData(
@@ -528,7 +299,7 @@ public final class PartyTopBarContributionModel {
     ) {
     }
 
-    private record LevelProgressDisplay(String nextLevelLabel, String text, double fraction) {
+    private record LevelProgressDisplay(String nextLevelLabel, String text) {
     }
 
     @SuppressWarnings("PMD.UnnecessaryConstructor")
@@ -537,7 +308,7 @@ public final class PartyTopBarContributionModel {
         private MemberProjectionSupport() {
         }
 
-        private static MemberModel toMemberModel(
+        private static PartyRosterTopBarContentModel.MemberModel toMemberModel(
                 @Nullable PartyMemberDetails member,
                 @Nullable RestCadenceStatus restStatus
         ) {
@@ -545,43 +316,38 @@ public final class PartyTopBarContributionModel {
                     ? new PartyMemberDetails(0L, "", "", 1, 0, 0, 300, 300, false, 10, 10, 0, 0, 0,
                     MembershipState.ACTIVE)
                     : member;
-            String progression = safe(progressionDetails(safeMember));
             String restText = safe(restStatusText(restStatus));
             LevelProgressDisplay levelProgress = levelProgressDisplay(safeMember);
-            return new MemberModel(
+            return new PartyRosterTopBarContentModel.MemberModel(
                     safeMember.id(),
                     safe(safeMember.name()),
                     safe(safeMember.playerName()),
                     safeMember.level(),
-                    safeMember.currentXp(),
-                    safeMember.currentLevelXp(),
-                    safeMember.nextLevelXp(),
                     safeMember.passivePerception(),
                     safeMember.armorClass(),
+                    identityText(safeMember),
+                    combatText(safeMember),
                     "Lv " + safeMember.level(),
                     levelProgress.nextLevelLabel(),
-                    memberDetails(safeMember),
-                    progression,
                     levelProgress.text(),
-                    levelProgress.fraction(),
                     restText,
                     restUrgencyStyleClass(restStatus));
         }
 
-        private static String memberDetails(PartyMemberDetails member) {
-            String playerName = safe(member.playerName()).trim();
-            String prefix = playerName.isEmpty() ? "" : playerName + "  .  ";
-            return prefix + "AC " + member.armorClass() + "  .  PP " + member.passivePerception();
+        private static String identityText(PartyMemberDetails member) {
+            String name = safe(member.name()).trim();
+            String player = safe(member.playerName()).trim();
+            if (player.isBlank()) {
+                return name;
+            }
+            if (name.isBlank()) {
+                return player;
+            }
+            return name + " - " + player;
         }
 
-        private static String progressionDetails(PartyMemberDetails member) {
-            if (member.level() >= MAX_CHARACTER_LEVEL) {
-                return "Max-Level erreicht";
-            }
-            if (member.readyToLevel()) {
-                return "Level-up bereit";
-            }
-            return member.xpToNextLevel() + " XP bis Level " + (member.level() + 1);
+        private static String combatText(PartyMemberDetails member) {
+            return "AC " + member.armorClass() + " | PP " + member.passivePerception();
         }
 
         private static LevelProgressDisplay levelProgressDisplay(PartyMemberDetails member) {
@@ -589,7 +355,7 @@ public final class PartyTopBarContributionModel {
             int currentLevelXp = Math.max(0, member.currentLevelXp());
             int nextLevelXp = Math.max(currentLevelXp, member.nextLevelXp());
             if (member.level() >= MAX_CHARACTER_LEVEL || nextLevelXp <= currentLevelXp) {
-                return new LevelProgressDisplay("Max", formatProgressText(currentXp, currentXp, 100), 1.0);
+                return new LevelProgressDisplay("Max", formatProgressText(currentXp, currentXp, 100));
             }
             int span = Math.max(1, nextLevelXp - currentLevelXp);
             int earnedInLevel = Math.max(0, currentXp - currentLevelXp);
@@ -601,8 +367,7 @@ public final class PartyTopBarContributionModel {
             }
             return new LevelProgressDisplay(
                     "Lv " + (member.level() + 1),
-                    formatProgressText(currentXp, nextLevelXp, percent),
-                    fraction);
+                    formatProgressText(currentXp, nextLevelXp, percent));
         }
 
         private static String formatProgressText(int currentXp, int targetXp, int percent) {

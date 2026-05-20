@@ -6,7 +6,6 @@ import javafx.scene.Node;
 import shell.api.ShellBinding;
 import shell.api.ShellRuntimeContext;
 import shell.api.ShellSlot;
-import src.domain.encounter.EncounterApplicationService;
 import src.domain.party.PartyApplicationService;
 import src.domain.party.published.AdventuringDaySummaryModel;
 import src.domain.party.published.PartyMutationModel;
@@ -23,39 +22,27 @@ final class PartyTopBarBinder {
     }
 
     ShellBinding bind() {
-        PartyApplicationService party = runtimeContext.services().require(PartyApplicationService.class);
-        EncounterApplicationService encounters = runtimeContext.services().require(EncounterApplicationService.class);
         PartyTopBarContributionModel presentationModel = new PartyTopBarContributionModel();
         DropdownPopupContentModel popupContentModel = new DropdownPopupContentModel();
+        PartyApplicationService partyService = runtimeContext.services().require(PartyApplicationService.class);
         PartyTopBarIntentHandler intentHandler = new PartyTopBarIntentHandler(
                 presentationModel,
                 popupContentModel,
-                party,
-                encounters);
+                partyService);
         PartyRosterTopBarView rosterView = new PartyRosterTopBarView();
         PartyEditorTopBarView editorView = new PartyEditorTopBarView();
         PartyTopBarView panelView = new PartyTopBarView(rosterView, editorView);
         DropdownPopupView topBarView = new DropdownPopupView(panelView);
         topBarView.bind(popupContentModel);
+        panelView.bind(presentationModel.topBarContentModel());
+        rosterView.bind(presentationModel.rosterContentModel());
+        editorView.bind(presentationModel.editorContentModel());
         PartySnapshotModel snapshotModel = runtimeContext.services().require(PartySnapshotModel.class);
         AdventuringDaySummaryModel summaryModel = runtimeContext.services().require(AdventuringDaySummaryModel.class);
         PartyMutationModel mutationModel = runtimeContext.services().require(PartyMutationModel.class);
-        applyPopupPresentation(popupContentModel, presentationModel.triggerTextProperty().get());
-        PartyTopBarContributionModel.PanelModel initialModel = presentationModel.panelProperty().get();
-        PartyTopBarContributionModel.EditorPanelModel initialEditorModel = initialModel == null
-                ? PartyTopBarContributionModel.EditorPanelModel.hidden()
-                : initialModel.editorPanel();
-        rosterView.showPanel(toRosterContent(initialModel));
-        editorView.showEditor(initialEditorModel);
-        presentationModel.triggerTextProperty().addListener((ignored, before, after) ->
+        applyPopupPresentation(popupContentModel, presentationModel.topBarContentModel().triggerTextProperty().get());
+        presentationModel.topBarContentModel().triggerTextProperty().addListener((ignored, before, after) ->
                 applyPopupPresentation(popupContentModel, after));
-        presentationModel.panelProperty().addListener((ignored, before, after) -> {
-            PartyTopBarContributionModel.EditorPanelModel editorModel = after == null
-                    ? PartyTopBarContributionModel.EditorPanelModel.hidden()
-                    : after.editorPanel();
-            rosterView.showPanel(toRosterContent(after));
-            editorView.showEditor(editorModel);
-        });
         panelView.onViewInputEvent(intentHandler::consume);
         topBarView.onViewInputEvent(intentHandler::consume);
         rosterView.onViewInputEvent(intentHandler::consume);
@@ -78,24 +65,6 @@ final class PartyTopBarBinder {
                 snapshotModel.current(),
                 summaryModel.current()));
         return new Binding(topBarView);
-    }
-
-    private static PartyRosterTopBarView.PanelContent toRosterContent(PartyTopBarContributionModel.PanelModel model) {
-        PartyTopBarContributionModel.PanelModel safeModel = model == null
-                ? PartyTopBarContributionModel.PanelModel.loadingModel()
-                : model;
-        return new PartyRosterTopBarView.PanelContent(
-                safeModel.loading(),
-                safeModel.storageError(),
-                safeModel.storageMessage(),
-                safeModel.activeMembers(),
-                safeModel.reserveMembers(),
-                safeModel.summaryText(),
-                safeModel.restSummaryText(),
-                safeModel.actionStatus(),
-                safeModel.actionStatusError(),
-                safeModel.restActionsDisabled(),
-                safeModel.actionsDisabled());
     }
 
     private static void applyPopupPresentation(

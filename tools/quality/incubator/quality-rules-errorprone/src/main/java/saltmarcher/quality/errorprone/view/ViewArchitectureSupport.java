@@ -20,6 +20,9 @@ import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.ElementFilter;
+import saltmarcher.architecture.policy.view.ViewPolicy;
+import saltmarcher.architecture.policy.view.ViewRole;
+import saltmarcher.architecture.policy.view.ViewSourceDescriptor;
 import saltmarcher.quality.errorprone.TypeMirrorReferenceScanner;
 
 public final class ViewArchitectureSupport {
@@ -137,7 +140,8 @@ public final class ViewArchitectureSupport {
     }
 
     public static boolean isAllowedIntentHandlerDomainBoundary(String sourcePackageName, String referencedType) {
-        return isApplicationServiceReference(referencedType);
+        return isApplicationServiceReference(referencedType)
+                || isSameFeaturePublishedBoundary(sourcePackageName, referencedType);
     }
 
     public static boolean isApplicationServiceReference(String referencedType) {
@@ -236,21 +240,7 @@ public final class ViewArchitectureSupport {
     }
 
     public static String topLevelQualifiedTypeNameOf(String referencedType) {
-        if (referencedType == null || referencedType.isBlank()) {
-            return "";
-        }
-        String normalizedType = referencedType.replaceFirst("\\$.*$", "");
-        if (!normalizedType.startsWith("src.view.")) {
-            return normalizedType;
-        }
-        String[] segments = normalizedType.split("\\.");
-        if (segments.length >= 6 && "slotcontent".equals(segments[2])) {
-            return String.join(".", segments[0], segments[1], segments[2], segments[3], segments[4], segments[5]);
-        }
-        if (segments.length >= 5 && Set.of("leftbartabs", "statetabs", "dropdowns").contains(segments[2])) {
-            return String.join(".", segments[0], segments[1], segments[2], segments[3], segments[4]);
-        }
-        return normalizedType;
+        return ViewPolicy.topLevelQualifiedTypeName(referencedType);
     }
 
     public static boolean isSameViewUnitReference(String leftReferencedType, String rightReferencedType) {
@@ -454,6 +444,42 @@ public final class ViewArchitectureSupport {
 
     private static boolean isDomainWriteCarrier(String referencedType) {
         return referencedType.matches("^src\\.domain\\.[^.]+\\.published\\..*(Command|Query|Operation|Edit)(\\$.*)?$");
+    }
+
+    private static boolean isSameFeaturePublishedBoundary(String sourcePackageName, String referencedType) {
+        String featureName = viewFeatureName(sourcePackageName);
+        return !featureName.isBlank()
+                && referencedType != null
+                && referencedType.startsWith("src.domain." + featureName + ".published.")
+                && isPublishedWorkRequestCarrier(referencedType);
+    }
+
+    private static boolean isPublishedWorkRequestCarrier(String referencedType) {
+        String simpleName = topLevelQualifiedTypeNameOf(referencedType);
+        int separator = simpleName.lastIndexOf('.');
+        if (separator >= 0) {
+            simpleName = simpleName.substring(separator + 1);
+        }
+        return simpleName.endsWith("Command")
+                || simpleName.endsWith("Draft")
+                || simpleName.endsWith("Operation")
+                || simpleName.endsWith("Edit")
+                || simpleName.endsWith("State")
+                || simpleName.endsWith("Type");
+    }
+
+    private static String viewFeatureName(String sourcePackageName) {
+        if (sourcePackageName == null || sourcePackageName.isBlank()) {
+            return "";
+        }
+        String[] parts = sourcePackageName.split("\\.");
+        if (parts.length < 4 || !"src".equals(parts[0]) || !"view".equals(parts[1])) {
+            return "";
+        }
+        return switch (parts[2]) {
+            case "dropdowns", "leftbartabs", "statetabs" -> parts[3];
+            default -> "";
+        };
     }
 
     private static boolean isAllowedShellType(String referencedType, Set<String> allowedTypes) {

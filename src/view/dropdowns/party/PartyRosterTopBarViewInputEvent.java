@@ -8,10 +8,13 @@ public record PartyRosterTopBarViewInputEvent(
         int xpDelta,
         boolean removeRequested,
         boolean shortRestRequested,
-        boolean longRestRequested
+        boolean longRestRequested,
+        boolean reserveSearchChanged,
+        String reserveSearchText
 ) {
 
     public PartyRosterTopBarViewInputEvent {
         memberId = Math.max(0L, memberId);
+        reserveSearchText = reserveSearchText == null ? "" : reserveSearchText;
     }
 }
