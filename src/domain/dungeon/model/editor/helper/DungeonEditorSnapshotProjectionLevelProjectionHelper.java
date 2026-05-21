@@ -32,17 +32,25 @@ public final class DungeonEditorSnapshotProjectionLevelProjectionHelper {
     ) {
         NavigableSet<Integer> levels = new TreeSet<>();
         if (surface != null) {
-            surface.map().areas().forEach(area -> addCellLevels(levels, area.cells()));
+            for (var area : surface.map().areas()) {
+                addCellLevels(levels, area.cells());
+            }
             for (Feature feature : surface.map().features()) {
                 addCellLevels(levels, feature.cells());
             }
-            surface.map().editorHandles().forEach(handle -> levels.add(handle.cell().level()));
+            for (var handle : surface.map().editorHandles()) {
+                levels.add(handle.cell().level());
+            }
             if (surface.previewMap() != null) {
-                surface.previewMap().areas().forEach(area -> addCellLevels(levels, area.cells()));
+                for (var area : surface.previewMap().areas()) {
+                    addCellLevels(levels, area.cells());
+                }
                 for (Feature feature : surface.previewMap().features()) {
                     addCellLevels(levels, feature.cells());
                 }
-                surface.previewMap().editorHandles().forEach(handle -> levels.add(handle.cell().level()));
+                for (var handle : surface.previewMap().editorHandles()) {
+                    levels.add(handle.cell().level());
+                }
             }
         }
         if (levels.isEmpty()) {

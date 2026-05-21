@@ -3,7 +3,6 @@ package src.domain.dungeon.model.editor.usecase;
 import java.util.List;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.editor.helper.DungeonEditorSnapshotProjectionLevelProjectionHelper;
-import src.domain.dungeon.model.editor.helper.DungeonEditorSnapshotSelectionProjectionHelper;
 import src.domain.dungeon.model.editor.helper.DungeonEditorSnapshotStateProjectionHelper;
 import src.domain.dungeon.model.editor.model.session.model.DungeonEditorDungeonFacts;
 import src.domain.dungeon.model.editor.model.session.model.DungeonEditorDungeonState;
@@ -36,9 +35,7 @@ public final class BuildDungeonEditorSnapshotUseCase {
         DungeonEditorSession safeState = DungeonEditorSnapshotStateProjectionHelper.safeState(state);
         searchMapsUseCase.execute("");
         List<MapSummary> maps = dungeonState.currentFacts(null, safeState.selection(), safeState.preview()).maps();
-        @Nullable MapId resolvedMapId = DungeonEditorSnapshotSelectionProjectionHelper.resolveSelectedMapId(
-                safeState.selectedMapId(),
-                maps);
+        @Nullable MapId resolvedMapId = resolveSelectedMapId(safeState.selectedMapId(), maps);
         refreshAuthoredSurface(resolvedMapId, safeState);
         DungeonEditorDungeonFacts surfaceFacts = dungeonState.currentFacts(
                 resolvedMapId,
@@ -104,6 +101,17 @@ public final class BuildDungeonEditorSnapshotUseCase {
     private static boolean hasSelectionForInspector(DungeonEditorSession state) {
         return !state.selection().topologyRef().equals(DungeonTopologyRef.empty())
                 || state.selection().clusterSelection();
+    }
+
+    private static @Nullable MapId resolveSelectedMapId(@Nullable MapId requestedMapId, List<MapSummary> maps) {
+        if (requestedMapId != null) {
+            for (MapSummary summary : maps) {
+                if (requestedMapId.equals(summary.mapId())) {
+                    return requestedMapId;
+                }
+            }
+        }
+        return maps.isEmpty() ? null : maps.getFirst().mapId();
     }
 
 }
