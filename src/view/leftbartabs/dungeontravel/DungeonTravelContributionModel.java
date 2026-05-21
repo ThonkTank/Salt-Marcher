@@ -66,6 +66,19 @@ public final class DungeonTravelContributionModel {
         contentModel.apply(state.get(), toStateActionItems(actions.get()));
     }
 
+    void bindControlsContentModel(DungeonTravelControlsContentModel contentModel) {
+        if (contentModel == null) {
+            return;
+        }
+        mapName.addListener((ignored, before, after) -> contentModel.showMapName(after));
+        overlaySettings.addListener((ignored, before, after) ->
+                contentModel.showOverlaySettings(toControlsOverlaySettings(after), false));
+        projectionLevel.addListener((ignored, before, after) -> contentModel.showProjectionLevel(after.intValue()));
+        contentModel.showMapName(mapName.get());
+        contentModel.showOverlaySettings(toControlsOverlaySettings(overlaySettings.get()), false);
+        contentModel.showProjectionLevel(projectionLevel.get());
+    }
+
     void apply(TravelDungeonSnapshot snapshot) {
         TravelDungeonSnapshot safeSnapshot = snapshot == null
                 ? TravelDungeonSnapshot.empty()
@@ -141,6 +154,17 @@ public final class DungeonTravelContributionModel {
                 projection.actionId(),
                 projection.buttonLabel(),
                 projection.descriptionText());
+    }
+
+    private static DungeonTravelControlsContentModel.OverlaySettings toControlsOverlaySettings(
+            OverlayProjection projection
+    ) {
+        OverlayProjection resolved = projection == null ? OverlayProjection.defaults() : projection;
+        return new DungeonTravelControlsContentModel.OverlaySettings(
+                DungeonTravelControlsContentModel.OverlayMode.fromKey(resolved.modeKey()),
+                resolved.levelRange(),
+                resolved.opacity(),
+                resolved.selectedLevels());
     }
 
     static final class OverlayProjection {
