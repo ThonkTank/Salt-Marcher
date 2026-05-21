@@ -1,7 +1,7 @@
 package src.domain.dungeon.model.editor.usecase;
 
 import java.util.Objects;
-import src.domain.dungeon.model.editor.model.session.model.DungeonEditorMainViewInput;
+import src.domain.dungeon.model.editor.usecase.InterpretDungeonEditorMainViewInputUseCase.MainViewInput;
 import src.domain.dungeon.model.editor.model.session.model.DungeonEditorSessionValues;
 import src.domain.dungeon.model.editor.model.session.model.DungeonEditorSessionWorkflow;
 import src.domain.dungeon.model.editor.model.workspace.model.DungeonEditorWorkspaceValues.MapSnapshot;
@@ -21,7 +21,7 @@ public final class ApplyDungeonEditorPaintRoomUseCase {
         this.effectUseCase = Objects.requireNonNull(effectUseCase, "effectUseCase");
     }
 
-    public void press(DungeonEditorMainViewInput input) {
+    public void press(MainViewInput input) {
         MapSnapshot committedSnapshot = effectUseCase.committedGridOrPublishCurrent();
         if (committedSnapshot == null) {
             return;
@@ -32,7 +32,7 @@ public final class ApplyDungeonEditorPaintRoomUseCase {
                 workflow.projectionLevel()));
     }
 
-    public void drag(DungeonEditorMainViewInput input) {
+    public void drag(MainViewInput input) {
         MapSnapshot committedSnapshot = effectUseCase.committedGridOrPublishCurrent();
         if (committedSnapshot == null) {
             return;
@@ -42,7 +42,7 @@ public final class ApplyDungeonEditorPaintRoomUseCase {
                 workflow.projectionLevel()));
     }
 
-    public void release(DungeonEditorMainViewInput input) {
+    public void release(MainViewInput input) {
         MapSnapshot committedSnapshot = effectUseCase.committedGridOrPublishCurrent();
         if (committedSnapshot == null) {
             return;

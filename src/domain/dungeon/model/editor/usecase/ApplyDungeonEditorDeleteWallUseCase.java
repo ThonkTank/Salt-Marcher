@@ -1,7 +1,7 @@
 package src.domain.dungeon.model.editor.usecase;
 
 import java.util.Objects;
-import src.domain.dungeon.model.editor.model.session.model.DungeonEditorMainViewInput;
+import src.domain.dungeon.model.editor.usecase.InterpretDungeonEditorMainViewInputUseCase.MainViewInput;
 import src.domain.dungeon.model.editor.model.session.model.DungeonEditorSessionValues;
 import src.domain.dungeon.model.editor.model.session.model.DungeonEditorSessionWorkflow;
 import src.domain.dungeon.model.editor.model.workspace.model.DungeonEditorWorkspaceValues.MapSnapshot;
@@ -21,19 +21,19 @@ public final class ApplyDungeonEditorDeleteWallUseCase {
         this.effectUseCase = Objects.requireNonNull(effectUseCase, "effectUseCase");
     }
 
-    public void press(DungeonEditorMainViewInput input) {
+    public void press(MainViewInput input) {
         applyPress(input, DungeonEditorSessionValues.Tool.WALL_DELETE);
     }
 
-    public void drag(DungeonEditorMainViewInput input) {
+    public void drag(MainViewInput input) {
         applyDrag(input, DungeonEditorSessionValues.Tool.WALL_DELETE);
     }
 
-    public void hover(DungeonEditorMainViewInput input) {
+    public void hover(MainViewInput input) {
         applyHover(input, DungeonEditorSessionValues.Tool.WALL_DELETE);
     }
 
-    private void applyPress(DungeonEditorMainViewInput input, DungeonEditorSessionValues.Tool tool) {
+    private void applyPress(MainViewInput input, DungeonEditorSessionValues.Tool tool) {
         MapSnapshot committedSnapshot = effectUseCase.committedGridOrPublishCurrent();
         if (committedSnapshot == null) {
             return;
@@ -46,7 +46,7 @@ public final class ApplyDungeonEditorDeleteWallUseCase {
                 workflow.projectionLevel()));
     }
 
-    private void applyDrag(DungeonEditorMainViewInput input, DungeonEditorSessionValues.Tool tool) {
+    private void applyDrag(MainViewInput input, DungeonEditorSessionValues.Tool tool) {
         MapSnapshot committedSnapshot = effectUseCase.committedGridOrPublishCurrent();
         if (committedSnapshot == null) {
             return;
@@ -58,7 +58,7 @@ public final class ApplyDungeonEditorDeleteWallUseCase {
                 workflow.projectionLevel()));
     }
 
-    private void applyHover(DungeonEditorMainViewInput input, DungeonEditorSessionValues.Tool tool) {
+    private void applyHover(MainViewInput input, DungeonEditorSessionValues.Tool tool) {
         MapSnapshot committedSnapshot = effectUseCase.committedGridOrPublishCurrent();
         if (committedSnapshot == null) {
             return;
