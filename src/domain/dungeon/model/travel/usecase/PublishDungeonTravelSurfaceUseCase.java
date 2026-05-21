@@ -25,29 +25,14 @@ public final class PublishDungeonTravelSurfaceUseCase {
     }
 
     public void execute(
-            boolean hasPosition,
-            long mapIdValue,
-            String locationKindName,
-            long ownerId,
-            int tileQ,
-            int tileR,
-            int tileLevel,
-            String headingName
+            PositionInput position
     ) {
         publishedStateRepository.publishSurface(loadDungeonTravelSurfaceUseCase.execute(
-                new LoadDungeonTravelSurfaceUseCase.Input(travelPosition(
-                        hasPosition,
-                        mapIdValue,
-                        locationKindName,
-                        ownerId,
-                        tileQ,
-                        tileR,
-                        tileLevel,
-                        headingName))));
+                new LoadDungeonTravelSurfaceUseCase.Input(travelPosition(position))));
     }
 
-    static @Nullable DungeonTravelPositionFacts travelPosition(
-            boolean hasPosition,
+    public record PositionInput(
+            boolean present,
             long mapIdValue,
             String locationKindName,
             long ownerId,
@@ -56,15 +41,18 @@ public final class PublishDungeonTravelSurfaceUseCase {
             int tileLevel,
             String headingName
     ) {
-        if (!hasPosition) {
+    }
+
+    private static @Nullable DungeonTravelPositionFacts travelPosition(PositionInput position) {
+        if (position == null || !position.present()) {
             return null;
         }
         return new DungeonTravelPositionFacts(
-                new DungeonMapIdentity(mapIdValue),
-                locationKind(locationKindName),
-                ownerId,
-                new DungeonCell(tileQ, tileR, tileLevel),
-                heading(headingName));
+                new DungeonMapIdentity(position.mapIdValue()),
+                locationKind(position.locationKindName()),
+                position.ownerId(),
+                new DungeonCell(position.tileQ(), position.tileR(), position.tileLevel()),
+                heading(position.headingName()));
     }
 
     private static DungeonTravelLocationKind locationKind(String name) {

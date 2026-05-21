@@ -23,7 +23,7 @@ public final class DungeonTravelApplicationService {
 
     public void loadSurface(DungeonTravelCommand.LoadSurfaceCommand command) {
         Objects.requireNonNull(command, "command");
-        publishSurfaceUseCase.execute(
+        publishSurfaceUseCase.execute(new PublishDungeonTravelSurfaceUseCase.PositionInput(
                 command.position() != null,
                 command.position() == null ? 1L : command.position().mapId().value(),
                 command.position() == null ? "TILE" : command.position().locationKind().name(),
@@ -31,20 +31,21 @@ public final class DungeonTravelApplicationService {
                 command.position() == null ? 0 : command.position().tile().q(),
                 command.position() == null ? 0 : command.position().tile().r(),
                 command.position() == null ? 0 : command.position().tile().level(),
-                command.position() == null ? "SOUTH" : command.position().heading().name());
+                command.position() == null ? "SOUTH" : command.position().heading().name()));
     }
 
     public void moveAction(DungeonTravelCommand.MoveActionCommand command) {
         Objects.requireNonNull(command, "command");
-        publishMoveUseCase.execute(
-                command.position() != null,
-                command.position() == null ? 1L : command.position().mapId().value(),
-                command.position() == null ? "TILE" : command.position().locationKind().name(),
-                command.position() == null ? 0L : command.position().ownerId(),
-                command.position() == null ? 0 : command.position().tile().q(),
-                command.position() == null ? 0 : command.position().tile().r(),
-                command.position() == null ? 0 : command.position().tile().level(),
-                command.position() == null ? "SOUTH" : command.position().heading().name(),
-                command.actionId());
+        publishMoveUseCase.execute(new PublishDungeonTravelMoveUseCase.MoveInput(
+                new PublishDungeonTravelMoveUseCase.PositionInput(
+                        command.position() != null,
+                        command.position() == null ? 1L : command.position().mapId().value(),
+                        command.position() == null ? "TILE" : command.position().locationKind().name(),
+                        command.position() == null ? 0L : command.position().ownerId(),
+                        command.position() == null ? 0 : command.position().tile().q(),
+                        command.position() == null ? 0 : command.position().tile().r(),
+                        command.position() == null ? 0 : command.position().tile().level(),
+                        command.position() == null ? "SOUTH" : command.position().heading().name()),
+                command.actionId()));
     }
 }

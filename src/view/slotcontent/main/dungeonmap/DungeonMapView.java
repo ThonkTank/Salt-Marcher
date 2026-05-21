@@ -34,7 +34,6 @@ public class DungeonMapView extends BorderPane {
     private static final double DEFAULT_WIDTH = 960.0;
     private static final double DEFAULT_HEIGHT = 640.0;
     private static final double ZOOM_STEP_FACTOR = 1.1;
-    private static final double NO_DELTA = 0.0;
     private static final double MIN_CANVAS_SIZE = 1.0;
     private static final double MIN_GRID_PIXEL_SPACING = 10.0;
     private static final double KEYBOARD_SCROLL_DELTA = 1.0;
@@ -119,12 +118,12 @@ public class DungeonMapView extends BorderPane {
         canvasLayer.requestFocus();
         MouseButton button = event.getButton();
         if (button == MouseButton.MIDDLE) {
-            emitMouseEvent(event, true, false, false, false, false);
+            emitMousePressedEvent(event);
             event.consume();
             return;
         }
         if (button == MouseButton.PRIMARY) {
-            emitMouseEvent(event, true, false, false, false, false);
+            emitMousePressedEvent(event);
             event.consume();
             return;
         }
@@ -135,23 +134,23 @@ public class DungeonMapView extends BorderPane {
 
     private void handleMouseDragged(MouseEvent event) {
         if (event.isPrimaryButtonDown()) {
-            emitMouseEvent(event, false, true, false, false, false);
+            emitMouseDraggedEvent(event);
             event.consume();
             return;
         }
         if (event.isMiddleButtonDown()) {
-            emitMouseEvent(event, false, true, false, false, false);
+            emitMouseDraggedEvent(event);
             event.consume();
         }
     }
 
     private void handleMouseMoved(MouseEvent event) {
-        emitMouseEvent(event, false, false, true, false, false);
+        emitMouseMovedEvent(event);
     }
 
     private void handleMouseReleased(MouseEvent event) {
         if (event.getButton() == MouseButton.MIDDLE || event.getButton() == MouseButton.PRIMARY) {
-            emitMouseEvent(event, false, false, false, true, false);
+            emitMouseReleasedEvent(event);
             event.consume();
         }
     }
@@ -172,35 +171,22 @@ public class DungeonMapView extends BorderPane {
     private void handleKeyPressed(KeyEvent event) {
         KeyCode code = event.getCode();
         if (code == KeyCode.ENTER || code == KeyCode.SPACE) {
-            emitKeyboardEvent(true, false, false, false, false, event, true, NO_DELTA);
-            emitKeyboardEvent(false, false, false, true, false, event, false, NO_DELTA);
+            emitKeyboardPressEvent(event);
+            emitKeyboardReleaseEvent(event);
             event.consume();
             return;
         }
         if (code == KeyCode.PAGE_UP || code == KeyCode.PAGE_DOWN) {
-            emitKeyboardEvent(
-                    false,
-                    false,
-                    false,
-                    false,
-                    true,
+            emitKeyboardScrollEvent(
                     event,
-                    false,
                     code == KeyCode.PAGE_UP ? KEYBOARD_SCROLL_DELTA : -KEYBOARD_SCROLL_DELTA);
             event.consume();
         }
     }
 
-    private void emitMouseEvent(
-            MouseEvent event,
-            boolean press,
-            boolean drag,
-            boolean move,
-            boolean release,
-            boolean scroll
-    ) {
+    private void emitMousePressedEvent(MouseEvent event) {
         viewInputEventHandler.accept(new DungeonMapViewInputEvent(
-                new DungeonMapViewInputEvent.CanvasInput(press, drag, move, release, scroll),
+                new DungeonMapViewInputEvent.CanvasInput(true, false, false, false, false),
                 new DungeonMapViewInputEvent.CanvasButtons(
                         event.isPrimaryButtonDown() || event.getButton() == MouseButton.PRIMARY,
                         event.isMiddleButtonDown() || event.getButton() == MouseButton.MIDDLE,
@@ -213,19 +199,79 @@ public class DungeonMapView extends BorderPane {
                 0.0));
     }
 
-    private void emitKeyboardEvent(
-            boolean press,
-            boolean drag,
-            boolean move,
-            boolean release,
-            boolean scroll,
-            KeyEvent event,
-            boolean primaryButtonDown,
-            double scrollDeltaY
-    ) {
+    private void emitMouseDraggedEvent(MouseEvent event) {
         viewInputEventHandler.accept(new DungeonMapViewInputEvent(
-                new DungeonMapViewInputEvent.CanvasInput(press, drag, move, release, scroll),
-                new DungeonMapViewInputEvent.CanvasButtons(primaryButtonDown, false, false),
+                new DungeonMapViewInputEvent.CanvasInput(false, true, false, false, false),
+                new DungeonMapViewInputEvent.CanvasButtons(
+                        event.isPrimaryButtonDown() || event.getButton() == MouseButton.PRIMARY,
+                        event.isMiddleButtonDown() || event.getButton() == MouseButton.MIDDLE,
+                        event.isSecondaryButtonDown()),
+                new DungeonMapViewInputEvent.CanvasModifiers(
+                        event.isControlDown(),
+                        event.isShiftDown(),
+                        event.isAltDown()),
+                new DungeonMapViewInputEvent.CanvasPosition(event.getX(), event.getY()),
+                0.0));
+    }
+
+    private void emitMouseMovedEvent(MouseEvent event) {
+        viewInputEventHandler.accept(new DungeonMapViewInputEvent(
+                new DungeonMapViewInputEvent.CanvasInput(false, false, true, false, false),
+                new DungeonMapViewInputEvent.CanvasButtons(
+                        event.isPrimaryButtonDown() || event.getButton() == MouseButton.PRIMARY,
+                        event.isMiddleButtonDown() || event.getButton() == MouseButton.MIDDLE,
+                        event.isSecondaryButtonDown()),
+                new DungeonMapViewInputEvent.CanvasModifiers(
+                        event.isControlDown(),
+                        event.isShiftDown(),
+                        event.isAltDown()),
+                new DungeonMapViewInputEvent.CanvasPosition(event.getX(), event.getY()),
+                0.0));
+    }
+
+    private void emitMouseReleasedEvent(MouseEvent event) {
+        viewInputEventHandler.accept(new DungeonMapViewInputEvent(
+                new DungeonMapViewInputEvent.CanvasInput(false, false, false, true, false),
+                new DungeonMapViewInputEvent.CanvasButtons(
+                        event.isPrimaryButtonDown() || event.getButton() == MouseButton.PRIMARY,
+                        event.isMiddleButtonDown() || event.getButton() == MouseButton.MIDDLE,
+                        event.isSecondaryButtonDown()),
+                new DungeonMapViewInputEvent.CanvasModifiers(
+                        event.isControlDown(),
+                        event.isShiftDown(),
+                        event.isAltDown()),
+                new DungeonMapViewInputEvent.CanvasPosition(event.getX(), event.getY()),
+                0.0));
+    }
+
+    private void emitKeyboardPressEvent(KeyEvent event) {
+        viewInputEventHandler.accept(new DungeonMapViewInputEvent(
+                new DungeonMapViewInputEvent.CanvasInput(true, false, false, false, false),
+                new DungeonMapViewInputEvent.CanvasButtons(true, false, false),
+                new DungeonMapViewInputEvent.CanvasModifiers(
+                        event.isControlDown(),
+                        event.isShiftDown(),
+                        event.isAltDown()),
+                new DungeonMapViewInputEvent.CanvasPosition(canvas.getWidth() / 2.0, canvas.getHeight() / 2.0),
+                0.0));
+    }
+
+    private void emitKeyboardReleaseEvent(KeyEvent event) {
+        viewInputEventHandler.accept(new DungeonMapViewInputEvent(
+                new DungeonMapViewInputEvent.CanvasInput(false, false, false, true, false),
+                new DungeonMapViewInputEvent.CanvasButtons(false, false, false),
+                new DungeonMapViewInputEvent.CanvasModifiers(
+                        event.isControlDown(),
+                        event.isShiftDown(),
+                        event.isAltDown()),
+                new DungeonMapViewInputEvent.CanvasPosition(canvas.getWidth() / 2.0, canvas.getHeight() / 2.0),
+                0.0));
+    }
+
+    private void emitKeyboardScrollEvent(KeyEvent event, double scrollDeltaY) {
+        viewInputEventHandler.accept(new DungeonMapViewInputEvent(
+                new DungeonMapViewInputEvent.CanvasInput(false, false, false, false, true),
+                new DungeonMapViewInputEvent.CanvasButtons(false, false, false),
                 new DungeonMapViewInputEvent.CanvasModifiers(
                         event.isControlDown(),
                         event.isShiftDown(),
