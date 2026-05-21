@@ -16,6 +16,7 @@ public final class SaveDungeonEditorAuthoredRoomNarrationUseCase {
     private final ApplyDungeonAuthoredMutationUseCase mutationUseCase;
     private final DungeonAuthoredPublishedStateRepository publishedStateRepository;
     private final DungeonEditorDungeonState state;
+    private final DungeonEditorAuthoredOperationExchange exchange = new DungeonEditorAuthoredOperationExchange();
 
     public SaveDungeonEditorAuthoredRoomNarrationUseCase(
             ApplyDungeonAuthoredMutationUseCase mutationUseCase,
@@ -37,8 +38,8 @@ public final class SaveDungeonEditorAuthoredRoomNarrationUseCase {
                 current -> current.saveRoomNarration(
                         roomNarration.roomId(),
                         DungeonEditorAuthoredOperationHelper.roomNarration(roomNarration)));
-        state.replaceMutation(ApplyDungeonEditorAuthoredOperationUseCase.mutationFacts(result));
-        publishedStateRepository.publishMutation(ApplyDungeonEditorAuthoredOperationUseCase.mutationPublication(result));
+        state.replaceMutation(exchange.mutationFacts(result));
+        publishedStateRepository.publishMutation(exchange.mutationPublication(result));
     }
 
     private static DungeonMapIdentity domainMapId(MapId mapId) {

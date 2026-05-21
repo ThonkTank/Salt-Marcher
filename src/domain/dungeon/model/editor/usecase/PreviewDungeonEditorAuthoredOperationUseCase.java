@@ -14,6 +14,7 @@ public final class PreviewDungeonEditorAuthoredOperationUseCase {
     private final ApplyDungeonAuthoredMutationUseCase mutationUseCase;
     private final DungeonAuthoredPublishedStateRepository publishedStateRepository;
     private final DungeonEditorDungeonState state;
+    private final DungeonEditorAuthoredOperationExchange exchange = new DungeonEditorAuthoredOperationExchange();
 
     public PreviewDungeonEditorAuthoredOperationUseCase(
             ApplyDungeonAuthoredMutationUseCase mutationUseCase,
@@ -27,16 +28,15 @@ public final class PreviewDungeonEditorAuthoredOperationUseCase {
     }
 
     public void execute(MapId mapId, DungeonEditorSessionValues.Preview preview) {
-        ApplyDungeonEditorOperationUseCase.Mutation mutation =
-                ApplyDungeonEditorAuthoredOperationUseCase.mutation(preview);
+        ApplyDungeonEditorOperationUseCase.Mutation mutation = exchange.mutation(preview);
         if (mutation == null) {
             return;
         }
         ApplyDungeonEditorOperationUseCase.OperationResultData result = mutationUseCase.preview(
                 domainMapId(mapId),
                 mutation);
-        state.replaceMutation(ApplyDungeonEditorAuthoredOperationUseCase.mutationFacts(result));
-        publishedStateRepository.publishMutation(ApplyDungeonEditorAuthoredOperationUseCase.mutationPublication(result));
+        state.replaceMutation(exchange.mutationFacts(result));
+        publishedStateRepository.publishMutation(exchange.mutationPublication(result));
     }
 
     private static DungeonMapIdentity domainMapId(MapId mapId) {

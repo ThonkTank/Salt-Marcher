@@ -13,6 +13,7 @@ import src.domain.dungeon.model.editor.model.workspace.model.DungeonEditorWorksp
 import src.domain.dungeon.model.editor.model.workspace.model.DungeonEditorWorkspaceValues.MapSnapshot;
 import src.domain.dungeon.model.editor.model.workspace.model.DungeonEditorWorkspaceValues.MapSummary;
 import src.domain.dungeon.model.map.model.DungeonTopologyRef;
+import src.domain.dungeon.model.map.usecase.LoadDungeonSnapshotUseCase;
 
 public final class BuildDungeonEditorSnapshotUseCase {
     private final SearchDungeonEditorMapCatalogUseCase searchMapsUseCase;
@@ -80,8 +81,11 @@ public final class BuildDungeonEditorSnapshotUseCase {
         if (mapId == null) {
             return;
         }
-        refreshAuthoredSnapshot(mapId);
-        refreshAuthoredSelectionInspector(mapId, state);
+        if (hasSelectionForInspector(state)) {
+            refreshAuthoredSurfaceWithSelection(mapId, state);
+        } else {
+            refreshAuthoredSnapshot(mapId);
+        }
         previewAuthoredOperation(mapId, state);
     }
 
@@ -89,15 +93,13 @@ public final class BuildDungeonEditorSnapshotUseCase {
         loadMapUseCase.execute(mapId);
     }
 
-    private void refreshAuthoredSelectionInspector(MapId mapId, DungeonEditorSession state) {
-        if (!hasSelectionForInspector(state)) {
-            return;
-        }
-        describeSelectionUseCase.execute(
+    private void refreshAuthoredSurfaceWithSelection(MapId mapId, DungeonEditorSession state) {
+        LoadDungeonSnapshotUseCase.AuthoredSurfaceData surface = loadMapUseCase.executeWithSelection(
                 mapId,
                 state.selection().topologyRef(),
                 state.selection().clusterId(),
                 state.selection().clusterSelection());
+        describeSelectionUseCase.publish(surface.inspector());
     }
 
     private void previewAuthoredOperation(MapId mapId, DungeonEditorSession state) {

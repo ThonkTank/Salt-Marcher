@@ -1,13 +1,14 @@
 package src.domain.dungeon.model.map.usecase;
 
+import java.util.List;
+import java.util.Objects;
 import src.domain.dungeon.model.map.model.DungeonCell;
 import src.domain.dungeon.model.map.model.DungeonDerivedState;
 import src.domain.dungeon.model.map.model.DungeonEditorHandleFacts;
 import src.domain.dungeon.model.map.model.DungeonEdgeDirection;
+import src.domain.dungeon.model.map.model.DungeonMap;
 import src.domain.dungeon.model.map.model.DungeonMapIdentity;
 import src.domain.dungeon.model.map.model.DungeonTopologyRef;
-
-import java.util.List;
 
 /**
  * Loads the current committed dungeon snapshot.
@@ -72,6 +73,16 @@ public final class LoadDungeonSnapshotUseCase {
         }
     }
 
+    public record AuthoredSurfaceData(
+            DungeonSnapshotData snapshot,
+            InspectorSnapshotData inspector
+    ) {
+        public AuthoredSurfaceData {
+            snapshot = Objects.requireNonNull(snapshot, "snapshot");
+            inspector = Objects.requireNonNull(inspector, "inspector");
+        }
+    }
+
     private final LoadDungeonMapUseCase loadDungeonMap;
     private final AssembleDungeonSnapshotUseCase assembleDungeonSnapshot;
     private final PublishDungeonEditorHandlesUseCase publishDungeonEditorHandles;
@@ -97,7 +108,25 @@ public final class LoadDungeonSnapshotUseCase {
         return snapshotData(loadDungeonMap.execute(mapId));
     }
 
-    private DungeonSnapshotData snapshotData(src.domain.dungeon.model.map.model.DungeonMap dungeonMap) {
+    public AuthoredSurfaceData executeWithSelection(
+            DungeonMapIdentity mapId,
+            DungeonTopologyRef topologyRef,
+            long clusterId,
+            boolean clusterSelection
+    ) {
+        DungeonMap dungeonMap = loadDungeonMap.execute(mapId);
+        DungeonSnapshotData snapshot = snapshotData(dungeonMap);
+        return new AuthoredSurfaceData(
+                snapshot,
+                inspectDungeonSelection.execute(
+                        dungeonMap,
+                        snapshot.derived(),
+                        topologyRef,
+                        clusterId,
+                        clusterSelection));
+    }
+
+    private DungeonSnapshotData snapshotData(DungeonMap dungeonMap) {
         return assembleDungeonSnapshot.execute(
                 dungeonMap,
                 publishDungeonEditorHandles.execute(dungeonMap));
