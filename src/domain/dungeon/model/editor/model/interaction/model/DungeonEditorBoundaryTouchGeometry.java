@@ -73,6 +73,18 @@ public record DungeonEditorBoundaryTouchGeometry(Cell start, Cell end) {
         return count;
     }
 
+    public boolean touchesAnyCell(List<Cell> cells) {
+        List<Cell> safeCells = cells == null ? List.of() : cells;
+        for (Cell touchingCell : touchingCells()) {
+            for (Cell cell : safeCells) {
+                if (touchingCell.equals(cell)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
     public String directionForCell(Cell cell) {
         if (cell == null) {
             return "";

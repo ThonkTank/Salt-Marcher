@@ -14,7 +14,7 @@ public final class DungeonEditorProjectionGeometryProjectionHelper {
             DungeonEditorWorkspaceValues.Edge edge,
             List<DungeonEditorWorkspaceValues.Cell> cells
     ) {
-        return edge != null && DungeonEditorBoundaryTouchGeometry.fromEdge(edge).touchingCount(cells) > 0;
+        return edge != null && DungeonEditorBoundaryTouchGeometry.fromEdge(edge).touchesAnyCell(cells);
     }
 
     public static CellCenter centerOf(List<DungeonEditorMapProjectionSnapshot.CellProjection> cells) {
