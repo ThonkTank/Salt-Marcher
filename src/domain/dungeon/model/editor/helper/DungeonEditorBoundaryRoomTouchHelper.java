@@ -39,7 +39,7 @@ public final class DungeonEditorBoundaryRoomTouchHelper {
         if (requireDoorBoundary != boundary.doorKind()) {
             return null;
         }
-        List<DungeonEditorWorkspaceValues.Cell> touchingCells = DungeonEditorBoundaryRoomTouchSupportHelper.touchingCells(
+        List<DungeonEditorWorkspaceValues.Cell> touchingCells = touchingCells(
                 boundary.start().toWorkspaceCell(),
                 boundary.end().toWorkspaceCell());
         List<BoundaryRoomTouch> touches = roomTouches(snapshot.areas(), touchingCells);
@@ -65,11 +65,9 @@ public final class DungeonEditorBoundaryRoomTouchHelper {
             return 0;
         }
         Set<Long> roomIds = new LinkedHashSet<>();
-        List<CellKey> touchingCells = DungeonEditorBoundaryRoomTouchSupportHelper.touchingCells(
+        List<CellKey> touchingCells = touchingCellKeys(
                 boundary.start().toWorkspaceCell(),
-                boundary.end().toWorkspaceCell()).stream()
-                .map(cell -> new CellKey(cell.q(), cell.r(), cell.level()))
-                .toList();
+                boundary.end().toWorkspaceCell());
         for (DungeonEditorWorkspaceValues.Area area : snapshot.areas()) {
             if (!area.kind().isRoom()) {
                 continue;
@@ -100,5 +98,60 @@ public final class DungeonEditorBoundaryRoomTouchHelper {
             }
         }
         return List.copyOf(touches);
+    }
+
+    private static List<CellKey> touchingCellKeys(
+            DungeonEditorWorkspaceValues.Cell start,
+            DungeonEditorWorkspaceValues.Cell end
+    ) {
+        List<CellKey> result = new ArrayList<>();
+        for (DungeonEditorWorkspaceValues.Cell cell : touchingCells(start, end)) {
+            result.add(new CellKey(cell.q(), cell.r(), cell.level()));
+        }
+        return List.copyOf(result);
+    }
+
+    private static List<DungeonEditorWorkspaceValues.Cell> touchingCells(
+            DungeonEditorWorkspaceValues.Cell start,
+            DungeonEditorWorkspaceValues.Cell end
+    ) {
+        if (start.level() != end.level()) {
+            return List.of();
+        }
+        if (start.r() == end.r()) {
+            return horizontalTouchingCells(start, end);
+        }
+        if (start.q() == end.q()) {
+            return verticalTouchingCells(start, end);
+        }
+        return List.of();
+    }
+
+    private static List<DungeonEditorWorkspaceValues.Cell> horizontalTouchingCells(
+            DungeonEditorWorkspaceValues.Cell start,
+            DungeonEditorWorkspaceValues.Cell end
+    ) {
+        int minQ = Math.min(start.q(), end.q());
+        int maxQ = Math.max(start.q(), end.q());
+        List<DungeonEditorWorkspaceValues.Cell> result = new ArrayList<>();
+        for (int q = minQ; q < maxQ; q++) {
+            result.add(new DungeonEditorWorkspaceValues.Cell(q, start.r() - 1, start.level()));
+            result.add(new DungeonEditorWorkspaceValues.Cell(q, start.r(), start.level()));
+        }
+        return List.copyOf(result);
+    }
+
+    private static List<DungeonEditorWorkspaceValues.Cell> verticalTouchingCells(
+            DungeonEditorWorkspaceValues.Cell start,
+            DungeonEditorWorkspaceValues.Cell end
+    ) {
+        int minR = Math.min(start.r(), end.r());
+        int maxR = Math.max(start.r(), end.r());
+        List<DungeonEditorWorkspaceValues.Cell> result = new ArrayList<>();
+        for (int r = minR; r < maxR; r++) {
+            result.add(new DungeonEditorWorkspaceValues.Cell(start.q() - 1, r, start.level()));
+            result.add(new DungeonEditorWorkspaceValues.Cell(start.q(), r, start.level()));
+        }
+        return List.copyOf(result);
     }
 }

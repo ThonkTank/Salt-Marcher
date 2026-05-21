@@ -1,6 +1,6 @@
 package src.domain.dungeon.model.editor.helper;
 
-import java.util.Comparator;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -10,6 +10,7 @@ import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.editor.model.interaction.model.DungeonEditorInteractionValues.CellKey;
 import src.domain.dungeon.model.editor.model.interaction.model.DungeonEditorInteractionValues.VertexTarget;
 import src.domain.dungeon.model.editor.model.interaction.model.DungeonEditorMainViewInteractionValues.BoundaryTarget;
+import src.domain.dungeon.model.editor.model.interaction.model.DungeonEditorMainViewInteractionValues.EdgeKey;
 import src.domain.dungeon.model.editor.model.interaction.model.DungeonEditorMainViewInteractionValues.PointerState;
 import src.domain.dungeon.model.editor.model.session.model.DungeonEditorSessionValues;
 import src.domain.dungeon.model.editor.model.workspace.model.DungeonEditorWorkspaceValues;
@@ -24,14 +25,15 @@ public final class DungeonEditorBoundaryClusterResolutionHelper {
             return 0L;
         }
         List<CellKey> touchingCells = touchingCells(boundaryTarget);
-        return snapshot.areas().stream()
-                .filter(area -> area.kind().isRoom() && DungeonEditorWorkspaceValues.hasId(area.clusterId()))
-                .filter(area -> area.cells().stream()
-                        .map(cell -> new CellKey(cell.q(), cell.r(), cell.level()))
-                        .anyMatch(touchingCells::contains))
-                .map(DungeonEditorWorkspaceValues.Area::clusterId)
-                .findFirst()
-                .orElse(0L);
+        for (DungeonEditorWorkspaceValues.Area area : snapshot.areas()) {
+            if (!area.kind().isRoom() || !DungeonEditorWorkspaceValues.hasId(area.clusterId())) {
+                continue;
+            }
+            if (areaTouchesCells(area, touchingCells)) {
+                return area.clusterId();
+            }
+        }
+        return 0L;
     }
 
     public long resolveClusterId(
@@ -39,20 +41,19 @@ public final class DungeonEditorBoundaryClusterResolutionHelper {
             VertexTarget vertex,
             boolean deleteMode,
             DungeonEditorWorkspaceValues.MapSnapshot snapshot,
-            DungeonEditorSessionValues.Selection selection,
-            DungeonEditorBoundaryGraphHelper graphService
+            DungeonEditorSessionValues.Selection selection
     ) {
         if (selection != null
                 && DungeonEditorWorkspaceValues.hasId(selection.clusterId())
-                && graphService.isEditableVertex(snapshot, selection.clusterId(), vertex, deleteMode)) {
+                && isEditableVertex(snapshot, selection.clusterId(), vertex, deleteMode)) {
             return selection.clusterId();
         }
         long boundaryClusterId = resolveBoundaryClusterId(snapshot, input.boundaryTarget());
         if (DungeonEditorWorkspaceValues.hasId(boundaryClusterId)
-                && graphService.isEditableVertex(snapshot, boundaryClusterId, vertex, deleteMode)) {
+                && isEditableVertex(snapshot, boundaryClusterId, vertex, deleteMode)) {
             return boundaryClusterId;
         }
-        return nearestEditableCluster(snapshot, vertex, deleteMode, graphService);
+        return nearestEditableCluster(snapshot, vertex, deleteMode);
     }
 
     public Map<Long, Set<CellKey>> clusterCellsByCluster(
@@ -67,7 +68,11 @@ public final class DungeonEditorBoundaryClusterResolutionHelper {
             if (!area.kind().isRoom() || !DungeonEditorWorkspaceValues.hasId(area.clusterId())) {
                 continue;
             }
-            Set<CellKey> cells = result.computeIfAbsent(area.clusterId(), ignored -> new LinkedHashSet<>());
+            Set<CellKey> cells = result.get(area.clusterId());
+            if (cells == null) {
+                cells = new LinkedHashSet<>();
+                result.put(area.clusterId(), cells);
+            }
             for (DungeonEditorWorkspaceValues.Cell cell : area.cells()) {
                 if (cell.level() == level) {
                     cells.add(new CellKey(cell.q(), cell.r(), cell.level()));
@@ -84,16 +89,90 @@ public final class DungeonEditorBoundaryClusterResolutionHelper {
     private long nearestEditableCluster(
             DungeonEditorWorkspaceValues.MapSnapshot snapshot,
             VertexTarget vertex,
-            boolean deleteMode,
-            DungeonEditorBoundaryGraphHelper graphService
+            boolean deleteMode
     ) {
-        return clusterCellsByCluster(snapshot, vertex.level()).entrySet().stream()
-                .filter(entry -> graphService.isEditableVertex(snapshot, entry.getKey(), vertex, deleteMode))
-                .min(Comparator
-                        .comparingDouble((Map.Entry<Long, Set<CellKey>> entry) -> centerDistance(entry.getValue(), vertex))
-                        .thenComparingLong(Map.Entry::getKey))
-                .map(Map.Entry::getKey)
-                .orElse(0L);
+        long bestClusterId = 0L;
+        double bestDistance = Double.MAX_VALUE;
+        for (Map.Entry<Long, Set<CellKey>> entry : clusterCellsByCluster(snapshot, vertex.level()).entrySet()) {
+            if (!isEditableVertex(snapshot, entry.getKey(), vertex, deleteMode)) {
+                continue;
+            }
+            double distance = centerDistance(entry.getValue(), vertex);
+            if (bestClusterId == 0L || distance < bestDistance
+                    || distance == bestDistance && entry.getKey() < bestClusterId) {
+                bestClusterId = entry.getKey();
+                bestDistance = distance;
+            }
+        }
+        return bestClusterId;
+    }
+
+    private boolean isEditableVertex(
+            DungeonEditorWorkspaceValues.MapSnapshot snapshot,
+            long clusterId,
+            VertexTarget vertex,
+            boolean deleteMode
+    ) {
+        Set<EdgeKey> edges = deleteMode
+                ? existingInternalBoundaryEdges(snapshot, clusterId, vertex.level(), DungeonEditorWorkspaceValues.BoundaryKind.WALL)
+                : internalClusterEdges(snapshot, clusterId, vertex.level());
+        src.domain.dungeon.model.editor.model.interaction.model.DungeonEditorInteractionValues.VertexKey key =
+                new src.domain.dungeon.model.editor.model.interaction.model.DungeonEditorInteractionValues.VertexKey(
+                        vertex.q(),
+                        vertex.r(),
+                        vertex.level());
+        for (EdgeKey edge : edges) {
+            if (edge.touches(key)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private Set<EdgeKey> internalClusterEdges(
+            DungeonEditorWorkspaceValues.MapSnapshot snapshot,
+            long clusterId,
+            int level
+    ) {
+        Set<CellKey> cells = clusterCellsByCluster(snapshot, level).getOrDefault(clusterId, Set.of());
+        Set<EdgeKey> result = new LinkedHashSet<>();
+        for (CellKey cell : cells) {
+            for (src.domain.dungeon.model.editor.model.interaction.model.DungeonEditorInteractionValues.TravelHeading direction
+                    : src.domain.dungeon.model.editor.model.interaction.model.DungeonEditorInteractionValues.TravelHeading.values()) {
+                CellKey neighbor = cell.neighbor(direction);
+                if (cells.contains(neighbor)) {
+                    result.add(EdgeKey.sideOf(cell, direction));
+                }
+            }
+        }
+        return Set.copyOf(result);
+    }
+
+    private Set<EdgeKey> existingInternalBoundaryEdges(
+            DungeonEditorWorkspaceValues.MapSnapshot snapshot,
+            long clusterId,
+            int level,
+            DungeonEditorWorkspaceValues.BoundaryKind kind
+    ) {
+        Set<EdgeKey> internalEdges = internalClusterEdges(snapshot, clusterId, level);
+        Set<EdgeKey> result = new LinkedHashSet<>();
+        if (snapshot == null) {
+            return Set.of();
+        }
+        for (DungeonEditorWorkspaceValues.Boundary boundary : snapshot.boundaries()) {
+            if (boundary.edge() == null
+                    || boundary.edge().from() == null
+                    || boundary.edge().to() == null
+                    || boundary.edge().from().level() != level
+                    || boundary.kind() != kind) {
+                continue;
+            }
+            EdgeKey edge = EdgeKey.from(boundary.edge());
+            if (internalEdges.contains(edge)) {
+                result.add(edge);
+            }
+        }
+        return Set.copyOf(result);
     }
 
     private static double centerDistance(Set<CellKey> cells, VertexTarget vertex) {
@@ -108,10 +187,32 @@ public final class DungeonEditorBoundaryClusterResolutionHelper {
     }
 
     private static List<CellKey> touchingCells(BoundaryTarget boundaryTarget) {
-        return DungeonEditorBoundaryRoomTouchSupportHelper.touchingCells(
-                boundaryTarget.start().toWorkspaceCell(),
-                boundaryTarget.end().toWorkspaceCell()).stream()
-                .map(cell -> new CellKey(cell.q(), cell.r(), cell.level()))
-                .toList();
+        List<CellKey> result = new ArrayList<>();
+        DungeonEditorWorkspaceValues.Cell start = boundaryTarget.start().toWorkspaceCell();
+        DungeonEditorWorkspaceValues.Cell end = boundaryTarget.end().toWorkspaceCell();
+        if (start.level() != end.level()) {
+            return List.of();
+        }
+        if (start.r() == end.r()) {
+            for (int q = Math.min(start.q(), end.q()); q < Math.max(start.q(), end.q()); q++) {
+                result.add(new CellKey(q, start.r() - 1, start.level()));
+                result.add(new CellKey(q, start.r(), start.level()));
+            }
+        } else if (start.q() == end.q()) {
+            for (int r = Math.min(start.r(), end.r()); r < Math.max(start.r(), end.r()); r++) {
+                result.add(new CellKey(start.q() - 1, r, start.level()));
+                result.add(new CellKey(start.q(), r, start.level()));
+            }
+        }
+        return List.copyOf(result);
+    }
+
+    private static boolean areaTouchesCells(DungeonEditorWorkspaceValues.Area area, List<CellKey> touchingCells) {
+        for (DungeonEditorWorkspaceValues.Cell cell : area.cells()) {
+            if (touchingCells.contains(new CellKey(cell.q(), cell.r(), cell.level()))) {
+                return true;
+            }
+        }
+        return false;
     }
 }

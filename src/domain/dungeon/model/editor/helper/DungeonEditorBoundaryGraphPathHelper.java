@@ -32,10 +32,19 @@ public final class DungeonEditorBoundaryGraphPathHelper {
     private static Map<VertexKey, Set<VertexKey>> adjacency(Set<EdgeKey> edges) {
         Map<VertexKey, Set<VertexKey>> result = new LinkedHashMap<>();
         for (EdgeKey edge : edges == null ? Set.<EdgeKey>of() : edges) {
-            result.computeIfAbsent(edge.start(), ignored -> new LinkedHashSet<>()).add(edge.end());
-            result.computeIfAbsent(edge.end(), ignored -> new LinkedHashSet<>()).add(edge.start());
+            addNeighbor(result, edge.start(), edge.end());
+            addNeighbor(result, edge.end(), edge.start());
         }
         return Map.copyOf(result);
+    }
+
+    private static void addNeighbor(Map<VertexKey, Set<VertexKey>> adjacency, VertexKey vertex, VertexKey neighbor) {
+        Set<VertexKey> neighbors = adjacency.get(vertex);
+        if (neighbors == null) {
+            neighbors = new LinkedHashSet<>();
+            adjacency.put(vertex, neighbors);
+        }
+        neighbors.add(neighbor);
     }
 
     private static boolean hasPathInputs(VertexKey start, VertexKey goal, Set<EdgeKey> traversableEdges) {
@@ -77,7 +86,9 @@ public final class DungeonEditorBoundaryGraphPathHelper {
     }
 
     private static List<VertexKey> orderedNeighbors(Map<VertexKey, Set<VertexKey>> adjacency, VertexKey current) {
-        return adjacency.getOrDefault(current, Set.of()).stream().sorted(VertexKey.order()).toList();
+        List<VertexKey> neighbors = new ArrayList<>(adjacency.getOrDefault(current, Set.of()));
+        neighbors.sort(VertexKey.order());
+        return List.copyOf(neighbors);
     }
 
     private static List<EdgeKey> buildPath(

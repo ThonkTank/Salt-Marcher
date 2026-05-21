@@ -1,5 +1,7 @@
 package src.domain.dungeon.model.editor.helper;
 
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -20,7 +22,6 @@ public final class DungeonEditorBoundaryStretchHelper {
             DungeonEditorWorkspaceValues.MapSnapshot snapshot,
             DungeonEditorSessionValues.Selection currentSelection
     ) {
-        DungeonEditorBoundaryClusterResolutionHelper clusterResolver = new DungeonEditorBoundaryClusterResolutionHelper();
         BoundaryTarget boundaryTarget = input == null ? null : input.boundaryTarget();
         if (input == null || !input.primaryButtonDown() || boundaryTarget == null || !boundaryTarget.present()) {
             return null;
@@ -29,7 +30,7 @@ public final class DungeonEditorBoundaryStretchHelper {
         if (orientation == null) {
             return null;
         }
-        long clusterId = clusterResolver.resolveBoundaryClusterId(snapshot, boundaryTarget);
+        long clusterId = resolveBoundaryClusterId(snapshot, boundaryTarget);
         if (!DungeonEditorWorkspaceValues.hasId(clusterId)) {
             return null;
         }
@@ -59,7 +60,6 @@ public final class DungeonEditorBoundaryStretchHelper {
             BoundaryTarget boundaryTarget,
             StretchOrientation orientation
     ) {
-        DungeonEditorBoundaryStretchLineCatalogHelper lineCatalog = new DungeonEditorBoundaryStretchLineCatalogHelper();
         if (snapshot == null || !boundaryTarget.present()) {
             return List.of();
         }
@@ -74,7 +74,7 @@ public final class DungeonEditorBoundaryStretchHelper {
             return List.of();
         }
         Map<Integer, DungeonEditorWorkspaceValues.Edge> edgesByVariable =
-                lineCatalog.edgesOnLine(snapshot, clusterCells, clickedEdge, orientation, stretchSide.outer());
+                edgesOnLine(snapshot, clusterCells, clickedEdge, orientation, stretchSide.outer());
         List<DungeonEditorWorkspaceValues.Edge> contiguousEdges =
                 contiguousEdges(edgesByVariable, clickedEdge, orientation);
         return contiguousEdges.isEmpty() ? List.of(clickedEdge) : contiguousEdges;
@@ -113,18 +113,19 @@ public final class DungeonEditorBoundaryStretchHelper {
         if (snapshot == null || clusterId <= 0L) {
             return null;
         }
-        return snapshot.areas().stream()
-                .filter(area -> area.kind().isRoom() && area.clusterId() == clusterId)
-                .findFirst()
-                .orElse(null);
+        for (DungeonEditorWorkspaceValues.Area area : snapshot.areas()) {
+            if (area.kind().isRoom() && area.clusterId() == clusterId) {
+                return area;
+            }
+        }
+        return null;
     }
 
     private BoundaryStretchSide outerStretch(
             DungeonEditorWorkspaceValues.Edge clickedEdge,
             Set<DungeonEditorWorkspaceValues.Cell> clusterCells
     ) {
-        DungeonEditorBoundaryStretchLineCatalogHelper lineCatalog = new DungeonEditorBoundaryStretchLineCatalogHelper();
-        int clickedTouchCount = lineCatalog.touchingClusterCount(clickedEdge, clusterCells);
+        int clickedTouchCount = touchingClusterCount(clickedEdge, clusterCells);
         if (clickedTouchCount == 0) {
             return BoundaryStretchSide.NONE;
         }
@@ -163,6 +164,13 @@ public final class DungeonEditorBoundaryStretchHelper {
                 : Math.min(edge.from().q(), edge.to().q());
     }
 
+    private static int fixedCoordinate(
+            StretchOrientation orientation,
+            DungeonEditorWorkspaceValues.Edge edge
+    ) {
+        return orientation == StretchOrientation.VERTICAL ? edge.from().q() : edge.from().r();
+    }
+
     private static @Nullable StretchOrientation orientation(BoundaryTarget boundaryTarget) {
         if (boundaryTarget == null || !boundaryTarget.present()) {
             return null;
@@ -184,7 +192,7 @@ public final class DungeonEditorBoundaryStretchHelper {
         if (snapshot == null || !DungeonEditorWorkspaceValues.hasId(clusterId)) {
             return Set.of();
         }
-        Set<DungeonEditorWorkspaceValues.Cell> result = new java.util.LinkedHashSet<>();
+        Set<DungeonEditorWorkspaceValues.Cell> result = new LinkedHashSet<>();
         for (DungeonEditorWorkspaceValues.Area area : snapshot.areas()) {
             if (!area.kind().isRoom() || area.clusterId() != clusterId) {
                 continue;
@@ -196,5 +204,152 @@ public final class DungeonEditorBoundaryStretchHelper {
             }
         }
         return Set.copyOf(result);
+    }
+
+    private static long resolveBoundaryClusterId(
+            DungeonEditorWorkspaceValues.@Nullable MapSnapshot snapshot,
+            BoundaryTarget boundaryTarget
+    ) {
+        if (snapshot == null || boundaryTarget == null || !boundaryTarget.present()) {
+            return 0L;
+        }
+        List<DungeonEditorWorkspaceValues.Cell> touchingCells = touchingCells(
+                boundaryTarget.start().toWorkspaceCell(),
+                boundaryTarget.end().toWorkspaceCell());
+        for (DungeonEditorWorkspaceValues.Area area : snapshot.areas()) {
+            if (!area.kind().isRoom() || !DungeonEditorWorkspaceValues.hasId(area.clusterId())) {
+                continue;
+            }
+            for (DungeonEditorWorkspaceValues.Cell cell : area.cells()) {
+                if (touchingCells.contains(cell)) {
+                    return area.clusterId();
+                }
+            }
+        }
+        return 0L;
+    }
+
+    private static List<DungeonEditorWorkspaceValues.Cell> touchingCells(
+            DungeonEditorWorkspaceValues.Cell start,
+            DungeonEditorWorkspaceValues.Cell end
+    ) {
+        if (start.level() != end.level()) {
+            return List.of();
+        }
+        List<DungeonEditorWorkspaceValues.Cell> result = new ArrayList<>();
+        if (start.r() == end.r()) {
+            for (int q = Math.min(start.q(), end.q()); q < Math.max(start.q(), end.q()); q++) {
+                result.add(new DungeonEditorWorkspaceValues.Cell(q, start.r() - 1, start.level()));
+                result.add(new DungeonEditorWorkspaceValues.Cell(q, start.r(), start.level()));
+            }
+        } else if (start.q() == end.q()) {
+            for (int r = Math.min(start.r(), end.r()); r < Math.max(start.r(), end.r()); r++) {
+                result.add(new DungeonEditorWorkspaceValues.Cell(start.q() - 1, r, start.level()));
+                result.add(new DungeonEditorWorkspaceValues.Cell(start.q(), r, start.level()));
+            }
+        }
+        return List.copyOf(result);
+    }
+
+    private static Map<Integer, DungeonEditorWorkspaceValues.Edge> edgesOnLine(
+            DungeonEditorWorkspaceValues.MapSnapshot snapshot,
+            Set<DungeonEditorWorkspaceValues.Cell> clusterCells,
+            DungeonEditorWorkspaceValues.Edge clickedEdge,
+            StretchOrientation orientation,
+            boolean outer
+    ) {
+        Map<Integer, DungeonEditorWorkspaceValues.Edge> edgesByVariable = new LinkedHashMap<>();
+        int level = clickedEdge.from().level();
+        int fixedCoordinate = fixedCoordinate(orientation, clickedEdge);
+        for (DungeonEditorWorkspaceValues.Boundary boundary : snapshot.boundaries()) {
+            DungeonEditorWorkspaceValues.Edge edge = boundary.edge();
+            if (!matchesStretchLine(edge, clusterCells, level, orientation, fixedCoordinate, outer)) {
+                continue;
+            }
+            edgesByVariable.put(variableCoordinate(orientation, edge), edge);
+        }
+        return Map.copyOf(edgesByVariable);
+    }
+
+    private static boolean matchesStretchLine(
+            DungeonEditorWorkspaceValues.Edge edge,
+            Set<DungeonEditorWorkspaceValues.Cell> clusterCells,
+            int level,
+            StretchOrientation orientation,
+            int fixedCoordinate,
+            boolean outer
+    ) {
+        if (edge == null
+                || edge.from() == null
+                || edge.to() == null
+                || edge.from().level() != level
+                || edge.to().level() != level
+                || !sameOrientation(orientation, edge)
+                || fixedCoordinate(orientation, edge) != fixedCoordinate) {
+            return false;
+        }
+        int touchCount = touchingClusterCount(edge, clusterCells);
+        boolean outerEdge = touchCount == 1;
+        return touchCount > 0 && outerEdge == outer;
+    }
+
+    private static int touchingClusterCount(
+            DungeonEditorWorkspaceValues.Edge edge,
+            Set<DungeonEditorWorkspaceValues.Cell> clusterCells
+    ) {
+        if (edge == null || edge.from() == null || edge.to() == null || edge.from().level() != edge.to().level()) {
+            return 0;
+        }
+        if (edge.from().r() == edge.to().r()) {
+            return horizontalTouchingClusterCount(edge.from(), edge.to(), clusterCells);
+        }
+        if (edge.from().q() == edge.to().q()) {
+            return verticalTouchingClusterCount(edge.from(), edge.to(), clusterCells);
+        }
+        return 0;
+    }
+
+    private static int horizontalTouchingClusterCount(
+            DungeonEditorWorkspaceValues.Cell from,
+            DungeonEditorWorkspaceValues.Cell to,
+            Set<DungeonEditorWorkspaceValues.Cell> clusterCells
+    ) {
+        int count = 0;
+        for (int q = Math.min(from.q(), to.q()); q < Math.max(from.q(), to.q()); q++) {
+            if (clusterCells.contains(new DungeonEditorWorkspaceValues.Cell(q, from.r() - 1, from.level()))) {
+                count++;
+            }
+            if (clusterCells.contains(new DungeonEditorWorkspaceValues.Cell(q, from.r(), from.level()))) {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    private static int verticalTouchingClusterCount(
+            DungeonEditorWorkspaceValues.Cell from,
+            DungeonEditorWorkspaceValues.Cell to,
+            Set<DungeonEditorWorkspaceValues.Cell> clusterCells
+    ) {
+        int count = 0;
+        for (int r = Math.min(from.r(), to.r()); r < Math.max(from.r(), to.r()); r++) {
+            if (clusterCells.contains(new DungeonEditorWorkspaceValues.Cell(from.q() - 1, r, from.level()))) {
+                count++;
+            }
+            if (clusterCells.contains(new DungeonEditorWorkspaceValues.Cell(from.q(), r, from.level()))) {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    private static boolean sameOrientation(
+            StretchOrientation orientation,
+            DungeonEditorWorkspaceValues.Edge edge
+    ) {
+        if (orientation == StretchOrientation.HORIZONTAL) {
+            return edge.from().r() == edge.to().r();
+        }
+        return edge.from().q() == edge.to().q();
     }
 }

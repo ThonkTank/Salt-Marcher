@@ -10,8 +10,7 @@ import src.domain.dungeon.model.editor.model.workspace.model.DungeonEditorWorksp
 
 public final class DungeonEditorBoundaryEdgeCatalogHelper {
     public Set<EdgeKey> internalClusterEdges(DungeonEditorWorkspaceValues.MapSnapshot snapshot, long clusterId, int level) {
-        DungeonEditorBoundaryClusterResolutionHelper clusterResolver = new DungeonEditorBoundaryClusterResolutionHelper();
-        Set<CellKey> cells = clusterResolver.clusterCellsByCluster(snapshot, level).getOrDefault(clusterId, Set.of());
+        Set<CellKey> cells = clusterCells(snapshot, clusterId, level);
         Set<EdgeKey> result = new LinkedHashSet<>();
         for (CellKey cell : cells) {
             for (TravelHeading direction : TravelHeading.values()) {
@@ -49,8 +48,7 @@ public final class DungeonEditorBoundaryEdgeCatalogHelper {
     }
 
     public Set<EdgeKey> outerClusterEdges(DungeonEditorWorkspaceValues.MapSnapshot snapshot, long clusterId, int level) {
-        DungeonEditorBoundaryClusterResolutionHelper clusterResolver = new DungeonEditorBoundaryClusterResolutionHelper();
-        Set<CellKey> cells = clusterResolver.clusterCellsByCluster(snapshot, level).getOrDefault(clusterId, Set.of());
+        Set<CellKey> cells = clusterCells(snapshot, clusterId, level);
         Set<EdgeKey> result = new LinkedHashSet<>();
         for (CellKey cell : cells) {
             for (TravelHeading direction : TravelHeading.values()) {
@@ -66,6 +64,28 @@ public final class DungeonEditorBoundaryEdgeCatalogHelper {
             DungeonEditorWorkspaceValues.MapSnapshot snapshot
     ) {
         return snapshot == null ? List.of() : snapshot.boundaries();
+    }
+
+    private static Set<CellKey> clusterCells(
+            DungeonEditorWorkspaceValues.MapSnapshot snapshot,
+            long clusterId,
+            int level
+    ) {
+        if (snapshot == null || !DungeonEditorWorkspaceValues.hasId(clusterId)) {
+            return Set.of();
+        }
+        Set<CellKey> result = new LinkedHashSet<>();
+        for (DungeonEditorWorkspaceValues.Area area : snapshot.areas()) {
+            if (!area.kind().isRoom() || area.clusterId() != clusterId) {
+                continue;
+            }
+            for (DungeonEditorWorkspaceValues.Cell cell : area.cells()) {
+                if (cell.level() == level) {
+                    result.add(new CellKey(cell.q(), cell.r(), cell.level()));
+                }
+            }
+        }
+        return Set.copyOf(result);
     }
 
     private static boolean boundaryKindMatches(

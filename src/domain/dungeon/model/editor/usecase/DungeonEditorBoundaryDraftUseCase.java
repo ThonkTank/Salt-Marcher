@@ -1,5 +1,6 @@
 package src.domain.dungeon.model.editor.usecase;
 
+import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -38,7 +39,7 @@ final class DungeonEditorBoundaryDraftUseCase {
             return clearedBoundaryDraft(state);
         }
         boolean deleteMode = selectedTool.deleteMode();
-        long clusterId = clusterResolver.resolveClusterId(input, vertex, deleteMode, snapshot, currentSelection, graphService);
+        long clusterId = clusterResolver.resolveClusterId(input, vertex, deleteMode, snapshot, currentSelection);
         if (!DungeonEditorWorkspaceValues.hasId(clusterId)) {
             return clearedBoundaryDraft(state);
         }
@@ -82,7 +83,7 @@ final class DungeonEditorBoundaryDraftUseCase {
         }
         return DungeonEditorMainViewEffect.preview(new DungeonEditorSessionValues.ClusterBoundariesPreview(
                 state.boundaryDraft().clusterId(),
-                previewEdges.stream().map(EdgeKey::toEdgeRef).toList(),
+                edgeRefs(previewEdges),
                 DungeonEditorWorkspaceValues.BoundaryKind.WALL,
                 state.boundaryDraft().deleteMode()));
     }
@@ -230,7 +231,7 @@ final class DungeonEditorBoundaryDraftUseCase {
                     nextState,
                     DungeonEditorMainViewEffect.apply(new DungeonEditorSessionValues.ClusterBoundariesPreview(
                             current.clusterId(),
-                            current.previewEdges().stream().map(EdgeKey::toEdgeRef).toList(),
+                            edgeRefs(current.previewEdges()),
                             DungeonEditorWorkspaceValues.BoundaryKind.WALL,
                             current.deleteMode())));
         }
@@ -247,5 +248,13 @@ final class DungeonEditorBoundaryDraftUseCase {
             src.domain.dungeon.model.editor.model.interaction.model.DungeonEditorInteractionValues.VertexTarget vertex
     ) {
         return vertex != null && vertex.present();
+    }
+
+    private static List<DungeonEditorWorkspaceValues.Edge> edgeRefs(Set<EdgeKey> edges) {
+        List<DungeonEditorWorkspaceValues.Edge> result = new ArrayList<>();
+        for (EdgeKey edge : edges) {
+            result.add(edge.toEdgeRef());
+        }
+        return List.copyOf(result);
     }
 }
