@@ -13,25 +13,21 @@ import src.domain.dungeon.model.editor.model.workspace.model.DungeonEditorWorksp
 import src.domain.dungeon.model.editor.model.workspace.model.DungeonEditorWorkspaceValues.MapSnapshot;
 import src.domain.dungeon.model.editor.model.workspace.model.DungeonEditorWorkspaceValues.MapSummary;
 import src.domain.dungeon.model.map.model.DungeonTopologyRef;
-import src.domain.dungeon.model.map.usecase.LoadDungeonSnapshotUseCase;
 
 public final class BuildDungeonEditorSnapshotUseCase {
     private final SearchDungeonEditorMapCatalogUseCase searchMapsUseCase;
     private final LoadDungeonEditorAuthoredMapUseCase loadMapUseCase;
-    private final DescribeDungeonEditorAuthoredSelectionUseCase describeSelectionUseCase;
     private final PreviewDungeonEditorAuthoredOperationUseCase previewOperationUseCase;
     private final DungeonEditorDungeonState dungeonState;
 
     public BuildDungeonEditorSnapshotUseCase(
             SearchDungeonEditorMapCatalogUseCase searchMapsUseCase,
             LoadDungeonEditorAuthoredMapUseCase loadMapUseCase,
-            DescribeDungeonEditorAuthoredSelectionUseCase describeSelectionUseCase,
             PreviewDungeonEditorAuthoredOperationUseCase previewOperationUseCase,
             DungeonEditorDungeonState dungeonState
     ) {
         this.searchMapsUseCase = searchMapsUseCase;
         this.loadMapUseCase = loadMapUseCase;
-        this.describeSelectionUseCase = describeSelectionUseCase;
         this.previewOperationUseCase = previewOperationUseCase;
         this.dungeonState = dungeonState;
     }
@@ -94,12 +90,11 @@ public final class BuildDungeonEditorSnapshotUseCase {
     }
 
     private void refreshAuthoredSurfaceWithSelection(MapId mapId, DungeonEditorSession state) {
-        LoadDungeonSnapshotUseCase.AuthoredSurfaceData surface = loadMapUseCase.executeWithSelection(
+        loadMapUseCase.executeWithSelection(
                 mapId,
                 state.selection().topologyRef(),
                 state.selection().clusterId(),
                 state.selection().clusterSelection());
-        describeSelectionUseCase.publish(surface.inspector());
     }
 
     private void previewAuthoredOperation(MapId mapId, DungeonEditorSession state) {

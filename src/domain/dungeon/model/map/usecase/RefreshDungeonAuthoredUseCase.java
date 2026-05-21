@@ -17,19 +17,6 @@ public final class RefreshDungeonAuthoredUseCase {
         return loadDungeonSnapshotUseCase.execute(mapId);
     }
 
-    public LoadDungeonSnapshotUseCase.AuthoredSurfaceData refreshMapAndDescribeSelection(
-            @Nullable DungeonMapIdentity mapId,
-            DungeonTopologyRef topologyRef,
-            long clusterId,
-            boolean clusterSelection
-    ) {
-        return loadDungeonSnapshotUseCase.executeWithSelection(
-                mapId,
-                topologyRef,
-                clusterId,
-                clusterSelection);
-    }
-
     public LoadDungeonSnapshotUseCase.InspectorSnapshotData describeSelection(
             @Nullable DungeonMapIdentity mapId,
             DungeonTopologyRef topologyRef,

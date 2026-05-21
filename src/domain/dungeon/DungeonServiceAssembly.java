@@ -42,7 +42,6 @@ import src.domain.dungeon.model.editor.usecase.CreateDungeonEditorMapUseCase;
 import src.domain.dungeon.model.editor.usecase.DeleteDungeonEditorMapCatalogUseCase;
 import src.domain.dungeon.model.editor.usecase.DeleteDungeonEditorMapUseCase;
 import src.domain.dungeon.model.editor.usecase.DungeonEditorSnapshotPublication;
-import src.domain.dungeon.model.editor.usecase.DescribeDungeonEditorAuthoredSelectionUseCase;
 import src.domain.dungeon.model.editor.usecase.InterpretDungeonEditorMainViewInputUseCase;
 import src.domain.dungeon.model.editor.usecase.LoadDungeonEditorAuthoredMapUseCase;
 import src.domain.dungeon.model.editor.usecase.PreviewDungeonEditorAuthoredOperationUseCase;
@@ -223,7 +222,7 @@ final class DungeonServiceAssembly {
         DungeonPublishedState publishedState = authoredPublishedState(services);
         DungeonEditorDungeonState dungeonState = new DungeonEditorDungeonState();
         ApplyDungeonMapCatalogUseCase catalogUseCase = mapCatalogUseCase(services);
-        RefreshDungeonAuthoredUseCase refreshUseCase = refreshDungeonAuthoredUseCase(services);
+        LoadDungeonSnapshotUseCase loadDungeonSnapshotUseCase = loadDungeonSnapshotUseCase(services);
         ApplyDungeonAuthoredMutationUseCase mutationUseCase = authoredMutationUseCase(services);
         SearchDungeonEditorMapCatalogUseCase searchMapsUseCase =
                 new SearchDungeonEditorMapCatalogUseCase(catalogUseCase, publishedState, dungeonState);
@@ -234,9 +233,7 @@ final class DungeonServiceAssembly {
         DeleteDungeonEditorMapCatalogUseCase deleteMapUseCase =
                 new DeleteDungeonEditorMapCatalogUseCase(catalogUseCase, publishedState, dungeonState);
         LoadDungeonEditorAuthoredMapUseCase loadMapUseCase =
-                new LoadDungeonEditorAuthoredMapUseCase(refreshUseCase, publishedState, dungeonState);
-        DescribeDungeonEditorAuthoredSelectionUseCase describeSelectionUseCase =
-                new DescribeDungeonEditorAuthoredSelectionUseCase(refreshUseCase, publishedState, dungeonState);
+                new LoadDungeonEditorAuthoredMapUseCase(loadDungeonSnapshotUseCase, publishedState, dungeonState);
         PreviewDungeonEditorAuthoredOperationUseCase previewOperationUseCase =
                 new PreviewDungeonEditorAuthoredOperationUseCase(mutationUseCase, publishedState, dungeonState);
         ApplyDungeonEditorAuthoredOperationUseCase applyOperationUseCase =
@@ -247,7 +244,6 @@ final class DungeonServiceAssembly {
         BuildDungeonEditorSnapshotUseCase snapshotBuilder = new BuildDungeonEditorSnapshotUseCase(
                 searchMapsUseCase,
                 loadMapUseCase,
-                describeSelectionUseCase,
                 previewOperationUseCase,
                 dungeonState);
         InterpretDungeonEditorMainViewInputUseCase mainViewInterpreter =
@@ -352,16 +348,20 @@ final class DungeonServiceAssembly {
     }
 
     private static RefreshDungeonAuthoredUseCase refreshDungeonAuthoredUseCase(ServiceRegistry registry) {
+        return new RefreshDungeonAuthoredUseCase(loadDungeonSnapshotUseCase(registry));
+    }
+
+    private static LoadDungeonSnapshotUseCase loadDungeonSnapshotUseCase(ServiceRegistry registry) {
         LoadDungeonMapUseCase loadDungeonMapUseCase = loadDungeonMapUseCase(registry);
         PublishDungeonEditorHandlesUseCase publishDungeonEditorHandlesUseCase = new PublishDungeonEditorHandlesUseCase();
         BuildDungeonDerivedStateUseCase derive = new BuildDungeonDerivedStateUseCase();
         AssembleDungeonSnapshotUseCase assembleDungeonSnapshotUseCase = new AssembleDungeonSnapshotUseCase(derive);
         InspectDungeonSelectionUseCase inspectDungeonSelectionUseCase = new InspectDungeonSelectionUseCase(derive);
-        return new RefreshDungeonAuthoredUseCase(new LoadDungeonSnapshotUseCase(
+        return new LoadDungeonSnapshotUseCase(
                 loadDungeonMapUseCase,
                 assembleDungeonSnapshotUseCase,
                 publishDungeonEditorHandlesUseCase,
-                inspectDungeonSelectionUseCase));
+                inspectDungeonSelectionUseCase);
     }
 
     private static ApplyDungeonAuthoredMutationUseCase authoredMutationUseCase(ServiceRegistry registry) {
