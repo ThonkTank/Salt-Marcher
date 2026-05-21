@@ -161,7 +161,7 @@ public final class DungeonTravelContributionModel {
     ) {
         OverlayProjection resolved = projection == null ? OverlayProjection.defaults() : projection;
         return new DungeonTravelControlsContentModel.OverlaySettings(
-                DungeonTravelControlsContentModel.OverlayMode.fromKey(resolved.modeKey()),
+                OverlayMode.fromKey(resolved.modeKey()),
                 resolved.levelRange(),
                 resolved.opacity(),
                 resolved.selectedLevels());
@@ -180,7 +180,7 @@ public final class DungeonTravelContributionModel {
                 double opacity,
                 List<Integer> selectedLevels
         ) {
-            this.mode = mode == null ? OverlayMode.OFF : mode;
+            this.mode = OverlayMode.safe(mode);
             this.levelRange = Math.max(0, levelRange);
             this.opacity = Math.max(0.0, Math.min(1.0, opacity));
             this.selectedLevels = selectedLevels == null ? List.of() : List.copyOf(selectedLevels);
@@ -205,7 +205,7 @@ public final class DungeonTravelContributionModel {
         }
 
         String overlayLabel() {
-            return mode.label();
+            return mode.contributionLabel();
         }
 
         int levelRange() {
@@ -229,25 +229,43 @@ public final class DungeonTravelContributionModel {
         }
     }
 
-    private enum OverlayMode {
-        OFF("OFF", "Overlays aus"),
-        NEARBY("NEARBY", "Nahe Ebenen"),
-        SELECTED("SELECTED", "Ausgewählte Ebenen");
+    enum OverlayMode {
+        OFF("OFF", "Aus", "Overlays aus"),
+        NEARBY("NEARBY", "Nahe Ebenen", "Nahe Ebenen"),
+        SELECTED("SELECTED", "Auswahl", "Ausgewählte Ebenen");
 
         private final String key;
-        private final String label;
+        private final String controlsLabel;
+        private final String contributionLabel;
 
-        OverlayMode(String key, String label) {
+        OverlayMode(String key, String controlsLabel, String contributionLabel) {
             this.key = key;
-            this.label = label;
+            this.controlsLabel = controlsLabel;
+            this.contributionLabel = contributionLabel;
         }
 
         String key() {
             return key;
         }
 
-        String label() {
-            return label;
+        String controlsLabel() {
+            return controlsLabel;
+        }
+
+        String contributionLabel() {
+            return contributionLabel;
+        }
+
+        boolean usesRange() {
+            return this == NEARBY;
+        }
+
+        boolean usesSelectedLevels() {
+            return this == SELECTED;
+        }
+
+        static OverlayMode safe(OverlayMode mode) {
+            return mode == null ? OFF : mode;
         }
 
         static OverlayMode fromKey(String modeKey) {

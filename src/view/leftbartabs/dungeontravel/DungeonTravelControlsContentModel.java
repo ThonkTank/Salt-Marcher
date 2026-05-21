@@ -44,7 +44,10 @@ final class DungeonTravelControlsContentModel {
     }
 
     List<OverlayModeOption> overlayModeOptions() {
-        return OverlayMode.options();
+        return List.of(
+                overlayModeOption(DungeonTravelContributionModel.OverlayMode.OFF),
+                overlayModeOption(DungeonTravelContributionModel.OverlayMode.NEARBY),
+                overlayModeOption(DungeonTravelContributionModel.OverlayMode.SELECTED));
     }
 
     void showMapName(String nextMapName) {
@@ -72,51 +75,13 @@ final class DungeonTravelControlsContentModel {
         overlayPanelState.set(safeState);
     }
 
-    enum OverlayMode {
-        OFF("Aus"),
-        NEARBY("Nahe Ebenen"),
-        SELECTED("Auswahl");
-
-        private final String label;
-
-        OverlayMode(String label) {
-            this.label = label;
-        }
-
-        @Override
-        public String toString() {
-            return label;
-        }
-
-        boolean usesRange() {
-            return this == NEARBY;
-        }
-
-        boolean usesSelectedLevels() {
-            return this == SELECTED;
-        }
-
-        static OverlayMode safe(OverlayMode mode) {
-            return mode == null ? OFF : mode;
-        }
-
-        static OverlayMode fromKey(String modeKey) {
-            if ("NEARBY".equalsIgnoreCase(modeKey)) {
-                return NEARBY;
-            }
-            if ("SELECTED".equalsIgnoreCase(modeKey)) {
-                return SELECTED;
-            }
-            return OFF;
-        }
-
-        private OverlayModeOption option() {
-            return new OverlayModeOption(name(), label, usesRange(), usesSelectedLevels());
-        }
-
-        private static List<OverlayModeOption> options() {
-            return List.of(OFF.option(), NEARBY.option(), SELECTED.option());
-        }
+    private static OverlayModeOption overlayModeOption(DungeonTravelContributionModel.OverlayMode mode) {
+        DungeonTravelContributionModel.OverlayMode safeMode = DungeonTravelContributionModel.OverlayMode.safe(mode);
+        return new OverlayModeOption(
+                safeMode.key(),
+                safeMode.controlsLabel(),
+                safeMode.usesRange(),
+                safeMode.usesSelectedLevels());
     }
 
     record OverlayModeOption(
@@ -133,21 +98,21 @@ final class DungeonTravelControlsContentModel {
     }
 
     record OverlaySettings(
-            OverlayMode mode,
+            DungeonTravelContributionModel.OverlayMode mode,
             int levelRange,
             double opacity,
             List<Integer> selectedLevels
     ) {
 
         OverlaySettings {
-            mode = OverlayMode.safe(mode);
+            mode = DungeonTravelContributionModel.OverlayMode.safe(mode);
             levelRange = Math.max(1, levelRange);
             opacity = Math.max(0.1, Math.min(0.9, opacity));
             selectedLevels = selectedLevels == null ? List.of() : List.copyOf(selectedLevels);
         }
 
         static OverlaySettings defaults() {
-            return new OverlaySettings(OverlayMode.OFF, 2, 0.35, List.of());
+            return new OverlaySettings(DungeonTravelContributionModel.OverlayMode.OFF, 2, 0.35, List.of());
         }
     }
 
@@ -164,9 +129,10 @@ final class DungeonTravelControlsContentModel {
 
         static OverlayPanelState from(OverlaySettings settings, boolean disabled) {
             OverlaySettings safeSettings = settings == null ? OverlaySettings.defaults() : settings;
-            OverlayMode safeMode = OverlayMode.safe(safeSettings.mode());
+            DungeonTravelContributionModel.OverlayMode safeMode =
+                    DungeonTravelContributionModel.OverlayMode.safe(safeSettings.mode());
             return new OverlayPanelState(
-                    safeMode.name(),
+                    safeMode.key(),
                     safeSettings.levelRange(),
                     safeSettings.opacity() * 100.0,
                     OverlayText.formatLevels(safeSettings.selectedLevels()),
