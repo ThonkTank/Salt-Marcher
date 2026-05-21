@@ -2,8 +2,9 @@ package src.domain.dungeon.model.editor.usecase;
 
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
+import src.domain.dungeon.model.editor.helper.DungeonEditorAuthoredPublicationProjectionHelper;
+import src.domain.dungeon.model.editor.helper.DungeonEditorAuthoredPublicationProjectionHelper.SnapshotPublication;
 import src.domain.dungeon.model.editor.model.session.model.DungeonEditorDungeonState;
-import src.domain.dungeon.model.editor.model.session.model.DungeonEditorAuthoredSnapshotPublicationModel;
 import src.domain.dungeon.model.map.repository.DungeonAuthoredPublishedStateRepository;
 import src.domain.dungeon.model.map.usecase.ApplyDungeonEditorOperationUseCase;
 
@@ -21,8 +22,7 @@ public final class PublishDungeonEditorAuthoredMutationUseCase {
     }
 
     public void execute(ApplyDungeonEditorOperationUseCase.OperationResultData mutation) {
-        DungeonEditorAuthoredSnapshotPublicationModel snapshotPublication =
-                publication(mutation);
+        SnapshotPublication snapshotPublication = publication(mutation);
         state.replaceMutation(mutationFacts(mutation, snapshotPublication));
         DungeonAuthoredPublishedStateRepository.MutationPublication publication =
                 mutationPublication(mutation, snapshotPublication);
@@ -33,21 +33,21 @@ public final class PublishDungeonEditorAuthoredMutationUseCase {
 
     private DungeonEditorDungeonState.@Nullable MutationFacts mutationFacts(
             ApplyDungeonEditorOperationUseCase.@Nullable OperationResultData mutation,
-            @Nullable DungeonEditorAuthoredSnapshotPublicationModel snapshotPublication
+            @Nullable SnapshotPublication snapshotPublication
     ) {
         DungeonEditorDungeonState.SnapshotFacts snapshot = snapshotPublication == null
                 ? null
-                : snapshotPublication.stateFacts();
+                : DungeonEditorAuthoredPublicationProjectionHelper.stateFacts(snapshotPublication);
         return snapshot == null ? null : new DungeonEditorDungeonState.MutationFacts(snapshot, statusText(mutation));
     }
 
-    private @Nullable DungeonEditorAuthoredSnapshotPublicationModel publication(
+    private @Nullable SnapshotPublication publication(
             ApplyDungeonEditorOperationUseCase.@Nullable OperationResultData mutation
     ) {
         if (mutation == null || mutation.snapshot() == null) {
             return null;
         }
-        return DungeonEditorAuthoredSnapshotPublicationModel.from(
+        return DungeonEditorAuthoredPublicationProjectionHelper.snapshotPublication(
                 mutation.snapshot().mapName(),
                 mutation.snapshot().derived(),
                 mutation.snapshot().editorHandles(),
@@ -56,7 +56,7 @@ public final class PublishDungeonEditorAuthoredMutationUseCase {
 
     private DungeonAuthoredPublishedStateRepository.@Nullable MutationPublication mutationPublication(
             ApplyDungeonEditorOperationUseCase.@Nullable OperationResultData mutation,
-            @Nullable DungeonEditorAuthoredSnapshotPublicationModel snapshotPublication
+            @Nullable SnapshotPublication snapshotPublication
     ) {
         if (mutation == null || snapshotPublication == null) {
             return null;
@@ -68,13 +68,13 @@ public final class PublishDungeonEditorAuthoredMutationUseCase {
     }
 
     private static DungeonAuthoredPublishedStateRepository.SnapshotPublication repositoryPublication(
-            DungeonEditorAuthoredSnapshotPublicationModel snapshotPublication
+            SnapshotPublication publication
     ) {
         return new DungeonAuthoredPublishedStateRepository.SnapshotPublication(
-                snapshotPublication.mapName(),
-                snapshotPublication.derived(),
-                snapshotPublication.editorHandles(),
-                snapshotPublication.repositoryRevision());
+                publication.mapName(),
+                publication.derived(),
+                publication.editorHandles(),
+                publication.repositoryRevision());
     }
 
     private static String statusText(ApplyDungeonEditorOperationUseCase.@Nullable OperationResultData mutation) {

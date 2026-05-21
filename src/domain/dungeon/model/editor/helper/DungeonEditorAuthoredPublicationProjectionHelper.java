@@ -1,8 +1,9 @@
-package src.domain.dungeon.model.editor.model.session.model;
+package src.domain.dungeon.model.editor.helper;
 
 import java.util.ArrayList;
 import java.util.List;
 import org.jspecify.annotations.Nullable;
+import src.domain.dungeon.model.editor.model.session.model.DungeonEditorDungeonState;
 import src.domain.dungeon.model.editor.model.workspace.model.DungeonEditorWorkspaceValues;
 import src.domain.dungeon.model.editor.model.workspace.model.DungeonEditorWorkspaceValues.MapSnapshot;
 import src.domain.dungeon.model.map.model.DungeonAreaFacts;
@@ -16,57 +17,40 @@ import src.domain.dungeon.model.map.model.DungeonFeatureFacts;
 import src.domain.dungeon.model.map.model.DungeonMapFacts;
 import src.domain.dungeon.model.map.model.DungeonTopology;
 
-public final class DungeonEditorAuthoredSnapshotPublicationModel {
+public final class DungeonEditorAuthoredPublicationProjectionHelper {
 
-    private final String mapName;
-    private final @Nullable DungeonDerivedState derived;
-    private final List<DungeonEditorHandleFacts> editorHandles;
-    private final long repositoryRevision;
-    private final DungeonEditorDungeonState.SnapshotFacts stateFacts;
+    private DungeonEditorAuthoredPublicationProjectionHelper() {
+    }
 
-    private DungeonEditorAuthoredSnapshotPublicationModel(
+    public static SnapshotPublication snapshotPublication(
             String mapName,
             @Nullable DungeonDerivedState derived,
             List<DungeonEditorHandleFacts> editorHandles,
             long revision
     ) {
-        this.mapName = mapName;
-        this.derived = derived;
-        this.editorHandles = editorHandles == null ? List.of() : List.copyOf(editorHandles);
-        this.repositoryRevision = revision;
-        this.stateFacts = new DungeonEditorDungeonState.SnapshotFacts(
-                mapName,
-                stateRevision(revision),
-                mapSnapshot(derived, this.editorHandles));
+        return new SnapshotPublication(mapName, derived, editorHandles, revision);
     }
 
-    public static DungeonEditorAuthoredSnapshotPublicationModel from(
+    public static DungeonEditorDungeonState.SnapshotFacts stateFacts(SnapshotPublication publication) {
+        return publication.stateFacts();
+    }
+
+    public record SnapshotPublication(
             String mapName,
             @Nullable DungeonDerivedState derived,
             List<DungeonEditorHandleFacts> editorHandles,
-            long revision
+            long repositoryRevision
     ) {
-        return new DungeonEditorAuthoredSnapshotPublicationModel(mapName, derived, editorHandles, revision);
-    }
+        public SnapshotPublication {
+            editorHandles = editorHandles == null ? List.of() : List.copyOf(editorHandles);
+        }
 
-    public DungeonEditorDungeonState.SnapshotFacts stateFacts() {
-        return stateFacts;
-    }
-
-    public String mapName() {
-        return mapName;
-    }
-
-    public @Nullable DungeonDerivedState derived() {
-        return derived;
-    }
-
-    public List<DungeonEditorHandleFacts> editorHandles() {
-        return List.copyOf(editorHandles);
-    }
-
-    public long repositoryRevision() {
-        return repositoryRevision;
+        private DungeonEditorDungeonState.SnapshotFacts stateFacts() {
+            return new DungeonEditorDungeonState.SnapshotFacts(
+                    mapName,
+                    stateRevision(repositoryRevision),
+                    mapSnapshot(derived, editorHandles));
+        }
     }
 
     private static int stateRevision(long revision) {

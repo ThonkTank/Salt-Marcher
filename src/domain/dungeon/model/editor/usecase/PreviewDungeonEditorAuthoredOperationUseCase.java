@@ -1,6 +1,7 @@
 package src.domain.dungeon.model.editor.usecase;
 
 import java.util.Objects;
+import src.domain.dungeon.model.editor.helper.DungeonEditorAuthoredOperationHelper;
 import src.domain.dungeon.model.editor.model.session.model.DungeonEditorSessionValues;
 import src.domain.dungeon.model.editor.model.workspace.model.DungeonEditorWorkspaceValues.MapId;
 import src.domain.dungeon.model.map.model.DungeonEditorAuthoredOperation;
@@ -23,7 +24,7 @@ public final class PreviewDungeonEditorAuthoredOperationUseCase {
 
     public void execute(MapId mapId, DungeonEditorSessionValues.Preview preview) {
         DungeonEditorAuthoredOperation operation =
-                ApplyDungeonEditorAuthoredOperationUseCase.authoredOperation(preview);
+                DungeonEditorAuthoredOperationHelper.authoredOperation(preview);
         if (operation == null) {
             return;
         }

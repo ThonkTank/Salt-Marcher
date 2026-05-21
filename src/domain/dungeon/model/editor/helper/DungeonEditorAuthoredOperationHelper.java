@@ -2,13 +2,16 @@ package src.domain.dungeon.model.editor.helper;
 
 import java.util.ArrayList;
 import java.util.List;
+import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.editor.model.session.model.DungeonEditorRoomNarrationInput;
+import src.domain.dungeon.model.editor.model.session.model.DungeonEditorSessionValues;
 import src.domain.dungeon.model.editor.model.workspace.model.DungeonEditorWorkspaceValues;
 import src.domain.dungeon.model.map.model.DungeonCell;
 import src.domain.dungeon.model.map.model.DungeonClusterBoundaryKind;
 import src.domain.dungeon.model.map.model.DungeonCorridorEndpoint;
 import src.domain.dungeon.model.map.model.DungeonEdge;
 import src.domain.dungeon.model.map.model.DungeonEdgeDirection;
+import src.domain.dungeon.model.map.model.DungeonEditorAuthoredOperation;
 import src.domain.dungeon.model.map.model.DungeonEditorHandle;
 import src.domain.dungeon.model.map.model.DungeonEditorHandleType;
 import src.domain.dungeon.model.map.model.DungeonRoomExitDescription;
@@ -24,6 +27,54 @@ public final class DungeonEditorAuthoredOperationHelper {
         return new DungeonRoomNarration(
                 roomNarration.visualDescription(),
                 roomExits(roomNarration.exits()));
+    }
+
+    public static @Nullable DungeonEditorAuthoredOperation authoredOperation(
+            DungeonEditorSessionValues.Preview preview
+    ) {
+        if (preview == null || preview == DungeonEditorSessionValues.Preview.none()) {
+            return null;
+        }
+        if (preview instanceof DungeonEditorSessionValues.RoomRectanglePreview room) {
+            return room.deleteMode()
+                    ? DungeonEditorAuthoredOperation.deleteRoomRectangle(
+                            cell(room.start()),
+                            cell(room.end()))
+                    : DungeonEditorAuthoredOperation.paintRoomRectangle(
+                            cell(room.start()),
+                            cell(room.end()));
+        }
+        if (preview instanceof DungeonEditorSessionValues.ClusterBoundariesPreview boundaries) {
+            return DungeonEditorAuthoredOperation.editClusterBoundaries(
+                    boundaries.clusterId(),
+                    edges(boundaries.edges()),
+                    boundaryKind(boundaries.boundaryKind()),
+                    boundaries.deleteMode());
+        }
+        if (preview instanceof DungeonEditorSessionValues.CorridorCreatePreview corridor) {
+            return DungeonEditorAuthoredOperation.createCorridor(
+                    corridorEndpoint(corridor.start()),
+                    corridorEndpoint(corridor.end()));
+        }
+        if (preview instanceof DungeonEditorSessionValues.DeleteCorridorPreview corridorDelete) {
+            return DungeonEditorAuthoredOperation.deleteCorridor(corridorDelete.corridorId());
+        }
+        if (preview instanceof DungeonEditorSessionValues.MoveHandlePreview moveHandle) {
+            return DungeonEditorAuthoredOperation.moveEditorHandle(
+                    handle(moveHandle.handleRef()),
+                    moveHandle.deltaQ(),
+                    moveHandle.deltaR(),
+                    moveHandle.deltaLevel());
+        }
+        if (preview instanceof DungeonEditorSessionValues.MoveBoundaryStretchPreview stretch) {
+            return DungeonEditorAuthoredOperation.moveBoundaryStretch(
+                    stretch.clusterId(),
+                    edges(stretch.sourceEdges()),
+                    stretch.deltaQ(),
+                    stretch.deltaR(),
+                    stretch.deltaLevel());
+        }
+        return null;
     }
 
     public static DungeonCell cell(DungeonEditorWorkspaceValues.Cell cell) {

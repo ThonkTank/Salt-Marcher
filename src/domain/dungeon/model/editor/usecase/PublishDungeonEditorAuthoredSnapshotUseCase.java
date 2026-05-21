@@ -2,8 +2,9 @@ package src.domain.dungeon.model.editor.usecase;
 
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
+import src.domain.dungeon.model.editor.helper.DungeonEditorAuthoredPublicationProjectionHelper;
+import src.domain.dungeon.model.editor.helper.DungeonEditorAuthoredPublicationProjectionHelper.SnapshotPublication;
 import src.domain.dungeon.model.editor.model.session.model.DungeonEditorDungeonState;
-import src.domain.dungeon.model.editor.model.session.model.DungeonEditorAuthoredSnapshotPublicationModel;
 import src.domain.dungeon.model.map.repository.DungeonAuthoredPublishedStateRepository;
 import src.domain.dungeon.model.map.usecase.LoadDungeonSnapshotUseCase;
 
@@ -22,20 +23,22 @@ public final class PublishDungeonEditorAuthoredSnapshotUseCase {
     }
 
     public void execute(LoadDungeonSnapshotUseCase.DungeonSnapshotData snapshot) {
-        DungeonEditorAuthoredSnapshotPublicationModel publication = publication(snapshot);
-        state.replaceSnapshot(publication == null ? null : publication.stateFacts());
+        SnapshotPublication publication = publication(snapshot);
+        state.replaceSnapshot(publication == null
+                ? null
+                : DungeonEditorAuthoredPublicationProjectionHelper.stateFacts(publication));
         if (publication != null) {
             publishedStateRepository.publishSnapshot(repositoryPublication(publication));
         }
     }
 
-    private static @Nullable DungeonEditorAuthoredSnapshotPublicationModel publication(
+    private static @Nullable SnapshotPublication publication(
             LoadDungeonSnapshotUseCase.@Nullable DungeonSnapshotData snapshot
     ) {
         if (snapshot == null) {
             return null;
         }
-        return DungeonEditorAuthoredSnapshotPublicationModel.from(
+        return DungeonEditorAuthoredPublicationProjectionHelper.snapshotPublication(
                 snapshot.mapName(),
                 snapshot.derived(),
                 snapshot.editorHandles(),
@@ -43,7 +46,7 @@ public final class PublishDungeonEditorAuthoredSnapshotUseCase {
     }
 
     private static DungeonAuthoredPublishedStateRepository.SnapshotPublication repositoryPublication(
-            DungeonEditorAuthoredSnapshotPublicationModel publication
+            SnapshotPublication publication
     ) {
         return new DungeonAuthoredPublishedStateRepository.SnapshotPublication(
                 publication.mapName(),
