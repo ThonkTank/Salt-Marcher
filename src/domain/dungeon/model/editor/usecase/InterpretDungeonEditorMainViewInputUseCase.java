@@ -7,17 +7,15 @@ import src.domain.dungeon.model.editor.model.interaction.model.DungeonEditorMain
 import src.domain.dungeon.model.editor.model.interaction.model.DungeonEditorMainViewInteractionValues.PointerState;
 import src.domain.dungeon.model.editor.model.interaction.model.DungeonEditorMainViewInterpretation;
 import src.domain.dungeon.model.editor.model.session.model.DungeonEditorMainViewInput;
-import src.domain.dungeon.model.editor.model.session.model.DungeonEditorMainViewPointerTarget;
 import src.domain.dungeon.model.editor.model.session.model.DungeonEditorSessionValues;
-import src.domain.dungeon.model.editor.model.workspace.model.DungeonEditorWorkspaceValues;
 import src.domain.dungeon.model.editor.model.workspace.model.DungeonEditorWorkspaceValues.MapSnapshot;
-import src.domain.dungeon.model.map.model.DungeonEditorHandleType;
-import src.domain.dungeon.model.map.model.DungeonTopologyElementKind;
-import src.domain.dungeon.model.map.model.DungeonTopologyRef;
+import src.domain.dungeon.model.editor.usecase.BuildDungeonEditorMainViewInputUseCase.MainViewInput;
 
 public final class InterpretDungeonEditorMainViewInputUseCase {
     private final DungeonEditorMainViewInputBoundaryTranslationHelper inputTranslator =
             new DungeonEditorMainViewInputBoundaryTranslationHelper();
+    private final BuildDungeonEditorMainViewInputUseCase inputBuilder =
+            new BuildDungeonEditorMainViewInputUseCase();
     private final InterpretDungeonEditorMainViewPressUseCase pressUseCase =
             new InterpretDungeonEditorMainViewPressUseCase();
     private final InterpretDungeonEditorMainViewDragUseCase dragUseCase =
@@ -160,7 +158,7 @@ public final class InterpretDungeonEditorMainViewInputUseCase {
     private PointerState pointer(MainViewInput input, int projectionLevel) {
         DungeonEditorMainViewInput safeInput = input == null
                 ? DungeonEditorMainViewInput.empty()
-                : input.mainViewInput();
+                : inputBuilder.execute(input);
         return inputTranslator.resolvePointerState(
                 safeInput.canvasX(),
                 safeInput.canvasY(),
@@ -168,201 +166,6 @@ public final class InterpretDungeonEditorMainViewInputUseCase {
                 safeInput.primaryButtonDown(),
                 safeInput.secondaryButtonDown(),
                 safeInput.target());
-    }
-
-    public record MainViewInput(
-            double canvasX,
-            double canvasY,
-            boolean primaryButtonDown,
-            boolean secondaryButtonDown,
-            PointerTargetInput target
-    ) {
-        public MainViewInput {
-            target = target == null ? PointerTargetInput.empty() : target;
-        }
-
-        private DungeonEditorMainViewInput mainViewInput() {
-            return new DungeonEditorMainViewInput(
-                    canvasX,
-                    canvasY,
-                    primaryButtonDown,
-                    secondaryButtonDown,
-                    target.pointerTarget());
-        }
-    }
-
-    public record PointerTargetInput(
-            String targetKind,
-            String elementKind,
-            long ownerId,
-            long clusterId,
-            TopologyRefInput topologyRef,
-            HandleInput handleRef,
-            BoundaryInput boundaryRef
-    ) {
-        public PointerTargetInput {
-            targetKind = defaultName(targetKind, "EMPTY");
-            elementKind = defaultName(elementKind, "EMPTY");
-            ownerId = Math.max(0L, ownerId);
-            clusterId = Math.max(0L, clusterId);
-            topologyRef = topologyRef == null ? TopologyRefInput.empty() : topologyRef;
-            handleRef = handleRef == null ? HandleInput.empty() : handleRef;
-            boundaryRef = boundaryRef == null ? BoundaryInput.empty() : boundaryRef;
-        }
-
-        public static PointerTargetInput empty() {
-            return new PointerTargetInput(
-                    "EMPTY",
-                    "EMPTY",
-                    0L,
-                    0L,
-                    TopologyRefInput.empty(),
-                    HandleInput.empty(),
-                    BoundaryInput.empty());
-        }
-
-        private DungeonEditorMainViewPointerTarget pointerTarget() {
-            return switch (targetKind) {
-                case "EMPTY" -> DungeonEditorMainViewPointerTarget.empty();
-                case "CELL" -> DungeonEditorMainViewPointerTarget.cell(
-                        topologyKind(elementKind),
-                        ownerId,
-                        clusterId,
-                        topologyRef.topologyRef());
-                case "LABEL" -> DungeonEditorMainViewPointerTarget.label(
-                        ownerId,
-                        clusterId,
-                        topologyRef.topologyRef());
-                case "GRAPH_NODE" -> DungeonEditorMainViewPointerTarget.graphNode(
-                        ownerId,
-                        clusterId,
-                        topologyRef.topologyRef());
-                case "HANDLE" -> DungeonEditorMainViewPointerTarget.handle(handleRef.handleRef());
-                case "BOUNDARY" -> DungeonEditorMainViewPointerTarget.boundary(
-                        boundaryKind(boundaryRef.kind()),
-                        boundaryRef.key(),
-                        boundaryRef.ownerId(),
-                        boundaryRef.topologyRef().topologyRef(),
-                        boundaryRef.start().cell(),
-                        boundaryRef.end().cell());
-                default -> throw new IllegalArgumentException("Unsupported dungeon editor pointer target: " + targetKind);
-            };
-        }
-    }
-
-    public record TopologyRefInput(String kind, long id) {
-        public TopologyRefInput {
-            kind = defaultName(kind, "EMPTY");
-            id = Math.max(0L, id);
-        }
-
-        public static TopologyRefInput empty() {
-            return new TopologyRefInput("EMPTY", 0L);
-        }
-
-        private DungeonTopologyRef topologyRef() {
-            return new DungeonTopologyRef(topologyKind(kind), id);
-        }
-    }
-
-    public record HandleInput(
-            String kind,
-            TopologyRefInput topologyRef,
-            long ownerId,
-            long clusterId,
-            long corridorId,
-            long roomId,
-            int index,
-            CellInput cell,
-            String direction
-    ) {
-        public HandleInput {
-            kind = defaultName(kind, "CLUSTER_LABEL");
-            topologyRef = topologyRef == null ? TopologyRefInput.empty() : topologyRef;
-            ownerId = Math.max(0L, ownerId);
-            clusterId = Math.max(0L, clusterId);
-            corridorId = Math.max(0L, corridorId);
-            roomId = Math.max(0L, roomId);
-            index = Math.max(0, index);
-            cell = cell == null ? CellInput.empty() : cell;
-            direction = direction == null ? "" : direction.trim();
-        }
-
-        public static HandleInput empty() {
-            return new HandleInput(
-                    "CLUSTER_LABEL",
-                    TopologyRefInput.empty(),
-                    0L,
-                    0L,
-                    0L,
-                    0L,
-                    0,
-                    CellInput.empty(),
-                    "");
-        }
-
-        private DungeonEditorWorkspaceValues.HandleRef handleRef() {
-            return new DungeonEditorWorkspaceValues.HandleRef(
-                    DungeonEditorHandleType.valueOf(kind),
-                    topologyRef.topologyRef(),
-                    ownerId,
-                    clusterId,
-                    corridorId,
-                    roomId,
-                    index,
-                    cell.cell(),
-                    direction);
-        }
-    }
-
-    public record BoundaryInput(
-            String kind,
-            String key,
-            long ownerId,
-            TopologyRefInput topologyRef,
-            CellInput start,
-            CellInput end
-    ) {
-        public BoundaryInput {
-            kind = defaultName(kind, "WALL");
-            key = key == null ? "" : key.strip();
-            ownerId = Math.max(0L, ownerId);
-            topologyRef = topologyRef == null ? TopologyRefInput.empty() : topologyRef;
-            start = start == null ? CellInput.empty() : start;
-            end = end == null ? CellInput.empty() : end;
-        }
-
-        public static BoundaryInput empty() {
-            return new BoundaryInput(
-                    "WALL",
-                    "",
-                    0L,
-                    TopologyRefInput.empty(),
-                    CellInput.empty(),
-                    CellInput.empty());
-        }
-    }
-
-    public record CellInput(int q, int r, int level) {
-        public static CellInput empty() {
-            return new CellInput(0, 0, 0);
-        }
-
-        private DungeonEditorWorkspaceValues.Cell cell() {
-            return new DungeonEditorWorkspaceValues.Cell(q, r, level);
-        }
-    }
-
-    private static DungeonTopologyElementKind topologyKind(String name) {
-        return DungeonTopologyElementKind.valueOf(defaultName(name, "EMPTY"));
-    }
-
-    private static DungeonEditorWorkspaceValues.BoundaryKind boundaryKind(String name) {
-        return DungeonEditorWorkspaceValues.BoundaryKind.fromExternalKind(defaultName(name, "WALL"));
-    }
-
-    private static String defaultName(String name, String defaultName) {
-        return name == null || name.isBlank() ? defaultName : name.trim();
     }
 
     private static final class InteractionStateHolder {

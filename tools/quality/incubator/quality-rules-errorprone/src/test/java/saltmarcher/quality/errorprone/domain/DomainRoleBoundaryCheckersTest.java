@@ -142,6 +142,28 @@ public final class DomainRoleBoundaryCheckersTest {
     }
 
     @Test
+    public void applicationServiceAllowsPrivateStaticBoundaryAdapterParameter() {
+        CompilationTestHelper.newInstance(DomainApplicationServiceRoleBoundaryChecker.class, getClass())
+                .addSourceLines(
+                        "src/domain/foo/FooSelectionApplicationService.java",
+                        "package src.domain.foo;",
+                        "import src.domain.foo.published.ApplySelectionCommand;",
+                        "public final class FooSelectionApplicationService {",
+                        "  public void apply(ApplySelectionCommand command) {",
+                        "    String input = toUseCaseInput(command);",
+                        "  }",
+                        "  private static String toUseCaseInput(ApplySelectionCommand command) {",
+                        "    return command == null ? \"\" : command.value();",
+                        "  }",
+                        "}")
+                .addSourceLines(
+                        "src/domain/foo/published/ApplySelectionCommand.java",
+                        "package src.domain.foo.published;",
+                        "public record ApplySelectionCommand(String value) { }")
+                .doTest();
+    }
+
+    @Test
     public void applicationServiceRejectsPublishedCommandPrivateMethodParameter() {
         CompilationTestHelper.newInstance(DomainApplicationServiceRoleBoundaryChecker.class, getClass())
                 .addSourceLines(

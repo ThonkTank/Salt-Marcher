@@ -11,14 +11,18 @@ import src.domain.dungeon.model.editor.usecase.ApplyDungeonEditorDeleteRoomUseCa
 import src.domain.dungeon.model.editor.usecase.ApplyDungeonEditorDeleteWallUseCase;
 import src.domain.dungeon.model.editor.usecase.ApplyDungeonEditorPaintRoomUseCase;
 import src.domain.dungeon.model.editor.usecase.ApplyDungeonEditorSelectionUseCase;
+import src.domain.dungeon.model.editor.usecase.BuildDungeonEditorMainViewInputUseCase.BoundaryInput;
+import src.domain.dungeon.model.editor.usecase.BuildDungeonEditorMainViewInputUseCase.BoundaryKindInput;
+import src.domain.dungeon.model.editor.usecase.BuildDungeonEditorMainViewInputUseCase.CellInput;
+import src.domain.dungeon.model.editor.usecase.BuildDungeonEditorMainViewInputUseCase.HandleInput;
+import src.domain.dungeon.model.editor.usecase.BuildDungeonEditorMainViewInputUseCase.HandleKindInput;
+import src.domain.dungeon.model.editor.usecase.BuildDungeonEditorMainViewInputUseCase.MainViewInput;
+import src.domain.dungeon.model.editor.usecase.BuildDungeonEditorMainViewInputUseCase.PointerTargetInput;
+import src.domain.dungeon.model.editor.usecase.BuildDungeonEditorMainViewInputUseCase.TargetKindInput;
+import src.domain.dungeon.model.editor.usecase.BuildDungeonEditorMainViewInputUseCase.TopologyKindInput;
+import src.domain.dungeon.model.editor.usecase.BuildDungeonEditorMainViewInputUseCase.TopologyRefInput;
 import src.domain.dungeon.model.editor.usecase.CreateDungeonEditorMapUseCase;
 import src.domain.dungeon.model.editor.usecase.DeleteDungeonEditorMapUseCase;
-import src.domain.dungeon.model.editor.usecase.InterpretDungeonEditorMainViewInputUseCase.BoundaryInput;
-import src.domain.dungeon.model.editor.usecase.InterpretDungeonEditorMainViewInputUseCase.CellInput;
-import src.domain.dungeon.model.editor.usecase.InterpretDungeonEditorMainViewInputUseCase.HandleInput;
-import src.domain.dungeon.model.editor.usecase.InterpretDungeonEditorMainViewInputUseCase.MainViewInput;
-import src.domain.dungeon.model.editor.usecase.InterpretDungeonEditorMainViewInputUseCase.PointerTargetInput;
-import src.domain.dungeon.model.editor.usecase.InterpretDungeonEditorMainViewInputUseCase.TopologyRefInput;
 import src.domain.dungeon.model.editor.usecase.RenameDungeonEditorMapUseCase;
 import src.domain.dungeon.model.editor.usecase.SaveDungeonEditorRoomNarrationUseCase;
 import src.domain.dungeon.model.editor.usecase.SelectDungeonEditorMapUseCase;
@@ -35,8 +39,14 @@ import src.domain.dungeon.published.DeleteDungeonEditorRoomCommand;
 import src.domain.dungeon.published.DeleteDungeonEditorWallCommand;
 import src.domain.dungeon.published.DeleteDungeonMapCommand;
 import src.domain.dungeon.published.DungeonAuthoredReadCommand;
+import src.domain.dungeon.published.DungeonCellRef;
+import src.domain.dungeon.published.DungeonEditorBoundaryTargetRef;
+import src.domain.dungeon.published.DungeonEditorHandleRef;
+import src.domain.dungeon.published.DungeonEditorPointerSample;
+import src.domain.dungeon.published.DungeonEditorPointerTarget;
 import src.domain.dungeon.published.DungeonEditorSelectionCommand;
 import src.domain.dungeon.published.DungeonMapCatalogCommand;
+import src.domain.dungeon.published.DungeonTopologyElementRef;
 import src.domain.dungeon.published.PaintDungeonEditorRoomCommand;
 import src.domain.dungeon.published.SaveDungeonEditorRoomNarrationCommand;
 import src.domain.dungeon.published.SetDungeonEditorOverlayCommand;
@@ -148,151 +158,19 @@ public final class DungeonEditorApplicationService {
     }
 
     public void pressSelection(DungeonEditorSelectionCommand command) {
-        applySelectionUseCase.press(toMainViewInput(
-                command.pointer().canvasX(),
-                command.pointer().canvasY(),
-                command.pointer().primaryButtonDown(),
-                command.pointer().secondaryButtonDown(),
-                command.pointer().target().targetKind().name(),
-                command.pointer().target().elementKind().name(),
-                command.pointer().target().ownerId(),
-                command.pointer().target().clusterId(),
-                command.pointer().target().topologyRef().kind().name(),
-                command.pointer().target().topologyRef().id(),
-                command.pointer().target().handleRef().kind().name(),
-                command.pointer().target().handleRef().topologyRef().kind().name(),
-                command.pointer().target().handleRef().topologyRef().id(),
-                command.pointer().target().handleRef().ownerId(),
-                command.pointer().target().handleRef().clusterId(),
-                command.pointer().target().handleRef().corridorId(),
-                command.pointer().target().handleRef().roomId(),
-                command.pointer().target().handleRef().index(),
-                command.pointer().target().handleRef().cell().q(),
-                command.pointer().target().handleRef().cell().r(),
-                command.pointer().target().handleRef().cell().level(),
-                command.pointer().target().handleRef().direction(),
-                command.pointer().target().boundaryRef().kind().name(),
-                command.pointer().target().boundaryRef().key(),
-                command.pointer().target().boundaryRef().ownerId(),
-                command.pointer().target().boundaryRef().topologyRef().kind().name(),
-                command.pointer().target().boundaryRef().topologyRef().id(),
-                command.pointer().target().boundaryRef().start().q(),
-                command.pointer().target().boundaryRef().start().r(),
-                command.pointer().target().boundaryRef().start().level(),
-                command.pointer().target().boundaryRef().end().q(),
-                command.pointer().target().boundaryRef().end().r(),
-                command.pointer().target().boundaryRef().end().level()));
+        applySelectionUseCase.press(toMainViewInput(command.pointer()));
     }
 
     public void dragSelection(DungeonEditorSelectionCommand command) {
-        applySelectionUseCase.drag(toMainViewInput(
-                command.pointer().canvasX(),
-                command.pointer().canvasY(),
-                command.pointer().primaryButtonDown(),
-                command.pointer().secondaryButtonDown(),
-                command.pointer().target().targetKind().name(),
-                command.pointer().target().elementKind().name(),
-                command.pointer().target().ownerId(),
-                command.pointer().target().clusterId(),
-                command.pointer().target().topologyRef().kind().name(),
-                command.pointer().target().topologyRef().id(),
-                command.pointer().target().handleRef().kind().name(),
-                command.pointer().target().handleRef().topologyRef().kind().name(),
-                command.pointer().target().handleRef().topologyRef().id(),
-                command.pointer().target().handleRef().ownerId(),
-                command.pointer().target().handleRef().clusterId(),
-                command.pointer().target().handleRef().corridorId(),
-                command.pointer().target().handleRef().roomId(),
-                command.pointer().target().handleRef().index(),
-                command.pointer().target().handleRef().cell().q(),
-                command.pointer().target().handleRef().cell().r(),
-                command.pointer().target().handleRef().cell().level(),
-                command.pointer().target().handleRef().direction(),
-                command.pointer().target().boundaryRef().kind().name(),
-                command.pointer().target().boundaryRef().key(),
-                command.pointer().target().boundaryRef().ownerId(),
-                command.pointer().target().boundaryRef().topologyRef().kind().name(),
-                command.pointer().target().boundaryRef().topologyRef().id(),
-                command.pointer().target().boundaryRef().start().q(),
-                command.pointer().target().boundaryRef().start().r(),
-                command.pointer().target().boundaryRef().start().level(),
-                command.pointer().target().boundaryRef().end().q(),
-                command.pointer().target().boundaryRef().end().r(),
-                command.pointer().target().boundaryRef().end().level()));
+        applySelectionUseCase.drag(toMainViewInput(command.pointer()));
     }
 
     public void releaseSelection(DungeonEditorSelectionCommand command) {
-        applySelectionUseCase.release(toMainViewInput(
-                command.pointer().canvasX(),
-                command.pointer().canvasY(),
-                command.pointer().primaryButtonDown(),
-                command.pointer().secondaryButtonDown(),
-                command.pointer().target().targetKind().name(),
-                command.pointer().target().elementKind().name(),
-                command.pointer().target().ownerId(),
-                command.pointer().target().clusterId(),
-                command.pointer().target().topologyRef().kind().name(),
-                command.pointer().target().topologyRef().id(),
-                command.pointer().target().handleRef().kind().name(),
-                command.pointer().target().handleRef().topologyRef().kind().name(),
-                command.pointer().target().handleRef().topologyRef().id(),
-                command.pointer().target().handleRef().ownerId(),
-                command.pointer().target().handleRef().clusterId(),
-                command.pointer().target().handleRef().corridorId(),
-                command.pointer().target().handleRef().roomId(),
-                command.pointer().target().handleRef().index(),
-                command.pointer().target().handleRef().cell().q(),
-                command.pointer().target().handleRef().cell().r(),
-                command.pointer().target().handleRef().cell().level(),
-                command.pointer().target().handleRef().direction(),
-                command.pointer().target().boundaryRef().kind().name(),
-                command.pointer().target().boundaryRef().key(),
-                command.pointer().target().boundaryRef().ownerId(),
-                command.pointer().target().boundaryRef().topologyRef().kind().name(),
-                command.pointer().target().boundaryRef().topologyRef().id(),
-                command.pointer().target().boundaryRef().start().q(),
-                command.pointer().target().boundaryRef().start().r(),
-                command.pointer().target().boundaryRef().start().level(),
-                command.pointer().target().boundaryRef().end().q(),
-                command.pointer().target().boundaryRef().end().r(),
-                command.pointer().target().boundaryRef().end().level()));
+        applySelectionUseCase.release(toMainViewInput(command.pointer()));
     }
 
     public void hoverSelection(DungeonEditorSelectionCommand command) {
-        applySelectionUseCase.hover(toMainViewInput(
-                command.pointer().canvasX(),
-                command.pointer().canvasY(),
-                command.pointer().primaryButtonDown(),
-                command.pointer().secondaryButtonDown(),
-                command.pointer().target().targetKind().name(),
-                command.pointer().target().elementKind().name(),
-                command.pointer().target().ownerId(),
-                command.pointer().target().clusterId(),
-                command.pointer().target().topologyRef().kind().name(),
-                command.pointer().target().topologyRef().id(),
-                command.pointer().target().handleRef().kind().name(),
-                command.pointer().target().handleRef().topologyRef().kind().name(),
-                command.pointer().target().handleRef().topologyRef().id(),
-                command.pointer().target().handleRef().ownerId(),
-                command.pointer().target().handleRef().clusterId(),
-                command.pointer().target().handleRef().corridorId(),
-                command.pointer().target().handleRef().roomId(),
-                command.pointer().target().handleRef().index(),
-                command.pointer().target().handleRef().cell().q(),
-                command.pointer().target().handleRef().cell().r(),
-                command.pointer().target().handleRef().cell().level(),
-                command.pointer().target().handleRef().direction(),
-                command.pointer().target().boundaryRef().kind().name(),
-                command.pointer().target().boundaryRef().key(),
-                command.pointer().target().boundaryRef().ownerId(),
-                command.pointer().target().boundaryRef().topologyRef().kind().name(),
-                command.pointer().target().boundaryRef().topologyRef().id(),
-                command.pointer().target().boundaryRef().start().q(),
-                command.pointer().target().boundaryRef().start().r(),
-                command.pointer().target().boundaryRef().start().level(),
-                command.pointer().target().boundaryRef().end().q(),
-                command.pointer().target().boundaryRef().end().r(),
-                command.pointer().target().boundaryRef().end().level()));
+        applySelectionUseCase.hover(toMainViewInput(command.pointer()));
     }
 
     public void scrollSelection(ShiftDungeonEditorProjectionLevelCommand command) {
@@ -300,891 +178,99 @@ public final class DungeonEditorApplicationService {
     }
 
     public void pressPaintRoom(PaintDungeonEditorRoomCommand command) {
-        applyPaintRoomUseCase.press(toMainViewInput(
-                command.pointer().canvasX(),
-                command.pointer().canvasY(),
-                command.pointer().primaryButtonDown(),
-                command.pointer().secondaryButtonDown(),
-                command.pointer().target().targetKind().name(),
-                command.pointer().target().elementKind().name(),
-                command.pointer().target().ownerId(),
-                command.pointer().target().clusterId(),
-                command.pointer().target().topologyRef().kind().name(),
-                command.pointer().target().topologyRef().id(),
-                command.pointer().target().handleRef().kind().name(),
-                command.pointer().target().handleRef().topologyRef().kind().name(),
-                command.pointer().target().handleRef().topologyRef().id(),
-                command.pointer().target().handleRef().ownerId(),
-                command.pointer().target().handleRef().clusterId(),
-                command.pointer().target().handleRef().corridorId(),
-                command.pointer().target().handleRef().roomId(),
-                command.pointer().target().handleRef().index(),
-                command.pointer().target().handleRef().cell().q(),
-                command.pointer().target().handleRef().cell().r(),
-                command.pointer().target().handleRef().cell().level(),
-                command.pointer().target().handleRef().direction(),
-                command.pointer().target().boundaryRef().kind().name(),
-                command.pointer().target().boundaryRef().key(),
-                command.pointer().target().boundaryRef().ownerId(),
-                command.pointer().target().boundaryRef().topologyRef().kind().name(),
-                command.pointer().target().boundaryRef().topologyRef().id(),
-                command.pointer().target().boundaryRef().start().q(),
-                command.pointer().target().boundaryRef().start().r(),
-                command.pointer().target().boundaryRef().start().level(),
-                command.pointer().target().boundaryRef().end().q(),
-                command.pointer().target().boundaryRef().end().r(),
-                command.pointer().target().boundaryRef().end().level()));
+        applyPaintRoomUseCase.press(toMainViewInput(command.pointer()));
     }
 
     public void dragPaintRoom(PaintDungeonEditorRoomCommand command) {
-        applyPaintRoomUseCase.drag(toMainViewInput(
-                command.pointer().canvasX(),
-                command.pointer().canvasY(),
-                command.pointer().primaryButtonDown(),
-                command.pointer().secondaryButtonDown(),
-                command.pointer().target().targetKind().name(),
-                command.pointer().target().elementKind().name(),
-                command.pointer().target().ownerId(),
-                command.pointer().target().clusterId(),
-                command.pointer().target().topologyRef().kind().name(),
-                command.pointer().target().topologyRef().id(),
-                command.pointer().target().handleRef().kind().name(),
-                command.pointer().target().handleRef().topologyRef().kind().name(),
-                command.pointer().target().handleRef().topologyRef().id(),
-                command.pointer().target().handleRef().ownerId(),
-                command.pointer().target().handleRef().clusterId(),
-                command.pointer().target().handleRef().corridorId(),
-                command.pointer().target().handleRef().roomId(),
-                command.pointer().target().handleRef().index(),
-                command.pointer().target().handleRef().cell().q(),
-                command.pointer().target().handleRef().cell().r(),
-                command.pointer().target().handleRef().cell().level(),
-                command.pointer().target().handleRef().direction(),
-                command.pointer().target().boundaryRef().kind().name(),
-                command.pointer().target().boundaryRef().key(),
-                command.pointer().target().boundaryRef().ownerId(),
-                command.pointer().target().boundaryRef().topologyRef().kind().name(),
-                command.pointer().target().boundaryRef().topologyRef().id(),
-                command.pointer().target().boundaryRef().start().q(),
-                command.pointer().target().boundaryRef().start().r(),
-                command.pointer().target().boundaryRef().start().level(),
-                command.pointer().target().boundaryRef().end().q(),
-                command.pointer().target().boundaryRef().end().r(),
-                command.pointer().target().boundaryRef().end().level()));
+        applyPaintRoomUseCase.drag(toMainViewInput(command.pointer()));
     }
 
     public void releasePaintRoom(PaintDungeonEditorRoomCommand command) {
-        applyPaintRoomUseCase.release(toMainViewInput(
-                command.pointer().canvasX(),
-                command.pointer().canvasY(),
-                command.pointer().primaryButtonDown(),
-                command.pointer().secondaryButtonDown(),
-                command.pointer().target().targetKind().name(),
-                command.pointer().target().elementKind().name(),
-                command.pointer().target().ownerId(),
-                command.pointer().target().clusterId(),
-                command.pointer().target().topologyRef().kind().name(),
-                command.pointer().target().topologyRef().id(),
-                command.pointer().target().handleRef().kind().name(),
-                command.pointer().target().handleRef().topologyRef().kind().name(),
-                command.pointer().target().handleRef().topologyRef().id(),
-                command.pointer().target().handleRef().ownerId(),
-                command.pointer().target().handleRef().clusterId(),
-                command.pointer().target().handleRef().corridorId(),
-                command.pointer().target().handleRef().roomId(),
-                command.pointer().target().handleRef().index(),
-                command.pointer().target().handleRef().cell().q(),
-                command.pointer().target().handleRef().cell().r(),
-                command.pointer().target().handleRef().cell().level(),
-                command.pointer().target().handleRef().direction(),
-                command.pointer().target().boundaryRef().kind().name(),
-                command.pointer().target().boundaryRef().key(),
-                command.pointer().target().boundaryRef().ownerId(),
-                command.pointer().target().boundaryRef().topologyRef().kind().name(),
-                command.pointer().target().boundaryRef().topologyRef().id(),
-                command.pointer().target().boundaryRef().start().q(),
-                command.pointer().target().boundaryRef().start().r(),
-                command.pointer().target().boundaryRef().start().level(),
-                command.pointer().target().boundaryRef().end().q(),
-                command.pointer().target().boundaryRef().end().r(),
-                command.pointer().target().boundaryRef().end().level()));
+        applyPaintRoomUseCase.release(toMainViewInput(command.pointer()));
     }
 
     public void pressDeleteRoom(DeleteDungeonEditorRoomCommand command) {
-        applyDeleteRoomUseCase.press(toMainViewInput(
-                command.pointer().canvasX(),
-                command.pointer().canvasY(),
-                command.pointer().primaryButtonDown(),
-                command.pointer().secondaryButtonDown(),
-                command.pointer().target().targetKind().name(),
-                command.pointer().target().elementKind().name(),
-                command.pointer().target().ownerId(),
-                command.pointer().target().clusterId(),
-                command.pointer().target().topologyRef().kind().name(),
-                command.pointer().target().topologyRef().id(),
-                command.pointer().target().handleRef().kind().name(),
-                command.pointer().target().handleRef().topologyRef().kind().name(),
-                command.pointer().target().handleRef().topologyRef().id(),
-                command.pointer().target().handleRef().ownerId(),
-                command.pointer().target().handleRef().clusterId(),
-                command.pointer().target().handleRef().corridorId(),
-                command.pointer().target().handleRef().roomId(),
-                command.pointer().target().handleRef().index(),
-                command.pointer().target().handleRef().cell().q(),
-                command.pointer().target().handleRef().cell().r(),
-                command.pointer().target().handleRef().cell().level(),
-                command.pointer().target().handleRef().direction(),
-                command.pointer().target().boundaryRef().kind().name(),
-                command.pointer().target().boundaryRef().key(),
-                command.pointer().target().boundaryRef().ownerId(),
-                command.pointer().target().boundaryRef().topologyRef().kind().name(),
-                command.pointer().target().boundaryRef().topologyRef().id(),
-                command.pointer().target().boundaryRef().start().q(),
-                command.pointer().target().boundaryRef().start().r(),
-                command.pointer().target().boundaryRef().start().level(),
-                command.pointer().target().boundaryRef().end().q(),
-                command.pointer().target().boundaryRef().end().r(),
-                command.pointer().target().boundaryRef().end().level()));
+        applyDeleteRoomUseCase.press(toMainViewInput(command.pointer()));
     }
 
     public void dragDeleteRoom(DeleteDungeonEditorRoomCommand command) {
-        applyDeleteRoomUseCase.drag(toMainViewInput(
-                command.pointer().canvasX(),
-                command.pointer().canvasY(),
-                command.pointer().primaryButtonDown(),
-                command.pointer().secondaryButtonDown(),
-                command.pointer().target().targetKind().name(),
-                command.pointer().target().elementKind().name(),
-                command.pointer().target().ownerId(),
-                command.pointer().target().clusterId(),
-                command.pointer().target().topologyRef().kind().name(),
-                command.pointer().target().topologyRef().id(),
-                command.pointer().target().handleRef().kind().name(),
-                command.pointer().target().handleRef().topologyRef().kind().name(),
-                command.pointer().target().handleRef().topologyRef().id(),
-                command.pointer().target().handleRef().ownerId(),
-                command.pointer().target().handleRef().clusterId(),
-                command.pointer().target().handleRef().corridorId(),
-                command.pointer().target().handleRef().roomId(),
-                command.pointer().target().handleRef().index(),
-                command.pointer().target().handleRef().cell().q(),
-                command.pointer().target().handleRef().cell().r(),
-                command.pointer().target().handleRef().cell().level(),
-                command.pointer().target().handleRef().direction(),
-                command.pointer().target().boundaryRef().kind().name(),
-                command.pointer().target().boundaryRef().key(),
-                command.pointer().target().boundaryRef().ownerId(),
-                command.pointer().target().boundaryRef().topologyRef().kind().name(),
-                command.pointer().target().boundaryRef().topologyRef().id(),
-                command.pointer().target().boundaryRef().start().q(),
-                command.pointer().target().boundaryRef().start().r(),
-                command.pointer().target().boundaryRef().start().level(),
-                command.pointer().target().boundaryRef().end().q(),
-                command.pointer().target().boundaryRef().end().r(),
-                command.pointer().target().boundaryRef().end().level()));
+        applyDeleteRoomUseCase.drag(toMainViewInput(command.pointer()));
     }
 
     public void releaseDeleteRoom(DeleteDungeonEditorRoomCommand command) {
-        applyDeleteRoomUseCase.release(toMainViewInput(
-                command.pointer().canvasX(),
-                command.pointer().canvasY(),
-                command.pointer().primaryButtonDown(),
-                command.pointer().secondaryButtonDown(),
-                command.pointer().target().targetKind().name(),
-                command.pointer().target().elementKind().name(),
-                command.pointer().target().ownerId(),
-                command.pointer().target().clusterId(),
-                command.pointer().target().topologyRef().kind().name(),
-                command.pointer().target().topologyRef().id(),
-                command.pointer().target().handleRef().kind().name(),
-                command.pointer().target().handleRef().topologyRef().kind().name(),
-                command.pointer().target().handleRef().topologyRef().id(),
-                command.pointer().target().handleRef().ownerId(),
-                command.pointer().target().handleRef().clusterId(),
-                command.pointer().target().handleRef().corridorId(),
-                command.pointer().target().handleRef().roomId(),
-                command.pointer().target().handleRef().index(),
-                command.pointer().target().handleRef().cell().q(),
-                command.pointer().target().handleRef().cell().r(),
-                command.pointer().target().handleRef().cell().level(),
-                command.pointer().target().handleRef().direction(),
-                command.pointer().target().boundaryRef().kind().name(),
-                command.pointer().target().boundaryRef().key(),
-                command.pointer().target().boundaryRef().ownerId(),
-                command.pointer().target().boundaryRef().topologyRef().kind().name(),
-                command.pointer().target().boundaryRef().topologyRef().id(),
-                command.pointer().target().boundaryRef().start().q(),
-                command.pointer().target().boundaryRef().start().r(),
-                command.pointer().target().boundaryRef().start().level(),
-                command.pointer().target().boundaryRef().end().q(),
-                command.pointer().target().boundaryRef().end().r(),
-                command.pointer().target().boundaryRef().end().level()));
+        applyDeleteRoomUseCase.release(toMainViewInput(command.pointer()));
     }
 
     public void pressCreateWall(CreateDungeonEditorWallCommand command) {
-        applyCreateWallUseCase.press(toMainViewInput(
-                command.pointer().canvasX(),
-                command.pointer().canvasY(),
-                command.pointer().primaryButtonDown(),
-                command.pointer().secondaryButtonDown(),
-                command.pointer().target().targetKind().name(),
-                command.pointer().target().elementKind().name(),
-                command.pointer().target().ownerId(),
-                command.pointer().target().clusterId(),
-                command.pointer().target().topologyRef().kind().name(),
-                command.pointer().target().topologyRef().id(),
-                command.pointer().target().handleRef().kind().name(),
-                command.pointer().target().handleRef().topologyRef().kind().name(),
-                command.pointer().target().handleRef().topologyRef().id(),
-                command.pointer().target().handleRef().ownerId(),
-                command.pointer().target().handleRef().clusterId(),
-                command.pointer().target().handleRef().corridorId(),
-                command.pointer().target().handleRef().roomId(),
-                command.pointer().target().handleRef().index(),
-                command.pointer().target().handleRef().cell().q(),
-                command.pointer().target().handleRef().cell().r(),
-                command.pointer().target().handleRef().cell().level(),
-                command.pointer().target().handleRef().direction(),
-                command.pointer().target().boundaryRef().kind().name(),
-                command.pointer().target().boundaryRef().key(),
-                command.pointer().target().boundaryRef().ownerId(),
-                command.pointer().target().boundaryRef().topologyRef().kind().name(),
-                command.pointer().target().boundaryRef().topologyRef().id(),
-                command.pointer().target().boundaryRef().start().q(),
-                command.pointer().target().boundaryRef().start().r(),
-                command.pointer().target().boundaryRef().start().level(),
-                command.pointer().target().boundaryRef().end().q(),
-                command.pointer().target().boundaryRef().end().r(),
-                command.pointer().target().boundaryRef().end().level()));
+        applyCreateWallUseCase.press(toMainViewInput(command.pointer()));
     }
 
     public void dragCreateWall(CreateDungeonEditorWallCommand command) {
-        applyCreateWallUseCase.drag(toMainViewInput(
-                command.pointer().canvasX(),
-                command.pointer().canvasY(),
-                command.pointer().primaryButtonDown(),
-                command.pointer().secondaryButtonDown(),
-                command.pointer().target().targetKind().name(),
-                command.pointer().target().elementKind().name(),
-                command.pointer().target().ownerId(),
-                command.pointer().target().clusterId(),
-                command.pointer().target().topologyRef().kind().name(),
-                command.pointer().target().topologyRef().id(),
-                command.pointer().target().handleRef().kind().name(),
-                command.pointer().target().handleRef().topologyRef().kind().name(),
-                command.pointer().target().handleRef().topologyRef().id(),
-                command.pointer().target().handleRef().ownerId(),
-                command.pointer().target().handleRef().clusterId(),
-                command.pointer().target().handleRef().corridorId(),
-                command.pointer().target().handleRef().roomId(),
-                command.pointer().target().handleRef().index(),
-                command.pointer().target().handleRef().cell().q(),
-                command.pointer().target().handleRef().cell().r(),
-                command.pointer().target().handleRef().cell().level(),
-                command.pointer().target().handleRef().direction(),
-                command.pointer().target().boundaryRef().kind().name(),
-                command.pointer().target().boundaryRef().key(),
-                command.pointer().target().boundaryRef().ownerId(),
-                command.pointer().target().boundaryRef().topologyRef().kind().name(),
-                command.pointer().target().boundaryRef().topologyRef().id(),
-                command.pointer().target().boundaryRef().start().q(),
-                command.pointer().target().boundaryRef().start().r(),
-                command.pointer().target().boundaryRef().start().level(),
-                command.pointer().target().boundaryRef().end().q(),
-                command.pointer().target().boundaryRef().end().r(),
-                command.pointer().target().boundaryRef().end().level()));
+        applyCreateWallUseCase.drag(toMainViewInput(command.pointer()));
     }
 
     public void hoverCreateWall(CreateDungeonEditorWallCommand command) {
-        applyCreateWallUseCase.hover(toMainViewInput(
-                command.pointer().canvasX(),
-                command.pointer().canvasY(),
-                command.pointer().primaryButtonDown(),
-                command.pointer().secondaryButtonDown(),
-                command.pointer().target().targetKind().name(),
-                command.pointer().target().elementKind().name(),
-                command.pointer().target().ownerId(),
-                command.pointer().target().clusterId(),
-                command.pointer().target().topologyRef().kind().name(),
-                command.pointer().target().topologyRef().id(),
-                command.pointer().target().handleRef().kind().name(),
-                command.pointer().target().handleRef().topologyRef().kind().name(),
-                command.pointer().target().handleRef().topologyRef().id(),
-                command.pointer().target().handleRef().ownerId(),
-                command.pointer().target().handleRef().clusterId(),
-                command.pointer().target().handleRef().corridorId(),
-                command.pointer().target().handleRef().roomId(),
-                command.pointer().target().handleRef().index(),
-                command.pointer().target().handleRef().cell().q(),
-                command.pointer().target().handleRef().cell().r(),
-                command.pointer().target().handleRef().cell().level(),
-                command.pointer().target().handleRef().direction(),
-                command.pointer().target().boundaryRef().kind().name(),
-                command.pointer().target().boundaryRef().key(),
-                command.pointer().target().boundaryRef().ownerId(),
-                command.pointer().target().boundaryRef().topologyRef().kind().name(),
-                command.pointer().target().boundaryRef().topologyRef().id(),
-                command.pointer().target().boundaryRef().start().q(),
-                command.pointer().target().boundaryRef().start().r(),
-                command.pointer().target().boundaryRef().start().level(),
-                command.pointer().target().boundaryRef().end().q(),
-                command.pointer().target().boundaryRef().end().r(),
-                command.pointer().target().boundaryRef().end().level()));
+        applyCreateWallUseCase.hover(toMainViewInput(command.pointer()));
     }
 
     public void pressDeleteWall(DeleteDungeonEditorWallCommand command) {
-        applyDeleteWallUseCase.press(toMainViewInput(
-                command.pointer().canvasX(),
-                command.pointer().canvasY(),
-                command.pointer().primaryButtonDown(),
-                command.pointer().secondaryButtonDown(),
-                command.pointer().target().targetKind().name(),
-                command.pointer().target().elementKind().name(),
-                command.pointer().target().ownerId(),
-                command.pointer().target().clusterId(),
-                command.pointer().target().topologyRef().kind().name(),
-                command.pointer().target().topologyRef().id(),
-                command.pointer().target().handleRef().kind().name(),
-                command.pointer().target().handleRef().topologyRef().kind().name(),
-                command.pointer().target().handleRef().topologyRef().id(),
-                command.pointer().target().handleRef().ownerId(),
-                command.pointer().target().handleRef().clusterId(),
-                command.pointer().target().handleRef().corridorId(),
-                command.pointer().target().handleRef().roomId(),
-                command.pointer().target().handleRef().index(),
-                command.pointer().target().handleRef().cell().q(),
-                command.pointer().target().handleRef().cell().r(),
-                command.pointer().target().handleRef().cell().level(),
-                command.pointer().target().handleRef().direction(),
-                command.pointer().target().boundaryRef().kind().name(),
-                command.pointer().target().boundaryRef().key(),
-                command.pointer().target().boundaryRef().ownerId(),
-                command.pointer().target().boundaryRef().topologyRef().kind().name(),
-                command.pointer().target().boundaryRef().topologyRef().id(),
-                command.pointer().target().boundaryRef().start().q(),
-                command.pointer().target().boundaryRef().start().r(),
-                command.pointer().target().boundaryRef().start().level(),
-                command.pointer().target().boundaryRef().end().q(),
-                command.pointer().target().boundaryRef().end().r(),
-                command.pointer().target().boundaryRef().end().level()));
+        applyDeleteWallUseCase.press(toMainViewInput(command.pointer()));
     }
 
     public void dragDeleteWall(DeleteDungeonEditorWallCommand command) {
-        applyDeleteWallUseCase.drag(toMainViewInput(
-                command.pointer().canvasX(),
-                command.pointer().canvasY(),
-                command.pointer().primaryButtonDown(),
-                command.pointer().secondaryButtonDown(),
-                command.pointer().target().targetKind().name(),
-                command.pointer().target().elementKind().name(),
-                command.pointer().target().ownerId(),
-                command.pointer().target().clusterId(),
-                command.pointer().target().topologyRef().kind().name(),
-                command.pointer().target().topologyRef().id(),
-                command.pointer().target().handleRef().kind().name(),
-                command.pointer().target().handleRef().topologyRef().kind().name(),
-                command.pointer().target().handleRef().topologyRef().id(),
-                command.pointer().target().handleRef().ownerId(),
-                command.pointer().target().handleRef().clusterId(),
-                command.pointer().target().handleRef().corridorId(),
-                command.pointer().target().handleRef().roomId(),
-                command.pointer().target().handleRef().index(),
-                command.pointer().target().handleRef().cell().q(),
-                command.pointer().target().handleRef().cell().r(),
-                command.pointer().target().handleRef().cell().level(),
-                command.pointer().target().handleRef().direction(),
-                command.pointer().target().boundaryRef().kind().name(),
-                command.pointer().target().boundaryRef().key(),
-                command.pointer().target().boundaryRef().ownerId(),
-                command.pointer().target().boundaryRef().topologyRef().kind().name(),
-                command.pointer().target().boundaryRef().topologyRef().id(),
-                command.pointer().target().boundaryRef().start().q(),
-                command.pointer().target().boundaryRef().start().r(),
-                command.pointer().target().boundaryRef().start().level(),
-                command.pointer().target().boundaryRef().end().q(),
-                command.pointer().target().boundaryRef().end().r(),
-                command.pointer().target().boundaryRef().end().level()));
+        applyDeleteWallUseCase.drag(toMainViewInput(command.pointer()));
     }
 
     public void hoverDeleteWall(DeleteDungeonEditorWallCommand command) {
-        applyDeleteWallUseCase.hover(toMainViewInput(
-                command.pointer().canvasX(),
-                command.pointer().canvasY(),
-                command.pointer().primaryButtonDown(),
-                command.pointer().secondaryButtonDown(),
-                command.pointer().target().targetKind().name(),
-                command.pointer().target().elementKind().name(),
-                command.pointer().target().ownerId(),
-                command.pointer().target().clusterId(),
-                command.pointer().target().topologyRef().kind().name(),
-                command.pointer().target().topologyRef().id(),
-                command.pointer().target().handleRef().kind().name(),
-                command.pointer().target().handleRef().topologyRef().kind().name(),
-                command.pointer().target().handleRef().topologyRef().id(),
-                command.pointer().target().handleRef().ownerId(),
-                command.pointer().target().handleRef().clusterId(),
-                command.pointer().target().handleRef().corridorId(),
-                command.pointer().target().handleRef().roomId(),
-                command.pointer().target().handleRef().index(),
-                command.pointer().target().handleRef().cell().q(),
-                command.pointer().target().handleRef().cell().r(),
-                command.pointer().target().handleRef().cell().level(),
-                command.pointer().target().handleRef().direction(),
-                command.pointer().target().boundaryRef().kind().name(),
-                command.pointer().target().boundaryRef().key(),
-                command.pointer().target().boundaryRef().ownerId(),
-                command.pointer().target().boundaryRef().topologyRef().kind().name(),
-                command.pointer().target().boundaryRef().topologyRef().id(),
-                command.pointer().target().boundaryRef().start().q(),
-                command.pointer().target().boundaryRef().start().r(),
-                command.pointer().target().boundaryRef().start().level(),
-                command.pointer().target().boundaryRef().end().q(),
-                command.pointer().target().boundaryRef().end().r(),
-                command.pointer().target().boundaryRef().end().level()));
+        applyDeleteWallUseCase.hover(toMainViewInput(command.pointer()));
     }
 
     public void pressCreateDoor(CreateDungeonEditorDoorCommand command) {
-        applyCreateDoorUseCase.press(toMainViewInput(
-                command.pointer().canvasX(),
-                command.pointer().canvasY(),
-                command.pointer().primaryButtonDown(),
-                command.pointer().secondaryButtonDown(),
-                command.pointer().target().targetKind().name(),
-                command.pointer().target().elementKind().name(),
-                command.pointer().target().ownerId(),
-                command.pointer().target().clusterId(),
-                command.pointer().target().topologyRef().kind().name(),
-                command.pointer().target().topologyRef().id(),
-                command.pointer().target().handleRef().kind().name(),
-                command.pointer().target().handleRef().topologyRef().kind().name(),
-                command.pointer().target().handleRef().topologyRef().id(),
-                command.pointer().target().handleRef().ownerId(),
-                command.pointer().target().handleRef().clusterId(),
-                command.pointer().target().handleRef().corridorId(),
-                command.pointer().target().handleRef().roomId(),
-                command.pointer().target().handleRef().index(),
-                command.pointer().target().handleRef().cell().q(),
-                command.pointer().target().handleRef().cell().r(),
-                command.pointer().target().handleRef().cell().level(),
-                command.pointer().target().handleRef().direction(),
-                command.pointer().target().boundaryRef().kind().name(),
-                command.pointer().target().boundaryRef().key(),
-                command.pointer().target().boundaryRef().ownerId(),
-                command.pointer().target().boundaryRef().topologyRef().kind().name(),
-                command.pointer().target().boundaryRef().topologyRef().id(),
-                command.pointer().target().boundaryRef().start().q(),
-                command.pointer().target().boundaryRef().start().r(),
-                command.pointer().target().boundaryRef().start().level(),
-                command.pointer().target().boundaryRef().end().q(),
-                command.pointer().target().boundaryRef().end().r(),
-                command.pointer().target().boundaryRef().end().level()));
+        applyCreateDoorUseCase.press(toMainViewInput(command.pointer()));
     }
 
     public void dragCreateDoor(CreateDungeonEditorDoorCommand command) {
-        applyCreateDoorUseCase.drag(toMainViewInput(
-                command.pointer().canvasX(),
-                command.pointer().canvasY(),
-                command.pointer().primaryButtonDown(),
-                command.pointer().secondaryButtonDown(),
-                command.pointer().target().targetKind().name(),
-                command.pointer().target().elementKind().name(),
-                command.pointer().target().ownerId(),
-                command.pointer().target().clusterId(),
-                command.pointer().target().topologyRef().kind().name(),
-                command.pointer().target().topologyRef().id(),
-                command.pointer().target().handleRef().kind().name(),
-                command.pointer().target().handleRef().topologyRef().kind().name(),
-                command.pointer().target().handleRef().topologyRef().id(),
-                command.pointer().target().handleRef().ownerId(),
-                command.pointer().target().handleRef().clusterId(),
-                command.pointer().target().handleRef().corridorId(),
-                command.pointer().target().handleRef().roomId(),
-                command.pointer().target().handleRef().index(),
-                command.pointer().target().handleRef().cell().q(),
-                command.pointer().target().handleRef().cell().r(),
-                command.pointer().target().handleRef().cell().level(),
-                command.pointer().target().handleRef().direction(),
-                command.pointer().target().boundaryRef().kind().name(),
-                command.pointer().target().boundaryRef().key(),
-                command.pointer().target().boundaryRef().ownerId(),
-                command.pointer().target().boundaryRef().topologyRef().kind().name(),
-                command.pointer().target().boundaryRef().topologyRef().id(),
-                command.pointer().target().boundaryRef().start().q(),
-                command.pointer().target().boundaryRef().start().r(),
-                command.pointer().target().boundaryRef().start().level(),
-                command.pointer().target().boundaryRef().end().q(),
-                command.pointer().target().boundaryRef().end().r(),
-                command.pointer().target().boundaryRef().end().level()));
+        applyCreateDoorUseCase.drag(toMainViewInput(command.pointer()));
     }
 
     public void releaseCreateDoor(CreateDungeonEditorDoorCommand command) {
-        applyCreateDoorUseCase.release(toMainViewInput(
-                command.pointer().canvasX(),
-                command.pointer().canvasY(),
-                command.pointer().primaryButtonDown(),
-                command.pointer().secondaryButtonDown(),
-                command.pointer().target().targetKind().name(),
-                command.pointer().target().elementKind().name(),
-                command.pointer().target().ownerId(),
-                command.pointer().target().clusterId(),
-                command.pointer().target().topologyRef().kind().name(),
-                command.pointer().target().topologyRef().id(),
-                command.pointer().target().handleRef().kind().name(),
-                command.pointer().target().handleRef().topologyRef().kind().name(),
-                command.pointer().target().handleRef().topologyRef().id(),
-                command.pointer().target().handleRef().ownerId(),
-                command.pointer().target().handleRef().clusterId(),
-                command.pointer().target().handleRef().corridorId(),
-                command.pointer().target().handleRef().roomId(),
-                command.pointer().target().handleRef().index(),
-                command.pointer().target().handleRef().cell().q(),
-                command.pointer().target().handleRef().cell().r(),
-                command.pointer().target().handleRef().cell().level(),
-                command.pointer().target().handleRef().direction(),
-                command.pointer().target().boundaryRef().kind().name(),
-                command.pointer().target().boundaryRef().key(),
-                command.pointer().target().boundaryRef().ownerId(),
-                command.pointer().target().boundaryRef().topologyRef().kind().name(),
-                command.pointer().target().boundaryRef().topologyRef().id(),
-                command.pointer().target().boundaryRef().start().q(),
-                command.pointer().target().boundaryRef().start().r(),
-                command.pointer().target().boundaryRef().start().level(),
-                command.pointer().target().boundaryRef().end().q(),
-                command.pointer().target().boundaryRef().end().r(),
-                command.pointer().target().boundaryRef().end().level()));
+        applyCreateDoorUseCase.release(toMainViewInput(command.pointer()));
     }
 
     public void hoverCreateDoor(CreateDungeonEditorDoorCommand command) {
-        applyCreateDoorUseCase.hover(toMainViewInput(
-                command.pointer().canvasX(),
-                command.pointer().canvasY(),
-                command.pointer().primaryButtonDown(),
-                command.pointer().secondaryButtonDown(),
-                command.pointer().target().targetKind().name(),
-                command.pointer().target().elementKind().name(),
-                command.pointer().target().ownerId(),
-                command.pointer().target().clusterId(),
-                command.pointer().target().topologyRef().kind().name(),
-                command.pointer().target().topologyRef().id(),
-                command.pointer().target().handleRef().kind().name(),
-                command.pointer().target().handleRef().topologyRef().kind().name(),
-                command.pointer().target().handleRef().topologyRef().id(),
-                command.pointer().target().handleRef().ownerId(),
-                command.pointer().target().handleRef().clusterId(),
-                command.pointer().target().handleRef().corridorId(),
-                command.pointer().target().handleRef().roomId(),
-                command.pointer().target().handleRef().index(),
-                command.pointer().target().handleRef().cell().q(),
-                command.pointer().target().handleRef().cell().r(),
-                command.pointer().target().handleRef().cell().level(),
-                command.pointer().target().handleRef().direction(),
-                command.pointer().target().boundaryRef().kind().name(),
-                command.pointer().target().boundaryRef().key(),
-                command.pointer().target().boundaryRef().ownerId(),
-                command.pointer().target().boundaryRef().topologyRef().kind().name(),
-                command.pointer().target().boundaryRef().topologyRef().id(),
-                command.pointer().target().boundaryRef().start().q(),
-                command.pointer().target().boundaryRef().start().r(),
-                command.pointer().target().boundaryRef().start().level(),
-                command.pointer().target().boundaryRef().end().q(),
-                command.pointer().target().boundaryRef().end().r(),
-                command.pointer().target().boundaryRef().end().level()));
+        applyCreateDoorUseCase.hover(toMainViewInput(command.pointer()));
     }
 
     public void pressDeleteDoor(DeleteDungeonEditorDoorCommand command) {
-        applyDeleteDoorUseCase.press(toMainViewInput(
-                command.pointer().canvasX(),
-                command.pointer().canvasY(),
-                command.pointer().primaryButtonDown(),
-                command.pointer().secondaryButtonDown(),
-                command.pointer().target().targetKind().name(),
-                command.pointer().target().elementKind().name(),
-                command.pointer().target().ownerId(),
-                command.pointer().target().clusterId(),
-                command.pointer().target().topologyRef().kind().name(),
-                command.pointer().target().topologyRef().id(),
-                command.pointer().target().handleRef().kind().name(),
-                command.pointer().target().handleRef().topologyRef().kind().name(),
-                command.pointer().target().handleRef().topologyRef().id(),
-                command.pointer().target().handleRef().ownerId(),
-                command.pointer().target().handleRef().clusterId(),
-                command.pointer().target().handleRef().corridorId(),
-                command.pointer().target().handleRef().roomId(),
-                command.pointer().target().handleRef().index(),
-                command.pointer().target().handleRef().cell().q(),
-                command.pointer().target().handleRef().cell().r(),
-                command.pointer().target().handleRef().cell().level(),
-                command.pointer().target().handleRef().direction(),
-                command.pointer().target().boundaryRef().kind().name(),
-                command.pointer().target().boundaryRef().key(),
-                command.pointer().target().boundaryRef().ownerId(),
-                command.pointer().target().boundaryRef().topologyRef().kind().name(),
-                command.pointer().target().boundaryRef().topologyRef().id(),
-                command.pointer().target().boundaryRef().start().q(),
-                command.pointer().target().boundaryRef().start().r(),
-                command.pointer().target().boundaryRef().start().level(),
-                command.pointer().target().boundaryRef().end().q(),
-                command.pointer().target().boundaryRef().end().r(),
-                command.pointer().target().boundaryRef().end().level()));
+        applyDeleteDoorUseCase.press(toMainViewInput(command.pointer()));
     }
 
     public void dragDeleteDoor(DeleteDungeonEditorDoorCommand command) {
-        applyDeleteDoorUseCase.drag(toMainViewInput(
-                command.pointer().canvasX(),
-                command.pointer().canvasY(),
-                command.pointer().primaryButtonDown(),
-                command.pointer().secondaryButtonDown(),
-                command.pointer().target().targetKind().name(),
-                command.pointer().target().elementKind().name(),
-                command.pointer().target().ownerId(),
-                command.pointer().target().clusterId(),
-                command.pointer().target().topologyRef().kind().name(),
-                command.pointer().target().topologyRef().id(),
-                command.pointer().target().handleRef().kind().name(),
-                command.pointer().target().handleRef().topologyRef().kind().name(),
-                command.pointer().target().handleRef().topologyRef().id(),
-                command.pointer().target().handleRef().ownerId(),
-                command.pointer().target().handleRef().clusterId(),
-                command.pointer().target().handleRef().corridorId(),
-                command.pointer().target().handleRef().roomId(),
-                command.pointer().target().handleRef().index(),
-                command.pointer().target().handleRef().cell().q(),
-                command.pointer().target().handleRef().cell().r(),
-                command.pointer().target().handleRef().cell().level(),
-                command.pointer().target().handleRef().direction(),
-                command.pointer().target().boundaryRef().kind().name(),
-                command.pointer().target().boundaryRef().key(),
-                command.pointer().target().boundaryRef().ownerId(),
-                command.pointer().target().boundaryRef().topologyRef().kind().name(),
-                command.pointer().target().boundaryRef().topologyRef().id(),
-                command.pointer().target().boundaryRef().start().q(),
-                command.pointer().target().boundaryRef().start().r(),
-                command.pointer().target().boundaryRef().start().level(),
-                command.pointer().target().boundaryRef().end().q(),
-                command.pointer().target().boundaryRef().end().r(),
-                command.pointer().target().boundaryRef().end().level()));
+        applyDeleteDoorUseCase.drag(toMainViewInput(command.pointer()));
     }
 
     public void releaseDeleteDoor(DeleteDungeonEditorDoorCommand command) {
-        applyDeleteDoorUseCase.release(toMainViewInput(
-                command.pointer().canvasX(),
-                command.pointer().canvasY(),
-                command.pointer().primaryButtonDown(),
-                command.pointer().secondaryButtonDown(),
-                command.pointer().target().targetKind().name(),
-                command.pointer().target().elementKind().name(),
-                command.pointer().target().ownerId(),
-                command.pointer().target().clusterId(),
-                command.pointer().target().topologyRef().kind().name(),
-                command.pointer().target().topologyRef().id(),
-                command.pointer().target().handleRef().kind().name(),
-                command.pointer().target().handleRef().topologyRef().kind().name(),
-                command.pointer().target().handleRef().topologyRef().id(),
-                command.pointer().target().handleRef().ownerId(),
-                command.pointer().target().handleRef().clusterId(),
-                command.pointer().target().handleRef().corridorId(),
-                command.pointer().target().handleRef().roomId(),
-                command.pointer().target().handleRef().index(),
-                command.pointer().target().handleRef().cell().q(),
-                command.pointer().target().handleRef().cell().r(),
-                command.pointer().target().handleRef().cell().level(),
-                command.pointer().target().handleRef().direction(),
-                command.pointer().target().boundaryRef().kind().name(),
-                command.pointer().target().boundaryRef().key(),
-                command.pointer().target().boundaryRef().ownerId(),
-                command.pointer().target().boundaryRef().topologyRef().kind().name(),
-                command.pointer().target().boundaryRef().topologyRef().id(),
-                command.pointer().target().boundaryRef().start().q(),
-                command.pointer().target().boundaryRef().start().r(),
-                command.pointer().target().boundaryRef().start().level(),
-                command.pointer().target().boundaryRef().end().q(),
-                command.pointer().target().boundaryRef().end().r(),
-                command.pointer().target().boundaryRef().end().level()));
+        applyDeleteDoorUseCase.release(toMainViewInput(command.pointer()));
     }
 
     public void hoverDeleteDoor(DeleteDungeonEditorDoorCommand command) {
-        applyDeleteDoorUseCase.hover(toMainViewInput(
-                command.pointer().canvasX(),
-                command.pointer().canvasY(),
-                command.pointer().primaryButtonDown(),
-                command.pointer().secondaryButtonDown(),
-                command.pointer().target().targetKind().name(),
-                command.pointer().target().elementKind().name(),
-                command.pointer().target().ownerId(),
-                command.pointer().target().clusterId(),
-                command.pointer().target().topologyRef().kind().name(),
-                command.pointer().target().topologyRef().id(),
-                command.pointer().target().handleRef().kind().name(),
-                command.pointer().target().handleRef().topologyRef().kind().name(),
-                command.pointer().target().handleRef().topologyRef().id(),
-                command.pointer().target().handleRef().ownerId(),
-                command.pointer().target().handleRef().clusterId(),
-                command.pointer().target().handleRef().corridorId(),
-                command.pointer().target().handleRef().roomId(),
-                command.pointer().target().handleRef().index(),
-                command.pointer().target().handleRef().cell().q(),
-                command.pointer().target().handleRef().cell().r(),
-                command.pointer().target().handleRef().cell().level(),
-                command.pointer().target().handleRef().direction(),
-                command.pointer().target().boundaryRef().kind().name(),
-                command.pointer().target().boundaryRef().key(),
-                command.pointer().target().boundaryRef().ownerId(),
-                command.pointer().target().boundaryRef().topologyRef().kind().name(),
-                command.pointer().target().boundaryRef().topologyRef().id(),
-                command.pointer().target().boundaryRef().start().q(),
-                command.pointer().target().boundaryRef().start().r(),
-                command.pointer().target().boundaryRef().start().level(),
-                command.pointer().target().boundaryRef().end().q(),
-                command.pointer().target().boundaryRef().end().r(),
-                command.pointer().target().boundaryRef().end().level()));
+        applyDeleteDoorUseCase.hover(toMainViewInput(command.pointer()));
     }
 
     public void pressCreateCorridor(CreateDungeonEditorCorridorCommand command) {
-        applyCreateCorridorUseCase.press(toMainViewInput(
-                command.pointer().canvasX(),
-                command.pointer().canvasY(),
-                command.pointer().primaryButtonDown(),
-                command.pointer().secondaryButtonDown(),
-                command.pointer().target().targetKind().name(),
-                command.pointer().target().elementKind().name(),
-                command.pointer().target().ownerId(),
-                command.pointer().target().clusterId(),
-                command.pointer().target().topologyRef().kind().name(),
-                command.pointer().target().topologyRef().id(),
-                command.pointer().target().handleRef().kind().name(),
-                command.pointer().target().handleRef().topologyRef().kind().name(),
-                command.pointer().target().handleRef().topologyRef().id(),
-                command.pointer().target().handleRef().ownerId(),
-                command.pointer().target().handleRef().clusterId(),
-                command.pointer().target().handleRef().corridorId(),
-                command.pointer().target().handleRef().roomId(),
-                command.pointer().target().handleRef().index(),
-                command.pointer().target().handleRef().cell().q(),
-                command.pointer().target().handleRef().cell().r(),
-                command.pointer().target().handleRef().cell().level(),
-                command.pointer().target().handleRef().direction(),
-                command.pointer().target().boundaryRef().kind().name(),
-                command.pointer().target().boundaryRef().key(),
-                command.pointer().target().boundaryRef().ownerId(),
-                command.pointer().target().boundaryRef().topologyRef().kind().name(),
-                command.pointer().target().boundaryRef().topologyRef().id(),
-                command.pointer().target().boundaryRef().start().q(),
-                command.pointer().target().boundaryRef().start().r(),
-                command.pointer().target().boundaryRef().start().level(),
-                command.pointer().target().boundaryRef().end().q(),
-                command.pointer().target().boundaryRef().end().r(),
-                command.pointer().target().boundaryRef().end().level()));
+        applyCreateCorridorUseCase.press(toMainViewInput(command.pointer()));
     }
 
     public void hoverCreateCorridor(CreateDungeonEditorCorridorCommand command) {
-        applyCreateCorridorUseCase.hover(toMainViewInput(
-                command.pointer().canvasX(),
-                command.pointer().canvasY(),
-                command.pointer().primaryButtonDown(),
-                command.pointer().secondaryButtonDown(),
-                command.pointer().target().targetKind().name(),
-                command.pointer().target().elementKind().name(),
-                command.pointer().target().ownerId(),
-                command.pointer().target().clusterId(),
-                command.pointer().target().topologyRef().kind().name(),
-                command.pointer().target().topologyRef().id(),
-                command.pointer().target().handleRef().kind().name(),
-                command.pointer().target().handleRef().topologyRef().kind().name(),
-                command.pointer().target().handleRef().topologyRef().id(),
-                command.pointer().target().handleRef().ownerId(),
-                command.pointer().target().handleRef().clusterId(),
-                command.pointer().target().handleRef().corridorId(),
-                command.pointer().target().handleRef().roomId(),
-                command.pointer().target().handleRef().index(),
-                command.pointer().target().handleRef().cell().q(),
-                command.pointer().target().handleRef().cell().r(),
-                command.pointer().target().handleRef().cell().level(),
-                command.pointer().target().handleRef().direction(),
-                command.pointer().target().boundaryRef().kind().name(),
-                command.pointer().target().boundaryRef().key(),
-                command.pointer().target().boundaryRef().ownerId(),
-                command.pointer().target().boundaryRef().topologyRef().kind().name(),
-                command.pointer().target().boundaryRef().topologyRef().id(),
-                command.pointer().target().boundaryRef().start().q(),
-                command.pointer().target().boundaryRef().start().r(),
-                command.pointer().target().boundaryRef().start().level(),
-                command.pointer().target().boundaryRef().end().q(),
-                command.pointer().target().boundaryRef().end().r(),
-                command.pointer().target().boundaryRef().end().level()));
+        applyCreateCorridorUseCase.hover(toMainViewInput(command.pointer()));
     }
 
     public void pressDeleteCorridor(DeleteDungeonEditorCorridorCommand command) {
-        applyDeleteCorridorUseCase.press(toMainViewInput(
-                command.pointer().canvasX(),
-                command.pointer().canvasY(),
-                command.pointer().primaryButtonDown(),
-                command.pointer().secondaryButtonDown(),
-                command.pointer().target().targetKind().name(),
-                command.pointer().target().elementKind().name(),
-                command.pointer().target().ownerId(),
-                command.pointer().target().clusterId(),
-                command.pointer().target().topologyRef().kind().name(),
-                command.pointer().target().topologyRef().id(),
-                command.pointer().target().handleRef().kind().name(),
-                command.pointer().target().handleRef().topologyRef().kind().name(),
-                command.pointer().target().handleRef().topologyRef().id(),
-                command.pointer().target().handleRef().ownerId(),
-                command.pointer().target().handleRef().clusterId(),
-                command.pointer().target().handleRef().corridorId(),
-                command.pointer().target().handleRef().roomId(),
-                command.pointer().target().handleRef().index(),
-                command.pointer().target().handleRef().cell().q(),
-                command.pointer().target().handleRef().cell().r(),
-                command.pointer().target().handleRef().cell().level(),
-                command.pointer().target().handleRef().direction(),
-                command.pointer().target().boundaryRef().kind().name(),
-                command.pointer().target().boundaryRef().key(),
-                command.pointer().target().boundaryRef().ownerId(),
-                command.pointer().target().boundaryRef().topologyRef().kind().name(),
-                command.pointer().target().boundaryRef().topologyRef().id(),
-                command.pointer().target().boundaryRef().start().q(),
-                command.pointer().target().boundaryRef().start().r(),
-                command.pointer().target().boundaryRef().start().level(),
-                command.pointer().target().boundaryRef().end().q(),
-                command.pointer().target().boundaryRef().end().r(),
-                command.pointer().target().boundaryRef().end().level()));
+        applyDeleteCorridorUseCase.press(toMainViewInput(command.pointer()));
     }
 
     public void hoverDeleteCorridor(DeleteDungeonEditorCorridorCommand command) {
-        applyDeleteCorridorUseCase.hover(toMainViewInput(
-                command.pointer().canvasX(),
-                command.pointer().canvasY(),
-                command.pointer().primaryButtonDown(),
-                command.pointer().secondaryButtonDown(),
-                command.pointer().target().targetKind().name(),
-                command.pointer().target().elementKind().name(),
-                command.pointer().target().ownerId(),
-                command.pointer().target().clusterId(),
-                command.pointer().target().topologyRef().kind().name(),
-                command.pointer().target().topologyRef().id(),
-                command.pointer().target().handleRef().kind().name(),
-                command.pointer().target().handleRef().topologyRef().kind().name(),
-                command.pointer().target().handleRef().topologyRef().id(),
-                command.pointer().target().handleRef().ownerId(),
-                command.pointer().target().handleRef().clusterId(),
-                command.pointer().target().handleRef().corridorId(),
-                command.pointer().target().handleRef().roomId(),
-                command.pointer().target().handleRef().index(),
-                command.pointer().target().handleRef().cell().q(),
-                command.pointer().target().handleRef().cell().r(),
-                command.pointer().target().handleRef().cell().level(),
-                command.pointer().target().handleRef().direction(),
-                command.pointer().target().boundaryRef().kind().name(),
-                command.pointer().target().boundaryRef().key(),
-                command.pointer().target().boundaryRef().ownerId(),
-                command.pointer().target().boundaryRef().topologyRef().kind().name(),
-                command.pointer().target().boundaryRef().topologyRef().id(),
-                command.pointer().target().boundaryRef().start().q(),
-                command.pointer().target().boundaryRef().start().r(),
-                command.pointer().target().boundaryRef().start().level(),
-                command.pointer().target().boundaryRef().end().q(),
-                command.pointer().target().boundaryRef().end().r(),
-                command.pointer().target().boundaryRef().end().level()));
+        applyDeleteCorridorUseCase.hover(toMainViewInput(command.pointer()));
     }
 
     public void saveRoomNarration(SaveDungeonEditorRoomNarrationCommand command) {
@@ -1206,69 +292,75 @@ public final class DungeonEditorApplicationService {
                 exits));
     }
 
-    private static MainViewInput toMainViewInput(
-            double canvasX,
-            double canvasY,
-            boolean primaryButtonDown,
-            boolean secondaryButtonDown,
-            String targetKind,
-            String elementKind,
-            long ownerId,
-            long clusterId,
-            String topologyKind,
-            long topologyId,
-            String handleKind,
-            String handleTopologyKind,
-            long handleTopologyId,
-            long handleOwnerId,
-            long handleClusterId,
-            long handleCorridorId,
-            long handleRoomId,
-            int handleIndex,
-            int handleCellQ,
-            int handleCellR,
-            int handleCellLevel,
-            String handleDirection,
-            String boundaryKind,
-            String boundaryKey,
-            long boundaryOwnerId,
-            String boundaryTopologyKind,
-            long boundaryTopologyId,
-            int boundaryStartQ,
-            int boundaryStartR,
-            int boundaryStartLevel,
-            int boundaryEndQ,
-            int boundaryEndR,
-            int boundaryEndLevel
-    ) {
+    private static MainViewInput toMainViewInput(DungeonEditorPointerSample pointer) {
+        if (pointer == null) {
+            return MainViewInput.empty();
+        }
         return new MainViewInput(
-                canvasX,
-                canvasY,
-                primaryButtonDown,
-                secondaryButtonDown,
-                new PointerTargetInput(
-                        targetKind,
-                        elementKind,
-                        ownerId,
-                        clusterId,
-                        new TopologyRefInput(topologyKind, topologyId),
-                        new HandleInput(
-                                handleKind,
-                                new TopologyRefInput(handleTopologyKind, handleTopologyId),
-                                handleOwnerId,
-                                handleClusterId,
-                                handleCorridorId,
-                                handleRoomId,
-                                handleIndex,
-                                new CellInput(handleCellQ, handleCellR, handleCellLevel),
-                                handleDirection),
-                        new BoundaryInput(
-                                boundaryKind,
-                                boundaryKey,
-                                boundaryOwnerId,
-                                new TopologyRefInput(boundaryTopologyKind, boundaryTopologyId),
-                                new CellInput(boundaryStartQ, boundaryStartR, boundaryStartLevel),
-                                new CellInput(boundaryEndQ, boundaryEndR, boundaryEndLevel))));
+                pointer.canvasX(),
+                pointer.canvasY(),
+                pointer.primaryButtonDown(),
+                pointer.secondaryButtonDown(),
+                toPointerTargetInput(pointer.target()));
+    }
+
+    private static PointerTargetInput toPointerTargetInput(DungeonEditorPointerTarget target) {
+        if (target == null) {
+            return PointerTargetInput.empty();
+        }
+        return new PointerTargetInput(
+                TargetKindInput.fromName(target.targetKind().name()),
+                TopologyKindInput.fromName(target.elementKind().name()),
+                target.ownerId(),
+                target.clusterId(),
+                toTopologyRefInput(target.topologyRef()),
+                toHandleInput(target.handleRef()),
+                toBoundaryInput(target.boundaryRef()));
+    }
+
+    private static TopologyRefInput toTopologyRefInput(DungeonTopologyElementRef topologyRef) {
+        if (topologyRef == null) {
+            return TopologyRefInput.empty();
+        }
+        return new TopologyRefInput(
+                TopologyKindInput.fromName(topologyRef.kind().name()),
+                topologyRef.id());
+    }
+
+    private static HandleInput toHandleInput(DungeonEditorHandleRef handleRef) {
+        if (handleRef == null) {
+            return HandleInput.empty();
+        }
+        return new HandleInput(
+                HandleKindInput.fromName(handleRef.kind().name()),
+                toTopologyRefInput(handleRef.topologyRef()),
+                handleRef.ownerId(),
+                handleRef.clusterId(),
+                handleRef.corridorId(),
+                handleRef.roomId(),
+                handleRef.index(),
+                toCellInput(handleRef.cell()),
+                handleRef.direction());
+    }
+
+    private static BoundaryInput toBoundaryInput(DungeonEditorBoundaryTargetRef boundaryRef) {
+        if (boundaryRef == null) {
+            return BoundaryInput.empty();
+        }
+        return new BoundaryInput(
+                BoundaryKindInput.fromName(boundaryRef.kind().name()),
+                boundaryRef.key(),
+                boundaryRef.ownerId(),
+                toTopologyRefInput(boundaryRef.topologyRef()),
+                toCellInput(boundaryRef.start()),
+                toCellInput(boundaryRef.end()));
+    }
+
+    private static CellInput toCellInput(DungeonCellRef cell) {
+        if (cell == null) {
+            return CellInput.empty();
+        }
+        return new CellInput(cell.q(), cell.r(), cell.level());
     }
 
 }
