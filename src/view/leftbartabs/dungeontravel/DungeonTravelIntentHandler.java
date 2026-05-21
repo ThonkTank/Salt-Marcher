@@ -10,9 +10,16 @@ import src.view.slotcontent.main.dungeonmap.DungeonMapViewInputEvent;
 
 final class DungeonTravelIntentHandler {
 
+    private static final double NO_SCROLL_DELTA = 0.0;
+    private static final double WHEEL_ZOOM_STEP = 1.1;
+    private static final double WHEEL_ZOOM_BACK_STEP = 1.0 / WHEEL_ZOOM_STEP;
+
     private final DungeonTravelContributionModel presentationModel;
     private final DungeonMapContentModel mapContentModel;
     private final DungeonTravelRuntimeApplicationService travel;
+    private double previousMiddleDragCanvasX;
+    private double previousMiddleDragCanvasY;
+    private boolean middleDragInProgress;
 
     DungeonTravelIntentHandler(
             DungeonTravelContributionModel presentationModel,
@@ -87,23 +94,47 @@ final class DungeonTravelIntentHandler {
     }
 
     private void consumeLocalCameraInput(DungeonMapViewInputEvent event) {
-        if (event.input().mousePressed() && event.buttons().middleButtonDown()) {
-            mapContentModel.beginMiddleDrag(event.position().canvasX(), event.position().canvasY());
+        DungeonMapViewInputEvent.CanvasInput input = event.input();
+        if (input.scrolled()) {
+            applyScrollCameraZoom(event);
             return;
         }
-        if (event.input().mouseDragged() && event.buttons().middleButtonDown()) {
-            mapContentModel.panMiddleDragTo(event.position().canvasX(), event.position().canvasY());
+        if (!event.buttons().middleButtonDown()) {
             return;
         }
-        if (event.input().mouseReleased() && event.buttons().middleButtonDown()) {
-            mapContentModel.endMiddleDrag();
+        if (input.mousePressed()) {
+            markMiddleDragStart(event.position().canvasX(), event.position().canvasY());
             return;
         }
-        if (event.input().scrolled() && !event.modifiers().controlDown()) {
-            mapContentModel.zoomForScroll(
-                    event.position().canvasX(),
-                    event.position().canvasY(),
-                    event.scrollDeltaY());
+        if (input.mouseDragged()) {
+            dragCameraTo(event.position().canvasX(), event.position().canvasY());
+        } else if (input.mouseReleased()) {
+            middleDragInProgress = false;
+        }
+    }
+
+    private void markMiddleDragStart(double canvasX, double canvasY) {
+        previousMiddleDragCanvasX = canvasX;
+        previousMiddleDragCanvasY = canvasY;
+        middleDragInProgress = true;
+    }
+
+    private void dragCameraTo(double canvasX, double canvasY) {
+        if (middleDragInProgress) {
+            mapContentModel.panByPixels(canvasX - previousMiddleDragCanvasX, canvasY - previousMiddleDragCanvasY);
+        }
+        markMiddleDragStart(canvasX, canvasY);
+    }
+
+    private void applyScrollCameraZoom(DungeonMapViewInputEvent event) {
+        if (event.modifiers().controlDown()) {
+            return;
+        }
+        double scrollDeltaY = event.scrollDeltaY();
+        if (scrollDeltaY > NO_SCROLL_DELTA) {
+            mapContentModel.zoomAround(event.position().canvasX(), event.position().canvasY(), WHEEL_ZOOM_STEP);
+        } else if (scrollDeltaY < NO_SCROLL_DELTA) {
+            mapContentModel.zoomAround(event.position().canvasX(), event.position().canvasY(), WHEEL_ZOOM_BACK_STEP);
         }
     }
 }

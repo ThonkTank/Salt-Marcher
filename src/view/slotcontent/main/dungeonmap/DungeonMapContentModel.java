@@ -47,9 +47,6 @@ public final class DungeonMapContentModel {
     private static final double DEFAULT_ZOOM = 1.0;
     private static final double MIN_ZOOM = 0.1;
     private static final double MAX_ZOOM = 4.0;
-    private static final double ZOOM_IN_FACTOR = 1.1;
-    private static final double ZOOM_OUT_FACTOR = 1.0 / ZOOM_IN_FACTOR;
-    private static final double ZERO_SCROLL_DELTA = 0.0;
     private static final double HIT_TOLERANCE_PIXELS = 7.0;
     private static final double MIN_HIT_TOLERANCE = 0.22;
     private static final double HIT_BUCKET_SIZE_SCENE = 4.0;
@@ -62,9 +59,6 @@ public final class DungeonMapContentModel {
     private final ReadOnlyDoubleWrapper zoom = new ReadOnlyDoubleWrapper(DEFAULT_ZOOM);
     private DungeonMapRenderState renderState;
     private Map<String, PointerTarget> pointerTargets = Map.of();
-    private double lastMiddleDragCanvasX;
-    private double lastMiddleDragCanvasY;
-    private boolean middleDragActive;
 
     // Public ContentModel API
 
@@ -83,7 +77,7 @@ public final class DungeonMapContentModel {
         return zoom.getReadOnlyProperty();
     }
 
-    public CanvasState currentCanvasState() {
+    CanvasState currentCanvasState() {
         return canvasState.get();
     }
 
@@ -103,42 +97,8 @@ public final class DungeonMapContentModel {
         setCanvasState(canvasState.get().withViewport(canvasState.get().viewport().panByPixels(deltaX, deltaY)));
     }
 
-    public void beginMiddleDrag(double canvasX, double canvasY) {
-        middleDragActive = true;
-        lastMiddleDragCanvasX = canvasX;
-        lastMiddleDragCanvasY = canvasY;
-    }
-
-    public DragDelta updateMiddleDrag(double canvasX, double canvasY) {
-        if (!middleDragActive) {
-            beginMiddleDrag(canvasX, canvasY);
-            return DragDelta.none();
-        }
-        DragDelta delta = new DragDelta(canvasX - lastMiddleDragCanvasX, canvasY - lastMiddleDragCanvasY);
-        lastMiddleDragCanvasX = canvasX;
-        lastMiddleDragCanvasY = canvasY;
-        return delta;
-    }
-
-    public void endMiddleDrag() {
-        middleDragActive = false;
-    }
-
     public void zoomAround(double canvasX, double canvasY, double factor) {
         setCanvasState(canvasState.get().withViewport(canvasState.get().viewport().zoomAround(canvasX, canvasY, factor)));
-    }
-
-    public void panMiddleDragTo(double canvasX, double canvasY) {
-        DragDelta delta = updateMiddleDrag(canvasX, canvasY);
-        panByPixels(delta.canvasX(), delta.canvasY());
-    }
-
-    public void zoomForScroll(double canvasX, double canvasY, double scrollDeltaY) {
-        if (scrollDeltaY > ZERO_SCROLL_DELTA) {
-            zoomAround(canvasX, canvasY, ZOOM_IN_FACTOR);
-        } else if (scrollDeltaY < ZERO_SCROLL_DELTA) {
-            zoomAround(canvasX, canvasY, ZOOM_OUT_FACTOR);
-        }
     }
 
     public KeyboardTarget showKeyboardTarget(double sceneX, double sceneY) {
@@ -224,28 +184,6 @@ public final class DungeonMapContentModel {
         return placeholderTitle == null || placeholderTitle.isBlank()
                 ? "Dungeon Map"
                 : placeholderTitle;
-    }
-
-    public static final class DragDelta {
-        private final double canvasX;
-        private final double canvasY;
-
-        private DragDelta(double canvasX, double canvasY) {
-            this.canvasX = canvasX;
-            this.canvasY = canvasY;
-        }
-
-        private static DragDelta none() {
-            return new DragDelta(0.0, 0.0);
-        }
-
-        public double canvasX() {
-            return canvasX;
-        }
-
-        public double canvasY() {
-            return canvasY;
-        }
     }
 
     public record CanvasState(
