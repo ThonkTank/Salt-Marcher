@@ -1,6 +1,12 @@
 package src.domain.dungeon.model.editor.helper;
 
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
 import org.jspecify.annotations.Nullable;
+import src.domain.dungeon.model.editor.model.interaction.model.DungeonEditorBoundaryTouchGeometry;
+import src.domain.dungeon.model.editor.model.interaction.model.DungeonEditorInteractionValues.CellKey;
+import src.domain.dungeon.model.editor.model.interaction.model.DungeonEditorInteractionValues.TravelHeading;
 import src.domain.dungeon.model.editor.model.interaction.model.DungeonEditorMainViewInteractionValues;
 import src.domain.dungeon.model.editor.model.interaction.model.DungeonEditorMainViewInteractionValues.BoundaryRoomTouch;
 import src.domain.dungeon.model.editor.model.interaction.model.DungeonEditorMainViewInteractionValues.BoundaryTarget;
@@ -19,17 +25,15 @@ public final class DungeonEditorCorridorTargetHelper {
             PointerState input,
             DungeonEditorWorkspaceValues.MapSnapshot snapshot
     ) {
-        DungeonEditorRoomInteractionLookupHelper roomLookup = new DungeonEditorRoomInteractionLookupHelper();
-        DungeonEditorBoundaryRoomTouchHelper roomTouchService = new DungeonEditorBoundaryRoomTouchHelper();
         PendingCorridorTarget fixedDoorHandleTarget = fixedDoorHandleTarget(input.hitTarget());
         if (fixedDoorHandleTarget != null) {
             return fixedDoorHandleTarget;
         }
-        PendingCorridorTarget fixedDoorTarget = fixedDoorBoundaryTarget(input, snapshot, roomTouchService, roomLookup);
+        PendingCorridorTarget fixedDoorTarget = fixedDoorBoundaryTarget(input, snapshot);
         if (fixedDoorTarget != null) {
             return fixedDoorTarget;
         }
-        PendingCorridorTarget perimeterWallTarget = perimeterWallTarget(input, snapshot, roomTouchService, roomLookup);
+        PendingCorridorTarget perimeterWallTarget = perimeterWallTarget(input, snapshot);
         if (perimeterWallTarget != null) {
             return perimeterWallTarget;
         }
@@ -37,7 +41,7 @@ public final class DungeonEditorCorridorTargetHelper {
         if (explicitAnchorTarget != null) {
             return explicitAnchorTarget;
         }
-        PendingCorridorTarget roomTarget = roomTarget(input, snapshot, input.hitTarget(), roomLookup);
+        PendingCorridorTarget roomTarget = roomTarget(input, snapshot, input.hitTarget());
         if (roomTarget != null) {
             return roomTarget;
         }
@@ -83,23 +87,21 @@ public final class DungeonEditorCorridorTargetHelper {
 
     private @Nullable PendingCorridorTarget fixedDoorBoundaryTarget(
             PointerState input,
-            DungeonEditorWorkspaceValues.MapSnapshot snapshot,
-            DungeonEditorBoundaryRoomTouchHelper roomTouchService,
-            DungeonEditorRoomInteractionLookupHelper roomLookup
+            DungeonEditorWorkspaceValues.MapSnapshot snapshot
     ) {
         BoundaryTarget boundary = input == null ? null : input.boundaryTarget();
-        BoundaryRoomTouch roomTouch = roomTouchService.singleRoomTouch(snapshot, boundary, true);
+        BoundaryRoomTouch roomTouch = singleRoomTouch(snapshot, boundary, true);
         if (roomTouch == null || boundary == null) {
             return null;
         }
-        String direction = roomTouchService.boundaryDirectionForRoomCell(boundary, roomTouch.roomCell());
+        String direction = boundaryDirectionForRoomCell(boundary, roomTouch.roomCell());
         if (direction.isBlank()) {
             return null;
         }
         return new PendingCorridorTarget.EndpointTarget(
                 DungeonEditorMainViewInteractionValues.ROOM_PREFIX + roomTouch.room().id() + ":door:" + boundary.topologyRefId(),
                 "Tür " + boundary.topologyRefId(),
-                roomLookup.selectionForBoundary(boundary, roomTouch.room().clusterId()),
+                selectionForBoundary(boundary, roomTouch.room().clusterId()),
                 0L,
                 new DungeonEditorWorkspaceValues.CorridorDoorEndpoint(
                         roomTouch.room().id(),
@@ -113,16 +115,14 @@ public final class DungeonEditorCorridorTargetHelper {
 
     private @Nullable PendingCorridorTarget perimeterWallTarget(
             PointerState input,
-            DungeonEditorWorkspaceValues.MapSnapshot snapshot,
-            DungeonEditorBoundaryRoomTouchHelper roomTouchService,
-            DungeonEditorRoomInteractionLookupHelper roomLookup
+            DungeonEditorWorkspaceValues.MapSnapshot snapshot
     ) {
         BoundaryTarget boundary = input == null ? null : input.boundaryTarget();
-        BoundaryRoomTouch roomTouch = roomTouchService.singleRoomTouch(snapshot, boundary, false);
+        BoundaryRoomTouch roomTouch = singleRoomTouch(snapshot, boundary, false);
         if (roomTouch == null || boundary == null) {
             return null;
         }
-        String direction = roomTouchService.boundaryDirectionForRoomCell(boundary, roomTouch.roomCell());
+        String direction = boundaryDirectionForRoomCell(boundary, roomTouch.roomCell());
         if (direction.isBlank()) {
             return null;
         }
@@ -140,7 +140,7 @@ public final class DungeonEditorCorridorTargetHelper {
                         + ":"
                         + boundary.start().level(),
                 roomTouch.room().label().isBlank() ? "Raum " + roomTouch.room().id() : roomTouch.room().label(),
-                roomLookup.selectionForBoundary(boundary, roomTouch.room().clusterId()),
+                selectionForBoundary(boundary, roomTouch.room().clusterId()),
                 0L,
                 new DungeonEditorWorkspaceValues.CorridorDoorEndpoint(
                         roomTouch.room().id(),
@@ -212,15 +212,14 @@ public final class DungeonEditorCorridorTargetHelper {
     private @Nullable PendingCorridorTarget roomTarget(
             PointerState input,
             DungeonEditorWorkspaceValues.MapSnapshot snapshot,
-            HitTarget hit,
-            DungeonEditorRoomInteractionLookupHelper roomLookup
+            HitTarget hit
     ) {
-        var room = roomLookup.roomArea(snapshot, hit);
+        var room = roomArea(snapshot, hit);
         if (room == null) {
             return null;
         }
-        var roomCell = roomLookup.corridorRoomCell(room, input.q(), input.r());
-        String direction = roomLookup.corridorDirection(room, roomCell);
+        var roomCell = corridorRoomCell(room, input.q(), input.r());
+        String direction = corridorDirection(room, roomCell);
         if (direction.isBlank()) {
             return null;
         }
@@ -239,5 +238,155 @@ public final class DungeonEditorCorridorTargetHelper {
                         roomCell,
                         direction,
                         src.domain.dungeon.model.map.model.DungeonTopologyRef.empty()));
+    }
+
+    private static @Nullable BoundaryRoomTouch singleRoomTouch(
+            DungeonEditorWorkspaceValues.@Nullable MapSnapshot snapshot,
+            @Nullable BoundaryTarget boundary,
+            boolean requireDoorBoundary
+    ) {
+        if (snapshot == null || boundary == null || !boundary.present()) {
+            return null;
+        }
+        if (requireDoorBoundary != boundary.doorKind()) {
+            return null;
+        }
+        List<DungeonEditorWorkspaceValues.Cell> touchingCells =
+                DungeonEditorBoundaryTouchGeometry.fromEdge(boundary.edgeRef()).touchingCells();
+        List<BoundaryRoomTouch> touches = roomTouches(snapshot.areas(), touchingCells);
+        return touches.size() == 1 ? touches.getFirst() : null;
+    }
+
+    private static List<BoundaryRoomTouch> roomTouches(
+            List<DungeonEditorWorkspaceValues.Area> areas,
+            List<DungeonEditorWorkspaceValues.Cell> touchingCells
+    ) {
+        java.util.ArrayList<BoundaryRoomTouch> touches = new java.util.ArrayList<>();
+        for (DungeonEditorWorkspaceValues.Area area : areas) {
+            if (!area.kind().isRoom()) {
+                continue;
+            }
+            for (DungeonEditorWorkspaceValues.Cell cell : area.cells()) {
+                if (touchingCells.contains(cell)) {
+                    touches.add(new BoundaryRoomTouch(area, cell));
+                    break;
+                }
+            }
+        }
+        return List.copyOf(touches);
+    }
+
+    private static String boundaryDirectionForRoomCell(
+            BoundaryTarget boundary,
+            DungeonEditorWorkspaceValues.Cell roomCell
+    ) {
+        return DungeonEditorBoundaryTouchGeometry.fromEdge(boundary.edgeRef()).directionForCell(roomCell);
+    }
+
+    private static DungeonEditorSessionValues.Selection selectionForBoundary(BoundaryTarget boundary, long clusterId) {
+        return new DungeonEditorSessionValues.Selection(
+                new DungeonTopologyRef(
+                        DungeonEditorMainViewInteractionValues.toTopologyKind(boundary.topologyRefKind()),
+                        boundary.topologyRefId()),
+                clusterId,
+                false,
+                DungeonEditorSessionValues.emptyHandleRef());
+    }
+
+    private static DungeonEditorWorkspaceValues.@Nullable Area roomArea(
+            DungeonEditorWorkspaceValues.@Nullable MapSnapshot snapshot,
+            @Nullable HitTarget hit
+    ) {
+        if (snapshot == null || hit == null) {
+            return null;
+        }
+        if (roomHit(hit)) {
+            return roomAreaById(snapshot, hit.ownerId());
+        }
+        if (roomLabelHit(hit)) {
+            return roomAreaById(snapshot, hit.topologyRefId());
+        }
+        if (!clusterLabelHit(hit)) {
+            return null;
+        }
+        return firstRoomAreaInCluster(snapshot, hit.clusterId());
+    }
+
+    private static DungeonEditorWorkspaceValues.@Nullable Area roomAreaById(
+            DungeonEditorWorkspaceValues.MapSnapshot snapshot,
+            long roomId
+    ) {
+        if (!DungeonEditorWorkspaceValues.hasId(roomId)) {
+            return null;
+        }
+        for (DungeonEditorWorkspaceValues.Area area : snapshot.areas()) {
+            if (area.kind().isRoom() && area.id() == roomId) {
+                return area;
+            }
+        }
+        return null;
+    }
+
+    private static DungeonEditorWorkspaceValues.@Nullable Area firstRoomAreaInCluster(
+            DungeonEditorWorkspaceValues.MapSnapshot snapshot,
+            long clusterId
+    ) {
+        for (DungeonEditorWorkspaceValues.Area area : snapshot.areas()) {
+            if (area.kind().isRoom() && area.clusterId() == clusterId) {
+                return area;
+            }
+        }
+        return null;
+    }
+
+    private static DungeonEditorWorkspaceValues.Cell corridorRoomCell(
+            DungeonEditorWorkspaceValues.Area room,
+            int pointerQ,
+            int pointerR
+    ) {
+        DungeonEditorWorkspaceValues.Cell bestCell = null;
+        int bestDistance = Integer.MAX_VALUE;
+        for (DungeonEditorWorkspaceValues.Cell cell : room.cells()) {
+            int distance = Math.abs(cell.q() - pointerQ) + Math.abs(cell.r() - pointerR);
+            if (bestCell == null
+                    || distance < bestDistance
+                    || distance == bestDistance && cell.r() < bestCell.r()
+                    || distance == bestDistance && cell.r() == bestCell.r() && cell.q() < bestCell.q()) {
+                bestCell = cell;
+                bestDistance = distance;
+            }
+        }
+        return bestCell == null ? new DungeonEditorWorkspaceValues.Cell(pointerQ, pointerR, 0) : bestCell;
+    }
+
+    private static String corridorDirection(
+            DungeonEditorWorkspaceValues.Area room,
+            DungeonEditorWorkspaceValues.Cell roomCell
+    ) {
+        Set<CellKey> roomCells = new LinkedHashSet<>();
+        for (DungeonEditorWorkspaceValues.Cell cell : room.cells()) {
+            roomCells.add(new CellKey(cell.q(), cell.r(), cell.level()));
+        }
+        CellKey key = new CellKey(roomCell.q(), roomCell.r(), roomCell.level());
+        for (TravelHeading direction : TravelHeading.values()) {
+            if (!roomCells.contains(key.neighbor(direction))) {
+                return direction.name();
+            }
+        }
+        return "";
+    }
+
+    private static boolean roomHit(HitTarget hit) {
+        return hit.kind() == HitKind.ROOM && DungeonEditorWorkspaceValues.hasId(hit.ownerId());
+    }
+
+    private static boolean roomLabelHit(HitTarget hit) {
+        return hit.kind() == HitKind.LABEL
+                && DungeonEditorMainViewInteractionValues.ROOM_KIND.equals(hit.topologyRefKind())
+                && DungeonEditorWorkspaceValues.hasId(hit.topologyRefId());
+    }
+
+    private static boolean clusterLabelHit(HitTarget hit) {
+        return hit.kind() == HitKind.LABEL && DungeonEditorWorkspaceValues.hasId(hit.clusterId());
     }
 }

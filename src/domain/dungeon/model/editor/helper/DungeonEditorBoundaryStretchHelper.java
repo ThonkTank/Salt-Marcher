@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.jspecify.annotations.Nullable;
+import src.domain.dungeon.model.editor.model.interaction.model.DungeonEditorBoundaryTouchGeometry;
 import src.domain.dungeon.model.editor.model.interaction.model.DungeonEditorMainViewInteractionValues;
 import src.domain.dungeon.model.editor.model.interaction.model.DungeonEditorMainViewInteractionValues.BoundaryStretchSession;
 import src.domain.dungeon.model.editor.model.interaction.model.DungeonEditorMainViewInteractionValues.BoundaryStretchSide;
@@ -213,9 +214,8 @@ public final class DungeonEditorBoundaryStretchHelper {
         if (snapshot == null || boundaryTarget == null || !boundaryTarget.present()) {
             return 0L;
         }
-        List<DungeonEditorWorkspaceValues.Cell> touchingCells = touchingCells(
-                boundaryTarget.start().toWorkspaceCell(),
-                boundaryTarget.end().toWorkspaceCell());
+        List<DungeonEditorWorkspaceValues.Cell> touchingCells =
+                DungeonEditorBoundaryTouchGeometry.fromEdge(boundaryTarget.edgeRef()).touchingCells();
         for (DungeonEditorWorkspaceValues.Area area : snapshot.areas()) {
             if (!area.kind().isRoom() || !DungeonEditorWorkspaceValues.hasId(area.clusterId())) {
                 continue;
@@ -227,28 +227,6 @@ public final class DungeonEditorBoundaryStretchHelper {
             }
         }
         return 0L;
-    }
-
-    private static List<DungeonEditorWorkspaceValues.Cell> touchingCells(
-            DungeonEditorWorkspaceValues.Cell start,
-            DungeonEditorWorkspaceValues.Cell end
-    ) {
-        if (start.level() != end.level()) {
-            return List.of();
-        }
-        List<DungeonEditorWorkspaceValues.Cell> result = new ArrayList<>();
-        if (start.r() == end.r()) {
-            for (int q = Math.min(start.q(), end.q()); q < Math.max(start.q(), end.q()); q++) {
-                result.add(new DungeonEditorWorkspaceValues.Cell(q, start.r() - 1, start.level()));
-                result.add(new DungeonEditorWorkspaceValues.Cell(q, start.r(), start.level()));
-            }
-        } else if (start.q() == end.q()) {
-            for (int r = Math.min(start.r(), end.r()); r < Math.max(start.r(), end.r()); r++) {
-                result.add(new DungeonEditorWorkspaceValues.Cell(start.q() - 1, r, start.level()));
-                result.add(new DungeonEditorWorkspaceValues.Cell(start.q(), r, start.level()));
-            }
-        }
-        return List.copyOf(result);
     }
 
     private static Map<Integer, DungeonEditorWorkspaceValues.Edge> edgesOnLine(
@@ -300,47 +278,7 @@ public final class DungeonEditorBoundaryStretchHelper {
         if (edge == null || edge.from() == null || edge.to() == null || edge.from().level() != edge.to().level()) {
             return 0;
         }
-        if (edge.from().r() == edge.to().r()) {
-            return horizontalTouchingClusterCount(edge.from(), edge.to(), clusterCells);
-        }
-        if (edge.from().q() == edge.to().q()) {
-            return verticalTouchingClusterCount(edge.from(), edge.to(), clusterCells);
-        }
-        return 0;
-    }
-
-    private static int horizontalTouchingClusterCount(
-            DungeonEditorWorkspaceValues.Cell from,
-            DungeonEditorWorkspaceValues.Cell to,
-            Set<DungeonEditorWorkspaceValues.Cell> clusterCells
-    ) {
-        int count = 0;
-        for (int q = Math.min(from.q(), to.q()); q < Math.max(from.q(), to.q()); q++) {
-            if (clusterCells.contains(new DungeonEditorWorkspaceValues.Cell(q, from.r() - 1, from.level()))) {
-                count++;
-            }
-            if (clusterCells.contains(new DungeonEditorWorkspaceValues.Cell(q, from.r(), from.level()))) {
-                count++;
-            }
-        }
-        return count;
-    }
-
-    private static int verticalTouchingClusterCount(
-            DungeonEditorWorkspaceValues.Cell from,
-            DungeonEditorWorkspaceValues.Cell to,
-            Set<DungeonEditorWorkspaceValues.Cell> clusterCells
-    ) {
-        int count = 0;
-        for (int r = Math.min(from.r(), to.r()); r < Math.max(from.r(), to.r()); r++) {
-            if (clusterCells.contains(new DungeonEditorWorkspaceValues.Cell(from.q() - 1, r, from.level()))) {
-                count++;
-            }
-            if (clusterCells.contains(new DungeonEditorWorkspaceValues.Cell(from.q(), r, from.level()))) {
-                count++;
-            }
-        }
-        return count;
+        return DungeonEditorBoundaryTouchGeometry.fromEdge(edge).touchingCount(clusterCells);
     }
 
     private static boolean sameOrientation(

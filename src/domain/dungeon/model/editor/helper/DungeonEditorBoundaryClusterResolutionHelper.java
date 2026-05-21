@@ -1,12 +1,12 @@
 package src.domain.dungeon.model.editor.helper;
 
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.jspecify.annotations.Nullable;
+import src.domain.dungeon.model.editor.model.interaction.model.DungeonEditorBoundaryTouchGeometry;
 import src.domain.dungeon.model.editor.model.interaction.model.DungeonEditorInteractionValues.CellKey;
 import src.domain.dungeon.model.editor.model.interaction.model.DungeonEditorInteractionValues.VertexTarget;
 import src.domain.dungeon.model.editor.model.interaction.model.DungeonEditorMainViewInteractionValues.BoundaryTarget;
@@ -24,7 +24,8 @@ public final class DungeonEditorBoundaryClusterResolutionHelper {
         if (snapshot == null || boundaryTarget == null || !boundaryTarget.present()) {
             return 0L;
         }
-        List<CellKey> touchingCells = touchingCells(boundaryTarget);
+        List<CellKey> touchingCells =
+                DungeonEditorBoundaryTouchGeometry.fromEdge(boundaryTarget.edgeRef()).touchingCellKeys();
         for (DungeonEditorWorkspaceValues.Area area : snapshot.areas()) {
             if (!area.kind().isRoom() || !DungeonEditorWorkspaceValues.hasId(area.clusterId())) {
                 continue;
@@ -184,27 +185,6 @@ public final class DungeonEditorBoundaryClusterResolutionHelper {
         }
         int count = Math.max(1, cells.size());
         return Math.hypot(q / count - vertex.q(), r / count - vertex.r());
-    }
-
-    private static List<CellKey> touchingCells(BoundaryTarget boundaryTarget) {
-        List<CellKey> result = new ArrayList<>();
-        DungeonEditorWorkspaceValues.Cell start = boundaryTarget.start().toWorkspaceCell();
-        DungeonEditorWorkspaceValues.Cell end = boundaryTarget.end().toWorkspaceCell();
-        if (start.level() != end.level()) {
-            return List.of();
-        }
-        if (start.r() == end.r()) {
-            for (int q = Math.min(start.q(), end.q()); q < Math.max(start.q(), end.q()); q++) {
-                result.add(new CellKey(q, start.r() - 1, start.level()));
-                result.add(new CellKey(q, start.r(), start.level()));
-            }
-        } else if (start.q() == end.q()) {
-            for (int r = Math.min(start.r(), end.r()); r < Math.max(start.r(), end.r()); r++) {
-                result.add(new CellKey(start.q() - 1, r, start.level()));
-                result.add(new CellKey(start.q(), r, start.level()));
-            }
-        }
-        return List.copyOf(result);
     }
 
     private static boolean areaTouchesCells(DungeonEditorWorkspaceValues.Area area, List<CellKey> touchingCells) {
