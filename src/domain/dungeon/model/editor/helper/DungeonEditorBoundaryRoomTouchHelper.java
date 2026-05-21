@@ -1,12 +1,7 @@
 package src.domain.dungeon.model.editor.helper;
 
-import java.util.ArrayList;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Set;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.editor.model.interaction.model.DungeonEditorBoundaryTouchGeometry;
-import src.domain.dungeon.model.editor.model.interaction.model.DungeonEditorInteractionValues.CellKey;
 import src.domain.dungeon.model.editor.model.interaction.model.DungeonEditorMainViewInteractionValues.BoundaryRoomTouch;
 import src.domain.dungeon.model.editor.model.interaction.model.DungeonEditorMainViewInteractionValues.BoundaryTarget;
 import src.domain.dungeon.model.editor.model.workspace.model.DungeonEditorWorkspaceValues;
@@ -38,10 +33,7 @@ public final class DungeonEditorBoundaryRoomTouchHelper {
         if (requireDoorBoundary != boundary.doorKind()) {
             return null;
         }
-        List<DungeonEditorWorkspaceValues.Cell> touchingCells =
-                DungeonEditorBoundaryTouchGeometry.fromEdge(boundary.edgeRef()).touchingCells();
-        List<BoundaryRoomTouch> touches = roomTouches(snapshot.areas(), touchingCells);
-        return touches.size() == 1 ? touches.getFirst() : null;
+        return DungeonEditorBoundaryTouchGeometry.fromEdge(boundary.edgeRef()).singleRoomTouch(snapshot);
     }
 
     public String boundaryDirectionForRoomCell(BoundaryTarget boundary, DungeonEditorWorkspaceValues.Cell roomCell) {
@@ -55,39 +47,7 @@ public final class DungeonEditorBoundaryRoomTouchHelper {
         if (snapshot == null) {
             return 0;
         }
-        Set<Long> roomIds = new LinkedHashSet<>();
-        List<CellKey> touchingCells =
-                DungeonEditorBoundaryTouchGeometry.fromEdge(boundary.edgeRef()).touchingCellKeys();
-        for (DungeonEditorWorkspaceValues.Area area : snapshot.areas()) {
-            if (!area.kind().isRoom()) {
-                continue;
-            }
-            for (DungeonEditorWorkspaceValues.Cell cell : area.cells()) {
-                if (touchingCells.contains(new CellKey(cell.q(), cell.r(), cell.level()))) {
-                    roomIds.add(area.id());
-                }
-            }
-        }
-        return roomIds.size();
-    }
-
-    private static List<BoundaryRoomTouch> roomTouches(
-            List<DungeonEditorWorkspaceValues.Area> areas,
-            List<DungeonEditorWorkspaceValues.Cell> touchingCells
-    ) {
-        List<BoundaryRoomTouch> touches = new ArrayList<>();
-        for (DungeonEditorWorkspaceValues.Area area : areas) {
-            if (!area.kind().isRoom()) {
-                continue;
-            }
-            for (DungeonEditorWorkspaceValues.Cell cell : area.cells()) {
-                if (touchingCells.contains(cell)) {
-                    touches.add(new BoundaryRoomTouch(area, cell));
-                    break;
-                }
-            }
-        }
-        return List.copyOf(touches);
+        return DungeonEditorBoundaryTouchGeometry.fromEdge(boundary.edgeRef()).touchingRoomCount(snapshot.areas());
     }
 
 }

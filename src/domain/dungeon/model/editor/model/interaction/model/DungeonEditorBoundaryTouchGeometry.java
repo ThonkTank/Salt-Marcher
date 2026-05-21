@@ -3,11 +3,15 @@ package src.domain.dungeon.model.editor.model.interaction.model;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.editor.model.interaction.model.DungeonEditorInteractionValues.CellKey;
 import src.domain.dungeon.model.editor.model.interaction.model.DungeonEditorInteractionValues.TravelHeading;
+import src.domain.dungeon.model.editor.model.interaction.model.DungeonEditorMainViewInteractionValues.BoundaryRoomTouch;
 import src.domain.dungeon.model.editor.model.workspace.model.DungeonEditorWorkspaceValues;
+import src.domain.dungeon.model.editor.model.workspace.model.DungeonEditorWorkspaceValues.Area;
 import src.domain.dungeon.model.editor.model.workspace.model.DungeonEditorWorkspaceValues.Cell;
 import src.domain.dungeon.model.editor.model.workspace.model.DungeonEditorWorkspaceValues.Edge;
+import src.domain.dungeon.model.editor.model.workspace.model.DungeonEditorWorkspaceValues.MapSnapshot;
 
 public record DungeonEditorBoundaryTouchGeometry(Cell start, Cell end) {
 
@@ -56,6 +60,19 @@ public record DungeonEditorBoundaryTouchGeometry(Cell start, Cell end) {
         return count;
     }
 
+    public int touchingCount(List<Cell> cells) {
+        int count = 0;
+        List<Cell> safeCells = cells == null ? List.of() : cells;
+        for (Cell touchingCell : touchingCells()) {
+            for (Cell cell : safeCells) {
+                if (touchingCell.equals(cell)) {
+                    count++;
+                }
+            }
+        }
+        return count;
+    }
+
     public String directionForCell(Cell cell) {
         if (cell == null) {
             return "";
@@ -69,6 +86,39 @@ public record DungeonEditorBoundaryTouchGeometry(Cell start, Cell end) {
             }
         }
         return "";
+    }
+
+    public int touchingRoomCount(List<Area> areas) {
+        return roomTouches(areas).size();
+    }
+
+    public @Nullable BoundaryRoomTouch singleRoomTouch(@Nullable MapSnapshot snapshot) {
+        if (snapshot == null) {
+            return null;
+        }
+        return singleRoomTouch(snapshot.areas());
+    }
+
+    public @Nullable BoundaryRoomTouch singleRoomTouch(List<Area> areas) {
+        List<BoundaryRoomTouch> touches = roomTouches(areas);
+        return touches.size() == 1 ? touches.getFirst() : null;
+    }
+
+    public List<BoundaryRoomTouch> roomTouches(List<Area> areas) {
+        List<BoundaryRoomTouch> touches = new ArrayList<>();
+        List<Cell> touchingCells = touchingCells();
+        for (Area area : areas == null ? List.<Area>of() : areas) {
+            if (!area.kind().isRoom()) {
+                continue;
+            }
+            for (Cell cell : area.cells()) {
+                if (touchingCells.contains(cell)) {
+                    touches.add(new BoundaryRoomTouch(area, cell));
+                    break;
+                }
+            }
+        }
+        return List.copyOf(touches);
     }
 
     private List<Cell> horizontalTouchingCells() {

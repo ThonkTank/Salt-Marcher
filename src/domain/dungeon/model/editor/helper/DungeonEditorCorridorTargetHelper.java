@@ -1,7 +1,6 @@
 package src.domain.dungeon.model.editor.helper;
 
 import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Set;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.editor.model.interaction.model.DungeonEditorBoundaryTouchGeometry;
@@ -90,11 +89,12 @@ public final class DungeonEditorCorridorTargetHelper {
             DungeonEditorWorkspaceValues.MapSnapshot snapshot
     ) {
         BoundaryTarget boundary = input == null ? null : input.boundaryTarget();
-        BoundaryRoomTouch roomTouch = singleRoomTouch(snapshot, boundary, true);
+        BoundaryRoomTouch roomTouch = boundaryRoomTouch(snapshot, boundary, true);
         if (roomTouch == null || boundary == null) {
             return null;
         }
-        String direction = boundaryDirectionForRoomCell(boundary, roomTouch.roomCell());
+        String direction = DungeonEditorBoundaryTouchGeometry.fromEdge(boundary.edgeRef())
+                .directionForCell(roomTouch.roomCell());
         if (direction.isBlank()) {
             return null;
         }
@@ -118,11 +118,12 @@ public final class DungeonEditorCorridorTargetHelper {
             DungeonEditorWorkspaceValues.MapSnapshot snapshot
     ) {
         BoundaryTarget boundary = input == null ? null : input.boundaryTarget();
-        BoundaryRoomTouch roomTouch = singleRoomTouch(snapshot, boundary, false);
+        BoundaryRoomTouch roomTouch = boundaryRoomTouch(snapshot, boundary, false);
         if (roomTouch == null || boundary == null) {
             return null;
         }
-        String direction = boundaryDirectionForRoomCell(boundary, roomTouch.roomCell());
+        String direction = DungeonEditorBoundaryTouchGeometry.fromEdge(boundary.edgeRef())
+                .directionForCell(roomTouch.roomCell());
         if (direction.isBlank()) {
             return null;
         }
@@ -240,7 +241,7 @@ public final class DungeonEditorCorridorTargetHelper {
                         src.domain.dungeon.model.map.model.DungeonTopologyRef.empty()));
     }
 
-    private static @Nullable BoundaryRoomTouch singleRoomTouch(
+    private static @Nullable BoundaryRoomTouch boundaryRoomTouch(
             DungeonEditorWorkspaceValues.@Nullable MapSnapshot snapshot,
             @Nullable BoundaryTarget boundary,
             boolean requireDoorBoundary
@@ -251,36 +252,7 @@ public final class DungeonEditorCorridorTargetHelper {
         if (requireDoorBoundary != boundary.doorKind()) {
             return null;
         }
-        List<DungeonEditorWorkspaceValues.Cell> touchingCells =
-                DungeonEditorBoundaryTouchGeometry.fromEdge(boundary.edgeRef()).touchingCells();
-        List<BoundaryRoomTouch> touches = roomTouches(snapshot.areas(), touchingCells);
-        return touches.size() == 1 ? touches.getFirst() : null;
-    }
-
-    private static List<BoundaryRoomTouch> roomTouches(
-            List<DungeonEditorWorkspaceValues.Area> areas,
-            List<DungeonEditorWorkspaceValues.Cell> touchingCells
-    ) {
-        java.util.ArrayList<BoundaryRoomTouch> touches = new java.util.ArrayList<>();
-        for (DungeonEditorWorkspaceValues.Area area : areas) {
-            if (!area.kind().isRoom()) {
-                continue;
-            }
-            for (DungeonEditorWorkspaceValues.Cell cell : area.cells()) {
-                if (touchingCells.contains(cell)) {
-                    touches.add(new BoundaryRoomTouch(area, cell));
-                    break;
-                }
-            }
-        }
-        return List.copyOf(touches);
-    }
-
-    private static String boundaryDirectionForRoomCell(
-            BoundaryTarget boundary,
-            DungeonEditorWorkspaceValues.Cell roomCell
-    ) {
-        return DungeonEditorBoundaryTouchGeometry.fromEdge(boundary.edgeRef()).directionForCell(roomCell);
+        return DungeonEditorBoundaryTouchGeometry.fromEdge(boundary.edgeRef()).singleRoomTouch(snapshot);
     }
 
     private static DungeonEditorSessionValues.Selection selectionForBoundary(BoundaryTarget boundary, long clusterId) {

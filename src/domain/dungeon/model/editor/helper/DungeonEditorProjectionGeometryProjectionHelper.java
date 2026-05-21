@@ -1,8 +1,9 @@
 package src.domain.dungeon.model.editor.helper;
 
 import java.util.List;
-import src.domain.dungeon.published.DungeonEditorMapProjectionSnapshot;
+import src.domain.dungeon.model.editor.model.interaction.model.DungeonEditorBoundaryTouchGeometry;
 import src.domain.dungeon.model.editor.model.workspace.model.DungeonEditorWorkspaceValues;
+import src.domain.dungeon.published.DungeonEditorMapProjectionSnapshot;
 
 public final class DungeonEditorProjectionGeometryProjectionHelper {
 
@@ -13,7 +14,7 @@ public final class DungeonEditorProjectionGeometryProjectionHelper {
             DungeonEditorWorkspaceValues.Edge edge,
             List<DungeonEditorWorkspaceValues.Cell> cells
     ) {
-        return edge != null && edge.touchesAnyCell(cells);
+        return edge != null && DungeonEditorBoundaryTouchGeometry.fromEdge(edge).touchingCount(cells) > 0;
     }
 
     public static CellCenter centerOf(List<DungeonEditorMapProjectionSnapshot.CellProjection> cells) {
