@@ -1,22 +1,24 @@
 Status: Draft
 Owner: SaltMarcher Team
 Last Reviewed: 2026-04-24
-Source of Truth: Current implementation shared canvas-side contract for the
-generic map canvas while the view layer migrates to the reusable three-role
-slotcontent model.
+Source of Truth: Legacy shared canvas-side contract record. The former
+`MapCanvasView` / `CanvasPointerEvent` seam has been removed; current dungeon
+rendering is adopter-local while the view layer migrates to the reusable
+three-role slotcontent model.
 
 # Maps Canvas Contract
 
 ## Purpose
 
-This contract defines the current implementation boundary language below any
-adopter-native map surface.
+This contract records the removed shared-canvas boundary language below any
+adopter-native map surface. It remains a Review-Owned debt record and must not
+be read as proof that `MapCanvasView` still exists in production sources.
 
 Owners:
 
 - producers: canvas-facing adopter `ContentModel`s
-- consumers: `MapCanvasView`, adopter-facing Binders, and adopter-facing
-  `IntentHandler` wiring
+- consumers: adopter-local map Views, adopter-facing Binders, and
+  adopter-facing `IntentHandler` wiring
 
 It does not own adopter-native requests, adopter-native payloads, or adopter
 domain truth.
@@ -24,7 +26,7 @@ domain truth.
 This is not the canonical target reusable-slotcontent contract. The canonical
 reusable-slotcontent target lives only in the
 [View Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/view-layer.md:1).
-The `MapRenderScene` and `CanvasPointerEvent` seams below describe current
+The `MapRenderScene` and `CanvasPointerEvent` seams below describe removed
 implementation boundary debt relative to that owner.
 
 ## Rules
@@ -35,11 +37,9 @@ implementation boundary debt relative to that owner.
   map view draws
 - shared hit ordering MUST come from the same rendered scene that the passive
   map view draws
-- in the current implementation, `MapRenderScene` is the shared renderer input
-  root
-- in the current implementation, `CanvasPointerEvent` is the shared
-  pointer-output root
-- all geometry in `MapRenderScene` MUST be canvas-native
+- removed `MapRenderScene` was the shared renderer input root
+- removed `CanvasPointerEvent` was the shared pointer-output root
+- all geometry in an adopter-local render scene MUST be canvas-native
 - the shared canvas boundary MUST NOT expose adopter-native commands, queries,
   or coordinates directly
 
@@ -63,10 +63,10 @@ Optional fields:
 
 - `selectionRef`
 
-`hitRef` and `selectionRef` MUST identify content from the same
-`MapRenderScene` instance that was drawn for the hit test.
+`hitRef` and `selectionRef` MUST identify content from the same render-scene
+instance that was drawn for the hit test.
 
-### `CanvasPointerEvent`
+### Removed Legacy `CanvasPointerEvent`
 
 Required fields:
 
@@ -79,11 +79,12 @@ Optional fields:
 
 - `hit`
 
-`MapCanvasView` emits `CanvasPointerEvent` through one technical outbound seam.
-Consumers must not require several phase-specific callback families from the
-shared passive canvas.
+The removed `MapCanvasView` emitted `CanvasPointerEvent` through one technical
+outbound seam. Current adopter-local map Views must keep the same constraint by
+emitting one same-stem `ViewInputEvent` family instead of several phase-specific
+callback families.
 
-### `MapRenderScene`
+### Removed Legacy `MapRenderScene`
 
 Required families:
 
@@ -97,17 +98,17 @@ Required families:
 - `overlays`
 
 `hitAreas` is the prepared technical hit-evidence list for the same rendered
-scene. The passive canvas consumes that order directly instead of reconstructing
-cross-family hit priority locally.
+scene. The passive map surface consumes that order directly instead of
+reconstructing cross-family hit priority locally.
 
 ## Validation And Error Behavior
 
 - a pointer event with no hit MUST still carry a valid `canvasPoint`
 - stale or unknown scene refs MUST be treated as no-hit
 - omitted optional fields mean absence, not implicit adopter defaults
-- the passive canvas MUST remain renderable with an empty `MapRenderScene`
-- a consumer MUST treat `CanvasPointerEvent` as technical input only; adopter
-  meaning is resolved outside the passive canvas
+- the passive map surface MUST remain renderable with an empty render scene
+- a consumer MUST treat same-stem map `ViewInputEvent` snapshots as technical
+  input only; adopter meaning is resolved outside the passive map surface
 
 ## Compatibility Notes
 
@@ -117,12 +118,13 @@ shared frontend root is superseded by this contract.
 ## Verification Notes
 
 - This contract is currently `Review-Owned`.
-- Review must treat `MapRenderScene` and `CanvasPointerEvent` as current
-  implementation carriers, not as new canonical reusable role families.
+- Review must treat `MapRenderScene`, `CanvasPointerEvent`, and `MapCanvasView`
+  as removed implementation carriers, not as new canonical reusable role
+  families.
 - Review must reject any shared map contract that exposes dungeon-grid or
   hex-native coordinates as the canonical canvas boundary.
-- Review must reject any second shared pointer-output family beside
-  `CanvasPointerEvent`.
+- Review must reject any second shared pointer-output family beside the
+  adopter-local same-stem `ViewInputEvent`.
 
 ## References
 

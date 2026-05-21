@@ -40,8 +40,9 @@ runtime position path as action-driven movement.
 
 ## Current Debt
 
-- the shared map-canvas seam is now implemented through `MapCanvasView`,
-  `MapRenderScene`, and `DungeonMapCanvasAdapter`
+- the former shared map-canvas seam has been removed; current dungeon rendering
+  runs through the dungeon-local `DungeonMapContentModel` / `DungeonMapView`
+  surface
 - remaining parity debt is now outside the old one-off dungeon boundary-carrier
   cleanup, which has been replaced by the canonical authored-read,
   authored-mutation, catalog, and travel boundary families

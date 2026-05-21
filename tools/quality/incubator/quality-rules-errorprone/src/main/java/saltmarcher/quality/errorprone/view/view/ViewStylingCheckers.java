@@ -70,7 +70,7 @@ public final class ViewStylingCheckers {
             "USE_PREF_SIZE",
             "USE_COMPUTED_SIZE");
     private static final Set<String> DIRECT_RENDER_EXCEPTION_TYPES = Set.of(
-            "src.view.slotcontent.primitives.mapcanvas.MapCanvasView", "src.view.slotcontent.main.dungeonmap.DungeonMapView");
+            "src.view.slotcontent.main.dungeonmap.DungeonMapView");
 
     private ViewStylingCheckers() {}
 

@@ -2,15 +2,16 @@ Status: Draft
 Owner: SaltMarcher Team
 Last Reviewed: 2026-05-04
 Source of Truth: Dungeon-specific current implementation adoption of the
-generic maps canvas while the view layer migrates to the reusable three-role
-slotcontent model.
+map-canvas constraints after the former shared `MapCanvasView` seam was
+removed, while the view layer migrates to the reusable three-role slotcontent
+model.
 
 # Dungeon Map Adoption Architecture
 
 ## Purpose
 
-This specification records the current implementation binding of the generic
-maps canvas onto the dungeon feature.
+This specification records the current implementation binding of map-canvas
+constraints onto the dungeon feature.
 
 It owns:
 
@@ -24,10 +25,9 @@ invariants.
 ## Dungeon Owners
 
 - `DungeonEditorMainView` and `DungeonTravelMainView` are thin root-local
-  wrappers over `MapCanvasView`
-- `DungeonMapMainView` remains the shared map slotcontent View wrapper that
-  renders only the `MapRenderScene` exposed by the dungeon map slotcontent
-  `ContentModel`
+  wrappers around the dungeon-local map slotcontent surface
+- `DungeonMapView` is the dungeon-local map slotcontent View that renders only
+  the render scene exposed by the dungeon map slotcontent `ContentModel`
 - the dungeon map slotcontent `DungeonMapContentModel` is the only allowed
   dungeon-side owner of map render state and the only allowed
   canvas-facing render-state owner; raw map normalization and preview
@@ -38,7 +38,7 @@ invariants.
   subscribe to emitted snapshots and deliver those snapshots into the dungeon
   map slotcontent `ContentModel`
 - `DungeonEditorBinder` also owns reverse pointer-event translation from
-  `CanvasPointerEvent` into dungeon-editor input wiring
+  `DungeonMapViewInputEvent` into dungeon-editor input wiring
 - the active-root dungeon `ContributionModel` owns aggregate controls,
   inspector, status, and other non-canvas projection state, but must not
   mirror dungeon map render projection as a second render path
@@ -62,7 +62,7 @@ invariants.
 
 ### Surface Read
 
-`Dungeon*Binder -> DungeonEditorApplicationService or DungeonTravelRuntimeApplicationService -> dungeon published/*Model -> Dungeon*Snapshot or TravelDungeonSnapshot -> DungeonMapContentModel -> MapRenderScene -> DungeonMapMainView -> Dungeon*MainView`
+`Dungeon*Binder -> DungeonEditorApplicationService or DungeonTravelRuntimeApplicationService -> dungeon published/*Model -> Dungeon*Snapshot or TravelDungeonSnapshot -> DungeonMapContentModel -> DungeonMapContentModel.RenderScene -> DungeonMapView -> Dungeon*MainView`
 
 For the editor workspace, `DungeonEditorApplicationService` composes that
 runtime snapshot from authored dungeon family seams such as
@@ -72,14 +72,14 @@ runtime snapshot from authored dungeon family seams such as
 
 ### Preview And Apply
 
-`Dungeon*MainView -> CanvasPointerEvent -> DungeonEditorBinder wiring -> same-root Dungeon*IntentHandler -> DungeonEditorPublishedEvent -> DungeonEditorBinder -> DungeonEditorApplicationService -> DungeonEditorModel -> DungeonEditorSnapshot -> DungeonEditorMapProjectionSnapshot -> DungeonMapContentModel -> MapRenderScene -> DungeonMapMainView -> Dungeon*MainView`
+`Dungeon*MainView -> DungeonMapViewInputEvent -> DungeonEditorBinder wiring -> same-root Dungeon*IntentHandler -> DungeonEditorPublishedEvent -> DungeonEditorBinder -> DungeonEditorApplicationService -> DungeonEditorModel -> DungeonEditorSnapshot -> DungeonEditorMapProjectionSnapshot -> DungeonMapContentModel -> DungeonMapContentModel.RenderScene -> DungeonMapView -> Dungeon*MainView`
 
 Preview and apply reuse the same authored dungeon edit body and differ only in
 the boundary wrapper and commit semantics.
 
 ### Travel Action
 
-`Dungeon*MainView or travel controls -> DungeonTravelBinder wiring -> same-root DungeonTravelIntentHandler -> DungeonTravelStatePublishedEvent -> DungeonTravelBinder -> DungeonTravelRuntimeApplicationService -> TravelDungeonSnapshot -> DungeonMapContentModel -> MapRenderScene -> DungeonMapMainView -> Dungeon*MainView`
+`Dungeon*MainView or travel controls -> DungeonTravelBinder wiring -> same-root DungeonTravelIntentHandler -> DungeonTravelStatePublishedEvent -> DungeonTravelBinder -> DungeonTravelRuntimeApplicationService -> TravelDungeonSnapshot -> DungeonMapContentModel -> DungeonMapContentModel.RenderScene -> DungeonMapView -> Dungeon*MainView`
 
 Direct token drag is adapter-side travel action resolution, not a second
 backend movement path.
@@ -113,8 +113,8 @@ Catalog behavior remains separate from the shared canvas scene path.
 ## Verification Notes
 
 - This architecture is currently `Review-Owned`.
-- Review must treat `CanvasPointerEvent` and `MapRenderScene` as legacy
-  current-state seams, not as target reusable-slotcontent truth.
+- Review must treat `CanvasPointerEvent`, `MapRenderScene`, and `MapCanvasView`
+  as removed legacy seams, not as target reusable-slotcontent truth.
 - Review must reject any second dungeon-to-canvas adapter for the same seam.
 
 ## References
