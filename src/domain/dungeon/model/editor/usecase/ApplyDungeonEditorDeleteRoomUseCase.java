@@ -4,6 +4,7 @@ import java.util.Objects;
 import src.domain.dungeon.model.editor.model.session.model.DungeonEditorMainViewInput;
 import src.domain.dungeon.model.editor.model.session.model.DungeonEditorSessionValues;
 import src.domain.dungeon.model.editor.model.session.model.DungeonEditorSessionWorkflow;
+import src.domain.dungeon.model.editor.model.workspace.model.DungeonEditorWorkspaceValues.MapSnapshot;
 
 public final class ApplyDungeonEditorDeleteRoomUseCase {
     private final DungeonEditorSessionWorkflow workflow;
@@ -21,20 +22,32 @@ public final class ApplyDungeonEditorDeleteRoomUseCase {
     }
 
     public void press(DungeonEditorMainViewInput input) {
-        effectUseCase.applyCommittedGrid(ignored -> mainViewInterpreter.pressRoom(
+        MapSnapshot committedSnapshot = effectUseCase.committedGridOrPublishCurrent();
+        if (committedSnapshot == null) {
+            return;
+        }
+        effectUseCase.applyEffect(mainViewInterpreter.pressRoom(
                 input,
                 DungeonEditorSessionValues.Tool.ROOM_DELETE,
                 workflow.projectionLevel()));
     }
 
     public void drag(DungeonEditorMainViewInput input) {
-        effectUseCase.applyCommittedGrid(ignored -> mainViewInterpreter.dragRoom(
+        MapSnapshot committedSnapshot = effectUseCase.committedGridOrPublishCurrent();
+        if (committedSnapshot == null) {
+            return;
+        }
+        effectUseCase.applyEffect(mainViewInterpreter.dragRoom(
                 input,
                 workflow.projectionLevel()));
     }
 
     public void release(DungeonEditorMainViewInput input) {
-        effectUseCase.applyCommittedGrid(ignored -> mainViewInterpreter.releaseRoom(
+        MapSnapshot committedSnapshot = effectUseCase.committedGridOrPublishCurrent();
+        if (committedSnapshot == null) {
+            return;
+        }
+        effectUseCase.applyEffect(mainViewInterpreter.releaseRoom(
                 input,
                 workflow.projectionLevel()));
     }

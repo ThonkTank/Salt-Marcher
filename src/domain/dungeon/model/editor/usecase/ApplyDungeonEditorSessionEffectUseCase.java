@@ -1,7 +1,6 @@
 package src.domain.dungeon.model.editor.usecase;
 
 import java.util.Objects;
-import java.util.function.Function;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.editor.model.interaction.model.DungeonEditorMainViewEffect;
 import src.domain.dungeon.model.editor.model.session.model.DungeonEditorDungeonFacts;
@@ -45,13 +44,13 @@ public final class ApplyDungeonEditorSessionEffectUseCase {
         snapshotPublicationUseCase.execute(currentSnapshot());
     }
 
-    void applyCommittedGrid(Function<DungeonEditorWorkspaceValues.MapSnapshot, DungeonEditorMainViewEffect> effectFactory) {
+    DungeonEditorWorkspaceValues.@Nullable MapSnapshot committedGridOrPublishCurrent() {
         DungeonEditorWorkspaceValues.MapSnapshot committedSnapshot = loadCommittedSnapshot();
         if (!workflow.canUseGridMap(committedSnapshot)) {
             publishCurrent();
-            return;
+            return null;
         }
-        applyEffect(effectFactory.apply(committedSnapshot));
+        return committedSnapshot;
     }
 
     void applyEffect(DungeonEditorMainViewEffect effect) {

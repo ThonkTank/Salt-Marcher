@@ -4,6 +4,7 @@ import java.util.Objects;
 import src.domain.dungeon.model.editor.model.session.model.DungeonEditorMainViewInput;
 import src.domain.dungeon.model.editor.model.session.model.DungeonEditorSessionValues;
 import src.domain.dungeon.model.editor.model.session.model.DungeonEditorSessionWorkflow;
+import src.domain.dungeon.model.editor.model.workspace.model.DungeonEditorWorkspaceValues.MapSnapshot;
 
 public final class ApplyDungeonEditorCreateDoorUseCase {
     private final DungeonEditorSessionWorkflow workflow;
@@ -37,7 +38,11 @@ public final class ApplyDungeonEditorCreateDoorUseCase {
     }
 
     private void applyPress(DungeonEditorMainViewInput input, DungeonEditorSessionValues.Tool tool) {
-        effectUseCase.applyCommittedGrid(committedSnapshot -> mainViewInterpreter.pressBoundary(
+        MapSnapshot committedSnapshot = effectUseCase.committedGridOrPublishCurrent();
+        if (committedSnapshot == null) {
+            return;
+        }
+        effectUseCase.applyEffect(mainViewInterpreter.pressBoundary(
                 input,
                 committedSnapshot,
                 workflow.selection(),
@@ -46,7 +51,11 @@ public final class ApplyDungeonEditorCreateDoorUseCase {
     }
 
     private void applyDrag(DungeonEditorMainViewInput input, DungeonEditorSessionValues.Tool tool) {
-        effectUseCase.applyCommittedGrid(committedSnapshot -> mainViewInterpreter.dragBoundary(
+        MapSnapshot committedSnapshot = effectUseCase.committedGridOrPublishCurrent();
+        if (committedSnapshot == null) {
+            return;
+        }
+        effectUseCase.applyEffect(mainViewInterpreter.dragBoundary(
                 input,
                 committedSnapshot,
                 tool,
@@ -54,7 +63,11 @@ public final class ApplyDungeonEditorCreateDoorUseCase {
     }
 
     private void applyRelease(DungeonEditorMainViewInput input, DungeonEditorSessionValues.Tool tool) {
-        effectUseCase.applyCommittedGrid(committedSnapshot -> mainViewInterpreter.releaseBoundary(
+        MapSnapshot committedSnapshot = effectUseCase.committedGridOrPublishCurrent();
+        if (committedSnapshot == null) {
+            return;
+        }
+        effectUseCase.applyEffect(mainViewInterpreter.releaseBoundary(
                 input,
                 committedSnapshot,
                 tool,
@@ -62,7 +75,11 @@ public final class ApplyDungeonEditorCreateDoorUseCase {
     }
 
     private void applyHover(DungeonEditorMainViewInput input, DungeonEditorSessionValues.Tool tool) {
-        effectUseCase.applyCommittedGrid(committedSnapshot -> mainViewInterpreter.hoverBoundary(
+        MapSnapshot committedSnapshot = effectUseCase.committedGridOrPublishCurrent();
+        if (committedSnapshot == null) {
+            return;
+        }
+        effectUseCase.applyEffect(mainViewInterpreter.hoverBoundary(
                 input,
                 committedSnapshot,
                 tool,

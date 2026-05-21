@@ -4,6 +4,7 @@ import java.util.Objects;
 import src.domain.dungeon.model.editor.model.session.model.DungeonEditorMainViewInput;
 import src.domain.dungeon.model.editor.model.session.model.DungeonEditorSessionValues;
 import src.domain.dungeon.model.editor.model.session.model.DungeonEditorSessionWorkflow;
+import src.domain.dungeon.model.editor.model.workspace.model.DungeonEditorWorkspaceValues.MapSnapshot;
 
 public final class ApplyDungeonEditorCreateCorridorUseCase {
     private final DungeonEditorSessionWorkflow workflow;
@@ -29,7 +30,11 @@ public final class ApplyDungeonEditorCreateCorridorUseCase {
     }
 
     private void applyPress(DungeonEditorMainViewInput input, DungeonEditorSessionValues.Tool tool) {
-        effectUseCase.applyCommittedGrid(committedSnapshot -> mainViewInterpreter.pressCorridor(
+        MapSnapshot committedSnapshot = effectUseCase.committedGridOrPublishCurrent();
+        if (committedSnapshot == null) {
+            return;
+        }
+        effectUseCase.applyEffect(mainViewInterpreter.pressCorridor(
                 input,
                 committedSnapshot,
                 tool,
@@ -37,7 +42,11 @@ public final class ApplyDungeonEditorCreateCorridorUseCase {
     }
 
     private void applyHover(DungeonEditorMainViewInput input, DungeonEditorSessionValues.Tool tool) {
-        effectUseCase.applyCommittedGrid(committedSnapshot -> mainViewInterpreter.hoverCorridor(
+        MapSnapshot committedSnapshot = effectUseCase.committedGridOrPublishCurrent();
+        if (committedSnapshot == null) {
+            return;
+        }
+        effectUseCase.applyEffect(mainViewInterpreter.hoverCorridor(
                 input,
                 committedSnapshot,
                 tool,
