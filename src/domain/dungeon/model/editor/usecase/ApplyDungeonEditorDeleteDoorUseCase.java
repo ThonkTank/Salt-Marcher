@@ -1,88 +1,33 @@
 package src.domain.dungeon.model.editor.usecase;
 
-import java.util.Objects;
-import src.domain.dungeon.model.editor.usecase.BuildDungeonEditorMainViewInputUseCase.MainViewInput;
 import src.domain.dungeon.model.editor.model.session.model.DungeonEditorSessionValues;
 import src.domain.dungeon.model.editor.model.session.model.DungeonEditorSessionWorkflow;
-import src.domain.dungeon.model.editor.model.workspace.model.DungeonEditorWorkspaceValues.MapSnapshot;
+import src.domain.dungeon.model.editor.usecase.BuildDungeonEditorMainViewInputUseCase.MainViewInput;
 
 public final class ApplyDungeonEditorDeleteDoorUseCase {
-    private final DungeonEditorSessionWorkflow workflow;
-    private final InterpretDungeonEditorMainViewInputUseCase mainViewInterpreter;
-    private final ApplyDungeonEditorSessionEffectUseCase effectUseCase;
+    private final DungeonEditorApplyToolUseCase toolUseCase;
 
     public ApplyDungeonEditorDeleteDoorUseCase(
             DungeonEditorSessionWorkflow workflow,
             InterpretDungeonEditorMainViewInputUseCase mainViewInterpreter,
             ApplyDungeonEditorSessionEffectUseCase effectUseCase
     ) {
-        this.workflow = Objects.requireNonNull(workflow, "workflow");
-        this.mainViewInterpreter = Objects.requireNonNull(mainViewInterpreter, "mainViewInterpreter");
-        this.effectUseCase = Objects.requireNonNull(effectUseCase, "effectUseCase");
+        this.toolUseCase = new DungeonEditorApplyToolUseCase(workflow, mainViewInterpreter, effectUseCase);
     }
 
     public void press(MainViewInput input) {
-        applyPress(input, DungeonEditorSessionValues.Tool.DOOR_DELETE);
+        toolUseCase.pressBoundary(input, DungeonEditorSessionValues.Tool.DOOR_DELETE);
     }
 
     public void drag(MainViewInput input) {
-        applyDrag(input, DungeonEditorSessionValues.Tool.DOOR_DELETE);
+        toolUseCase.dragBoundary(input, DungeonEditorSessionValues.Tool.DOOR_DELETE);
     }
 
     public void release(MainViewInput input) {
-        applyRelease(input, DungeonEditorSessionValues.Tool.DOOR_DELETE);
+        toolUseCase.releaseBoundary(input, DungeonEditorSessionValues.Tool.DOOR_DELETE);
     }
 
     public void hover(MainViewInput input) {
-        applyHover(input, DungeonEditorSessionValues.Tool.DOOR_DELETE);
-    }
-
-    private void applyPress(MainViewInput input, DungeonEditorSessionValues.Tool tool) {
-        MapSnapshot committedSnapshot = effectUseCase.committedGridOrPublishCurrent();
-        if (committedSnapshot == null) {
-            return;
-        }
-        effectUseCase.applyEffect(mainViewInterpreter.pressBoundary(
-                input,
-                committedSnapshot,
-                workflow.selection(),
-                tool,
-                workflow.projectionLevel()));
-    }
-
-    private void applyDrag(MainViewInput input, DungeonEditorSessionValues.Tool tool) {
-        MapSnapshot committedSnapshot = effectUseCase.committedGridOrPublishCurrent();
-        if (committedSnapshot == null) {
-            return;
-        }
-        effectUseCase.applyEffect(mainViewInterpreter.dragBoundary(
-                input,
-                committedSnapshot,
-                tool,
-                workflow.projectionLevel()));
-    }
-
-    private void applyRelease(MainViewInput input, DungeonEditorSessionValues.Tool tool) {
-        MapSnapshot committedSnapshot = effectUseCase.committedGridOrPublishCurrent();
-        if (committedSnapshot == null) {
-            return;
-        }
-        effectUseCase.applyEffect(mainViewInterpreter.releaseBoundary(
-                input,
-                committedSnapshot,
-                tool,
-                workflow.projectionLevel()));
-    }
-
-    private void applyHover(MainViewInput input, DungeonEditorSessionValues.Tool tool) {
-        MapSnapshot committedSnapshot = effectUseCase.committedGridOrPublishCurrent();
-        if (committedSnapshot == null) {
-            return;
-        }
-        effectUseCase.applyEffect(mainViewInterpreter.hoverBoundary(
-                input,
-                committedSnapshot,
-                tool,
-                workflow.projectionLevel()));
+        toolUseCase.hoverBoundary(input, DungeonEditorSessionValues.Tool.DOOR_DELETE);
     }
 }
