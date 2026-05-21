@@ -1,7 +1,6 @@
 package src.domain.dungeon;
 
 import java.util.Objects;
-import src.domain.dungeon.model.travel.usecase.ApplyDungeonTravelUseCase;
 import src.domain.dungeon.model.travel.usecase.PublishDungeonTravelMoveUseCase;
 import src.domain.dungeon.model.travel.usecase.PublishDungeonTravelSurfaceUseCase;
 import src.domain.dungeon.published.DungeonTravelCommand;
@@ -26,23 +25,23 @@ public final class DungeonTravelApplicationService {
         Objects.requireNonNull(command, "command");
         publishSurfaceUseCase.execute(command.position() == null
                 ? null
-                : new ApplyDungeonTravelUseCase.PositionInput(
-                        new ApplyDungeonTravelUseCase.MapInput(command.position().mapId().value()),
+                : new PublishDungeonTravelSurfaceUseCase.PositionInput(
+                        new PublishDungeonTravelSurfaceUseCase.MapInput(command.position().mapId().value()),
                         switch (command.position().locationKind().name()) {
-                            case "STAIR_EXIT" -> ApplyDungeonTravelUseCase.LocationKindInput.STAIR_EXIT;
-                            case "TRANSITION" -> ApplyDungeonTravelUseCase.LocationKindInput.TRANSITION;
-                            default -> ApplyDungeonTravelUseCase.LocationKindInput.TILE;
+                            case "STAIR_EXIT" -> PublishDungeonTravelSurfaceUseCase.LocationKindInput.STAIR_EXIT;
+                            case "TRANSITION" -> PublishDungeonTravelSurfaceUseCase.LocationKindInput.TRANSITION;
+                            default -> PublishDungeonTravelSurfaceUseCase.LocationKindInput.TILE;
                         },
                         command.position().ownerId(),
-                        new ApplyDungeonTravelUseCase.CellInput(
+                        new PublishDungeonTravelSurfaceUseCase.CellInput(
                                 command.position().tile().q(),
                                 command.position().tile().r(),
                                 command.position().tile().level()),
                         switch (command.position().heading().name()) {
-                            case "NORTH" -> ApplyDungeonTravelUseCase.HeadingInput.NORTH;
-                            case "EAST" -> ApplyDungeonTravelUseCase.HeadingInput.EAST;
-                            case "WEST" -> ApplyDungeonTravelUseCase.HeadingInput.WEST;
-                            default -> ApplyDungeonTravelUseCase.HeadingInput.SOUTH;
+                            case "NORTH" -> PublishDungeonTravelSurfaceUseCase.HeadingInput.NORTH;
+                            case "EAST" -> PublishDungeonTravelSurfaceUseCase.HeadingInput.EAST;
+                            case "WEST" -> PublishDungeonTravelSurfaceUseCase.HeadingInput.WEST;
+                            default -> PublishDungeonTravelSurfaceUseCase.HeadingInput.SOUTH;
                         }));
     }
 
@@ -51,23 +50,23 @@ public final class DungeonTravelApplicationService {
         publishMoveUseCase.execute(new PublishDungeonTravelMoveUseCase.MoveInput(
                 command.position() == null
                         ? null
-                        : new ApplyDungeonTravelUseCase.PositionInput(
-                                new ApplyDungeonTravelUseCase.MapInput(command.position().mapId().value()),
+                        : new PublishDungeonTravelMoveUseCase.PositionInput(
+                                new PublishDungeonTravelMoveUseCase.MapInput(command.position().mapId().value()),
                                 switch (command.position().locationKind().name()) {
-                                    case "STAIR_EXIT" -> ApplyDungeonTravelUseCase.LocationKindInput.STAIR_EXIT;
-                                    case "TRANSITION" -> ApplyDungeonTravelUseCase.LocationKindInput.TRANSITION;
-                                    default -> ApplyDungeonTravelUseCase.LocationKindInput.TILE;
+                                    case "STAIR_EXIT" -> PublishDungeonTravelMoveUseCase.LocationKindInput.STAIR_EXIT;
+                                    case "TRANSITION" -> PublishDungeonTravelMoveUseCase.LocationKindInput.TRANSITION;
+                                    default -> PublishDungeonTravelMoveUseCase.LocationKindInput.TILE;
                                 },
                                 command.position().ownerId(),
-                                new ApplyDungeonTravelUseCase.CellInput(
+                                new PublishDungeonTravelMoveUseCase.CellInput(
                                         command.position().tile().q(),
                                         command.position().tile().r(),
                                         command.position().tile().level()),
                                 switch (command.position().heading().name()) {
-                                    case "NORTH" -> ApplyDungeonTravelUseCase.HeadingInput.NORTH;
-                                    case "EAST" -> ApplyDungeonTravelUseCase.HeadingInput.EAST;
-                                    case "WEST" -> ApplyDungeonTravelUseCase.HeadingInput.WEST;
-                                    default -> ApplyDungeonTravelUseCase.HeadingInput.SOUTH;
+                                    case "NORTH" -> PublishDungeonTravelMoveUseCase.HeadingInput.NORTH;
+                                    case "EAST" -> PublishDungeonTravelMoveUseCase.HeadingInput.EAST;
+                                    case "WEST" -> PublishDungeonTravelMoveUseCase.HeadingInput.WEST;
+                                    default -> PublishDungeonTravelMoveUseCase.HeadingInput.SOUTH;
                                 }),
                 command.actionId()));
     }

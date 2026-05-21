@@ -156,8 +156,13 @@ public class DungeonMapView extends BorderPane {
     }
 
     private void handleScroll(ScrollEvent event) {
+        emitScrollEvent(scrolledInput(), event);
+        event.consume();
+    }
+
+    private void emitScrollEvent(DungeonMapViewInputEvent.CanvasInput input, ScrollEvent event) {
         viewInputEventHandler.accept(new DungeonMapViewInputEvent(
-                new DungeonMapViewInputEvent.CanvasInput(false, false, false, false, true),
+                input,
                 new DungeonMapViewInputEvent.CanvasButtons(false, false, false),
                 new DungeonMapViewInputEvent.CanvasModifiers(
                         event.isControlDown(),
@@ -165,7 +170,6 @@ public class DungeonMapView extends BorderPane {
                         event.isAltDown()),
                 new DungeonMapViewInputEvent.CanvasPosition(event.getX(), event.getY()),
                 event.getDeltaY()));
-        event.consume();
     }
 
     private void handleKeyPressed(KeyEvent event) {
