@@ -78,7 +78,6 @@ public final class ApplyDungeonAuthoredMutationUseCase {
                             stretch.deltaLevel());
             case DungeonEditorAuthoredOperation.SaveRoomNarration narration ->
                     current -> current.saveRoomNarration(narration.roomId(), narration.narration());
-            default -> null;
         };
     }
 }

@@ -1,9 +1,8 @@
-package src.domain.dungeon.model.map.repository;
+package src.domain.dungeon.model.editor.model.session.model;
 
 import java.util.ArrayList;
 import java.util.List;
 import org.jspecify.annotations.Nullable;
-import src.domain.dungeon.model.editor.model.session.model.DungeonEditorDungeonState;
 import src.domain.dungeon.model.editor.model.workspace.model.DungeonEditorWorkspaceValues;
 import src.domain.dungeon.model.editor.model.workspace.model.DungeonEditorWorkspaceValues.MapSnapshot;
 import src.domain.dungeon.model.map.model.DungeonAreaFacts;
@@ -17,51 +16,60 @@ import src.domain.dungeon.model.map.model.DungeonFeatureFacts;
 import src.domain.dungeon.model.map.model.DungeonMapFacts;
 import src.domain.dungeon.model.map.model.DungeonTopology;
 
-public final class DungeonEditorAuthoredSnapshotPublicationRepository {
+public final class DungeonEditorAuthoredSnapshotPublicationModel {
 
-    public record SnapshotPublicationData(
-            DungeonEditorDungeonState.@Nullable SnapshotFacts stateFacts,
-            DungeonAuthoredPublishedStateRepository.@Nullable SnapshotPublication repositoryPublication
-    ) {
-    }
+    private final String mapName;
+    private final @Nullable DungeonDerivedState derived;
+    private final List<DungeonEditorHandleFacts> editorHandles;
+    private final long repositoryRevision;
+    private final DungeonEditorDungeonState.SnapshotFacts stateFacts;
 
-    public SnapshotPublicationData publication(
+    private DungeonEditorAuthoredSnapshotPublicationModel(
             String mapName,
-            DungeonDerivedState derived,
+            @Nullable DungeonDerivedState derived,
             List<DungeonEditorHandleFacts> editorHandles,
             long revision
     ) {
-        return new SnapshotPublicationData(
-                snapshotFacts(mapName, derived, editorHandles, revision),
-                snapshotPublication(mapName, derived, editorHandles, revision));
-    }
-
-    private static DungeonEditorDungeonState.@Nullable SnapshotFacts snapshotFacts(
-            String mapName,
-            DungeonDerivedState derived,
-            List<DungeonEditorHandleFacts> editorHandles,
-            long revision
-    ) {
-        return new DungeonEditorDungeonState.SnapshotFacts(
+        this.mapName = mapName;
+        this.derived = derived;
+        this.editorHandles = editorHandles == null ? List.of() : List.copyOf(editorHandles);
+        this.repositoryRevision = revision;
+        this.stateFacts = new DungeonEditorDungeonState.SnapshotFacts(
                 mapName,
-                revision(revision),
-                mapSnapshot(derived, editorHandles));
+                stateRevision(revision),
+                mapSnapshot(derived, this.editorHandles));
     }
 
-    private static DungeonAuthoredPublishedStateRepository.@Nullable SnapshotPublication snapshotPublication(
+    public static DungeonEditorAuthoredSnapshotPublicationModel from(
             String mapName,
-            DungeonDerivedState derived,
+            @Nullable DungeonDerivedState derived,
             List<DungeonEditorHandleFacts> editorHandles,
             long revision
     ) {
-        return new DungeonAuthoredPublishedStateRepository.SnapshotPublication(
-                mapName,
-                derived,
-                editorHandles,
-                revision);
+        return new DungeonEditorAuthoredSnapshotPublicationModel(mapName, derived, editorHandles, revision);
     }
 
-    private static int revision(long revision) {
+    public DungeonEditorDungeonState.SnapshotFacts stateFacts() {
+        return stateFacts;
+    }
+
+    public String mapName() {
+        return mapName;
+    }
+
+    public @Nullable DungeonDerivedState derived() {
+        return derived;
+    }
+
+    public List<DungeonEditorHandleFacts> editorHandles() {
+        return List.copyOf(editorHandles);
+    }
+
+    public long repositoryRevision() {
+        return repositoryRevision;
+    }
+
+    private static int stateRevision(long revision) {
         if (revision > Integer.MAX_VALUE) {
             return Integer.MAX_VALUE;
         }

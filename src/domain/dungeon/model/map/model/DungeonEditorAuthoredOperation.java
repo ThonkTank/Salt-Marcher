@@ -1,17 +1,29 @@
 package src.domain.dungeon.model.map.model;
 
 import java.util.List;
+import java.util.Objects;
 
 public final class DungeonEditorAuthoredOperation {
 
-    private final Object variant;
+    private final Variant variant;
 
-    private DungeonEditorAuthoredOperation(Object variant) {
-        this.variant = variant;
+    private DungeonEditorAuthoredOperation(Variant variant) {
+        this.variant = Objects.requireNonNull(variant, "variant");
     }
 
-    public Object variant() {
+    public Variant variant() {
         return variant;
+    }
+
+    public sealed interface Variant permits
+            PaintRoomRectangle,
+            DeleteRoomRectangle,
+            EditClusterBoundaries,
+            CreateCorridor,
+            DeleteCorridor,
+            MoveEditorHandle,
+            MoveBoundaryStretch,
+            SaveRoomNarration {
     }
 
     public static DungeonEditorAuthoredOperation paintRoomRectangle(DungeonCell start, DungeonCell end) {
@@ -69,7 +81,7 @@ public final class DungeonEditorAuthoredOperation {
         return new DungeonEditorAuthoredOperation(new SaveRoomNarration(roomId, narration));
     }
 
-    public static final class PaintRoomRectangle {
+    public static final class PaintRoomRectangle implements Variant {
         private final DungeonCell start;
         private final DungeonCell end;
 
@@ -87,7 +99,7 @@ public final class DungeonEditorAuthoredOperation {
         }
     }
 
-    public static final class DeleteRoomRectangle {
+    public static final class DeleteRoomRectangle implements Variant {
         private final DungeonCell start;
         private final DungeonCell end;
 
@@ -105,7 +117,7 @@ public final class DungeonEditorAuthoredOperation {
         }
     }
 
-    public static final class EditClusterBoundaries {
+    public static final class EditClusterBoundaries implements Variant {
         private final long clusterId;
         private final List<DungeonEdge> edges;
         private final DungeonClusterBoundaryKind boundaryKind;
@@ -140,7 +152,7 @@ public final class DungeonEditorAuthoredOperation {
         }
     }
 
-    public static final class CreateCorridor {
+    public static final class CreateCorridor implements Variant {
         private final DungeonCorridorEndpoint start;
         private final DungeonCorridorEndpoint end;
 
@@ -158,7 +170,7 @@ public final class DungeonEditorAuthoredOperation {
         }
     }
 
-    public static final class DeleteCorridor {
+    public static final class DeleteCorridor implements Variant {
         private final long corridorId;
 
         private DeleteCorridor(long corridorId) {
@@ -170,7 +182,7 @@ public final class DungeonEditorAuthoredOperation {
         }
     }
 
-    public static final class MoveEditorHandle {
+    public static final class MoveEditorHandle implements Variant {
         private final DungeonEditorHandle handle;
         private final int deltaQ;
         private final int deltaR;
@@ -200,7 +212,7 @@ public final class DungeonEditorAuthoredOperation {
         }
     }
 
-    public static final class MoveBoundaryStretch {
+    public static final class MoveBoundaryStretch implements Variant {
         private final long clusterId;
         private final List<DungeonEdge> sourceEdges;
         private final int deltaQ;
@@ -242,7 +254,7 @@ public final class DungeonEditorAuthoredOperation {
         }
     }
 
-    public static final class SaveRoomNarration {
+    public static final class SaveRoomNarration implements Variant {
         private final long roomId;
         private final DungeonRoomNarration narration;
 
