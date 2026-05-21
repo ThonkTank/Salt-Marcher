@@ -200,12 +200,18 @@ public final class ApplyDungeonAuthoredMutationUseCase {
         }
     }
 
-    public enum ActionInput {
-        PREVIEW,
-        APPLY;
+    public static final class ActionInput {
+        public static final ActionInput PREVIEW = new ActionInput(true);
+        public static final ActionInput APPLY = new ActionInput(false);
+
+        private final boolean previews;
+
+        private ActionInput(boolean previews) {
+            this.previews = previews;
+        }
 
         boolean previews() {
-            return this == PREVIEW;
+            return previews;
         }
     }
 
@@ -224,8 +230,11 @@ public final class ApplyDungeonAuthoredMutationUseCase {
             SaveRoomNarrationInput {
     }
 
-    public enum NoopInput implements OperationInput {
-        INSTANCE
+    public static final class NoopInput implements OperationInput {
+        public static final NoopInput INSTANCE = new NoopInput();
+
+        private NoopInput() {
+        }
     }
 
     public record MoveTopologyElementInput(
@@ -267,7 +276,22 @@ public final class ApplyDungeonAuthoredMutationUseCase {
         }
     }
 
-    public record MoveRoomAnchorInput(int deltaQ, int deltaR) implements OperationInput {
+    public static final class MoveRoomAnchorInput implements OperationInput {
+        private final int deltaQ;
+        private final int deltaR;
+
+        public MoveRoomAnchorInput(int deltaQ, int deltaR) {
+            this.deltaQ = deltaQ;
+            this.deltaR = deltaR;
+        }
+
+        int deltaQ() {
+            return deltaQ;
+        }
+
+        int deltaR() {
+            return deltaR;
+        }
     }
 
     public record RoomRectangleInput(
@@ -323,16 +347,33 @@ public final class ApplyDungeonAuthoredMutationUseCase {
         }
     }
 
-    public record MergeCorridorsInput(long corridorId, long mergedCorridorId) implements OperationInput {
-        public MergeCorridorsInput {
-            corridorId = Math.max(0L, corridorId);
-            mergedCorridorId = Math.max(0L, mergedCorridorId);
+    public static final class MergeCorridorsInput implements OperationInput {
+        private final long corridorId;
+        private final long mergedCorridorId;
+
+        public MergeCorridorsInput(long corridorId, long mergedCorridorId) {
+            this.corridorId = Math.max(0L, corridorId);
+            this.mergedCorridorId = Math.max(0L, mergedCorridorId);
+        }
+
+        long corridorId() {
+            return corridorId;
+        }
+
+        long mergedCorridorId() {
+            return mergedCorridorId;
         }
     }
 
-    public record DeleteCorridorInput(long corridorId) implements OperationInput {
-        public DeleteCorridorInput {
-            corridorId = Math.max(0L, corridorId);
+    public static final class DeleteCorridorInput implements OperationInput {
+        private final long corridorId;
+
+        public DeleteCorridorInput(long corridorId) {
+            this.corridorId = Math.max(0L, corridorId);
+        }
+
+        long corridorId() {
+            return corridorId;
         }
     }
 
@@ -404,9 +445,19 @@ public final class ApplyDungeonAuthoredMutationUseCase {
         }
     }
 
-    public enum CorridorEndpointKindInput {
-        DOOR,
-        ANCHOR
+    public static final class CorridorEndpointKindInput {
+        public static final CorridorEndpointKindInput DOOR = new CorridorEndpointKindInput("DOOR");
+        public static final CorridorEndpointKindInput ANCHOR = new CorridorEndpointKindInput("ANCHOR");
+
+        private final String name;
+
+        private CorridorEndpointKindInput(String name) {
+            this.name = name;
+        }
+
+        public String name() {
+            return name;
+        }
     }
 
     public record CorridorEndpointInput(
@@ -491,7 +542,17 @@ public final class ApplyDungeonAuthoredMutationUseCase {
         }
     }
 
-    public record CellInput(int q, int r, int level) {
+    public static final class CellInput {
+        private final int q;
+        private final int r;
+        private final int level;
+
+        public CellInput(int q, int r, int level) {
+            this.q = q;
+            this.r = r;
+            this.level = level;
+        }
+
         public static CellInput empty() {
             return new CellInput(0, 0, 0);
         }

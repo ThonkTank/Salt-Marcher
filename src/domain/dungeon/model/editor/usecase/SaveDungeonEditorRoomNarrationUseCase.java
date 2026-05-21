@@ -70,18 +70,21 @@ public final class SaveDungeonEditorRoomNarrationUseCase {
         }
     }
 
-    public record ExitInput(
-            String label,
-            int q,
-            int r,
-            int level,
-            String direction,
-            String description
-    ) {
-        public ExitInput {
-            label = label == null ? "" : label;
-            direction = direction == null ? "" : direction;
-            description = description == null ? "" : description;
+    public static final class ExitInput {
+        private final String label;
+        private final int q;
+        private final int r;
+        private final int level;
+        private final String direction;
+        private final String description;
+
+        public ExitInput(String label, int q, int r, int level, String direction, String description) {
+            this.label = label == null ? "" : label;
+            this.q = q;
+            this.r = r;
+            this.level = level;
+            this.direction = direction == null ? "" : direction;
+            this.description = description == null ? "" : description;
         }
 
         private static ExitInput empty() {

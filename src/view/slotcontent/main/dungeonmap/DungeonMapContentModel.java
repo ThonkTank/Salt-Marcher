@@ -210,10 +210,25 @@ public final class DungeonMapContentModel {
                 : placeholderTitle;
     }
 
-    public record DragDelta(double canvasX, double canvasY) {
+    public static final class DragDelta {
+        private final double canvasX;
+        private final double canvasY;
+
+        private DragDelta(double canvasX, double canvasY) {
+            this.canvasX = canvasX;
+            this.canvasY = canvasY;
+        }
 
         private static DragDelta none() {
             return new DragDelta(0.0, 0.0);
+        }
+
+        public double canvasX() {
+            return canvasX;
+        }
+
+        public double canvasY() {
+            return canvasY;
         }
     }
 
@@ -381,19 +396,6 @@ public final class DungeonMapContentModel {
         return values == null ? List.of() : List.copyOf(values);
     }
 
-    public enum SceneViewMode {
-        GRID,
-        GRAPH;
-
-        public static SceneViewMode graph() {
-            return GRAPH;
-        }
-
-        public static SceneViewMode grid() {
-            return GRID;
-        }
-    }
-
     public record RenderColor(
             int red,
             int green,
@@ -465,7 +467,7 @@ public final class DungeonMapContentModel {
             String summaryLabel,
             boolean sceneLoaded,
             String overlayMessage,
-            SceneViewMode viewMode,
+            boolean gridView,
             List<MapCanvasPolygonPrimitive> surfaces,
             List<BoundaryPrimitive> boundaries,
             List<GlyphPrimitive> glyphs,
@@ -483,7 +485,6 @@ public final class DungeonMapContentModel {
             statusLabel = statusLabel == null ? "" : statusLabel;
             summaryLabel = summaryLabel == null ? "" : summaryLabel;
             overlayMessage = overlayMessage == null ? "" : overlayMessage;
-            viewMode = viewMode == null ? SceneViewMode.GRID : viewMode;
             surfaces = DungeonMapContentModel.copyOf(surfaces);
             boundaries = DungeonMapContentModel.copyOf(boundaries);
             glyphs = DungeonMapContentModel.copyOf(glyphs);
@@ -503,7 +504,7 @@ public final class DungeonMapContentModel {
                     "",
                     false,
                     "No map scene loaded.",
-                    SceneViewMode.GRID,
+                    true,
                     List.of(),
                     List.of(),
                     List.of(),
@@ -515,7 +516,7 @@ public final class DungeonMapContentModel {
         }
 
         public boolean gridView() {
-            return viewMode == SceneViewMode.GRID;
+            return gridView;
         }
     }
 
@@ -917,7 +918,7 @@ public final class DungeonMapContentModel {
                     displayModel.summaryLabel(),
                     displayModel.mapLoaded(),
                     displayModel.overlayMessage(),
-                    displayModel.sceneViewMode(),
+                    !displayModel.isGraphView(),
                     buckets.surfaces(),
                     buckets.boundaries(),
                     buckets.glyphs(),
@@ -3220,12 +3221,6 @@ public final class DungeonMapContentModel {
 
     boolean isGraphView() {
         return viewMode == ViewMode.GRAPH;
-    }
-
-    SceneViewMode sceneViewMode() {
-        return isGraphView()
-                ? SceneViewMode.graph()
-                : SceneViewMode.grid();
     }
 
     String statusLabel() {

@@ -69,37 +69,48 @@ public final class BuildDungeonEditorMainViewInputUseCase {
         }
 
         private DungeonEditorMainViewPointerTarget pointerTarget() {
-            return switch (targetKind) {
-                case EMPTY -> DungeonEditorMainViewPointerTarget.empty();
-                case CELL -> DungeonEditorMainViewPointerTarget.cell(
+            if (targetKind == TargetKindInput.CELL) {
+                return DungeonEditorMainViewPointerTarget.cell(
                         elementKind.topologyKind(),
                         ownerId,
                         clusterId,
                         topologyRef.topologyRef());
-                case LABEL -> DungeonEditorMainViewPointerTarget.label(
+            }
+            if (targetKind == TargetKindInput.LABEL) {
+                return DungeonEditorMainViewPointerTarget.label(
                         ownerId,
                         clusterId,
                         topologyRef.topologyRef());
-                case GRAPH_NODE -> DungeonEditorMainViewPointerTarget.graphNode(
+            }
+            if (targetKind == TargetKindInput.GRAPH_NODE) {
+                return DungeonEditorMainViewPointerTarget.graphNode(
                         ownerId,
                         clusterId,
                         topologyRef.topologyRef());
-                case HANDLE -> DungeonEditorMainViewPointerTarget.handle(handleRef.handleRef());
-                case BOUNDARY -> DungeonEditorMainViewPointerTarget.boundary(
+            }
+            if (targetKind == TargetKindInput.HANDLE) {
+                return DungeonEditorMainViewPointerTarget.handle(handleRef.handleRef());
+            }
+            if (targetKind == TargetKindInput.BOUNDARY) {
+                return DungeonEditorMainViewPointerTarget.boundary(
                         boundaryRef.kind().boundaryKind(),
                         boundaryRef.key(),
                         boundaryRef.ownerId(),
                         boundaryRef.topologyRef().topologyRef(),
                         boundaryRef.start().cell(),
                         boundaryRef.end().cell());
-            };
+            }
+            return DungeonEditorMainViewPointerTarget.empty();
         }
     }
 
-    public record TopologyRefInput(TopologyKindInput kind, long id) {
-        public TopologyRefInput {
-            kind = kind == null ? TopologyKindInput.EMPTY : kind;
-            id = Math.max(0L, id);
+    public static final class TopologyRefInput {
+        private final TopologyKindInput kind;
+        private final long id;
+
+        public TopologyRefInput(TopologyKindInput kind, long id) {
+            this.kind = kind == null ? TopologyKindInput.EMPTY : kind;
+            this.id = Math.max(0L, id);
         }
 
         public static TopologyRefInput empty() {
@@ -189,7 +200,17 @@ public final class BuildDungeonEditorMainViewInputUseCase {
         }
     }
 
-    public record CellInput(int q, int r, int level) {
+    public static final class CellInput {
+        private final int q;
+        private final int r;
+        private final int level;
+
+        public CellInput(int q, int r, int level) {
+            this.q = q;
+            this.r = r;
+            this.level = level;
+        }
+
         public static CellInput empty() {
             return new CellInput(0, 0, 0);
         }
@@ -199,76 +220,148 @@ public final class BuildDungeonEditorMainViewInputUseCase {
         }
     }
 
-    public enum TargetKindInput {
-        EMPTY,
-        CELL,
-        LABEL,
-        GRAPH_NODE,
-        HANDLE,
-        BOUNDARY;
+    public static final class TargetKindInput implements NamedInput {
+        public static final TargetKindInput EMPTY = new TargetKindInput("EMPTY");
+        public static final TargetKindInput CELL = new TargetKindInput("CELL");
+        public static final TargetKindInput LABEL = new TargetKindInput("LABEL");
+        public static final TargetKindInput GRAPH_NODE = new TargetKindInput("GRAPH_NODE");
+        public static final TargetKindInput HANDLE = new TargetKindInput("HANDLE");
+        public static final TargetKindInput BOUNDARY = new TargetKindInput("BOUNDARY");
+        private static final TargetKindInput[] VALUES = {EMPTY, CELL, LABEL, GRAPH_NODE, HANDLE, BOUNDARY};
+
+        private final String name;
+
+        private TargetKindInput(String name) {
+            this.name = name;
+        }
 
         public static TargetKindInput fromName(String name) {
             if (name == null || name.isBlank()) {
                 return EMPTY;
             }
-            return valueOf(name.trim());
+            return findByName(VALUES, name.trim(), "target kind");
+        }
+
+        public String name() {
+            return name;
         }
     }
 
-    public enum TopologyKindInput {
-        EMPTY,
-        ROOM,
-        CORRIDOR,
-        CORRIDOR_ANCHOR,
-        DOOR,
-        WALL,
-        STAIR,
-        TRANSITION;
+    public static final class TopologyKindInput implements NamedInput {
+        public static final TopologyKindInput EMPTY = new TopologyKindInput("EMPTY");
+        public static final TopologyKindInput ROOM = new TopologyKindInput("ROOM");
+        public static final TopologyKindInput CORRIDOR = new TopologyKindInput("CORRIDOR");
+        public static final TopologyKindInput CORRIDOR_ANCHOR = new TopologyKindInput("CORRIDOR_ANCHOR");
+        public static final TopologyKindInput DOOR = new TopologyKindInput("DOOR");
+        public static final TopologyKindInput WALL = new TopologyKindInput("WALL");
+        public static final TopologyKindInput STAIR = new TopologyKindInput("STAIR");
+        public static final TopologyKindInput TRANSITION = new TopologyKindInput("TRANSITION");
+        private static final TopologyKindInput[] VALUES = {
+                EMPTY,
+                ROOM,
+                CORRIDOR,
+                CORRIDOR_ANCHOR,
+                DOOR,
+                WALL,
+                STAIR,
+                TRANSITION
+        };
+
+        private final String name;
+
+        private TopologyKindInput(String name) {
+            this.name = name;
+        }
 
         public static TopologyKindInput fromName(String name) {
             if (name == null || name.isBlank()) {
                 return EMPTY;
             }
-            return valueOf(name.trim());
+            return findByName(VALUES, name.trim(), "topology kind");
         }
 
         private DungeonTopologyElementKind topologyKind() {
             return DungeonTopologyElementKind.valueOf(name());
         }
+
+        public String name() {
+            return name;
+        }
     }
 
-    public enum HandleKindInput {
-        CLUSTER_LABEL,
-        DOOR,
-        CORRIDOR_ANCHOR,
-        CORRIDOR_WAYPOINT,
-        STAIR_ANCHOR;
+    public static final class HandleKindInput implements NamedInput {
+        public static final HandleKindInput CLUSTER_LABEL = new HandleKindInput("CLUSTER_LABEL");
+        public static final HandleKindInput DOOR = new HandleKindInput("DOOR");
+        public static final HandleKindInput CORRIDOR_ANCHOR = new HandleKindInput("CORRIDOR_ANCHOR");
+        public static final HandleKindInput CORRIDOR_WAYPOINT = new HandleKindInput("CORRIDOR_WAYPOINT");
+        public static final HandleKindInput STAIR_ANCHOR = new HandleKindInput("STAIR_ANCHOR");
+        private static final HandleKindInput[] VALUES = {
+                CLUSTER_LABEL,
+                DOOR,
+                CORRIDOR_ANCHOR,
+                CORRIDOR_WAYPOINT,
+                STAIR_ANCHOR
+        };
+
+        private final String name;
+
+        private HandleKindInput(String name) {
+            this.name = name;
+        }
 
         public static HandleKindInput fromName(String name) {
             if (name == null || name.isBlank()) {
                 return CLUSTER_LABEL;
             }
-            return valueOf(name.trim());
+            return findByName(VALUES, name.trim(), "handle kind");
         }
 
         private DungeonEditorHandleType handleType() {
             return DungeonEditorHandleType.valueOf(name());
         }
+
+        public String name() {
+            return name;
+        }
     }
 
-    public enum BoundaryKindInput {
-        WALL,
-        DOOR;
+    public static final class BoundaryKindInput implements NamedInput {
+        public static final BoundaryKindInput WALL = new BoundaryKindInput("WALL");
+        public static final BoundaryKindInput DOOR = new BoundaryKindInput("DOOR");
+        private static final BoundaryKindInput[] VALUES = {WALL, DOOR};
+
+        private final String name;
+
+        private BoundaryKindInput(String name) {
+            this.name = name;
+        }
 
         public static BoundaryKindInput fromName(String name) {
             if (name == null || name.isBlank()) {
                 return WALL;
             }
-            return valueOf(name.trim());
+            return findByName(VALUES, name.trim(), "boundary kind");
         }
 
         private DungeonEditorWorkspaceValues.BoundaryKind boundaryKind() {
             return DungeonEditorWorkspaceValues.BoundaryKind.fromExternalKind(name());
         }
+
+        public String name() {
+            return name;
+        }
+    }
+
+    private interface NamedInput {
+        String name();
+    }
+
+    private static <T extends NamedInput> T findByName(T[] values, String name, String label) {
+        for (T value : values) {
+            if (value.name().equals(name)) {
+                return value;
+            }
+        }
+        throw new IllegalArgumentException("No " + label + " input constant " + name);
     }
 }
