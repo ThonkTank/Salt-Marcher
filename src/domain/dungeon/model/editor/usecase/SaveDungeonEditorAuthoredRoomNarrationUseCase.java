@@ -2,12 +2,10 @@ package src.domain.dungeon.model.editor.usecase;
 
 import java.util.Objects;
 import src.domain.dungeon.model.editor.helper.DungeonEditorAuthoredOperationHelper;
-import src.domain.dungeon.model.editor.model.session.model.DungeonEditorDungeonState;
 import src.domain.dungeon.model.editor.model.session.model.DungeonEditorRoomNarrationInput;
 import src.domain.dungeon.model.editor.model.workspace.model.DungeonEditorWorkspaceValues;
 import src.domain.dungeon.model.editor.model.workspace.model.DungeonEditorWorkspaceValues.MapId;
 import src.domain.dungeon.model.map.model.DungeonMapIdentity;
-import src.domain.dungeon.model.map.repository.DungeonAuthoredPublishedStateRepository;
 import src.domain.dungeon.model.map.usecase.ApplyDungeonAuthoredMutationUseCase;
 import src.domain.dungeon.model.map.usecase.ApplyDungeonEditorOperationUseCase;
 
@@ -18,13 +16,10 @@ public final class SaveDungeonEditorAuthoredRoomNarrationUseCase {
 
     public SaveDungeonEditorAuthoredRoomNarrationUseCase(
             ApplyDungeonAuthoredMutationUseCase mutationUseCase,
-            DungeonAuthoredPublishedStateRepository publishedStateRepository,
-            DungeonEditorDungeonState state
+            PublishDungeonEditorAuthoredMutationUseCase publishMutationUseCase
     ) {
         this.mutationUseCase = Objects.requireNonNull(mutationUseCase, "mutationUseCase");
-        this.publishMutationUseCase = new PublishDungeonEditorAuthoredMutationUseCase(
-                publishedStateRepository,
-                state);
+        this.publishMutationUseCase = Objects.requireNonNull(publishMutationUseCase, "publishMutationUseCase");
     }
 
     public void execute(MapId mapId, DungeonEditorRoomNarrationInput roomNarration) {
