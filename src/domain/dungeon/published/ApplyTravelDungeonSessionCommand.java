@@ -7,6 +7,30 @@ public record ApplyTravelDungeonSessionCommand(
         DungeonOverlaySettings overlaySettings
 ) {
 
+    public static ApplyTravelDungeonSessionCommand projectionLevel(int projectionLevel) {
+        return new ApplyTravelDungeonSessionCommand(
+                Action.SET_PROJECTION_LEVEL,
+                "",
+                projectionLevel,
+                DungeonOverlaySettings.defaults());
+    }
+
+    public static ApplyTravelDungeonSessionCommand overlay(DungeonOverlaySettings overlaySettings) {
+        return new ApplyTravelDungeonSessionCommand(
+                Action.SET_OVERLAY,
+                "",
+                0,
+                overlaySettings);
+    }
+
+    public static ApplyTravelDungeonSessionCommand action(String actionId) {
+        return new ApplyTravelDungeonSessionCommand(
+                Action.ACTION,
+                actionId,
+                0,
+                DungeonOverlaySettings.defaults());
+    }
+
     public ApplyTravelDungeonSessionCommand {
         action = action == null ? Action.REFRESH : action;
         actionId = actionId == null ? "" : actionId.trim();

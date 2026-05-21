@@ -47,17 +47,11 @@ final class DungeonTravelIntentHandler {
             return;
         }
         if (event.projectionLevelShift() != 0) {
-            travel.applyDungeonTravelSession(new ApplyTravelDungeonSessionCommand(
-                    ApplyTravelDungeonSessionCommand.Action.SET_PROJECTION_LEVEL,
-                    "",
-                    presentationModel.currentProjectionLevel() + event.projectionLevelShift(),
-                    DungeonOverlaySettings.defaults()));
+            travel.applyDungeonTravelSession(ApplyTravelDungeonSessionCommand.projectionLevel(
+                    presentationModel.currentProjectionLevel() + event.projectionLevelShift()));
             return;
         }
-        travel.applyDungeonTravelSession(new ApplyTravelDungeonSessionCommand(
-                ApplyTravelDungeonSessionCommand.Action.SET_OVERLAY,
-                "",
-                0,
+        travel.applyDungeonTravelSession(ApplyTravelDungeonSessionCommand.overlay(
                 new DungeonOverlaySettings(
                         event.overlayModeKey(),
                         event.overlayRange(),
@@ -69,11 +63,7 @@ final class DungeonTravelIntentHandler {
         if (event == null) {
             return;
         }
-        travel.applyDungeonTravelSession(new ApplyTravelDungeonSessionCommand(
-                ApplyTravelDungeonSessionCommand.Action.ACTION,
-                event.actionId(),
-                0,
-                DungeonOverlaySettings.defaults()));
+        travel.applyDungeonTravelSession(ApplyTravelDungeonSessionCommand.action(event.actionId()));
     }
 
     private static List<Integer> parseLevels(String rawLevelsText) {
