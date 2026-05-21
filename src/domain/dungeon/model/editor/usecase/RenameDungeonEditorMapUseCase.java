@@ -27,7 +27,7 @@ public final class RenameDungeonEditorMapUseCase {
     }
 
     public void execute(long mapId, String mapName) {
-        if (mapId > 0L) {
+        if (DungeonEditorWorkspaceValues.hasId(mapId)) {
             renameMapUseCase.execute(new DungeonEditorWorkspaceValues.MapId(mapId), mapName);
         }
         DungeonEditorWorkspaceValues.MapId nextMapId = dungeonState.currentFacts(

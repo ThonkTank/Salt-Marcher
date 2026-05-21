@@ -16,8 +16,6 @@ import src.domain.dungeon.model.map.model.DungeonEditorHandleType;
 import src.domain.dungeon.model.map.model.DungeonMapIdentity;
 import src.domain.dungeon.model.map.model.DungeonRoomExitDescription;
 import src.domain.dungeon.model.map.model.DungeonRoomNarration;
-import src.domain.dungeon.model.map.model.DungeonTopologyElementKind;
-import src.domain.dungeon.model.map.model.DungeonTopologyRef;
 import src.domain.dungeon.model.map.repository.DungeonAuthoredPublishedStateRepository;
 
 @SuppressWarnings({"PMD.CouplingBetweenObjects", "PMD.TooManyMethods"})

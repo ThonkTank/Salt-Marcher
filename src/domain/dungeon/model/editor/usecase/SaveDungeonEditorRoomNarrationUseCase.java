@@ -47,7 +47,7 @@ public final class SaveDungeonEditorRoomNarrationUseCase {
         }
 
         private DungeonEditorRoomNarrationInput roomNarration() {
-            java.util.ArrayList<DungeonEditorWorkspaceValues.RoomExitNarration> roomExits =
+            List<DungeonEditorWorkspaceValues.RoomExitNarration> roomExits =
                     new java.util.ArrayList<>(exits.size());
             for (ExitInput exit : exits) {
                 roomExits.add(exit.roomExitNarration());
@@ -62,7 +62,7 @@ public final class SaveDungeonEditorRoomNarrationUseCase {
             if (exits == null || exits.isEmpty()) {
                 return List.of();
             }
-            java.util.ArrayList<ExitInput> safeExits = new java.util.ArrayList<>(exits.size());
+            List<ExitInput> safeExits = new java.util.ArrayList<>(exits.size());
             for (ExitInput exit : exits) {
                 safeExits.add(exit == null ? ExitInput.empty() : exit);
             }

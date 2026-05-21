@@ -30,7 +30,7 @@ public final class DeleteDungeonEditorMapUseCase {
     }
 
     public void execute(long mapId) {
-        if (mapId > 0L) {
+        if (DungeonEditorWorkspaceValues.hasId(mapId)) {
             deleteMapUseCase.execute(new DungeonEditorWorkspaceValues.MapId(mapId));
         }
         DungeonEditorWorkspaceValues.MapId nextMapId = dungeonState.currentFacts(

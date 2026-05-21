@@ -242,6 +242,7 @@ public final class BuildDungeonEditorMainViewInputUseCase {
             return findByName(VALUES, name.trim(), "target kind");
         }
 
+        @Override
         public String name() {
             return name;
         }
@@ -284,6 +285,7 @@ public final class BuildDungeonEditorMainViewInputUseCase {
             return DungeonTopologyElementKind.valueOf(name());
         }
 
+        @Override
         public String name() {
             return name;
         }
@@ -320,6 +322,7 @@ public final class BuildDungeonEditorMainViewInputUseCase {
             return DungeonEditorHandleType.valueOf(name());
         }
 
+        @Override
         public String name() {
             return name;
         }
@@ -347,6 +350,7 @@ public final class BuildDungeonEditorMainViewInputUseCase {
             return DungeonEditorWorkspaceValues.BoundaryKind.fromExternalKind(name());
         }
 
+        @Override
         public String name() {
             return name;
         }
