@@ -3,7 +3,6 @@ package src.view.leftbartabs.dungeoneditor;
 import java.util.List;
 import java.util.Objects;
 import javafx.beans.value.ChangeListener;
-import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
@@ -65,12 +64,11 @@ final class DungeonEditorMapControlsView {
         deleteMapItem.setOnAction(event -> mapEditorPopup.openDelete());
         panelView.describeNode(mapActionButton, "Neuen Dungeon erstellen; weitere Dungeon-Aktionen im Menü");
 
-        DungeonEditorControlsFxAccess.addStyle(statusLabel, "text-muted");
+        DungeonEditorControlsFxAccess.addStyles(statusLabel, "text-muted", "dungeon-map-status-label");
         statusLabel.setWrapText(false);
         statusLabel.setVisible(false);
         statusLabel.setManaged(false);
         statusLabel.setMinWidth(0.0);
-        statusLabel.setMaxWidth(160.0);
 
         HBox.setHgrow(mapSelector, Priority.ALWAYS);
         row = panelView.controlsRow(mapSelector, mapActionButton, statusLabel);
@@ -166,20 +164,22 @@ final class DungeonEditorMapEditorPopup {
         errorLabel.setVisible(false);
 
         DungeonEditorControlsFxAccess.addStyle(deleteLabel, "text-warning");
-        deleteConfirmRow = new HBox(8, deleteLabel, panelView.rowSpacer(), cancelDeleteButton, confirmDeleteButton);
+        deleteConfirmRow = new HBox(deleteLabel, panelView.rowSpacer(), cancelDeleteButton, confirmDeleteButton);
+        DungeonEditorControlsFxAccess.addStyle(deleteConfirmRow, "dungeon-editor-popup-actions");
         deleteConfirmRow.setVisible(false);
         deleteConfirmRow.setManaged(false);
 
-        actionRow = new HBox(8, cancelButton, panelView.rowSpacer(), saveButton);
+        actionRow = new HBox(cancelButton, panelView.rowSpacer(), saveButton);
+        DungeonEditorControlsFxAccess.addStyle(actionRow, "dungeon-editor-popup-actions");
         actionRow.setAlignment(Pos.CENTER_LEFT);
 
-        VBox body = new VBox(10, draftFieldLabel, draftField, errorLabel, deleteConfirmRow);
+        VBox body = new VBox(draftFieldLabel, draftField, errorLabel, deleteConfirmRow);
+        DungeonEditorControlsFxAccess.addStyle(body, "dungeon-editor-popup-body");
         DialogSurfaceContentModel dialogContentModel = new DialogSurfaceContentModel();
         DialogSurfaceView panel = new DialogSurfaceView(titleLabel, body, actionRow);
         panel.bind(dialogContentModel);
         dialogContentModel.showLayout(DialogSurfaceContentModel.BodyPolicy.FIXED, true, true);
-        panel.setPadding(new Insets(10));
-        DungeonEditorControlsFxAccess.addStyles(panel, "dropdown-window", "dropdown-form");
+        DungeonEditorControlsFxAccess.addStyles(panel, "dropdown-window", "dropdown-form", "dungeon-editor-popup");
         popup = new AnchoredPopupView(panel, () -> this.anchor, () -> draftField);
         popup.bind(popupContentModel);
         popup.onViewInputEvent(event -> {

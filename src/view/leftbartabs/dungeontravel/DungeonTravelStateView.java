@@ -3,7 +3,6 @@ package src.view.leftbartabs.dungeontravel;
 import java.util.List;
 import java.util.function.Consumer;
 import javafx.beans.property.StringProperty;
-import javafx.geometry.Insets;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
@@ -16,9 +15,7 @@ public final class DungeonTravelStateView extends VBox {
     private Consumer<DungeonTravelStateViewInputEvent> viewInputEventHandler = ignored -> {};
 
     public DungeonTravelStateView() {
-        setSpacing(12);
-        setPadding(new Insets(12));
-        getStyleClass().addAll("surface-root", "control-stack");
+        getStyleClass().addAll("surface-root", "control-stack", "dungeon-state-panel");
         body.setWrapText(true);
         getChildren().add(new StateCard(body, actions));
     }

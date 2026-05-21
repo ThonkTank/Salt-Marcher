@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 import javafx.beans.property.StringProperty;
-import javafx.geometry.Insets;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextArea;
@@ -20,9 +19,7 @@ public final class DungeonEditorStateView extends VBox {
     private Consumer<DungeonEditorStateViewInputEvent> viewInputEventHandler = ignored -> {};
 
     public DungeonEditorStateView() {
-        setSpacing(12);
-        setPadding(new Insets(12));
-        getStyleClass().addAll("surface-root", "control-stack");
+        getStyleClass().addAll("surface-root", "control-stack", "dungeon-state-panel");
         getChildren().addAll(createStateCard(), narrationCards);
     }
 

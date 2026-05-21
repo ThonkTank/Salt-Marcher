@@ -1,7 +1,6 @@
 package src.view.slotcontent.controls.dungeoncontrol;
 
 import java.util.function.Consumer;
-import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
@@ -25,9 +24,7 @@ public class DungeonControlPanelView extends VBox {
 
     @SuppressWarnings("PMD.ConstructorCallsOverridableMethod")
     public DungeonControlPanelView(String titleText) {
-        setSpacing(6);
-        setPadding(new Insets(8));
-        getStyleClass().add("surface-root");
+        getStyleClass().addAll("surface-root", "dungeon-control-panel");
         if (titleText != null && !titleText.isBlank()) {
             getChildren().add(new Label(titleText));
         }
@@ -136,13 +133,12 @@ public class DungeonControlPanelView extends VBox {
         private String displayedSelectedLevels = "";
 
         private OverlayPopupContentView() {
-            super(6);
             FxAccess.setComboItems(modeSelector, DungeonControlPanelContentModel.Mode.values());
             modeSelector.setMaxWidth(Double.MAX_VALUE);
             HBox.setHgrow(modeSelector, Priority.ALWAYS);
 
             rangeSpinner.setEditable(true);
-            rangeSpinner.setPrefWidth(84);
+            FxAccess.addStyle(rangeSpinner, "dungeon-overlay-range-spinner");
 
             opacitySlider.setShowTickMarks(false);
             opacitySlider.setShowTickLabels(false);
@@ -158,8 +154,7 @@ public class DungeonControlPanelView extends VBox {
             rangeRow = row(new Label("Umfang"), rangeSpinner);
             selectedRow = row(new Label("Ebenen"), selectedLevelsField);
             getChildren().addAll(sectionLabel("Overlay"), modeRow, opacityRow, rangeRow, selectedRow);
-            setPadding(new Insets(8));
-            getStyleClass().addAll("filter-dropdown", "dungeon-overlay-dropdown");
+            getStyleClass().addAll("filter-dropdown", "dungeon-overlay-dropdown", "dungeon-overlay-content");
             configureListeners();
         }
 

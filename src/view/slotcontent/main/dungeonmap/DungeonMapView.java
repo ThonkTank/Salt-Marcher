@@ -6,7 +6,6 @@ import java.util.Map;
 import java.util.function.Consumer;
 import javafx.beans.InvalidationListener;
 import javafx.beans.value.ChangeListener;
-import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
@@ -62,8 +61,7 @@ public class DungeonMapView extends BorderPane {
     private double[] polygonYBuffer = new double[0];
 
     public DungeonMapView() {
-        getStyleClass().add(SURFACE_ROOT_STYLE);
-        setPadding(new Insets(8));
+        getStyleClass().addAll(SURFACE_ROOT_STYLE, "dungeon-map-surface");
         host.getStyleClass().add(CONTENT_STYLE);
         host.setAlignment(Pos.CENTER);
         canvas.getStyleClass().add(CANVAS_STYLE);

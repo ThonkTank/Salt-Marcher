@@ -763,6 +763,9 @@
     -fx-background-color: linear-gradient(to bottom, #151b20, #0f1418);
     -fx-background-radius: 10;
 }
+.dungeon-map-surface {
+    -fx-padding: 8;
+}
 .dungeon-map-canvas {
     -fx-background-color: #12181c;
 }
@@ -787,9 +790,16 @@
     -fx-spacing: 0;
     -fx-alignment: center-left;
 }
+.dungeon-control-panel {
+    -fx-padding: 8;
+    -fx-spacing: 6;
+}
 .dungeon-control-map-row,
 .dungeon-control-projection-row {
     -fx-min-height: 30;
+}
+.dungeon-map-status-label {
+    -fx-max-width: 160;
 }
 .dungeon-control-tool-row {
     -fx-padding: 0 0 2 0;
@@ -811,6 +821,24 @@
 }
 .dungeon-overlay-dropdown {
     -fx-min-width: 180;
+}
+.dungeon-overlay-content {
+    -fx-spacing: 6;
+}
+.dungeon-overlay-range-spinner {
+    -fx-pref-width: 84;
+}
+.dungeon-editor-popup {
+    -fx-padding: 10;
+}
+.dungeon-editor-popup-actions {
+    -fx-spacing: 8;
+}
+.dungeon-editor-popup-body {
+    -fx-spacing: 10;
+}
+.dungeon-state-panel {
+    -fx-padding: 12;
 }
 
 .control-toolbar {

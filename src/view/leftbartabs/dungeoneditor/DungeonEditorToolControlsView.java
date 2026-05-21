@@ -1,6 +1,5 @@
 package src.view.leftbartabs.dungeoneditor;
 
-import javafx.geometry.Insets;
 import javafx.scene.control.Button;
 import javafx.scene.control.ToggleButton;
 import javafx.scene.control.ToggleGroup;
@@ -164,9 +163,13 @@ final class DungeonEditorToolPalettePopupView {
     DungeonEditorToolPalettePopupView(DungeonEditorControlsEvents events, DungeonEditorToolControlsView toolControls) {
         this.events = events;
         this.toolControls = toolControls;
-        HBox panel = new HBox(8, primaryToolOption, secondaryToolOption);
-        panel.setPadding(new Insets(10));
-        DungeonEditorControlsFxAccess.addStyles(panel, "dropdown-window", "dropdown-form");
+        HBox panel = new HBox(primaryToolOption, secondaryToolOption);
+        DungeonEditorControlsFxAccess.addStyles(
+                panel,
+                "dropdown-window",
+                "dropdown-form",
+                "dungeon-editor-popup",
+                "dungeon-editor-popup-actions");
         popup = new AnchoredPopupView(panel, () -> anchor, () -> primaryToolOption);
         popup.bind(popupContentModel);
         popup.onViewInputEvent(event -> {
