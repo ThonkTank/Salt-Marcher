@@ -1,4 +1,4 @@
-package src.data.travel.mapper;
+package src.data.dungeon.mapper;
 
 import java.util.List;
 import org.jspecify.annotations.Nullable;
@@ -17,10 +17,8 @@ import src.domain.dungeon.published.DungeonCellRef;
 import src.domain.dungeon.published.DungeonFeatureSnapshot;
 import src.domain.dungeon.published.DungeonMapSnapshot;
 
+@SuppressWarnings("PMD.UseUtilityClass")
 public final class TravelDungeonSessionMapMapper {
-
-    private TravelDungeonSessionMapMapper() {
-    }
 
     public static MapData toInternalMap(@Nullable DungeonMapSnapshot map) {
         DungeonMapSnapshot safeMap = map == null ? DungeonMapSnapshot.empty() : map;

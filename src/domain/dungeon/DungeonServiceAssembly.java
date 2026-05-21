@@ -20,7 +20,6 @@ import src.domain.dungeon.model.map.model.DungeonMapIdentity;
 import src.domain.dungeon.model.map.model.DungeonState;
 import src.domain.dungeon.model.map.model.DungeonTopology;
 import src.domain.dungeon.model.map.model.DungeonTopologyRef;
-import src.domain.dungeon.model.map.model.DungeonEditorHandleType;
 import src.domain.dungeon.model.map.model.DungeonTravelActionFacts;
 import src.domain.dungeon.model.map.model.DungeonTravelExternalTargetFacts;
 import src.domain.dungeon.model.map.model.DungeonTravelMoveFacts;
@@ -108,7 +107,6 @@ import src.domain.dungeon.published.DungeonAuthoredMutationModel;
 import src.domain.dungeon.published.DungeonAuthoredMutationResult;
 import src.domain.dungeon.published.DungeonAuthoredReadModel;
 import src.domain.dungeon.published.DungeonAuthoredReadResult;
-import src.domain.dungeon.published.DungeonBoundaryKind;
 import src.domain.dungeon.published.DungeonBoundarySnapshot;
 import src.domain.dungeon.published.DungeonCellRef;
 import src.domain.dungeon.published.DungeonEditorControlsModel;
@@ -424,7 +422,7 @@ final class DungeonServiceAssembly {
         }
         Objects.requireNonNull(registry, "registry");
         ApplyTravelDungeonSessionUseCase applyUseCase = new ApplyTravelDungeonSessionUseCase(
-                registry.require(TravelDungeonSessionRepository.class));
+                travelDungeonSessionRuntimeAccess(registry));
         TravelRuntimeComponent.PublishedState publishedState = new TravelRuntimeComponent.PublishedState();
         publishedState.publishCurrentSession(applyUseCase.snapshot());
         PublishTravelDungeonSessionUseCase publishUseCase =
@@ -435,6 +433,10 @@ final class DungeonServiceAssembly {
         return travelRuntime.compareAndSet(null, candidate)
                 ? candidate
                 : Objects.requireNonNull(travelRuntime.get(), "travelRuntime");
+    }
+
+    private static TravelDungeonSessionRepository travelDungeonSessionRuntimeAccess(ServiceRegistry registry) {
+        return registry.require(TravelDungeonSessionRepository.class);
     }
 
     private record TravelRuntimeComponent(

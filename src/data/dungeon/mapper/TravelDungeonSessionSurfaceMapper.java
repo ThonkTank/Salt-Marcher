@@ -1,4 +1,4 @@
-package src.data.travel.mapper;
+package src.data.dungeon.mapper;
 
 import java.util.List;
 import org.jspecify.annotations.Nullable;
@@ -22,10 +22,8 @@ import src.domain.dungeon.published.DungeonTravelMoveResult;
 import src.domain.dungeon.published.DungeonTravelPosition;
 import src.domain.dungeon.published.DungeonTravelSurfaceSnapshot;
 
+@SuppressWarnings("PMD.UseUtilityClass")
 public final class TravelDungeonSessionSurfaceMapper {
-
-    private TravelDungeonSessionSurfaceMapper() {
-    }
 
     public static SurfaceData toInternalSurface(@Nullable DungeonTravelSurfaceSnapshot surface) {
         if (surface == null) {
@@ -56,8 +54,8 @@ public final class TravelDungeonSessionSurfaceMapper {
         OverworldTarget externalTarget =
                 result.externalTarget() instanceof DungeonTravelExternalTarget.OverworldTile overworld
                         ? new OverworldTarget(
-                        overworld.mapId(),
-                        overworld.tileId())
+                                overworld.mapId(),
+                                overworld.tileId())
                         : null;
         return new MoveResultData(
                 MoveStatus.valueOf(result.status().name()),

@@ -1,4 +1,4 @@
-package src.data.travel.repository;
+package src.data.dungeon.repository;
 
 import java.util.List;
 import java.util.Objects;
@@ -27,14 +27,14 @@ import src.domain.party.published.PartyTravelPositionsResult;
 import src.domain.party.published.PartyTravelTile;
 import src.domain.party.published.ReadStatus;
 
-public final class ApplicationTravelPartyStateRepository {
+final class ApplicationTravelPartyStateRepository {
 
     private final PartyApplicationService party;
     private final ActivePartyModel activePartyModel;
     private final PartyTravelPositionsModel partyTravelPositionsModel;
     private final PartyMutationModel partyMutationModel;
 
-    public ApplicationTravelPartyStateRepository(
+    ApplicationTravelPartyStateRepository(
             PartyApplicationService party,
             ActivePartyModel activePartyModel,
             PartyTravelPositionsModel partyTravelPositionsModel,
@@ -46,7 +46,7 @@ public final class ApplicationTravelPartyStateRepository {
         this.partyMutationModel = Objects.requireNonNull(partyMutationModel, "partyMutationModel");
     }
 
-    public ActiveTravelStateData loadActiveTravelState() {
+    ActiveTravelStateData loadActiveTravelState() {
         ActivePartyResult activeParty = activePartyModel.current();
         List<Long> activeCharacterIds = activeParty.status() == ReadStatus.SUCCESS
                 ? activeParty.members().stream()
@@ -63,7 +63,7 @@ public final class ApplicationTravelPartyStateRepository {
                 toInternalPartyLocation(travelPositions.partyTokenLocation()));
     }
 
-    public void saveDungeonPosition(PositionData position, List<Long> characterIds) {
+    void saveDungeonPosition(PositionData position, List<Long> characterIds) {
         if (position == null || characterIds == null || characterIds.isEmpty()) {
             return;
         }
@@ -80,7 +80,7 @@ public final class ApplicationTravelPartyStateRepository {
                 true));
     }
 
-    public boolean saveOverworldPosition(OverworldTarget target, List<Long> characterIds) {
+    boolean saveOverworldPosition(OverworldTarget target, List<Long> characterIds) {
         if (target == null || characterIds == null || characterIds.isEmpty()) {
             return false;
         }

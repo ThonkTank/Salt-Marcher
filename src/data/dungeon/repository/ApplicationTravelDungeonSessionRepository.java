@@ -1,9 +1,9 @@
-package src.data.travel.repository;
+package src.data.dungeon.repository;
 
 import java.util.List;
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
-import src.data.travel.mapper.TravelDungeonSessionSurfaceMapper;
+import src.data.dungeon.mapper.TravelDungeonSessionSurfaceMapper;
 import src.domain.dungeon.DungeonTravelApplicationService;
 import src.domain.dungeon.model.travel.model.session.model.TravelDungeonActiveState.ActiveTravelStateData;
 import src.domain.dungeon.model.travel.model.session.model.TravelDungeonSessionMovement.MoveResultData;
@@ -16,6 +16,10 @@ import src.domain.dungeon.published.DungeonTravelModel;
 import src.domain.dungeon.published.DungeonTravelMoveResult;
 import src.domain.dungeon.published.DungeonTravelResponse;
 import src.domain.dungeon.published.DungeonTravelSurfaceSnapshot;
+import src.domain.party.PartyApplicationService;
+import src.domain.party.published.ActivePartyModel;
+import src.domain.party.published.PartyMutationModel;
+import src.domain.party.published.PartyTravelPositionsModel;
 
 public final class ApplicationTravelDungeonSessionRepository implements TravelDungeonSessionRepository {
 
@@ -24,11 +28,18 @@ public final class ApplicationTravelDungeonSessionRepository implements TravelDu
     private final DungeonTravelModel dungeonTravelModel;
 
     public ApplicationTravelDungeonSessionRepository(
-            ApplicationTravelPartyStateRepository partyStateRepository,
+            PartyApplicationService party,
+            ActivePartyModel activePartyModel,
+            PartyTravelPositionsModel partyTravelPositionsModel,
+            PartyMutationModel partyMutationModel,
             DungeonTravelApplicationService dungeonTravelApplicationService,
             DungeonTravelModel dungeonTravelModel
     ) {
-        this.partyStateRepository = Objects.requireNonNull(partyStateRepository, "partyStateRepository");
+        this.partyStateRepository = new ApplicationTravelPartyStateRepository(
+                party,
+                activePartyModel,
+                partyTravelPositionsModel,
+                partyMutationModel);
         this.dungeonTravelApplicationService =
                 Objects.requireNonNull(dungeonTravelApplicationService, "dungeonTravelApplicationService");
         this.dungeonTravelModel = Objects.requireNonNull(dungeonTravelModel, "dungeonTravelModel");
