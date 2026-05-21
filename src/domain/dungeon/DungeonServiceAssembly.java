@@ -1,16 +1,13 @@
 package src.domain.dungeon;
 
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.function.Consumer;
 import org.jspecify.annotations.Nullable;
 import shell.api.ServiceRegistry;
-import src.domain.dungeon.model.editor.model.interaction.model.DungeonEditorBoundaryTouchGeometry;
 import src.domain.dungeon.model.map.model.DungeonAreaFacts;
 import src.domain.dungeon.model.map.model.DungeonAreaType;
 import src.domain.dungeon.model.map.model.DungeonCell;
@@ -83,6 +80,7 @@ import src.domain.dungeon.model.map.usecase.LoadDungeonSnapshotUseCase;
 import src.domain.dungeon.model.map.usecase.PublishDungeonEditorHandlesUseCase;
 import src.domain.dungeon.model.map.usecase.RefreshDungeonAuthoredUseCase;
 import src.domain.dungeon.model.map.usecase.RenameDungeonMapUseCase;
+import src.domain.dungeon.model.map.usecase.RouteDungeonMapCatalogCommandUseCase;
 import src.domain.dungeon.model.map.usecase.SearchDungeonMapsUseCase;
 import src.domain.dungeon.model.travel.model.session.model.TravelDungeonSessionSnapshot.SnapshotData;
 import src.domain.dungeon.model.travel.model.session.model.TravelDungeonSessionSurface.AvailableAction;
@@ -100,6 +98,7 @@ import src.domain.dungeon.model.travel.usecase.ApplyTravelDungeonSessionUseCase;
 import src.domain.dungeon.model.travel.usecase.LoadDungeonTravelSurfaceUseCase;
 import src.domain.dungeon.model.travel.usecase.MoveDungeonTravelActionUseCase;
 import src.domain.dungeon.model.travel.usecase.PublishTravelDungeonSessionUseCase;
+import src.domain.dungeon.model.travel.usecase.RouteDungeonTravelCommandUseCase;
 import src.domain.dungeon.published.DungeonAreaKind;
 import src.domain.dungeon.published.DungeonAreaSnapshot;
 import src.domain.dungeon.published.DungeonAuthoredMutationModel;
@@ -114,7 +113,6 @@ import src.domain.dungeon.published.DungeonEditorControlsSnapshot;
 import src.domain.dungeon.published.DungeonEditorHandleKind;
 import src.domain.dungeon.published.DungeonEditorHandleRef;
 import src.domain.dungeon.published.DungeonEditorHandleSnapshot;
-import src.domain.dungeon.published.DungeonEditorMapProjectionSnapshot;
 import src.domain.dungeon.published.DungeonEditorMapSurfaceModel;
 import src.domain.dungeon.published.DungeonEditorMapSurfaceSnapshot;
 import src.domain.dungeon.published.DungeonEditorMapSnapshot;
@@ -133,7 +131,6 @@ import src.domain.dungeon.published.DungeonMapCatalogModel;
 import src.domain.dungeon.published.DungeonMapCatalogResponse;
 import src.domain.dungeon.published.DungeonMapId;
 import src.domain.dungeon.published.DungeonMapMode;
-import src.domain.dungeon.published.DungeonMapProjectionContent;
 import src.domain.dungeon.published.DungeonMapSnapshot;
 import src.domain.dungeon.published.DungeonMapSummary;
 import src.domain.dungeon.published.DungeonOperationResult;
@@ -194,22 +191,27 @@ final class DungeonServiceAssembly {
     DungeonCatalogApplicationService createCatalogApplicationService(ServiceRegistry registry) {
         DungeonPublishedState publishedState = authoredPublishedState(registry);
         DungeonMapRepository repository = registry.require(DungeonMapRepository.class);
-        return new DungeonCatalogApplicationService(new ApplyDungeonMapCatalogUseCase(
-                new SearchDungeonMapsUseCase(repository),
-                new CreateDungeonMapUseCase(repository),
-                new RenameDungeonMapUseCase(repository),
-                new DeleteDungeonMapUseCase(repository)),
-                publishedState);
+        return new DungeonCatalogApplicationService(new RouteDungeonMapCatalogCommandUseCase(
+                new ApplyDungeonMapCatalogUseCase(
+                        new SearchDungeonMapsUseCase(repository),
+                        new CreateDungeonMapUseCase(repository),
+                        new RenameDungeonMapUseCase(repository),
+                        new DeleteDungeonMapUseCase(repository)),
+                publishedState));
     }
 
     DungeonTravelApplicationService createTravelApplicationService(ServiceRegistry registry) {
         DungeonPublishedState publishedState = authoredPublishedState(registry);
         LoadDungeonMapUseCase loadDungeonMapUseCase = loadDungeonMapUseCase(registry);
         BuildDungeonDerivedStateUseCase derive = new BuildDungeonDerivedStateUseCase();
-        return new DungeonTravelApplicationService(new ApplyDungeonTravelUseCase(
-                new LoadDungeonTravelSurfaceUseCase(loadDungeonMapUseCase, derive),
-                new MoveDungeonTravelActionUseCase(loadDungeonMapUseCase, registry.require(DungeonMapRepository.class), derive)),
-                publishedState);
+        return new DungeonTravelApplicationService(new RouteDungeonTravelCommandUseCase(
+                new ApplyDungeonTravelUseCase(
+                        new LoadDungeonTravelSurfaceUseCase(loadDungeonMapUseCase, derive),
+                        new MoveDungeonTravelActionUseCase(
+                                loadDungeonMapUseCase,
+                                registry.require(DungeonMapRepository.class),
+                                derive)),
+                publishedState));
     }
 
     DungeonTravelRuntimeApplicationService createTravelRuntimeApplicationService(ServiceRegistry registry) {
@@ -601,8 +603,6 @@ final class DungeonServiceAssembly {
 
     private static final class DungeonPublishedState implements
             DungeonAuthoredApplicationService.AuthoredPublication,
-            DungeonCatalogApplicationService.CatalogPublication,
-            DungeonTravelApplicationService.TravelPublication,
             DungeonAuthoredPublishedStateRepository {
 
         private static final String DEFAULT_DUNGEON_NAME = "Dungeon";
@@ -672,22 +672,18 @@ final class DungeonServiceAssembly {
             }
         }
 
-        @Override
         public void publishSearch(ApplyDungeonMapCatalogUseCase.MapCatalogResult result) {
             mapCatalog.publish(new DungeonMapCatalogResponse.MapList(summaries(result)));
         }
 
-        @Override
         public void publishCreated(DungeonMapIdentity mapId) {
             mapCatalog.publish(mapMutation(DungeonMapCatalogResponse.MutationKind.CREATED, mapId));
         }
 
-        @Override
         public void publishRenamed(DungeonMapIdentity mapId) {
             mapCatalog.publish(mapMutation(DungeonMapCatalogResponse.MutationKind.RENAMED, mapId));
         }
 
-        @Override
         public void publishDeleted(DungeonMapIdentity mapId) {
             mapCatalog.publish(mapMutation(DungeonMapCatalogResponse.MutationKind.DELETED, mapId));
         }
@@ -1112,8 +1108,6 @@ final class DungeonServiceAssembly {
         private final List<Consumer<DungeonEditorControlsSnapshot>> controlsListeners = new ArrayList<>();
         private final List<Consumer<DungeonEditorMapSurfaceSnapshot>> mapSurfaceListeners = new ArrayList<>();
         private final List<Consumer<DungeonEditorStateSnapshot>> stateListeners = new ArrayList<>();
-        private final DungeonEditorPublishedSnapshotProjectionServiceAssembly editorProjection =
-                new DungeonEditorPublishedSnapshotProjectionServiceAssembly();
         private final DungeonEditorControlsModel controlsModel = new DungeonEditorControlsModel(
                 this::currentControls,
                 this::subscribeControls);
@@ -1129,11 +1123,12 @@ final class DungeonServiceAssembly {
 
         @Override
         public void publishEditorSnapshot(DungeonEditorSessionSnapshot.SnapshotData snapshot) {
-            DungeonEditorPublishedSnapshotProjectionServiceAssembly.PublishedSnapshots snapshots =
-                    editorProjection.execute(snapshot);
-            currentControls = snapshots.controls();
-            currentMapSurface = snapshots.mapSurface();
-            currentState = snapshots.state();
+            DungeonEditorSessionSnapshot.SnapshotData safeSnapshot =
+                    snapshot == null ? DungeonEditorSessionSnapshot.SnapshotData.empty("") : snapshot;
+            SurfaceContext surfaceContext = surfaceContext(safeSnapshot.surface(), safeSnapshot.projectionLevel());
+            currentControls = toControlsSnapshot(safeSnapshot, surfaceContext);
+            currentMapSurface = toMapSurfaceSnapshot(safeSnapshot, surfaceContext.surface());
+            currentState = toStateSnapshot(safeSnapshot, surfaceContext.surface());
             for (Consumer<DungeonEditorControlsSnapshot> listener : List.copyOf(controlsListeners)) {
                 listener.accept(currentControls);
             }
@@ -1173,6 +1168,468 @@ final class DungeonServiceAssembly {
             Consumer<DungeonEditorStateSnapshot> safeListener = Objects.requireNonNull(listener, "listener");
             stateListeners.add(safeListener);
             return () -> stateListeners.remove(safeListener);
+        }
+
+        private static SurfaceContext surfaceContext(
+                DungeonEditorSessionSnapshot.@Nullable SurfaceData surface,
+                int fallbackLevel
+        ) {
+            SortedSet<Integer> levels = new TreeSet<>();
+            if (surface != null && surface.map() != null) {
+                addWorkspaceMapLevels(levels, surface.map());
+                if (surface.previewMap() != null) {
+                    addWorkspaceMapLevels(levels, surface.previewMap());
+                }
+            }
+            if (levels.isEmpty()) {
+                levels.add(fallbackLevel);
+            }
+            return new SurfaceContext(toPublishedSurface(surface), new ArrayList<>(levels), surface != null);
+        }
+
+        private static void addWorkspaceMapLevels(
+                SortedSet<Integer> levels,
+                DungeonEditorWorkspaceValues.MapSnapshot map
+        ) {
+            for (DungeonEditorWorkspaceValues.Area area : map.areas()) {
+                addWorkspaceCellLevels(levels, area.cells());
+            }
+            for (DungeonEditorWorkspaceValues.Feature feature : map.features()) {
+                addWorkspaceCellLevels(levels, feature.cells());
+            }
+            for (DungeonEditorWorkspaceValues.Handle handle : map.editorHandles()) {
+                levels.add(handle.cell().level());
+            }
+        }
+
+        private static void addWorkspaceCellLevels(
+                SortedSet<Integer> levels,
+                List<DungeonEditorWorkspaceValues.Cell> cells
+        ) {
+            for (DungeonEditorWorkspaceValues.Cell cell
+                    : cells == null ? List.<DungeonEditorWorkspaceValues.Cell>of() : cells) {
+                levels.add(cell.level());
+            }
+        }
+
+        private static DungeonEditorControlsSnapshot toControlsSnapshot(
+                DungeonEditorSessionSnapshot.SnapshotData snapshot,
+                SurfaceContext surfaceContext
+        ) {
+            return new DungeonEditorControlsSnapshot(
+                    publishedMapSummaries(snapshot.maps()),
+                    toPublishedMapId(snapshot.selectedMapId()),
+                    toPublishedViewMode(snapshot.viewMode()),
+                    toPublishedTool(snapshot.selectedTool()),
+                    snapshot.projectionLevel(),
+                    toPublishedOverlay(snapshot.overlaySettings()),
+                    surfaceContext.reachableLevels(),
+                    surfaceContext.surfacePresent(),
+                    snapshot.statusText());
+        }
+
+        private static DungeonEditorMapSurfaceSnapshot toMapSurfaceSnapshot(
+                DungeonEditorSessionSnapshot.SnapshotData snapshot,
+                @Nullable DungeonEditorSurface surface
+        ) {
+            return new DungeonEditorMapSurfaceSnapshot(
+                    surface,
+                    toPublishedSelection(snapshot.selection()),
+                    toPublishedPreview(snapshot.preview()),
+                    toPublishedViewMode(snapshot.viewMode()),
+                    toPublishedOverlay(snapshot.overlaySettings()),
+                    snapshot.projectionLevel(),
+                    toPublishedTool(snapshot.selectedTool()));
+        }
+
+        private static DungeonEditorStateSnapshot toStateSnapshot(
+                DungeonEditorSessionSnapshot.SnapshotData snapshot,
+                @Nullable DungeonEditorSurface surface
+        ) {
+            return new DungeonEditorStateSnapshot(
+                    toPublishedSelection(snapshot.selection()),
+                    surface == null ? null : surface.inspector(),
+                    toPublishedPreview(snapshot.preview()),
+                    snapshot.statusText(),
+                    toPublishedViewMode(snapshot.viewMode()),
+                    toPublishedTool(snapshot.selectedTool()),
+                    toPublishedOverlay(snapshot.overlaySettings()),
+                    snapshot.projectionLevel());
+        }
+
+        private static List<DungeonMapSummary> publishedMapSummaries(
+                List<DungeonEditorWorkspaceValues.MapSummary> maps
+        ) {
+            List<DungeonMapSummary> result = new ArrayList<>();
+            for (DungeonEditorWorkspaceValues.MapSummary map
+                    : maps == null ? List.<DungeonEditorWorkspaceValues.MapSummary>of() : maps) {
+                result.add(toPublishedMapSummary(map));
+            }
+            return List.copyOf(result);
+        }
+
+        private static DungeonMapSummary toPublishedMapSummary(DungeonEditorWorkspaceValues.@Nullable MapSummary map) {
+            DungeonEditorWorkspaceValues.MapSummary safeMap = map == null
+                    ? new DungeonEditorWorkspaceValues.MapSummary(new DungeonEditorWorkspaceValues.MapId(1L), "Dungeon Map", 0L)
+                    : map;
+            return new DungeonMapSummary(
+                    new DungeonMapId(safeMap.mapId().value()),
+                    safeMap.mapName(),
+                    safeMap.revision());
+        }
+
+        private static @Nullable DungeonMapId toPublishedMapId(DungeonEditorWorkspaceValues.@Nullable MapId mapId) {
+            return mapId == null ? null : new DungeonMapId(mapId.value());
+        }
+
+        private static @Nullable DungeonEditorSurface toPublishedSurface(
+                DungeonEditorSessionSnapshot.@Nullable SurfaceData surface
+        ) {
+            if (surface == null) {
+                return null;
+            }
+            return new DungeonEditorSurface(
+                    surface.mapName(),
+                    surface.revision(),
+                    toPublishedMap(surface.map()),
+                    surface.previewMap() == null ? null : toPublishedMap(surface.previewMap()),
+                    toPublishedInspector(surface.inspector()));
+        }
+
+        private static DungeonEditorMapSnapshot toPublishedMap(DungeonEditorWorkspaceValues.@Nullable MapSnapshot map) {
+            DungeonEditorWorkspaceValues.MapSnapshot safeMap = map == null
+                    ? DungeonEditorWorkspaceValues.MapSnapshot.empty()
+                    : map;
+            return new DungeonEditorMapSnapshot(
+                    safeMap.topology().name(),
+                    safeMap.width(),
+                    safeMap.height(),
+                    toPublishedAreas(safeMap.areas()),
+                    toPublishedBoundaries(safeMap.boundaries()),
+                    toPublishedFeatures(safeMap.features()),
+                    toPublishedEditorHandles(safeMap.editorHandles()));
+        }
+
+        private static List<DungeonEditorMapSnapshot.Area> toPublishedAreas(
+                List<DungeonEditorWorkspaceValues.Area> areas
+        ) {
+            List<DungeonEditorMapSnapshot.Area> result = new ArrayList<>();
+            for (DungeonEditorWorkspaceValues.Area area
+                    : areas == null ? List.<DungeonEditorWorkspaceValues.Area>of() : areas) {
+                result.add(toPublishedArea(area));
+            }
+            return List.copyOf(result);
+        }
+
+        private static DungeonEditorMapSnapshot.Area toPublishedArea(DungeonEditorWorkspaceValues.@Nullable Area area) {
+            if (area == null) {
+                return new DungeonEditorMapSnapshot.Area(
+                        "ROOM",
+                        1L,
+                        0L,
+                        "ROOM",
+                        List.of(),
+                        DungeonEditorTopologyElementRef.empty());
+            }
+            return new DungeonEditorMapSnapshot.Area(
+                    area.kind().name(),
+                    area.id(),
+                    area.clusterId(),
+                    area.label(),
+                    toPublishedCells(area.cells()),
+                    toPublishedTopologyRef(area.topologyRef()));
+        }
+
+        private static List<DungeonEditorMapSnapshot.Boundary> toPublishedBoundaries(
+                List<DungeonEditorWorkspaceValues.Boundary> boundaries
+        ) {
+            List<DungeonEditorMapSnapshot.Boundary> result = new ArrayList<>();
+            for (DungeonEditorWorkspaceValues.Boundary boundary
+                    : boundaries == null ? List.<DungeonEditorWorkspaceValues.Boundary>of() : boundaries) {
+                result.add(toPublishedBoundary(boundary));
+            }
+            return List.copyOf(result);
+        }
+
+        private static DungeonEditorMapSnapshot.Boundary toPublishedBoundary(
+                DungeonEditorWorkspaceValues.@Nullable Boundary boundary
+        ) {
+            if (boundary == null) {
+                return new DungeonEditorMapSnapshot.Boundary(
+                        "boundary",
+                        1L,
+                        "boundary",
+                        new DungeonEdgeRef(new DungeonCellRef(0, 0, 0), new DungeonCellRef(0, 0, 0)),
+                        DungeonEditorTopologyElementRef.empty());
+            }
+            return new DungeonEditorMapSnapshot.Boundary(
+                    boundary.kind().externalKind(),
+                    boundary.id(),
+                    boundary.label(),
+                    toPublishedEdge(boundary.edge()),
+                    toPublishedTopologyRef(boundary.topologyRef()));
+        }
+
+        private static List<DungeonEditorMapSnapshot.Feature> toPublishedFeatures(
+                List<DungeonEditorWorkspaceValues.Feature> features
+        ) {
+            List<DungeonEditorMapSnapshot.Feature> result = new ArrayList<>();
+            for (DungeonEditorWorkspaceValues.Feature feature
+                    : features == null ? List.<DungeonEditorWorkspaceValues.Feature>of() : features) {
+                result.add(toPublishedFeature(feature));
+            }
+            return List.copyOf(result);
+        }
+
+        private static DungeonEditorMapSnapshot.Feature toPublishedFeature(
+                DungeonEditorWorkspaceValues.@Nullable Feature feature
+        ) {
+            if (feature == null) {
+                return new DungeonEditorMapSnapshot.Feature(
+                        "STAIR",
+                        1L,
+                        "STAIR",
+                        List.of(),
+                        "",
+                        "",
+                        DungeonEditorTopologyElementRef.empty());
+            }
+            return new DungeonEditorMapSnapshot.Feature(
+                    feature.kind().name(),
+                    feature.id(),
+                    feature.label(),
+                    toPublishedCells(feature.cells()),
+                    feature.description(),
+                    feature.destinationLabel(),
+                    toPublishedTopologyRef(feature.topologyRef()));
+        }
+
+        private static List<DungeonEditorHandleSnapshot> toPublishedEditorHandles(
+                List<DungeonEditorWorkspaceValues.Handle> handles
+        ) {
+            List<DungeonEditorHandleSnapshot> result = new ArrayList<>();
+            for (DungeonEditorWorkspaceValues.Handle handle
+                    : handles == null ? List.<DungeonEditorWorkspaceValues.Handle>of() : handles) {
+                result.add(toPublishedEditorHandle(handle));
+            }
+            return List.copyOf(result);
+        }
+
+        private static DungeonEditorHandleSnapshot toPublishedEditorHandle(
+                DungeonEditorWorkspaceValues.@Nullable Handle handle
+        ) {
+            if (handle == null) {
+                return new DungeonEditorHandleSnapshot(
+                        DungeonEditorHandleRef.empty(),
+                        "CLUSTER_LABEL",
+                        new DungeonCellRef(0, 0, 0));
+            }
+            return new DungeonEditorHandleSnapshot(
+                    toPublishedHandleRefOrEmpty(handle.ref()),
+                    handle.label(),
+                    toPublishedCell(handle.cell()));
+        }
+
+        private static List<DungeonCellRef> toPublishedCells(List<DungeonEditorWorkspaceValues.Cell> cells) {
+            List<DungeonCellRef> result = new ArrayList<>();
+            for (DungeonEditorWorkspaceValues.Cell cell
+                    : cells == null ? List.<DungeonEditorWorkspaceValues.Cell>of() : cells) {
+                result.add(toPublishedCell(cell));
+            }
+            return List.copyOf(result);
+        }
+
+        private static @Nullable DungeonInspectorSnapshot toPublishedInspector(
+                DungeonEditorWorkspaceValues.@Nullable Inspector inspector
+        ) {
+            if (inspector == null) {
+                return null;
+            }
+            return new DungeonInspectorSnapshot(
+                    inspector.title(),
+                    inspector.summary(),
+                    inspector.facts(),
+                    toPublishedRoomNarrationCards(inspector.roomNarrations()));
+        }
+
+        private static List<DungeonInspectorSnapshot.RoomNarrationCard> toPublishedRoomNarrationCards(
+                List<DungeonEditorWorkspaceValues.RoomNarrationCard> cards
+        ) {
+            List<DungeonInspectorSnapshot.RoomNarrationCard> result = new ArrayList<>();
+            for (DungeonEditorWorkspaceValues.RoomNarrationCard card
+                    : cards == null ? List.<DungeonEditorWorkspaceValues.RoomNarrationCard>of() : cards) {
+                result.add(toPublishedRoomNarrationCard(card));
+            }
+            return List.copyOf(result);
+        }
+
+        private static DungeonInspectorSnapshot.RoomNarrationCard toPublishedRoomNarrationCard(
+                DungeonEditorWorkspaceValues.@Nullable RoomNarrationCard card
+        ) {
+            DungeonEditorWorkspaceValues.RoomNarrationCard safeCard = card == null
+                    ? new DungeonEditorWorkspaceValues.RoomNarrationCard(0L, "Raum", "", List.of())
+                    : card;
+            return new DungeonInspectorSnapshot.RoomNarrationCard(
+                    safeCard.roomId(),
+                    safeCard.roomName(),
+                    safeCard.visualDescription(),
+                    toPublishedRoomExits(safeCard.exits()));
+        }
+
+        private static List<DungeonInspectorSnapshot.RoomExitNarration> toPublishedRoomExits(
+                List<DungeonEditorWorkspaceValues.RoomExitNarration> exits
+        ) {
+            List<DungeonInspectorSnapshot.RoomExitNarration> result = new ArrayList<>();
+            for (DungeonEditorWorkspaceValues.RoomExitNarration exit
+                    : exits == null ? List.<DungeonEditorWorkspaceValues.RoomExitNarration>of() : exits) {
+                result.add(toPublishedRoomExit(exit));
+            }
+            return List.copyOf(result);
+        }
+
+        private static DungeonInspectorSnapshot.RoomExitNarration toPublishedRoomExit(
+                DungeonEditorWorkspaceValues.@Nullable RoomExitNarration exit
+        ) {
+            DungeonEditorWorkspaceValues.RoomExitNarration safeExit = exit == null
+                    ? new DungeonEditorWorkspaceValues.RoomExitNarration("", DungeonEditorWorkspaceValues.Cell.empty(), "", "")
+                    : exit;
+            return new DungeonInspectorSnapshot.RoomExitNarration(
+                    safeExit.label(),
+                    toPublishedCell(safeExit.cell()),
+                    safeExit.direction(),
+                    safeExit.description());
+        }
+
+        private static DungeonOverlaySettings toPublishedOverlay(
+                DungeonEditorSessionValues.@Nullable OverlaySettings overlay
+        ) {
+            DungeonEditorSessionValues.OverlaySettings safeOverlay = overlay == null
+                    ? DungeonEditorSessionValues.OverlaySettings.defaults()
+                    : overlay;
+            return new DungeonOverlaySettings(
+                    safeOverlay.modeKey(),
+                    safeOverlay.levelRange(),
+                    safeOverlay.opacity(),
+                    safeOverlay.selectedLevels());
+        }
+
+        private static DungeonEditorStateSnapshot.Selection toPublishedSelection(
+                DungeonEditorSessionValues.@Nullable Selection selection
+        ) {
+            DungeonEditorSessionValues.Selection safeSelection = selection == null
+                    ? DungeonEditorSessionValues.Selection.empty()
+                    : selection;
+            return new DungeonEditorStateSnapshot.Selection(
+                    toPublishedTopologyRef(safeSelection.topologyRef()),
+                    safeSelection.clusterId(),
+                    safeSelection.clusterSelection(),
+                    safeSelection.handleRef().equals(DungeonEditorSessionValues.emptyHandleRef())
+                            ? null
+                            : toPublishedHandleRefOrEmpty(safeSelection.handleRef()));
+        }
+
+        private static DungeonEditorPreview toPublishedPreview(DungeonEditorSessionValues.@Nullable Preview preview) {
+            if (preview == null || preview == DungeonEditorSessionValues.Preview.none()) {
+                return DungeonEditorPreview.none();
+            }
+            return switch (preview) {
+                case DungeonEditorSessionValues.RoomRectanglePreview room ->
+                        new DungeonEditorPreview.RoomRectanglePreview(
+                                toPublishedCell(room.start()),
+                                toPublishedCell(room.end()),
+                                room.deleteMode());
+                case DungeonEditorSessionValues.ClusterBoundariesPreview boundaries ->
+                        new DungeonEditorPreview.ClusterBoundariesPreview(
+                                boundaries.clusterId(),
+                                toPublishedEdges(boundaries.edges()),
+                                boundaries.boundaryKind().name(),
+                                boundaries.deleteMode());
+                case DungeonEditorSessionValues.MoveHandlePreview moveHandle ->
+                        new DungeonEditorPreview.MoveHandlePreview(
+                                toPublishedHandleRefOrEmpty(moveHandle.handleRef()),
+                                moveHandle.deltaQ(),
+                                moveHandle.deltaR(),
+                                moveHandle.deltaLevel());
+                case DungeonEditorSessionValues.MoveBoundaryStretchPreview stretch ->
+                        new DungeonEditorPreview.MoveBoundaryStretchPreview(
+                                stretch.clusterId(),
+                                toPublishedEdges(stretch.sourceEdges()),
+                                stretch.deltaQ(),
+                                stretch.deltaR(),
+                                stretch.deltaLevel());
+                case DungeonEditorSessionValues.CorridorCreatePreview ignored -> DungeonEditorPreview.none();
+                case DungeonEditorSessionValues.DeleteCorridorPreview ignored -> DungeonEditorPreview.none();
+                case DungeonEditorSessionValues.NoPreview ignored -> DungeonEditorPreview.none();
+            };
+        }
+
+        private static List<DungeonEdgeRef> toPublishedEdges(List<DungeonEditorWorkspaceValues.Edge> edges) {
+            List<DungeonEdgeRef> result = new ArrayList<>();
+            for (DungeonEditorWorkspaceValues.Edge edge
+                    : edges == null ? List.<DungeonEditorWorkspaceValues.Edge>of() : edges) {
+                result.add(toPublishedEdge(edge));
+            }
+            return List.copyOf(result);
+        }
+
+        private static DungeonEditorViewMode toPublishedViewMode(DungeonEditorSessionValues.@Nullable ViewMode viewMode) {
+            return viewMode == DungeonEditorSessionValues.ViewMode.GRAPH
+                    ? DungeonEditorViewMode.GRAPH
+                    : DungeonEditorViewMode.GRID;
+        }
+
+        private static DungeonEditorTool toPublishedTool(DungeonEditorSessionValues.@Nullable Tool tool) {
+            return tool == null ? DungeonEditorTool.SELECT : DungeonEditorTool.valueOf(tool.name());
+        }
+
+        private static DungeonEditorHandleRef toPublishedHandleRefOrEmpty(
+                DungeonEditorWorkspaceValues.@Nullable HandleRef handleRef
+        ) {
+            if (handleRef == null) {
+                return DungeonEditorHandleRef.empty();
+            }
+            return new DungeonEditorHandleRef(
+                    DungeonEditorHandleKind.valueOf(handleRef.kind().name()),
+                    toDomainTopologyRef(handleRef.topologyRef()),
+                    handleRef.ownerId(),
+                    handleRef.clusterId(),
+                    handleRef.corridorId(),
+                    handleRef.roomId(),
+                    handleRef.index(),
+                    toPublishedCell(handleRef.cell()),
+                    handleRef.direction());
+        }
+
+        private static DungeonTopologyElementRef toDomainTopologyRef(@Nullable DungeonTopologyRef ref) {
+            return ref == null
+                    ? DungeonTopologyElementRef.empty()
+                    : new DungeonTopologyElementRef(DungeonTopologyElementKind.valueOf(ref.kind().name()), ref.id());
+        }
+
+        private static DungeonEditorTopologyElementRef toPublishedTopologyRef(@Nullable DungeonTopologyRef ref) {
+            return ref == null
+                    ? DungeonEditorTopologyElementRef.empty()
+                    : new DungeonEditorTopologyElementRef(ref.kind().name(), ref.id());
+        }
+
+        private static DungeonCellRef toPublishedCell(DungeonEditorWorkspaceValues.@Nullable Cell mapCell) {
+            return mapCell == null
+                    ? new DungeonCellRef(0, 0, 0)
+                    : new DungeonCellRef(mapCell.q(), mapCell.r(), mapCell.level());
+        }
+
+        private static DungeonEdgeRef toPublishedEdge(DungeonEditorWorkspaceValues.@Nullable Edge mapEdge) {
+            if (mapEdge == null) {
+                return new DungeonEdgeRef(new DungeonCellRef(0, 0, 0), new DungeonCellRef(0, 0, 0));
+            }
+            return new DungeonEdgeRef(toPublishedCell(mapEdge.from()), toPublishedCell(mapEdge.to()));
+        }
+
+        private record SurfaceContext(
+                @Nullable DungeonEditorSurface surface,
+                List<Integer> reachableLevels,
+                boolean surfacePresent
+        ) {
         }
     }
 }

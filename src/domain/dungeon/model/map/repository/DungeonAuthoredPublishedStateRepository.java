@@ -7,6 +7,8 @@ import src.domain.dungeon.model.map.model.DungeonDerivedState;
 import src.domain.dungeon.model.map.model.DungeonEdgeDirection;
 import src.domain.dungeon.model.map.model.DungeonEditorHandleFacts;
 import src.domain.dungeon.model.map.model.DungeonMapIdentity;
+import src.domain.dungeon.model.map.model.DungeonTravelMoveFacts;
+import src.domain.dungeon.model.map.model.DungeonTravelSurfaceFacts;
 
 public interface DungeonAuthoredPublishedStateRepository {
 
@@ -23,6 +25,10 @@ public interface DungeonAuthoredPublishedStateRepository {
     void publishRenamed(MapMutationPublication mutation);
 
     void publishDeleted(MapMutationPublication mutation);
+
+    void publishSurface(DungeonTravelSurfaceFacts surface);
+
+    void publishMove(DungeonTravelMoveFacts move);
 
     record SnapshotPublication(
             String mapName,

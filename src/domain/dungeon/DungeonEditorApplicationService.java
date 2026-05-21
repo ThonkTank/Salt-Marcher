@@ -114,16 +114,19 @@ public final class DungeonEditorApplicationService {
         this.saveRoomNarrationUseCase = Objects.requireNonNull(saveRoomNarrationUseCase, "saveRoomNarrationUseCase");
     }
 
-    public void selectMap(DungeonAuthoredReadCommand.MapSelection command) {
-        selectMapUseCase.execute(command.mapId().value());
+    public void selectMap(DungeonAuthoredReadCommand command) {
+        Objects.requireNonNull(command, "command");
+        selectMapUseCase.execute(command.mapIdValue());
     }
 
-    public void createMap(DungeonMapCatalogCommand.CreateMap command) {
+    public void createMap(DungeonMapCatalogCommand command) {
+        Objects.requireNonNull(command, "command");
         createMapUseCase.execute(command.mapName());
     }
 
-    public void renameMap(DungeonMapCatalogCommand.RenameMap command) {
-        renameMapUseCase.execute(command.mapId().value(), command.mapName());
+    public void renameMap(DungeonMapCatalogCommand command) {
+        Objects.requireNonNull(command, "command");
+        renameMapUseCase.execute(command.mapIdValue(), command.mapName());
     }
 
     public void deleteMap(DeleteDungeonMapCommand command) {

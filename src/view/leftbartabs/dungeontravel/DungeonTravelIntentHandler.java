@@ -5,9 +5,8 @@ import java.util.Objects;
 import src.domain.dungeon.DungeonTravelRuntimeApplicationService;
 import src.domain.dungeon.published.ApplyTravelDungeonSessionCommand;
 import src.domain.dungeon.published.DungeonOverlaySettings;
+import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel;
 import src.view.slotcontent.main.dungeonmap.DungeonMapViewInputEvent;
-import src.view.slotcontent.primitives.mapcanvas.MapCanvasContentModel;
-import src.view.slotcontent.primitives.mapcanvas.MapCanvasViewInputEvent;
 
 final class DungeonTravelIntentHandler {
 
@@ -16,16 +15,16 @@ final class DungeonTravelIntentHandler {
     private static final double SCROLL_DELTA_IDLE = 0.0;
 
     private final DungeonTravelContributionModel presentationModel;
-    private final MapCanvasContentModel mapCanvasContentModel;
+    private final DungeonMapContentModel mapContentModel;
     private final DungeonTravelRuntimeApplicationService travel;
 
     DungeonTravelIntentHandler(
             DungeonTravelContributionModel presentationModel,
-            MapCanvasContentModel mapCanvasContentModel,
+            DungeonMapContentModel mapContentModel,
             DungeonTravelRuntimeApplicationService travel
     ) {
         this.presentationModel = Objects.requireNonNull(presentationModel, "presentationModel");
-        this.mapCanvasContentModel = Objects.requireNonNull(mapCanvasContentModel, "mapCanvasContentModel");
+        this.mapContentModel = Objects.requireNonNull(mapContentModel, "mapContentModel");
         this.travel = Objects.requireNonNull(travel, "travel");
     }
 
@@ -33,7 +32,7 @@ final class DungeonTravelIntentHandler {
         if (event == null) {
             return;
         }
-        LocalCameraSupport.consume(mapCanvasContentModel, event.canvasEvent());
+        LocalCameraSupport.consume(mapContentModel, event);
     }
 
     void consume(DungeonTravelControlsViewInputEvent event) {
@@ -41,7 +40,7 @@ final class DungeonTravelIntentHandler {
             return;
         }
         if (event.resetViewRequested()) {
-            mapCanvasContentModel.resetCamera();
+            mapContentModel.resetCamera();
             return;
         }
         if (event.projectionLevelShift() != 0) {
@@ -93,24 +92,24 @@ final class DungeonTravelIntentHandler {
 
     private static final class LocalCameraSupport {
 
-        private static void consume(MapCanvasContentModel mapCanvasContentModel, MapCanvasViewInputEvent event) {
+        private static void consume(DungeonMapContentModel mapContentModel, DungeonMapViewInputEvent event) {
             if (event == null) {
                 return;
             }
-            if (event.interaction().isDrag()
+            if ("DRAG".equals(event.interaction())
                     && event.buttons().middleButtonDown()) {
-                mapCanvasContentModel.panByPixels(event.dragDeltaX(), event.dragDeltaY());
+                mapContentModel.panByPixels(event.dragDeltaX(), event.dragDeltaY());
                 return;
             }
-            if (event.interaction().isScroll()
+            if ("SCROLL".equals(event.interaction())
                     && !event.modifiers().controlDown()) {
                 if (event.scrollDeltaY() > SCROLL_DELTA_IDLE) {
-                    mapCanvasContentModel.zoomAround(
+                    mapContentModel.zoomAround(
                             event.position().canvasX(),
                             event.position().canvasY(),
                             ZOOM_IN_FACTOR);
                 } else if (event.scrollDeltaY() < SCROLL_DELTA_IDLE) {
-                    mapCanvasContentModel.zoomAround(
+                    mapContentModel.zoomAround(
                             event.position().canvasX(),
                             event.position().canvasY(),
                             ZOOM_OUT_FACTOR);

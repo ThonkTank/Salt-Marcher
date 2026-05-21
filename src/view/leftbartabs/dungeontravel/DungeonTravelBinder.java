@@ -28,7 +28,7 @@ final class DungeonTravelBinder {
         DungeonTravelStateContentModel stateContentModel = new DungeonTravelStateContentModel();
         DungeonMapContentModel mapContentModel = new DungeonMapContentModel("Travel workspace", false);
         DungeonTravelIntentHandler intentHandler =
-                new DungeonTravelIntentHandler(contributionModel, mapContentModel.mapCanvasContentModel(), travel);
+                new DungeonTravelIntentHandler(contributionModel, mapContentModel, travel);
         DungeonTravelControlsView controls = new DungeonTravelControlsView();
         DungeonMapView main = new DungeonMapView();
         DungeonTravelStateView state = new DungeonTravelStateView();
@@ -39,12 +39,12 @@ final class DungeonTravelBinder {
         state.bind(stateContentModel);
         controls.onTravelControlsInputEvent(intentHandler::consume);
         main.onViewInputEvent(intentHandler::consume);
-        mapContentModel.mapCanvasContentModel().zoomProperty().addListener((ignored, before, after) ->
+        mapContentModel.zoomProperty().addListener((ignored, before, after) ->
                 controlsContentModel.showZoom(after.doubleValue()));
         state.onViewInputEvent(intentHandler::consume);
         travelModel.subscribe(snapshot -> applySnapshot(snapshot, contributionModel, mapContentModel));
         applySnapshot(travelModel.current(), contributionModel, mapContentModel);
-        controlsContentModel.showZoom(mapContentModel.mapCanvasContentModel().currentViewport().zoom());
+        controlsContentModel.showZoom(mapContentModel.currentZoom());
         return new Binding(controls, main, state);
     }
 

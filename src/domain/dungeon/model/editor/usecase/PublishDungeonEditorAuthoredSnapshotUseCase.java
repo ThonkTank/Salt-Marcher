@@ -2,7 +2,7 @@ package src.domain.dungeon.model.editor.usecase;
 
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
-import src.domain.dungeon.model.editor.usecase.DungeonEditorAuthoredPublicationUseCase.SnapshotPublication;
+import src.domain.dungeon.model.editor.usecase.DungeonEditorAuthoredPublicationUseCase.Publication;
 import src.domain.dungeon.model.editor.model.session.model.DungeonEditorDungeonState;
 import src.domain.dungeon.model.map.repository.DungeonAuthoredPublishedStateRepository;
 import src.domain.dungeon.model.map.usecase.LoadDungeonSnapshotUseCase;
@@ -11,6 +11,7 @@ public final class PublishDungeonEditorAuthoredSnapshotUseCase {
 
     private final DungeonAuthoredPublishedStateRepository publishedStateRepository;
     private final DungeonEditorDungeonState state;
+    private final DungeonEditorAuthoredPublicationUseCase publicationUseCase;
 
     public PublishDungeonEditorAuthoredSnapshotUseCase(
             DungeonAuthoredPublishedStateRepository publishedStateRepository,
@@ -19,38 +20,27 @@ public final class PublishDungeonEditorAuthoredSnapshotUseCase {
         this.publishedStateRepository =
                 Objects.requireNonNull(publishedStateRepository, "publishedStateRepository");
         this.state = Objects.requireNonNull(state, "state");
+        publicationUseCase = new DungeonEditorAuthoredPublicationUseCase();
     }
 
     public void execute(LoadDungeonSnapshotUseCase.DungeonSnapshotData snapshot) {
-        SnapshotPublication publication = publication(snapshot);
-        state.replaceSnapshot(publication == null
-                ? null
-                : DungeonEditorAuthoredPublicationUseCase.stateFacts(publication));
+        Publication publication = publication(snapshot);
+        state.replaceSnapshot(publication == null ? null : publication.stateFacts());
         if (publication != null) {
-            publishedStateRepository.publishSnapshot(repositoryPublication(publication));
+            publishedStateRepository.publishSnapshot(publication.repositoryPublication());
         }
     }
 
-    private static @Nullable SnapshotPublication publication(
+    private @Nullable Publication publication(
             LoadDungeonSnapshotUseCase.@Nullable DungeonSnapshotData snapshot
     ) {
         if (snapshot == null) {
             return null;
         }
-        return DungeonEditorAuthoredPublicationUseCase.snapshotPublication(
+        return publicationUseCase.execute(
                 snapshot.mapName(),
                 snapshot.derived(),
                 snapshot.editorHandles(),
                 snapshot.revision());
-    }
-
-    private static DungeonAuthoredPublishedStateRepository.SnapshotPublication repositoryPublication(
-            SnapshotPublication publication
-    ) {
-        return new DungeonAuthoredPublishedStateRepository.SnapshotPublication(
-                publication.mapName(),
-                publication.derived(),
-                publication.editorHandles(),
-                publication.repositoryRevision());
     }
 }

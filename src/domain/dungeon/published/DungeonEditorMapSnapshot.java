@@ -30,15 +30,21 @@ public record DungeonEditorMapSnapshot(
     public record Area(
             String kind,
             long id,
+            long clusterId,
             String label,
-            List<DungeonCellRef> cells
+            List<DungeonCellRef> cells,
+            DungeonEditorTopologyElementRef topologyRef
     ) {
 
         public Area {
             kind = kind == null || kind.isBlank() ? "ROOM" : kind.trim();
             id = Math.max(1L, id);
+            clusterId = Math.max(0L, clusterId);
             label = label == null || label.isBlank() ? kind : label.trim();
             cells = cells == null ? List.of() : List.copyOf(cells);
+            topologyRef = topologyRef == null
+                    ? new DungeonEditorTopologyElementRef(kind.toUpperCase(Locale.ROOT), id)
+                    : topologyRef;
         }
     }
 
@@ -69,7 +75,8 @@ public record DungeonEditorMapSnapshot(
             String label,
             List<DungeonCellRef> cells,
             String description,
-            String destinationLabel
+            String destinationLabel,
+            DungeonEditorTopologyElementRef topologyRef
     ) {
 
         public Feature {
@@ -79,6 +86,9 @@ public record DungeonEditorMapSnapshot(
             cells = cells == null ? List.of() : List.copyOf(cells);
             description = description == null ? "" : description.trim();
             destinationLabel = destinationLabel == null ? "" : destinationLabel.trim();
+            topologyRef = topologyRef == null
+                    ? new DungeonEditorTopologyElementRef(kind.toUpperCase(Locale.ROOT), id)
+                    : topologyRef;
         }
     }
 

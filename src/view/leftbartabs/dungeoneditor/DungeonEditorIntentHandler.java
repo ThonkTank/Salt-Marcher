@@ -37,7 +37,6 @@ import src.domain.dungeon.published.SetDungeonEditorViewModeCommand;
 import src.domain.dungeon.published.ShiftDungeonEditorProjectionLevelCommand;
 import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel;
 import src.view.slotcontent.main.dungeonmap.DungeonMapViewInputEvent;
-import src.view.slotcontent.primitives.mapcanvas.MapCanvasViewInputEvent;
 
 final class DungeonEditorIntentHandler {
 
@@ -82,7 +81,7 @@ final class DungeonEditorIntentHandler {
 
     void consume(DungeonMapViewInputEvent event) {
         if (event != null) {
-            consumeMapCanvas(event.canvasEvent());
+            consumeMapCanvas(event);
         }
     }
 
@@ -134,15 +133,15 @@ final class DungeonEditorIntentHandler {
         }
     }
 
-    private void consumeMapCanvas(MapCanvasViewInputEvent event) {
+    private void consumeMapCanvas(DungeonMapViewInputEvent event) {
         if (event == null) {
             return;
         }
-        if (event.interaction().isDrag() && event.buttons().middleButtonDown()) {
-            mapContentModel.mapCanvasContentModel().panByPixels(event.dragDeltaX(), event.dragDeltaY());
+        if ("DRAG".equals(event.interaction()) && event.buttons().middleButtonDown()) {
+            mapContentModel.panByPixels(event.dragDeltaX(), event.dragDeltaY());
             return;
         }
-        if (event.interaction().isScroll()) {
+        if ("SCROLL".equals(event.interaction())) {
             handleScroll(event);
             return;
         }
@@ -154,21 +153,23 @@ final class DungeonEditorIntentHandler {
             return;
         }
         DungeonEditorTool selectedTool = presentationModel.currentInteractionState().currentSelectedTool();
-        DungeonMapContentModel.PointerTarget pointerTarget = mapContentModel.resolvePointerTarget(event);
+        double sceneX = sceneX(event);
+        double sceneY = sceneY(event);
+        DungeonMapContentModel.PointerTarget pointerTarget = mapContentModel.resolvePointerTarget(sceneX, sceneY);
         if (suppressedRepeatedHover(event, selectedTool, pointerTarget)) {
             return;
         }
         applyToolWorkflow(event, pointerSample(event, pointerTarget), selectedTool);
     }
 
-    private static boolean secondaryOnly(MapCanvasViewInputEvent event) {
+    private static boolean secondaryOnly(DungeonMapViewInputEvent event) {
         return event.buttons().secondaryButtonDown()
                 && !event.buttons().primaryButtonDown()
                 && !event.buttons().middleButtonDown();
     }
 
     private void applyToolWorkflow(
-            MapCanvasViewInputEvent event,
+            DungeonMapViewInputEvent event,
             DungeonEditorPointerSample pointerSample,
             DungeonEditorTool tool
     ) {
@@ -187,115 +188,115 @@ final class DungeonEditorIntentHandler {
     }
 
     private void applySelection(
-            MapCanvasViewInputEvent.Interaction interaction,
+            String interaction,
             DungeonEditorPointerSample pointerSample
     ) {
         switch (safeInteraction(interaction)) {
-            case PRESS -> editor.pressSelection(new DungeonEditorSelectionCommand(pointerSample));
-            case DRAG -> editor.dragSelection(new DungeonEditorSelectionCommand(pointerSample));
-            case RELEASE -> editor.releaseSelection(new DungeonEditorSelectionCommand(pointerSample));
-            case MOVE -> editor.hoverSelection(new DungeonEditorSelectionCommand(pointerSample));
-            case SCROLL -> { }
+            case "PRESS" -> editor.pressSelection(new DungeonEditorSelectionCommand(pointerSample));
+            case "DRAG" -> editor.dragSelection(new DungeonEditorSelectionCommand(pointerSample));
+            case "RELEASE" -> editor.releaseSelection(new DungeonEditorSelectionCommand(pointerSample));
+            case "MOVE" -> editor.hoverSelection(new DungeonEditorSelectionCommand(pointerSample));
+            case "SCROLL" -> { }
         }
     }
 
     private void applyRoomPaint(
-            MapCanvasViewInputEvent.Interaction interaction,
+            String interaction,
             DungeonEditorPointerSample pointerSample
     ) {
         switch (safeInteraction(interaction)) {
-            case PRESS -> editor.pressPaintRoom(new PaintDungeonEditorRoomCommand(pointerSample));
-            case DRAG -> editor.dragPaintRoom(new PaintDungeonEditorRoomCommand(pointerSample));
-            case RELEASE -> editor.releasePaintRoom(new PaintDungeonEditorRoomCommand(pointerSample));
-            case MOVE, SCROLL -> { }
+            case "PRESS" -> editor.pressPaintRoom(new PaintDungeonEditorRoomCommand(pointerSample));
+            case "DRAG" -> editor.dragPaintRoom(new PaintDungeonEditorRoomCommand(pointerSample));
+            case "RELEASE" -> editor.releasePaintRoom(new PaintDungeonEditorRoomCommand(pointerSample));
+            case "MOVE", "SCROLL" -> { }
         }
     }
 
     private void applyRoomDelete(
-            MapCanvasViewInputEvent.Interaction interaction,
+            String interaction,
             DungeonEditorPointerSample pointerSample
     ) {
         switch (safeInteraction(interaction)) {
-            case PRESS -> editor.pressDeleteRoom(new DeleteDungeonEditorRoomCommand(pointerSample));
-            case DRAG -> editor.dragDeleteRoom(new DeleteDungeonEditorRoomCommand(pointerSample));
-            case RELEASE -> editor.releaseDeleteRoom(new DeleteDungeonEditorRoomCommand(pointerSample));
-            case MOVE, SCROLL -> { }
+            case "PRESS" -> editor.pressDeleteRoom(new DeleteDungeonEditorRoomCommand(pointerSample));
+            case "DRAG" -> editor.dragDeleteRoom(new DeleteDungeonEditorRoomCommand(pointerSample));
+            case "RELEASE" -> editor.releaseDeleteRoom(new DeleteDungeonEditorRoomCommand(pointerSample));
+            case "MOVE", "SCROLL" -> { }
         }
     }
 
     private void applyWallCreate(
-            MapCanvasViewInputEvent.Interaction interaction,
+            String interaction,
             DungeonEditorPointerSample pointerSample
     ) {
         switch (safeInteraction(interaction)) {
-            case PRESS -> editor.pressCreateWall(new CreateDungeonEditorWallCommand(pointerSample));
-            case DRAG -> editor.dragCreateWall(new CreateDungeonEditorWallCommand(pointerSample));
-            case MOVE -> editor.hoverCreateWall(new CreateDungeonEditorWallCommand(pointerSample));
-            case RELEASE, SCROLL -> { }
+            case "PRESS" -> editor.pressCreateWall(new CreateDungeonEditorWallCommand(pointerSample));
+            case "DRAG" -> editor.dragCreateWall(new CreateDungeonEditorWallCommand(pointerSample));
+            case "MOVE" -> editor.hoverCreateWall(new CreateDungeonEditorWallCommand(pointerSample));
+            case "RELEASE", "SCROLL" -> { }
         }
     }
 
     private void applyWallDelete(
-            MapCanvasViewInputEvent.Interaction interaction,
+            String interaction,
             DungeonEditorPointerSample pointerSample
     ) {
         switch (safeInteraction(interaction)) {
-            case PRESS -> editor.pressDeleteWall(new DeleteDungeonEditorWallCommand(pointerSample));
-            case DRAG -> editor.dragDeleteWall(new DeleteDungeonEditorWallCommand(pointerSample));
-            case MOVE -> editor.hoverDeleteWall(new DeleteDungeonEditorWallCommand(pointerSample));
-            case RELEASE, SCROLL -> { }
+            case "PRESS" -> editor.pressDeleteWall(new DeleteDungeonEditorWallCommand(pointerSample));
+            case "DRAG" -> editor.dragDeleteWall(new DeleteDungeonEditorWallCommand(pointerSample));
+            case "MOVE" -> editor.hoverDeleteWall(new DeleteDungeonEditorWallCommand(pointerSample));
+            case "RELEASE", "SCROLL" -> { }
         }
     }
 
     private void applyDoorCreate(
-            MapCanvasViewInputEvent.Interaction interaction,
+            String interaction,
             DungeonEditorPointerSample pointerSample
     ) {
         switch (safeInteraction(interaction)) {
-            case PRESS -> editor.pressCreateDoor(new CreateDungeonEditorDoorCommand(pointerSample));
-            case DRAG -> editor.dragCreateDoor(new CreateDungeonEditorDoorCommand(pointerSample));
-            case MOVE -> editor.hoverCreateDoor(new CreateDungeonEditorDoorCommand(pointerSample));
-            case RELEASE -> editor.releaseCreateDoor(new CreateDungeonEditorDoorCommand(pointerSample));
-            case SCROLL -> { }
+            case "PRESS" -> editor.pressCreateDoor(new CreateDungeonEditorDoorCommand(pointerSample));
+            case "DRAG" -> editor.dragCreateDoor(new CreateDungeonEditorDoorCommand(pointerSample));
+            case "MOVE" -> editor.hoverCreateDoor(new CreateDungeonEditorDoorCommand(pointerSample));
+            case "RELEASE" -> editor.releaseCreateDoor(new CreateDungeonEditorDoorCommand(pointerSample));
+            case "SCROLL" -> { }
         }
     }
 
     private void applyDoorDelete(
-            MapCanvasViewInputEvent.Interaction interaction,
+            String interaction,
             DungeonEditorPointerSample pointerSample
     ) {
         switch (safeInteraction(interaction)) {
-            case PRESS -> editor.pressDeleteDoor(new DeleteDungeonEditorDoorCommand(pointerSample));
-            case DRAG -> editor.dragDeleteDoor(new DeleteDungeonEditorDoorCommand(pointerSample));
-            case MOVE -> editor.hoverDeleteDoor(new DeleteDungeonEditorDoorCommand(pointerSample));
-            case RELEASE -> editor.releaseDeleteDoor(new DeleteDungeonEditorDoorCommand(pointerSample));
-            case SCROLL -> { }
+            case "PRESS" -> editor.pressDeleteDoor(new DeleteDungeonEditorDoorCommand(pointerSample));
+            case "DRAG" -> editor.dragDeleteDoor(new DeleteDungeonEditorDoorCommand(pointerSample));
+            case "MOVE" -> editor.hoverDeleteDoor(new DeleteDungeonEditorDoorCommand(pointerSample));
+            case "RELEASE" -> editor.releaseDeleteDoor(new DeleteDungeonEditorDoorCommand(pointerSample));
+            case "SCROLL" -> { }
         }
     }
 
     private void applyCorridorCreate(
-            MapCanvasViewInputEvent.Interaction interaction,
+            String interaction,
             DungeonEditorPointerSample pointerSample
     ) {
         switch (safeInteraction(interaction)) {
-            case PRESS -> editor.pressCreateCorridor(new CreateDungeonEditorCorridorCommand(pointerSample));
-            case MOVE -> editor.hoverCreateCorridor(new CreateDungeonEditorCorridorCommand(pointerSample));
-            case DRAG, RELEASE, SCROLL -> { }
+            case "PRESS" -> editor.pressCreateCorridor(new CreateDungeonEditorCorridorCommand(pointerSample));
+            case "MOVE" -> editor.hoverCreateCorridor(new CreateDungeonEditorCorridorCommand(pointerSample));
+            case "DRAG", "RELEASE", "SCROLL" -> { }
         }
     }
 
     private void applyCorridorDelete(
-            MapCanvasViewInputEvent.Interaction interaction,
+            String interaction,
             DungeonEditorPointerSample pointerSample
     ) {
         switch (safeInteraction(interaction)) {
-            case PRESS -> editor.pressDeleteCorridor(new DeleteDungeonEditorCorridorCommand(pointerSample));
-            case MOVE -> editor.hoverDeleteCorridor(new DeleteDungeonEditorCorridorCommand(pointerSample));
-            case DRAG, RELEASE, SCROLL -> { }
+            case "PRESS" -> editor.pressDeleteCorridor(new DeleteDungeonEditorCorridorCommand(pointerSample));
+            case "MOVE" -> editor.hoverDeleteCorridor(new DeleteDungeonEditorCorridorCommand(pointerSample));
+            case "DRAG", "RELEASE", "SCROLL" -> { }
         }
     }
 
-    private void handleScroll(MapCanvasViewInputEvent event) {
+    private void handleScroll(DungeonMapViewInputEvent event) {
         if (!event.modifiers().controlDown()) {
             zoomForScroll(event);
             return;
@@ -306,14 +307,14 @@ final class DungeonEditorIntentHandler {
         }
     }
 
-    private void zoomForScroll(MapCanvasViewInputEvent event) {
+    private void zoomForScroll(DungeonMapViewInputEvent event) {
         if (event.scrollDeltaY() > ZERO_SCROLL_DELTA) {
-            mapContentModel.mapCanvasContentModel().zoomAround(
+            mapContentModel.zoomAround(
                     event.position().canvasX(),
                     event.position().canvasY(),
                     ZOOM_IN_FACTOR);
         } else if (event.scrollDeltaY() < ZERO_SCROLL_DELTA) {
-            mapContentModel.mapCanvasContentModel().zoomAround(
+            mapContentModel.zoomAround(
                     event.position().canvasX(),
                     event.position().canvasY(),
                     ZOOM_OUT_FACTOR);
@@ -321,7 +322,7 @@ final class DungeonEditorIntentHandler {
     }
 
     private DungeonEditorPointerSample pointerSample(
-            MapCanvasViewInputEvent event,
+            DungeonMapViewInputEvent event,
             DungeonMapContentModel.PointerTarget target
     ) {
         return new DungeonEditorPointerSample(
@@ -333,15 +334,15 @@ final class DungeonEditorIntentHandler {
     }
 
     private boolean suppressedRepeatedHover(
-            MapCanvasViewInputEvent event,
+            DungeonMapViewInputEvent event,
             DungeonEditorTool selectedTool,
             DungeonMapContentModel.PointerTarget target
     ) {
-        if (safeInteraction(event.interaction()) != MapCanvasViewInputEvent.Interaction.MOVE) {
+        if (!"MOVE".equals(safeInteraction(event.interaction()))) {
             lastHoverSample = null;
             return false;
         }
-        HoverSample nextSample = HoverSample.from(event, selectedTool, target);
+        HoverSample nextSample = HoverSample.from(event, selectedTool, target, sceneX(event), sceneY(event));
         if (nextSample.equals(lastHoverSample)) {
             return true;
         }
@@ -447,10 +448,18 @@ final class DungeonEditorIntentHandler {
         return NO_LEVEL_DELTA;
     }
 
-    private static MapCanvasViewInputEvent.Interaction safeInteraction(MapCanvasViewInputEvent.Interaction interaction) {
+    private static String safeInteraction(String interaction) {
         return interaction == null
-                ? MapCanvasViewInputEvent.Interaction.MOVE
+                ? "MOVE"
                 : interaction;
+    }
+
+    private double sceneX(DungeonMapViewInputEvent event) {
+        return mapContentModel.currentViewport().screenToSceneX(event.position().canvasX());
+    }
+
+    private double sceneY(DungeonMapViewInputEvent event) {
+        return mapContentModel.currentViewport().screenToSceneY(event.position().canvasY());
     }
 
     private void handleMapSelection(long selectedMapIdValue) {
@@ -672,12 +681,12 @@ final class DungeonEditorIntentHandler {
         private static final double VERTEX_SNAP_DISTANCE = 0.22;
 
         private static HoverSample from(
-                MapCanvasViewInputEvent event,
+                DungeonMapViewInputEvent event,
                 DungeonEditorTool tool,
-                DungeonMapContentModel.PointerTarget target
+                DungeonMapContentModel.PointerTarget target,
+                double sceneX,
+                double sceneY
         ) {
-            double sceneX = event.position().sceneX();
-            double sceneY = event.position().sceneY();
             int vertexQ = (int) Math.round(sceneX);
             int vertexR = (int) Math.round(sceneY);
             boolean vertexPresent = Math.hypot(sceneX - vertexQ, sceneY - vertexR) <= VERTEX_SNAP_DISTANCE;

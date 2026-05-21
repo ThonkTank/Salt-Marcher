@@ -16,26 +16,30 @@ import src.domain.dungeon.model.map.model.DungeonEditorHandleFacts;
 import src.domain.dungeon.model.map.model.DungeonFeatureFacts;
 import src.domain.dungeon.model.map.model.DungeonMapFacts;
 import src.domain.dungeon.model.map.model.DungeonTopology;
+import src.domain.dungeon.model.map.repository.DungeonAuthoredPublishedStateRepository;
 
 public final class DungeonEditorAuthoredPublicationUseCase {
 
-    private DungeonEditorAuthoredPublicationUseCase() {
+    public DungeonEditorAuthoredPublicationUseCase() {
     }
 
-    public static SnapshotPublication snapshotPublication(
+    public Publication execute(
             String mapName,
             @Nullable DungeonDerivedState derived,
             List<DungeonEditorHandleFacts> editorHandles,
             long revision
     ) {
-        return new SnapshotPublication(mapName, derived, editorHandles, revision);
+        SnapshotPublication snapshot = new SnapshotPublication(mapName, derived, editorHandles, revision);
+        return new Publication(snapshot.stateFacts(), snapshot.repositoryPublication());
     }
 
-    public static DungeonEditorDungeonState.SnapshotFacts stateFacts(SnapshotPublication publication) {
-        return publication.stateFacts();
+    public record Publication(
+            DungeonEditorDungeonState.SnapshotFacts stateFacts,
+            DungeonAuthoredPublishedStateRepository.SnapshotPublication repositoryPublication
+    ) {
     }
 
-    public record SnapshotPublication(
+    private record SnapshotPublication(
             String mapName,
             @Nullable DungeonDerivedState derived,
             List<DungeonEditorHandleFacts> editorHandles,
@@ -45,11 +49,19 @@ public final class DungeonEditorAuthoredPublicationUseCase {
             editorHandles = editorHandles == null ? List.of() : List.copyOf(editorHandles);
         }
 
-        private DungeonEditorDungeonState.SnapshotFacts stateFacts() {
+        public DungeonEditorDungeonState.SnapshotFacts stateFacts() {
             return new DungeonEditorDungeonState.SnapshotFacts(
                     mapName,
                     stateRevision(repositoryRevision),
                     mapSnapshot(derived, editorHandles));
+        }
+
+        public DungeonAuthoredPublishedStateRepository.SnapshotPublication repositoryPublication() {
+            return new DungeonAuthoredPublishedStateRepository.SnapshotPublication(
+                    mapName,
+                    derived,
+                    editorHandles,
+                    repositoryRevision);
         }
     }
 
