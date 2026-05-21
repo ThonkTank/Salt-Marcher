@@ -8,7 +8,6 @@ import javafx.scene.control.ToggleButton;
 import javafx.scene.control.ToggleGroup;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Region;
-import src.view.slotcontent.controls.dungeoncontrol.DungeonControlPanelContentModel;
 import src.view.slotcontent.controls.dungeoncontrol.DungeonControlPanelView;
 
 final class DungeonEditorProjectionControlsView {

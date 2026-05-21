@@ -38,6 +38,7 @@ public final class DungeonEditorControlsView extends DungeonControlPanelView {
     static final String TOOL_BUTTON_STYLE = "tool-btn";
 
     private Consumer<DungeonEditorControlsViewInputEvent> viewInputEventHandler = ignored -> { };
+    @SuppressWarnings("PMD.LambdaCanBeMethodReference")
     private final DungeonEditorControlsEvents events = new DungeonEditorControlsEvents(event -> viewInputEventHandler.accept(event));
     private final DungeonEditorMapControlsView mapControls = new DungeonEditorMapControlsView(this, events);
     private final DungeonEditorProjectionControlsView projectionControls = new DungeonEditorProjectionControlsView(this, events);

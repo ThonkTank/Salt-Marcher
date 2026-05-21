@@ -258,9 +258,6 @@ final class DungeonEditorStateContentModel {
     }
 
     private static final class ProjectionTextSupport {
-        private ProjectionTextSupport() {
-        }
-
         private static String stateTextFor(
                 DungeonEditorStateSnapshot snapshot,
                 StateProjectionContext context

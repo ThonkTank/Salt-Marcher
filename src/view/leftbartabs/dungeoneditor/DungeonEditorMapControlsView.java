@@ -123,11 +123,10 @@ final class DungeonEditorMapControlsView {
             List<DungeonEditorMapControlsContentModel.MapItem> maps,
             String selectedKey
     ) {
-        DungeonEditorMapControlsContentModel.MapItem selectedMap = maps.stream()
+        return maps.stream()
                 .filter(item -> Objects.equals(item.key(), selectedKey))
                 .findFirst()
                 .orElse(null);
-        return selectedMap;
     }
 }
 

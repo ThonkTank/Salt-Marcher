@@ -480,7 +480,7 @@ final class DungeonEditorIntentHandler {
     }
 
     private static String normalizedEnumName(String value) {
-        return value == null ? "" : value.trim().toUpperCase(java.util.Locale.ROOT).replace('-', '_');
+        return value == null ? "" : value.trim().toUpperCase(Locale.ROOT).replace('-', '_');
     }
 
     private static int normalizeLevelDelta(double scrollDeltaY) {

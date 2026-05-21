@@ -74,9 +74,7 @@ public final class DungeonEditorStateView extends VBox {
         visualArea.setAccessibleText(VISUAL_DESCRIPTION_LABEL);
         VBox content = new VBox(6, title, visualTitle, visualArea);
         List<ExitEditor> exitAreas = new ArrayList<>();
-        List<DungeonEditorStateContentModel.RoomExitNarrationProjection> exits = card.exits();
-        for (int index = 0; index < exits.size(); index++) {
-            DungeonEditorStateContentModel.RoomExitNarrationProjection exit = exits.get(index);
+        for (DungeonEditorStateContentModel.RoomExitNarrationProjection exit : card.exits()) {
             Label exitTitle = muted(exit.label());
             TextArea exitArea = textArea(exit.description());
             exitTitle.setLabelFor(exitArea);

@@ -62,9 +62,6 @@ public final class DungeonEditorContributionModel {
         private static final String NO_MAPS_STATUS = "Keine Dungeon-Maps vorhanden.";
         private static final String NO_SELECTED_MAP_STATUS = "Kein Dungeon ausgewählt.";
 
-        private ProjectionFactory() {
-        }
-
         private static ProjectionBundle create(DungeonEditorControlsSnapshot controlsSnapshot) {
             ProjectionSource safeSource = ProjectionSource.from(controlsSnapshot);
             List<MapListEntry> mapEntries = safeSource.maps().stream().map(MapListEntry::from).toList();
