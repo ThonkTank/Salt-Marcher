@@ -2,6 +2,7 @@ package src.domain.dungeon.model.travel.model.session.model;
 
 import java.util.List;
 
+@SuppressWarnings("PMD.MissingStaticMethodInNonInstantiatableClass")
 public final class TravelDungeonSessionValues {
 
     private TravelDungeonSessionValues() {

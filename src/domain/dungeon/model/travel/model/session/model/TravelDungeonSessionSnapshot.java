@@ -4,6 +4,7 @@ import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.travel.model.session.model.TravelDungeonSessionSurface.SurfaceData;
 import src.domain.dungeon.model.travel.model.session.model.TravelDungeonSessionValues.TravelOverlayState;
 
+@SuppressWarnings("PMD.MissingStaticMethodInNonInstantiatableClass")
 public final class TravelDungeonSessionSnapshot {
 
     private TravelDungeonSessionSnapshot() {

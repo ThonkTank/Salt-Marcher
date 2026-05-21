@@ -5,6 +5,7 @@ import src.domain.dungeon.model.travel.model.session.model.TravelDungeonSessionS
 import src.domain.dungeon.model.travel.model.session.model.TravelDungeonSessionValues.MoveStatus;
 import src.domain.dungeon.model.travel.model.session.model.TravelDungeonSessionValues.OverworldTarget;
 
+@SuppressWarnings("PMD.MissingStaticMethodInNonInstantiatableClass")
 public final class TravelDungeonSessionMovement {
 
     private TravelDungeonSessionMovement() {
