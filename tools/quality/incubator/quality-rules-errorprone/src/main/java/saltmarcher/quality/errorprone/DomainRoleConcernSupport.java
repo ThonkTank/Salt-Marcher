@@ -638,18 +638,6 @@ final class DomainRoleConcernSupport {
         return name.startsWith("to") || name.startsWith("from");
     }
 
-    private static boolean isSameFeaturePublishedNonModelParameter(Symbol symbol, String feature) {
-        if (isSameFeaturePublishedNonModelType(symbol.asType().toString(), feature)) {
-            return true;
-        }
-        for (String referencedType : collectTypeReferences(symbol.asType())) {
-            if (isSameFeaturePublishedNonModelType(referencedType, feature)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
     private static boolean isDirectSameFeaturePublishedNonModelParameter(Symbol symbol, String feature) {
         return isSameFeaturePublishedNonModelType(symbol.asType().toString(), feature);
     }
