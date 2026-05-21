@@ -232,6 +232,26 @@ public final class DomainRoleBoundaryCheckersTest {
     }
 
     @Test
+    public void applicationServiceRejectsNonCommandBoundaryAdapterParameter() {
+        CompilationTestHelper.newInstance(DomainApplicationServiceRoleBoundaryChecker.class, getClass())
+                .addSourceLines(
+                        "src/domain/foo/FooSelectionApplicationService.java",
+                        "package src.domain.foo;",
+                        "import src.domain.foo.published.SelectionStatus;",
+                        "// BUG: Diagnostic contains: method parameter toUseCaseInput.status",
+                        "public final class FooSelectionApplicationService {",
+                        "  private static String toUseCaseInput(SelectionStatus status) {",
+                        "    return status.value();",
+                        "  }",
+                        "}")
+                .addSourceLines(
+                        "src/domain/foo/published/SelectionStatus.java",
+                        "package src.domain.foo.published;",
+                        "public record SelectionStatus(String value) { }")
+                .doTest();
+    }
+
+    @Test
     public void applicationServiceRejectsPublishedCommandPrivateMethodParameter() {
         CompilationTestHelper.newInstance(DomainApplicationServiceRoleBoundaryChecker.class, getClass())
                 .addSourceLines(

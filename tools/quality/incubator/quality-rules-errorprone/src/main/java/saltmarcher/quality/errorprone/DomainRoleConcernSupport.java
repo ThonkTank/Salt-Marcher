@@ -630,7 +630,7 @@ final class DomainRoleConcernSupport {
                 && modifiers.contains(Modifier.PRIVATE)
                 && modifiers.contains(Modifier.STATIC)
                 && isApplicationServiceBoundaryAdapterName(currentMethod)
-                && isDirectSameFeaturePublishedNonModelParameter(symbol, sourceRole.feature());
+                && isDirectSameFeaturePublishedCommandParameter(symbol, sourceRole.feature());
     }
 
     private static boolean isApplicationServiceBoundaryAdapterName(Symbol.MethodSymbol currentMethod) {
@@ -638,8 +638,10 @@ final class DomainRoleConcernSupport {
         return name.startsWith("to") || name.startsWith("from");
     }
 
-    private static boolean isDirectSameFeaturePublishedNonModelParameter(Symbol symbol, String feature) {
-        return isSameFeaturePublishedNonModelType(symbol.asType().toString(), feature);
+    private static boolean isDirectSameFeaturePublishedCommandParameter(Symbol symbol, String feature) {
+        String parameterType = symbol.asType().toString();
+        return isSameFeaturePublishedNonModelType(parameterType, feature)
+                && parameterType.endsWith("Command");
     }
 
     private static String ownerTypeName(Symbol symbol) {
