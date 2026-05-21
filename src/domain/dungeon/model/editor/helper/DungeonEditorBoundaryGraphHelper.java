@@ -124,7 +124,7 @@ public final class DungeonEditorBoundaryGraphHelper {
             long clusterId,
             int level
     ) {
-        Set<CellKey> cells = clusterCells(snapshot, clusterId, level);
+        Set<CellKey> cells = clusterCellsByCluster(snapshot, level).getOrDefault(clusterId, Set.of());
         Set<EdgeKey> result = new LinkedHashSet<>();
         for (CellKey cell : cells) {
             for (TravelHeading direction : TravelHeading.values()) {
@@ -169,7 +169,7 @@ public final class DungeonEditorBoundaryGraphHelper {
             long clusterId,
             int level
     ) {
-        Set<CellKey> cells = clusterCells(snapshot, clusterId, level);
+        Set<CellKey> cells = clusterCellsByCluster(snapshot, level).getOrDefault(clusterId, Set.of());
         Set<EdgeKey> result = new LinkedHashSet<>();
         for (CellKey cell : cells) {
             for (TravelHeading direction : TravelHeading.values()) {
@@ -181,26 +181,34 @@ public final class DungeonEditorBoundaryGraphHelper {
         return Set.copyOf(result);
     }
 
-    private static Set<CellKey> clusterCells(
+    public Map<Long, Set<CellKey>> clusterCellsByCluster(
             DungeonEditorWorkspaceValues.MapSnapshot snapshot,
-            long clusterId,
             int level
     ) {
-        if (snapshot == null || !DungeonEditorWorkspaceValues.hasId(clusterId)) {
-            return Set.of();
+        Map<Long, Set<CellKey>> result = new LinkedHashMap<>();
+        if (snapshot == null) {
+            return Map.of();
         }
-        Set<CellKey> result = new LinkedHashSet<>();
         for (DungeonEditorWorkspaceValues.Area area : snapshot.areas()) {
-            if (!area.kind().isRoom() || area.clusterId() != clusterId) {
+            if (!area.kind().isRoom() || !DungeonEditorWorkspaceValues.hasId(area.clusterId())) {
                 continue;
+            }
+            Set<CellKey> cells = result.get(area.clusterId());
+            if (cells == null) {
+                cells = new LinkedHashSet<>();
+                result.put(area.clusterId(), cells);
             }
             for (DungeonEditorWorkspaceValues.Cell cell : area.cells()) {
                 if (cell.level() == level) {
-                    result.add(new CellKey(cell.q(), cell.r(), cell.level()));
+                    cells.add(new CellKey(cell.q(), cell.r(), cell.level()));
                 }
             }
         }
-        return Set.copyOf(result);
+        Map<Long, Set<CellKey>> immutable = new LinkedHashMap<>();
+        for (Map.Entry<Long, Set<CellKey>> entry : result.entrySet()) {
+            immutable.put(entry.getKey(), Set.copyOf(entry.getValue()));
+        }
+        return Map.copyOf(immutable);
     }
 
     private static List<EdgeKey> shortestPath(VertexKey start, VertexKey goal, Set<EdgeKey> traversableEdges) {
