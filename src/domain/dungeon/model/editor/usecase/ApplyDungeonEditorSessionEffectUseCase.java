@@ -5,30 +5,29 @@ import java.util.function.Function;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.editor.model.interaction.model.DungeonEditorMainViewEffect;
 import src.domain.dungeon.model.editor.model.session.model.DungeonEditorDungeonFacts;
+import src.domain.dungeon.model.editor.model.session.model.DungeonEditorDungeonState;
 import src.domain.dungeon.model.editor.model.session.model.DungeonEditorSessionSnapshot;
 import src.domain.dungeon.model.editor.model.session.model.DungeonEditorSessionValues;
 import src.domain.dungeon.model.editor.model.session.model.DungeonEditorSessionWorkflow;
 import src.domain.dungeon.model.editor.model.workspace.model.DungeonEditorWorkspaceValues;
-import src.domain.dungeon.model.editor.port.DungeonEditorDungeonPort;
-import src.domain.dungeon.model.editor.repository.DungeonEditorDungeonRepository;
 
 public final class ApplyDungeonEditorSessionEffectUseCase {
     private final DungeonEditorSessionWorkflow workflow;
-    private final DungeonEditorDungeonRepository dungeonRepository;
-    private final DungeonEditorDungeonPort dungeonPort;
+    private final ApplyDungeonEditorAuthoredOperationUseCase applyOperationUseCase;
+    private final DungeonEditorDungeonState dungeonState;
     private final BuildDungeonEditorSnapshotUseCase snapshotBuilder;
     private final PublishDungeonEditorSnapshotUseCase snapshotPublicationUseCase;
 
     public ApplyDungeonEditorSessionEffectUseCase(
             DungeonEditorSessionWorkflow workflow,
-            DungeonEditorDungeonRepository dungeonRepository,
-            DungeonEditorDungeonPort dungeonPort,
+            ApplyDungeonEditorAuthoredOperationUseCase applyOperationUseCase,
+            DungeonEditorDungeonState dungeonState,
             BuildDungeonEditorSnapshotUseCase snapshotBuilder,
             PublishDungeonEditorSnapshotUseCase snapshotPublicationUseCase
     ) {
         this.workflow = Objects.requireNonNull(workflow, "workflow");
-        this.dungeonRepository = Objects.requireNonNull(dungeonRepository, "dungeonRepository");
-        this.dungeonPort = Objects.requireNonNull(dungeonPort, "dungeonPort");
+        this.applyOperationUseCase = Objects.requireNonNull(applyOperationUseCase, "applyOperationUseCase");
+        this.dungeonState = Objects.requireNonNull(dungeonState, "dungeonState");
         this.snapshotBuilder = Objects.requireNonNull(snapshotBuilder, "snapshotBuilder");
         this.snapshotPublicationUseCase =
                 Objects.requireNonNull(snapshotPublicationUseCase, "snapshotPublicationUseCase");
@@ -58,14 +57,16 @@ public final class ApplyDungeonEditorSessionEffectUseCase {
     void applyEffect(DungeonEditorMainViewEffect effect) {
         DungeonEditorSessionValues.Preview applyPreview = workflow.applyEffect(effect);
         if (applyPreview != null) {
-            dungeonRepository.applyOperation(workflow.selectedMapId(), applyPreview);
+            if (workflow.selectedMapId() != null) {
+                applyOperationUseCase.execute(workflow.selectedMapId(), applyPreview);
+            }
             workflow.clearPreviewWithStatus(currentFacts().mutationStatusText());
         }
         publishCurrent();
     }
 
     DungeonEditorDungeonFacts currentFacts() {
-        return dungeonPort.currentFacts(
+        return dungeonState.currentFacts(
                 workflow.selectedMapId(),
                 workflow.selection(),
                 workflow.preview());

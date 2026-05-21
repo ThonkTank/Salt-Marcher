@@ -4,20 +4,19 @@ import java.util.Objects;
 import src.domain.dungeon.model.editor.model.session.model.DungeonEditorSessionWorkflow;
 import src.domain.dungeon.model.editor.model.session.model.DungeonEditorRoomNarrationInput;
 import src.domain.dungeon.model.editor.model.workspace.model.DungeonEditorWorkspaceValues;
-import src.domain.dungeon.model.editor.repository.DungeonEditorDungeonRepository;
 
 public final class SaveDungeonEditorRoomNarrationUseCase {
     private final DungeonEditorSessionWorkflow workflow;
-    private final DungeonEditorDungeonRepository dungeonRepository;
+    private final SaveDungeonEditorAuthoredRoomNarrationUseCase saveRoomNarrationUseCase;
     private final ApplyDungeonEditorSessionEffectUseCase effectUseCase;
 
     public SaveDungeonEditorRoomNarrationUseCase(
             DungeonEditorSessionWorkflow workflow,
-            DungeonEditorDungeonRepository dungeonRepository,
+            SaveDungeonEditorAuthoredRoomNarrationUseCase saveRoomNarrationUseCase,
             ApplyDungeonEditorSessionEffectUseCase effectUseCase
     ) {
         this.workflow = Objects.requireNonNull(workflow, "workflow");
-        this.dungeonRepository = Objects.requireNonNull(dungeonRepository, "dungeonRepository");
+        this.saveRoomNarrationUseCase = Objects.requireNonNull(saveRoomNarrationUseCase, "saveRoomNarrationUseCase");
         this.effectUseCase = Objects.requireNonNull(effectUseCase, "effectUseCase");
     }
 
@@ -26,7 +25,9 @@ public final class SaveDungeonEditorRoomNarrationUseCase {
             effectUseCase.publishCurrent();
             return;
         }
-        dungeonRepository.saveRoomNarration(workflow.selectedMapId(), roomNarration);
+        if (workflow.selectedMapId() != null) {
+            saveRoomNarrationUseCase.execute(workflow.selectedMapId(), roomNarration);
+        }
         workflow.narrationSaved(effectUseCase.currentFacts().mutationStatusText());
         effectUseCase.publishCurrent();
     }

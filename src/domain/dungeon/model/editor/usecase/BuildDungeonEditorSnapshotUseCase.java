@@ -6,35 +6,43 @@ import src.domain.dungeon.model.editor.helper.DungeonEditorSnapshotProjectionLev
 import src.domain.dungeon.model.editor.helper.DungeonEditorSnapshotSelectionProjectionHelper;
 import src.domain.dungeon.model.editor.helper.DungeonEditorSnapshotStateProjectionHelper;
 import src.domain.dungeon.model.editor.model.session.model.DungeonEditorDungeonFacts;
+import src.domain.dungeon.model.editor.model.session.model.DungeonEditorDungeonState;
 import src.domain.dungeon.model.editor.model.session.model.DungeonEditorSession;
 import src.domain.dungeon.model.editor.model.session.model.DungeonEditorSessionSnapshot;
-import src.domain.dungeon.model.editor.port.DungeonEditorDungeonPort;
-import src.domain.dungeon.model.editor.repository.DungeonEditorDungeonRepository;
 import src.domain.dungeon.model.editor.model.workspace.model.DungeonEditorWorkspaceValues.MapId;
 import src.domain.dungeon.model.editor.model.workspace.model.DungeonEditorWorkspaceValues.MapSnapshot;
 import src.domain.dungeon.model.editor.model.workspace.model.DungeonEditorWorkspaceValues.MapSummary;
 
 public final class BuildDungeonEditorSnapshotUseCase {
-    private final DungeonEditorDungeonRepository dungeonRepository;
-    private final DungeonEditorDungeonPort dungeonPort;
+    private final SearchDungeonEditorMapCatalogUseCase searchMapsUseCase;
+    private final LoadDungeonEditorAuthoredMapUseCase loadMapUseCase;
+    private final DescribeDungeonEditorAuthoredSelectionUseCase describeSelectionUseCase;
+    private final PreviewDungeonEditorAuthoredOperationUseCase previewOperationUseCase;
+    private final DungeonEditorDungeonState dungeonState;
 
     public BuildDungeonEditorSnapshotUseCase(
-            DungeonEditorDungeonRepository dungeonRepository,
-            DungeonEditorDungeonPort dungeonPort
+            SearchDungeonEditorMapCatalogUseCase searchMapsUseCase,
+            LoadDungeonEditorAuthoredMapUseCase loadMapUseCase,
+            DescribeDungeonEditorAuthoredSelectionUseCase describeSelectionUseCase,
+            PreviewDungeonEditorAuthoredOperationUseCase previewOperationUseCase,
+            DungeonEditorDungeonState dungeonState
     ) {
-        this.dungeonRepository = dungeonRepository;
-        this.dungeonPort = dungeonPort;
+        this.searchMapsUseCase = searchMapsUseCase;
+        this.loadMapUseCase = loadMapUseCase;
+        this.describeSelectionUseCase = describeSelectionUseCase;
+        this.previewOperationUseCase = previewOperationUseCase;
+        this.dungeonState = dungeonState;
     }
 
     public DungeonEditorSessionSnapshot.SnapshotData execute(@Nullable DungeonEditorSession state) {
         DungeonEditorSession safeState = DungeonEditorSnapshotStateProjectionHelper.safeState(state);
-        dungeonRepository.searchMaps("");
-        List<MapSummary> maps = dungeonPort.currentFacts(null, safeState.selection(), safeState.preview()).maps();
+        searchMapsUseCase.execute("");
+        List<MapSummary> maps = dungeonState.currentFacts(null, safeState.selection(), safeState.preview()).maps();
         @Nullable MapId resolvedMapId = DungeonEditorSnapshotSelectionProjectionHelper.resolveSelectedMapId(
                 safeState.selectedMapId(),
                 maps);
         requestSurfaceFacts(resolvedMapId, safeState);
-        DungeonEditorDungeonFacts surfaceFacts = dungeonPort.currentFacts(
+        DungeonEditorDungeonFacts surfaceFacts = dungeonState.currentFacts(
                 resolvedMapId,
                 safeState.selection(),
                 safeState.preview());
@@ -61,19 +69,23 @@ public final class BuildDungeonEditorSnapshotUseCase {
     public @Nullable MapSnapshot loadCommittedSnapshot(
             @Nullable MapId mapId
     ) {
-        dungeonRepository.loadMap(mapId);
-        return dungeonPort.committedFacts(mapId).committedSnapshot();
+        if (mapId != null) {
+            loadMapUseCase.execute(mapId);
+        }
+        return dungeonState.committedFacts(mapId).committedSnapshot();
     }
 
     private void requestSurfaceFacts(@Nullable MapId mapId, DungeonEditorSession state) {
-        dungeonRepository.loadMap(mapId);
         if (mapId != null) {
-            dungeonRepository.describeSelection(
+            loadMapUseCase.execute(mapId);
+        }
+        if (mapId != null) {
+            describeSelectionUseCase.execute(
                     mapId,
                     state.selection().topologyRef(),
                     state.selection().clusterId(),
                     state.selection().clusterSelection());
-            dungeonRepository.previewOperation(mapId, state.preview());
+            previewOperationUseCase.execute(mapId, state.preview());
         }
     }
 }

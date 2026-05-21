@@ -1,29 +1,28 @@
 package src.domain.dungeon.model.editor.usecase;
 
 import java.util.Objects;
+import src.domain.dungeon.model.editor.model.session.model.DungeonEditorDungeonState;
 import src.domain.dungeon.model.editor.model.session.model.DungeonEditorSessionWorkflow;
 import src.domain.dungeon.model.editor.model.workspace.model.DungeonEditorWorkspaceValues;
-import src.domain.dungeon.model.editor.port.DungeonEditorDungeonPort;
-import src.domain.dungeon.model.editor.repository.DungeonEditorDungeonRepository;
 
 public final class CreateDungeonEditorMapUseCase {
     private final DungeonEditorSessionWorkflow workflow;
-    private final DungeonEditorDungeonRepository dungeonRepository;
-    private final DungeonEditorDungeonPort dungeonPort;
+    private final CreateDungeonEditorMapCatalogUseCase createMapUseCase;
+    private final DungeonEditorDungeonState dungeonState;
     private final BuildDungeonEditorSnapshotUseCase snapshotBuilder;
     private final PublishDungeonEditorSnapshotUseCase snapshotPublicationUseCase;
     private final InterpretDungeonEditorMainViewInputUseCase mainViewInterpreter;
     public CreateDungeonEditorMapUseCase(
             DungeonEditorSessionWorkflow workflow,
-            DungeonEditorDungeonRepository dungeonRepository,
-            DungeonEditorDungeonPort dungeonPort,
+            CreateDungeonEditorMapCatalogUseCase createMapUseCase,
+            DungeonEditorDungeonState dungeonState,
             BuildDungeonEditorSnapshotUseCase snapshotBuilder,
             InterpretDungeonEditorMainViewInputUseCase mainViewInterpreter,
             PublishDungeonEditorSnapshotUseCase snapshotPublicationUseCase
     ) {
         this.workflow = Objects.requireNonNull(workflow, "workflow");
-        this.dungeonRepository = Objects.requireNonNull(dungeonRepository, "dungeonRepository");
-        this.dungeonPort = Objects.requireNonNull(dungeonPort, "dungeonPort");
+        this.createMapUseCase = Objects.requireNonNull(createMapUseCase, "createMapUseCase");
+        this.dungeonState = Objects.requireNonNull(dungeonState, "dungeonState");
         this.snapshotBuilder = Objects.requireNonNull(snapshotBuilder, "snapshotBuilder");
         this.snapshotPublicationUseCase =
                 Objects.requireNonNull(snapshotPublicationUseCase, "snapshotPublicationUseCase");
@@ -31,8 +30,8 @@ public final class CreateDungeonEditorMapUseCase {
     }
 
     public void execute(String mapName) {
-        dungeonRepository.createMap(mapName);
-        DungeonEditorWorkspaceValues.MapId nextMapId = dungeonPort.currentFacts(
+        createMapUseCase.execute(mapName);
+        DungeonEditorWorkspaceValues.MapId nextMapId = dungeonState.currentFacts(
                 workflow.selectedMapId(),
                 workflow.selection(),
                 workflow.preview()).mutationMapId();

@@ -1,6 +1,7 @@
 package src.domain.dungeon.model.map.repository;
 
 import java.util.List;
+import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.map.model.DungeonCell;
 import src.domain.dungeon.model.map.model.DungeonDerivedState;
 import src.domain.dungeon.model.map.model.DungeonEdgeDirection;
@@ -17,20 +18,11 @@ public interface DungeonAuthoredPublishedStateRepository {
 
     void publishSearch(CatalogPublication result);
 
-    void publishCreated(DungeonMapIdentity mapId);
+    void publishCreated(MapMutationPublication mutation);
 
-    void publishRenamed(DungeonMapIdentity mapId);
+    void publishRenamed(MapMutationPublication mutation);
 
-    void publishDeleted(DungeonMapIdentity mapId);
-
-    record CatalogPublication(List<MapSummaryPublication> maps) {
-        public CatalogPublication {
-            maps = maps == null ? List.of() : List.copyOf(maps);
-        }
-    }
-
-    record MapSummaryPublication(DungeonMapIdentity mapId, String mapName, long revision) {
-    }
+    void publishDeleted(MapMutationPublication mutation);
 
     record SnapshotPublication(
             String mapName,
@@ -39,6 +31,7 @@ public interface DungeonAuthoredPublishedStateRepository {
             long revision
     ) {
         public SnapshotPublication {
+            mapName = mapName == null || mapName.isBlank() ? "Dungeon" : mapName;
             editorHandles = editorHandles == null ? List.of() : List.copyOf(editorHandles);
         }
     }
@@ -50,8 +43,36 @@ public interface DungeonAuthoredPublishedStateRepository {
             List<RoomNarrationPublication> roomNarrations
     ) {
         public InspectorPublication {
+            title = title == null ? "" : title;
+            description = description == null ? "" : description;
             facts = facts == null ? List.of() : List.copyOf(facts);
             roomNarrations = roomNarrations == null ? List.of() : List.copyOf(roomNarrations);
+        }
+    }
+
+    record MutationPublication(
+            @Nullable SnapshotPublication snapshot,
+            List<String> validationMessages,
+            List<String> reactionMessages
+    ) {
+        public MutationPublication {
+            validationMessages = validationMessages == null ? List.of() : List.copyOf(validationMessages);
+            reactionMessages = reactionMessages == null ? List.of() : List.copyOf(reactionMessages);
+        }
+    }
+
+    record CatalogPublication(List<MapSummaryPublication> maps) {
+        public CatalogPublication {
+            maps = maps == null ? List.of() : List.copyOf(maps);
+        }
+    }
+
+    record MapMutationPublication(DungeonMapIdentity mapId) {
+    }
+
+    record MapSummaryPublication(DungeonMapIdentity mapId, String mapName, long revision) {
+        public MapSummaryPublication {
+            mapName = mapName == null || mapName.isBlank() ? "Dungeon Map" : mapName;
         }
     }
 
@@ -62,6 +83,8 @@ public interface DungeonAuthoredPublishedStateRepository {
             List<RoomExitNarrationPublication> exits
     ) {
         public RoomNarrationPublication {
+            roomName = roomName == null || roomName.isBlank() ? "Raum " + roomId : roomName;
+            visualDescription = visualDescription == null ? "" : visualDescription;
             exits = exits == null ? List.of() : List.copyOf(exits);
         }
     }
@@ -72,16 +95,11 @@ public interface DungeonAuthoredPublishedStateRepository {
             DungeonEdgeDirection direction,
             String description
     ) {
-    }
-
-    record MutationPublication(
-            SnapshotPublication snapshot,
-            List<String> validationMessages,
-            List<String> reactionMessages
-    ) {
-        public MutationPublication {
-            validationMessages = validationMessages == null ? List.of() : List.copyOf(validationMessages);
-            reactionMessages = reactionMessages == null ? List.of() : List.copyOf(reactionMessages);
+        public RoomExitNarrationPublication {
+            label = label == null || label.isBlank() ? "Ausgang" : label;
+            cell = cell == null ? new DungeonCell(0, 0, 0) : cell;
+            direction = direction == null ? DungeonEdgeDirection.NORTH : direction;
+            description = description == null ? "" : description;
         }
     }
 }
