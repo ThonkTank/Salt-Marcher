@@ -2,8 +2,7 @@ package src.domain.dungeon.model.editor.usecase;
 
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
-import src.domain.dungeon.model.editor.helper.DungeonEditorAuthoredPublicationProjectionHelper;
-import src.domain.dungeon.model.editor.helper.DungeonEditorAuthoredPublicationProjectionHelper.SnapshotPublication;
+import src.domain.dungeon.model.editor.usecase.DungeonEditorAuthoredPublicationUseCase.SnapshotPublication;
 import src.domain.dungeon.model.editor.model.session.model.DungeonEditorDungeonState;
 import src.domain.dungeon.model.map.repository.DungeonAuthoredPublishedStateRepository;
 import src.domain.dungeon.model.map.usecase.LoadDungeonSnapshotUseCase;
@@ -26,7 +25,7 @@ public final class PublishDungeonEditorAuthoredSnapshotUseCase {
         SnapshotPublication publication = publication(snapshot);
         state.replaceSnapshot(publication == null
                 ? null
-                : DungeonEditorAuthoredPublicationProjectionHelper.stateFacts(publication));
+                : DungeonEditorAuthoredPublicationUseCase.stateFacts(publication));
         if (publication != null) {
             publishedStateRepository.publishSnapshot(repositoryPublication(publication));
         }
@@ -38,7 +37,7 @@ public final class PublishDungeonEditorAuthoredSnapshotUseCase {
         if (snapshot == null) {
             return null;
         }
-        return DungeonEditorAuthoredPublicationProjectionHelper.snapshotPublication(
+        return DungeonEditorAuthoredPublicationUseCase.snapshotPublication(
                 snapshot.mapName(),
                 snapshot.derived(),
                 snapshot.editorHandles(),

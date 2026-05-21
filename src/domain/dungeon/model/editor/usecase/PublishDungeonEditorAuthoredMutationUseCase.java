@@ -2,8 +2,7 @@ package src.domain.dungeon.model.editor.usecase;
 
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
-import src.domain.dungeon.model.editor.helper.DungeonEditorAuthoredPublicationProjectionHelper;
-import src.domain.dungeon.model.editor.helper.DungeonEditorAuthoredPublicationProjectionHelper.SnapshotPublication;
+import src.domain.dungeon.model.editor.usecase.DungeonEditorAuthoredPublicationUseCase.SnapshotPublication;
 import src.domain.dungeon.model.editor.model.session.model.DungeonEditorDungeonState;
 import src.domain.dungeon.model.map.repository.DungeonAuthoredPublishedStateRepository;
 import src.domain.dungeon.model.map.usecase.ApplyDungeonEditorOperationUseCase;
@@ -37,7 +36,7 @@ public final class PublishDungeonEditorAuthoredMutationUseCase {
     ) {
         DungeonEditorDungeonState.SnapshotFacts snapshot = snapshotPublication == null
                 ? null
-                : DungeonEditorAuthoredPublicationProjectionHelper.stateFacts(snapshotPublication);
+                : DungeonEditorAuthoredPublicationUseCase.stateFacts(snapshotPublication);
         return snapshot == null ? null : new DungeonEditorDungeonState.MutationFacts(snapshot, statusText(mutation));
     }
 
@@ -47,7 +46,7 @@ public final class PublishDungeonEditorAuthoredMutationUseCase {
         if (mutation == null || mutation.snapshot() == null) {
             return null;
         }
-        return DungeonEditorAuthoredPublicationProjectionHelper.snapshotPublication(
+        return DungeonEditorAuthoredPublicationUseCase.snapshotPublication(
                 mutation.snapshot().mapName(),
                 mutation.snapshot().derived(),
                 mutation.snapshot().editorHandles(),

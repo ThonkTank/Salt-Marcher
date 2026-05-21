@@ -1,4 +1,4 @@
-package src.domain.dungeon.model.editor.helper;
+package src.domain.dungeon.model.editor.usecase;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -17,9 +17,9 @@ import src.domain.dungeon.model.map.model.DungeonFeatureFacts;
 import src.domain.dungeon.model.map.model.DungeonMapFacts;
 import src.domain.dungeon.model.map.model.DungeonTopology;
 
-public final class DungeonEditorAuthoredPublicationProjectionHelper {
+public final class DungeonEditorAuthoredPublicationUseCase {
 
-    private DungeonEditorAuthoredPublicationProjectionHelper() {
+    private DungeonEditorAuthoredPublicationUseCase() {
     }
 
     public static SnapshotPublication snapshotPublication(
