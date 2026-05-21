@@ -57,6 +57,15 @@ public final class DungeonTravelContributionModel {
         return projectionLevel.get();
     }
 
+    void bindStateContentModel(DungeonTravelStateContentModel contentModel) {
+        if (contentModel == null) {
+            return;
+        }
+        state.addListener((ignored, before, after) -> contentModel.showState(after));
+        actions.addListener((ignored, before, after) -> contentModel.showActions(toStateActionItems(after)));
+        contentModel.apply(state.get(), toStateActionItems(actions.get()));
+    }
+
     void apply(TravelDungeonSnapshot snapshot) {
         TravelDungeonSnapshot safeSnapshot = snapshot == null
                 ? TravelDungeonSnapshot.empty()
@@ -113,6 +122,25 @@ public final class DungeonTravelContributionModel {
         String descriptionText() {
             return descriptionText;
         }
+    }
+
+    private static List<DungeonTravelStateContentModel.ActionItem> toStateActionItems(List<ActionProjection> projections) {
+        if (projections == null) {
+            return List.of();
+        }
+        return projections.stream()
+                .map(DungeonTravelContributionModel::toStateActionItem)
+                .toList();
+    }
+
+    private static DungeonTravelStateContentModel.ActionItem toStateActionItem(ActionProjection projection) {
+        if (projection == null) {
+            return DungeonTravelStateContentModel.ActionItem.of("", "", "");
+        }
+        return DungeonTravelStateContentModel.ActionItem.of(
+                projection.actionId(),
+                projection.buttonLabel(),
+                projection.descriptionText());
     }
 
     static final class OverlayProjection {

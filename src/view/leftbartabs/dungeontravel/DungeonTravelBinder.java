@@ -34,7 +34,7 @@ final class DungeonTravelBinder {
         DungeonTravelStateView state = new DungeonTravelStateView();
         main.bind(mapContentModel);
         controlsContentModel.bindTo(contributionModel);
-        stateContentModel.bindTo(contributionModel);
+        contributionModel.bindStateContentModel(stateContentModel);
         controls.bind(controlsContentModel);
         state.bind(stateContentModel);
         controls.onTravelControlsInputEvent(intentHandler::consume);

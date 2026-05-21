@@ -2,7 +2,6 @@ package src.view.leftbartabs.dungeontravel;
 
 import java.util.List;
 import java.util.function.Consumer;
-import javafx.beans.property.StringProperty;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
@@ -11,124 +10,94 @@ import javafx.scene.layout.VBox;
 public final class DungeonTravelStateView extends VBox {
 
     private final Label body = new Label();
-    private final ActionListView actions = new ActionListView();
+    private final VBox rows = new VBox(6);
     private Consumer<DungeonTravelStateViewInputEvent> viewInputEventHandler = ignored -> {};
 
     public DungeonTravelStateView() {
         getStyleClass().addAll("surface-root", "control-stack", "dungeon-state-panel");
         body.setWrapText(true);
-        getChildren().add(new StateCard(body, actions));
-    }
-
-    public StringProperty stateTextProperty() {
-        return body.textProperty();
+        getChildren().add(new StateCard(body, rows));
     }
 
     public void onViewInputEvent(Consumer<DungeonTravelStateViewInputEvent> handler) {
         viewInputEventHandler = handler == null ? ignored -> {} : handler;
     }
 
-    private void showActions(List<DungeonTravelContributionModel.ActionProjection> items) {
-        actions.showItems(items, viewInputEventHandler);
+    private void showActions(List<DungeonTravelStateContentModel.ActionItem> items) {
+        ActionRows.showItems(rows, items, this::publishViewInputEvent);
+    }
+
+    private void publishViewInputEvent(DungeonTravelStateViewInputEvent event) {
+        viewInputEventHandler.accept(event);
     }
 
     public void bind(DungeonTravelStateContentModel contentModel) {
         if (contentModel == null) {
             return;
         }
-        stateTextProperty().bind(contentModel.stateProperty());
+        body.textProperty().bind(contentModel.stateProperty());
         contentModel.actionsProperty().addListener((ignored, before, after) -> showActions(after));
         showActions(contentModel.actionsProperty().get());
     }
 
-    private static final class ActionItem {
-
-        private final String actionId;
-        private final String buttonLabel;
-        private final String descriptionText;
-
-        private ActionItem(String actionId, String buttonLabel, String descriptionText) {
-            this.actionId = actionId;
-            this.buttonLabel = buttonLabel;
-            this.descriptionText = descriptionText;
-        }
-
-        static ActionItem from(DungeonTravelContributionModel.ActionProjection projection) {
-            return new ActionItem(
-                    projection.actionId(),
-                    projection.buttonLabel(),
-                    projection.descriptionText());
-        }
-
-        String actionId() {
-            return actionId;
-        }
-
-        String buttonLabel() {
-            return buttonLabel;
-        }
-
-        boolean hasDescription() {
-            return !descriptionText.isBlank();
-        }
-
-        String descriptionText() {
-            return descriptionText;
-        }
-    }
-
     private static final class StateCard extends VBox {
 
-        private StateCard(Label body, ActionListView actions) {
-            super(6, new StyledLabel("Reisestatus", "panel-title"), body, actions);
+        private StateCard(Label body, VBox rows) {
+            super(6, new StyledLabel("Reisestatus", "panel-title"), body, rows);
             getStyleClass().addAll("card-surface", "content-card");
         }
     }
 
-    private static final class ActionListView extends VBox {
+    private static final class ActionRows {
 
-        private ActionListView() {
-            super(6);
-        }
-
-        private void showItems(
-                List<DungeonTravelContributionModel.ActionProjection> items,
+        private static void showItems(
+                VBox rows,
+                List<DungeonTravelStateContentModel.ActionItem> items,
                 Consumer<DungeonTravelStateViewInputEvent> publisher
         ) {
-            List<DungeonTravelContributionModel.ActionProjection> safeItems = items == null ? List.of() : items;
+            List<DungeonTravelStateContentModel.ActionItem> safeItems = items == null ? List.of() : items;
             if (safeItems.isEmpty()) {
-                getChildren().setAll(new HintLabel("Keine Reiseaktionen am aktuellen Standort."));
+                rows.getChildren().setAll(new HintLabel("Keine Reiseaktionen am aktuellen Standort."));
                 return;
             }
             List<Node> nodes = new java.util.ArrayList<>();
             nodes.add(new StyledLabel("Aktionen", "section-header", "text-muted"));
-            for (DungeonTravelContributionModel.ActionProjection projection : safeItems) {
-                nodes.add(new ActionRow(ActionItem.from(projection), publisher));
+            for (DungeonTravelStateContentModel.ActionItem item : safeItems) {
+                nodes.add(new ActionRow(
+                        item.actionId(),
+                        item.buttonLabel(),
+                        item.hasDescription(),
+                        item.descriptionText(),
+                        publisher));
             }
-            getChildren().setAll(nodes);
+            rows.getChildren().setAll(nodes);
         }
     }
 
     private static final class ActionRow extends VBox {
 
         private ActionRow(
-                ActionItem item,
+                String actionId,
+                String buttonLabel,
+                boolean hasDescription,
+                String descriptionText,
                 Consumer<DungeonTravelStateViewInputEvent> publisher
         ) {
             super(4);
-            getChildren().add(actionButton(item, publisher));
-            if (item.hasDescription()) {
-                getChildren().add(new HintLabel(item.descriptionText()));
+            getChildren().add(actionButton(actionId, buttonLabel, publisher));
+            if (hasDescription) {
+                getChildren().add(new HintLabel(descriptionText));
             }
         }
 
         private static Button actionButton(
-                ActionItem item,
+                String actionId,
+                String buttonLabel,
                 Consumer<DungeonTravelStateViewInputEvent> publisher
         ) {
-            Button button = new StyledButton(item.buttonLabel(), "toolbar-action-button", "neutral-action");
+            Button button = new StyledButton(buttonLabel, "toolbar-action-button", "neutral-action");
             button.setMaxWidth(Double.MAX_VALUE);
-            button.setOnAction(event -> publisher.accept(new DungeonTravelStateViewInputEvent(item.actionId())));
+            button.setOnAction(event -> publisher.accept(new DungeonTravelStateViewInputEvent(actionId)));
             return button;
         }
     }
