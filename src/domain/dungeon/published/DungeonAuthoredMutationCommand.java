@@ -6,6 +6,19 @@ import org.jspecify.annotations.Nullable;
 public sealed interface DungeonAuthoredMutationCommand permits
         DungeonAuthoredMutationCommand.Operation {
 
+    String OPERATION_NOOP = "NOOP";
+    String OPERATION_MOVE_TOPOLOGY_ELEMENT = "MOVE_TOPOLOGY_ELEMENT";
+    String OPERATION_MOVE_EDITOR_HANDLE = "MOVE_EDITOR_HANDLE";
+    String OPERATION_MOVE_BOUNDARY_STRETCH = "MOVE_BOUNDARY_STRETCH";
+    String OPERATION_MOVE_ROOM_ANCHOR = "MOVE_ROOM_ANCHOR";
+    String OPERATION_ROOM_RECTANGLE = "ROOM_RECTANGLE";
+    String OPERATION_EDIT_CLUSTER_BOUNDARIES = "EDIT_CLUSTER_BOUNDARIES";
+    String OPERATION_CREATE_CORRIDOR = "CREATE_CORRIDOR";
+    String OPERATION_EXTEND_CORRIDOR = "EXTEND_CORRIDOR";
+    String OPERATION_MERGE_CORRIDORS = "MERGE_CORRIDORS";
+    String OPERATION_DELETE_CORRIDOR = "DELETE_CORRIDOR";
+    String OPERATION_SAVE_ROOM_NARRATION = "SAVE_ROOM_NARRATION";
+
     default String actionName() {
         return Action.APPLY.name();
     }
@@ -15,7 +28,7 @@ public sealed interface DungeonAuthoredMutationCommand permits
     }
 
     default String operationKindName() {
-        return "NOOP";
+        return OPERATION_NOOP;
     }
 
     default int deltaQ() {
@@ -294,18 +307,18 @@ public sealed interface DungeonAuthoredMutationCommand permits
         @Override
         public String operationKindName() {
             return switch (operation) {
-                case null -> "NOOP";
-                case DungeonEditorOperation.MoveTopologyElement ignored -> "MOVE_TOPOLOGY_ELEMENT";
-                case DungeonEditorOperation.MoveEditorHandle ignored -> "MOVE_EDITOR_HANDLE";
-                case DungeonEditorOperation.MoveBoundaryStretch ignored -> "MOVE_BOUNDARY_STRETCH";
-                case DungeonEditorOperation.MoveRoomAnchor ignored -> "MOVE_ROOM_ANCHOR";
-                case DungeonEditorOperation.RoomRectangle ignored -> "ROOM_RECTANGLE";
-                case DungeonEditorOperation.EditClusterBoundaries ignored -> "EDIT_CLUSTER_BOUNDARIES";
-                case DungeonEditorOperation.CreateCorridor ignored -> "CREATE_CORRIDOR";
-                case DungeonEditorOperation.ExtendCorridor ignored -> "EXTEND_CORRIDOR";
-                case DungeonEditorOperation.MergeCorridors ignored -> "MERGE_CORRIDORS";
-                case DungeonEditorOperation.DeleteCorridor ignored -> "DELETE_CORRIDOR";
-                case DungeonEditorOperation.SaveRoomNarration ignored -> "SAVE_ROOM_NARRATION";
+                case null -> OPERATION_NOOP;
+                case DungeonEditorOperation.MoveTopologyElement ignored -> OPERATION_MOVE_TOPOLOGY_ELEMENT;
+                case DungeonEditorOperation.MoveEditorHandle ignored -> OPERATION_MOVE_EDITOR_HANDLE;
+                case DungeonEditorOperation.MoveBoundaryStretch ignored -> OPERATION_MOVE_BOUNDARY_STRETCH;
+                case DungeonEditorOperation.MoveRoomAnchor ignored -> OPERATION_MOVE_ROOM_ANCHOR;
+                case DungeonEditorOperation.RoomRectangle ignored -> OPERATION_ROOM_RECTANGLE;
+                case DungeonEditorOperation.EditClusterBoundaries ignored -> OPERATION_EDIT_CLUSTER_BOUNDARIES;
+                case DungeonEditorOperation.CreateCorridor ignored -> OPERATION_CREATE_CORRIDOR;
+                case DungeonEditorOperation.ExtendCorridor ignored -> OPERATION_EXTEND_CORRIDOR;
+                case DungeonEditorOperation.MergeCorridors ignored -> OPERATION_MERGE_CORRIDORS;
+                case DungeonEditorOperation.DeleteCorridor ignored -> OPERATION_DELETE_CORRIDOR;
+                case DungeonEditorOperation.SaveRoomNarration ignored -> OPERATION_SAVE_ROOM_NARRATION;
             };
         }
 

@@ -1,5 +1,18 @@
 package src.domain.dungeon;
 
+import static src.domain.dungeon.published.DungeonAuthoredMutationCommand.OPERATION_CREATE_CORRIDOR;
+import static src.domain.dungeon.published.DungeonAuthoredMutationCommand.OPERATION_DELETE_CORRIDOR;
+import static src.domain.dungeon.published.DungeonAuthoredMutationCommand.OPERATION_EDIT_CLUSTER_BOUNDARIES;
+import static src.domain.dungeon.published.DungeonAuthoredMutationCommand.OPERATION_EXTEND_CORRIDOR;
+import static src.domain.dungeon.published.DungeonAuthoredMutationCommand.OPERATION_MERGE_CORRIDORS;
+import static src.domain.dungeon.published.DungeonAuthoredMutationCommand.OPERATION_MOVE_BOUNDARY_STRETCH;
+import static src.domain.dungeon.published.DungeonAuthoredMutationCommand.OPERATION_MOVE_EDITOR_HANDLE;
+import static src.domain.dungeon.published.DungeonAuthoredMutationCommand.OPERATION_MOVE_ROOM_ANCHOR;
+import static src.domain.dungeon.published.DungeonAuthoredMutationCommand.OPERATION_MOVE_TOPOLOGY_ELEMENT;
+import static src.domain.dungeon.published.DungeonAuthoredMutationCommand.OPERATION_NOOP;
+import static src.domain.dungeon.published.DungeonAuthoredMutationCommand.OPERATION_ROOM_RECTANGLE;
+import static src.domain.dungeon.published.DungeonAuthoredMutationCommand.OPERATION_SAVE_ROOM_NARRATION;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -59,12 +72,12 @@ public final class DungeonAuthoredApplicationService {
                         : ApplyDungeonAuthoredMutationUseCase.ActionInput.APPLY,
                 command.mapIdValue(),
                 switch (command.operationKindName()) {
-            case "MOVE_TOPOLOGY_ELEMENT" -> new ApplyDungeonAuthoredMutationUseCase.MoveTopologyElementInput(
+            case OPERATION_MOVE_TOPOLOGY_ELEMENT -> new ApplyDungeonAuthoredMutationUseCase.MoveTopologyElementInput(
                     topologyRef(command.topologyKindName(), command.topologyId()),
                     command.deltaQ(),
                     command.deltaR(),
                     command.deltaLevel());
-            case "MOVE_EDITOR_HANDLE" -> new ApplyDungeonAuthoredMutationUseCase.MoveEditorHandleInput(
+            case OPERATION_MOVE_EDITOR_HANDLE -> new ApplyDungeonAuthoredMutationUseCase.MoveEditorHandleInput(
                     new ApplyDungeonAuthoredMutationUseCase.HandleInput(
                             command.handleKindName(),
                             topologyRef(command.handleTopologyKindName(), command.handleTopologyId()),
@@ -78,7 +91,7 @@ public final class DungeonAuthoredApplicationService {
                     command.deltaQ(),
                     command.deltaR(),
                     command.deltaLevel());
-            case "MOVE_BOUNDARY_STRETCH" -> {
+            case OPERATION_MOVE_BOUNDARY_STRETCH -> {
                 List<ApplyDungeonAuthoredMutationUseCase.EdgeInput> edges = new ArrayList<>();
                 for (int index = 0; index < command.edgeCount(); index++) {
                     edges.add(edge(
@@ -96,14 +109,14 @@ public final class DungeonAuthoredApplicationService {
                         command.deltaR(),
                         command.deltaLevel());
             }
-            case "MOVE_ROOM_ANCHOR" -> new ApplyDungeonAuthoredMutationUseCase.MoveRoomAnchorInput(
+            case OPERATION_MOVE_ROOM_ANCHOR -> new ApplyDungeonAuthoredMutationUseCase.MoveRoomAnchorInput(
                     command.deltaQ(),
                     command.deltaR());
-            case "ROOM_RECTANGLE" -> new ApplyDungeonAuthoredMutationUseCase.RoomRectangleInput(
+            case OPERATION_ROOM_RECTANGLE -> new ApplyDungeonAuthoredMutationUseCase.RoomRectangleInput(
                     command.rectangleActionName(),
                     cell(command.startCellQ(), command.startCellR(), command.startCellLevel()),
                     cell(command.endCellQ(), command.endCellR(), command.endCellLevel()));
-            case "EDIT_CLUSTER_BOUNDARIES" -> {
+            case OPERATION_EDIT_CLUSTER_BOUNDARIES -> {
                 List<ApplyDungeonAuthoredMutationUseCase.EdgeInput> edges = new ArrayList<>();
                 for (int index = 0; index < command.edgeCount(); index++) {
                     edges.add(edge(
@@ -120,7 +133,7 @@ public final class DungeonAuthoredApplicationService {
                         command.boundaryKindName(),
                         command.deleteBoundary());
             }
-            case "CREATE_CORRIDOR" -> new ApplyDungeonAuthoredMutationUseCase.CreateCorridorInput(
+            case OPERATION_CREATE_CORRIDOR -> new ApplyDungeonAuthoredMutationUseCase.CreateCorridorInput(
                     corridorEndpoint(
                             command.endpointKindName(true),
                             command.endpointHostCorridorId(true),
@@ -143,7 +156,7 @@ public final class DungeonAuthoredApplicationService {
                             command.endpointDirection(false),
                             command.endpointTopologyKindName(false),
                             command.endpointTopologyId(false)));
-            case "EXTEND_CORRIDOR" -> new ApplyDungeonAuthoredMutationUseCase.ExtendCorridorInput(
+            case OPERATION_EXTEND_CORRIDOR -> new ApplyDungeonAuthoredMutationUseCase.ExtendCorridorInput(
                     command.corridorId(),
                     new ApplyDungeonAuthoredMutationUseCase.CorridorRoomEndpointInput(
                             command.roomEndpointRoomId(),
@@ -155,12 +168,12 @@ public final class DungeonAuthoredApplicationService {
                                     command.roomEndpointCellLevel()),
                             command.roomEndpointDirection(),
                             topologyRef(command.roomEndpointTopologyKindName(), command.roomEndpointTopologyId())));
-            case "MERGE_CORRIDORS" -> new ApplyDungeonAuthoredMutationUseCase.MergeCorridorsInput(
+            case OPERATION_MERGE_CORRIDORS -> new ApplyDungeonAuthoredMutationUseCase.MergeCorridorsInput(
                     command.corridorId(),
                     command.mergedCorridorId());
-            case "DELETE_CORRIDOR" -> new ApplyDungeonAuthoredMutationUseCase.DeleteCorridorInput(
+            case OPERATION_DELETE_CORRIDOR -> new ApplyDungeonAuthoredMutationUseCase.DeleteCorridorInput(
                     command.corridorId());
-            case "SAVE_ROOM_NARRATION" -> {
+            case OPERATION_SAVE_ROOM_NARRATION -> {
                 List<ApplyDungeonAuthoredMutationUseCase.RoomExitNarrationInput> exits = new ArrayList<>();
                 for (int index = 0; index < command.exitCount(); index++) {
                     exits.add(new ApplyDungeonAuthoredMutationUseCase.RoomExitNarrationInput(
@@ -173,7 +186,7 @@ public final class DungeonAuthoredApplicationService {
                         command.visualDescription(),
                         List.copyOf(exits));
             }
-            case "NOOP" -> ApplyDungeonAuthoredMutationUseCase.NoopInput.INSTANCE;
+            case OPERATION_NOOP -> ApplyDungeonAuthoredMutationUseCase.NoopInput.INSTANCE;
             default -> throw new IllegalArgumentException("Unsupported authored mutation operation");
         });
     }
