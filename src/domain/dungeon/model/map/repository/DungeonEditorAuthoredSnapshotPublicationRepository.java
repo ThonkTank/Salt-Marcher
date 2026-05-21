@@ -1,4 +1,4 @@
-package src.domain.dungeon.model.editor.usecase;
+package src.domain.dungeon.model.map.repository;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -16,10 +16,8 @@ import src.domain.dungeon.model.map.model.DungeonEditorHandleFacts;
 import src.domain.dungeon.model.map.model.DungeonFeatureFacts;
 import src.domain.dungeon.model.map.model.DungeonMapFacts;
 import src.domain.dungeon.model.map.model.DungeonTopology;
-import src.domain.dungeon.model.map.repository.DungeonAuthoredPublishedStateRepository;
-import src.domain.dungeon.model.map.usecase.LoadDungeonSnapshotUseCase;
 
-public final class BuildDungeonEditorAuthoredSnapshotPublicationUseCase {
+public final class DungeonEditorAuthoredSnapshotPublicationRepository {
 
     public record SnapshotPublicationData(
             DungeonEditorDungeonState.@Nullable SnapshotFacts stateFacts,
@@ -27,33 +25,40 @@ public final class BuildDungeonEditorAuthoredSnapshotPublicationUseCase {
     ) {
     }
 
-    public SnapshotPublicationData execute(LoadDungeonSnapshotUseCase.@Nullable DungeonSnapshotData snapshot) {
-        return new SnapshotPublicationData(snapshotFacts(snapshot), snapshotPublication(snapshot));
+    public SnapshotPublicationData publication(
+            String mapName,
+            DungeonDerivedState derived,
+            List<DungeonEditorHandleFacts> editorHandles,
+            long revision
+    ) {
+        return new SnapshotPublicationData(
+                snapshotFacts(mapName, derived, editorHandles, revision),
+                snapshotPublication(mapName, derived, editorHandles, revision));
     }
 
     private static DungeonEditorDungeonState.@Nullable SnapshotFacts snapshotFacts(
-            LoadDungeonSnapshotUseCase.@Nullable DungeonSnapshotData snapshot
+            String mapName,
+            DungeonDerivedState derived,
+            List<DungeonEditorHandleFacts> editorHandles,
+            long revision
     ) {
-        if (snapshot == null) {
-            return null;
-        }
         return new DungeonEditorDungeonState.SnapshotFacts(
-                snapshot.mapName(),
-                revision(snapshot.revision()),
-                mapSnapshot(snapshot.derived(), snapshot.editorHandles()));
+                mapName,
+                revision(revision),
+                mapSnapshot(derived, editorHandles));
     }
 
     private static DungeonAuthoredPublishedStateRepository.@Nullable SnapshotPublication snapshotPublication(
-            LoadDungeonSnapshotUseCase.@Nullable DungeonSnapshotData snapshot
+            String mapName,
+            DungeonDerivedState derived,
+            List<DungeonEditorHandleFacts> editorHandles,
+            long revision
     ) {
-        if (snapshot == null) {
-            return null;
-        }
         return new DungeonAuthoredPublishedStateRepository.SnapshotPublication(
-                snapshot.mapName(),
-                snapshot.derived(),
-                snapshot.editorHandles(),
-                snapshot.revision());
+                mapName,
+                derived,
+                editorHandles,
+                revision);
     }
 
     private static int revision(long revision) {

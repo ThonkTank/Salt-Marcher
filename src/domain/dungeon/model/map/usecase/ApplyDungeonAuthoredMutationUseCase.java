@@ -48,32 +48,37 @@ public final class ApplyDungeonAuthoredMutationUseCase {
         if (operation == null) {
             return null;
         }
-        return switch (operation.kind()) {
-            case PAINT_ROOM_RECTANGLE -> current -> current.paintRoomRectangle(operation.start(), operation.end());
-            case DELETE_ROOM_RECTANGLE -> current -> current.deleteRoomRectangle(operation.start(), operation.end());
-            case EDIT_CLUSTER_BOUNDARIES -> current -> current.editClusterBoundaries(
-                    operation.clusterId(),
-                    operation.edges(),
-                    operation.boundaryKind(),
-                    operation.deleteMode());
-            case CREATE_CORRIDOR -> current -> current.createCorridor(
-                    operation.corridorStart(),
-                    operation.corridorEnd());
-            case DELETE_CORRIDOR -> current -> current.deleteCorridor(operation.corridorId());
-            case MOVE_EDITOR_HANDLE -> current -> current.moveEditorHandle(
-                    operation.handle(),
-                    operation.deltaQ(),
-                    operation.deltaR(),
-                    operation.deltaLevel());
-            case MOVE_BOUNDARY_STRETCH -> current -> current.moveBoundaryStretch(
-                    operation.clusterId(),
-                    operation.sourceEdges(),
-                    operation.deltaQ(),
-                    operation.deltaR(),
-                    operation.deltaLevel());
-            case SAVE_ROOM_NARRATION -> current -> current.saveRoomNarration(
-                    operation.roomId(),
-                    operation.narration());
+        return switch (operation.variant()) {
+            case DungeonEditorAuthoredOperation.PaintRoomRectangle rectangle ->
+                    current -> current.paintRoomRectangle(rectangle.start(), rectangle.end());
+            case DungeonEditorAuthoredOperation.DeleteRoomRectangle rectangle ->
+                    current -> current.deleteRoomRectangle(rectangle.start(), rectangle.end());
+            case DungeonEditorAuthoredOperation.EditClusterBoundaries boundaries ->
+                    current -> current.editClusterBoundaries(
+                            boundaries.clusterId(),
+                            boundaries.edges(),
+                            boundaries.boundaryKind(),
+                            boundaries.deleteMode());
+            case DungeonEditorAuthoredOperation.CreateCorridor corridor ->
+                    current -> current.createCorridor(corridor.start(), corridor.end());
+            case DungeonEditorAuthoredOperation.DeleteCorridor corridor ->
+                    current -> current.deleteCorridor(corridor.corridorId());
+            case DungeonEditorAuthoredOperation.MoveEditorHandle move ->
+                    current -> current.moveEditorHandle(
+                            move.handle(),
+                            move.deltaQ(),
+                            move.deltaR(),
+                            move.deltaLevel());
+            case DungeonEditorAuthoredOperation.MoveBoundaryStretch stretch ->
+                    current -> current.moveBoundaryStretch(
+                            stretch.clusterId(),
+                            stretch.sourceEdges(),
+                            stretch.deltaQ(),
+                            stretch.deltaR(),
+                            stretch.deltaLevel());
+            case DungeonEditorAuthoredOperation.SaveRoomNarration narration ->
+                    current -> current.saveRoomNarration(narration.roomId(), narration.narration());
+            default -> null;
         };
     }
 }

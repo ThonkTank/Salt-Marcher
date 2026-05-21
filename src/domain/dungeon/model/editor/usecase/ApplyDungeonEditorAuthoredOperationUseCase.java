@@ -1,6 +1,7 @@
 package src.domain.dungeon.model.editor.usecase;
 
 import java.util.Objects;
+import src.domain.dungeon.model.editor.helper.DungeonEditorAuthoredPreviewTranslationHelper;
 import src.domain.dungeon.model.editor.model.session.model.DungeonEditorSessionValues;
 import src.domain.dungeon.model.editor.model.workspace.model.DungeonEditorWorkspaceValues.MapId;
 import src.domain.dungeon.model.map.model.DungeonEditorAuthoredOperation;
@@ -11,21 +12,18 @@ import src.domain.dungeon.model.map.usecase.ApplyDungeonEditorOperationUseCase;
 public final class ApplyDungeonEditorAuthoredOperationUseCase {
 
     private final ApplyDungeonAuthoredMutationUseCase mutationUseCase;
-    private final TranslateDungeonEditorAuthoredPreviewUseCase translatePreviewUseCase;
     private final PublishDungeonEditorAuthoredMutationUseCase publishMutationUseCase;
 
     public ApplyDungeonEditorAuthoredOperationUseCase(
             ApplyDungeonAuthoredMutationUseCase mutationUseCase,
-            TranslateDungeonEditorAuthoredPreviewUseCase translatePreviewUseCase,
             PublishDungeonEditorAuthoredMutationUseCase publishMutationUseCase
     ) {
         this.mutationUseCase = Objects.requireNonNull(mutationUseCase, "mutationUseCase");
-        this.translatePreviewUseCase = Objects.requireNonNull(translatePreviewUseCase, "translatePreviewUseCase");
         this.publishMutationUseCase = Objects.requireNonNull(publishMutationUseCase, "publishMutationUseCase");
     }
 
     public void execute(MapId mapId, DungeonEditorSessionValues.Preview preview) {
-        DungeonEditorAuthoredOperation operation = translatePreviewUseCase.execute(preview);
+        DungeonEditorAuthoredOperation operation = DungeonEditorAuthoredPreviewTranslationHelper.toOperation(preview);
         if (operation == null) {
             return;
         }
