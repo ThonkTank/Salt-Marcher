@@ -9,17 +9,18 @@ import src.domain.dungeon.model.map.usecase.ApplyDungeonEditorOperationUseCase;
 public final class PublishDungeonEditorAuthoredMutationUseCase {
     private final DungeonAuthoredPublishedStateRepository publishedStateRepository;
     private final DungeonEditorDungeonState state;
-    private final PublishDungeonEditorAuthoredSnapshotUseCase publishSnapshotUseCase;
+    private final BuildDungeonEditorAuthoredSnapshotPublicationUseCase buildSnapshotPublicationUseCase;
 
     public PublishDungeonEditorAuthoredMutationUseCase(
             DungeonAuthoredPublishedStateRepository publishedStateRepository,
             DungeonEditorDungeonState state,
-            PublishDungeonEditorAuthoredSnapshotUseCase publishSnapshotUseCase
+            BuildDungeonEditorAuthoredSnapshotPublicationUseCase buildSnapshotPublicationUseCase
     ) {
         this.publishedStateRepository =
                 Objects.requireNonNull(publishedStateRepository, "publishedStateRepository");
         this.state = Objects.requireNonNull(state, "state");
-        this.publishSnapshotUseCase = Objects.requireNonNull(publishSnapshotUseCase, "publishSnapshotUseCase");
+        this.buildSnapshotPublicationUseCase =
+                Objects.requireNonNull(buildSnapshotPublicationUseCase, "buildSnapshotPublicationUseCase");
     }
 
     public void execute(ApplyDungeonEditorOperationUseCase.OperationResultData mutation) {
@@ -34,7 +35,7 @@ public final class PublishDungeonEditorAuthoredMutationUseCase {
             ApplyDungeonEditorOperationUseCase.@Nullable OperationResultData mutation
     ) {
         DungeonEditorDungeonState.SnapshotFacts snapshot =
-                mutation == null ? null : publishSnapshotUseCase.snapshotFacts(mutation.snapshot());
+                mutation == null ? null : buildSnapshotPublicationUseCase.execute(mutation.snapshot()).stateFacts();
         return snapshot == null ? null : new DungeonEditorDungeonState.MutationFacts(snapshot, statusText(mutation));
     }
 
@@ -44,8 +45,10 @@ public final class PublishDungeonEditorAuthoredMutationUseCase {
         if (mutation == null) {
             return null;
         }
+        BuildDungeonEditorAuthoredSnapshotPublicationUseCase.SnapshotPublicationData snapshotPublication =
+                buildSnapshotPublicationUseCase.execute(mutation.snapshot());
         return new DungeonAuthoredPublishedStateRepository.MutationPublication(
-                publishSnapshotUseCase.snapshotPublication(mutation.snapshot()),
+                snapshotPublication.repositoryPublication(),
                 mutation.validationMessages(),
                 mutation.reactionMessages());
     }

@@ -5,6 +5,7 @@ import src.domain.dungeon.model.editor.helper.DungeonEditorAuthoredOperationHelp
 import src.domain.dungeon.model.editor.model.session.model.DungeonEditorRoomNarrationInput;
 import src.domain.dungeon.model.editor.model.workspace.model.DungeonEditorWorkspaceValues;
 import src.domain.dungeon.model.editor.model.workspace.model.DungeonEditorWorkspaceValues.MapId;
+import src.domain.dungeon.model.map.model.DungeonEditorAuthoredOperation;
 import src.domain.dungeon.model.map.model.DungeonMapIdentity;
 import src.domain.dungeon.model.map.usecase.ApplyDungeonAuthoredMutationUseCase;
 import src.domain.dungeon.model.map.usecase.ApplyDungeonEditorOperationUseCase;
@@ -28,7 +29,7 @@ public final class SaveDungeonEditorAuthoredRoomNarrationUseCase {
         }
         ApplyDungeonEditorOperationUseCase.OperationResultData result = mutationUseCase.apply(
                 domainMapId(mapId),
-                current -> current.saveRoomNarration(
+                DungeonEditorAuthoredOperation.saveRoomNarration(
                         roomNarration.roomId(),
                         DungeonEditorAuthoredOperationHelper.roomNarration(roomNarration)));
         publishMutationUseCase.execute(result);

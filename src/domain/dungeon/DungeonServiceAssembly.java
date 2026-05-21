@@ -36,6 +36,7 @@ import src.domain.dungeon.model.editor.usecase.ApplyDungeonEditorDeleteWallUseCa
 import src.domain.dungeon.model.editor.usecase.ApplyDungeonEditorPaintRoomUseCase;
 import src.domain.dungeon.model.editor.usecase.ApplyDungeonEditorSelectionUseCase;
 import src.domain.dungeon.model.editor.usecase.ApplyDungeonEditorSessionEffectUseCase;
+import src.domain.dungeon.model.editor.usecase.BuildDungeonEditorAuthoredSnapshotPublicationUseCase;
 import src.domain.dungeon.model.editor.usecase.BuildDungeonEditorSnapshotUseCase;
 import src.domain.dungeon.model.editor.usecase.CreateDungeonEditorMapCatalogUseCase;
 import src.domain.dungeon.model.editor.usecase.CreateDungeonEditorMapUseCase;
@@ -236,15 +237,20 @@ final class DungeonServiceAssembly {
                 new RenameDungeonEditorMapCatalogUseCase(catalogUseCase, publishedState, dungeonState);
         DeleteDungeonEditorMapCatalogUseCase deleteMapUseCase =
                 new DeleteDungeonEditorMapCatalogUseCase(catalogUseCase, publishedState, dungeonState);
+        BuildDungeonEditorAuthoredSnapshotPublicationUseCase buildAuthoredSnapshotPublicationUseCase =
+                new BuildDungeonEditorAuthoredSnapshotPublicationUseCase();
         PublishDungeonEditorAuthoredSnapshotUseCase publishAuthoredSnapshotUseCase =
-                new PublishDungeonEditorAuthoredSnapshotUseCase(publishedState, dungeonState);
+                new PublishDungeonEditorAuthoredSnapshotUseCase(
+                        publishedState,
+                        dungeonState,
+                        buildAuthoredSnapshotPublicationUseCase);
         PublishDungeonEditorAuthoredInspectorUseCase publishAuthoredInspectorUseCase =
                 new PublishDungeonEditorAuthoredInspectorUseCase(publishedState, dungeonState);
         PublishDungeonEditorAuthoredMutationUseCase publishAuthoredMutationUseCase =
                 new PublishDungeonEditorAuthoredMutationUseCase(
                         publishedState,
                         dungeonState,
-                        publishAuthoredSnapshotUseCase);
+                        buildAuthoredSnapshotPublicationUseCase);
         TranslateDungeonEditorAuthoredPreviewUseCase translatePreviewUseCase =
                 new TranslateDungeonEditorAuthoredPreviewUseCase();
         LoadDungeonEditorAuthoredMapUseCase loadMapUseCase =
