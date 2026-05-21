@@ -20,7 +20,15 @@ import javafx.scene.layout.Pane;
 import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
 import javafx.scene.text.TextAlignment;
-import static src.view.slotcontent.main.dungeonmap.DungeonMapContentModel.*;
+import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel.BoundaryPrimitive;
+import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel.GlyphPrimitive;
+import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel.MapCanvasPoint;
+import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel.MapCanvasPolygonPrimitive;
+import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel.OverlayPrimitive;
+import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel.PaintStyle;
+import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel.RelationPrimitive;
+import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel.RenderScene;
+import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel.Viewport;
 
 @SuppressWarnings("PMD.CouplingBetweenObjects")
 public class DungeonMapView extends BorderPane {
@@ -44,7 +52,7 @@ public class DungeonMapView extends BorderPane {
     private static final Object CANVAS_STATE_LISTENER_KEY = new Object();
     private static final Object CANVAS_SIZE_LISTENER_KEY = new Object();
     private static final int[] GRID_STEPS = {1, 5, 10, 25};
-    private static final Map<RenderColor, Color> FX_COLOR_CACHE = new HashMap<>();
+    private static final Map<DungeonMapContentModel.RenderColor, Color> FX_COLOR_CACHE = new HashMap<>();
     private static final Color BACKGROUND_COLOR = color(0x12, 0x18, 0x1c, 1.0);
     private static final Color[] GRID_COLORS = {
             color(0x66, 0x77, 0x82, 0.18),
@@ -265,7 +273,13 @@ public class DungeonMapView extends BorderPane {
         overlayMessage.getStyleClass().setAll(renderScene.sceneLoaded() ? OVERLAY_NOTE_STYLE : OVERLAY_PLACEHOLDER_STYLE);
     }
 
-    private static void drawGrid(GraphicsContext gc, RenderScene renderScene, Viewport viewport, double width, double height) {
+    private static void drawGrid(
+            GraphicsContext gc,
+            RenderScene renderScene,
+            Viewport viewport,
+            double width,
+            double height
+    ) {
         if (!renderScene.gridView()) {
             return;
         }
@@ -287,25 +301,41 @@ public class DungeonMapView extends BorderPane {
         }
     }
 
-    private void drawSurfaces(GraphicsContext gc, List<MapCanvasPolygonPrimitive> surfaces, Viewport viewport) {
+    private void drawSurfaces(
+            GraphicsContext gc,
+            List<MapCanvasPolygonPrimitive> surfaces,
+            Viewport viewport
+    ) {
         for (MapCanvasPolygonPrimitive surface : surfaces) {
             drawPolygon(gc, surface.polygon(), surface.style(), viewport);
         }
     }
 
-    private void drawBoundaries(GraphicsContext gc, List<BoundaryPrimitive> boundaries, Viewport viewport) {
+    private void drawBoundaries(
+            GraphicsContext gc,
+            List<BoundaryPrimitive> boundaries,
+            Viewport viewport
+    ) {
         for (BoundaryPrimitive boundary : boundaries) {
             drawPolyline(gc, boundary.polyline(), boundary.style(), viewport);
         }
     }
 
-    private void drawRelations(GraphicsContext gc, List<RelationPrimitive> relations, Viewport viewport) {
+    private void drawRelations(
+            GraphicsContext gc,
+            List<RelationPrimitive> relations,
+            Viewport viewport
+    ) {
         for (RelationPrimitive relation : relations) {
             drawPolyline(gc, relation.polyline(), relation.style(), viewport);
         }
     }
 
-    private void drawGlyphs(GraphicsContext gc, List<GlyphPrimitive> glyphs, Viewport viewport) {
+    private void drawGlyphs(
+            GraphicsContext gc,
+            List<GlyphPrimitive> glyphs,
+            Viewport viewport
+    ) {
         gc.setTextAlign(TextAlignment.CENTER);
         for (GlyphPrimitive glyph : glyphs) {
             drawPolygon(gc, glyph.polygon(), glyph.style(), viewport);
@@ -321,9 +351,13 @@ public class DungeonMapView extends BorderPane {
         gc.setTextAlign(TextAlignment.LEFT);
     }
 
-    private void drawTexts(GraphicsContext gc, List<TextPrimitive> texts, Viewport viewport) {
+    private void drawTexts(
+            GraphicsContext gc,
+            List<DungeonMapContentModel.TextPrimitive> texts,
+            Viewport viewport
+    ) {
         gc.setTextAlign(TextAlignment.CENTER);
-        for (TextPrimitive text : texts) {
+        for (DungeonMapContentModel.TextPrimitive text : texts) {
             double width = text.width() * viewport.gridSize();
             double height = text.height() * viewport.gridSize();
             double x = viewport.sceneToScreenX(text.centerX()) - width / 2.0;
@@ -334,7 +368,11 @@ public class DungeonMapView extends BorderPane {
         gc.setTextAlign(TextAlignment.LEFT);
     }
 
-    private void drawOverlays(GraphicsContext gc, List<OverlayPrimitive> overlays, Viewport viewport) {
+    private void drawOverlays(
+            GraphicsContext gc,
+            List<OverlayPrimitive> overlays,
+            Viewport viewport
+    ) {
         gc.setTextAlign(TextAlignment.CENTER);
         for (OverlayPrimitive overlay : overlays) {
             double width = overlay.width() * viewport.gridSize();
@@ -347,7 +385,12 @@ public class DungeonMapView extends BorderPane {
         gc.setTextAlign(TextAlignment.LEFT);
     }
 
-    private void drawPolygon(GraphicsContext gc, List<MapCanvasPoint> points, PaintStyle style, Viewport viewport) {
+    private void drawPolygon(
+            GraphicsContext gc,
+            List<MapCanvasPoint> points,
+            PaintStyle style,
+            Viewport viewport
+    ) {
         if (points.size() < MIN_POLYGON_POINTS) {
             return;
         }
@@ -369,7 +412,12 @@ public class DungeonMapView extends BorderPane {
         gc.restore();
     }
 
-    private void drawPolyline(GraphicsContext gc, List<MapCanvasPoint> points, PaintStyle style, Viewport viewport) {
+    private void drawPolyline(
+            GraphicsContext gc,
+            List<MapCanvasPoint> points,
+            PaintStyle style,
+            Viewport viewport
+    ) {
         if (points.size() < MIN_POLYLINE_POINTS) {
             return;
         }
@@ -410,7 +458,11 @@ public class DungeonMapView extends BorderPane {
         gc.restore();
     }
 
-    private void applyStyle(GraphicsContext gc, PaintStyle style, Viewport viewport) {
+    private void applyStyle(
+            GraphicsContext gc,
+            PaintStyle style,
+            Viewport viewport
+    ) {
         gc.save();
         gc.setGlobalAlpha(style.alpha());
         Color fill = fxColor(style.fill());
@@ -490,18 +542,18 @@ public class DungeonMapView extends BorderPane {
         }
     }
 
-    private Color defaultTextColor(RenderColor sceneColor) {
+    private Color defaultTextColor(DungeonMapContentModel.RenderColor sceneColor) {
         if (sceneColor == null) {
             return Color.WHITE;
         }
         return fxColor(sceneColor);
     }
 
-    private Color fxColor(RenderColor sceneColor) {
+    private Color fxColor(DungeonMapContentModel.RenderColor sceneColor) {
         return sceneColor == null ? null : FX_COLOR_CACHE.computeIfAbsent(sceneColor, DungeonMapView::toFxColor);
     }
 
-    private static Color toFxColor(RenderColor sceneColor) {
+    private static Color toFxColor(DungeonMapContentModel.RenderColor sceneColor) {
         return new Color(
                 sceneColor.redUnit(),
                 sceneColor.greenUnit(),

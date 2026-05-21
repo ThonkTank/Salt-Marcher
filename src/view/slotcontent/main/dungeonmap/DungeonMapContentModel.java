@@ -51,7 +51,10 @@ public final class DungeonMapContentModel {
     private static final double MIN_HIT_TOLERANCE = 0.22;
     private static final double HIT_BUCKET_SIZE_SCENE = 4.0;
     private static final double MAX_HIT_INDEX_TOLERANCE = HIT_TOLERANCE_PIXELS / (BASE_GRID * MIN_ZOOM);
+    private static final double DEGENERATE_SEGMENT_LENGTH_SQUARED = 0.0;
     private static final int MIN_POLYLINE_POINTS = 2;
+    private static final int MAX_LINKLESS_GRAPH_NODE_COUNT = 1;
+    private static final String DEFAULT_TITLE = "Dungeon Map";
     private static final SceneProjector SCENE_PROJECTOR = new SceneProjector();
 
     private final String placeholderTitle;
@@ -182,7 +185,7 @@ public final class DungeonMapContentModel {
 
     private static String normalizePlaceholderTitle(String placeholderTitle) {
         return placeholderTitle == null || placeholderTitle.isBlank()
-                ? "Dungeon Map"
+                ? DEFAULT_TITLE
                 : placeholderTitle;
     }
 
@@ -343,7 +346,7 @@ public final class DungeonMapContentModel {
     }
 
     private static String normalizeTitle(String title) {
-        return title == null || title.isBlank() ? "Dungeon Map" : title.trim();
+        return title == null || title.isBlank() ? DEFAULT_TITLE : title.trim();
     }
 
     private static <T> List<T> copyOf(@Nullable List<T> values) {
@@ -433,20 +436,20 @@ public final class DungeonMapContentModel {
     ) {
 
         public RenderScene {
-            title = DungeonMapContentModel.normalizeTitle(title);
+            title = normalizeTitle(title);
             subtitle = subtitle == null ? "" : subtitle;
             modeLabel = modeLabel == null ? "" : modeLabel;
             statusLabel = statusLabel == null ? "" : statusLabel;
             summaryLabel = summaryLabel == null ? "" : summaryLabel;
             overlayMessage = overlayMessage == null ? "" : overlayMessage;
-            surfaces = DungeonMapContentModel.copyOf(surfaces);
-            boundaries = DungeonMapContentModel.copyOf(boundaries);
-            glyphs = DungeonMapContentModel.copyOf(glyphs);
-            texts = DungeonMapContentModel.copyOf(texts);
-            relations = DungeonMapContentModel.copyOf(relations);
-            actors = DungeonMapContentModel.copyOf(actors);
-            hitAreas = DungeonMapContentModel.copyOf(hitAreas);
-            overlays = DungeonMapContentModel.copyOf(overlays);
+            surfaces = copyOf(surfaces);
+            boundaries = copyOf(boundaries);
+            glyphs = copyOf(glyphs);
+            texts = copyOf(texts);
+            relations = copyOf(relations);
+            actors = copyOf(actors);
+            hitAreas = copyOf(hitAreas);
+            overlays = copyOf(overlays);
         }
 
         public static RenderScene empty(String title) {
@@ -502,7 +505,7 @@ public final class DungeonMapContentModel {
         public MapCanvasPolygonPrimitive {
             hitRef = hitRef == null ? "" : hitRef;
             selectionRef = selectionRef == null ? "" : selectionRef;
-            polygon = DungeonMapContentModel.copyOf(polygon);
+            polygon = copyOf(polygon);
             style = style == null ? new PaintStyle(null, null, 0.0, 1.0, false) : style;
         }
     }
@@ -518,7 +521,7 @@ public final class DungeonMapContentModel {
         public BoundaryPrimitive {
             hitRef = hitRef == null ? "" : hitRef;
             selectionRef = selectionRef == null ? "" : selectionRef;
-            polyline = DungeonMapContentModel.copyOf(polyline);
+            polyline = copyOf(polyline);
             style = style == null ? new PaintStyle(null, null, 0.0, 1.0, false) : style;
         }
     }
@@ -536,7 +539,7 @@ public final class DungeonMapContentModel {
         public GlyphPrimitive {
             hitRef = hitRef == null ? "" : hitRef;
             selectionRef = selectionRef == null ? "" : selectionRef;
-            polygon = DungeonMapContentModel.copyOf(polygon);
+            polygon = copyOf(polygon);
             style = style == null ? new PaintStyle(null, null, 0.0, 1.0, false) : style;
             label = label == null ? "" : label;
             labelColor = labelColor == null ? RenderColor.color(255, 255, 255, 1.0) : labelColor;
@@ -576,7 +579,7 @@ public final class DungeonMapContentModel {
 
         public RelationPrimitive {
             hitRef = hitRef == null ? "" : hitRef;
-            polyline = DungeonMapContentModel.copyOf(polyline);
+            polyline = copyOf(polyline);
             style = style == null ? new PaintStyle(null, null, 0.0, 1.0, false) : style;
         }
     }
@@ -649,7 +652,7 @@ public final class DungeonMapContentModel {
             hitRef = hitRef == null ? "" : hitRef;
             primitive = primitive == null ? CanvasPrimitive.EMPTY : primitive;
             selectionRef = selectionRef == null ? "" : selectionRef;
-            polygon = DungeonMapContentModel.copyOf(polygon);
+            polygon = copyOf(polygon);
         }
 
         @Override
@@ -674,7 +677,7 @@ public final class DungeonMapContentModel {
             hitRef = hitRef == null ? "" : hitRef;
             primitive = primitive == null ? CanvasPrimitive.EMPTY : primitive;
             selectionRef = selectionRef == null ? "" : selectionRef;
-            polyline = DungeonMapContentModel.copyOf(polyline);
+            polyline = copyOf(polyline);
         }
 
         @Override
@@ -798,18 +801,17 @@ public final class DungeonMapContentModel {
 
     private static final class Geometry {
 
-        private Geometry() {
-        }
-
         private static boolean pointInPolygon(double x, double y, List<MapCanvasPoint> polygon) {
             boolean inside = false;
-            for (int index = 0, previous = polygon.size() - 1; index < polygon.size(); previous = index++) {
+            int previous = polygon.size() - 1;
+            for (int index = 0; index < polygon.size(); index++) {
                 MapCanvasPoint current = polygon.get(index);
                 MapCanvasPoint before = polygon.get(previous);
                 if (((current.y() > y) != (before.y() > y))
                         && (x < (before.x() - current.x()) * (y - current.y()) / (before.y() - current.y()) + current.x())) {
                     inside = !inside;
                 }
+                previous = index;
             }
             return inside;
         }
@@ -828,7 +830,7 @@ public final class DungeonMapContentModel {
             double dx = end.x() - start.x();
             double dy = end.y() - start.y();
             double lengthSquared = dx * dx + dy * dy;
-            if (lengthSquared <= 0.0) {
+            if (lengthSquared <= DEGENERATE_SEGMENT_LENGTH_SQUARED) {
                 return Math.hypot(x - start.x(), y - start.y());
             }
             double t = ((x - start.x()) * dx + (y - start.y()) * dy) / lengthSquared;
@@ -859,7 +861,7 @@ public final class DungeonMapContentModel {
 
         private RenderScene toScene(DungeonMapRenderState displayModel) {
             if (displayModel == null) {
-                return RenderScene.empty("Dungeon Map");
+                return RenderScene.empty(DEFAULT_TITLE);
             }
             SceneBuckets buckets = displayModel.isGraphView()
                     ? graphSceneAssembler.assemble(displayModel)
@@ -1915,9 +1917,6 @@ public final class DungeonMapContentModel {
 
     private static final Map<DungeonEditorTool, String> TOOL_LABELS = createToolLabels();
 
-    private DungeonMapSnapshotMapper() {
-    }
-
     static DungeonMapRenderState mapEditorSurface(String placeholderTitle, DungeonEditorMapSurfaceSnapshot snapshot) {
         DungeonEditorMapSurfaceSnapshot safeSnapshot = snapshot == null
                 ? DungeonEditorMapSurfaceSnapshot.empty()
@@ -1983,9 +1982,6 @@ public final class DungeonMapContentModel {
 }
 
     private static final class DungeonMapTravelFactsProjector {
-
-    private DungeonMapTravelFactsProjector() {
-    }
 
     static DungeonMapRenderState mapTravelSurface(
             String placeholderTitle,
@@ -2149,7 +2145,7 @@ public final class DungeonMapContentModel {
     private static List<DungeonMapRenderState.GraphLink> fallbackGraphLinks(
             List<DungeonMapRenderState.GraphNode> nodes
     ) {
-        if (nodes.size() <= 1) {
+        if (nodes.size() <= MAX_LINKLESS_GRAPH_NODE_COUNT) {
             return List.of();
         }
         List<DungeonMapRenderState.GraphLink> links = new ArrayList<>();
@@ -2201,9 +2197,6 @@ public final class DungeonMapContentModel {
 }
 
     private static final class DungeonMapEditorSurfaceProjector {
-
-    private DungeonMapEditorSurfaceProjector() {
-    }
 
     static DungeonMapRenderState mapEditorSurface(
             String placeholderTitle,
@@ -3625,7 +3618,7 @@ public final class DungeonMapContentModel {
     }
 
     private static String normalizeTitle(String title) {
-        return title == null || title.isBlank() ? "Dungeon Map" : title.trim();
+        return title == null || title.isBlank() ? DEFAULT_TITLE : title.trim();
     }
 
     private static String normalizeTool(String selectedTool) {
