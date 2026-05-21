@@ -28,9 +28,10 @@ public final class DungeonTravelApplicationService {
                 : new PublishDungeonTravelSurfaceUseCase.PositionInput(
                         new PublishDungeonTravelSurfaceUseCase.MapInput(command.position().mapId().value()),
                         switch (command.position().locationKind().name()) {
+                            case "TILE" -> PublishDungeonTravelSurfaceUseCase.LocationKindInput.TILE;
                             case "STAIR_EXIT" -> PublishDungeonTravelSurfaceUseCase.LocationKindInput.STAIR_EXIT;
                             case "TRANSITION" -> PublishDungeonTravelSurfaceUseCase.LocationKindInput.TRANSITION;
-                            default -> PublishDungeonTravelSurfaceUseCase.LocationKindInput.TILE;
+                            default -> throw new IllegalArgumentException("Unknown travel location kind.");
                         },
                         command.position().ownerId(),
                         new PublishDungeonTravelSurfaceUseCase.CellInput(
@@ -40,8 +41,9 @@ public final class DungeonTravelApplicationService {
                         switch (command.position().heading().name()) {
                             case "NORTH" -> PublishDungeonTravelSurfaceUseCase.HeadingInput.NORTH;
                             case "EAST" -> PublishDungeonTravelSurfaceUseCase.HeadingInput.EAST;
+                            case "SOUTH" -> PublishDungeonTravelSurfaceUseCase.HeadingInput.SOUTH;
                             case "WEST" -> PublishDungeonTravelSurfaceUseCase.HeadingInput.WEST;
-                            default -> PublishDungeonTravelSurfaceUseCase.HeadingInput.SOUTH;
+                            default -> throw new IllegalArgumentException("Unknown travel heading.");
                         }));
     }
 
@@ -53,9 +55,10 @@ public final class DungeonTravelApplicationService {
                         : new PublishDungeonTravelMoveUseCase.PositionInput(
                                 new PublishDungeonTravelMoveUseCase.MapInput(command.position().mapId().value()),
                                 switch (command.position().locationKind().name()) {
+                                    case "TILE" -> PublishDungeonTravelMoveUseCase.LocationKindInput.TILE;
                                     case "STAIR_EXIT" -> PublishDungeonTravelMoveUseCase.LocationKindInput.STAIR_EXIT;
                                     case "TRANSITION" -> PublishDungeonTravelMoveUseCase.LocationKindInput.TRANSITION;
-                                    default -> PublishDungeonTravelMoveUseCase.LocationKindInput.TILE;
+                                    default -> throw new IllegalArgumentException("Unknown travel location kind.");
                                 },
                                 command.position().ownerId(),
                                 new PublishDungeonTravelMoveUseCase.CellInput(
@@ -65,8 +68,9 @@ public final class DungeonTravelApplicationService {
                                 switch (command.position().heading().name()) {
                                     case "NORTH" -> PublishDungeonTravelMoveUseCase.HeadingInput.NORTH;
                                     case "EAST" -> PublishDungeonTravelMoveUseCase.HeadingInput.EAST;
+                                    case "SOUTH" -> PublishDungeonTravelMoveUseCase.HeadingInput.SOUTH;
                                     case "WEST" -> PublishDungeonTravelMoveUseCase.HeadingInput.WEST;
-                                    default -> PublishDungeonTravelMoveUseCase.HeadingInput.SOUTH;
+                                    default -> throw new IllegalArgumentException("Unknown travel heading.");
                                 }),
                 command.actionId()));
     }
