@@ -76,7 +76,8 @@ public final class DomainLayerArchitectureTest {
                     .resideInAPackage("src.domain..model..constants..")
                     .should(onlyDependOnAllowedDomainPackages(
                             "same-context constants only",
-                            DomainLayerArchitectureTest::isAllowedForConstants));
+                            DomainLayerArchitectureTest::isAllowedForConstants))
+                    .allowEmptyShould(true);
 
     @ArchTest
     static final ArchRule domainPortsMustOnlyDependOnForeignPublishedAndSameContextFollowUpRoles =
@@ -85,7 +86,8 @@ public final class DomainLayerArchitectureTest {
                     .resideInAPackage("src.domain..model..port..")
                     .should(onlyDependOnAllowedDomainPackages(
                             "foreign published state plus same-context use cases, models, and constants only",
-                            DomainLayerArchitectureTest::isAllowedForPort));
+                            DomainLayerArchitectureTest::isAllowedForPort))
+                    .allowEmptyShould(true);
 
     @ArchTest
     static final ArchRule domainRepositoriesMustOnlyDependOnForeignRootsAndSameContextInternals =

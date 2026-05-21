@@ -8,6 +8,26 @@ public sealed interface DungeonAuthoredReadCommand permits
         return 1L;
     }
 
+    default boolean describesSelection() {
+        return false;
+    }
+
+    default String topologyKindName() {
+        return "EMPTY";
+    }
+
+    default long topologyId() {
+        return 0L;
+    }
+
+    default long clusterIdValue() {
+        return 0L;
+    }
+
+    default boolean clusterSelectionValue() {
+        return false;
+    }
+
     record MapSelection(DungeonMapId mapId) implements DungeonAuthoredReadCommand {
         public MapSelection() {
             this(new DungeonMapId(1L));
@@ -39,6 +59,31 @@ public sealed interface DungeonAuthoredReadCommand permits
         @Override
         public long mapIdValue() {
             return mapId.value();
+        }
+
+        @Override
+        public boolean describesSelection() {
+            return true;
+        }
+
+        @Override
+        public String topologyKindName() {
+            return topologyRef.kind().name();
+        }
+
+        @Override
+        public long topologyId() {
+            return topologyRef.id();
+        }
+
+        @Override
+        public long clusterIdValue() {
+            return clusterId;
+        }
+
+        @Override
+        public boolean clusterSelectionValue() {
+            return clusterSelection;
         }
     }
 }

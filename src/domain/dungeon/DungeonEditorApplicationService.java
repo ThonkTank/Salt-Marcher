@@ -39,14 +39,9 @@ import src.domain.dungeon.published.DeleteDungeonEditorRoomCommand;
 import src.domain.dungeon.published.DeleteDungeonEditorWallCommand;
 import src.domain.dungeon.published.DeleteDungeonMapCommand;
 import src.domain.dungeon.published.DungeonAuthoredReadCommand;
-import src.domain.dungeon.published.DungeonCellRef;
-import src.domain.dungeon.published.DungeonEditorBoundaryTargetRef;
-import src.domain.dungeon.published.DungeonEditorHandleRef;
-import src.domain.dungeon.published.DungeonEditorPointerSample;
-import src.domain.dungeon.published.DungeonEditorPointerTarget;
+import src.domain.dungeon.published.DungeonEditorPointerCommand;
 import src.domain.dungeon.published.DungeonEditorSelectionCommand;
 import src.domain.dungeon.published.DungeonMapCatalogCommand;
-import src.domain.dungeon.published.DungeonTopologyElementRef;
 import src.domain.dungeon.published.PaintDungeonEditorRoomCommand;
 import src.domain.dungeon.published.SaveDungeonEditorRoomNarrationCommand;
 import src.domain.dungeon.published.SetDungeonEditorOverlayCommand;
@@ -158,19 +153,19 @@ public final class DungeonEditorApplicationService {
     }
 
     public void pressSelection(DungeonEditorSelectionCommand command) {
-        applySelectionUseCase.press(toMainViewInput(command.pointer()));
+        applySelectionUseCase.press(toMainViewInput(command));
     }
 
     public void dragSelection(DungeonEditorSelectionCommand command) {
-        applySelectionUseCase.drag(toMainViewInput(command.pointer()));
+        applySelectionUseCase.drag(toMainViewInput(command));
     }
 
     public void releaseSelection(DungeonEditorSelectionCommand command) {
-        applySelectionUseCase.release(toMainViewInput(command.pointer()));
+        applySelectionUseCase.release(toMainViewInput(command));
     }
 
     public void hoverSelection(DungeonEditorSelectionCommand command) {
-        applySelectionUseCase.hover(toMainViewInput(command.pointer()));
+        applySelectionUseCase.hover(toMainViewInput(command));
     }
 
     public void scrollSelection(ShiftDungeonEditorProjectionLevelCommand command) {
@@ -178,99 +173,99 @@ public final class DungeonEditorApplicationService {
     }
 
     public void pressPaintRoom(PaintDungeonEditorRoomCommand command) {
-        applyPaintRoomUseCase.press(toMainViewInput(command.pointer()));
+        applyPaintRoomUseCase.press(toMainViewInput(command));
     }
 
     public void dragPaintRoom(PaintDungeonEditorRoomCommand command) {
-        applyPaintRoomUseCase.drag(toMainViewInput(command.pointer()));
+        applyPaintRoomUseCase.drag(toMainViewInput(command));
     }
 
     public void releasePaintRoom(PaintDungeonEditorRoomCommand command) {
-        applyPaintRoomUseCase.release(toMainViewInput(command.pointer()));
+        applyPaintRoomUseCase.release(toMainViewInput(command));
     }
 
     public void pressDeleteRoom(DeleteDungeonEditorRoomCommand command) {
-        applyDeleteRoomUseCase.press(toMainViewInput(command.pointer()));
+        applyDeleteRoomUseCase.press(toMainViewInput(command));
     }
 
     public void dragDeleteRoom(DeleteDungeonEditorRoomCommand command) {
-        applyDeleteRoomUseCase.drag(toMainViewInput(command.pointer()));
+        applyDeleteRoomUseCase.drag(toMainViewInput(command));
     }
 
     public void releaseDeleteRoom(DeleteDungeonEditorRoomCommand command) {
-        applyDeleteRoomUseCase.release(toMainViewInput(command.pointer()));
+        applyDeleteRoomUseCase.release(toMainViewInput(command));
     }
 
     public void pressCreateWall(CreateDungeonEditorWallCommand command) {
-        applyCreateWallUseCase.press(toMainViewInput(command.pointer()));
+        applyCreateWallUseCase.press(toMainViewInput(command));
     }
 
     public void dragCreateWall(CreateDungeonEditorWallCommand command) {
-        applyCreateWallUseCase.drag(toMainViewInput(command.pointer()));
+        applyCreateWallUseCase.drag(toMainViewInput(command));
     }
 
     public void hoverCreateWall(CreateDungeonEditorWallCommand command) {
-        applyCreateWallUseCase.hover(toMainViewInput(command.pointer()));
+        applyCreateWallUseCase.hover(toMainViewInput(command));
     }
 
     public void pressDeleteWall(DeleteDungeonEditorWallCommand command) {
-        applyDeleteWallUseCase.press(toMainViewInput(command.pointer()));
+        applyDeleteWallUseCase.press(toMainViewInput(command));
     }
 
     public void dragDeleteWall(DeleteDungeonEditorWallCommand command) {
-        applyDeleteWallUseCase.drag(toMainViewInput(command.pointer()));
+        applyDeleteWallUseCase.drag(toMainViewInput(command));
     }
 
     public void hoverDeleteWall(DeleteDungeonEditorWallCommand command) {
-        applyDeleteWallUseCase.hover(toMainViewInput(command.pointer()));
+        applyDeleteWallUseCase.hover(toMainViewInput(command));
     }
 
     public void pressCreateDoor(CreateDungeonEditorDoorCommand command) {
-        applyCreateDoorUseCase.press(toMainViewInput(command.pointer()));
+        applyCreateDoorUseCase.press(toMainViewInput(command));
     }
 
     public void dragCreateDoor(CreateDungeonEditorDoorCommand command) {
-        applyCreateDoorUseCase.drag(toMainViewInput(command.pointer()));
+        applyCreateDoorUseCase.drag(toMainViewInput(command));
     }
 
     public void releaseCreateDoor(CreateDungeonEditorDoorCommand command) {
-        applyCreateDoorUseCase.release(toMainViewInput(command.pointer()));
+        applyCreateDoorUseCase.release(toMainViewInput(command));
     }
 
     public void hoverCreateDoor(CreateDungeonEditorDoorCommand command) {
-        applyCreateDoorUseCase.hover(toMainViewInput(command.pointer()));
+        applyCreateDoorUseCase.hover(toMainViewInput(command));
     }
 
     public void pressDeleteDoor(DeleteDungeonEditorDoorCommand command) {
-        applyDeleteDoorUseCase.press(toMainViewInput(command.pointer()));
+        applyDeleteDoorUseCase.press(toMainViewInput(command));
     }
 
     public void dragDeleteDoor(DeleteDungeonEditorDoorCommand command) {
-        applyDeleteDoorUseCase.drag(toMainViewInput(command.pointer()));
+        applyDeleteDoorUseCase.drag(toMainViewInput(command));
     }
 
     public void releaseDeleteDoor(DeleteDungeonEditorDoorCommand command) {
-        applyDeleteDoorUseCase.release(toMainViewInput(command.pointer()));
+        applyDeleteDoorUseCase.release(toMainViewInput(command));
     }
 
     public void hoverDeleteDoor(DeleteDungeonEditorDoorCommand command) {
-        applyDeleteDoorUseCase.hover(toMainViewInput(command.pointer()));
+        applyDeleteDoorUseCase.hover(toMainViewInput(command));
     }
 
     public void pressCreateCorridor(CreateDungeonEditorCorridorCommand command) {
-        applyCreateCorridorUseCase.press(toMainViewInput(command.pointer()));
+        applyCreateCorridorUseCase.press(toMainViewInput(command));
     }
 
     public void hoverCreateCorridor(CreateDungeonEditorCorridorCommand command) {
-        applyCreateCorridorUseCase.hover(toMainViewInput(command.pointer()));
+        applyCreateCorridorUseCase.hover(toMainViewInput(command));
     }
 
     public void pressDeleteCorridor(DeleteDungeonEditorCorridorCommand command) {
-        applyDeleteCorridorUseCase.press(toMainViewInput(command.pointer()));
+        applyDeleteCorridorUseCase.press(toMainViewInput(command));
     }
 
     public void hoverDeleteCorridor(DeleteDungeonEditorCorridorCommand command) {
-        applyDeleteCorridorUseCase.hover(toMainViewInput(command.pointer()));
+        applyDeleteCorridorUseCase.hover(toMainViewInput(command));
     }
 
     public void saveRoomNarration(SaveDungeonEditorRoomNarrationCommand command) {
@@ -292,75 +287,63 @@ public final class DungeonEditorApplicationService {
                 exits));
     }
 
-    private static MainViewInput toMainViewInput(DungeonEditorPointerSample pointer) {
-        if (pointer == null) {
-            return MainViewInput.empty();
-        }
+    private static MainViewInput toMainViewInput(DungeonEditorPointerCommand command) {
         return new MainViewInput(
-                pointer.canvasX(),
-                pointer.canvasY(),
-                pointer.primaryButtonDown(),
-                pointer.secondaryButtonDown(),
-                toPointerTargetInput(pointer.target()));
+                command.pointerCanvasX(),
+                command.pointerCanvasY(),
+                command.pointerPrimaryButtonDown(),
+                command.pointerSecondaryButtonDown(),
+                toPointerTargetInput(command));
     }
 
-    private static PointerTargetInput toPointerTargetInput(DungeonEditorPointerTarget target) {
-        if (target == null) {
-            return PointerTargetInput.empty();
-        }
+    private static PointerTargetInput toPointerTargetInput(DungeonEditorPointerCommand command) {
         return new PointerTargetInput(
-                TargetKindInput.fromName(target.targetKind().name()),
-                TopologyKindInput.fromName(target.elementKind().name()),
-                target.ownerId(),
-                target.clusterId(),
-                toTopologyRefInput(target.topologyRef()),
-                toHandleInput(target.handleRef()),
-                toBoundaryInput(target.boundaryRef()));
+                TargetKindInput.fromName(command.pointerTargetKindName()),
+                TopologyKindInput.fromName(command.pointerElementKindName()),
+                command.pointerOwnerId(),
+                command.pointerClusterId(),
+                toTopologyRefInput(command.pointerTopologyKindName(), command.pointerTopologyId()),
+                toHandleInput(command),
+                toBoundaryInput(command));
     }
 
-    private static TopologyRefInput toTopologyRefInput(DungeonTopologyElementRef topologyRef) {
-        if (topologyRef == null) {
-            return TopologyRefInput.empty();
-        }
+    private static TopologyRefInput toTopologyRefInput(String kindName, long id) {
         return new TopologyRefInput(
-                TopologyKindInput.fromName(topologyRef.kind().name()),
-                topologyRef.id());
+                TopologyKindInput.fromName(kindName),
+                id);
     }
 
-    private static HandleInput toHandleInput(DungeonEditorHandleRef handleRef) {
-        if (handleRef == null) {
-            return HandleInput.empty();
-        }
+    private static HandleInput toHandleInput(DungeonEditorPointerCommand command) {
         return new HandleInput(
-                HandleKindInput.fromName(handleRef.kind().name()),
-                toTopologyRefInput(handleRef.topologyRef()),
-                handleRef.ownerId(),
-                handleRef.clusterId(),
-                handleRef.corridorId(),
-                handleRef.roomId(),
-                handleRef.index(),
-                toCellInput(handleRef.cell()),
-                handleRef.direction());
+                HandleKindInput.fromName(command.pointerHandleKindName()),
+                toTopologyRefInput(command.pointerHandleTopologyKindName(), command.pointerHandleTopologyId()),
+                command.pointerHandleOwnerId(),
+                command.pointerHandleClusterId(),
+                command.pointerHandleCorridorId(),
+                command.pointerHandleRoomId(),
+                command.pointerHandleIndex(),
+                toCellInput(command.pointerHandleCellQ(), command.pointerHandleCellR(), command.pointerHandleCellLevel()),
+                command.pointerHandleDirection());
     }
 
-    private static BoundaryInput toBoundaryInput(DungeonEditorBoundaryTargetRef boundaryRef) {
-        if (boundaryRef == null) {
-            return BoundaryInput.empty();
-        }
+    private static BoundaryInput toBoundaryInput(DungeonEditorPointerCommand command) {
         return new BoundaryInput(
-                BoundaryKindInput.fromName(boundaryRef.kind().name()),
-                boundaryRef.key(),
-                boundaryRef.ownerId(),
-                toTopologyRefInput(boundaryRef.topologyRef()),
-                toCellInput(boundaryRef.start()),
-                toCellInput(boundaryRef.end()));
+                BoundaryKindInput.fromName(command.pointerBoundaryKindName()),
+                command.pointerBoundaryKey(),
+                command.pointerBoundaryOwnerId(),
+                toTopologyRefInput(command.pointerBoundaryTopologyKindName(), command.pointerBoundaryTopologyId()),
+                toCellInput(
+                        command.pointerBoundaryStartQ(),
+                        command.pointerBoundaryStartR(),
+                        command.pointerBoundaryStartLevel()),
+                toCellInput(
+                        command.pointerBoundaryEndQ(),
+                        command.pointerBoundaryEndR(),
+                        command.pointerBoundaryEndLevel()));
     }
 
-    private static CellInput toCellInput(DungeonCellRef cell) {
-        if (cell == null) {
-            return CellInput.empty();
-        }
-        return new CellInput(cell.q(), cell.r(), cell.level());
+    private static CellInput toCellInput(int q, int r, int level) {
+        return new CellInput(q, r, level);
     }
 
 }

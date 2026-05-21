@@ -186,9 +186,8 @@ final class DungeonServiceAssembly {
                 assembleDungeonSnapshotUseCase,
                 publishDungeonEditorHandlesUseCase);
         return new DungeonAuthoredApplicationService(
-                new RefreshDungeonAuthoredUseCase(loadDungeonSnapshotUseCase),
-                new ApplyDungeonAuthoredMutationUseCase(applyDungeonEditorOperationUseCase),
-                publishedState);
+                new RefreshDungeonAuthoredUseCase(loadDungeonSnapshotUseCase, publishedState),
+                new ApplyDungeonAuthoredMutationUseCase(applyDungeonEditorOperationUseCase, publishedState));
     }
 
     DungeonCatalogApplicationService createCatalogApplicationService(ServiceRegistry registry) {
@@ -604,9 +603,7 @@ final class DungeonServiceAssembly {
         }
     }
 
-    private static final class DungeonPublishedState implements
-            DungeonAuthoredApplicationService.AuthoredPublication,
-            DungeonAuthoredPublishedStateRepository {
+    private static final class DungeonPublishedState implements DungeonAuthoredPublishedStateRepository {
 
         private static final String DEFAULT_DUNGEON_NAME = "Dungeon";
 
@@ -647,14 +644,12 @@ final class DungeonServiceAssembly {
             return travelModel;
         }
 
-        @Override
         public void publishSnapshot(LoadDungeonSnapshotUseCase.DungeonSnapshotData snapshot) {
             if (snapshot != null) {
                 authoredRead.publish(new DungeonAuthoredReadResult.CommittedSnapshot(dungeonSnapshot(snapshot)));
             }
         }
 
-        @Override
         public void publishInspector(LoadDungeonSnapshotUseCase.InspectorSnapshotData inspector) {
             if (inspector != null) {
                 authoredRead.publish(new DungeonAuthoredReadResult.SelectionInspector(new DungeonInspectorSnapshot(
@@ -665,7 +660,6 @@ final class DungeonServiceAssembly {
             }
         }
 
-        @Override
         public void publishMutation(ApplyDungeonEditorOperationUseCase.OperationResultData result) {
             if (result != null) {
                 authoredMutation.publish(new DungeonAuthoredMutationResult.Operation(new DungeonOperationResult(
