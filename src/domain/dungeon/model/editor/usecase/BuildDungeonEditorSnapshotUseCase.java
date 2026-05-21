@@ -12,6 +12,7 @@ import src.domain.dungeon.model.editor.model.session.model.DungeonEditorSessionS
 import src.domain.dungeon.model.editor.model.workspace.model.DungeonEditorWorkspaceValues.MapId;
 import src.domain.dungeon.model.editor.model.workspace.model.DungeonEditorWorkspaceValues.MapSnapshot;
 import src.domain.dungeon.model.editor.model.workspace.model.DungeonEditorWorkspaceValues.MapSummary;
+import src.domain.dungeon.model.map.model.DungeonTopologyRef;
 
 public final class BuildDungeonEditorSnapshotUseCase {
     private final SearchDungeonEditorMapCatalogUseCase searchMapsUseCase;
@@ -41,7 +42,7 @@ public final class BuildDungeonEditorSnapshotUseCase {
         @Nullable MapId resolvedMapId = DungeonEditorSnapshotSelectionProjectionHelper.resolveSelectedMapId(
                 safeState.selectedMapId(),
                 maps);
-        requestSurfaceFacts(resolvedMapId, safeState);
+        refreshAuthoredSurface(resolvedMapId, safeState);
         DungeonEditorDungeonFacts surfaceFacts = dungeonState.currentFacts(
                 resolvedMapId,
                 safeState.selection(),
@@ -75,17 +76,37 @@ public final class BuildDungeonEditorSnapshotUseCase {
         return dungeonState.committedFacts(mapId).committedSnapshot();
     }
 
-    private void requestSurfaceFacts(@Nullable MapId mapId, DungeonEditorSession state) {
-        if (mapId != null) {
-            loadMapUseCase.execute(mapId);
+    private void refreshAuthoredSurface(@Nullable MapId mapId, DungeonEditorSession state) {
+        if (mapId == null) {
+            return;
         }
-        if (mapId != null) {
-            describeSelectionUseCase.execute(
-                    mapId,
-                    state.selection().topologyRef(),
-                    state.selection().clusterId(),
-                    state.selection().clusterSelection());
-            previewOperationUseCase.execute(mapId, state.preview());
-        }
+        refreshAuthoredSnapshot(mapId);
+        refreshAuthoredSelectionInspector(mapId, state);
+        previewAuthoredOperation(mapId, state);
     }
+
+    private void refreshAuthoredSnapshot(MapId mapId) {
+        loadMapUseCase.execute(mapId);
+    }
+
+    private void refreshAuthoredSelectionInspector(MapId mapId, DungeonEditorSession state) {
+        if (!hasSelectionForInspector(state)) {
+            return;
+        }
+        describeSelectionUseCase.execute(
+                mapId,
+                state.selection().topologyRef(),
+                state.selection().clusterId(),
+                state.selection().clusterSelection());
+    }
+
+    private void previewAuthoredOperation(MapId mapId, DungeonEditorSession state) {
+        previewOperationUseCase.execute(mapId, state.preview());
+    }
+
+    private static boolean hasSelectionForInspector(DungeonEditorSession state) {
+        return !state.selection().topologyRef().equals(DungeonTopologyRef.empty())
+                || state.selection().clusterSelection();
+    }
+
 }

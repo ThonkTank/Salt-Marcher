@@ -1,7 +1,6 @@
 package src.domain.dungeon.model.editor.usecase;
 
 import java.util.Objects;
-import src.domain.dungeon.model.editor.helper.DungeonEditorAuthoredOperationHelper;
 import src.domain.dungeon.model.editor.model.session.model.DungeonEditorDungeonState;
 import src.domain.dungeon.model.editor.model.session.model.DungeonEditorSessionValues;
 import src.domain.dungeon.model.editor.model.workspace.model.DungeonEditorWorkspaceValues.MapId;
@@ -29,15 +28,15 @@ public final class PreviewDungeonEditorAuthoredOperationUseCase {
 
     public void execute(MapId mapId, DungeonEditorSessionValues.Preview preview) {
         ApplyDungeonEditorOperationUseCase.Mutation mutation =
-                DungeonEditorAuthoredOperationHelper.mutation(preview);
+                ApplyDungeonEditorAuthoredOperationUseCase.mutation(preview);
         if (mutation == null) {
             return;
         }
         ApplyDungeonEditorOperationUseCase.OperationResultData result = mutationUseCase.preview(
                 domainMapId(mapId),
                 mutation);
-        state.replaceMutation(DungeonEditorAuthoredFactsUseCase.mutationFacts(result));
-        publishedStateRepository.publishMutation(DungeonEditorAuthoredFactsUseCase.mutationPublication(result));
+        state.replaceMutation(ApplyDungeonEditorAuthoredOperationUseCase.mutationFacts(result));
+        publishedStateRepository.publishMutation(ApplyDungeonEditorAuthoredOperationUseCase.mutationPublication(result));
     }
 
     private static DungeonMapIdentity domainMapId(MapId mapId) {

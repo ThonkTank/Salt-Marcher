@@ -2,9 +2,7 @@ package src.domain.dungeon.model.editor.helper;
 
 import java.util.ArrayList;
 import java.util.List;
-import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.editor.model.session.model.DungeonEditorRoomNarrationInput;
-import src.domain.dungeon.model.editor.model.session.model.DungeonEditorSessionValues;
 import src.domain.dungeon.model.editor.model.workspace.model.DungeonEditorWorkspaceValues;
 import src.domain.dungeon.model.map.model.DungeonCell;
 import src.domain.dungeon.model.map.model.DungeonClusterBoundaryKind;
@@ -16,55 +14,10 @@ import src.domain.dungeon.model.map.model.DungeonEditorHandleType;
 import src.domain.dungeon.model.map.model.DungeonRoomExitDescription;
 import src.domain.dungeon.model.map.model.DungeonRoomNarration;
 import src.domain.dungeon.model.map.model.DungeonTopologyRef;
-import src.domain.dungeon.model.map.usecase.ApplyDungeonEditorOperationUseCase;
 
 public final class DungeonEditorAuthoredOperationHelper {
 
     private DungeonEditorAuthoredOperationHelper() {
-    }
-
-    public static ApplyDungeonEditorOperationUseCase.@Nullable Mutation mutation(
-            DungeonEditorSessionValues.Preview preview
-    ) {
-        if (preview == null || preview == DungeonEditorSessionValues.Preview.none()) {
-            return null;
-        }
-        if (preview instanceof DungeonEditorSessionValues.RoomRectanglePreview room) {
-            return room.deleteMode()
-                    ? current -> current.deleteRoomRectangle(cell(room.start()), cell(room.end()))
-                    : current -> current.paintRoomRectangle(cell(room.start()), cell(room.end()));
-        }
-        if (preview instanceof DungeonEditorSessionValues.ClusterBoundariesPreview boundaries) {
-            return current -> current.editClusterBoundaries(
-                    boundaries.clusterId(),
-                    edges(boundaries.edges()),
-                    boundaryKind(boundaries.boundaryKind()),
-                    boundaries.deleteMode());
-        }
-        if (preview instanceof DungeonEditorSessionValues.CorridorCreatePreview corridor) {
-            return current -> current.createCorridor(
-                    corridorEndpoint(corridor.start()),
-                    corridorEndpoint(corridor.end()));
-        }
-        if (preview instanceof DungeonEditorSessionValues.DeleteCorridorPreview corridorDelete) {
-            return current -> current.deleteCorridor(corridorDelete.corridorId());
-        }
-        if (preview instanceof DungeonEditorSessionValues.MoveHandlePreview moveHandle) {
-            return current -> current.moveEditorHandle(
-                    handle(moveHandle.handleRef()),
-                    moveHandle.deltaQ(),
-                    moveHandle.deltaR(),
-                    moveHandle.deltaLevel());
-        }
-        if (preview instanceof DungeonEditorSessionValues.MoveBoundaryStretchPreview stretch) {
-            return current -> current.moveBoundaryStretch(
-                    stretch.clusterId(),
-                    edges(stretch.sourceEdges()),
-                    stretch.deltaQ(),
-                    stretch.deltaR(),
-                    stretch.deltaLevel());
-        }
-        return null;
     }
 
     public static DungeonRoomNarration roomNarration(DungeonEditorRoomNarrationInput roomNarration) {
@@ -73,7 +26,7 @@ public final class DungeonEditorAuthoredOperationHelper {
                 roomExits(roomNarration.exits()));
     }
 
-    private static DungeonCell cell(DungeonEditorWorkspaceValues.Cell cell) {
+    public static DungeonCell cell(DungeonEditorWorkspaceValues.Cell cell) {
         DungeonEditorWorkspaceValues.Cell safeCell = cell == null
                 ? DungeonEditorWorkspaceValues.Cell.empty()
                 : cell;
@@ -88,7 +41,7 @@ public final class DungeonEditorAuthoredOperationHelper {
         return new DungeonEdge(cell(edge.from()), cell(edge.to()));
     }
 
-    private static List<DungeonEdge> edges(List<DungeonEditorWorkspaceValues.Edge> edges) {
+    public static List<DungeonEdge> edges(List<DungeonEditorWorkspaceValues.Edge> edges) {
         if (edges == null) {
             return List.of();
         }
@@ -99,13 +52,15 @@ public final class DungeonEditorAuthoredOperationHelper {
         return List.copyOf(result);
     }
 
-    private static DungeonClusterBoundaryKind boundaryKind(DungeonEditorWorkspaceValues.BoundaryKind boundaryKind) {
+    public static DungeonClusterBoundaryKind boundaryKind(
+            DungeonEditorWorkspaceValues.BoundaryKind boundaryKind
+    ) {
         return boundaryKind != null && boundaryKind.isDoor()
                 ? DungeonClusterBoundaryKind.DOOR
                 : DungeonClusterBoundaryKind.WALL;
     }
 
-    private static DungeonEditorHandle handle(DungeonEditorWorkspaceValues.HandleRef ref) {
+    public static DungeonEditorHandle handle(DungeonEditorWorkspaceValues.HandleRef ref) {
         DungeonEditorWorkspaceValues.HandleRef safeRef = ref == null
                 ? DungeonEditorWorkspaceValues.HandleRef.empty()
                 : ref;
@@ -121,7 +76,9 @@ public final class DungeonEditorAuthoredOperationHelper {
                 direction(safeRef.direction()));
     }
 
-    private static DungeonCorridorEndpoint corridorEndpoint(DungeonEditorWorkspaceValues.CorridorEndpoint endpoint) {
+    public static DungeonCorridorEndpoint corridorEndpoint(
+            DungeonEditorWorkspaceValues.CorridorEndpoint endpoint
+    ) {
         return switch (endpoint) {
             case DungeonEditorWorkspaceValues.CorridorDoorEndpoint door -> DungeonCorridorEndpoint.door(
                     door.roomId(),

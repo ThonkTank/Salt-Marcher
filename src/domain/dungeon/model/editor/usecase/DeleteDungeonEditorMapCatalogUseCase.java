@@ -26,11 +26,21 @@ public final class DeleteDungeonEditorMapCatalogUseCase {
 
     public void execute(MapId mapId) {
         DungeonMapIdentity mutationMapId = catalogUseCase.deleteMap(domainMapId(mapId));
-        state.replaceMutationMapId(DungeonEditorAuthoredFactsUseCase.mapId(mutationMapId));
-        publishedStateRepository.publishDeleted(DungeonEditorAuthoredFactsUseCase.mapMutationPublication(mutationMapId));
+        state.replaceMutationMapId(mapId(mutationMapId));
+        publishedStateRepository.publishDeleted(mapMutationPublication(mutationMapId));
     }
 
     private static DungeonMapIdentity domainMapId(MapId mapId) {
         return new DungeonMapIdentity(mapId == null ? 1L : mapId.value());
+    }
+
+    private static MapId mapId(DungeonMapIdentity mapId) {
+        return new MapId(mapId.value());
+    }
+
+    private static DungeonAuthoredPublishedStateRepository.MapMutationPublication mapMutationPublication(
+            DungeonMapIdentity mapId
+    ) {
+        return new DungeonAuthoredPublishedStateRepository.MapMutationPublication(mapId);
     }
 }

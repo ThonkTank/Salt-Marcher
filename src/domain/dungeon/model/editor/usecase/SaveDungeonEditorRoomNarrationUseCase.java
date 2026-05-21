@@ -21,8 +21,7 @@ public final class SaveDungeonEditorRoomNarrationUseCase {
     }
 
     public void execute(DungeonEditorRoomNarrationInput roomNarration) {
-        if (!DungeonEditorWorkspaceValues.hasId(roomNarration.roomId())) {
-            effectUseCase.publishCurrent();
+        if (roomNarration == null || !DungeonEditorWorkspaceValues.hasId(roomNarration.roomId())) {
             return;
         }
         if (workflow.selectedMapId() != null) {

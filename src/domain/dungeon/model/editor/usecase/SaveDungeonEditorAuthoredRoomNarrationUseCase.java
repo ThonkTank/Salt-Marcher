@@ -4,6 +4,7 @@ import java.util.Objects;
 import src.domain.dungeon.model.editor.helper.DungeonEditorAuthoredOperationHelper;
 import src.domain.dungeon.model.editor.model.session.model.DungeonEditorDungeonState;
 import src.domain.dungeon.model.editor.model.session.model.DungeonEditorRoomNarrationInput;
+import src.domain.dungeon.model.editor.model.workspace.model.DungeonEditorWorkspaceValues;
 import src.domain.dungeon.model.editor.model.workspace.model.DungeonEditorWorkspaceValues.MapId;
 import src.domain.dungeon.model.map.model.DungeonMapIdentity;
 import src.domain.dungeon.model.map.repository.DungeonAuthoredPublishedStateRepository;
@@ -28,13 +29,16 @@ public final class SaveDungeonEditorAuthoredRoomNarrationUseCase {
     }
 
     public void execute(MapId mapId, DungeonEditorRoomNarrationInput roomNarration) {
+        if (roomNarration == null || !DungeonEditorWorkspaceValues.hasId(roomNarration.roomId())) {
+            return;
+        }
         ApplyDungeonEditorOperationUseCase.OperationResultData result = mutationUseCase.apply(
                 domainMapId(mapId),
                 current -> current.saveRoomNarration(
                         roomNarration.roomId(),
                         DungeonEditorAuthoredOperationHelper.roomNarration(roomNarration)));
-        state.replaceMutation(DungeonEditorAuthoredFactsUseCase.mutationFacts(result));
-        publishedStateRepository.publishMutation(DungeonEditorAuthoredFactsUseCase.mutationPublication(result));
+        state.replaceMutation(ApplyDungeonEditorAuthoredOperationUseCase.mutationFacts(result));
+        publishedStateRepository.publishMutation(ApplyDungeonEditorAuthoredOperationUseCase.mutationPublication(result));
     }
 
     private static DungeonMapIdentity domainMapId(MapId mapId) {

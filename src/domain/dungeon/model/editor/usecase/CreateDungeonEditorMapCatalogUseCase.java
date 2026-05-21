@@ -2,6 +2,7 @@ package src.domain.dungeon.model.editor.usecase;
 
 import java.util.Objects;
 import src.domain.dungeon.model.editor.model.session.model.DungeonEditorDungeonState;
+import src.domain.dungeon.model.editor.model.workspace.model.DungeonEditorWorkspaceValues.MapId;
 import src.domain.dungeon.model.map.model.DungeonMapIdentity;
 import src.domain.dungeon.model.map.repository.DungeonAuthoredPublishedStateRepository;
 import src.domain.dungeon.model.map.usecase.ApplyDungeonMapCatalogUseCase;
@@ -25,7 +26,17 @@ public final class CreateDungeonEditorMapCatalogUseCase {
 
     public void execute(String mapName) {
         DungeonMapIdentity mapId = catalogUseCase.createMap(mapName);
-        state.replaceMutationMapId(DungeonEditorAuthoredFactsUseCase.mapId(mapId));
-        publishedStateRepository.publishCreated(DungeonEditorAuthoredFactsUseCase.mapMutationPublication(mapId));
+        state.replaceMutationMapId(mapId(mapId));
+        publishedStateRepository.publishCreated(mapMutationPublication(mapId));
+    }
+
+    private static MapId mapId(DungeonMapIdentity mapId) {
+        return new MapId(mapId.value());
+    }
+
+    private static DungeonAuthoredPublishedStateRepository.MapMutationPublication mapMutationPublication(
+            DungeonMapIdentity mapId
+    ) {
+        return new DungeonAuthoredPublishedStateRepository.MapMutationPublication(mapId);
     }
 }

@@ -26,11 +26,21 @@ public final class RenameDungeonEditorMapCatalogUseCase {
 
     public void execute(MapId mapId, String mapName) {
         DungeonMapIdentity mutationMapId = catalogUseCase.renameMap(domainMapId(mapId), mapName);
-        state.replaceMutationMapId(DungeonEditorAuthoredFactsUseCase.mapId(mutationMapId));
-        publishedStateRepository.publishRenamed(DungeonEditorAuthoredFactsUseCase.mapMutationPublication(mutationMapId));
+        state.replaceMutationMapId(mapId(mutationMapId));
+        publishedStateRepository.publishRenamed(mapMutationPublication(mutationMapId));
     }
 
     private static DungeonMapIdentity domainMapId(MapId mapId) {
         return new DungeonMapIdentity(mapId == null ? 1L : mapId.value());
+    }
+
+    private static MapId mapId(DungeonMapIdentity mapId) {
+        return new MapId(mapId.value());
+    }
+
+    private static DungeonAuthoredPublishedStateRepository.MapMutationPublication mapMutationPublication(
+            DungeonMapIdentity mapId
+    ) {
+        return new DungeonAuthoredPublishedStateRepository.MapMutationPublication(mapId);
     }
 }
