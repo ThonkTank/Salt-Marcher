@@ -119,14 +119,14 @@ public final class DungeonEditorApplicationService {
         selectMapUseCase.execute(command.mapIdValue());
     }
 
-    public void createMap(DungeonMapCatalogCommand command) {
+    public void createMap(DungeonMapCatalogCommand.CreateMapCommand command) {
         Objects.requireNonNull(command, "command");
         createMapUseCase.execute(command.mapName());
     }
 
-    public void renameMap(DungeonMapCatalogCommand command) {
+    public void renameMap(DungeonMapCatalogCommand.RenameMapCommand command) {
         Objects.requireNonNull(command, "command");
-        renameMapUseCase.execute(command.mapIdValue(), command.mapName());
+        renameMapUseCase.execute(command.mapId().value(), command.mapName());
     }
 
     public void deleteMap(DeleteDungeonMapCommand command) {

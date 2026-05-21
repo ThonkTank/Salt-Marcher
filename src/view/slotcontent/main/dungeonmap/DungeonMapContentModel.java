@@ -28,12 +28,12 @@ import src.domain.dungeon.published.DungeonEditorMapSurfaceSnapshot;
 import src.domain.dungeon.published.DungeonEditorPreview;
 import src.domain.dungeon.published.DungeonEditorStateSnapshot;
 import src.domain.dungeon.published.DungeonEditorSurface;
-import src.domain.dungeon.published.DungeonOverlaySettings;
 import src.domain.dungeon.published.DungeonEditorTool;
 import src.domain.dungeon.published.DungeonEditorViewMode;
 import src.domain.dungeon.published.DungeonFeatureKind;
 import src.domain.dungeon.published.DungeonFeatureSnapshot;
 import src.domain.dungeon.published.DungeonMapSnapshot;
+import src.domain.dungeon.published.DungeonOverlaySettings;
 import src.domain.dungeon.published.DungeonTopologyElementRef;
 import src.domain.dungeon.published.DungeonTopologyKind;
 import src.domain.dungeon.published.DungeonTravelHeading;
@@ -394,35 +394,65 @@ public final class DungeonMapContentModel {
         }
     }
 
-    public record SceneColor(
-            double red,
-            double green,
-            double blue,
-            double opacity
+    public record RenderColor(
+            int red,
+            int green,
+            int blue,
+            int alpha
     ) {
 
-        public SceneColor {
-            red = clamp(red);
-            green = clamp(green);
-            blue = clamp(blue);
-            opacity = clamp(opacity);
+        private static final int MAX_CHANNEL = 255;
+
+        public RenderColor {
+            red = clampChannel(red);
+            green = clampChannel(green);
+            blue = clampChannel(blue);
+            alpha = clampChannel(alpha);
         }
 
-        public static SceneColor color(int red, int green, int blue, double opacity) {
-            return new SceneColor(red / 255.0, green / 255.0, blue / 255.0, opacity);
+        public static RenderColor color(int red, int green, int blue, double opacity) {
+            return new RenderColor(red, green, blue, toChannel(opacity));
         }
 
-        public static SceneColor blend(SceneColor base, SceneColor tint, double weight) {
+        public static RenderColor blend(RenderColor base, RenderColor tint, double weight) {
             double clampedWeight = Math.max(0.0, Math.min(1.0, weight));
             double inverseWeight = 1.0 - clampedWeight;
-            return new SceneColor(
-                    base.red() * inverseWeight + tint.red() * clampedWeight,
-                    base.green() * inverseWeight + tint.green() * clampedWeight,
-                    base.blue() * inverseWeight + tint.blue() * clampedWeight,
-                    base.opacity() * inverseWeight + tint.opacity() * clampedWeight);
+            return new RenderColor(
+                    blendChannel(base.red(), tint.red(), inverseWeight, clampedWeight),
+                    blendChannel(base.green(), tint.green(), inverseWeight, clampedWeight),
+                    blendChannel(base.blue(), tint.blue(), inverseWeight, clampedWeight),
+                    blendChannel(base.alpha(), tint.alpha(), inverseWeight, clampedWeight));
         }
 
-        private static double clamp(double value) {
+        public double redUnit() {
+            return red / (double) MAX_CHANNEL;
+        }
+
+        public double greenUnit() {
+            return green / (double) MAX_CHANNEL;
+        }
+
+        public double blueUnit() {
+            return blue / (double) MAX_CHANNEL;
+        }
+
+        public double alphaUnit() {
+            return alpha / (double) MAX_CHANNEL;
+        }
+
+        private static int blendChannel(int base, int tint, double inverseWeight, double weight) {
+            return clampChannel((int) Math.round(base * inverseWeight + tint * weight));
+        }
+
+        private static int toChannel(double value) {
+            return clampChannel((int) Math.round(clampUnit(value) * MAX_CHANNEL));
+        }
+
+        private static int clampChannel(int value) {
+            return Math.max(0, Math.min(MAX_CHANNEL, value));
+        }
+
+        private static double clampUnit(double value) {
             return Math.max(0.0, Math.min(1.0, value));
         }
     }
@@ -490,8 +520,8 @@ public final class DungeonMapContentModel {
     }
 
     public record PaintStyle(
-            @Nullable SceneColor fill,
-            @Nullable SceneColor stroke,
+            @Nullable RenderColor fill,
+            @Nullable RenderColor stroke,
             double strokeWidth,
             double alpha,
             boolean dashed
@@ -545,7 +575,7 @@ public final class DungeonMapContentModel {
             List<MapCanvasPoint> polygon,
             PaintStyle style,
             String label,
-            @Nullable SceneColor labelColor
+            @Nullable RenderColor labelColor
     ) {
 
         public GlyphPrimitive {
@@ -554,7 +584,7 @@ public final class DungeonMapContentModel {
             polygon = DungeonMapContentModel.copyOf(polygon);
             style = style == null ? new PaintStyle(null, null, 0.0, 1.0, false) : style;
             label = label == null ? "" : label;
-            labelColor = labelColor == null ? SceneColor.color(255, 255, 255, 1.0) : labelColor;
+            labelColor = labelColor == null ? RenderColor.color(255, 255, 255, 1.0) : labelColor;
         }
     }
 
@@ -568,7 +598,7 @@ public final class DungeonMapContentModel {
             double width,
             double height,
             PaintStyle style,
-            @Nullable SceneColor textColor
+            @Nullable RenderColor textColor
     ) {
 
         public TextPrimitive {
@@ -578,7 +608,7 @@ public final class DungeonMapContentModel {
             width = Math.max(0.0, width);
             height = Math.max(0.0, height);
             style = style == null ? new PaintStyle(null, null, 0.0, 1.0, false) : style;
-            textColor = textColor == null ? SceneColor.color(255, 255, 255, 1.0) : textColor;
+            textColor = textColor == null ? RenderColor.color(255, 255, 255, 1.0) : textColor;
         }
     }
 
@@ -604,7 +634,7 @@ public final class DungeonMapContentModel {
             double width,
             double height,
             PaintStyle style,
-            @Nullable SceneColor textColor
+            @Nullable RenderColor textColor
     ) {
 
         public OverlayPrimitive {
@@ -613,7 +643,7 @@ public final class DungeonMapContentModel {
             width = Math.max(0.0, width);
             height = Math.max(0.0, height);
             style = style == null ? new PaintStyle(null, null, 0.0, 1.0, false) : style;
-            textColor = textColor == null ? SceneColor.color(255, 255, 255, 1.0) : textColor;
+            textColor = textColor == null ? RenderColor.color(255, 255, 255, 1.0) : textColor;
         }
     }
 
@@ -1743,8 +1773,8 @@ public final class DungeonMapContentModel {
                 DungeonMapRenderState displayModel
         ) {
             boolean above = cell.z() > displayModel.projectionLevel();
-            SceneColor tint = above ? ScenePalette.ABOVE_TINT : ScenePalette.BELOW_TINT;
-            SceneColor baseFill = above ? ScenePalette.ROOM_FILL : ScenePalette.CORRIDOR_FILL;
+            RenderColor tint = above ? ScenePalette.ABOVE_TINT : ScenePalette.BELOW_TINT;
+            RenderColor baseFill = above ? ScenePalette.ROOM_FILL : ScenePalette.CORRIDOR_FILL;
             return new PaintStyle(
                     ScenePalette.blend(baseFill, tint, 0.56),
                     ScenePalette.blend(ScenePalette.ROOM_CELL_STROKE, tint, 0.62),
@@ -1753,7 +1783,7 @@ public final class DungeonMapContentModel {
                     false);
         }
 
-        private static SceneColor baseFill(DungeonMapRenderState.Cell cell) {
+        private static RenderColor baseFill(DungeonMapRenderState.Cell cell) {
             return switch (cell.kind()) {
                 case ROOM -> ScenePalette.ROOM_FILL;
                 case CORRIDOR -> ScenePalette.CORRIDOR_FILL;
@@ -1762,7 +1792,7 @@ public final class DungeonMapContentModel {
             };
         }
 
-        private static SceneColor baseStroke(DungeonMapRenderState.Cell cell) {
+        private static RenderColor baseStroke(DungeonMapRenderState.Cell cell) {
             return switch (cell.kind()) {
                 case ROOM -> ScenePalette.ROOM_CELL_STROKE;
                 case CORRIDOR, STAIR -> ScenePalette.CORRIDOR_STROKE;
@@ -1799,7 +1829,7 @@ public final class DungeonMapContentModel {
         }
 
         private static PaintStyle visibleStyle(DungeonMapRenderState.Edge edge) {
-            SceneColor stroke = edge.isDoor()
+            RenderColor stroke = edge.isDoor()
                     ? ScenePalette.DOOR_STROKE
                     : edge.selected() ? ScenePalette.HIGHLIGHT_STROKE : ScenePalette.WALL_STROKE;
             double strokeWidth = edge.isDoor() ? 3.6 / 32.0 : edge.selected() ? 2.8 / 32.0 : 2.0 / 32.0;
@@ -1834,7 +1864,7 @@ public final class DungeonMapContentModel {
                     false);
         }
 
-        private static SceneColor fill(DungeonMapRenderState.Marker marker) {
+        private static RenderColor fill(DungeonMapRenderState.Marker marker) {
             return switch (marker.kind()) {
                 case DOOR, CLUSTER -> ScenePalette.LABEL_FILL;
                 case STAIR -> ScenePalette.STAIR_FILL;
@@ -1843,7 +1873,7 @@ public final class DungeonMapContentModel {
             };
         }
 
-        private static SceneColor stroke(DungeonMapRenderState.Marker marker) {
+        private static RenderColor stroke(DungeonMapRenderState.Marker marker) {
             if (marker.selected()) {
                 return ScenePalette.HIGHLIGHT_STROKE;
             }
@@ -1889,38 +1919,38 @@ public final class DungeonMapContentModel {
 
     private static final class ScenePalette {
 
-        private static final SceneColor ROOM_FILL = color(0x2a, 0x32, 0x38, 1.0);
-        private static final SceneColor ROOM_CELL_STROKE = color(0x6d, 0x78, 0x81, 0.72);
-        private static final SceneColor WALL_STROKE = color(0x8a, 0x6a, 0x35, 1.0);
-        private static final SceneColor HIGHLIGHT_STROKE = color(0xf1, 0xd3, 0x8a, 1.0);
-        private static final SceneColor CORRIDOR_FILL = color(0x3b, 0x50, 0x53, 0.8);
-        private static final SceneColor CORRIDOR_STROKE = color(0x91, 0xb6, 0xb0, 1.0);
-        private static final SceneColor SELECTED_FILL = color(0x58, 0x70, 0x6e, 0.95);
-        private static final SceneColor SELECTED_STROKE = color(0xd7, 0xec, 0xe7, 1.0);
-        private static final SceneColor PREVIEW_FILL = color(0xd7, 0xec, 0xe7, 0.72);
-        private static final SceneColor PREVIEW_STROKE = color(0xf1, 0xd3, 0x8a, 1.0);
-        private static final SceneColor PARTY_FILL = color(0xff, 0xb6, 0x2a, 1.0);
-        private static final SceneColor PARTY_STROKE = color(0xff, 0xf0, 0xc6, 1.0);
-        private static final SceneColor LABEL_FILL = color(0x18, 0x1f, 0x24, 1.0);
-        private static final SceneColor LABEL_BORDER = color(0x76, 0x84, 0x8d, 1.0);
-        private static final SceneColor LABEL_TEXT = color(0xf2, 0xf4, 0xf5, 1.0);
-        private static final SceneColor STAIR_FILL = color(0x4b, 0x3a, 0x6e, 0.95);
-        private static final SceneColor TRANSITION_FILL = color(0x6f, 0x3f, 0x28, 0.95);
-        private static final SceneColor TRANSITION_STROKE = color(0xe0, 0xa3, 0x6a, 1.0);
-        private static final SceneColor DOOR_STROKE = color(0xc6, 0xe2, 0xff, 1.0);
-        private static final SceneColor GRAPH_LINK = color(0x88, 0x96, 0xa1, 0.9);
-        private static final SceneColor GRAPH_NODE_FILL = color(0x21, 0x29, 0x2f, 1.0);
-        private static final SceneColor ABOVE_TINT = color(0x86, 0x90, 0xd8, 0.75);
-        private static final SceneColor BELOW_TINT = color(0x55, 0x8a, 0x9c, 0.75);
-        private static final SceneColor DESTRUCTIVE_PREVIEW_FILL = color(0x99, 0x43, 0x3d, 1.0);
-        private static final SceneColor DESTRUCTIVE_PREVIEW_STROKE = color(0xff, 0xc1, 0x87, 1.0);
+        private static final RenderColor ROOM_FILL = color(0x2a, 0x32, 0x38, 1.0);
+        private static final RenderColor ROOM_CELL_STROKE = color(0x6d, 0x78, 0x81, 0.72);
+        private static final RenderColor WALL_STROKE = color(0x8a, 0x6a, 0x35, 1.0);
+        private static final RenderColor HIGHLIGHT_STROKE = color(0xf1, 0xd3, 0x8a, 1.0);
+        private static final RenderColor CORRIDOR_FILL = color(0x3b, 0x50, 0x53, 0.8);
+        private static final RenderColor CORRIDOR_STROKE = color(0x91, 0xb6, 0xb0, 1.0);
+        private static final RenderColor SELECTED_FILL = color(0x58, 0x70, 0x6e, 0.95);
+        private static final RenderColor SELECTED_STROKE = color(0xd7, 0xec, 0xe7, 1.0);
+        private static final RenderColor PREVIEW_FILL = color(0xd7, 0xec, 0xe7, 0.72);
+        private static final RenderColor PREVIEW_STROKE = color(0xf1, 0xd3, 0x8a, 1.0);
+        private static final RenderColor PARTY_FILL = color(0xff, 0xb6, 0x2a, 1.0);
+        private static final RenderColor PARTY_STROKE = color(0xff, 0xf0, 0xc6, 1.0);
+        private static final RenderColor LABEL_FILL = color(0x18, 0x1f, 0x24, 1.0);
+        private static final RenderColor LABEL_BORDER = color(0x76, 0x84, 0x8d, 1.0);
+        private static final RenderColor LABEL_TEXT = color(0xf2, 0xf4, 0xf5, 1.0);
+        private static final RenderColor STAIR_FILL = color(0x4b, 0x3a, 0x6e, 0.95);
+        private static final RenderColor TRANSITION_FILL = color(0x6f, 0x3f, 0x28, 0.95);
+        private static final RenderColor TRANSITION_STROKE = color(0xe0, 0xa3, 0x6a, 1.0);
+        private static final RenderColor DOOR_STROKE = color(0xc6, 0xe2, 0xff, 1.0);
+        private static final RenderColor GRAPH_LINK = color(0x88, 0x96, 0xa1, 0.9);
+        private static final RenderColor GRAPH_NODE_FILL = color(0x21, 0x29, 0x2f, 1.0);
+        private static final RenderColor ABOVE_TINT = color(0x86, 0x90, 0xd8, 0.75);
+        private static final RenderColor BELOW_TINT = color(0x55, 0x8a, 0x9c, 0.75);
+        private static final RenderColor DESTRUCTIVE_PREVIEW_FILL = color(0x99, 0x43, 0x3d, 1.0);
+        private static final RenderColor DESTRUCTIVE_PREVIEW_STROKE = color(0xff, 0xc1, 0x87, 1.0);
 
-        private static SceneColor blend(SceneColor base, SceneColor tint, double weight) {
-            return SceneColor.blend(base, tint, weight);
+        private static RenderColor blend(RenderColor base, RenderColor tint, double weight) {
+            return RenderColor.blend(base, tint, weight);
         }
 
-        private static SceneColor color(int red, int green, int blue, double opacity) {
-            return SceneColor.color(red, green, blue, opacity);
+        private static RenderColor color(int red, int green, int blue, double opacity) {
+            return RenderColor.color(red, green, blue, opacity);
         }
     }
 

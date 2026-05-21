@@ -96,22 +96,22 @@ final class DungeonTravelIntentHandler {
             if (event == null) {
                 return;
             }
-            if (event.press() && event.buttons().middleButtonDown()) {
+            if (event.input().mousePressed() && event.buttons().middleButtonDown()) {
                 mapContentModel.beginMiddleDrag(event.position().canvasX(), event.position().canvasY());
                 return;
             }
-            if (event.drag() && event.buttons().middleButtonDown()) {
+            if (event.input().mouseDragged() && event.buttons().middleButtonDown()) {
                 DungeonMapContentModel.DragDelta delta = mapContentModel.updateMiddleDrag(
                         event.position().canvasX(),
                         event.position().canvasY());
                 mapContentModel.panByPixels(delta.canvasX(), delta.canvasY());
                 return;
             }
-            if (event.release() && event.buttons().middleButtonDown()) {
+            if (event.input().mouseReleased() && event.buttons().middleButtonDown()) {
                 mapContentModel.endMiddleDrag();
                 return;
             }
-            if (event.scroll() && !event.modifiers().controlDown()) {
+            if (event.input().scrolled() && !event.modifiers().controlDown()) {
                 if (event.scrollDeltaY() > SCROLL_DELTA_IDLE) {
                     mapContentModel.zoomAround(
                             event.position().canvasX(),

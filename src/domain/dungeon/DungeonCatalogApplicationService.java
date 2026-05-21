@@ -1,7 +1,11 @@
 package src.domain.dungeon;
 
 import java.util.Objects;
-import src.domain.dungeon.model.map.usecase.RouteDungeonMapCatalogCommandUseCase;
+import src.domain.dungeon.model.map.usecase.PublishDungeonMapCatalogCreateUseCase;
+import src.domain.dungeon.model.map.usecase.PublishDungeonMapCatalogDeleteUseCase;
+import src.domain.dungeon.model.map.usecase.PublishDungeonMapCatalogRenameUseCase;
+import src.domain.dungeon.model.map.usecase.PublishDungeonMapCatalogSearchUseCase;
+import src.domain.dungeon.published.DeleteDungeonMapCommand;
 import src.domain.dungeon.published.DungeonMapCatalogCommand;
 
 /**
@@ -9,19 +13,40 @@ import src.domain.dungeon.published.DungeonMapCatalogCommand;
  */
 public final class DungeonCatalogApplicationService {
 
-    private final RouteDungeonMapCatalogCommandUseCase routeDungeonMapCatalogCommandUseCase;
+    private final PublishDungeonMapCatalogSearchUseCase searchUseCase;
+    private final PublishDungeonMapCatalogCreateUseCase createUseCase;
+    private final PublishDungeonMapCatalogRenameUseCase renameUseCase;
+    private final PublishDungeonMapCatalogDeleteUseCase deleteUseCase;
 
-    public DungeonCatalogApplicationService(RouteDungeonMapCatalogCommandUseCase routeDungeonMapCatalogCommandUseCase) {
-        this.routeDungeonMapCatalogCommandUseCase =
-                Objects.requireNonNull(routeDungeonMapCatalogCommandUseCase, "routeDungeonMapCatalogCommandUseCase");
+    public DungeonCatalogApplicationService(
+            PublishDungeonMapCatalogSearchUseCase searchUseCase,
+            PublishDungeonMapCatalogCreateUseCase createUseCase,
+            PublishDungeonMapCatalogRenameUseCase renameUseCase,
+            PublishDungeonMapCatalogDeleteUseCase deleteUseCase
+    ) {
+        this.searchUseCase = Objects.requireNonNull(searchUseCase, "searchUseCase");
+        this.createUseCase = Objects.requireNonNull(createUseCase, "createUseCase");
+        this.renameUseCase = Objects.requireNonNull(renameUseCase, "renameUseCase");
+        this.deleteUseCase = Objects.requireNonNull(deleteUseCase, "deleteUseCase");
     }
 
-    public void catalog(DungeonMapCatalogCommand command) {
+    public void search(DungeonMapCatalogCommand.SearchCommand command) {
         Objects.requireNonNull(command, "command");
-        routeDungeonMapCatalogCommandUseCase.execute(
-                command.operationKey(),
-                command.query(),
-                command.mapIdValue(),
-                command.mapName());
+        searchUseCase.execute(command.query());
+    }
+
+    public void createMap(DungeonMapCatalogCommand.CreateMapCommand command) {
+        Objects.requireNonNull(command, "command");
+        createUseCase.execute(command.mapName());
+    }
+
+    public void renameMap(DungeonMapCatalogCommand.RenameMapCommand command) {
+        Objects.requireNonNull(command, "command");
+        renameUseCase.execute(command.mapId().value(), command.mapName());
+    }
+
+    public void deleteMap(DeleteDungeonMapCommand command) {
+        Objects.requireNonNull(command, "command");
+        deleteUseCase.execute(command.mapId().value());
     }
 }

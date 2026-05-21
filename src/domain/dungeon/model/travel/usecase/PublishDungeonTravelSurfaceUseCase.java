@@ -9,30 +9,22 @@ import src.domain.dungeon.model.map.model.DungeonTravelLocationKind;
 import src.domain.dungeon.model.map.model.DungeonTravelPositionFacts;
 import src.domain.dungeon.model.map.repository.DungeonAuthoredPublishedStateRepository;
 
-public final class RouteDungeonTravelCommandUseCase {
-
-    private static final int LOAD_SURFACE_OPERATION = 1;
-    private static final int MOVE_ACTION_OPERATION = 2;
+public final class PublishDungeonTravelSurfaceUseCase {
 
     private final LoadDungeonTravelSurfaceUseCase loadDungeonTravelSurfaceUseCase;
-    private final MoveDungeonTravelActionUseCase moveDungeonTravelActionUseCase;
     private final DungeonAuthoredPublishedStateRepository publishedStateRepository;
 
-    public RouteDungeonTravelCommandUseCase(
+    public PublishDungeonTravelSurfaceUseCase(
             LoadDungeonTravelSurfaceUseCase loadDungeonTravelSurfaceUseCase,
-            MoveDungeonTravelActionUseCase moveDungeonTravelActionUseCase,
             DungeonAuthoredPublishedStateRepository publishedStateRepository
     ) {
         this.loadDungeonTravelSurfaceUseCase =
                 Objects.requireNonNull(loadDungeonTravelSurfaceUseCase, "loadDungeonTravelSurfaceUseCase");
-        this.moveDungeonTravelActionUseCase =
-                Objects.requireNonNull(moveDungeonTravelActionUseCase, "moveDungeonTravelActionUseCase");
         this.publishedStateRepository =
                 Objects.requireNonNull(publishedStateRepository, "publishedStateRepository");
     }
 
     public void execute(
-            int operationKey,
             boolean hasPosition,
             long mapIdValue,
             String locationKindName,
@@ -40,31 +32,21 @@ public final class RouteDungeonTravelCommandUseCase {
             int tileQ,
             int tileR,
             int tileLevel,
-            String headingName,
-            String actionId
+            String headingName
     ) {
-        DungeonTravelPositionFacts position = travelPosition(
-                hasPosition,
-                mapIdValue,
-                locationKindName,
-                ownerId,
-                tileQ,
-                tileR,
-                tileLevel,
-                headingName);
-        switch (operationKey) {
-            case LOAD_SURFACE_OPERATION -> publishedStateRepository.publishSurface(
-                    loadDungeonTravelSurfaceUseCase.execute(new LoadDungeonTravelSurfaceUseCase.Input(
-                            position)));
-            case MOVE_ACTION_OPERATION -> publishedStateRepository.publishMove(
-                    moveDungeonTravelActionUseCase.execute(new MoveDungeonTravelActionUseCase.Input(
-                            position,
-                            actionId)));
-            default -> throw new IllegalArgumentException("Unknown dungeon travel operation: " + operationKey);
-        }
+        publishedStateRepository.publishSurface(loadDungeonTravelSurfaceUseCase.execute(
+                new LoadDungeonTravelSurfaceUseCase.Input(travelPosition(
+                        hasPosition,
+                        mapIdValue,
+                        locationKindName,
+                        ownerId,
+                        tileQ,
+                        tileR,
+                        tileLevel,
+                        headingName))));
     }
 
-    private static @Nullable DungeonTravelPositionFacts travelPosition(
+    static @Nullable DungeonTravelPositionFacts travelPosition(
             boolean hasPosition,
             long mapIdValue,
             String locationKindName,
@@ -86,14 +68,14 @@ public final class RouteDungeonTravelCommandUseCase {
     }
 
     private static DungeonTravelLocationKind locationKind(String name) {
-        return name == null || name.isBlank()
-                ? DungeonTravelLocationKind.TILE
-                : DungeonTravelLocationKind.valueOf(name);
+        try {
+            return DungeonTravelLocationKind.valueOf(name == null ? "" : name);
+        } catch (IllegalArgumentException ignored) {
+            return DungeonTravelLocationKind.TILE;
+        }
     }
 
     private static DungeonTravelHeading heading(String name) {
-        return name == null || name.isBlank()
-                ? DungeonTravelHeading.defaultHeading()
-                : DungeonTravelHeading.valueOf(name);
+        return DungeonTravelHeading.parse(name);
     }
 }

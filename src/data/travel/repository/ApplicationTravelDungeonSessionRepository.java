@@ -41,7 +41,7 @@ public final class ApplicationTravelDungeonSessionRepository implements TravelDu
 
     @Override
     public SurfaceData loadDungeonSurface(@Nullable PositionData position) {
-        dungeonTravelApplicationService.travel(new DungeonTravelCommand.LoadSurface(
+        dungeonTravelApplicationService.loadSurface(new DungeonTravelCommand.LoadSurfaceCommand(
                 TravelDungeonSessionSurfaceMapper.toDungeonPosition(position)));
         return TravelDungeonSessionSurfaceMapper.toInternalSurface(surfaceResponse(dungeonTravelModel.current()));
     }
@@ -51,7 +51,7 @@ public final class ApplicationTravelDungeonSessionRepository implements TravelDu
             @Nullable PositionData position,
             String actionId
     ) {
-        dungeonTravelApplicationService.travel(new DungeonTravelCommand.MoveAction(
+        dungeonTravelApplicationService.moveAction(new DungeonTravelCommand.MoveActionCommand(
                 TravelDungeonSessionSurfaceMapper.toDungeonPosition(position),
                 actionId));
         return TravelDungeonSessionSurfaceMapper.toInternalMoveResult(moveResponse(dungeonTravelModel.current()));

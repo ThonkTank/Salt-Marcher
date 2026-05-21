@@ -1,96 +1,33 @@
 package src.domain.dungeon.published;
 
 public sealed interface DungeonMapCatalogCommand permits
-        DungeonMapCatalogCommand.Search,
-        DungeonMapCatalogCommand.CreateMap,
-        DungeonMapCatalogCommand.RenameMap,
+        DungeonMapCatalogCommand.SearchCommand,
+        DungeonMapCatalogCommand.CreateMapCommand,
+        DungeonMapCatalogCommand.RenameMapCommand,
         DeleteDungeonMapCommand {
 
-    int SEARCH_OPERATION = 1;
-    int CREATE_OPERATION = 2;
-    int RENAME_OPERATION = 3;
-    int DELETE_OPERATION = 4;
+    record SearchCommand(String query) implements DungeonMapCatalogCommand {
 
-    int operationKey();
-
-    String query();
-
-    long mapIdValue();
-
-    String mapName();
-
-    record Search(String query) implements DungeonMapCatalogCommand {
-
-        public Search {
+        public SearchCommand {
             query = query == null ? "" : query;
         }
-
-        @Override
-        public int operationKey() {
-            return SEARCH_OPERATION;
-        }
-
-        @Override
-        public String query() {
-            return query;
-        }
-
-        @Override
-        public long mapIdValue() {
-            return 1L;
-        }
-
-        @Override
-        public String mapName() {
-            return "";
-        }
     }
 
-    record CreateMap(String mapName) implements DungeonMapCatalogCommand {
+    record CreateMapCommand(String mapName) implements DungeonMapCatalogCommand {
 
-        public CreateMap {
+        public CreateMapCommand {
             mapName = mapName == null ? "" : mapName;
         }
-
-        @Override
-        public int operationKey() {
-            return CREATE_OPERATION;
-        }
-
-        @Override
-        public String query() {
-            return "";
-        }
-
-        @Override
-        public long mapIdValue() {
-            return 1L;
-        }
     }
 
-    record RenameMap(
+    record RenameMapCommand(
             DungeonMapId mapId,
             String mapName
     ) implements DungeonMapCatalogCommand {
 
-        public RenameMap {
+        public RenameMapCommand {
             mapId = mapId == null ? new DungeonMapId(1L) : mapId;
             mapName = mapName == null ? "" : mapName;
-        }
-
-        @Override
-        public int operationKey() {
-            return RENAME_OPERATION;
-        }
-
-        @Override
-        public String query() {
-            return "";
-        }
-
-        @Override
-        public long mapIdValue() {
-            return mapId.value();
         }
     }
 

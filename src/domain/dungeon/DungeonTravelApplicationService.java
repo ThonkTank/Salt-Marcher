@@ -1,7 +1,8 @@
 package src.domain.dungeon;
 
 import java.util.Objects;
-import src.domain.dungeon.model.travel.usecase.RouteDungeonTravelCommandUseCase;
+import src.domain.dungeon.model.travel.usecase.PublishDungeonTravelMoveUseCase;
+import src.domain.dungeon.model.travel.usecase.PublishDungeonTravelSurfaceUseCase;
 import src.domain.dungeon.published.DungeonTravelCommand;
 
 /**
@@ -9,25 +10,41 @@ import src.domain.dungeon.published.DungeonTravelCommand;
  */
 public final class DungeonTravelApplicationService {
 
-    private final RouteDungeonTravelCommandUseCase routeDungeonTravelCommandUseCase;
+    private final PublishDungeonTravelSurfaceUseCase publishSurfaceUseCase;
+    private final PublishDungeonTravelMoveUseCase publishMoveUseCase;
 
-    public DungeonTravelApplicationService(RouteDungeonTravelCommandUseCase routeDungeonTravelCommandUseCase) {
-        this.routeDungeonTravelCommandUseCase =
-                Objects.requireNonNull(routeDungeonTravelCommandUseCase, "routeDungeonTravelCommandUseCase");
+    public DungeonTravelApplicationService(
+            PublishDungeonTravelSurfaceUseCase publishSurfaceUseCase,
+            PublishDungeonTravelMoveUseCase publishMoveUseCase
+    ) {
+        this.publishSurfaceUseCase = Objects.requireNonNull(publishSurfaceUseCase, "publishSurfaceUseCase");
+        this.publishMoveUseCase = Objects.requireNonNull(publishMoveUseCase, "publishMoveUseCase");
     }
 
-    public void travel(DungeonTravelCommand command) {
+    public void loadSurface(DungeonTravelCommand.LoadSurfaceCommand command) {
         Objects.requireNonNull(command, "command");
-        routeDungeonTravelCommandUseCase.execute(
-                command.operationKey(),
-                command.hasPosition(),
-                command.mapIdValue(),
-                command.locationKindName(),
-                command.ownerId(),
-                command.tileQ(),
-                command.tileR(),
-                command.tileLevel(),
-                command.headingName(),
+        publishSurfaceUseCase.execute(
+                command.position() != null,
+                command.position() == null ? 1L : command.position().mapId().value(),
+                command.position() == null ? "TILE" : command.position().locationKind().name(),
+                command.position() == null ? 0L : command.position().ownerId(),
+                command.position() == null ? 0 : command.position().tile().q(),
+                command.position() == null ? 0 : command.position().tile().r(),
+                command.position() == null ? 0 : command.position().tile().level(),
+                command.position() == null ? "SOUTH" : command.position().heading().name());
+    }
+
+    public void moveAction(DungeonTravelCommand.MoveActionCommand command) {
+        Objects.requireNonNull(command, "command");
+        publishMoveUseCase.execute(
+                command.position() != null,
+                command.position() == null ? 1L : command.position().mapId().value(),
+                command.position() == null ? "TILE" : command.position().locationKind().name(),
+                command.position() == null ? 0L : command.position().ownerId(),
+                command.position() == null ? 0 : command.position().tile().q(),
+                command.position() == null ? 0 : command.position().tile().r(),
+                command.position() == null ? 0 : command.position().tile().level(),
+                command.position() == null ? "SOUTH" : command.position().heading().name(),
                 command.actionId());
     }
 }

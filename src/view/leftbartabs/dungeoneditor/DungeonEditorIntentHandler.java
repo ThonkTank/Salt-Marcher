@@ -137,22 +137,22 @@ final class DungeonEditorIntentHandler {
         if (event == null) {
             return;
         }
-        if (event.press() && event.buttons().middleButtonDown()) {
+        if (event.input().mousePressed() && event.buttons().middleButtonDown()) {
             mapContentModel.beginMiddleDrag(event.position().canvasX(), event.position().canvasY());
             return;
         }
-        if (event.drag() && event.buttons().middleButtonDown()) {
+        if (event.input().mouseDragged() && event.buttons().middleButtonDown()) {
             DungeonMapContentModel.DragDelta delta = mapContentModel.updateMiddleDrag(
                     event.position().canvasX(),
                     event.position().canvasY());
             mapContentModel.panByPixels(delta.canvasX(), delta.canvasY());
             return;
         }
-        if (event.release() && event.buttons().middleButtonDown()) {
+        if (event.input().mouseReleased() && event.buttons().middleButtonDown()) {
             mapContentModel.endMiddleDrag();
             return;
         }
-        if (event.scroll()) {
+        if (event.input().scrolled()) {
             handleScroll(event);
             return;
         }
@@ -202,13 +202,13 @@ final class DungeonEditorIntentHandler {
             DungeonMapViewInputEvent event,
             DungeonEditorPointerSample pointerSample
     ) {
-        if (event.press()) {
+        if (event.input().mousePressed()) {
             editor.pressSelection(new DungeonEditorSelectionCommand(pointerSample));
-        } else if (event.drag()) {
+        } else if (event.input().mouseDragged()) {
             editor.dragSelection(new DungeonEditorSelectionCommand(pointerSample));
-        } else if (event.release()) {
+        } else if (event.input().mouseReleased()) {
             editor.releaseSelection(new DungeonEditorSelectionCommand(pointerSample));
-        } else if (event.move()) {
+        } else if (event.input().mouseMoved()) {
             editor.hoverSelection(new DungeonEditorSelectionCommand(pointerSample));
         }
     }
@@ -217,11 +217,11 @@ final class DungeonEditorIntentHandler {
             DungeonMapViewInputEvent event,
             DungeonEditorPointerSample pointerSample
     ) {
-        if (event.press()) {
+        if (event.input().mousePressed()) {
             editor.pressPaintRoom(new PaintDungeonEditorRoomCommand(pointerSample));
-        } else if (event.drag()) {
+        } else if (event.input().mouseDragged()) {
             editor.dragPaintRoom(new PaintDungeonEditorRoomCommand(pointerSample));
-        } else if (event.release()) {
+        } else if (event.input().mouseReleased()) {
             editor.releasePaintRoom(new PaintDungeonEditorRoomCommand(pointerSample));
         }
     }
@@ -230,11 +230,11 @@ final class DungeonEditorIntentHandler {
             DungeonMapViewInputEvent event,
             DungeonEditorPointerSample pointerSample
     ) {
-        if (event.press()) {
+        if (event.input().mousePressed()) {
             editor.pressDeleteRoom(new DeleteDungeonEditorRoomCommand(pointerSample));
-        } else if (event.drag()) {
+        } else if (event.input().mouseDragged()) {
             editor.dragDeleteRoom(new DeleteDungeonEditorRoomCommand(pointerSample));
-        } else if (event.release()) {
+        } else if (event.input().mouseReleased()) {
             editor.releaseDeleteRoom(new DeleteDungeonEditorRoomCommand(pointerSample));
         }
     }
@@ -243,11 +243,11 @@ final class DungeonEditorIntentHandler {
             DungeonMapViewInputEvent event,
             DungeonEditorPointerSample pointerSample
     ) {
-        if (event.press()) {
+        if (event.input().mousePressed()) {
             editor.pressCreateWall(new CreateDungeonEditorWallCommand(pointerSample));
-        } else if (event.drag()) {
+        } else if (event.input().mouseDragged()) {
             editor.dragCreateWall(new CreateDungeonEditorWallCommand(pointerSample));
-        } else if (event.move()) {
+        } else if (event.input().mouseMoved()) {
             editor.hoverCreateWall(new CreateDungeonEditorWallCommand(pointerSample));
         }
     }
@@ -256,11 +256,11 @@ final class DungeonEditorIntentHandler {
             DungeonMapViewInputEvent event,
             DungeonEditorPointerSample pointerSample
     ) {
-        if (event.press()) {
+        if (event.input().mousePressed()) {
             editor.pressDeleteWall(new DeleteDungeonEditorWallCommand(pointerSample));
-        } else if (event.drag()) {
+        } else if (event.input().mouseDragged()) {
             editor.dragDeleteWall(new DeleteDungeonEditorWallCommand(pointerSample));
-        } else if (event.move()) {
+        } else if (event.input().mouseMoved()) {
             editor.hoverDeleteWall(new DeleteDungeonEditorWallCommand(pointerSample));
         }
     }
@@ -269,13 +269,13 @@ final class DungeonEditorIntentHandler {
             DungeonMapViewInputEvent event,
             DungeonEditorPointerSample pointerSample
     ) {
-        if (event.press()) {
+        if (event.input().mousePressed()) {
             editor.pressCreateDoor(new CreateDungeonEditorDoorCommand(pointerSample));
-        } else if (event.drag()) {
+        } else if (event.input().mouseDragged()) {
             editor.dragCreateDoor(new CreateDungeonEditorDoorCommand(pointerSample));
-        } else if (event.move()) {
+        } else if (event.input().mouseMoved()) {
             editor.hoverCreateDoor(new CreateDungeonEditorDoorCommand(pointerSample));
-        } else if (event.release()) {
+        } else if (event.input().mouseReleased()) {
             editor.releaseCreateDoor(new CreateDungeonEditorDoorCommand(pointerSample));
         }
     }
@@ -284,13 +284,13 @@ final class DungeonEditorIntentHandler {
             DungeonMapViewInputEvent event,
             DungeonEditorPointerSample pointerSample
     ) {
-        if (event.press()) {
+        if (event.input().mousePressed()) {
             editor.pressDeleteDoor(new DeleteDungeonEditorDoorCommand(pointerSample));
-        } else if (event.drag()) {
+        } else if (event.input().mouseDragged()) {
             editor.dragDeleteDoor(new DeleteDungeonEditorDoorCommand(pointerSample));
-        } else if (event.move()) {
+        } else if (event.input().mouseMoved()) {
             editor.hoverDeleteDoor(new DeleteDungeonEditorDoorCommand(pointerSample));
-        } else if (event.release()) {
+        } else if (event.input().mouseReleased()) {
             editor.releaseDeleteDoor(new DeleteDungeonEditorDoorCommand(pointerSample));
         }
     }
@@ -299,9 +299,9 @@ final class DungeonEditorIntentHandler {
             DungeonMapViewInputEvent event,
             DungeonEditorPointerSample pointerSample
     ) {
-        if (event.press()) {
+        if (event.input().mousePressed()) {
             editor.pressCreateCorridor(new CreateDungeonEditorCorridorCommand(pointerSample));
-        } else if (event.move()) {
+        } else if (event.input().mouseMoved()) {
             editor.hoverCreateCorridor(new CreateDungeonEditorCorridorCommand(pointerSample));
         }
     }
@@ -310,9 +310,9 @@ final class DungeonEditorIntentHandler {
             DungeonMapViewInputEvent event,
             DungeonEditorPointerSample pointerSample
     ) {
-        if (event.press()) {
+        if (event.input().mousePressed()) {
             editor.pressDeleteCorridor(new DeleteDungeonEditorCorridorCommand(pointerSample));
-        } else if (event.move()) {
+        } else if (event.input().mouseMoved()) {
             editor.hoverDeleteCorridor(new DeleteDungeonEditorCorridorCommand(pointerSample));
         }
     }
@@ -359,7 +359,7 @@ final class DungeonEditorIntentHandler {
             DungeonEditorTool selectedTool,
             DungeonMapContentModel.PointerTarget target
     ) {
-        if (!event.move()) {
+        if (!event.input().mouseMoved()) {
             lastHoverSample = null;
             return false;
         }
@@ -532,7 +532,7 @@ final class DungeonEditorIntentHandler {
         }
         if (mapEditorUiState.isCreateMode()) {
             mapControlsContentModel.closeMapEditor();
-            editor.createMap(new DungeonMapCatalogCommand.CreateMap(draftName));
+            editor.createMap(new DungeonMapCatalogCommand.CreateMapCommand(draftName));
             return;
         }
         if (mapEditorUiState.isRenameMode()) {
@@ -544,7 +544,7 @@ final class DungeonEditorIntentHandler {
         long mapIdValue = mapEditorUiState.mapIdValue();
         if (mapIdValue > NO_MAP_ID) {
             mapControlsContentModel.closeMapEditor();
-            editor.renameMap(new DungeonMapCatalogCommand.RenameMap(new DungeonMapId(mapIdValue), draftName));
+            editor.renameMap(new DungeonMapCatalogCommand.RenameMapCommand(new DungeonMapId(mapIdValue), draftName));
         }
     }
 

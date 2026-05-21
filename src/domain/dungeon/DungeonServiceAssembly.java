@@ -80,7 +80,10 @@ import src.domain.dungeon.model.map.usecase.LoadDungeonSnapshotUseCase;
 import src.domain.dungeon.model.map.usecase.PublishDungeonEditorHandlesUseCase;
 import src.domain.dungeon.model.map.usecase.RefreshDungeonAuthoredUseCase;
 import src.domain.dungeon.model.map.usecase.RenameDungeonMapUseCase;
-import src.domain.dungeon.model.map.usecase.RouteDungeonMapCatalogCommandUseCase;
+import src.domain.dungeon.model.map.usecase.PublishDungeonMapCatalogCreateUseCase;
+import src.domain.dungeon.model.map.usecase.PublishDungeonMapCatalogDeleteUseCase;
+import src.domain.dungeon.model.map.usecase.PublishDungeonMapCatalogRenameUseCase;
+import src.domain.dungeon.model.map.usecase.PublishDungeonMapCatalogSearchUseCase;
 import src.domain.dungeon.model.map.usecase.SearchDungeonMapsUseCase;
 import src.domain.dungeon.model.travel.model.session.model.TravelDungeonSessionSnapshot.SnapshotData;
 import src.domain.dungeon.model.travel.model.session.model.TravelDungeonSessionSurface.AvailableAction;
@@ -97,7 +100,8 @@ import src.domain.dungeon.model.travel.usecase.ApplyTravelDungeonSessionUseCase;
 import src.domain.dungeon.model.travel.usecase.LoadDungeonTravelSurfaceUseCase;
 import src.domain.dungeon.model.travel.usecase.MoveDungeonTravelActionUseCase;
 import src.domain.dungeon.model.travel.usecase.PublishTravelDungeonSessionUseCase;
-import src.domain.dungeon.model.travel.usecase.RouteDungeonTravelCommandUseCase;
+import src.domain.dungeon.model.travel.usecase.PublishDungeonTravelMoveUseCase;
+import src.domain.dungeon.model.travel.usecase.PublishDungeonTravelSurfaceUseCase;
 import src.domain.dungeon.published.DungeonAreaKind;
 import src.domain.dungeon.published.DungeonAreaSnapshot;
 import src.domain.dungeon.published.DungeonAuthoredMutationModel;
@@ -190,25 +194,27 @@ final class DungeonServiceAssembly {
     DungeonCatalogApplicationService createCatalogApplicationService(ServiceRegistry registry) {
         DungeonPublishedState publishedState = authoredPublishedState(registry);
         DungeonMapRepository repository = registry.require(DungeonMapRepository.class);
-        return new DungeonCatalogApplicationService(new RouteDungeonMapCatalogCommandUseCase(
-                new SearchDungeonMapsUseCase(repository),
-                new CreateDungeonMapUseCase(repository),
-                new RenameDungeonMapUseCase(repository),
-                new DeleteDungeonMapUseCase(repository),
-                publishedState));
+        return new DungeonCatalogApplicationService(
+                new PublishDungeonMapCatalogSearchUseCase(new SearchDungeonMapsUseCase(repository), publishedState),
+                new PublishDungeonMapCatalogCreateUseCase(new CreateDungeonMapUseCase(repository), publishedState),
+                new PublishDungeonMapCatalogRenameUseCase(new RenameDungeonMapUseCase(repository), publishedState),
+                new PublishDungeonMapCatalogDeleteUseCase(new DeleteDungeonMapUseCase(repository), publishedState));
     }
 
     DungeonTravelApplicationService createTravelApplicationService(ServiceRegistry registry) {
         DungeonPublishedState publishedState = authoredPublishedState(registry);
         LoadDungeonMapUseCase loadDungeonMapUseCase = loadDungeonMapUseCase(registry);
         BuildDungeonDerivedStateUseCase derive = new BuildDungeonDerivedStateUseCase();
-        return new DungeonTravelApplicationService(new RouteDungeonTravelCommandUseCase(
-                new LoadDungeonTravelSurfaceUseCase(loadDungeonMapUseCase, derive),
-                new MoveDungeonTravelActionUseCase(
+        return new DungeonTravelApplicationService(
+                new PublishDungeonTravelSurfaceUseCase(
+                        new LoadDungeonTravelSurfaceUseCase(loadDungeonMapUseCase, derive),
+                        publishedState),
+                new PublishDungeonTravelMoveUseCase(
+                        new MoveDungeonTravelActionUseCase(
                         loadDungeonMapUseCase,
                         registry.require(DungeonMapRepository.class),
                         derive),
-                publishedState));
+                        publishedState));
     }
 
     DungeonTravelRuntimeApplicationService createTravelRuntimeApplicationService(ServiceRegistry registry) {

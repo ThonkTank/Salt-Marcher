@@ -1,11 +1,7 @@
 package src.view.slotcontent.main.dungeonmap;
 
 public record DungeonMapViewInputEvent(
-        boolean press,
-        boolean drag,
-        boolean move,
-        boolean release,
-        boolean scroll,
+        CanvasInput input,
         CanvasButtons buttons,
         CanvasModifiers modifiers,
         CanvasPosition position,
@@ -13,9 +9,31 @@ public record DungeonMapViewInputEvent(
 ) {
 
     public DungeonMapViewInputEvent {
+        input = input == null ? new CanvasInput(false, false, true, false, false) : input;
         buttons = buttons == null ? new CanvasButtons(false, false, false) : buttons;
         modifiers = modifiers == null ? new CanvasModifiers(false, false, false) : modifiers;
         position = position == null ? new CanvasPosition(0.0, 0.0) : position;
+    }
+
+    public record CanvasInput(
+            boolean mousePressed,
+            boolean mouseDragged,
+            boolean mouseMoved,
+            boolean mouseReleased,
+            boolean scrolled
+    ) {
+
+        public CanvasInput {
+            int rawEvents = 0;
+            rawEvents += mousePressed ? 1 : 0;
+            rawEvents += mouseDragged ? 1 : 0;
+            rawEvents += mouseMoved ? 1 : 0;
+            rawEvents += mouseReleased ? 1 : 0;
+            rawEvents += scrolled ? 1 : 0;
+            if (rawEvents != 1) {
+                throw new IllegalArgumentException("Exactly one raw canvas input must be selected.");
+            }
+        }
     }
 
     public record CanvasPosition(

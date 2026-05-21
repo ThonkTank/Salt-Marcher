@@ -1,7 +1,11 @@
 package src.view.slotcontent.main.dungeonmap;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
+import javafx.beans.InvalidationListener;
+import javafx.beans.value.ChangeListener;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.canvas.Canvas;
@@ -38,7 +42,11 @@ public class DungeonMapView extends BorderPane {
     private static final double LABEL_BASELINE_RATIO = 0.69;
     private static final int MIN_POLYGON_POINTS = 3;
     private static final int MIN_POLYLINE_POINTS = 2;
+    private static final Object BOUND_MODEL_KEY = new Object();
+    private static final Object CANVAS_STATE_LISTENER_KEY = new Object();
+    private static final Object CANVAS_SIZE_LISTENER_KEY = new Object();
     private static final int[] GRID_STEPS = {1, 5, 10, 25};
+    private static final Map<RenderColor, Color> FX_COLOR_CACHE = new HashMap<>();
     private static final Color BACKGROUND_COLOR = color(0x12, 0x18, 0x1c, 1.0);
     private static final Color[] GRID_COLORS = {
             color(0x66, 0x77, 0x82, 0.18),
@@ -78,10 +86,19 @@ public class DungeonMapView extends BorderPane {
     }
 
     public void bind(DungeonMapContentModel presentationModel) {
+        removeCurrentCanvasListeners();
         if (presentationModel == null) {
             return;
         }
-        presentationModel.canvasStateProperty().addListener((ignored, before, after) -> redraw(after));
+        ChangeListener<DungeonMapContentModel.CanvasState> canvasStateListener =
+                (ignored, before, after) -> redraw(after);
+        InvalidationListener canvasSizeListener = ignored -> redraw(presentationModel.currentCanvasState());
+        presentationModel.canvasStateProperty().addListener(canvasStateListener);
+        canvas.widthProperty().addListener(canvasSizeListener);
+        canvas.heightProperty().addListener(canvasSizeListener);
+        getProperties().put(BOUND_MODEL_KEY, presentationModel);
+        getProperties().put(CANVAS_STATE_LISTENER_KEY, canvasStateListener);
+        getProperties().put(CANVAS_SIZE_LISTENER_KEY, canvasSizeListener);
         redraw(presentationModel.currentCanvasState());
     }
 
@@ -141,11 +158,7 @@ public class DungeonMapView extends BorderPane {
 
     private void handleScroll(ScrollEvent event) {
         viewInputEventHandler.accept(new DungeonMapViewInputEvent(
-                false,
-                false,
-                false,
-                false,
-                true,
+                new DungeonMapViewInputEvent.CanvasInput(false, false, false, false, true),
                 new DungeonMapViewInputEvent.CanvasButtons(false, false, false),
                 new DungeonMapViewInputEvent.CanvasModifiers(
                         event.isControlDown(),
@@ -187,11 +200,7 @@ public class DungeonMapView extends BorderPane {
             boolean scroll
     ) {
         viewInputEventHandler.accept(new DungeonMapViewInputEvent(
-                press,
-                drag,
-                move,
-                release,
-                scroll,
+                new DungeonMapViewInputEvent.CanvasInput(press, drag, move, release, scroll),
                 new DungeonMapViewInputEvent.CanvasButtons(
                         event.isPrimaryButtonDown() || event.getButton() == MouseButton.PRIMARY,
                         event.isMiddleButtonDown() || event.getButton() == MouseButton.MIDDLE,
@@ -215,11 +224,7 @@ public class DungeonMapView extends BorderPane {
             double scrollDeltaY
     ) {
         viewInputEventHandler.accept(new DungeonMapViewInputEvent(
-                press,
-                drag,
-                move,
-                release,
-                scroll,
+                new DungeonMapViewInputEvent.CanvasInput(press, drag, move, release, scroll),
                 new DungeonMapViewInputEvent.CanvasButtons(primaryButtonDown, false, false),
                 new DungeonMapViewInputEvent.CanvasModifiers(
                         event.isControlDown(),
@@ -463,23 +468,39 @@ public class DungeonMapView extends BorderPane {
         };
     }
 
-    private Color defaultTextColor(SceneColor sceneColor) {
+    @SuppressWarnings("unchecked")
+    private void removeCurrentCanvasListeners() {
+        Object boundModel = getProperties().remove(BOUND_MODEL_KEY);
+        Object stateListener = getProperties().remove(CANVAS_STATE_LISTENER_KEY);
+        Object sizeListener = getProperties().remove(CANVAS_SIZE_LISTENER_KEY);
+        if (boundModel instanceof DungeonMapContentModel model
+                && stateListener instanceof ChangeListener<?> changeListener) {
+            model.canvasStateProperty()
+                    .removeListener((ChangeListener<? super DungeonMapContentModel.CanvasState>) changeListener);
+        }
+        if (sizeListener instanceof InvalidationListener listener) {
+            canvas.widthProperty().removeListener(listener);
+            canvas.heightProperty().removeListener(listener);
+        }
+    }
+
+    private Color defaultTextColor(RenderColor sceneColor) {
         if (sceneColor == null) {
             return Color.WHITE;
         }
         return fxColor(sceneColor);
     }
 
-    private Color fxColor(SceneColor sceneColor) {
-        return sceneColor == null ? null : toFxColor(sceneColor);
+    private Color fxColor(RenderColor sceneColor) {
+        return sceneColor == null ? null : FX_COLOR_CACHE.computeIfAbsent(sceneColor, DungeonMapView::toFxColor);
     }
 
-    private static Color toFxColor(SceneColor sceneColor) {
+    private static Color toFxColor(RenderColor sceneColor) {
         return new Color(
-                sceneColor.red(),
-                sceneColor.green(),
-                sceneColor.blue(),
-                sceneColor.opacity());
+                sceneColor.redUnit(),
+                sceneColor.greenUnit(),
+                sceneColor.blueUnit(),
+                sceneColor.alphaUnit());
     }
 
     private static Color color(int red, int green, int blue, double opacity) {
