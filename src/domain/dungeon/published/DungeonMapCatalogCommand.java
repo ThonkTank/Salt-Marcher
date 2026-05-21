@@ -6,26 +6,18 @@ public sealed interface DungeonMapCatalogCommand permits
         DungeonMapCatalogCommand.RenameMap,
         DeleteDungeonMapCommand {
 
-    String SEARCH = "search";
-    String CREATE = "create";
-    String RENAME = "rename";
-    String DELETE = "delete";
+    int SEARCH_OPERATION = 1;
+    int CREATE_OPERATION = 2;
+    int RENAME_OPERATION = 3;
+    int DELETE_OPERATION = 4;
 
-    default String actionKey() {
-        return "";
-    }
+    int operationKey();
 
-    default String query() {
-        return "";
-    }
+    String query();
 
-    default long mapIdValue() {
-        return 1L;
-    }
+    long mapIdValue();
 
-    default String mapName() {
-        return "";
-    }
+    String mapName();
 
     record Search(String query) implements DungeonMapCatalogCommand {
 
@@ -34,8 +26,23 @@ public sealed interface DungeonMapCatalogCommand permits
         }
 
         @Override
-        public String actionKey() {
-            return SEARCH;
+        public int operationKey() {
+            return SEARCH_OPERATION;
+        }
+
+        @Override
+        public String query() {
+            return query;
+        }
+
+        @Override
+        public long mapIdValue() {
+            return 1L;
+        }
+
+        @Override
+        public String mapName() {
+            return "";
         }
     }
 
@@ -46,8 +53,18 @@ public sealed interface DungeonMapCatalogCommand permits
         }
 
         @Override
-        public String actionKey() {
-            return CREATE;
+        public int operationKey() {
+            return CREATE_OPERATION;
+        }
+
+        @Override
+        public String query() {
+            return "";
+        }
+
+        @Override
+        public long mapIdValue() {
+            return 1L;
         }
     }
 
@@ -62,8 +79,13 @@ public sealed interface DungeonMapCatalogCommand permits
         }
 
         @Override
-        public String actionKey() {
-            return RENAME;
+        public int operationKey() {
+            return RENAME_OPERATION;
+        }
+
+        @Override
+        public String query() {
+            return "";
         }
 
         @Override

@@ -7,12 +7,22 @@ public record DeleteDungeonMapCommand(DungeonMapId mapId) implements DungeonMapC
     }
 
     @Override
-    public String actionKey() {
-        return DELETE;
+    public int operationKey() {
+        return DELETE_OPERATION;
+    }
+
+    @Override
+    public String query() {
+        return "";
     }
 
     @Override
     public long mapIdValue() {
         return mapId.value();
+    }
+
+    @Override
+    public String mapName() {
+        return "";
     }
 }

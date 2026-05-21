@@ -39,11 +39,20 @@ public class DungeonMapView extends BorderPane {
     private static final int MIN_POLYGON_POINTS = 3;
     private static final int MIN_POLYLINE_POINTS = 2;
     private static final int[] GRID_STEPS = {1, 5, 10, 25};
+    private static final Color BACKGROUND_COLOR = color(0x12, 0x18, 0x1c, 1.0);
+    private static final Color[] GRID_COLORS = {
+            color(0x66, 0x77, 0x82, 0.18),
+            color(0x73, 0x83, 0x90, 0.16),
+            color(0x8d, 0x9c, 0xa8, 0.22),
+            color(0xb1, 0xbc, 0xc5, 0.28)
+    };
     private final StackPane host = new StackPane();
     private final Pane canvasLayer = new Pane();
     private final Canvas canvas = new Canvas(DEFAULT_WIDTH, DEFAULT_HEIGHT);
     private final Label overlayMessage = new Label();
     private Consumer<DungeonMapViewInputEvent> viewInputEventHandler = ignored -> {};
+    private double[] polygonXBuffer = new double[0];
+    private double[] polygonYBuffer = new double[0];
 
     public DungeonMapView() {
         getStyleClass().add(SURFACE_ROOT_STYLE);
@@ -65,6 +74,7 @@ public class DungeonMapView extends BorderPane {
         StackPane.setAlignment(canvasLayer, Pos.TOP_LEFT);
         StackPane.setAlignment(overlayMessage, Pos.CENTER);
         setCenter(host);
+        installInputHandlers();
     }
 
     public void bind(DungeonMapContentModel presentationModel) {
@@ -72,9 +82,6 @@ public class DungeonMapView extends BorderPane {
             return;
         }
         presentationModel.canvasStateProperty().addListener((ignored, before, after) -> redraw(after));
-        canvas.widthProperty().addListener((ignored, before, after) -> redraw(presentationModel.currentCanvasState()));
-        canvas.heightProperty().addListener((ignored, before, after) -> redraw(presentationModel.currentCanvasState()));
-        installInputHandlers();
         redraw(presentationModel.currentCanvasState());
     }
 
@@ -95,12 +102,12 @@ public class DungeonMapView extends BorderPane {
         canvasLayer.requestFocus();
         MouseButton button = event.getButton();
         if (button == MouseButton.MIDDLE) {
-            emitMouseEvent(event, "PRESS", NO_DELTA, NO_DELTA);
+            emitMouseEvent(event, true, false, false, false, false);
             event.consume();
             return;
         }
         if (button == MouseButton.PRIMARY) {
-            emitMouseEvent(event, "PRESS", NO_DELTA, NO_DELTA);
+            emitMouseEvent(event, true, false, false, false, false);
             event.consume();
             return;
         }
@@ -111,57 +118,59 @@ public class DungeonMapView extends BorderPane {
 
     private void handleMouseDragged(MouseEvent event) {
         if (event.isPrimaryButtonDown()) {
-            emitMouseEvent(event, "DRAG", NO_DELTA, NO_DELTA);
+            emitMouseEvent(event, false, true, false, false, false);
             event.consume();
             return;
         }
         if (event.isMiddleButtonDown()) {
-            emitMouseEvent(
-                    event,
-                    "DRAG",
-                    NO_DELTA,
-                    NO_DELTA);
+            emitMouseEvent(event, false, true, false, false, false);
             event.consume();
         }
     }
 
     private void handleMouseMoved(MouseEvent event) {
-        emitMouseEvent(event, "MOVE", NO_DELTA, NO_DELTA);
+        emitMouseEvent(event, false, false, true, false, false);
     }
 
     private void handleMouseReleased(MouseEvent event) {
         if (event.getButton() == MouseButton.MIDDLE || event.getButton() == MouseButton.PRIMARY) {
-            emitMouseEvent(event, "RELEASE", NO_DELTA, NO_DELTA);
+            emitMouseEvent(event, false, false, false, true, false);
             event.consume();
         }
     }
 
     private void handleScroll(ScrollEvent event) {
         viewInputEventHandler.accept(new DungeonMapViewInputEvent(
-                "SCROLL",
+                false,
+                false,
+                false,
+                false,
+                true,
                 new DungeonMapViewInputEvent.CanvasButtons(false, false, false),
                 new DungeonMapViewInputEvent.CanvasModifiers(
                         event.isControlDown(),
                         event.isShiftDown(),
                         event.isAltDown()),
-                new DungeonMapViewInputEvent.CanvasPosition(event.getX(), event.getY(), 0.0, 0.0),
-                event.getDeltaY(),
-                0.0,
-                0.0));
+                new DungeonMapViewInputEvent.CanvasPosition(event.getX(), event.getY()),
+                event.getDeltaY()));
         event.consume();
     }
 
     private void handleKeyPressed(KeyEvent event) {
         KeyCode code = event.getCode();
         if (code == KeyCode.ENTER || code == KeyCode.SPACE) {
-            emitKeyboardEvent("PRESS", event, true, NO_DELTA);
-            emitKeyboardEvent("RELEASE", event, false, NO_DELTA);
+            emitKeyboardEvent(true, false, false, false, false, event, true, NO_DELTA);
+            emitKeyboardEvent(false, false, false, true, false, event, false, NO_DELTA);
             event.consume();
             return;
         }
         if (code == KeyCode.PAGE_UP || code == KeyCode.PAGE_DOWN) {
             emitKeyboardEvent(
-                    "SCROLL",
+                    false,
+                    false,
+                    false,
+                    false,
+                    true,
                     event,
                     false,
                     code == KeyCode.PAGE_UP ? KEYBOARD_SCROLL_DELTA : -KEYBOARD_SCROLL_DELTA);
@@ -171,12 +180,18 @@ public class DungeonMapView extends BorderPane {
 
     private void emitMouseEvent(
             MouseEvent event,
-            String interaction,
-            double dragDeltaX,
-            double dragDeltaY
+            boolean press,
+            boolean drag,
+            boolean move,
+            boolean release,
+            boolean scroll
     ) {
         viewInputEventHandler.accept(new DungeonMapViewInputEvent(
-                interaction,
+                press,
+                drag,
+                move,
+                release,
+                scroll,
                 new DungeonMapViewInputEvent.CanvasButtons(
                         event.isPrimaryButtonDown() || event.getButton() == MouseButton.PRIMARY,
                         event.isMiddleButtonDown() || event.getButton() == MouseButton.MIDDLE,
@@ -185,29 +200,33 @@ public class DungeonMapView extends BorderPane {
                         event.isControlDown(),
                         event.isShiftDown(),
                         event.isAltDown()),
-                new DungeonMapViewInputEvent.CanvasPosition(event.getX(), event.getY(), 0.0, 0.0),
-                0.0,
-                dragDeltaX,
-                dragDeltaY));
+                new DungeonMapViewInputEvent.CanvasPosition(event.getX(), event.getY()),
+                0.0));
     }
 
     private void emitKeyboardEvent(
-            String interaction,
+            boolean press,
+            boolean drag,
+            boolean move,
+            boolean release,
+            boolean scroll,
             KeyEvent event,
             boolean primaryButtonDown,
             double scrollDeltaY
     ) {
         viewInputEventHandler.accept(new DungeonMapViewInputEvent(
-                interaction,
+                press,
+                drag,
+                move,
+                release,
+                scroll,
                 new DungeonMapViewInputEvent.CanvasButtons(primaryButtonDown, false, false),
                 new DungeonMapViewInputEvent.CanvasModifiers(
                         event.isControlDown(),
                         event.isShiftDown(),
                         event.isAltDown()),
-                new DungeonMapViewInputEvent.CanvasPosition(canvas.getWidth() / 2.0, canvas.getHeight() / 2.0, 0.0, 0.0),
-                scrollDeltaY,
-                0.0,
-                0.0));
+                new DungeonMapViewInputEvent.CanvasPosition(canvas.getWidth() / 2.0, canvas.getHeight() / 2.0),
+                scrollDeltaY));
     }
 
     private void redraw(DungeonMapContentModel.CanvasState canvasState) {
@@ -220,7 +239,7 @@ public class DungeonMapView extends BorderPane {
         double height = canvas.getHeight() > MIN_CANVAS_SIZE ? canvas.getHeight() : DEFAULT_HEIGHT;
         GraphicsContext gc = canvas.getGraphicsContext2D();
         gc.clearRect(0.0, 0.0, width, height);
-        gc.setFill(color(0x12, 0x18, 0x1c, 1.0));
+        gc.setFill(BACKGROUND_COLOR);
         gc.fillRect(0.0, 0.0, width, height);
         drawGrid(gc, renderScene, viewport, width, height);
         drawRelations(gc, renderScene.relations(), viewport);
@@ -257,39 +276,41 @@ public class DungeonMapView extends BorderPane {
         }
     }
 
-    private static void drawSurfaces(GraphicsContext gc, List<MapCanvasPolygonPrimitive> surfaces, Viewport viewport) {
+    private void drawSurfaces(GraphicsContext gc, List<MapCanvasPolygonPrimitive> surfaces, Viewport viewport) {
         for (MapCanvasPolygonPrimitive surface : surfaces) {
             drawPolygon(gc, surface.polygon(), surface.style(), viewport);
         }
     }
 
-    private static void drawBoundaries(GraphicsContext gc, List<BoundaryPrimitive> boundaries, Viewport viewport) {
+    private void drawBoundaries(GraphicsContext gc, List<BoundaryPrimitive> boundaries, Viewport viewport) {
         for (BoundaryPrimitive boundary : boundaries) {
             drawPolyline(gc, boundary.polyline(), boundary.style(), viewport);
         }
     }
 
-    private static void drawRelations(GraphicsContext gc, List<RelationPrimitive> relations, Viewport viewport) {
+    private void drawRelations(GraphicsContext gc, List<RelationPrimitive> relations, Viewport viewport) {
         for (RelationPrimitive relation : relations) {
             drawPolyline(gc, relation.polyline(), relation.style(), viewport);
         }
     }
 
-    private static void drawGlyphs(GraphicsContext gc, List<GlyphPrimitive> glyphs, Viewport viewport) {
+    private void drawGlyphs(GraphicsContext gc, List<GlyphPrimitive> glyphs, Viewport viewport) {
         gc.setTextAlign(TextAlignment.CENTER);
         for (GlyphPrimitive glyph : glyphs) {
             drawPolygon(gc, glyph.polygon(), glyph.style(), viewport);
             String label = glyph.label();
             if (!label.isBlank()) {
-                double[] center = polygonCenter(glyph.polygon());
                 gc.setFill(defaultTextColor(glyph.labelColor()));
-                gc.fillText(label, viewport.sceneToScreenX(center[0]), viewport.sceneToScreenY(center[1]) + 4.0);
+                gc.fillText(
+                        label,
+                        viewport.sceneToScreenX(polygonCenterX(glyph.polygon())),
+                        viewport.sceneToScreenY(polygonCenterY(glyph.polygon())) + 4.0);
             }
         }
         gc.setTextAlign(TextAlignment.LEFT);
     }
 
-    private static void drawTexts(GraphicsContext gc, List<TextPrimitive> texts, Viewport viewport) {
+    private void drawTexts(GraphicsContext gc, List<TextPrimitive> texts, Viewport viewport) {
         gc.setTextAlign(TextAlignment.CENTER);
         for (TextPrimitive text : texts) {
             double width = text.width() * viewport.gridSize();
@@ -302,7 +323,7 @@ public class DungeonMapView extends BorderPane {
         gc.setTextAlign(TextAlignment.LEFT);
     }
 
-    private static void drawOverlays(GraphicsContext gc, List<OverlayPrimitive> overlays, Viewport viewport) {
+    private void drawOverlays(GraphicsContext gc, List<OverlayPrimitive> overlays, Viewport viewport) {
         gc.setTextAlign(TextAlignment.CENTER);
         for (OverlayPrimitive overlay : overlays) {
             double width = overlay.width() * viewport.gridSize();
@@ -315,30 +336,29 @@ public class DungeonMapView extends BorderPane {
         gc.setTextAlign(TextAlignment.LEFT);
     }
 
-    private static void drawPolygon(GraphicsContext gc, List<MapCanvasPoint> points, PaintStyle style, Viewport viewport) {
+    private void drawPolygon(GraphicsContext gc, List<MapCanvasPoint> points, PaintStyle style, Viewport viewport) {
         if (points.size() < MIN_POLYGON_POINTS) {
             return;
         }
-        double[] x = new double[points.size()];
-        double[] y = new double[points.size()];
+        ensurePolygonBufferCapacity(points.size());
         for (int index = 0; index < points.size(); index++) {
             MapCanvasPoint point = points.get(index);
-            x[index] = viewport.sceneToScreenX(point.x());
-            y[index] = viewport.sceneToScreenY(point.y());
+            polygonXBuffer[index] = viewport.sceneToScreenX(point.x());
+            polygonYBuffer[index] = viewport.sceneToScreenY(point.y());
         }
         applyStyle(gc, style, viewport);
         Color fill = fxColor(style.fill());
         if (fill != null) {
-            gc.fillPolygon(x, y, points.size());
+            gc.fillPolygon(polygonXBuffer, polygonYBuffer, points.size());
         }
         Color stroke = fxColor(style.stroke());
         if (stroke != null && style.strokeWidth() > 0.0) {
-            gc.strokePolygon(x, y, points.size());
+            gc.strokePolygon(polygonXBuffer, polygonYBuffer, points.size());
         }
         gc.restore();
     }
 
-    private static void drawPolyline(GraphicsContext gc, List<MapCanvasPoint> points, PaintStyle style, Viewport viewport) {
+    private void drawPolyline(GraphicsContext gc, List<MapCanvasPoint> points, PaintStyle style, Viewport viewport) {
         if (points.size() < MIN_POLYLINE_POINTS) {
             return;
         }
@@ -354,7 +374,7 @@ public class DungeonMapView extends BorderPane {
         gc.restore();
     }
 
-    private static void drawLabelBox(
+    private void drawLabelBox(
             GraphicsContext gc,
             PaintStyle style,
             Color textColor,
@@ -379,7 +399,7 @@ public class DungeonMapView extends BorderPane {
         gc.restore();
     }
 
-    private static void applyStyle(GraphicsContext gc, PaintStyle style, Viewport viewport) {
+    private void applyStyle(GraphicsContext gc, PaintStyle style, Viewport viewport) {
         gc.save();
         gc.setGlobalAlpha(style.alpha());
         Color fill = fxColor(style.fill());
@@ -398,26 +418,40 @@ public class DungeonMapView extends BorderPane {
         }
     }
 
-    private static double[] polygonCenter(List<MapCanvasPoint> points) {
+    private void ensurePolygonBufferCapacity(int pointCount) {
+        if (polygonXBuffer.length >= pointCount) {
+            return;
+        }
+        polygonXBuffer = new double[pointCount];
+        polygonYBuffer = new double[pointCount];
+    }
+
+    private static double polygonCenterX(List<MapCanvasPoint> points) {
         if (points.isEmpty()) {
-            return new double[] {0.0, 0.0};
+            return 0.0;
         }
         double sumX = 0.0;
-        double sumY = 0.0;
         for (MapCanvasPoint point : points) {
             sumX += point.x();
+        }
+        return sumX / points.size();
+    }
+
+    private static double polygonCenterY(List<MapCanvasPoint> points) {
+        if (points.isEmpty()) {
+            return 0.0;
+        }
+        double sumY = 0.0;
+        for (MapCanvasPoint point : points) {
             sumY += point.y();
         }
-        return new double[] {sumX / points.size(), sumY / points.size()};
+        return sumY / points.size();
     }
 
     private static Color gridColor(int tier) {
-        return switch (tier) {
-            case 0 -> color(0x66, 0x77, 0x82, 0.18);
-            case 1 -> color(0x73, 0x83, 0x90, 0.16);
-            case 2 -> color(0x8d, 0x9c, 0xa8, 0.22);
-            default -> color(0xb1, 0xbc, 0xc5, 0.28);
-        };
+        return tier >= 0 && tier < GRID_COLORS.length
+                ? GRID_COLORS[tier]
+                : GRID_COLORS[GRID_COLORS.length - 1];
     }
 
     private static double gridWidth(int tier) {
@@ -429,15 +463,19 @@ public class DungeonMapView extends BorderPane {
         };
     }
 
-    private static Color defaultTextColor(SceneColor sceneColor) {
+    private Color defaultTextColor(SceneColor sceneColor) {
         if (sceneColor == null) {
             return Color.WHITE;
         }
         return fxColor(sceneColor);
     }
 
-    private static Color fxColor(SceneColor sceneColor) {
-        return sceneColor == null ? null : new Color(
+    private Color fxColor(SceneColor sceneColor) {
+        return sceneColor == null ? null : toFxColor(sceneColor);
+    }
+
+    private static Color toFxColor(SceneColor sceneColor) {
+        return new Color(
                 sceneColor.red(),
                 sceneColor.green(),
                 sceneColor.blue(),

@@ -6,47 +6,39 @@ public sealed interface DungeonTravelCommand permits
         DungeonTravelCommand.LoadSurface,
         DungeonTravelCommand.MoveAction {
 
-    default boolean loadsSurface() {
-        return false;
-    }
+    int LOAD_SURFACE_OPERATION = 1;
+    int MOVE_ACTION_OPERATION = 2;
 
-    default long mapIdValue() {
-        return 1L;
-    }
+    int operationKey();
 
-    default String locationKindName() {
-        return DungeonTravelLocationKind.TILE.name();
-    }
+    boolean hasPosition();
 
-    default long ownerId() {
-        return 0L;
-    }
+    long mapIdValue();
 
-    default int tileQ() {
-        return 0;
-    }
+    String locationKindName();
 
-    default int tileR() {
-        return 0;
-    }
+    long ownerId();
 
-    default int tileLevel() {
-        return 0;
-    }
+    int tileQ();
 
-    default String headingName() {
-        return DungeonTravelHeading.defaultHeading().name();
-    }
+    int tileR();
 
-    default String actionId() {
-        return "";
-    }
+    int tileLevel();
+
+    String headingName();
+
+    String actionId();
 
     record LoadSurface(@Nullable DungeonTravelPosition position) implements DungeonTravelCommand {
 
         @Override
-        public boolean loadsSurface() {
-            return true;
+        public int operationKey() {
+            return LOAD_SURFACE_OPERATION;
+        }
+
+        @Override
+        public boolean hasPosition() {
+            return position != null;
         }
 
         @Override
@@ -83,6 +75,11 @@ public sealed interface DungeonTravelCommand permits
         public String headingName() {
             return position == null ? DungeonTravelHeading.defaultHeading().name() : position.heading().name();
         }
+
+        @Override
+        public String actionId() {
+            return "";
+        }
     }
 
     record MoveAction(
@@ -92,6 +89,16 @@ public sealed interface DungeonTravelCommand permits
 
         public MoveAction {
             actionId = actionId == null ? "" : actionId;
+        }
+
+        @Override
+        public int operationKey() {
+            return MOVE_ACTION_OPERATION;
+        }
+
+        @Override
+        public boolean hasPosition() {
+            return position != null;
         }
 
         @Override

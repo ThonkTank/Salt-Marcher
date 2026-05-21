@@ -93,7 +93,6 @@ import src.domain.dungeon.model.travel.model.session.model.TravelDungeonSessionS
 import src.domain.dungeon.model.travel.model.session.model.TravelDungeonSessionValues.TravelOverlayState;
 import src.domain.dungeon.model.travel.repository.TravelDungeonSessionPublishedStateRepository;
 import src.domain.dungeon.model.travel.repository.TravelDungeonSessionRepository;
-import src.domain.dungeon.model.travel.usecase.ApplyDungeonTravelUseCase;
 import src.domain.dungeon.model.travel.usecase.ApplyTravelDungeonSessionUseCase;
 import src.domain.dungeon.model.travel.usecase.LoadDungeonTravelSurfaceUseCase;
 import src.domain.dungeon.model.travel.usecase.MoveDungeonTravelActionUseCase;
@@ -192,11 +191,10 @@ final class DungeonServiceAssembly {
         DungeonPublishedState publishedState = authoredPublishedState(registry);
         DungeonMapRepository repository = registry.require(DungeonMapRepository.class);
         return new DungeonCatalogApplicationService(new RouteDungeonMapCatalogCommandUseCase(
-                new ApplyDungeonMapCatalogUseCase(
-                        new SearchDungeonMapsUseCase(repository),
-                        new CreateDungeonMapUseCase(repository),
-                        new RenameDungeonMapUseCase(repository),
-                        new DeleteDungeonMapUseCase(repository)),
+                new SearchDungeonMapsUseCase(repository),
+                new CreateDungeonMapUseCase(repository),
+                new RenameDungeonMapUseCase(repository),
+                new DeleteDungeonMapUseCase(repository),
                 publishedState));
     }
 
@@ -205,12 +203,11 @@ final class DungeonServiceAssembly {
         LoadDungeonMapUseCase loadDungeonMapUseCase = loadDungeonMapUseCase(registry);
         BuildDungeonDerivedStateUseCase derive = new BuildDungeonDerivedStateUseCase();
         return new DungeonTravelApplicationService(new RouteDungeonTravelCommandUseCase(
-                new ApplyDungeonTravelUseCase(
-                        new LoadDungeonTravelSurfaceUseCase(loadDungeonMapUseCase, derive),
-                        new MoveDungeonTravelActionUseCase(
-                                loadDungeonMapUseCase,
-                                registry.require(DungeonMapRepository.class),
-                                derive)),
+                new LoadDungeonTravelSurfaceUseCase(loadDungeonMapUseCase, derive),
+                new MoveDungeonTravelActionUseCase(
+                        loadDungeonMapUseCase,
+                        registry.require(DungeonMapRepository.class),
+                        derive),
                 publishedState));
     }
 

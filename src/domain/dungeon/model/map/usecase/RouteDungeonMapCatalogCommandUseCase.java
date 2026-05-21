@@ -8,41 +8,51 @@ import src.domain.dungeon.model.map.repository.DungeonAuthoredPublishedStateRepo
 
 public final class RouteDungeonMapCatalogCommandUseCase {
 
-    private static final String SEARCH = "search";
-    private static final String CREATE = "create";
-    private static final String RENAME = "rename";
-    private static final String DELETE = "delete";
+    private static final int SEARCH_OPERATION = 1;
+    private static final int CREATE_OPERATION = 2;
+    private static final int RENAME_OPERATION = 3;
+    private static final int DELETE_OPERATION = 4;
 
-    private final ApplyDungeonMapCatalogUseCase catalogUseCase;
+    private final SearchDungeonMapsUseCase searchDungeonMapsUseCase;
+    private final CreateDungeonMapUseCase createDungeonMapUseCase;
+    private final RenameDungeonMapUseCase renameDungeonMapUseCase;
+    private final DeleteDungeonMapUseCase deleteDungeonMapUseCase;
     private final DungeonAuthoredPublishedStateRepository publishedStateRepository;
 
     public RouteDungeonMapCatalogCommandUseCase(
-            ApplyDungeonMapCatalogUseCase catalogUseCase,
+            SearchDungeonMapsUseCase searchDungeonMapsUseCase,
+            CreateDungeonMapUseCase createDungeonMapUseCase,
+            RenameDungeonMapUseCase renameDungeonMapUseCase,
+            DeleteDungeonMapUseCase deleteDungeonMapUseCase,
             DungeonAuthoredPublishedStateRepository publishedStateRepository
     ) {
-        this.catalogUseCase = Objects.requireNonNull(catalogUseCase, "catalogUseCase");
+        this.searchDungeonMapsUseCase = Objects.requireNonNull(searchDungeonMapsUseCase, "searchDungeonMapsUseCase");
+        this.createDungeonMapUseCase = Objects.requireNonNull(createDungeonMapUseCase, "createDungeonMapUseCase");
+        this.renameDungeonMapUseCase = Objects.requireNonNull(renameDungeonMapUseCase, "renameDungeonMapUseCase");
+        this.deleteDungeonMapUseCase = Objects.requireNonNull(deleteDungeonMapUseCase, "deleteDungeonMapUseCase");
         this.publishedStateRepository =
                 Objects.requireNonNull(publishedStateRepository, "publishedStateRepository");
     }
 
-    public void execute(String actionKey, String query, long mapIdValue, String mapName) {
-        if (SEARCH.equals(actionKey)) {
-            publishedStateRepository.publishSearch(catalogPublication(catalogUseCase.search(query)));
-            return;
-        }
-        if (CREATE.equals(actionKey)) {
-            publishedStateRepository.publishCreated(mapMutation(catalogUseCase.createMap(mapName)));
-            return;
-        }
-        if (RENAME.equals(actionKey)) {
-            publishedStateRepository.publishRenamed(mapMutation(catalogUseCase.renameMap(
-                    new DungeonMapIdentity(mapIdValue),
-                    mapName)));
-            return;
-        }
-        if (DELETE.equals(actionKey)) {
-            publishedStateRepository.publishDeleted(mapMutation(catalogUseCase.deleteMap(
-                    new DungeonMapIdentity(mapIdValue))));
+    public void execute(
+            int operationKey,
+            String query,
+            long mapIdValue,
+            String mapName
+    ) {
+        switch (operationKey) {
+            case SEARCH_OPERATION -> publishedStateRepository.publishSearch(catalogPublication(
+                    searchDungeonMapsUseCase.execute(query)));
+            case CREATE_OPERATION -> publishedStateRepository.publishCreated(mapMutation(
+                    createDungeonMapUseCase.execute(mapName).mapId()));
+            case RENAME_OPERATION -> publishedStateRepository.publishRenamed(mapMutation(
+                    renameDungeonMapUseCase.execute(
+                            new DungeonMapIdentity(mapIdValue),
+                            mapName)
+                            .mapId()));
+            case DELETE_OPERATION -> publishedStateRepository.publishDeleted(mapMutation(
+                    deleteDungeonMapUseCase.execute(new DungeonMapIdentity(mapIdValue))));
+            default -> throw new IllegalArgumentException("Unknown dungeon map catalog operation: " + operationKey);
         }
     }
 
@@ -53,18 +63,17 @@ public final class RouteDungeonMapCatalogCommandUseCase {
     }
 
     private static DungeonAuthoredPublishedStateRepository.CatalogPublication catalogPublication(
-            ApplyDungeonMapCatalogUseCase.MapCatalogResult catalog
+            List<SearchDungeonMapsUseCase.MapSummary> maps
     ) {
-        if (catalog == null) {
-            return new DungeonAuthoredPublishedStateRepository.CatalogPublication(List.of());
-        }
-        List<DungeonAuthoredPublishedStateRepository.MapSummaryPublication> maps = new ArrayList<>();
-        for (SearchDungeonMapsUseCase.MapSummary map : catalog.maps()) {
-            maps.add(new DungeonAuthoredPublishedStateRepository.MapSummaryPublication(
+        List<DungeonAuthoredPublishedStateRepository.MapSummaryPublication> publications = new ArrayList<>();
+        List<SearchDungeonMapsUseCase.MapSummary> safeMaps =
+                maps == null ? List.<SearchDungeonMapsUseCase.MapSummary>of() : maps;
+        for (SearchDungeonMapsUseCase.MapSummary map : safeMaps) {
+            publications.add(new DungeonAuthoredPublishedStateRepository.MapSummaryPublication(
                     map.mapId(),
                     map.mapName(),
                     map.revision()));
         }
-        return new DungeonAuthoredPublishedStateRepository.CatalogPublication(maps);
+        return new DungeonAuthoredPublishedStateRepository.CatalogPublication(publications);
     }
 }

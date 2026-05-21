@@ -11,21 +11,29 @@ import src.domain.dungeon.model.map.repository.DungeonAuthoredPublishedStateRepo
 
 public final class RouteDungeonTravelCommandUseCase {
 
-    private final ApplyDungeonTravelUseCase applyDungeonTravelUseCase;
+    private static final int LOAD_SURFACE_OPERATION = 1;
+    private static final int MOVE_ACTION_OPERATION = 2;
+
+    private final LoadDungeonTravelSurfaceUseCase loadDungeonTravelSurfaceUseCase;
+    private final MoveDungeonTravelActionUseCase moveDungeonTravelActionUseCase;
     private final DungeonAuthoredPublishedStateRepository publishedStateRepository;
 
     public RouteDungeonTravelCommandUseCase(
-            ApplyDungeonTravelUseCase applyDungeonTravelUseCase,
+            LoadDungeonTravelSurfaceUseCase loadDungeonTravelSurfaceUseCase,
+            MoveDungeonTravelActionUseCase moveDungeonTravelActionUseCase,
             DungeonAuthoredPublishedStateRepository publishedStateRepository
     ) {
-        this.applyDungeonTravelUseCase =
-                Objects.requireNonNull(applyDungeonTravelUseCase, "applyDungeonTravelUseCase");
+        this.loadDungeonTravelSurfaceUseCase =
+                Objects.requireNonNull(loadDungeonTravelSurfaceUseCase, "loadDungeonTravelSurfaceUseCase");
+        this.moveDungeonTravelActionUseCase =
+                Objects.requireNonNull(moveDungeonTravelActionUseCase, "moveDungeonTravelActionUseCase");
         this.publishedStateRepository =
                 Objects.requireNonNull(publishedStateRepository, "publishedStateRepository");
     }
 
     public void execute(
-            boolean loadSurface,
+            int operationKey,
+            boolean hasPosition,
             long mapIdValue,
             String locationKindName,
             long ownerId,
@@ -36,6 +44,7 @@ public final class RouteDungeonTravelCommandUseCase {
             String actionId
     ) {
         DungeonTravelPositionFacts position = travelPosition(
+                hasPosition,
                 mapIdValue,
                 locationKindName,
                 ownerId,
@@ -43,14 +52,20 @@ public final class RouteDungeonTravelCommandUseCase {
                 tileR,
                 tileLevel,
                 headingName);
-        if (loadSurface) {
-            publishedStateRepository.publishSurface(applyDungeonTravelUseCase.loadSurface(position));
-            return;
+        switch (operationKey) {
+            case LOAD_SURFACE_OPERATION -> publishedStateRepository.publishSurface(
+                    loadDungeonTravelSurfaceUseCase.execute(new LoadDungeonTravelSurfaceUseCase.Input(
+                            position)));
+            case MOVE_ACTION_OPERATION -> publishedStateRepository.publishMove(
+                    moveDungeonTravelActionUseCase.execute(new MoveDungeonTravelActionUseCase.Input(
+                            position,
+                            actionId)));
+            default -> throw new IllegalArgumentException("Unknown dungeon travel operation: " + operationKey);
         }
-        publishedStateRepository.publishMove(applyDungeonTravelUseCase.move(position, actionId));
     }
 
     private static @Nullable DungeonTravelPositionFacts travelPosition(
+            boolean hasPosition,
             long mapIdValue,
             String locationKindName,
             long ownerId,
@@ -59,6 +74,9 @@ public final class RouteDungeonTravelCommandUseCase {
             int tileLevel,
             String headingName
     ) {
+        if (!hasPosition) {
+            return null;
+        }
         return new DungeonTravelPositionFacts(
                 new DungeonMapIdentity(mapIdValue),
                 locationKind(locationKindName),

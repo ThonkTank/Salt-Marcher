@@ -19,7 +19,7 @@ public final class DungeonCatalogApplicationService {
     public void catalog(DungeonMapCatalogCommand command) {
         Objects.requireNonNull(command, "command");
         routeDungeonMapCatalogCommandUseCase.execute(
-                command.actionKey(),
+                command.operationKey(),
                 command.query(),
                 command.mapIdValue(),
                 command.mapName());

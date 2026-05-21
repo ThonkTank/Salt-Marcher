@@ -19,7 +19,8 @@ public final class DungeonTravelApplicationService {
     public void travel(DungeonTravelCommand command) {
         Objects.requireNonNull(command, "command");
         routeDungeonTravelCommandUseCase.execute(
-                command.loadsSurface(),
+                command.operationKey(),
+                command.hasPosition(),
                 command.mapIdValue(),
                 command.locationKindName(),
                 command.ownerId(),

@@ -1,27 +1,26 @@
 package src.view.slotcontent.main.dungeonmap;
 
 public record DungeonMapViewInputEvent(
-        String interaction,
+        boolean press,
+        boolean drag,
+        boolean move,
+        boolean release,
+        boolean scroll,
         CanvasButtons buttons,
         CanvasModifiers modifiers,
         CanvasPosition position,
-        double scrollDeltaY,
-        double dragDeltaX,
-        double dragDeltaY
+        double scrollDeltaY
 ) {
 
     public DungeonMapViewInputEvent {
-        interaction = interaction == null || interaction.isBlank() ? "MOVE" : interaction;
         buttons = buttons == null ? new CanvasButtons(false, false, false) : buttons;
         modifiers = modifiers == null ? new CanvasModifiers(false, false, false) : modifiers;
-        position = position == null ? new CanvasPosition(0.0, 0.0, 0.0, 0.0) : position;
+        position = position == null ? new CanvasPosition(0.0, 0.0) : position;
     }
 
     public record CanvasPosition(
             double canvasX,
-            double canvasY,
-            double sceneX,
-            double sceneY
+            double canvasY
     ) {
     }
 
