@@ -1,9 +1,9 @@
 package src.domain.dungeon;
 
+import java.util.ArrayList;
 import java.util.Objects;
 import src.domain.dungeon.model.editor.model.session.model.DungeonEditorMainViewInput;
 import src.domain.dungeon.model.editor.model.session.model.DungeonEditorMainViewPointerTarget;
-import src.domain.dungeon.model.editor.model.session.model.DungeonEditorRoomNarrationInput;
 import src.domain.dungeon.model.editor.model.workspace.model.DungeonEditorWorkspaceValues;
 import src.domain.dungeon.model.editor.usecase.ApplyDungeonEditorCreateCorridorUseCase;
 import src.domain.dungeon.model.editor.usecase.ApplyDungeonEditorCreateDoorUseCase;
@@ -270,20 +270,22 @@ public final class DungeonEditorApplicationService {
     }
 
     public void saveRoomNarration(SaveDungeonEditorRoomNarrationCommand command) {
-        saveRoomNarrationUseCase.execute(toRoomNarrationInput(command));
-    }
-
-    private static DungeonEditorRoomNarrationInput toRoomNarrationInput(SaveDungeonEditorRoomNarrationCommand command) {
-        return new DungeonEditorRoomNarrationInput(
+        Objects.requireNonNull(command, "command");
+        ArrayList<SaveDungeonEditorRoomNarrationUseCase.ExitInput> exits =
+                new ArrayList<>(command.exits().size());
+        for (int index = 0; index < command.exits().size(); index++) {
+            exits.add(new SaveDungeonEditorRoomNarrationUseCase.ExitInput(
+                    command.exits().get(index).label(),
+                    command.exits().get(index).q(),
+                    command.exits().get(index).r(),
+                    command.exits().get(index).level(),
+                    command.exits().get(index).direction(),
+                    command.exits().get(index).description()));
+        }
+        saveRoomNarrationUseCase.execute(new SaveDungeonEditorRoomNarrationUseCase.RoomNarrationInput(
                 command.roomId(),
                 command.visualDescription(),
-                command.exits().stream()
-                        .map(exit -> new DungeonEditorWorkspaceValues.RoomExitNarration(
-                                exit.label(),
-                                new DungeonEditorWorkspaceValues.Cell(exit.q(), exit.r(), exit.level()),
-                                exit.direction(),
-                                exit.description()))
-                        .toList());
+                exits));
     }
 
     private static DungeonEditorMainViewInput toMainViewInput(DungeonEditorPointerSample pointer) {
