@@ -41,8 +41,6 @@ import src.view.slotcontent.main.dungeonmap.DungeonMapViewInputEvent;
 final class DungeonEditorIntentHandler {
 
     private static final String NAME_MISSING_ERROR = "Name fehlt.";
-    private static final double ZOOM_IN_FACTOR = 1.1;
-    private static final double ZOOM_OUT_FACTOR = 1.0 / ZOOM_IN_FACTOR;
     private static final double ZERO_SCROLL_DELTA = 0.0;
     private static final long NO_MAP_ID = 0L;
     private static final int NO_LEVEL_DELTA = 0;
@@ -137,26 +135,11 @@ final class DungeonEditorIntentHandler {
         if (event == null) {
             return;
         }
-        if (event.input().mousePressed() && event.buttons().middleButtonDown()) {
-            mapContentModel.beginMiddleDrag(event.position().canvasX(), event.position().canvasY());
-            return;
-        }
-        if (event.input().mouseDragged() && event.buttons().middleButtonDown()) {
-            DungeonMapContentModel.DragDelta delta = mapContentModel.updateMiddleDrag(
-                    event.position().canvasX(),
-                    event.position().canvasY());
-            mapContentModel.panByPixels(delta.canvasX(), delta.canvasY());
-            return;
-        }
-        if (event.input().mouseReleased() && event.buttons().middleButtonDown()) {
-            mapContentModel.endMiddleDrag();
+        if (consumeLocalCameraInput(event)) {
             return;
         }
         if (event.input().scrolled()) {
             handleScroll(event);
-            return;
-        }
-        if (event.buttons().middleButtonDown()) {
             return;
         }
         if (secondaryOnly(event)) {
@@ -171,6 +154,29 @@ final class DungeonEditorIntentHandler {
             return;
         }
         applyToolWorkflow(event, pointerSample(event, pointerTarget), selectedTool);
+    }
+
+    private boolean consumeLocalCameraInput(DungeonMapViewInputEvent event) {
+        if (event.input().mousePressed() && event.buttons().middleButtonDown()) {
+            mapContentModel.beginMiddleDrag(event.position().canvasX(), event.position().canvasY());
+            return true;
+        }
+        if (event.input().mouseDragged() && event.buttons().middleButtonDown()) {
+            mapContentModel.panMiddleDragTo(event.position().canvasX(), event.position().canvasY());
+            return true;
+        }
+        if (event.input().mouseReleased() && event.buttons().middleButtonDown()) {
+            mapContentModel.endMiddleDrag();
+            return true;
+        }
+        if (event.input().scrolled() && !event.modifiers().controlDown()) {
+            mapContentModel.zoomForScroll(
+                    event.position().canvasX(),
+                    event.position().canvasY(),
+                    event.scrollDeltaY());
+            return true;
+        }
+        return event.buttons().middleButtonDown();
     }
 
     private static boolean secondaryOnly(DungeonMapViewInputEvent event) {
@@ -319,26 +325,11 @@ final class DungeonEditorIntentHandler {
 
     private void handleScroll(DungeonMapViewInputEvent event) {
         if (!event.modifiers().controlDown()) {
-            zoomForScroll(event);
             return;
         }
         int levelDelta = normalizeLevelDelta(event.scrollDeltaY());
         if (levelDelta != NO_LEVEL_DELTA) {
             editor.scrollSelection(new ShiftDungeonEditorProjectionLevelCommand(levelDelta));
-        }
-    }
-
-    private void zoomForScroll(DungeonMapViewInputEvent event) {
-        if (event.scrollDeltaY() > ZERO_SCROLL_DELTA) {
-            mapContentModel.zoomAround(
-                    event.position().canvasX(),
-                    event.position().canvasY(),
-                    ZOOM_IN_FACTOR);
-        } else if (event.scrollDeltaY() < ZERO_SCROLL_DELTA) {
-            mapContentModel.zoomAround(
-                    event.position().canvasX(),
-                    event.position().canvasY(),
-                    ZOOM_OUT_FACTOR);
         }
     }
 

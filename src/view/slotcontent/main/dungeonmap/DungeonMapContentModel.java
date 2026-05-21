@@ -47,6 +47,9 @@ public final class DungeonMapContentModel {
     private static final double DEFAULT_ZOOM = 1.0;
     private static final double MIN_ZOOM = 0.1;
     private static final double MAX_ZOOM = 4.0;
+    private static final double ZOOM_IN_FACTOR = 1.1;
+    private static final double ZOOM_OUT_FACTOR = 1.0 / ZOOM_IN_FACTOR;
+    private static final double ZERO_SCROLL_DELTA = 0.0;
     private static final double HIT_TOLERANCE_PIXELS = 7.0;
     private static final double MIN_HIT_TOLERANCE = 0.22;
     private static final double HIT_BUCKET_SIZE_SCENE = 4.0;
@@ -123,6 +126,19 @@ public final class DungeonMapContentModel {
 
     public void zoomAround(double canvasX, double canvasY, double factor) {
         setCanvasState(canvasState.get().withViewport(canvasState.get().viewport().zoomAround(canvasX, canvasY, factor)));
+    }
+
+    public void panMiddleDragTo(double canvasX, double canvasY) {
+        DragDelta delta = updateMiddleDrag(canvasX, canvasY);
+        panByPixels(delta.canvasX(), delta.canvasY());
+    }
+
+    public void zoomForScroll(double canvasX, double canvasY, double scrollDeltaY) {
+        if (scrollDeltaY > ZERO_SCROLL_DELTA) {
+            zoomAround(canvasX, canvasY, ZOOM_IN_FACTOR);
+        } else if (scrollDeltaY < ZERO_SCROLL_DELTA) {
+            zoomAround(canvasX, canvasY, ZOOM_OUT_FACTOR);
+        }
     }
 
     public KeyboardTarget showKeyboardTarget(double sceneX, double sceneY) {
