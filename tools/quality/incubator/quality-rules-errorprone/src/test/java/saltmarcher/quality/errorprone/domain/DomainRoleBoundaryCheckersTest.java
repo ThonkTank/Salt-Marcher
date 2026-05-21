@@ -164,6 +164,74 @@ public final class DomainRoleBoundaryCheckersTest {
     }
 
     @Test
+    public void applicationServiceRejectsBoundaryAdapterReturningPublishedCommand() {
+        CompilationTestHelper.newInstance(DomainApplicationServiceRoleBoundaryChecker.class, getClass())
+                .addSourceLines(
+                        "src/domain/foo/FooSelectionApplicationService.java",
+                        "package src.domain.foo;",
+                        "import src.domain.foo.published.ApplySelectionCommand;",
+                        "// BUG: Diagnostic contains: method return type toCommand",
+                        "public final class FooSelectionApplicationService {",
+                        "  public void apply(ApplySelectionCommand command) {",
+                        "    Object input = toCommand(command);",
+                        "  }",
+                        "  private static ApplySelectionCommand toCommand(ApplySelectionCommand command) {",
+                        "    return command;",
+                        "  }",
+                        "}")
+                .addSourceLines(
+                        "src/domain/foo/published/ApplySelectionCommand.java",
+                        "package src.domain.foo.published;",
+                        "public record ApplySelectionCommand(String value) { }")
+                .doTest();
+    }
+
+    @Test
+    public void applicationServiceRejectsBoundaryAdapterLocalPublishedCommandCache() {
+        CompilationTestHelper.newInstance(DomainApplicationServiceRoleBoundaryChecker.class, getClass())
+                .addSourceLines(
+                        "src/domain/foo/FooSelectionApplicationService.java",
+                        "package src.domain.foo;",
+                        "import src.domain.foo.published.ApplySelectionCommand;",
+                        "// BUG: Diagnostic contains: local variable cached",
+                        "public final class FooSelectionApplicationService {",
+                        "  public void apply(ApplySelectionCommand command) {",
+                        "    String input = toUseCaseInput(command);",
+                        "  }",
+                        "  private static String toUseCaseInput(ApplySelectionCommand command) {",
+                        "    ApplySelectionCommand cached = command;",
+                        "    return cached.value();",
+                        "  }",
+                        "}")
+                .addSourceLines(
+                        "src/domain/foo/published/ApplySelectionCommand.java",
+                        "package src.domain.foo.published;",
+                        "public record ApplySelectionCommand(String value) { }")
+                .doTest();
+    }
+
+    @Test
+    public void applicationServiceRejectsGenericBoundaryAdapterParameter() {
+        CompilationTestHelper.newInstance(DomainApplicationServiceRoleBoundaryChecker.class, getClass())
+                .addSourceLines(
+                        "src/domain/foo/FooSelectionApplicationService.java",
+                        "package src.domain.foo;",
+                        "import java.util.List;",
+                        "import src.domain.foo.published.ApplySelectionCommand;",
+                        "// BUG: Diagnostic contains: method parameter toUseCaseInput.commands",
+                        "public final class FooSelectionApplicationService {",
+                        "  private static String toUseCaseInput(List<ApplySelectionCommand> commands) {",
+                        "    return commands.isEmpty() ? \"\" : commands.get(0).value();",
+                        "  }",
+                        "}")
+                .addSourceLines(
+                        "src/domain/foo/published/ApplySelectionCommand.java",
+                        "package src.domain.foo.published;",
+                        "public record ApplySelectionCommand(String value) { }")
+                .doTest();
+    }
+
+    @Test
     public void applicationServiceRejectsPublishedCommandPrivateMethodParameter() {
         CompilationTestHelper.newInstance(DomainApplicationServiceRoleBoundaryChecker.class, getClass())
                 .addSourceLines(
@@ -285,7 +353,7 @@ public final class DomainRoleBoundaryCheckersTest {
                         "src/domain/foo/FooSelectionApplicationService.java",
                         "package src.domain.foo;",
                         "import src.domain.foo.published.ApplySelectionCommand;",
-                        "// BUG: Diagnostic contains: type use PARAMETERIZED_TYPE",
+                        "// BUG: Diagnostic contains: type use IDENTIFIER",
                         "public final class FooSelectionApplicationService implements CommandSink<ApplySelectionCommand> {",
                         "}",
                         "interface CommandSink<T> { }")

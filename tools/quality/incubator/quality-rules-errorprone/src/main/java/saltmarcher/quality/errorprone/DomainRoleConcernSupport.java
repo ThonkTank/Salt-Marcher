@@ -410,6 +410,14 @@ final class DomainRoleConcernSupport {
                 if (isLegalRootParameterBoundaryRead(memberSelect, context)) {
                     return null;
                 }
+                Symbol symbol = ASTHelpers.getSymbol(memberSelect);
+                if (isApplicationServicePublishedCarrierTypeUseSymbol(symbol, context)) {
+                    addApplicationServicePublishedCarrierViolations(
+                            sourceRole,
+                            symbol.asType(),
+                            "type use " + memberSelect.getKind(),
+                            violations);
+                }
                 return super.visitMemberSelect(memberSelect, context);
             }
 
@@ -419,10 +427,7 @@ final class DomainRoleConcernSupport {
                     ApplicationServiceCarrierScanContext context) {
                 if (!isInsideLegalRootParameterType(context)) {
                     Symbol symbol = ASTHelpers.getSymbol(identifierTree);
-                    if (symbol != null
-                            && !isLegalRootParameterSymbol(symbol, context)
-                            && !isLegalRootParameterTypeSymbol(symbol, context)
-                            && !isApplicationServiceBoundaryAdapterTypeUse(sourceRole, symbol, context)) {
+                    if (isApplicationServicePublishedCarrierTypeUseSymbol(symbol, context)) {
                         addApplicationServicePublishedCarrierViolations(
                                 sourceRole,
                                 symbol.asType(),
@@ -438,9 +443,6 @@ final class DomainRoleConcernSupport {
                 Symbol.MethodSymbol methodSymbol = ASTHelpers.getSymbol(methodTree);
                 if (methodSymbol == null) {
                     return super.visitMethod(methodTree, nullContext());
-                }
-                if (isApplicationServiceBoundaryAdapter(sourceRole, methodSymbol)) {
-                    return null;
                 }
                 if (!methodSymbol.isConstructor()) {
                     addApplicationServicePublishedCarrierViolations(
@@ -526,30 +528,16 @@ final class DomainRoleConcernSupport {
         return collectTypeReferences(context.legalRootParameter().asType()).contains(symbolTypeName);
     }
 
-    private static boolean isApplicationServiceBoundaryAdapterTypeUse(
-            SourceRole sourceRole,
+    private static boolean isApplicationServicePublishedCarrierTypeUseSymbol(
             Symbol symbol,
             ApplicationServiceCarrierScanContext context) {
-        if (sourceRole == null || context == null || context.currentMethod() == null) {
+        if (symbol == null
+                || symbol.getKind() == ElementKind.METHOD
+                || symbol.getKind() == ElementKind.CONSTRUCTOR) {
             return false;
         }
-        Symbol.MethodSymbol currentMethod = context.currentMethod();
-        if (!isApplicationServiceBoundaryAdapterName(currentMethod)
-                || !currentMethod.getModifiers().contains(Modifier.PRIVATE)
-                || !currentMethod.getModifiers().contains(Modifier.STATIC)
-                || currentMethod.getParameters().size() != 1
-                || !isSameFeaturePublishedNonModelParameter(currentMethod.getParameters().getFirst(), sourceRole.feature())) {
-            return false;
-        }
-        if (isSameFeaturePublishedNonModelType(symbol.asType().toString(), sourceRole.feature())) {
-            return true;
-        }
-        for (String referencedType : collectTypeReferences(symbol.asType())) {
-            if (isSameFeaturePublishedNonModelType(referencedType, sourceRole.feature())) {
-                return true;
-            }
-        }
-        return false;
+        return !isLegalRootParameterSymbol(symbol, context)
+                && !isLegalRootParameterTypeSymbol(symbol, context);
     }
 
     private static boolean isLegalRootParameterBoundaryRead(
@@ -642,25 +630,12 @@ final class DomainRoleConcernSupport {
                 && modifiers.contains(Modifier.PRIVATE)
                 && modifiers.contains(Modifier.STATIC)
                 && isApplicationServiceBoundaryAdapterName(currentMethod)
-                && isSameFeaturePublishedNonModelParameter(symbol, sourceRole.feature());
+                && isDirectSameFeaturePublishedNonModelParameter(symbol, sourceRole.feature());
     }
 
     private static boolean isApplicationServiceBoundaryAdapterName(Symbol.MethodSymbol currentMethod) {
         String name = currentMethod.getSimpleName().toString();
         return name.startsWith("to") || name.startsWith("from");
-    }
-
-    private static boolean isApplicationServiceBoundaryAdapter(
-            SourceRole sourceRole,
-            Symbol.MethodSymbol currentMethod) {
-        return sourceRole != null
-                && currentMethod != null
-                && !currentMethod.isConstructor()
-                && currentMethod.getModifiers().contains(Modifier.PRIVATE)
-                && currentMethod.getModifiers().contains(Modifier.STATIC)
-                && currentMethod.getParameters().size() == 1
-                && isApplicationServiceBoundaryAdapterName(currentMethod)
-                && isSameFeaturePublishedNonModelParameter(currentMethod.getParameters().getFirst(), sourceRole.feature());
     }
 
     private static boolean isSameFeaturePublishedNonModelParameter(Symbol symbol, String feature) {
@@ -673,6 +648,10 @@ final class DomainRoleConcernSupport {
             }
         }
         return false;
+    }
+
+    private static boolean isDirectSameFeaturePublishedNonModelParameter(Symbol symbol, String feature) {
+        return isSameFeaturePublishedNonModelType(symbol.asType().toString(), feature);
     }
 
     private static String ownerTypeName(Symbol symbol) {
@@ -696,9 +675,6 @@ final class DomainRoleConcernSupport {
             Set<String> referencedTypes,
             String position,
             Set<String> violations) {
-        if ("type use IDENTIFIER".equals(position)) {
-            return;
-        }
         for (String referencedType : referencedTypes) {
             if (isSameFeaturePublishedNonModelType(referencedType, sourceRole.feature())) {
                 violations.add("uses same-feature published non-model carrier " + referencedType
