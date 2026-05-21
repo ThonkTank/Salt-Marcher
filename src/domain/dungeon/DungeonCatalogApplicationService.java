@@ -13,6 +13,8 @@ import src.domain.dungeon.published.DungeonMapCatalogCommand;
  */
 public final class DungeonCatalogApplicationService {
 
+    private static final String COMMAND_REQUIRED_MESSAGE = "command";
+
     private final PublishDungeonMapCatalogSearchUseCase searchUseCase;
     private final PublishDungeonMapCatalogCreateUseCase createUseCase;
     private final PublishDungeonMapCatalogRenameUseCase renameUseCase;
@@ -31,22 +33,22 @@ public final class DungeonCatalogApplicationService {
     }
 
     public void search(DungeonMapCatalogCommand.SearchCommand command) {
-        Objects.requireNonNull(command, "command");
+        Objects.requireNonNull(command, COMMAND_REQUIRED_MESSAGE);
         searchUseCase.execute(command.query());
     }
 
     public void createMap(DungeonMapCatalogCommand.CreateMapCommand command) {
-        Objects.requireNonNull(command, "command");
+        Objects.requireNonNull(command, COMMAND_REQUIRED_MESSAGE);
         createUseCase.execute(command.mapName());
     }
 
     public void renameMap(DungeonMapCatalogCommand.RenameMapCommand command) {
-        Objects.requireNonNull(command, "command");
+        Objects.requireNonNull(command, COMMAND_REQUIRED_MESSAGE);
         renameUseCase.execute(command.mapId().value(), command.mapName());
     }
 
     public void deleteMap(DeleteDungeonMapCommand command) {
-        Objects.requireNonNull(command, "command");
+        Objects.requireNonNull(command, COMMAND_REQUIRED_MESSAGE);
         deleteUseCase.execute(command.mapId().value());
     }
 }

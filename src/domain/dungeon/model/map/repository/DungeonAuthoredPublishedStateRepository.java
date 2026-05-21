@@ -67,10 +67,7 @@ public interface DungeonAuthoredPublishedStateRepository {
 
         @Override
         public boolean equals(Object other) {
-            if (this == other) {
-                return true;
-            }
-            return other instanceof SnapshotPublication that
+            return this == other || other instanceof SnapshotPublication that
                     && revision == that.revision
                     && Objects.equals(mapName, that.mapName)
                     && Objects.equals(derived, that.derived)
@@ -127,10 +124,7 @@ public interface DungeonAuthoredPublishedStateRepository {
 
         @Override
         public boolean equals(Object other) {
-            if (this == other) {
-                return true;
-            }
-            return other instanceof InspectorPublication that
+            return this == other || other instanceof InspectorPublication that
                     && Objects.equals(title, that.title)
                     && Objects.equals(description, that.description)
                     && Objects.equals(facts, that.facts)
@@ -213,10 +207,7 @@ public interface DungeonAuthoredPublishedStateRepository {
 
         @Override
         public boolean equals(Object other) {
-            if (this == other) {
-                return true;
-            }
-            return other instanceof RoomNarrationPublication that
+            return this == other || other instanceof RoomNarrationPublication that
                     && roomId == that.roomId
                     && Objects.equals(roomName, that.roomName)
                     && Objects.equals(visualDescription, that.visualDescription)
@@ -273,10 +264,7 @@ public interface DungeonAuthoredPublishedStateRepository {
 
         @Override
         public boolean equals(Object other) {
-            if (this == other) {
-                return true;
-            }
-            return other instanceof RoomExitNarrationPublication that
+            return this == other || other instanceof RoomExitNarrationPublication that
                     && Objects.equals(label, that.label)
                     && Objects.equals(cell, that.cell)
                     && direction == that.direction

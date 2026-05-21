@@ -51,6 +51,8 @@ import src.domain.dungeon.published.ShiftDungeonEditorProjectionLevelCommand;
 
 public final class DungeonEditorApplicationService {
 
+    private static final String COMMAND_REQUIRED_MESSAGE = "command";
+
     private final SelectDungeonEditorMapUseCase selectMapUseCase;
     private final CreateDungeonEditorMapUseCase createMapUseCase;
     private final RenameDungeonEditorMapUseCase renameMapUseCase;
@@ -114,17 +116,17 @@ public final class DungeonEditorApplicationService {
     }
 
     public void selectMap(DungeonAuthoredReadCommand command) {
-        Objects.requireNonNull(command, "command");
+        Objects.requireNonNull(command, COMMAND_REQUIRED_MESSAGE);
         selectMapUseCase.execute(command.mapIdValue());
     }
 
     public void createMap(DungeonMapCatalogCommand.CreateMapCommand command) {
-        Objects.requireNonNull(command, "command");
+        Objects.requireNonNull(command, COMMAND_REQUIRED_MESSAGE);
         createMapUseCase.execute(command.mapName());
     }
 
     public void renameMap(DungeonMapCatalogCommand.RenameMapCommand command) {
-        Objects.requireNonNull(command, "command");
+        Objects.requireNonNull(command, COMMAND_REQUIRED_MESSAGE);
         renameMapUseCase.execute(command.mapId().value(), command.mapName());
     }
 
@@ -269,8 +271,8 @@ public final class DungeonEditorApplicationService {
     }
 
     public void saveRoomNarration(SaveDungeonEditorRoomNarrationCommand command) {
-        Objects.requireNonNull(command, "command");
-        ArrayList<SaveDungeonEditorRoomNarrationUseCase.ExitInput> exits =
+        Objects.requireNonNull(command, COMMAND_REQUIRED_MESSAGE);
+        java.util.List<SaveDungeonEditorRoomNarrationUseCase.ExitInput> exits =
                 new ArrayList<>(command.exits().size());
         for (int index = 0; index < command.exits().size(); index++) {
             exits.add(new SaveDungeonEditorRoomNarrationUseCase.ExitInput(
