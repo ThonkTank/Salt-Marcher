@@ -321,7 +321,6 @@ public final class DungeonEditorControlsView extends VBox {
                 emitToolSelection(DungeonEditorControlsContentModel.ToolCatalog.CORRIDOR_DELETE_TOOL_KEY));
     }
 
-    @SuppressWarnings(PMD_LAW_OF_DEMETER)
     private void wireMapProjection(
             DungeonEditorControlsContentModel contentModel,
             ComboBox<DungeonEditorControlsContentModel.MapItem> mapSelector,
