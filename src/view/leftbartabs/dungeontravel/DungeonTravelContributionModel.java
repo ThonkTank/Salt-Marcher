@@ -161,7 +161,7 @@ public final class DungeonTravelContributionModel {
     ) {
         OverlayProjection resolved = projection == null ? OverlayProjection.defaults() : projection;
         return new DungeonTravelControlsContentModel.OverlaySettings(
-                OverlayMode.fromKey(resolved.modeKey()),
+                resolved.modeKey(),
                 resolved.levelRange(),
                 resolved.opacity(),
                 resolved.selectedLevels());
@@ -220,27 +220,18 @@ public final class DungeonTravelContributionModel {
             return selectedLevels;
         }
 
-        boolean usesNearbyLevels() {
-            return mode == OverlayMode.NEARBY;
-        }
-
-        boolean usesSelectedLevels() {
-            return mode == OverlayMode.SELECTED;
-        }
     }
 
     enum OverlayMode {
-        OFF("OFF", "Aus", "Overlays aus"),
-        NEARBY("NEARBY", "Nahe Ebenen", "Nahe Ebenen"),
-        SELECTED("SELECTED", "Auswahl", "Ausgewählte Ebenen");
+        OFF("OFF", "Overlays aus"),
+        NEARBY("NEARBY", "Nahe Ebenen"),
+        SELECTED("SELECTED", "Ausgewählte Ebenen");
 
         private final String key;
-        private final String controlsLabel;
         private final String contributionLabel;
 
-        OverlayMode(String key, String controlsLabel, String contributionLabel) {
+        OverlayMode(String key, String contributionLabel) {
             this.key = key;
-            this.controlsLabel = controlsLabel;
             this.contributionLabel = contributionLabel;
         }
 
@@ -248,20 +239,8 @@ public final class DungeonTravelContributionModel {
             return key;
         }
 
-        String controlsLabel() {
-            return controlsLabel;
-        }
-
         String contributionLabel() {
             return contributionLabel;
-        }
-
-        boolean usesRange() {
-            return this == NEARBY;
-        }
-
-        boolean usesSelectedLevels() {
-            return this == SELECTED;
         }
 
         static OverlayMode safe(OverlayMode mode) {
