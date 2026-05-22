@@ -26,23 +26,23 @@ public final class DungeonEditorDungeonState {
     }
 
     public void replaceCatalog(List<MapSummary> catalog) {
-        mutable.catalog = catalog == null ? List.of() : List.copyOf(catalog);
+        mutable.replaceCatalog(catalog);
     }
 
     public void replaceMutationMapId(@Nullable MapId mutationMapId) {
-        mutable.mutationMapId = mutationMapId;
+        mutable.replaceMutationMapId(mutationMapId);
     }
 
     public void replaceSnapshot(@Nullable SnapshotFacts snapshot) {
-        mutable.snapshot = snapshot;
+        mutable.replaceSnapshot(snapshot);
     }
 
     public void replaceInspector(@Nullable Inspector inspector) {
-        mutable.inspector = inspector;
+        mutable.replaceInspector(inspector);
     }
 
     public void replaceMutation(@Nullable MutationFacts mutation) {
-        mutable.mutation = mutation;
+        mutable.replaceMutation(mutation);
     }
 
     private DungeonEditorDungeonFacts facts(
@@ -50,14 +50,7 @@ public final class DungeonEditorDungeonState {
             DungeonEditorSessionValues.Selection selection,
             DungeonEditorSessionValues.Preview preview
     ) {
-        MutationFacts mutation = mutable.mutation;
-        return new DungeonEditorDungeonFacts(
-                mutable.catalog,
-                mutable.mutationMapId,
-                mutable.snapshot == null ? null : mutable.snapshot.map(),
-                currentSurface(mapId, selection, preview, mutable.snapshot, mutable.inspector, mutation),
-                statusText(mutation),
-                preview == DungeonEditorSessionValues.Preview.none() ? "" : statusText(mutation));
+        return mutable.facts(mapId, selection, preview);
     }
 
     private static DungeonEditorSessionSnapshot.@Nullable SurfaceData currentSurface(
@@ -130,5 +123,39 @@ public final class DungeonEditorDungeonState {
         private @Nullable SnapshotFacts snapshot;
         private @Nullable Inspector inspector;
         private @Nullable MutationFacts mutation;
+
+        private void replaceCatalog(List<MapSummary> nextCatalog) {
+            catalog = nextCatalog == null ? List.of() : List.copyOf(nextCatalog);
+        }
+
+        private void replaceMutationMapId(@Nullable MapId nextMutationMapId) {
+            mutationMapId = nextMutationMapId;
+        }
+
+        private void replaceSnapshot(@Nullable SnapshotFacts nextSnapshot) {
+            snapshot = nextSnapshot;
+        }
+
+        private void replaceInspector(@Nullable Inspector nextInspector) {
+            inspector = nextInspector;
+        }
+
+        private void replaceMutation(@Nullable MutationFacts nextMutation) {
+            mutation = nextMutation;
+        }
+
+        private DungeonEditorDungeonFacts facts(
+                @Nullable MapId mapId,
+                DungeonEditorSessionValues.Selection selection,
+                DungeonEditorSessionValues.Preview preview
+        ) {
+            return new DungeonEditorDungeonFacts(
+                    catalog,
+                    mutationMapId,
+                    snapshot == null ? null : snapshot.map(),
+                    currentSurface(mapId, selection, preview, snapshot, inspector, mutation),
+                    statusText(mutation),
+                    preview == DungeonEditorSessionValues.Preview.none() ? "" : statusText(mutation));
+        }
     }
 }
