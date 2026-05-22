@@ -99,8 +99,8 @@ public final class DungeonEditorContributionModel {
             int clampedProjectionLevel = clampProjectionLevel(reachableLevels, safeSource.projectionLevel());
             OverlayProjection overlayProjection = OverlayProjection.from(safeSource.overlaySettings());
             String selectedMapKey = MapSelection.keyOf(safeSource.selectedMapId());
-            String viewModeLabel = DungeonEditorControlsContentModel.ToolCatalog.labelOf(safeSource.viewMode());
-            String selectedToolLabel = DungeonEditorControlsContentModel.ToolCatalog.labelOf(safeSource.selectedTool());
+            String viewModeLabel = DungeonEditorControlsContentModel.labelOf(safeSource.viewMode());
+            String selectedToolLabel = DungeonEditorControlsContentModel.labelOf(safeSource.selectedTool());
             String statusText = statusTextFor(safeSource, mapEntries);
             DungeonOverlaySettings overlaySettings = safeSource.overlaySettings() == null
                     ? DungeonOverlaySettings.defaults()
@@ -235,11 +235,11 @@ public final class DungeonEditorContributionModel {
             selectedMapKey = selectedMapKey == null ? "" : selectedMapKey;
             reachableLevels = reachableLevels == null ? List.of(0) : List.copyOf(reachableLevels);
             statusText = statusText == null ? "" : statusText;
-            viewModeLabel = DungeonEditorControlsContentModel.ToolCatalog.normalizeViewModeKey(viewModeLabel);
+            viewModeLabel = DungeonEditorControlsContentModel.normalizeViewModeKey(viewModeLabel);
             overlaySettings = overlaySettings == null ? DungeonOverlaySettings.defaults() : overlaySettings;
             projectionLevel = Math.max(0, projectionLevel);
             selectedToolLabel = selectedToolLabel == null
-                    ? DungeonEditorControlsContentModel.ToolCatalog.DEFAULT_TOOL_LABEL
+                    ? DungeonEditorControlsContentModel.defaultToolLabel()
                     : selectedToolLabel;
         }
 
@@ -250,10 +250,10 @@ public final class DungeonEditorContributionModel {
                     List.of(0),
                     false,
                     "",
-                    DungeonEditorControlsContentModel.ToolCatalog.GRID_VIEW_LABEL,
+                    DungeonEditorControlsContentModel.gridViewLabel(),
                     DungeonOverlaySettings.defaults(),
                     0,
-                    DungeonEditorControlsContentModel.ToolCatalog.DEFAULT_TOOL_LABEL);
+                    DungeonEditorControlsContentModel.defaultToolLabel());
         }
     }
 
@@ -266,9 +266,9 @@ public final class DungeonEditorContributionModel {
     ) {
         InteractionState {
             currentSelectedMapIdValue = Math.max(NO_MAP_ID, currentSelectedMapIdValue);
-            currentViewModeKey = DungeonEditorControlsContentModel.ToolCatalog.normalizeViewModeKey(currentViewModeKey);
+            currentViewModeKey = DungeonEditorControlsContentModel.normalizeViewModeKey(currentViewModeKey);
             currentSelectedToolLabel = currentSelectedToolLabel == null
-                    ? DungeonEditorControlsContentModel.ToolCatalog.DEFAULT_TOOL_LABEL
+                    ? DungeonEditorControlsContentModel.defaultToolLabel()
                     : currentSelectedToolLabel;
             currentSelectedTool = currentSelectedTool == null
                     ? DungeonEditorTool.SELECT
@@ -281,8 +281,8 @@ public final class DungeonEditorContributionModel {
         static InteractionState empty() {
             return new InteractionState(
                     NO_MAP_ID,
-                    DungeonEditorControlsContentModel.ToolCatalog.GRID_VIEW_LABEL,
-                    DungeonEditorControlsContentModel.ToolCatalog.DEFAULT_TOOL_LABEL,
+                    DungeonEditorControlsContentModel.gridViewLabel(),
+                    DungeonEditorControlsContentModel.defaultToolLabel(),
                     DungeonEditorTool.SELECT,
                     OverlayProjection.from(DungeonOverlaySettings.defaults()));
         }

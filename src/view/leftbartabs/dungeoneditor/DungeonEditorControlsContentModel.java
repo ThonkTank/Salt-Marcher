@@ -18,6 +18,7 @@ final class DungeonEditorControlsContentModel {
     private static final String MODE_OFF = "OFF";
     private static final String MODE_NEARBY = "NEARBY";
     private static final String MODE_SELECTED = "SELECTED";
+    private static final Map<DungeonEditorTool, String> TOOL_LABELS = createToolLabels();
 
     private final ReadOnlyObjectWrapper<MapProjection> mapProjection =
             new ReadOnlyObjectWrapper<>(MapProjection.empty());
@@ -75,6 +76,10 @@ final class DungeonEditorControlsContentModel {
                 new OverlayModeOption(MODE_OFF, "Aus", false, false),
                 new OverlayModeOption(MODE_NEARBY, "Nahe Ebenen", true, false),
                 new OverlayModeOption(MODE_SELECTED, "Auswahl", false, true));
+    }
+
+    ToolControls toolControls() {
+        return ToolControls.current();
     }
 
     MapEditorUiState currentMapEditorUiState() {
@@ -328,7 +333,7 @@ final class DungeonEditorControlsContentModel {
             overlayPanelState = overlayPanelState == null
                     ? OverlayPanelState.from(overlaySettings, overlayDisabled)
                     : overlayPanelState;
-            viewMode = ToolCatalog.normalizeViewModeKey(viewMode);
+            viewMode = normalizeViewModeKey(viewMode);
         }
 
         static ProjectionState initial() {
@@ -339,122 +344,110 @@ final class DungeonEditorControlsContentModel {
                     DungeonOverlaySettings.defaults(),
                     OverlayPanelState.from(DungeonOverlaySettings.defaults(), false),
                     false,
-                    ToolCatalog.GRID_VIEW_LABEL);
+                    gridViewLabel());
         }
     }
 
     record ToolProjection(String selectedTool) {
         ToolProjection {
             selectedTool = selectedTool == null || selectedTool.isBlank()
-                    ? ToolCatalog.DEFAULT_TOOL_LABEL
+                    ? defaultToolLabel()
                     : selectedTool;
         }
 
         static ToolProjection initial() {
-            return new ToolProjection(ToolCatalog.DEFAULT_TOOL_LABEL);
+            return new ToolProjection(defaultToolLabel());
         }
     }
 
-    static final class ToolCatalog {
-
-        static final String DEFAULT_TOOL_LABEL = "Auswahl";
-        static final String GRID_VIEW_LABEL = "Grid";
-        static final String GRAPH_VIEW_LABEL = "Graph";
-        static final String ROOM_PAINT_LABEL = "Raum malen";
-        static final String ROOM_DELETE_LABEL = "Raum löschen";
-        static final String WALL_CREATE_LABEL = "Wand setzen";
-        static final String WALL_DELETE_LABEL = "Wand löschen";
-        static final String DOOR_CREATE_LABEL = "Tür setzen";
-        static final String DOOR_DELETE_LABEL = "Tür löschen";
-        static final String CORRIDOR_CREATE_LABEL = "Korridor erstellen";
-        static final String CORRIDOR_DELETE_LABEL = "Korridor löschen";
-        static final String SELECT_TOOL_KEY = "SELECT";
-        static final String ROOM_PAINT_TOOL_KEY = "ROOM_PAINT";
-        static final String ROOM_DELETE_TOOL_KEY = "ROOM_DELETE";
-        static final String WALL_CREATE_TOOL_KEY = "WALL_CREATE";
-        static final String WALL_DELETE_TOOL_KEY = "WALL_DELETE";
-        static final String DOOR_CREATE_TOOL_KEY = "DOOR_CREATE";
-        static final String DOOR_DELETE_TOOL_KEY = "DOOR_DELETE";
-        static final String CORRIDOR_CREATE_TOOL_KEY = "CORRIDOR_CREATE";
-        static final String CORRIDOR_DELETE_TOOL_KEY = "CORRIDOR_DELETE";
-        private static final Map<DungeonEditorTool, String> TOOL_LABELS = createToolLabels();
-
-        private ToolCatalog() {
+    record ToolControls(
+            String defaultTool,
+            String gridView,
+            String graphView,
+            ToolButton select,
+            ToolButton room,
+            ToolButton roomDelete,
+            ToolButton wall,
+            ToolButton wallDelete,
+            ToolButton door,
+            ToolButton doorDelete,
+            ToolButton corridor,
+            ToolButton corridorDelete
+    ) {
+        private static ToolControls current() {
+            return new ToolControls(
+                    defaultToolLabel(),
+                    gridViewLabel(),
+                    graphViewLabel(),
+                    new ToolButton(defaultToolLabel(), defaultToolLabel(), DungeonEditorTool.SELECT.name()),
+                    new ToolButton("Raum", "Raum malen", DungeonEditorTool.ROOM_PAINT.name()),
+                    new ToolButton("Raum löschen", "Raum löschen", DungeonEditorTool.ROOM_DELETE.name()),
+                    new ToolButton("Wand", "Wand setzen", DungeonEditorTool.WALL_CREATE.name()),
+                    new ToolButton("Wand löschen", "Wand löschen", DungeonEditorTool.WALL_DELETE.name()),
+                    new ToolButton("Tür", "Tür setzen", DungeonEditorTool.DOOR_CREATE.name()),
+                    new ToolButton("Tür löschen", "Tür löschen", DungeonEditorTool.DOOR_DELETE.name()),
+                    new ToolButton("Korridor", "Korridor erstellen", DungeonEditorTool.CORRIDOR_CREATE.name()),
+                    new ToolButton("Korridor löschen", "Korridor löschen", DungeonEditorTool.CORRIDOR_DELETE.name()));
         }
+    }
 
-        enum LabelKey {
-            DEFAULT_TOOL(DEFAULT_TOOL_LABEL),
-            GRID_VIEW(GRID_VIEW_LABEL),
-            GRAPH_VIEW(GRAPH_VIEW_LABEL),
-            ROOM_PAINT(ROOM_PAINT_LABEL),
-            ROOM_DELETE(ROOM_DELETE_LABEL),
-            WALL_CREATE(WALL_CREATE_LABEL),
-            WALL_DELETE(WALL_DELETE_LABEL),
-            DOOR_CREATE(DOOR_CREATE_LABEL),
-            DOOR_DELETE(DOOR_DELETE_LABEL),
-            CORRIDOR_CREATE(CORRIDOR_CREATE_LABEL),
-            CORRIDOR_DELETE(CORRIDOR_DELETE_LABEL);
+    record ToolButton(String label, String selectedLabel, String key) { }
 
-            private final String label;
+    static String defaultToolLabel() {
+        return "Auswahl";
+    }
 
-            LabelKey(String label) {
-                this.label = label;
-            }
+    static String gridViewLabel() {
+        return "Grid";
+    }
 
-            String label() {
-                return label;
-            }
+    static String graphViewLabel() {
+        return "Graph";
+    }
+
+    static String labelOf(@Nullable DungeonEditorTool tool) {
+        return TOOL_LABELS.getOrDefault(tool == null ? DungeonEditorTool.SELECT : tool, defaultToolLabel());
+    }
+
+    static String labelOf(@Nullable DungeonEditorViewMode viewMode) {
+        return viewMode == DungeonEditorViewMode.GRAPH ? graphViewLabel() : gridViewLabel();
+    }
+
+    static String normalizeViewModeKey(@Nullable String viewModeKey) {
+        return graphViewLabel().equals(viewModeKey) ? graphViewLabel() : gridViewLabel();
+    }
+
+    static DungeonEditorViewMode toPublishedViewMode(@Nullable String viewModeKey) {
+        return graphViewLabel().equals(viewModeKey) ? DungeonEditorViewMode.GRAPH : DungeonEditorViewMode.GRID;
+    }
+
+    static DungeonEditorTool toPublishedToolKey(@Nullable String selectedToolKey) {
+        if (selectedToolKey == null || selectedToolKey.isBlank()) {
+            return DungeonEditorTool.SELECT;
         }
-
-        static String labelOf(@Nullable DungeonEditorTool tool) {
-            return TOOL_LABELS.getOrDefault(tool == null ? DungeonEditorTool.SELECT : tool, DEFAULT_TOOL_LABEL);
+        try {
+            return DungeonEditorTool.valueOf(selectedToolKey.trim());
+        } catch (IllegalArgumentException ignored) {
+            return DungeonEditorTool.SELECT;
         }
+    }
 
-        static String labelOf(@Nullable DungeonEditorViewMode viewMode) {
-            return viewMode == DungeonEditorViewMode.GRAPH ? GRAPH_VIEW_LABEL : GRID_VIEW_LABEL;
-        }
-
-        static String normalizeViewModeKey(@Nullable String viewModeKey) {
-            return GRAPH_VIEW_LABEL.equals(viewModeKey) ? GRAPH_VIEW_LABEL : GRID_VIEW_LABEL;
-        }
-
-        static DungeonEditorViewMode toPublishedViewMode(@Nullable String viewModeKey) {
-            return GRAPH_VIEW_LABEL.equals(viewModeKey) ? DungeonEditorViewMode.GRAPH : DungeonEditorViewMode.GRID;
-        }
-
-        static DungeonEditorTool toPublishedToolKey(@Nullable String selectedToolKey) {
-            if (selectedToolKey == null || selectedToolKey.isBlank()) {
-                return DungeonEditorTool.SELECT;
-            }
-            try {
-                return DungeonEditorTool.valueOf(selectedToolKey.trim());
-            } catch (IllegalArgumentException ignored) {
-                return DungeonEditorTool.SELECT;
-            }
-        }
-
-        static String roomRectangleLabel(boolean deleteMode) {
-            return deleteMode ? ROOM_DELETE_LABEL : ROOM_PAINT_LABEL;
-        }
-
-        private static Map<DungeonEditorTool, String> createToolLabels() {
-            Map<DungeonEditorTool, String> toolLabels = new EnumMap<>(DungeonEditorTool.class);
-            toolLabels.put(DungeonEditorTool.SELECT, DEFAULT_TOOL_LABEL);
-            toolLabels.put(DungeonEditorTool.ROOM_PAINT, ROOM_PAINT_LABEL);
-            toolLabels.put(DungeonEditorTool.ROOM_DELETE, ROOM_DELETE_LABEL);
-            toolLabels.put(DungeonEditorTool.WALL_CREATE, WALL_CREATE_LABEL);
-            toolLabels.put(DungeonEditorTool.WALL_DELETE, WALL_DELETE_LABEL);
-            toolLabels.put(DungeonEditorTool.DOOR_CREATE, DOOR_CREATE_LABEL);
-            toolLabels.put(DungeonEditorTool.DOOR_DELETE, DOOR_DELETE_LABEL);
-            toolLabels.put(DungeonEditorTool.CORRIDOR_CREATE, CORRIDOR_CREATE_LABEL);
-            toolLabels.put(DungeonEditorTool.CORRIDOR_DELETE, CORRIDOR_DELETE_LABEL);
-            toolLabels.put(DungeonEditorTool.STAIR_CREATE, "Treppe erstellen");
-            toolLabels.put(DungeonEditorTool.STAIR_DELETE, "Treppe löschen");
-            toolLabels.put(DungeonEditorTool.TRANSITION_CREATE, "Übergang erstellen");
-            toolLabels.put(DungeonEditorTool.TRANSITION_DELETE, "Übergang löschen");
-            return Map.copyOf(toolLabels);
-        }
-
+    private static Map<DungeonEditorTool, String> createToolLabels() {
+        Map<DungeonEditorTool, String> toolLabels = new EnumMap<>(DungeonEditorTool.class);
+        toolLabels.put(DungeonEditorTool.SELECT, defaultToolLabel());
+        toolLabels.put(DungeonEditorTool.ROOM_PAINT, "Raum malen");
+        toolLabels.put(DungeonEditorTool.ROOM_DELETE, "Raum löschen");
+        toolLabels.put(DungeonEditorTool.WALL_CREATE, "Wand setzen");
+        toolLabels.put(DungeonEditorTool.WALL_DELETE, "Wand löschen");
+        toolLabels.put(DungeonEditorTool.DOOR_CREATE, "Tür setzen");
+        toolLabels.put(DungeonEditorTool.DOOR_DELETE, "Tür löschen");
+        toolLabels.put(DungeonEditorTool.CORRIDOR_CREATE, "Korridor erstellen");
+        toolLabels.put(DungeonEditorTool.CORRIDOR_DELETE, "Korridor löschen");
+        toolLabels.put(DungeonEditorTool.STAIR_CREATE, "Treppe erstellen");
+        toolLabels.put(DungeonEditorTool.STAIR_DELETE, "Treppe löschen");
+        toolLabels.put(DungeonEditorTool.TRANSITION_CREATE, "Übergang erstellen");
+        toolLabels.put(DungeonEditorTool.TRANSITION_DELETE, "Übergang löschen");
+        return Map.copyOf(toolLabels);
     }
 
     private static String triggerSummary(DungeonOverlaySettings settings) {

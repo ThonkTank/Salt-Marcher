@@ -576,19 +576,19 @@ final class DungeonEditorIntentHandler {
         if (viewModeKey == null || viewModeKey.isBlank()) {
             return;
         }
-        String normalizedViewModeKey = DungeonEditorControlsContentModel.ToolCatalog.normalizeViewModeKey(viewModeKey);
+        String normalizedViewModeKey = DungeonEditorControlsContentModel.normalizeViewModeKey(viewModeKey);
         String selectedViewMode = presentationModel.currentInteractionState().currentViewModeKey();
-        if (DungeonEditorControlsContentModel.ToolCatalog.GRAPH_VIEW_LABEL.equals(normalizedViewModeKey)) {
-            if (!DungeonEditorControlsContentModel.ToolCatalog.GRAPH_VIEW_LABEL.equals(selectedViewMode)) {
+        if (DungeonEditorControlsContentModel.graphViewLabel().equals(normalizedViewModeKey)) {
+            if (!DungeonEditorControlsContentModel.graphViewLabel().equals(selectedViewMode)) {
                 editor.setViewMode(new SetDungeonEditorViewModeCommand(
-                        DungeonEditorControlsContentModel.ToolCatalog.toPublishedViewMode(normalizedViewModeKey)));
+                        DungeonEditorControlsContentModel.toPublishedViewMode(normalizedViewModeKey)));
             }
             return;
         }
-        if (!DungeonEditorControlsContentModel.ToolCatalog.GRID_VIEW_LABEL.equals(selectedViewMode)) {
+        if (!DungeonEditorControlsContentModel.gridViewLabel().equals(selectedViewMode)) {
             editor.setViewMode(new SetDungeonEditorViewModeCommand(
-                    DungeonEditorControlsContentModel.ToolCatalog.toPublishedViewMode(
-                            DungeonEditorControlsContentModel.ToolCatalog.GRID_VIEW_LABEL)));
+                    DungeonEditorControlsContentModel.toPublishedViewMode(
+                            DungeonEditorControlsContentModel.gridViewLabel())));
         }
     }
 
@@ -597,7 +597,7 @@ final class DungeonEditorIntentHandler {
             return;
         }
         DungeonEditorContributionModel.InteractionState interactionState = presentationModel.currentInteractionState();
-        DungeonEditorTool selectedTool = DungeonEditorControlsContentModel.ToolCatalog.toPublishedToolKey(
+        DungeonEditorTool selectedTool = DungeonEditorControlsContentModel.toPublishedToolKey(
                 tool.selectedToolKey());
         if (!tool.selectedToolKey().isBlank() && selectedTool != interactionState.currentSelectedTool()) {
             editor.setTool(new SetDungeonEditorToolCommand(selectedTool));
