@@ -18,7 +18,6 @@ import javafx.scene.control.ToggleButton;
 import javafx.scene.control.ToggleGroup;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
-import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.util.StringConverter;
 import org.jspecify.annotations.Nullable;
@@ -202,7 +201,7 @@ public final class DungeonEditorControlsView extends VBox {
         mapActionButton.setText("Neu");
         mapActionButton.getItems().setAll(editMapItem, deleteMapItem);
         mapActionButton.getStyleClass().addAll("toolbar-action-button", "dungeon-toolbar-menu");
-        mapActionButton.setMinWidth(Region.USE_PREF_SIZE);
+        mapActionButton.setMinWidth(USE_PREF_SIZE);
         mapActionButton.setAccessibleText("Neuen Dungeon erstellen; weitere Dungeon-Aktionen im Menü");
         mapActionButton.setOnAction(event -> emitMapEditorInput(
                 rendering, "", true, false, false, false, false, false));
@@ -669,21 +668,21 @@ public final class DungeonEditorControlsView extends VBox {
     private static Button actionButton(String text) {
         Button button = new Button(text);
         button.getStyleClass().add("toolbar-action-button");
-        button.setMinWidth(Region.USE_PREF_SIZE);
+        button.setMinWidth(USE_PREF_SIZE);
         return button;
     }
 
     private static ToggleButton toolToggle(String text) {
         ToggleButton button = new ToggleButton(text);
         button.getStyleClass().add(TOOL_BUTTON_STYLE);
-        button.setMinWidth(Region.USE_PREF_SIZE);
+        button.setMinWidth(USE_PREF_SIZE);
         return button;
     }
 
     private static Button toolButton(String text) {
         Button button = new Button(text);
         button.getStyleClass().add(TOOL_BUTTON_STYLE);
-        button.setMinWidth(Region.USE_PREF_SIZE);
+        button.setMinWidth(USE_PREF_SIZE);
         return button;
     }
 
