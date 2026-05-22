@@ -616,7 +616,6 @@ public final class DungeonMapContentModel {
     }
 
     public record OverlayPrimitive(
-            String hitRef,
             String text,
             double centerX,
             double centerY,
@@ -627,7 +626,6 @@ public final class DungeonMapContentModel {
     ) {
 
         public OverlayPrimitive {
-            hitRef = hitRef == null ? "" : hitRef;
             text = text == null ? "" : text;
             width = Math.max(0.0, width);
             height = Math.max(0.0, height);
@@ -2282,25 +2280,7 @@ public final class DungeonMapContentModel {
                 surface.previewMap(),
                 selection == null ? DungeonEditorStateSnapshot.Selection.empty() : selection,
                 preview == null ? DungeonEditorPreview.none() : preview);
-        return new DungeonMapRenderState(
-                surface.mapName(),
-                true,
-                map.width(),
-                map.height(),
-                DungeonMapRenderState.Topology.fromName(map.topology()),
-                DungeonMapRenderState.ViewMode.grid(),
-                DungeonMapRenderState.LevelOverlaySettings.off(),
-                0,
-                editorMode,
-                DungeonMapRenderState.selectToolLabel(),
-                "No dungeon map geometry available.",
-                projection.cells(),
-                projection.edges(),
-                projection.labels(),
-                projection.markers(),
-                projection.graphNodes(),
-                projection.graphLinks(),
-                null);
+        return projection.renderState(surface, map, editorMode);
     }
 
     private static ProjectionAccumulator assemble(
@@ -2310,150 +2290,14 @@ public final class DungeonMapContentModel {
             DungeonEditorPreview preview
     ) {
         ProjectionAccumulator projection = new ProjectionAccumulator();
-        renderAreas(map, selection, projection);
-        renderClusterLabels(map, selection, projection.labels);
-        addPreviewAndBoundaries(map, selection, preview, previewMap, projection);
-        renderFeatures(map, selection, projection);
-        renderHandles(map, selection, preview, projection.markers);
-        addPreviewMapDiff(map, selection, preview, previewMap, projection);
-        addFallbackGraphLinks(projection.graphNodes, projection.graphLinks);
+        projection.addAreas(map, selection);
+        projection.addClusterLabels(map, selection);
+        projection.addPreviewAndBoundaries(map, selection, preview, previewMap);
+        projection.addFeatures(map, selection);
+        projection.addHandles(map, selection, preview);
+        projection.addPreviewMapDiff(map, selection, preview, previewMap);
+        projection.addFallbackGraphLinks();
         return projection;
-    }
-
-    private static void renderAreas(
-            DungeonEditorMapSnapshot map,
-            DungeonEditorStateSnapshot.Selection selection,
-            ProjectionAccumulator projection
-    ) {
-        for (DungeonEditorMapSnapshot.Area area : map.areas()) {
-            boolean selected = selectedArea(area, selection);
-            List<DungeonMapRenderState.Cell> areaCells = new ArrayList<>();
-            for (DungeonCellRef cell : area.cells()) {
-                areaCells.add(cell(area, cell, selected, false, false, 0, 0, 0));
-            }
-            projection.cells.addAll(areaCells);
-            if (areaCells.isEmpty()) {
-                continue;
-            }
-            CellCenter center = centerOfCells(areaCells);
-            projection.graphNodes.add(new DungeonMapRenderState.GraphNode(
-                    area.id(),
-                    clusterId(area),
-                    area.label(),
-                    center.q(),
-                    center.r(),
-                    selected));
-        }
-    }
-
-    private static void renderClusterLabels(
-            DungeonEditorMapSnapshot map,
-            DungeonEditorStateSnapshot.Selection selection,
-            List<DungeonMapRenderState.Label> labels
-    ) {
-        List<Long> renderedClusterIds = new ArrayList<>();
-        for (DungeonEditorHandleSnapshot handle : map.editorHandles()) {
-            if (!handle.ref().kind().isClusterLabel()) {
-                continue;
-            }
-            long clusterId = handle.ref().clusterId();
-            if (clusterId <= 0L || renderedClusterIds.contains(clusterId)) {
-                continue;
-            }
-            renderedClusterIds.add(clusterId);
-            labels.add(clusterLabel(handle, selectedClusterLabel(handle, selection), false, 0, 0, 0));
-        }
-    }
-
-    private static void addPreviewAndBoundaries(
-            DungeonEditorMapSnapshot map,
-            DungeonEditorStateSnapshot.Selection selection,
-            DungeonEditorPreview preview,
-            @Nullable DungeonEditorMapSnapshot previewMap,
-            ProjectionAccumulator projection
-    ) {
-        addEditorPreview(projection.cells, projection.edges, projection.labels, map, selection, preview, previewMap);
-        for (DungeonEditorMapSnapshot.Boundary boundary : map.boundaries()) {
-            if (invalidEdge(boundary.edge())) {
-                continue;
-            }
-            projection.edges.add(edge(boundary, 0, 0, 0, false, selectedBoundary(boundary, selection)));
-        }
-    }
-
-    private static void addPreviewMapDiff(
-            DungeonEditorMapSnapshot map,
-            DungeonEditorStateSnapshot.Selection selection,
-            DungeonEditorPreview preview,
-            @Nullable DungeonEditorMapSnapshot previewMap,
-            ProjectionAccumulator projection
-    ) {
-        if (preview != DungeonEditorPreview.none() || previewMap == null) {
-            return;
-        }
-        addPreviewAreaDiff(projection.cells, projection.labels, map.areas(), previewMap.areas(), selection);
-        addPreviewBoundaryDiff(projection.edges, map.boundaries(), previewMap.boundaries(), selection);
-        addPreviewHandleDiff(projection.markers, map.editorHandles(), previewMap.editorHandles(), selection);
-    }
-
-    private static void renderFeatures(
-            DungeonEditorMapSnapshot map,
-            DungeonEditorStateSnapshot.Selection selection,
-            ProjectionAccumulator projection
-    ) {
-        for (DungeonEditorMapSnapshot.Feature feature : map.features()) {
-            boolean selected = selectedFeature(feature, selection);
-            List<DungeonMapRenderState.Cell> featureCells = new ArrayList<>();
-            for (DungeonCellRef cell : feature.cells()) {
-                featureCells.add(featureCell(feature, cell, selected));
-            }
-            projection.cells.addAll(featureCells);
-            if (featureCells.isEmpty()) {
-                continue;
-            }
-            CellCenter center = centerOfCells(featureCells);
-            projection.labels.add(new DungeonMapRenderState.Label(
-                    feature.label(),
-                    center.q(),
-                    center.r(),
-                    featureCells.getFirst().z(),
-                    feature.id(),
-                    0L,
-                    featureTopologyRef(feature),
-                    selected,
-                    false));
-            projection.markers.add(featureMarker(feature, center, featureCells.getFirst().z(), selected));
-        }
-    }
-
-    private static void renderHandles(
-            DungeonEditorMapSnapshot map,
-            DungeonEditorStateSnapshot.Selection selection,
-            DungeonEditorPreview preview,
-            List<DungeonMapRenderState.Marker> markers
-    ) {
-        for (DungeonEditorHandleSnapshot handle : map.editorHandles()) {
-            if (handle.ref().kind().isClusterLabel()) {
-                continue;
-            }
-            markers.add(handleMarker(handle, selection, false));
-        }
-        addHandleMovePreview(markers, preview);
-    }
-
-    private static void addFallbackGraphLinks(
-            List<DungeonMapRenderState.GraphNode> graphNodes,
-            List<DungeonMapRenderState.GraphLink> graphLinks
-    ) {
-        if (!graphLinks.isEmpty() || graphNodes.size() <= 1) {
-            return;
-        }
-        for (int index = 1; index < graphNodes.size(); index++) {
-            graphLinks.add(new DungeonMapRenderState.GraphLink(
-                    graphNodes.get(index - 1).id(),
-                    graphNodes.get(index).id(),
-                    false));
-        }
     }
 
     private static void addEditorPreview(
@@ -3155,28 +2999,169 @@ public final class DungeonMapContentModel {
         private final List<DungeonMapRenderState.GraphNode> graphNodes = new ArrayList<>();
         private final List<DungeonMapRenderState.GraphLink> graphLinks = new ArrayList<>();
 
-        private List<DungeonMapRenderState.Cell> cells() {
-            return List.copyOf(cells);
+        private void addAreas(
+                DungeonEditorMapSnapshot map,
+                DungeonEditorStateSnapshot.Selection selection
+        ) {
+            for (DungeonEditorMapSnapshot.Area area : map.areas()) {
+                addArea(area, selectedArea(area, selection));
+            }
         }
 
-        private List<DungeonMapRenderState.Edge> edges() {
-            return List.copyOf(edges);
+        private void addArea(
+                DungeonEditorMapSnapshot.Area area,
+                boolean selected
+        ) {
+            List<DungeonMapRenderState.Cell> areaCells = new ArrayList<>();
+            for (DungeonCellRef cell : area.cells()) {
+                areaCells.add(cell(area, cell, selected, false, false, 0, 0, 0));
+            }
+            cells.addAll(areaCells);
+            if (areaCells.isEmpty()) {
+                return;
+            }
+            CellCenter center = centerOfCells(areaCells);
+            graphNodes.add(new DungeonMapRenderState.GraphNode(
+                    area.id(),
+                    clusterId(area),
+                    area.label(),
+                    center.q(),
+                    center.r(),
+                    selected));
         }
 
-        private List<DungeonMapRenderState.Label> labels() {
-            return List.copyOf(labels);
+        private void addClusterLabels(
+                DungeonEditorMapSnapshot map,
+                DungeonEditorStateSnapshot.Selection selection
+        ) {
+            List<Long> renderedClusterIds = new ArrayList<>();
+            for (DungeonEditorHandleSnapshot handle : map.editorHandles()) {
+                if (!handle.ref().kind().isClusterLabel()) {
+                    continue;
+                }
+                long clusterId = handle.ref().clusterId();
+                if (clusterId <= 0L || renderedClusterIds.contains(clusterId)) {
+                    continue;
+                }
+                renderedClusterIds.add(clusterId);
+                labels.add(clusterLabel(handle, selectedClusterLabel(handle, selection), false, 0, 0, 0));
+            }
         }
 
-        private List<DungeonMapRenderState.Marker> markers() {
-            return List.copyOf(markers);
+        private void addPreviewAndBoundaries(
+                DungeonEditorMapSnapshot map,
+                DungeonEditorStateSnapshot.Selection selection,
+                DungeonEditorPreview preview,
+                @Nullable DungeonEditorMapSnapshot previewMap
+        ) {
+            addEditorPreview(cells, edges, labels, map, selection, preview, previewMap);
+            for (DungeonEditorMapSnapshot.Boundary boundary : map.boundaries()) {
+                if (invalidEdge(boundary.edge())) {
+                    continue;
+                }
+                edges.add(edge(boundary, 0, 0, 0, false, selectedBoundary(boundary, selection)));
+            }
         }
 
-        private List<DungeonMapRenderState.GraphNode> graphNodes() {
-            return List.copyOf(graphNodes);
+        private void addFeatures(
+                DungeonEditorMapSnapshot map,
+                DungeonEditorStateSnapshot.Selection selection
+        ) {
+            for (DungeonEditorMapSnapshot.Feature feature : map.features()) {
+                addFeature(feature, selectedFeature(feature, selection));
+            }
         }
 
-        private List<DungeonMapRenderState.GraphLink> graphLinks() {
-            return List.copyOf(graphLinks);
+        private void addFeature(
+                DungeonEditorMapSnapshot.Feature feature,
+                boolean selected
+        ) {
+            List<DungeonMapRenderState.Cell> featureCells = new ArrayList<>();
+            for (DungeonCellRef cell : feature.cells()) {
+                featureCells.add(featureCell(feature, cell, selected));
+            }
+            cells.addAll(featureCells);
+            if (featureCells.isEmpty()) {
+                return;
+            }
+            CellCenter center = centerOfCells(featureCells);
+            labels.add(new DungeonMapRenderState.Label(
+                    feature.label(),
+                    center.q(),
+                    center.r(),
+                    featureCells.getFirst().z(),
+                    feature.id(),
+                    0L,
+                    featureTopologyRef(feature),
+                    selected,
+                    false));
+            markers.add(featureMarker(feature, center, featureCells.getFirst().z(), selected));
+        }
+
+        private void addHandles(
+                DungeonEditorMapSnapshot map,
+                DungeonEditorStateSnapshot.Selection selection,
+                DungeonEditorPreview preview
+        ) {
+            for (DungeonEditorHandleSnapshot handle : map.editorHandles()) {
+                if (handle.ref().kind().isClusterLabel()) {
+                    continue;
+                }
+                markers.add(handleMarker(handle, selection, false));
+            }
+            addHandleMovePreview(markers, preview);
+        }
+
+        private void addPreviewMapDiff(
+                DungeonEditorMapSnapshot map,
+                DungeonEditorStateSnapshot.Selection selection,
+                DungeonEditorPreview preview,
+                @Nullable DungeonEditorMapSnapshot previewMap
+        ) {
+            if (preview != DungeonEditorPreview.none() || previewMap == null) {
+                return;
+            }
+            addPreviewAreaDiff(cells, labels, map.areas(), previewMap.areas(), selection);
+            addPreviewBoundaryDiff(edges, map.boundaries(), previewMap.boundaries(), selection);
+            addPreviewHandleDiff(markers, map.editorHandles(), previewMap.editorHandles(), selection);
+        }
+
+        private void addFallbackGraphLinks() {
+            if (!graphLinks.isEmpty() || graphNodes.size() <= 1) {
+                return;
+            }
+            for (int index = 1; index < graphNodes.size(); index++) {
+                graphLinks.add(new DungeonMapRenderState.GraphLink(
+                        graphNodes.get(index - 1).id(),
+                        graphNodes.get(index).id(),
+                        false));
+            }
+        }
+
+        private DungeonMapRenderState renderState(
+                DungeonEditorSurface surface,
+                DungeonEditorMapSnapshot map,
+                boolean editorMode
+        ) {
+            return new DungeonMapRenderState(
+                    surface.mapName(),
+                    true,
+                    map.width(),
+                    map.height(),
+                    DungeonMapRenderState.Topology.fromName(map.topology()),
+                    DungeonMapRenderState.ViewMode.grid(),
+                    DungeonMapRenderState.LevelOverlaySettings.off(),
+                    0,
+                    editorMode,
+                    DungeonMapRenderState.selectToolLabel(),
+                    "No dungeon map geometry available.",
+                    List.copyOf(cells),
+                    List.copyOf(edges),
+                    List.copyOf(labels),
+                    List.copyOf(markers),
+                    List.copyOf(graphNodes),
+                    List.copyOf(graphLinks),
+                    null);
         }
     }
 }

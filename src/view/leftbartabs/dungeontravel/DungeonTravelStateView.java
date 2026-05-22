@@ -10,7 +10,7 @@ import javafx.scene.layout.VBox;
 public final class DungeonTravelStateView extends VBox {
 
     private final Label body = new Label();
-    private final VBox rows = new VBox(6);
+    private final VBox rows = new ActionRows();
     private Consumer<DungeonTravelStateViewInputEvent> viewInputEventHandler = ignored -> {};
 
     public DungeonTravelStateView() {
@@ -24,11 +24,15 @@ public final class DungeonTravelStateView extends VBox {
     }
 
     private void showActions(List<DungeonTravelStateContentModel.ActionItem> items) {
-        ActionRows.showItems(rows, items, this::publishViewInputEvent);
+        actionRows().showItems(items, this::publishViewInputEvent);
     }
 
     private void publishViewInputEvent(DungeonTravelStateViewInputEvent event) {
         viewInputEventHandler.accept(event);
+    }
+
+    private ActionRows actionRows() {
+        return (ActionRows) rows;
     }
 
     public void bind(DungeonTravelStateContentModel contentModel) {
@@ -48,16 +52,19 @@ public final class DungeonTravelStateView extends VBox {
         }
     }
 
-    private static final class ActionRows {
+    private static final class ActionRows extends VBox {
 
-        private static void showItems(
-                VBox rows,
+        private ActionRows() {
+            super(6);
+        }
+
+        private void showItems(
                 List<DungeonTravelStateContentModel.ActionItem> items,
                 Consumer<DungeonTravelStateViewInputEvent> publisher
         ) {
             List<DungeonTravelStateContentModel.ActionItem> safeItems = items == null ? List.of() : items;
             if (safeItems.isEmpty()) {
-                rows.getChildren().setAll(new HintLabel("Keine Reiseaktionen am aktuellen Standort."));
+                getChildren().setAll(new HintLabel("Keine Reiseaktionen am aktuellen Standort."));
                 return;
             }
             List<Node> nodes = new java.util.ArrayList<>();
@@ -70,7 +77,7 @@ public final class DungeonTravelStateView extends VBox {
                         item.descriptionText(),
                         publisher));
             }
-            rows.getChildren().setAll(nodes);
+            getChildren().setAll(nodes);
         }
     }
 
