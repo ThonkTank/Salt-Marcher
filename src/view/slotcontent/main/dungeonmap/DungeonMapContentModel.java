@@ -1285,6 +1285,13 @@ public final class DungeonMapContentModel {
         }
 
         private static void addGridTargets(DungeonMapRenderState displayModel, Map<String, PointerTarget> targets) {
+            addCellTargets(displayModel, targets);
+            addBoundaryTargets(displayModel, targets);
+            addMarkerTargets(displayModel, targets);
+            addLabelTargets(displayModel, targets);
+        }
+
+        private static void addCellTargets(DungeonMapRenderState displayModel, Map<String, PointerTarget> targets) {
             for (DungeonMapRenderState.Cell cell : displayModel.cells()) {
                 if (LevelFilter.includeLevel(displayModel, cell.z())) {
                     targets.put(SceneIdentity.cellHitRef(cell), PointerTarget.cell(
@@ -1294,22 +1301,23 @@ public final class DungeonMapContentModel {
                             cell.topologyRef()));
                 }
             }
+        }
+
+        private static void addBoundaryTargets(DungeonMapRenderState displayModel, Map<String, PointerTarget> targets) {
             for (DungeonMapRenderState.Edge edge : displayModel.edges()) {
                 if (LevelFilter.includeLevel(displayModel, edge.z())) {
-                    DungeonMapRenderState.TopologyRef topologyRef = edge.topologyRef();
-                    String kind = edge.isDoor() ? "DOOR" : "WALL";
-                    targets.put(SceneIdentity.edgeHitRef(edge), PointerTarget.boundary(new BoundaryTarget(
+                    targets.put(SceneIdentity.edgeHitRef(edge), PointerTarget.boundary(edgeBoundaryTarget(edge)));
+                }
+            }
+        }
+
+        private static BoundaryTarget edgeBoundaryTarget(DungeonMapRenderState.Edge edge) {
+            DungeonMapRenderState.TopologyRef topologyRef = edge.topologyRef();
+            String kind = edge.isDoor() ? "DOOR" : "WALL";
+            return new BoundaryTarget(
+                    kind,
+                    boundaryKey(
                             kind,
-                            boundaryKey(
-                                    kind,
-                                    edge.ownerId(),
-                                    topologyRef,
-                                    edge.startQ(),
-                                    edge.startR(),
-                                    edge.z(),
-                                    edge.endQ(),
-                                    edge.endR(),
-                                    edge.z()),
                             edge.ownerId(),
                             topologyRef,
                             edge.startQ(),
@@ -1317,14 +1325,26 @@ public final class DungeonMapContentModel {
                             edge.z(),
                             edge.endQ(),
                             edge.endR(),
-                            edge.z())));
-                }
-            }
+                            edge.z()),
+                    edge.ownerId(),
+                    topologyRef,
+                    edge.startQ(),
+                    edge.startR(),
+                    edge.z(),
+                    edge.endQ(),
+                    edge.endR(),
+                    edge.z());
+        }
+
+        private static void addMarkerTargets(DungeonMapRenderState displayModel, Map<String, PointerTarget> targets) {
             for (DungeonMapRenderState.Marker marker : displayModel.markers()) {
                 if (LevelFilter.includeLevel(displayModel, marker.z())) {
                     targets.put(SceneIdentity.markerHitRef(marker), PointerTarget.handle(toHandleTarget(marker.handle())));
                 }
             }
+        }
+
+        private static void addLabelTargets(DungeonMapRenderState displayModel, Map<String, PointerTarget> targets) {
             for (DungeonMapRenderState.Label label : displayModel.labels()) {
                 if (LevelFilter.includeLevel(displayModel, label.z())) {
                     targets.put(SceneIdentity.labelHitRef(label), PointerTarget.label(
