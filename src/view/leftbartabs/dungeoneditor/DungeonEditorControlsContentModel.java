@@ -63,7 +63,8 @@ final class DungeonEditorControlsContentModel {
                 overlaySettings,
                 OverlayPanelState.from(overlaySettings, busy),
                 busy,
-                viewMode));
+                viewMode,
+                graphViewLabel().equals(normalizeViewModeKey(viewMode))));
         toolProjection.set(new ToolProjection(selectedTool));
     }
 
@@ -293,6 +294,7 @@ final class DungeonEditorControlsContentModel {
             String modeKey,
             int levelRange,
             double opacityPercent,
+            String opacityText,
             String selectedLevelsText,
             boolean rangeVisible,
             boolean selectedVisible,
@@ -306,6 +308,7 @@ final class DungeonEditorControlsContentModel {
                     safeModeKey,
                     safeOverlayRange(safeSettings),
                     safeOverlayOpacity(safeSettings) * 100.0,
+                    DungeonEditorControlsContentModel.opacityText(safeOverlayOpacity(safeSettings)),
                     selectedLevelList(safeSettings.selectedLevels()),
                     overlayNearbyMode().equals(safeModeKey),
                     overlaySelectedMode().equals(safeModeKey),
@@ -321,7 +324,8 @@ final class DungeonEditorControlsContentModel {
             DungeonOverlaySettings overlaySettings,
             OverlayPanelState overlayPanelState,
             boolean overlayDisabled,
-            String viewMode
+            String viewMode,
+            boolean graphViewSelected
     ) {
         ProjectionState {
             activeLevel = Math.max(0, activeLevel);
@@ -340,7 +344,8 @@ final class DungeonEditorControlsContentModel {
                     DungeonOverlaySettings.defaults(),
                     OverlayPanelState.from(DungeonOverlaySettings.defaults(), false),
                     false,
-                    gridViewLabel());
+                    gridViewLabel(),
+                    false);
         }
     }
 

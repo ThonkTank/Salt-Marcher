@@ -4,7 +4,9 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
 import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
 import javafx.geometry.Pos;
+import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
@@ -17,17 +19,19 @@ import javafx.scene.control.Toggle;
 import javafx.scene.control.ToggleButton;
 import javafx.scene.control.ToggleGroup;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Pane;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.util.StringConverter;
 import org.jspecify.annotations.Nullable;
 
+@SuppressWarnings("PMD.LawOfDemeter")
 public final class DungeonEditorControlsView extends VBox {
 
     private Consumer<DungeonEditorControlsViewInputEvent> viewInputEventHandler = ignored -> { };
 
     public DungeonEditorControlsView() {
-        getStyleClass().addAll("surface-root", "dungeon-control-panel", "control-toolbar");
+        styled(this, "surface-root", "dungeon-control-panel", "control-toolbar");
         setFillWidth(true);
     }
 
@@ -41,536 +45,390 @@ public final class DungeonEditorControlsView extends VBox {
         }
         boolean[] rendering = {false};
         DungeonEditorControlsContentModel.ToolControls toolControls = contentModel.toolControls();
-        ComboBox<DungeonEditorControlsContentModel.MapItem> mapSelector = mapSelector();
-        SplitMenuButton mapActionButton = new SplitMenuButton();
-        MenuItem editMapItem = new MenuItem("Dungeon bearbeiten");
-        MenuItem deleteMapItem = new MenuItem("Dungeon löschen");
-        Label statusLabel = mutedLabel("");
-        TextField mapDraftField = new TextField();
-        Button cancelMapEditButton = new Button("Abbrechen");
-        Button saveMapEditButton = new Button("Speichern");
-        Button confirmDeleteButton = new Button("Löschen");
-        VBox mapEditor = new VBox(4);
-        Label mapEditorTitle = new Label();
-        Label mapEditorError = mutedLabel("");
+        MapControls mapControls = new MapControls(rendering);
+        MapEditorSection mapEditorSection = new MapEditorSection(rendering);
+        ProjectionSection projectionSection = new ProjectionSection(contentModel, toolControls, rendering);
+        ToolSection toolSection = new ToolSection(toolControls);
 
-        Label levelLabel = mutedLabel("Ebene z=0");
-        Button previousLevelButton = actionButton("-");
-        Button nextLevelButton = actionButton("+");
-        ToggleButton gridButton = toolToggle(toolControls.gridView());
-        ToggleButton graphButton = toolToggle(toolControls.graphView());
-        ToggleGroup viewModeGroup = new ToggleGroup();
-        Button overlayTrigger = actionButton("Overlay: Aus");
-        ComboBox<DungeonEditorControlsContentModel.OverlayModeOption> overlayModeSelector = new ComboBox<>();
-        Spinner<Integer> overlayRangeSpinner = new Spinner<>(1, 6, 2);
-        Slider overlayOpacitySlider = new Slider(10, 90, 35);
-        Label overlayOpacityLabel = mutedLabel("35%");
-        TextField selectedLevelsField = new TextField();
-        HBox overlayRangeRow = row(new Label("Umfang"), overlayRangeSpinner);
-        HBox selectedLevelsRow = row(new Label("Ebenen"), selectedLevelsField);
+        replaceChildren(
+                this,
+                mapControls.row(),
+                mapEditorSection.node(),
+                projectionSection.row(),
+                projectionSection.overlayRow(),
+                toolSection.row());
 
-        ToggleButton selectButton = toolToggle(toolControls.select().label());
-        Button roomButton = toolButton(toolControls.room().label());
-        Button roomDeleteButton = toolButton(toolControls.roomDelete().label());
-        Button wallButton = toolButton(toolControls.wall().label());
-        Button wallDeleteButton = toolButton(toolControls.wallDelete().label());
-        Button doorButton = toolButton(toolControls.door().label());
-        Button doorDeleteButton = toolButton(toolControls.doorDelete().label());
-        Button corridorButton = toolButton(toolControls.corridor().label());
-        Button corridorDeleteButton = toolButton(toolControls.corridorDelete().label());
-
-        configureMapControls(mapSelector, mapActionButton, editMapItem, deleteMapItem, rendering);
-        configureMapEditor(
-                mapEditor,
-                mapEditorTitle,
-                mapDraftField,
-                mapEditorError,
-                cancelMapEditButton,
-                saveMapEditButton,
-                confirmDeleteButton);
-        configureProjectionControls(
-                contentModel,
-                previousLevelButton,
-                nextLevelButton,
-                gridButton,
-                graphButton,
-                viewModeGroup,
-                overlayTrigger,
-                overlayModeSelector,
-                overlayRangeSpinner,
-                overlayOpacitySlider,
-                selectedLevelsField,
-                rendering,
-                toolControls);
-        configureToolControls(
-                toolControls,
-                selectButton,
-                roomButton,
-                roomDeleteButton,
-                wallButton,
-                wallDeleteButton,
-                doorButton,
-                doorDeleteButton,
-                corridorButton,
-                corridorDeleteButton);
-
-        HBox.setHgrow(mapSelector, Priority.ALWAYS);
-        HBox mapRow = row(mapSelector, mapActionButton, statusLabel);
-        mapRow.getStyleClass().add("dungeon-control-map-row");
-        HBox stepper = group(levelLabel, previousLevelButton, nextLevelButton);
-        stepper.getStyleClass().add("dungeon-stepper-group");
-        HBox viewModes = group(gridButton, graphButton);
-        viewModes.getStyleClass().add("dungeon-segment-group");
-        HBox overlayOpacityRow = row(new Label("Staerke"), overlayOpacitySlider, overlayOpacityLabel);
-        HBox overlayRow = row(overlayTrigger, overlayModeSelector, overlayOpacityRow, overlayRangeRow, selectedLevelsRow);
-        overlayRow.getStyleClass().add("dungeon-overlay-content");
-        HBox projectionRow = row(stepper, viewModes);
-        projectionRow.getStyleClass().add("dungeon-control-projection-row");
-        HBox toolRow = row(
-                selectButton,
-                roomButton,
-                roomDeleteButton,
-                wallButton,
-                wallDeleteButton,
-                doorButton,
-                doorDeleteButton,
-                corridorButton,
-                corridorDeleteButton);
-        toolRow.getStyleClass().add("dungeon-control-tool-row");
-        getChildren().setAll(mapRow, mapEditor, projectionRow, overlayRow, toolRow);
-
-        wireMapProjection(contentModel, mapSelector, mapActionButton, editMapItem, deleteMapItem, statusLabel, rendering);
-        wireMapEditor(contentModel, mapEditor, mapEditorTitle, mapDraftField, mapEditorError,
-                cancelMapEditButton, saveMapEditButton, confirmDeleteButton, rendering);
-        wireProjection(contentModel, levelLabel, previousLevelButton, nextLevelButton, gridButton, graphButton,
-                overlayTrigger, overlayModeSelector, overlayRangeSpinner, overlayOpacitySlider, overlayOpacityLabel,
-                selectedLevelsField, overlayRangeRow, selectedLevelsRow, rendering, toolControls);
-        wireToolProjection(
-                contentModel,
-                toolControls,
-                selectButton,
-                roomButton,
-                roomDeleteButton,
-                wallButton,
-                wallDeleteButton,
-                doorButton,
-                doorDeleteButton,
-                corridorButton,
-                corridorDeleteButton);
+        mapControls.bind(contentModel);
+        mapEditorSection.bind(contentModel);
+        projectionSection.bind(contentModel);
+        toolSection.bind(contentModel, toolControls);
     }
 
-    private void configureMapControls(
-            ComboBox<DungeonEditorControlsContentModel.MapItem> mapSelector,
-            SplitMenuButton mapActionButton,
-            MenuItem editMapItem,
-            MenuItem deleteMapItem,
-            boolean[] rendering
-    ) {
-        mapSelector.setConverter(new StringConverter<>() {
-            @Override
-            public String toString(DungeonEditorControlsContentModel.MapItem item) {
-                return item == null ? "" : item.mapName();
-            }
+    private final class MapControls {
 
-            @Override
-            public DungeonEditorControlsContentModel.@Nullable MapItem fromString(String string) {
-                return null;
-            }
-        });
-        mapSelector.setMaxWidth(Double.MAX_VALUE);
-        mapSelector.setMinWidth(0.0);
-        mapSelector.setPromptText("Dungeon auswählen");
-        mapSelector.setAccessibleText("Dungeon auswählen");
-        mapSelector.getSelectionModel().selectedItemProperty().addListener((ignored, before, after) -> {
-            if (!rendering[0] && after != null) {
-                emitMapSelection(after.mapId());
-            }
-        });
+        private final boolean[] rendering;
+        private final ComboBox<Object> mapSelector = mapSelector();
+        private final SplitMenuButton mapActionButton =
+                styled(new SplitMenuButton(), "toolbar-action-button", "dungeon-toolbar-menu");
+        private final MenuItem editMapItem = new MenuItem("Dungeon bearbeiten");
+        private final MenuItem deleteMapItem = new MenuItem("Dungeon löschen");
+        private final Label statusLabel = mutedLabel("");
+        private final HBox row = styled(
+                DungeonEditorControlsView.row(mapSelector, mapActionButton, statusLabel),
+                "dungeon-control-map-row");
 
-        mapActionButton.setText("Neu");
-        mapActionButton.getItems().setAll(editMapItem, deleteMapItem);
-        mapActionButton.getStyleClass().addAll("toolbar-action-button", "dungeon-toolbar-menu");
-        mapActionButton.setMinWidth(USE_PREF_SIZE);
-        mapActionButton.setAccessibleText("Neuen Dungeon erstellen; weitere Dungeon-Aktionen im Menü");
-        mapActionButton.setOnAction(event -> emitMapEditorInput(
-                rendering, "", true, false, false, false, false, false));
-        editMapItem.setOnAction(event -> emitMapEditorInput(
-                rendering, "", false, true, false, false, false, false));
-        deleteMapItem.setOnAction(event -> emitMapEditorInput(
-                rendering, "", false, false, true, false, false, false));
-    }
-
-    private static void configureMapEditor(
-            VBox mapEditor,
-            Label mapEditorTitle,
-            TextField mapDraftField,
-            Label mapEditorError,
-            Button cancelMapEditButton,
-            Button saveMapEditButton,
-            Button confirmDeleteButton
-    ) {
-        Label draftLabel = new Label("Name");
-        draftLabel.setLabelFor(mapDraftField);
-        mapDraftField.setAccessibleText("Dungeon-Name");
-        HBox actionRow = row(cancelMapEditButton, saveMapEditButton, confirmDeleteButton);
-        mapEditor.getChildren().setAll(mapEditorTitle, draftLabel, mapDraftField, mapEditorError, actionRow);
-        mapEditor.getStyleClass().addAll("dropdown-window", "dropdown-form", "dungeon-editor-popup");
-        mapEditor.setVisible(false);
-        mapEditor.setManaged(false);
-    }
-
-    private void configureProjectionControls(
-            DungeonEditorControlsContentModel contentModel,
-            Button previousLevelButton,
-            Button nextLevelButton,
-            ToggleButton gridButton,
-            ToggleButton graphButton,
-            ToggleGroup viewModeGroup,
-            Button overlayTrigger,
-            ComboBox<DungeonEditorControlsContentModel.OverlayModeOption> overlayModeSelector,
-            Spinner<Integer> overlayRangeSpinner,
-            Slider overlayOpacitySlider,
-            TextField selectedLevelsField,
-            boolean[] rendering,
-            DungeonEditorControlsContentModel.ToolControls toolControls
-    ) {
-        previousLevelButton.setAccessibleText("Vorherige Dungeon-Ebene anzeigen");
-        nextLevelButton.setAccessibleText("Nächste Dungeon-Ebene anzeigen");
-        previousLevelButton.setOnAction(event -> emitProjectionShift(-1));
-        nextLevelButton.setOnAction(event -> emitProjectionShift(1));
-        gridButton.setToggleGroup(viewModeGroup);
-        graphButton.setToggleGroup(viewModeGroup);
-        gridButton.setSelected(true);
-        viewModeGroup.selectedToggleProperty().addListener((ignored, oldToggle, newToggle) ->
-                handleViewModeChanged(oldToggle, newToggle, graphButton, gridButton, toolControls));
-        overlayModeSelector.getItems().setAll(contentModel.overlayModeOptions());
-        overlayRangeSpinner.setEditable(true);
-        overlayOpacitySlider.setShowTickMarks(false);
-        overlayOpacitySlider.setShowTickLabels(false);
-        selectedLevelsField.setPromptText("-1, 1, 3");
-        selectedLevelsField.setPrefColumnCount(10);
-        overlayTrigger.setDisable(true);
-        ChangeListener<Object> overlayListener = (ignored, before, after) -> emitOverlayInput(
-                rendering,
-                selectedOverlayModeKey(overlayModeSelector),
-                overlayRangeSpinner.getValue() == null ? 0 : overlayRangeSpinner.getValue(),
-                overlayOpacitySlider.getValue() / 100.0,
-                selectedLevelsField.getText());
-        overlayModeSelector.valueProperty().addListener(overlayListener);
-        overlayRangeSpinner.valueProperty().addListener(overlayListener);
-        overlayOpacitySlider.valueProperty().addListener(overlayListener);
-        selectedLevelsField.setOnAction(event -> emitOverlayInput(
-                rendering,
-                selectedOverlayModeKey(overlayModeSelector),
-                overlayRangeSpinner.getValue() == null ? 0 : overlayRangeSpinner.getValue(),
-                overlayOpacitySlider.getValue() / 100.0,
-                selectedLevelsField.getText()));
-    }
-
-    private void configureToolControls(
-            DungeonEditorControlsContentModel.ToolControls toolControls,
-            ToggleButton selectButton,
-            Button roomButton,
-            Button roomDeleteButton,
-            Button wallButton,
-            Button wallDeleteButton,
-            Button doorButton,
-            Button doorDeleteButton,
-            Button corridorButton,
-            Button corridorDeleteButton
-    ) {
-        ToggleGroup toolGroup = new ToggleGroup();
-        selectButton.setToggleGroup(toolGroup);
-        selectButton.setSelected(true);
-        selectButton.setAccessibleText("Auswahlwerkzeug aktivieren");
-        roomButton.setAccessibleText("Raumwerkzeug wählen");
-        roomDeleteButton.setAccessibleText("Raum löschen wählen");
-        wallButton.setAccessibleText("Wandwerkzeug wählen");
-        wallDeleteButton.setAccessibleText("Wand löschen wählen");
-        doorButton.setAccessibleText("Türwerkzeug wählen");
-        doorDeleteButton.setAccessibleText("Tür löschen wählen");
-        corridorButton.setAccessibleText("Korridorwerkzeug wählen");
-        corridorDeleteButton.setAccessibleText("Korridor löschen wählen");
-        selectButton.setOnAction(event -> emitToolSelection(toolControls.select().key()));
-        roomButton.setOnAction(event -> emitToolSelection(toolControls.room().key()));
-        roomDeleteButton.setOnAction(event -> emitToolSelection(toolControls.roomDelete().key()));
-        wallButton.setOnAction(event -> emitToolSelection(toolControls.wall().key()));
-        wallDeleteButton.setOnAction(event -> emitToolSelection(toolControls.wallDelete().key()));
-        doorButton.setOnAction(event -> emitToolSelection(toolControls.door().key()));
-        doorDeleteButton.setOnAction(event -> emitToolSelection(toolControls.doorDelete().key()));
-        corridorButton.setOnAction(event -> emitToolSelection(toolControls.corridor().key()));
-        corridorDeleteButton.setOnAction(event -> emitToolSelection(toolControls.corridorDelete().key()));
-    }
-
-    private void wireMapProjection(
-            DungeonEditorControlsContentModel contentModel,
-            ComboBox<DungeonEditorControlsContentModel.MapItem> mapSelector,
-            SplitMenuButton mapActionButton,
-            MenuItem editMapItem,
-            MenuItem deleteMapItem,
-            Label statusLabel,
-            boolean[] rendering
-    ) {
-        contentModel.mapProjectionProperty().addListener((ignored, before, after) ->
-                showMaps(after, mapSelector, mapActionButton, editMapItem, deleteMapItem, statusLabel, rendering));
-        showMaps(contentModel.mapProjectionProperty().get(), mapSelector, mapActionButton, editMapItem,
-                deleteMapItem, statusLabel, rendering);
-    }
-
-    private void wireMapEditor(
-            DungeonEditorControlsContentModel contentModel,
-            VBox mapEditor,
-            Label mapEditorTitle,
-            TextField mapDraftField,
-            Label mapEditorError,
-            Button cancelMapEditButton,
-            Button saveMapEditButton,
-            Button confirmDeleteButton,
-            boolean[] rendering
-    ) {
-        mapDraftField.textProperty().addListener((ignored, before, after) ->
-                emitMapEditorInput(rendering, after, false, false, false, false, false, false));
-        cancelMapEditButton.setOnAction(event -> emitMapEditorInput(
-                rendering, mapDraftField.getText(), false, false, false, true, false, false));
-        saveMapEditButton.setOnAction(event -> emitMapEditorInput(
-                rendering, mapDraftField.getText(), false, false, false, false, true, false));
-        confirmDeleteButton.setOnAction(event -> emitMapEditorInput(
-                rendering, mapDraftField.getText(), false, false, false, false, false, true));
-        contentModel.mapEditorProperty().addListener((ignored, before, after) ->
-                showMapEditor(after, mapEditor, mapEditorTitle, mapDraftField, mapEditorError,
-                        saveMapEditButton, confirmDeleteButton, rendering));
-        showMapEditor(contentModel.mapEditorProperty().get(), mapEditor, mapEditorTitle, mapDraftField,
-                mapEditorError, saveMapEditButton, confirmDeleteButton, rendering);
-    }
-
-    private void wireProjection(
-            DungeonEditorControlsContentModel contentModel,
-            Label levelLabel,
-            Button previousLevelButton,
-            Button nextLevelButton,
-            ToggleButton gridButton,
-            ToggleButton graphButton,
-            Button overlayTrigger,
-            ComboBox<DungeonEditorControlsContentModel.OverlayModeOption> overlayModeSelector,
-            Spinner<Integer> overlayRangeSpinner,
-            Slider overlayOpacitySlider,
-            Label overlayOpacityLabel,
-            TextField selectedLevelsField,
-            HBox overlayRangeRow,
-            HBox selectedLevelsRow,
-            boolean[] rendering,
-            DungeonEditorControlsContentModel.ToolControls toolControls
-    ) {
-        contentModel.projectionProperty().addListener((ignored, before, after) ->
-                showProjection(after, levelLabel, previousLevelButton, nextLevelButton, gridButton, graphButton,
-                        overlayTrigger, overlayModeSelector, overlayRangeSpinner, overlayOpacitySlider,
-                        overlayOpacityLabel, selectedLevelsField, overlayRangeRow, selectedLevelsRow, rendering,
-                        toolControls));
-        showProjection(contentModel.projectionProperty().get(), levelLabel, previousLevelButton, nextLevelButton,
-                gridButton, graphButton, overlayTrigger, overlayModeSelector, overlayRangeSpinner,
-                overlayOpacitySlider, overlayOpacityLabel, selectedLevelsField, overlayRangeRow, selectedLevelsRow,
-                rendering, toolControls);
-    }
-
-    private void wireToolProjection(
-            DungeonEditorControlsContentModel contentModel,
-            DungeonEditorControlsContentModel.ToolControls toolControls,
-            ToggleButton selectButton,
-            Button roomButton,
-            Button roomDeleteButton,
-            Button wallButton,
-            Button wallDeleteButton,
-            Button doorButton,
-            Button doorDeleteButton,
-            Button corridorButton,
-            Button corridorDeleteButton
-    ) {
-        contentModel.toolProjectionProperty().addListener((ignored, before, after) ->
-                showTool(
-                        after,
-                        toolControls,
-                        selectButton,
-                        roomButton,
-                        roomDeleteButton,
-                        wallButton,
-                        wallDeleteButton,
-                        doorButton,
-                        doorDeleteButton,
-                        corridorButton,
-                        corridorDeleteButton));
-        showTool(
-                contentModel.toolProjectionProperty().get(),
-                toolControls,
-                selectButton,
-                roomButton,
-                roomDeleteButton,
-                wallButton,
-                wallDeleteButton,
-                doorButton,
-                doorDeleteButton,
-                corridorButton,
-                corridorDeleteButton);
-    }
-
-    @SuppressWarnings("PMD.LawOfDemeter")
-    private void showMaps(
-            DungeonEditorControlsContentModel.MapProjection projection,
-            ComboBox<DungeonEditorControlsContentModel.MapItem> mapSelector,
-            SplitMenuButton mapActionButton,
-            MenuItem editMapItem,
-            MenuItem deleteMapItem,
-            Label statusLabel,
-            boolean[] rendering
-    ) {
-        DungeonEditorControlsContentModel.MapProjection safeProjection = projection;
-        List<DungeonEditorControlsContentModel.MapItem> safeMaps = safeProjection.maps();
-        rendering[0] = true;
-        mapSelector.getItems().setAll(safeMaps);
-        mapSelector.getSelectionModel().select(resolveSelected(safeMaps, safeProjection.selectedKey()));
-        rendering[0] = false;
-        mapSelector.setDisable(safeProjection.busy() || safeMaps.isEmpty());
-        mapActionButton.setDisable(safeProjection.busy());
-        boolean selectionMissing = mapSelector.getSelectionModel().getSelectedItem() == null;
-        editMapItem.setDisable(safeProjection.busy() || selectionMissing);
-        deleteMapItem.setDisable(safeProjection.busy() || selectionMissing);
-        statusLabel.setText(safeProjection.statusText());
-        statusLabel.setVisible(!safeProjection.statusText().isBlank());
-        statusLabel.setManaged(!safeProjection.statusText().isBlank());
-    }
-
-    private static void showMapEditor(
-            DungeonEditorControlsContentModel.MapEditorUiState mapEditorUiState,
-            VBox mapEditor,
-            Label mapEditorTitle,
-            TextField mapDraftField,
-            Label mapEditorError,
-            Button saveMapEditButton,
-            Button confirmDeleteButton,
-            boolean[] rendering
-    ) {
-        DungeonEditorControlsContentModel.MapEditorUiState resolvedState = mapEditorUiState;
-        mapEditor.setVisible(resolvedState.visible());
-        mapEditor.setManaged(resolvedState.visible());
-        mapEditorTitle.setText(resolvedState.title());
-        rendering[0] = true;
-        mapDraftField.setText(resolvedState.draftName());
-        rendering[0] = false;
-        mapDraftField.setVisible(resolvedState.draftFieldVisible());
-        mapDraftField.setManaged(resolvedState.draftFieldVisible());
-        saveMapEditButton.setVisible(resolvedState.submitVisible());
-        saveMapEditButton.setManaged(resolvedState.submitVisible());
-        saveMapEditButton.setText(resolvedState.submitLabel());
-        confirmDeleteButton.setVisible(resolvedState.deleteConfirmationVisible());
-        confirmDeleteButton.setManaged(resolvedState.deleteConfirmationVisible());
-        mapEditorError.setText(resolvedState.errorText());
-        mapEditorError.setVisible(!resolvedState.errorText().isBlank());
-        mapEditorError.setManaged(!resolvedState.errorText().isBlank());
-    }
-
-    private void showProjection(
-            DungeonEditorControlsContentModel.ProjectionState projection,
-            Label levelLabel,
-            Button previousLevelButton,
-            Button nextLevelButton,
-            ToggleButton gridButton,
-            ToggleButton graphButton,
-            Button overlayTrigger,
-            ComboBox<DungeonEditorControlsContentModel.OverlayModeOption> overlayModeSelector,
-            Spinner<Integer> overlayRangeSpinner,
-            Slider overlayOpacitySlider,
-            Label overlayOpacityLabel,
-            TextField selectedLevelsField,
-            HBox overlayRangeRow,
-            HBox selectedLevelsRow,
-            boolean[] rendering,
-            DungeonEditorControlsContentModel.ToolControls toolControls
-    ) {
-        DungeonEditorControlsContentModel.ProjectionState safeProjection = projection;
-        levelLabel.setText("Ebene z=" + safeProjection.activeLevel());
-        previousLevelButton.setDisable(safeProjection.busy() || !safeProjection.navigationEnabled());
-        nextLevelButton.setDisable(safeProjection.busy() || !safeProjection.navigationEnabled());
-        rendering[0] = true;
-        String graphViewLabel = toolControls.graphView();
-        graphButton.setSelected(graphViewLabel.equals(safeProjection.viewMode()));
-        gridButton.setSelected(!graphViewLabel.equals(safeProjection.viewMode()));
-        showOverlay(safeProjection, overlayTrigger, overlayModeSelector, overlayRangeSpinner, overlayOpacitySlider,
-                overlayOpacityLabel, selectedLevelsField, overlayRangeRow, selectedLevelsRow);
-        rendering[0] = false;
-    }
-
-    private static void showOverlay(
-            DungeonEditorControlsContentModel.ProjectionState projection,
-            Button overlayTrigger,
-            ComboBox<DungeonEditorControlsContentModel.OverlayModeOption> overlayModeSelector,
-            Spinner<Integer> overlayRangeSpinner,
-            Slider overlayOpacitySlider,
-            Label overlayOpacityLabel,
-            TextField selectedLevelsField,
-            HBox overlayRangeRow,
-            HBox selectedLevelsRow
-    ) {
-        DungeonEditorControlsContentModel.OverlayPanelState panelState = projection.overlayPanelState();
-        overlayTrigger.setText(panelState.triggerText());
-        selectOverlayMode(overlayModeSelector, panelState.modeKey());
-        if (overlayRangeSpinner.getValueFactory() != null) {
-            overlayRangeSpinner.getValueFactory().setValue(panelState.levelRange());
+        private MapControls(boolean[] rendering) {
+            this.rendering = rendering;
+            configureMapSelector();
+            configureMapActions();
+            HBox.setHgrow(mapSelector, Priority.ALWAYS);
         }
-        overlayOpacitySlider.setValue(panelState.opacityPercent());
-        overlayOpacityLabel.setText(Math.round(panelState.opacityPercent()) + "%");
-        selectedLevelsField.setText(panelState.selectedLevelsText());
-        overlayModeSelector.setDisable(panelState.controlsDisabled());
-        overlayOpacitySlider.setDisable(panelState.controlsDisabled());
-        overlayRangeRow.setVisible(panelState.rangeVisible());
-        overlayRangeRow.setManaged(panelState.rangeVisible());
-        selectedLevelsRow.setVisible(panelState.selectedVisible());
-        selectedLevelsRow.setManaged(panelState.selectedVisible());
-        overlayRangeSpinner.setDisable(panelState.controlsDisabled() || !panelState.rangeVisible());
-        selectedLevelsField.setDisable(panelState.controlsDisabled() || !panelState.selectedVisible());
+
+        private HBox row() {
+            return row;
+        }
+
+        private void bind(DungeonEditorControlsContentModel contentModel) {
+            contentModel.mapProjectionProperty().addListener((ignored, before, after) -> show(after));
+            show(contentModel.mapProjectionProperty().get());
+        }
+
+        private void configureMapSelector() {
+            mapSelector.setConverter(new MapItemStringConverter());
+            mapSelector.setMaxWidth(Double.MAX_VALUE);
+            mapSelector.setMinWidth(0.0);
+            mapSelector.setPromptText("Dungeon auswählen");
+            mapSelector.setAccessibleText("Dungeon auswählen");
+            selectedItemProperty(mapSelector).addListener((ignored, before, after) -> {
+                DungeonEditorControlsContentModel.MapItem selectedItem = asMapItem(after);
+                if (!rendering[0] && selectedItem != null) {
+                    emitMapSelection(selectedItem.mapId());
+                }
+            });
+        }
+
+        private void configureMapActions() {
+            mapActionButton.setText("Neu");
+            replaceMenuItems(mapActionButton, editMapItem, deleteMapItem);
+            mapActionButton.setMinWidth(USE_PREF_SIZE);
+            mapActionButton.setAccessibleText("Neuen Dungeon erstellen; weitere Dungeon-Aktionen im Menü");
+            mapActionButton.setOnAction(event -> emitMapEditorInput(
+                    rendering, "", true, false, false, false, false, false));
+            editMapItem.setOnAction(event -> emitMapEditorInput(
+                    rendering, "", false, true, false, false, false, false));
+            deleteMapItem.setOnAction(event -> emitMapEditorInput(
+                    rendering, "", false, false, true, false, false, false));
+        }
+
+        private void show(DungeonEditorControlsContentModel.MapProjection projection) {
+            DungeonEditorControlsContentModel.MapProjection safeProjection = projection;
+            List<DungeonEditorControlsContentModel.MapItem> safeMaps = safeProjection.maps();
+            rendering[0] = true;
+            replaceComboItems(mapSelector, safeMaps);
+            selectMapItem(mapSelector, resolveSelected(safeMaps, safeProjection.selectedKey()));
+            rendering[0] = false;
+            mapSelector.setDisable(safeProjection.busy() || safeMaps.isEmpty());
+            mapActionButton.setDisable(safeProjection.busy());
+            boolean selectionMissing = selectedComboItem(mapSelector) == null;
+            editMapItem.setDisable(safeProjection.busy() || selectionMissing);
+            deleteMapItem.setDisable(safeProjection.busy() || selectionMissing);
+            setTextVisibility(statusLabel, safeProjection.statusText(), !safeProjection.statusText().isBlank());
+        }
     }
 
-    private static void showTool(
-            DungeonEditorControlsContentModel.ToolProjection projection,
-            DungeonEditorControlsContentModel.ToolControls toolControls,
-            ToggleButton selectButton,
-            Button roomButton,
-            Button roomDeleteButton,
-            Button wallButton,
-            Button wallDeleteButton,
-            Button doorButton,
-            Button doorDeleteButton,
-            Button corridorButton,
-            Button corridorDeleteButton
-    ) {
-        String defaultToolLabel = toolControls.defaultTool();
-        String selectedTool = projection == null ? defaultToolLabel : projection.selectedTool();
-        selectButton.setSelected(defaultToolLabel.equals(selectedTool));
-        markSelected(roomButton, selectedTool, toolControls.room().selectedLabel());
-        markSelected(roomDeleteButton, selectedTool, toolControls.roomDelete().selectedLabel());
-        markSelected(wallButton, selectedTool, toolControls.wall().selectedLabel());
-        markSelected(wallDeleteButton, selectedTool, toolControls.wallDelete().selectedLabel());
-        markSelected(doorButton, selectedTool, toolControls.door().selectedLabel());
-        markSelected(doorDeleteButton, selectedTool, toolControls.doorDelete().selectedLabel());
-        markSelected(corridorButton, selectedTool, toolControls.corridor().selectedLabel());
-        markSelected(corridorDeleteButton, selectedTool, toolControls.corridorDelete().selectedLabel());
+    private final class MapEditorSection {
+
+        private final boolean[] rendering;
+        private final VBox container = styled(
+                new VBox(4),
+                "dropdown-window",
+                "dropdown-form",
+                "dungeon-editor-popup");
+        private final Label title = new Label();
+        private final TextField draftField = new TextField();
+        private final Label errorLabel = mutedLabel("");
+        private final Button cancelButton = new Button("Abbrechen");
+        private final Button saveButton = new Button("Speichern");
+        private final Button confirmDeleteButton = new Button("Löschen");
+
+        private MapEditorSection(boolean[] rendering) {
+            this.rendering = rendering;
+            Label draftLabel = new Label("Name");
+            draftLabel.setLabelFor(draftField);
+            draftField.setAccessibleText("Dungeon-Name");
+            replaceChildren(container, title, draftLabel, draftField, errorLabel, row(cancelButton, saveButton, confirmDeleteButton));
+            setNodeVisibility(container, false);
+        }
+
+        private VBox node() {
+            return container;
+        }
+
+        private void bind(DungeonEditorControlsContentModel contentModel) {
+            draftField.textProperty().addListener((ignored, before, after) ->
+                    emitMapEditorInput(rendering, after, false, false, false, false, false, false));
+            cancelButton.setOnAction(event -> emitMapEditorInput(
+                    rendering, draftField.getText(), false, false, false, true, false, false));
+            saveButton.setOnAction(event -> emitMapEditorInput(
+                    rendering, draftField.getText(), false, false, false, false, true, false));
+            confirmDeleteButton.setOnAction(event -> emitMapEditorInput(
+                    rendering, draftField.getText(), false, false, false, false, false, true));
+            contentModel.mapEditorProperty().addListener((ignored, before, after) -> show(after));
+            show(contentModel.mapEditorProperty().get());
+        }
+
+        private void show(DungeonEditorControlsContentModel.MapEditorUiState state) {
+            DungeonEditorControlsContentModel.MapEditorUiState resolvedState = state;
+            setNodeVisibility(container, resolvedState.visible());
+            title.setText(resolvedState.title());
+            rendering[0] = true;
+            draftField.setText(resolvedState.draftName());
+            rendering[0] = false;
+            setNodeVisibility(draftField, resolvedState.draftFieldVisible());
+            setNodeVisibility(saveButton, resolvedState.submitVisible());
+            saveButton.setText(resolvedState.submitLabel());
+            setNodeVisibility(confirmDeleteButton, resolvedState.deleteConfirmationVisible());
+            setTextVisibility(errorLabel, resolvedState.errorText(), !resolvedState.errorText().isBlank());
+        }
+    }
+
+    private final class ProjectionSection {
+
+        private final boolean[] rendering;
+        private final Label levelLabel = mutedLabel("Ebene z=0");
+        private final Button previousLevelButton = actionButton("-");
+        private final Button nextLevelButton = actionButton("+");
+        private final ToggleButton gridButton;
+        private final ToggleButton graphButton;
+        private final Button overlayTrigger = actionButton("Overlay: Aus");
+        private final ComboBox<Object> overlayModeSelector = new ComboBox<>();
+        private final Spinner<Integer> overlayRangeSpinner = new Spinner<>(1, 6, 2);
+        private final Slider overlayOpacitySlider = new Slider(10, 90, 35);
+        private final Label overlayOpacityLabel = mutedLabel("35%");
+        private final TextField selectedLevelsField = new TextField();
+        private final HBox overlayRangeRow = DungeonEditorControlsView.row(new Label("Umfang"), overlayRangeSpinner);
+        private final HBox selectedLevelsRow = DungeonEditorControlsView.row(new Label("Ebenen"), selectedLevelsField);
+        private final HBox row;
+        private final HBox overlayRow;
+
+        private ProjectionSection(
+                DungeonEditorControlsContentModel contentModel,
+                DungeonEditorControlsContentModel.ToolControls toolControls,
+                boolean[] rendering
+        ) {
+            this.rendering = rendering;
+            gridButton = toolToggle(toolControls.gridView());
+            graphButton = toolToggle(toolControls.graphView());
+            row = styled(
+                    DungeonEditorControlsView.row(
+                            styled(group(levelLabel, previousLevelButton, nextLevelButton), "dungeon-stepper-group"),
+                            styled(group(gridButton, graphButton), "dungeon-segment-group")),
+                    "dungeon-control-projection-row");
+            overlayRow = styled(
+                    DungeonEditorControlsView.row(
+                            overlayTrigger,
+                            overlayModeSelector,
+                            DungeonEditorControlsView.row(new Label("Staerke"), overlayOpacitySlider, overlayOpacityLabel),
+                            overlayRangeRow,
+                            selectedLevelsRow),
+                    "dungeon-overlay-content");
+            configureProjectionControls(toolControls);
+            configureOverlayControls(contentModel);
+        }
+
+        private HBox row() {
+            return row;
+        }
+
+        private HBox overlayRow() {
+            return overlayRow;
+        }
+
+        private void bind(DungeonEditorControlsContentModel contentModel) {
+            contentModel.projectionProperty().addListener((ignored, before, after) -> show(after));
+            show(contentModel.projectionProperty().get());
+        }
+
+        private void configureProjectionControls(DungeonEditorControlsContentModel.ToolControls toolControls) {
+            ToggleGroup viewModeGroup = new ToggleGroup();
+            previousLevelButton.setAccessibleText("Vorherige Dungeon-Ebene anzeigen");
+            nextLevelButton.setAccessibleText("Nächste Dungeon-Ebene anzeigen");
+            previousLevelButton.setOnAction(event -> emitProjectionShift(-1));
+            nextLevelButton.setOnAction(event -> emitProjectionShift(1));
+            gridButton.setToggleGroup(viewModeGroup);
+            graphButton.setToggleGroup(viewModeGroup);
+            gridButton.setSelected(true);
+            viewModeGroup.selectedToggleProperty().addListener((ignored, oldToggle, newToggle) ->
+                    handleViewModeChanged(rendering, oldToggle, newToggle, graphButton, gridButton, toolControls));
+        }
+
+        private void show(DungeonEditorControlsContentModel.ProjectionState projection) {
+            DungeonEditorControlsContentModel.ProjectionState safeProjection = projection;
+            levelLabel.setText("Ebene z=" + safeProjection.activeLevel());
+            previousLevelButton.setDisable(safeProjection.busy() || !safeProjection.navigationEnabled());
+            nextLevelButton.setDisable(safeProjection.busy() || !safeProjection.navigationEnabled());
+            rendering[0] = true;
+            graphButton.setSelected(safeProjection.graphViewSelected());
+            gridButton.setSelected(!safeProjection.graphViewSelected());
+            showOverlay(safeProjection.overlayPanelState());
+            rendering[0] = false;
+        }
+
+        private void configureOverlayControls(DungeonEditorControlsContentModel contentModel) {
+            replaceComboItems(overlayModeSelector, contentModel.overlayModeOptions());
+            overlayRangeSpinner.setEditable(true);
+            overlayOpacitySlider.setShowTickMarks(false);
+            overlayOpacitySlider.setShowTickLabels(false);
+            selectedLevelsField.setPromptText("-1, 1, 3");
+            selectedLevelsField.setPrefColumnCount(10);
+            overlayTrigger.setDisable(true);
+            ChangeListener<Object> overlayListener = (ignored, before, after) -> emitCurrentOverlay();
+            overlayModeSelector.valueProperty().addListener(overlayListener);
+            overlayRangeSpinner.valueProperty().addListener(overlayListener);
+            overlayOpacitySlider.valueProperty().addListener(overlayListener);
+            selectedLevelsField.setOnAction(event -> emitCurrentOverlay());
+        }
+
+        private void showOverlay(DungeonEditorControlsContentModel.OverlayPanelState panelState) {
+            overlayTrigger.setText(panelState.triggerText());
+            selectOverlayMode(overlayModeSelector, panelState.modeKey());
+            setSpinnerValue(overlayRangeSpinner, panelState.levelRange());
+            overlayOpacitySlider.setValue(panelState.opacityPercent());
+            overlayOpacityLabel.setText(panelState.opacityText());
+            selectedLevelsField.setText(panelState.selectedLevelsText());
+            overlayModeSelector.setDisable(panelState.controlsDisabled());
+            overlayOpacitySlider.setDisable(panelState.controlsDisabled());
+            setNodeVisibility(overlayRangeRow, panelState.rangeVisible());
+            setNodeVisibility(selectedLevelsRow, panelState.selectedVisible());
+            overlayRangeSpinner.setDisable(panelState.controlsDisabled() || !panelState.rangeVisible());
+            selectedLevelsField.setDisable(panelState.controlsDisabled() || !panelState.selectedVisible());
+        }
+
+        private void emitCurrentOverlay() {
+            emitOverlayInput(
+                    rendering,
+                    selectedOverlayModeKey(overlayModeSelector),
+                    spinnerValue(overlayRangeSpinner),
+                    overlayOpacitySlider.getValue() / 100.0,
+                    selectedLevelsField.getText());
+        }
+    }
+
+    private final class ToolSection {
+
+        private final ToggleButton selectButton;
+        private final Button roomButton;
+        private final Button roomDeleteButton;
+        private final Button wallButton;
+        private final Button wallDeleteButton;
+        private final Button doorButton;
+        private final Button doorDeleteButton;
+        private final Button corridorButton;
+        private final Button corridorDeleteButton;
+        private final HBox row;
+
+        private ToolSection(DungeonEditorControlsContentModel.ToolControls toolControls) {
+            selectButton = toolToggle(toolControls.select().label());
+            roomButton = toolButton(toolControls.room().label());
+            roomDeleteButton = toolButton(toolControls.roomDelete().label());
+            wallButton = toolButton(toolControls.wall().label());
+            wallDeleteButton = toolButton(toolControls.wallDelete().label());
+            doorButton = toolButton(toolControls.door().label());
+            doorDeleteButton = toolButton(toolControls.doorDelete().label());
+            corridorButton = toolButton(toolControls.corridor().label());
+            corridorDeleteButton = toolButton(toolControls.corridorDelete().label());
+            row = styled(
+                    DungeonEditorControlsView.row(
+                            selectButton,
+                            roomButton,
+                            roomDeleteButton,
+                            wallButton,
+                            wallDeleteButton,
+                            doorButton,
+                            doorDeleteButton,
+                            corridorButton,
+                            corridorDeleteButton),
+                    "dungeon-control-tool-row");
+            configureToolControls(toolControls);
+        }
+
+        private HBox row() {
+            return row;
+        }
+
+        private void bind(
+                DungeonEditorControlsContentModel contentModel,
+                DungeonEditorControlsContentModel.ToolControls toolControls
+        ) {
+            contentModel.toolProjectionProperty().addListener((ignored, before, after) -> show(after, toolControls));
+            show(contentModel.toolProjectionProperty().get(), toolControls);
+        }
+
+        private void configureToolControls(DungeonEditorControlsContentModel.ToolControls toolControls) {
+            ToggleGroup toolGroup = new ToggleGroup();
+            selectButton.setToggleGroup(toolGroup);
+            selectButton.setSelected(true);
+            selectButton.setAccessibleText("Auswahlwerkzeug aktivieren");
+            roomButton.setAccessibleText("Raumwerkzeug wählen");
+            roomDeleteButton.setAccessibleText("Raum löschen wählen");
+            wallButton.setAccessibleText("Wandwerkzeug wählen");
+            wallDeleteButton.setAccessibleText("Wand löschen wählen");
+            doorButton.setAccessibleText("Türwerkzeug wählen");
+            doorDeleteButton.setAccessibleText("Tür löschen wählen");
+            corridorButton.setAccessibleText("Korridorwerkzeug wählen");
+            corridorDeleteButton.setAccessibleText("Korridor löschen wählen");
+            selectButton.setOnAction(event -> emitToolSelection(toolControls.select().key()));
+            roomButton.setOnAction(event -> emitToolSelection(toolControls.room().key()));
+            roomDeleteButton.setOnAction(event -> emitToolSelection(toolControls.roomDelete().key()));
+            wallButton.setOnAction(event -> emitToolSelection(toolControls.wall().key()));
+            wallDeleteButton.setOnAction(event -> emitToolSelection(toolControls.wallDelete().key()));
+            doorButton.setOnAction(event -> emitToolSelection(toolControls.door().key()));
+            doorDeleteButton.setOnAction(event -> emitToolSelection(toolControls.doorDelete().key()));
+            corridorButton.setOnAction(event -> emitToolSelection(toolControls.corridor().key()));
+            corridorDeleteButton.setOnAction(event -> emitToolSelection(toolControls.corridorDelete().key()));
+        }
+
+        private void show(
+                DungeonEditorControlsContentModel.ToolProjection projection,
+                DungeonEditorControlsContentModel.ToolControls toolControls
+        ) {
+            String defaultToolLabel = toolControls.defaultTool();
+            String selectedTool = projection == null ? defaultToolLabel : projection.selectedTool();
+            selectButton.setSelected(defaultToolLabel.equals(selectedTool));
+            markSelected(roomButton, selectedTool, toolControls.room().selectedLabel());
+            markSelected(roomDeleteButton, selectedTool, toolControls.roomDelete().selectedLabel());
+            markSelected(wallButton, selectedTool, toolControls.wall().selectedLabel());
+            markSelected(wallDeleteButton, selectedTool, toolControls.wallDelete().selectedLabel());
+            markSelected(doorButton, selectedTool, toolControls.door().selectedLabel());
+            markSelected(doorDeleteButton, selectedTool, toolControls.doorDelete().selectedLabel());
+            markSelected(corridorButton, selectedTool, toolControls.corridor().selectedLabel());
+            markSelected(corridorDeleteButton, selectedTool, toolControls.corridorDelete().selectedLabel());
+        }
     }
 
     private void handleViewModeChanged(
+            boolean[] rendering,
             Toggle oldToggle,
             Toggle newToggle,
             ToggleButton graphButton,
             ToggleButton gridButton,
             DungeonEditorControlsContentModel.ToolControls toolControls
     ) {
+        if (rendering[0]) {
+            return;
+        }
         if (newToggle == null) {
             if (oldToggle != null) {
                 oldToggle.setSelected(true);
             }
             return;
         }
-        emitViewMode(graphButton.equals(newToggle)
-                ? toolControls.graphView()
-                : toolControls.gridView());
-        gridButton.setSelected(!graphButton.equals(newToggle));
+        if (newToggle.equals(graphButton)) {
+            emitViewMode(toolControls.graphView());
+            return;
+        }
+        gridButton.setSelected(true);
+        emitViewMode(toolControls.gridView());
     }
 
     private void emitMapSelection(long selectedMapIdValue) {
@@ -644,51 +502,46 @@ public final class DungeonEditorControlsView extends VBox {
                 new DungeonEditorControlsViewInputEvent.OverlaySnapshot(modeKey, levelRange, opacity, selectedLevelsText)));
     }
 
-    private static ComboBox<DungeonEditorControlsContentModel.MapItem> mapSelector() {
+    private static ComboBox<Object> mapSelector() {
         return new ComboBox<>();
     }
 
-    private static HBox row(javafx.scene.Node... nodes) {
+    private static HBox row(Node... nodes) {
         HBox row = new HBox(6, nodes);
-        row.getStyleClass().add("dungeon-control-row");
+        styled(row, "dungeon-control-row");
         row.setAlignment(Pos.CENTER_LEFT);
         row.setMaxWidth(Double.MAX_VALUE);
         return row;
     }
 
-    private static HBox group(javafx.scene.Node... nodes) {
+    private static HBox group(Node... nodes) {
         HBox group = new HBox(0, nodes);
-        group.getStyleClass().add("dungeon-control-group");
+        styled(group, "dungeon-control-group");
         group.setAlignment(Pos.CENTER_LEFT);
         group.setMaxWidth(USE_PREF_SIZE);
         return group;
     }
 
     private static Button actionButton(String text) {
-        Button button = new Button(text);
-        button.getStyleClass().add("toolbar-action-button");
+        Button button = styled(new Button(text), "toolbar-action-button");
         button.setMinWidth(USE_PREF_SIZE);
         return button;
     }
 
     private static ToggleButton toolToggle(String text) {
-        ToggleButton button = new ToggleButton(text);
-        button.getStyleClass().add("tool-btn");
+        ToggleButton button = styled(new ToggleButton(text), "tool-btn");
         button.setMinWidth(USE_PREF_SIZE);
         return button;
     }
 
     private static Button toolButton(String text) {
-        Button button = new Button(text);
-        button.getStyleClass().add("tool-btn");
+        Button button = styled(new Button(text), "tool-btn");
         button.setMinWidth(USE_PREF_SIZE);
         return button;
     }
 
     private static Label mutedLabel(String text) {
-        Label label = new Label(text == null ? "" : text);
-        label.getStyleClass().add("text-muted");
-        return label;
+        return styled(new Label(text == null ? "" : text), "text-muted");
     }
 
     private static DungeonEditorControlsContentModel.@Nullable MapItem resolveSelected(
@@ -704,35 +557,129 @@ public final class DungeonEditorControlsView extends VBox {
     }
 
     private static void selectOverlayMode(
-            ComboBox<DungeonEditorControlsContentModel.OverlayModeOption> modeSelector,
+            ComboBox<Object> modeSelector,
             String modeKey
     ) {
-        for (DungeonEditorControlsContentModel.OverlayModeOption option : modeSelector.getItems()) {
+        for (Object item : comboItems(modeSelector)) {
+            DungeonEditorControlsContentModel.OverlayModeOption option = asOverlayModeOption(item);
             if (option.key().equals(modeKey)) {
                 modeSelector.setValue(option);
                 return;
             }
         }
-        if (!modeSelector.getItems().isEmpty()) {
-            modeSelector.setValue(modeSelector.getItems().get(0));
+        DungeonEditorControlsContentModel.OverlayModeOption firstOption =
+                asOverlayModeOption(firstComboItem(modeSelector));
+        if (firstOption != null) {
+            modeSelector.setValue(firstOption);
         }
     }
 
     private static String selectedOverlayModeKey(
-            ComboBox<DungeonEditorControlsContentModel.OverlayModeOption> modeSelector
+            ComboBox<Object> modeSelector
     ) {
-        DungeonEditorControlsContentModel.OverlayModeOption option = modeSelector.getValue();
+        DungeonEditorControlsContentModel.OverlayModeOption option = asOverlayModeOption(comboValue(modeSelector));
         return option == null ? "" : option.key();
     }
 
     private static void markSelected(Button button, String selectedTool, String label) {
         boolean selected = label.equals(selectedTool);
-        if (selected && !button.getStyleClass().contains("selected")) {
-            button.getStyleClass().add("selected");
-        }
-        if (!selected) {
-            button.getStyleClass().remove("selected");
-        }
+        setStyleClassPresence(button, "selected", selected);
         button.setAccessibleText(button.getText() + (selected ? " aktiv" : " inaktiv"));
+    }
+
+    private static void setTextVisibility(Label label, String text, boolean visible) {
+        label.setText(text);
+        setNodeVisibility(label, visible);
+    }
+
+    private static void setNodeVisibility(Node node, boolean visible) {
+        node.setVisible(visible);
+        node.setManaged(visible);
+    }
+
+    private static <T extends Node> T styled(T node, String... styleClasses) {
+        node.getStyleClass().addAll(styleClasses);
+        return node;
+    }
+
+    private static void setStyleClassPresence(Node node, String styleClass, boolean present) {
+        if (present && !node.getStyleClass().contains(styleClass)) {
+            node.getStyleClass().add(styleClass);
+        }
+        if (!present) {
+            node.getStyleClass().remove(styleClass);
+        }
+    }
+
+    private static void replaceChildren(Pane pane, Node... nodes) {
+        pane.getChildren().setAll(nodes);
+    }
+
+    private static void replaceMenuItems(SplitMenuButton button, MenuItem... menuItems) {
+        button.getItems().setAll(menuItems);
+    }
+
+    private static <T> void replaceComboItems(ComboBox<T> comboBox, List<? extends T> items) {
+        comboBox.getItems().setAll(items);
+    }
+
+    private static <T> List<T> comboItems(ComboBox<T> comboBox) {
+        return comboBox.getItems();
+    }
+
+    private static <T> @Nullable T firstComboItem(ComboBox<T> comboBox) {
+        return comboBox.getItems().isEmpty() ? null : comboBox.getItems().get(0);
+    }
+
+    private static <T> void selectMapItem(ComboBox<T> comboBox, @Nullable T selectedItem) {
+        comboBox.getSelectionModel().select(selectedItem);
+    }
+
+    private static <T> @Nullable T selectedComboItem(ComboBox<T> comboBox) {
+        return comboBox.getSelectionModel().getSelectedItem();
+    }
+
+    private static <T> ObservableValue<T> selectedItemProperty(ComboBox<T> comboBox) {
+        return comboBox.getSelectionModel().selectedItemProperty();
+    }
+
+    private static void setSpinnerValue(Spinner<Integer> spinner, int value) {
+        if (spinner.getValueFactory() != null) {
+            spinner.getValueFactory().setValue(value);
+        }
+    }
+
+    private static <T> @Nullable T comboValue(ComboBox<T> comboBox) {
+        return comboBox.getValue();
+    }
+
+    private static int spinnerValue(Spinner<Integer> spinner) {
+        Integer value = spinner.getValue();
+        return value == null ? 0 : value;
+    }
+
+    private static DungeonEditorControlsContentModel.@Nullable MapItem asMapItem(@Nullable Object value) {
+        return value instanceof DungeonEditorControlsContentModel.MapItem mapItem ? mapItem : null;
+    }
+
+    private static DungeonEditorControlsContentModel.@Nullable OverlayModeOption asOverlayModeOption(
+            @Nullable Object value
+    ) {
+        return value instanceof DungeonEditorControlsContentModel.OverlayModeOption option ? option : null;
+    }
+
+    private static final class MapItemStringConverter
+            extends StringConverter<Object> {
+
+        @Override
+        public String toString(Object item) {
+            DungeonEditorControlsContentModel.MapItem mapItem = asMapItem(item);
+            return mapItem == null ? "" : mapItem.mapName();
+        }
+
+        @Override
+        public @Nullable Object fromString(String string) {
+            return null;
+        }
     }
 }
