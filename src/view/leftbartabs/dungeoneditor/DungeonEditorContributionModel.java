@@ -63,7 +63,6 @@ public final class DungeonEditorContributionModel {
         ControlsProjection safeProjection = projection == null
                 ? ControlsProjection.initial()
                 : projection;
-        OverlayProjection overlay = safeProjection.overlayProjection();
         contentModel.showControls(
                 safeProjection.mapEntries().stream()
                         .map(entry -> new DungeonEditorControlsContentModel.MapItem(
@@ -77,13 +76,7 @@ public final class DungeonEditorContributionModel {
                 safeProjection.busy(),
                 safeProjection.statusText(),
                 safeProjection.viewModeLabel(),
-                overlay == null
-                        ? DungeonEditorControlsContentModel.OverlaySettings.defaults()
-                        : new DungeonEditorControlsContentModel.OverlaySettings(
-                                overlay.modeKey(),
-                                overlay.levelRange(),
-                                overlay.opacity(),
-                                overlay.selectedLevels()),
+                safeProjection.overlaySettings(),
                 safeProjection.projectionLevel(),
                 safeProjection.selectedToolLabel());
     }
@@ -109,6 +102,9 @@ public final class DungeonEditorContributionModel {
             String viewModeLabel = DungeonEditorControlsContentModel.ToolCatalog.labelOf(safeSource.viewMode());
             String selectedToolLabel = DungeonEditorControlsContentModel.ToolCatalog.labelOf(safeSource.selectedTool());
             String statusText = statusTextFor(safeSource, mapEntries);
+            DungeonOverlaySettings overlaySettings = safeSource.overlaySettings() == null
+                    ? DungeonOverlaySettings.defaults()
+                    : safeSource.overlaySettings();
             long selectedMapIdValue = safeSource.selectedMapId() == null
                     ? NO_MAP_ID
                     : safeSource.selectedMapId().value();
@@ -119,7 +115,7 @@ public final class DungeonEditorContributionModel {
                     false,
                     statusText,
                     viewModeLabel,
-                    overlayProjection,
+                    overlaySettings,
                     clampedProjectionLevel,
                     selectedToolLabel);
             DungeonEditorStateContentModel.StateProjectionContext stateContext =
@@ -230,7 +226,7 @@ public final class DungeonEditorContributionModel {
             boolean busy,
             String statusText,
             String viewModeLabel,
-            OverlayProjection overlayProjection,
+            DungeonOverlaySettings overlaySettings,
             int projectionLevel,
             String selectedToolLabel
     ) {
@@ -240,9 +236,7 @@ public final class DungeonEditorContributionModel {
             reachableLevels = reachableLevels == null ? List.of(0) : List.copyOf(reachableLevels);
             statusText = statusText == null ? "" : statusText;
             viewModeLabel = DungeonEditorControlsContentModel.ToolCatalog.normalizeViewModeKey(viewModeLabel);
-            overlayProjection = overlayProjection == null
-                    ? OverlayProjection.from(DungeonOverlaySettings.defaults())
-                    : overlayProjection;
+            overlaySettings = overlaySettings == null ? DungeonOverlaySettings.defaults() : overlaySettings;
             projectionLevel = Math.max(0, projectionLevel);
             selectedToolLabel = selectedToolLabel == null
                     ? DungeonEditorControlsContentModel.ToolCatalog.DEFAULT_TOOL_LABEL
@@ -257,7 +251,7 @@ public final class DungeonEditorContributionModel {
                     false,
                     "",
                     DungeonEditorControlsContentModel.ToolCatalog.GRID_VIEW_LABEL,
-                    OverlayProjection.from(DungeonOverlaySettings.defaults()),
+                    DungeonOverlaySettings.defaults(),
                     0,
                     DungeonEditorControlsContentModel.ToolCatalog.DEFAULT_TOOL_LABEL);
         }

@@ -10,6 +10,7 @@ import javafx.beans.property.ReadOnlyObjectWrapper;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.published.DungeonEditorTool;
 import src.domain.dungeon.published.DungeonEditorViewMode;
+import src.domain.dungeon.published.DungeonOverlaySettings;
 
 final class DungeonEditorControlsContentModel {
 
@@ -50,7 +51,7 @@ final class DungeonEditorControlsContentModel {
             boolean busy,
             String statusText,
             String viewMode,
-            OverlaySettings overlaySettings,
+            DungeonOverlaySettings overlaySettings,
             int projectionLevel,
             String selectedTool
     ) {
@@ -270,24 +271,6 @@ final class DungeonEditorControlsContentModel {
         }
     }
 
-    record OverlaySettings(
-            String modeKey,
-            int levelRange,
-            double opacity,
-            List<Integer> selectedLevels
-    ) {
-        OverlaySettings {
-            modeKey = normalizeModeKey(modeKey);
-            levelRange = Math.max(1, levelRange);
-            opacity = Math.max(0.1, Math.min(0.9, opacity));
-            selectedLevels = selectedLevels == null ? List.of() : List.copyOf(selectedLevels);
-        }
-
-        static OverlaySettings defaults() {
-            return new OverlaySettings(MODE_OFF, 2, 0.35, List.of());
-        }
-    }
-
     record OverlayModeOption(
             String key,
             String label,
@@ -315,13 +298,13 @@ final class DungeonEditorControlsContentModel {
             boolean controlsDisabled,
             String triggerText
     ) {
-        static OverlayPanelState from(OverlaySettings settings, boolean disabled) {
-            OverlaySettings safeSettings = settings == null ? OverlaySettings.defaults() : settings;
-            String safeModeKey = normalizeModeKey(safeSettings.modeKey());
+        static OverlayPanelState from(DungeonOverlaySettings settings, boolean disabled) {
+            DungeonOverlaySettings safeSettings = settings == null ? DungeonOverlaySettings.defaults() : settings;
+            String safeModeKey = normalizedOverlayMode(safeSettings);
             return new OverlayPanelState(
                     safeModeKey,
-                    safeSettings.levelRange(),
-                    safeSettings.opacity() * 100.0,
+                    safeOverlayRange(safeSettings),
+                    safeOverlayOpacity(safeSettings) * 100.0,
                     selectedLevelList(safeSettings.selectedLevels()),
                     MODE_NEARBY.equals(safeModeKey),
                     MODE_SELECTED.equals(safeModeKey),
@@ -334,14 +317,14 @@ final class DungeonEditorControlsContentModel {
             int activeLevel,
             boolean busy,
             boolean navigationEnabled,
-            OverlaySettings overlaySettings,
+            DungeonOverlaySettings overlaySettings,
             OverlayPanelState overlayPanelState,
             boolean overlayDisabled,
             String viewMode
     ) {
         ProjectionState {
             activeLevel = Math.max(0, activeLevel);
-            overlaySettings = overlaySettings == null ? OverlaySettings.defaults() : overlaySettings;
+            overlaySettings = overlaySettings == null ? DungeonOverlaySettings.defaults() : overlaySettings;
             overlayPanelState = overlayPanelState == null
                     ? OverlayPanelState.from(overlaySettings, overlayDisabled)
                     : overlayPanelState;
@@ -353,8 +336,8 @@ final class DungeonEditorControlsContentModel {
                     0,
                     false,
                     false,
-                    OverlaySettings.defaults(),
-                    OverlayPanelState.from(OverlaySettings.defaults(), false),
+                    DungeonOverlaySettings.defaults(),
+                    OverlayPanelState.from(DungeonOverlaySettings.defaults(), false),
                     false,
                     ToolCatalog.GRID_VIEW_LABEL);
         }
@@ -454,16 +437,16 @@ final class DungeonEditorControlsContentModel {
 
     }
 
-    private static String triggerSummary(OverlaySettings settings) {
-        OverlaySettings resolvedSettings = settings == null ? OverlaySettings.defaults() : settings;
-        String key = normalizeModeKey(resolvedSettings.modeKey());
+    private static String triggerSummary(DungeonOverlaySettings settings) {
+        DungeonOverlaySettings resolvedSettings = settings == null ? DungeonOverlaySettings.defaults() : settings;
+        String key = normalizedOverlayMode(resolvedSettings);
         if (MODE_NEARBY.equals(key)) {
-            return "Overlay: Nachbarn +/-" + resolvedSettings.levelRange()
-                    + " " + opacityText(resolvedSettings.opacity());
+            return "Overlay: Nachbarn +/-" + safeOverlayRange(resolvedSettings)
+                    + " " + opacityText(safeOverlayOpacity(resolvedSettings));
         }
         if (MODE_SELECTED.equals(key)) {
             return "Overlay: Auswahl z=" + selectedLevelSummary(resolvedSettings.selectedLevels())
-                    + " " + opacityText(resolvedSettings.opacity());
+                    + " " + opacityText(safeOverlayOpacity(resolvedSettings));
         }
         return "Overlay: Aus";
     }
@@ -485,7 +468,21 @@ final class DungeonEditorControlsContentModel {
         return Math.round(opacity * 100.0) + "%";
     }
 
-    private static String normalizeModeKey(String modeKey) {
+    private static String normalizedOverlayMode(DungeonOverlaySettings settings) {
+        return normalizeModeKey(settings == null ? null : settings.modeKey());
+    }
+
+    private static int safeOverlayRange(DungeonOverlaySettings settings) {
+        DungeonOverlaySettings safeSettings = settings == null ? DungeonOverlaySettings.defaults() : settings;
+        return Math.max(1, safeSettings.levelRange());
+    }
+
+    private static double safeOverlayOpacity(DungeonOverlaySettings settings) {
+        DungeonOverlaySettings safeSettings = settings == null ? DungeonOverlaySettings.defaults() : settings;
+        return Math.max(0.1, Math.min(0.9, safeSettings.opacity()));
+    }
+
+    private static String normalizeModeKey(@Nullable String modeKey) {
         if (MODE_NEARBY.equalsIgnoreCase(modeKey)) {
             return MODE_NEARBY;
         }

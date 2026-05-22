@@ -7,6 +7,8 @@ import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.ReadOnlyStringProperty;
 import javafx.beans.property.ReadOnlyStringWrapper;
+import org.jspecify.annotations.Nullable;
+import src.domain.dungeon.published.DungeonOverlaySettings;
 
 final class DungeonTravelControlsContentModel {
 
@@ -22,7 +24,7 @@ final class DungeonTravelControlsContentModel {
     private final ReadOnlyStringWrapper zoomLabel = new ReadOnlyStringWrapper("Zoom: 100%");
     private final ReadOnlyStringWrapper projectionLevelLabel = new ReadOnlyStringWrapper("Ebene z=0");
     private final ReadOnlyObjectWrapper<OverlayPanelState> overlayPanelState =
-            new ReadOnlyObjectWrapper<>(OverlayPanelState.from(OverlaySettings.defaults(), false));
+            new ReadOnlyObjectWrapper<>(OverlayPanelState.from(DungeonOverlaySettings.defaults(), false));
     private final ReadOnlyBooleanWrapper projectionNavigationDisabled = new ReadOnlyBooleanWrapper(false);
 
     ReadOnlyStringProperty mapNameProperty() {
@@ -64,8 +66,10 @@ final class DungeonTravelControlsContentModel {
         projectionLevelLabel.set("Ebene z=" + nextProjectionLevel);
     }
 
-    void showOverlaySettings(OverlaySettings nextOverlaySettings, boolean disabled) {
-        OverlaySettings safeSettings = nextOverlaySettings == null ? OverlaySettings.defaults() : nextOverlaySettings;
+    void showOverlaySettings(DungeonOverlaySettings nextOverlaySettings, boolean disabled) {
+        DungeonOverlaySettings safeSettings = nextOverlaySettings == null
+                ? DungeonOverlaySettings.defaults()
+                : nextOverlaySettings;
         overlayDisabled.set(disabled);
         applyOverlayPanelState(OverlayPanelState.from(safeSettings, disabled));
     }
@@ -76,7 +80,7 @@ final class DungeonTravelControlsContentModel {
 
     private void applyOverlayPanelState(OverlayPanelState nextState) {
         OverlayPanelState safeState = nextState == null
-                ? OverlayPanelState.from(OverlaySettings.defaults(), false)
+                ? OverlayPanelState.from(DungeonOverlaySettings.defaults(), false)
                 : nextState;
         overlayPanelState.set(safeState);
     }
@@ -94,25 +98,6 @@ final class DungeonTravelControlsContentModel {
         }
     }
 
-    record OverlaySettings(
-            String modeKey,
-            int levelRange,
-            double opacity,
-            List<Integer> selectedLevels
-    ) {
-
-        OverlaySettings {
-            modeKey = normalizeModeKey(modeKey);
-            levelRange = Math.max(1, levelRange);
-            opacity = Math.max(0.1, Math.min(0.9, opacity));
-            selectedLevels = selectedLevels == null ? List.of() : List.copyOf(selectedLevels);
-        }
-
-        static OverlaySettings defaults() {
-            return new OverlaySettings(MODE_OFF, 2, 0.35, List.of());
-        }
-    }
-
     record OverlayPanelState(
             String modeKey,
             int levelRange,
@@ -124,13 +109,13 @@ final class DungeonTravelControlsContentModel {
             String triggerText
     ) {
 
-        static OverlayPanelState from(OverlaySettings settings, boolean disabled) {
-            OverlaySettings safeSettings = settings == null ? OverlaySettings.defaults() : settings;
+        static OverlayPanelState from(DungeonOverlaySettings settings, boolean disabled) {
+            DungeonOverlaySettings safeSettings = settings == null ? DungeonOverlaySettings.defaults() : settings;
             String safeModeKey = normalizeModeKey(safeSettings.modeKey());
             return new OverlayPanelState(
                     safeModeKey,
-                    safeSettings.levelRange(),
-                    safeSettings.opacity() * 100.0,
+                    boundedOverlayRange(safeSettings),
+                    boundedOverlayOpacity(safeSettings) * 100.0,
                     OverlayText.selectedLevelList(safeSettings.selectedLevels()),
                     rangeMode(safeModeKey),
                     selectedLevelsMode(safeModeKey),
@@ -150,18 +135,15 @@ final class DungeonTravelControlsContentModel {
     private enum OverlayText {
         ;
 
-        private static String triggerSummary(OverlaySettings settings) {
-            OverlaySettings resolvedSettings = settings == null ? OverlaySettings.defaults() : settings;
-            String key = normalizeModeKey(resolvedSettings.modeKey());
-            if (MODE_NEARBY.equals(key)) {
-                return "Overlay: Nachbarn +/-" + resolvedSettings.levelRange()
-                        + " " + opacityText(resolvedSettings.opacity());
-            }
-            if (MODE_SELECTED.equals(key)) {
-                return "Overlay: Auswahl z=" + selectedLevelSummary(resolvedSettings.selectedLevels())
-                        + " " + opacityText(resolvedSettings.opacity());
-            }
-            return "Overlay: Aus";
+        private static String triggerSummary(DungeonOverlaySettings settings) {
+            DungeonOverlaySettings resolvedSettings = settings == null ? DungeonOverlaySettings.defaults() : settings;
+            String percentText = opacityText(boundedOverlayOpacity(resolvedSettings));
+            return switch (normalizeModeKey(resolvedSettings.modeKey())) {
+                case MODE_NEARBY -> "Overlay: Nachbarn +/-" + boundedOverlayRange(resolvedSettings) + " " + percentText;
+                case MODE_SELECTED -> "Overlay: Auswahl z="
+                        + selectedLevelSummary(resolvedSettings.selectedLevels()) + " " + percentText;
+                default -> "Overlay: Aus";
+            };
         }
 
         private static String selectedLevelList(List<Integer> levels) {
@@ -189,7 +171,17 @@ final class DungeonTravelControlsContentModel {
         }
     }
 
-    private static String normalizeModeKey(String modeKey) {
+    private static int boundedOverlayRange(DungeonOverlaySettings settings) {
+        DungeonOverlaySettings safeSettings = settings == null ? DungeonOverlaySettings.defaults() : settings;
+        return Math.max(1, safeSettings.levelRange());
+    }
+
+    private static double boundedOverlayOpacity(DungeonOverlaySettings settings) {
+        DungeonOverlaySettings safeSettings = settings == null ? DungeonOverlaySettings.defaults() : settings;
+        return Math.max(0.1, Math.min(0.9, safeSettings.opacity()));
+    }
+
+    private static String normalizeModeKey(@Nullable String modeKey) {
         if (MODE_NEARBY.equalsIgnoreCase(modeKey)) {
             return MODE_NEARBY;
         }

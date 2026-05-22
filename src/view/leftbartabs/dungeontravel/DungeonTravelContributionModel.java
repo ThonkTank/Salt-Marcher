@@ -156,15 +156,11 @@ public final class DungeonTravelContributionModel {
                 projection.descriptionText());
     }
 
-    private static DungeonTravelControlsContentModel.OverlaySettings toControlsOverlaySettings(
+    private static DungeonOverlaySettings toControlsOverlaySettings(
             OverlayProjection projection
     ) {
         OverlayProjection resolved = projection == null ? OverlayProjection.defaults() : projection;
-        return new DungeonTravelControlsContentModel.OverlaySettings(
-                resolved.modeKey(),
-                resolved.levelRange(),
-                resolved.opacity(),
-                resolved.selectedLevels());
+        return resolved.overlaySettings();
     }
 
     static final class OverlayProjection {
@@ -173,21 +169,24 @@ public final class DungeonTravelContributionModel {
         private final int levelRange;
         private final double opacity;
         private final List<Integer> selectedLevels;
+        private final DungeonOverlaySettings overlaySettings;
 
         private OverlayProjection(
                 OverlayMode mode,
                 int levelRange,
                 double opacity,
-                List<Integer> selectedLevels
+                List<Integer> selectedLevels,
+                DungeonOverlaySettings overlaySettings
         ) {
             this.mode = OverlayMode.safe(mode);
             this.levelRange = Math.max(0, levelRange);
             this.opacity = Math.max(0.0, Math.min(1.0, opacity));
             this.selectedLevels = selectedLevels == null ? List.of() : List.copyOf(selectedLevels);
+            this.overlaySettings = overlaySettings == null ? DungeonOverlaySettings.defaults() : overlaySettings;
         }
 
         static OverlayProjection defaults() {
-            return new OverlayProjection(OverlayMode.OFF, 2, 0.35, List.of());
+            return from(DungeonOverlaySettings.defaults());
         }
 
         static OverlayProjection from(DungeonOverlaySettings overlaySettings) {
@@ -197,7 +196,8 @@ public final class DungeonTravelContributionModel {
                     OverlayMode.fromKey(safeOverlay.modeKey()),
                     safeOverlay.levelRange(),
                     safeOverlay.opacity(),
-                    safeOverlay.selectedLevels());
+                    safeOverlay.selectedLevels(),
+                    safeOverlay);
         }
 
         String modeKey() {
@@ -218,6 +218,10 @@ public final class DungeonTravelContributionModel {
 
         List<Integer> selectedLevels() {
             return selectedLevels;
+        }
+
+        DungeonOverlaySettings overlaySettings() {
+            return overlaySettings;
         }
 
     }
