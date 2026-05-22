@@ -1,12 +1,9 @@
 package src.view.leftbartabs.dungeoneditor;
 
-import java.util.Arrays;
 import java.util.Comparator;
 import java.util.EnumMap;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Collectors;
 import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.ReadOnlyObjectWrapper;
@@ -325,11 +322,11 @@ final class DungeonEditorControlsContentModel {
                     safeModeKey,
                     safeSettings.levelRange(),
                     safeSettings.opacity() * 100.0,
-                    OverlayText.selectedLevelList(safeSettings.selectedLevels()),
+                    selectedLevelList(safeSettings.selectedLevels()),
                     MODE_NEARBY.equals(safeModeKey),
                     MODE_SELECTED.equals(safeModeKey),
                     disabled,
-                    OverlayText.triggerSummary(safeSettings));
+                    triggerSummary(safeSettings));
         }
     }
 
@@ -385,8 +382,7 @@ final class DungeonEditorControlsContentModel {
         TRANSITION
     }
 
-    enum ToolCatalog {
-        ;
+    static final class ToolCatalog {
 
         static final String DEFAULT_TOOL_LABEL = "Auswahl";
         static final String GRID_VIEW_LABEL = "Grid";
@@ -403,7 +399,9 @@ final class DungeonEditorControlsContentModel {
         static final String CORRIDOR_CREATE_TOOL_KEY = "CORRIDOR_CREATE";
         static final String CORRIDOR_DELETE_TOOL_KEY = "CORRIDOR_DELETE";
         private static final Map<DungeonEditorTool, String> TOOL_LABELS = createToolLabels();
-        private static final Map<String, DungeonEditorTool> PUBLISHED_TOOLS_BY_LABEL = createPublishedToolsByLabel();
+
+        private ToolCatalog() {
+        }
 
         static String labelOf(@Nullable DungeonEditorTool tool) {
             return TOOL_LABELS.getOrDefault(tool == null ? DungeonEditorTool.SELECT : tool, DEFAULT_TOOL_LABEL);
@@ -454,66 +452,37 @@ final class DungeonEditorControlsContentModel {
             return Map.copyOf(toolLabels);
         }
 
-        private static Map<String, DungeonEditorTool> createPublishedToolsByLabel() {
-            Map<String, DungeonEditorTool> toolsByLabel = new HashMap<>();
-            for (Map.Entry<DungeonEditorTool, String> entry : TOOL_LABELS.entrySet()) {
-                toolsByLabel.put(entry.getValue(), entry.getKey());
-            }
-            return Map.copyOf(toolsByLabel);
-        }
     }
 
-    private enum OverlayText {
-        ;
-
-        private static String triggerSummary(OverlaySettings settings) {
-            OverlaySettings resolvedSettings = settings == null ? OverlaySettings.defaults() : settings;
-            String key = normalizeModeKey(resolvedSettings.modeKey());
-            if (MODE_NEARBY.equals(key)) {
-                return "Overlay: Nachbarn +/-" + resolvedSettings.levelRange()
-                        + " " + opacityText(resolvedSettings.opacity());
-            }
-            if (MODE_SELECTED.equals(key)) {
-                return "Overlay: Auswahl z=" + selectedLevelSummary(resolvedSettings.selectedLevels())
-                        + " " + opacityText(resolvedSettings.opacity());
-            }
-            return "Overlay: Aus";
+    private static String triggerSummary(OverlaySettings settings) {
+        OverlaySettings resolvedSettings = settings == null ? OverlaySettings.defaults() : settings;
+        String key = normalizeModeKey(resolvedSettings.modeKey());
+        if (MODE_NEARBY.equals(key)) {
+            return "Overlay: Nachbarn +/-" + resolvedSettings.levelRange()
+                    + " " + opacityText(resolvedSettings.opacity());
         }
-
-        private static String selectedLevelList(List<Integer> levels) {
-            return (levels == null ? List.<Integer>of() : levels).stream()
-                    .map(String::valueOf)
-                    .sorted(Comparator.comparingInt(Integer::parseInt))
-                    .distinct()
-                    .collect(Collectors.joining(", "));
+        if (MODE_SELECTED.equals(key)) {
+            return "Overlay: Auswahl z=" + selectedLevelSummary(resolvedSettings.selectedLevels())
+                    + " " + opacityText(resolvedSettings.opacity());
         }
+        return "Overlay: Aus";
+    }
 
-        @SuppressWarnings("unused")
-        private static Optional<List<Integer>> parseLevels(String raw) {
-            if (raw == null || raw.isBlank()) {
-                return Optional.of(List.of());
-            }
-            try {
-                return Optional.of(Arrays.stream(raw.split(","))
-                        .map(String::trim)
-                        .filter(part -> !part.isBlank())
-                        .map(Integer::parseInt)
-                        .sorted()
-                        .distinct()
-                        .toList());
-            } catch (NumberFormatException exception) {
-                return Optional.empty();
-            }
-        }
+    private static String selectedLevelList(List<Integer> levels) {
+        return (levels == null ? List.<Integer>of() : levels).stream()
+                .map(String::valueOf)
+                .sorted(Comparator.comparingInt(Integer::parseInt))
+                .distinct()
+                .collect(Collectors.joining(", "));
+    }
 
-        private static String selectedLevelSummary(List<Integer> levels) {
-            String formatted = selectedLevelList(levels);
-            return formatted.isBlank() ? "-" : formatted;
-        }
+    private static String selectedLevelSummary(List<Integer> levels) {
+        String formatted = selectedLevelList(levels);
+        return formatted.isBlank() ? "-" : formatted;
+    }
 
-        private static String opacityText(double opacity) {
-            return Math.round(opacity * 100.0) + "%";
-        }
+    private static String opacityText(double opacity) {
+        return Math.round(opacity * 100.0) + "%";
     }
 
     private static String normalizeModeKey(String modeKey) {
