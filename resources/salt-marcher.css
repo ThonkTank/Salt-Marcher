@@ -262,6 +262,9 @@
 .party-search {
     -fx-padding: 8 8 4 8;
 }
+.party-search-field {
+    -fx-max-width: Infinity;
+}
 .party-rest-actions {
     -fx-padding: 4 8 6 8;
 }

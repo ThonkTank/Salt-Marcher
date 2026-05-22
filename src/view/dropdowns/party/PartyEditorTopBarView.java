@@ -76,14 +76,25 @@ public final class PartyEditorTopBarView extends VBox {
     }
 
     private void showEditor(PartyEditorTopBarContentModel.EditorPanelModel content) {
-        boolean visible = content != null && content.visible();
-        boolean editingExisting = content != null && content.editingExisting();
+        boolean visible = editorVisible(content);
+        boolean editingExisting = editingExisting(content);
+        boolean actionsDisabled = actionsDisabled(content);
+        updateEditorFrame(visible, editingExisting);
+        updateDraftFields(content);
+        updateDeleteConfirmation(content, visible);
+        updateEditorDisabled(actionsDisabled);
+    }
+
+    private void updateEditorFrame(boolean visible, boolean editingExisting) {
         setVisible(visible);
         setManaged(visible);
         titleLabel.setText(editingExisting ? "Charakter bearbeiten" : "Neuer Charakter");
         submitButton.setText(editingExisting ? "Speichern" : "Erstellen");
         revealDeleteButton.setVisible(visible && editingExisting);
         revealDeleteButton.setManaged(visible && editingExisting);
+    }
+
+    private void updateDraftFields(PartyEditorTopBarContentModel.EditorPanelModel content) {
         removeDraftListeners();
         try {
             nameField.setText(content == null ? "" : content.memberName());
@@ -94,11 +105,16 @@ public final class PartyEditorTopBarView extends VBox {
         } finally {
             addDraftListeners();
         }
+    }
+
+    private void updateDeleteConfirmation(PartyEditorTopBarContentModel.EditorPanelModel content, boolean visible) {
         deleteMessageLabel.setText("\"" + safe(content == null ? "" : content.deleteTargetName()).trim()
                 + "\" wirklich dauerhaft loeschen?");
         deleteSection.setVisible(visible && content.deleteConfirmationVisible());
         deleteSection.setManaged(visible && content.deleteConfirmationVisible());
-        boolean actionsDisabled = content != null && content.actionsDisabled();
+    }
+
+    private void updateEditorDisabled(boolean actionsDisabled) {
         nameField.setDisable(actionsDisabled);
         playerNameField.setDisable(actionsDisabled);
         levelField.setDisable(actionsDisabled);
@@ -108,6 +124,18 @@ public final class PartyEditorTopBarView extends VBox {
         cancelButton.setDisable(actionsDisabled);
         deleteSection.setDisable(actionsDisabled);
         updateSubmitDisabled(actionsDisabled);
+    }
+
+    private static boolean editorVisible(PartyEditorTopBarContentModel.EditorPanelModel content) {
+        return content != null && content.visible();
+    }
+
+    private static boolean editingExisting(PartyEditorTopBarContentModel.EditorPanelModel content) {
+        return content != null && content.editingExisting();
+    }
+
+    private static boolean actionsDisabled(PartyEditorTopBarContentModel.EditorPanelModel content) {
+        return content != null && content.actionsDisabled();
     }
 
     private void publish(
