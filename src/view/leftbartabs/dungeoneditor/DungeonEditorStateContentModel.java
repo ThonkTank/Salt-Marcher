@@ -13,6 +13,12 @@ import src.domain.dungeon.published.DungeonEditorPreview;
 import src.domain.dungeon.published.DungeonEditorStateSnapshot;
 
 final class DungeonEditorStateContentModel {
+    private static final String DEFAULT_TOOL_LABEL = "Auswahl";
+    private static final String GRID_VIEW_LABEL = "Grid";
+    private static final String GRAPH_VIEW_LABEL = "Graph";
+    private static final String ROOM_PAINT_LABEL = "Raum malen";
+    private static final String ROOM_DELETE_LABEL = "Raum löschen";
+
     private final ReadOnlyObjectWrapper<StateProjection> stateProjection =
             new ReadOnlyObjectWrapper<>(StateProjection.initial());
     private final Map<VisualDraftKey, String> visualDrafts = new HashMap<>();
@@ -57,17 +63,15 @@ final class DungeonEditorStateContentModel {
         return null;
     }
 
-    void updateNarrationDraft(DungeonEditorStateViewInputEvent event) {
-        if (event == null) {
-            return;
-        }
-        RoomNarrationCardProjection card = currentNarrationCard(event.roomId());
+    void updateNarrationDraft(long roomId, String visualDescription, List<String> exitDescriptions) {
+        RoomNarrationCardProjection card = currentNarrationCard(roomId);
         if (card == null) {
             return;
         }
         long selectedMapIdValue = currentContext.selectedMapIdValue();
-        visualDrafts.put(new VisualDraftKey(selectedMapIdValue, card.roomId()), event.visualDescription());
-        List<String> descriptions = event.exitDescriptions();
+        visualDrafts.put(new VisualDraftKey(selectedMapIdValue, card.roomId()),
+                visualDescription == null ? "" : visualDescription);
+        List<String> descriptions = exitDescriptions == null ? List.of() : exitDescriptions;
         List<RoomExitNarrationProjection> exits = card.exits();
         for (int index = 0; index < exits.size(); index++) {
             String description = index < descriptions.size() ? descriptions.get(index) : exits.get(index).description();
@@ -165,8 +169,8 @@ final class DungeonEditorStateContentModel {
         StateProjectionContext {
             selectedMapIdValue = Math.max(0L, selectedMapIdValue);
             statusText = statusText == null ? "" : statusText;
-            selectedToolLabel = selectedToolLabel == null ? ToolCatalog.DEFAULT_TOOL_LABEL : selectedToolLabel;
-            viewModeLabel = ToolCatalog.normalizeViewModeKey(viewModeLabel);
+            selectedToolLabel = selectedToolLabel == null ? DEFAULT_TOOL_LABEL : selectedToolLabel;
+            viewModeLabel = normalizeViewModeKey(viewModeLabel);
             projectionLevel = Math.max(0, projectionLevel);
             overlayLabel = overlayLabel == null ? "" : overlayLabel;
         }
@@ -176,8 +180,8 @@ final class DungeonEditorStateContentModel {
                     0L,
                     "",
                     false,
-                    ToolCatalog.DEFAULT_TOOL_LABEL,
-                    ToolCatalog.GRID_VIEW_LABEL,
+                    DEFAULT_TOOL_LABEL,
+                    GRID_VIEW_LABEL,
                     0,
                     "");
         }
@@ -317,7 +321,7 @@ final class DungeonEditorStateContentModel {
             }
             if (preview instanceof DungeonEditorPreview.RoomRectanglePreview roomRectangle) {
                 return "Topologie-Preview: "
-                        + ToolCatalog.roomRectangleLabel(roomRectangle.deleteMode())
+                        + roomRectangleLabel(roomRectangle.deleteMode())
                         + " z=" + roomRectangle.start().level();
             }
             if (preview instanceof DungeonEditorPreview.ClusterBoundariesPreview boundaries) {
@@ -351,5 +355,13 @@ final class DungeonEditorStateContentModel {
         private boolean isEmpty() {
             return "EMPTY".equals(kind);
         }
+    }
+
+    private static String normalizeViewModeKey(@Nullable String viewModeKey) {
+        return GRAPH_VIEW_LABEL.equals(viewModeKey) ? GRAPH_VIEW_LABEL : GRID_VIEW_LABEL;
+    }
+
+    private static String roomRectangleLabel(boolean deleteMode) {
+        return deleteMode ? ROOM_DELETE_LABEL : ROOM_PAINT_LABEL;
     }
 }

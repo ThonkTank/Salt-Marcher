@@ -65,19 +65,9 @@ public record DungeonEditorControlsViewInputEvent(
                 @Nullable String selectedToolKey,
                 boolean dismissControlActivated
         ) {
-            this.requestedFamilyKey = normalizedOptionalTextOrEmpty(requestedFamilyKey);
-            this.selectedToolKey = normalizedOptionalTextOrEmpty(selectedToolKey);
+            this.requestedFamilyKey = requestedFamilyKey == null ? "" : requestedFamilyKey.strip();
+            this.selectedToolKey = selectedToolKey == null ? "" : selectedToolKey.strip();
             this.dismissControlActivated = dismissControlActivated;
-        }
-
-        @Override
-        public @Nullable String requestedFamilyKey() {
-            return emptyToNull(requestedFamilyKey);
-        }
-
-        @Override
-        public @Nullable String selectedToolKey() {
-            return emptyToNull(selectedToolKey);
         }
     }
 
@@ -86,13 +76,8 @@ public record DungeonEditorControlsViewInputEvent(
             int levelShift
     ) {
         public ProjectionSnapshot(@Nullable String viewModeKey, int levelShift) {
-            this.viewModeKey = normalizedOptionalTextOrEmpty(viewModeKey);
+            this.viewModeKey = viewModeKey == null ? "" : viewModeKey.strip();
             this.levelShift = levelShift;
-        }
-
-        @Override
-        public @Nullable String viewModeKey() {
-            return emptyToNull(viewModeKey);
         }
     }
 
@@ -113,17 +98,5 @@ public record DungeonEditorControlsViewInputEvent(
             this.opacity = Math.max(0.0, Math.min(1.0, opacity));
             this.selectedLevelsText = selectedLevelsText == null ? "" : selectedLevelsText.strip();
         }
-    }
-
-    private static String normalizedOptionalTextOrEmpty(@Nullable String rawText) {
-        if (rawText == null) {
-            return "";
-        }
-        String stripped = rawText.strip();
-        return stripped.isEmpty() ? "" : stripped;
-    }
-
-    private static @Nullable String emptyToNull(String text) {
-        return text.isEmpty() ? null : text;
     }
 }

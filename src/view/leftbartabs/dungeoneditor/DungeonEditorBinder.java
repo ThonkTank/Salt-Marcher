@@ -36,8 +36,7 @@ final class DungeonEditorBinder {
         DungeonEditorIntentHandler intentHandler =
                 new DungeonEditorIntentHandler(
                         contributionModel,
-                        controlsContentModel.mapControlsContentModel(),
-                        controlsContentModel.toolControlsContentModel(),
+                        controlsContentModel,
                         stateContentModel,
                         mapContentModel,
                         editor);
@@ -49,11 +48,9 @@ final class DungeonEditorBinder {
         controls.bind(controlsContentModel);
         state.bind(stateContentModel);
         main.onViewInputEvent(intentHandler::consume);
-        controls.onDungeonEditorControlsInputEvent(intentHandler::consume);
+        controls.onViewInputEvent(intentHandler::consume);
         state.onViewInputEvent(intentHandler::consume);
-        contributionModel.controlsProjectionProperty().addListener((ignored, before, after) ->
-                controlsContentModel.apply(after));
-        controlsContentModel.apply(contributionModel.controlsProjectionProperty().get());
+        contributionModel.bindControlsContentModel(controlsContentModel);
         controlsModel.subscribe(snapshot -> applyControls(snapshot, contributionModel));
         mapSurfaceModel.subscribe(snapshot -> applyMapSurface(snapshot, mapContentModel));
         stateModel.subscribe(snapshot -> applyState(snapshot, contributionModel));

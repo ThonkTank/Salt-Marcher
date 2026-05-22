@@ -1,9 +1,6 @@
 package src.view.leftbartabs.dungeoneditor;
 
-import java.util.EnumMap;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import javafx.beans.property.ReadOnlyObjectProperty;
@@ -51,6 +48,46 @@ public final class DungeonEditorContributionModel {
         return interactionState;
     }
 
+    void bindControlsContentModel(DungeonEditorControlsContentModel contentModel) {
+        if (contentModel == null) {
+            return;
+        }
+        controlsProjection.addListener((ignored, before, after) -> applyControlsProjection(after, contentModel));
+        applyControlsProjection(controlsProjection.get(), contentModel);
+    }
+
+    private static void applyControlsProjection(
+            ControlsProjection projection,
+            DungeonEditorControlsContentModel contentModel
+    ) {
+        ControlsProjection safeProjection = projection == null
+                ? ControlsProjection.initial()
+                : projection;
+        OverlayProjection overlay = safeProjection.overlayProjection();
+        contentModel.showControls(
+                safeProjection.mapEntries().stream()
+                        .map(entry -> new DungeonEditorControlsContentModel.MapItem(
+                                entry.key(),
+                                entry.mapIdValue(),
+                                entry.mapName(),
+                                entry.revision()))
+                        .toList(),
+                safeProjection.selectedMapKey(),
+                safeProjection.reachableLevels(),
+                safeProjection.busy(),
+                safeProjection.statusText(),
+                safeProjection.viewModeLabel(),
+                overlay == null
+                        ? DungeonEditorControlsContentModel.OverlaySettings.defaults()
+                        : new DungeonEditorControlsContentModel.OverlaySettings(
+                                overlay.modeKey(),
+                                overlay.levelRange(),
+                                overlay.opacity(),
+                                overlay.selectedLevels()),
+                safeProjection.projectionLevel(),
+                safeProjection.selectedToolLabel());
+    }
+
     private void refreshProjection() {
         var bundle = ProjectionFactory.create(controlsSnapshot);
         interactionState = bundle.interactionState();
@@ -69,8 +106,8 @@ public final class DungeonEditorContributionModel {
             int clampedProjectionLevel = clampProjectionLevel(reachableLevels, safeSource.projectionLevel());
             OverlayProjection overlayProjection = OverlayProjection.from(safeSource.overlaySettings());
             String selectedMapKey = MapSelection.keyOf(safeSource.selectedMapId());
-            String viewModeLabel = ToolCatalog.labelOf(safeSource.viewMode());
-            String selectedToolLabel = ToolCatalog.labelOf(safeSource.selectedTool());
+            String viewModeLabel = DungeonEditorControlsContentModel.ToolCatalog.labelOf(safeSource.viewMode());
+            String selectedToolLabel = DungeonEditorControlsContentModel.ToolCatalog.labelOf(safeSource.selectedTool());
             String statusText = statusTextFor(safeSource, mapEntries);
             long selectedMapIdValue = safeSource.selectedMapId() == null
                     ? NO_MAP_ID
@@ -202,12 +239,14 @@ public final class DungeonEditorContributionModel {
             selectedMapKey = selectedMapKey == null ? "" : selectedMapKey;
             reachableLevels = reachableLevels == null ? List.of(0) : List.copyOf(reachableLevels);
             statusText = statusText == null ? "" : statusText;
-            viewModeLabel = ToolCatalog.normalizeViewModeKey(viewModeLabel);
+            viewModeLabel = DungeonEditorControlsContentModel.ToolCatalog.normalizeViewModeKey(viewModeLabel);
             overlayProjection = overlayProjection == null
                     ? OverlayProjection.from(DungeonOverlaySettings.defaults())
                     : overlayProjection;
             projectionLevel = Math.max(0, projectionLevel);
-            selectedToolLabel = selectedToolLabel == null ? ToolCatalog.DEFAULT_TOOL_LABEL : selectedToolLabel;
+            selectedToolLabel = selectedToolLabel == null
+                    ? DungeonEditorControlsContentModel.ToolCatalog.DEFAULT_TOOL_LABEL
+                    : selectedToolLabel;
         }
 
         static ControlsProjection initial() {
@@ -217,10 +256,10 @@ public final class DungeonEditorContributionModel {
                     List.of(0),
                     false,
                     "",
-                    ToolCatalog.GRID_VIEW_LABEL,
+                    DungeonEditorControlsContentModel.ToolCatalog.GRID_VIEW_LABEL,
                     OverlayProjection.from(DungeonOverlaySettings.defaults()),
                     0,
-                    ToolCatalog.DEFAULT_TOOL_LABEL);
+                    DungeonEditorControlsContentModel.ToolCatalog.DEFAULT_TOOL_LABEL);
         }
     }
 
@@ -233,9 +272,9 @@ public final class DungeonEditorContributionModel {
     ) {
         InteractionState {
             currentSelectedMapIdValue = Math.max(NO_MAP_ID, currentSelectedMapIdValue);
-            currentViewModeKey = ToolCatalog.normalizeViewModeKey(currentViewModeKey);
+            currentViewModeKey = DungeonEditorControlsContentModel.ToolCatalog.normalizeViewModeKey(currentViewModeKey);
             currentSelectedToolLabel = currentSelectedToolLabel == null
-                    ? ToolCatalog.DEFAULT_TOOL_LABEL
+                    ? DungeonEditorControlsContentModel.ToolCatalog.DEFAULT_TOOL_LABEL
                     : currentSelectedToolLabel;
             currentSelectedTool = currentSelectedTool == null
                     ? DungeonEditorTool.SELECT
@@ -248,8 +287,8 @@ public final class DungeonEditorContributionModel {
         static InteractionState empty() {
             return new InteractionState(
                     NO_MAP_ID,
-                    ToolCatalog.GRID_VIEW_LABEL,
-                    ToolCatalog.DEFAULT_TOOL_LABEL,
+                    DungeonEditorControlsContentModel.ToolCatalog.GRID_VIEW_LABEL,
+                    DungeonEditorControlsContentModel.ToolCatalog.DEFAULT_TOOL_LABEL,
                     DungeonEditorTool.SELECT,
                     OverlayProjection.from(DungeonOverlaySettings.defaults()));
         }
@@ -338,157 +377,4 @@ public final class DungeonEditorContributionModel {
         }
     }
 
-}
-
-final class ToolCatalog {
-
-    static final String DEFAULT_TOOL_LABEL = "Auswahl";
-    static final String GRID_VIEW_LABEL = "Grid";
-    static final String GRAPH_VIEW_LABEL = "Graph";
-    static final String ROOM_PAINT_LABEL = "Raum malen";
-    static final String ROOM_DELETE_LABEL = "Raum löschen";
-    static final String SELECT_TOOL_KEY = DungeonEditorTool.SELECT.name();
-    static final String ROOM_PAINT_TOOL_KEY = DungeonEditorTool.ROOM_PAINT.name();
-    static final String WALL_CREATE_TOOL_KEY = DungeonEditorTool.WALL_CREATE.name();
-    static final String DOOR_CREATE_TOOL_KEY = DungeonEditorTool.DOOR_CREATE.name();
-    static final String CORRIDOR_CREATE_TOOL_KEY = DungeonEditorTool.CORRIDOR_CREATE.name();
-    private static final Map<DungeonEditorTool, String> TOOL_LABELS = createToolLabels();
-    private static final Map<String, DungeonEditorTool> PUBLISHED_TOOLS_BY_LABEL =
-            createPublishedToolsByLabel();
-    private static final Map<DungeonEditorToolControlsContentModel.ToolFamily, ToolPalette> PALETTES =
-            createPalettes();
-
-    private ToolCatalog() {
-    }
-
-    static String labelOf(@Nullable DungeonEditorTool tool) {
-        return TOOL_LABELS.getOrDefault(tool == null ? DungeonEditorTool.SELECT : tool, DEFAULT_TOOL_LABEL);
-    }
-
-    static String labelOf(@Nullable DungeonEditorViewMode viewMode) {
-        return viewMode == DungeonEditorViewMode.GRAPH ? GRAPH_VIEW_LABEL : GRID_VIEW_LABEL;
-    }
-
-    static String normalizeViewModeKey(@Nullable String viewModeKey) {
-        return GRAPH_VIEW_LABEL.equals(viewModeKey) ? GRAPH_VIEW_LABEL : GRID_VIEW_LABEL;
-    }
-
-    static DungeonEditorViewMode toPublishedViewMode(@Nullable String viewModeKey) {
-        return GRAPH_VIEW_LABEL.equals(viewModeKey)
-                ? DungeonEditorViewMode.GRAPH
-                : DungeonEditorViewMode.GRID;
-    }
-
-    static DungeonEditorTool toPublishedTool(@Nullable String selectedToolLabel) {
-        return PUBLISHED_TOOLS_BY_LABEL.getOrDefault(selectedToolLabel, DungeonEditorTool.SELECT);
-    }
-
-    static DungeonEditorTool toPublishedToolKey(@Nullable String selectedToolKey) {
-        if (selectedToolKey == null || selectedToolKey.isBlank()) {
-            return DungeonEditorTool.SELECT;
-        }
-        try {
-            return DungeonEditorTool.valueOf(selectedToolKey.trim());
-        } catch (IllegalArgumentException ignored) {
-            return DungeonEditorTool.SELECT;
-        }
-    }
-
-    static ToolPalette paletteFor(DungeonEditorToolControlsContentModel.ToolFamily family) {
-        return family == null ? ToolPalette.empty() : PALETTES.getOrDefault(family, ToolPalette.empty());
-    }
-
-    static String roomRectangleLabel(boolean deleteMode) {
-        return deleteMode ? ROOM_DELETE_LABEL : ROOM_PAINT_LABEL;
-    }
-
-    private static Map<DungeonEditorTool, String> createToolLabels() {
-        Map<DungeonEditorTool, String> toolLabels = new EnumMap<>(DungeonEditorTool.class);
-        toolLabels.put(DungeonEditorTool.SELECT, DEFAULT_TOOL_LABEL);
-        toolLabels.put(DungeonEditorTool.ROOM_PAINT, ROOM_PAINT_LABEL);
-        toolLabels.put(DungeonEditorTool.ROOM_DELETE, ROOM_DELETE_LABEL);
-        toolLabels.put(DungeonEditorTool.WALL_CREATE, "Wand setzen");
-        toolLabels.put(DungeonEditorTool.WALL_DELETE, "Wand löschen");
-        toolLabels.put(DungeonEditorTool.DOOR_CREATE, "Tür setzen");
-        toolLabels.put(DungeonEditorTool.DOOR_DELETE, "Tür löschen");
-        toolLabels.put(DungeonEditorTool.CORRIDOR_CREATE, "Korridor erstellen");
-        toolLabels.put(DungeonEditorTool.CORRIDOR_DELETE, "Korridor löschen");
-        toolLabels.put(DungeonEditorTool.STAIR_CREATE, "Treppe erstellen");
-        toolLabels.put(DungeonEditorTool.STAIR_DELETE, "Treppe löschen");
-        toolLabels.put(DungeonEditorTool.TRANSITION_CREATE, "Übergang erstellen");
-        toolLabels.put(DungeonEditorTool.TRANSITION_DELETE, "Übergang löschen");
-        return Map.copyOf(toolLabels);
-    }
-
-    private static Map<String, DungeonEditorTool> createPublishedToolsByLabel() {
-        Map<String, DungeonEditorTool> toolsByLabel = new HashMap<>();
-        toolsByLabel.put(DEFAULT_TOOL_LABEL, DungeonEditorTool.SELECT);
-        toolsByLabel.put(ROOM_PAINT_LABEL, DungeonEditorTool.ROOM_PAINT);
-        toolsByLabel.put(ROOM_DELETE_LABEL, DungeonEditorTool.ROOM_DELETE);
-        toolsByLabel.put("Wand setzen", DungeonEditorTool.WALL_CREATE);
-        toolsByLabel.put("Wand löschen", DungeonEditorTool.WALL_DELETE);
-        toolsByLabel.put("Tür setzen", DungeonEditorTool.DOOR_CREATE);
-        toolsByLabel.put("Tür löschen", DungeonEditorTool.DOOR_DELETE);
-        toolsByLabel.put("Korridor erstellen", DungeonEditorTool.CORRIDOR_CREATE);
-        toolsByLabel.put("Korridor löschen", DungeonEditorTool.CORRIDOR_DELETE);
-        toolsByLabel.put("Treppe erstellen", DungeonEditorTool.STAIR_CREATE);
-        toolsByLabel.put("Treppe löschen", DungeonEditorTool.STAIR_DELETE);
-        toolsByLabel.put("Übergang erstellen", DungeonEditorTool.TRANSITION_CREATE);
-        toolsByLabel.put("Übergang löschen", DungeonEditorTool.TRANSITION_DELETE);
-        return Map.copyOf(toolsByLabel);
-    }
-
-    private static Map<DungeonEditorToolControlsContentModel.ToolFamily, ToolPalette> createPalettes() {
-        Map<DungeonEditorToolControlsContentModel.ToolFamily, ToolPalette> palettes =
-                new EnumMap<>(DungeonEditorToolControlsContentModel.ToolFamily.class);
-        palettes.put(DungeonEditorToolControlsContentModel.ToolFamily.ROOM, toolPalette(
-                DungeonEditorTool.ROOM_PAINT,
-                DungeonEditorTool.ROOM_DELETE));
-        palettes.put(DungeonEditorToolControlsContentModel.ToolFamily.WALL, toolPalette(
-                DungeonEditorTool.WALL_CREATE,
-                DungeonEditorTool.WALL_DELETE));
-        palettes.put(DungeonEditorToolControlsContentModel.ToolFamily.DOOR, toolPalette(
-                DungeonEditorTool.DOOR_CREATE,
-                DungeonEditorTool.DOOR_DELETE));
-        palettes.put(DungeonEditorToolControlsContentModel.ToolFamily.CORRIDOR, toolPalette(
-                DungeonEditorTool.CORRIDOR_CREATE,
-                DungeonEditorTool.CORRIDOR_DELETE));
-        palettes.put(DungeonEditorToolControlsContentModel.ToolFamily.STAIR, toolPalette(
-                DungeonEditorTool.STAIR_CREATE,
-                DungeonEditorTool.STAIR_DELETE));
-        palettes.put(DungeonEditorToolControlsContentModel.ToolFamily.TRANSITION, toolPalette(
-                DungeonEditorTool.TRANSITION_CREATE,
-                DungeonEditorTool.TRANSITION_DELETE));
-        return Map.copyOf(palettes);
-    }
-
-    private static ToolPalette toolPalette(DungeonEditorTool primaryTool, DungeonEditorTool secondaryTool) {
-        return new ToolPalette(
-                labelOf(primaryTool),
-                labelOf(secondaryTool),
-                primaryTool.name(),
-                secondaryTool.name());
-    }
-}
-
-record ToolPalette(
-        String primaryToolLabel,
-        String secondaryToolLabel,
-        String primaryToolKey,
-        String secondaryToolKey
-) {
-    ToolPalette {
-        primaryToolLabel = primaryToolLabel == null ? "" : primaryToolLabel;
-        secondaryToolLabel = secondaryToolLabel == null ? "" : secondaryToolLabel;
-        primaryToolKey = primaryToolKey == null ? "" : primaryToolKey;
-        secondaryToolKey = secondaryToolKey == null ? "" : secondaryToolKey;
-    }
-
-    static ToolPalette empty() {
-        return new ToolPalette("", "", "", "");
-    }
-
-    boolean available() {
-        return !primaryToolLabel.isBlank() && !secondaryToolLabel.isBlank();
-    }
 }

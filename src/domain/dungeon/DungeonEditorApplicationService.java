@@ -38,12 +38,12 @@ import src.domain.dungeon.published.DeleteDungeonEditorDoorCommand;
 import src.domain.dungeon.published.DeleteDungeonEditorRoomCommand;
 import src.domain.dungeon.published.DeleteDungeonEditorWallCommand;
 import src.domain.dungeon.published.DeleteDungeonMapCommand;
-import src.domain.dungeon.published.DungeonAuthoredReadCommand;
 import src.domain.dungeon.published.DungeonEditorPointerCommand;
 import src.domain.dungeon.published.DungeonEditorSelectionCommand;
 import src.domain.dungeon.published.DungeonMapCatalogCommand;
 import src.domain.dungeon.published.PaintDungeonEditorRoomCommand;
 import src.domain.dungeon.published.SaveDungeonEditorRoomNarrationCommand;
+import src.domain.dungeon.published.SelectDungeonEditorMapCommand;
 import src.domain.dungeon.published.SetDungeonEditorOverlayCommand;
 import src.domain.dungeon.published.SetDungeonEditorToolCommand;
 import src.domain.dungeon.published.SetDungeonEditorViewModeCommand;
@@ -115,9 +115,9 @@ public final class DungeonEditorApplicationService {
         this.saveRoomNarrationUseCase = Objects.requireNonNull(saveRoomNarrationUseCase, "saveRoomNarrationUseCase");
     }
 
-    public void selectMap(DungeonAuthoredReadCommand command) {
+    public void selectMap(SelectDungeonEditorMapCommand command) {
         Objects.requireNonNull(command, COMMAND_REQUIRED_MESSAGE);
-        selectMapUseCase.execute(command.mapIdValue());
+        selectMapUseCase.execute(command.mapId().value());
     }
 
     public void createMap(DungeonMapCatalogCommand.CreateMapCommand command) {
