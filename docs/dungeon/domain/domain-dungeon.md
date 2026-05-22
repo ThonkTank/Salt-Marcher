@@ -107,7 +107,6 @@ or persisted party travel position.
 
 Active root boundaries:
 
-- `DungeonAuthoredApplicationService`
 - `DungeonCatalogApplicationService`
 - `DungeonTravelApplicationService`
 - `DungeonEditorApplicationService`

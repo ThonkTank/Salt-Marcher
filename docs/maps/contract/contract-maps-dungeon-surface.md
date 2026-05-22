@@ -16,17 +16,19 @@ the generic maps feature.
 
 Owners:
 
- - provider: `DungeonAuthoredApplicationService`, `DungeonCatalogApplicationService`, and `DungeonTravelApplicationService`
-- consumers: `DungeonEditorApplicationService`, `DungeonTravelRuntimeApplicationService`,
+- provider: `DungeonEditorApplicationService`, `DungeonCatalogApplicationService`,
+  `DungeonTravelApplicationService`, and `DungeonTravelRuntimeApplicationService`
+- consumers: dungeon editor and travel view roots,
   and any future runtime-workspace context that needs authored dungeon map
   facts
 
 ## Rules
 
-- committed dungeon map read and selection inspection MUST use the authored
-  read family
-- preview and apply MUST reuse one authored dungeon mutation family and one
-  shared `DungeonEditorOperation` body
+- committed dungeon map read and selection inspection MUST enter through the
+  owning editor or travel runtime boundary for that workspace
+- preview and apply MUST reuse the authored map operation vocabulary owned by
+  `dungeon/model/map/model/DungeonEditorAuthoredOperation` and applied through
+  the authored dungeon mutation use case
 - map catalog work MUST use one catalog request and response family
 - travel surface reads and travel moves MUST use one travel request and
   response family
@@ -37,27 +39,30 @@ Owners:
 
 ## Inbound Request Families
 
-### Authored Read
+### Editor Authored Read
 
-- `DungeonAuthoredReadQuery.LoadSnapshot`
-- `DungeonAuthoredReadQuery.DescribeSelection`
+- `SelectDungeonEditorMapCommand`
+- `DungeonEditorSelectionCommand`
 
 Required context:
 
-- `mapId`
+- map id for map selection
+- pointer sample for selection inspection
 
 Optional context:
 
-- topology ref, cluster id, and cluster-selection flag for selection reads
+- topology ref, handle ref, and boundary target data carried by the pointer
+  sample
 
-### Authored Mutation
+### Editor Authored Mutation
 
-- `DungeonAuthoredMutationCommand.PreviewOperation`
-- `DungeonAuthoredMutationCommand.ApplyOperation`
+- `DungeonEditorPointerCommand` variants for pointer-driven editor operations
+- focused editor commands for map selection, projection, overlay, tool, and
+  room narration work
 
-`DungeonEditorOperation` is the one canonical authored dungeon edit body.
-Preview and apply wrap the same body through their dedicated mutation-family
-variants.
+Editor preview and apply share the same authored map operation vocabulary in
+`DungeonEditorAuthoredOperation`. Public published command carriers no longer
+reconstruct a second authored edit body.
 
 ### Map Catalog
 
@@ -148,8 +153,8 @@ authored family results they actually consume.
 - This contract is currently `Review-Owned`.
 - Review must reject reintroduction of standalone one-off dungeon boundary
   carriers that bypass the four canonical families.
-- Review must reject a second canonical authored dungeon edit body beside
-  `DungeonEditorOperation`.
+- Review must reject a second public authored dungeon edit body beside
+  `DungeonEditorAuthoredOperation`.
 
 ## References
 
