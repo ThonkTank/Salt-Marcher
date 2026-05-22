@@ -1,6 +1,7 @@
 package src.domain.dungeon.model.editor.usecase;
 
 import java.util.Objects;
+import src.domain.dungeon.model.editor.model.interaction.model.DungeonEditorMainViewEffect;
 import src.domain.dungeon.model.editor.model.session.model.DungeonEditorSessionValues;
 import src.domain.dungeon.model.editor.model.session.model.DungeonEditorSessionWorkflow;
 import src.domain.dungeon.model.editor.model.workspace.model.DungeonEditorWorkspaceValues.MapSnapshot;
@@ -22,75 +23,64 @@ final class DungeonEditorApplyToolUseCase {
     }
 
     void pressBoundary(MainViewInput input, DungeonEditorSessionValues.Tool tool) {
-        MapSnapshot committedSnapshot = effectUseCase.committedGridOrPublishCurrent();
-        if (committedSnapshot == null) {
-            return;
-        }
-        effectUseCase.applyEffect(mainViewInterpreter.pressBoundary(
+        applyCommittedSnapshotEffect((committedSnapshot, projectionLevel) -> mainViewInterpreter.pressBoundary(
                 input,
                 committedSnapshot,
                 workflow.selection(),
                 tool,
-                workflow.projectionLevel()));
+                projectionLevel));
     }
 
     void dragBoundary(MainViewInput input, DungeonEditorSessionValues.Tool tool) {
-        MapSnapshot committedSnapshot = effectUseCase.committedGridOrPublishCurrent();
-        if (committedSnapshot == null) {
-            return;
-        }
-        effectUseCase.applyEffect(mainViewInterpreter.dragBoundary(
+        applyCommittedSnapshotEffect((committedSnapshot, projectionLevel) -> mainViewInterpreter.dragBoundary(
                 input,
                 committedSnapshot,
                 tool,
-                workflow.projectionLevel()));
+                projectionLevel));
     }
 
     void releaseBoundary(MainViewInput input, DungeonEditorSessionValues.Tool tool) {
-        MapSnapshot committedSnapshot = effectUseCase.committedGridOrPublishCurrent();
-        if (committedSnapshot == null) {
-            return;
-        }
-        effectUseCase.applyEffect(mainViewInterpreter.releaseBoundary(
+        applyCommittedSnapshotEffect((committedSnapshot, projectionLevel) -> mainViewInterpreter.releaseBoundary(
                 input,
                 committedSnapshot,
                 tool,
-                workflow.projectionLevel()));
+                projectionLevel));
     }
 
     void hoverBoundary(MainViewInput input, DungeonEditorSessionValues.Tool tool) {
-        MapSnapshot committedSnapshot = effectUseCase.committedGridOrPublishCurrent();
-        if (committedSnapshot == null) {
-            return;
-        }
-        effectUseCase.applyEffect(mainViewInterpreter.hoverBoundary(
+        applyCommittedSnapshotEffect((committedSnapshot, projectionLevel) -> mainViewInterpreter.hoverBoundary(
                 input,
                 committedSnapshot,
                 tool,
-                workflow.projectionLevel()));
+                projectionLevel));
     }
 
     void pressCorridor(MainViewInput input, DungeonEditorSessionValues.Tool tool) {
-        MapSnapshot committedSnapshot = effectUseCase.committedGridOrPublishCurrent();
-        if (committedSnapshot == null) {
-            return;
-        }
-        effectUseCase.applyEffect(mainViewInterpreter.pressCorridor(
+        applyCommittedSnapshotEffect((committedSnapshot, projectionLevel) -> mainViewInterpreter.pressCorridor(
                 input,
                 committedSnapshot,
                 tool,
-                workflow.projectionLevel()));
+                projectionLevel));
     }
 
     void hoverCorridor(MainViewInput input, DungeonEditorSessionValues.Tool tool) {
+        applyCommittedSnapshotEffect((committedSnapshot, projectionLevel) -> mainViewInterpreter.hoverCorridor(
+                input,
+                committedSnapshot,
+                tool,
+                projectionLevel));
+    }
+
+    private void applyCommittedSnapshotEffect(CommittedSnapshotEffect effectFactory) {
         MapSnapshot committedSnapshot = effectUseCase.committedGridOrPublishCurrent();
         if (committedSnapshot == null) {
             return;
         }
-        effectUseCase.applyEffect(mainViewInterpreter.hoverCorridor(
-                input,
-                committedSnapshot,
-                tool,
-                workflow.projectionLevel()));
+        effectUseCase.applyEffect(effectFactory.create(committedSnapshot, workflow.projectionLevel()));
+    }
+
+    @FunctionalInterface
+    private interface CommittedSnapshotEffect {
+        DungeonEditorMainViewEffect create(MapSnapshot committedSnapshot, int projectionLevel);
     }
 }

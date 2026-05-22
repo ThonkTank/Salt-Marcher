@@ -797,12 +797,14 @@
 .dungeon-control-map-row,
 .dungeon-control-projection-row {
     -fx-min-height: 30;
+    -fx-spacing: 6;
 }
 .dungeon-map-status-label {
     -fx-max-width: 160;
 }
 .dungeon-control-tool-row {
     -fx-padding: 0 0 2 0;
+    -fx-spacing: 6;
 }
 .dungeon-control-scroll {
     -fx-background-color: transparent;
@@ -830,6 +832,7 @@
 }
 .dungeon-editor-popup {
     -fx-padding: 10;
+    -fx-spacing: 4;
 }
 .dungeon-editor-popup-actions {
     -fx-spacing: 8;

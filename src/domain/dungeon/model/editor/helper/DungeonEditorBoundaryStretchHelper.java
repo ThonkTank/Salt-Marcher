@@ -65,12 +65,20 @@ public final class DungeonEditorBoundaryStretchHelper {
             return List.of();
         }
         int level = boundaryTarget.start().level();
+        if (!DungeonEditorWorkspaceValues.hasId(clusterId)) {
+            return List.of();
+        }
         Set<DungeonEditorWorkspaceValues.Cell> clusterCells = clusterCells(snapshot, clusterId, level);
         if (clusterCells.isEmpty()) {
             return List.of();
         }
         DungeonEditorWorkspaceValues.Edge clickedEdge = boundaryTarget.edgeRef();
-        BoundaryStretchSide stretchSide = outerStretch(clickedEdge, clusterCells);
+        BoundaryStretchSide stretchSide = switch (
+                DungeonEditorBoundaryTouchGeometry.fromEdge(clickedEdge).touchingCount(clusterCells)) {
+            case 0 -> BoundaryStretchSide.NONE;
+            case 1 -> BoundaryStretchSide.OUTER;
+            default -> BoundaryStretchSide.INNER;
+        };
         if (stretchSide == BoundaryStretchSide.NONE) {
             return List.of();
         }
@@ -79,6 +87,31 @@ public final class DungeonEditorBoundaryStretchHelper {
         List<DungeonEditorWorkspaceValues.Edge> contiguousEdges =
                 contiguousEdges(edgesByVariable, clickedEdge, orientation);
         return contiguousEdges.isEmpty() ? List.of(clickedEdge) : contiguousEdges;
+    }
+
+    private static List<DungeonEditorWorkspaceValues.Edge> contiguousEdges(
+            Map<Integer, DungeonEditorWorkspaceValues.Edge> edgesByVariable,
+            DungeonEditorWorkspaceValues.Edge clickedEdge,
+            StretchOrientation orientation
+    ) {
+        int min = orientation == StretchOrientation.VERTICAL
+                ? Math.min(clickedEdge.from().r(), clickedEdge.to().r())
+                : Math.min(clickedEdge.from().q(), clickedEdge.to().q());
+        int max = min;
+        while (edgesByVariable.containsKey(min - 1)) {
+            min--;
+        }
+        while (edgesByVariable.containsKey(max + 1)) {
+            max++;
+        }
+        List<DungeonEditorWorkspaceValues.Edge> contiguousEdges = new ArrayList<>();
+        for (int variable = min; variable <= max; variable++) {
+            DungeonEditorWorkspaceValues.Edge edge = edgesByVariable.get(variable);
+            if (edge != null) {
+                contiguousEdges.add(edge);
+            }
+        }
+        return List.copyOf(contiguousEdges);
     }
 
     private DungeonEditorSessionValues.Selection selectionForBoundaryStretch(
@@ -90,13 +123,16 @@ public final class DungeonEditorBoundaryStretchHelper {
         if (currentSelection != null && currentSelection.clusterSelection() && currentSelection.clusterId() == clusterId) {
             return currentSelection;
         }
-        DungeonEditorWorkspaceValues.Area clusterArea = firstClusterArea(snapshot, clusterId);
-        if (clusterArea != null) {
-            return new DungeonEditorSessionValues.Selection(
-                    clusterArea.topologyRef(),
-                    clusterArea.clusterId(),
-                    true,
-                    DungeonEditorSessionValues.emptyHandleRef());
+        if (snapshot != null && clusterId > 0L) {
+            for (DungeonEditorWorkspaceValues.Area area : snapshot.areas()) {
+                if (area.kind().isRoom() && area.clusterId() == clusterId) {
+                    return new DungeonEditorSessionValues.Selection(
+                            area.topologyRef(),
+                            area.clusterId(),
+                            true,
+                            DungeonEditorSessionValues.emptyHandleRef());
+                }
+            }
         }
         return new DungeonEditorSessionValues.Selection(
                 new src.domain.dungeon.model.map.model.DungeonTopologyRef(
@@ -105,71 +141,6 @@ public final class DungeonEditorBoundaryStretchHelper {
                 clusterId,
                 true,
                 DungeonEditorSessionValues.emptyHandleRef());
-    }
-
-    private DungeonEditorWorkspaceValues.@Nullable Area firstClusterArea(
-            DungeonEditorWorkspaceValues.MapSnapshot snapshot,
-            long clusterId
-    ) {
-        if (snapshot == null || clusterId <= 0L) {
-            return null;
-        }
-        for (DungeonEditorWorkspaceValues.Area area : snapshot.areas()) {
-            if (area.kind().isRoom() && area.clusterId() == clusterId) {
-                return area;
-            }
-        }
-        return null;
-    }
-
-    private BoundaryStretchSide outerStretch(
-            DungeonEditorWorkspaceValues.Edge clickedEdge,
-            Set<DungeonEditorWorkspaceValues.Cell> clusterCells
-    ) {
-        int clickedTouchCount = touchingClusterCount(clickedEdge, clusterCells);
-        if (clickedTouchCount == 0) {
-            return BoundaryStretchSide.NONE;
-        }
-        return clickedTouchCount == 1 ? BoundaryStretchSide.OUTER : BoundaryStretchSide.INNER;
-    }
-
-    private static List<DungeonEditorWorkspaceValues.Edge> contiguousEdges(
-            Map<Integer, DungeonEditorWorkspaceValues.Edge> edgesByVariable,
-            DungeonEditorWorkspaceValues.Edge clickedEdge,
-            StretchOrientation orientation
-    ) {
-        int min = variableCoordinate(orientation, clickedEdge);
-        int max = min;
-        while (edgesByVariable.containsKey(min - 1)) {
-            min--;
-        }
-        while (edgesByVariable.containsKey(max + 1)) {
-            max++;
-        }
-        List<DungeonEditorWorkspaceValues.Edge> result = new ArrayList<>();
-        for (int variable = min; variable <= max; variable++) {
-            DungeonEditorWorkspaceValues.Edge edge = edgesByVariable.get(variable);
-            if (edge != null) {
-                result.add(edge);
-            }
-        }
-        return List.copyOf(result);
-    }
-
-    private static int variableCoordinate(
-            StretchOrientation orientation,
-            DungeonEditorWorkspaceValues.Edge edge
-    ) {
-        return orientation == StretchOrientation.VERTICAL
-                ? Math.min(edge.from().r(), edge.to().r())
-                : Math.min(edge.from().q(), edge.to().q());
-    }
-
-    private static int fixedCoordinate(
-            StretchOrientation orientation,
-            DungeonEditorWorkspaceValues.Edge edge
-    ) {
-        return orientation == StretchOrientation.VERTICAL ? edge.from().q() : edge.from().r();
     }
 
     private static @Nullable StretchOrientation orientation(BoundaryTarget boundaryTarget) {
@@ -238,13 +209,16 @@ public final class DungeonEditorBoundaryStretchHelper {
     ) {
         Map<Integer, DungeonEditorWorkspaceValues.Edge> edgesByVariable = new LinkedHashMap<>();
         int level = clickedEdge.from().level();
-        int fixedCoordinate = fixedCoordinate(orientation, clickedEdge);
+        int fixedCoordinate = orientation == StretchOrientation.VERTICAL ? clickedEdge.from().q() : clickedEdge.from().r();
         for (DungeonEditorWorkspaceValues.Boundary boundary : snapshot.boundaries()) {
             DungeonEditorWorkspaceValues.Edge edge = boundary.edge();
             if (!matchesStretchLine(edge, clusterCells, level, orientation, fixedCoordinate, outer)) {
                 continue;
             }
-            edgesByVariable.put(variableCoordinate(orientation, edge), edge);
+            int variableCoordinate = orientation == StretchOrientation.VERTICAL
+                    ? Math.min(edge.from().r(), edge.to().r())
+                    : Math.min(edge.from().q(), edge.to().q());
+            edgesByVariable.put(variableCoordinate, edge);
         }
         return Map.copyOf(edgesByVariable);
     }
@@ -261,24 +235,16 @@ public final class DungeonEditorBoundaryStretchHelper {
                 || edge.from() == null
                 || edge.to() == null
                 || edge.from().level() != level
-                || edge.to().level() != level
-                || !sameOrientation(orientation, edge)
-                || fixedCoordinate(orientation, edge) != fixedCoordinate) {
+                || edge.to().level() != level) {
             return false;
         }
-        int touchCount = touchingClusterCount(edge, clusterCells);
+        int edgeFixedCoordinate = orientation == StretchOrientation.VERTICAL ? edge.from().q() : edge.from().r();
+        if (!sameOrientation(orientation, edge) || edgeFixedCoordinate != fixedCoordinate) {
+            return false;
+        }
+        int touchCount = DungeonEditorBoundaryTouchGeometry.fromEdge(edge).touchingCount(clusterCells);
         boolean outerEdge = touchCount == 1;
         return touchCount > 0 && outerEdge == outer;
-    }
-
-    private static int touchingClusterCount(
-            DungeonEditorWorkspaceValues.Edge edge,
-            Set<DungeonEditorWorkspaceValues.Cell> clusterCells
-    ) {
-        if (edge == null || edge.from() == null || edge.to() == null || edge.from().level() != edge.to().level()) {
-            return 0;
-        }
-        return DungeonEditorBoundaryTouchGeometry.fromEdge(edge).touchingCount(clusterCells);
     }
 
     private static boolean sameOrientation(

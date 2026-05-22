@@ -52,11 +52,11 @@ public final class DungeonEditorControlsView extends VBox {
 
         replaceChildren(
                 this,
-                mapControls.row(),
-                mapEditorSection.node(),
-                projectionSection.row(),
+                mapControls,
+                mapEditorSection,
+                projectionSection,
                 projectionSection.overlayRow(),
-                toolSection.row());
+                toolSection);
 
         mapControls.bind(contentModel);
         mapEditorSection.bind(contentModel);
@@ -64,28 +64,25 @@ public final class DungeonEditorControlsView extends VBox {
         toolSection.bind(contentModel, toolControls);
     }
 
-    private final class MapControls {
+    private final class MapControls extends HBox {
 
         private final boolean[] rendering;
-        private final ComboBox<Object> mapSelector = mapSelector();
+        private final ComboBox<Object> mapSelector = new ComboBox<>();
         private final SplitMenuButton mapActionButton =
                 styled(new SplitMenuButton(), "toolbar-action-button", "dungeon-toolbar-menu");
         private final MenuItem editMapItem = new MenuItem("Dungeon bearbeiten");
         private final MenuItem deleteMapItem = new MenuItem("Dungeon löschen");
         private final Label statusLabel = mutedLabel("");
-        private final HBox row = styled(
-                DungeonEditorControlsView.row(mapSelector, mapActionButton, statusLabel),
-                "dungeon-control-map-row");
 
         private MapControls(boolean[] rendering) {
             this.rendering = rendering;
+            styled(this, controlRowStyle(), "dungeon-control-map-row");
+            setAlignment(Pos.CENTER_LEFT);
+            setMaxWidth(Double.MAX_VALUE);
+            replaceChildren(this, mapSelector, mapActionButton, statusLabel);
             configureMapSelector();
             configureMapActions();
-            HBox.setHgrow(mapSelector, Priority.ALWAYS);
-        }
-
-        private HBox row() {
-            return row;
+            setHgrow(mapSelector, Priority.ALWAYS);
         }
 
         private void bind(DungeonEditorControlsContentModel contentModel) {
@@ -136,14 +133,9 @@ public final class DungeonEditorControlsView extends VBox {
         }
     }
 
-    private final class MapEditorSection {
+    private final class MapEditorSection extends VBox {
 
         private final boolean[] rendering;
-        private final VBox container = styled(
-                new VBox(4),
-                "dropdown-window",
-                "dropdown-form",
-                "dungeon-editor-popup");
         private final Label title = new Label();
         private final TextField draftField = new TextField();
         private final Label errorLabel = mutedLabel("");
@@ -153,15 +145,12 @@ public final class DungeonEditorControlsView extends VBox {
 
         private MapEditorSection(boolean[] rendering) {
             this.rendering = rendering;
+            styled(this, "dropdown-window", "dropdown-form", "dungeon-editor-popup");
             Label draftLabel = new Label("Name");
             draftLabel.setLabelFor(draftField);
             draftField.setAccessibleText("Dungeon-Name");
-            replaceChildren(container, title, draftLabel, draftField, errorLabel, row(cancelButton, saveButton, confirmDeleteButton));
-            setNodeVisibility(container, false);
-        }
-
-        private VBox node() {
-            return container;
+            replaceChildren(this, title, draftLabel, draftField, errorLabel, row(cancelButton, saveButton, confirmDeleteButton));
+            setNodeVisibility(this, false);
         }
 
         private void bind(DungeonEditorControlsContentModel contentModel) {
@@ -179,7 +168,7 @@ public final class DungeonEditorControlsView extends VBox {
 
         private void show(DungeonEditorControlsContentModel.MapEditorUiState state) {
             DungeonEditorControlsContentModel.MapEditorUiState resolvedState = state;
-            setNodeVisibility(container, resolvedState.visible());
+            setNodeVisibility(this, resolvedState.visible());
             title.setText(resolvedState.title());
             rendering[0] = true;
             draftField.setText(resolvedState.draftName());
@@ -192,7 +181,7 @@ public final class DungeonEditorControlsView extends VBox {
         }
     }
 
-    private final class ProjectionSection {
+    private final class ProjectionSection extends HBox {
 
         private final boolean[] rendering;
         private final Label levelLabel = mutedLabel("Ebene z=0");
@@ -206,9 +195,8 @@ public final class DungeonEditorControlsView extends VBox {
         private final Slider overlayOpacitySlider = new Slider(10, 90, 35);
         private final Label overlayOpacityLabel = mutedLabel("35%");
         private final TextField selectedLevelsField = new TextField();
-        private final HBox overlayRangeRow = DungeonEditorControlsView.row(new Label("Umfang"), overlayRangeSpinner);
-        private final HBox selectedLevelsRow = DungeonEditorControlsView.row(new Label("Ebenen"), selectedLevelsField);
-        private final HBox row;
+        private final HBox overlayRangeRow = row(new Label("Umfang"), overlayRangeSpinner);
+        private final HBox selectedLevelsRow = row(new Label("Ebenen"), selectedLevelsField);
         private final HBox overlayRow;
 
         private ProjectionSection(
@@ -219,25 +207,23 @@ public final class DungeonEditorControlsView extends VBox {
             this.rendering = rendering;
             gridButton = toolToggle(toolControls.gridView());
             graphButton = toolToggle(toolControls.graphView());
-            row = styled(
-                    DungeonEditorControlsView.row(
-                            styled(group(levelLabel, previousLevelButton, nextLevelButton), "dungeon-stepper-group"),
-                            styled(group(gridButton, graphButton), "dungeon-segment-group")),
-                    "dungeon-control-projection-row");
+            styled(this, controlRowStyle(), "dungeon-control-projection-row");
+            setAlignment(Pos.CENTER_LEFT);
+            setMaxWidth(Double.MAX_VALUE);
+            replaceChildren(
+                    this,
+                    styled(group(levelLabel, previousLevelButton, nextLevelButton), "dungeon-stepper-group"),
+                    styled(group(gridButton, graphButton), "dungeon-segment-group"));
             overlayRow = styled(
-                    DungeonEditorControlsView.row(
+                    row(
                             overlayTrigger,
                             overlayModeSelector,
-                            DungeonEditorControlsView.row(new Label("Staerke"), overlayOpacitySlider, overlayOpacityLabel),
+                            row(new Label("Staerke"), overlayOpacitySlider, overlayOpacityLabel),
                             overlayRangeRow,
                             selectedLevelsRow),
                     "dungeon-overlay-content");
             configureProjectionControls(toolControls);
             configureOverlayControls(contentModel);
-        }
-
-        private HBox row() {
-            return row;
         }
 
         private HBox overlayRow() {
@@ -314,7 +300,7 @@ public final class DungeonEditorControlsView extends VBox {
         }
     }
 
-    private final class ToolSection {
+    private final class ToolSection extends HBox {
 
         private final ToggleButton selectButton;
         private final Button roomButton;
@@ -325,7 +311,6 @@ public final class DungeonEditorControlsView extends VBox {
         private final Button doorDeleteButton;
         private final Button corridorButton;
         private final Button corridorDeleteButton;
-        private final HBox row;
 
         private ToolSection(DungeonEditorControlsContentModel.ToolControls toolControls) {
             selectButton = toolToggle(toolControls.select().label());
@@ -337,23 +322,21 @@ public final class DungeonEditorControlsView extends VBox {
             doorDeleteButton = toolButton(toolControls.doorDelete().label());
             corridorButton = toolButton(toolControls.corridor().label());
             corridorDeleteButton = toolButton(toolControls.corridorDelete().label());
-            row = styled(
-                    DungeonEditorControlsView.row(
-                            selectButton,
-                            roomButton,
-                            roomDeleteButton,
-                            wallButton,
-                            wallDeleteButton,
-                            doorButton,
-                            doorDeleteButton,
-                            corridorButton,
-                            corridorDeleteButton),
-                    "dungeon-control-tool-row");
+            styled(this, controlRowStyle(), "dungeon-control-tool-row");
+            setAlignment(Pos.CENTER_LEFT);
+            setMaxWidth(Double.MAX_VALUE);
+            replaceChildren(
+                    this,
+                    selectButton,
+                    roomButton,
+                    roomDeleteButton,
+                    wallButton,
+                    wallDeleteButton,
+                    doorButton,
+                    doorDeleteButton,
+                    corridorButton,
+                    corridorDeleteButton);
             configureToolControls(toolControls);
-        }
-
-        private HBox row() {
-            return row;
         }
 
         private void bind(
@@ -502,16 +485,16 @@ public final class DungeonEditorControlsView extends VBox {
                 new DungeonEditorControlsViewInputEvent.OverlaySnapshot(modeKey, levelRange, opacity, selectedLevelsText)));
     }
 
-    private static ComboBox<Object> mapSelector() {
-        return new ComboBox<>();
-    }
-
     private static HBox row(Node... nodes) {
         HBox row = new HBox(6, nodes);
-        styled(row, "dungeon-control-row");
+        styled(row, controlRowStyle());
         row.setAlignment(Pos.CENTER_LEFT);
         row.setMaxWidth(Double.MAX_VALUE);
         return row;
+    }
+
+    private static String controlRowStyle() {
+        return "dungeon-control-row";
     }
 
     private static HBox group(Node... nodes) {

@@ -84,19 +84,13 @@ public final class PublishDungeonEditorAuthoredInspectorUseCase {
     ) {
         List<DungeonAuthoredPublishedStateRepository.RoomExitNarrationPublication> result = new ArrayList<>();
         for (LoadDungeonSnapshotUseCase.RoomExitNarrationData exit : exits) {
-            result.add(roomExitPublication(exit));
+            result.add(new DungeonAuthoredPublishedStateRepository.RoomExitNarrationPublication(
+                    exit.label(),
+                    exit.cell(),
+                    exit.direction(),
+                    exit.description()));
         }
         return List.copyOf(result);
-    }
-
-    private static DungeonAuthoredPublishedStateRepository.RoomExitNarrationPublication roomExitPublication(
-            LoadDungeonSnapshotUseCase.RoomExitNarrationData exit
-    ) {
-        return new DungeonAuthoredPublishedStateRepository.RoomExitNarrationPublication(
-                exit.label(),
-                exit.cell(),
-                exit.direction(),
-                exit.description());
     }
 
     private static List<DungeonEditorWorkspaceValues.RoomNarrationCard> roomNarrations(
@@ -124,24 +118,15 @@ public final class PublishDungeonEditorAuthoredInspectorUseCase {
     ) {
         List<DungeonEditorWorkspaceValues.RoomExitNarration> result = new ArrayList<>();
         for (LoadDungeonSnapshotUseCase.RoomExitNarrationData exit : exits) {
-            result.add(roomExit(exit));
+            DungeonCell cell = exit.cell();
+            result.add(new DungeonEditorWorkspaceValues.RoomExitNarration(
+                    exit.label(),
+                    cell == null
+                            ? DungeonEditorWorkspaceValues.Cell.empty()
+                            : new DungeonEditorWorkspaceValues.Cell(cell.q(), cell.r(), cell.level()),
+                    exit.direction().name(),
+                    exit.description()));
         }
         return List.copyOf(result);
-    }
-
-    private static DungeonEditorWorkspaceValues.RoomExitNarration roomExit(
-            LoadDungeonSnapshotUseCase.RoomExitNarrationData exit
-    ) {
-        return new DungeonEditorWorkspaceValues.RoomExitNarration(
-                exit.label(),
-                cell(exit.cell()),
-                exit.direction().name(),
-                exit.description());
-    }
-
-    private static DungeonEditorWorkspaceValues.Cell cell(@Nullable DungeonCell cell) {
-        return cell == null
-                ? DungeonEditorWorkspaceValues.Cell.empty()
-                : new DungeonEditorWorkspaceValues.Cell(cell.q(), cell.r(), cell.level());
     }
 }

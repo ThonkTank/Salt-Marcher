@@ -13,12 +13,9 @@ import src.domain.dungeon.model.editor.model.workspace.model.DungeonEditorWorksp
 import src.domain.dungeon.model.editor.model.workspace.model.DungeonEditorWorkspaceValues.Handle;
 import src.domain.dungeon.model.editor.model.workspace.model.DungeonEditorWorkspaceValues.MapSnapshot;
 
-public final class DungeonEditorSnapshotProjectionLevelProjectionHelper {
+public interface DungeonEditorSnapshotProjectionLevelProjectionHelper {
 
-    private DungeonEditorSnapshotProjectionLevelProjectionHelper() {
-    }
-
-    public static int clampProjectionLevel(
+    static int clampProjectionLevel(
             DungeonEditorSessionSnapshot.@Nullable SurfaceData surface,
             int projectionLevel
     ) {

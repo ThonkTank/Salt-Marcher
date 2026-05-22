@@ -1,9 +1,6 @@
 package src.domain.dungeon.model.editor.helper;
 
-import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Deque;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -226,19 +223,20 @@ public final class DungeonEditorBoundaryGraphHelper {
     private static Map<VertexKey, Set<VertexKey>> adjacency(Set<EdgeKey> edges) {
         Map<VertexKey, Set<VertexKey>> result = new LinkedHashMap<>();
         for (EdgeKey edge : edges) {
-            addNeighbor(result, edge.start(), edge.end());
-            addNeighbor(result, edge.end(), edge.start());
+            Set<VertexKey> startNeighbors = result.get(edge.start());
+            if (startNeighbors == null) {
+                startNeighbors = new LinkedHashSet<>();
+                result.put(edge.start(), startNeighbors);
+            }
+            startNeighbors.add(edge.end());
+            Set<VertexKey> endNeighbors = result.get(edge.end());
+            if (endNeighbors == null) {
+                endNeighbors = new LinkedHashSet<>();
+                result.put(edge.end(), endNeighbors);
+            }
+            endNeighbors.add(edge.start());
         }
         return Map.copyOf(result);
-    }
-
-    private static void addNeighbor(Map<VertexKey, Set<VertexKey>> adjacency, VertexKey vertex, VertexKey neighbor) {
-        Set<VertexKey> neighbors = adjacency.get(vertex);
-        if (neighbors == null) {
-            neighbors = new LinkedHashSet<>();
-            adjacency.put(vertex, neighbors);
-        }
-        neighbors.add(neighbor);
     }
 
     private static Map<VertexKey, VertexKey> visitVertices(
@@ -246,30 +244,28 @@ public final class DungeonEditorBoundaryGraphHelper {
             VertexKey goal,
             Map<VertexKey, Set<VertexKey>> adjacency
     ) {
-        Deque<VertexKey> queue = new ArrayDeque<>();
+        List<VertexKey> queue = new ArrayList<>();
         Map<VertexKey, VertexKey> previous = new LinkedHashMap<>();
         queue.add(start);
         previous.put(start, null);
-        while (!queue.isEmpty()) {
-            VertexKey current = queue.removeFirst();
+        int nextQueuedIndex = 0;
+        while (nextQueuedIndex < queue.size()) {
+            VertexKey current = queue.get(nextQueuedIndex);
+            nextQueuedIndex++;
             if (current.equals(goal)) {
                 return previous;
             }
-            for (VertexKey neighbor : orderedNeighbors(adjacency, current)) {
+            List<VertexKey> neighbors = new ArrayList<>(adjacency.getOrDefault(current, Set.of()));
+            neighbors.sort(VertexKey.order());
+            for (VertexKey neighbor : neighbors) {
                 if (previous.containsKey(neighbor)) {
                     continue;
                 }
                 previous.put(neighbor, current);
-                queue.addLast(neighbor);
+                queue.add(neighbor);
             }
         }
         return previous;
-    }
-
-    private static List<VertexKey> orderedNeighbors(Map<VertexKey, Set<VertexKey>> adjacency, VertexKey current) {
-        List<VertexKey> neighbors = new ArrayList<>(adjacency.getOrDefault(current, Set.of()));
-        neighbors.sort(VertexKey.order());
-        return List.copyOf(neighbors);
     }
 
     private static List<EdgeKey> buildPath(
@@ -284,10 +280,9 @@ public final class DungeonEditorBoundaryGraphHelper {
             if (parent == null) {
                 return List.of();
             }
-            path.add(EdgeKey.between(parent, current));
+            path.add(0, EdgeKey.between(parent, current));
             current = parent;
         }
-        Collections.reverse(path);
         return List.copyOf(path);
     }
 }

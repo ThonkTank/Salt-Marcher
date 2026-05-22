@@ -30,7 +30,7 @@ import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel.RelationPrimi
 import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel.RenderScene;
 import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel.Viewport;
 
-@SuppressWarnings("PMD.CouplingBetweenObjects")
+@SuppressWarnings("PMD.LawOfDemeter")
 public class DungeonMapView extends BorderPane {
 
     private static final Object BOUND_MODEL_KEY = new Object();
@@ -125,7 +125,6 @@ public class DungeonMapView extends BorderPane {
         }
     }
 
-    @SuppressWarnings("PMD.LawOfDemeter")
     private interface InputEvents {
 
         static void install(Pane canvasLayer, DungeonMapView view) {
@@ -199,7 +198,6 @@ public class DungeonMapView extends BorderPane {
         }
     }
 
-    @SuppressWarnings("PMD.LawOfDemeter")
     private interface InputSnapshots {
 
         static void emitScrollEvent(
@@ -258,7 +256,6 @@ public class DungeonMapView extends BorderPane {
         }
     }
 
-    @SuppressWarnings("PMD.LawOfDemeter")
     private interface ViewChrome {
 
         static StackPane createHost() {
@@ -368,7 +365,7 @@ public class DungeonMapView extends BorderPane {
             for (int index = 0; index < GRID_STEPS.length; index++) {
                 int gridStep = GRID_STEPS[index];
                 double spacing = viewport.gridSize() * gridStep;
-                if (spacing >= 10.0) {
+                if (gridSpacingVisible(spacing)) {
                     gc.setStroke(PaintPalette.gridColor(index));
                     gc.setLineWidth(PaintPalette.gridWidth(index));
                     double offsetX = viewport.normalizedOffset(spacing, true);
@@ -381,6 +378,10 @@ public class DungeonMapView extends BorderPane {
                     }
                 }
             }
+        }
+
+        static boolean gridSpacingVisible(double spacing) {
+            return spacing >= 10.0;
         }
 
         static void drawSurfaces(
@@ -486,7 +487,6 @@ public class DungeonMapView extends BorderPane {
         }
     }
 
-    @SuppressWarnings("PMD.LawOfDemeter")
     private interface PrimitivePainter {
 
         static void drawPolygon(
@@ -496,7 +496,7 @@ public class DungeonMapView extends BorderPane {
                 PaintStyle style,
                 Viewport viewport
         ) {
-            if (points.size() < 3) {
+            if (!polygonDrawable(points)) {
                 return;
             }
             ensurePolygonBufferCapacity(view, points.size());
@@ -523,7 +523,7 @@ public class DungeonMapView extends BorderPane {
                 PaintStyle style,
                 Viewport viewport
         ) {
-            if (points.size() < 2) {
+            if (!polylineDrawable(points)) {
                 return;
             }
             applyStyle(gc, style, viewport);
@@ -536,6 +536,14 @@ public class DungeonMapView extends BorderPane {
             }
             gc.stroke();
             gc.restore();
+        }
+
+        static boolean polygonDrawable(List<MapCanvasPoint> points) {
+            return points.size() >= 3;
+        }
+
+        static boolean polylineDrawable(List<MapCanvasPoint> points) {
+            return points.size() >= 2;
         }
 
         static void drawLabelBox(

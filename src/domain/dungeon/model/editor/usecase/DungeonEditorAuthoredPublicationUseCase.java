@@ -40,7 +40,7 @@ public final class DungeonEditorAuthoredPublicationUseCase {
     ) {
     }
 
-    private static DungeonEditorDungeonState.SnapshotFacts stateFacts(
+    private DungeonEditorDungeonState.SnapshotFacts stateFacts(
             String mapName,
             @Nullable DungeonDerivedState derived,
             List<DungeonEditorHandleFacts> editorHandles,
@@ -76,42 +76,70 @@ public final class DungeonEditorAuthoredPublicationUseCase {
         DungeonMapFacts safeFacts = derived == null || derived.map() == null
                 ? new DungeonMapFacts(DungeonTopology.SQUARE, 1, 1, List.of(), List.of())
                 : derived.map();
+        List<DungeonEditorWorkspaceValues.Area> areas = new ArrayList<>();
+        for (DungeonAreaFacts area : safeFacts.areas()) {
+            areas.add(area(area));
+        }
+        List<DungeonEditorWorkspaceValues.Boundary> boundaries = new ArrayList<>();
+        for (DungeonBoundaryFacts boundary : safeFacts.boundaries()) {
+            boundaries.add(boundary(boundary));
+        }
+        List<DungeonEditorWorkspaceValues.Feature> features = new ArrayList<>();
+        for (DungeonFeatureFacts feature : safeFacts.features()) {
+            features.add(feature(feature));
+        }
+        List<DungeonEditorWorkspaceValues.Handle> workspaceHandles = new ArrayList<>();
         List<DungeonEditorHandleFacts> safeHandles = handles == null ? List.of() : List.copyOf(handles);
+        for (DungeonEditorHandleFacts handle : safeHandles) {
+            workspaceHandles.add(handle(handle));
+        }
         return new MapSnapshot(
                 safeFacts.topology(),
                 safeFacts.width(),
                 safeFacts.height(),
-                areas(safeFacts.areas()),
-                boundaries(safeFacts.boundaries()),
-                features(safeFacts.features()),
-                handles(safeHandles));
+                List.copyOf(areas),
+                List.copyOf(boundaries),
+                List.copyOf(features),
+                List.copyOf(workspaceHandles));
     }
 
     private static DungeonEditorWorkspaceValues.Area area(DungeonAreaFacts area) {
+        List<DungeonEditorWorkspaceValues.Cell> cells = new ArrayList<>();
+        for (DungeonCell cell : area.cells()) {
+            cells.add(cell(cell));
+        }
         return new DungeonEditorWorkspaceValues.Area(
                 area.kind(),
                 area.id(),
                 area.clusterId(),
                 area.label(),
-                cells(area.cells()),
+                List.copyOf(cells),
                 area.topologyRef());
     }
 
     private static DungeonEditorWorkspaceValues.Boundary boundary(DungeonBoundaryFacts boundary) {
+        DungeonEdge edge = boundary.edge();
+        DungeonEditorWorkspaceValues.Edge workspaceEdge = edge == null
+                ? new DungeonEditorWorkspaceValues.Edge(cell(null), cell(null))
+                : new DungeonEditorWorkspaceValues.Edge(cell(edge.from()), cell(edge.to()));
         return new DungeonEditorWorkspaceValues.Boundary(
                 DungeonEditorWorkspaceValues.BoundaryKind.fromExternalKind(boundary.kind()),
                 boundary.id(),
                 boundary.label(),
-                edge(boundary.edge()),
+                workspaceEdge,
                 boundary.topologyRef());
     }
 
     private static DungeonEditorWorkspaceValues.Feature feature(DungeonFeatureFacts feature) {
+        List<DungeonEditorWorkspaceValues.Cell> cells = new ArrayList<>();
+        for (DungeonCell cell : feature.cells()) {
+            cells.add(cell(cell));
+        }
         return new DungeonEditorWorkspaceValues.Feature(
                 feature.kind(),
                 feature.id(),
                 feature.label(),
-                cells(feature.cells()),
+                List.copyOf(cells),
                 feature.description(),
                 feature.destinationLabel(),
                 feature.topologyRef());
@@ -119,6 +147,7 @@ public final class DungeonEditorAuthoredPublicationUseCase {
 
     private static DungeonEditorWorkspaceValues.Handle handle(DungeonEditorHandleFacts handleFacts) {
         DungeonEditorHandle handle = handleFacts.handle();
+        DungeonEditorWorkspaceValues.Cell cell = cell(handle.cell());
         DungeonEditorWorkspaceValues.HandleRef ref = new DungeonEditorWorkspaceValues.HandleRef(
                 handle.type(),
                 handle.topologyRef(),
@@ -127,56 +156,9 @@ public final class DungeonEditorAuthoredPublicationUseCase {
                 handle.corridorId(),
                 handle.roomId(),
                 handle.index(),
-                cell(handle.cell()),
+                cell,
                 handle.direction().name());
-        return new DungeonEditorWorkspaceValues.Handle(ref, handleFacts.label(), cell(handle.cell()));
-    }
-
-    private static List<DungeonEditorWorkspaceValues.Area> areas(List<DungeonAreaFacts> areas) {
-        List<DungeonEditorWorkspaceValues.Area> result = new ArrayList<>();
-        for (DungeonAreaFacts area : areas) {
-            result.add(area(area));
-        }
-        return List.copyOf(result);
-    }
-
-    private static List<DungeonEditorWorkspaceValues.Boundary> boundaries(List<DungeonBoundaryFacts> boundaries) {
-        List<DungeonEditorWorkspaceValues.Boundary> result = new ArrayList<>();
-        for (DungeonBoundaryFacts boundary : boundaries) {
-            result.add(boundary(boundary));
-        }
-        return List.copyOf(result);
-    }
-
-    private static List<DungeonEditorWorkspaceValues.Feature> features(List<DungeonFeatureFacts> features) {
-        List<DungeonEditorWorkspaceValues.Feature> result = new ArrayList<>();
-        for (DungeonFeatureFacts feature : features) {
-            result.add(feature(feature));
-        }
-        return List.copyOf(result);
-    }
-
-    private static List<DungeonEditorWorkspaceValues.Handle> handles(List<DungeonEditorHandleFacts> handles) {
-        List<DungeonEditorWorkspaceValues.Handle> result = new ArrayList<>();
-        for (DungeonEditorHandleFacts handle : handles) {
-            result.add(handle(handle));
-        }
-        return List.copyOf(result);
-    }
-
-    private static List<DungeonEditorWorkspaceValues.Cell> cells(List<DungeonCell> cells) {
-        List<DungeonEditorWorkspaceValues.Cell> result = new ArrayList<>();
-        for (DungeonCell cell : cells) {
-            result.add(cell(cell));
-        }
-        return List.copyOf(result);
-    }
-
-    private static DungeonEditorWorkspaceValues.Edge edge(@Nullable DungeonEdge edge) {
-        if (edge == null) {
-            return new DungeonEditorWorkspaceValues.Edge(cell(null), cell(null));
-        }
-        return new DungeonEditorWorkspaceValues.Edge(cell(edge.from()), cell(edge.to()));
+        return new DungeonEditorWorkspaceValues.Handle(ref, handleFacts.label(), cell);
     }
 
     private static DungeonEditorWorkspaceValues.Cell cell(@Nullable DungeonCell cell) {

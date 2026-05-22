@@ -3,7 +3,6 @@ package src.domain.dungeon.model.editor.usecase;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import src.domain.dungeon.model.editor.helper.DungeonEditorBoundaryClusterResolutionHelper;
 import src.domain.dungeon.model.editor.helper.DungeonEditorBoundaryGraphHelper;
@@ -38,7 +37,7 @@ final class DungeonEditorBoundaryDraftUseCase {
             return armDoorBoundary(input, snapshot, selectedTool, state);
         }
         var vertex = input.vertexTarget();
-        if (!vertexPresent(vertex)) {
+        if (vertex == null || !vertex.present()) {
             return clearedBoundaryDraft(state);
         }
         boolean deleteMode = selectedTool.deleteMode();
@@ -84,9 +83,13 @@ final class DungeonEditorBoundaryDraftUseCase {
         if (previewEdges.isEmpty()) {
             return DungeonEditorMainViewEffect.clearPreviewIfNeeded(true);
         }
+        List<DungeonEditorWorkspaceValues.Edge> edgeRefs = new ArrayList<>();
+        for (EdgeKey edge : previewEdges) {
+            edgeRefs.add(edge.toEdgeRef());
+        }
         return DungeonEditorMainViewEffect.preview(new DungeonEditorSessionValues.ClusterBoundariesPreview(
                 state.boundaryDraft().clusterId(),
-                edgeRefs(previewEdges),
+                List.copyOf(edgeRefs),
                 DungeonEditorWorkspaceValues.BoundaryKind.WALL,
                 state.boundaryDraft().deleteMode()));
     }
@@ -106,11 +109,20 @@ final class DungeonEditorBoundaryDraftUseCase {
         }
         BoundaryTarget boundary = input.boundaryTarget();
         boolean deleteMode = selectedTool.deleteMode();
-        if (!doorBoundaryMatchesDraft(boundary, snapshot, deleteMode, state.boundaryDraft())) {
+        long clusterId = clusterResolver.resolveBoundaryClusterId(snapshot, boundary);
+        EdgeKey edge = EdgeKey.from(boundary.edgeRef());
+        if (!roomTouchService.editableDoorBoundary(snapshot, boundary, deleteMode)
+                || state.boundaryDraft().deleteMode() != deleteMode
+                || state.boundaryDraft().clusterId() != clusterId
+                || !state.boundaryDraft().previewEdges().contains(edge)) {
             return new DungeonEditorMainViewInterpretation(nextState, DungeonEditorMainViewEffect.clearPreviewIfNeeded(true));
         }
         return new DungeonEditorMainViewInterpretation(nextState, DungeonEditorMainViewEffect.apply(
-                doorPreview(boundary, snapshot, deleteMode)));
+                new DungeonEditorSessionValues.ClusterBoundariesPreview(
+                        clusterId,
+                        List.of(boundary.edgeRef()),
+                        DungeonEditorWorkspaceValues.BoundaryKind.DOOR,
+                        deleteMode)));
     }
 
     private DungeonEditorMainViewInterpretation armDoorBoundary(
@@ -129,54 +141,27 @@ final class DungeonEditorBoundaryDraftUseCase {
                     state.withBoundaryDraft(BoundaryDraft.none()),
                     DungeonEditorMainViewEffect.clearPreviewIfNeeded(true));
         }
-        InteractionState nextState = state.withBoundaryDraft(doorDraft(boundary, snapshot, deleteMode));
-        return new DungeonEditorMainViewInterpretation(nextState, DungeonEditorMainViewEffect.preview(
-                doorPreview(boundary, snapshot, deleteMode)));
-    }
-
-    private DungeonEditorSessionValues.ClusterBoundariesPreview doorPreview(
-            BoundaryTarget boundary,
-            DungeonEditorWorkspaceValues.MapSnapshot snapshot,
-            boolean deleteMode
-    ) {
-        return new DungeonEditorSessionValues.ClusterBoundariesPreview(
-                clusterResolver.resolveBoundaryClusterId(snapshot, boundary),
-                List.of(boundary.edgeRef()),
-                DungeonEditorWorkspaceValues.BoundaryKind.DOOR,
-                deleteMode);
-    }
-
-    private BoundaryDraft doorDraft(
-            BoundaryTarget boundary,
-            DungeonEditorWorkspaceValues.MapSnapshot snapshot,
-            boolean deleteMode
-    ) {
+        long clusterId = clusterResolver.resolveBoundaryClusterId(snapshot, boundary);
         EdgeKey edge = EdgeKey.from(boundary.edgeRef());
-        return new BoundaryDraft(
-                clusterResolver.resolveBoundaryClusterId(snapshot, boundary),
+        InteractionState nextState = state.withBoundaryDraft(new BoundaryDraft(
+                clusterId,
                 deleteMode,
                 edge.start(),
                 edge.end(),
                 Set.of(edge),
-                true);
-    }
-
-    private boolean doorBoundaryMatchesDraft(
-            BoundaryTarget boundary,
-            DungeonEditorWorkspaceValues.MapSnapshot snapshot,
-            boolean deleteMode,
-            BoundaryDraft draft
-    ) {
-        return roomTouchService.editableDoorBoundary(snapshot, boundary, deleteMode)
-                && draft.deleteMode() == deleteMode
-                && draft.clusterId() == clusterResolver.resolveBoundaryClusterId(snapshot, boundary)
-                && draft.previewEdges().contains(EdgeKey.from(boundary.edgeRef()));
+                true));
+        return new DungeonEditorMainViewInterpretation(nextState, DungeonEditorMainViewEffect.preview(
+                new DungeonEditorSessionValues.ClusterBoundariesPreview(
+                        clusterId,
+                        List.of(boundary.edgeRef()),
+                        DungeonEditorWorkspaceValues.BoundaryKind.DOOR,
+                        deleteMode)));
     }
 
     private DungeonEditorMainViewInterpretation beginBoundaryDraft(
             DungeonEditorWorkspaceValues.MapSnapshot snapshot,
             long clusterId,
-            src.domain.dungeon.model.editor.model.interaction.model.DungeonEditorInteractionValues.VertexTarget vertex,
+            VertexTarget vertex,
             boolean deleteMode,
             VertexKey nextVertex,
             InteractionState state
@@ -216,12 +201,18 @@ final class DungeonEditorBoundaryDraftUseCase {
     ) {
         long bestClusterId = 0L;
         double bestDistance = Double.MAX_VALUE;
-        for (Map.Entry<Long, Set<CellKey>> entry :
-                graphService.clusterCellsByCluster(snapshot, vertex.level()).entrySet()) {
+        for (var entry : graphService.clusterCellsByCluster(snapshot, vertex.level()).entrySet()) {
             if (!graphService.isEditableVertex(snapshot, entry.getKey(), vertex, deleteMode)) {
                 continue;
             }
-            double distance = centerDistance(entry.getValue(), vertex);
+            double q = 0.0;
+            double r = 0.0;
+            for (CellKey cell : entry.getValue()) {
+                q += cell.q() + 0.5;
+                r += cell.r() + 0.5;
+            }
+            int count = Math.max(1, entry.getValue().size());
+            double distance = Math.hypot(q / count - vertex.q(), r / count - vertex.r());
             if (bestClusterId == 0L || distance < bestDistance
                     || distance == bestDistance && entry.getKey() < bestClusterId) {
                 bestClusterId = entry.getKey();
@@ -229,20 +220,6 @@ final class DungeonEditorBoundaryDraftUseCase {
             }
         }
         return bestClusterId;
-    }
-
-    private static double centerDistance(
-            Set<CellKey> cells,
-            VertexTarget vertex
-    ) {
-        double q = 0.0;
-        double r = 0.0;
-        for (CellKey cell : cells) {
-            q += cell.q() + 0.5;
-            r += cell.r() + 0.5;
-        }
-        int count = Math.max(1, cells.size());
-        return Math.hypot(q / count - vertex.q(), r / count - vertex.r());
     }
 
     private DungeonEditorMainViewInterpretation advanceBoundaryDraft(
@@ -286,11 +263,15 @@ final class DungeonEditorBoundaryDraftUseCase {
             if (current.previewEdges().isEmpty()) {
                 return new DungeonEditorMainViewInterpretation(nextState, DungeonEditorMainViewEffect.clearPreviewIfNeeded(true));
             }
+            List<DungeonEditorWorkspaceValues.Edge> edgeRefs = new ArrayList<>();
+            for (EdgeKey edge : current.previewEdges()) {
+                edgeRefs.add(edge.toEdgeRef());
+            }
             return new DungeonEditorMainViewInterpretation(
                     nextState,
                     DungeonEditorMainViewEffect.apply(new DungeonEditorSessionValues.ClusterBoundariesPreview(
                             current.clusterId(),
-                            edgeRefs(current.previewEdges()),
+                            List.copyOf(edgeRefs),
                             DungeonEditorWorkspaceValues.BoundaryKind.WALL,
                             current.deleteMode())));
         }
@@ -301,19 +282,5 @@ final class DungeonEditorBoundaryDraftUseCase {
         return new DungeonEditorMainViewInterpretation(
                 state.boundaryDraft().present() ? state : state.clear(),
                 DungeonEditorMainViewEffect.none());
-    }
-
-    private static boolean vertexPresent(
-            src.domain.dungeon.model.editor.model.interaction.model.DungeonEditorInteractionValues.VertexTarget vertex
-    ) {
-        return vertex != null && vertex.present();
-    }
-
-    private static List<DungeonEditorWorkspaceValues.Edge> edgeRefs(Set<EdgeKey> edges) {
-        List<DungeonEditorWorkspaceValues.Edge> result = new ArrayList<>();
-        for (EdgeKey edge : edges) {
-            result.add(edge.toEdgeRef());
-        }
-        return List.copyOf(result);
     }
 }

@@ -320,15 +320,27 @@ public final class DungeonEditorCorridorTargetHelper {
         int bestDistance = Integer.MAX_VALUE;
         for (DungeonEditorWorkspaceValues.Cell cell : room.cells()) {
             int distance = Math.abs(cell.q() - pointerQ) + Math.abs(cell.r() - pointerR);
-            if (bestCell == null
-                    || distance < bestDistance
-                    || distance == bestDistance && cell.r() < bestCell.r()
-                    || distance == bestDistance && cell.r() == bestCell.r() && cell.q() < bestCell.q()) {
+            if (bestCell == null || closerRoomCell(cell, distance, bestCell, bestDistance)) {
                 bestCell = cell;
                 bestDistance = distance;
             }
         }
         return bestCell == null ? new DungeonEditorWorkspaceValues.Cell(pointerQ, pointerR, 0) : bestCell;
+    }
+
+    private static boolean closerRoomCell(
+            DungeonEditorWorkspaceValues.Cell cell,
+            int distance,
+            DungeonEditorWorkspaceValues.Cell bestCell,
+            int bestDistance
+    ) {
+        if (distance != bestDistance) {
+            return distance < bestDistance;
+        }
+        if (cell.r() != bestCell.r()) {
+            return cell.r() < bestCell.r();
+        }
+        return cell.q() < bestCell.q();
     }
 
     private static String corridorDirection(

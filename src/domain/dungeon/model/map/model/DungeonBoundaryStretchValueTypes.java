@@ -76,7 +76,7 @@ public final class DungeonBoundaryStretchValueTypes {
         public static BoundarySide resolve(
                 StretchOrientation orientation,
                 DungeonBoundaryTouch touch,
-            int fixedCoordinate
+                int fixedCoordinate
         ) {
             if (orientation == StretchOrientation.VERTICAL) {
                 return hasInsideCellWithColumn(touch, fixedCoordinate - 1)
@@ -206,51 +206,64 @@ public final class DungeonBoundaryStretchValueTypes {
         }
 
         public List<DungeonEdge> connectorPath(BoundaryVertex vertex) {
-            BoundaryVertex moved = orientation == StretchOrientation.VERTICAL
-                    ? new BoundaryVertex(vertex.q() + movement, vertex.r(), vertex.level())
-                    : new BoundaryVertex(vertex.q(), vertex.r() + movement, vertex.level());
-            if (vertex.equals(moved)) {
+            BoundaryVertex moved = movedVertex(vertex);
+            if (sameCoordinates(vertex, moved)) {
                 return List.of();
             }
             List<DungeonEdge> result = new ArrayList<>();
-            if (vertex.q() == moved.q()) {
-                int step = Integer.compare(moved.r(), vertex.r());
-                for (int r = vertex.r(); r != moved.r(); r += step) {
-                    result.add(new DungeonEdge(
-                            new DungeonCell(vertex.q(), r, vertex.level()),
-                            new DungeonCell(vertex.q(), r + step, vertex.level())));
-                }
-            } else {
-                int step = Integer.compare(moved.q(), vertex.q());
-                for (int q = vertex.q(); q != moved.q(); q += step) {
-                    result.add(new DungeonEdge(
-                            new DungeonCell(q, vertex.r(), vertex.level()),
-                            new DungeonCell(q + step, vertex.r(), vertex.level())));
-                }
+            int step = orientation == StretchOrientation.VERTICAL
+                    ? Integer.compare(moved.q(), vertex.q())
+                    : Integer.compare(moved.r(), vertex.r());
+            for (int offset = 0; offset != movement; offset += step) {
+                result.add(connectorEdge(vertex, offset, step));
             }
             return List.copyOf(result);
         }
 
+        private BoundaryVertex movedVertex(BoundaryVertex vertex) {
+            return orientation == StretchOrientation.VERTICAL
+                    ? new BoundaryVertex(vertex.q() + movement, vertex.r(), vertex.level())
+                    : new BoundaryVertex(vertex.q(), vertex.r() + movement, vertex.level());
+        }
+
+        private boolean sameCoordinates(BoundaryVertex left, BoundaryVertex right) {
+            return left.q() == right.q()
+                    && left.r() == right.r()
+                    && left.level() == right.level();
+        }
+
+        private DungeonEdge connectorEdge(BoundaryVertex vertex, int offset, int step) {
+            return orientation == StretchOrientation.VERTICAL
+                    ? new DungeonEdge(
+                            new DungeonCell(vertex.q() + offset, vertex.r(), vertex.level()),
+                            new DungeonCell(vertex.q() + offset + step, vertex.r(), vertex.level()))
+                    : new DungeonEdge(
+                            new DungeonCell(vertex.q(), vertex.r() + offset, vertex.level()),
+                            new DungeonCell(vertex.q(), vertex.r() + offset + step, vertex.level()));
+        }
+
         public Set<DungeonCell> stripCells() {
             Set<DungeonCell> result = new LinkedHashSet<>();
-            if (orientation == StretchOrientation.VERTICAL) {
-                int minQ = Math.min(fixedCoordinate, fixedCoordinate + movement);
-                int maxQ = Math.max(fixedCoordinate, fixedCoordinate + movement);
-                for (int q = minQ; q < maxQ; q++) {
-                    for (int r = startVariable; r < endVariable; r++) {
-                        result.add(new DungeonCell(q, r, level));
-                    }
-                }
-            } else {
-                int minR = Math.min(fixedCoordinate, fixedCoordinate + movement);
-                int maxR = Math.max(fixedCoordinate, fixedCoordinate + movement);
-                for (int r = minR; r < maxR; r++) {
-                    for (int q = startVariable; q < endVariable; q++) {
-                        result.add(new DungeonCell(q, r, level));
-                    }
+            for (int fixed = firstMovedCoordinate(); fixed < lastMovedCoordinate(); fixed++) {
+                for (int variable = startVariable; variable < endVariable; variable++) {
+                    result.add(stripCell(fixed, variable));
                 }
             }
             return Set.copyOf(result);
+        }
+
+        private int firstMovedCoordinate() {
+            return Math.min(fixedCoordinate, fixedCoordinate + movement);
+        }
+
+        private int lastMovedCoordinate() {
+            return Math.max(fixedCoordinate, fixedCoordinate + movement);
+        }
+
+        private DungeonCell stripCell(int fixed, int variable) {
+            return orientation == StretchOrientation.VERTICAL
+                    ? new DungeonCell(fixed, variable, level)
+                    : new DungeonCell(variable, fixed, level);
         }
     }
 
@@ -259,24 +272,14 @@ public final class DungeonBoundaryStretchValueTypes {
             Map<Integer, List<DungeonClusterBoundary>> boundariesByLevel
     ) {
         public StretchMutationResult {
-            cellsByLevel = copyCellsByLevel(cellsByLevel);
-            boundariesByLevel = copyBoundariesByLevel(boundariesByLevel);
+            cellsByLevel = copyListsByLevel(cellsByLevel);
+            boundariesByLevel = copyListsByLevel(boundariesByLevel);
         }
 
-        private static Map<Integer, List<DungeonCell>> copyCellsByLevel(Map<Integer, List<DungeonCell>> source) {
-            Map<Integer, List<DungeonCell>> result = new LinkedHashMap<>();
-            for (Map.Entry<Integer, List<DungeonCell>> entry : (source == null ? Map.<Integer, List<DungeonCell>>of() : source).entrySet()) {
-                result.put(entry.getKey(), entry.getValue() == null ? List.of() : List.copyOf(entry.getValue()));
-            }
-            return Map.copyOf(result);
-        }
-
-        private static Map<Integer, List<DungeonClusterBoundary>> copyBoundariesByLevel(
-                Map<Integer, List<DungeonClusterBoundary>> source
-        ) {
-            Map<Integer, List<DungeonClusterBoundary>> result = new LinkedHashMap<>();
-            for (Map.Entry<Integer, List<DungeonClusterBoundary>> entry
-                    : (source == null ? Map.<Integer, List<DungeonClusterBoundary>>of() : source).entrySet()) {
+        private static <T> Map<Integer, List<T>> copyListsByLevel(Map<Integer, List<T>> source) {
+            Map<Integer, List<T>> result = new LinkedHashMap<>();
+            for (Map.Entry<Integer, List<T>> entry
+                    : (source == null ? Map.<Integer, List<T>>of() : source).entrySet()) {
                 result.put(entry.getKey(), entry.getValue() == null ? List.of() : List.copyOf(entry.getValue()));
             }
             return Map.copyOf(result);

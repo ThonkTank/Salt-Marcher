@@ -33,23 +33,19 @@ public final class ApplyDungeonEditorSelectionUseCase {
     }
 
     public void drag(MainViewInput input) {
-        MapSnapshot committedSnapshot = effectUseCase.committedGridOrPublishCurrent();
-        if (committedSnapshot == null) {
-            return;
+        if (effectUseCase.committedGridOrPublishCurrent() != null) {
+            effectUseCase.applyEffect(mainViewInterpreter.dragSelection(
+                    input,
+                    workflow.projectionLevel()));
         }
-        effectUseCase.applyEffect(mainViewInterpreter.dragSelection(
-                input,
-                workflow.projectionLevel()));
     }
 
     public void release(MainViewInput input) {
-        MapSnapshot committedSnapshot = effectUseCase.committedGridOrPublishCurrent();
-        if (committedSnapshot == null) {
-            return;
+        if (effectUseCase.committedGridOrPublishCurrent() != null) {
+            effectUseCase.applyEffect(mainViewInterpreter.releaseSelection(
+                    input,
+                    workflow.projectionLevel()));
         }
-        effectUseCase.applyEffect(mainViewInterpreter.releaseSelection(
-                input,
-                workflow.projectionLevel()));
     }
 
     public void hover(MainViewInput input) {

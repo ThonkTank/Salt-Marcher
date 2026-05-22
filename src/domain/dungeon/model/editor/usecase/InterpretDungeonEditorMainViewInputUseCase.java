@@ -35,21 +35,30 @@ public final class InterpretDungeonEditorMainViewInputUseCase {
             DungeonEditorSessionValues.Selection selection,
             int projectionLevel
     ) {
-        return apply(pressUseCase.interpretSelection(pointer(input, projectionLevel), snapshot, selection, state.current()));
+        DungeonEditorMainViewInterpretation interpretation =
+                pressUseCase.interpretSelection(pointer(input, projectionLevel), snapshot, selection, state.current());
+        state.replace(interpretation.nextState());
+        return interpretation.effect();
     }
 
     public DungeonEditorMainViewEffect dragSelection(
             MainViewInput input,
             int projectionLevel
     ) {
-        return apply(dragUseCase.interpretSelection(pointer(input, projectionLevel), state.current()));
+        DungeonEditorMainViewInterpretation interpretation =
+                dragUseCase.interpretSelection(pointer(input, projectionLevel), state.current());
+        state.replace(interpretation.nextState());
+        return interpretation.effect();
     }
 
     public DungeonEditorMainViewEffect releaseSelection(
             MainViewInput input,
             int projectionLevel
     ) {
-        return apply(releaseUseCase.interpretSelection(pointer(input, projectionLevel), state.current()));
+        DungeonEditorMainViewInterpretation interpretation =
+                releaseUseCase.interpretSelection(pointer(input, projectionLevel), state.current());
+        state.replace(interpretation.nextState());
+        return interpretation.effect();
     }
 
     public DungeonEditorMainViewEffect hoverSelection() {
@@ -61,7 +70,10 @@ public final class InterpretDungeonEditorMainViewInputUseCase {
             int projectionLevel,
             @Nullable MapSnapshot snapshot
     ) {
-        return apply(scrollUseCase.interpretSelection(levelDelta, projectionLevel, snapshot, state.current()));
+        DungeonEditorMainViewInterpretation interpretation =
+                scrollUseCase.interpretSelection(levelDelta, projectionLevel, snapshot, state.current());
+        state.replace(interpretation.nextState());
+        return interpretation.effect();
     }
 
     public DungeonEditorMainViewEffect pressRoom(
@@ -69,21 +81,30 @@ public final class InterpretDungeonEditorMainViewInputUseCase {
             DungeonEditorSessionValues.Tool roomTool,
             int projectionLevel
     ) {
-        return apply(pressUseCase.interpretRoom(pointer(input, projectionLevel), roomTool, state.current()));
+        DungeonEditorMainViewInterpretation interpretation =
+                pressUseCase.interpretRoom(pointer(input, projectionLevel), roomTool, state.current());
+        state.replace(interpretation.nextState());
+        return interpretation.effect();
     }
 
     public DungeonEditorMainViewEffect dragRoom(
             MainViewInput input,
             int projectionLevel
     ) {
-        return apply(dragUseCase.interpretRoom(pointer(input, projectionLevel), state.current()));
+        DungeonEditorMainViewInterpretation interpretation =
+                dragUseCase.interpretRoom(pointer(input, projectionLevel), state.current());
+        state.replace(interpretation.nextState());
+        return interpretation.effect();
     }
 
     public DungeonEditorMainViewEffect releaseRoom(
             MainViewInput input,
             int projectionLevel
     ) {
-        return apply(releaseUseCase.interpretRoom(pointer(input, projectionLevel), state.current()));
+        DungeonEditorMainViewInterpretation interpretation =
+                releaseUseCase.interpretRoom(pointer(input, projectionLevel), state.current());
+        state.replace(interpretation.nextState());
+        return interpretation.effect();
     }
 
     public DungeonEditorMainViewEffect pressBoundary(
@@ -93,12 +114,14 @@ public final class InterpretDungeonEditorMainViewInputUseCase {
             DungeonEditorSessionValues.Tool boundaryTool,
             int projectionLevel
     ) {
-        return apply(pressUseCase.interpretBoundary(
+        DungeonEditorMainViewInterpretation interpretation = pressUseCase.interpretBoundary(
                 pointer(input, projectionLevel),
                 snapshot,
                 selection,
                 boundaryTool,
-                state.current()));
+                state.current());
+        state.replace(interpretation.nextState());
+        return interpretation.effect();
     }
 
     public DungeonEditorMainViewEffect dragBoundary(
@@ -107,7 +130,10 @@ public final class InterpretDungeonEditorMainViewInputUseCase {
             DungeonEditorSessionValues.Tool boundaryTool,
             int projectionLevel
     ) {
-        return apply(dragUseCase.interpretBoundary(pointer(input, projectionLevel), snapshot, boundaryTool, state.current()));
+        DungeonEditorMainViewInterpretation interpretation =
+                dragUseCase.interpretBoundary(pointer(input, projectionLevel), snapshot, boundaryTool, state.current());
+        state.replace(interpretation.nextState());
+        return interpretation.effect();
     }
 
     public DungeonEditorMainViewEffect releaseBoundary(
@@ -116,7 +142,10 @@ public final class InterpretDungeonEditorMainViewInputUseCase {
             DungeonEditorSessionValues.Tool boundaryTool,
             int projectionLevel
     ) {
-        return apply(releaseUseCase.interpretBoundary(pointer(input, projectionLevel), snapshot, boundaryTool, state.current()));
+        DungeonEditorMainViewInterpretation interpretation =
+                releaseUseCase.interpretBoundary(pointer(input, projectionLevel), snapshot, boundaryTool, state.current());
+        state.replace(interpretation.nextState());
+        return interpretation.effect();
     }
 
     public DungeonEditorMainViewEffect hoverBoundary(
@@ -134,7 +163,10 @@ public final class InterpretDungeonEditorMainViewInputUseCase {
             DungeonEditorSessionValues.Tool corridorTool,
             int projectionLevel
     ) {
-        return apply(pressUseCase.interpretCorridor(pointer(input, projectionLevel), snapshot, corridorTool, state.current()));
+        DungeonEditorMainViewInterpretation interpretation =
+                pressUseCase.interpretCorridor(pointer(input, projectionLevel), snapshot, corridorTool, state.current());
+        state.replace(interpretation.nextState());
+        return interpretation.effect();
     }
 
     public DungeonEditorMainViewEffect hoverCorridor(
@@ -148,11 +180,6 @@ public final class InterpretDungeonEditorMainViewInputUseCase {
 
     public void clear() {
         state.replace(state.current().clear());
-    }
-
-    private DungeonEditorMainViewEffect apply(DungeonEditorMainViewInterpretation interpretation) {
-        state.replace(interpretation.nextState());
-        return interpretation.effect();
     }
 
     private PointerState pointer(MainViewInput input, int projectionLevel) {

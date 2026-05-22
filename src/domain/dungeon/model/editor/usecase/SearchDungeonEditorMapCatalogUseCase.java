@@ -61,7 +61,7 @@ public final class SearchDungeonEditorMapCatalogUseCase {
     private static MapSummary mapSummary(SearchDungeonMapsUseCase.MapSummary map) {
         return map == null
                 ? new MapSummary(new MapId(1L), "Dungeon Map", 0L)
-                : new MapSummary(mapId(map.mapId()), map.mapName(), map.revision());
+                : new MapSummary(new MapId(map.mapId().value()), map.mapName(), map.revision());
     }
 
     private static DungeonAuthoredPublishedStateRepository.MapSummaryPublication mapSummaryPublication(
@@ -76,9 +76,5 @@ public final class SearchDungeonEditorMapCatalogUseCase {
                         map.mapId(),
                         map.mapName(),
                         map.revision());
-    }
-
-    private static MapId mapId(DungeonMapIdentity mapId) {
-        return new MapId(mapId.value());
     }
 }

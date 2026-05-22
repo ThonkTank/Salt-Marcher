@@ -1,9 +1,6 @@
 package src.view.leftbartabs.dungeoneditor;
 
-import java.util.Comparator;
-import java.util.EnumMap;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.ReadOnlyObjectWrapper;
@@ -13,8 +10,6 @@ import src.domain.dungeon.published.DungeonEditorViewMode;
 import src.domain.dungeon.published.DungeonOverlaySettings;
 
 final class DungeonEditorControlsContentModel {
-
-    private static final Map<DungeonEditorTool, String> TOOL_LABELS = createToolLabels();
 
     private final ReadOnlyObjectWrapper<MapProjection> mapProjection =
             new ReadOnlyObjectWrapper<>(MapProjection.empty());
@@ -54,7 +49,7 @@ final class DungeonEditorControlsContentModel {
     ) {
         MapProjection nextMapProjection = new MapProjection(maps, selectedKey, busy, statusText);
         mapProjection.set(nextMapProjection);
-        mapEditor.set(synchronizeMapEditorUiState(mapEditor.get(), nextMapProjection.maps()));
+        mapEditor.set(MapEditorUiState.resolve(mapEditor.get()).synchronizeWith(nextMapProjection.maps()));
         boolean hasMap = !nextMapProjection.selectedKey().isBlank();
         projection.set(new ProjectionState(
                 projectionLevel,
@@ -80,8 +75,7 @@ final class DungeonEditorControlsContentModel {
     }
 
     MapEditorUiState currentMapEditorUiState() {
-        MapEditorUiState current = mapEditor.get();
-        return current == null ? MapEditorUiState.hidden() : current;
+        return MapEditorUiState.resolve(mapEditor.get());
     }
 
     void openCreateMapEditor() {
@@ -128,17 +122,6 @@ final class DungeonEditorControlsContentModel {
 
     private static List<Integer> safeLevels(List<Integer> levels) {
         return levels == null ? List.of() : List.copyOf(levels);
-    }
-
-    private static MapEditorUiState synchronizeMapEditorUiState(
-            MapEditorUiState mapEditorUiState,
-            List<MapItem> mapEntries
-    ) {
-        MapEditorUiState safeState = mapEditorUiState == null ? MapEditorUiState.hidden() : mapEditorUiState;
-        if (!safeState.visible() || !safeState.targetsExistingMap()) {
-            return safeState;
-        }
-        return findMapEntry(mapEntries, safeState.mapIdValue()) == null ? MapEditorUiState.hidden() : safeState;
     }
 
     private static @Nullable MapItem findMapEntry(List<MapItem> mapEntries, long mapIdValue) {
@@ -230,6 +213,10 @@ final class DungeonEditorControlsContentModel {
             return new MapEditorUiState(false, MapEditorMode.hiddenMode(), 0L, "", "", "", false, false, false, "", false);
         }
 
+        static MapEditorUiState resolve(@Nullable MapEditorUiState state) {
+            return state == null ? hidden() : state;
+        }
+
         static MapEditorUiState create(String draftName) {
             return new MapEditorUiState(true, MapEditorMode.CREATE, 0L, "Neuen Dungeon anlegen",
                     draftName, "", true, true, true, "Erstellen", false);
@@ -254,6 +241,13 @@ final class DungeonEditorControlsContentModel {
         MapEditorUiState withErrorText(String nextErrorText) {
             return new MapEditorUiState(visible, mode, mapIdValue, title, draftName, nextErrorText,
                     draftFieldVisible, actionRowVisible, submitVisible, submitLabel, deleteConfirmationVisible);
+        }
+
+        MapEditorUiState synchronizeWith(List<MapItem> mapEntries) {
+            if (!visible() || !targetsExistingMap()) {
+                return this;
+            }
+            return findMapEntry(mapEntries, mapIdValue()) == null ? hidden() : this;
         }
 
         boolean isCreateMode() {
@@ -303,17 +297,52 @@ final class DungeonEditorControlsContentModel {
     ) {
         static OverlayPanelState from(DungeonOverlaySettings settings, boolean disabled) {
             DungeonOverlaySettings safeSettings = settings == null ? DungeonOverlaySettings.defaults() : settings;
-            String safeModeKey = normalizedOverlayMode(safeSettings);
+            String modeKey = normalizeModeKey(safeSettings.modeKey());
+            int levelRange = Math.max(1, safeSettings.levelRange());
+            double opacity = Math.max(0.1, Math.min(0.9, safeSettings.opacity()));
+            String opacityText = opacityText(opacity);
+            String selectedLevelsText = selectedLevelList(safeSettings.selectedLevels());
             return new OverlayPanelState(
-                    safeModeKey,
-                    safeOverlayRange(safeSettings),
-                    safeOverlayOpacity(safeSettings) * 100.0,
-                    DungeonEditorControlsContentModel.opacityText(safeOverlayOpacity(safeSettings)),
-                    selectedLevelList(safeSettings.selectedLevels()),
-                    overlayNearbyMode().equals(safeModeKey),
-                    overlaySelectedMode().equals(safeModeKey),
+                    modeKey,
+                    levelRange,
+                    opacity * 100.0,
+                    opacityText,
+                    selectedLevelsText,
+                    overlayNearbyMode().equals(modeKey),
+                    overlaySelectedMode().equals(modeKey),
                     disabled,
-                    triggerSummary(safeSettings));
+                    triggerText(modeKey, levelRange, opacityText, selectedLevelsText));
+        }
+
+        private static String opacityText(double opacity) {
+            return Math.round(opacity * 100.0) + "%";
+        }
+
+        private static String triggerText(
+                String modeKey,
+                int levelRange,
+                String opacityText,
+                String selectedLevelsText
+        ) {
+            if (overlayNearbyMode().equals(modeKey)) {
+                return "Overlay: Nachbarn +/-" + levelRange + " " + opacityText;
+            }
+            if (overlaySelectedMode().equals(modeKey)) {
+                return "Overlay: Auswahl z=" + selectedLevelSummary(selectedLevelsText) + " " + opacityText;
+            }
+            return "Overlay: Aus";
+        }
+
+        private static String selectedLevelSummary(String selectedLevelsText) {
+            return selectedLevelsText.isBlank() ? "-" : selectedLevelsText;
+        }
+
+        private static String selectedLevelList(List<Integer> levels) {
+            return (levels == null ? List.<Integer>of() : levels).stream()
+                    .distinct()
+                    .sorted()
+                    .map(String::valueOf)
+                    .collect(Collectors.joining(", "));
         }
     }
 
@@ -407,93 +436,91 @@ final class DungeonEditorControlsContentModel {
     }
 
     static String labelOf(@Nullable DungeonEditorTool tool) {
-        return TOOL_LABELS.getOrDefault(tool == null ? DungeonEditorTool.SELECT : tool, defaultToolLabel());
+        return ToolPresentation.labelOf(tool);
     }
 
     static String labelOf(@Nullable DungeonEditorViewMode viewMode) {
-        return viewMode == DungeonEditorViewMode.GRAPH ? graphViewLabel() : gridViewLabel();
+        return ToolPresentation.labelOf(viewMode);
     }
 
     static String normalizeViewModeKey(@Nullable String viewModeKey) {
-        return graphViewLabel().equals(viewModeKey) ? graphViewLabel() : gridViewLabel();
+        return ToolPresentation.normalizeViewModeKey(viewModeKey);
     }
 
     static DungeonEditorViewMode toPublishedViewMode(@Nullable String viewModeKey) {
-        return graphViewLabel().equals(viewModeKey) ? DungeonEditorViewMode.GRAPH : DungeonEditorViewMode.GRID;
+        return ToolPresentation.toPublishedViewMode(viewModeKey);
     }
 
     static DungeonEditorTool toPublishedToolKey(@Nullable String selectedToolKey) {
-        if (selectedToolKey == null || selectedToolKey.isBlank()) {
-            return DungeonEditorTool.SELECT;
+        return ToolPresentation.toPublishedToolKey(selectedToolKey);
+    }
+
+    private interface ToolPresentation {
+
+        static String labelOf(@Nullable DungeonEditorTool tool) {
+            if (tool == null || tool == DungeonEditorTool.SELECT) {
+                return defaultToolLabel();
+            }
+            String paintLabel = paintToolLabel(tool);
+            if (!paintLabel.isBlank()) {
+                return paintLabel;
+            }
+            String structureLabel = structureToolLabel(tool);
+            return structureLabel.isBlank() ? transitionToolLabel(tool) : structureLabel;
         }
-        try {
-            return DungeonEditorTool.valueOf(selectedToolKey.trim());
-        } catch (IllegalArgumentException ignored) {
-            return DungeonEditorTool.SELECT;
+
+        private static String paintToolLabel(DungeonEditorTool tool) {
+            return switch (tool) {
+                case ROOM_PAINT -> "Raum malen";
+                case ROOM_DELETE -> "Raum löschen";
+                case WALL_CREATE -> "Wand setzen";
+                case WALL_DELETE -> "Wand löschen";
+                default -> "";
+            };
         }
-    }
 
-    private static Map<DungeonEditorTool, String> createToolLabels() {
-        Map<DungeonEditorTool, String> toolLabels = new EnumMap<>(DungeonEditorTool.class);
-        toolLabels.put(DungeonEditorTool.SELECT, defaultToolLabel());
-        toolLabels.put(DungeonEditorTool.ROOM_PAINT, "Raum malen");
-        toolLabels.put(DungeonEditorTool.ROOM_DELETE, "Raum löschen");
-        toolLabels.put(DungeonEditorTool.WALL_CREATE, "Wand setzen");
-        toolLabels.put(DungeonEditorTool.WALL_DELETE, "Wand löschen");
-        toolLabels.put(DungeonEditorTool.DOOR_CREATE, "Tür setzen");
-        toolLabels.put(DungeonEditorTool.DOOR_DELETE, "Tür löschen");
-        toolLabels.put(DungeonEditorTool.CORRIDOR_CREATE, "Korridor erstellen");
-        toolLabels.put(DungeonEditorTool.CORRIDOR_DELETE, "Korridor löschen");
-        toolLabels.put(DungeonEditorTool.STAIR_CREATE, "Treppe erstellen");
-        toolLabels.put(DungeonEditorTool.STAIR_DELETE, "Treppe löschen");
-        toolLabels.put(DungeonEditorTool.TRANSITION_CREATE, "Übergang erstellen");
-        toolLabels.put(DungeonEditorTool.TRANSITION_DELETE, "Übergang löschen");
-        return Map.copyOf(toolLabels);
-    }
-
-    private static String triggerSummary(DungeonOverlaySettings settings) {
-        DungeonOverlaySettings resolvedSettings = settings == null ? DungeonOverlaySettings.defaults() : settings;
-        String key = normalizedOverlayMode(resolvedSettings);
-        if (overlayNearbyMode().equals(key)) {
-            return "Overlay: Nachbarn +/-" + safeOverlayRange(resolvedSettings)
-                    + " " + opacityText(safeOverlayOpacity(resolvedSettings));
+        private static String structureToolLabel(DungeonEditorTool tool) {
+            return switch (tool) {
+                case DOOR_CREATE -> "Tür setzen";
+                case DOOR_DELETE -> "Tür löschen";
+                case CORRIDOR_CREATE -> "Korridor erstellen";
+                case CORRIDOR_DELETE -> "Korridor löschen";
+                default -> "";
+            };
         }
-        if (overlaySelectedMode().equals(key)) {
-            return "Overlay: Auswahl z=" + selectedLevelSummary(resolvedSettings.selectedLevels())
-                    + " " + opacityText(safeOverlayOpacity(resolvedSettings));
+
+        private static String transitionToolLabel(DungeonEditorTool tool) {
+            return switch (tool) {
+                case STAIR_CREATE -> "Treppe erstellen";
+                case STAIR_DELETE -> "Treppe löschen";
+                case TRANSITION_CREATE -> "Übergang erstellen";
+                case TRANSITION_DELETE -> "Übergang löschen";
+                default -> defaultToolLabel();
+            };
         }
-        return "Overlay: Aus";
-    }
 
-    private static String selectedLevelList(List<Integer> levels) {
-        return (levels == null ? List.<Integer>of() : levels).stream()
-                .map(String::valueOf)
-                .sorted(Comparator.comparingInt(Integer::parseInt))
-                .distinct()
-                .collect(Collectors.joining(", "));
-    }
+        static String labelOf(@Nullable DungeonEditorViewMode viewMode) {
+            return viewMode == DungeonEditorViewMode.GRAPH ? graphViewLabel() : gridViewLabel();
+        }
 
-    private static String selectedLevelSummary(List<Integer> levels) {
-        String formatted = selectedLevelList(levels);
-        return formatted.isBlank() ? "-" : formatted;
-    }
+        static String normalizeViewModeKey(@Nullable String viewModeKey) {
+            return graphViewLabel().equals(viewModeKey) ? graphViewLabel() : gridViewLabel();
+        }
 
-    private static String opacityText(double opacity) {
-        return Math.round(opacity * 100.0) + "%";
-    }
+        static DungeonEditorViewMode toPublishedViewMode(@Nullable String viewModeKey) {
+            return graphViewLabel().equals(viewModeKey) ? DungeonEditorViewMode.GRAPH : DungeonEditorViewMode.GRID;
+        }
 
-    private static String normalizedOverlayMode(DungeonOverlaySettings settings) {
-        return normalizeModeKey(settings == null ? null : settings.modeKey());
-    }
-
-    private static int safeOverlayRange(DungeonOverlaySettings settings) {
-        DungeonOverlaySettings safeSettings = settings == null ? DungeonOverlaySettings.defaults() : settings;
-        return Math.max(1, safeSettings.levelRange());
-    }
-
-    private static double safeOverlayOpacity(DungeonOverlaySettings settings) {
-        DungeonOverlaySettings safeSettings = settings == null ? DungeonOverlaySettings.defaults() : settings;
-        return Math.max(0.1, Math.min(0.9, safeSettings.opacity()));
+        static DungeonEditorTool toPublishedToolKey(@Nullable String selectedToolKey) {
+            if (selectedToolKey == null || selectedToolKey.isBlank()) {
+                return DungeonEditorTool.SELECT;
+            }
+            try {
+                return DungeonEditorTool.valueOf(selectedToolKey.trim());
+            } catch (IllegalArgumentException ignored) {
+                return DungeonEditorTool.SELECT;
+            }
+        }
     }
 
     private static String normalizeModeKey(@Nullable String modeKey) {
