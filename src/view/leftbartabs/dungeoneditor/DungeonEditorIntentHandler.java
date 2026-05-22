@@ -7,6 +7,13 @@ import java.util.Objects;
 import java.util.Optional;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.DungeonEditorApplicationService;
+import src.domain.dungeon.published.CreateDungeonEditorCorridorCommand;
+import src.domain.dungeon.published.CreateDungeonEditorDoorCommand;
+import src.domain.dungeon.published.CreateDungeonEditorWallCommand;
+import src.domain.dungeon.published.DeleteDungeonEditorCorridorCommand;
+import src.domain.dungeon.published.DeleteDungeonEditorDoorCommand;
+import src.domain.dungeon.published.DeleteDungeonEditorRoomCommand;
+import src.domain.dungeon.published.DeleteDungeonEditorWallCommand;
 import src.domain.dungeon.published.DeleteDungeonMapCommand;
 import src.domain.dungeon.published.DungeonBoundaryKind;
 import src.domain.dungeon.published.DungeonCellRef;
@@ -15,14 +22,19 @@ import src.domain.dungeon.published.DungeonEditorHandleKind;
 import src.domain.dungeon.published.DungeonEditorHandleRef;
 import src.domain.dungeon.published.DungeonEditorPointerSample;
 import src.domain.dungeon.published.DungeonEditorPointerTarget;
+import src.domain.dungeon.published.DungeonEditorSelectionCommand;
 import src.domain.dungeon.published.DungeonEditorTool;
 import src.domain.dungeon.published.DungeonMapCatalogCommand;
 import src.domain.dungeon.published.DungeonMapId;
 import src.domain.dungeon.published.DungeonOverlaySettings;
 import src.domain.dungeon.published.DungeonTopologyElementKind;
 import src.domain.dungeon.published.DungeonTopologyElementRef;
+import src.domain.dungeon.published.PaintDungeonEditorRoomCommand;
 import src.domain.dungeon.published.SaveDungeonEditorRoomNarrationCommand;
 import src.domain.dungeon.published.SelectDungeonEditorMapCommand;
+import src.domain.dungeon.published.SetDungeonEditorOverlayCommand;
+import src.domain.dungeon.published.SetDungeonEditorToolCommand;
+import src.domain.dungeon.published.SetDungeonEditorViewModeCommand;
 import src.domain.dungeon.published.ShiftDungeonEditorProjectionLevelCommand;
 import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel;
 import src.view.slotcontent.main.dungeonmap.DungeonMapViewInputEvent;
@@ -34,7 +46,7 @@ final class DungeonEditorIntentHandler {
     private final DungeonEditorStateContentModel stateContentModel;
     private final DungeonMapContentModel mapContentModel;
     private final DungeonEditorApplicationService editor;
-    private final ToolWorkflowDispatch toolWorkflowDispatch;
+    private final DungeonEditorToolWorkflowDispatch toolWorkflowDispatch;
     private Optional<HoverSample> lastHoverSample = Optional.empty();
     private double lastCameraDragCanvasX;
     private double lastCameraDragCanvasY;
@@ -52,7 +64,7 @@ final class DungeonEditorIntentHandler {
         this.stateContentModel = Objects.requireNonNull(stateContentModel, "stateContentModel");
         this.mapContentModel = Objects.requireNonNull(mapContentModel, "mapContentModel");
         this.editor = Objects.requireNonNull(editor, "editor");
-        this.toolWorkflowDispatch = new ToolWorkflowDispatch(editor);
+        this.toolWorkflowDispatch = new DungeonEditorToolWorkflowDispatch(editor);
     }
 
     void consume(DungeonMapViewInputEvent event) {
@@ -225,7 +237,7 @@ final class DungeonEditorIntentHandler {
                 event.position().canvasY(),
                 event.buttons().primaryButtonDown(),
                 event.buttons().secondaryButtonDown(),
-                toPublishedPointerTarget(target));
+                DungeonEditorPointerTargetTranslator.toPublishedPointerTarget(target));
     }
 
     private boolean suppressedRepeatedHover(
@@ -248,94 +260,6 @@ final class DungeonEditorIntentHandler {
         }
         lastHoverSample = Optional.of(nextSample);
         return false;
-    }
-
-    private static DungeonEditorPointerTarget toPublishedPointerTarget(DungeonMapContentModel.PointerTarget target) {
-        DungeonMapContentModel.PointerTarget safeTarget = target == null
-                ? DungeonMapContentModel.PointerTarget.empty()
-                : target;
-        return switch (safeTarget.targetKind()) {
-            case EMPTY -> DungeonEditorPointerTarget.empty();
-            case CELL -> DungeonEditorPointerTarget.cell(
-                    topologyElementKind(safeTarget.elementKind()),
-                    safeTarget.ownerId(),
-                    safeTarget.clusterId(),
-                    topologyRef(safeTarget.topologyKind(), safeTarget.topologyId()));
-            case LABEL -> DungeonEditorPointerTarget.label(
-                    safeTarget.ownerId(),
-                    safeTarget.clusterId(),
-                    topologyRef(safeTarget.topologyKind(), safeTarget.topologyId()));
-            case GRAPH_NODE -> DungeonEditorPointerTarget.graphNode(
-                    safeTarget.ownerId(),
-                    safeTarget.clusterId(),
-                    topologyRef(safeTarget.topologyKind(), safeTarget.topologyId()));
-            case HANDLE -> DungeonEditorPointerTarget.handle(handleRef(safeTarget.handleRef()));
-            case BOUNDARY -> DungeonEditorPointerTarget.boundary(boundaryRef(safeTarget.boundaryRef()));
-        };
-    }
-
-    private static DungeonTopologyElementRef topologyRef(String kind, long id) {
-        return new DungeonTopologyElementRef(topologyElementKind(kind), id);
-    }
-
-    private static DungeonCellRef cellRef(double q, double r, int level) {
-        return new DungeonCellRef(
-                (int) Math.round(q),
-                (int) Math.round(r),
-                level);
-    }
-
-    private static DungeonEditorHandleRef handleRef(DungeonMapContentModel.HandleTarget handle) {
-        DungeonMapContentModel.HandleTarget safeHandle = handle == null
-                ? DungeonMapContentModel.HandleTarget.empty()
-                : handle;
-        return new DungeonEditorHandleRef(
-                handleKind(safeHandle.kind()),
-                topologyRef(safeHandle.topologyKind(), safeHandle.topologyId()),
-                safeHandle.ownerId(),
-                safeHandle.clusterId(),
-                safeHandle.corridorId(),
-                safeHandle.roomId(),
-                safeHandle.orderIndex(),
-                cellRef(safeHandle.q(), safeHandle.r(), safeHandle.level()),
-                safeHandle.direction());
-    }
-
-    private static DungeonEditorBoundaryTargetRef boundaryRef(DungeonMapContentModel.BoundaryTarget boundary) {
-        DungeonMapContentModel.BoundaryTarget safeBoundary = boundary == null
-                ? DungeonMapContentModel.BoundaryTarget.empty()
-                : boundary;
-        return new DungeonEditorBoundaryTargetRef(
-                boundaryKind(safeBoundary.kind()),
-                safeBoundary.key(),
-                safeBoundary.ownerId(),
-                topologyRef(safeBoundary.topologyKind(), safeBoundary.topologyId()),
-                cellRef(safeBoundary.startQ(), safeBoundary.startR(), safeBoundary.startLevel()),
-                cellRef(safeBoundary.endQ(), safeBoundary.endR(), safeBoundary.endLevel()));
-    }
-
-    private static DungeonBoundaryKind boundaryKind(String value) {
-        return "DOOR".equals(value) ? DungeonBoundaryKind.DOOR : DungeonBoundaryKind.WALL;
-    }
-
-    private static DungeonEditorHandleKind handleKind(String value) {
-        try {
-            return DungeonEditorHandleKind.valueOf(normalizedEnumName(value));
-        } catch (IllegalArgumentException ignored) {
-            return DungeonEditorHandleKind.CLUSTER_LABEL;
-        }
-    }
-
-    private static DungeonTopologyElementKind topologyElementKind(String value) {
-        try {
-            return DungeonTopologyElementKind.valueOf(normalizedEnumName(value));
-        } catch (IllegalArgumentException ignored) {
-            return DungeonTopologyElementKind.EMPTY;
-        }
-    }
-
-    private static String normalizedEnumName(String value) {
-        return value == null ? "" : value.trim().toUpperCase(Locale.ROOT).replace('-', '_');
     }
 
     private static int normalizeLevelDelta(double scrollDeltaY) {
@@ -447,13 +371,13 @@ final class DungeonEditorIntentHandler {
         String selectedViewMode = presentationModel.currentInteractionState().currentViewModeKey();
         if (DungeonEditorControlsContentModel.graphViewLabel().equals(normalizedViewModeKey)) {
             if (!DungeonEditorControlsContentModel.graphViewLabel().equals(selectedViewMode)) {
-                editor.setViewMode(new src.domain.dungeon.published.SetDungeonEditorViewModeCommand(
+                editor.setViewMode(new SetDungeonEditorViewModeCommand(
                         DungeonEditorControlsContentModel.toPublishedViewMode(normalizedViewModeKey)));
             }
             return;
         }
         if (!DungeonEditorControlsContentModel.gridViewLabel().equals(selectedViewMode)) {
-            editor.setViewMode(new src.domain.dungeon.published.SetDungeonEditorViewModeCommand(
+            editor.setViewMode(new SetDungeonEditorViewModeCommand(
                     DungeonEditorControlsContentModel.toPublishedViewMode(
                             DungeonEditorControlsContentModel.gridViewLabel())));
         }
@@ -467,7 +391,7 @@ final class DungeonEditorIntentHandler {
         DungeonEditorTool selectedTool = DungeonEditorControlsContentModel.toPublishedToolKey(
                 tool.selectedToolKey());
         if (!tool.selectedToolKey().isBlank() && selectedTool != interactionState.currentSelectedTool()) {
-            editor.setTool(new src.domain.dungeon.published.SetDungeonEditorToolCommand(selectedTool));
+            editor.setTool(new SetDungeonEditorToolCommand(selectedTool));
         }
     }
 
@@ -486,7 +410,7 @@ final class DungeonEditorIntentHandler {
                 && currentSelectedLevels.equals(selectedLevels)) {
             return;
         }
-        editor.setOverlay(new src.domain.dungeon.published.SetDungeonEditorOverlayCommand(new DungeonOverlaySettings(
+        editor.setOverlay(new SetDungeonEditorOverlayCommand(new DungeonOverlaySettings(
                         overlay.modeKey(),
                         overlay.levelRange(),
                         overlay.opacity(),
@@ -606,11 +530,102 @@ final class DungeonEditorIntentHandler {
         }
     }
 
-    private static final class ToolWorkflowDispatch {
+    private interface DungeonEditorPointerTargetTranslator {
+
+        static DungeonEditorPointerTarget toPublishedPointerTarget(DungeonMapContentModel.PointerTarget target) {
+            DungeonMapContentModel.PointerTarget safeTarget = target == null
+                    ? DungeonMapContentModel.PointerTarget.empty()
+                    : target;
+            return switch (safeTarget.targetKind()) {
+                case EMPTY -> DungeonEditorPointerTarget.empty();
+                case CELL -> DungeonEditorPointerTarget.cell(
+                        topologyElementKind(safeTarget.elementKind()),
+                        safeTarget.ownerId(),
+                        safeTarget.clusterId(),
+                        topologyRef(safeTarget.topologyKind(), safeTarget.topologyId()));
+                case LABEL -> DungeonEditorPointerTarget.label(
+                        safeTarget.ownerId(),
+                        safeTarget.clusterId(),
+                        topologyRef(safeTarget.topologyKind(), safeTarget.topologyId()));
+                case GRAPH_NODE -> DungeonEditorPointerTarget.graphNode(
+                        safeTarget.ownerId(),
+                        safeTarget.clusterId(),
+                        topologyRef(safeTarget.topologyKind(), safeTarget.topologyId()));
+                case HANDLE -> DungeonEditorPointerTarget.handle(handleRef(safeTarget.handleRef()));
+                case BOUNDARY -> DungeonEditorPointerTarget.boundary(boundaryRef(safeTarget.boundaryRef()));
+            };
+        }
+
+        private static DungeonTopologyElementRef topologyRef(String kind, long id) {
+            return new DungeonTopologyElementRef(topologyElementKind(kind), id);
+        }
+
+        private static DungeonCellRef cellRef(double q, double r, int level) {
+            return new DungeonCellRef(
+                    (int) Math.round(q),
+                    (int) Math.round(r),
+                    level);
+        }
+
+        private static DungeonEditorHandleRef handleRef(DungeonMapContentModel.HandleTarget handle) {
+            DungeonMapContentModel.HandleTarget safeHandle = handle == null
+                    ? DungeonMapContentModel.HandleTarget.empty()
+                    : handle;
+            return new DungeonEditorHandleRef(
+                    handleKind(safeHandle.kind()),
+                    topologyRef(safeHandle.topologyKind(), safeHandle.topologyId()),
+                    safeHandle.ownerId(),
+                    safeHandle.clusterId(),
+                    safeHandle.corridorId(),
+                    safeHandle.roomId(),
+                    safeHandle.orderIndex(),
+                    cellRef(safeHandle.q(), safeHandle.r(), safeHandle.level()),
+                    safeHandle.direction());
+        }
+
+        private static DungeonEditorBoundaryTargetRef boundaryRef(DungeonMapContentModel.BoundaryTarget boundary) {
+            DungeonMapContentModel.BoundaryTarget safeBoundary = boundary == null
+                    ? DungeonMapContentModel.BoundaryTarget.empty()
+                    : boundary;
+            return new DungeonEditorBoundaryTargetRef(
+                    boundaryKind(safeBoundary.kind()),
+                    safeBoundary.key(),
+                    safeBoundary.ownerId(),
+                    topologyRef(safeBoundary.topologyKind(), safeBoundary.topologyId()),
+                    cellRef(safeBoundary.startQ(), safeBoundary.startR(), safeBoundary.startLevel()),
+                    cellRef(safeBoundary.endQ(), safeBoundary.endR(), safeBoundary.endLevel()));
+        }
+
+        private static DungeonBoundaryKind boundaryKind(String value) {
+            return "DOOR".equals(value) ? DungeonBoundaryKind.DOOR : DungeonBoundaryKind.WALL;
+        }
+
+        private static DungeonEditorHandleKind handleKind(String value) {
+            try {
+                return DungeonEditorHandleKind.valueOf(normalizedEnumName(value));
+            } catch (IllegalArgumentException ignored) {
+                return DungeonEditorHandleKind.CLUSTER_LABEL;
+            }
+        }
+
+        private static DungeonTopologyElementKind topologyElementKind(String value) {
+            try {
+                return DungeonTopologyElementKind.valueOf(normalizedEnumName(value));
+            } catch (IllegalArgumentException ignored) {
+                return DungeonTopologyElementKind.EMPTY;
+            }
+        }
+
+        private static String normalizedEnumName(String value) {
+            return value == null ? "" : value.trim().toUpperCase(Locale.ROOT).replace('-', '_');
+        }
+    }
+
+    private static final class DungeonEditorToolWorkflowDispatch {
         private final DungeonEditorApplicationService editor;
         private final Map<DungeonEditorTool, ToolWorkflow> workflows;
 
-        private ToolWorkflowDispatch(DungeonEditorApplicationService editor) {
+        DungeonEditorToolWorkflowDispatch(DungeonEditorApplicationService editor) {
             this.editor = Objects.requireNonNull(editor, "editor");
             Map<DungeonEditorTool, ToolWorkflow> registeredWorkflows =
                     new java.util.EnumMap<>(DungeonEditorTool.class);
@@ -622,7 +637,7 @@ final class DungeonEditorIntentHandler {
             workflows = Map.copyOf(registeredWorkflows);
         }
 
-        private void apply(
+        void apply(
                 DungeonMapViewInputEvent event,
                 DungeonEditorPointerSample pointerSample,
                 DungeonEditorTool tool
@@ -638,13 +653,13 @@ final class DungeonEditorIntentHandler {
                     DungeonEditorTool.SELECT,
                     new ToolWorkflow(
                             pointerSample -> editor.pressSelection(
-                                    new src.domain.dungeon.published.DungeonEditorSelectionCommand(pointerSample)),
+                                    new DungeonEditorSelectionCommand(pointerSample)),
                             pointerSample -> editor.dragSelection(
-                                    new src.domain.dungeon.published.DungeonEditorSelectionCommand(pointerSample)),
+                                    new DungeonEditorSelectionCommand(pointerSample)),
                             pointerSample -> editor.releaseSelection(
-                                    new src.domain.dungeon.published.DungeonEditorSelectionCommand(pointerSample)),
+                                    new DungeonEditorSelectionCommand(pointerSample)),
                             pointerSample -> editor.hoverSelection(
-                                    new src.domain.dungeon.published.DungeonEditorSelectionCommand(pointerSample))));
+                                    new DungeonEditorSelectionCommand(pointerSample))));
         }
 
         private void registerRoomWorkflows(Map<DungeonEditorTool, ToolWorkflow> registeredWorkflows) {
@@ -652,21 +667,21 @@ final class DungeonEditorIntentHandler {
                     DungeonEditorTool.ROOM_PAINT,
                     new ToolWorkflow(
                             pointerSample -> editor.pressPaintRoom(
-                                    new src.domain.dungeon.published.PaintDungeonEditorRoomCommand(pointerSample)),
+                                    new PaintDungeonEditorRoomCommand(pointerSample)),
                             pointerSample -> editor.dragPaintRoom(
-                                    new src.domain.dungeon.published.PaintDungeonEditorRoomCommand(pointerSample)),
+                                    new PaintDungeonEditorRoomCommand(pointerSample)),
                             pointerSample -> editor.releasePaintRoom(
-                                    new src.domain.dungeon.published.PaintDungeonEditorRoomCommand(pointerSample)),
+                                    new PaintDungeonEditorRoomCommand(pointerSample)),
                             null));
             registeredWorkflows.put(
                     DungeonEditorTool.ROOM_DELETE,
                     new ToolWorkflow(
                             pointerSample -> editor.pressDeleteRoom(
-                                    new src.domain.dungeon.published.DeleteDungeonEditorRoomCommand(pointerSample)),
+                                    new DeleteDungeonEditorRoomCommand(pointerSample)),
                             pointerSample -> editor.dragDeleteRoom(
-                                    new src.domain.dungeon.published.DeleteDungeonEditorRoomCommand(pointerSample)),
+                                    new DeleteDungeonEditorRoomCommand(pointerSample)),
                             pointerSample -> editor.releaseDeleteRoom(
-                                    new src.domain.dungeon.published.DeleteDungeonEditorRoomCommand(pointerSample)),
+                                    new DeleteDungeonEditorRoomCommand(pointerSample)),
                             null));
         }
 
@@ -675,22 +690,22 @@ final class DungeonEditorIntentHandler {
                     DungeonEditorTool.WALL_CREATE,
                     new ToolWorkflow(
                             pointerSample -> editor.pressCreateWall(
-                                    new src.domain.dungeon.published.CreateDungeonEditorWallCommand(pointerSample)),
+                                    new CreateDungeonEditorWallCommand(pointerSample)),
                             pointerSample -> editor.dragCreateWall(
-                                    new src.domain.dungeon.published.CreateDungeonEditorWallCommand(pointerSample)),
+                                    new CreateDungeonEditorWallCommand(pointerSample)),
                             null,
                             pointerSample -> editor.hoverCreateWall(
-                                    new src.domain.dungeon.published.CreateDungeonEditorWallCommand(pointerSample))));
+                                    new CreateDungeonEditorWallCommand(pointerSample))));
             registeredWorkflows.put(
                     DungeonEditorTool.WALL_DELETE,
                     new ToolWorkflow(
                             pointerSample -> editor.pressDeleteWall(
-                                    new src.domain.dungeon.published.DeleteDungeonEditorWallCommand(pointerSample)),
+                                    new DeleteDungeonEditorWallCommand(pointerSample)),
                             pointerSample -> editor.dragDeleteWall(
-                                    new src.domain.dungeon.published.DeleteDungeonEditorWallCommand(pointerSample)),
+                                    new DeleteDungeonEditorWallCommand(pointerSample)),
                             null,
                             pointerSample -> editor.hoverDeleteWall(
-                                    new src.domain.dungeon.published.DeleteDungeonEditorWallCommand(pointerSample))));
+                                    new DeleteDungeonEditorWallCommand(pointerSample))));
         }
 
         private void registerDoorWorkflows(Map<DungeonEditorTool, ToolWorkflow> registeredWorkflows) {
@@ -698,24 +713,24 @@ final class DungeonEditorIntentHandler {
                     DungeonEditorTool.DOOR_CREATE,
                     new ToolWorkflow(
                             pointerSample -> editor.pressCreateDoor(
-                                    new src.domain.dungeon.published.CreateDungeonEditorDoorCommand(pointerSample)),
+                                    new CreateDungeonEditorDoorCommand(pointerSample)),
                             pointerSample -> editor.dragCreateDoor(
-                                    new src.domain.dungeon.published.CreateDungeonEditorDoorCommand(pointerSample)),
+                                    new CreateDungeonEditorDoorCommand(pointerSample)),
                             pointerSample -> editor.releaseCreateDoor(
-                                    new src.domain.dungeon.published.CreateDungeonEditorDoorCommand(pointerSample)),
+                                    new CreateDungeonEditorDoorCommand(pointerSample)),
                             pointerSample -> editor.hoverCreateDoor(
-                                    new src.domain.dungeon.published.CreateDungeonEditorDoorCommand(pointerSample))));
+                                    new CreateDungeonEditorDoorCommand(pointerSample))));
             registeredWorkflows.put(
                     DungeonEditorTool.DOOR_DELETE,
                     new ToolWorkflow(
                             pointerSample -> editor.pressDeleteDoor(
-                                    new src.domain.dungeon.published.DeleteDungeonEditorDoorCommand(pointerSample)),
+                                    new DeleteDungeonEditorDoorCommand(pointerSample)),
                             pointerSample -> editor.dragDeleteDoor(
-                                    new src.domain.dungeon.published.DeleteDungeonEditorDoorCommand(pointerSample)),
+                                    new DeleteDungeonEditorDoorCommand(pointerSample)),
                             pointerSample -> editor.releaseDeleteDoor(
-                                    new src.domain.dungeon.published.DeleteDungeonEditorDoorCommand(pointerSample)),
+                                    new DeleteDungeonEditorDoorCommand(pointerSample)),
                             pointerSample -> editor.hoverDeleteDoor(
-                                    new src.domain.dungeon.published.DeleteDungeonEditorDoorCommand(pointerSample))));
+                                    new DeleteDungeonEditorDoorCommand(pointerSample))));
         }
 
         private void registerCorridorWorkflows(Map<DungeonEditorTool, ToolWorkflow> registeredWorkflows) {
@@ -723,20 +738,20 @@ final class DungeonEditorIntentHandler {
                     DungeonEditorTool.CORRIDOR_CREATE,
                     new ToolWorkflow(
                             pointerSample -> editor.pressCreateCorridor(
-                                    new src.domain.dungeon.published.CreateDungeonEditorCorridorCommand(pointerSample)),
+                                    new CreateDungeonEditorCorridorCommand(pointerSample)),
                             null,
                             null,
                             pointerSample -> editor.hoverCreateCorridor(
-                                    new src.domain.dungeon.published.CreateDungeonEditorCorridorCommand(pointerSample))));
+                                    new CreateDungeonEditorCorridorCommand(pointerSample))));
             registeredWorkflows.put(
                     DungeonEditorTool.CORRIDOR_DELETE,
                     new ToolWorkflow(
                             pointerSample -> editor.pressDeleteCorridor(
-                                    new src.domain.dungeon.published.DeleteDungeonEditorCorridorCommand(pointerSample)),
+                                    new DeleteDungeonEditorCorridorCommand(pointerSample)),
                             null,
                             null,
                             pointerSample -> editor.hoverDeleteCorridor(
-                                    new src.domain.dungeon.published.DeleteDungeonEditorCorridorCommand(pointerSample))));
+                                    new DeleteDungeonEditorCorridorCommand(pointerSample))));
         }
 
         @FunctionalInterface

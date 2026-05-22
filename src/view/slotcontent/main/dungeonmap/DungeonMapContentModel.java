@@ -228,7 +228,7 @@ public final class DungeonMapContentModel {
             return new CanvasState(
                     renderScene,
                     Viewport.initial(),
-                    HitIndex.from(renderScene.hitAreas()),
+                    HitIndex.from(indexableHitAreas(renderScene)),
                     KeyboardTarget.hidden());
         }
 
@@ -236,7 +236,7 @@ public final class DungeonMapContentModel {
             return new CanvasState(
                     nextRenderScene,
                     viewport,
-                    HitIndex.from(nextRenderScene.hitAreas()),
+                    HitIndex.from(indexableHitAreas(nextRenderScene)),
                     refreshKeyboardTarget(nextRenderScene));
         }
 
@@ -260,10 +260,16 @@ public final class DungeonMapContentModel {
                     keyboardTarget,
                     keyboardTarget.sceneX(),
                     keyboardTarget.sceneY(),
-                    HitIndex.from(nextRenderScene.hitAreas()).hitAt(
+                    HitIndex.from(indexableHitAreas(nextRenderScene)).hitAt(
                             keyboardTarget.sceneX(),
                             keyboardTarget.sceneY(),
                             viewport.gridSize()));
+        }
+
+        private static List<HitArea> indexableHitAreas(RenderScene renderScene) {
+            return renderScene.containsRenderablePrimitives() && renderScene.containsHitAreas()
+                    ? renderScene.hitAreas()
+                    : List.of();
         }
     }
 
@@ -506,6 +512,71 @@ public final class DungeonMapContentModel {
             return gridView;
         }
 
+        public boolean containsHitAreas() {
+            return !hitAreas.isEmpty();
+        }
+
+        public boolean containsRenderablePrimitives() {
+            return containsSurfacePrimitives()
+                    || containsAnnotationPrimitives()
+                    || containsOverlayPrimitives();
+        }
+
+        public boolean containsSurfacePrimitives() {
+            return !surfaces.isEmpty()
+                    || !boundaries.isEmpty()
+                    || !glyphs.isEmpty()
+                    || !actors.isEmpty();
+        }
+
+        public boolean containsAnnotationPrimitives() {
+            return !texts.isEmpty() || !relations.isEmpty();
+        }
+
+        public boolean containsOverlayPrimitives() {
+            return !overlays.isEmpty();
+        }
+
+        @Override
+        public List<MapCanvasPolygonPrimitive> surfaces() {
+            return copyOf(surfaces);
+        }
+
+        @Override
+        public List<BoundaryPrimitive> boundaries() {
+            return copyOf(boundaries);
+        }
+
+        @Override
+        public List<GlyphPrimitive> glyphs() {
+            return copyOf(glyphs);
+        }
+
+        @Override
+        public List<TextPrimitive> texts() {
+            return copyOf(texts);
+        }
+
+        @Override
+        public List<RelationPrimitive> relations() {
+            return copyOf(relations);
+        }
+
+        @Override
+        public List<MapCanvasPolygonPrimitive> actors() {
+            return copyOf(actors);
+        }
+
+        @Override
+        public List<HitArea> hitAreas() {
+            return copyOf(hitAreas);
+        }
+
+        @Override
+        public List<OverlayPrimitive> overlays() {
+            return copyOf(overlays);
+        }
+
     }
 
     public record PaintStyle(
@@ -539,6 +610,11 @@ public final class DungeonMapContentModel {
             polygon = copyOf(polygon);
             style = style == null ? new PaintStyle(null, null, 0.0, 1.0, false) : style;
         }
+
+        @Override
+        public List<MapCanvasPoint> polygon() {
+            return copyOf(polygon);
+        }
     }
 
     public record BoundaryPrimitive(
@@ -554,6 +630,11 @@ public final class DungeonMapContentModel {
             selectionRef = selectionRef == null ? "" : selectionRef;
             polyline = copyOf(polyline);
             style = style == null ? new PaintStyle(null, null, 0.0, 1.0, false) : style;
+        }
+
+        @Override
+        public List<MapCanvasPoint> polyline() {
+            return copyOf(polyline);
         }
     }
 
@@ -574,6 +655,11 @@ public final class DungeonMapContentModel {
             style = style == null ? new PaintStyle(null, null, 0.0, 1.0, false) : style;
             label = label == null ? "" : label;
             labelColor = labelColor == null ? RenderColor.color(255, 255, 255, 1.0) : labelColor;
+        }
+
+        @Override
+        public List<MapCanvasPoint> polygon() {
+            return copyOf(polygon);
         }
     }
 
@@ -612,6 +698,11 @@ public final class DungeonMapContentModel {
             hitRef = hitRef == null ? "" : hitRef;
             polyline = copyOf(polyline);
             style = style == null ? new PaintStyle(null, null, 0.0, 1.0, false) : style;
+        }
+
+        @Override
+        public List<MapCanvasPoint> polyline() {
+            return copyOf(polyline);
         }
     }
 
@@ -685,6 +776,11 @@ public final class DungeonMapContentModel {
         }
 
         @Override
+        public List<MapCanvasPoint> polygon() {
+            return copyOf(polygon);
+        }
+
+        @Override
         public HitBounds bounds() {
             return HitBounds.from(polygon);
         }
@@ -707,6 +803,11 @@ public final class DungeonMapContentModel {
             primitive = primitive == null ? CanvasPrimitive.EMPTY : primitive;
             selectionRef = selectionRef == null ? "" : selectionRef;
             polyline = copyOf(polyline);
+        }
+
+        @Override
+        public List<MapCanvasPoint> polyline() {
+            return copyOf(polyline);
         }
 
         @Override
@@ -3700,10 +3801,6 @@ public final class DungeonMapContentModel {
 
     private static <T> List<T> immutableList(@Nullable List<T> values) {
         return values == null ? List.of() : List.copyOf(values);
-    }
-
-    private static <T> List<T> copyOf(@Nullable List<T> values) {
-        return immutableList(values);
     }
 
     private static String upper(String value) {
