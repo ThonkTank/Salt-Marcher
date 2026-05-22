@@ -27,17 +27,6 @@ public final class DungeonEditorControlsView extends VBox {
     private static final String PMD_LAW_OF_DEMETER = "PMD.LawOfDemeter";
     private static final String TOOL_BUTTON_STYLE = "tool-btn";
     private static final String STYLE_SELECTED = "selected";
-    private static final String VIEW_GRID = "Grid";
-    private static final String VIEW_GRAPH = "Graph";
-    private static final String SELECT_TOOL = "Auswahl";
-    private static final String ROOM_PAINT_TOOL = "Raum malen";
-    private static final String ROOM_DELETE_TOOL = "Raum löschen";
-    private static final String WALL_CREATE_TOOL = "Wand setzen";
-    private static final String WALL_DELETE_TOOL = "Wand löschen";
-    private static final String DOOR_CREATE_TOOL = "Tür setzen";
-    private static final String DOOR_DELETE_TOOL = "Tür löschen";
-    private static final String CORRIDOR_CREATE_TOOL = "Korridor erstellen";
-    private static final String CORRIDOR_DELETE_TOOL = "Korridor löschen";
 
     private Consumer<DungeonEditorControlsViewInputEvent> viewInputEventHandler = ignored -> { };
 
@@ -71,8 +60,8 @@ public final class DungeonEditorControlsView extends VBox {
         Label levelLabel = mutedLabel("Ebene z=0");
         Button previousLevelButton = actionButton("-");
         Button nextLevelButton = actionButton("+");
-        ToggleButton gridButton = toolToggle(VIEW_GRID);
-        ToggleButton graphButton = toolToggle(VIEW_GRAPH);
+        ToggleButton gridButton = toolToggle(toolLabel(DungeonEditorControlsContentModel.ToolCatalog.LabelKey.GRID_VIEW));
+        ToggleButton graphButton = toolToggle(toolLabel(DungeonEditorControlsContentModel.ToolCatalog.LabelKey.GRAPH_VIEW));
         ToggleGroup viewModeGroup = new ToggleGroup();
         Button overlayTrigger = actionButton("Overlay: Aus");
         ComboBox<DungeonEditorControlsContentModel.OverlayModeOption> overlayModeSelector = new ComboBox<>();
@@ -83,15 +72,15 @@ public final class DungeonEditorControlsView extends VBox {
         HBox overlayRangeRow = row(new Label("Umfang"), overlayRangeSpinner);
         HBox selectedLevelsRow = row(new Label("Ebenen"), selectedLevelsField);
 
-        ToggleButton selectButton = toolToggle(SELECT_TOOL);
+        ToggleButton selectButton = toolToggle(toolLabel(DungeonEditorControlsContentModel.ToolCatalog.LabelKey.DEFAULT_TOOL));
         Button roomButton = toolButton("Raum");
-        Button roomDeleteButton = toolButton("Raum löschen");
+        Button roomDeleteButton = toolButton(toolLabel(DungeonEditorControlsContentModel.ToolCatalog.LabelKey.ROOM_DELETE));
         Button wallButton = toolButton("Wand");
-        Button wallDeleteButton = toolButton("Wand löschen");
+        Button wallDeleteButton = toolButton(toolLabel(DungeonEditorControlsContentModel.ToolCatalog.LabelKey.WALL_DELETE));
         Button doorButton = toolButton("Tür");
-        Button doorDeleteButton = toolButton("Tür löschen");
+        Button doorDeleteButton = toolButton(toolLabel(DungeonEditorControlsContentModel.ToolCatalog.LabelKey.DOOR_DELETE));
         Button corridorButton = toolButton("Korridor");
-        Button corridorDeleteButton = toolButton("Korridor löschen");
+        Button corridorDeleteButton = toolButton(toolLabel(DungeonEditorControlsContentModel.ToolCatalog.LabelKey.CORRIDOR_DELETE));
 
         configureMapControls(mapSelector, mapActionButton, editMapItem, deleteMapItem, rendering);
         configureMapEditor(
@@ -502,8 +491,9 @@ public final class DungeonEditorControlsView extends VBox {
         previousLevelButton.setDisable(safeProjection.busy() || !safeProjection.navigationEnabled());
         nextLevelButton.setDisable(safeProjection.busy() || !safeProjection.navigationEnabled());
         rendering[0] = true;
-        graphButton.setSelected(VIEW_GRAPH.equals(safeProjection.viewMode()));
-        gridButton.setSelected(!VIEW_GRAPH.equals(safeProjection.viewMode()));
+        String graphViewLabel = toolLabel(DungeonEditorControlsContentModel.ToolCatalog.LabelKey.GRAPH_VIEW);
+        graphButton.setSelected(graphViewLabel.equals(safeProjection.viewMode()));
+        gridButton.setSelected(!graphViewLabel.equals(safeProjection.viewMode()));
         showOverlay(safeProjection, overlayTrigger, overlayModeSelector, overlayRangeSpinner, overlayOpacitySlider,
                 overlayOpacityLabel, selectedLevelsField, overlayRangeRow, selectedLevelsRow);
         rendering[0] = false;
@@ -551,16 +541,17 @@ public final class DungeonEditorControlsView extends VBox {
             Button corridorButton,
             Button corridorDeleteButton
     ) {
-        String selectedTool = projection == null ? SELECT_TOOL : projection.selectedTool();
-        selectButton.setSelected(SELECT_TOOL.equals(selectedTool));
-        markSelected(roomButton, selectedTool, ROOM_PAINT_TOOL);
-        markSelected(roomDeleteButton, selectedTool, ROOM_DELETE_TOOL);
-        markSelected(wallButton, selectedTool, WALL_CREATE_TOOL);
-        markSelected(wallDeleteButton, selectedTool, WALL_DELETE_TOOL);
-        markSelected(doorButton, selectedTool, DOOR_CREATE_TOOL);
-        markSelected(doorDeleteButton, selectedTool, DOOR_DELETE_TOOL);
-        markSelected(corridorButton, selectedTool, CORRIDOR_CREATE_TOOL);
-        markSelected(corridorDeleteButton, selectedTool, CORRIDOR_DELETE_TOOL);
+        String defaultToolLabel = toolLabel(DungeonEditorControlsContentModel.ToolCatalog.LabelKey.DEFAULT_TOOL);
+        String selectedTool = projection == null ? defaultToolLabel : projection.selectedTool();
+        selectButton.setSelected(defaultToolLabel.equals(selectedTool));
+        markSelected(roomButton, selectedTool, toolLabel(DungeonEditorControlsContentModel.ToolCatalog.LabelKey.ROOM_PAINT));
+        markSelected(roomDeleteButton, selectedTool, toolLabel(DungeonEditorControlsContentModel.ToolCatalog.LabelKey.ROOM_DELETE));
+        markSelected(wallButton, selectedTool, toolLabel(DungeonEditorControlsContentModel.ToolCatalog.LabelKey.WALL_CREATE));
+        markSelected(wallDeleteButton, selectedTool, toolLabel(DungeonEditorControlsContentModel.ToolCatalog.LabelKey.WALL_DELETE));
+        markSelected(doorButton, selectedTool, toolLabel(DungeonEditorControlsContentModel.ToolCatalog.LabelKey.DOOR_CREATE));
+        markSelected(doorDeleteButton, selectedTool, toolLabel(DungeonEditorControlsContentModel.ToolCatalog.LabelKey.DOOR_DELETE));
+        markSelected(corridorButton, selectedTool, toolLabel(DungeonEditorControlsContentModel.ToolCatalog.LabelKey.CORRIDOR_CREATE));
+        markSelected(corridorDeleteButton, selectedTool, toolLabel(DungeonEditorControlsContentModel.ToolCatalog.LabelKey.CORRIDOR_DELETE));
     }
 
     private void handleViewModeChanged(Toggle oldToggle, Toggle newToggle, ToggleButton graphButton, ToggleButton gridButton) {
@@ -570,8 +561,14 @@ public final class DungeonEditorControlsView extends VBox {
             }
             return;
         }
-        emitViewMode(graphButton.equals(newToggle) ? VIEW_GRAPH : VIEW_GRID);
+        emitViewMode(graphButton.equals(newToggle)
+                ? toolLabel(DungeonEditorControlsContentModel.ToolCatalog.LabelKey.GRAPH_VIEW)
+                : toolLabel(DungeonEditorControlsContentModel.ToolCatalog.LabelKey.GRID_VIEW));
         gridButton.setSelected(!graphButton.equals(newToggle));
+    }
+
+    private static String toolLabel(DungeonEditorControlsContentModel.ToolCatalog.LabelKey labelKey) {
+        return labelKey.label();
     }
 
     private void emitMapSelection(long selectedMapIdValue) {

@@ -362,6 +362,12 @@ final class DungeonEditorControlsContentModel {
         static final String GRAPH_VIEW_LABEL = "Graph";
         static final String ROOM_PAINT_LABEL = "Raum malen";
         static final String ROOM_DELETE_LABEL = "Raum löschen";
+        static final String WALL_CREATE_LABEL = "Wand setzen";
+        static final String WALL_DELETE_LABEL = "Wand löschen";
+        static final String DOOR_CREATE_LABEL = "Tür setzen";
+        static final String DOOR_DELETE_LABEL = "Tür löschen";
+        static final String CORRIDOR_CREATE_LABEL = "Korridor erstellen";
+        static final String CORRIDOR_DELETE_LABEL = "Korridor löschen";
         static final String SELECT_TOOL_KEY = "SELECT";
         static final String ROOM_PAINT_TOOL_KEY = "ROOM_PAINT";
         static final String ROOM_DELETE_TOOL_KEY = "ROOM_DELETE";
@@ -374,6 +380,30 @@ final class DungeonEditorControlsContentModel {
         private static final Map<DungeonEditorTool, String> TOOL_LABELS = createToolLabels();
 
         private ToolCatalog() {
+        }
+
+        enum LabelKey {
+            DEFAULT_TOOL(DEFAULT_TOOL_LABEL),
+            GRID_VIEW(GRID_VIEW_LABEL),
+            GRAPH_VIEW(GRAPH_VIEW_LABEL),
+            ROOM_PAINT(ROOM_PAINT_LABEL),
+            ROOM_DELETE(ROOM_DELETE_LABEL),
+            WALL_CREATE(WALL_CREATE_LABEL),
+            WALL_DELETE(WALL_DELETE_LABEL),
+            DOOR_CREATE(DOOR_CREATE_LABEL),
+            DOOR_DELETE(DOOR_DELETE_LABEL),
+            CORRIDOR_CREATE(CORRIDOR_CREATE_LABEL),
+            CORRIDOR_DELETE(CORRIDOR_DELETE_LABEL);
+
+            private final String label;
+
+            LabelKey(String label) {
+                this.label = label;
+            }
+
+            String label() {
+                return label;
+            }
         }
 
         static String labelOf(@Nullable DungeonEditorTool tool) {
@@ -412,12 +442,12 @@ final class DungeonEditorControlsContentModel {
             toolLabels.put(DungeonEditorTool.SELECT, DEFAULT_TOOL_LABEL);
             toolLabels.put(DungeonEditorTool.ROOM_PAINT, ROOM_PAINT_LABEL);
             toolLabels.put(DungeonEditorTool.ROOM_DELETE, ROOM_DELETE_LABEL);
-            toolLabels.put(DungeonEditorTool.WALL_CREATE, "Wand setzen");
-            toolLabels.put(DungeonEditorTool.WALL_DELETE, "Wand löschen");
-            toolLabels.put(DungeonEditorTool.DOOR_CREATE, "Tür setzen");
-            toolLabels.put(DungeonEditorTool.DOOR_DELETE, "Tür löschen");
-            toolLabels.put(DungeonEditorTool.CORRIDOR_CREATE, "Korridor erstellen");
-            toolLabels.put(DungeonEditorTool.CORRIDOR_DELETE, "Korridor löschen");
+            toolLabels.put(DungeonEditorTool.WALL_CREATE, WALL_CREATE_LABEL);
+            toolLabels.put(DungeonEditorTool.WALL_DELETE, WALL_DELETE_LABEL);
+            toolLabels.put(DungeonEditorTool.DOOR_CREATE, DOOR_CREATE_LABEL);
+            toolLabels.put(DungeonEditorTool.DOOR_DELETE, DOOR_DELETE_LABEL);
+            toolLabels.put(DungeonEditorTool.CORRIDOR_CREATE, CORRIDOR_CREATE_LABEL);
+            toolLabels.put(DungeonEditorTool.CORRIDOR_DELETE, CORRIDOR_DELETE_LABEL);
             toolLabels.put(DungeonEditorTool.STAIR_CREATE, "Treppe erstellen");
             toolLabels.put(DungeonEditorTool.STAIR_DELETE, "Treppe löschen");
             toolLabels.put(DungeonEditorTool.TRANSITION_CREATE, "Übergang erstellen");
