@@ -54,7 +54,7 @@ final class DungeonEditorIntentHandler {
     private final DungeonEditorStateContentModel stateContentModel;
     private final DungeonMapContentModel mapContentModel;
     private final DungeonEditorApplicationService editor;
-    private @Nullable HoverSample lastHoverSample;
+    private Optional<HoverSample> lastHoverSample = Optional.empty();
     private double lastCameraDragCanvasX;
     private double lastCameraDragCanvasY;
     private boolean cameraDragActive;
@@ -139,7 +139,7 @@ final class DungeonEditorIntentHandler {
             return;
         }
         if (secondaryOnly(event)) {
-            lastHoverSample = null;
+            lastHoverSample = Optional.empty();
             return;
         }
         DungeonEditorTool selectedTool = presentationModel.currentInteractionState().currentSelectedTool();
@@ -220,6 +220,7 @@ final class DungeonEditorIntentHandler {
             case CORRIDOR_DELETE -> applyCorridorDelete(event, pointerSample);
             case SELECT -> applySelection(event, pointerSample);
             case STAIR_CREATE, STAIR_DELETE, TRANSITION_CREATE, TRANSITION_DELETE -> { }
+            default -> { }
         }
     }
 
@@ -370,7 +371,7 @@ final class DungeonEditorIntentHandler {
             DungeonMapContentModel.PointerTarget target
     ) {
         if (!event.input().mouseMoved()) {
-            lastHoverSample = null;
+            lastHoverSample = Optional.empty();
             return false;
         }
         HoverSample nextSample = HoverSample.from(
@@ -379,10 +380,10 @@ final class DungeonEditorIntentHandler {
                 target,
                 sceneX(event),
                 sceneY(event));
-        if (nextSample.equals(lastHoverSample)) {
+        if (lastHoverSample.filter(nextSample::equals).isPresent()) {
             return true;
         }
-        lastHoverSample = nextSample;
+        lastHoverSample = Optional.of(nextSample);
         return false;
     }
 
