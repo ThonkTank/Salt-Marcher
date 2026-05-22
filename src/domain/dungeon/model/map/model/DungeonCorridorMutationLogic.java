@@ -12,8 +12,6 @@ public final class DungeonCorridorMutationLogic {
             new DungeonCorridorConnectionNormalizationLogic();
     private static final DungeonCorridorCreationLogic CREATION_SERVICE =
             new DungeonCorridorCreationLogic();
-    private static final DungeonCorridorExtensionLogic EXTENSION_SERVICE =
-            new DungeonCorridorExtensionLogic();
     private static final DungeonCorridorMergeDeleteLogic MERGE_DELETE_SERVICE =
             new DungeonCorridorMergeDeleteLogic();
 
@@ -23,14 +21,6 @@ public final class DungeonCorridorMutationLogic {
             DungeonCorridorEndpoint end
     ) {
         return CREATION_SERVICE.createCorridor(dungeonMap, start, end);
-    }
-
-    public DungeonMap extendCorridor(
-            DungeonMap dungeonMap,
-            long corridorId,
-            DungeonCorridorRoomEndpoint endpoint
-    ) {
-        return EXTENSION_SERVICE.extendCorridor(dungeonMap, corridorId, endpoint);
     }
 
     public DungeonMap mergeCorridors(DungeonMap dungeonMap, long corridorId, long mergedCorridorId) {

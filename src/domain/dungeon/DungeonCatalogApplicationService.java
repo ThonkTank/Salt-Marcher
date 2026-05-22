@@ -4,7 +4,6 @@ import java.util.Objects;
 import src.domain.dungeon.model.map.usecase.PublishDungeonMapCatalogCreateUseCase;
 import src.domain.dungeon.model.map.usecase.PublishDungeonMapCatalogDeleteUseCase;
 import src.domain.dungeon.model.map.usecase.PublishDungeonMapCatalogRenameUseCase;
-import src.domain.dungeon.model.map.usecase.PublishDungeonMapCatalogSearchUseCase;
 import src.domain.dungeon.published.DeleteDungeonMapCommand;
 import src.domain.dungeon.published.DungeonMapCatalogCommand;
 
@@ -15,26 +14,18 @@ public final class DungeonCatalogApplicationService {
 
     private static final String COMMAND_REQUIRED_MESSAGE = "command";
 
-    private final PublishDungeonMapCatalogSearchUseCase searchUseCase;
     private final PublishDungeonMapCatalogCreateUseCase createUseCase;
     private final PublishDungeonMapCatalogRenameUseCase renameUseCase;
     private final PublishDungeonMapCatalogDeleteUseCase deleteUseCase;
 
     public DungeonCatalogApplicationService(
-            PublishDungeonMapCatalogSearchUseCase searchUseCase,
             PublishDungeonMapCatalogCreateUseCase createUseCase,
             PublishDungeonMapCatalogRenameUseCase renameUseCase,
             PublishDungeonMapCatalogDeleteUseCase deleteUseCase
     ) {
-        this.searchUseCase = Objects.requireNonNull(searchUseCase, "searchUseCase");
         this.createUseCase = Objects.requireNonNull(createUseCase, "createUseCase");
         this.renameUseCase = Objects.requireNonNull(renameUseCase, "renameUseCase");
         this.deleteUseCase = Objects.requireNonNull(deleteUseCase, "deleteUseCase");
-    }
-
-    public void search(DungeonMapCatalogCommand.SearchCommand command) {
-        Objects.requireNonNull(command, COMMAND_REQUIRED_MESSAGE);
-        searchUseCase.execute(command.query());
     }
 
     public void createMap(DungeonMapCatalogCommand.CreateMapCommand command) {

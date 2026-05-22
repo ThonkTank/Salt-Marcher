@@ -141,13 +141,6 @@ public record DungeonMap(
         return CORRIDOR_MUTATION_SERVICE.createCorridor(this, start, end);
     }
 
-    public DungeonMap extendCorridor(
-            long corridorId,
-            DungeonCorridorRoomEndpoint endpoint
-    ) {
-        return CORRIDOR_MUTATION_SERVICE.extendCorridor(this, corridorId, endpoint);
-    }
-
     public DungeonMap mergeCorridors(long corridorId, long mergedCorridorId) {
         return CORRIDOR_MUTATION_SERVICE.mergeCorridors(this, corridorId, mergedCorridorId);
     }

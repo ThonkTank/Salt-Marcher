@@ -10,16 +10,14 @@ import src.domain.dungeon.model.travel.model.session.model.TravelDungeonSessionV
 
 public final class TravelDungeonSession {
 
-    private final State state = new State();
+    private final MutableTravelSessionState state = new MutableTravelSessionState();
 
     public void primeRequestedPosition(@Nullable PositionData position) {
-        if (state.currentSurface == null && state.requestedPosition == null && position != null) {
-            state.requestedPosition = position;
-        }
+        state.primeInitialPosition(position);
     }
 
     public boolean hasCurrentSurface() {
-        return state.currentSurface != null;
+        return state.surfaceLoaded();
     }
 
     public @Nullable PositionData requestedPosition() {
@@ -27,18 +25,15 @@ public final class TravelDungeonSession {
     }
 
     public @Nullable PositionData currentPosition() {
-        if (state.currentSurface == null || state.currentSurface.contextKind() != ContextKind.DUNGEON) {
-            return state.requestedPosition;
-        }
-        return state.currentSurface.position();
+        return state.navigationOrigin();
     }
 
     public void applySurface(SurfaceData surface) {
-        state.currentSurface = surface;
+        state.replaceSurface(surface);
     }
 
     public @Nullable SurfaceData currentSurface() {
-        return state.currentSurface;
+        return state.loadedSurface();
     }
 
     public int projectionLevel() {
@@ -54,7 +49,7 @@ public final class TravelDungeonSession {
     }
 
     public void setOverlay(String modeKey, int levelRange, double opacity, List<Integer> selectedLevels) {
-        state.overlayState = TravelOverlayState.of(modeKey, levelRange, opacity, selectedLevels);
+        state.configureOverlay(modeKey, levelRange, opacity, selectedLevels);
     }
 
     public void stabilizeProjectionLevel(int nextProjectionLevel, boolean initialized) {
@@ -63,14 +58,48 @@ public final class TravelDungeonSession {
     }
 
     public SnapshotData snapshot() {
-        return new SnapshotData(state.currentSurface, state.overlayState, state.projectionLevel);
+        return state.snapshot();
     }
 
-    private static final class State {
+    private static final class MutableTravelSessionState {
+
         private TravelOverlayState overlayState = TravelOverlayState.defaults();
         private int projectionLevel;
         private boolean projectionLevelInitialized;
         private @Nullable PositionData requestedPosition;
         private @Nullable SurfaceData currentSurface;
+
+        private void primeInitialPosition(@Nullable PositionData position) {
+            if (currentSurface == null && requestedPosition == null && position != null) {
+                requestedPosition = position;
+            }
+        }
+
+        private boolean surfaceLoaded() {
+            return currentSurface != null;
+        }
+
+        private @Nullable PositionData navigationOrigin() {
+            if (currentSurface == null || currentSurface.contextKind() != ContextKind.DUNGEON) {
+                return requestedPosition;
+            }
+            return currentSurface.position();
+        }
+
+        private @Nullable SurfaceData loadedSurface() {
+            return currentSurface;
+        }
+
+        private void replaceSurface(SurfaceData surface) {
+            currentSurface = surface;
+        }
+
+        private void configureOverlay(String modeKey, int levelRange, double opacity, List<Integer> selectedLevels) {
+            overlayState = TravelOverlayState.of(modeKey, levelRange, opacity, selectedLevels);
+        }
+
+        private SnapshotData snapshot() {
+            return new SnapshotData(currentSurface, overlayState, projectionLevel);
+        }
     }
 }

@@ -1,17 +1,9 @@
 package src.domain.dungeon.published;
 
 public sealed interface DungeonMapCatalogCommand permits
-        DungeonMapCatalogCommand.SearchCommand,
         DungeonMapCatalogCommand.CreateMapCommand,
         DungeonMapCatalogCommand.RenameMapCommand,
         DeleteDungeonMapCommand {
-
-    record SearchCommand(String query) implements DungeonMapCatalogCommand {
-
-        public SearchCommand {
-            query = query == null ? "" : query;
-        }
-    }
 
     record CreateMapCommand(String mapName) implements DungeonMapCatalogCommand {
 

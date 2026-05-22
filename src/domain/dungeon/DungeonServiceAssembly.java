@@ -81,7 +81,6 @@ import src.domain.dungeon.model.map.usecase.RenameDungeonMapUseCase;
 import src.domain.dungeon.model.map.usecase.PublishDungeonMapCatalogCreateUseCase;
 import src.domain.dungeon.model.map.usecase.PublishDungeonMapCatalogDeleteUseCase;
 import src.domain.dungeon.model.map.usecase.PublishDungeonMapCatalogRenameUseCase;
-import src.domain.dungeon.model.map.usecase.PublishDungeonMapCatalogSearchUseCase;
 import src.domain.dungeon.model.map.usecase.SearchDungeonMapsUseCase;
 import src.domain.dungeon.model.travel.model.session.model.TravelDungeonSessionSnapshot.SnapshotData;
 import src.domain.dungeon.model.travel.model.session.model.TravelDungeonSessionSurface.AvailableAction;
@@ -168,7 +167,6 @@ final class DungeonServiceAssembly {
         DungeonPublishedState publishedState = authoredPublishedState(registry);
         DungeonMapRepository repository = registry.require(DungeonMapRepository.class);
         return new DungeonCatalogApplicationService(
-                new PublishDungeonMapCatalogSearchUseCase(new SearchDungeonMapsUseCase(repository), publishedState),
                 new PublishDungeonMapCatalogCreateUseCase(new CreateDungeonMapUseCase(repository), publishedState),
                 new PublishDungeonMapCatalogRenameUseCase(new RenameDungeonMapUseCase(repository), publishedState),
                 new PublishDungeonMapCatalogDeleteUseCase(new DeleteDungeonMapUseCase(repository), publishedState));
