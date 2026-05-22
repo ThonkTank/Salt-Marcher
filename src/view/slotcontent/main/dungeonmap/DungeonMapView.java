@@ -33,20 +33,6 @@ import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel.Viewport;
 @SuppressWarnings("PMD.CouplingBetweenObjects")
 public class DungeonMapView extends BorderPane {
 
-    private static final String SURFACE_ROOT_STYLE = "surface-root";
-    private static final String CONTENT_STYLE = "map-workspace-content";
-    private static final String CANVAS_STYLE = "dungeon-map-canvas";
-    private static final String OVERLAY_PLACEHOLDER_STYLE = "dungeon-map-overlay-placeholder";
-    private static final String OVERLAY_NOTE_STYLE = "dungeon-map-overlay-note";
-    private static final double DEFAULT_WIDTH = 960.0;
-    private static final double DEFAULT_HEIGHT = 640.0;
-    private static final double MIN_CANVAS_SIZE = 1.0;
-    private static final double MIN_GRID_PIXEL_SPACING = 10.0;
-    private static final double KEYBOARD_SCROLL_DELTA = 1.0;
-    private static final double ROUNDED_BOX_ARC = 14.0;
-    private static final double LABEL_BASELINE_RATIO = 0.69;
-    private static final int MIN_POLYGON_POINTS = 3;
-    private static final int MIN_POLYLINE_POINTS = 2;
     private static final Object BOUND_MODEL_KEY = new Object();
     private static final Object CANVAS_STATE_LISTENER_KEY = new Object();
     private static final Object CANVAS_SIZE_LISTENER_KEY = new Object();
@@ -61,17 +47,17 @@ public class DungeonMapView extends BorderPane {
     };
     private final StackPane host = new StackPane();
     private final Pane canvasLayer = new Pane();
-    private final Canvas canvas = new Canvas(DEFAULT_WIDTH, DEFAULT_HEIGHT);
+    private final Canvas canvas = new Canvas(defaultCanvasWidth(), defaultCanvasHeight());
     private final Label overlayMessage = new Label();
     private Consumer<DungeonMapViewInputEvent> viewInputEventHandler = ignored -> {};
     private double[] polygonXBuffer = new double[0];
     private double[] polygonYBuffer = new double[0];
 
     public DungeonMapView() {
-        getStyleClass().addAll(SURFACE_ROOT_STYLE, "dungeon-map-surface");
-        host.getStyleClass().add(CONTENT_STYLE);
+        getStyleClass().addAll(surfaceRootStyleClass(), dungeonMapSurfaceStyleClass());
+        host.getStyleClass().add(mapWorkspaceContentStyleClass());
         host.setAlignment(Pos.CENTER);
-        canvas.getStyleClass().add(CANVAS_STYLE);
+        canvas.getStyleClass().add(dungeonMapCanvasStyleClass());
         canvasLayer.setMinSize(0.0, 0.0);
         canvasLayer.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
         canvasLayer.setFocusTraversable(true);
@@ -190,7 +176,7 @@ public class DungeonMapView extends BorderPane {
                     scrolledInput(),
                     event,
                     false,
-                    code == KeyCode.PAGE_UP ? KEYBOARD_SCROLL_DELTA : -KEYBOARD_SCROLL_DELTA);
+                    code == KeyCode.PAGE_UP ? keyboardScrollDelta() : -keyboardScrollDelta());
             event.consume();
         }
     }
@@ -253,8 +239,8 @@ public class DungeonMapView extends BorderPane {
         }
         RenderScene renderScene = canvasState.renderScene();
         Viewport viewport = canvasState.viewport();
-        double width = canvas.getWidth() > MIN_CANVAS_SIZE ? canvas.getWidth() : DEFAULT_WIDTH;
-        double height = canvas.getHeight() > MIN_CANVAS_SIZE ? canvas.getHeight() : DEFAULT_HEIGHT;
+        double width = canvas.getWidth() > minimumCanvasSize() ? canvas.getWidth() : defaultCanvasWidth();
+        double height = canvas.getHeight() > minimumCanvasSize() ? canvas.getHeight() : defaultCanvasHeight();
         GraphicsContext gc = canvas.getGraphicsContext2D();
         gc.clearRect(0.0, 0.0, width, height);
         gc.setFill(BACKGROUND_COLOR);
@@ -269,7 +255,68 @@ public class DungeonMapView extends BorderPane {
         drawOverlays(gc, renderScene.overlays(), viewport);
         overlayMessage.setText(renderScene.overlayMessage());
         overlayMessage.setVisible(!renderScene.sceneLoaded());
-        overlayMessage.getStyleClass().setAll(renderScene.sceneLoaded() ? OVERLAY_NOTE_STYLE : OVERLAY_PLACEHOLDER_STYLE);
+        overlayMessage.getStyleClass().setAll(
+                renderScene.sceneLoaded() ? dungeonMapOverlayNoteStyleClass() : dungeonMapOverlayPlaceholderStyleClass());
+    }
+
+    private static double defaultCanvasWidth() {
+        return 960.0;
+    }
+
+    private static double defaultCanvasHeight() {
+        return 640.0;
+    }
+
+    private static double minimumCanvasSize() {
+        return 1.0;
+    }
+
+    private static String surfaceRootStyleClass() {
+        return "surface-root";
+    }
+
+    private static String dungeonMapSurfaceStyleClass() {
+        return "dungeon-map-surface";
+    }
+
+    private static String mapWorkspaceContentStyleClass() {
+        return "map-workspace-content";
+    }
+
+    private static String dungeonMapCanvasStyleClass() {
+        return "dungeon-map-canvas";
+    }
+
+    private static String dungeonMapOverlayNoteStyleClass() {
+        return "dungeon-map-overlay-note";
+    }
+
+    private static String dungeonMapOverlayPlaceholderStyleClass() {
+        return "dungeon-map-overlay-placeholder";
+    }
+
+    private static double minimumGridPixelSpacing() {
+        return 10.0;
+    }
+
+    private static double keyboardScrollDelta() {
+        return 1.0;
+    }
+
+    private static double labelBaselineRatio() {
+        return 0.69;
+    }
+
+    private static int minimumPolygonPoints() {
+        return 3;
+    }
+
+    private static int minimumPolylinePoints() {
+        return 2;
+    }
+
+    private static double roundedBoxArc() {
+        return 14.0;
     }
 
     private static void drawGrid(
@@ -285,7 +332,7 @@ public class DungeonMapView extends BorderPane {
         for (int index = 0; index < GRID_STEPS.length; index++) {
             int gridStep = GRID_STEPS[index];
             double spacing = viewport.gridSize() * gridStep;
-            if (spacing >= MIN_GRID_PIXEL_SPACING) {
+            if (spacing >= minimumGridPixelSpacing()) {
                 gc.setStroke(gridColor(index));
                 gc.setLineWidth(gridWidth(index));
                 double offsetX = viewport.normalizedOffset(spacing, true);
@@ -362,7 +409,7 @@ public class DungeonMapView extends BorderPane {
             double x = viewport.sceneToScreenX(text.centerX()) - width / 2.0;
             double y = viewport.sceneToScreenY(text.centerY()) - height / 2.0;
             drawLabelBox(gc, text.style(), defaultTextColor(text.textColor()), x, y, width, height, viewport);
-            gc.fillText(text.text(), viewport.sceneToScreenX(text.centerX()), y + height * LABEL_BASELINE_RATIO);
+            gc.fillText(text.text(), viewport.sceneToScreenX(text.centerX()), y + height * labelBaselineRatio());
         }
         gc.setTextAlign(TextAlignment.LEFT);
     }
@@ -379,7 +426,7 @@ public class DungeonMapView extends BorderPane {
             double x = viewport.sceneToScreenX(overlay.centerX()) - width / 2.0;
             double y = viewport.sceneToScreenY(overlay.centerY()) - height / 2.0;
             drawLabelBox(gc, overlay.style(), defaultTextColor(overlay.textColor()), x, y, width, height, viewport);
-            gc.fillText(overlay.text(), viewport.sceneToScreenX(overlay.centerX()), y + height * LABEL_BASELINE_RATIO);
+            gc.fillText(overlay.text(), viewport.sceneToScreenX(overlay.centerX()), y + height * labelBaselineRatio());
         }
         gc.setTextAlign(TextAlignment.LEFT);
     }
@@ -390,7 +437,7 @@ public class DungeonMapView extends BorderPane {
             PaintStyle style,
             Viewport viewport
     ) {
-        if (points.size() < MIN_POLYGON_POINTS) {
+        if (points.size() < minimumPolygonPoints()) {
             return;
         }
         ensurePolygonBufferCapacity(points.size());
@@ -417,7 +464,7 @@ public class DungeonMapView extends BorderPane {
             PaintStyle style,
             Viewport viewport
     ) {
-        if (points.size() < MIN_POLYLINE_POINTS) {
+        if (points.size() < minimumPolylinePoints()) {
             return;
         }
         applyStyle(gc, style, viewport);
@@ -446,12 +493,12 @@ public class DungeonMapView extends BorderPane {
         Color fill = fxColor(style.fill());
         if (fill != null) {
             gc.setFill(fill);
-            gc.fillRoundRect(x, y, width, height, ROUNDED_BOX_ARC, ROUNDED_BOX_ARC);
+            gc.fillRoundRect(x, y, width, height, roundedBoxArc(), roundedBoxArc());
         }
         Color stroke = fxColor(style.stroke());
         if (stroke != null && style.strokeWidth() > 0.0) {
             gc.setStroke(stroke);
-            gc.strokeRoundRect(x, y, width, height, ROUNDED_BOX_ARC, ROUNDED_BOX_ARC);
+            gc.strokeRoundRect(x, y, width, height, roundedBoxArc(), roundedBoxArc());
         }
         gc.setFill(textColor);
         gc.restore();

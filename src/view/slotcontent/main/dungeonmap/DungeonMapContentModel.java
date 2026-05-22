@@ -43,22 +43,11 @@ import src.domain.dungeon.published.TravelDungeonSnapshot;
 @SuppressWarnings("PMD.CouplingBetweenObjects")
 public final class DungeonMapContentModel {
 
-    private static final double BASE_GRID = 32.0;
-    private static final double DEFAULT_ZOOM = 1.0;
-    private static final double MIN_ZOOM = 0.1;
-    private static final double MAX_ZOOM = 4.0;
-    private static final double HIT_TOLERANCE_PIXELS = 7.0;
-    private static final double HIT_BUCKET_SIZE_SCENE = 4.0;
-    private static final double MAX_HIT_INDEX_TOLERANCE = HIT_TOLERANCE_PIXELS / (BASE_GRID * MIN_ZOOM);
-    private static final double DEGENERATE_SEGMENT_LENGTH_SQUARED = 0.0;
-    private static final int MIN_POLYLINE_POINTS = 2;
-    private static final int MAX_LINKLESS_GRAPH_NODE_COUNT = 1;
-    private static final String DEFAULT_TITLE = "Dungeon Map";
     private static final SceneProjector SCENE_PROJECTOR = new SceneProjector();
 
     private final String placeholderTitle;
     private final ReadOnlyObjectWrapper<CanvasState> canvasState;
-    private final ReadOnlyDoubleWrapper zoom = new ReadOnlyDoubleWrapper(DEFAULT_ZOOM);
+    private final ReadOnlyDoubleWrapper zoom = new ReadOnlyDoubleWrapper(defaultZoom());
     private DungeonMapRenderState renderState;
     private Map<String, PointerTarget> pointerTargets = Map.of();
 
@@ -93,6 +82,42 @@ public final class DungeonMapContentModel {
 
     private static double minimumHitTolerance() {
         return 0.22;
+    }
+
+    private static double baseGrid() {
+        return 32.0;
+    }
+
+    private static double defaultZoom() {
+        return 1.0;
+    }
+
+    private static double minimumZoom() {
+        return 0.1;
+    }
+
+    private static double maximumZoom() {
+        return 4.0;
+    }
+
+    private static double hitTolerancePixels() {
+        return 7.0;
+    }
+
+    private static double hitBucketSizeScene() {
+        return 4.0;
+    }
+
+    private static double maximumHitIndexTolerance() {
+        return hitTolerancePixels() / (baseGrid() * minimumZoom());
+    }
+
+    private static int minimumPolylinePoints() {
+        return 2;
+    }
+
+    private static String defaultTitle() {
+        return "Dungeon Map";
     }
 
     public void resetCamera() {
@@ -188,7 +213,7 @@ public final class DungeonMapContentModel {
 
     private static String normalizePlaceholderTitle(String placeholderTitle) {
         return placeholderTitle == null || placeholderTitle.isBlank()
-                ? DEFAULT_TITLE
+                ? defaultTitle()
                 : placeholderTitle;
     }
 
@@ -301,11 +326,11 @@ public final class DungeonMapContentModel {
     ) {
 
         private static Viewport initial() {
-            return new Viewport(0.0, 0.0, DEFAULT_ZOOM);
+            return new Viewport(0.0, 0.0, defaultZoom());
         }
 
         public Viewport {
-            zoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, zoom));
+            zoom = Math.max(minimumZoom(), Math.min(maximumZoom(), zoom));
         }
 
         private Viewport panByPixels(double deltaX, double deltaY) {
@@ -313,7 +338,7 @@ public final class DungeonMapContentModel {
         }
 
         private Viewport zoomAround(double canvasX, double canvasY, double factor) {
-            double nextZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, zoom * factor));
+            double nextZoom = Math.max(minimumZoom(), Math.min(maximumZoom(), zoom * factor));
             double scale = nextZoom / zoom;
             return new Viewport(
                     canvasX - (canvasX - panX) * scale,
@@ -322,7 +347,7 @@ public final class DungeonMapContentModel {
         }
 
         public double gridSize() {
-            return BASE_GRID * zoom;
+            return baseGrid() * zoom;
         }
 
         public double sceneToScreenX(double sceneX) {
@@ -349,7 +374,7 @@ public final class DungeonMapContentModel {
     }
 
     private static String normalizeTitle(String title) {
-        return title == null || title.isBlank() ? DEFAULT_TITLE : title.trim();
+        return title == null || title.isBlank() ? defaultTitle() : title.trim();
     }
 
     private static <T> List<T> copyOf(@Nullable List<T> values) {
@@ -362,8 +387,6 @@ public final class DungeonMapContentModel {
             int blue,
             int alpha
     ) {
-
-        private static final int MAX_CHANNEL = 255;
 
         public RenderColor {
             red = clampChannel(red);
@@ -387,19 +410,19 @@ public final class DungeonMapContentModel {
         }
 
         public double redUnit() {
-            return red / (double) MAX_CHANNEL;
+            return red / (double) maximumChannel();
         }
 
         public double greenUnit() {
-            return green / (double) MAX_CHANNEL;
+            return green / (double) maximumChannel();
         }
 
         public double blueUnit() {
-            return blue / (double) MAX_CHANNEL;
+            return blue / (double) maximumChannel();
         }
 
         public double alphaUnit() {
-            return alpha / (double) MAX_CHANNEL;
+            return alpha / (double) maximumChannel();
         }
 
         private static int blendChannel(int base, int tint, double inverseWeight, double weight) {
@@ -407,15 +430,19 @@ public final class DungeonMapContentModel {
         }
 
         private static int toChannel(double value) {
-            return clampChannel((int) Math.round(clampUnit(value) * MAX_CHANNEL));
+            return clampChannel((int) Math.round(clampUnit(value) * maximumChannel()));
         }
 
         private static int clampChannel(int value) {
-            return Math.max(0, Math.min(MAX_CHANNEL, value));
+            return Math.max(0, Math.min(maximumChannel(), value));
         }
 
         private static double clampUnit(double value) {
             return Math.max(0.0, Math.min(1.0, value));
+        }
+
+        private static int maximumChannel() {
+            return 255;
         }
     }
 
@@ -478,6 +505,7 @@ public final class DungeonMapContentModel {
         public boolean gridView() {
             return gridView;
         }
+
     }
 
     public record PaintStyle(
@@ -691,7 +719,7 @@ public final class DungeonMapContentModel {
         @Override
         public boolean matches(double sceneX, double sceneY, double tolerance) {
             return !hitRef.isBlank()
-                    && polyline.size() >= MIN_POLYLINE_POINTS
+                    && polyline.size() >= minimumPolylinePoints()
                     && Geometry.distanceToPolyline(sceneX, sceneY, polyline) <= tolerance;
         }
     }
@@ -708,7 +736,7 @@ public final class DungeonMapContentModel {
                     continue;
                 }
                 HitCandidate candidate = HitCandidate.from(hitArea);
-                HitBounds bounds = hitArea.bounds().expand(MAX_HIT_INDEX_TOLERANCE);
+                HitBounds bounds = hitArea.bounds().expand(maximumHitIndexTolerance());
                 int minBucketX = bucket(bounds.minX());
                 int maxBucketX = bucket(bounds.maxX());
                 int minBucketY = bucket(bounds.minY());
@@ -727,7 +755,7 @@ public final class DungeonMapContentModel {
             if (candidates == null) {
                 return null;
             }
-            double tolerance = Math.max(HIT_TOLERANCE_PIXELS / gridSize, minimumHitTolerance());
+            double tolerance = Math.max(hitTolerancePixels() / gridSize, minimumHitTolerance());
             for (HitCandidate candidate : candidates) {
                 if (candidate.matches(sceneX, sceneY, tolerance)) {
                     return candidate.hit();
@@ -737,7 +765,7 @@ public final class DungeonMapContentModel {
         }
 
         private static int bucket(double sceneCoordinate) {
-            return (int) Math.floor(sceneCoordinate / HIT_BUCKET_SIZE_SCENE);
+            return (int) Math.floor(sceneCoordinate / hitBucketSizeScene());
         }
 
         private static long key(int bucketX, int bucketY) {
@@ -833,7 +861,8 @@ public final class DungeonMapContentModel {
             double dx = end.x() - start.x();
             double dy = end.y() - start.y();
             double lengthSquared = dx * dx + dy * dy;
-            if (lengthSquared <= DEGENERATE_SEGMENT_LENGTH_SQUARED) {
+            double degenerateSegmentLengthSquared = 0.0;
+            if (lengthSquared <= degenerateSegmentLengthSquared) {
                 return Math.hypot(x - start.x(), y - start.y());
             }
             double t = ((x - start.x()) * dx + (y - start.y()) * dy) / lengthSquared;
@@ -864,7 +893,7 @@ public final class DungeonMapContentModel {
 
         private RenderScene toScene(DungeonMapRenderState displayModel) {
             if (displayModel == null) {
-                return RenderScene.empty(DEFAULT_TITLE);
+                return RenderScene.empty(defaultTitle());
             }
             SceneBuckets buckets = displayModel.isGraphView()
                     ? graphSceneAssembler.assemble(displayModel)
@@ -983,7 +1012,7 @@ public final class DungeonMapContentModel {
                         label.q(),
                         label.r(),
                         SceneGeometry.labelWidthScene(label.label()),
-                        SceneGeometry.LABEL_HEIGHT_SCENE,
+                        SceneGeometry.labelHeightScene(),
                         LabelStyler.style(label, displayModel),
                         ScenePalette.LABEL_TEXT));
             }
@@ -1089,7 +1118,7 @@ public final class DungeonMapContentModel {
                         node.q(),
                         node.r(),
                         Math.max(1.8, SceneGeometry.labelWidthScene(node.label())),
-                        SceneGeometry.LABEL_HEIGHT_SCENE,
+                        SceneGeometry.labelHeightScene(),
                         new PaintStyle(null, null, 0.0, 1.0, false),
                         ScenePalette.LABEL_TEXT));
             }
@@ -1623,12 +1652,6 @@ public final class DungeonMapContentModel {
 
     private static final class SceneGeometry {
 
-        private static final double LABEL_HEIGHT_SCENE = 24.0 / 32.0;
-        private static final double LABEL_PADDING_SCENE = 16.0 / 32.0;
-        private static final double LABEL_CHAR_WIDTH_SCENE = 7.2 / 32.0;
-        private static final double MARKER_HALF_SIZE_SCENE = 0.34;
-        private static final double PARTY_OUTER_RADIUS_SCENE = 0.26;
-
         private static List<MapCanvasPoint> square(double q, double r, double size) {
             return List.of(
                     new MapCanvasPoint(q, r),
@@ -1661,8 +1684,28 @@ public final class DungeonMapContentModel {
             return roundedRect(centerQ, centerR, width, height);
         }
 
+        private static double labelHeightScene() {
+            return 24.0 / 32.0;
+        }
+
+        private static double labelPaddingScene() {
+            return 16.0 / 32.0;
+        }
+
+        private static double labelCharWidthScene() {
+            return 7.2 / 32.0;
+        }
+
+        private static double markerHalfSizeScene() {
+            return 0.34;
+        }
+
+        private static double partyOuterRadiusScene() {
+            return 0.26;
+        }
+
         private static List<MapCanvasPoint> markerShape(DungeonMapRenderState.Marker marker) {
-            double half = marker.isDoorMarker() ? 0.28 : MARKER_HALF_SIZE_SCENE;
+            double half = marker.isDoorMarker() ? 0.28 : markerHalfSizeScene();
             return square(marker.q() - half, marker.r() - half, half * 2.0);
         }
 
@@ -1671,39 +1714,40 @@ public final class DungeonMapContentModel {
             double forwardY = token.heading().dy();
             double sideX = -forwardY;
             double sideY = forwardX;
+            double outerRadius = partyOuterRadiusScene();
             return List.of(
                     new MapCanvasPoint(
-                            token.q() + forwardX * PARTY_OUTER_RADIUS_SCENE * 1.18,
-                            token.r() + forwardY * PARTY_OUTER_RADIUS_SCENE * 1.18),
+                            token.q() + forwardX * outerRadius * 1.18,
+                            token.r() + forwardY * outerRadius * 1.18),
                     new MapCanvasPoint(
-                            token.q() + forwardX * PARTY_OUTER_RADIUS_SCENE * 0.54
-                                    + sideX * PARTY_OUTER_RADIUS_SCENE * 0.76,
-                            token.r() + forwardY * PARTY_OUTER_RADIUS_SCENE * 0.54
-                                    + sideY * PARTY_OUTER_RADIUS_SCENE * 0.76),
+                            token.q() + forwardX * outerRadius * 0.54
+                                    + sideX * outerRadius * 0.76,
+                            token.r() + forwardY * outerRadius * 0.54
+                                    + sideY * outerRadius * 0.76),
                     new MapCanvasPoint(
-                            token.q() - forwardX * PARTY_OUTER_RADIUS_SCENE * 0.92
-                                    + sideX * PARTY_OUTER_RADIUS_SCENE * 0.92,
-                            token.r() - forwardY * PARTY_OUTER_RADIUS_SCENE * 0.92
-                                    + sideY * PARTY_OUTER_RADIUS_SCENE * 0.92),
+                            token.q() - forwardX * outerRadius * 0.92
+                                    + sideX * outerRadius * 0.92,
+                            token.r() - forwardY * outerRadius * 0.92
+                                    + sideY * outerRadius * 0.92),
                     new MapCanvasPoint(
-                            token.q() - forwardX * PARTY_OUTER_RADIUS_SCENE * 1.02,
-                            token.r() - forwardY * PARTY_OUTER_RADIUS_SCENE * 1.02),
+                            token.q() - forwardX * outerRadius * 1.02,
+                            token.r() - forwardY * outerRadius * 1.02),
                     new MapCanvasPoint(
-                            token.q() - forwardX * PARTY_OUTER_RADIUS_SCENE * 0.92
-                                    - sideX * PARTY_OUTER_RADIUS_SCENE * 0.92,
-                            token.r() - forwardY * PARTY_OUTER_RADIUS_SCENE * 0.92
-                                    - sideY * PARTY_OUTER_RADIUS_SCENE * 0.92),
+                            token.q() - forwardX * outerRadius * 0.92
+                                    - sideX * outerRadius * 0.92,
+                            token.r() - forwardY * outerRadius * 0.92
+                                    - sideY * outerRadius * 0.92),
                     new MapCanvasPoint(
-                            token.q() + forwardX * PARTY_OUTER_RADIUS_SCENE * 0.54
-                                    - sideX * PARTY_OUTER_RADIUS_SCENE * 0.76,
-                            token.r() + forwardY * PARTY_OUTER_RADIUS_SCENE * 0.54
-                                    - sideY * PARTY_OUTER_RADIUS_SCENE * 0.76));
+                            token.q() + forwardX * outerRadius * 0.54
+                                    - sideX * outerRadius * 0.76,
+                            token.r() + forwardY * outerRadius * 0.54
+                                    - sideY * outerRadius * 0.76));
         }
 
         private static double labelWidthScene(String label) {
             return Math.max(
                     56.0 / 32.0,
-                    Math.min(180.0 / 32.0, label.length() * LABEL_CHAR_WIDTH_SCENE + LABEL_PADDING_SCENE));
+                    Math.min(180.0 / 32.0, label.length() * labelCharWidthScene() + labelPaddingScene()));
         }
 
         private static double overlayAlpha(int z, int projectionLevel, double configuredOpacity) {
@@ -1965,7 +2009,7 @@ public final class DungeonMapContentModel {
                 safeSnapshot.travelSurface());
         return baseState.withOverlaySettings(toOverlaySettings(safeSnapshot.overlaySettings()))
                 .withProjectionLevel(safeSnapshot.projectionLevel())
-                .withSelectedTool(DungeonMapRenderState.SELECT_TOOL_LABEL);
+                .withSelectedTool(DungeonMapRenderState.selectToolLabel());
     }
 
     private static DungeonMapRenderState.LevelOverlaySettings toOverlaySettings(
@@ -1982,12 +2026,12 @@ public final class DungeonMapContentModel {
     }
 
     private static String toolLabel(DungeonEditorTool selectedTool) {
-        return TOOL_LABELS.getOrDefault(selectedTool, DungeonMapRenderState.SELECT_TOOL_LABEL);
+        return TOOL_LABELS.getOrDefault(selectedTool, DungeonMapRenderState.selectToolLabel());
     }
 
     private static Map<DungeonEditorTool, String> createToolLabels() {
         Map<DungeonEditorTool, String> labels = new EnumMap<>(DungeonEditorTool.class);
-        labels.put(DungeonEditorTool.SELECT, DungeonMapRenderState.SELECT_TOOL_LABEL);
+        labels.put(DungeonEditorTool.SELECT, DungeonMapRenderState.selectToolLabel());
         labels.put(DungeonEditorTool.ROOM_PAINT, "Raum malen");
         labels.put(DungeonEditorTool.ROOM_DELETE, "Raum löschen");
         labels.put(DungeonEditorTool.WALL_CREATE, "Wand setzen");
@@ -2025,7 +2069,7 @@ public final class DungeonMapContentModel {
                 DungeonMapRenderState.LevelOverlaySettings.off(),
                 0,
                 false,
-                DungeonMapRenderState.SELECT_TOOL_LABEL,
+                DungeonMapRenderState.selectToolLabel(),
                 "No dungeon map geometry available.",
                 cells(map),
                 edges(map.boundaries()),
@@ -2168,7 +2212,8 @@ public final class DungeonMapContentModel {
     private static List<DungeonMapRenderState.GraphLink> fallbackGraphLinks(
             List<DungeonMapRenderState.GraphNode> nodes
     ) {
-        if (nodes.size() <= MAX_LINKLESS_GRAPH_NODE_COUNT) {
+        int maximumLinklessGraphNodeCount = 1;
+        if (nodes.size() <= maximumLinklessGraphNodeCount) {
             return List.of();
         }
         List<DungeonMapRenderState.GraphLink> links = new ArrayList<>();
@@ -2247,7 +2292,7 @@ public final class DungeonMapContentModel {
                 DungeonMapRenderState.LevelOverlaySettings.off(),
                 0,
                 editorMode,
-                DungeonMapRenderState.SELECT_TOOL_LABEL,
+                DungeonMapRenderState.selectToolLabel(),
                 "No dungeon map geometry available.",
                 projection.cells(),
                 projection.edges(),
@@ -3158,9 +3203,6 @@ public final class DungeonMapContentModel {
         DungeonMapRenderState.PartyToken partyToken
 ) {
 
-    static final String SELECT_TOOL_LABEL = "Auswahl";
-    private static final String EMPTY_KIND = "EMPTY";
-
     DungeonMapRenderState {
         title = normalizeTitle(title);
         width = Math.max(0, width);
@@ -3315,7 +3357,7 @@ public final class DungeonMapContentModel {
                 LevelOverlaySettings.off(),
                 0,
                 editorMode,
-                SELECT_TOOL_LABEL,
+                selectToolLabel(),
                 "No dungeon map loaded.",
                 List.of(),
                 List.of(),
@@ -3457,13 +3499,9 @@ public final class DungeonMapContentModel {
             List<Integer> selectedLevels
     ) {
 
-        private static final int DEFAULT_LEVEL_RANGE = 2;
-        private static final int MAX_LEVEL_RANGE = 6;
-        private static final double DEFAULT_OPACITY = 0.35;
-
         LevelOverlaySettings {
             mode = mode == null ? OverlayMode.OFF : mode;
-            levelRange = Math.max(1, Math.min(MAX_LEVEL_RANGE, levelRange));
+            levelRange = Math.max(1, Math.min(maximumLevelRange(), levelRange));
             opacity = Math.max(0.05, Math.min(0.95, opacity));
             selectedLevels = selectedLevels == null
                     ? List.of()
@@ -3484,27 +3522,39 @@ public final class DungeonMapContentModel {
         }
 
         static LevelOverlaySettings defaults() {
-            return new LevelOverlaySettings(OverlayMode.NEARBY, DEFAULT_LEVEL_RANGE, DEFAULT_OPACITY, List.of());
+            return new LevelOverlaySettings(OverlayMode.NEARBY, defaultLevelRange(), defaultOpacity(), List.of());
         }
 
         static LevelOverlaySettings off() {
-            return new LevelOverlaySettings(OverlayMode.OFF, DEFAULT_LEVEL_RANGE, DEFAULT_OPACITY, List.of());
+            return new LevelOverlaySettings(OverlayMode.OFF, defaultLevelRange(), defaultOpacity(), List.of());
+        }
+
+        private static int defaultLevelRange() {
+            return 2;
+        }
+
+        private static int maximumLevelRange() {
+            return 6;
+        }
+
+        private static double defaultOpacity() {
+            return 0.35;
         }
     }
 
     record TopologyRef(String kind, long id) {
 
         TopologyRef {
-            kind = kind == null || kind.isBlank() ? EMPTY_KIND : kind.trim();
+            kind = kind == null || kind.isBlank() ? emptyKind() : kind.trim();
             id = Math.max(0L, id);
         }
 
         boolean isEmpty() {
-            return id <= 0L || EMPTY_KIND.equals(kind);
+            return id <= 0L || emptyKind().equals(kind);
         }
 
         static TopologyRef empty() {
-            return new TopologyRef(EMPTY_KIND, 0L);
+            return new TopologyRef(emptyKind(), 0L);
         }
     }
 
@@ -3523,7 +3573,7 @@ public final class DungeonMapContentModel {
     ) {
 
         MarkerHandle {
-            kind = kind == null || kind.isBlank() ? EMPTY_KIND : kind.trim();
+            kind = kind == null || kind.isBlank() ? emptyKind() : kind.trim();
             topologyRef = topologyRef == null ? TopologyRef.empty() : topologyRef;
             ownerId = Math.max(0L, ownerId);
             clusterId = Math.max(0L, clusterId);
@@ -3614,7 +3664,7 @@ public final class DungeonMapContentModel {
             label = label == null ? "" : label;
             kind = kind == null ? MarkerKind.DOOR : kind;
             handle = handle == null
-                    ? new MarkerHandle(EMPTY_KIND, TopologyRef.empty(), 0L, 0L, 0L, 0L, 0, 0, 0, 0, "")
+                    ? new MarkerHandle(emptyKind(), TopologyRef.empty(), 0L, 0L, 0L, 0L, 0, 0, 0, 0, "")
                     : handle;
         }
 
@@ -3641,11 +3691,19 @@ public final class DungeonMapContentModel {
     }
 
     private static String normalizeTitle(String title) {
-        return title == null || title.isBlank() ? DEFAULT_TITLE : title.trim();
+        return title == null || title.isBlank() ? defaultTitle() : title.trim();
     }
 
     private static String normalizeTool(String selectedTool) {
-        return selectedTool == null || selectedTool.isBlank() ? SELECT_TOOL_LABEL : selectedTool;
+        return selectedTool == null || selectedTool.isBlank() ? selectToolLabel() : selectedTool;
+    }
+
+    private static String selectToolLabel() {
+        return "Auswahl";
+    }
+
+    private static String emptyKind() {
+        return "EMPTY";
     }
 
     private static String normalizeEmptyMessage(String emptyMessage, boolean projectionAvailable) {

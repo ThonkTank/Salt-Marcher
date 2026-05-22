@@ -201,7 +201,7 @@ final class DungeonServiceAssembly {
     }
 
     DungeonEditorApplicationService createEditorApplicationService(ServiceRegistry registry) {
-        ServiceRegistry services = Objects.requireNonNull(registry, "registry");
+        ServiceRegistry services = requireRegistry(registry);
         DungeonPublishedState publishedState = authoredPublishedState(services);
         DungeonEditorDungeonState dungeonState = new DungeonEditorDungeonState();
         ApplyDungeonMapCatalogUseCase catalogUseCase = mapCatalogUseCase(services);
@@ -308,17 +308,17 @@ final class DungeonServiceAssembly {
     }
 
     DungeonEditorControlsModel createControlsModel(ServiceRegistry registry) {
-        Objects.requireNonNull(registry, "registry");
+        requireRegistry(registry);
         return editorPublishedState.controlsModel;
     }
 
     DungeonEditorMapSurfaceModel createMapSurfaceModel(ServiceRegistry registry) {
-        Objects.requireNonNull(registry, "registry");
+        requireRegistry(registry);
         return editorPublishedState.mapSurfaceModel;
     }
 
     DungeonEditorStateModel createStateModel(ServiceRegistry registry) {
-        Objects.requireNonNull(registry, "registry");
+        requireRegistry(registry);
         return editorPublishedState.stateModel;
     }
 
@@ -327,7 +327,7 @@ final class DungeonServiceAssembly {
         if (existing != null) {
             return existing;
         }
-        Objects.requireNonNull(registry, "registry");
+        requireRegistry(registry);
         DungeonPublishedState candidate = new DungeonPublishedState();
         return authoredPublishedState.compareAndSet(null, candidate)
                 ? candidate
@@ -378,7 +378,7 @@ final class DungeonServiceAssembly {
         if (existing != null) {
             return existing;
         }
-        Objects.requireNonNull(registry, "registry");
+        requireRegistry(registry);
         ApplyTravelDungeonSessionUseCase applyUseCase = new ApplyTravelDungeonSessionUseCase(
                 travelDungeonSessionRuntimeAccess(registry));
         TravelRuntimeComponent.PublishedState publishedState = new TravelRuntimeComponent.PublishedState();
@@ -395,6 +395,14 @@ final class DungeonServiceAssembly {
 
     private static TravelDungeonSessionRepository travelDungeonSessionRuntimeAccess(ServiceRegistry registry) {
         return registry.require(TravelDungeonSessionRepository.class);
+    }
+
+    private static ServiceRegistry requireRegistry(ServiceRegistry registry) {
+        return Objects.requireNonNull(registry, "registry");
+    }
+
+    private static <T> Consumer<T> requireListener(Consumer<T> listener) {
+        return Objects.requireNonNull(listener, "listener");
     }
 
     private record TravelRuntimeComponent(
@@ -425,7 +433,7 @@ final class DungeonServiceAssembly {
             }
 
             private Runnable subscribe(Consumer<TravelDungeonSnapshot> listener) {
-                Consumer<TravelDungeonSnapshot> safeListener = Objects.requireNonNull(listener, "listener");
+                Consumer<TravelDungeonSnapshot> safeListener = requireListener(listener);
                 listeners.add(safeListener);
                 return () -> listeners.remove(safeListener);
             }
@@ -565,8 +573,6 @@ final class DungeonServiceAssembly {
 
     private static final class DungeonPublishedState implements DungeonAuthoredPublishedStateRepository {
 
-        private static final String DEFAULT_DUNGEON_NAME = "Dungeon";
-
         private final PublishedChannel<DungeonAuthoredReadResult> authoredRead =
                 new PublishedChannel<>(defaultAuthoredRead());
         private final PublishedChannel<DungeonAuthoredMutationResult> authoredMutation =
@@ -682,9 +688,10 @@ final class DungeonServiceAssembly {
         }
 
         private static DungeonTravelResponse defaultTravel() {
+            String defaultDungeonName = "Dungeon";
             return new DungeonTravelResponse.Surface(new DungeonTravelSurfaceSnapshot(
                     DungeonTravelContextKind.DUNGEON,
-                    DEFAULT_DUNGEON_NAME,
+                    defaultDungeonName,
                     0,
                     DungeonMapSnapshot.empty(),
                     new DungeonTravelPosition(
@@ -693,7 +700,7 @@ final class DungeonServiceAssembly {
                             0L,
                             new DungeonCellRef(0, 0, 0),
                             DungeonTravelHeading.defaultHeading()),
-                    DEFAULT_DUNGEON_NAME,
+                    defaultDungeonName,
                     "Kein Standort",
                     "",
                     "",
@@ -704,7 +711,7 @@ final class DungeonServiceAssembly {
 
         private static DungeonSnapshot defaultSnapshot() {
             return new DungeonSnapshot(
-                    DEFAULT_DUNGEON_NAME,
+                    "Dungeon",
                     DungeonMapMode.EDITOR,
                     DungeonMapSnapshot.empty(),
                     List.of(),
@@ -928,8 +935,6 @@ final class DungeonServiceAssembly {
 
         private static final class PublishedChannel<T> {
 
-            private static final String LISTENER_PARAMETER = "listener";
-
             private final List<Consumer<T>> listeners = new ArrayList<>();
             private T current;
 
@@ -949,7 +954,7 @@ final class DungeonServiceAssembly {
             }
 
             private Runnable subscribe(Consumer<T> listener) {
-                Consumer<T> safeListener = Objects.requireNonNull(listener, LISTENER_PARAMETER);
+                Consumer<T> safeListener = requireListener(listener);
                 listeners.add(safeListener);
                 return () -> listeners.remove(safeListener);
             }
@@ -1006,19 +1011,19 @@ final class DungeonServiceAssembly {
         }
 
         private Runnable subscribeControls(Consumer<DungeonEditorControlsSnapshot> listener) {
-            Consumer<DungeonEditorControlsSnapshot> safeListener = Objects.requireNonNull(listener, "listener");
+            Consumer<DungeonEditorControlsSnapshot> safeListener = requireListener(listener);
             controlsListeners.add(safeListener);
             return () -> controlsListeners.remove(safeListener);
         }
 
         private Runnable subscribeMapSurface(Consumer<DungeonEditorMapSurfaceSnapshot> listener) {
-            Consumer<DungeonEditorMapSurfaceSnapshot> safeListener = Objects.requireNonNull(listener, "listener");
+            Consumer<DungeonEditorMapSurfaceSnapshot> safeListener = requireListener(listener);
             mapSurfaceListeners.add(safeListener);
             return () -> mapSurfaceListeners.remove(safeListener);
         }
 
         private Runnable subscribeState(Consumer<DungeonEditorStateSnapshot> listener) {
-            Consumer<DungeonEditorStateSnapshot> safeListener = Objects.requireNonNull(listener, "listener");
+            Consumer<DungeonEditorStateSnapshot> safeListener = requireListener(listener);
             stateListeners.add(safeListener);
             return () -> stateListeners.remove(safeListener);
         }
