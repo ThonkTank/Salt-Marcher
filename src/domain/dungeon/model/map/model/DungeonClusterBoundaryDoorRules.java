@@ -7,7 +7,6 @@ import org.jspecify.annotations.Nullable;
 
 final class DungeonClusterBoundaryDoorRules {
 
-    private static final long MULTIPLE_ROOM_TOUCH_COUNT = 2L;
     private static final DungeonCorridorBindingLookupLogic CORRIDOR_BINDING_LOOKUP_SERVICE =
             new DungeonCorridorBindingLookupLogic();
 
@@ -66,10 +65,10 @@ final class DungeonClusterBoundaryDoorRules {
             Map<Long, List<DungeonCell>> roomCells
     ) {
         long touchingRoomCount = touchingRoomCount(edge, roomCells);
-        if (touchingRoomCount >= MULTIPLE_ROOM_TOUCH_COUNT) {
+        if (touchesMultipleRooms(touchingRoomCount)) {
             return existing != null && existing.kind() != DungeonClusterBoundaryKind.DOOR;
         }
-        return touchingRoomCount == 1L && (existing == null || existing.kind() != DungeonClusterBoundaryKind.DOOR);
+        return touchesSingleRoom(touchingRoomCount) && (existing == null || existing.kind() != DungeonClusterBoundaryKind.DOOR);
     }
 
     private long touchingRoomCount(DungeonEdge edge, Map<Long, List<DungeonCell>> cellsByRoom) {
@@ -81,12 +80,20 @@ final class DungeonClusterBoundaryDoorRules {
         for (List<DungeonCell> roomCells : cellsByRoom.values()) {
             if (touchesRoom(roomCells, touching)) {
                 result++;
-                if (result >= MULTIPLE_ROOM_TOUCH_COUNT) {
+                if (touchesMultipleRooms(result)) {
                     return result;
                 }
             }
         }
         return result;
+    }
+
+    private boolean touchesMultipleRooms(long touchingRoomCount) {
+        return touchingRoomCount > 1L;
+    }
+
+    private boolean touchesSingleRoom(long touchingRoomCount) {
+        return touchingRoomCount == 1L;
     }
 
     private boolean touchesRoom(List<DungeonCell> roomCells, Set<DungeonCell> touching) {

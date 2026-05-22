@@ -5,7 +5,6 @@ import java.util.Objects;
 
 public final class DungeonRoomTopologyEditor {
 
-    private static final String DUNGEON_MAP_PARAMETER = "dungeonMap";
     private static final DungeonRoomRectangleMutationLogic RECTANGLE_MUTATION_SERVICE =
             new DungeonRoomRectangleMutationLogic();
     private static final DungeonClusterBoundaryEditLogic BOUNDARY_EDIT_SERVICE =
@@ -14,13 +13,11 @@ public final class DungeonRoomTopologyEditor {
             new DungeonBoundaryStretchEditLogic();
 
     public DungeonMap paintRectangle(DungeonMap dungeonMap, DungeonCell start, DungeonCell end) {
-        Objects.requireNonNull(dungeonMap, DUNGEON_MAP_PARAMETER);
-        return RECTANGLE_MUTATION_SERVICE.paintRectangle(dungeonMap, start, end);
+        return RECTANGLE_MUTATION_SERVICE.paintRectangle(requireDungeonMap(dungeonMap), start, end);
     }
 
     public DungeonMap deleteRectangle(DungeonMap dungeonMap, DungeonCell start, DungeonCell end) {
-        Objects.requireNonNull(dungeonMap, DUNGEON_MAP_PARAMETER);
-        return RECTANGLE_MUTATION_SERVICE.deleteRectangle(dungeonMap, start, end);
+        return RECTANGLE_MUTATION_SERVICE.deleteRectangle(requireDungeonMap(dungeonMap), start, end);
     }
 
     public DungeonMap editBoundaries(
@@ -30,8 +27,7 @@ public final class DungeonRoomTopologyEditor {
             DungeonClusterBoundaryKind kind,
             boolean deleteBoundary
     ) {
-        Objects.requireNonNull(dungeonMap, DUNGEON_MAP_PARAMETER);
-        return BOUNDARY_EDIT_SERVICE.editBoundaries(dungeonMap, clusterId, edges, kind, deleteBoundary);
+        return BOUNDARY_EDIT_SERVICE.editBoundaries(requireDungeonMap(dungeonMap), clusterId, edges, kind, deleteBoundary);
     }
 
     public DungeonMap moveBoundaryStretch(
@@ -42,7 +38,16 @@ public final class DungeonRoomTopologyEditor {
             int deltaR,
             int deltaLevel
     ) {
-        Objects.requireNonNull(dungeonMap, DUNGEON_MAP_PARAMETER);
-        return STRETCH_EDIT_SERVICE.moveBoundaryStretch(dungeonMap, clusterId, sourceEdges, deltaQ, deltaR, deltaLevel);
+        return STRETCH_EDIT_SERVICE.moveBoundaryStretch(
+                requireDungeonMap(dungeonMap),
+                clusterId,
+                sourceEdges,
+                deltaQ,
+                deltaR,
+                deltaLevel);
+    }
+
+    private DungeonMap requireDungeonMap(DungeonMap dungeonMap) {
+        return Objects.requireNonNull(dungeonMap, "dungeonMap");
     }
 }

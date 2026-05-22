@@ -1,13 +1,9 @@
 package src.domain.dungeon.model.map.model;
 
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Set;
 import org.jspecify.annotations.Nullable;
 
 final class DungeonCorridorMutationRules {
 
-    private static final int MULTI_CLUSTER_THRESHOLD = 1;
     private static final DungeonMapLookupLogic LOOKUP_SERVICE = new DungeonMapLookupLogic();
 
     boolean sameClusterOnly(DungeonMap dungeonMap, DungeonCorridorEndpoint start, DungeonCorridorEndpoint end) {
@@ -17,21 +13,6 @@ final class DungeonCorridorMutationRules {
         DungeonRoom left = LOOKUP_SERVICE.room(dungeonMap, start.roomId());
         DungeonRoom right = LOOKUP_SERVICE.room(dungeonMap, end.roomId());
         return left != null && right != null && left.clusterId() == right.clusterId();
-    }
-
-    boolean sameClusterOnly(DungeonMap dungeonMap, List<Long> roomIds) {
-        Set<Long> clusterIds = new LinkedHashSet<>();
-        for (Long roomId : roomIds == null ? List.<Long>of() : roomIds) {
-            DungeonRoom room = roomId == null ? null : LOOKUP_SERVICE.room(dungeonMap, roomId);
-            if (room == null) {
-                continue;
-            }
-            clusterIds.add(room.clusterId());
-            if (clusterIds.size() > MULTI_CLUSTER_THRESHOLD) {
-                return false;
-            }
-        }
-        return clusterIds.size() <= MULTI_CLUSTER_THRESHOLD;
     }
 
     boolean hasPersistedRoomId(@Nullable Long roomId) {
