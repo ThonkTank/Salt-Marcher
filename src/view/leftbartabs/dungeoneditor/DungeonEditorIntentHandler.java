@@ -40,15 +40,6 @@ import src.view.slotcontent.main.dungeonmap.DungeonMapViewInputEvent;
 
 final class DungeonEditorIntentHandler {
 
-    private static final String NAME_MISSING_ERROR = "Name fehlt.";
-    private static final double ZERO_SCROLL_DELTA = 0.0;
-    private static final double ZOOM_IN_FACTOR = 1.1;
-    private static final double ZOOM_OUT_FACTOR = 1.0 / ZOOM_IN_FACTOR;
-    private static final long NO_MAP_ID = 0L;
-    private static final int NO_LEVEL_DELTA = 0;
-    private static final int LEVEL_UP_DELTA = 1;
-    private static final int LEVEL_DOWN_DELTA = -1;
-
     private final DungeonEditorContributionModel presentationModel;
     private final DungeonEditorControlsContentModel controlsContentModel;
     private final DungeonEditorStateContentModel stateContentModel;
@@ -87,8 +78,10 @@ final class DungeonEditorIntentHandler {
         DungeonEditorControlsViewInputEvent.ProjectionSnapshot projection = event.projection();
         DungeonEditorControlsViewInputEvent.ToolSnapshot tool = event.tool();
         DungeonEditorControlsViewInputEvent.OverlaySnapshot overlay = event.overlay();
-        if (map.selectedMapIdValue() > NO_MAP_ID) {
-            handleMapSelection(map.selectedMapIdValue());
+        long selectedMapIdValue = map.selectedMapIdValue();
+        long emptyMapId = selectedMapIdValue - selectedMapIdValue;
+        if (selectedMapIdValue > emptyMapId) {
+            handleMapSelection(selectedMapIdValue);
             return;
         }
         if (hasMapEditorInput(map)) {
@@ -103,8 +96,10 @@ final class DungeonEditorIntentHandler {
             handleToolInput(tool);
             return;
         }
-        if (projection.levelShift() != 0) {
-            editor.shiftProjectionLevel(new ShiftDungeonEditorProjectionLevelCommand(projection.levelShift()));
+        int levelShift = projection.levelShift();
+        int noLevelShift = levelShift - levelShift;
+        if (levelShift != noLevelShift) {
+            editor.shiftProjectionLevel(new ShiftDungeonEditorProjectionLevelCommand(levelShift));
             return;
         }
         if (!overlay.modeKey().isBlank()) {
@@ -191,10 +186,19 @@ final class DungeonEditorIntentHandler {
     }
 
     private void zoomCamera(DungeonMapViewInputEvent event) {
-        if (event.scrollDeltaY() > ZERO_SCROLL_DELTA) {
-            mapContentModel.zoomAround(event.position().canvasX(), event.position().canvasY(), ZOOM_IN_FACTOR);
-        } else if (event.scrollDeltaY() < ZERO_SCROLL_DELTA) {
-            mapContentModel.zoomAround(event.position().canvasX(), event.position().canvasY(), ZOOM_OUT_FACTOR);
+        double scrollDeltaY = event.scrollDeltaY();
+        double neutralScrollDelta = scrollDeltaY - scrollDeltaY;
+        double zoomInFactor = 1.1;
+        if (scrollDeltaY > neutralScrollDelta) {
+            mapContentModel.zoomAround(
+                    event.position().canvasX(),
+                    event.position().canvasY(),
+                    zoomInFactor);
+        } else if (scrollDeltaY < neutralScrollDelta) {
+            mapContentModel.zoomAround(
+                    event.position().canvasX(),
+                    event.position().canvasY(),
+                    1.0 / zoomInFactor);
         }
     }
 
@@ -348,7 +352,7 @@ final class DungeonEditorIntentHandler {
             return;
         }
         int levelDelta = normalizeLevelDelta(event.scrollDeltaY());
-        if (levelDelta != NO_LEVEL_DELTA) {
+        if (levelDelta != 0) {
             editor.scrollSelection(new ShiftDungeonEditorProjectionLevelCommand(levelDelta));
         }
     }
@@ -374,12 +378,13 @@ final class DungeonEditorIntentHandler {
             lastHoverSample = Optional.empty();
             return false;
         }
+        double vertexSnapDistance = sceneX(event) - sceneX(event) + 0.22;
         HoverSample nextSample = HoverSample.from(
-                event,
                 selectedTool,
                 target,
                 sceneX(event),
-                sceneY(event));
+                sceneY(event),
+                vertexSnapDistance);
         if (lastHoverSample.filter(nextSample::equals).isPresent()) {
             return true;
         }
@@ -476,13 +481,14 @@ final class DungeonEditorIntentHandler {
     }
 
     private static int normalizeLevelDelta(double scrollDeltaY) {
-        if (scrollDeltaY > ZERO_SCROLL_DELTA) {
-            return LEVEL_UP_DELTA;
+        double neutralScrollDelta = scrollDeltaY - scrollDeltaY;
+        if (scrollDeltaY > neutralScrollDelta) {
+            return 1;
         }
-        if (scrollDeltaY < ZERO_SCROLL_DELTA) {
-            return LEVEL_DOWN_DELTA;
+        if (scrollDeltaY < neutralScrollDelta) {
+            return -1;
         }
-        return NO_LEVEL_DELTA;
+        return 0;
     }
 
     private double sceneX(DungeonMapViewInputEvent event) {
@@ -495,7 +501,8 @@ final class DungeonEditorIntentHandler {
 
     private void handleMapSelection(long selectedMapIdValue) {
         DungeonEditorContributionModel.InteractionState interactionState = presentationModel.currentInteractionState();
-        if (selectedMapIdValue > NO_MAP_ID
+        long emptyMapId = selectedMapIdValue - selectedMapIdValue;
+        if (selectedMapIdValue > emptyMapId
                 && selectedMapIdValue != interactionState.currentSelectedMapIdValue()) {
             editor.selectMap(new SelectDungeonEditorMapCommand(new DungeonMapId(selectedMapIdValue)));
         }
@@ -538,7 +545,7 @@ final class DungeonEditorIntentHandler {
                 controlsContentModel.currentMapEditorUiState();
         String draftName = mapEditorUiState.draftName().strip();
         if (draftName.isBlank()) {
-            controlsContentModel.showMapEditorValidationError(NAME_MISSING_ERROR);
+            controlsContentModel.showMapEditorValidationError("Name fehlt.");
             return;
         }
         if (mapEditorUiState.isCreateMode()) {
@@ -553,7 +560,8 @@ final class DungeonEditorIntentHandler {
 
     private void submitRename(DungeonEditorControlsContentModel.MapEditorUiState mapEditorUiState, String draftName) {
         long mapIdValue = mapEditorUiState.mapIdValue();
-        if (mapIdValue > NO_MAP_ID) {
+        long emptyMapId = mapIdValue - mapIdValue;
+        if (mapIdValue > emptyMapId) {
             controlsContentModel.closeMapEditor();
             editor.renameMap(new DungeonMapCatalogCommand.RenameMapCommand(new DungeonMapId(mapIdValue), draftName));
         }
@@ -566,7 +574,8 @@ final class DungeonEditorIntentHandler {
             return;
         }
         long mapIdValue = mapEditorUiState.mapIdValue();
-        if (mapIdValue > NO_MAP_ID) {
+        long emptyMapId = mapIdValue - mapIdValue;
+        if (mapIdValue > emptyMapId) {
             controlsContentModel.closeMapEditor();
             editor.deleteMap(new DeleteDungeonMapCommand(new DungeonMapId(mapIdValue)));
         }
@@ -689,18 +698,16 @@ final class DungeonEditorIntentHandler {
             int vertexR,
             DungeonMapContentModel.PointerTarget target
     ) {
-        private static final double VERTEX_SNAP_DISTANCE = 0.22;
-
         private static HoverSample from(
-                DungeonMapViewInputEvent event,
                 DungeonEditorTool tool,
                 DungeonMapContentModel.PointerTarget target,
                 double sceneX,
-                double sceneY
+                double sceneY,
+                double vertexSnapDistance
         ) {
             int vertexQ = (int) Math.round(sceneX);
             int vertexR = (int) Math.round(sceneY);
-            boolean vertexPresent = Math.hypot(sceneX - vertexQ, sceneY - vertexR) <= VERTEX_SNAP_DISTANCE;
+            boolean vertexPresent = Math.hypot(sceneX - vertexQ, sceneY - vertexR) <= vertexSnapDistance;
             return new HoverSample(
                     tool == null ? DungeonEditorTool.SELECT : tool,
                     (int) Math.floor(sceneX),

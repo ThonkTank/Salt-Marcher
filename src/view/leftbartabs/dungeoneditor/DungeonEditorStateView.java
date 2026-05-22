@@ -8,10 +8,8 @@ import javafx.scene.control.Label;
 import javafx.scene.control.TextArea;
 import javafx.scene.layout.VBox;
 
+@SuppressWarnings("PMD.LawOfDemeter")
 public final class DungeonEditorStateView extends VBox {
-
-    private static final String PMD_LAW_OF_DEMETER = "PMD.LawOfDemeter";
-    private static final String VISUAL_DESCRIPTION_LABEL = "Visueller Eindruck";
 
     private final Label body = new Label();
     private final VBox narrationCards = new VBox(8);
@@ -34,7 +32,6 @@ public final class DungeonEditorStateView extends VBox {
         showProjection(contentModel.stateProjectionProperty().get());
     }
 
-    @SuppressWarnings(PMD_LAW_OF_DEMETER)
     private void showNarrationCards(
             List<DungeonEditorStateContentModel.RoomNarrationCardProjection> cards,
             boolean busy,
@@ -53,7 +50,6 @@ public final class DungeonEditorStateView extends VBox {
         showNarrationCards(resolvedProjection.narrationCards(), resolvedProjection.busy(), resolvedProjection.statusText());
     }
 
-    @SuppressWarnings(PMD_LAW_OF_DEMETER)
     private VBox narrationCard(
             DungeonEditorStateContentModel.RoomNarrationCardProjection card,
             boolean busy,
@@ -61,10 +57,10 @@ public final class DungeonEditorStateView extends VBox {
     ) {
         Label title = new Label(card.roomName());
         title.getStyleClass().add("panel-title");
-        Label visualTitle = muted(VISUAL_DESCRIPTION_LABEL);
+        Label visualTitle = muted("Visueller Eindruck");
         TextArea visualArea = textArea(card.visualDescription());
         visualTitle.setLabelFor(visualArea);
-        visualArea.setAccessibleText(VISUAL_DESCRIPTION_LABEL);
+        visualArea.setAccessibleText("Visueller Eindruck");
         VBox content = new VBox(6, title, visualTitle, visualArea);
         List<TextArea> exitAreas = new ArrayList<>();
         for (DungeonEditorStateContentModel.RoomExitNarrationProjection exit : card.exits()) {
@@ -100,7 +96,6 @@ public final class DungeonEditorStateView extends VBox {
         return content;
     }
 
-    @SuppressWarnings(PMD_LAW_OF_DEMETER)
     private VBox createStateCard() {
         Label title = new Label("Editor state");
         title.getStyleClass().add("panel-title");
@@ -110,7 +105,6 @@ public final class DungeonEditorStateView extends VBox {
         return card;
     }
 
-    @SuppressWarnings(PMD_LAW_OF_DEMETER)
     private static Label muted(String text) {
         Label label = new Label(text == null ? "" : text);
         label.getStyleClass().add("text-muted");

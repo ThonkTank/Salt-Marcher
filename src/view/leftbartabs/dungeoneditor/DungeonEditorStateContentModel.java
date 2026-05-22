@@ -13,12 +13,6 @@ import src.domain.dungeon.published.DungeonEditorPreview;
 import src.domain.dungeon.published.DungeonEditorStateSnapshot;
 
 final class DungeonEditorStateContentModel {
-    private static final String DEFAULT_TOOL_LABEL = "Auswahl";
-    private static final String GRID_VIEW_LABEL = "Grid";
-    private static final String GRAPH_VIEW_LABEL = "Graph";
-    private static final String ROOM_PAINT_LABEL = "Raum malen";
-    private static final String ROOM_DELETE_LABEL = "Raum löschen";
-
     private final ReadOnlyObjectWrapper<StateProjection> stateProjection =
             new ReadOnlyObjectWrapper<>(StateProjection.initial());
     private final Map<VisualDraftKey, String> visualDrafts = new HashMap<>();
@@ -169,7 +163,7 @@ final class DungeonEditorStateContentModel {
         StateProjectionContext {
             selectedMapIdValue = Math.max(0L, selectedMapIdValue);
             statusText = statusText == null ? "" : statusText;
-            selectedToolLabel = selectedToolLabel == null ? DEFAULT_TOOL_LABEL : selectedToolLabel;
+            selectedToolLabel = selectedToolLabel == null ? "Auswahl" : selectedToolLabel;
             viewModeLabel = normalizeViewModeKey(viewModeLabel);
             projectionLevel = Math.max(0, projectionLevel);
             overlayLabel = overlayLabel == null ? "" : overlayLabel;
@@ -180,8 +174,8 @@ final class DungeonEditorStateContentModel {
                     0L,
                     "",
                     false,
-                    DEFAULT_TOOL_LABEL,
-                    GRID_VIEW_LABEL,
+                    "Auswahl",
+                    "Grid",
                     0,
                     "");
         }
@@ -358,10 +352,10 @@ final class DungeonEditorStateContentModel {
     }
 
     private static String normalizeViewModeKey(@Nullable String viewModeKey) {
-        return GRAPH_VIEW_LABEL.equals(viewModeKey) ? GRAPH_VIEW_LABEL : GRID_VIEW_LABEL;
+        return "Graph".equals(viewModeKey) ? "Graph" : "Grid";
     }
 
     private static String roomRectangleLabel(boolean deleteMode) {
-        return deleteMode ? ROOM_DELETE_LABEL : ROOM_PAINT_LABEL;
+        return deleteMode ? "Raum löschen" : "Raum malen";
     }
 }

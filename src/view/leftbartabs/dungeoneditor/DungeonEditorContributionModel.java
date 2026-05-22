@@ -19,7 +19,6 @@ public final class DungeonEditorContributionModel {
     private final ReadOnlyObjectWrapper<ControlsProjection> controlsProjection =
             new ReadOnlyObjectWrapper<>(ControlsProjection.initial());
     private final DungeonEditorStateContentModel stateContentModel;
-    private static final long NO_MAP_ID = 0L;
 
     private DungeonEditorControlsSnapshot controlsSnapshot = DungeonEditorControlsSnapshot.empty("");
     private DungeonEditorStateSnapshot stateSnapshot = DungeonEditorStateSnapshot.empty("");
@@ -89,9 +88,6 @@ public final class DungeonEditorContributionModel {
     }
 
     private static final class ProjectionFactory {
-        private static final String NO_MAPS_STATUS = "Keine Dungeon-Maps vorhanden.";
-        private static final String NO_SELECTED_MAP_STATUS = "Kein Dungeon ausgewählt.";
-
         private static ProjectionBundle create(DungeonEditorControlsSnapshot controlsSnapshot) {
             ProjectionSource safeSource = ProjectionSource.from(controlsSnapshot);
             List<MapListEntry> mapEntries = safeSource.maps().stream().map(MapListEntry::from).toList();
@@ -106,7 +102,7 @@ public final class DungeonEditorContributionModel {
                     ? DungeonOverlaySettings.defaults()
                     : safeSource.overlaySettings();
             long selectedMapIdValue = safeSource.selectedMapId() == null
-                    ? NO_MAP_ID
+                    ? 0L
                     : safeSource.selectedMapId().value();
             ControlsProjection controls = new ControlsProjection(
                     mapEntries,
@@ -153,10 +149,10 @@ public final class DungeonEditorContributionModel {
                 return source.statusText();
             }
             if (mapEntries.isEmpty()) {
-                return NO_MAPS_STATUS;
+                return "Keine Dungeon-Maps vorhanden.";
             }
             if (source.selectedMapId() == null) {
-                return NO_SELECTED_MAP_STATUS;
+                return "Kein Dungeon ausgewählt.";
             }
             return source.statusText();
         }
@@ -209,7 +205,7 @@ public final class DungeonEditorContributionModel {
 
         private static MapSelection toMapSelection(@Nullable DungeonMapSummary summary) {
             DungeonMapSummary safeSummary = summary == null
-                    ? new DungeonMapSummary(new DungeonMapId(1L), MapSelection.DEFAULT_MAP_NAME, 0L)
+                    ? new DungeonMapSummary(new DungeonMapId(1L), defaultMapName(), 0L)
                     : summary;
             return new MapSelection(
                     MapSelection.keyOf(safeSummary.mapId()),
@@ -265,7 +261,7 @@ public final class DungeonEditorContributionModel {
             OverlayProjection currentOverlayProjection
     ) {
         InteractionState {
-            currentSelectedMapIdValue = Math.max(NO_MAP_ID, currentSelectedMapIdValue);
+            currentSelectedMapIdValue = Math.max(0L, currentSelectedMapIdValue);
             currentViewModeKey = DungeonEditorControlsContentModel.normalizeViewModeKey(currentViewModeKey);
             currentSelectedToolLabel = currentSelectedToolLabel == null
                     ? DungeonEditorControlsContentModel.defaultToolLabel()
@@ -280,7 +276,7 @@ public final class DungeonEditorContributionModel {
 
         static InteractionState empty() {
             return new InteractionState(
-                    NO_MAP_ID,
+                    0L,
                     DungeonEditorControlsContentModel.gridViewLabel(),
                     DungeonEditorControlsContentModel.defaultToolLabel(),
                     DungeonEditorTool.SELECT,
@@ -294,11 +290,9 @@ public final class DungeonEditorContributionModel {
             String mapName,
             long revision
     ) {
-        static final String DEFAULT_MAP_NAME = "Dungeon Map";
-
         MapSelection {
             key = key == null ? "" : key;
-            mapName = mapName == null || mapName.isBlank() ? DEFAULT_MAP_NAME : mapName;
+            mapName = mapName == null || mapName.isBlank() ? defaultMapName() : mapName;
             revision = Math.max(0L, revision);
         }
 
@@ -316,13 +310,13 @@ public final class DungeonEditorContributionModel {
         MapListEntry {
             key = key == null ? "" : key;
             mapIdValue = Math.max(0L, mapIdValue);
-            mapName = mapName == null || mapName.isBlank() ? MapSelection.DEFAULT_MAP_NAME : mapName;
+            mapName = mapName == null || mapName.isBlank() ? defaultMapName() : mapName;
             revision = Math.max(0L, revision);
         }
 
         static MapListEntry from(MapSelection selection) {
             MapSelection safeSelection = selection == null
-                    ? new MapSelection("", null, MapSelection.DEFAULT_MAP_NAME, 0L)
+                    ? new MapSelection("", null, defaultMapName(), 0L)
                     : selection;
             return new MapListEntry(
                     safeSelection.key(),
@@ -331,6 +325,10 @@ public final class DungeonEditorContributionModel {
                     safeSelection.revision());
         }
 
+    }
+
+    private static String defaultMapName() {
+        return "Dungeon Map";
     }
 
     record OverlayProjection(

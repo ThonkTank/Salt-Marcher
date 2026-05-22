@@ -40,7 +40,6 @@ public class DungeonMapView extends BorderPane {
     private static final String OVERLAY_NOTE_STYLE = "dungeon-map-overlay-note";
     private static final double DEFAULT_WIDTH = 960.0;
     private static final double DEFAULT_HEIGHT = 640.0;
-    private static final double ZOOM_STEP_FACTOR = 1.1;
     private static final double MIN_CANVAS_SIZE = 1.0;
     private static final double MIN_GRID_PIXEL_SPACING = 10.0;
     private static final double KEYBOARD_SCROLL_DELTA = 1.0;

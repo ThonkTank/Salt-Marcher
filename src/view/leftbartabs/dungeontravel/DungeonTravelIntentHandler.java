@@ -10,10 +10,6 @@ import src.view.slotcontent.main.dungeonmap.DungeonMapViewInputEvent;
 
 final class DungeonTravelIntentHandler {
 
-    private static final double NO_SCROLL_DELTA = 0.0;
-    private static final double WHEEL_ZOOM_STEP = 1.1;
-    private static final double WHEEL_ZOOM_BACK_STEP = 1.0 / WHEEL_ZOOM_STEP;
-
     private final DungeonTravelContributionModel presentationModel;
     private final DungeonMapContentModel mapContentModel;
     private final DungeonTravelRuntimeApplicationService travel;
@@ -46,9 +42,11 @@ final class DungeonTravelIntentHandler {
             mapContentModel.resetCamera();
             return;
         }
-        if (event.projectionLevelShift() != 0) {
+        int projectionLevelShift = event.projectionLevelShift();
+        int noProjectionLevelShift = projectionLevelShift - projectionLevelShift;
+        if (projectionLevelShift != noProjectionLevelShift) {
             travel.applyDungeonTravelSession(ApplyTravelDungeonSessionCommand.projectionLevel(
-                    presentationModel.currentProjectionLevel() + event.projectionLevelShift()));
+                    presentationModel.currentProjectionLevel() + projectionLevelShift));
             return;
         }
         travel.applyDungeonTravelSession(ApplyTravelDungeonSessionCommand.overlay(
@@ -121,10 +119,18 @@ final class DungeonTravelIntentHandler {
             return;
         }
         double scrollDeltaY = event.scrollDeltaY();
-        if (scrollDeltaY > NO_SCROLL_DELTA) {
-            mapContentModel.zoomAround(event.position().canvasX(), event.position().canvasY(), WHEEL_ZOOM_STEP);
-        } else if (scrollDeltaY < NO_SCROLL_DELTA) {
-            mapContentModel.zoomAround(event.position().canvasX(), event.position().canvasY(), WHEEL_ZOOM_BACK_STEP);
+        double neutralScrollDelta = scrollDeltaY - scrollDeltaY;
+        double zoomInFactor = 1.1;
+        if (scrollDeltaY > neutralScrollDelta) {
+            mapContentModel.zoomAround(
+                    event.position().canvasX(),
+                    event.position().canvasY(),
+                    zoomInFactor);
+        } else if (scrollDeltaY < neutralScrollDelta) {
+            mapContentModel.zoomAround(
+                    event.position().canvasX(),
+                    event.position().canvasY(),
+                    1.0 / zoomInFactor);
         }
     }
 }

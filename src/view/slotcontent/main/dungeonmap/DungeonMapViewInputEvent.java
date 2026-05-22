@@ -22,8 +22,6 @@ public record DungeonMapViewInputEvent(
             boolean mouseReleased,
             boolean scrolled
     ) {
-        private static final int EXACTLY_ONE_RAW_INPUT = 1;
-
         public CanvasInput {
             int rawEvents = 0;
             rawEvents += mousePressed ? 1 : 0;
@@ -31,7 +29,8 @@ public record DungeonMapViewInputEvent(
             rawEvents += mouseMoved ? 1 : 0;
             rawEvents += mouseReleased ? 1 : 0;
             rawEvents += scrolled ? 1 : 0;
-            if (rawEvents != EXACTLY_ONE_RAW_INPUT) {
+            int exactlyOneRawInput = Boolean.TRUE.compareTo(Boolean.FALSE);
+            if (rawEvents != exactlyOneRawInput) {
                 throw new IllegalArgumentException("Exactly one raw canvas input must be selected.");
             }
         }

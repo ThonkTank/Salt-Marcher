@@ -14,17 +14,10 @@ import src.domain.dungeon.published.DungeonOverlaySettings;
 
 public final class DungeonTravelContributionModel {
 
-    private static final String DEFAULT_MAP_NAME = "Dungeon";
-    private static final String DEFAULT_ACTION_LABEL = "Aktion";
-    private static final String DEFAULT_HEADING_LABEL = "Sueden";
-    private static final String DEFAULT_STATUS_LABEL = "Token auf der Karte ziehen";
-    private static final String OUTSIDE_DUNGEON_STATUS = "Gruppe befindet sich ausserhalb des Dungeons";
-    private static final String NO_LOCATION_LABEL = "Kein Standort";
-
     private final ReadOnlyObjectWrapper<List<ActionProjection>> actions =
             new ReadOnlyObjectWrapper<>(List.of());
     private final ReadOnlyStringWrapper state = new ReadOnlyStringWrapper("");
-    private final ReadOnlyStringWrapper mapName = new ReadOnlyStringWrapper(DEFAULT_MAP_NAME);
+    private final ReadOnlyStringWrapper mapName = new ReadOnlyStringWrapper("Dungeon");
     private final ReadOnlyObjectWrapper<OverlayProjection> overlaySettings =
             new ReadOnlyObjectWrapper<>(OverlayProjection.defaults());
     private final ReadOnlyIntegerWrapper projectionLevel = new ReadOnlyIntegerWrapper(0);
@@ -88,7 +81,7 @@ public final class DungeonTravelContributionModel {
         projectionLevel.set(safeSnapshot.projectionLevel());
         if (workspaceState == null) {
             actions.set(List.of());
-            mapName.set(DEFAULT_MAP_NAME);
+            mapName.set("Dungeon");
             refreshStateText(null);
             return;
         }
@@ -108,14 +101,14 @@ public final class DungeonTravelContributionModel {
         private ActionProjection(String actionId, String buttonLabel, String descriptionText) {
             this.actionId = actionId == null ? "" : actionId.trim();
             this.buttonLabel = buttonLabel == null || buttonLabel.isBlank()
-                    ? DEFAULT_ACTION_LABEL
+                    ? "Aktion"
                     : buttonLabel.trim();
             this.descriptionText = descriptionText == null ? "" : descriptionText.trim();
         }
 
         static ActionProjection from(TravelDungeonAction action) {
             if (action == null) {
-                return new ActionProjection("", DEFAULT_ACTION_LABEL, "");
+                return new ActionProjection("", "Aktion", "");
             }
             return new ActionProjection(action.actionId(), action.label(), action.description());
         }
@@ -293,10 +286,10 @@ public final class DungeonTravelContributionModel {
             OverlayProjection resolvedOverlay = overlayProjection == null
                     ? OverlayProjection.defaults()
                     : overlayProjection;
-            return "Position: " + NO_LOCATION_LABEL + "\n"
+            return "Position: Kein Standort\n"
                     + "Tile: z=" + projectionLevel + "\n"
-                    + "Heading: " + DEFAULT_HEADING_LABEL + "\n"
-                    + "Status: " + DEFAULT_STATUS_LABEL + "\n"
+                    + "Heading: Sueden\n"
+                    + "Status: Token auf der Karte ziehen\n"
                     + resolvedOverlay.overlayLabel();
         }
 
@@ -305,8 +298,8 @@ public final class DungeonTravelContributionModel {
                 return workspaceState.statusLabel();
             }
             return workspaceState.outsideDungeon()
-                    ? OUTSIDE_DUNGEON_STATUS
-                    : DEFAULT_STATUS_LABEL;
+                    ? "Gruppe befindet sich ausserhalb des Dungeons"
+                    : "Token auf der Karte ziehen";
         }
     }
 }

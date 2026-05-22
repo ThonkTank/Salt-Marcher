@@ -12,13 +12,6 @@ import src.domain.dungeon.published.DungeonOverlaySettings;
 
 final class DungeonTravelControlsContentModel {
 
-    private static final String MODE_OFF = "OFF";
-    private static final String MODE_NEARBY = "NEARBY";
-    private static final String MODE_SELECTED = "SELECTED";
-    private static final String LABEL_OFF = "Aus";
-    private static final String LABEL_NEARBY = "Nahe Ebenen";
-    private static final String LABEL_SELECTED = "Auswahl";
-
     private final ReadOnlyStringWrapper mapName = new ReadOnlyStringWrapper("");
     private final ReadOnlyBooleanWrapper overlayDisabled = new ReadOnlyBooleanWrapper(false);
     private final ReadOnlyStringWrapper zoomLabel = new ReadOnlyStringWrapper("Zoom: 100%");
@@ -53,9 +46,9 @@ final class DungeonTravelControlsContentModel {
 
     List<OverlayModeOption> overlayModeOptions() {
         return List.of(
-                new OverlayModeOption(MODE_OFF, LABEL_OFF, false, false),
-                new OverlayModeOption(MODE_NEARBY, LABEL_NEARBY, true, false),
-                new OverlayModeOption(MODE_SELECTED, LABEL_SELECTED, false, true));
+                new OverlayModeOption(overlayOffMode(), "Aus", false, false),
+                new OverlayModeOption(overlayNearbyMode(), "Nahe Ebenen", true, false),
+                new OverlayModeOption(overlaySelectedMode(), "Auswahl", false, true));
     }
 
     void showMapName(String nextMapName) {
@@ -116,11 +109,11 @@ final class DungeonTravelControlsContentModel {
                     safeModeKey,
                     boundedOverlayRange(safeSettings),
                     boundedOverlayOpacity(safeSettings) * 100.0,
-                    OverlayText.selectedLevelList(safeSettings.selectedLevels()),
+                    selectedLevelList(safeSettings.selectedLevels()),
                     rangeMode(safeModeKey),
                     selectedLevelsMode(safeModeKey),
                     disabled,
-                    OverlayText.triggerSummary(safeSettings));
+                    triggerSummary(safeSettings));
         }
 
         boolean rangeDisabled() {
@@ -132,43 +125,42 @@ final class DungeonTravelControlsContentModel {
         }
     }
 
-    private enum OverlayText {
-        ;
-
-        private static String triggerSummary(DungeonOverlaySettings settings) {
-            DungeonOverlaySettings resolvedSettings = settings == null ? DungeonOverlaySettings.defaults() : settings;
-            String percentText = opacityText(boundedOverlayOpacity(resolvedSettings));
-            return switch (normalizeModeKey(resolvedSettings.modeKey())) {
-                case MODE_NEARBY -> "Overlay: Nachbarn +/-" + boundedOverlayRange(resolvedSettings) + " " + percentText;
-                case MODE_SELECTED -> "Overlay: Auswahl z="
-                        + selectedLevelSummary(resolvedSettings.selectedLevels()) + " " + percentText;
-                default -> "Overlay: Aus";
-            };
+    private static String triggerSummary(DungeonOverlaySettings settings) {
+        DungeonOverlaySettings resolvedSettings = settings == null ? DungeonOverlaySettings.defaults() : settings;
+        String percentText = opacityText(boundedOverlayOpacity(resolvedSettings));
+        String mode = normalizeModeKey(resolvedSettings.modeKey());
+        if (overlayNearbyMode().equals(mode)) {
+            return "Overlay: Nachbarn +/-" + boundedOverlayRange(resolvedSettings) + " " + percentText;
         }
+        if (overlaySelectedMode().equals(mode)) {
+            return "Overlay: Auswahl z="
+                    + selectedLevelSummary(resolvedSettings.selectedLevels()) + " " + percentText;
+        }
+        return "Overlay: Aus";
+    }
 
-        private static String selectedLevelList(List<Integer> levels) {
-            List<Integer> orderedLevels = (levels == null ? List.<Integer>of() : levels).stream()
-                    .sorted()
-                    .distinct()
-                    .toList();
-            StringBuilder text = new StringBuilder();
-            for (Integer level : orderedLevels) {
-                if (text.length() > 0) {
-                    text.append(", ");
-                }
-                text.append(level);
+    private static String selectedLevelList(List<Integer> levels) {
+        List<Integer> orderedLevels = (levels == null ? List.<Integer>of() : levels).stream()
+                .sorted()
+                .distinct()
+                .toList();
+        StringBuilder text = new StringBuilder();
+        for (Integer level : orderedLevels) {
+            if (text.length() > 0) {
+                text.append(", ");
             }
-            return text.toString();
+            text.append(level);
         }
+        return text.toString();
+    }
 
-        private static String selectedLevelSummary(List<Integer> levels) {
-            String formatted = selectedLevelList(levels);
-            return formatted.isBlank() ? "-" : formatted;
-        }
+    private static String selectedLevelSummary(List<Integer> levels) {
+        String formatted = selectedLevelList(levels);
+        return formatted.isBlank() ? "-" : formatted;
+    }
 
-        private static String opacityText(double opacity) {
-            return Math.round(opacity * 100.0) + "%";
-        }
+    private static String opacityText(double opacity) {
+        return Math.round(opacity * 100.0) + "%";
     }
 
     private static int boundedOverlayRange(DungeonOverlaySettings settings) {
@@ -182,20 +174,32 @@ final class DungeonTravelControlsContentModel {
     }
 
     private static String normalizeModeKey(@Nullable String modeKey) {
-        if (MODE_NEARBY.equalsIgnoreCase(modeKey)) {
-            return MODE_NEARBY;
+        if (overlayNearbyMode().equalsIgnoreCase(modeKey)) {
+            return overlayNearbyMode();
         }
-        if (MODE_SELECTED.equalsIgnoreCase(modeKey)) {
-            return MODE_SELECTED;
+        if (overlaySelectedMode().equalsIgnoreCase(modeKey)) {
+            return overlaySelectedMode();
         }
-        return MODE_OFF;
+        return overlayOffMode();
     }
 
     private static boolean rangeMode(String modeKey) {
-        return MODE_NEARBY.equals(normalizeModeKey(modeKey));
+        return overlayNearbyMode().equals(normalizeModeKey(modeKey));
     }
 
     private static boolean selectedLevelsMode(String modeKey) {
-        return MODE_SELECTED.equals(normalizeModeKey(modeKey));
+        return overlaySelectedMode().equals(normalizeModeKey(modeKey));
+    }
+
+    private static String overlayOffMode() {
+        return "OFF";
+    }
+
+    private static String overlayNearbyMode() {
+        return "NEARBY";
+    }
+
+    private static String overlaySelectedMode() {
+        return "SELECTED";
     }
 }

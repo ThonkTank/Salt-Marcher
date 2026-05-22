@@ -24,10 +24,6 @@ import org.jspecify.annotations.Nullable;
 
 public final class DungeonEditorControlsView extends VBox {
 
-    private static final String PMD_LAW_OF_DEMETER = "PMD.LawOfDemeter";
-    private static final String TOOL_BUTTON_STYLE = "tool-btn";
-    private static final String STYLE_SELECTED = "selected";
-
     private Consumer<DungeonEditorControlsViewInputEvent> viewInputEventHandler = ignored -> { };
 
     public DungeonEditorControlsView() {
@@ -416,7 +412,7 @@ public final class DungeonEditorControlsView extends VBox {
                 corridorDeleteButton);
     }
 
-    @SuppressWarnings(PMD_LAW_OF_DEMETER)
+    @SuppressWarnings("PMD.LawOfDemeter")
     private void showMaps(
             DungeonEditorControlsContentModel.MapProjection projection,
             ComboBox<DungeonEditorControlsContentModel.MapItem> mapSelector,
@@ -677,14 +673,14 @@ public final class DungeonEditorControlsView extends VBox {
 
     private static ToggleButton toolToggle(String text) {
         ToggleButton button = new ToggleButton(text);
-        button.getStyleClass().add(TOOL_BUTTON_STYLE);
+        button.getStyleClass().add("tool-btn");
         button.setMinWidth(USE_PREF_SIZE);
         return button;
     }
 
     private static Button toolButton(String text) {
         Button button = new Button(text);
-        button.getStyleClass().add(TOOL_BUTTON_STYLE);
+        button.getStyleClass().add("tool-btn");
         button.setMinWidth(USE_PREF_SIZE);
         return button;
     }
@@ -731,11 +727,11 @@ public final class DungeonEditorControlsView extends VBox {
 
     private static void markSelected(Button button, String selectedTool, String label) {
         boolean selected = label.equals(selectedTool);
-        if (selected && !button.getStyleClass().contains(STYLE_SELECTED)) {
-            button.getStyleClass().add(STYLE_SELECTED);
+        if (selected && !button.getStyleClass().contains("selected")) {
+            button.getStyleClass().add("selected");
         }
         if (!selected) {
-            button.getStyleClass().remove(STYLE_SELECTED);
+            button.getStyleClass().remove("selected");
         }
         button.setAccessibleText(button.getText() + (selected ? " aktiv" : " inaktiv"));
     }

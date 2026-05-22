@@ -48,7 +48,6 @@ public final class DungeonMapContentModel {
     private static final double MIN_ZOOM = 0.1;
     private static final double MAX_ZOOM = 4.0;
     private static final double HIT_TOLERANCE_PIXELS = 7.0;
-    private static final double MIN_HIT_TOLERANCE = 0.22;
     private static final double HIT_BUCKET_SIZE_SCENE = 4.0;
     private static final double MAX_HIT_INDEX_TOLERANCE = HIT_TOLERANCE_PIXELS / (BASE_GRID * MIN_ZOOM);
     private static final double DEGENERATE_SEGMENT_LENGTH_SQUARED = 0.0;
@@ -90,6 +89,10 @@ public final class DungeonMapContentModel {
 
     public double currentZoom() {
         return currentViewport().zoom();
+    }
+
+    private static double minimumHitTolerance() {
+        return 0.22;
     }
 
     public void resetCamera() {
@@ -724,7 +727,7 @@ public final class DungeonMapContentModel {
             if (candidates == null) {
                 return null;
             }
-            double tolerance = Math.max(HIT_TOLERANCE_PIXELS / gridSize, MIN_HIT_TOLERANCE);
+            double tolerance = Math.max(HIT_TOLERANCE_PIXELS / gridSize, minimumHitTolerance());
             for (HitCandidate candidate : candidates) {
                 if (candidate.matches(sceneX, sceneY, tolerance)) {
                     return candidate.hit();

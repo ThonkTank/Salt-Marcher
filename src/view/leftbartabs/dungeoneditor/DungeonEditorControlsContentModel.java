@@ -14,10 +14,6 @@ import src.domain.dungeon.published.DungeonOverlaySettings;
 
 final class DungeonEditorControlsContentModel {
 
-    private static final String DEFAULT_DUNGEON_NAME = "Dungeon";
-    private static final String MODE_OFF = "OFF";
-    private static final String MODE_NEARBY = "NEARBY";
-    private static final String MODE_SELECTED = "SELECTED";
     private static final Map<DungeonEditorTool, String> TOOL_LABELS = createToolLabels();
 
     private final ReadOnlyObjectWrapper<MapProjection> mapProjection =
@@ -73,9 +69,9 @@ final class DungeonEditorControlsContentModel {
 
     List<OverlayModeOption> overlayModeOptions() {
         return List.of(
-                new OverlayModeOption(MODE_OFF, "Aus", false, false),
-                new OverlayModeOption(MODE_NEARBY, "Nahe Ebenen", true, false),
-                new OverlayModeOption(MODE_SELECTED, "Auswahl", false, true));
+                new OverlayModeOption(overlayOffMode(), "Aus", false, false),
+                new OverlayModeOption(overlayNearbyMode(), "Nahe Ebenen", true, false),
+                new OverlayModeOption(overlaySelectedMode(), "Auswahl", false, true));
     }
 
     ToolControls toolControls() {
@@ -88,7 +84,7 @@ final class DungeonEditorControlsContentModel {
     }
 
     void openCreateMapEditor() {
-        mapEditor.set(MapEditorUiState.create(DEFAULT_DUNGEON_NAME));
+        mapEditor.set(MapEditorUiState.create("Dungeon"));
     }
 
     void openSelectedMapEditor(MapEditorMode mode, long mapIdValue) {
@@ -311,8 +307,8 @@ final class DungeonEditorControlsContentModel {
                     safeOverlayRange(safeSettings),
                     safeOverlayOpacity(safeSettings) * 100.0,
                     selectedLevelList(safeSettings.selectedLevels()),
-                    MODE_NEARBY.equals(safeModeKey),
-                    MODE_SELECTED.equals(safeModeKey),
+                    overlayNearbyMode().equals(safeModeKey),
+                    overlaySelectedMode().equals(safeModeKey),
                     disabled,
                     triggerSummary(safeSettings));
         }
@@ -453,11 +449,11 @@ final class DungeonEditorControlsContentModel {
     private static String triggerSummary(DungeonOverlaySettings settings) {
         DungeonOverlaySettings resolvedSettings = settings == null ? DungeonOverlaySettings.defaults() : settings;
         String key = normalizedOverlayMode(resolvedSettings);
-        if (MODE_NEARBY.equals(key)) {
+        if (overlayNearbyMode().equals(key)) {
             return "Overlay: Nachbarn +/-" + safeOverlayRange(resolvedSettings)
                     + " " + opacityText(safeOverlayOpacity(resolvedSettings));
         }
-        if (MODE_SELECTED.equals(key)) {
+        if (overlaySelectedMode().equals(key)) {
             return "Overlay: Auswahl z=" + selectedLevelSummary(resolvedSettings.selectedLevels())
                     + " " + opacityText(safeOverlayOpacity(resolvedSettings));
         }
@@ -496,12 +492,24 @@ final class DungeonEditorControlsContentModel {
     }
 
     private static String normalizeModeKey(@Nullable String modeKey) {
-        if (MODE_NEARBY.equalsIgnoreCase(modeKey)) {
-            return MODE_NEARBY;
+        if (overlayNearbyMode().equalsIgnoreCase(modeKey)) {
+            return overlayNearbyMode();
         }
-        if (MODE_SELECTED.equalsIgnoreCase(modeKey)) {
-            return MODE_SELECTED;
+        if (overlaySelectedMode().equalsIgnoreCase(modeKey)) {
+            return overlaySelectedMode();
         }
-        return MODE_OFF;
+        return overlayOffMode();
+    }
+
+    private static String overlayOffMode() {
+        return "OFF";
+    }
+
+    private static String overlayNearbyMode() {
+        return "NEARBY";
+    }
+
+    private static String overlaySelectedMode() {
+        return "SELECTED";
     }
 }
