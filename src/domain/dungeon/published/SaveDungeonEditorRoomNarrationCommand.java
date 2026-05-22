@@ -1,5 +1,6 @@
 package src.domain.dungeon.published;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public record SaveDungeonEditorRoomNarrationCommand(
@@ -58,7 +59,7 @@ public record SaveDungeonEditorRoomNarrationCommand(
             List<String> descriptions
     ) {
         int size = maxSize(labels, qs, rs, levels, directions, descriptions);
-        java.util.ArrayList<ExitNarration> result = new java.util.ArrayList<>(size);
+        List<ExitNarration> result = new ArrayList<>(size);
         for (int index = 0; index < size; index++) {
             result.add(new ExitNarration(
                     textAt(labels, index),

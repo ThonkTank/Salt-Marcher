@@ -355,16 +355,6 @@ final class DungeonEditorControlsContentModel {
         }
     }
 
-    enum ToolFamily {
-        NONE,
-        ROOM,
-        WALL,
-        DOOR,
-        CORRIDOR,
-        STAIR,
-        TRANSITION
-    }
-
     static final class ToolCatalog {
 
         static final String DEFAULT_TOOL_LABEL = "Auswahl";

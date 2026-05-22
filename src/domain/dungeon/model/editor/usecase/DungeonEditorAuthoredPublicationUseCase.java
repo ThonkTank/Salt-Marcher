@@ -20,17 +20,18 @@ import src.domain.dungeon.model.map.repository.DungeonAuthoredPublishedStateRepo
 
 public final class DungeonEditorAuthoredPublicationUseCase {
 
-    public DungeonEditorAuthoredPublicationUseCase() {
-    }
-
     public Publication execute(
             String mapName,
             @Nullable DungeonDerivedState derived,
             List<DungeonEditorHandleFacts> editorHandles,
             long revision
     ) {
-        SnapshotPublication snapshot = new SnapshotPublication(mapName, derived, editorHandles, revision);
-        return new Publication(snapshot.stateFacts(), snapshot.repositoryPublication());
+        List<DungeonEditorHandleFacts> safeEditorHandles = editorHandles == null
+                ? List.of()
+                : List.copyOf(editorHandles);
+        return new Publication(
+                stateFacts(mapName, derived, safeEditorHandles, revision),
+                repositoryPublication(mapName, derived, safeEditorHandles, revision));
     }
 
     public record Publication(
@@ -39,30 +40,29 @@ public final class DungeonEditorAuthoredPublicationUseCase {
     ) {
     }
 
-    private record SnapshotPublication(
+    private static DungeonEditorDungeonState.SnapshotFacts stateFacts(
             String mapName,
             @Nullable DungeonDerivedState derived,
             List<DungeonEditorHandleFacts> editorHandles,
-            long repositoryRevision
+            long revision
     ) {
-        public SnapshotPublication {
-            editorHandles = editorHandles == null ? List.of() : List.copyOf(editorHandles);
-        }
+        return new DungeonEditorDungeonState.SnapshotFacts(
+                mapName,
+                stateRevision(revision),
+                mapSnapshot(derived, editorHandles));
+    }
 
-        public DungeonEditorDungeonState.SnapshotFacts stateFacts() {
-            return new DungeonEditorDungeonState.SnapshotFacts(
-                    mapName,
-                    stateRevision(repositoryRevision),
-                    mapSnapshot(derived, editorHandles));
-        }
-
-        public DungeonAuthoredPublishedStateRepository.SnapshotPublication repositoryPublication() {
-            return new DungeonAuthoredPublishedStateRepository.SnapshotPublication(
-                    mapName,
-                    derived,
-                    editorHandles,
-                    repositoryRevision);
-        }
+    private static DungeonAuthoredPublishedStateRepository.SnapshotPublication repositoryPublication(
+            String mapName,
+            @Nullable DungeonDerivedState derived,
+            List<DungeonEditorHandleFacts> editorHandles,
+            long revision
+    ) {
+        return new DungeonAuthoredPublishedStateRepository.SnapshotPublication(
+                mapName,
+                derived,
+                editorHandles,
+                revision);
     }
 
     private static int stateRevision(long revision) {
