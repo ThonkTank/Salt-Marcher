@@ -37,7 +37,6 @@ Published dungeon carriers must not own:
 
 ## Application Boundary
 
-Application Service: DungeonCatalogApplicationService
 Application Service: DungeonTravelApplicationService
 Application Service: DungeonEditorApplicationService
 Application Service: DungeonTravelRuntimeApplicationService

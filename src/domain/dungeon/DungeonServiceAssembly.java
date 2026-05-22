@@ -78,9 +78,6 @@ import src.domain.dungeon.model.map.usecase.LoadDungeonMapUseCase;
 import src.domain.dungeon.model.map.usecase.LoadDungeonSnapshotUseCase;
 import src.domain.dungeon.model.map.usecase.PublishDungeonEditorHandlesUseCase;
 import src.domain.dungeon.model.map.usecase.RenameDungeonMapUseCase;
-import src.domain.dungeon.model.map.usecase.PublishDungeonMapCatalogCreateUseCase;
-import src.domain.dungeon.model.map.usecase.PublishDungeonMapCatalogDeleteUseCase;
-import src.domain.dungeon.model.map.usecase.PublishDungeonMapCatalogRenameUseCase;
 import src.domain.dungeon.model.map.usecase.SearchDungeonMapsUseCase;
 import src.domain.dungeon.model.travel.model.session.model.TravelDungeonSessionSnapshot.SnapshotData;
 import src.domain.dungeon.model.travel.model.session.model.TravelDungeonSessionSurface.AvailableAction;
@@ -162,15 +159,6 @@ final class DungeonServiceAssembly {
             new java.util.concurrent.atomic.AtomicReference<>();
     private final java.util.concurrent.atomic.AtomicReference<TravelRuntimeComponent> travelRuntime =
             new java.util.concurrent.atomic.AtomicReference<>();
-
-    DungeonCatalogApplicationService createCatalogApplicationService(ServiceRegistry registry) {
-        DungeonPublishedState publishedState = authoredPublishedState(registry);
-        DungeonMapRepository repository = registry.require(DungeonMapRepository.class);
-        return new DungeonCatalogApplicationService(
-                new PublishDungeonMapCatalogCreateUseCase(new CreateDungeonMapUseCase(repository), publishedState),
-                new PublishDungeonMapCatalogRenameUseCase(new RenameDungeonMapUseCase(repository), publishedState),
-                new PublishDungeonMapCatalogDeleteUseCase(new DeleteDungeonMapUseCase(repository), publishedState));
-    }
 
     DungeonTravelApplicationService createTravelApplicationService(ServiceRegistry registry) {
         DungeonPublishedState publishedState = authoredPublishedState(registry);

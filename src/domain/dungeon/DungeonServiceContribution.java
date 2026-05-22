@@ -20,7 +20,6 @@ public final class DungeonServiceContribution implements ServiceContribution {
     @Override
     public void register(ServiceRegistry.Builder services) {
         DungeonServiceAssembly assembly = new DungeonServiceAssembly();
-        services.registerFactory(DungeonCatalogApplicationService.class, assembly::createCatalogApplicationService);
         services.registerFactory(DungeonTravelApplicationService.class, assembly::createTravelApplicationService);
         services.registerFactory(DungeonTravelRuntimeApplicationService.class, assembly::createTravelRuntimeApplicationService);
         services.registerFactory(DungeonAuthoredReadModel.class, assembly::authoredReadModel);

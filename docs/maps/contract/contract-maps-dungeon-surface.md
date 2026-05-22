@@ -16,7 +16,7 @@ the generic maps feature.
 
 Owners:
 
-- provider: `DungeonEditorApplicationService`, `DungeonCatalogApplicationService`,
+- provider: `DungeonEditorApplicationService`,
   `DungeonTravelApplicationService`, and `DungeonTravelRuntimeApplicationService`
 - consumers: dungeon editor and travel view roots,
   and any future runtime-workspace context that needs authored dungeon map

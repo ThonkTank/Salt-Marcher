@@ -43,12 +43,11 @@ invariants.
   inspector, status, and other non-canvas projection state, but must not
   mirror dungeon map render projection as a second render path
 - the optional active-root dungeon `IntentHandler` owns input interpretation
-- `DungeonCatalogApplicationService` and
-  `DungeonTravelApplicationService` are the callable authored-dungeon backend
-  boundaries
+- `DungeonTravelApplicationService` is the callable authored-dungeon backend
+  boundary for raw travel surfaces
 - `DungeonEditorApplicationService` is the only callable runtime
-  dungeon-editor backend boundary and owns editor read, preview, and apply
-  orchestration over authored dungeon truth
+  dungeon-editor backend boundary and owns editor read, catalog change,
+  preview, and apply orchestration over authored dungeon truth
 - `DungeonTravelRuntimeApplicationService` is the only callable runtime dungeon-travel
   backend boundary
 - dungeon `published/**` owns dungeon-native authored carriers and raw travel
@@ -66,7 +65,7 @@ invariants.
 
 For the editor workspace, `DungeonEditorApplicationService` composes that
 runtime snapshot from dungeon editor model use cases over authored dungeon
-truth. Catalog changes still enter through `DungeonCatalogApplicationService`.
+truth. Catalog changes enter through the same editor backend boundary.
 
 ### Preview And Apply
 
@@ -89,9 +88,10 @@ lives only in the
 
 ### Map Catalog
 
-`editor controls -> DungeonEditorBinder -> DungeonCatalogApplicationService.catalog(...) -> catalog result`
+`editor controls -> DungeonEditorBinder -> DungeonEditorApplicationService -> catalog result`
 
-Catalog behavior remains separate from the shared canvas scene path.
+Catalog behavior remains separate from the shared canvas scene path while
+sharing the editor backend boundary.
 
 ## Decisions And Rationale
 
