@@ -22,7 +22,6 @@ public final class CatalogMainView extends BorderPane {
     private static final int FIRST_COLUMN_INDEX = 0;
     private static final int PREVIOUS_PAGE_SHIFT = -1;
     private static final int NEXT_PAGE_SHIFT = 1;
-    private static final long NO_CREATURE_ID = 0L;
     private static final String ACTION_LABEL = "+Add";
     private static final String ACTION_TOOLTIP = "Zum Encounter hinzufügen";
     private static final String CREATURE_ACCESSIBLE_TEXT_PREFIX = "Stat Block: ";
@@ -97,8 +96,8 @@ public final class CatalogMainView extends BorderPane {
     private void publishSortSelection(String sortKey) {
         viewInputEventHandler.accept(new CatalogMainViewInputEvent(
                 sortKey,
-                NO_CREATURE_ID,
-                NO_CREATURE_ID,
+                0L,
+                0L,
                 0));
     }
 
@@ -111,19 +110,19 @@ public final class CatalogMainView extends BorderPane {
     }
 
     private void publishCreatureEvent(long creatureId, boolean addCreature) {
-        if (creatureId <= 0L) {
+        if (!hasCreatureId(creatureId)) {
             return;
         }
         viewInputEventHandler.accept(addCreature
-                ? new CatalogMainViewInputEvent("", NO_CREATURE_ID, creatureId, 0)
-                : new CatalogMainViewInputEvent("", creatureId, NO_CREATURE_ID, 0));
+                ? new CatalogMainViewInputEvent("", 0L, creatureId, 0)
+                : new CatalogMainViewInputEvent("", creatureId, 0L, 0));
     }
 
     private void publishPageShift(int pageShift) {
         viewInputEventHandler.accept(new CatalogMainViewInputEvent(
                 "",
-                NO_CREATURE_ID,
-                NO_CREATURE_ID,
+                0L,
+                0L,
                 pageShift));
     }
 
@@ -192,7 +191,7 @@ public final class CatalogMainView extends BorderPane {
                 return;
             }
             long selectedCreatureId = creatureId(table.getSelectionModel().getSelectedItem());
-            if (selectedCreatureId <= NO_CREATURE_ID) {
+            if (!hasCreatureId(selectedCreatureId)) {
                 return;
             }
             if (event.isShiftDown()) {
@@ -202,6 +201,10 @@ public final class CatalogMainView extends BorderPane {
             }
             event.consume();
         });
+    }
+
+    private static boolean hasCreatureId(long creatureId) {
+        return creatureId > 0L;
     }
 
     private static void applyTableProjection(

@@ -31,7 +31,7 @@ public final class EncounterResultsStateView extends VBox {
     private final Label resultThresholdValueLabel = styledLabel("", "encounter-results-slider-value");
     private final Label resultFractionValueLabel = styledLabel("", "encounter-results-slider-value");
     private VBox controlsBox;
-    private final EnemyList resultEnemyList = new EnemyList();
+    private final VBox resultEnemyList = new VBox(4);
     private final Button resultAwardButton = new Button("XP verteilen");
     private final VBox dialog = buildPane();
     private Consumer<EncounterResultsStateViewInputEvent> viewInputEventHandler = ignored -> { };
@@ -56,6 +56,7 @@ public final class EncounterResultsStateView extends VBox {
     private VBox buildPane() {
         Label title = styledLabel("Kampfergebnis", "title");
         resultLootLabel.setWrapText(true);
+        resultEnemyList.getStyleClass().add("encounter-results-enemy-list");
 
         VBox summary = new VBox(2, resultXpLabel, resultPartyLabel, resultGoldLabel, resultLootLabel);
 
@@ -151,7 +152,10 @@ public final class EncounterResultsStateView extends VBox {
     }
 
     private void publish(boolean awardExperienceRequested, boolean returnToBuilderRequested) {
-        List<Boolean> selectedEnemies = resultEnemyList.selectedEnemies();
+        List<Boolean> selectedEnemies = new ArrayList<>();
+        for (Node node : resultEnemyList.getChildren()) {
+            selectedEnemies.add(node instanceof CheckBox checkBox && checkBox.isSelected());
+        }
         viewInputEventHandler.accept(new EncounterResultsStateViewInputEvent(
                 awardExperienceRequested,
                 returnToBuilderRequested,
@@ -161,7 +165,21 @@ public final class EncounterResultsStateView extends VBox {
     }
 
     private void showEnemies(List<EncounterResultsStateContentModel.EnemyView> enemies) {
-        resultEnemyList.showEnemies(enemies, this::publishSelection);
+        resultEnemyList.getChildren().clear();
+        List<EncounterResultsStateContentModel.EnemyView> safeEnemies = enemies == null ? List.of() : enemies;
+        for (EncounterResultsStateContentModel.EnemyView enemy : safeEnemies) {
+            resultEnemyList.getChildren().add(enemyToggle(enemy, this::publishSelection));
+        }
+    }
+
+    private static CheckBox enemyToggle(
+            EncounterResultsStateContentModel.EnemyView enemy,
+            Runnable selectionHandler
+    ) {
+        CheckBox toggle = new EnemyToggle(enemy);
+        toggle.setSelected(enemy.selected());
+        toggle.selectedProperty().addListener((obs, oldValue, newValue) -> selectionHandler.run());
+        return toggle;
     }
 
     private static final class StyledVBox extends VBox {
@@ -169,43 +187,6 @@ public final class EncounterResultsStateView extends VBox {
         private StyledVBox(String styleClass, double spacing, Node... children) {
             super(spacing, children);
             getStyleClass().add(styleClass);
-        }
-    }
-
-    private static final class EnemyList extends VBox {
-
-        private EnemyList() {
-            super(4);
-            getStyleClass().add("encounter-results-enemy-list");
-        }
-
-        private void showEnemies(
-                List<EncounterResultsStateContentModel.EnemyView> enemies,
-                Runnable selectionHandler
-        ) {
-            getChildren().clear();
-            List<EncounterResultsStateContentModel.EnemyView> safeEnemies = enemies == null ? List.of() : enemies;
-            for (EncounterResultsStateContentModel.EnemyView enemy : safeEnemies) {
-                getChildren().add(enemyToggle(enemy, selectionHandler));
-            }
-        }
-
-        private List<Boolean> selectedEnemies() {
-            List<Boolean> selectedEnemies = new ArrayList<>();
-            for (Node node : getChildren()) {
-                selectedEnemies.add(node instanceof CheckBox checkBox && checkBox.isSelected());
-            }
-            return selectedEnemies;
-        }
-
-        private static CheckBox enemyToggle(
-                EncounterResultsStateContentModel.EnemyView enemy,
-                Runnable selectionHandler
-        ) {
-            CheckBox toggle = new EnemyToggle(enemy);
-            toggle.setSelected(enemy.selected());
-            toggle.selectedProperty().addListener((obs, oldValue, newValue) -> selectionHandler.run());
-            return toggle;
         }
     }
 

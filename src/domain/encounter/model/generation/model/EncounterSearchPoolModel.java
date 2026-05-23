@@ -1,9 +1,6 @@
 package src.domain.encounter.model.generation.model;
 
-import java.io.Serial;
-import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -30,7 +27,7 @@ final class EncounterSearchPoolModel {
 
     static List<EncounterCandidateProfile> byLowXp(List<EncounterCandidateProfile> selected) {
         List<EncounterCandidateProfile> profiles = new ArrayList<>(selected);
-        profiles.sort(new CandidateLowXpComparator());
+        profiles.sort(EncounterSearchPoolModel::compareCandidateLowXp);
         return List.copyOf(profiles);
     }
 
@@ -39,7 +36,7 @@ final class EncounterSearchPoolModel {
             int targetXp
     ) {
         List<EncounterCandidateProfile> sortedProfiles = new ArrayList<>(profiles == null ? List.of() : profiles);
-        sortedProfiles.sort(new ClosestFitComparator(targetXp));
+        sortedProfiles.sort((left, right) -> compareClosestFit(left, right, targetXp));
         return limited(sortedProfiles, FIT_POOL_LIMIT);
     }
 
@@ -55,7 +52,7 @@ final class EncounterSearchPoolModel {
 
     private static List<EncounterCandidateProfile> lowestXp(List<EncounterCandidateProfile> profiles) {
         List<EncounterCandidateProfile> sortedProfiles = new ArrayList<>(profiles == null ? List.of() : profiles);
-        sortedProfiles.sort(new CandidateLowXpComparator());
+        sortedProfiles.sort(EncounterSearchPoolModel::compareCandidateLowXp);
         return limited(sortedProfiles, LOW_XP_POOL_LIMIT);
     }
 
@@ -75,33 +72,19 @@ final class EncounterSearchPoolModel {
         }
     }
 
-    private static final class ClosestFitComparator implements Comparator<EncounterCandidateProfile>, Serializable {
-        @Serial
-        private static final long serialVersionUID = 1L;
-
-        private final int targetXp;
-
-        private ClosestFitComparator(int targetXp) {
-            this.targetXp = targetXp;
-        }
-
-        @Override
-        public int compare(EncounterCandidateProfile left, EncounterCandidateProfile right) {
-            return Integer.compare(componentDistance(left, targetXp), componentDistance(right, targetXp));
-        }
+    private static int compareClosestFit(
+            EncounterCandidateProfile left,
+            EncounterCandidateProfile right,
+            int targetXp
+    ) {
+        return Integer.compare(componentDistance(left, targetXp), componentDistance(right, targetXp));
     }
 
-    private static final class CandidateLowXpComparator implements Comparator<EncounterCandidateProfile>, Serializable {
-        @Serial
-        private static final long serialVersionUID = 1L;
-
-        @Override
-        public int compare(EncounterCandidateProfile left, EncounterCandidateProfile right) {
-            int xpComparison = Integer.compare(left.xp(), right.xp());
-            if (xpComparison != 0) {
-                return xpComparison;
-            }
-            return String.CASE_INSENSITIVE_ORDER.compare(left.name(), right.name());
+    private static int compareCandidateLowXp(EncounterCandidateProfile left, EncounterCandidateProfile right) {
+        int xpComparison = Integer.compare(left.xp(), right.xp());
+        if (xpComparison != 0) {
+            return xpComparison;
         }
+        return String.CASE_INSENSITIVE_ORDER.compare(left.name(), right.name());
     }
 }

@@ -1,9 +1,6 @@
 package src.domain.dungeon.model.map.model;
 
-import java.io.Serial;
-import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -173,30 +170,24 @@ public final class DungeonStair {
                     result.add(exit);
                 }
             }
-            result.sort(new StairExitComparator());
+            result.sort(Geometry::compareStairExits);
             return List.copyOf(result);
         }
 
-        private static final class StairExitComparator implements Comparator<DungeonStairExit>, Serializable {
-            @Serial
-            private static final long serialVersionUID = 1L;
-
-            @Override
-            public int compare(DungeonStairExit left, DungeonStairExit right) {
-                int levelComparison = Integer.compare(left.position().level(), right.position().level());
-                if (levelComparison != 0) {
-                    return levelComparison;
-                }
-                int rowComparison = Integer.compare(left.position().r(), right.position().r());
-                if (rowComparison != 0) {
-                    return rowComparison;
-                }
-                int columnComparison = Integer.compare(left.position().q(), right.position().q());
-                if (columnComparison != 0) {
-                    return columnComparison;
-                }
-                return Long.compare(left.exitId(), right.exitId());
+        private static int compareStairExits(DungeonStairExit left, DungeonStairExit right) {
+            int levelComparison = Integer.compare(left.position().level(), right.position().level());
+            if (levelComparison != 0) {
+                return levelComparison;
             }
+            int rowComparison = Integer.compare(left.position().r(), right.position().r());
+            if (rowComparison != 0) {
+                return rowComparison;
+            }
+            int columnComparison = Integer.compare(left.position().q(), right.position().q());
+            if (columnComparison != 0) {
+                return columnComparison;
+            }
+            return Long.compare(left.exitId(), right.exitId());
         }
     }
 }

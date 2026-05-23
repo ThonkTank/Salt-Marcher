@@ -1,13 +1,17 @@
-package src.domain.party.application;
+package src.domain.party.model.roster.usecase;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import org.jspecify.annotations.Nullable;
-import src.domain.party.model.roster.model.PartyAdventuringDayBudget;
+import src.domain.party.model.roster.model.PartyAdventuringDayCalculation;
+import src.domain.party.model.roster.model.PartyAdventuringDayLevelProgress;
+import src.domain.party.model.roster.model.PartyAdventuringDayPlan;
+import src.domain.party.model.roster.model.PartyAdventuringDayProgress;
+import src.domain.party.model.roster.model.PartyAdventuringDayProgressEvent;
+import src.domain.party.model.roster.model.PartyAdventuringDayProgressTotals;
 import src.domain.party.model.roster.model.PartyCharacterProgress;
 import src.domain.party.model.roster.repository.PartyPublishedStateRepository;
 
@@ -30,51 +34,37 @@ public final class CalculateAdventuringDayUseCase {
             throw new IllegalStateException("publishedStateRepository");
         }
         PartyPublishedStateRepository publisher = publishedStateRepository;
-        publisher.publishAdventuringDayCalculation(levels, totalGroupXp);
+        publisher.publishAdventuringDayCalculation(
+                new PartyPublishedStateRepository.AdventuringDayCalculationPublication(levels, totalGroupXp));
     }
 
-    public Result execute(List<Integer> levels, int totalGroupXp) {
+    public PartyAdventuringDayCalculation execute(List<Integer> levels, int totalGroupXp) {
         List<Integer> normalizedLevels = normalizeLevels(levels);
-        return new Result(
+        return new PartyAdventuringDayCalculation(
                 computeBudget(normalizedLevels),
                 computeProgress(normalizedLevels, Math.max(0, totalGroupXp)));
     }
 
-    private static Budget computeBudget(List<Integer> levels) {
-        if (levels.isEmpty()) {
-            return new Budget(0, 0, 0, 0, 0);
-        }
-        int totalXp = 0;
-        for (Integer level : levels) {
-            totalXp += PartyAdventuringDayBudget.forLevel(level).perCharacter();
-        }
-        int perThirdXp = (int) Math.round(totalXp / 3.0);
-        return new Budget(
-                totalXp,
-                perThirdXp,
-                perThirdXp,
-                (int) Math.round(totalXp * 2.0 / 3.0),
-                levels.size());
+    private static PartyAdventuringDayPlan computeBudget(List<Integer> levels) {
+        return PartyAdventuringDayPlan.forLevels(levels);
     }
 
-    private static Progress computeProgress(List<Integer> levels, int totalGroupXp) {
+    private static PartyAdventuringDayProgress computeProgress(List<Integer> levels, int totalGroupXp) {
         if (levels.isEmpty()) {
-            return Progress.empty(totalGroupXp);
+            return PartyAdventuringDayProgress.empty(totalGroupXp);
         }
 
         int partySize = levels.size();
         int perCharacterAwardedXp = totalGroupXp / partySize;
-        List<LevelProgress> levelProgressions = buildLevelProgressions(levels, perCharacterAwardedXp);
-        List<ProgressEvent> events = new ArrayList<>();
+        List<PartyAdventuringDayLevelProgress> levelProgressions =
+                buildLevelProgressions(levels, perCharacterAwardedXp);
+        List<PartyAdventuringDayProgressEvent> events = new ArrayList<>();
 
         int[] startLevels = toLevelArray(levels);
         int[] currentLevels = toLevelArray(levels);
         int consumedGroupXp = 0;
         int remainingGroupXp = totalGroupXp;
         int dayNumber = 1;
-        int fullDays = 0;
-        int shortRests = 0;
-        int longRests = 0;
         double totalDays = 0.0;
 
         while (remainingGroupXp > 0) {
@@ -82,40 +72,32 @@ public final class CalculateAdventuringDayUseCase {
             for (int level : currentLevels) {
                 dayLevels.add(level);
             }
-            Budget dayBudget = computeBudget(dayLevels);
-            int dayTotalXp = Math.max(1, dayBudget.totalXp());
+            PartyAdventuringDayPlan dayBudget = computeBudget(dayLevels);
+            int dayTotalXp = Math.max(1, dayBudget.totalBudgetXp());
             int dayConsumedXp = Math.min(remainingGroupXp, dayTotalXp);
             int dayStartXp = consumedGroupXp;
             int dayEndXp = dayStartXp + dayConsumedXp;
             boolean partialDay = dayConsumedXp < dayTotalXp;
 
             if (dayConsumedXp >= dayBudget.firstShortRestXp()) {
-                events.add(new ProgressEvent(
+                events.add(PartyAdventuringDayProgressEvent.shortRest(
                         dayStartXp + dayBudget.firstShortRestXp(),
-                        ProgressEventType.SHORT_REST,
                         dayNumber,
-                        0,
-                        0,
                         partialDay));
-                shortRests++;
             }
             if (dayConsumedXp >= dayBudget.secondShortRestXp()) {
-                events.add(new ProgressEvent(
+                events.add(PartyAdventuringDayProgressEvent.shortRest(
                         dayStartXp + dayBudget.secondShortRestXp(),
-                        ProgressEventType.SHORT_REST,
                         dayNumber,
-                        0,
-                        0,
                         partialDay));
-                shortRests++;
             }
 
             appendLevelUpEvents(events, startLevels, currentLevels, partySize, dayNumber, dayStartXp, dayEndXp, partialDay);
 
             if (!partialDay) {
-                events.add(new ProgressEvent(dayEndXp, ProgressEventType.LONG_REST, dayNumber, 0, 0, false));
-                longRests++;
-                fullDays++;
+                events.add(PartyAdventuringDayProgressEvent.longRest(
+                        dayEndXp,
+                        dayNumber));
             }
 
             totalDays += dayConsumedXp / (double) dayTotalXp;
@@ -124,21 +106,16 @@ public final class CalculateAdventuringDayUseCase {
             dayNumber++;
         }
 
-        events.sort(new ProgressEventComparator());
-
-        return new Progress(
-                totalGroupXp,
-                perCharacterAwardedXp,
-                partySize,
-                fullDays,
-                totalDays,
-                shortRests,
-                longRests,
+        return new PartyAdventuringDayProgress(
+                new PartyAdventuringDayProgressTotals(totalGroupXp, perCharacterAwardedXp, partySize, totalDays),
                 levelProgressions,
                 List.copyOf(events));
     }
 
-    private static List<LevelProgress> buildLevelProgressions(List<Integer> levels, int perCharacterAwardedXp) {
+    private static List<PartyAdventuringDayLevelProgress> buildLevelProgressions(
+            List<Integer> levels,
+            int perCharacterAwardedXp
+    ) {
         Map<LevelSpan, Integer> counts = new LinkedHashMap<>();
         for (Integer level : levels) {
             int endLevel = levelAfterAwardedXp(level, perCharacterAwardedXp);
@@ -146,14 +123,13 @@ public final class CalculateAdventuringDayUseCase {
             Integer currentCount = counts.get(span);
             counts.put(span, currentCount == null ? 1 : currentCount + 1);
         }
-        List<LevelProgress> result = new ArrayList<>();
+        List<PartyAdventuringDayLevelProgress> result = new ArrayList<>();
         for (Map.Entry<LevelSpan, Integer> entry : counts.entrySet()) {
             LevelSpan span = entry.getKey();
-            result.add(new LevelProgress(
+            result.add(new PartyAdventuringDayLevelProgress(
                     span.startLevel(),
                     span.endLevel(),
-                    entry.getValue(),
-                    Math.max(0, span.endLevel() - span.startLevel())));
+                    entry.getValue()));
         }
         return List.copyOf(result);
     }
@@ -169,7 +145,7 @@ public final class CalculateAdventuringDayUseCase {
     }
 
     private static void appendLevelUpEvents(
-            List<ProgressEvent> events,
+            List<PartyAdventuringDayProgressEvent> events,
             int[] startLevels,
             int[] currentLevels,
             int partySize,
@@ -177,7 +153,8 @@ public final class CalculateAdventuringDayUseCase {
             int dayStartXp,
             int dayEndXp,
             boolean partialDay) {
-        Map<BreakpointLevel, Integer> groupedEvents = new TreeMap<>(new BreakpointLevelComparator());
+        Map<BreakpointLevel, Integer> groupedEvents = new TreeMap<>(
+                CalculateAdventuringDayUseCase::compareBreakpointLevels);
 
         for (int i = 0; i < currentLevels.length; i++) {
             while (currentLevels[i] < 20) {
@@ -199,9 +176,8 @@ public final class CalculateAdventuringDayUseCase {
         }
 
         for (Map.Entry<BreakpointLevel, Integer> entry : groupedEvents.entrySet()) {
-            events.add(new ProgressEvent(
+            events.add(PartyAdventuringDayProgressEvent.levelUp(
                     entry.getKey().groupXp(),
-                    ProgressEventType.LEVEL_UP,
                     dayNumber,
                     entry.getKey().newLevel(),
                     entry.getValue(),
@@ -230,105 +206,12 @@ public final class CalculateAdventuringDayUseCase {
         return result;
     }
 
-    private static final class ProgressEventComparator implements Comparator<ProgressEvent> {
-        @Override
-        public int compare(ProgressEvent first, ProgressEvent second) {
-            int xpComparison = Integer.compare(first.groupXp(), second.groupXp());
-            if (xpComparison != 0) {
-                return xpComparison;
-            }
-            int typeComparison = Integer.compare(first.type().sortOrder(), second.type().sortOrder());
-            if (typeComparison != 0) {
-                return typeComparison;
-            }
-            return Integer.compare(first.newLevel(), second.newLevel());
+    private static int compareBreakpointLevels(BreakpointLevel first, BreakpointLevel second) {
+        int xpComparison = Integer.compare(first.groupXp(), second.groupXp());
+        if (xpComparison != 0) {
+            return xpComparison;
         }
-    }
-
-    private static final class BreakpointLevelComparator implements Comparator<BreakpointLevel> {
-        @Override
-        public int compare(BreakpointLevel first, BreakpointLevel second) {
-            int xpComparison = Integer.compare(first.groupXp(), second.groupXp());
-            if (xpComparison != 0) {
-                return xpComparison;
-            }
-            return Integer.compare(first.newLevel(), second.newLevel());
-        }
-    }
-
-    public record Result(Budget budget, Progress progress) {
-    }
-
-    public record Budget(
-            int totalXp,
-            int perThirdXp,
-            int firstShortRestXp,
-            int secondShortRestXp,
-            int characterCount) {
-    }
-
-    public record Progress(
-            int totalGroupXp,
-            int perCharacterAwardedXp,
-            int partySize,
-            int fullDays,
-            double totalDays,
-            int shortRests,
-            int longRests,
-            List<LevelProgress> levelProgressions,
-            List<ProgressEvent> events) {
-        public Progress {
-            levelProgressions = immutableEvents(levelProgressions);
-            events = immutableEvents(events);
-        }
-
-        @Override
-        public List<LevelProgress> levelProgressions() {
-            return immutableEvents(levelProgressions);
-        }
-
-        @Override
-        public List<ProgressEvent> events() {
-            return immutableEvents(events);
-        }
-
-        private static Progress empty(int totalGroupXp) {
-            return new Progress(totalGroupXp, 0, 0, 0, 0.0, 0, 0, List.of(), List.of());
-        }
-    }
-
-    public record ProgressEvent(
-            int groupXp,
-            ProgressEventType type,
-            int dayNumber,
-            int newLevel,
-            int affectedCharacters,
-            boolean partialDay) {
-    }
-
-    public record LevelProgress(
-            int startLevel,
-            int endLevel,
-            int characterCount,
-            int levelUps
-    ) {
-    }
-
-    public enum ProgressEventType {
-
-        LEVEL_UP(0),
-        SHORT_REST(1),
-        LONG_REST(2);
-
-        private final int sortOrder;
-
-        ProgressEventType(int sortOrder) {
-            this.sortOrder = sortOrder;
-        }
-
-        int sortOrder() {
-            return sortOrder;
-        }
+        return Integer.compare(first.newLevel(), second.newLevel());
     }
 
     private record LevelSpan(int startLevel, int endLevel) {
@@ -337,7 +220,4 @@ public final class CalculateAdventuringDayUseCase {
     private record BreakpointLevel(int groupXp, int newLevel) {
     }
 
-    private static <T> List<T> immutableEvents(List<T> values) {
-        return values == null ? List.of() : List.copyOf(values);
-    }
 }

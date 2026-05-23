@@ -1,7 +1,5 @@
 package src.domain.dungeon.model.editor.model.interaction.model;
 
-import java.io.Serial;
-import java.io.Serializable;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
@@ -132,7 +130,7 @@ public final class DungeonEditorInteractionValues {
     }
 
     public static final class VertexKey {
-        private static final Comparator<VertexKey> ORDER = new VertexKeyOrder();
+        private static final Comparator<VertexKey> ORDER = VertexKey::compareVertices;
 
         private final int q;
         private final int r;
@@ -181,19 +179,13 @@ public final class DungeonEditorInteractionValues {
             return "VertexKey[q=%d, r=%d, level=%d]".formatted(q, r, level);
         }
 
-        private static final class VertexKeyOrder implements Comparator<VertexKey>, Serializable {
-            @Serial
-            private static final long serialVersionUID = 1L;
-
-            @Override
-            public int compare(VertexKey left, VertexKey right) {
-                int levelOrder = Integer.compare(left.level, right.level);
-                if (levelOrder != 0) {
-                    return levelOrder;
-                }
-                int rowOrder = Integer.compare(left.r, right.r);
-                return rowOrder != 0 ? rowOrder : Integer.compare(left.q, right.q);
+        private static int compareVertices(VertexKey left, VertexKey right) {
+            int levelOrder = Integer.compare(left.level, right.level);
+            if (levelOrder != 0) {
+                return levelOrder;
             }
+            int rowOrder = Integer.compare(left.r, right.r);
+            return rowOrder != 0 ? rowOrder : Integer.compare(left.q, right.q);
         }
     }
 

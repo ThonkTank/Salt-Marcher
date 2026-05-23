@@ -1,6 +1,7 @@
 package src.view.leftbartabs.sessionplanner;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Locale;
 import java.util.function.Consumer;
 import javafx.event.ActionEvent;
@@ -34,7 +35,7 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
                 rows,
                 lootHeader(),
                 lootRows);
-        content.getStyleClass().add("session-planner-main");
+        addStyles(content, "session-planner-main");
         setContent(content);
         getStyleClass().add("session-planner-main-scroll");
         setFitToWidth(true);
@@ -57,17 +58,17 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
         if (projection == null) {
             return;
         }
-        rows.getChildren().clear();
+        clearNodes(rows);
         showLoot(projection.lootPlaceholders(), projection.lootEmptyMessage());
         if (projection.encounters().isEmpty()) {
-            rows.getChildren().add(label("Noch keine Encounter importiert.", STYLE_TEXT_SECONDARY, "session-planner-empty"));
+            addNode(rows, label("Noch keine Encounter importiert.", STYLE_TEXT_SECONDARY, "session-planner-empty"));
             return;
         }
         for (int index = 0; index < projection.encounters().size(); index++) {
             SessionPlannerTimelineMainContentModel.Projection.EncounterModel encounter = projection.encounters().get(index);
-            rows.getChildren().add(encounterCard(encounter, index + 1));
+            addNode(rows, encounterCard(encounter, index + 1));
             if (index < projection.restGaps().size()) {
-                rows.getChildren().add(restGapCard(projection.restGaps().get(index), index + 1, index + 2));
+                addNode(rows, restGapCard(projection.restGaps().get(index), index + 1, index + 2));
             }
         }
     }
@@ -131,28 +132,26 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
                 stateHint,
                 actionRow(select, decreaseAllocation, increaseAllocation),
                 actionRow(up, down, remove));
-        card.getStyleClass().add("session-planner-encounter-card");
+        addStyles(card, "session-planner-encounter-card");
         return card;
     }
 
     private Node lootHeader() {
         Button addButton = actionButton("Loot-Platzhalter", this::publishAddLoot, "accent");
-        HBox row = new HBox(8, label("Loot-Platzhalter", "section-header", "text-muted"), addButton);
-        row.setAlignment(Pos.CENTER_LEFT);
-        return row;
+        return new ActionRow(8, label("Loot-Platzhalter", "section-header", "text-muted"), addButton);
     }
 
     private void showLoot(
-            java.util.List<SessionPlannerTimelineMainContentModel.Projection.LootModel> lootPlaceholders,
+            List<SessionPlannerTimelineMainContentModel.Projection.LootModel> lootPlaceholders,
             String emptyMessage
     ) {
-        lootRows.getChildren().clear();
+        clearNodes(lootRows);
         if (lootPlaceholders.isEmpty()) {
-            lootRows.getChildren().add(label(emptyMessage, STYLE_TEXT_SECONDARY, "session-planner-empty"));
+            addNode(lootRows, label(emptyMessage, STYLE_TEXT_SECONDARY, "session-planner-empty"));
             return;
         }
         for (SessionPlannerTimelineMainContentModel.Projection.LootModel loot : lootPlaceholders) {
-            lootRows.getChildren().add(lootCard(loot));
+            addNode(lootRows, lootCard(loot));
         }
     }
 
@@ -160,9 +159,8 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
         Label label = label(loot.label());
         Button remove = actionButton("Entfernen", this::publishRemoveLoot, STYLE_FLAT);
         remove.setUserData(Long.valueOf(loot.token()));
-        HBox row = new HBox(8, label, remove);
-        row.setAlignment(Pos.CENTER_LEFT);
-        row.getStyleClass().add("session-planner-loot-card");
+        ActionRow row = new ActionRow(8, label, remove);
+        row.addStyles("session-planner-loot-card");
         return row;
     }
 
@@ -197,7 +195,7 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
         clear.setDisable(!gap.hasAssignedRest());
 
         VBox card = new VBox(6, title, current, actionRow(shortRest, longRest, clear));
-        card.getStyleClass().add("session-planner-gap-card");
+        addStyles(card, "session-planner-gap-card");
         return card;
     }
 
@@ -363,22 +361,56 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
     }
 
     private static Label label(String text, String... styleClasses) {
-        Label label = new Label(text);
-        label.getStyleClass().addAll(styleClasses);
-        return label;
+        return new StyledLabel(text, styleClasses);
     }
 
     private static Button actionButton(String text, EventHandler<ActionEvent> action, String emphasisStyle) {
-        Button button = new Button(text);
-        button.getStyleClass().addAll(STYLE_COMPACT, emphasisStyle);
+        Button button = new StyledButton(text, STYLE_COMPACT, emphasisStyle);
         button.setOnAction(action);
         return button;
     }
 
     private static HBox actionRow(Button... actions) {
-        HBox row = new HBox(6);
-        row.getChildren().addAll(actions);
-        row.setAlignment(Pos.CENTER_LEFT);
-        return row;
+        return new ActionRow(6, actions);
+    }
+
+    private static void clearNodes(VBox box) {
+        box.getChildren().clear();
+    }
+
+    private static void addNode(VBox box, Node child) {
+        box.getChildren().add(child);
+    }
+
+    private static void addStyles(Node node, String... styleClasses) {
+        node.getStyleClass().addAll(styleClasses);
+    }
+
+    private static final class ActionRow extends HBox {
+
+        private ActionRow(double spacing, Node... actions) {
+            super(spacing, actions);
+            setAlignment(Pos.CENTER_LEFT);
+        }
+
+        private void addStyles(String... styleClasses) {
+            getStyleClass().addAll(styleClasses);
+        }
+    }
+
+    private static final class StyledLabel extends Label {
+
+        private StyledLabel(String text, String... styleClasses) {
+            super(text);
+            getStyleClass().addAll(styleClasses);
+        }
+    }
+
+    private static final class StyledButton extends Button {
+
+        private StyledButton(String text, String... styleClasses) {
+            super(text);
+            getStyleClass().addAll(styleClasses);
+        }
     }
 }

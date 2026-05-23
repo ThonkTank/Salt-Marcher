@@ -1,7 +1,5 @@
 package src.domain.dungeon.model.map.model;
 
-import java.io.Serial;
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -146,18 +144,12 @@ final class DungeonRoomClusterRebuildLogic {
     ) {
         List<DungeonRoomTopologyClusterWork> result = new ArrayList<>(
                 workClusters == null ? List.of() : workClusters);
-        result.sort(new ClusterWorkComparator());
+        result.sort(DungeonRoomClusterRebuildLogic::compareClusterWork);
         return result;
     }
 
-    private static final class ClusterWorkComparator implements java.util.Comparator<DungeonRoomTopologyClusterWork>, Serializable {
-        @Serial
-        private static final long serialVersionUID = 1L;
-
-        @Override
-        public int compare(DungeonRoomTopologyClusterWork left, DungeonRoomTopologyClusterWork right) {
-            return Long.compare(left.cluster().clusterId(), right.cluster().clusterId());
-        }
+    private static int compareClusterWork(DungeonRoomTopologyClusterWork left, DungeonRoomTopologyClusterWork right) {
+        return Long.compare(left.cluster().clusterId(), right.cluster().clusterId());
     }
 
     private Map<Integer, List<DungeonCell>> verticesByLevel(DungeonRoomTopologyClusterWork work) {

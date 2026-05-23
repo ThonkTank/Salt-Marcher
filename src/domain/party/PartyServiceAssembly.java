@@ -5,17 +5,73 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
 import org.jspecify.annotations.Nullable;
 import shell.api.ServiceRegistry;
-import src.domain.encounter.EncounterApplicationService;
-import src.domain.encounter.published.ApplyEncounterStateCommand;
-import src.domain.party.application.*;
-import src.domain.party.model.roster.model.*;
+import src.domain.party.model.roster.model.PartyAdventuringDayCalculation;
+import src.domain.party.model.roster.model.PartyAdventuringDayLevelProgress;
+import src.domain.party.model.roster.model.PartyAdventuringDayPlan;
+import src.domain.party.model.roster.model.PartyAdventuringDayProgress;
+import src.domain.party.model.roster.model.PartyAdventuringDayProgressEvent;
+import src.domain.party.model.roster.model.PartyCharacter;
+import src.domain.party.model.roster.model.PartyCharacterProgress;
+import src.domain.party.model.roster.model.PartyMembership;
+import src.domain.party.model.roster.model.PartyMutationStatus;
+import src.domain.party.model.roster.model.PartyTravelLocation;
 import src.domain.party.model.roster.repository.PartyEncounterSessionRepository;
 import src.domain.party.model.roster.repository.PartyPublishedStateRepository;
 import src.domain.party.model.roster.repository.PartyRosterRepository;
-import src.domain.party.published.*;
+import src.domain.party.model.roster.usecase.AdjustPartyXpUseCase;
+import src.domain.party.model.roster.usecase.AwardPartyXpUseCase;
+import src.domain.party.model.roster.usecase.CalculateAdventuringDayUseCase;
+import src.domain.party.model.roster.usecase.CreateCharacterUseCase;
+import src.domain.party.model.roster.usecase.DeleteCharacterUseCase;
+import src.domain.party.model.roster.usecase.LoadActivePartyCompositionUseCase;
+import src.domain.party.model.roster.usecase.LoadActivePartyUseCase;
+import src.domain.party.model.roster.usecase.LoadAdventuringDaySummaryUseCase;
+import src.domain.party.model.roster.usecase.LoadPartySnapshotUseCase;
+import src.domain.party.model.roster.usecase.LoadPartyTravelPositionsUseCase;
+import src.domain.party.model.roster.usecase.MovePartyCharactersUseCase;
+import src.domain.party.model.roster.usecase.PerformPartyRestUseCase;
+import src.domain.party.model.roster.usecase.SetPartyMembershipUseCase;
+import src.domain.party.model.roster.usecase.UpdateCharacterUseCase;
+import src.domain.party.published.ActivePartyComposition;
+import src.domain.party.published.ActivePartyCompositionModel;
+import src.domain.party.published.ActivePartyCompositionResult;
+import src.domain.party.published.ActivePartyModel;
+import src.domain.party.published.ActivePartyResult;
+import src.domain.party.published.AdventuringDayBudget;
+import src.domain.party.published.AdventuringDayCalculation;
+import src.domain.party.published.AdventuringDayCalculationModel;
+import src.domain.party.published.AdventuringDayCalculationResult;
+import src.domain.party.published.AdventuringDayLevelProgress;
+import src.domain.party.published.AdventuringDayPlanningSummary;
+import src.domain.party.published.AdventuringDayProgress;
+import src.domain.party.published.AdventuringDayProgressEvent;
+import src.domain.party.published.AdventuringDayProgressEventType;
+import src.domain.party.published.AdventuringDayResult;
+import src.domain.party.published.AdventuringDaySummary;
+import src.domain.party.published.AdventuringDaySummaryModel;
+import src.domain.party.published.MembershipState;
+import src.domain.party.published.MutationResult;
+import src.domain.party.published.MutationStatus;
+import src.domain.party.published.PartyDungeonTravelLocationSnapshot;
+import src.domain.party.published.PartyMemberDetails;
+import src.domain.party.published.PartyMemberSummary;
+import src.domain.party.published.PartyMutationModel;
+import src.domain.party.published.PartyOverworldTravelLocationSnapshot;
+import src.domain.party.published.PartySnapshot;
+import src.domain.party.published.PartySnapshotModel;
+import src.domain.party.published.PartySnapshotResult;
+import src.domain.party.published.PartySummary;
+import src.domain.party.published.PartyTravelLocationSnapshot;
+import src.domain.party.published.PartyTravelPositionSnapshot;
+import src.domain.party.published.PartyTravelPositionsModel;
+import src.domain.party.published.PartyTravelPositionsResult;
+import src.domain.party.published.PartyTravelTile;
+import src.domain.party.published.ReadStatus;
+import src.domain.party.published.RestCadenceStatus;
+import src.domain.party.published.RestCadenceUrgency;
+import src.domain.party.published.RestMilestone;
 
 @SuppressWarnings({
         "PMD.CouplingBetweenObjects",
@@ -31,7 +87,7 @@ final class PartyServiceAssembly {
         PublishedState state = publishedState(services);
         PartyPublishedStateRepository publishedStateRepository = state;
         PartyEncounterSessionRepository encounterSessionRepository =
-                new EncounterSessionRefresh(() -> services.require(EncounterApplicationService.class));
+                PartyEncounterSessionPublicationRefresh.INSTANCE;
         return new PartyApplicationService(
                 new CreateCharacterUseCase(repository, publishedStateRepository, encounterSessionRepository),
                 new UpdateCharacterUseCase(repository, publishedStateRepository, encounterSessionRepository),
@@ -83,30 +139,13 @@ final class PartyServiceAssembly {
                 : Objects.requireNonNull(publishedState.get(), "publishedState");
     }
 
-    private record EncounterSessionRefresh(Supplier<EncounterApplicationService> encounters) implements PartyEncounterSessionRepository {
+    private enum PartyEncounterSessionPublicationRefresh implements PartyEncounterSessionRepository {
 
-        private EncounterSessionRefresh {
-            Objects.requireNonNull(encounters, "encounters");
-        }
+        INSTANCE;
 
         @Override
         public void refreshEncounterSession() {
-            try {
-                encounters.get().applyState(new ApplyEncounterStateCommand(
-                        ApplyEncounterStateCommand.Action.REFRESH,
-                        0L,
-                        0L,
-                        0,
-                        0L,
-                        List.of(),
-                        "",
-                        0,
-                        0L,
-                        0,
-                        false));
-            } catch (IllegalStateException ignored) {
-                // Party mutation success remains authoritative; encounter refresh will recover on later readback.
-            }
+            // Party mutation publication is authoritative; consumers refresh from party published models.
         }
     }
 
@@ -200,7 +239,9 @@ final class PartyServiceAssembly {
         }
 
         @Override
-        public void publishRepositoryBackedState() {
+        public void publishRepositoryBackedState(
+                PartyPublishedStateRepository.StatePublication publication
+        ) {
             refreshRepositoryBackedState(true);
         }
 
@@ -211,14 +252,24 @@ final class PartyServiceAssembly {
         }
 
         @Override
-        public void publishStorageErrorMutation() {
+        public void publishStorageErrorMutation(
+                PartyPublishedStateRepository.StatePublication publication
+        ) {
             currentPartyMutation = Projection.storageErrorMutationResult();
             notifyPartyMutationListeners(currentPartyMutation);
         }
 
         @Override
-        public void publishAdventuringDayCalculation(List<Integer> levels, int totalGroupXp) {
-            currentAdventuringDayCalculation = readAdventuringDayCalculationResult(levels, totalGroupXp);
+        public void publishAdventuringDayCalculation(
+                PartyPublishedStateRepository.AdventuringDayCalculationPublication publication
+        ) {
+            PartyPublishedStateRepository.AdventuringDayCalculationPublication safePublication =
+                    publication == null
+                            ? new PartyPublishedStateRepository.AdventuringDayCalculationPublication(List.of(), 0)
+                            : publication;
+            currentAdventuringDayCalculation = readAdventuringDayCalculationResult(
+                    safePublication.levels(),
+                    safePublication.totalGroupXp());
             notifyAdventuringDayCalculationListeners(currentAdventuringDayCalculation);
         }
 
@@ -409,10 +460,7 @@ final class PartyServiceAssembly {
         }
     }
 
-    private static final class Projection {
-
-        private Projection() {
-        }
+    private interface Projection {
 
         private static PartySnapshotResult failedSnapshotResult() {
             return new PartySnapshotResult(ReadStatus.STORAGE_ERROR, emptySnapshot());
@@ -579,7 +627,7 @@ final class PartyServiceAssembly {
                         location.mapId(),
                         toPublishedDungeonLocationKind(location.dungeonLocationKind()),
                         location.dungeonOwnerId(),
-                        new src.domain.party.published.PartyTravelTile(
+                        new PartyTravelTile(
                                 location.dungeonTile().q(),
                                 location.dungeonTile().r(),
                                 location.dungeonTile().level()),

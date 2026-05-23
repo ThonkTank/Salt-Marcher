@@ -19,7 +19,10 @@ import src.data.sessionplanner.model.SessionPlannerPersistenceSchema;
 @SuppressWarnings("PMD.TooManyMethods")
 final class SessionPlanSqliteStore {
 
+    private static final String DELETE_FROM = "DELETE FROM ";
+    private static final String INSERT_INTO = "INSERT INTO ";
     private static final String SORT_ORDER = "sort_order";
+    private static final String WHERE_SESSION_ID = " WHERE session_id = ?";
 
     Optional<CurrentSessionPointerRecord> loadCurrentPointer(Connection connection) throws SQLException {
         try (PreparedStatement statement = connection.prepareStatement(
@@ -37,7 +40,7 @@ final class SessionPlanSqliteStore {
 
     void setCurrentSessionId(Connection connection, long sessionId) throws SQLException {
         try (PreparedStatement statement = connection.prepareStatement(
-                "INSERT INTO "
+                INSERT_INTO
                         + SessionPlannerPersistenceSchema.CURRENT_SESSION_TABLE
                         + " (singleton_id, session_id) VALUES (1, ?) "
                         + "ON CONFLICT(singleton_id) DO UPDATE SET session_id = excluded.session_id")) {
@@ -83,9 +86,9 @@ final class SessionPlanSqliteStore {
 
     void replaceParticipants(Connection connection, long sessionId, List<SessionParticipantRecord> participants) throws SQLException {
         try (PreparedStatement delete = connection.prepareStatement(
-                "DELETE FROM "
+                DELETE_FROM
                         + SessionPlannerPersistenceSchema.SESSION_PARTICIPANTS_TABLE
-                        + " WHERE session_id = ?")) {
+                        + WHERE_SESSION_ID)) {
             delete.setLong(1, sessionId);
             delete.executeUpdate();
         }
@@ -93,7 +96,7 @@ final class SessionPlanSqliteStore {
             return;
         }
         try (PreparedStatement insert = connection.prepareStatement(
-                "INSERT INTO "
+                INSERT_INTO
                         + SessionPlannerPersistenceSchema.SESSION_PARTICIPANTS_TABLE
                         + " (session_id, character_id, sort_order) VALUES (?, ?, ?)")) {
             for (SessionParticipantRecord record : participants) {
@@ -108,9 +111,9 @@ final class SessionPlanSqliteStore {
 
     void replaceEncounters(Connection connection, long sessionId, List<SessionEncounterRecord> encounters) throws SQLException {
         try (PreparedStatement delete = connection.prepareStatement(
-                "DELETE FROM "
+                DELETE_FROM
                         + SessionPlannerPersistenceSchema.SESSION_ENCOUNTERS_TABLE
-                        + " WHERE session_id = ?")) {
+                        + WHERE_SESSION_ID)) {
             delete.setLong(1, sessionId);
             delete.executeUpdate();
         }
@@ -118,7 +121,7 @@ final class SessionPlanSqliteStore {
             return;
         }
         try (PreparedStatement insert = connection.prepareStatement(
-                "INSERT INTO "
+                INSERT_INTO
                         + SessionPlannerPersistenceSchema.SESSION_ENCOUNTERS_TABLE
                         + " "
                         + "(session_id, encounter_id, encounter_plan_id, budget_percentage, sort_order) "
@@ -137,9 +140,9 @@ final class SessionPlanSqliteStore {
 
     void replaceRests(Connection connection, long sessionId, List<SessionRestPlacementRecord> rests) throws SQLException {
         try (PreparedStatement delete = connection.prepareStatement(
-                "DELETE FROM "
+                DELETE_FROM
                         + SessionPlannerPersistenceSchema.SESSION_RESTS_TABLE
-                        + " WHERE session_id = ?")) {
+                        + WHERE_SESSION_ID)) {
             delete.setLong(1, sessionId);
             delete.executeUpdate();
         }
@@ -147,7 +150,7 @@ final class SessionPlanSqliteStore {
             return;
         }
         try (PreparedStatement insert = connection.prepareStatement(
-                "INSERT INTO "
+                INSERT_INTO
                         + SessionPlannerPersistenceSchema.SESSION_RESTS_TABLE
                         + " "
                         + "(session_id, left_encounter_id, right_encounter_id, rest_kind, sort_order) "
@@ -170,9 +173,9 @@ final class SessionPlanSqliteStore {
             List<SessionLootPlaceholderRecord> lootPlaceholders
     ) throws SQLException {
         try (PreparedStatement delete = connection.prepareStatement(
-                "DELETE FROM "
+                DELETE_FROM
                         + SessionPlannerPersistenceSchema.SESSION_LOOT_PLACEHOLDERS_TABLE
-                        + " WHERE session_id = ?")) {
+                        + WHERE_SESSION_ID)) {
             delete.setLong(1, sessionId);
             delete.executeUpdate();
         }
@@ -180,7 +183,7 @@ final class SessionPlanSqliteStore {
             return;
         }
         try (PreparedStatement insert = connection.prepareStatement(
-                "INSERT INTO "
+                INSERT_INTO
                         + SessionPlannerPersistenceSchema.SESSION_LOOT_PLACEHOLDERS_TABLE
                         + " "
                         + "(session_id, loot_id, label, sort_order) VALUES (?, ?, ?, ?)")) {
@@ -308,7 +311,7 @@ final class SessionPlanSqliteStore {
 
     private void insertPlan(Connection connection, SessionPlanRecord plan) throws SQLException {
         try (PreparedStatement statement = connection.prepareStatement(
-                "INSERT INTO "
+                INSERT_INTO
                         + SessionPlannerPersistenceSchema.SESSION_PLANS_TABLE
                         + " "
                         + "(session_id, encounter_days, selected_encounter_id, status_text, "

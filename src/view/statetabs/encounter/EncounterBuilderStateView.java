@@ -558,7 +558,6 @@ public final class EncounterBuilderStateView extends VBox {
 
         private final HBox meterBar = new EncounterBuilderMeterBar();
         private final Region marker = new EncounterBuilderMarkerRegion();
-        private double markerFraction;
 
         EncounterDifficultyMeterView() {
             getStyleClass().add("difficulty-meter");
@@ -570,7 +569,7 @@ public final class EncounterBuilderStateView extends VBox {
 
         void update(EncounterBuilderStateContentModel.DifficultySummary value) {
             double maxXp = Math.max(1.0, value.deadly() * 1.5);
-            markerFraction = Math.max(0.0, Math.min(1.0, value.adjustedXp() / maxXp));
+            marker.setUserData(Double.valueOf(Math.max(0.0, Math.min(1.0, value.adjustedXp() / maxXp))));
             marker.setVisible(value.adjustedXp() > 0);
             positionMarker();
         }
@@ -581,6 +580,7 @@ public final class EncounterBuilderStateView extends VBox {
             if (width <= 0) {
                 return;
             }
+            double markerFraction = marker.getUserData() instanceof Double value ? value : 0.0;
             marker.setTranslateX((width * markerFraction) - (width / 2) - (markerWidth / 2));
         }
     }

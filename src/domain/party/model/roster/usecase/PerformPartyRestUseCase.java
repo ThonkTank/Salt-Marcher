@@ -1,4 +1,4 @@
-package src.domain.party.application;
+package src.domain.party.model.roster.usecase;
 
 import java.util.Objects;
 import src.domain.party.model.roster.model.PartyMutationStatus;
@@ -33,7 +33,7 @@ public final class PerformPartyRestUseCase {
             PartyMutationStatus status = perform(restType(restType));
             publish(status);
         } catch (IllegalStateException exception) {
-            publishedStateRepository.publishStorageErrorMutation();
+            publishedStateRepository.publishStorageErrorMutation(new PartyPublishedStateRepository.StatePublication());
         }
     }
 
@@ -48,7 +48,7 @@ public final class PerformPartyRestUseCase {
 
     private void publish(PartyMutationStatus status) {
         if (PartyMutationStatus.SUCCESS.equals(status)) {
-            publishedStateRepository.publishRepositoryBackedState();
+            publishedStateRepository.publishRepositoryBackedState(new PartyPublishedStateRepository.StatePublication());
             encounterSessionRepository.refreshEncounterSession();
         }
         publishedStateRepository.publishMutationStatus(status);

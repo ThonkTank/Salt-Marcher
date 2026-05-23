@@ -1,22 +1,14 @@
 package src.domain.party;
 
-import java.util.List;
-import java.util.Objects;
-import org.jspecify.annotations.Nullable;
-import src.domain.party.application.AdjustPartyXpUseCase;
-import src.domain.party.application.AwardPartyXpUseCase;
-import src.domain.party.application.CalculateAdventuringDayUseCase;
-import src.domain.party.application.CreateCharacterUseCase;
-import src.domain.party.application.DeleteCharacterUseCase;
-import src.domain.party.application.MovePartyCharactersUseCase;
-import src.domain.party.application.PerformPartyRestUseCase;
-import src.domain.party.application.SetPartyMembershipUseCase;
-import src.domain.party.application.UpdateCharacterUseCase;
-import src.domain.party.published.PartyTravelLocationSnapshot;
-import src.domain.party.model.roster.model.PartyDungeonTravelLocationKind;
-import src.domain.party.model.roster.model.PartyTravelHeading;
-import src.domain.party.model.roster.model.PartyTravelLocation;
-import src.domain.party.model.roster.model.PartyTravelTile;
+import src.domain.party.model.roster.usecase.AdjustPartyXpUseCase;
+import src.domain.party.model.roster.usecase.AwardPartyXpUseCase;
+import src.domain.party.model.roster.usecase.CalculateAdventuringDayUseCase;
+import src.domain.party.model.roster.usecase.CreateCharacterUseCase;
+import src.domain.party.model.roster.usecase.DeleteCharacterUseCase;
+import src.domain.party.model.roster.usecase.MovePartyCharactersUseCase;
+import src.domain.party.model.roster.usecase.PerformPartyRestUseCase;
+import src.domain.party.model.roster.usecase.SetPartyMembershipUseCase;
+import src.domain.party.model.roster.usecase.UpdateCharacterUseCase;
 
 /**
  * Public backend facade for party management.
@@ -44,44 +36,46 @@ public final class PartyApplicationService {
             MovePartyCharactersUseCase movePartyCharactersUseCase,
             CalculateAdventuringDayUseCase calculateAdventuringDayUseCase
     ) {
-        this.createCharacterUseCase = Objects.requireNonNull(createCharacterUseCase, "createCharacterUseCase");
-        this.updateCharacterUseCase = Objects.requireNonNull(updateCharacterUseCase, "updateCharacterUseCase");
-        this.deleteCharacterUseCase = Objects.requireNonNull(deleteCharacterUseCase, "deleteCharacterUseCase");
-        this.setPartyMembershipUseCase = Objects.requireNonNull(setPartyMembershipUseCase, "setPartyMembershipUseCase");
-        this.adjustPartyXpUseCase = Objects.requireNonNull(adjustPartyXpUseCase, "adjustPartyXpUseCase");
-        this.awardPartyXpUseCase = Objects.requireNonNull(awardPartyXpUseCase, "awardPartyXpUseCase");
-        this.performPartyRestUseCase = Objects.requireNonNull(performPartyRestUseCase, "performPartyRestUseCase");
-        this.movePartyCharactersUseCase = Objects.requireNonNull(movePartyCharactersUseCase, "movePartyCharactersUseCase");
+        this.createCharacterUseCase =
+                java.util.Objects.requireNonNull(createCharacterUseCase, "createCharacterUseCase");
+        this.updateCharacterUseCase =
+                java.util.Objects.requireNonNull(updateCharacterUseCase, "updateCharacterUseCase");
+        this.deleteCharacterUseCase =
+                java.util.Objects.requireNonNull(deleteCharacterUseCase, "deleteCharacterUseCase");
+        this.setPartyMembershipUseCase =
+                java.util.Objects.requireNonNull(setPartyMembershipUseCase, "setPartyMembershipUseCase");
+        this.adjustPartyXpUseCase =
+                java.util.Objects.requireNonNull(adjustPartyXpUseCase, "adjustPartyXpUseCase");
+        this.awardPartyXpUseCase =
+                java.util.Objects.requireNonNull(awardPartyXpUseCase, "awardPartyXpUseCase");
+        this.performPartyRestUseCase =
+                java.util.Objects.requireNonNull(performPartyRestUseCase, "performPartyRestUseCase");
+        this.movePartyCharactersUseCase =
+                java.util.Objects.requireNonNull(movePartyCharactersUseCase, "movePartyCharactersUseCase");
         this.calculateAdventuringDayUseCase =
-                Objects.requireNonNull(calculateAdventuringDayUseCase, "calculateAdventuringDayUseCase");
+                java.util.Objects.requireNonNull(
+                        calculateAdventuringDayUseCase,
+                        "calculateAdventuringDayUseCase");
     }
 
     public void createCharacter(src.domain.party.published.CreateCharacterCommand command) {
-        if (command == null) {
-            createCharacterUseCase.execute(null, null, 0, 0, 0, "RESERVE");
-            return;
-        }
         createCharacterUseCase.execute(
-                command.createDraftName(),
-                command.createDraftPlayerName(),
-                command.createDraftLevel(),
-                command.createDraftPassivePerception(),
-                command.createDraftArmorClass(),
-                command.membershipName());
+                command == null ? null : command.createDraftName(),
+                command == null ? null : command.createDraftPlayerName(),
+                command == null ? 0 : command.createDraftLevel(),
+                command == null ? 0 : command.createDraftPassivePerception(),
+                command == null ? 0 : command.createDraftArmorClass(),
+                command == null ? "RESERVE" : command.membershipName());
     }
 
     public void updateCharacter(src.domain.party.published.UpdateCharacterCommand command) {
-        if (command == null) {
-            updateCharacterUseCase.execute(0L, null, null, 0, 0, 0);
-            return;
-        }
         updateCharacterUseCase.execute(
-                command.id(),
-                command.updateDraftName(),
-                command.updateDraftPlayerName(),
-                command.updateDraftLevel(),
-                command.updateDraftPassivePerception(),
-                command.updateDraftArmorClass());
+                command == null ? 0L : command.id(),
+                command == null ? null : command.updateDraftName(),
+                command == null ? null : command.updateDraftPlayerName(),
+                command == null ? 0 : command.updateDraftLevel(),
+                command == null ? 0 : command.updateDraftPassivePerception(),
+                command == null ? 0 : command.updateDraftArmorClass());
     }
 
     public void deleteCharacter(src.domain.party.published.DeleteCharacterCommand command) {
@@ -89,24 +83,20 @@ public final class PartyApplicationService {
     }
 
     public void setMembership(src.domain.party.published.SetPartyMembershipCommand command) {
-        if (command == null) {
-            setPartyMembershipUseCase.execute(0L, "RESERVE");
-            return;
-        }
         setPartyMembershipUseCase.execute(
-                command.id(),
-                command.membershipName());
+                command == null ? 0L : command.id(),
+                command == null ? "RESERVE" : command.membershipName());
     }
 
     public void awardXp(src.domain.party.published.AwardPartyXpCommand command) {
         awardPartyXpUseCase.execute(
-                CommandInputs.copyOrEmpty(command == null ? null : command.ids()),
+                command == null ? java.util.Collections.emptyList() : command.ids(),
                 command == null ? 0 : command.xpPerCharacter());
     }
 
     public void adjustXp(src.domain.party.published.AdjustPartyXpCommand command) {
         adjustPartyXpUseCase.execute(
-                CommandInputs.copyOrEmpty(command == null ? null : command.ids()),
+                command == null ? java.util.Collections.emptyList() : command.ids(),
                 command == null ? 0 : command.xpDelta());
     }
 
@@ -115,44 +105,39 @@ public final class PartyApplicationService {
     }
 
     public void moveCharacters(src.domain.party.published.MovePartyCharactersCommand command) {
-        if (command == null) {
-            movePartyCharactersUseCase.execute(List.of(), null, true);
-            return;
+        MovePartyCharactersUseCase.TravelTarget travelTarget = null;
+        if (command != null && command.target() != null && command.target().isDungeon()) {
+            travelTarget = new MovePartyCharactersUseCase.TravelTarget(
+                    true,
+                    command.target().mapId(),
+                    command.target().dungeonLocationKindName(),
+                    command.target().dungeonOwnerId(),
+                    command.target().dungeonTileQ(),
+                    command.target().dungeonTileR(),
+                    command.target().dungeonTileLevel(),
+                    command.target().dungeonHeadingName(),
+                    0L);
+        } else if (command != null && command.target() != null && command.target().isOverworld()) {
+            travelTarget = new MovePartyCharactersUseCase.TravelTarget(
+                    false,
+                    command.target().mapId(),
+                    "TILE",
+                    0L,
+                    0,
+                    0,
+                    0,
+                    "SOUTH",
+                    command.target().overworldTileId());
         }
-        movePartyCharactersUseCase.execute(
-                CommandInputs.copyOrEmpty(command.characterIds()),
-                CommandInputs.travelLocation(command.target()),
-                command.attachToPartyToken());
+        movePartyCharactersUseCase.execute(new MovePartyCharactersUseCase.TravelCommand(
+                command == null ? java.util.Collections.emptyList() : command.characterIds(),
+                travelTarget,
+                command == null || command.attachToPartyToken()));
     }
 
     public void calculateAdventuringDay(src.domain.party.published.CalculateAdventuringDayCommand command) {
         calculateAdventuringDayUseCase.publish(
-                CommandInputs.copyOrEmpty(command == null ? null : command.levels()),
+                command == null ? java.util.Collections.emptyList() : command.levels(),
                 command == null ? 0 : command.totalGroupXp());
-    }
-
-    private static final class CommandInputs {
-
-        private CommandInputs() {
-        }
-
-        private static <T> List<T> copyOrEmpty(@Nullable List<T> values) {
-            return values == null ? List.of() : List.copyOf(values);
-        }
-
-        private static @Nullable PartyTravelLocation travelLocation(@Nullable PartyTravelLocationSnapshot target) {
-            if (target instanceof src.domain.party.published.PartyDungeonTravelLocationSnapshot dungeon) {
-                return PartyTravelLocation.dungeon(
-                        dungeon.mapId(),
-                        PartyDungeonTravelLocationKind.valueOf(dungeon.locationKind().name()),
-                        dungeon.ownerId(),
-                        new PartyTravelTile(dungeon.tile().q(), dungeon.tile().r(), dungeon.tile().level()),
-                        PartyTravelHeading.valueOf(dungeon.heading().name()));
-            }
-            if (target instanceof src.domain.party.published.PartyOverworldTravelLocationSnapshot overworld) {
-                return PartyTravelLocation.overworld(overworld.mapId(), overworld.tileId());
-            }
-            return null;
-        }
     }
 }

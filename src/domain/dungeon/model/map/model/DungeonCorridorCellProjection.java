@@ -1,8 +1,5 @@
 package src.domain.dungeon.model.map.model;
 
-
-import java.io.Serial;
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -35,7 +32,7 @@ final class DungeonCorridorCellProjection {
             }
         }
         List<DungeonCell> result = new ArrayList<>(cells);
-        result.sort(new CellComparator());
+        result.sort(DungeonCorridorCellProjection::compareCells);
         return List.copyOf(result);
     }
 
@@ -140,21 +137,15 @@ final class DungeonCorridorCellProjection {
         return candidate.q() < current.q();
     }
 
-    private static final class CellComparator implements java.util.Comparator<DungeonCell>, Serializable {
-        @Serial
-        private static final long serialVersionUID = 1L;
-
-        @Override
-        public int compare(DungeonCell left, DungeonCell right) {
-            int levelComparison = Integer.compare(left.level(), right.level());
-            if (levelComparison != 0) {
-                return levelComparison;
-            }
-            int rowComparison = Integer.compare(left.r(), right.r());
-            if (rowComparison != 0) {
-                return rowComparison;
-            }
-            return Integer.compare(left.q(), right.q());
+    private static int compareCells(DungeonCell left, DungeonCell right) {
+        int levelComparison = Integer.compare(left.level(), right.level());
+        if (levelComparison != 0) {
+            return levelComparison;
         }
+        int rowComparison = Integer.compare(left.r(), right.r());
+        if (rowComparison != 0) {
+            return rowComparison;
+        }
+        return Integer.compare(left.q(), right.q());
     }
 }

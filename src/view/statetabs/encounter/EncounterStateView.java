@@ -17,7 +17,7 @@ public final class EncounterStateView extends VBox {
     private static final int COMBAT_INDEX = 2;
     private static final int RESULTS_INDEX = 3;
 
-    private final ContentStack contentArea = new ContentStack();
+    private final StackPane contentArea = new StackPane();
 
     public EncounterStateView(
             Node builderContent,
@@ -25,7 +25,7 @@ public final class EncounterStateView extends VBox {
             Node combatContent,
             Node resultsContent
     ) {
-        contentArea.setContent(builderContent, initiativeContent, combatContent, resultsContent);
+        contentArea.getChildren().setAll(builderContent, initiativeContent, combatContent, resultsContent);
         hideAllContent();
         getStyleClass().add("surface-root");
         setFillWidth(true);
@@ -45,43 +45,28 @@ public final class EncounterStateView extends VBox {
         EncounterStateContentModel.ActiveContent safeContent =
                 activeContent == null ? BUILDER : activeContent;
         switch (safeContent) {
-            case INITIATIVE -> contentArea.showContent(INITIATIVE_INDEX);
-            case COMBAT -> contentArea.showContent(COMBAT_INDEX);
-            case RESULTS -> contentArea.showContent(RESULTS_INDEX);
-            case BUILDER -> contentArea.showContent(BUILDER_INDEX);
+            case INITIATIVE -> showContent(INITIATIVE_INDEX);
+            case COMBAT -> showContent(COMBAT_INDEX);
+            case RESULTS -> showContent(RESULTS_INDEX);
+            case BUILDER -> showContent(BUILDER_INDEX);
             default -> showContent(BUILDER_INDEX);
         }
     }
 
     private void showContent(int contentIndex) {
-        contentArea.showContent(contentIndex);
+        for (int index = 0; index < contentArea.getChildren().size(); index++) {
+            showNode(contentArea.getChildren().get(index), index == contentIndex);
+        }
     }
 
     private void hideAllContent() {
-        contentArea.hideAllContent();
+        for (Node child : contentArea.getChildren()) {
+            showNode(child, false);
+        }
     }
 
-    private static final class ContentStack extends StackPane {
-
-        private void setContent(Node... nodes) {
-            getChildren().setAll(nodes);
-        }
-
-        private void showContent(int contentIndex) {
-            for (int index = 0; index < getChildren().size(); index++) {
-                showNode(getChildren().get(index), index == contentIndex);
-            }
-        }
-
-        private void hideAllContent() {
-            for (Node child : getChildren()) {
-                showNode(child, false);
-            }
-        }
-
-        private static void showNode(Node child, boolean selected) {
-            child.setVisible(selected);
-            child.setManaged(selected);
-        }
+    private static void showNode(Node child, boolean selected) {
+        child.setVisible(selected);
+        child.setManaged(selected);
     }
 }

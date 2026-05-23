@@ -1,9 +1,6 @@
 package src.domain.dungeon.model.map.model;
 
-import java.io.Serial;
-import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -233,20 +230,14 @@ public final class DungeonTravelSurfaceProjection {
                                 position.heading()),
                         transition.destination()));
             }
-            result.sort(new TravelActionComparator());
+            result.sort(DungeonTravelSurfaceProjection::compareTravelActions);
             return List.copyOf(result);
         }
     }
 
-    private static final class TravelActionComparator implements Comparator<DungeonTravelActionFacts>, Serializable {
-        @Serial
-        private static final long serialVersionUID = 1L;
-
-        @Override
-        public int compare(DungeonTravelActionFacts left, DungeonTravelActionFacts right) {
-            String leftLabel = left == null ? "" : left.displayLabel();
-            String rightLabel = right == null ? "" : right.displayLabel();
-            return String.CASE_INSENSITIVE_ORDER.compare(leftLabel, rightLabel);
-        }
+    private static int compareTravelActions(DungeonTravelActionFacts left, DungeonTravelActionFacts right) {
+        String leftLabel = left == null ? "" : left.displayLabel();
+        String rightLabel = right == null ? "" : right.displayLabel();
+        return String.CASE_INSENSITIVE_ORDER.compare(leftLabel, rightLabel);
     }
 }

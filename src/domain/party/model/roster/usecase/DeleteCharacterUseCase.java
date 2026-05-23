@@ -1,8 +1,6 @@
-package src.domain.party.application;
+package src.domain.party.model.roster.usecase;
 
 import java.util.Objects;
-import org.jspecify.annotations.Nullable;
-import src.domain.party.model.roster.model.PartyCharacterDraft;
 import src.domain.party.model.roster.model.PartyMutationStatus;
 import src.domain.party.model.roster.model.PartyRoster;
 import src.domain.party.model.roster.model.PartyRosterMutation;
@@ -10,13 +8,13 @@ import src.domain.party.model.roster.repository.PartyEncounterSessionRepository;
 import src.domain.party.model.roster.repository.PartyPublishedStateRepository;
 import src.domain.party.model.roster.repository.PartyRosterRepository;
 
-public final class UpdateCharacterUseCase {
+public final class DeleteCharacterUseCase {
 
     private final PartyRosterRepository repository;
     private final PartyPublishedStateRepository publishedStateRepository;
     private final PartyEncounterSessionRepository encounterSessionRepository;
 
-    public UpdateCharacterUseCase(
+    public DeleteCharacterUseCase(
             PartyRosterRepository repository,
             PartyPublishedStateRepository publishedStateRepository,
             PartyEncounterSessionRepository encounterSessionRepository
@@ -27,30 +25,18 @@ public final class UpdateCharacterUseCase {
                 Objects.requireNonNull(encounterSessionRepository, "encounterSessionRepository");
     }
 
-    public void execute(
-            long id,
-            @Nullable String name,
-            @Nullable String playerName,
-            int level,
-            int passivePerception,
-            int armorClass
-    ) {
+    public void execute(long id) {
         try {
-            PartyMutationStatus status = update(id, new PartyCharacterDraft(
-                    name,
-                    playerName,
-                    level,
-                    passivePerception,
-                    armorClass));
+            PartyMutationStatus status = delete(id);
             publish(status);
         } catch (IllegalStateException exception) {
-            publishedStateRepository.publishStorageErrorMutation();
+            publishedStateRepository.publishStorageErrorMutation(new PartyPublishedStateRepository.StatePublication());
         }
     }
 
-    private PartyMutationStatus update(long id, PartyCharacterDraft draft) {
+    private PartyMutationStatus delete(long id) {
         PartyRoster roster = repository.load();
-        PartyRosterMutation mutation = roster.updateCharacter(id, draft);
+        PartyRosterMutation mutation = roster.deleteCharacter(id);
         if (mutation.successful()) {
             repository.save(mutation.roster());
         }
@@ -59,7 +45,7 @@ public final class UpdateCharacterUseCase {
 
     private void publish(PartyMutationStatus status) {
         if (PartyMutationStatus.SUCCESS.equals(status)) {
-            publishedStateRepository.publishRepositoryBackedState();
+            publishedStateRepository.publishRepositoryBackedState(new PartyPublishedStateRepository.StatePublication());
             encounterSessionRepository.refreshEncounterSession();
         }
         publishedStateRepository.publishMutationStatus(status);

@@ -1,7 +1,7 @@
-package src.domain.party.application;
+package src.domain.party.model.roster.usecase;
 
-import java.util.List;
 import java.util.Objects;
+import src.domain.party.model.roster.model.PartyMembership;
 import src.domain.party.model.roster.model.PartyMutationStatus;
 import src.domain.party.model.roster.model.PartyRoster;
 import src.domain.party.model.roster.model.PartyRosterMutation;
@@ -9,13 +9,13 @@ import src.domain.party.model.roster.repository.PartyEncounterSessionRepository;
 import src.domain.party.model.roster.repository.PartyPublishedStateRepository;
 import src.domain.party.model.roster.repository.PartyRosterRepository;
 
-public final class AdjustPartyXpUseCase {
+public final class SetPartyMembershipUseCase {
 
     private final PartyRosterRepository repository;
     private final PartyPublishedStateRepository publishedStateRepository;
     private final PartyEncounterSessionRepository encounterSessionRepository;
 
-    public AdjustPartyXpUseCase(
+    public SetPartyMembershipUseCase(
             PartyRosterRepository repository,
             PartyPublishedStateRepository publishedStateRepository,
             PartyEncounterSessionRepository encounterSessionRepository
@@ -26,29 +26,35 @@ public final class AdjustPartyXpUseCase {
                 Objects.requireNonNull(encounterSessionRepository, "encounterSessionRepository");
     }
 
-    public void execute(List<Long> ids, int xpDelta) {
+    public void execute(long id, String membership) {
         try {
-            PartyMutationStatus status = adjust(ids, xpDelta);
-            publish(status);
+            publishMembershipResult(updateMembership(id, PartyMembership.valueOf(membership)));
         } catch (IllegalStateException exception) {
-            publishedStateRepository.publishStorageErrorMutation();
+            publishedStateRepository.publishStorageErrorMutation(new PartyPublishedStateRepository.StatePublication());
         }
     }
 
-    private PartyMutationStatus adjust(List<Long> ids, int xpDelta) {
+    private PartyMutationStatus updateMembership(long id, PartyMembership membership) {
         PartyRoster roster = repository.load();
-        PartyRosterMutation mutation = roster.adjustXp(ids, xpDelta);
-        if (mutation.successful()) {
-            repository.save(mutation.roster());
-        }
+        PartyRosterMutation mutation = persistMembershipChange(roster.setMembership(id, membership));
         return mutation.status();
     }
 
-    private void publish(PartyMutationStatus status) {
-        if (PartyMutationStatus.SUCCESS.equals(status)) {
-            publishedStateRepository.publishRepositoryBackedState();
-            encounterSessionRepository.refreshEncounterSession();
+    private PartyRosterMutation persistMembershipChange(PartyRosterMutation mutation) {
+        if (!mutation.successful()) {
+            return mutation;
         }
+        repository.save(mutation.roster());
+        return mutation;
+    }
+
+    private void publishMembershipResult(PartyMutationStatus status) {
+        if (!PartyMutationStatus.SUCCESS.equals(status)) {
+            publishedStateRepository.publishMutationStatus(status);
+            return;
+        }
+        publishedStateRepository.publishRepositoryBackedState(new PartyPublishedStateRepository.StatePublication());
+        encounterSessionRepository.refreshEncounterSession();
         publishedStateRepository.publishMutationStatus(status);
     }
 }

@@ -1,9 +1,6 @@
 package src.domain.dungeon.model.map.model;
 
-import java.io.Serial;
-import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -42,27 +39,21 @@ final class DungeonClusterBoundaryOrdering {
         Map<Integer, List<DungeonClusterBoundary>> result = new LinkedHashMap<>();
         for (Map.Entry<Integer, List<DungeonClusterBoundary>> entry : grouped.entrySet()) {
             List<DungeonClusterBoundary> sorted = new ArrayList<>(entry.getValue());
-            sorted.sort(new BoundaryComparator());
+            sorted.sort(DungeonClusterBoundaryOrdering::compareBoundaries);
             result.put(entry.getKey(), List.copyOf(sorted));
         }
         return Map.copyOf(result);
     }
 
-    private static final class BoundaryComparator implements Comparator<DungeonClusterBoundary>, Serializable {
-        @Serial
-        private static final long serialVersionUID = 1L;
-
-        @Override
-        public int compare(DungeonClusterBoundary left, DungeonClusterBoundary right) {
-            int rowComparison = Integer.compare(left.relativeCell().r(), right.relativeCell().r());
-            if (rowComparison != 0) {
-                return rowComparison;
-            }
-            int columnComparison = Integer.compare(left.relativeCell().q(), right.relativeCell().q());
-            if (columnComparison != 0) {
-                return columnComparison;
-            }
-            return left.direction().name().compareTo(right.direction().name());
+    private static int compareBoundaries(DungeonClusterBoundary left, DungeonClusterBoundary right) {
+        int rowComparison = Integer.compare(left.relativeCell().r(), right.relativeCell().r());
+        if (rowComparison != 0) {
+            return rowComparison;
         }
+        int columnComparison = Integer.compare(left.relativeCell().q(), right.relativeCell().q());
+        if (columnComparison != 0) {
+            return columnComparison;
+        }
+        return left.direction().name().compareTo(right.direction().name());
     }
 }

@@ -1,9 +1,6 @@
 package src.domain.party.model.roster.model;
 
-import java.io.Serial;
-import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 
 public record PartyRosterProjection(
@@ -43,11 +40,11 @@ public record PartyRosterProjection(
                 reserveMembers.add(character);
             }
         }
-        activeMembers.sort(new ActiveMemberComparator());
-        reserveMembers.sort(new ReserveMemberComparator());
+        activeMembers.sort(PartyRosterProjection::compareActiveMembers);
+        reserveMembers.sort(PartyRosterProjection::compareReserveMembers);
 
         List<PartyCharacter> activeMembersByLevel = new ArrayList<>(activeMembers);
-        activeMembersByLevel.sort(new ActiveLevelComparator());
+        activeMembersByLevel.sort(PartyRosterProjection::compareActiveLevels);
         List<Integer> activeLevels = new ArrayList<>(activeMembersByLevel.size());
         int totalLevel = 0;
         for (PartyCharacter character : activeMembersByLevel) {
@@ -62,43 +59,25 @@ public record PartyRosterProjection(
         return new PartyRosterProjection(activeMembers, reserveMembers, activeLevels, averageLevel);
     }
 
-    private static final class ActiveMemberComparator implements Comparator<PartyCharacter>, Serializable {
-        @Serial
-        private static final long serialVersionUID = 1L;
-
-        @Override
-        public int compare(PartyCharacter first, PartyCharacter second) {
-            return Long.compare(first.id(), second.id());
-        }
+    private static int compareActiveMembers(PartyCharacter first, PartyCharacter second) {
+        return Long.compare(first.id(), second.id());
     }
 
-    private static final class ReserveMemberComparator implements Comparator<PartyCharacter>, Serializable {
-        @Serial
-        private static final long serialVersionUID = 1L;
-
-        @Override
-        public int compare(PartyCharacter first, PartyCharacter second) {
-            int nameComparison = String.CASE_INSENSITIVE_ORDER.compare(
-                    first.identity().name(),
-                    second.identity().name());
-            if (nameComparison != 0) {
-                return nameComparison;
-            }
-            return Long.compare(first.id(), second.id());
+    private static int compareReserveMembers(PartyCharacter first, PartyCharacter second) {
+        int nameComparison = String.CASE_INSENSITIVE_ORDER.compare(
+                first.identity().name(),
+                second.identity().name());
+        if (nameComparison != 0) {
+            return nameComparison;
         }
+        return Long.compare(first.id(), second.id());
     }
 
-    private static final class ActiveLevelComparator implements Comparator<PartyCharacter>, Serializable {
-        @Serial
-        private static final long serialVersionUID = 1L;
-
-        @Override
-        public int compare(PartyCharacter first, PartyCharacter second) {
-            int levelComparison = Integer.compare(first.progress().level(), second.progress().level());
-            if (levelComparison != 0) {
-                return levelComparison;
-            }
-            return Long.compare(first.id(), second.id());
+    private static int compareActiveLevels(PartyCharacter first, PartyCharacter second) {
+        int levelComparison = Integer.compare(first.progress().level(), second.progress().level());
+        if (levelComparison != 0) {
+            return levelComparison;
         }
+        return Long.compare(first.id(), second.id());
     }
 }

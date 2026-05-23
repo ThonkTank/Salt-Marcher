@@ -1088,9 +1088,9 @@ public final class DungeonMapContentModel {
                         SceneIdentity.markerHitRef(marker),
                         SceneIdentity.selectionRef(marker.handle().topologyRef()),
                         marker.z(),
-                        SceneGeometry.markerShape(marker),
+                        SceneGeometry.Marker.markerShape(marker),
                         MarkerStyler.style(marker, displayModel),
-                        SceneGeometry.abbreviateLabel(marker.label(), marker.isDoorMarker() ? 1 : 3),
+                        SceneGeometry.Label.abbreviateLabel(marker.label(), marker.isDoorMarker() ? 1 : 3),
                         ScenePalette.LABEL_TEXT));
             }
         }
@@ -1110,8 +1110,8 @@ public final class DungeonMapContentModel {
                         label.label(),
                         label.q(),
                         label.r(),
-                        SceneGeometry.labelWidthScene(label.label()),
-                        SceneGeometry.labelHeightScene(),
+                        SceneGeometry.Label.labelWidthScene(label.label()),
+                        SceneGeometry.Label.labelHeightScene(),
                         LabelStyler.style(label, displayModel),
                         ScenePalette.LABEL_TEXT));
             }
@@ -1129,7 +1129,7 @@ public final class DungeonMapContentModel {
                     "",
                     null,
                     token.z(),
-                    SceneGeometry.partyTokenShape(token),
+                    SceneGeometry.Marker.partyTokenShape(token),
                     new PaintStyle(
                             ScenePalette.PARTY_FILL,
                             ScenePalette.PARTY_STROKE,
@@ -1216,8 +1216,8 @@ public final class DungeonMapContentModel {
                         node.label(),
                         node.q(),
                         node.r(),
-                        Math.max(1.8, SceneGeometry.labelWidthScene(node.label())),
-                        SceneGeometry.labelHeightScene(),
+                        Math.max(1.8, SceneGeometry.Label.labelWidthScene(node.label())),
+                        SceneGeometry.Label.labelHeightScene(),
                         new PaintStyle(null, null, 0.0, 1.0, false),
                         ScenePalette.LABEL_TEXT));
             }
@@ -1783,82 +1783,91 @@ public final class DungeonMapContentModel {
             return roundedRect(centerQ, centerR, width, height);
         }
 
-        private static double labelHeightScene() {
-            return 24.0 / 32.0;
-        }
+        private static final class Label {
 
-        private static double labelPaddingScene() {
-            return 16.0 / 32.0;
-        }
-
-        private static double labelCharWidthScene() {
-            return 7.2 / 32.0;
-        }
-
-        private static double markerHalfSizeScene() {
-            return 0.34;
-        }
-
-        private static double partyOuterRadiusScene() {
-            return 0.26;
-        }
-
-        private static List<MapCanvasPoint> markerShape(DungeonMapRenderState.Marker marker) {
-            double half = marker.isDoorMarker() ? 0.28 : markerHalfSizeScene();
-            return square(marker.q() - half, marker.r() - half, half * 2.0);
-        }
-
-        private static List<MapCanvasPoint> partyTokenShape(DungeonMapRenderState.PartyToken token) {
-            double forwardX = token.heading().dx();
-            double forwardY = token.heading().dy();
-            double sideX = -forwardY;
-            double sideY = forwardX;
-            double outerRadius = partyOuterRadiusScene();
-            return List.of(
-                    new MapCanvasPoint(
-                            token.q() + forwardX * outerRadius * 1.18,
-                            token.r() + forwardY * outerRadius * 1.18),
-                    new MapCanvasPoint(
-                            token.q() + forwardX * outerRadius * 0.54
-                                    + sideX * outerRadius * 0.76,
-                            token.r() + forwardY * outerRadius * 0.54
-                                    + sideY * outerRadius * 0.76),
-                    new MapCanvasPoint(
-                            token.q() - forwardX * outerRadius * 0.92
-                                    + sideX * outerRadius * 0.92,
-                            token.r() - forwardY * outerRadius * 0.92
-                                    + sideY * outerRadius * 0.92),
-                    new MapCanvasPoint(
-                            token.q() - forwardX * outerRadius * 1.02,
-                            token.r() - forwardY * outerRadius * 1.02),
-                    new MapCanvasPoint(
-                            token.q() - forwardX * outerRadius * 0.92
-                                    - sideX * outerRadius * 0.92,
-                            token.r() - forwardY * outerRadius * 0.92
-                                    - sideY * outerRadius * 0.92),
-                    new MapCanvasPoint(
-                            token.q() + forwardX * outerRadius * 0.54
-                                    - sideX * outerRadius * 0.76,
-                            token.r() + forwardY * outerRadius * 0.54
-                                    - sideY * outerRadius * 0.76));
-        }
-
-        private static double labelWidthScene(String label) {
-            return Math.max(
-                    56.0 / 32.0,
-                    Math.min(180.0 / 32.0, label.length() * labelCharWidthScene() + labelPaddingScene()));
-        }
-
-        private static double overlayAlpha(int z, int projectionLevel, double configuredOpacity) {
-            int distance = Math.max(1, Math.abs(z - projectionLevel));
-            return Math.max(0.05, Math.min(0.95, configuredOpacity / Math.sqrt(distance)));
-        }
-
-        private static String abbreviateLabel(String label, int maxLength) {
-            if (label == null || label.length() <= maxLength) {
-                return label == null ? "" : label;
+            private static double labelHeightScene() {
+                return 24.0 / 32.0;
             }
-            return label.substring(0, Math.max(1, maxLength - 1)) + ".";
+
+            private static double labelWidthScene(String label) {
+                return Math.max(
+                        56.0 / 32.0,
+                        Math.min(180.0 / 32.0, label.length() * labelCharWidthScene() + labelPaddingScene()));
+            }
+
+            private static String abbreviateLabel(String label, int maxLength) {
+                if (label == null || label.length() <= maxLength) {
+                    return label == null ? "" : label;
+                }
+                return label.substring(0, Math.max(1, maxLength - 1)) + ".";
+            }
+
+            private static double labelPaddingScene() {
+                return 16.0 / 32.0;
+            }
+
+            private static double labelCharWidthScene() {
+                return 7.2 / 32.0;
+            }
+        }
+
+        private static final class Marker {
+
+            private static List<MapCanvasPoint> markerShape(DungeonMapRenderState.Marker marker) {
+                double half = marker.isDoorMarker() ? 0.28 : markerHalfSizeScene();
+                return square(marker.q() - half, marker.r() - half, half * 2.0);
+            }
+
+            private static List<MapCanvasPoint> partyTokenShape(DungeonMapRenderState.PartyToken token) {
+                double forwardX = token.heading().dx();
+                double forwardY = token.heading().dy();
+                double sideX = -forwardY;
+                double sideY = forwardX;
+                double outerRadius = partyOuterRadiusScene();
+                return List.of(
+                        new MapCanvasPoint(
+                                token.q() + forwardX * outerRadius * 1.18,
+                                token.r() + forwardY * outerRadius * 1.18),
+                        new MapCanvasPoint(
+                                token.q() + forwardX * outerRadius * 0.54
+                                        + sideX * outerRadius * 0.76,
+                                token.r() + forwardY * outerRadius * 0.54
+                                        + sideY * outerRadius * 0.76),
+                        new MapCanvasPoint(
+                                token.q() - forwardX * outerRadius * 0.92
+                                        + sideX * outerRadius * 0.92,
+                                token.r() - forwardY * outerRadius * 0.92
+                                        + sideY * outerRadius * 0.92),
+                        new MapCanvasPoint(
+                                token.q() - forwardX * outerRadius * 1.02,
+                                token.r() - forwardY * outerRadius * 1.02),
+                        new MapCanvasPoint(
+                                token.q() - forwardX * outerRadius * 0.92
+                                        - sideX * outerRadius * 0.92,
+                                token.r() - forwardY * outerRadius * 0.92
+                                        - sideY * outerRadius * 0.92),
+                        new MapCanvasPoint(
+                                token.q() + forwardX * outerRadius * 0.54
+                                        - sideX * outerRadius * 0.76,
+                                token.r() + forwardY * outerRadius * 0.54
+                                        - sideY * outerRadius * 0.76));
+            }
+
+            private static double markerHalfSizeScene() {
+                return 0.34;
+            }
+
+            private static double partyOuterRadiusScene() {
+                return 0.26;
+            }
+        }
+
+        private static final class Overlay {
+
+            private static double overlayAlpha(int z, int projectionLevel, double configuredOpacity) {
+                int distance = Math.max(1, Math.abs(z - projectionLevel));
+                return Math.max(0.05, Math.min(0.95, configuredOpacity / Math.sqrt(distance)));
+            }
         }
     }
 
@@ -1902,7 +1911,7 @@ public final class DungeonMapContentModel {
                     ScenePalette.blend(baseFill, tint, 0.56),
                     ScenePalette.blend(ScenePalette.ROOM_CELL_STROKE, tint, 0.62),
                     cell.selected() ? 2.4 / 32.0 : 1.0 / 32.0,
-                    SceneGeometry.overlayAlpha(cell.z(), displayModel.projectionLevel(), displayModel.overlaySettings().opacity()),
+                    SceneGeometry.Overlay.overlayAlpha(cell.z(), displayModel.projectionLevel(), displayModel.overlaySettings().opacity()),
                     false);
         }
 
@@ -1947,7 +1956,7 @@ public final class DungeonMapContentModel {
                     null,
                     edge.isDoor() ? ScenePalette.DOOR_STROKE : ScenePalette.WALL_STROKE,
                     edge.isDoor() ? 3.6 / 32.0 : 2.0 / 32.0,
-                    SceneGeometry.overlayAlpha(edge.z(), displayModel.projectionLevel(), displayModel.overlaySettings().opacity()),
+                    SceneGeometry.Overlay.overlayAlpha(edge.z(), displayModel.projectionLevel(), displayModel.overlaySettings().opacity()),
                     false);
         }
 
@@ -1980,7 +1989,7 @@ public final class DungeonMapContentModel {
                     marker.selected() ? 2.2 / 32.0 : 1.4 / 32.0,
                     marker.z() == displayModel.projectionLevel()
                             ? 1.0
-                            : SceneGeometry.overlayAlpha(
+                            : SceneGeometry.Overlay.overlayAlpha(
                                     marker.z(),
                                     displayModel.projectionLevel(),
                                     displayModel.overlaySettings().opacity()),
@@ -2031,7 +2040,7 @@ public final class DungeonMapContentModel {
                 DungeonMapRenderState displayModel
         ) {
             if (label.z() != displayModel.projectionLevel()) {
-                return SceneGeometry.overlayAlpha(
+                return SceneGeometry.Overlay.overlayAlpha(
                         label.z(),
                         displayModel.projectionLevel(),
                         displayModel.overlaySettings().opacity());
@@ -2157,7 +2166,7 @@ public final class DungeonMapContentModel {
             return DungeonMapRenderState.empty(placeholderTitle, false);
         }
         DungeonMapSnapshot map = surface.map();
-        List<DungeonMapRenderState.GraphNode> graphNodes = graphNodes(map.areas());
+        List<DungeonMapRenderState.GraphNode> graphNodes = TravelGraph.graphNodes(map.areas());
         return new DungeonMapRenderState(
                 surface.mapName(),
                 true,
@@ -2170,14 +2179,16 @@ public final class DungeonMapContentModel {
                 false,
                 DungeonMapRenderState.selectToolLabel(),
                 "No dungeon map geometry available.",
-                cells(map),
-                edges(map.boundaries()),
-                labels(map.features()),
-                markers(map.features()),
+                TravelGeometry.cells(map),
+                TravelGeometry.edges(map.boundaries()),
+                TravelFeatureAnnotations.labels(map.features()),
+                TravelFeatureAnnotations.markers(map.features()),
                 graphNodes,
-                fallbackGraphLinks(graphNodes),
-                partyToken(surface));
+                TravelGraph.fallbackGraphLinks(graphNodes),
+                TravelParty.partyToken(surface));
     }
+
+    private static final class TravelGeometry {
 
     private static List<DungeonMapRenderState.Cell> cells(DungeonMapSnapshot map) {
         List<DungeonMapRenderState.Cell> cells = new ArrayList<>();
@@ -2242,6 +2253,9 @@ public final class DungeonMapContentModel {
         }
         return List.copyOf(edges);
     }
+}
+
+    private static final class TravelFeatureAnnotations {
 
     private static List<DungeonMapRenderState.Label> labels(List<DungeonFeatureSnapshot> features) {
         List<DungeonMapRenderState.Label> labels = new ArrayList<>();
@@ -2289,6 +2303,9 @@ public final class DungeonMapContentModel {
         }
         return List.copyOf(markers);
     }
+}
+
+    private static final class TravelGraph {
 
     private static List<DungeonMapRenderState.GraphNode> graphNodes(List<DungeonAreaSnapshot> areas) {
         List<DungeonMapRenderState.GraphNode> nodes = new ArrayList<>();
@@ -2321,6 +2338,9 @@ public final class DungeonMapContentModel {
         }
         return List.copyOf(links);
     }
+}
+
+    private static final class TravelParty {
 
     private static DungeonMapRenderState.PartyToken partyToken(DungeonTravelSurfaceSnapshot surface) {
         if (surface.position() == null) {
@@ -2338,6 +2358,7 @@ public final class DungeonMapContentModel {
     private static DungeonMapRenderState.Heading heading(DungeonTravelHeading heading) {
         return DungeonMapRenderState.Heading.fromName(heading == null ? "SOUTH" : heading.name());
     }
+}
 
     private static DungeonMapRenderState.TopologyRef topologyRef(DungeonTopologyElementRef ref) {
         return ref == null

@@ -1,4 +1,4 @@
-package src.domain.party.application;
+package src.domain.party.model.roster.usecase;
 
 import src.domain.party.model.roster.model.PartyCharacter;
 import src.domain.party.model.roster.repository.PartyRosterRepository;

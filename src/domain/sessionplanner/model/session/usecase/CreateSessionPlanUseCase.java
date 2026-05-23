@@ -1,14 +1,13 @@
 package src.domain.sessionplanner.model.session.usecase;
 
 import java.util.Objects;
-import java.util.function.LongSupplier;
 import src.domain.sessionplanner.model.session.repository.SessionPlanRepository;
 
 public final class CreateSessionPlanUseCase {
 
     private static final long INITIAL_SESSION_ID = 1L;
 
-    private final LongSupplier nextSessionIdReader;
+    private final SessionIdReader nextSessionIdReader;
     private final SaveCurrentSessionPlanUseCase saveCurrentSessionPlanUseCase;
     private final SeedSessionPlanUseCase seedSessionPlanUseCase;
 
@@ -31,9 +30,13 @@ public final class CreateSessionPlanUseCase {
 
     private long nextSessionId() {
         try {
-            return Math.max(INITIAL_SESSION_ID, nextSessionIdReader.getAsLong());
+            return Math.max(INITIAL_SESSION_ID, nextSessionIdReader.nextSessionId());
         } catch (IllegalStateException exception) {
             return INITIAL_SESSION_ID;
         }
+    }
+
+    private interface SessionIdReader {
+        long nextSessionId();
     }
 }

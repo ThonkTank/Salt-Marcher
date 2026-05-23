@@ -7,6 +7,8 @@ import src.data.dungeon.model.DungeonPersistenceSchema;
 
 final class DungeonSqliteSeedMapCleanup {
 
+    private static final String AND_NOT_EXISTS_SELECT_ONE_FROM = " AND NOT EXISTS (SELECT 1 FROM ";
+
     void apply(Connection connection) throws SQLException {
         try (PreparedStatement statement = connection.prepareStatement(
                 "DELETE FROM " + DungeonPersistenceSchema.MAPS_TABLE
@@ -25,13 +27,13 @@ final class DungeonSqliteSeedMapCleanup {
                         + " AND EXISTS (SELECT 1 FROM " + DungeonPersistenceSchema.ROOM_CLUSTERS_TABLE
                         + " c WHERE c.dungeon_map_id=m.dungeon_map_id"
                         + " AND c.center_x=2 AND c.center_y=2 AND c.level_z=0)"
-                        + " AND NOT EXISTS (SELECT 1 FROM " + DungeonPersistenceSchema.CORRIDORS_TABLE
+                        + AND_NOT_EXISTS_SELECT_ONE_FROM + DungeonPersistenceSchema.CORRIDORS_TABLE
                         + " c WHERE c.dungeon_map_id=m.dungeon_map_id)"
-                        + " AND NOT EXISTS (SELECT 1 FROM " + DungeonPersistenceSchema.STAIRS_TABLE
+                        + AND_NOT_EXISTS_SELECT_ONE_FROM + DungeonPersistenceSchema.STAIRS_TABLE
                         + " s WHERE s.dungeon_map_id=m.dungeon_map_id)"
-                        + " AND NOT EXISTS (SELECT 1 FROM " + DungeonPersistenceSchema.TRANSITIONS_TABLE
+                        + AND_NOT_EXISTS_SELECT_ONE_FROM + DungeonPersistenceSchema.TRANSITIONS_TABLE
                         + " t WHERE t.dungeon_map_id=m.dungeon_map_id)"
-                        + " AND NOT EXISTS (SELECT 1 FROM "
+                        + AND_NOT_EXISTS_SELECT_ONE_FROM
                         + DungeonPersistenceSchema.ROOM_EXIT_DESCRIPTIONS_TABLE
                         + " x JOIN " + DungeonPersistenceSchema.ROOMS_TABLE + " r ON r.room_id=x.room_id"
                         + " WHERE r.dungeon_map_id=m.dungeon_map_id"

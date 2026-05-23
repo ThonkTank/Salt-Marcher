@@ -1,4 +1,4 @@
-package src.domain.party.application;
+package src.domain.party.model.roster.usecase;
 
 import java.util.ArrayList;
 import java.util.LinkedHashSet;

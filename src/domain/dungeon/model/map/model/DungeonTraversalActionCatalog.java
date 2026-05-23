@@ -1,9 +1,6 @@
 package src.domain.dungeon.model.map.model;
 
-import java.io.Serial;
-import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -77,7 +74,7 @@ final class DungeonTraversalActionCatalog {
                     candidates.add(candidate);
                 }
             }
-            candidates.sort(new TraversalCandidateComparator());
+            candidates.sort(DungeonTraversalActionCatalog::compareTraversalCandidates);
             return candidates;
         }
 
@@ -270,54 +267,48 @@ final class DungeonTraversalActionCatalog {
     ) {
     }
 
-    private static final class TraversalCandidateComparator implements Comparator<TraversalCandidate>, Serializable {
-        @Serial
-        private static final long serialVersionUID = 1L;
-
-        @Override
-        public int compare(TraversalCandidate left, TraversalCandidate right) {
-            int sourceComparison = Integer.compare(sourceOrder(left), sourceOrder(right));
-            if (sourceComparison != 0) {
-                return sourceComparison;
-            }
-            int directionComparison = Integer.compare(directionOrder(left), directionOrder(right));
-            if (directionComparison != 0) {
-                return directionComparison;
-            }
-            int labelComparison = String.CASE_INSENSITIVE_ORDER.compare(sourceLabel(left), sourceLabel(right));
-            if (labelComparison != 0) {
-                return labelComparison;
-            }
-            return sourceKey(left).compareTo(sourceKey(right));
+    private static int compareTraversalCandidates(TraversalCandidate left, TraversalCandidate right) {
+        int sourceComparison = Integer.compare(sourceOrder(left), sourceOrder(right));
+        if (sourceComparison != 0) {
+            return sourceComparison;
         }
-
-        private static int sourceOrder(TraversalCandidate candidate) {
-            return candidate != null && candidate.link().source().kind() == DungeonTraversalSourceKind.DOOR ? 0 : 1;
+        int directionComparison = Integer.compare(directionOrder(left), directionOrder(right));
+        if (directionComparison != 0) {
+            return directionComparison;
         }
+        int labelComparison = String.CASE_INSENSITIVE_ORDER.compare(sourceLabel(left), sourceLabel(right));
+        if (labelComparison != 0) {
+            return labelComparison;
+        }
+        return sourceKey(left).compareTo(sourceKey(right));
+    }
 
-        private static int directionOrder(TraversalCandidate candidate) {
-            if (candidate == null) {
-                return 0;
-            }
-            DungeonEdgeDirection direction = candidate.direction();
-            if (direction == DungeonEdgeDirection.EAST) {
-                return 1;
-            }
-            if (direction == DungeonEdgeDirection.SOUTH) {
-                return 2;
-            }
-            if (direction == DungeonEdgeDirection.WEST) {
-                return 3;
-            }
+    private static int sourceOrder(TraversalCandidate candidate) {
+        return candidate != null && candidate.link().source().kind() == DungeonTraversalSourceKind.DOOR ? 0 : 1;
+    }
+
+    private static int directionOrder(TraversalCandidate candidate) {
+        if (candidate == null) {
             return 0;
         }
-
-        private static String sourceLabel(TraversalCandidate candidate) {
-            return candidate == null ? "" : candidate.link().source().label();
+        DungeonEdgeDirection direction = candidate.direction();
+        if (direction == DungeonEdgeDirection.EAST) {
+            return 1;
         }
-
-        private static String sourceKey(TraversalCandidate candidate) {
-            return candidate == null ? "" : candidate.link().key();
+        if (direction == DungeonEdgeDirection.SOUTH) {
+            return 2;
         }
+        if (direction == DungeonEdgeDirection.WEST) {
+            return 3;
+        }
+        return 0;
+    }
+
+    private static String sourceLabel(TraversalCandidate candidate) {
+        return candidate == null ? "" : candidate.link().source().label();
+    }
+
+    private static String sourceKey(TraversalCandidate candidate) {
+        return candidate == null ? "" : candidate.link().key();
     }
 }

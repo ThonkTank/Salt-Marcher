@@ -5,7 +5,6 @@ import java.util.List;
 import java.util.function.Consumer;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.StringProperty;
-import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.geometry.Pos;
@@ -51,7 +50,7 @@ public final class SessionPlannerControlsView extends ScrollPane {
 
     public SessionPlannerControlsView() {
         setContent(content());
-        style(this, "session-planner-controls-scroll");
+        getStyleClass().add("session-planner-controls-scroll");
         setFitToWidth(true);
         setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
     }
@@ -70,8 +69,9 @@ public final class SessionPlannerControlsView extends ScrollPane {
 
     private VBox content() {
         VBox content = new VBox(12);
-        style(content, "session-planner-controls");
-        content.getChildren().addAll(
+        addStyles(content, "session-planner-controls");
+        addNodes(
+                content,
                 sessionSection(),
                 statusLabel,
                 sectionCard("Session-Ueberblick", partyHeadlineLabel, partyDetailLabel),
@@ -95,18 +95,17 @@ public final class SessionPlannerControlsView extends ScrollPane {
                         encounterDaysField.getText(),
                         0L)), STYLE_COMPACT, "flat");
         encounterDaysField.setPromptText("1.0");
-        HBox daysRow = new HBox(6,
+        GrowingFieldRow daysRow = new GrowingFieldRow(
                 label("Encounter Days", "session-planner-card-title"),
                 encounterDaysField,
                 applyDaysButton);
-        HBox.setHgrow(encounterDaysField, Priority.ALWAYS);
         return new VBox(10,
                 headerRow(label("SESSION PLANNER", "section-header", "text-muted"), createButton),
                 sectionCard("Session", sessionIdLabel, selectionLabel, daysRow));
     }
 
     private VBox budgetSection() {
-        VBox root = sectionCard(
+        return sectionCard(
                 "XP-Budget",
                 totalBudgetLabel,
                 plannedXpLabel,
@@ -114,7 +113,6 @@ public final class SessionPlannerControlsView extends ScrollPane {
                 budgetBar,
                 summaryLabel,
                 milestonesLabel);
-        return root;
     }
 
     private void show(SessionPlannerControlsContentModel.Projection projection) {
@@ -142,13 +140,13 @@ public final class SessionPlannerControlsView extends ScrollPane {
 
     private void showMembers(List<SessionPlannerControlsContentModel.Projection.PartyMemberModel> members) {
         if (members.isEmpty()) {
-            activePartyRows.getChildren().setAll(label(
+            setNodes(activePartyRows, label(
                     "Keine aktiven Party-Mitglieder verfuegbar.",
                     STYLE_TEXT_SECONDARY,
                     "session-planner-empty"));
             return;
         }
-        activePartyRows.getChildren().setAll(memberRows(members));
+        setNodes(activePartyRows, memberRows(members));
     }
 
     private List<Node> memberRows(List<SessionPlannerControlsContentModel.Projection.PartyMemberModel> members) {
@@ -170,9 +168,9 @@ public final class SessionPlannerControlsView extends ScrollPane {
         VBox labels = new VBox(
                 label(member.name(), "session-planner-plan-name"),
                 label("Level " + member.level(), STYLE_TEXT_SECONDARY));
-        HBox row = new HBox(8, labels, spacer(), addButton);
-        row.setAlignment(Pos.CENTER_LEFT);
-        style(row, "session-planner-plan-card");
+        ActionRow row = new ActionRow(8);
+        row.addAllNodes(labels, spacer(), addButton);
+        row.addStyles("session-planner-plan-card");
         return row;
     }
 
@@ -180,13 +178,13 @@ public final class SessionPlannerControlsView extends ScrollPane {
             List<SessionPlannerControlsContentModel.Projection.SessionParticipantModel> participants
     ) {
         if (participants.isEmpty()) {
-            sessionParticipantsRows.getChildren().setAll(label(
+            setNodes(sessionParticipantsRows, label(
                     "Noch keine Teilnehmer in dieser Session.",
                     STYLE_TEXT_SECONDARY,
                     "session-planner-empty"));
             return;
         }
-        sessionParticipantsRows.getChildren().setAll(participantRows(participants));
+        setNodes(sessionParticipantsRows, participantRows(participants));
     }
 
     private List<Node> participantRows(
@@ -206,9 +204,9 @@ public final class SessionPlannerControlsView extends ScrollPane {
         VBox labels = new VBox(
                 label(participant.name(), "session-planner-plan-name"),
                 label(participant.detail(), participant.available() ? STYLE_TEXT_SECONDARY : "session-planner-gap-active"));
-        HBox row = new HBox(8, labels, spacer(), removeButton);
-        row.setAlignment(Pos.CENTER_LEFT);
-        style(row, "session-planner-plan-card");
+        ActionRow row = new ActionRow(8);
+        row.addAllNodes(labels, spacer(), removeButton);
+        row.addStyles("session-planner-plan-card");
         return row;
     }
 
@@ -221,20 +219,18 @@ public final class SessionPlannerControlsView extends ScrollPane {
         summaryLabel.setText(model.summaryText());
         milestonesLabel.setText(model.milestonesText());
         budgetBar.setProgress(Math.max(0.0, Math.min(1.0, model.progressFraction())));
-        ObservableList<String> styleClasses = budgetBar.getStyleClass();
-        styleClasses.removeAll(STYLE_BUDGET_OK, STYLE_BUDGET_OVER);
-        styleClasses.add(model.overBudget() ? STYLE_BUDGET_OVER : STYLE_BUDGET_OK);
+        showBudgetStyle(budgetBar, model.overBudget() ? STYLE_BUDGET_OVER : STYLE_BUDGET_OK);
     }
 
     private void showPlans(List<SessionPlannerControlsContentModel.Projection.AvailablePlanModel> plans) {
         if (plans.isEmpty()) {
-            plansBox.getChildren().setAll(label(
+            setNodes(plansBox, label(
                     "Keine gespeicherten Encounter-Plaene.",
                     STYLE_TEXT_SECONDARY,
                     "session-planner-empty"));
             return;
         }
-        plansBox.getChildren().setAll(planCards(plans));
+        setNodes(plansBox, planCards(plans));
     }
 
     private List<Node> planCards(List<SessionPlannerControlsContentModel.Projection.AvailablePlanModel> plans) {
@@ -254,7 +250,7 @@ public final class SessionPlannerControlsView extends ScrollPane {
                 label(plan.summaryText(), STYLE_TEXT_SECONDARY),
                 label(plan.statusText(), STYLE_TEXT_SECONDARY),
                 importButton);
-        style(card, "session-planner-plan-card");
+        addStyles(card, "session-planner-plan-card");
         return card;
     }
 
@@ -287,10 +283,7 @@ public final class SessionPlannerControlsView extends ScrollPane {
     }
 
     private static Label label(String text, String... styleClasses) {
-        Label label = new Label(text);
-        label.setWrapText(true);
-        style(label, styleClasses);
-        return label;
+        return new StyledLabel(text, styleClasses);
     }
 
     private static Label statusLabel() {
@@ -304,42 +297,97 @@ public final class SessionPlannerControlsView extends ScrollPane {
     }
 
     private static Button button(String text, EventHandler<ActionEvent> action, String... styleClasses) {
-        Button button = new Button(text);
-        style(button, styleClasses);
+        Button button = new StyledButton(text, styleClasses);
         button.setOnAction(action);
         return button;
     }
 
     private static ProgressBar budgetBar() {
         ProgressBar progressBar = new ProgressBar(0.0);
-        style(progressBar, "session-planner-budget-bar");
+        addStyles(progressBar, "session-planner-budget-bar");
         return progressBar;
     }
 
-    private static HBox headerRow(Node titleLabel, Node... actionButtons) {
-        HBox row = new HBox(8);
-        row.getChildren().add(titleLabel);
-        row.getChildren().add(spacer());
-        row.getChildren().addAll(actionButtons);
-        row.setAlignment(Pos.CENTER_LEFT);
+    private static ActionRow headerRow(Node titleLabel, Node... actionButtons) {
+        ActionRow row = new ActionRow(8);
+        row.addAllNodes(titleLabel, spacer());
+        row.addAllNodes(actionButtons);
         return row;
     }
 
     private static VBox sectionCard(String title, Node... body) {
         VBox card = new VBox(4);
-        card.getChildren().add(label(title, "session-planner-card-title"));
-        card.getChildren().addAll(body);
-        style(card, "session-planner-card");
+        addNodes(card, label(title, "session-planner-card-title"));
+        addNodes(card, body);
+        addStyles(card, "session-planner-card");
         return card;
-    }
-
-    private static void style(Node node, String... styleClasses) {
-        node.getStyleClass().addAll(styleClasses);
     }
 
     private static Region spacer() {
         Region region = new Region();
         HBox.setHgrow(region, Priority.ALWAYS);
         return region;
+    }
+
+    private static void addNodes(VBox box, Node... children) {
+        box.getChildren().addAll(children);
+    }
+
+    private static void setNodes(VBox box, Node child) {
+        box.getChildren().setAll(child);
+    }
+
+    private static void setNodes(VBox box, List<Node> children) {
+        box.getChildren().setAll(children);
+    }
+
+    private static void addStyles(Node node, String... styleClasses) {
+        node.getStyleClass().addAll(styleClasses);
+    }
+
+    private static void showBudgetStyle(ProgressBar progressBar, String styleClass) {
+        progressBar.getStyleClass().removeAll(STYLE_BUDGET_OK, STYLE_BUDGET_OVER);
+        progressBar.getStyleClass().add(styleClass);
+    }
+
+    private static final class ActionRow extends HBox {
+
+        private ActionRow(double spacing) {
+            super(spacing);
+            setAlignment(Pos.CENTER_LEFT);
+        }
+
+        private void addAllNodes(Node... children) {
+            getChildren().addAll(children);
+        }
+
+        private void addStyles(String... styleClasses) {
+            getStyleClass().addAll(styleClasses);
+        }
+    }
+
+    private static final class GrowingFieldRow extends HBox {
+
+        private GrowingFieldRow(Node label, TextField field, Button button) {
+            super(6, label, field, button);
+            setHgrow(field, Priority.ALWAYS);
+        }
+    }
+
+    private static final class StyledLabel extends Label {
+
+        private StyledLabel(String text, String... styleClasses) {
+            super(text);
+            setWrapText(true);
+            getStyleClass().addAll(styleClasses);
+        }
+    }
+
+    private static final class StyledButton extends Button {
+
+        private StyledButton(String text, String... styleClasses) {
+            super(text);
+            getStyleClass().addAll(styleClasses);
+        }
     }
 }

@@ -1,10 +1,7 @@
 package src.domain.encounter.model.generation.model;
 
-import java.io.Serial;
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Comparator;
 import java.util.List;
 
 final class EncounterDraftRankingModel {
@@ -14,7 +11,7 @@ final class EncounterDraftRankingModel {
 
     static List<EncounterDraft> topDrafts(Collection<EncounterDraft> drafts, int limit) {
         List<EncounterDraft> sortedDrafts = new ArrayList<>(drafts);
-        sortedDrafts.sort(new DraftRankComparator());
+        sortedDrafts.sort(EncounterDraftRankingModel::compareDraftRanks);
         if (sortedDrafts.size() <= limit) {
             return List.copyOf(sortedDrafts);
         }
@@ -30,21 +27,15 @@ final class EncounterDraftRankingModel {
         return Math.abs(metrics.adjustedXp() - metrics.targetAdjustedXp());
     }
 
-    private static final class DraftRankComparator implements Comparator<EncounterDraft>, Serializable {
-        @Serial
-        private static final long serialVersionUID = 1L;
-
-        @Override
-        public int compare(EncounterDraft left, EncounterDraft right) {
-            int scoreComparison = Integer.compare(score(right), score(left));
-            if (scoreComparison != 0) {
-                return scoreComparison;
-            }
-            int distanceComparison = Integer.compare(targetDistance(left), targetDistance(right));
-            if (distanceComparison != 0) {
-                return distanceComparison;
-            }
-            return String.CASE_INSENSITIVE_ORDER.compare(left.title(), right.title());
+    private static int compareDraftRanks(EncounterDraft left, EncounterDraft right) {
+        int scoreComparison = Integer.compare(score(right), score(left));
+        if (scoreComparison != 0) {
+            return scoreComparison;
         }
+        int distanceComparison = Integer.compare(targetDistance(left), targetDistance(right));
+        if (distanceComparison != 0) {
+            return distanceComparison;
+        }
+        return String.CASE_INSENSITIVE_ORDER.compare(left.title(), right.title());
     }
 }

@@ -1,38 +1,43 @@
-package src.domain.party.application;
+package src.domain.party.model.roster.usecase;
 
 import java.util.List;
 import java.util.Objects;
 import src.domain.party.model.roster.model.PartyMutationStatus;
 import src.domain.party.model.roster.model.PartyRoster;
 import src.domain.party.model.roster.model.PartyRosterMutation;
+import src.domain.party.model.roster.repository.PartyEncounterSessionRepository;
 import src.domain.party.model.roster.repository.PartyPublishedStateRepository;
 import src.domain.party.model.roster.repository.PartyRosterRepository;
 
-public final class AwardPartyXpUseCase {
+public final class AdjustPartyXpUseCase {
 
     private final PartyRosterRepository repository;
     private final PartyPublishedStateRepository publishedStateRepository;
+    private final PartyEncounterSessionRepository encounterSessionRepository;
 
-    public AwardPartyXpUseCase(
+    public AdjustPartyXpUseCase(
             PartyRosterRepository repository,
-            PartyPublishedStateRepository publishedStateRepository
+            PartyPublishedStateRepository publishedStateRepository,
+            PartyEncounterSessionRepository encounterSessionRepository
     ) {
         this.repository = Objects.requireNonNull(repository, "repository");
         this.publishedStateRepository = Objects.requireNonNull(publishedStateRepository, "publishedStateRepository");
+        this.encounterSessionRepository =
+                Objects.requireNonNull(encounterSessionRepository, "encounterSessionRepository");
     }
 
-    public void execute(List<Long> ids, int xpPerCharacter) {
+    public void execute(List<Long> ids, int xpDelta) {
         try {
-            PartyMutationStatus status = award(ids, Math.max(0, xpPerCharacter));
+            PartyMutationStatus status = adjust(ids, xpDelta);
             publish(status);
         } catch (IllegalStateException exception) {
-            publishedStateRepository.publishStorageErrorMutation();
+            publishedStateRepository.publishStorageErrorMutation(new PartyPublishedStateRepository.StatePublication());
         }
     }
 
-    private PartyMutationStatus award(List<Long> ids, int xpPerCharacter) {
+    private PartyMutationStatus adjust(List<Long> ids, int xpDelta) {
         PartyRoster roster = repository.load();
-        PartyRosterMutation mutation = roster.adjustXp(ids, xpPerCharacter);
+        PartyRosterMutation mutation = roster.adjustXp(ids, xpDelta);
         if (mutation.successful()) {
             repository.save(mutation.roster());
         }
@@ -41,7 +46,8 @@ public final class AwardPartyXpUseCase {
 
     private void publish(PartyMutationStatus status) {
         if (PartyMutationStatus.SUCCESS.equals(status)) {
-            publishedStateRepository.publishRepositoryBackedState();
+            publishedStateRepository.publishRepositoryBackedState(new PartyPublishedStateRepository.StatePublication());
+            encounterSessionRepository.refreshEncounterSession();
         }
         publishedStateRepository.publishMutationStatus(status);
     }

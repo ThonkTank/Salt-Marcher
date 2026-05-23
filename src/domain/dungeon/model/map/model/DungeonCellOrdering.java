@@ -1,9 +1,6 @@
 package src.domain.dungeon.model.map.model;
 
-import java.io.Serial;
-import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 
@@ -25,7 +22,7 @@ final class DungeonCellOrdering {
                 unique.add(cell);
             }
         }
-        unique.sort(new CellComparator());
+        unique.sort(DungeonCellOrdering::compareCells);
         return List.copyOf(unique);
     }
 
@@ -36,7 +33,7 @@ final class DungeonCellOrdering {
                 result.add(component);
             }
         }
-        result.sort(new ComponentComparator());
+        result.sort(DungeonCellOrdering::compareComponents);
         return List.copyOf(result);
     }
 
@@ -97,31 +94,15 @@ final class DungeonCellOrdering {
         return result;
     }
 
-    private static final class ComponentComparator implements Comparator<Set<DungeonCell>>, Serializable {
-        @Serial
-        private static final long serialVersionUID = 1L;
-
-        @Override
-        public int compare(Set<DungeonCell> left, Set<DungeonCell> right) {
-            int levelComparison = Integer.compare(minimumLevel(left), minimumLevel(right));
-            if (levelComparison != 0) {
-                return levelComparison;
-            }
-            int rowComparison = Integer.compare(minimumRow(left), minimumRow(right));
-            if (rowComparison != 0) {
-                return rowComparison;
-            }
-            return Integer.compare(minimumColumn(left), minimumColumn(right));
+    private static int compareComponents(Set<DungeonCell> left, Set<DungeonCell> right) {
+        int levelComparison = Integer.compare(minimumLevel(left), minimumLevel(right));
+        if (levelComparison != 0) {
+            return levelComparison;
         }
-    }
-
-    private static final class CellComparator implements Comparator<DungeonCell>, Serializable {
-        @Serial
-        private static final long serialVersionUID = 1L;
-
-        @Override
-        public int compare(DungeonCell left, DungeonCell right) {
-            return compareCells(left, right);
+        int rowComparison = Integer.compare(minimumRow(left), minimumRow(right));
+        if (rowComparison != 0) {
+            return rowComparison;
         }
+        return Integer.compare(minimumColumn(left), minimumColumn(right));
     }
 }
