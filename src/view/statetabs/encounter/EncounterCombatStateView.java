@@ -6,6 +6,7 @@ import java.util.function.Consumer;
 import java.util.function.IntConsumer;
 import javafx.application.Platform;
 import javafx.geometry.Pos;
+import javafx.geometry.Side;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.ContextMenu;
@@ -27,14 +28,13 @@ public final class EncounterCombatStateView extends VBox {
 
     private final Label combatRoundLabel = new CombatStyledLabel("", "title");
     private final Label combatStatusLabel = new CombatStyledLabel("", STYLE_TEXT_SECONDARY);
-    private final VBox combatCardList = new VBox(6);
-    private final HBox endCombatActions = new HBox(6);
+    private final CombatStyledVBox combatCardList = new CombatStyledVBox(6, "encounter-combat-card-list");
+    private final CombatActionBar endCombatActions = new CombatActionBar();
     private final Button addPartyButton = new CombatStyledButton("SC hinzufuegen", "compact", "neutral-action");
     private final VBox dialog = buildPane();
     private Consumer<EncounterCombatStateViewInputEvent> viewInputEventHandler = ignored -> { };
 
     public EncounterCombatStateView() {
-        combatCardList.getStyleClass().add("encounter-combat-card-list");
         addPartyButton.setId("encounter-add-party-button");
         getChildren().add(dialog);
         setVgrow(dialog, Priority.ALWAYS);
@@ -79,8 +79,7 @@ public final class EncounterCombatStateView extends VBox {
         HBox.setHgrow(endCombatActions, Priority.ALWAYS);
         HBox footer = new HBox(8, nextTurnButton, endCombatActions);
         footer.setAlignment(Pos.CENTER_LEFT);
-        VBox nextDialog = new VBox(10, header, combatCardList, footer);
-        nextDialog.getStyleClass().add("dialog-surface");
+        VBox nextDialog = new CombatStyledVBox(10, "dialog-surface", header, combatCardList, footer);
         setVgrow(combatCardList, Priority.ALWAYS);
         return nextDialog;
     }
@@ -94,23 +93,23 @@ public final class EncounterCombatStateView extends VBox {
         for (EncounterCombatStateContentModel.CardView card : cards == null ? List.<EncounterCombatStateContentModel.CardView>of() : cards) {
             cardNodes.add(new EncounterCombatCardPane(card, contentModel, actions));
         }
-        combatCardList.getChildren().setAll(cardNodes);
+        combatCardList.setContent(cardNodes);
     }
 
     private void showEndCombatState(boolean allEnemiesDefeated) {
         CombatStyledButton end = new CombatStyledButton(
                 "_Kampf beenden",
-                allEnemiesDefeated ? "accent" : "");
+                allEnemiesDefeated ? STYLE_ACCENT : "");
         end.setMaxWidth(Double.MAX_VALUE);
         HBox.setHgrow(end, Priority.ALWAYS);
         end.setOnAction(event -> showEndCombatConfirmState(allEnemiesDefeated));
-        endCombatActions.getChildren().setAll(end);
+        endCombatActions.setContent(end);
     }
 
     private void showEndCombatConfirmState(boolean allEnemiesDefeated) {
         CombatStyledButton cancel = new CombatStyledButton("Abbruch");
         CombatStyledButton confirm = allEnemiesDefeated
-                ? new CombatStyledButton("_Bestaetigen!", "accent")
+                ? new CombatStyledButton("_Bestaetigen!", STYLE_ACCENT)
                 : new CombatStyledButton("_Bestaetigen!");
         cancel.setMaxWidth(Double.MAX_VALUE);
         confirm.setMaxWidth(Double.MAX_VALUE);
@@ -118,7 +117,7 @@ public final class EncounterCombatStateView extends VBox {
         HBox.setHgrow(confirm, Priority.ALWAYS);
         cancel.setOnAction(event -> showEndCombatState(allEnemiesDefeated));
         confirm.setOnAction(event -> publish(new EncounterCombatStateViewInputEvent.EndCombatInput()));
-        endCombatActions.getChildren().setAll(cancel, confirm);
+        endCombatActions.setContent(cancel, confirm);
     }
 
     private void showPartyCandidates(
@@ -274,14 +273,9 @@ public final class EncounterCombatStateView extends VBox {
             getStyleClass().add("progress-meter");
             getStyleClass().add("progress-meter-combat");
             getStyleClass().add("clickable");
-            Region fill = new Region();
-            fill.getStyleClass().add("progress-meter-fill");
-            if (!display.fillStyleClass().isBlank()) {
-                fill.getStyleClass().add(display.fillStyleClass());
-            }
+            Region fill = new CombatProgressFill(display.fillStyleClass());
             fill.prefWidthProperty().bind(widthProperty().multiply(display.fraction()));
-            Label overlay = new Label(display.text());
-            overlay.getStyleClass().add("progress-meter-text");
+            Label overlay = new CombatProgressOverlayLabel(display.text());
             overlay.setMouseTransparent(true);
             getChildren().addAll(fill, overlay);
             setAlignment(fill, Pos.CENTER_LEFT);
@@ -325,7 +319,7 @@ public final class EncounterCombatStateView extends VBox {
                     spinnerButton("\u25B2", amountField, 1),
                     decrease,
                     increase);
-            popup.show(anchor, javafx.geometry.Side.BOTTOM, 0.0, 8.0);
+            popup.show(anchor, Side.BOTTOM, 0.0, 8.0);
             Platform.runLater(amountField::requestFocus);
         }
 
@@ -379,7 +373,7 @@ public final class EncounterCombatStateView extends VBox {
                 down.setOnAction(event -> initiativeField.adjust(10, -1));
                 up.setOnAction(event -> initiativeField.adjust(10, 1));
 
-                CombatStyledButton add = new CombatStyledButton("Hinzufuegen", "accent");
+                CombatStyledButton add = new CombatStyledButton("Hinzufuegen", STYLE_ACCENT);
                 add.setOnAction(event -> {
                     popup.hide();
                     selectionListener.onPartyMemberSelected(candidate.memberId(), initiativeField.parse(10));
@@ -398,7 +392,7 @@ public final class EncounterCombatStateView extends VBox {
                 }
             }
             popupContent.setContent(rows);
-            popup.show(anchor, javafx.geometry.Side.BOTTOM, 0.0, 8.0);
+            popup.show(anchor, Side.BOTTOM, 0.0, 8.0);
             if (firstField != null) {
                 EncounterPopupNumberField focusTarget = firstField;
                 Platform.runLater(focusTarget::requestFocus);
@@ -413,9 +407,6 @@ public final class EncounterCombatStateView extends VBox {
 
     private static final class EncounterInitiativeEditorPopup {
 
-        EncounterInitiativeEditorPopup() {
-        }
-
         void show(Node anchor, int currentInitiative, IntConsumer onApply) {
             if (anchor == null || onApply == null) {
                 return;
@@ -427,7 +418,7 @@ public final class EncounterCombatStateView extends VBox {
             Button up = spinnerButton("\u25B2");
             down.setOnAction(event -> field.adjust(currentInitiative, -1));
             up.setOnAction(event -> field.adjust(currentInitiative, 1));
-            CombatStyledButton set = new CombatStyledButton("\u2713 Setzen", EncounterCombatStateView.STYLE_ACCENT);
+            CombatStyledButton set = new CombatStyledButton("\u2713 Setzen", STYLE_ACCENT);
             set.setDefaultButton(true);
             set.setOnAction(event -> {
                 popup.hide();
@@ -435,7 +426,7 @@ public final class EncounterCombatStateView extends VBox {
             });
             field.setOnAction(event -> set.fire());
             popupContent.setContent(down, field, up, set);
-            popup.show(anchor, javafx.geometry.Side.BOTTOM, 0.0, 8.0);
+            popup.show(anchor, Side.BOTTOM, 0.0, 8.0);
             Platform.runLater(field::requestFocus);
         }
 
@@ -530,6 +521,35 @@ public final class EncounterCombatStateView extends VBox {
 
         void setContent(List<Node> rows) {
             getChildren().setAll(rows);
+        }
+    }
+
+    private static final class CombatActionBar extends HBox {
+
+        CombatActionBar() {
+            super(6);
+        }
+
+        void setContent(Node... nodes) {
+            getChildren().setAll(nodes);
+        }
+    }
+
+    private static final class CombatProgressFill extends Region {
+
+        CombatProgressFill(String displayStyleClass) {
+            getStyleClass().add("progress-meter-fill");
+            if (!displayStyleClass.isBlank()) {
+                getStyleClass().add(displayStyleClass);
+            }
+        }
+    }
+
+    private static final class CombatProgressOverlayLabel extends Label {
+
+        CombatProgressOverlayLabel(String text) {
+            super(text);
+            getStyleClass().add("progress-meter-text");
         }
     }
 }

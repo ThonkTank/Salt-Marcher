@@ -14,6 +14,11 @@ public record SaveDungeonEditorRoomNarrationCommand(
         exits = safeExits(exits);
     }
 
+    @Override
+    public List<ExitNarration> exits() {
+        return List.copyOf(exits);
+    }
+
     public SaveDungeonEditorRoomNarrationCommand(
             long roomId,
             String visualDescription,

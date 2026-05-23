@@ -475,7 +475,12 @@ public final class DungeonEditorMainViewInteractionValues {
 
     public record CorridorDraft(PendingCorridorTarget start, boolean present) {
         public CorridorDraft {
-            start = start == null ? PendingCorridorTarget.empty() : start;
+            start = copyPendingCorridorTarget(start == null ? PendingCorridorTarget.empty() : start);
+        }
+
+        @Override
+        public PendingCorridorTarget start() {
+            return copyPendingCorridorTarget(start);
         }
 
         public static CorridorDraft none() {
@@ -484,6 +489,18 @@ public final class DungeonEditorMainViewInteractionValues {
 
         public static CorridorDraft start(PendingCorridorTarget target) {
             return new CorridorDraft(target, true);
+        }
+
+        private static PendingCorridorTarget copyPendingCorridorTarget(PendingCorridorTarget target) {
+            if (target instanceof PendingCorridorTarget.EndpointTarget endpointTarget) {
+                return new PendingCorridorTarget.EndpointTarget(
+                        endpointTarget.targetKey(),
+                        endpointTarget.displayLabel(),
+                        endpointTarget.selection(),
+                        endpointTarget.deleteCorridorId(),
+                        endpointTarget.endpoint());
+            }
+            return PendingCorridorTarget.empty();
         }
     }
 

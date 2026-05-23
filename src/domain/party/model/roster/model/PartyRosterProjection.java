@@ -1,5 +1,7 @@
 package src.domain.party.model.roster.model;
 
+import java.io.Serial;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -60,14 +62,20 @@ public record PartyRosterProjection(
         return new PartyRosterProjection(activeMembers, reserveMembers, activeLevels, averageLevel);
     }
 
-    private static final class ActiveMemberComparator implements Comparator<PartyCharacter> {
+    private static final class ActiveMemberComparator implements Comparator<PartyCharacter>, Serializable {
+        @Serial
+        private static final long serialVersionUID = 1L;
+
         @Override
         public int compare(PartyCharacter first, PartyCharacter second) {
             return Long.compare(first.id(), second.id());
         }
     }
 
-    private static final class ReserveMemberComparator implements Comparator<PartyCharacter> {
+    private static final class ReserveMemberComparator implements Comparator<PartyCharacter>, Serializable {
+        @Serial
+        private static final long serialVersionUID = 1L;
+
         @Override
         public int compare(PartyCharacter first, PartyCharacter second) {
             int nameComparison = String.CASE_INSENSITIVE_ORDER.compare(
@@ -80,7 +88,10 @@ public record PartyRosterProjection(
         }
     }
 
-    private static final class ActiveLevelComparator implements Comparator<PartyCharacter> {
+    private static final class ActiveLevelComparator implements Comparator<PartyCharacter>, Serializable {
+        @Serial
+        private static final long serialVersionUID = 1L;
+
         @Override
         public int compare(PartyCharacter first, PartyCharacter second) {
             int levelComparison = Integer.compare(first.progress().level(), second.progress().level());

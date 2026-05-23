@@ -1,5 +1,6 @@
 package src.view.statetabs.encounter;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 import javafx.geometry.Pos;
@@ -30,7 +31,7 @@ public final class EncounterResultsStateView extends VBox {
     private final Label resultThresholdValueLabel = styledLabel("", "encounter-results-slider-value");
     private final Label resultFractionValueLabel = styledLabel("", "encounter-results-slider-value");
     private VBox controlsBox;
-    private final VBox resultEnemyList = enemyList();
+    private final EnemyList resultEnemyList = new EnemyList();
     private final Button resultAwardButton = new Button("XP verteilen");
     private final VBox dialog = buildPane();
     private Consumer<EncounterResultsStateViewInputEvent> viewInputEventHandler = ignored -> { };
@@ -80,8 +81,7 @@ public final class EncounterResultsStateView extends VBox {
         VBox header = new VBox(2, title, resultSubtitleLabel);
         HBox footer = new HBox(8, resultAwardButton, doneButton);
         footer.setAlignment(Pos.CENTER_LEFT);
-        VBox nextDialog = new VBox(10, header, body, footer);
-        nextDialog.getStyleClass().add("dialog-surface");
+        VBox nextDialog = new StyledVBox("dialog-surface", 10, header, body, footer);
         setVgrow(body, Priority.ALWAYS);
         return nextDialog;
     }
@@ -147,16 +147,11 @@ public final class EncounterResultsStateView extends VBox {
     }
 
     private static Label styledLabel(String text, String... styleClasses) {
-        Label label = new Label(text);
-        label.getStyleClass().addAll(styleClasses);
-        return label;
+        return new StyledLabel(text, styleClasses);
     }
 
     private void publish(boolean awardExperienceRequested, boolean returnToBuilderRequested) {
-        List<Boolean> selectedEnemies = new java.util.ArrayList<>();
-        for (Node node : resultEnemyList.getChildren()) {
-            selectedEnemies.add(node instanceof CheckBox checkBox && checkBox.isSelected());
-        }
+        List<Boolean> selectedEnemies = resultEnemyList.selectedEnemies();
         viewInputEventHandler.accept(new EncounterResultsStateViewInputEvent(
                 awardExperienceRequested,
                 returnToBuilderRequested,
@@ -166,28 +161,67 @@ public final class EncounterResultsStateView extends VBox {
     }
 
     private void showEnemies(List<EncounterResultsStateContentModel.EnemyView> enemies) {
-        resultEnemyList.getChildren().clear();
-        List<EncounterResultsStateContentModel.EnemyView> safeEnemies = enemies == null ? List.of() : enemies;
-        for (EncounterResultsStateContentModel.EnemyView enemy : safeEnemies) {
-            CheckBox toggle = new CheckBox(enemy.name() + " (" + enemy.status() + ") - " + enemy.loot());
-            toggle.getStyleClass().add(STYLE_TEXT_SECONDARY);
-            toggle.setSelected(enemy.selected());
-            toggle.selectedProperty().addListener((obs, oldValue, newValue) -> publishSelection());
-            resultEnemyList.getChildren().add(toggle);
-        }
-    }
-
-    private static VBox enemyList() {
-        VBox list = new VBox(4);
-        list.getStyleClass().add("encounter-results-enemy-list");
-        return list;
+        resultEnemyList.showEnemies(enemies, this::publishSelection);
     }
 
     private static final class StyledVBox extends VBox {
 
-        private StyledVBox(String styleClass, double spacing, javafx.scene.Node... children) {
+        private StyledVBox(String styleClass, double spacing, Node... children) {
             super(spacing, children);
             getStyleClass().add(styleClass);
+        }
+    }
+
+    private static final class EnemyList extends VBox {
+
+        private EnemyList() {
+            super(4);
+            getStyleClass().add("encounter-results-enemy-list");
+        }
+
+        private void showEnemies(
+                List<EncounterResultsStateContentModel.EnemyView> enemies,
+                Runnable selectionHandler
+        ) {
+            getChildren().clear();
+            List<EncounterResultsStateContentModel.EnemyView> safeEnemies = enemies == null ? List.of() : enemies;
+            for (EncounterResultsStateContentModel.EnemyView enemy : safeEnemies) {
+                getChildren().add(enemyToggle(enemy, selectionHandler));
+            }
+        }
+
+        private List<Boolean> selectedEnemies() {
+            List<Boolean> selectedEnemies = new ArrayList<>();
+            for (Node node : getChildren()) {
+                selectedEnemies.add(node instanceof CheckBox checkBox && checkBox.isSelected());
+            }
+            return selectedEnemies;
+        }
+
+        private static CheckBox enemyToggle(
+                EncounterResultsStateContentModel.EnemyView enemy,
+                Runnable selectionHandler
+        ) {
+            CheckBox toggle = new EnemyToggle(enemy);
+            toggle.setSelected(enemy.selected());
+            toggle.selectedProperty().addListener((obs, oldValue, newValue) -> selectionHandler.run());
+            return toggle;
+        }
+    }
+
+    private static final class StyledLabel extends Label {
+
+        private StyledLabel(String text, String... styleClasses) {
+            super(text);
+            getStyleClass().addAll(styleClasses);
+        }
+    }
+
+    private static final class EnemyToggle extends CheckBox {
+
+        private EnemyToggle(EncounterResultsStateContentModel.EnemyView enemy) {
+            super(enemy.name() + " (" + enemy.status() + ") - " + enemy.loot());
+            getStyleClass().add(STYLE_TEXT_SECONDARY);
         }
     }
 }

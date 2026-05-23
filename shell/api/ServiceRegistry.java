@@ -1,9 +1,11 @@
 package shell.api;
 
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
 
 /**
@@ -12,9 +14,20 @@ import java.util.function.Function;
 public final class ServiceRegistry {
 
     private final Map<Class<?>, Object> services;
+    private final Map<Class<?>, Function<ServiceRegistry, ?>> factories;
+    private final Set<Class<?>> resolving = new LinkedHashSet<>();
 
     private ServiceRegistry(Map<Class<?>, Object> services) {
-        this.services = Map.copyOf(services);
+        this(services, Map.of(), true);
+    }
+
+    private ServiceRegistry(
+            Map<Class<?>, Object> services,
+            Map<Class<?>, Function<ServiceRegistry, ?>> factories,
+            boolean immutable
+    ) {
+        this.services = immutable ? Map.copyOf(services) : services;
+        this.factories = immutable ? Map.copyOf(factories) : factories;
     }
 
     public static ServiceRegistry empty() {
@@ -23,13 +36,33 @@ public final class ServiceRegistry {
 
     public <T> Optional<T> find(Class<T> serviceType) {
         Objects.requireNonNull(serviceType, "serviceType");
-        Object service = services.get(serviceType);
+        Object service = service(serviceType);
         return service == null ? Optional.empty() : Optional.of(serviceType.cast(service));
     }
 
     public <T> T require(Class<T> serviceType) {
         return find(serviceType)
                 .orElseThrow(() -> new IllegalStateException("Runtime service not registered: " + serviceType.getName()));
+    }
+
+    private Object service(Class<?> serviceType) {
+        Object service = services.get(serviceType);
+        if (service != null || !factories.containsKey(serviceType)) {
+            return service;
+        }
+        if (!resolving.add(serviceType)) {
+            throw new IllegalStateException("Runtime service factory cycle: " + resolving);
+        }
+        try {
+            Function<ServiceRegistry, ?> factory = factories.get(serviceType);
+            Object created = Objects.requireNonNull(
+                    factory.apply(this),
+                    () -> "Runtime service factory returned null: " + serviceType.getName());
+            services.put(serviceType, created);
+            return created;
+        } finally {
+            resolving.remove(serviceType);
+        }
     }
 
     public static final class Builder {
@@ -40,6 +73,9 @@ public final class ServiceRegistry {
         public <T> Builder register(Class<T> serviceType, T service) {
             Objects.requireNonNull(serviceType, "serviceType");
             Objects.requireNonNull(service, "service");
+            if (factories.containsKey(serviceType)) {
+                throw new IllegalStateException("Runtime service already registered: " + serviceType.getName());
+            }
             Object previous = services.putIfAbsent(serviceType, service);
             if (previous != null) {
                 throw new IllegalStateException("Runtime service already registered: " + serviceType.getName());
@@ -58,19 +94,14 @@ public final class ServiceRegistry {
         }
 
         public ServiceRegistry build() {
-            Map<Class<?>, Object> resolved = new LinkedHashMap<>(services);
-            ServiceRegistry visibleRegistry = new ServiceRegistry(resolved);
-            for (Map.Entry<Class<?>, Function<ServiceRegistry, ?>> entry : factories.entrySet()) {
-                Object service = Objects.requireNonNull(
-                        entry.getValue().apply(visibleRegistry),
-                        () -> "Runtime service factory returned null: " + entry.getKey().getName());
-                Object previous = resolved.putIfAbsent(entry.getKey(), service);
-                if (previous != null) {
-                    throw new IllegalStateException("Runtime service already registered: " + entry.getKey().getName());
-                }
-                visibleRegistry = new ServiceRegistry(resolved);
+            ServiceRegistry registry = new ServiceRegistry(
+                    new LinkedHashMap<>(services),
+                    new LinkedHashMap<>(factories),
+                    false);
+            for (Class<?> serviceType : factories.keySet()) {
+                registry.require(serviceType);
             }
-            return visibleRegistry;
+            return new ServiceRegistry(registry.services);
         }
     }
 }

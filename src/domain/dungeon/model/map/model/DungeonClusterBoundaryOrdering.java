@@ -1,5 +1,7 @@
 package src.domain.dungeon.model.map.model;
 
+import java.io.Serial;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
@@ -46,7 +48,10 @@ final class DungeonClusterBoundaryOrdering {
         return Map.copyOf(result);
     }
 
-    private static final class BoundaryComparator implements Comparator<DungeonClusterBoundary> {
+    private static final class BoundaryComparator implements Comparator<DungeonClusterBoundary>, Serializable {
+        @Serial
+        private static final long serialVersionUID = 1L;
+
         @Override
         public int compare(DungeonClusterBoundary left, DungeonClusterBoundary right) {
             int rowComparison = Integer.compare(left.relativeCell().r(), right.relativeCell().r());

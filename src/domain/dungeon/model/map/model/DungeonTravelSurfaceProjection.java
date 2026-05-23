@@ -1,12 +1,13 @@
 package src.domain.dungeon.model.map.model;
 
-import org.jspecify.annotations.Nullable;
-
+import java.io.Serial;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import org.jspecify.annotations.Nullable;
 
 public final class DungeonTravelSurfaceProjection {
 
@@ -237,7 +238,10 @@ public final class DungeonTravelSurfaceProjection {
         }
     }
 
-    private static final class TravelActionComparator implements Comparator<DungeonTravelActionFacts> {
+    private static final class TravelActionComparator implements Comparator<DungeonTravelActionFacts>, Serializable {
+        @Serial
+        private static final long serialVersionUID = 1L;
+
         @Override
         public int compare(DungeonTravelActionFacts left, DungeonTravelActionFacts right) {
             String leftLabel = left == null ? "" : left.displayLabel();

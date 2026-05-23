@@ -26,19 +26,6 @@ final class EncounterTableSqliteStore {
                     + "LEFT JOIN " + EncounterTablePersistenceSchema.ENCOUNTER_TABLE_LOOT_LINKS.name()
                     + " l ON l.table_id = t.table_id "
                     + "ORDER BY LOWER(t.name), t.table_id";
-    private static final String LOAD_GENERATION_CANDIDATES_SQL =
-            "SELECT c.id, c.name, c.creature_type, c.cr, c.xp, c.hp, "
-                    + "c.hit_dice_count, c.hit_dice_sides, c.hit_dice_modifier, "
-                    + "c.ac, c.initiative_bonus, c.legendary_action_count, MAX(e.weight) AS weight "
-                    + "FROM " + EncounterTablePersistenceSchema.ENCOUNTER_TABLE_ENTRIES.name() + " e "
-                    + "JOIN " + EncounterTablePersistenceSchema.REFERENCED_CREATURES_TABLE_NAME
-                    + " c ON c.id = e.creature_id "
-                    + "WHERE e.table_id IN (SELECT table_id FROM " + TEMP_SELECTED_TABLE_IDS + ") "
-                    + "AND c.xp <= ? "
-                    + "GROUP BY c.id, c.name, c.creature_type, c.cr, c.xp, c.hp, "
-                    + "c.hit_dice_count, c.hit_dice_sides, c.hit_dice_modifier, "
-                    + "c.ac, c.initiative_bonus, c.legendary_action_count "
-                    + "ORDER BY c.xp ASC, LOWER(c.name) ASC";
 
     List<EncounterTableSummaryRecord> loadSummaries(Connection connection) throws SQLException {
         try (PreparedStatement statement = connection.prepareStatement(LOAD_SUMMARIES_SQL);
@@ -63,7 +50,18 @@ final class EncounterTableSqliteStore {
             return List.of();
         }
         prepareSelectedTableIds(connection, tableIds);
-        try (PreparedStatement statement = connection.prepareStatement(LOAD_GENERATION_CANDIDATES_SQL)) {
+        try (PreparedStatement statement = connection.prepareStatement(
+                "SELECT c.id, c.name, c.creature_type, c.cr, c.xp, c.hp, "
+                        + "c.hit_dice_count, c.hit_dice_sides, c.hit_dice_modifier, "
+                        + "c.ac, c.initiative_bonus, c.legendary_action_count, MAX(e.weight) AS weight "
+                        + "FROM " + EncounterTablePersistenceSchema.ENCOUNTER_TABLE_ENTRIES_TABLE + " e "
+                        + "JOIN creatures c ON c.id = e.creature_id "
+                        + "WHERE e.table_id IN (SELECT table_id FROM sm_temp_selected_encounter_table_ids) "
+                        + "AND c.xp <= ? "
+                        + "GROUP BY c.id, c.name, c.creature_type, c.cr, c.xp, c.hp, "
+                        + "c.hit_dice_count, c.hit_dice_sides, c.hit_dice_modifier, "
+                        + "c.ac, c.initiative_bonus, c.legendary_action_count "
+                        + "ORDER BY c.xp ASC, LOWER(c.name) ASC")) {
             statement.setInt(1, maximumXp);
             return readCandidates(statement);
         } finally {

@@ -1,12 +1,14 @@
 package src.domain.sessionplanner.model.session.usecase;
 
+import java.util.Objects;
+import java.util.function.LongSupplier;
 import src.domain.sessionplanner.model.session.repository.SessionPlanRepository;
 
 public final class CreateSessionPlanUseCase {
 
     private static final long INITIAL_SESSION_ID = 1L;
 
-    private final SessionPlanRepository repository;
+    private final LongSupplier nextSessionIdReader;
     private final SaveCurrentSessionPlanUseCase saveCurrentSessionPlanUseCase;
     private final SeedSessionPlanUseCase seedSessionPlanUseCase;
 
@@ -15,9 +17,11 @@ public final class CreateSessionPlanUseCase {
             SaveCurrentSessionPlanUseCase saveCurrentSessionPlanUseCase,
             SeedSessionPlanUseCase seedSessionPlanUseCase
     ) {
-        this.repository = repository;
-        this.saveCurrentSessionPlanUseCase = saveCurrentSessionPlanUseCase;
-        this.seedSessionPlanUseCase = seedSessionPlanUseCase;
+        nextSessionIdReader = Objects.requireNonNull(repository, "repository")::nextSessionId;
+        this.saveCurrentSessionPlanUseCase = Objects.requireNonNull(
+                saveCurrentSessionPlanUseCase,
+                "saveCurrentSessionPlanUseCase");
+        this.seedSessionPlanUseCase = Objects.requireNonNull(seedSessionPlanUseCase, "seedSessionPlanUseCase");
     }
 
     public void execute() {
@@ -27,7 +31,7 @@ public final class CreateSessionPlanUseCase {
 
     private long nextSessionId() {
         try {
-            return Math.max(INITIAL_SESSION_ID, repository.nextSessionId());
+            return Math.max(INITIAL_SESSION_ID, nextSessionIdReader.getAsLong());
         } catch (IllegalStateException exception) {
             return INITIAL_SESSION_ID;
         }

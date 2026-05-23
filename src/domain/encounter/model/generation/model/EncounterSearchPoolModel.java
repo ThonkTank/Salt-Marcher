@@ -1,5 +1,7 @@
 package src.domain.encounter.model.generation.model;
 
+import java.io.Serial;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
@@ -73,7 +75,9 @@ final class EncounterSearchPoolModel {
         }
     }
 
-    private static final class ClosestFitComparator implements Comparator<EncounterCandidateProfile> {
+    private static final class ClosestFitComparator implements Comparator<EncounterCandidateProfile>, Serializable {
+        @Serial
+        private static final long serialVersionUID = 1L;
 
         private final int targetXp;
 
@@ -87,7 +91,9 @@ final class EncounterSearchPoolModel {
         }
     }
 
-    private static final class CandidateLowXpComparator implements Comparator<EncounterCandidateProfile> {
+    private static final class CandidateLowXpComparator implements Comparator<EncounterCandidateProfile>, Serializable {
+        @Serial
+        private static final long serialVersionUID = 1L;
 
         @Override
         public int compare(EncounterCandidateProfile left, EncounterCandidateProfile right) {

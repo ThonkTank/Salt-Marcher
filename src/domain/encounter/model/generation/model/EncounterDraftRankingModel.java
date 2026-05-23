@@ -1,5 +1,7 @@
 package src.domain.encounter.model.generation.model;
 
+import java.io.Serial;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
@@ -28,7 +30,9 @@ final class EncounterDraftRankingModel {
         return Math.abs(metrics.adjustedXp() - metrics.targetAdjustedXp());
     }
 
-    private static final class DraftRankComparator implements Comparator<EncounterDraft> {
+    private static final class DraftRankComparator implements Comparator<EncounterDraft>, Serializable {
+        @Serial
+        private static final long serialVersionUID = 1L;
 
         @Override
         public int compare(EncounterDraft left, EncounterDraft right) {

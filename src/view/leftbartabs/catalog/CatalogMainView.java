@@ -17,7 +17,6 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 
-@SuppressWarnings({"PMD.CouplingBetweenObjects", "PMD.AvoidDuplicateLiterals", "PMD.TooManyStaticImports"})
 public final class CatalogMainView extends BorderPane {
 
     private static final int FIRST_COLUMN_INDEX = 0;
@@ -98,8 +97,8 @@ public final class CatalogMainView extends BorderPane {
     private void publishSortSelection(String sortKey) {
         viewInputEventHandler.accept(new CatalogMainViewInputEvent(
                 sortKey,
-                0L,
-                0L,
+                NO_CREATURE_ID,
+                NO_CREATURE_ID,
                 0));
     }
 
@@ -116,15 +115,15 @@ public final class CatalogMainView extends BorderPane {
             return;
         }
         viewInputEventHandler.accept(addCreature
-                ? new CatalogMainViewInputEvent("", 0L, creatureId, 0)
-                : new CatalogMainViewInputEvent("", creatureId, 0L, 0));
+                ? new CatalogMainViewInputEvent("", NO_CREATURE_ID, creatureId, 0)
+                : new CatalogMainViewInputEvent("", creatureId, NO_CREATURE_ID, 0));
     }
 
     private void publishPageShift(int pageShift) {
         viewInputEventHandler.accept(new CatalogMainViewInputEvent(
                 "",
-                0L,
-                0L,
+                NO_CREATURE_ID,
+                NO_CREATURE_ID,
                 pageShift));
     }
 

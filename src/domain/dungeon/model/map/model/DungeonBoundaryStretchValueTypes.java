@@ -276,6 +276,16 @@ public final class DungeonBoundaryStretchValueTypes {
             boundariesByLevel = copyListsByLevel(boundariesByLevel);
         }
 
+        @Override
+        public Map<Integer, List<DungeonCell>> cellsByLevel() {
+            return copyListsByLevel(cellsByLevel);
+        }
+
+        @Override
+        public Map<Integer, List<DungeonClusterBoundary>> boundariesByLevel() {
+            return copyListsByLevel(boundariesByLevel);
+        }
+
         private static <T> Map<Integer, List<T>> copyListsByLevel(Map<Integer, List<T>> source) {
             Map<Integer, List<T>> result = new LinkedHashMap<>();
             for (Map.Entry<Integer, List<T>> entry

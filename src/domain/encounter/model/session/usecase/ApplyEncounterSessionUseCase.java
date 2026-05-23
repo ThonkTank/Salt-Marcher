@@ -15,7 +15,7 @@ public final class ApplyEncounterSessionUseCase {
     }
 
     public EncounterSession session() {
-        return session;
+        return session.apply(EncounterSessionCommand.refresh(), runtimeAccess);
     }
 
     public EncounterSession apply(EncounterSessionCommand command) {

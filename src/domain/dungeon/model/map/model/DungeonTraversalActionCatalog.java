@@ -1,12 +1,13 @@
 package src.domain.dungeon.model.map.model;
 
-import org.jspecify.annotations.Nullable;
-
+import java.io.Serial;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import org.jspecify.annotations.Nullable;
 
 final class DungeonTraversalActionCatalog {
 
@@ -269,7 +270,10 @@ final class DungeonTraversalActionCatalog {
     ) {
     }
 
-    private static final class TraversalCandidateComparator implements Comparator<TraversalCandidate> {
+    private static final class TraversalCandidateComparator implements Comparator<TraversalCandidate>, Serializable {
+        @Serial
+        private static final long serialVersionUID = 1L;
+
         @Override
         public int compare(TraversalCandidate left, TraversalCandidate right) {
             int sourceComparison = Integer.compare(sourceOrder(left), sourceOrder(right));

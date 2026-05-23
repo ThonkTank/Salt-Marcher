@@ -15,7 +15,7 @@ import javafx.scene.layout.VBox;
 
 public final class EncounterInitiativeStateView extends VBox {
 
-    private final VBox initiativeList = initiativeList();
+    private final InitiativeList initiativeList = new InitiativeList();
     private final VBox dialog = buildPane();
     private Consumer<EncounterInitiativeStateViewInputEvent> viewInputEventHandler = ignored -> { };
 
@@ -40,15 +40,15 @@ public final class EncounterInitiativeStateView extends VBox {
         if (panel == null) {
             return;
         }
-        initiativeList.getChildren().clear();
+        initiativeList.clearContent();
         String currentKind = "";
         for (EncounterInitiativeStateContentModel.EntryView entry : panel.entries()) {
             if (!entry.kind().equals(currentKind)) {
                 currentKind = entry.kind();
                 Label header = sectionHeader("SC".equals(currentKind) ? "Spieler" : currentKind);
-                initiativeList.getChildren().add(header);
+                initiativeList.addContent(header);
             }
-            initiativeList.getChildren().add(buildInitiativeRow(entry));
+            initiativeList.addContent(buildInitiativeRow(entry));
         }
     }
 
@@ -63,8 +63,7 @@ public final class EncounterInitiativeStateView extends VBox {
         startButton.setOnAction(event -> publishInitiativeConfirmation());
         HBox footer = new HBox(8, backButton, rollAllButton, footerSpacer(), startButton);
         footer.setAlignment(Pos.CENTER_LEFT);
-        VBox nextDialog = new VBox(10, title, initiativeList, footer);
-        nextDialog.getStyleClass().add("dialog-surface");
+        VBox nextDialog = new StyledVBox(10, "dialog-surface", title, initiativeList, footer);
         setVgrow(initiativeList, Priority.ALWAYS);
         return nextDialog;
     }
@@ -85,31 +84,16 @@ public final class EncounterInitiativeStateView extends VBox {
 
     private void rollAllInitiatives() {
         int seed = 13;
-        for (Node rowNode : initiativeList.getChildren()) {
-            if (rowNode instanceof HBox row) {
-                for (Node rowChild : row.getChildren()) {
-                    if (rowChild instanceof ValueSpinner spinner) {
-                        spinner.setNumericValue(seed);
-                        seed = seed == 19 ? 11 : seed + 2;
-                    }
-                }
-            }
+        for (ValueSpinner spinner : initiativeList.spinners()) {
+            spinner.setNumericValue(seed);
+            seed = seed == 19 ? 11 : seed + 2;
         }
     }
 
     private void publishInitiativeConfirmation() {
         List<EncounterInitiativeStateViewInputEvent.InitiativeEntry> inputs = new ArrayList<>();
-        for (Node rowNode : initiativeList.getChildren()) {
-            if (rowNode instanceof HBox row) {
-                for (Node rowChild : row.getChildren()) {
-                    if (rowChild instanceof Spinner<?> spinner) {
-                        spinner.commitValue();
-                        inputs.add(new EncounterInitiativeStateViewInputEvent.InitiativeEntry(
-                                String.valueOf(spinner.getUserData()),
-                                ((Number) spinner.getValue()).intValue()));
-                    }
-                }
-            }
+        for (ValueSpinner spinner : initiativeList.spinners()) {
+            inputs.add(spinner.confirmedInput());
         }
         publish(new EncounterInitiativeStateViewInputEvent(false, inputs));
     }
@@ -128,12 +112,6 @@ public final class EncounterInitiativeStateView extends VBox {
         return spacer;
     }
 
-    private static VBox initiativeList() {
-        VBox list = new VBox(6);
-        list.getStyleClass().add("encounter-initiative-list");
-        return list;
-    }
-
     private static final class StyledLabel extends Label {
 
         private StyledLabel(String text, String... styleClasses) {
@@ -150,6 +128,14 @@ public final class EncounterInitiativeStateView extends VBox {
         }
     }
 
+    private static final class StyledVBox extends VBox {
+
+        private StyledVBox(double spacing, String styleClass, Node... nodes) {
+            super(spacing, nodes);
+            getStyleClass().add(styleClass);
+        }
+    }
+
     private static final class ValueSpinner extends Spinner<Integer> {
 
         private ValueSpinner(int initiative) {
@@ -159,6 +145,13 @@ public final class EncounterInitiativeStateView extends VBox {
 
         private void setNumericValue(int initiative) {
             getValueFactory().setValue(initiative);
+        }
+
+        private EncounterInitiativeStateViewInputEvent.InitiativeEntry confirmedInput() {
+            commitValue();
+            return new EncounterInitiativeStateViewInputEvent.InitiativeEntry(
+                    String.valueOf(getUserData()),
+                    getValue().intValue());
         }
     }
 
@@ -172,6 +165,42 @@ public final class EncounterInitiativeStateView extends VBox {
 
         private void addContent(Node... nodes) {
             getChildren().addAll(nodes);
+        }
+
+        private List<ValueSpinner> spinners() {
+            List<ValueSpinner> values = new ArrayList<>();
+            for (Node rowChild : getChildren()) {
+                if (rowChild instanceof ValueSpinner spinner) {
+                    values.add(spinner);
+                }
+            }
+            return values;
+        }
+    }
+
+    private static final class InitiativeList extends VBox {
+
+        private InitiativeList() {
+            super(6);
+            getStyleClass().add("encounter-initiative-list");
+        }
+
+        private void clearContent() {
+            getChildren().clear();
+        }
+
+        private void addContent(Node node) {
+            getChildren().add(node);
+        }
+
+        private List<ValueSpinner> spinners() {
+            List<ValueSpinner> values = new ArrayList<>();
+            for (Node rowNode : getChildren()) {
+                if (rowNode instanceof InitiativeRow row) {
+                    values.addAll(row.spinners());
+                }
+            }
+            return values;
         }
     }
 }

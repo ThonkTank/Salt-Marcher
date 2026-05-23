@@ -1,5 +1,7 @@
 package src.domain.dungeon.model.map.model;
 
+import java.io.Serial;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -95,7 +97,10 @@ final class DungeonCellOrdering {
         return result;
     }
 
-    private static final class ComponentComparator implements Comparator<Set<DungeonCell>> {
+    private static final class ComponentComparator implements Comparator<Set<DungeonCell>>, Serializable {
+        @Serial
+        private static final long serialVersionUID = 1L;
+
         @Override
         public int compare(Set<DungeonCell> left, Set<DungeonCell> right) {
             int levelComparison = Integer.compare(minimumLevel(left), minimumLevel(right));
@@ -110,7 +115,10 @@ final class DungeonCellOrdering {
         }
     }
 
-    private static final class CellComparator implements Comparator<DungeonCell> {
+    private static final class CellComparator implements Comparator<DungeonCell>, Serializable {
+        @Serial
+        private static final long serialVersionUID = 1L;
+
         @Override
         public int compare(DungeonCell left, DungeonCell right) {
             return compareCells(left, right);

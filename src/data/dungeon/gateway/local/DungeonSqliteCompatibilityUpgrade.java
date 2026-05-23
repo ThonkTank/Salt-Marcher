@@ -9,7 +9,6 @@ import java.sql.Statement;
 final class DungeonSqliteCompatibilityUpgrade {
 
     private static final String SQL_FROM = " FROM ";
-    private static final String SQL_UPDATE = "UPDATE ";
     private static final String SQL_WHERE = " WHERE ";
     private static final String STRUCTURE_OBJECT_ID_REFERENCE = ".structure_object_id = ";
     private static final String COLUMN_LEVEL_Z = "level_z";
@@ -32,29 +31,35 @@ final class DungeonSqliteCompatibilityUpgrade {
                 || !hasLegacyRoomClusterStructureObjectColumn(connection)) {
             return;
         }
-        String roomClusters = DungeonPersistenceSchema.ROOM_CLUSTERS_TABLE;
-        String structureLevels = DungeonPersistenceSchema.LEGACY_STRUCTURE_LEVELS_TABLE;
         try (Statement statement = connection.createStatement()) {
             statement.executeUpdate(
-                    SQL_UPDATE + roomClusters
+                    "UPDATE " + DungeonPersistenceSchema.ROOM_CLUSTERS_TABLE
                             + " SET center_x = COALESCE(("
-                            + "SELECT CAST(anchor_x2 / 2 AS INTEGER)" + SQL_FROM + structureLevels
-                            + SQL_WHERE + structureLevels + STRUCTURE_OBJECT_ID_REFERENCE
-                            + roomClusters + STRUCTURE_OBJECT_ID_REFERENCE
+                            + "SELECT CAST(anchor_x2 / 2 AS INTEGER)" + SQL_FROM
+                            + DungeonPersistenceSchema.LEGACY_STRUCTURE_LEVELS_TABLE
+                            + SQL_WHERE + DungeonPersistenceSchema.LEGACY_STRUCTURE_LEVELS_TABLE
+                            + STRUCTURE_OBJECT_ID_REFERENCE
+                            + DungeonPersistenceSchema.ROOM_CLUSTERS_TABLE + STRUCTURE_OBJECT_ID_REFERENCE
                             + " ORDER BY level_z LIMIT 1), center_x),"
                             + " center_y = COALESCE(("
-                            + "SELECT CAST(anchor_y2 / 2 AS INTEGER)" + SQL_FROM + structureLevels
-                            + SQL_WHERE + structureLevels + STRUCTURE_OBJECT_ID_REFERENCE
-                            + roomClusters + STRUCTURE_OBJECT_ID_REFERENCE
+                            + "SELECT CAST(anchor_y2 / 2 AS INTEGER)" + SQL_FROM
+                            + DungeonPersistenceSchema.LEGACY_STRUCTURE_LEVELS_TABLE
+                            + SQL_WHERE + DungeonPersistenceSchema.LEGACY_STRUCTURE_LEVELS_TABLE
+                            + STRUCTURE_OBJECT_ID_REFERENCE
+                            + DungeonPersistenceSchema.ROOM_CLUSTERS_TABLE + STRUCTURE_OBJECT_ID_REFERENCE
                             + " ORDER BY level_z LIMIT 1), center_y),"
                             + " level_z = COALESCE(("
-                            + "SELECT " + COLUMN_LEVEL_Z + SQL_FROM + structureLevels
-                            + SQL_WHERE + structureLevels + STRUCTURE_OBJECT_ID_REFERENCE
-                            + roomClusters + STRUCTURE_OBJECT_ID_REFERENCE
+                            + "SELECT " + COLUMN_LEVEL_Z + SQL_FROM
+                            + DungeonPersistenceSchema.LEGACY_STRUCTURE_LEVELS_TABLE
+                            + SQL_WHERE + DungeonPersistenceSchema.LEGACY_STRUCTURE_LEVELS_TABLE
+                            + STRUCTURE_OBJECT_ID_REFERENCE
+                            + DungeonPersistenceSchema.ROOM_CLUSTERS_TABLE + STRUCTURE_OBJECT_ID_REFERENCE
                             + " ORDER BY " + COLUMN_LEVEL_Z + " LIMIT 1), " + COLUMN_LEVEL_Z + ")"
-                            + " WHERE EXISTS (SELECT 1" + SQL_FROM + structureLevels
-                            + SQL_WHERE + structureLevels + STRUCTURE_OBJECT_ID_REFERENCE
-                            + roomClusters + STRUCTURE_OBJECT_ID_REFERENCE + ")");
+                            + " WHERE EXISTS (SELECT 1" + SQL_FROM
+                            + DungeonPersistenceSchema.LEGACY_STRUCTURE_LEVELS_TABLE
+                            + SQL_WHERE + DungeonPersistenceSchema.LEGACY_STRUCTURE_LEVELS_TABLE
+                            + STRUCTURE_OBJECT_ID_REFERENCE
+                            + DungeonPersistenceSchema.ROOM_CLUSTERS_TABLE + STRUCTURE_OBJECT_ID_REFERENCE + ")");
         }
     }
 
@@ -91,7 +96,7 @@ final class DungeonSqliteCompatibilityUpgrade {
         }
         try (Statement statement = connection.createStatement()) {
             statement.executeUpdate(
-                    SQL_UPDATE + DungeonPersistenceSchema.TRANSITIONS_TABLE
+                    "UPDATE " + DungeonPersistenceSchema.TRANSITIONS_TABLE
                             + " SET cell_x = COALESCE(cell_x, stair_anchor_cell_x),"
                             + " cell_y = COALESCE(cell_y, stair_anchor_cell_y),"
                             + " level_z = COALESCE(level_z, stair_anchor_level_z)"

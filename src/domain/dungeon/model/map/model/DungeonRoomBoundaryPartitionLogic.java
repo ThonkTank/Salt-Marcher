@@ -1,5 +1,7 @@
 package src.domain.dungeon.model.map.model;
 
+import java.io.Serial;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -88,7 +90,10 @@ final class DungeonRoomBoundaryPartitionLogic {
         }
     }
 
-    private static final class RoomComponentComparator implements java.util.Comparator<RoomComponent> {
+    private static final class RoomComponentComparator implements java.util.Comparator<RoomComponent>, Serializable {
+        @Serial
+        private static final long serialVersionUID = 1L;
+
         @Override
         public int compare(RoomComponent left, RoomComponent right) {
             int levelComparison = Integer.compare(left.level(), right.level());

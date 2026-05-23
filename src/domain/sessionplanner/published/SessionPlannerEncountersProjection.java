@@ -15,6 +15,21 @@ public record SessionPlannerEncountersProjection(
         lootPlaceholders = copy(lootPlaceholders);
     }
 
+    @Override
+    public List<PlannedEncounter> plannedEncounters() {
+        return List.copyOf(plannedEncounters);
+    }
+
+    @Override
+    public List<RestGap> restGaps() {
+        return List.copyOf(restGaps);
+    }
+
+    @Override
+    public List<LootPlaceholder> lootPlaceholders() {
+        return List.copyOf(lootPlaceholders);
+    }
+
     public static SessionPlannerEncountersProjection empty() {
         return new SessionPlannerEncountersProjection(List.of(), List.of(), List.of());
     }

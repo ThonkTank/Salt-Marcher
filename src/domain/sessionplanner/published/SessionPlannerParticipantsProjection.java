@@ -14,6 +14,16 @@ public record SessionPlannerParticipantsProjection(
         participants = copy(participants);
     }
 
+    @Override
+    public List<ActivePartyMember> activePartyMembers() {
+        return List.copyOf(activePartyMembers);
+    }
+
+    @Override
+    public List<SessionParticipant> participants() {
+        return List.copyOf(participants);
+    }
+
     public static SessionPlannerParticipantsProjection empty() {
         return new SessionPlannerParticipantsProjection(PartyState.empty(), List.of(), List.of());
     }
@@ -37,6 +47,11 @@ public record SessionPlannerParticipantsProjection(
 
         public static PartyState empty() {
             return new PartyState(List.of(), 0, 0, false, "Keine Session-Teilnehmer", "Session hat noch keine Teilnehmer.");
+        }
+
+        @Override
+        public List<Integer> activePartyLevels() {
+            return List.copyOf(activePartyLevels);
         }
     }
 

@@ -37,6 +37,10 @@ public final class CatalogControlsView extends VBox {
     private static final String BIOME_PREFIX = "biome:";
     private static final String ALIGNMENT_PREFIX = "alignment:";
     private static final String ENCOUNTER_TABLE_PREFIX = "encounter-table:";
+    private static final String STYLE_ACTIVE = "active";
+    private static final String STYLE_COMPACT = "compact";
+    private static final String STYLE_FILTER_TRIGGER = "filter-trigger";
+    private static final String STYLE_FILTER_TRIGGER_ACTIVE = "filter-trigger-active";
     private static final String CLOSED_SUFFIX = " ▾";
     private static final String DEFAULT_TABLE_TRIGGER = "Tabelle ▾";
     private static final String DEFAULT_TABLE_TOOLTIP = "Mehrere Encounter-Tabellen können kombiniert werden.";
@@ -45,6 +49,7 @@ public final class CatalogControlsView extends VBox {
                     + "Kampfstart bleibt blockiert, bis höchstens eine verknüpfte Loot-Tabelle aktiv ist.";
     private static final Object VALUE_KEY = new Object();
     private static final Object LOOT_TABLE_ID_KEY = new Object();
+    private static final int SINGLE_SELECTION_COUNT = 1;
 
     private final PauseTransition searchDebounce = new PauseTransition(Duration.millis(300));
     private final TextField searchField = new TextField();
@@ -163,7 +168,7 @@ public final class CatalogControlsView extends VBox {
             VBox options,
             String label
     ) {
-        button.getStyleClass().addAll("compact", "filter-trigger");
+        button.getStyleClass().addAll(STYLE_COMPACT, STYLE_FILTER_TRIGGER);
         search.setPromptText(label + " suchen...");
         search.textProperty().addListener((obs, oldValue, newValue) -> {
             applyOptionFilter(options, newValue);
@@ -188,7 +193,7 @@ public final class CatalogControlsView extends VBox {
     }
 
     private void configureEncounterTablePicker() {
-        encounterTableButton.getStyleClass().addAll("compact", "filter-trigger");
+        encounterTableButton.getStyleClass().addAll(STYLE_COMPACT, STYLE_FILTER_TRIGGER);
         encounterTableButton.setTooltip(encounterTableTooltip);
         VBox content = new VBox(2, clearEncounterTablesButton(), scroll(encounterTableOptions));
         content.getStyleClass().add("filter-dropdown");
@@ -222,7 +227,7 @@ public final class CatalogControlsView extends VBox {
             String title,
             boolean snapToTicks
     ) {
-        autoButton.getStyleClass().addAll("compact", "auto-dice-btn", "active");
+        autoButton.getStyleClass().addAll(STYLE_COMPACT, "auto-dice-btn", STYLE_ACTIVE);
         autoButton.setAccessibleText(title + " automatisch bestimmen");
         autoButton.setUserData(Boolean.TRUE);
         autoButton.setOnAction(event -> {
@@ -387,9 +392,9 @@ public final class CatalogControlsView extends VBox {
     private void updateTuningVisual(Button autoButton, Slider slider, Label valueLabel) {
         boolean auto = Boolean.TRUE.equals(autoButton.getUserData());
         slider.setDisable(auto);
-        autoButton.getStyleClass().remove("active");
+        autoButton.getStyleClass().remove(STYLE_ACTIVE);
         if (auto) {
-            autoButton.getStyleClass().add("active");
+            autoButton.getStyleClass().add(STYLE_ACTIVE);
         }
         valueLabel.setText(auto ? "" : String.valueOf((int) Math.round(slider.getValue())));
     }
@@ -402,7 +407,7 @@ public final class CatalogControlsView extends VBox {
             HBox chipBox = new HBox(2);
             chipBox.getStyleClass().addAll("chip", chip.styleClass());
             Button remove = new Button("×");
-            remove.getStyleClass().addAll("flat", "compact", "chip-remove-btn");
+            remove.getStyleClass().addAll("flat", STYLE_COMPACT, "chip-remove-btn");
             remove.setAccessibleText("Entfernen: " + chip.label());
             remove.setOnAction(event -> clearChip(chip.key()));
             chipBox.getChildren().setAll(new Label(chip.label()), remove);
@@ -474,7 +479,7 @@ public final class CatalogControlsView extends VBox {
 
     private Button clearButton() {
         Button button = new Button("Leeren");
-        button.getStyleClass().addAll("compact", "flat");
+        button.getStyleClass().addAll(STYLE_COMPACT, "flat");
         button.setOnAction(event -> {
             searchField.setText("");
             selectCrValue(crMinimum, "", true);
@@ -491,7 +496,7 @@ public final class CatalogControlsView extends VBox {
 
     private Button clearEncounterTablesButton() {
         Button button = new Button("(Alle Monster)");
-        button.getStyleClass().addAll("flat", "compact");
+        button.getStyleClass().addAll("flat", STYLE_COMPACT);
         button.setOnAction(event -> {
             clearAll(encounterTableOptions);
             updateEncounterTableTrigger();
@@ -524,10 +529,10 @@ public final class CatalogControlsView extends VBox {
                 selectedCount++;
             }
         }
-        button.getStyleClass().remove("filter-trigger-active");
+        button.getStyleClass().remove(STYLE_FILTER_TRIGGER_ACTIVE);
         if (selectedCount > 0) {
             button.setText(label + " (" + selectedCount + ")" + CLOSED_SUFFIX);
-            button.getStyleClass().add("filter-trigger-active");
+            button.getStyleClass().add(STYLE_FILTER_TRIGGER_ACTIVE);
         } else {
             button.setText(label + CLOSED_SUFFIX);
         }
@@ -549,19 +554,19 @@ public final class CatalogControlsView extends VBox {
                 }
             }
         }
-        encounterTableButton.getStyleClass().remove("filter-trigger-active");
+        encounterTableButton.getStyleClass().remove(STYLE_FILTER_TRIGGER_ACTIVE);
         if (selectedCount == 0) {
             encounterTableButton.setText(DEFAULT_TABLE_TRIGGER);
             encounterTableTooltip.setText(DEFAULT_TABLE_TOOLTIP);
             return;
         }
-        encounterTableButton.getStyleClass().add("filter-trigger-active");
-        if (selectedCount == 1) {
+        encounterTableButton.getStyleClass().add(STYLE_FILTER_TRIGGER_ACTIVE);
+        if (selectedCount == SINGLE_SELECTION_COUNT) {
             encounterTableButton.setText(singleName + CLOSED_SUFFIX);
             encounterTableTooltip.setText(DEFAULT_TABLE_TOOLTIP);
             return;
         }
-        if (lootIds.size() > 1) {
+        if (lootIds.size() > SINGLE_SELECTION_COUNT) {
             encounterTableButton.setText("Tabellen (" + selectedCount + ", Loot-Konflikt)" + CLOSED_SUFFIX);
             encounterTableTooltip.setText(LOOT_CONFLICT_TOOLTIP);
             return;
@@ -600,13 +605,12 @@ public final class CatalogControlsView extends VBox {
     }
 
     private Node tuningRow() {
-        HBox row = new HBox(
+        return new HBox(
                 8,
                 tuningControl("Schwierigkeit", difficultyAuto, difficultyValue, difficultySlider),
                 tuningControl("Balance", balanceAuto, balanceValue, balanceSlider),
                 tuningControl("Menge", amountAuto, amountValue, amountSlider),
                 tuningControl("Diversität", diversityAuto, diversityValue, diversitySlider));
-        return row;
     }
 
     private Node tuningControl(String title, Button autoButton, Label valueLabel, Slider slider) {

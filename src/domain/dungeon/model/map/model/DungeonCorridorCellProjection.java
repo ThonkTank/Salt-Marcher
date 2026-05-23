@@ -1,6 +1,8 @@
 package src.domain.dungeon.model.map.model;
 
 
+import java.io.Serial;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -138,7 +140,10 @@ final class DungeonCorridorCellProjection {
         return candidate.q() < current.q();
     }
 
-    private static final class CellComparator implements java.util.Comparator<DungeonCell> {
+    private static final class CellComparator implements java.util.Comparator<DungeonCell>, Serializable {
+        @Serial
+        private static final long serialVersionUID = 1L;
+
         @Override
         public int compare(DungeonCell left, DungeonCell right) {
             int levelComparison = Integer.compare(left.level(), right.level());

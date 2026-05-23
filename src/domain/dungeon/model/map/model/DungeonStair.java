@@ -1,12 +1,13 @@
 package src.domain.dungeon.model.map.model;
 
-import org.jspecify.annotations.Nullable;
-
+import java.io.Serial;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import org.jspecify.annotations.Nullable;
 
 public final class DungeonStair {
 
@@ -133,6 +134,16 @@ public final class DungeonStair {
             corridorId = positiveCorridorId(corridorId);
         }
 
+        @Override
+        public List<DungeonCell> path() {
+            return List.copyOf(path);
+        }
+
+        @Override
+        public List<DungeonStairExit> exits() {
+            return List.copyOf(exits);
+        }
+
         static Geometry empty() {
             return new Geometry(
                     DungeonStairShape.defaultShape(),
@@ -166,7 +177,10 @@ public final class DungeonStair {
             return List.copyOf(result);
         }
 
-        private static final class StairExitComparator implements Comparator<DungeonStairExit> {
+        private static final class StairExitComparator implements Comparator<DungeonStairExit>, Serializable {
+            @Serial
+            private static final long serialVersionUID = 1L;
+
             @Override
             public int compare(DungeonStairExit left, DungeonStairExit right) {
                 int levelComparison = Integer.compare(left.position().level(), right.position().level());

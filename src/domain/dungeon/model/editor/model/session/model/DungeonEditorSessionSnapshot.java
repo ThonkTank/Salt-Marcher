@@ -51,6 +51,11 @@ public final class DungeonEditorSessionSnapshot {
                     DungeonEditorSessionValues.Preview.none(),
                     statusText);
         }
+
+        @Override
+        public DungeonEditorSessionValues.Tool selectedTool() {
+            return DungeonEditorSessionValues.Tool.valueOf(selectedTool.name());
+        }
     }
 
     public record SurfaceData(

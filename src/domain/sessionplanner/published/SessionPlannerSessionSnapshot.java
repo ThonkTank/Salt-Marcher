@@ -21,6 +21,11 @@ public record SessionPlannerSessionSnapshot(
         status = status == null ? "" : status;
     }
 
+    @Override
+    public List<AvailableEncounterPlan> availableEncounterPlans() {
+        return List.copyOf(availableEncounterPlans);
+    }
+
     public static SessionPlannerSessionSnapshot empty(String status) {
         return new SessionPlannerSessionSnapshot(
                 SessionState.empty(),

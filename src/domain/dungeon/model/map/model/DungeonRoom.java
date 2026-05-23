@@ -1,7 +1,6 @@
 package src.domain.dungeon.model.map.model;
 
 
-import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -47,7 +46,7 @@ public final class DungeonRoom {
     }
 
     public Map<Integer, DungeonCell> floorAnchors() {
-        return floorAnchors;
+        return Map.copyOf(floorAnchors);
     }
 
     public DungeonCell primaryAnchor() {
@@ -90,6 +89,6 @@ public final class DungeonRoom {
                 result.put(entry.getKey(), entry.getValue());
             }
         }
-        return Collections.unmodifiableMap(result);
+        return Map.copyOf(result);
     }
 }

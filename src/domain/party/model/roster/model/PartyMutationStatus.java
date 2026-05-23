@@ -19,6 +19,10 @@ public final class PartyMutationStatus {
         return name;
     }
 
+    public static PartyMutationStatus storageError() {
+        return STORAGE_ERROR;
+    }
+
     @Override
     public boolean equals(Object other) {
         return this == other || (other instanceof PartyMutationStatus status && name.equals(status.name));

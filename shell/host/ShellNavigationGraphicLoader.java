@@ -2,8 +2,10 @@ package shell.host;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.StringReader;
 import java.util.Arrays;
 import javax.xml.XMLConstants;
+import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import javafx.scene.Node;
@@ -15,6 +17,7 @@ import org.jspecify.annotations.Nullable;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
+import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 import shell.api.NavigationGraphicResource;
 
@@ -37,14 +40,14 @@ final class ShellNavigationGraphicLoader {
             if (input == null) {
                 return null;
             }
-            Document document = newFactory().newDocumentBuilder().parse(input);
+            Document document = parse(input);
             return render(document);
         } catch (IOException | ParserConfigurationException | SAXException exception) {
             return null;
         }
     }
 
-    private static DocumentBuilderFactory newFactory() throws ParserConfigurationException {
+    private static Document parse(InputStream input) throws ParserConfigurationException, SAXException, IOException {
         DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
         factory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
         factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
@@ -55,7 +58,9 @@ final class ShellNavigationGraphicLoader {
         factory.setAttribute(XMLConstants.ACCESS_EXTERNAL_SCHEMA, "");
         factory.setExpandEntityReferences(false);
         factory.setXIncludeAware(false);
-        return factory;
+        DocumentBuilder builder = factory.newDocumentBuilder();
+        builder.setEntityResolver((publicId, systemId) -> new InputSource(new StringReader("")));
+        return builder.parse(input);
     }
 
     private static Node render(Document document) {

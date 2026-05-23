@@ -17,7 +17,7 @@ public final class TravelDungeonSession {
     }
 
     public @Nullable PositionData requestedPosition() {
-        return state.requestedPosition;
+        return null;
     }
 
     public @Nullable PositionData currentPosition() {
@@ -62,7 +62,6 @@ public final class TravelDungeonSession {
         private TravelOverlayState overlayState = TravelOverlayState.defaults();
         private int projectionLevel;
         private boolean projectionLevelInitialized;
-        private @Nullable PositionData requestedPosition;
         private @Nullable SurfaceData currentSurface;
 
         private boolean surfaceLoaded() {
@@ -71,7 +70,7 @@ public final class TravelDungeonSession {
 
         private @Nullable PositionData navigationOrigin() {
             if (currentSurface == null || currentSurface.contextKind() != ContextKind.DUNGEON) {
-                return requestedPosition;
+                return null;
             }
             return currentSurface.position();
         }

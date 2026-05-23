@@ -40,11 +40,11 @@ public final class DungeonRoomCluster {
     }
 
     public Map<Integer, List<DungeonCell>> relativeVerticesByLevel() {
-        return relativeVerticesByLevel;
+        return copyNestedLists(relativeVerticesByLevel);
     }
 
     public Map<Integer, List<DungeonClusterBoundary>> boundariesByLevel() {
-        return boundariesByLevel;
+        return copyNestedLists(boundariesByLevel);
     }
 
     private static <T> Map<Integer, List<T>> copyNestedLists(Map<Integer, List<T>> source) {

@@ -313,7 +313,7 @@ public final class CatalogControlsContentModel {
 
         static CreatureFilters from(CreatureFilters filters) {
             CreatureFilters safeFilters = filters == null
-                    ? CreatureFilters.empty()
+                    ? empty()
                     : filters;
             return new CreatureFilters(
                     safeFilters.nameQuery(),
@@ -350,7 +350,7 @@ public final class CatalogControlsContentModel {
 
         static FilterOptionsProjection from(FilterOptionsProjection projection) {
             FilterOptionsProjection safeProjection = projection == null
-                    ? FilterOptionsProjection.empty()
+                    ? empty()
                     : projection;
             return new FilterOptionsProjection(
                     safeProjection.sizes(),
@@ -397,7 +397,7 @@ public final class CatalogControlsContentModel {
 
         static ControlsState from(ControlsState state) {
             ControlsState safeState = state == null
-                    ? ControlsState.empty()
+                    ? empty()
                     : state;
             return new ControlsState(
                     safeState.creatureTypes(),
@@ -703,7 +703,7 @@ public final class CatalogControlsContentModel {
 
         static FilterDropdownState from(FilterDropdownState state) {
             FilterDropdownState safeState = state == null
-                    ? FilterDropdownState.closed()
+                    ? closed()
                     : state;
             return new FilterDropdownState(safeState.open(), safeState.searchQuery());
         }

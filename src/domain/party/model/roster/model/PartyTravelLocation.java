@@ -43,6 +43,23 @@ public final class PartyTravelLocation {
         return new PartyTravelLocation(TravelSpace.DUNGEON, mapId, 0L, locationKind, ownerId, tile, heading);
     }
 
+    public static PartyTravelLocation dungeon(
+            long mapId,
+            String locationKindName,
+            long ownerId,
+            int q,
+            int r,
+            int level,
+            String headingName
+    ) {
+        return dungeon(
+                mapId,
+                PartyDungeonTravelLocationKind.valueOf(locationKindName),
+                ownerId,
+                new PartyTravelTile(q, r, level),
+                PartyTravelHeading.valueOf(headingName));
+    }
+
     public static PartyTravelLocation overworld(long mapId, long tileId) {
         return new PartyTravelLocation(
                 TravelSpace.OVERWORLD,

@@ -35,6 +35,11 @@ public record DungeonEditorSession(
                 "");
     }
 
+    @Override
+    public DungeonEditorSessionValues.Tool selectedTool() {
+        return DungeonEditorSessionValues.Tool.valueOf(selectedTool.name());
+    }
+
     public DungeonEditorSession primeSelectedMap(long mapId) {
         return withSelectedMap(DungeonEditorSessionValues.primeSelectedMap(selectedMapId, mapId));
     }

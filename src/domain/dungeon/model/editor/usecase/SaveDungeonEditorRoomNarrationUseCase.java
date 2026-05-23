@@ -46,6 +46,11 @@ public final class SaveDungeonEditorRoomNarrationUseCase {
             exits = safeExits(exits);
         }
 
+        @Override
+        public List<ExitInput> exits() {
+            return List.copyOf(exits);
+        }
+
         private DungeonEditorRoomNarrationInput roomNarration() {
             List<DungeonEditorWorkspaceValues.RoomExitNarration> roomExits =
                     new java.util.ArrayList<>(exits.size());

@@ -1,6 +1,7 @@
 package src.domain.dungeon.model.editor.usecase;
 
 import java.util.List;
+import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.editor.helper.DungeonEditorSnapshotProjectionLevelProjectionHelper;
 import src.domain.dungeon.model.editor.helper.DungeonEditorSnapshotStateProjectionHelper;
@@ -18,7 +19,8 @@ public final class BuildDungeonEditorSnapshotUseCase {
     private final SearchDungeonEditorMapCatalogUseCase searchMapsUseCase;
     private final LoadDungeonEditorAuthoredMapUseCase loadMapUseCase;
     private final PreviewDungeonEditorAuthoredOperationUseCase previewOperationUseCase;
-    private final DungeonEditorDungeonState dungeonState;
+    private final CurrentDungeonFacts currentDungeonFacts;
+    private final CommittedDungeonFacts committedDungeonFacts;
 
     public BuildDungeonEditorSnapshotUseCase(
             SearchDungeonEditorMapCatalogUseCase searchMapsUseCase,
@@ -26,19 +28,21 @@ public final class BuildDungeonEditorSnapshotUseCase {
             PreviewDungeonEditorAuthoredOperationUseCase previewOperationUseCase,
             DungeonEditorDungeonState dungeonState
     ) {
-        this.searchMapsUseCase = searchMapsUseCase;
-        this.loadMapUseCase = loadMapUseCase;
-        this.previewOperationUseCase = previewOperationUseCase;
-        this.dungeonState = dungeonState;
+        this.searchMapsUseCase = Objects.requireNonNull(searchMapsUseCase, "searchMapsUseCase");
+        this.loadMapUseCase = Objects.requireNonNull(loadMapUseCase, "loadMapUseCase");
+        this.previewOperationUseCase = Objects.requireNonNull(previewOperationUseCase, "previewOperationUseCase");
+        DungeonEditorDungeonState safeDungeonState = Objects.requireNonNull(dungeonState, "dungeonState");
+        currentDungeonFacts = safeDungeonState::currentFacts;
+        committedDungeonFacts = safeDungeonState::committedFacts;
     }
 
     public DungeonEditorSessionSnapshot.SnapshotData execute(@Nullable DungeonEditorSession state) {
         DungeonEditorSession safeState = DungeonEditorSnapshotStateProjectionHelper.safeState(state);
         searchMapsUseCase.execute("");
-        List<MapSummary> maps = dungeonState.currentFacts(null, safeState.selection(), safeState.preview()).maps();
+        List<MapSummary> maps = currentDungeonFacts.currentFacts(null, safeState.selection(), safeState.preview()).maps();
         @Nullable MapId resolvedMapId = resolveSelectedMapId(safeState.selectedMapId(), maps);
         refreshAuthoredSurface(resolvedMapId, safeState);
-        DungeonEditorDungeonFacts surfaceFacts = dungeonState.currentFacts(
+        DungeonEditorDungeonFacts surfaceFacts = currentDungeonFacts.currentFacts(
                 resolvedMapId,
                 safeState.selection(),
                 safeState.preview());
@@ -68,7 +72,7 @@ public final class BuildDungeonEditorSnapshotUseCase {
         if (mapId != null) {
             loadMapUseCase.execute(mapId);
         }
-        return dungeonState.committedFacts(mapId).committedSnapshot();
+        return committedDungeonFacts.committedFacts(mapId).committedSnapshot();
     }
 
     private void refreshAuthoredSurface(@Nullable MapId mapId, DungeonEditorSession state) {
@@ -104,4 +108,16 @@ public final class BuildDungeonEditorSnapshotUseCase {
         return maps.isEmpty() ? null : maps.getFirst().mapId();
     }
 
+    @FunctionalInterface
+    private interface CurrentDungeonFacts {
+        DungeonEditorDungeonFacts currentFacts(
+                @Nullable MapId mapId,
+                DungeonEditorSessionValues.Selection selection,
+                DungeonEditorSessionValues.Preview preview);
+    }
+
+    @FunctionalInterface
+    private interface CommittedDungeonFacts {
+        DungeonEditorDungeonFacts committedFacts(@Nullable MapId mapId);
+    }
 }

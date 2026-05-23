@@ -1,6 +1,5 @@
 package src.view.leftbartabs.catalog;
 
-import java.util.List;
 import java.util.Objects;
 import src.domain.creatures.CreaturesApplicationService;
 import src.domain.creatures.published.RefreshCreatureCatalogCommand;
