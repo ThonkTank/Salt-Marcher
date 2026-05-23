@@ -17,4 +17,16 @@ public enum EncounterRole {
     public String label() {
         return label;
     }
+
+    public boolean boss() {
+        return this == BOSS;
+    }
+
+    public static EncounterRole bossRole() {
+        return BOSS;
+    }
+
+    public static EncounterRole standardRole() {
+        return STANDARD;
+    }
 }

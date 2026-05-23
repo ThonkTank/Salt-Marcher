@@ -48,7 +48,7 @@ public record DungeonTravelSurfaceFacts(
         return position == null
                 ? new DungeonTravelPositionFacts(
                         mapId,
-                        DungeonTravelLocationKind.TILE,
+                        DungeonTravelPositionFacts.LocationKind.TILE,
                         0L,
                         new DungeonCell(0, 0, 0),
                         DungeonTravelHeading.defaultHeading())

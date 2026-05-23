@@ -227,6 +227,18 @@
     -fx-min-width: 340;
     -fx-pref-width: 380;
 }
+.party-topbar-root {
+    -fx-spacing: 8;
+    -fx-padding: 4 8 4 8;
+}
+.catalog-main-topbar {
+    -fx-spacing: 8;
+    -fx-padding: 4 0 8 0;
+}
+.catalog-main-pagination {
+    -fx-spacing: 8;
+    -fx-padding: 8 0 0 0;
+}
 .party-header {
     -fx-background-color: -sm-bg-elevated;
     -fx-padding: 8 12 8 12;
@@ -259,14 +271,22 @@
     -fx-font-size: 10px;
     -fx-font-weight: bold;
 }
+.party-level-progress-row {
+    -fx-spacing: 5;
+}
 .party-search {
     -fx-padding: 8 8 4 8;
+    -fx-spacing: 4;
 }
 .party-search-field {
     -fx-max-width: Infinity;
 }
 .party-rest-actions {
     -fx-padding: 4 8 6 8;
+    -fx-spacing: 6;
+}
+.party-message-label {
+    -fx-padding: 8;
 }
 .party-suggestions {
     -fx-background-color: -sm-bg-card;
@@ -303,6 +323,23 @@
     -fx-min-width: 380;
     -fx-pref-width: 420;
 }
+.adventuring-day-root {
+    -fx-spacing: 8;
+    -fx-padding: 4 0 4 8;
+}
+.adventuring-day-body {
+    -fx-padding: 0 12 12 12;
+}
+.adventuring-day-calculator {
+    -fx-spacing: 8;
+    -fx-padding: 8 0 0 0;
+}
+.adventuring-day-level-column {
+    -fx-min-width: 78;
+}
+.adventuring-day-count-column {
+    -fx-min-width: 70;
+}
 .adventuring-day-toolbar-popup .scroll-pane,
 .adventuring-day-toolbar-popup .scroll-pane > .viewport {
     -fx-background-color: transparent;
@@ -312,6 +349,9 @@
 .adventuring-day-scroll > .viewport,
 .adventuring-day-timeline-scroll > .viewport {
     -fx-background-color: transparent;
+}
+.adventuring-day-scroll {
+    -fx-max-height: 560;
 }
 .dropdown-window {
     -fx-background-color: -sm-bg-panel;
@@ -325,6 +365,14 @@
 }
 .dropdown-form {
     -fx-spacing: 10;
+}
+.party-editor-inline {
+    -fx-padding: 10;
+    -fx-spacing: 10;
+}
+.party-editor-form {
+    -fx-hgap: 10;
+    -fx-vgap: 8;
 }
 .dropdown-message {
     -fx-text-fill: -sm-text-secondary;
@@ -629,6 +677,9 @@
     -fx-border-color: -sm-stat-red transparent -sm-stat-red transparent;
     -fx-border-width: 3 0 3 0;
     -fx-background-radius: 0;
+    -fx-padding: 16;
+    -fx-spacing: 0;
+    -fx-max-width: 580;
 }
 .stat-block-name {
     -fx-text-fill: -sm-stat-red-light;
@@ -643,9 +694,16 @@
 }
 .stat-block-separator {
     -fx-background-color: -sm-stat-red;
+    -fx-background-insets: 6 0 6 0;
+    -fx-min-height: 14;
+    -fx-pref-height: 14;
+    -fx-max-height: 14;
+    -fx-padding: 6 0 6 0;
 }
 .stat-block-abilities {
     -fx-background-color: transparent;
+    -fx-hgap: 0;
+    -fx-padding: 4 0 4 0;
 }
 .stat-block-ability-header {
     -fx-text-fill: -sm-stat-red-light;
@@ -665,6 +723,9 @@
     -fx-fill: -sm-text-primary;
     -fx-font-size: 13px;
 }
+.stat-block-property-line {
+    -fx-padding: 1 0 1 0;
+}
 .stat-block-section-header {
     -fx-text-fill: -sm-stat-red-light;
     -fx-font-size: 16px;
@@ -672,6 +733,10 @@
     -fx-font-family: "Serif";
     -fx-border-color: transparent transparent -sm-stat-red transparent;
     -fx-border-width: 0 0 1 0;
+    -fx-padding: 8 0 2 0;
+}
+.stat-block-action-line {
+    -fx-padding: 2 0 2 0;
 }
 .stat-block-action-name {
     -fx-fill: -sm-text-primary;
@@ -759,6 +824,8 @@
 }
 .travel-details-grid {
     -fx-padding: 4 0 4 0;
+    -fx-hgap: 12;
+    -fx-vgap: 4;
 }
 
 .map-workspace-content {
@@ -932,8 +999,10 @@
     -fx-opacity: 0.72;
 }
 .control-toolbar .toolbar-action-button:focused {
-    -fx-border-color: transparent;
-    -fx-border-width: 0;
+    -fx-border-color: -sm-accent-hover;
+    -fx-border-width: 2;
+    -fx-border-radius: 3;
+    -fx-background-insets: 0;
 }
 
 .filter-dropdown {
@@ -1024,6 +1093,17 @@
 }
 .difficulty-meter-marker {
     -fx-background-color: -sm-text-primary;
+    -fx-min-width: 2;
+    -fx-pref-width: 2;
+    -fx-max-width: 2;
+    -fx-min-height: 22;
+    -fx-pref-height: 22;
+    -fx-max-height: 22;
+}
+.difficulty-meter {
+    -fx-min-height: 28;
+    -fx-pref-height: 28;
+    -fx-max-height: 28;
 }
 .difficulty-meter-bar {
     -fx-background-color: -sm-bg-elevated;
@@ -1052,6 +1132,30 @@
     -fx-padding: 0 3 0 3;
     -fx-font-size: 11px;
 }
+.encounter-builder-body {
+    -fx-padding: 8 12 8 12;
+}
+.encounter-roster-list {
+    -fx-padding: 2 0 2 0;
+}
+.encounter-advisory-region {
+    -fx-padding: 8 0 0 0;
+}
+.encounter-roster-count {
+    -fx-min-width: 24;
+}
+.encounter-initiative-list {
+    -fx-padding: 8 12 8 12;
+}
+.encounter-initiative-section-header {
+    -fx-padding: 8 0 0 0;
+}
+.encounter-initiative-spinner {
+    -fx-pref-width: 84;
+}
+.encounter-initiative-row {
+    -fx-padding: 0 0 0 12;
+}
 .role-minion     { -fx-border-color: -sm-role-minion;     -fx-text-fill: -sm-role-minion; }
 .role-boss       { -fx-border-color: -sm-role-boss;       -fx-text-fill: -sm-role-boss; }
 .role-soldier    { -fx-border-color: -sm-role-soldier;    -fx-text-fill: -sm-role-soldier; }
@@ -1065,6 +1169,9 @@
     -fx-border-width: 1 1 1 3;
     -fx-border-radius: 3;
     -fx-background-radius: 3;
+    -fx-padding: 8 12 8 12;
+}
+.encounter-combat-card-list {
     -fx-padding: 8 12 8 12;
 }
 .combat-card:focused {
@@ -1176,6 +1283,19 @@
     -fx-font-size: 11px;
     -fx-min-width: 28;
     -fx-min-height: 28;
+}
+.progress-meter-amount-field,
+.encounter-popup-number-field {
+    -fx-pref-width: 56;
+}
+.encounter-results-body {
+    -fx-padding: 8 12 8 12;
+}
+.encounter-results-slider-value {
+    -fx-min-width: 40;
+}
+.encounter-results-enemy-list {
+    -fx-padding: 2 0 8 0;
 }
 .encounter-result-xp {
     -fx-font-size: 16px;

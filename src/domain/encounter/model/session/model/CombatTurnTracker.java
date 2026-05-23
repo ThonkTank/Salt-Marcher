@@ -2,7 +2,6 @@ package src.domain.encounter.model.session.model;
 
 import java.util.OptionalInt;
 import org.jspecify.annotations.Nullable;
-import src.domain.encounter.model.session.model.CombatProjectionData;
 
 final class CombatTurnTracker {
 

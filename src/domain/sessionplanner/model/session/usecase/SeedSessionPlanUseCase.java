@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import src.domain.sessionplanner.model.session.helper.SessionPlanSeedHelper;
+import src.domain.sessionplanner.model.session.model.SessionActivePartyMembersFact;
+import src.domain.sessionplanner.model.session.model.SessionPartyMemberProfile;
 import src.domain.sessionplanner.model.session.model.SessionPlan;
 import src.domain.sessionplanner.model.session.port.SessionPartyFactsPort;
 
@@ -17,7 +19,7 @@ public final class SeedSessionPlanUseCase {
 
     SessionPlan execute(long sessionId) {
         try {
-            SessionPartyFactsPort.ActivePartyMembersFact activeParty =
+            SessionActivePartyMembersFact activeParty =
                     partyFactsPort.activePartyMembers();
             return SessionPlanSeedHelper.createSeeded(
                     sessionId,
@@ -28,9 +30,9 @@ public final class SeedSessionPlanUseCase {
         }
     }
 
-    private List<Long> participantRefs(SessionPartyFactsPort.ActivePartyMembersFact activeParty) {
+    private List<Long> participantRefs(SessionActivePartyMembersFact activeParty) {
         List<Long> participantRefs = new ArrayList<>();
-        for (SessionPartyFactsPort.PartyMemberProfile member : activeParty.members()) {
+        for (SessionPartyMemberProfile member : activeParty.members()) {
             participantRefs.add(member.characterId());
         }
         return participantRefs;

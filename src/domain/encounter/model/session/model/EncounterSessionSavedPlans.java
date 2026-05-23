@@ -1,15 +1,11 @@
 package src.domain.encounter.model.session.model;
 
-import src.domain.encounter.model.session.model.Mode;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.OptionalLong;
-import src.domain.encounter.model.session.model.CreatureDetailData;
 import src.domain.encounter.model.plan.model.EncounterPlan;
 import src.domain.encounter.model.plan.model.EncounterPlanCreature;
-import src.domain.encounter.model.session.model.EncounterCreatureData;
-import src.domain.encounter.model.session.model.PlanOutcome;
 
 final class EncounterSessionSavedPlans {
 

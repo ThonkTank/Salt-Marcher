@@ -1,5 +1,7 @@
 package src.domain.dungeon.model.travel.model.session.model;
 
+import java.util.Locale;
+import java.util.Objects;
 import java.util.List;
 
 @SuppressWarnings("PMD.MissingStaticMethodInNonInstantiatableClass")
@@ -52,21 +54,77 @@ public final class TravelDungeonSessionValues {
         }
     }
 
-    public enum LocationKind {
-        TILE,
-        TRANSITION
-    }
+    public static final class LocationKind {
+        public static final LocationKind TILE = new LocationKind("TILE");
+        public static final LocationKind TRANSITION = new LocationKind("TRANSITION");
 
-    public enum ContextKind {
-        DUNGEON,
-        OVERWORLD;
+        private final String name;
 
-        public boolean isDungeon() {
-            return this == DUNGEON;
+        private LocationKind(String name) {
+            this.name = name;
         }
 
-        public boolean isOverworld() {
-            return this == OVERWORLD;
+        public String name() {
+            return name;
+        }
+
+        public static LocationKind valueOf(String name) {
+            if (name == null || name.isBlank()) {
+                return TILE;
+            }
+            return "TRANSITION".equals(name.trim().toUpperCase(Locale.ROOT)) ? TRANSITION : TILE;
+        }
+
+        @Override
+        public boolean equals(Object other) {
+            return this == other || other instanceof LocationKind locationKind && name.equals(locationKind.name);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(name);
+        }
+
+        @Override
+        public String toString() {
+            return name;
+        }
+    }
+
+    public static final class ContextKind {
+        public static final ContextKind DUNGEON = new ContextKind("DUNGEON");
+        public static final ContextKind OVERWORLD = new ContextKind("OVERWORLD");
+
+        private final String name;
+
+        private ContextKind(String name) {
+            this.name = name;
+        }
+
+        public String name() {
+            return name;
+        }
+
+        public static ContextKind valueOf(String name) {
+            if (name == null || name.isBlank()) {
+                return DUNGEON;
+            }
+            return "OVERWORLD".equals(name.trim().toUpperCase(Locale.ROOT)) ? OVERWORLD : DUNGEON;
+        }
+
+        @Override
+        public boolean equals(Object other) {
+            return this == other || other instanceof ContextKind contextKind && name.equals(contextKind.name);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(name);
+        }
+
+        @Override
+        public String toString() {
+            return name;
         }
     }
 

@@ -56,7 +56,7 @@ final class DungeonTraversalActionCatalog {
                                 destinationLabel),
                         new DungeonTravelPositionFacts(
                                 dungeonMap.metadata().mapId(),
-                                DungeonTravelLocationKind.TILE,
+                                DungeonTravelPositionFacts.LocationKind.TILE,
                                 candidate.target().areaId(),
                                 candidate.target().tile(),
                                 candidate.link().headingFrom(candidate.source().tile(), position.heading())),

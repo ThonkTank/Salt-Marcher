@@ -1,8 +1,6 @@
 package src.domain.encounter.model.session.model;
 
 import java.util.List;
-import src.domain.encounter.model.session.model.CreatureDetailData;
-import src.domain.encounter.model.session.model.EncounterCreatureData;
 
 final class EncounterSessionCreatureRows {
 

@@ -1,11 +1,11 @@
-package src.domain.encounter.application;
+package src.domain.encounter.model.generation.usecase;
 
 import java.util.List;
 import org.jspecify.annotations.Nullable;
 import src.domain.encounter.model.generation.model.EncounterDraft;
 import src.domain.encounter.model.generation.model.EncounterGenerationDiagnosticsData;
 
-record EncounterGenerationPreparationUseCase(
+public record EncounterGenerationPreparationUseCase(
         boolean success,
         List<EncounterDraft> drafts,
         String message,
@@ -14,12 +14,12 @@ record EncounterGenerationPreparationUseCase(
         boolean fallbackUsed
 ) {
 
-    EncounterGenerationPreparationUseCase {
+    public EncounterGenerationPreparationUseCase {
         drafts = drafts == null ? List.of() : List.copyOf(drafts);
         message = message == null ? "" : message;
     }
 
-    static EncounterGenerationPreparationUseCase success(
+    public static EncounterGenerationPreparationUseCase success(
             List<EncounterDraft> drafts
     ) {
         return success(
@@ -30,7 +30,7 @@ record EncounterGenerationPreparationUseCase(
                 false);
     }
 
-    static EncounterGenerationPreparationUseCase success(
+    public static EncounterGenerationPreparationUseCase success(
             List<EncounterDraft> drafts,
             String message,
             @Nullable EncounterGenerationDiagnosticsData diagnostics,
@@ -46,7 +46,7 @@ record EncounterGenerationPreparationUseCase(
                 fallbackUsed);
     }
 
-    static EncounterGenerationPreparationUseCase failure(String message) {
+    public static EncounterGenerationPreparationUseCase failure(String message) {
         return new EncounterGenerationPreparationUseCase(false, List.of(), message, null, false, false);
     }
 }

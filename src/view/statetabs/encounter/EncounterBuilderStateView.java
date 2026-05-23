@@ -296,10 +296,9 @@ public final class EncounterBuilderStateView extends VBox {
                 EncounterBuilderBodyActions actions
         ) {
             List<Node> cards = new ArrayList<>();
-            EncounterBuilderBodyActions safeActions = actions == null ? NoBuilderBodyActions.INSTANCE : actions;
             for (EncounterBuilderStateContentModel.RosterCardView card
                     : roster == null ? List.<EncounterBuilderStateContentModel.RosterCardView>of() : roster) {
-                cards.add(buildRosterCard(card, safeActions));
+                cards.add(buildRosterCard(card, actions));
             }
             getChildren().setAll(cards);
         }
@@ -311,7 +310,11 @@ public final class EncounterBuilderStateView extends VBox {
             Button minus = new BuilderStyledButton("-", EncounterBuilderStateView.STYLE_COMPACT);
             minus.setAccessibleText("Anzahl von " + card.name() + " verringern");
             minus.setDisable(card.count() <= 1);
-            minus.setOnAction(event -> actions.changeRosterCount(card.creatureId(), -1));
+            minus.setOnAction(event -> {
+                if (actions != null) {
+                    actions.changeRosterCount(card.creatureId(), -1);
+                }
+            });
 
             BuilderStyledLabel count =
                     new BuilderStyledLabel(String.valueOf(card.count()), "bold", "encounter-roster-count");
@@ -319,14 +322,22 @@ public final class EncounterBuilderStateView extends VBox {
 
             Button plus = new BuilderStyledButton("+", EncounterBuilderStateView.STYLE_COMPACT);
             plus.setAccessibleText("Anzahl von " + card.name() + " erhoehen");
-            plus.setOnAction(event -> actions.changeRosterCount(card.creatureId(), 1));
+            plus.setOnAction(event -> {
+                if (actions != null) {
+                    actions.changeRosterCount(card.creatureId(), 1);
+                }
+            });
 
             HBox quantity = new HBox(2, minus, count, plus);
             quantity.setAlignment(Pos.CENTER);
 
             Button name = new BuilderStyledButton(card.name(), "creature-link");
             name.setTooltip(new Tooltip("Creature details oeffnen"));
-            name.setOnAction(event -> actions.openCreatureDetail(card.creatureId()));
+            name.setOnAction(event -> {
+                if (actions != null) {
+                    actions.openCreatureDetail(card.creatureId());
+                }
+            });
 
             HBox detail = new HBox(
                     4,
@@ -341,7 +352,11 @@ public final class EncounterBuilderStateView extends VBox {
 
             Button remove = new BuilderStyledButton("\u00d7", EncounterBuilderStateView.STYLE_COMPACT, "remove-btn");
             remove.setAccessibleText(card.name() + " aus dem Encounter entfernen");
-            remove.setOnAction(event -> actions.removeCreature(card.creatureId()));
+            remove.setOnAction(event -> {
+                if (actions != null) {
+                    actions.removeCreature(card.creatureId());
+                }
+            });
 
             VBox right = new VBox(
                     4,
@@ -352,30 +367,6 @@ public final class EncounterBuilderStateView extends VBox {
             HBox summary = new HBox(8, quantity, info, right);
             summary.setAlignment(Pos.CENTER_LEFT);
             return new BuilderEntityCard(summary);
-        }
-    }
-
-    private enum NoBuilderBodyActions implements EncounterBuilderBodyActions {
-        INSTANCE;
-
-        @Override
-        public void changeRosterCount(long creatureId, int delta) {
-            // Default sink intentionally ignores optional builder callbacks.
-        }
-
-        @Override
-        public void openCreatureDetail(long creatureId) {
-            // Default sink intentionally ignores optional builder callbacks.
-        }
-
-        @Override
-        public void removeCreature(long creatureId) {
-            // Default sink intentionally ignores optional builder callbacks.
-        }
-
-        @Override
-        public void undoRemove(long undoToken) {
-            // Default sink intentionally ignores optional builder callbacks.
         }
     }
 

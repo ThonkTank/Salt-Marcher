@@ -3,12 +3,11 @@ package src.domain.dungeon.model.travel.usecase;
 import src.domain.dungeon.model.map.model.DungeonCell;
 import src.domain.dungeon.model.map.model.DungeonMapIdentity;
 import src.domain.dungeon.model.map.model.DungeonTravelHeading;
-import src.domain.dungeon.model.map.model.DungeonTravelLocationKind;
 import src.domain.dungeon.model.map.model.DungeonTravelPositionFacts;
 
 final class DungeonTravelPublicationPosition {
     private final long mapId;
-    private final DungeonTravelLocationKind locationKind;
+    private final DungeonTravelPositionFacts.LocationKind locationKind;
     private final long ownerId;
     private final int q;
     private final int r;
@@ -17,7 +16,7 @@ final class DungeonTravelPublicationPosition {
 
     private DungeonTravelPublicationPosition(
             long mapId,
-            DungeonTravelLocationKind locationKind,
+            DungeonTravelPositionFacts.LocationKind locationKind,
             long ownerId,
             int q,
             int r,
@@ -61,16 +60,8 @@ final class DungeonTravelPublicationPosition {
                 heading);
     }
 
-    private static DungeonTravelLocationKind locationKind(String name) {
-        if (name == null || name.isBlank()) {
-            return DungeonTravelLocationKind.TILE;
-        }
-        return switch (name.trim()) {
-            case "STAIR_EXIT" -> DungeonTravelLocationKind.STAIR_EXIT;
-            case "TRANSITION" -> DungeonTravelLocationKind.TRANSITION;
-            case "TILE" -> DungeonTravelLocationKind.TILE;
-            default -> throw new IllegalArgumentException("Unknown travel location kind.");
-        };
+    private static DungeonTravelPositionFacts.LocationKind locationKind(String name) {
+        return DungeonTravelPositionFacts.LocationKind.fromName(name);
     }
 
     private static DungeonTravelHeading heading(String name) {

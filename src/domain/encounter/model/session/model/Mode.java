@@ -13,4 +13,8 @@ public final class Mode {
     public static boolean isCombatMode(int mode) {
         return mode == COMBAT;
     }
+
+    public static boolean isNotCombatMode(int mode) {
+        return !isCombatMode(mode);
+    }
 }

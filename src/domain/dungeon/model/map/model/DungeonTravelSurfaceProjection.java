@@ -97,7 +97,7 @@ public final class DungeonTravelSurfaceProjection {
             DungeonCell resolvedTile = fallback == null ? new DungeonCell(0, 0, 0) : fallback;
             return new DungeonTravelPositionFacts(
                     dungeonMap.metadata().mapId(),
-                    DungeonTravelLocationKind.TILE,
+                    DungeonTravelPositionFacts.LocationKind.TILE,
                     0L,
                     resolvedTile,
                     heading);
@@ -226,7 +226,7 @@ public final class DungeonTravelSurfaceProjection {
                                 : transition.description(),
                         new DungeonTravelPositionFacts(
                                 dungeonMap.metadata().mapId(),
-                                DungeonTravelLocationKind.TRANSITION,
+                                DungeonTravelPositionFacts.LocationKind.TRANSITION,
                                 transition.transitionId(),
                                 anchor,
                                 position.heading()),

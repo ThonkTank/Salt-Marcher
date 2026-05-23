@@ -3,37 +3,109 @@ package src.domain.encounter.model.session.model;
 import java.util.List;
 
 public record EncounterTuningPreviewData(
-        Status status,
-        List<PreviewLabel> easyLabels,
-        List<PreviewLabel> mediumLabels,
-        List<PreviewLabel> hardLabels,
-        List<PreviewLabel> deadlyLabels,
+        Outcome outcome,
+        List<PreviewPoint> difficultyLabels,
+        List<PreviewPoint> balanceLabels,
+        List<PreviewPoint> amountLabels,
+        List<PreviewPoint> diversityLabels,
         String message
 ) {
 
+    public enum Outcome {
+        AVAILABLE,
+        PARTY_MISSING,
+        FAILED
+    }
+
     public EncounterTuningPreviewData {
-        status = status == null ? Status.STORAGE_ERROR : status;
-        easyLabels = easyLabels == null ? List.of() : List.copyOf(easyLabels);
-        mediumLabels = mediumLabels == null ? List.of() : List.copyOf(mediumLabels);
-        hardLabels = hardLabels == null ? List.of() : List.copyOf(hardLabels);
-        deadlyLabels = deadlyLabels == null ? List.of() : List.copyOf(deadlyLabels);
+        outcome = outcome == null ? Outcome.FAILED : outcome;
+        difficultyLabels = difficultyLabels == null ? List.of() : List.copyOf(difficultyLabels);
+        balanceLabels = balanceLabels == null ? List.of() : List.copyOf(balanceLabels);
+        amountLabels = amountLabels == null ? List.of() : List.copyOf(amountLabels);
+        diversityLabels = diversityLabels == null ? List.of() : List.copyOf(diversityLabels);
         message = message == null ? "" : message;
     }
 
+    public static EncounterTuningPreviewData available(
+            List<PreviewPoint> difficultyLabels,
+            List<PreviewPoint> balanceLabels,
+            List<PreviewPoint> amountLabels,
+            List<PreviewPoint> diversityLabels,
+            String message
+    ) {
+        return new EncounterTuningPreviewData(
+                Outcome.AVAILABLE,
+                difficultyLabels,
+                balanceLabels,
+                amountLabels,
+                diversityLabels,
+                message);
+    }
+
+    public static EncounterTuningPreviewData noActiveParty(
+            List<PreviewPoint> difficultyLabels,
+            List<PreviewPoint> balanceLabels,
+            List<PreviewPoint> amountLabels,
+            List<PreviewPoint> diversityLabels,
+            String message
+    ) {
+        return new EncounterTuningPreviewData(
+                Outcome.PARTY_MISSING,
+                difficultyLabels,
+                balanceLabels,
+                amountLabels,
+                diversityLabels,
+                message);
+    }
+
     public static EncounterTuningPreviewData storageError(String message) {
-        return new EncounterTuningPreviewData(Status.STORAGE_ERROR, List.of(), List.of(), List.of(), List.of(), message);
+        return new EncounterTuningPreviewData(Outcome.FAILED, List.of(), List.of(), List.of(), List.of(), message);
     }
 
-    public enum Status {
-        SUCCESS,
-        NO_ACTIVE_PARTY,
-        STORAGE_ERROR
+    public static EncounterTuningPreviewData storageError(
+            List<PreviewPoint> difficultyLabels,
+            List<PreviewPoint> balanceLabels,
+            List<PreviewPoint> amountLabels,
+            List<PreviewPoint> diversityLabels,
+            String message
+    ) {
+        return new EncounterTuningPreviewData(
+                Outcome.FAILED,
+                difficultyLabels,
+                balanceLabels,
+                amountLabels,
+                diversityLabels,
+                message);
     }
 
-    public record PreviewLabel(double value, String label) {
+    public boolean available() {
+        return outcome == Outcome.AVAILABLE;
+    }
 
-        public PreviewLabel {
-            label = label == null ? "" : label;
+    public boolean activePartyMissing() {
+        return outcome == Outcome.PARTY_MISSING;
+    }
+
+    public boolean storageFailed() {
+        return outcome == Outcome.FAILED;
+    }
+
+    public static final class PreviewPoint {
+
+        private final double value;
+        private final String label;
+
+        public PreviewPoint(double value, String label) {
+            this.value = value;
+            this.label = label == null ? "" : label;
+        }
+
+        public double value() {
+            return value;
+        }
+
+        public String label() {
+            return label;
         }
     }
 }

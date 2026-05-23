@@ -3,8 +3,6 @@ package src.domain.encounter.model.session.model;
 import java.util.ArrayList;
 import java.util.List;
 import org.jspecify.annotations.Nullable;
-import src.domain.encounter.model.session.model.CombatCardData;
-import src.domain.encounter.model.session.model.CombatProjectionData;
 
 public final class CombatTurn {
 

@@ -3,6 +3,7 @@ package src.domain.encounter.model.session.usecase;
 import java.util.Objects;
 import src.domain.encounter.model.generation.helper.EncounterDifficultyMathHelper;
 import src.domain.encounter.model.generation.model.EncounterBudgetSummary;
+import src.domain.encounter.model.session.model.PartyBudgetFacts;
 import src.domain.encounter.model.session.repository.EncounterPartyFactsRepository;
 
 public final class LoadEncounterBudgetUseCase {
@@ -16,7 +17,7 @@ public final class LoadEncounterBudgetUseCase {
     }
 
     public Result execute() {
-        EncounterPartyFactsRepository.PartyBudgetFacts facts = party.loadPartyBudgetFacts();
+        PartyBudgetFacts facts = party.loadPartyBudgetFacts();
         if (facts.status().isStorageError()) {
             return Result.storageError();
         }
@@ -31,30 +32,30 @@ public final class LoadEncounterBudgetUseCase {
     }
 
     public record Result(
-            EncounterPartyFactsRepository.Status status,
+            PartyBudgetFacts.Status status,
             EncounterBudgetSummary budget,
             String message
     ) {
 
         public Result {
-            status = status == null ? EncounterPartyFactsRepository.Status.storageErrorStatus() : status;
+            status = status == null ? PartyBudgetFacts.Status.storageErrorStatus() : status;
             message = message == null ? "" : message;
         }
 
         static Result success(EncounterBudgetSummary budget) {
-            return new Result(EncounterPartyFactsRepository.Status.successStatus(), budget, "");
+            return new Result(PartyBudgetFacts.Status.successStatus(), budget, "");
         }
 
         static Result noActiveParty() {
             return new Result(
-                    EncounterPartyFactsRepository.Status.noActivePartyStatus(),
+                    PartyBudgetFacts.Status.noActivePartyStatus(),
                     EMPTY_BUDGET,
                     "No active party is available.");
         }
 
         static Result storageError() {
             return new Result(
-                    EncounterPartyFactsRepository.Status.storageErrorStatus(),
+                    PartyBudgetFacts.Status.storageErrorStatus(),
                     EMPTY_BUDGET,
                     "Party data could not be loaded.");
         }

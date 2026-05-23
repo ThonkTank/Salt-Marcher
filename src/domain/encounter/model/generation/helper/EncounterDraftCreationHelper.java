@@ -1,17 +1,12 @@
 package src.domain.encounter.model.generation.helper;
 
 import java.util.List;
-import src.domain.encounter.model.generation.model.EncounterDifficultyIntent;
 import src.domain.encounter.model.generation.model.EncounterDraft;
 import src.domain.encounter.model.generation.model.EncounterDraftBuildRequest;
 import src.domain.encounter.model.generation.model.EncounterDraftComposition;
-import src.domain.encounter.model.generation.model.EncounterDraftCompositionStats;
-import src.domain.encounter.model.generation.model.EncounterDraftMetrics;
-import src.domain.encounter.model.generation.model.EncounterDraftXpProfile;
+import src.domain.encounter.model.generation.model.EncounterDraftGenerationModel;
 
 final class EncounterDraftCreationHelper {
-
-    private static final int MAX_DEADLY_MULTIPLE = 2;
 
     private EncounterDraftCreationHelper() {
     }
@@ -20,57 +15,13 @@ final class EncounterDraftCreationHelper {
             EncounterDraftComposition composition,
             EncounterDraftBuildRequest request
     ) {
-        if (!composition.valid()) {
-            return List.of();
-        }
-        EncounterDraftXpProfile xpProfile = xpProfile(composition.stats(), request);
-        int maxAllowedAdjustedXp = EncounterDifficultyTargetHelper.maxAdjustedXp(
-                EncounterDifficultyIntent.DEADLY,
-                request.thresholds());
-        if (xpProfile.adjustedXp() > maxAllowedAdjustedXp * MAX_DEADLY_MULTIPLE) {
-            return List.of();
-        }
-        EncounterDifficultyIntent achievedDifficulty = EncounterDifficultyTargetHelper.bandFor(
-                xpProfile.adjustedXp(),
-                request.thresholds());
-        int score = EncounterDraftScoringHelper.score(new EncounterDraftScoringHelper.ScoreInput(
-                composition,
-                new EncounterDraftScoringHelper.ScoreContext(
-                        request.targetDifficulty(),
-                        achievedDifficulty,
-                        request.thresholds(),
-                        xpProfile,
-                        request.tuning(),
-                        request.partySize())));
-        return List.of(EncounterDraft.create(
-                achievedDifficulty,
-                metrics(composition.stats(), xpProfile, score),
-                composition.entries()));
-    }
-
-    private static EncounterDraftXpProfile xpProfile(
-            EncounterDraftCompositionStats stats,
-            EncounterDraftBuildRequest request
-    ) {
-        double multiplier = EncounterDifficultyTargetHelper.multiplierFor(stats.creatureCount(), request.partySize());
-        int adjustedXp = (int) Math.round(stats.totalBaseXp() * multiplier);
-        int targetAdjustedXp = EncounterDifficultyTargetHelper.targetAdjustedXp(
+        return new EncounterDraftGenerationModel(
                 request.targetDifficulty(),
-                request.thresholds());
-        return new EncounterDraftXpProfile(adjustedXp, targetAdjustedXp, multiplier);
-    }
-
-    private static EncounterDraftMetrics metrics(
-            EncounterDraftCompositionStats stats,
-            EncounterDraftXpProfile xpProfile,
-            int score
-    ) {
-        return new EncounterDraftMetrics(
-                stats.creatureCount(),
-                stats.totalBaseXp(),
-                xpProfile.adjustedXp(),
-                xpProfile.multiplier(),
-                score,
-                xpProfile.targetAdjustedXp());
+                request.thresholds(),
+                request.partySize(),
+                request.tuning(),
+                request.lockedProfiles(),
+                request.lockedQuantities(),
+                request.pool()).create(composition, request);
     }
 }

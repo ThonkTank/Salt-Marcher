@@ -4,9 +4,6 @@ import org.jspecify.annotations.Nullable;
 
 public final class DungeonTransitionDestination {
 
-    private static final String DUNGEON_MAP_TYPE = "DUNGEON_MAP";
-    private static final String OVERWORLD_TILE_TYPE = "OVERWORLD_TILE";
-
     private final String typeKey;
     private final long mapId;
     private final long tileId;
@@ -18,18 +15,18 @@ public final class DungeonTransitionDestination {
             long tileId,
             @Nullable Long transitionId
     ) {
-        this.typeKey = typeKey == null || typeKey.isBlank() ? DUNGEON_MAP_TYPE : typeKey.trim();
+        this.typeKey = typeKey == null || typeKey.isBlank() ? "DUNGEON_MAP" : typeKey.trim();
         this.mapId = Math.max(0L, mapId);
         this.tileId = Math.max(0L, tileId);
         this.transitionId = transitionId == null || transitionId <= 0L ? null : transitionId;
     }
 
     public static DungeonTransitionDestination dungeonMapDestination(long mapId, @Nullable Long transitionId) {
-        return new DungeonTransitionDestination(DUNGEON_MAP_TYPE, mapId, 0L, transitionId);
+        return new DungeonTransitionDestination("DUNGEON_MAP", mapId, 0L, transitionId);
     }
 
     public static DungeonTransitionDestination overworldTileDestination(long mapId, long tileId) {
-        return new DungeonTransitionDestination(OVERWORLD_TILE_TYPE, mapId, tileId, null);
+        return new DungeonTransitionDestination("OVERWORLD_TILE", mapId, tileId, null);
     }
 
     public String typeKey() {
@@ -49,10 +46,10 @@ public final class DungeonTransitionDestination {
     }
 
     public boolean isDungeonMapDestination() {
-        return DUNGEON_MAP_TYPE.equals(typeKey);
+        return "DUNGEON_MAP".equals(typeKey);
     }
 
     public boolean isOverworldTileDestination() {
-        return OVERWORLD_TILE_TYPE.equals(typeKey);
+        return "OVERWORLD_TILE".equals(typeKey);
     }
 }

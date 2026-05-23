@@ -5,14 +5,13 @@ import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.map.model.DungeonMap;
 import src.domain.dungeon.model.map.model.DungeonTransition;
 import src.domain.dungeon.model.map.model.DungeonTravelSurfaceProjection;
-import src.domain.dungeon.model.map.model.DungeonCell;
 import src.domain.dungeon.model.map.model.DungeonDerivedState;
 import src.domain.dungeon.model.map.model.DungeonMapIdentity;
 import src.domain.dungeon.model.map.model.DungeonTransitionDestination;
 import src.domain.dungeon.model.map.model.DungeonTravelActionFacts;
 import src.domain.dungeon.model.map.model.DungeonTravelActionKind;
 import src.domain.dungeon.model.map.model.DungeonTravelExternalTargetFacts;
-import src.domain.dungeon.model.map.model.DungeonTravelLocationKind;
+import src.domain.dungeon.model.map.model.DungeonTravelHeading;
 import src.domain.dungeon.model.map.model.DungeonTravelMoveFacts;
 import src.domain.dungeon.model.map.model.DungeonTravelMoveStatus;
 import src.domain.dungeon.model.map.model.DungeonTravelPositionFacts;
@@ -22,6 +21,8 @@ import src.domain.dungeon.model.map.usecase.BuildDungeonDerivedStateUseCase;
 import src.domain.dungeon.model.map.usecase.LoadDungeonMapUseCase;
 
 public final class MoveDungeonTravelActionUseCase {
+    private static final String TRAVEL_ACTION_COMPLETE = "Reiseaktion ausgefuehrt.";
+    private static final String DUNGEON_TRANSITION_USED = "Übergang benutzt.";
 
     public static final class Input {
         private final @Nullable DungeonTravelPositionFacts position;
@@ -115,32 +116,33 @@ public final class MoveDungeonTravelActionUseCase {
             if (target == null) {
                 return unavailableFromCurrent("Reiseziel ist nicht verfügbar.");
             }
-            DungeonTravelSurfaceFacts surface = projector.project(
-                    currentMap,
-                    currentDerived,
-                    target,
-                    "Reiseaktion ausgefuehrt.");
-            return moveResult(DungeonTravelMoveStatus.SUCCESS, "Reiseaktion ausgefuehrt.", surface, null);
+            DungeonTravelSurfaceFacts surface = projectCurrentMap(target, TRAVEL_ACTION_COMPLETE);
+            return moveResult(DungeonTravelMoveStatus.SUCCESS, TRAVEL_ACTION_COMPLETE, surface, null);
         }
 
         private DungeonTravelMoveFacts moveTransition(DungeonTravelActionFacts action) {
             DungeonTransitionDestination destination = action.transitionDestination();
-            if (destination != null && destination.isOverworldTileDestination()) {
-                DungeonTravelSurfaceFacts surface = projector.project(
-                        currentMap,
-                        currentDerived,
-                        currentSurface.position(),
-                        "Übergang führt zum Overworld-Feld " + destination.tileId() + ".");
-                return moveResult(
-                        DungeonTravelMoveStatus.EXTERNAL_TARGET,
-                        surface.statusLabel(),
-                        surface,
-                        DungeonTravelExternalTargetFacts.overworldTile(destination.mapId(), destination.tileId()));
+            if (destination == null) {
+                return unavailableFromCurrent("Übergangsziel ist nicht verfügbar.");
             }
-            if (destination != null && destination.isDungeonMapDestination()) {
+            if (destination.isOverworldTileDestination()) {
+                return moveToOverworldTransition(destination);
+            }
+            if (destination.isDungeonMapDestination()) {
                 return moveToDungeonTransition(destination);
             }
             return unavailableFromCurrent("Übergangsziel ist nicht verfügbar.");
+        }
+
+        private DungeonTravelMoveFacts moveToOverworldTransition(DungeonTransitionDestination destination) {
+            DungeonTravelSurfaceFacts surface = projectCurrentMap(
+                    currentSurface.position(),
+                    "Übergang führt zum Overworld-Feld " + destination.tileId() + ".");
+            return moveResult(
+                    DungeonTravelMoveStatus.EXTERNAL_TARGET,
+                    surface.statusLabel(),
+                    surface,
+                    DungeonTravelExternalTargetFacts.overworldTile(destination.mapId(), destination.tileId()));
         }
 
         private DungeonTravelMoveFacts moveToDungeonTransition(
@@ -149,32 +151,36 @@ public final class MoveDungeonTravelActionUseCase {
             if (destination.transitionId() == null) {
                 return unavailableFromCurrent("Ziel-Übergang ist noch nicht platziert.");
             }
-            DungeonMapIdentity targetMapId = new DungeonMapIdentity(destination.mapId());
-            DungeonMap targetMap = repository.findById(targetMapId).orElse(null);
-            DungeonTransition targetTransition =
-                    targetMap == null ? null : findTransition(targetMap, destination.transitionId());
-            DungeonCell anchor = targetTransition == null ? null : targetTransition.anchor();
-            if (targetMap == null || targetTransition == null || anchor == null) {
+            DungeonTransitionTarget target = resolveTransitionTarget(destination);
+            if (!target.available()) {
                 return unavailableFromCurrent("Ziel-Übergang ist nicht verfügbar.");
             }
-            DungeonTravelPositionFacts targetPosition = new DungeonTravelPositionFacts(
-                    targetMap.metadata().mapId(),
-                    DungeonTravelLocationKind.TRANSITION,
-                    targetTransition.transitionId(),
-                    anchor,
-                    currentSurface.position().heading());
-            DungeonDerivedState targetDerived = deriveState.execute(targetMap);
-            DungeonTravelSurfaceFacts surface = projector.project(targetMap, targetDerived, targetPosition, "Übergang benutzt.");
-            return moveResult(DungeonTravelMoveStatus.SUCCESS, "Übergang benutzt.", surface, null);
+            DungeonMap targetMap = target.mapOrThrow();
+            DungeonTravelSurfaceFacts surface = projector.project(
+                    targetMap,
+                    deriveState.execute(targetMap),
+                    target.position(currentSurface.position().heading()),
+                    DUNGEON_TRANSITION_USED);
+            return moveResult(DungeonTravelMoveStatus.SUCCESS, DUNGEON_TRANSITION_USED, surface, null);
+        }
+
+        private DungeonTransitionTarget resolveTransitionTarget(DungeonTransitionDestination destination) {
+            DungeonMap targetMap = repository.findById(new DungeonMapIdentity(destination.mapId())).orElse(null);
+            DungeonTransition targetTransition =
+                    targetMap == null ? null : findTransition(targetMap, destination.transitionId());
+            return new DungeonTransitionTarget(targetMap, targetTransition);
         }
 
         private DungeonTravelMoveFacts unavailableFromCurrent(String statusLabel) {
-            DungeonTravelSurfaceFacts surface = projector.project(
-                    currentMap,
-                    currentDerived,
-                    requestedPosition,
-                    statusLabel);
+            DungeonTravelSurfaceFacts surface = projectCurrentMap(requestedPosition, statusLabel);
             return moveResult(DungeonTravelMoveStatus.TARGET_UNAVAILABLE, surface.statusLabel(), surface, null);
+        }
+
+        private DungeonTravelSurfaceFacts projectCurrentMap(
+                @Nullable DungeonTravelPositionFacts position,
+                String statusLabel
+        ) {
+            return projector.project(currentMap, currentDerived, position, statusLabel);
         }
 
         private DungeonTransition findTransition(DungeonMap dungeonMap, long transitionId) {
@@ -193,6 +199,29 @@ public final class MoveDungeonTravelActionUseCase {
                 @Nullable DungeonTravelExternalTargetFacts externalTarget
         ) {
             return new DungeonTravelMoveFacts(status, message, surface, externalTarget);
+        }
+    }
+
+    private record DungeonTransitionTarget(
+            @Nullable DungeonMap map,
+            @Nullable DungeonTransition transition
+    ) {
+        private boolean available() {
+            return map != null && transition != null && transition.anchor() != null;
+        }
+
+        private DungeonMap mapOrThrow() {
+            return Objects.requireNonNull(map, "map");
+        }
+
+        private DungeonTravelPositionFacts position(DungeonTravelHeading heading) {
+            DungeonTransition safeTransition = Objects.requireNonNull(transition, "transition");
+            return new DungeonTravelPositionFacts(
+                    mapOrThrow().metadata().mapId(),
+                    DungeonTravelPositionFacts.LocationKind.TRANSITION,
+                    safeTransition.transitionId(),
+                    safeTransition.anchor(),
+                    heading);
         }
     }
 }

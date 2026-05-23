@@ -1,97 +1,130 @@
 package src.domain.creatures;
 
-import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.Consumer;
-import org.jspecify.annotations.Nullable;
 import shell.api.ServiceRegistry;
 import src.domain.creatures.model.catalog.model.CreatureCatalogData;
-import src.domain.creatures.model.catalog.model.CreatureCatalogData.CreatureProfile;
 import src.domain.creatures.model.catalog.port.CreatureCatalogPort;
 import src.domain.creatures.model.catalog.repository.CreaturesPublishedStateRepository;
-import src.domain.creatures.published.CreatureActionDetail;
-import src.domain.creatures.published.CreatureCatalogModel;
-import src.domain.creatures.published.CreatureCatalogPage;
-import src.domain.creatures.published.CreatureCatalogPageResult;
-import src.domain.creatures.published.CreatureCatalogRow;
-import src.domain.creatures.published.CreatureDetail;
-import src.domain.creatures.published.CreatureDetailModel;
-import src.domain.creatures.published.CreatureDetailResult;
-import src.domain.creatures.published.CreatureFilterOptions;
-import src.domain.creatures.published.CreatureFilterOptionsModel;
-import src.domain.creatures.published.CreatureFilterOptionsResult;
+import src.domain.creatures.model.catalog.usecase.LoadCreatureDetailUseCase;
+import src.domain.creatures.model.catalog.usecase.LoadCreatureEncounterCandidatesUseCase;
+import src.domain.creatures.model.catalog.usecase.LoadCreatureFilterOptionsUseCase;
+import src.domain.creatures.model.catalog.usecase.SearchCreatureCatalogUseCase;
 import src.domain.creatures.published.CreatureLookupStatus;
 import src.domain.creatures.published.CreatureQueryStatus;
 import src.domain.creatures.published.CreatureReadStatus;
 
 final class CreaturesServiceAssembly {
 
-    private final PublishedState publishedState = new PublishedState();
+    private static final String REGISTRY_PARAMETER = "registry";
+
+    private final CreaturesPublishedState publishedState = new CreaturesPublishedState();
 
     CreaturesApplicationService createApplicationService(ServiceRegistry registry) {
-        ServiceRegistry services = Objects.requireNonNull(registry, "registry");
-        return new CreaturesApplicationService(services.require(CreatureCatalogPort.class), publishedState);
+        ServiceRegistry services = Objects.requireNonNull(registry, REGISTRY_PARAMETER);
+        CreatureCatalogPort lookup = services.require(CreatureCatalogPort.class);
+        return new CreaturesApplicationService(
+                new LoadCreatureFilterOptionsUseCase(lookup, publishedState),
+                new SearchCreatureCatalogUseCase(lookup, publishedState),
+                new LoadCreatureDetailUseCase(lookup, publishedState),
+                new LoadCreatureEncounterCandidatesUseCase(lookup, publishedState));
     }
 
-    CreatureFilterOptionsModel createFilterOptionsModel(ServiceRegistry registry) {
-        Objects.requireNonNull(registry, "registry");
-        return publishedState.filterOptionsModel;
+    src.domain.creatures.published.CreatureFilterOptionsModel createFilterOptionsModel(
+            ServiceRegistry registry
+    ) {
+        Objects.requireNonNull(registry, REGISTRY_PARAMETER);
+        return publishedState.filterOptionsModel();
     }
 
-    CreatureCatalogModel createCatalogModel(ServiceRegistry registry) {
-        Objects.requireNonNull(registry, "registry");
-        return publishedState.catalogModel;
+    src.domain.creatures.published.CreatureCatalogModel createCatalogModel(ServiceRegistry registry) {
+        Objects.requireNonNull(registry, REGISTRY_PARAMETER);
+        return publishedState.catalogModel();
     }
 
-    CreatureDetailModel createDetailModel(ServiceRegistry registry) {
-        Objects.requireNonNull(registry, "registry");
-        return publishedState.detailModel;
+    src.domain.creatures.published.CreatureDetailModel createDetailModel(ServiceRegistry registry) {
+        Objects.requireNonNull(registry, REGISTRY_PARAMETER);
+        return publishedState.detailModel();
     }
 
-    private static final class PublishedState implements CreaturesPublishedStateRepository {
+    src.domain.creatures.published.CreatureEncounterCandidatesModel createEncounterCandidatesModel(
+            ServiceRegistry registry
+    ) {
+        Objects.requireNonNull(registry, REGISTRY_PARAMETER);
+        return publishedState.encounterCandidatesModel();
+    }
 
-        private static final String LISTENER_PARAMETER = "listener";
+    private static final class CreaturesPublishedState implements CreaturesPublishedStateRepository {
+
         private static final CreatureCatalogData.DistinctFilterValues EMPTY_FILTER_VALUES =
                 CreatureCatalogData.emptyFilterValues();
         private static final CreatureCatalogData.CatalogPageData EMPTY_CATALOG_PAGE =
                 CreatureCatalogData.emptyCatalogPage(50, 0);
 
-        private final List<Consumer<CreatureFilterOptionsResult>> filterOptionsListeners = new ArrayList<>();
-        private final List<Consumer<CreatureCatalogPageResult>> catalogListeners = new ArrayList<>();
-        private final List<Consumer<CreatureDetailResult>> detailListeners = new ArrayList<>();
-
-        private final CreatureFilterOptionsModel filterOptionsModel = new CreatureFilterOptionsModel(
-                this::currentFilterOptions,
-                this::subscribeFilterOptionsListener);
-        private final CreatureCatalogModel catalogModel = new CreatureCatalogModel(
-                this::currentCatalogPage,
-                this::subscribeCatalogListener);
-        private final CreatureDetailModel detailModel = new CreatureDetailModel(
-                this::currentCreatureDetail,
-                this::subscribeDetailListener);
-
-        private CreatureFilterOptionsResult currentFilterOptions =
-                new CreatureFilterOptionsResult(
+        private final PublishedModelChannel<src.domain.creatures.published.CreatureFilterOptionsResult> filterOptions =
+                new PublishedModelChannel<>(new src.domain.creatures.published.CreatureFilterOptionsResult(
                         CreatureReadStatus.STORAGE_ERROR,
-                        Mapper.toPublishedFilterOptions(EMPTY_FILTER_VALUES, List.of()));
-        private CreatureCatalogPageResult currentCatalogPage =
-                new CreatureCatalogPageResult(
+                        CreaturesPublicationProjection.toPublishedFilterOptions(EMPTY_FILTER_VALUES, List.of())));
+        private final PublishedModelChannel<src.domain.creatures.published.CreatureCatalogPageResult> catalog =
+                new PublishedModelChannel<>(new src.domain.creatures.published.CreatureCatalogPageResult(
                         CreatureQueryStatus.STORAGE_ERROR,
-                        Mapper.toPublishedCatalogPage(EMPTY_CATALOG_PAGE));
-        private CreatureDetailResult currentCreatureDetail =
-                new CreatureDetailResult(CreatureLookupStatus.STORAGE_ERROR, null);
+                        CreaturesPublicationProjection.toPublishedCatalogPage(EMPTY_CATALOG_PAGE)));
+        private final PublishedModelChannel<src.domain.creatures.published.CreatureDetailResult> detail =
+                new PublishedModelChannel<>(new src.domain.creatures.published.CreatureDetailResult(
+                        CreatureLookupStatus.STORAGE_ERROR,
+                        null));
+        private final PublishedModelChannel<src.domain.creatures.published.CreatureEncounterCandidatesResult>
+                encounterCandidates = new PublishedModelChannel<>(
+                        new src.domain.creatures.published.CreatureEncounterCandidatesResult(
+                                CreatureQueryStatus.STORAGE_ERROR,
+                                List.of()));
+
+        private final src.domain.creatures.published.CreatureFilterOptionsModel filterOptionsModel =
+                new src.domain.creatures.published.CreatureFilterOptionsModel(
+                        filterOptions::snapshot,
+                        filterOptions::listen);
+        private final src.domain.creatures.published.CreatureCatalogModel catalogModel =
+                new src.domain.creatures.published.CreatureCatalogModel(
+                        catalog::snapshot,
+                        catalog::listen);
+        private final src.domain.creatures.published.CreatureDetailModel detailModel =
+                new src.domain.creatures.published.CreatureDetailModel(
+                        detail::snapshot,
+                        detail::listen);
+        private final src.domain.creatures.published.CreatureEncounterCandidatesModel encounterCandidatesModel =
+                new src.domain.creatures.published.CreatureEncounterCandidatesModel(
+                        encounterCandidates::snapshot,
+                        encounterCandidates::listen);
+
+        private src.domain.creatures.published.CreatureFilterOptionsModel filterOptionsModel() {
+            return filterOptionsModel;
+        }
+
+        private src.domain.creatures.published.CreatureCatalogModel catalogModel() {
+            return catalogModel;
+        }
+
+        private src.domain.creatures.published.CreatureDetailModel detailModel() {
+            return detailModel;
+        }
+
+        private src.domain.creatures.published.CreatureEncounterCandidatesModel encounterCandidatesModel() {
+            return encounterCandidatesModel;
+        }
 
         @Override
         public void publishFilterOptions(FilterOptionsPublication result) {
             FilterOptionsPublication safeResult = result == null
                     ? new FilterOptionsPublication(STORAGE_ERROR, EMPTY_FILTER_VALUES, List.of())
                     : result;
-            CreatureCatalogData.DistinctFilterValues values = safeResult.values();
-            currentFilterOptions = new CreatureFilterOptionsResult(
-                    Mapper.toReadStatus(safeResult.status()),
-                    Mapper.toPublishedFilterOptions(values, safeResult.challengeRatings()));
-            notifyListeners(filterOptionsListeners, currentFilterOptions);
+            filterOptions.replace(new src.domain.creatures.published.CreatureFilterOptionsResult(
+                    CreaturesPublicationProjection.toReadStatus(safeResult.status()),
+                    CreaturesPublicationProjection.toPublishedFilterOptions(
+                            safeResult.values(),
+                            safeResult.challengeRatings())));
         }
 
         @Override
@@ -99,10 +132,9 @@ final class CreaturesServiceAssembly {
             CatalogPagePublication safeResult = result == null
                     ? new CatalogPagePublication(STORAGE_ERROR, EMPTY_CATALOG_PAGE)
                     : result;
-            currentCatalogPage = new CreatureCatalogPageResult(
-                    Mapper.toQueryStatus(safeResult.status()),
-                    Mapper.toPublishedCatalogPage(safeResult.page()));
-            notifyListeners(catalogListeners, currentCatalogPage);
+            catalog.replace(new src.domain.creatures.published.CreatureCatalogPageResult(
+                    CreaturesPublicationProjection.toQueryStatus(safeResult.status()),
+                    CreaturesPublicationProjection.toPublishedCatalogPage(safeResult.page())));
         }
 
         @Override
@@ -110,52 +142,27 @@ final class CreaturesServiceAssembly {
             CreatureDetailPublication safeResult = result == null
                     ? new CreatureDetailPublication(STORAGE_ERROR, null)
                     : result;
-            currentCreatureDetail = new CreatureDetailResult(
-                    Mapper.toLookupStatus(safeResult.status()),
-                    Mapper.toPublishedCreatureDetail(safeResult.detail()));
-            notifyListeners(detailListeners, currentCreatureDetail);
+            detail.replace(new src.domain.creatures.published.CreatureDetailResult(
+                    CreaturesPublicationProjection.toLookupStatus(safeResult.status()),
+                    CreaturesPublicationProjection.toPublishedCreatureDetail(safeResult.detail())));
         }
 
-        private CreatureFilterOptionsResult currentFilterOptions() {
-            return currentFilterOptions;
-        }
-
-        private CreatureCatalogPageResult currentCatalogPage() {
-            return currentCatalogPage;
-        }
-
-        private CreatureDetailResult currentCreatureDetail() {
-            return currentCreatureDetail;
-        }
-
-        private Runnable subscribeFilterOptionsListener(Consumer<CreatureFilterOptionsResult> listener) {
-            Consumer<CreatureFilterOptionsResult> safeListener = Objects.requireNonNull(listener, LISTENER_PARAMETER);
-            filterOptionsListeners.add(safeListener);
-            return () -> filterOptionsListeners.remove(safeListener);
-        }
-
-        private Runnable subscribeCatalogListener(Consumer<CreatureCatalogPageResult> listener) {
-            Consumer<CreatureCatalogPageResult> safeListener = Objects.requireNonNull(listener, LISTENER_PARAMETER);
-            catalogListeners.add(safeListener);
-            return () -> catalogListeners.remove(safeListener);
-        }
-
-        private Runnable subscribeDetailListener(Consumer<CreatureDetailResult> listener) {
-            Consumer<CreatureDetailResult> safeListener = Objects.requireNonNull(listener, LISTENER_PARAMETER);
-            detailListeners.add(safeListener);
-            return () -> detailListeners.remove(safeListener);
-        }
-
-        private static <T> void notifyListeners(List<Consumer<T>> listeners, T result) {
-            for (Consumer<T> listener : List.copyOf(listeners)) {
-                listener.accept(result);
-            }
+        @Override
+        public void publishEncounterCandidates(EncounterCandidatesPublication result) {
+            EncounterCandidatesPublication safeResult = result == null
+                    ? new EncounterCandidatesPublication(STORAGE_ERROR, List.of())
+                    : result;
+            encounterCandidates.replace(new src.domain.creatures.published.CreatureEncounterCandidatesResult(
+                    CreaturesPublicationProjection.toQueryStatus(safeResult.status()),
+                    safeResult.candidates().stream()
+                            .map(CreaturesPublicationProjection::toPublishedEncounterCandidate)
+                            .toList()));
         }
     }
 
-    private static final class Mapper {
+    private static final class CreaturesPublicationProjection {
 
-        private Mapper() {
+        private CreaturesPublicationProjection() {
         }
 
         private static CreatureReadStatus toReadStatus(String status) {
@@ -166,25 +173,29 @@ final class CreaturesServiceAssembly {
 
         private static CreatureQueryStatus toQueryStatus(String status) {
             return switch (status) {
-                case CreaturesPublishedStateRepository.SUCCESS -> CreatureQueryStatus.SUCCESS;
-                case CreaturesPublishedStateRepository.INVALID_QUERY -> CreatureQueryStatus.INVALID_QUERY;
+                case CreaturesPublishedStateRepository.SUCCESS ->
+                        CreatureQueryStatus.SUCCESS;
+                case CreaturesPublishedStateRepository.INVALID_QUERY ->
+                        CreatureQueryStatus.INVALID_QUERY;
                 default -> CreatureQueryStatus.STORAGE_ERROR;
             };
         }
 
         private static CreatureLookupStatus toLookupStatus(String status) {
             return switch (status) {
-                case CreaturesPublishedStateRepository.SUCCESS -> CreatureLookupStatus.SUCCESS;
-                case CreaturesPublishedStateRepository.NOT_FOUND -> CreatureLookupStatus.NOT_FOUND;
+                case CreaturesPublishedStateRepository.SUCCESS ->
+                        CreatureLookupStatus.SUCCESS;
+                case CreaturesPublishedStateRepository.NOT_FOUND ->
+                        CreatureLookupStatus.NOT_FOUND;
                 default -> CreatureLookupStatus.STORAGE_ERROR;
             };
         }
 
-        private static CreatureFilterOptions toPublishedFilterOptions(
+        private static src.domain.creatures.published.CreatureFilterOptions toPublishedFilterOptions(
                 CreatureCatalogData.DistinctFilterValues values,
                 List<String> challengeRatings
         ) {
-            return new CreatureFilterOptions(
+            return new src.domain.creatures.published.CreatureFilterOptions(
                     values.sizes(),
                     values.types(),
                     values.subtypes(),
@@ -193,10 +204,12 @@ final class CreaturesServiceAssembly {
                     challengeRatings);
         }
 
-        private static CreatureCatalogPage toPublishedCatalogPage(CreatureCatalogData.CatalogPageData page) {
-            return new CreatureCatalogPage(
+        private static src.domain.creatures.published.CreatureCatalogPage toPublishedCatalogPage(
+                CreatureCatalogData.CatalogPageData page
+        ) {
+            return new src.domain.creatures.published.CreatureCatalogPage(
                     page.rows().stream()
-                            .map(row -> new CreatureCatalogRow(
+                            .map(row -> new src.domain.creatures.published.CreatureCatalogRow(
                                     row.id(),
                                     row.name(),
                                     row.size(),
@@ -212,11 +225,13 @@ final class CreaturesServiceAssembly {
                     page.pageOffset());
         }
 
-        private static @Nullable CreatureDetail toPublishedCreatureDetail(@Nullable CreatureProfile detail) {
+        private static src.domain.creatures.published.CreatureDetail toPublishedCreatureDetail(
+                CreatureCatalogData.CreatureProfile detail
+        ) {
             if (detail == null) {
                 return null;
             }
-            return new CreatureDetail(
+            return new src.domain.creatures.published.CreatureDetail(
                     detail.id(),
                     detail.name(),
                     detail.size(),
@@ -257,12 +272,60 @@ final class CreaturesServiceAssembly {
                     detail.languages(),
                     detail.legendaryActionCount(),
                     detail.actions().stream()
-                            .map(action -> new CreatureActionDetail(
+                            .map(action -> new src.domain.creatures.published.CreatureActionDetail(
                                     action.actionType(),
                                     action.name(),
                                     action.description(),
                                     action.toHitBonus()))
                             .toList());
+        }
+
+        private static src.domain.creatures.published.CreatureEncounterCandidate toPublishedEncounterCandidate(
+                CreatureCatalogData.EncounterCandidateProfile candidate
+        ) {
+            return new src.domain.creatures.published.CreatureEncounterCandidate(
+                    candidate.id(),
+                    candidate.name(),
+                    candidate.creatureType(),
+                    candidate.challengeRating(),
+                    candidate.xp(),
+                    candidate.hitPoints(),
+                    candidate.hitDiceCount(),
+                    candidate.hitDiceSides(),
+                    candidate.hitDiceModifier(),
+                    candidate.armorClass(),
+                    candidate.initiativeBonus(),
+                    candidate.legendaryActionCount(),
+                    1);
+        }
+    }
+
+    private static final class PublishedModelChannel<T> {
+
+        private static final String LISTENER_PARAMETER = "listener";
+
+        private final Set<Consumer<T>> subscribers = new LinkedHashSet<>();
+        private T value;
+
+        private PublishedModelChannel(T initialValue) {
+            value = Objects.requireNonNull(initialValue, "initialValue");
+        }
+
+        private T snapshot() {
+            return value;
+        }
+
+        private void replace(T nextValue) {
+            value = Objects.requireNonNull(nextValue, "nextValue");
+            for (Consumer<T> subscriber : Set.copyOf(subscribers)) {
+                subscriber.accept(value);
+            }
+        }
+
+        private Runnable listen(Consumer<T> listener) {
+            Consumer<T> subscriber = Objects.requireNonNull(listener, LISTENER_PARAMETER);
+            subscribers.add(subscriber);
+            return () -> subscribers.remove(subscriber);
         }
     }
 }

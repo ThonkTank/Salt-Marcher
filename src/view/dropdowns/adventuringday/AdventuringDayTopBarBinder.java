@@ -7,7 +7,6 @@ import shell.api.ShellBinding;
 import shell.api.ShellRuntimeContext;
 import shell.api.ShellSlot;
 import src.domain.party.PartyApplicationService;
-import src.domain.party.published.AdventuringDayCalculationResult;
 import src.domain.party.published.AdventuringDayCalculationModel;
 import src.domain.party.published.AdventuringDayResult;
 import src.domain.party.published.AdventuringDaySummary;
@@ -25,30 +24,26 @@ final class AdventuringDayTopBarBinder {
     }
 
     ShellBinding bind() {
-        PartyApplicationService party = runtimeContext.services().require(PartyApplicationService.class);
         AdventuringDaySummaryModel summaryModel = runtimeContext.services().require(AdventuringDaySummaryModel.class);
         AdventuringDayCalculationModel calculationModel =
                 runtimeContext.services().require(AdventuringDayCalculationModel.class);
+        PartyApplicationService party = runtimeContext.services().require(PartyApplicationService.class);
         AdventuringDayTopBarContributionModel presentationModel = new AdventuringDayTopBarContributionModel();
+        AdventuringDayTopBarContentModel panelContentModel = presentationModel.contentModel();
         DropdownPopupContentModel popupContentModel = new DropdownPopupContentModel();
         AdventuringDayTopBarIntentHandler intentHandler =
                 new AdventuringDayTopBarIntentHandler(presentationModel, popupContentModel, party);
         AdventuringDayTopBarView panelView = new AdventuringDayTopBarView();
         DropdownPopupView view = new DropdownPopupView(panelView);
         view.bind(popupContentModel);
+        panelView.bind(panelContentModel);
         applyPopupPresentation(popupContentModel, presentationModel.triggerTextProperty().getValue());
         panelView.onViewInputEvent(intentHandler::consume);
         view.onViewInputEvent(intentHandler::consume);
-        panelView.showPanel(presentationModel.panelProperty().getValue());
         presentationModel.triggerTextProperty().addListener((ignored, before, after) ->
                 applyPopupPresentation(popupContentModel, after));
-        presentationModel.panelProperty().addListener((ignored, before, after) -> panelView.showPanel(after));
         summaryModel.subscribe(result -> applySummary(presentationModel, result));
-        calculationModel.subscribe(result -> presentationModel.applyCalculationResult(
-                result == null || result.calculation() == null
-                        ? null
-                        : new AdventuringDayCalculationMapper().map(result.calculation()),
-                successful(result)));
+        calculationModel.subscribe(presentationModel::applyCalculationResult);
         AdventuringDayResult initialSummary = summaryModel.current();
         applySummary(presentationModel, initialSummary);
         return new Binding(view);
@@ -67,10 +62,6 @@ final class AdventuringDayTopBarBinder {
     }
 
     private static boolean successful(AdventuringDayResult result) {
-        return result != null && result.status() == ReadStatus.SUCCESS;
-    }
-
-    private static boolean successful(AdventuringDayCalculationResult result) {
         return result != null && result.status() == ReadStatus.SUCCESS;
     }
 

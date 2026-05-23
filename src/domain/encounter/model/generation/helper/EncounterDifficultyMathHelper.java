@@ -145,10 +145,16 @@ public final class EncounterDifficultyMathHelper {
         if (partyLevels == null || partyLevels.isEmpty()) {
             return 1;
         }
-        return (int) Math.round(partyLevels.stream()
-                .mapToInt(level -> clampLevel(level == null ? 1 : level))
-                .average()
-                .orElse(1.0));
+        int total = 0;
+        int count = 0;
+        for (Integer rawLevel : partyLevels) {
+            total += clampLevel(rawLevel == null ? 1 : rawLevel);
+            count++;
+        }
+        if (count == 0) {
+            return 1;
+        }
+        return (int) Math.round((double) total / count);
     }
 
     private static int clampLevel(int rawLevel) {

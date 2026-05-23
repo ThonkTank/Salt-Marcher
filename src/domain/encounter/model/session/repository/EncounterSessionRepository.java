@@ -23,11 +23,12 @@ public final class EncounterSessionRepository implements EncounterSession.Sessio
     public EncounterSessionRepository(
             EncounterPartyFactsRepository party,
             EncounterCreatureRepository creatures,
+            Object creatureCatalog,
             EncounterSessionUseCaseAdaptersRepository useCases
     ) {
         this.party = party;
         this.useCases = useCases;
-        this.dataMapper = new EncounterSessionDataMapperRepository(creatures);
+        this.dataMapper = new EncounterSessionDataMapperRepository(creatures, creatureCatalog);
     }
 
     @Override

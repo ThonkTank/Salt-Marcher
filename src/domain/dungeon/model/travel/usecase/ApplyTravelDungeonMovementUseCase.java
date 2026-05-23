@@ -17,21 +17,36 @@ public final class ApplyTravelDungeonMovementUseCase {
             String actionId
     ) {
         ActiveTravelStateData activeTravel = runtimeAccess.loadActiveTravelState();
-        PositionData effectivePosition = requestedTravelPosition != null
-                ? requestedTravelPosition
-                : TravelDungeonActiveState.toTravelPosition(activeTravel.partyLocation());
+        PositionData effectivePosition =
+                TravelDungeonActiveState.effectiveTravelPosition(requestedTravelPosition, activeTravel.partyLocation());
         MoveResultData result = runtimeAccess.moveDungeonAction(effectivePosition, actionId);
+        return applyResult(runtimeAccess, activeTravel, result);
+    }
+
+    private static SurfaceData applyResult(
+            TravelDungeonSessionRepository runtimeAccess,
+            ActiveTravelStateData activeTravel,
+            MoveResultData result
+    ) {
         if (result.status().isExternalTarget() && result.externalTarget() != null) {
-            boolean saved = runtimeAccess.saveOverworldPosition(
-                    result.externalTarget(),
-                    activeTravel.travelCharacterIds());
-            return saved
-                    ? TravelDungeonSessionSurface.outsideDungeonSurface(result.externalTarget().tileId())
-                    : result.surface();
+            return applyExternalTarget(runtimeAccess, activeTravel, result);
         }
         if (result.status().isSuccess()) {
             runtimeAccess.saveDungeonPosition(result.surface().position(), activeTravel.travelCharacterIds());
         }
         return result.surface();
+    }
+
+    private static SurfaceData applyExternalTarget(
+            TravelDungeonSessionRepository runtimeAccess,
+            ActiveTravelStateData activeTravel,
+            MoveResultData result
+    ) {
+        boolean saved = runtimeAccess.saveOverworldPosition(
+                result.externalTarget(),
+                activeTravel.travelCharacterIds());
+        return saved
+                ? TravelDungeonSessionSurface.outsideDungeonSurface(result.externalTarget().tileId())
+                : result.surface();
     }
 }

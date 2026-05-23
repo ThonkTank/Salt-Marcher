@@ -1,6 +1,5 @@
 package src.domain.encounter.model.session.model;
 
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -92,15 +91,21 @@ final class CombatInitiativeTracker {
     }
 
     private static Optional<InitiativeEntryData> initiativeEntry(List<InitiativeEntryData> entries, String id) {
-        return entries.stream()
-                .filter(entry -> entry.id().equals(id))
-                .findFirst();
+        for (InitiativeEntryData entry : entries) {
+            if (entry.id().equals(id)) {
+                return Optional.of(entry);
+            }
+        }
+        return Optional.empty();
     }
 
     private static Optional<EncounterCreatureData> rosterCreature(List<EncounterCreatureData> roster, String id) {
-        return roster.stream()
-                .filter(entry -> entry.id().equals(id))
-                .findFirst();
+        for (EncounterCreatureData entry : roster) {
+            if (entry.id().equals(id)) {
+                return Optional.of(entry);
+            }
+        }
+        return Optional.empty();
     }
 
     private static List<EncounterInitiativeInput> safeInitiatives(

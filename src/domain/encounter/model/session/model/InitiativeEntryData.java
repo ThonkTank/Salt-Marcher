@@ -4,6 +4,6 @@ public record InitiativeEntryData(String id, String label, CombatantKind kind, i
     public InitiativeEntryData {
         id = id == null ? "" : id;
         label = label == null ? "" : label;
-        kind = kind == null ? CombatantKind.MONSTER : kind;
+        kind = kind == null ? CombatantKind.monsterKind() : kind;
     }
 }

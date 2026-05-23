@@ -36,7 +36,7 @@ public final class EncounterCandidateProfile {
     ) {
         this.facts = facts;
         this.combatStats = combatStats;
-        this.role = role == null ? EncounterRole.STANDARD : role;
+        this.role = role == null ? EncounterRole.standardRole() : role;
         this.selectionWeight = Math.max(1, Math.min(10, selectionWeight));
     }
 

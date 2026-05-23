@@ -6,6 +6,7 @@ import java.util.Map;
 import src.domain.encounter.model.generation.model.EncounterCandidateProfile;
 import src.domain.encounter.model.generation.model.EncounterDraft;
 import src.domain.encounter.model.generation.model.EncounterDraftBuildRequest;
+import src.domain.encounter.model.generation.model.EncounterDraftGenerationModel;
 import src.domain.encounter.model.generation.model.EncounterProfileCopies;
 
 final class EncounterSingleDraftEnumerationHelper {
@@ -34,8 +35,12 @@ final class EncounterSingleDraftEnumerationHelper {
     ) {
         for (int firstCount = 1; firstCount <= EncounterProfileCopies.maxAdditionalCopies(first); firstCount++) {
             Map<Long, Integer> single = new LinkedHashMap<>(baseCounts);
-            single.merge(first.id(), firstCount, Integer::sum);
-            EncounterDraftCollectionHelper.add(drafts, profiles, request, single);
+            single.put(first.id(), single.getOrDefault(first.id(), 0) + firstCount);
+            EncounterDraftGenerationModel.fromRequest(request).addDraft(
+                    drafts,
+                    profiles,
+                    request,
+                    single);
         }
     }
 }

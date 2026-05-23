@@ -21,4 +21,8 @@ public enum CombatantKind {
     public static CombatantKind playerCharacterKind() {
         return PLAYER_CHARACTER;
     }
+
+    public static CombatantKind monsterKind() {
+        return MONSTER;
+    }
 }

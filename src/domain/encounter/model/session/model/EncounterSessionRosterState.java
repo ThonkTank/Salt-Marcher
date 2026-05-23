@@ -2,8 +2,6 @@ package src.domain.encounter.model.session.model;
 
 import java.util.List;
 import java.util.Optional;
-import src.domain.encounter.model.session.model.EncounterCreatureData;
-import src.domain.encounter.model.session.model.RemovedRosterEntryData;
 
 record EncounterSessionRosterState(
         List<EncounterCreatureData> creatures,

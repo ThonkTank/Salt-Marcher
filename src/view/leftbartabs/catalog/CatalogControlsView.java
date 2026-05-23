@@ -3,6 +3,7 @@ package src.view.leftbartabs.catalog;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import javafx.animation.PauseTransition;
 import javafx.geometry.Side;
 import javafx.scene.Node;
@@ -619,41 +620,22 @@ public final class CatalogControlsView extends VBox {
     }
 
     private void publishSnapshot() {
-        List<String> sizeValues = new ArrayList<>();
-        for (Node node : sizeOptions.getChildren()) {
-            CheckBox checkBox = (CheckBox) node;
-            if (checkBox.isSelected()) {
-                sizeValues.add(String.valueOf(checkBox.getUserData()));
+        Function<VBox, List<String>> selectedValues = options -> {
+            List<String> values = new ArrayList<>();
+            for (Node node : options.getChildren()) {
+                CheckBox checkBox = (CheckBox) node;
+                if (checkBox.isSelected()) {
+                    values.add(String.valueOf(checkBox.getUserData()));
+                }
             }
-        }
-        List<String> typeValues = new ArrayList<>();
-        for (Node node : typeOptions.getChildren()) {
-            CheckBox checkBox = (CheckBox) node;
-            if (checkBox.isSelected()) {
-                typeValues.add(String.valueOf(checkBox.getUserData()));
-            }
-        }
-        List<String> subtypeValues = new ArrayList<>();
-        for (Node node : subtypeOptions.getChildren()) {
-            CheckBox checkBox = (CheckBox) node;
-            if (checkBox.isSelected()) {
-                subtypeValues.add(String.valueOf(checkBox.getUserData()));
-            }
-        }
-        List<String> biomeValues = new ArrayList<>();
-        for (Node node : biomeOptions.getChildren()) {
-            CheckBox checkBox = (CheckBox) node;
-            if (checkBox.isSelected()) {
-                biomeValues.add(String.valueOf(checkBox.getUserData()));
-            }
-        }
-        List<String> alignmentValues = new ArrayList<>();
-        for (Node node : alignmentOptions.getChildren()) {
-            CheckBox checkBox = (CheckBox) node;
-            if (checkBox.isSelected()) {
-                alignmentValues.add(String.valueOf(checkBox.getUserData()));
-            }
-        }
+            return List.copyOf(values);
+        };
+        Function<TextField, String> fieldText = field -> field.getText() == null ? "" : field.getText();
+        List<String> sizeValues = selectedValues.apply(sizeOptions);
+        List<String> typeValues = selectedValues.apply(typeOptions);
+        List<String> subtypeValues = selectedValues.apply(subtypeOptions);
+        List<String> biomeValues = selectedValues.apply(biomeOptions);
+        List<String> alignmentValues = selectedValues.apply(alignmentOptions);
         List<Long> selectedTableIds = new ArrayList<>();
         for (Node node : encounterTableOptions.getChildren()) {
             CheckBox checkBox = (CheckBox) node;
@@ -662,11 +644,12 @@ public final class CatalogControlsView extends VBox {
                 selectedTableIds.add(value);
             }
         }
-        String sizeQuery = sizeSearch.getText() == null ? "" : sizeSearch.getText();
-        String typeQuery = typeSearch.getText() == null ? "" : typeSearch.getText();
-        String subtypeQuery = subtypeSearch.getText() == null ? "" : subtypeSearch.getText();
-        String biomeQuery = biomeSearch.getText() == null ? "" : biomeSearch.getText();
-        String alignmentQuery = alignmentSearch.getText() == null ? "" : alignmentSearch.getText();
+        String searchText = fieldText.apply(searchField).trim();
+        String sizeQuery = fieldText.apply(sizeSearch);
+        String typeQuery = fieldText.apply(typeSearch);
+        String subtypeQuery = fieldText.apply(subtypeSearch);
+        String biomeQuery = fieldText.apply(biomeSearch);
+        String alignmentQuery = fieldText.apply(alignmentSearch);
         String minimum = crMinimum.getValue() == null || crMinimum.getSelectionModel().getSelectedIndex() <= 0
                 ? ""
                 : crMinimum.getValue();
@@ -675,34 +658,39 @@ public final class CatalogControlsView extends VBox {
                 || crMaximum.getSelectionModel().getSelectedIndex() >= crMaximum.getItems().size() - 1
                 ? ""
                 : crMaximum.getValue();
-        viewInputEventHandler.accept(new CatalogControlsViewInputEvent(
-                searchField.getText() == null ? "" : searchField.getText().trim(),
-                minimum,
-                maximum,
-                List.copyOf(sizeValues),
-                List.copyOf(typeValues),
-                List.copyOf(subtypeValues),
-                List.copyOf(biomeValues),
-                List.copyOf(alignmentValues),
-                sizeMenu.isShowing(),
-                sizeQuery,
-                typeMenu.isShowing(),
-                typeQuery,
-                subtypeMenu.isShowing(),
-                subtypeQuery,
-                biomeMenu.isShowing(),
-                biomeQuery,
-                alignmentMenu.isShowing(),
-                alignmentQuery,
-                encounterTableMenu.isShowing(),
-                Boolean.TRUE.equals(difficultyAuto.getUserData()),
-                difficultySlider.getValue(),
-                Boolean.TRUE.equals(balanceAuto.getUserData()),
-                balanceSlider.getValue(),
-                Boolean.TRUE.equals(amountAuto.getUserData()),
-                amountSlider.getValue(),
-                Boolean.TRUE.equals(diversityAuto.getUserData()),
-                diversitySlider.getValue(),
-                List.copyOf(selectedTableIds)));
+        publishSnapshotEvent(
+                new CatalogControlsViewInputEvent(
+                        searchText,
+                        minimum,
+                        maximum,
+                        List.copyOf(sizeValues),
+                        List.copyOf(typeValues),
+                        List.copyOf(subtypeValues),
+                        List.copyOf(biomeValues),
+                        List.copyOf(alignmentValues),
+                        sizeMenu.isShowing(),
+                        sizeQuery,
+                        typeMenu.isShowing(),
+                        typeQuery,
+                        subtypeMenu.isShowing(),
+                        subtypeQuery,
+                        biomeMenu.isShowing(),
+                        biomeQuery,
+                        alignmentMenu.isShowing(),
+                        alignmentQuery,
+                        encounterTableMenu.isShowing(),
+                        Boolean.TRUE.equals(difficultyAuto.getUserData()),
+                        difficultySlider.getValue(),
+                        Boolean.TRUE.equals(balanceAuto.getUserData()),
+                        balanceSlider.getValue(),
+                        Boolean.TRUE.equals(amountAuto.getUserData()),
+                        amountSlider.getValue(),
+                        Boolean.TRUE.equals(diversityAuto.getUserData()),
+                        diversitySlider.getValue(),
+                        List.copyOf(selectedTableIds)));
+    }
+
+    private void publishSnapshotEvent(CatalogControlsViewInputEvent event) {
+        viewInputEventHandler.accept(event);
     }
 }

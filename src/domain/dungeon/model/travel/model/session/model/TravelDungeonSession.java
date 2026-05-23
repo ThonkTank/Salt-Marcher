@@ -12,10 +12,6 @@ public final class TravelDungeonSession {
 
     private final MutableTravelSessionState state = new MutableTravelSessionState();
 
-    public void primeRequestedPosition(@Nullable PositionData position) {
-        state.primeInitialPosition(position);
-    }
-
     public boolean hasCurrentSurface() {
         return state.surfaceLoaded();
     }
@@ -68,12 +64,6 @@ public final class TravelDungeonSession {
         private boolean projectionLevelInitialized;
         private @Nullable PositionData requestedPosition;
         private @Nullable SurfaceData currentSurface;
-
-        private void primeInitialPosition(@Nullable PositionData position) {
-            if (currentSurface == null && requestedPosition == null && position != null) {
-                requestedPosition = position;
-            }
-        }
 
         private boolean surfaceLoaded() {
             return currentSurface != null;

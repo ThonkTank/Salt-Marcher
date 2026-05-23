@@ -11,7 +11,9 @@ import src.domain.encounter.model.plan.model.EncounterPlanBudgetLoadResult;
 import src.domain.encounter.model.plan.model.EncounterPlanBudgetSummaryData;
 import src.domain.encounter.model.plan.repository.EncounterPlanRepository;
 import src.domain.encounter.model.plan.model.EncounterPlanCreature;
+import src.domain.encounter.model.reference.port.ApplicationEncounterCreatureCatalogPort;
 import src.domain.encounter.model.reference.repository.EncounterCreatureRepository;
+import src.domain.encounter.model.session.model.PartyBudgetFacts;
 import src.domain.encounter.model.session.repository.EncounterPartyFactsRepository;
 
 public final class LoadEncounterPlanBudgetUseCase {
@@ -21,15 +23,18 @@ public final class LoadEncounterPlanBudgetUseCase {
     private final EncounterPlanRepository plans;
     private final EncounterPartyFactsRepository party;
     private final EncounterCreatureRepository creatures;
+    private final ApplicationEncounterCreatureCatalogPort creatureCatalog;
 
     public LoadEncounterPlanBudgetUseCase(
             EncounterPlanRepository plans,
             EncounterPartyFactsRepository party,
-            EncounterCreatureRepository creatures
+            EncounterCreatureRepository creatures,
+            ApplicationEncounterCreatureCatalogPort creatureCatalog
     ) {
         this.plans = Objects.requireNonNull(plans, "plans");
         this.party = Objects.requireNonNull(party, "party");
         this.creatures = Objects.requireNonNull(creatures, "creatures");
+        this.creatureCatalog = Objects.requireNonNull(creatureCatalog, "creatureCatalog");
     }
 
     public EncounterPlanBudgetLoadResult execute(long planId) {
@@ -40,7 +45,7 @@ public final class LoadEncounterPlanBudgetUseCase {
         if (maybePlan.isEmpty()) {
             return EncounterPlanBudgetLoadResult.notFound("Encounter plan was not found.");
         }
-        EncounterPartyFactsRepository.PartyBudgetFacts facts = party.loadPartyBudgetFacts();
+        PartyBudgetFacts facts = party.loadPartyBudgetFacts();
         if (facts.status().isStorageError()) {
             return EncounterPlanBudgetLoadResult.storageError("Party data could not be loaded.");
         }
@@ -68,8 +73,9 @@ public final class LoadEncounterPlanBudgetUseCase {
     private int totalBaseXp(List<EncounterPlanCreature> creaturesInPlan) {
         int total = 0;
         for (EncounterPlanCreature creature : creaturesInPlan == null ? List.<EncounterPlanCreature>of() : creaturesInPlan) {
+            creatures.requestCreature(creature.creatureId());
             Optional<src.domain.encounter.model.reference.model.EncounterCreatureReference> reference =
-                    creatures.loadCreature(creature.creatureId());
+                    creatureCatalog.loadCreature();
             if (reference.isEmpty()) {
                 throw new IllegalStateException("Creature detail could not be loaded for plan budget.");
             }

@@ -1,15 +1,19 @@
 package src.domain.encounter.model.session.repository;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import org.jspecify.annotations.Nullable;
-import src.domain.encounter.application.EncounterGenerationUseCase;
 import src.domain.encounter.model.generation.model.EncounterBudgetSummary;
 import src.domain.encounter.model.generation.model.EncounterDifficultyIntent;
+import src.domain.encounter.model.generation.model.EncounterGeneratedAlternative;
 import src.domain.encounter.model.generation.model.EncounterGenerationDiagnosticsData;
 import src.domain.encounter.model.generation.model.EncounterTuningIntent;
+import src.domain.encounter.model.generation.model.GeneratedEncounterCreatureData;
 import src.domain.encounter.model.reference.repository.EncounterCreatureRepository;
 import src.domain.encounter.model.session.model.BudgetData;
 import src.domain.encounter.model.session.model.CreatureDetailData;
+import src.domain.encounter.model.session.model.EncounterCreatureData;
 import src.domain.encounter.model.session.model.GeneratedEncounterData;
 import src.domain.encounter.model.session.model.GenerationDiagnosticsData;
 
@@ -17,20 +21,28 @@ final class EncounterSessionDataMapperRepository {
 
     private final EncounterSessionCreatureDataRepository creatures;
 
-    EncounterSessionDataMapperRepository(EncounterCreatureRepository creatures) {
-        this.creatures = new EncounterSessionCreatureDataRepository(creatures);
+    EncounterSessionDataMapperRepository(
+            EncounterCreatureRepository creatures,
+            Object creatureCatalog
+    ) {
+        this.creatures = new EncounterSessionCreatureDataRepository(creatures, creatureCatalog);
     }
 
     GeneratedEncounterData toGeneratedEncounter(
-            EncounterGenerationUseCase.GeneratedAlternative encounter,
+            EncounterGeneratedAlternative encounter,
             boolean autoResolved,
             boolean fallbackUsed
     ) {
+        List<GeneratedEncounterCreatureData> sourceCreatures = encounter.creatures();
+        List<EncounterCreatureData> encounterCreatures = new ArrayList<>();
+        for (GeneratedEncounterCreatureData creature : sourceCreatures) {
+            encounterCreatures.add(creatures.toCreature(creature));
+        }
         return new GeneratedEncounterData(
                 encounter.title(),
                 difficultyLabel(encounter.achievedDifficulty()),
                 encounter.adjustedXp(),
-                encounter.creatures().stream().map(creatures::toCreature).toList(),
+                List.copyOf(encounterCreatures),
                 creatures.advisoryMessages(autoResolved, fallbackUsed));
     }
 

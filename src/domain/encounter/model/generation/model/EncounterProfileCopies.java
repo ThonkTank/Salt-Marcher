@@ -10,7 +10,7 @@ public final class EncounterProfileCopies {
     }
 
     public static int maxAdditionalCopies(EncounterCandidateProfile profile) {
-        if (EncounterRole.BOSS == profile.role() || profile.combatStats().legendaryActionCount() > 0) {
+        if (profile.role().boss() || profile.combatStats().legendaryActionCount() > 0) {
             return 1;
         }
         if (profile.xp() >= HIGH_XP_COPY_LIMIT) {

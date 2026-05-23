@@ -4,7 +4,7 @@ import java.util.List;
 import java.util.Objects;
 
 public record TravelDungeonSessionCommand(
-        Action action,
+        String action,
         String actionId,
         int projectionLevel,
         String overlayModeKey,
@@ -13,7 +13,7 @@ public record TravelDungeonSessionCommand(
         List<Integer> overlaySelectedLevels
 ) {
     public TravelDungeonSessionCommand {
-        action = Objects.requireNonNull(action, "action");
+        action = Objects.requireNonNull(action, "action").trim();
         actionId = actionId == null ? "" : actionId.trim();
         overlayModeKey = overlayModeKey == null ? "" : overlayModeKey.trim();
         overlayLevelRange = Math.max(0, overlayLevelRange);
@@ -24,13 +24,5 @@ public record TravelDungeonSessionCommand(
     @Override
     public List<Integer> overlaySelectedLevels() {
         return List.copyOf(overlaySelectedLevels);
-    }
-
-    public enum Action {
-        REFRESH,
-        ACTION,
-        SET_PROJECTION_LEVEL,
-        SET_OVERLAY;
-
     }
 }

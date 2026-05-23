@@ -7,7 +7,7 @@ import src.domain.encounter.model.generation.model.EncounterBudgetSummary;
 import src.domain.encounter.model.generation.model.EncounterDifficultyThresholds;
 import src.domain.encounter.model.generation.model.EncounterRequestedDifficulty;
 import src.domain.encounter.model.session.model.EncounterTuningPreviewData;
-import src.domain.encounter.model.session.repository.EncounterPartyFactsRepository;
+import src.domain.encounter.model.session.model.PartyBudgetFacts;
 
 final class EncounterTuningPreviewPublicationUseCase {
 
@@ -27,7 +27,7 @@ final class EncounterTuningPreviewPublicationUseCase {
     private LoadEncounterBudgetUseCase.Result loadBudgetResult() {
         if (loadBudgetUseCase == null) {
             return new LoadEncounterBudgetUseCase.Result(
-                    EncounterPartyFactsRepository.Status.STORAGE_ERROR,
+                    PartyBudgetFacts.Status.STORAGE_ERROR,
                     emptyBudgetSummary(),
                     TUNING_PREVIEW_NOT_REGISTERED);
         }
@@ -35,7 +35,7 @@ final class EncounterTuningPreviewPublicationUseCase {
             return loadBudgetUseCase.execute();
         } catch (IllegalStateException exception) {
             return new LoadEncounterBudgetUseCase.Result(
-                    EncounterPartyFactsRepository.Status.STORAGE_ERROR,
+                    PartyBudgetFacts.Status.STORAGE_ERROR,
                     emptyBudgetSummary(),
                     TUNING_PREVIEW_LOAD_FAILED);
         }
@@ -43,32 +43,50 @@ final class EncounterTuningPreviewPublicationUseCase {
 
     private static EncounterTuningPreviewData toTuningPreviewData(LoadEncounterBudgetUseCase.Result result) {
         if (result == null) {
-            return new EncounterTuningPreviewData(
-                    EncounterTuningPreviewData.Status.STORAGE_ERROR,
-                    tuningPreviewLabels(emptyBudgetSummary()).easyLabels(),
-                    tuningPreviewLabels(emptyBudgetSummary()).mediumLabels(),
-                    tuningPreviewLabels(emptyBudgetSummary()).hardLabels(),
-                    tuningPreviewLabels(emptyBudgetSummary()).deadlyLabels(),
+            EncounterTuningPreviewData labels = tuningPreviewLabels(emptyBudgetSummary());
+            return EncounterTuningPreviewData.storageError(
+                    labels.difficultyLabels(),
+                    labels.balanceLabels(),
+                    labels.amountLabels(),
+                    labels.diversityLabels(),
                     TUNING_PREVIEW_NOT_REGISTERED);
         }
         EncounterTuningPreviewData labels = tuningPreviewLabels(result.budget() == null ? emptyBudgetSummary() : result.budget());
-        return new EncounterTuningPreviewData(
-                toStatus(result.status()),
-                labels.easyLabels(),
-                labels.mediumLabels(),
-                labels.hardLabels(),
-                labels.deadlyLabels(),
-                result.message());
+        return toData(result.status(), labels, result.message());
     }
 
-    private static EncounterTuningPreviewData.Status toStatus(EncounterPartyFactsRepository.Status status) {
+    private static EncounterTuningPreviewData toData(
+            PartyBudgetFacts.Status status,
+            EncounterTuningPreviewData labels,
+        String message
+    ) {
         if (status == null) {
-            return EncounterTuningPreviewData.Status.STORAGE_ERROR;
+            return EncounterTuningPreviewData.storageError(
+                    labels.difficultyLabels(),
+                    labels.balanceLabels(),
+                    labels.amountLabels(),
+                    labels.diversityLabels(),
+                    message);
         }
         return switch (status) {
-            case SUCCESS -> EncounterTuningPreviewData.Status.SUCCESS;
-            case NO_ACTIVE_PARTY -> EncounterTuningPreviewData.Status.NO_ACTIVE_PARTY;
-            case STORAGE_ERROR -> EncounterTuningPreviewData.Status.STORAGE_ERROR;
+            case SUCCESS -> EncounterTuningPreviewData.available(
+                    labels.difficultyLabels(),
+                    labels.balanceLabels(),
+                    labels.amountLabels(),
+                    labels.diversityLabels(),
+                    message);
+            case NO_ACTIVE_PARTY -> EncounterTuningPreviewData.noActiveParty(
+                    labels.difficultyLabels(),
+                    labels.balanceLabels(),
+                    labels.amountLabels(),
+                    labels.diversityLabels(),
+                    message);
+            case STORAGE_ERROR -> EncounterTuningPreviewData.storageError(
+                    labels.difficultyLabels(),
+                    labels.balanceLabels(),
+                    labels.amountLabels(),
+                    labels.diversityLabels(),
+                    message);
         };
     }
 
@@ -77,8 +95,7 @@ final class EncounterTuningPreviewPublicationUseCase {
         int partySize = budget == null || budget.activePartyLevels().isEmpty()
                 ? 1
                 : Math.max(1, budget.activePartyLevels().size());
-        return new EncounterTuningPreviewData(
-                EncounterTuningPreviewData.Status.SUCCESS,
+        return EncounterTuningPreviewData.available(
                 List.of(
                         previewLabel(1.0, difficultyRangeLabel(EncounterRequestedDifficulty.EASY, averageLevel, partySize)),
                         previewLabel(2.0, difficultyRangeLabel(EncounterRequestedDifficulty.MEDIUM, averageLevel, partySize)),
@@ -104,8 +121,8 @@ final class EncounterTuningPreviewPublicationUseCase {
                 "");
     }
 
-    private static EncounterTuningPreviewData.PreviewLabel previewLabel(double value, String label) {
-        return new EncounterTuningPreviewData.PreviewLabel(value, label);
+    private static EncounterTuningPreviewData.PreviewPoint previewLabel(double value, String label) {
+        return new EncounterTuningPreviewData.PreviewPoint(value, label);
     }
 
     private static String difficultyRangeLabel(EncounterRequestedDifficulty band, int averageLevel, int partySize) {

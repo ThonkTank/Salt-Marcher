@@ -18,9 +18,8 @@ public final class LoadTravelDungeonSessionSurfaceUseCase {
         if (activeTravel.partyLocation() != null && activeTravel.partyLocation().outsideDungeon()) {
             return TravelDungeonSessionSurface.outsideDungeonSurface(activeTravel.partyLocation().overworldTileId());
         }
-        PositionData effectivePosition = requestedTravelPosition != null
-                ? requestedTravelPosition
-                : TravelDungeonActiveState.toTravelPosition(activeTravel.partyLocation());
+        PositionData effectivePosition =
+                TravelDungeonActiveState.effectiveTravelPosition(requestedTravelPosition, activeTravel.partyLocation());
         SurfaceData surface = runtimeAccess.loadDungeonSurface(effectivePosition);
         if (requestedTravelPosition == null
                 && activeTravel.partyLocation() == null

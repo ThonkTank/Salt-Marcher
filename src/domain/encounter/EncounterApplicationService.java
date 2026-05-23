@@ -1,16 +1,12 @@
 package src.domain.encounter;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import src.domain.encounter.application.ApplyEncounterStateUseCase;
-import src.domain.encounter.model.generation.model.EncounterGenerationInputs;
-import src.domain.encounter.model.generation.model.EncounterRequestedDifficulty;
-import src.domain.encounter.model.generation.model.EncounterTuningIntent;
 import src.domain.encounter.model.plan.usecase.PublishEncounterPlanBudgetUseCase;
-import src.domain.encounter.model.session.model.EncounterInitiativeInput;
-import src.domain.encounter.model.session.model.EncounterSessionCommand;
 import src.domain.encounter.model.session.usecase.UpdateEncounterBuilderInputsUseCase;
 import src.domain.encounter.published.ApplyEncounterStateCommand;
-import src.domain.encounter.published.EncounterBuilderInputs;
 import src.domain.encounter.published.RefreshEncounterPlanBudgetCommand;
 import src.domain.encounter.published.UpdateEncounterBuilderInputsCommand;
 
@@ -34,62 +30,97 @@ public final class EncounterApplicationService {
     }
 
     public void applyState(ApplyEncounterStateCommand command) {
-        applyStateUseCase.execute(toInternalCommand(command));
+        applyStateUseCase.execute(toStateArguments(command));
     }
 
     public void updateBuilderInputs(UpdateEncounterBuilderInputsCommand command) {
-        updateBuilderInputsUseCase.execute(toInternal(command == null ? null : command.inputs()));
+        updateBuilderInputsUseCase.execute(toBuilderArguments(command));
     }
 
     public void refreshPlanBudget(RefreshEncounterPlanBudgetCommand command) {
         publishPlanBudgetUseCase.execute(command == null ? 0L : command.planId());
     }
 
-    private static EncounterSessionCommand toInternalCommand(ApplyEncounterStateCommand command) {
+    private static Object[] toStateArguments(ApplyEncounterStateCommand command) {
         if (command == null) {
-            return EncounterSessionCommand.refresh();
+            return defaultStateArguments();
         }
-        return new EncounterSessionCommand(
-                toInternalAction(command.action()),
-                java.util.Optional.empty(),
-                EncounterGenerationInputs.empty(),
+        long[] stateIds = new long[] {
                 command.creatureId(),
                 command.planId(),
-                command.delta(),
                 command.undoToken(),
-                command.initiativeValues().stream()
-                        .map(input -> new EncounterInitiativeInput(input.id(), input.initiative()))
-                        .toList(),
-                command.combatantId(),
+                command.partyMemberId()
+        };
+        int[] stateValues = new int[] {
+                command.delta(),
                 command.initiative(),
-                command.partyMemberId(),
-                command.amount(),
-                command.healing());
+                command.amount()
+        };
+        List<String> initiativeIds = new ArrayList<>();
+        List<Integer> initiatives = new ArrayList<>();
+        int initiativeValueCount = command.initiativeValues().size();
+        for (int index = 0; index < initiativeValueCount; index++) {
+            initiativeIds.add(command.initiativeValues().get(index).id());
+            initiatives.add(command.initiativeValues().get(index).initiative());
+        }
+        return new Object[] {
+                command.action().name(),
+                stateIds,
+                stateValues,
+                initiativeIds,
+                initiatives,
+                command.combatantId(),
+                command.healing()
+        };
     }
 
-    private static EncounterSessionCommand.Action toInternalAction(ApplyEncounterStateCommand.Action action) {
-        ApplyEncounterStateCommand.Action effective = action == null
-                ? ApplyEncounterStateCommand.Action.REFRESH
-                : action;
-        return EncounterSessionCommand.Action.valueOf(effective.name());
+    private static Object[] toBuilderArguments(UpdateEncounterBuilderInputsCommand command) {
+        if (command == null) {
+            return defaultBuilderArguments();
+        }
+        boolean[] autoFlags = new boolean[] {
+                command.inputs().autoDifficulty(),
+                command.inputs().autoBalance(),
+                command.inputs().autoAmount(),
+                command.inputs().autoDiversity()
+        };
+        int[] tuningLevels = new int[] {
+                command.inputs().difficultyLevel(),
+                command.inputs().balanceLevel(),
+                command.inputs().diversityLevel()
+        };
+        return new Object[] {
+                command.inputs().creatureTypes(),
+                command.inputs().creatureSubtypes(),
+                command.inputs().biomes(),
+                autoFlags,
+                tuningLevels,
+                command.inputs().amountValue(),
+                command.inputs().encounterTableIds()
+        };
     }
 
-    private static EncounterGenerationInputs toInternal(EncounterBuilderInputs inputs) {
-        EncounterBuilderInputs safeInputs = inputs == null ? EncounterBuilderInputs.empty() : inputs;
-        return new EncounterGenerationInputs(
-                safeInputs.creatureTypes(),
-                safeInputs.creatureSubtypes(),
-                safeInputs.biomes(),
-                EncounterRequestedDifficulty.fromPublishedDifficulty(
-                        safeInputs.autoDifficulty(),
-                        safeInputs.difficultyLevel()),
-                EncounterTuningIntent.fromPublishedValues(
-                        safeInputs.autoBalance(),
-                        safeInputs.balanceLevel(),
-                        safeInputs.autoAmount(),
-                        safeInputs.amountValue(),
-                        safeInputs.autoDiversity(),
-                        safeInputs.diversityLevel()),
-                safeInputs.encounterTableIds());
+    private static Object[] defaultStateArguments() {
+        return new Object[] {
+                null,
+                new long[] {0L, 0L, 0L, 0L},
+                new int[] {0, 0, 0},
+                List.of(),
+                List.of(),
+                "",
+                false
+        };
+    }
+
+    private static Object[] defaultBuilderArguments() {
+        return new Object[] {
+                null,
+                null,
+                null,
+                new boolean[] {false, false, false, false},
+                new int[] {0, 0, 0},
+                0.0,
+                null
+        };
     }
 }

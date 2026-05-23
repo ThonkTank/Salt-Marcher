@@ -263,20 +263,6 @@ public final class EncounterCombatStateView extends VBox {
         void editInitiative(String cardId, int initiative);
     }
 
-    private enum NoEncounterCombatCardActions implements EncounterCombatCardActions {
-        INSTANCE;
-
-        @Override
-        public void changeHitPoints(String cardId, String actionId, int amount) {
-            // Default sink intentionally ignores optional combat-card callbacks.
-        }
-
-        @Override
-        public void editInitiative(String cardId, int initiative) {
-            // Default sink intentionally ignores optional combat-card callbacks.
-        }
-    }
-
     private static final class EncounterCombatHpMeter extends StackPane {
 
         EncounterCombatHpMeter(
@@ -285,7 +271,6 @@ public final class EncounterCombatStateView extends VBox {
                 EncounterCombatCardActions actions
         ) {
             String safeCardId = cardId == null ? "" : cardId;
-            EncounterCombatCardActions safeActions = actions == null ? NoEncounterCombatCardActions.INSTANCE : actions;
             getStyleClass().add("progress-meter");
             getStyleClass().add("progress-meter-combat");
             getStyleClass().add("clickable");
@@ -302,7 +287,11 @@ public final class EncounterCombatStateView extends VBox {
             setAlignment(fill, Pos.CENTER_LEFT);
             setAlignment(overlay, Pos.CENTER);
             setAccessibleText(display.accessibleText());
-            setOnMouseClicked(event -> showHpPopup(this, safeCardId, safeActions));
+            setOnMouseClicked(event -> {
+                if (actions != null) {
+                    showHpPopup(this, safeCardId, actions);
+                }
+            });
         }
 
         private static void showHpPopup(

@@ -13,6 +13,13 @@ public final class TravelDungeonActiveState {
         return location == null || location.outsideDungeon() ? null : location.dungeonPosition();
     }
 
+    public static @Nullable PositionData effectiveTravelPosition(
+            @Nullable PositionData requestedTravelPosition,
+            @Nullable PartyLocationData partyLocation
+    ) {
+        return requestedTravelPosition == null ? toTravelPosition(partyLocation) : requestedTravelPosition;
+    }
+
     public record ActiveTravelStateData(
             List<Long> travelCharacterIds,
             @Nullable PartyLocationData partyLocation

@@ -1,8 +1,5 @@
 package src.domain.encounter.model.session.model;
 
-import src.domain.encounter.model.session.model.BuilderStateData;
-import src.domain.encounter.model.session.model.BudgetData;
-import src.domain.encounter.model.session.model.DifficultySummaryData;
 
 final class EncounterSessionGenerationProjection {
 

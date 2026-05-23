@@ -3,7 +3,6 @@ package src.domain.encounter.model.session.model;
 import java.util.ArrayList;
 import java.util.List;
 import org.jspecify.annotations.Nullable;
-import src.domain.encounter.model.session.model.ResultEnemyData;
 
 public final class CombatRosterMutation {
 
@@ -40,16 +39,20 @@ public final class CombatRosterMutation {
     }
 
     public List<ResultEnemyData> resultEnemies(CombatRoster roster) {
-        return roster.combatants().stream()
-                .filter(combatant -> !combatant.isPlayerCharacter())
-                .map(combatant -> new ResultEnemyData(
-                        combatant.name(),
-                        combatant.isAlive() ? "Lebt" : "Tot",
-                        Math.max(0, combatant.maxHp() - combatant.currentHp()),
-                        combatant.xp(),
-                        !combatant.isAlive(),
-                        combatant.loot()))
-                .toList();
+        List<ResultEnemyData> enemies = new ArrayList<>();
+        for (Combatant combatant : roster.combatants()) {
+            if (combatant.isPlayerCharacter()) {
+                continue;
+            }
+            enemies.add(new ResultEnemyData(
+                    combatant.name(),
+                    combatant.isAlive() ? "Lebt" : "Tot",
+                    Math.max(0, combatant.maxHp() - combatant.currentHp()),
+                    combatant.xp(),
+                    !combatant.isAlive(),
+                    combatant.loot()));
+        }
+        return List.copyOf(enemies);
     }
 
     private static List<Combatant> aliveMembers(List<Combatant> combatants, List<String> memberIds) {

@@ -6,6 +6,7 @@ import java.util.Map;
 import src.domain.encounter.model.generation.model.EncounterCandidateProfile;
 import src.domain.encounter.model.generation.model.EncounterDraft;
 import src.domain.encounter.model.generation.model.EncounterDraftBuildRequest;
+import src.domain.encounter.model.generation.model.EncounterDraftGenerationModel;
 import src.domain.encounter.model.generation.model.EncounterProfileCopies;
 
 final class EncounterDualDraftEnumerationHelper {
@@ -58,7 +59,10 @@ final class EncounterDualDraftEnumerationHelper {
                     profiles,
                     request,
                     baseCounts,
-                    new DualProfileCountRequest(first, second, firstCount, secondLimit));
+                    first,
+                    second,
+                    firstCount,
+                    secondLimit);
         }
     }
 
@@ -67,21 +71,20 @@ final class EncounterDualDraftEnumerationHelper {
             Map<Long, EncounterCandidateProfile> profiles,
             EncounterDraftBuildRequest buildRequest,
             Map<Long, Integer> baseCounts,
-            DualProfileCountRequest dualRequest
-    ) {
-        for (int secondCount = 1; secondCount <= dualRequest.secondLimit(); secondCount++) {
-            Map<Long, Integer> dual = new LinkedHashMap<>(baseCounts);
-            dual.merge(dualRequest.first().id(), dualRequest.firstCount(), Integer::sum);
-            dual.merge(dualRequest.second().id(), secondCount, Integer::sum);
-            EncounterDraftCollectionHelper.add(drafts, profiles, buildRequest, dual);
-        }
-    }
-
-    private record DualProfileCountRequest(
             EncounterCandidateProfile first,
             EncounterCandidateProfile second,
             int firstCount,
             int secondLimit
     ) {
+        for (int secondCount = 1; secondCount <= secondLimit; secondCount++) {
+            Map<Long, Integer> dual = new LinkedHashMap<>(baseCounts);
+            dual.put(first.id(), dual.getOrDefault(first.id(), 0) + firstCount);
+            dual.put(second.id(), dual.getOrDefault(second.id(), 0) + secondCount);
+            EncounterDraftGenerationModel.fromRequest(buildRequest).addDraft(
+                    drafts,
+                    profiles,
+                    buildRequest,
+                    dual);
+        }
     }
 }

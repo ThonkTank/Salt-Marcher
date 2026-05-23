@@ -358,7 +358,8 @@ final class DungeonServiceAssembly {
                         surface.tileLabel(),
                         surface.headingLabel(),
                         surface.statusLabel(),
-                        surface.contextKind().isOverworld(),
+                        surface.contextKind()
+                                == src.domain.dungeon.model.travel.model.session.model.TravelDungeonSessionValues.ContextKind.OVERWORLD,
                         surface.actions().stream().map(PublishedState::workspaceAction).toList());
             }
 

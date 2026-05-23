@@ -1,10 +1,6 @@
 package src.domain.encounter.model.session.model;
 
 import java.util.List;
-import src.domain.encounter.model.session.model.AwardXpOutcome;
-import src.domain.encounter.model.session.model.PartyMemberData;
-import src.domain.encounter.model.session.model.ResultEnemyData;
-import src.domain.encounter.model.session.model.ResultStateData;
 
 final class CombatResolutionTracker {
 
@@ -21,14 +17,18 @@ final class CombatResolutionTracker {
 
     void endCombat(CombatRosterMutation combatRosterMutations, CombatRoster combatRoster, int activePartySize, boolean hasActiveParty) {
         List<ResultEnemyData> enemies = combatRosterMutations.resultEnemies(combatRoster);
-        int eligibleXp = enemies.stream()
-                .filter(ResultEnemyData::defeatedByDefault)
-                .mapToInt(ResultEnemyData::xp)
-                .sum();
+        int eligibleXp = 0;
+        long defeatedEnemies = 0;
+        for (ResultEnemyData enemy : enemies) {
+            if (enemy.defeatedByDefault()) {
+                eligibleXp += enemy.xp();
+                defeatedEnemies++;
+            }
+        }
         int partySize = Math.max(MINIMUM_PARTY_SIZE, activePartySize);
         resultState = new ResultStateData(
                 enemies,
-                enemies.stream().filter(ResultEnemyData::defeatedByDefault).count(),
+                defeatedEnemies,
                 eligibleXp,
                 eligibleXp / partySize,
                 NO_LOOT,
@@ -43,8 +43,12 @@ final class CombatResolutionTracker {
         if (resultState.xpAwarded() || resultState.perPlayerXp() <= 0 || !context.hasActiveParty()) {
             return;
         }
+        List<Long> partyMemberIds = new java.util.ArrayList<>();
+        for (PartyMemberData member : context.activeParty()) {
+            partyMemberIds.add(member.numericId());
+        }
         AwardXpOutcome outcome = access.awardXp(
-                context.activeParty().stream().map(PartyMemberData::numericId).toList(),
+                List.copyOf(partyMemberIds),
                 resultState.perPlayerXp());
         resultState = resultState.withAwardStatus(
                 outcome.success() ? XP_AWARDED_STATUS : XP_AWARD_FAILED_STATUS,

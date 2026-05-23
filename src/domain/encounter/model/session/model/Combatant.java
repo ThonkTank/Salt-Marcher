@@ -1,6 +1,5 @@
 package src.domain.encounter.model.session.model;
 
-import src.domain.encounter.model.session.model.CombatantKind;
 
 public record Combatant(
         String id,

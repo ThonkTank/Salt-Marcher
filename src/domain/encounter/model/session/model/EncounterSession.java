@@ -7,14 +7,6 @@ import java.util.Optional;
 import src.domain.encounter.model.generation.model.EncounterGenerationInputs;
 import src.domain.encounter.model.generation.model.EncounterGenerationRequest;
 import src.domain.encounter.model.plan.model.EncounterPlan;
-import src.domain.encounter.model.session.model.AwardXpOutcome;
-import src.domain.encounter.model.session.model.BudgetData;
-import src.domain.encounter.model.session.model.CombatProjectionData;
-import src.domain.encounter.model.session.model.CreatureDetailData;
-import src.domain.encounter.model.session.model.GenerationResultData;
-import src.domain.encounter.model.session.model.ListPlansOutcome;
-import src.domain.encounter.model.session.model.PartyMemberData;
-import src.domain.encounter.model.session.model.PlanOutcome;
 
 public final class EncounterSession {
 
@@ -98,7 +90,7 @@ public final class EncounterSession {
     }
 
     private void addPartyMemberToCombat(long partyMemberId, int initiative) {
-        if (context.mode() != Mode.COMBAT) {
+        if (Mode.isNotCombatMode(context.mode())) {
             return;
         }
         PartyMemberData member = partyMember(partyMemberId).orElse(null);
@@ -115,9 +107,12 @@ public final class EncounterSession {
     }
 
     private Optional<PartyMemberData> partyMember(long id) {
-        return context.activeParty().stream()
-                .filter(entry -> entry.numericId() == id)
-                .findFirst();
+        for (PartyMemberData entry : context.activeParty()) {
+            if (entry.numericId() == id) {
+                return Optional.of(entry);
+            }
+        }
+        return Optional.empty();
     }
 
     private void addReinforcement(CreatureDetailData creature) {

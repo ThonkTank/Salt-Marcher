@@ -1,6 +1,5 @@
 package src.domain.encounter.model.session.model;
 
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -42,13 +41,19 @@ final class EncounterSessionContext {
     }
 
     List<PartyMemberData> missingCombatPartyMembers(CombatProjectionData projection) {
-        List<String> activePcIds = projection.cards().stream()
-                .filter(CombatCardData::playerCharacter)
-                .map(CombatCardData::id)
-                .toList();
-        return activeParty.stream()
-                .filter(member -> !activePcIds.contains(member.id()))
-                .toList();
+        List<String> activePcIds = new ArrayList<>();
+        for (CombatCardData card : projection.cards()) {
+            if (card.playerCharacter()) {
+                activePcIds.add(card.id());
+            }
+        }
+        List<PartyMemberData> missingMembers = new ArrayList<>();
+        for (PartyMemberData member : activeParty) {
+            if (!activePcIds.contains(member.id())) {
+                missingMembers.add(member);
+            }
+        }
+        return List.copyOf(missingMembers);
     }
 
     int mode() {
