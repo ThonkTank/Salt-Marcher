@@ -4,10 +4,6 @@ import java.util.List;
 import java.util.function.Consumer;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.SimpleStringProperty;
-import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
-import javafx.geometry.Insets;
-import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
@@ -21,54 +17,51 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 
-@SuppressWarnings("PMD.CouplingBetweenObjects")
+@SuppressWarnings({"PMD.CouplingBetweenObjects", "PMD.AvoidDuplicateLiterals", "PMD.TooManyStaticImports"})
 public final class CatalogMainView extends BorderPane {
 
-    static final int FIRST_COLUMN_INDEX = 0;
-    static final int PREVIOUS_PAGE_SHIFT = -1;
-    static final int NEXT_PAGE_SHIFT = 1;
-    static final int NO_PAGE_SHIFT = 0;
-    static final long NO_CREATURE_ID = 0L;
-    static final String EMPTY_SORT_KEY = "";
-    static final String ACTION_LABEL = "+Add";
-    static final String ACTION_TOOLTIP = "Zum Encounter hinzufügen";
-    static final String CREATURE_ACCESSIBLE_TEXT_PREFIX = "Stat Block: ";
-    static final String ACTION_ACCESSIBLE_TEXT_PREFIX = ACTION_LABEL + ": ";
-    static final String SORT_KEY_NAME_ASC = "name-asc";
-    static final String SORT_KEY_NAME_DESC = "name-desc";
-    static final String SORT_KEY_CR_ASC = "cr-asc";
-    static final String SORT_KEY_CR_DESC = "cr-desc";
-    static final String SORT_KEY_XP_ASC = "xp-asc";
-    static final String SORT_KEY_XP_DESC = "xp-desc";
-    static final String SORT_LABEL_NAME_ASC = "Name (A-Z)";
-    static final String SORT_LABEL_NAME_DESC = "Name (Z-A)";
-    static final String SORT_LABEL_CR_ASC = "CR (aufst.)";
-    static final String SORT_LABEL_CR_DESC = "CR (abst.)";
-    static final String SORT_LABEL_XP_ASC = "XP (aufst.)";
-    static final String SORT_LABEL_XP_DESC = "XP (abst.)";
-    static final String NO_SORT_LABEL = "";
-    static final String COLUMN_KEY_CHALLENGE_RATING = "cr";
-    static final String COLUMN_KEY_TYPE = "type";
-    static final String COLUMN_KEY_SIZE = "size";
-    static final String COLUMN_KEY_XP = "xp";
+    private static final int FIRST_COLUMN_INDEX = 0;
+    private static final int PREVIOUS_PAGE_SHIFT = -1;
+    private static final int NEXT_PAGE_SHIFT = 1;
+    private static final long NO_CREATURE_ID = 0L;
+    private static final String ACTION_LABEL = "+Add";
+    private static final String ACTION_TOOLTIP = "Zum Encounter hinzufügen";
+    private static final String CREATURE_ACCESSIBLE_TEXT_PREFIX = "Stat Block: ";
+    private static final String ACTION_ACCESSIBLE_TEXT_PREFIX = ACTION_LABEL + ": ";
+    private static final String SORT_KEY_NAME_ASC = "name-asc";
+    private static final String SORT_KEY_NAME_DESC = "name-desc";
+    private static final String SORT_KEY_CR_ASC = "cr-asc";
+    private static final String SORT_KEY_CR_DESC = "cr-desc";
+    private static final String SORT_KEY_XP_ASC = "xp-asc";
+    private static final String SORT_KEY_XP_DESC = "xp-desc";
+    private static final String SORT_LABEL_NAME_ASC = "Name (A-Z)";
+    private static final String SORT_LABEL_NAME_DESC = "Name (Z-A)";
+    private static final String SORT_LABEL_CR_ASC = "CR (aufst.)";
+    private static final String SORT_LABEL_CR_DESC = "CR (abst.)";
+    private static final String SORT_LABEL_XP_ASC = "XP (aufst.)";
+    private static final String SORT_LABEL_XP_DESC = "XP (abst.)";
+    private static final String COLUMN_KEY_CHALLENGE_RATING = "cr";
+    private static final String COLUMN_KEY_TYPE = "type";
+    private static final String COLUMN_KEY_SIZE = "size";
+    private static final String COLUMN_KEY_XP = "xp";
 
-    private final SecondaryLabel countLabel = new SecondaryLabel("0 Monster gefunden");
-    private final SecondaryLabel pageLabel = new SecondaryLabel("Seite 1 / 1");
+    private final Label countLabel = secondaryLabel("0 Monster gefunden");
+    private final Label pageLabel = secondaryLabel("Seite 1 / 1");
     private final Button previousButton = new Button("◀ Zurück");
     private final Button nextButton = new Button("Weiter ▶");
-    private final SortSelector sortSelector = new SortSelector(this::publishSortSelection);
-    private final CatalogTable table = new CatalogTable(this::publishOpenCreature, this::publishAddCreature);
+    private final ComboBox<Object> sortSelector = new ComboBox<>();
+    private final TableView<Object> table = new TableView<>();
     private Consumer<CatalogMainViewInputEvent> viewInputEventHandler = ignored -> { };
 
     public CatalogMainView() {
         getStyleClass().add("surface-root");
-        setPadding(new Insets(8));
-        setTop(new TopBar(countLabel, sortSelector));
-        setCenter(table);
-
+        configureSortSelector(sortSelector, this::publishSortSelection);
+        configureTable(table, this::publishOpenCreature, this::publishAddCreature);
         previousButton.setOnAction(event -> publishPageShift(PREVIOUS_PAGE_SHIFT));
         nextButton.setOnAction(event -> publishPageShift(NEXT_PAGE_SHIFT));
-        setBottom(new PaginationBar(previousButton, pageLabel, nextButton));
+        setTop(topBar(countLabel, sortSelector));
+        setCenter(table);
+        setBottom(paginationBar(previousButton, pageLabel, nextButton));
     }
 
     public void bind(CatalogMainContentModel contentModel) {
@@ -83,346 +76,321 @@ public final class CatalogMainView extends BorderPane {
         viewInputEventHandler = handler == null ? ignored -> { } : handler;
     }
 
-    private void applyProjection(CatalogContributionModel.MainProjection projection) {
-        CatalogContributionModel.MainProjection safeProjection = projection == null
-                ? CatalogContributionModel.MainProjection.initial()
-                : projection;
-        countLabel.setText(safeProjection.countLabel());
-        pageLabel.setText(safeProjection.pageLabel());
-        previousButton.setDisable(!safeProjection.previousPageAvailable());
-        nextButton.setDisable(!safeProjection.nextPageAvailable());
-        sortSelector.applyOptions(safeProjection.sortOptions());
-        sortSelector.selectSortKey(safeProjection.selectedSortKey());
-        table.applyProjection(safeProjection.placeholderText(), safeProjection.rows(), safeProjection.columns());
+    private void applyProjection(CatalogMainContentModel.MainProjection projection) {
+        if (projection == null) {
+            return;
+        }
+        countLabel.setText(projection.countLabel());
+        pageLabel.setText(projection.pageLabel());
+        previousButton.setDisable(!projection.previousPageAvailable());
+        nextButton.setDisable(!projection.nextPageAvailable());
+        sortSelector.getItems().setAll(projection.sortOptions());
+        selectSortKey(projection.selectedSortKey());
+        applyTableProjection(
+                table,
+                projection.placeholderText(),
+                projection.rows(),
+                projection.columns(),
+                this::publishOpenCreature,
+                this::publishAddCreature);
     }
 
     private void publishSortSelection(String sortKey) {
         viewInputEventHandler.accept(new CatalogMainViewInputEvent(
                 sortKey,
-                NO_CREATURE_ID,
-                NO_CREATURE_ID,
-                NO_PAGE_SHIFT));
+                0L,
+                0L,
+                0));
     }
 
-    private void publishOpenCreature(CatalogContributionModel.CatalogRow row) {
-        publishCreatureEvent(row, false);
+    private void publishOpenCreature(long creatureId) {
+        publishCreatureEvent(creatureId, false);
     }
 
-    private void publishAddCreature(CatalogContributionModel.CatalogRow row) {
-        publishCreatureEvent(row, true);
+    private void publishAddCreature(long creatureId) {
+        publishCreatureEvent(creatureId, true);
     }
 
-    private void publishCreatureEvent(CatalogContributionModel.CatalogRow row, boolean addCreature) {
-        if (row == null) {
+    private void publishCreatureEvent(long creatureId, boolean addCreature) {
+        if (creatureId <= 0L) {
             return;
         }
         viewInputEventHandler.accept(addCreature
-                ? new CatalogMainViewInputEvent(EMPTY_SORT_KEY, NO_CREATURE_ID, row.id(), NO_PAGE_SHIFT)
-                : new CatalogMainViewInputEvent(EMPTY_SORT_KEY, row.id(), NO_CREATURE_ID, NO_PAGE_SHIFT));
+                ? new CatalogMainViewInputEvent("", 0L, creatureId, 0)
+                : new CatalogMainViewInputEvent("", creatureId, 0L, 0));
     }
 
     private void publishPageShift(int pageShift) {
         viewInputEventHandler.accept(new CatalogMainViewInputEvent(
-                EMPTY_SORT_KEY,
-                NO_CREATURE_ID,
-                NO_CREATURE_ID,
+                "",
+                0L,
+                0L,
                 pageShift));
     }
-}
 
-final class TopBar extends HBox {
+    private static Label secondaryLabel(String text) {
+        Label label = new Label(text);
+        label.getStyleClass().add("text-secondary");
+        return label;
+    }
 
-    TopBar(Label countLabel, SortSelector sortSelector) {
-        super(8);
-        setAlignment(Pos.CENTER_LEFT);
-        setPadding(new Insets(0, 0, 6, 0));
+    private static HBox topBar(Label countLabel, ComboBox<Object> sortSelector) {
+        HBox topBar = new HBox(8);
+        topBar.getStyleClass().add("catalog-main-topbar");
         Region spacer = new Region();
-        setHgrow(spacer, Priority.ALWAYS);
-        getChildren().addAll(countLabel, spacer, new MutedLabel("Sortierung:"), sortSelector);
-    }
-}
-
-final class PaginationBar extends HBox {
-
-    PaginationBar(Button previousButton, Label pageLabel, Button nextButton) {
-        super(8, previousButton, pageLabel, nextButton);
-        setAlignment(Pos.CENTER);
-        setPadding(new Insets(6, 0, 0, 0));
-    }
-}
-
-final class SecondaryLabel extends Label {
-
-    SecondaryLabel(String text) {
-        super(text);
-        getStyleClass().add("text-secondary");
-    }
-}
-
-final class MutedLabel extends Label {
-
-    MutedLabel(String text) {
-        super(text);
-        getStyleClass().add("text-muted");
-    }
-}
-
-final class SortSelector extends ComboBox<CatalogContributionModel.KeyLabel> {
-
-    private final ObservableList<CatalogContributionModel.KeyLabel> sortItems = FXCollections.observableArrayList();
-    private final Consumer<String> selectionConsumer;
-
-    SortSelector(Consumer<String> selectionConsumer) {
-        this.selectionConsumer = selectionConsumer;
-        setItems(sortItems);
-        installSelectionPublisher();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
+        Label sortLabel = new Label("Sortierung:");
+        sortLabel.getStyleClass().add("text-muted");
+        topBar.getChildren().addAll(countLabel, spacer, sortLabel, sortSelector);
+        return topBar;
     }
 
-    void applyOptions(List<CatalogContributionModel.KeyLabel> options) {
-        sortItems.setAll(options == null ? List.of() : List.copyOf(options));
+    private static HBox paginationBar(Button previousButton, Label pageLabel, Button nextButton) {
+        HBox bar = new HBox(8, previousButton, pageLabel, nextButton);
+        bar.getStyleClass().add("catalog-main-pagination");
+        return bar;
     }
 
-    void selectSortKey(String key) {
-        String label = labelForKey(key);
-        if (label.isBlank()) {
-            return;
-        }
-        suspendSelectionPublisher();
-        try {
-            for (CatalogContributionModel.KeyLabel selection : sortItems) {
-                if (label.equals(selection.toString())) {
-                    getSelectionModel().select(selection);
-                    return;
-                }
-            }
-        } finally {
-            installSelectionPublisher();
-        }
-    }
-
-    private static String keyForLabel(String label) {
-        return switch (label) {
-            case CatalogMainView.SORT_LABEL_NAME_ASC -> CatalogMainView.SORT_KEY_NAME_ASC;
-            case CatalogMainView.SORT_LABEL_NAME_DESC -> CatalogMainView.SORT_KEY_NAME_DESC;
-            case CatalogMainView.SORT_LABEL_CR_ASC -> CatalogMainView.SORT_KEY_CR_ASC;
-            case CatalogMainView.SORT_LABEL_CR_DESC -> CatalogMainView.SORT_KEY_CR_DESC;
-            case CatalogMainView.SORT_LABEL_XP_ASC -> CatalogMainView.SORT_KEY_XP_ASC;
-            case CatalogMainView.SORT_LABEL_XP_DESC -> CatalogMainView.SORT_KEY_XP_DESC;
-            default -> "";
-        };
-    }
-
-    private static String labelForKey(String key) {
-        return switch (key) {
-            case CatalogMainView.SORT_KEY_NAME_ASC -> CatalogMainView.SORT_LABEL_NAME_ASC;
-            case CatalogMainView.SORT_KEY_NAME_DESC -> CatalogMainView.SORT_LABEL_NAME_DESC;
-            case CatalogMainView.SORT_KEY_CR_ASC -> CatalogMainView.SORT_LABEL_CR_ASC;
-            case CatalogMainView.SORT_KEY_CR_DESC -> CatalogMainView.SORT_LABEL_CR_DESC;
-            case CatalogMainView.SORT_KEY_XP_ASC -> CatalogMainView.SORT_LABEL_XP_ASC;
-            case CatalogMainView.SORT_KEY_XP_DESC -> CatalogMainView.SORT_LABEL_XP_DESC;
-            default -> CatalogMainView.NO_SORT_LABEL;
-        };
-    }
-
-    private void installSelectionPublisher() {
-        setOnAction(event -> {
-            String selectedKey = keyForLabel(getValue() == null ? CatalogMainView.NO_SORT_LABEL : getValue().toString());
+    private static void configureSortSelector(
+            ComboBox<Object> sortSelector,
+            Consumer<String> selectionConsumer
+    ) {
+        sortSelector.setOnAction(event -> {
+            String selectedKey = keyForLabel(sortSelector.getValue() == null ? "" : sortSelector.getValue().toString());
             if (!selectedKey.isBlank()) {
                 selectionConsumer.accept(selectedKey);
             }
         });
     }
 
-    private void suspendSelectionPublisher() {
-        setOnAction(event -> {
-        });
+    private void selectSortKey(String key) {
+        String label = labelForKey(key);
+        if (label.isBlank()) {
+            return;
+        }
+        sortSelector.setOnAction(event -> { });
+        try {
+            for (Object selection : sortSelector.getItems()) {
+                if (label.equals(selection.toString())) {
+                    sortSelector.getSelectionModel().select(selection);
+                    return;
+                }
+            }
+        } finally {
+            configureSortSelector(sortSelector, this::publishSortSelection);
+        }
     }
-}
 
-final class CatalogTable extends TableView<CatalogContributionModel.CatalogRow> {
-
-    private final ObservableList<CatalogContributionModel.CatalogRow> rowItems = FXCollections.observableArrayList();
-    private final PlaceholderLabel placeholder = new PlaceholderLabel();
-    private final Consumer<CatalogContributionModel.CatalogRow> openCreatureAction;
-    private final Consumer<CatalogContributionModel.CatalogRow> addCreatureAction;
-
-    CatalogTable(
-            Consumer<CatalogContributionModel.CatalogRow> openCreatureAction,
-            Consumer<CatalogContributionModel.CatalogRow> addCreatureAction
+    private static void configureTable(
+            TableView<Object> table,
+            Consumer<Long> openCreatureAction,
+            Consumer<Long> addCreatureAction
     ) {
-        this.openCreatureAction = openCreatureAction;
-        this.addCreatureAction = addCreatureAction;
-        setItems(rowItems);
-        setColumnResizePolicy(CONSTRAINED_RESIZE_POLICY);
-        setPlaceholder(placeholder);
-        setOnKeyPressed(event -> {
+        table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        table.setPlaceholder(new Label("Lade Monster..."));
+        table.setOnKeyPressed(event -> {
             if (event.getCode() != KeyCode.ENTER) {
                 return;
             }
-            CatalogContributionModel.CatalogRow selectedRow = getSelectionModel().getSelectedItem();
-            if (selectedRow == null) {
+            long selectedCreatureId = creatureId(table.getSelectionModel().getSelectedItem());
+            if (selectedCreatureId <= NO_CREATURE_ID) {
                 return;
             }
             if (event.isShiftDown()) {
-                addCreatureAction.accept(selectedRow);
+                addCreatureAction.accept(selectedCreatureId);
             } else {
-                openCreatureAction.accept(selectedRow);
+                openCreatureAction.accept(selectedCreatureId);
             }
             event.consume();
         });
     }
 
-    void applyProjection(
+    private static void applyTableProjection(
+            TableView<Object> table,
             String placeholderText,
-            List<CatalogContributionModel.CatalogRow> rows,
-            List<CatalogContributionModel.KeyLabel> columns
+            List<CatalogMainContentModel.CatalogRow> rows,
+            List<CatalogMainContentModel.KeyLabel> columns,
+            Consumer<Long> openCreatureAction,
+            Consumer<Long> addCreatureAction
     ) {
-        placeholder.setText(placeholderText);
-        rowItems.setAll(rows == null ? List.of() : List.copyOf(rows));
-        getColumns().setAll(configuredColumns(columns));
+        if (table.getPlaceholder() instanceof Label label) {
+            label.setText(placeholderText);
+        }
+        table.getItems().setAll(rows == null ? List.of() : List.copyOf(rows));
+        table.getColumns().setAll(configuredColumns(columns, openCreatureAction, addCreatureAction));
     }
 
-    private List<TableColumn<CatalogContributionModel.CatalogRow, ?>> configuredColumns(
-            List<CatalogContributionModel.KeyLabel> columns
+    private static List<TableColumn<Object, ?>> configuredColumns(
+            List<CatalogMainContentModel.KeyLabel> columns,
+            Consumer<Long> openCreatureAction,
+            Consumer<Long> addCreatureAction
     ) {
-        List<CatalogContributionModel.KeyLabel> safeColumns = columns == null ? List.of() : List.copyOf(columns);
-        TableColumn<CatalogContributionModel.CatalogRow, ?>[] configuredColumns =
-                new TableColumn[safeColumns.size() + 1];
+        List<CatalogMainContentModel.KeyLabel> safeColumns = columns == null ? List.of() : List.copyOf(columns);
+        TableColumn<Object, ?>[] configuredColumns = new TableColumn[safeColumns.size() + 1];
         for (int index = 0; index < safeColumns.size(); index++) {
-            configuredColumns[index] = index == CatalogMainView.FIRST_COLUMN_INDEX
-                    ? createLinkColumn(safeColumns.get(index))
+            configuredColumns[index] = index == FIRST_COLUMN_INDEX
+                    ? createLinkColumn(safeColumns.get(index), openCreatureAction)
                     : createTextColumn(safeColumns.get(index), index);
         }
-        configuredColumns[safeColumns.size()] = createActionColumn();
+        configuredColumns[safeColumns.size()] = createActionColumn(addCreatureAction);
         return List.of(configuredColumns);
     }
 
-    private TableColumn<CatalogContributionModel.CatalogRow, String> createTextColumn(
-            CatalogContributionModel.KeyLabel column,
+    private static TableColumn<Object, String> createTextColumn(
+            CatalogMainContentModel.KeyLabel column,
             int index
     ) {
-        TableColumn<CatalogContributionModel.CatalogRow, String> textColumn = new TableColumn<>(column.label());
-        textColumn.setCellValueFactory(data -> {
-            CatalogContributionModel.CatalogRow row = data.getValue();
-            return new SimpleStringProperty(row == null ? "" : row.cell(index));
-        });
-        ColumnSizing sizing = ColumnSizing.forKey(column.key());
-        textColumn.setMinWidth(sizing.minWidth());
-        textColumn.setPrefWidth(sizing.prefWidth());
-        if (!Double.isNaN(sizing.maxWidth())) {
-            textColumn.setMaxWidth(sizing.maxWidth());
-        }
+        TableColumn<Object, String> textColumn = new TableColumn<>(column.label());
+        textColumn.setCellValueFactory(data -> new SimpleStringProperty(cellText(data.getValue(), index)));
+        applyColumnSizing(textColumn, column.key());
         return textColumn;
     }
 
-    private TableColumn<CatalogContributionModel.CatalogRow, CatalogContributionModel.CatalogRow> createLinkColumn(
-            CatalogContributionModel.KeyLabel column
+    private static TableColumn<Object, Object> createLinkColumn(
+            CatalogMainContentModel.KeyLabel column,
+            Consumer<Long> openCreatureAction
     ) {
-        TableColumn<CatalogContributionModel.CatalogRow, CatalogContributionModel.CatalogRow> linkColumn =
-                new TableColumn<>(column.label());
+        TableColumn<Object, Object> linkColumn = new TableColumn<>(column.label());
         linkColumn.setMinWidth(120);
         linkColumn.setPrefWidth(200);
         linkColumn.setCellValueFactory(data -> new ReadOnlyObjectWrapper<>(data.getValue()));
-        linkColumn.setCellFactory(ignored -> new LinkCell(openCreatureAction));
+        linkColumn.setCellFactory(ignored -> new LinkCell(CatalogMainView::creatureId, openCreatureAction));
         return linkColumn;
     }
 
-    private TableColumn<CatalogContributionModel.CatalogRow, CatalogContributionModel.CatalogRow> createActionColumn() {
-        TableColumn<CatalogContributionModel.CatalogRow, CatalogContributionModel.CatalogRow> actionColumn =
-                new TableColumn<>("");
+    private static TableColumn<Object, Object> createActionColumn(Consumer<Long> addCreatureAction) {
+        TableColumn<Object, Object> actionColumn = new TableColumn<>("");
         actionColumn.setMinWidth(55);
         actionColumn.setPrefWidth(65);
         actionColumn.setMaxWidth(75);
         actionColumn.setSortable(false);
         actionColumn.setCellValueFactory(data -> new ReadOnlyObjectWrapper<>(data.getValue()));
-        actionColumn.setCellFactory(ignored -> new ActionCell(addCreatureAction));
+        actionColumn.setCellFactory(ignored -> new ActionCell(CatalogMainView::creatureId, addCreatureAction));
         return actionColumn;
     }
-}
 
-record ColumnSizing(double minWidth, double prefWidth, double maxWidth) {
-
-    static ColumnSizing forKey(String key) {
-        return switch (key) {
-            case CatalogMainView.COLUMN_KEY_CHALLENGE_RATING -> new ColumnSizing(40, 50, 60);
-            case CatalogMainView.COLUMN_KEY_TYPE -> new ColumnSizing(80, 110, 150);
-            case CatalogMainView.COLUMN_KEY_SIZE -> new ColumnSizing(65, 85, 100);
-            case CatalogMainView.COLUMN_KEY_XP -> new ColumnSizing(45, 60, 75);
-            default -> new ColumnSizing(70, 110, Double.NaN);
+    private static String keyForLabel(String label) {
+        return switch (label) {
+            case SORT_LABEL_NAME_ASC -> SORT_KEY_NAME_ASC;
+            case SORT_LABEL_NAME_DESC -> SORT_KEY_NAME_DESC;
+            case SORT_LABEL_CR_ASC -> SORT_KEY_CR_ASC;
+            case SORT_LABEL_CR_DESC -> SORT_KEY_CR_DESC;
+            case SORT_LABEL_XP_ASC -> SORT_KEY_XP_ASC;
+            case SORT_LABEL_XP_DESC -> SORT_KEY_XP_DESC;
+            default -> "";
         };
     }
-}
 
-final class PlaceholderLabel extends Label {
-
-    PlaceholderLabel() {
-        super("Lade Monster...");
+    private static String labelForKey(String key) {
+        return switch (key) {
+            case SORT_KEY_NAME_ASC -> SORT_LABEL_NAME_ASC;
+            case SORT_KEY_NAME_DESC -> SORT_LABEL_NAME_DESC;
+            case SORT_KEY_CR_ASC -> SORT_LABEL_CR_ASC;
+            case SORT_KEY_CR_DESC -> SORT_LABEL_CR_DESC;
+            case SORT_KEY_XP_ASC -> SORT_LABEL_XP_ASC;
+            case SORT_KEY_XP_DESC -> SORT_LABEL_XP_DESC;
+            default -> "";
+        };
     }
-}
 
-final class CreatureLinkButton extends Button {
-
-    CreatureLinkButton() {
-        getStyleClass().addAll("creature-link", "flat");
+    private static String cellText(Object row, int index) {
+        return row instanceof CatalogMainContentModel.CatalogRow catalogRow ? catalogRow.cell(index) : "";
     }
-}
 
-final class AddCreatureButton extends Button {
-
-    AddCreatureButton() {
-        super(CatalogMainView.ACTION_LABEL);
-        getStyleClass().addAll("accent", "compact");
-        setTooltip(new Tooltip(CatalogMainView.ACTION_TOOLTIP));
+    private static long creatureId(Object row) {
+        return row instanceof CatalogMainContentModel.CatalogRow catalogRow ? catalogRow.id() : 0L;
     }
-}
 
-final class LinkCell extends TableCell<CatalogContributionModel.CatalogRow, CatalogContributionModel.CatalogRow> {
-
-    private final CreatureLinkButton button = new CreatureLinkButton();
-
-    LinkCell(Consumer<CatalogContributionModel.CatalogRow> openAction) {
-        button.setOnAction(event -> {
-            CatalogContributionModel.CatalogRow row = getItem();
-            if (row != null) {
-                openAction.accept(row);
+    private static void applyColumnSizing(TableColumn<Object, String> textColumn, String key) {
+        switch (key) {
+            case COLUMN_KEY_CHALLENGE_RATING -> setColumnSizing(textColumn, 40, 50, 60);
+            case COLUMN_KEY_TYPE -> setColumnSizing(textColumn, 80, 110, 150);
+            case COLUMN_KEY_SIZE -> setColumnSizing(textColumn, 65, 85, 100);
+            case COLUMN_KEY_XP -> setColumnSizing(textColumn, 45, 60, 75);
+            default -> {
+                textColumn.setMinWidth(70);
+                textColumn.setPrefWidth(110);
             }
-        });
+        }
     }
 
-    @Override
-    protected void updateItem(CatalogContributionModel.CatalogRow row, boolean empty) {
-        super.updateItem(row, empty);
-        CatalogContributionModel.CatalogRow displayRow = empty ? null : row;
-        String creatureName = displayRow == null ? "" : displayRow.cell(CatalogMainView.FIRST_COLUMN_INDEX);
-        button.setText(creatureName);
-        button.setAccessibleText(displayRow == null
-                ? ""
-                : CatalogMainView.CREATURE_ACCESSIBLE_TEXT_PREFIX + creatureName);
-        setText(null);
-        setGraphic(displayRow == null ? null : button);
-    }
-}
-
-final class ActionCell extends TableCell<CatalogContributionModel.CatalogRow, CatalogContributionModel.CatalogRow> {
-
-    private final AddCreatureButton button = new AddCreatureButton();
-
-    ActionCell(Consumer<CatalogContributionModel.CatalogRow> addAction) {
-        button.setOnAction(event -> {
-            CatalogContributionModel.CatalogRow row = getItem();
-            if (row != null) {
-                addAction.accept(row);
-            }
-        });
+    private static void setColumnSizing(
+            TableColumn<Object, String> textColumn,
+            double minWidth,
+            double prefWidth,
+            double maxWidth
+    ) {
+        textColumn.setMinWidth(minWidth);
+        textColumn.setPrefWidth(prefWidth);
+        textColumn.setMaxWidth(maxWidth);
     }
 
-    @Override
-    protected void updateItem(CatalogContributionModel.CatalogRow row, boolean empty) {
-        super.updateItem(row, empty);
-        CatalogContributionModel.CatalogRow displayRow = empty ? null : row;
-        button.setAccessibleText(displayRow == null
-                ? ""
-                : CatalogMainView.ACTION_ACCESSIBLE_TEXT_PREFIX + displayRow.cell(CatalogMainView.FIRST_COLUMN_INDEX));
-        setGraphic(displayRow == null ? null : button);
+    private static final class LinkCell extends TableCell<Object, Object> {
+
+        private final Button button = new Button();
+        private final java.util.function.ToLongFunction<Object> creatureIdReader;
+        private final Consumer<Long> openCreatureAction;
+
+        LinkCell(
+                java.util.function.ToLongFunction<Object> creatureIdReader,
+                Consumer<Long> openCreatureAction
+        ) {
+            this.creatureIdReader = creatureIdReader;
+            this.openCreatureAction = openCreatureAction;
+            button.getStyleClass().addAll("creature-link", "flat");
+            button.setOnAction(event -> {
+                Object row = getItem();
+                TableView<Object> owningTable = getTableView();
+                if (owningTable != null && row != null) {
+                    owningTable.getSelectionModel().select(row);
+                }
+                openCreatureAction.accept(creatureIdReader.applyAsLong(row));
+            });
+        }
+
+        @Override
+        protected void updateItem(Object row, boolean empty) {
+            super.updateItem(row, empty);
+            Object displayRow = empty ? null : row;
+            String creatureName = cellText(displayRow, FIRST_COLUMN_INDEX);
+            button.setText(creatureName);
+            button.setAccessibleText(displayRow == null ? "" : CREATURE_ACCESSIBLE_TEXT_PREFIX + creatureName);
+            setText(null);
+            setGraphic(displayRow == null ? null : button);
+        }
     }
+
+    private static final class ActionCell extends TableCell<Object, Object> {
+
+        private final Button button = new Button(ACTION_LABEL);
+        private final java.util.function.ToLongFunction<Object> creatureIdReader;
+        private final Consumer<Long> addCreatureAction;
+
+        ActionCell(
+                java.util.function.ToLongFunction<Object> creatureIdReader,
+                Consumer<Long> addCreatureAction
+        ) {
+            this.creatureIdReader = creatureIdReader;
+            this.addCreatureAction = addCreatureAction;
+            button.getStyleClass().addAll("accent", "compact");
+            button.setTooltip(new Tooltip(ACTION_TOOLTIP));
+            button.setOnAction(event -> {
+                Object row = getItem();
+                TableView<Object> owningTable = getTableView();
+                if (owningTable != null && row != null) {
+                    owningTable.getSelectionModel().select(row);
+                }
+                addCreatureAction.accept(creatureIdReader.applyAsLong(row));
+            });
+        }
+
+        @Override
+        protected void updateItem(Object row, boolean empty) {
+            super.updateItem(row, empty);
+            Object displayRow = empty ? null : row;
+            button.setAccessibleText(displayRow == null ? "" : ACTION_ACCESSIBLE_TEXT_PREFIX + cellText(displayRow, FIRST_COLUMN_INDEX));
+            setGraphic(displayRow == null ? null : button);
+        }
+    }
+
 }

@@ -1,6 +1,5 @@
 package src.view.leftbartabs.sessionplanner;
 
-import javafx.geometry.Insets;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.layout.VBox;
@@ -33,15 +32,15 @@ public final class SessionPlannerStateView extends ScrollPane {
     }
 
     private void show(SessionPlannerStateContentModel.Projection projection) {
-        SessionPlannerStateContentModel.Projection safe = projection == null
-                ? SessionPlannerStateContentModel.Projection.empty()
-                : projection;
-        encounterTitleLabel.setText(safe.selectedEncounterTitle());
-        encounterDetailLabel.setText(safe.selectedEncounterDetail());
-        encounterXpLabel.setText(safe.selectedEncounterXpSummary());
-        contextLabel.setText(safe.stateContextLabel());
-        placeholderTitleLabel.setText(safe.placeholderTitle());
-        placeholderDetailLabel.setText(safe.placeholderDetail());
+        if (projection == null) {
+            return;
+        }
+        encounterTitleLabel.setText(projection.selectedEncounterTitle());
+        encounterDetailLabel.setText(projection.selectedEncounterDetail());
+        encounterXpLabel.setText(projection.selectedEncounterXpSummary());
+        contextLabel.setText(projection.stateContextLabel());
+        placeholderTitleLabel.setText(projection.placeholderTitle());
+        placeholderDetailLabel.setText(projection.placeholderDetail());
     }
 
     private static VBox section(String title, Label... labels) {
@@ -57,7 +56,6 @@ public final class SessionPlannerStateView extends ScrollPane {
         private StateContent(VBox... sections) {
             super(12, sections);
             getStyleClass().add("session-planner-main");
-            setPadding(new Insets(10));
         }
     }
 
@@ -66,7 +64,6 @@ public final class SessionPlannerStateView extends ScrollPane {
         private SectionBox(String title, Label... labels) {
             super(6);
             getStyleClass().add("session-planner-card");
-            setPadding(new Insets(10));
             getChildren().add(label(title, "session-planner-card-title"));
             getChildren().addAll(labels);
         }

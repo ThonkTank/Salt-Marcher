@@ -2,7 +2,6 @@ package src.view.statetabs.encounter;
 
 import java.util.List;
 import java.util.function.Consumer;
-import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
@@ -15,28 +14,25 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.util.StringConverter;
-import src.view.slotcontent.primitives.dialog.DialogSurfaceContentModel;
-import src.view.slotcontent.primitives.dialog.DialogSurfaceView;
 
 public final class EncounterResultsStateView extends VBox {
 
     private static final String STYLE_TEXT_SECONDARY = "text-secondary";
 
-    private final StyledLabel resultSubtitleLabel = styledLabel("", STYLE_TEXT_SECONDARY);
-    private final StyledLabel resultXpLabel = styledLabel("", "encounter-result-xp");
-    private final StyledLabel resultPartyLabel = styledLabel("", STYLE_TEXT_SECONDARY);
-    private final StyledLabel resultGoldLabel = styledLabel("", "encounter-result-gold");
-    private final StyledLabel resultLootLabel = styledLabel("", STYLE_TEXT_SECONDARY);
-    private final StyledLabel resultAwardStatusLabel = styledLabel("", STYLE_TEXT_SECONDARY);
+    private final Label resultSubtitleLabel = styledLabel("", STYLE_TEXT_SECONDARY);
+    private final Label resultXpLabel = styledLabel("", "encounter-result-xp");
+    private final Label resultPartyLabel = styledLabel("", STYLE_TEXT_SECONDARY);
+    private final Label resultGoldLabel = styledLabel("", "encounter-result-gold");
+    private final Label resultLootLabel = styledLabel("", STYLE_TEXT_SECONDARY);
+    private final Label resultAwardStatusLabel = styledLabel("", STYLE_TEXT_SECONDARY);
     private final Slider resultThresholdSlider = percentSlider();
     private final Slider resultFractionSlider = percentSlider();
-    private final Label resultThresholdValueLabel = new Label();
-    private final Label resultFractionValueLabel = new Label();
-    private final EnemySelectionList resultEnemyList = new EnemySelectionList();
+    private final Label resultThresholdValueLabel = styledLabel("", "encounter-results-slider-value");
+    private final Label resultFractionValueLabel = styledLabel("", "encounter-results-slider-value");
+    private VBox controlsBox;
+    private final VBox resultEnemyList = enemyList();
     private final Button resultAwardButton = new Button("XP verteilen");
-    private final DialogSurfaceContentModel dialogContentModel = new DialogSurfaceContentModel();
-    private final DialogSurfaceView dialog = buildPane();
-    private EncounterResultStateView lastState = EncounterResultStateView.empty();
+    private final VBox dialog = buildPane();
     private Consumer<EncounterResultsStateViewInputEvent> viewInputEventHandler = ignored -> { };
 
     public EncounterResultsStateView() {
@@ -48,80 +44,77 @@ public final class EncounterResultsStateView extends VBox {
         viewInputEventHandler = handler == null ? ignored -> { } : handler;
     }
 
-    public void showResults(EncounterResultStateView state) {
-        EncounterResultStateView safeState = state == null
-                ? EncounterResultStateView.empty()
-                : state;
-        lastState = safeState;
-        resultEnemyList.showEnemies(safeState.enemies(), this::updateResultCalculations);
-        resultAwardStatusLabel.setText(safeState.awardStatus());
-        resultAwardButton.setDisable(!safeState.canAwardXp() || safeState.xpAwarded());
-        updateResultCalculations();
+    public void bind(EncounterResultsStateContentModel contentModel) {
+        if (contentModel == null) {
+            return;
+        }
+        showPanel(contentModel.panelProperty().get());
+        contentModel.panelProperty().addListener((ignored, before, after) -> showPanel(after));
     }
 
-    private DialogSurfaceView buildPane() {
+    private VBox buildPane() {
         Label title = styledLabel("Kampfergebnis", "title");
         resultLootLabel.setWrapText(true);
 
         VBox summary = new VBox(2, resultXpLabel, resultPartyLabel, resultGoldLabel, resultLootLabel);
 
-        resultThresholdSlider.valueProperty().addListener((obs, oldValue, newValue) -> updateResultCalculations());
-        resultFractionSlider.valueProperty().addListener((obs, oldValue, newValue) -> updateResultCalculations());
-        VBox controls = new VBox(4,
+        resultThresholdSlider.valueProperty().addListener((obs, oldValue, newValue) -> publishSelection());
+        resultFractionSlider.valueProperty().addListener((obs, oldValue, newValue) -> publishSelection());
+        controlsBox = new VBox(4,
                 sliderRow("Besiegungsschwelle", resultThresholdSlider, resultThresholdValueLabel),
                 sliderRow("XP-Anteil", resultFractionSlider, resultFractionValueLabel));
 
         resultAwardStatusLabel.setWrapText(true);
         resultAwardButton.setMaxWidth(Double.MAX_VALUE);
-        resultAwardButton.setOnAction(event -> publish(EncounterResultsStateViewInputEvent.Action.AWARD_XP));
+        resultAwardButton.setOnAction(event -> publish(true, false));
         Button doneButton = new Button("Zum Planer");
         doneButton.setTooltip(new Tooltip("Zur Encounter-Planung zurückkehren"));
         doneButton.setAccessibleText("Zur Encounter-Planung zurückkehren");
         doneButton.setMaxWidth(Double.MAX_VALUE);
-        doneButton.setOnAction(event -> publish(EncounterResultsStateViewInputEvent.Action.RETURN_TO_BUILDER));
-        DialogSurfaceView.grow(resultAwardButton);
-        DialogSurfaceView.grow(doneButton);
+        doneButton.setOnAction(event -> publish(false, true));
+        HBox.setHgrow(resultAwardButton, Priority.ALWAYS);
+        HBox.setHgrow(doneButton, Priority.ALWAYS);
 
-        VBox body = new VBox(8, summary, separator(), controls, separator(), resultEnemyList,
+        VBox body = new StyledVBox("encounter-results-body", 8, summary, separator(), controlsBox, separator(), resultEnemyList,
                 separator(), resultAwardStatusLabel);
-        body.setPadding(DialogSurfaceView.contentInsets());
         VBox header = new VBox(2, title, resultSubtitleLabel);
         HBox footer = new HBox(8, resultAwardButton, doneButton);
         footer.setAlignment(Pos.CENTER_LEFT);
-        DialogSurfaceView nextDialog = new DialogSurfaceView(header, body, footer);
-        nextDialog.bind(dialogContentModel);
-        dialogContentModel.showLayout(DialogSurfaceContentModel.BodyPolicy.SCROLL, true, true);
+        VBox nextDialog = new VBox(10, header, body, footer);
+        nextDialog.getStyleClass().add("dialog-surface");
+        setVgrow(body, Priority.ALWAYS);
         return nextDialog;
     }
 
-    private void updateResultCalculations() {
-        int selectedXp = 0;
-        long selectedCount = 0;
-        int childIndex = 0;
-        for (EncounterResultEnemyView enemy : lastState.enemies()) {
-            if (resultEnemyList.isSelected(childIndex)) {
-                selectedXp += enemy.xp();
-                selectedCount++;
-            }
-            childIndex++;
+    private void showPanel(EncounterResultsStateContentModel.PanelModel panel) {
+        if (panel == null) {
+            return;
         }
-        int thresholdPercent = (int) Math.round(resultThresholdSlider.getValue() * 100);
-        int fractionPercent = (int) Math.round(resultFractionSlider.getValue() * 100);
-        int awardedXp = (int) Math.round(selectedXp * resultFractionSlider.getValue());
-        int partySize = Math.max(1, lastState.partySize());
-        int perPlayer = awardedXp / partySize;
-        resultSubtitleLabel.setText(selectedCount + " Gegner besiegt | " + selectedXp + " XP");
-        resultThresholdValueLabel.setText(thresholdPercent + "%");
-        resultFractionValueLabel.setText(fractionPercent + "%");
-        resultXpLabel.setText(perPlayer + " XP");
-        resultPartyLabel.setText("pro Spieler  (" + partySize + " Spieler | " + awardedXp + " XP gesamt)");
-        resultGoldLabel.setText(lastState.goldSummary());
-        resultLootLabel.setText(lastState.lootDetail());
+        showEnemies(panel.enemies());
+        resultThresholdSlider.setValue(panel.thresholdFraction());
+        resultFractionSlider.setValue(panel.xpFraction());
+        controlsBox.setVisible(!panel.enemies().isEmpty());
+        controlsBox.setManaged(controlsBox.isVisible());
+        resultSubtitleLabel.setText(panel.subtitle());
+        resultThresholdValueLabel.setText(panel.thresholdValue());
+        resultFractionValueLabel.setText(panel.fractionValue());
+        resultXpLabel.setText(panel.xp());
+        resultPartyLabel.setText(panel.party());
+        resultGoldLabel.setText(panel.gold());
+        resultLootLabel.setText(panel.loot());
+        resultAwardStatusLabel.setText(panel.awardStatus());
+        resultAwardButton.setDisable(panel.awardButtonDisabled());
+    }
+
+    private void publishSelection() {
+        publish(false, false);
     }
 
     private HBox sliderRow(String title, Slider slider, Label valueLabel) {
         Label label = styledLabel(title, STYLE_TEXT_SECONDARY);
-        valueLabel.setMinWidth(40);
+        label.setLabelFor(slider);
+        slider.setAccessibleText(title);
+        slider.setAccessibleHelp(title + " in Prozent");
         valueLabel.setAlignment(Pos.CENTER_RIGHT);
         HBox.setHgrow(slider, Priority.ALWAYS);
         HBox row = new HBox(8, label, slider, valueLabel);
@@ -153,73 +146,48 @@ public final class EncounterResultsStateView extends VBox {
         return new Separator();
     }
 
-    private static StyledLabel styledLabel(String text, String... styleClasses) {
-        StyledLabel label = new StyledLabel(text);
-        label.addStyles(styleClasses);
+    private static Label styledLabel(String text, String... styleClasses) {
+        Label label = new Label(text);
+        label.getStyleClass().addAll(styleClasses);
         return label;
     }
 
-    private void publish(EncounterResultsStateViewInputEvent.Action action) {
-        viewInputEventHandler.accept(new EncounterResultsStateViewInputEvent(action));
+    private void publish(boolean awardExperienceRequested, boolean returnToBuilderRequested) {
+        List<Boolean> selectedEnemies = new java.util.ArrayList<>();
+        for (Node node : resultEnemyList.getChildren()) {
+            selectedEnemies.add(node instanceof CheckBox checkBox && checkBox.isSelected());
+        }
+        viewInputEventHandler.accept(new EncounterResultsStateViewInputEvent(
+                awardExperienceRequested,
+                returnToBuilderRequested,
+                selectedEnemies,
+                resultThresholdSlider.getValue(),
+                resultFractionSlider.getValue()));
     }
 
-    private static final class EnemySelectionList extends VBox {
-
-        private EnemySelectionList() {
-            super(4);
-            setPadding(new Insets(2, 0, 8, 0));
-        }
-
-        private void showEnemies(
-                List<EncounterResultEnemyView> enemies,
-                Runnable onSelectionChanged
-        ) {
-            List<EncounterResultEnemyView> safeEnemies = enemies == null ? List.of() : enemies;
-            Runnable safeSelectionChanged = onSelectionChanged == null ? () -> { } : onSelectionChanged;
-            getChildren().setAll(safeEnemies.stream()
-                    .map(enemy -> createToggle(enemy, safeSelectionChanged))
-                    .toList());
-        }
-
-        private boolean isSelected(int index) {
-            if (index < 0 || index >= getChildren().size()) {
-                return false;
-            }
-            Node node = getChildren().get(index);
-            return node instanceof CheckBox checkBox && checkBox.isSelected();
-        }
-
-        private CheckBox createToggle(
-                EncounterResultEnemyView enemy,
-                Runnable onSelectionChanged
-        ) {
-            StyledCheckBox toggle = new StyledCheckBox(enemy.name() + " (" + enemy.status() + ") - " + enemy.loot());
-            toggle.addStyles(STYLE_TEXT_SECONDARY);
-            toggle.setSelected(enemy.defeatedByDefault());
-            toggle.selectedProperty().addListener((obs, oldValue, newValue) -> onSelectionChanged.run());
-            return toggle;
+    private void showEnemies(List<EncounterResultsStateContentModel.EnemyView> enemies) {
+        resultEnemyList.getChildren().clear();
+        List<EncounterResultsStateContentModel.EnemyView> safeEnemies = enemies == null ? List.of() : enemies;
+        for (EncounterResultsStateContentModel.EnemyView enemy : safeEnemies) {
+            CheckBox toggle = new CheckBox(enemy.name() + " (" + enemy.status() + ") - " + enemy.loot());
+            toggle.getStyleClass().add(STYLE_TEXT_SECONDARY);
+            toggle.setSelected(enemy.selected());
+            toggle.selectedProperty().addListener((obs, oldValue, newValue) -> publishSelection());
+            resultEnemyList.getChildren().add(toggle);
         }
     }
 
-    private static final class StyledLabel extends Label {
-
-        private StyledLabel(String text) {
-            super(text);
-        }
-
-        private void addStyles(String... styleClasses) {
-            getStyleClass().addAll(styleClasses);
-        }
+    private static VBox enemyList() {
+        VBox list = new VBox(4);
+        list.getStyleClass().add("encounter-results-enemy-list");
+        return list;
     }
 
-    private static final class StyledCheckBox extends CheckBox {
+    private static final class StyledVBox extends VBox {
 
-        private StyledCheckBox(String text) {
-            super(text);
-        }
-
-        private void addStyles(String... styleClasses) {
-            getStyleClass().addAll(styleClasses);
+        private StyledVBox(String styleClass, double spacing, javafx.scene.Node... children) {
+            super(spacing, children);
+            getStyleClass().add(styleClass);
         }
     }
 }

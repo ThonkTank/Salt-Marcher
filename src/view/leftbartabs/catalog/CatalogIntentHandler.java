@@ -4,10 +4,14 @@ import java.util.List;
 import java.util.Objects;
 import src.domain.creatures.CreaturesApplicationService;
 import src.domain.creatures.published.RefreshCreatureCatalogCommand;
+import src.domain.creatures.published.RefreshCreatureFilterOptionsCommand;
+import src.domain.creatures.published.SelectCreatureDetailCommand;
 import src.domain.encounter.EncounterApplicationService;
 import src.domain.encounter.published.ApplyEncounterStateCommand;
 import src.domain.encounter.published.EncounterBuilderInputs;
 import src.domain.encounter.published.UpdateEncounterBuilderInputsCommand;
+import src.domain.encountertable.EncounterTableApplicationService;
+import src.domain.encountertable.published.RefreshEncounterTableCatalogCommand;
 
 final class CatalogIntentHandler {
 
@@ -19,16 +23,20 @@ final class CatalogIntentHandler {
 
     private final CatalogContributionModel presentationModel;
     private final CreaturesApplicationService creatures;
+    private final EncounterTableApplicationService encounterTables;
     private final EncounterApplicationService encounters;
 
     CatalogIntentHandler(
             CatalogContributionModel presentationModel,
             CreaturesApplicationService creatures,
+            EncounterTableApplicationService encounterTables,
             EncounterApplicationService encounters
     ) {
         this.presentationModel = Objects.requireNonNull(presentationModel, "presentationModel");
         this.creatures = Objects.requireNonNull(creatures, "creatures");
+        this.encounterTables = Objects.requireNonNull(encounterTables, "encounterTables");
         this.encounters = Objects.requireNonNull(encounters, "encounters");
+        refreshCatalogSources();
     }
 
     void consume(CatalogControlsViewInputEvent event) {
@@ -36,52 +44,52 @@ final class CatalogIntentHandler {
             return;
         }
 
-        CatalogContributionModel.InteractionState interactionState = presentationModel.currentInteractionState();
-        CatalogContributionModel.LocalFilterState previousLocalFilters = interactionState.localFilters();
-        CatalogContributionModel.ControlsState previousDraftControls = interactionState.draftControls();
-        CatalogContributionModel.ControlsState authoritativeControls = interactionState.domainControls();
+        CatalogControlsContentModel.InteractionState interactionState = presentationModel.currentInteractionState();
+        CatalogControlsContentModel.LocalFilterState previousLocalFilters = interactionState.localFilters();
+        CatalogControlsContentModel.ControlsState previousDraftControls = interactionState.draftControls();
+        CatalogControlsContentModel.ControlsState authoritativeControls = interactionState.domainControls();
 
-        presentationModel.applyControlsDraft(new CatalogContributionModel.ControlsDraft(
-                new CatalogContributionModel.LocalFilterState(
+        presentationModel.applyControlsDraft(new CatalogControlsContentModel.ControlsDraft(
+                new CatalogControlsContentModel.LocalFilterState(
                         event.nameQuery(),
                         event.challengeRatingMin(),
                         event.challengeRatingMax(),
                         event.sizes(),
                         event.alignments()),
-                new CatalogContributionModel.ControlsState(
+                new CatalogControlsContentModel.ControlsState(
                         event.types(),
                         event.subtypes(),
                         event.biomes(),
                         event.encounterTableIds(),
-                        CatalogContributionModel.SliderProjection.draftDifficulty(
+                        CatalogControlsContentModel.SliderProjection.draftDifficulty(
                                 event.difficultyAuto(),
                                 event.difficultyValue(),
                                 previousDraftControls.difficulty()),
-                        CatalogContributionModel.SliderProjection.draftBalance(
+                        CatalogControlsContentModel.SliderProjection.draftBalance(
                                 event.balanceAuto(),
                                 event.balanceValue(),
                                 previousDraftControls.balance()),
-                        CatalogContributionModel.SliderProjection.draftAmount(
+                        CatalogControlsContentModel.SliderProjection.draftAmount(
                                 event.amountAuto(),
                                 event.amountValue(),
                                 previousDraftControls.amount()),
-                        CatalogContributionModel.SliderProjection.draftDiversity(
+                        CatalogControlsContentModel.SliderProjection.draftDiversity(
                                 event.diversityAuto(),
                                 event.diversityValue(),
                                 previousDraftControls.diversity())),
-                new CatalogContributionModel.FilterDropdownState(event.sizePopupOpen(), event.sizePopupQuery()),
-                new CatalogContributionModel.FilterDropdownState(event.typePopupOpen(), event.typePopupQuery()),
-                new CatalogContributionModel.FilterDropdownState(event.subtypePopupOpen(), event.subtypePopupQuery()),
-                new CatalogContributionModel.FilterDropdownState(event.biomePopupOpen(), event.biomePopupQuery()),
-                new CatalogContributionModel.FilterDropdownState(event.alignmentPopupOpen(), event.alignmentPopupQuery()),
-                new CatalogContributionModel.FilterDropdownState(event.encounterTablePopupOpen(), "")));
+                new CatalogControlsContentModel.FilterDropdownState(event.sizePopupOpen(), event.sizePopupQuery()),
+                new CatalogControlsContentModel.FilterDropdownState(event.typePopupOpen(), event.typePopupQuery()),
+                new CatalogControlsContentModel.FilterDropdownState(event.subtypePopupOpen(), event.subtypePopupQuery()),
+                new CatalogControlsContentModel.FilterDropdownState(event.biomePopupOpen(), event.biomePopupQuery()),
+                new CatalogControlsContentModel.FilterDropdownState(event.alignmentPopupOpen(), event.alignmentPopupQuery()),
+                new CatalogControlsContentModel.FilterDropdownState(event.encounterTablePopupOpen(), "")));
 
-        CatalogContributionModel.InteractionState currentState = presentationModel.currentInteractionState();
+        CatalogControlsContentModel.InteractionState currentState = presentationModel.currentInteractionState();
         if (!previousLocalFilters.equals(currentState.localFilters())) {
             refreshSearch();
         }
 
-        CatalogContributionModel.ControlsState currentDraftControls = currentState.draftControls();
+        CatalogControlsContentModel.ControlsState currentDraftControls = currentState.draftControls();
         if (!previousDraftControls.equals(currentDraftControls) && !currentDraftControls.equals(authoritativeControls)) {
             encounters.updateBuilderInputs(new UpdateEncounterBuilderInputsCommand(
                     new EncounterBuilderInputs(
@@ -115,41 +123,53 @@ final class CatalogIntentHandler {
             return;
         }
         if (event.openedCreatureId() > NO_CREATURE_ID) {
-            presentationModel.setCreatureDetailSelection(event.openedCreatureId());
+            openCreatureDetail(event.openedCreatureId());
             return;
         }
         if (event.actionCreatureId() > NO_CREATURE_ID) {
-            encounters.applyState(new ApplyEncounterStateCommand(
-                    ApplyEncounterStateCommand.Action.ADD_CREATURE,
-                    event.actionCreatureId(),
-                    0L,
-                    0,
-                    0L,
-                    List.of(),
-                    "",
-                    0,
-                    0L,
-                    0,
-                    false));
+            addCreatureToEncounter(event.actionCreatureId());
         }
     }
 
     private void refreshSearch() {
         presentationModel.beginSearch();
-        CatalogContributionModel.SearchRequest request = presentationModel.currentSearchRequest();
-        creatures.refreshCatalog(new RefreshCreatureCatalogCommand(
-                request.nameQuery(),
-                request.challengeRatingMin(),
-                request.challengeRatingMax(),
-                request.sizes(),
-                request.creatureTypes(),
-                request.creatureSubtypes(),
-                request.biomes(),
-                request.alignments(),
-                request.sortField(),
-                request.sortDirection(),
+        refreshCatalog();
+    }
+
+    void applyEncounterBuilderInputs(EncounterBuilderInputs builderInputs) {
+        if (presentationModel.applyEncounterBuilderInputs(builderInputs)) {
+            refreshCatalog();
+        }
+    }
+
+    private void refreshCatalog() {
+        creatures.refreshCatalog(RefreshCreatureCatalogCommand.fromSortKey(
+                presentationModel.currentNameQuery(),
+                presentationModel.currentChallengeRatingMin(),
+                presentationModel.currentChallengeRatingMax(),
+                presentationModel.currentSizes(),
+                presentationModel.currentCreatureTypes(),
+                presentationModel.currentCreatureSubtypes(),
+                presentationModel.currentBiomes(),
+                presentationModel.currentAlignments(),
+                presentationModel.currentSortKey(),
                 50,
-                request.pageOffset()));
+                presentationModel.currentPageOffset()));
+    }
+
+    private void refreshCatalogSources() {
+        creatures.refreshFilterOptions(new RefreshCreatureFilterOptionsCommand());
+        encounterTables.refreshCatalog(new RefreshEncounterTableCatalogCommand());
+        refreshCatalog();
+    }
+
+    private void openCreatureDetail(long creatureId) {
+        creatures.selectCreatureDetail(new SelectCreatureDetailCommand(creatureId));
+        presentationModel.setCreatureDetailSelection(creatureId);
+    }
+
+    private void addCreatureToEncounter(long creatureId) {
+        encounters.applyState(ApplyEncounterStateCommand.creature("ADD_CREATURE", creatureId));
     }
 
     private static int toDifficultyLevel(double value) {

@@ -57,23 +57,9 @@ public final class TravelDungeonSessionValues {
         TRANSITION
     }
 
-    public static final class ContextKind {
-        public static final ContextKind DUNGEON = new ContextKind("DUNGEON");
-        public static final ContextKind OVERWORLD = new ContextKind("OVERWORLD");
-
-        private final String name;
-
-        private ContextKind(String name) {
-            this.name = name;
-        }
-
-        public static ContextKind valueOf(String name) {
-            return "OVERWORLD".equals(name) ? OVERWORLD : DUNGEON;
-        }
-
-        public String name() {
-            return name;
-        }
+    public enum ContextKind {
+        DUNGEON,
+        OVERWORLD;
 
         public boolean isDungeon() {
             return this == DUNGEON;
@@ -81,11 +67,6 @@ public final class TravelDungeonSessionValues {
 
         public boolean isOverworld() {
             return this == OVERWORLD;
-        }
-
-        @Override
-        public String toString() {
-            return name;
         }
     }
 
@@ -124,10 +105,6 @@ public final class TravelDungeonSessionValues {
             return this == EXTERNAL_TARGET;
         }
 
-        @Override
-        public String toString() {
-            return name;
-        }
     }
 
     public static final class OverworldTarget {

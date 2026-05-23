@@ -24,16 +24,20 @@ public final class SessionPlannerTimelineMainContentModel {
 
     record Projection(
             List<Projection.EncounterModel> encounters,
-            List<Projection.RestGapModel> restGaps
+            List<Projection.RestGapModel> restGaps,
+            List<Projection.LootModel> lootPlaceholders,
+            String lootEmptyMessage
     ) {
 
         Projection {
             encounters = safeCopy(encounters);
             restGaps = safeCopy(restGaps);
+            lootPlaceholders = safeCopy(lootPlaceholders);
+            lootEmptyMessage = safeText(lootEmptyMessage);
         }
 
         static Projection empty() {
-            return new Projection(List.of(), List.of());
+            return new Projection(List.of(), List.of(), List.of(), "Keine Loot-Platzhalter angelegt.");
         }
 
         static Projection from(SessionPlannerEncountersProjection projection) {
@@ -48,7 +52,11 @@ public final class SessionPlannerTimelineMainContentModel {
                                     gap.rightEncounterId(),
                                     restLabel(gap.restKind()),
                                     gap.restKind() != null && gap.restKind() != SessionPlannerRestKind.NONE))
-                            .toList());
+                            .toList(),
+                    safe.lootPlaceholders().stream()
+                            .map(loot -> new LootModel(loot.token(), loot.label()))
+                            .toList(),
+                    "Keine Loot-Platzhalter angelegt.");
         }
 
         private static List<EncounterModel> mapEncounters(
@@ -141,6 +149,16 @@ public final class SessionPlannerTimelineMainContentModel {
         ) {
 
             RestGapModel {
+                label = safeText(label);
+            }
+        }
+
+        record LootModel(
+                long token,
+                String label
+        ) {
+
+            LootModel {
                 label = safeText(label);
             }
         }

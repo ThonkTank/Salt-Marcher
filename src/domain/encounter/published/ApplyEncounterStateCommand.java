@@ -27,6 +27,96 @@ public record ApplyEncounterStateCommand(
         amount = Math.max(0, amount);
     }
 
+    public static ApplyEncounterStateCommand action(String actionKey) {
+        return create(actionKey, 0L, 0L, 0, 0L, List.of(), "", 0, 0L, 0, false);
+    }
+
+    public static ApplyEncounterStateCommand creature(String actionKey, long creatureId) {
+        return create(actionKey, creatureId, 0L, 0, 0L, List.of(), "", 0, 0L, 0, false);
+    }
+
+    public static ApplyEncounterStateCommand plan(String actionKey, long planId) {
+        return create(actionKey, 0L, planId, 0, 0L, List.of(), "", 0, 0L, 0, false);
+    }
+
+    public static ApplyEncounterStateCommand delta(String actionKey, int delta) {
+        return create(actionKey, 0L, 0L, delta, 0L, List.of(), "", 0, 0L, 0, false);
+    }
+
+    public static ApplyEncounterStateCommand undo(String actionKey, long undoToken) {
+        return create(actionKey, 0L, 0L, 0, undoToken, List.of(), "", 0, 0L, 0, false);
+    }
+
+    public static ApplyEncounterStateCommand initiatives(
+            String actionKey,
+            List<String> ids,
+            List<Integer> initiatives
+    ) {
+        return create(actionKey, 0L, 0L, 0, 0L, initiativeValues(ids, initiatives), "", 0, 0L, 0, false);
+    }
+
+    public static ApplyEncounterStateCommand hitPoints(
+            String actionKey,
+            String combatantId,
+            int amount,
+            boolean healing
+    ) {
+        return create(actionKey, 0L, 0L, 0, 0L, List.of(), combatantId, 0, 0L, amount, healing);
+    }
+
+    public static ApplyEncounterStateCommand initiative(String actionKey, String combatantId, int initiative) {
+        return create(actionKey, 0L, 0L, 0, 0L, List.of(), combatantId, initiative, 0L, 0, false);
+    }
+
+    public static ApplyEncounterStateCommand partyMember(String actionKey, long partyMemberId, int initiative) {
+        return create(actionKey, 0L, 0L, 0, 0L, List.of(), "", initiative, partyMemberId, 0, false);
+    }
+
+    public static ApplyEncounterStateCommand create(
+            String actionKey,
+            long creatureId,
+            long planId,
+            int delta,
+            long undoToken,
+            List<InitiativeValue> initiativeValues,
+            String combatantId,
+            int initiative,
+            long partyMemberId,
+            int amount,
+            boolean healing
+    ) {
+        return new ApplyEncounterStateCommand(
+                actionFromKey(actionKey),
+                creatureId,
+                planId,
+                delta,
+                undoToken,
+                initiativeValues,
+                combatantId,
+                initiative,
+                partyMemberId,
+                amount,
+                healing);
+    }
+
+    private static Action actionFromKey(String actionKey) {
+        if (actionKey == null || actionKey.isBlank()) {
+            throw new IllegalArgumentException("actionKey must name an encounter action");
+        }
+        return Action.valueOf(actionKey);
+    }
+
+    private static List<InitiativeValue> initiativeValues(List<String> ids, List<Integer> initiatives) {
+        List<String> safeIds = ids == null ? List.of() : List.copyOf(ids);
+        List<Integer> safeInitiatives = initiatives == null ? List.of() : List.copyOf(initiatives);
+        int count = Math.min(safeIds.size(), safeInitiatives.size());
+        java.util.ArrayList<InitiativeValue> values = new java.util.ArrayList<>();
+        for (int index = 0; index < count; index++) {
+            values.add(new InitiativeValue(safeIds.get(index), safeInitiatives.get(index)));
+        }
+        return List.copyOf(values);
+    }
+
     public enum Action {
         REFRESH,
         GENERATE,

@@ -11,7 +11,6 @@ import shell.api.ShellSlot;
 import src.domain.creatures.CreaturesApplicationService;
 import src.domain.creatures.published.CreatureDetailModel;
 import src.domain.creatures.published.CreatureDetailResult;
-import src.domain.creatures.published.SelectCreatureDetailCommand;
 import src.domain.encounter.EncounterApplicationService;
 import src.domain.encounter.published.EncounterStateModel;
 import src.view.slotcontent.details.creature.CreatureDetailsContentModel;
@@ -26,45 +25,44 @@ final class EncounterStateBinder {
     }
 
     ShellBinding bind() {
-        CreaturesApplicationService creatures = runtimeContext.services().require(CreaturesApplicationService.class);
         CreatureDetailModel detailModel = runtimeContext.services().require(CreatureDetailModel.class);
-        EncounterApplicationService encounters = runtimeContext.services().require(EncounterApplicationService.class);
+        CreaturesApplicationService creatures = runtimeContext.services().require(CreaturesApplicationService.class);
         EncounterStateModel stateModel = runtimeContext.services().require(EncounterStateModel.class);
+        EncounterApplicationService encounters = runtimeContext.services().require(EncounterApplicationService.class);
         EncounterStateContributionModel presentationModel = new EncounterStateContributionModel();
-        EncounterStateIntentHandler intentHandler = new EncounterStateIntentHandler(presentationModel, encounters);
+        EncounterStateIntentHandler intentHandler = new EncounterStateIntentHandler(
+                presentationModel,
+                encounters,
+                creatures,
+                creatureId -> openCreatureDetails(runtimeContext.inspector(), detailModel, creatureId));
+        EncounterStateContributionModel.ContentModels contentModels = presentationModel.contentModels();
         EncounterBuilderStateView builderView = new EncounterBuilderStateView();
         EncounterInitiativeStateView initiativeView = new EncounterInitiativeStateView();
         EncounterCombatStateView combatView = new EncounterCombatStateView();
         EncounterResultsStateView resultsView = new EncounterResultsStateView();
         EncounterStateView state = new EncounterStateView(builderView, initiativeView, combatView, resultsView);
+        state.bind(contentModels.state());
+        builderView.bind(contentModels.builder());
+        initiativeView.bind(contentModels.initiative());
+        combatView.bind(contentModels.combat());
+        resultsView.bind(contentModels.results());
         stateModel.subscribe(presentationModel::apply);
         presentationModel.apply(stateModel.current());
-        presentationModel.creatureDetailSelectionProperty().addListener((obs, before, after) -> {
-            if (after == null || !hasResolvedId(after.longValue())) {
-                return;
-            }
-            openCreatureDetails(runtimeContext.inspector(), creatures, detailModel, after.longValue());
-            presentationModel.clearCreatureDetailSelection();
-        });
         builderView.onViewInputEvent(intentHandler::consume);
         initiativeView.onViewInputEvent(intentHandler::consume);
         combatView.onViewInputEvent(intentHandler::consume);
         resultsView.onViewInputEvent(intentHandler::consume);
-        wireRendering(state, presentationModel);
-        state.render(presentationModel);
         return new Binding(state);
     }
 
     private static void openCreatureDetails(
             InspectorSink inspector,
-            CreaturesApplicationService creatures,
             CreatureDetailModel detailModel,
             long creatureId
     ) {
         if (!hasResolvedId(creatureId)) {
             return;
         }
-        creatures.selectCreatureDetail(new SelectCreatureDetailCommand(creatureId));
         inspector.push(new InspectorEntrySpec(
                 "Creature",
                 "creature:" + creatureId,
@@ -78,14 +76,6 @@ final class EncounterStateBinder {
         detailView.bind(contentModel);
         contentModel.load();
         return detailView;
-    }
-
-    private void wireRendering(EncounterStateView state, EncounterStateContributionModel presentationModel) {
-        presentationModel.modeProperty().addListener((obs, before, after) -> state.render(presentationModel));
-        presentationModel.builderStateProperty().addListener((obs, before, after) -> state.render(presentationModel));
-        presentationModel.initiativeStateProperty().addListener((obs, before, after) -> state.render(presentationModel));
-        presentationModel.combatStateProperty().addListener((obs, before, after) -> state.render(presentationModel));
-        presentationModel.resultStateProperty().addListener((obs, before, after) -> state.render(presentationModel));
     }
 
     private static boolean hasResolvedId(long candidate) {

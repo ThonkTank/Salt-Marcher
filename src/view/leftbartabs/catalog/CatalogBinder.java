@@ -13,15 +13,11 @@ import src.domain.creatures.published.CreatureCatalogModel;
 import src.domain.creatures.published.CreatureDetailModel;
 import src.domain.creatures.published.CreatureDetailResult;
 import src.domain.creatures.published.CreatureFilterOptionsModel;
-import src.domain.creatures.published.RefreshCreatureCatalogCommand;
-import src.domain.creatures.published.RefreshCreatureFilterOptionsCommand;
-import src.domain.creatures.published.SelectCreatureDetailCommand;
 import src.domain.encounter.EncounterApplicationService;
 import src.domain.encounter.published.EncounterBuilderInputsModel;
 import src.domain.encounter.published.EncounterTuningPreviewModel;
 import src.domain.encountertable.EncounterTableApplicationService;
 import src.domain.encountertable.published.EncounterTableCatalogModel;
-import src.domain.encountertable.published.RefreshEncounterTableCatalogCommand;
 import src.view.slotcontent.details.creature.CreatureDetailsContentModel;
 import src.view.slotcontent.details.creature.CreatureDetailsView;
 
@@ -39,17 +35,21 @@ final class CatalogBinder {
 
         CatalogContributionModel presentationModel = new CatalogContributionModel();
         CatalogIntentHandler intentHandler =
-                new CatalogIntentHandler(presentationModel, services.creatures(), services.encounters());
-        CatalogControlsView controls = new CatalogControlsView(presentationModel.controlsContentModel());
+                new CatalogIntentHandler(
+                        presentationModel,
+                        services.creatures(),
+                        services.encounterTables(),
+                        services.encounters());
+        CatalogControlsView controls = new CatalogControlsView();
         CatalogMainView main = new CatalogMainView();
 
-        bindControls(intentHandler, controls);
+        bindControls(intentHandler, controls, presentationModel.controlsContentModel());
         bindMain(main, presentationModel.mainContentModel(), intentHandler);
         presentationModel.creatureDetailSelectionProperty().addListener((obs, before, after) -> {
             if (after == null || after.longValue() <= 0L) {
                 return;
             }
-            openCreatureDetails(runtimeContext.inspector(), services.creatures(), models.detail(), after.longValue());
+            openCreatureDetails(runtimeContext.inspector(), models.detail(), after.longValue());
             presentationModel.setCreatureDetailSelection(0L);
         });
 
@@ -57,24 +57,21 @@ final class CatalogBinder {
         models.catalog().subscribe(presentationModel::applySearchResult);
         models.encounterTables().subscribe(presentationModel::applyEncounterTables);
         models.tuningPreview().subscribe(result -> presentationModel.applyEncounterTuningPreview(result.labels()));
-        models.builderInputs().subscribe(builderInputs -> {
-            if (presentationModel.applyEncounterBuilderInputs(builderInputs)) {
-                runSearch(services.creatures(), presentationModel.currentSearchRequest());
-            }
-        });
+        models.builderInputs().subscribe(intentHandler::applyEncounterBuilderInputs);
 
         presentationModel.applyCreatureFilterOptions(models.filterOptions().current());
         presentationModel.applyEncounterTables(models.encounterTables().current());
         presentationModel.applyEncounterTuningPreview(models.tuningPreview().current().labels());
-        presentationModel.applyEncounterBuilderInputs(models.builderInputs().current());
-
-        services.creatures().refreshFilterOptions(new RefreshCreatureFilterOptionsCommand());
-        services.encounterTables().refreshCatalog(new RefreshEncounterTableCatalogCommand());
-        runSearch(services.creatures(), presentationModel.currentSearchRequest());
+        intentHandler.applyEncounterBuilderInputs(models.builderInputs().current());
         return new Binding(controls, main);
     }
 
-    private static void bindControls(CatalogIntentHandler intentHandler, CatalogControlsView controls) {
+    private static void bindControls(
+            CatalogIntentHandler intentHandler,
+            CatalogControlsView controls,
+            CatalogControlsContentModel contentModel
+    ) {
+        controls.bind(contentModel);
         controls.onViewInputEvent(intentHandler::consume);
     }
 
@@ -89,11 +86,9 @@ final class CatalogBinder {
 
     private static void openCreatureDetails(
             InspectorSink inspector,
-            CreaturesApplicationService creatures,
             CreatureDetailModel detailModel,
             long creatureId
     ) {
-        creatures.selectCreatureDetail(new SelectCreatureDetailCommand(creatureId));
         inspector.push(new InspectorEntrySpec(
                 "Creature",
                 "creature:" + creatureId,
@@ -107,25 +102,6 @@ final class CatalogBinder {
         detailView.bind(contentModel);
         contentModel.load();
         return detailView;
-    }
-
-    private static void runSearch(
-            CreaturesApplicationService creatures,
-            CatalogContributionModel.SearchRequest request
-    ) {
-        creatures.refreshCatalog(new RefreshCreatureCatalogCommand(
-                request.nameQuery(),
-                request.challengeRatingMin(),
-                request.challengeRatingMax(),
-                request.sizes(),
-                request.creatureTypes(),
-                request.creatureSubtypes(),
-                request.biomes(),
-                request.alignments(),
-                request.sortField(),
-                request.sortDirection(),
-                50,
-                request.pageOffset()));
     }
 
     private static final class RuntimeLookup {

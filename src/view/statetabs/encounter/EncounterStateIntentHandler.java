@@ -1,21 +1,33 @@
 package src.view.statetabs.encounter;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import src.domain.creatures.CreaturesApplicationService;
+import src.domain.creatures.published.SelectCreatureDetailCommand;
 import src.domain.encounter.EncounterApplicationService;
 import src.domain.encounter.published.ApplyEncounterStateCommand;
 
 final class EncounterStateIntentHandler {
 
+    private static final long UNRESOLVED_ID = 0L;
+    private static final CreatureDetailSink NO_CREATURE_DETAIL_SINK = creatureId -> { };
+
     private final EncounterStateContributionModel presentationModel;
     private final EncounterApplicationService encounters;
+    private final CreaturesApplicationService creatures;
+    private final CreatureDetailSink creatureDetailSink;
 
     EncounterStateIntentHandler(
             EncounterStateContributionModel presentationModel,
-            EncounterApplicationService encounters
+            EncounterApplicationService encounters,
+            CreaturesApplicationService creatures,
+            CreatureDetailSink creatureDetailSink
     ) {
         this.presentationModel = Objects.requireNonNull(presentationModel, "presentationModel");
         this.encounters = Objects.requireNonNull(encounters, "encounters");
+        this.creatures = Objects.requireNonNull(creatures, "creatures");
+        this.creatureDetailSink = creatureDetailSink == null ? NO_CREATURE_DETAIL_SINK : creatureDetailSink;
     }
 
     void consume(EncounterBuilderStateViewInputEvent event) {
@@ -23,31 +35,31 @@ final class EncounterStateIntentHandler {
             return;
         }
         switch (event.builderInput()) {
-            case EncounterBuilderStateViewInputEvent.GenerateInput ignored ->
-                    apply(command(ApplyEncounterStateCommand.Action.GENERATE));
+        case EncounterBuilderStateViewInputEvent.GenerateInput ignored ->
+                    apply(command("GENERATE"));
             case EncounterBuilderStateViewInputEvent.ShiftAlternativeInput shift ->
-                    apply(command(ApplyEncounterStateCommand.Action.SHIFT_ALTERNATIVE, shift.alternativeShift()));
+                    apply(shiftAlternativeCommand(shift.alternativeShift()));
             case EncounterBuilderStateViewInputEvent.SaveCurrentPlanInput ignored ->
-                    apply(command(ApplyEncounterStateCommand.Action.SAVE_CURRENT_PLAN));
+                    apply(command("SAVE_CURRENT_PLAN"));
             case EncounterBuilderStateViewInputEvent.OpenSavedPlanInput openPlan ->
-                    apply(command(ApplyEncounterStateCommand.Action.OPEN_SAVED_PLAN, openPlan.selectedPlanId()));
+                    apply(openSavedPlanCommand(openPlan.selectedPlanId()));
             case EncounterBuilderStateViewInputEvent.ChangeRosterCountInput rosterChange -> {
                 if (rosterChange.delta() > 0) {
-                    apply(command(ApplyEncounterStateCommand.Action.INCREMENT_CREATURE, rosterChange.creatureId()));
+                    apply(creatureCommand("INCREMENT_CREATURE", rosterChange.creatureId()));
                 } else {
-                    apply(command(ApplyEncounterStateCommand.Action.DECREMENT_CREATURE, rosterChange.creatureId()));
+                    apply(creatureCommand("DECREMENT_CREATURE", rosterChange.creatureId()));
                 }
             }
             case EncounterBuilderStateViewInputEvent.RemoveCreatureInput removal ->
-                    apply(command(ApplyEncounterStateCommand.Action.REMOVE_CREATURE, removal.creatureId()));
+                    apply(creatureCommand("REMOVE_CREATURE", removal.creatureId()));
             case EncounterBuilderStateViewInputEvent.UndoRemoveInput undo ->
-                    apply(command(ApplyEncounterStateCommand.Action.UNDO_REMOVE, undo.undoToken()));
+                    apply(undoRemoveCommand(undo.undoToken()));
             case EncounterBuilderStateViewInputEvent.ClearGenerationHistoryInput ignored ->
-                    apply(command(ApplyEncounterStateCommand.Action.CLEAR_GENERATION_HISTORY));
+                    apply(command("CLEAR_GENERATION_HISTORY"));
             case EncounterBuilderStateViewInputEvent.OpenInitiativeInput ignored ->
-                    apply(command(ApplyEncounterStateCommand.Action.OPEN_INITIATIVE));
+                    apply(command("OPEN_INITIATIVE"));
             case EncounterBuilderStateViewInputEvent.OpenCreatureDetailInput detail ->
-                    presentationModel.selectCreatureDetail(detail.creatureId());
+                    openCreatureDetail(detail.creatureId());
         }
     }
 
@@ -56,25 +68,10 @@ final class EncounterStateIntentHandler {
             return;
         }
         if (event.backToBuilder()) {
-            apply(command(ApplyEncounterStateCommand.Action.BACK_TO_BUILDER));
+            apply(command("BACK_TO_BUILDER"));
             return;
         }
-        apply(new ApplyEncounterStateCommand(
-                ApplyEncounterStateCommand.Action.CONFIRM_INITIATIVE,
-                0L,
-                0L,
-                0,
-                0L,
-                event.initiatives().stream()
-                        .map(entry -> new ApplyEncounterStateCommand.InitiativeValue(
-                                entry.id(),
-                                entry.initiative()))
-                        .toList(),
-                "",
-                0,
-                0L,
-                0,
-                false));
+        apply(confirmInitiativeCommand(event.initiatives()));
     }
 
     void consume(EncounterCombatStateViewInputEvent event) {
@@ -83,48 +80,15 @@ final class EncounterStateIntentHandler {
         }
         switch (event.combatInput()) {
             case EncounterCombatStateViewInputEvent.AdvanceTurnInput ignored ->
-                    apply(command(ApplyEncounterStateCommand.Action.ADVANCE_TURN));
+                    apply(command("ADVANCE_TURN"));
             case EncounterCombatStateViewInputEvent.EndCombatInput ignored ->
-                    apply(command(ApplyEncounterStateCommand.Action.END_COMBAT));
+                    apply(command("END_COMBAT"));
             case EncounterCombatStateViewInputEvent.HpChangeInput hp ->
-                    apply(new ApplyEncounterStateCommand(
-                            ApplyEncounterStateCommand.Action.MUTATE_HP,
-                            0L,
-                            0L,
-                            0,
-                            0L,
-                            List.of(),
-                            hp.combatantId(),
-                            0,
-                            0L,
-                            hp.amount(),
-                            hp.healing()));
+                    apply(hitPointCommand(hp.combatantId(), hp.amount(), hp.healing()));
             case EncounterCombatStateViewInputEvent.InitiativeEditInput initiative ->
-                    apply(new ApplyEncounterStateCommand(
-                            ApplyEncounterStateCommand.Action.ADJUST_INITIATIVE,
-                            0L,
-                            0L,
-                            0,
-                            0L,
-                            List.of(),
-                            initiative.combatantId(),
-                            initiative.initiativeValue(),
-                            0L,
-                            0,
-                            false));
+                    apply(adjustInitiativeCommand(initiative.combatantId(), initiative.initiativeValue()));
             case EncounterCombatStateViewInputEvent.PartyMemberJoinInput partyMember ->
-                    apply(new ApplyEncounterStateCommand(
-                            ApplyEncounterStateCommand.Action.ADD_PARTY_MEMBER_TO_COMBAT,
-                            0L,
-                            0L,
-                            0,
-                            0L,
-                            List.of(),
-                            "",
-                            partyMember.initiativeValue(),
-                            partyMember.partyMemberId(),
-                            0,
-                            false));
+                    apply(addPartyMemberCommand(partyMember.partyMemberId(), partyMember.initiativeValue()));
         }
     }
 
@@ -132,94 +96,100 @@ final class EncounterStateIntentHandler {
         if (event == null) {
             return;
         }
+        presentationModel.contentModels().results().showSelection(
+                event.selectedEnemies(),
+                event.thresholdFraction(),
+                event.xpFraction());
         if (event.awardExperienceRequested()) {
-            apply(command(ApplyEncounterStateCommand.Action.AWARD_XP));
+            apply(command("AWARD_XP"));
             return;
         }
-        apply(command(ApplyEncounterStateCommand.Action.RETURN_TO_BUILDER_AFTER_RESULTS));
+        if (event.returnToBuilderRequested()) {
+            apply(command("RETURN_TO_BUILDER_AFTER_RESULTS"));
+        }
+    }
+
+    private void openCreatureDetail(long creatureId) {
+        if (creatureId <= UNRESOLVED_ID) {
+            return;
+        }
+        creatures.selectCreatureDetail(new SelectCreatureDetailCommand(creatureId));
+        creatureDetailSink.openCreatureDetail(creatureId);
+    }
+
+    @FunctionalInterface
+    interface CreatureDetailSink {
+        void openCreatureDetail(long creatureId);
     }
 
     private void apply(ApplyEncounterStateCommand command) {
         encounters.applyState(Objects.requireNonNull(command, "command"));
     }
 
-    private static ApplyEncounterStateCommand command(ApplyEncounterStateCommand.Action action) {
-        return new ApplyEncounterStateCommand(
-                action,
-                0L,
-                0L,
-                0,
-                0L,
-                List.of(),
-                "",
-                0,
-                0L,
-                0,
-                false);
+    private static ApplyEncounterStateCommand command(String action) {
+        return ApplyEncounterStateCommand.action(action);
     }
 
-    private static ApplyEncounterStateCommand command(
-            ApplyEncounterStateCommand.Action action,
-            int delta
-    ) {
-        return new ApplyEncounterStateCommand(
-                action,
-                0L,
-                0L,
-                delta,
-                0L,
-                List.of(),
-                "",
-                0,
-                0L,
-                0,
-                false);
+    private static ApplyEncounterStateCommand shiftAlternativeCommand(int delta) {
+        return ApplyEncounterStateCommand.delta("SHIFT_ALTERNATIVE", delta);
     }
 
-    private static ApplyEncounterStateCommand command(
-            ApplyEncounterStateCommand.Action action,
-            long longValue
+    private static ApplyEncounterStateCommand openSavedPlanCommand(long planId) {
+        return ApplyEncounterStateCommand.plan("OPEN_SAVED_PLAN", planId);
+    }
+
+    private static ApplyEncounterStateCommand creatureCommand(String action, long creatureId) {
+        return ApplyEncounterStateCommand.creature(action, creatureId);
+    }
+
+    private static ApplyEncounterStateCommand undoRemoveCommand(long undoToken) {
+        return ApplyEncounterStateCommand.undo("UNDO_REMOVE", undoToken);
+    }
+
+    private static ApplyEncounterStateCommand confirmInitiativeCommand(
+            List<EncounterInitiativeStateViewInputEvent.InitiativeEntry> initiatives
     ) {
-        return switch (action) {
-            case OPEN_SAVED_PLAN -> new ApplyEncounterStateCommand(
-                    action,
-                    0L,
-                    longValue,
-                    0,
-                    0L,
-                    List.of(),
-                    "",
-                    0,
-                    0L,
-                    0,
-                    false);
-            case INCREMENT_CREATURE,
-                    DECREMENT_CREATURE,
-                    REMOVE_CREATURE -> new ApplyEncounterStateCommand(
-                    action,
-                    longValue,
-                    0L,
-                    0,
-                    0L,
-                    List.of(),
-                    "",
-                    0,
-                    0L,
-                    0,
-                    false);
-            case UNDO_REMOVE -> new ApplyEncounterStateCommand(
-                    action,
-                    0L,
-                    0L,
-                    0,
-                    longValue,
-                    List.of(),
-                    "",
-                    0,
-                    0L,
-                    0,
-                    false);
-            default -> command(action);
-        };
+        return ApplyEncounterStateCommand.initiatives(
+                "CONFIRM_INITIATIVE",
+                initiativeIds(initiatives),
+                initiativeNumbers(initiatives));
+    }
+
+    private static ApplyEncounterStateCommand hitPointCommand(String combatantId, int amount, boolean healing) {
+        return ApplyEncounterStateCommand.hitPoints("MUTATE_HP", combatantId, amount, healing);
+    }
+
+    private static ApplyEncounterStateCommand adjustInitiativeCommand(String combatantId, int initiativeValue) {
+        return ApplyEncounterStateCommand.initiative("ADJUST_INITIATIVE", combatantId, initiativeValue);
+    }
+
+    private static ApplyEncounterStateCommand addPartyMemberCommand(long partyMemberId, int initiativeValue) {
+        return ApplyEncounterStateCommand.partyMember("ADD_PARTY_MEMBER_TO_COMBAT", partyMemberId, initiativeValue);
+    }
+
+    private static List<String> initiativeIds(
+            List<EncounterInitiativeStateViewInputEvent.InitiativeEntry> entries
+    ) {
+        List<String> values = new ArrayList<>();
+        for (EncounterInitiativeStateViewInputEvent.InitiativeEntry entry : safeInitiativeEntries(entries)) {
+            values.add(entry.id());
+        }
+        return List.copyOf(values);
+    }
+
+    private static List<Integer> initiativeNumbers(
+            List<EncounterInitiativeStateViewInputEvent.InitiativeEntry> entries
+    ) {
+        List<Integer> values = new ArrayList<>();
+        for (EncounterInitiativeStateViewInputEvent.InitiativeEntry entry : safeInitiativeEntries(entries)) {
+            values.add(entry.initiative());
+        }
+        return List.copyOf(values);
+    }
+
+    private static List<EncounterInitiativeStateViewInputEvent.InitiativeEntry> safeInitiativeEntries(
+            List<EncounterInitiativeStateViewInputEvent.InitiativeEntry> entries
+    ) {
+        return entries == null ? List.of() : entries;
     }
 }
