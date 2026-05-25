@@ -71,10 +71,6 @@ public final class PartyTravelLocation {
                 PartyTravelHeading.defaultHeading());
     }
 
-    public TravelSpace space() {
-        return space;
-    }
-
     public boolean isDungeon() {
         return space == TravelSpace.DUNGEON;
     }

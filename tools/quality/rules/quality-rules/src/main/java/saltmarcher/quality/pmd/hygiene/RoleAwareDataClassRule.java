@@ -17,8 +17,21 @@ public final class RoleAwareDataClassRule extends DataClassRule {
 
     private static boolean isExpectedPassiveCarrier(ASTTypeDeclaration typeDeclaration) {
         SaltMarcherSourceFacts sourceFacts = SaltMarcherSourceFacts.from(typeDeclaration.getRoot());
+        String typeName = typeDeclaration.getSimpleName();
         return sourceFacts.isDataPersistenceSchemaSource()
                 || sourceFacts.isDataSourceModelRecordSource()
-                || sourceFacts.isDomainPublishedSource();
+                || sourceFacts.isDomainPublishedSource()
+                || sourceFacts.isViewStateOnlySource()
+                || isDomainModelPassiveCarrier(sourceFacts, typeName);
+    }
+
+    private static boolean isDomainModelPassiveCarrier(SaltMarcherSourceFacts sourceFacts, String typeName) {
+        return sourceFacts.isDomainModelSource()
+                && (sourceFacts.isDomainModelCarrierSource()
+                || typeName.endsWith("Data")
+                || typeName.endsWith("Input")
+                || typeName.endsWith("Request")
+                || typeName.endsWith("Spec")
+                || sourceFacts.isDomainModelOperationSource());
     }
 }

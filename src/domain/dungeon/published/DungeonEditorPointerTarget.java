@@ -101,10 +101,6 @@ public record DungeonEditorPointerTarget(
                 safeBoundary);
     }
 
-    public boolean isEmpty() {
-        return targetKind == TargetKind.EMPTY;
-    }
-
     public enum TargetKind {
         EMPTY,
         CELL,

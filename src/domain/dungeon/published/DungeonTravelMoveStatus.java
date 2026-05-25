@@ -5,13 +5,5 @@ public enum DungeonTravelMoveStatus {
     INVALID_ACTION,
     TARGET_UNAVAILABLE,
     EXTERNAL_TARGET,
-    NO_MAP;
-
-    public boolean isSuccess() {
-        return this == SUCCESS;
-    }
-
-    public boolean isExternalTarget() {
-        return this == EXTERNAL_TARGET;
-    }
+    NO_MAP
 }

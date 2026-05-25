@@ -8,8 +8,8 @@ import com.sun.source.tree.CompilationUnitTree;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import saltmarcher.quality.errorprone.view.ViewArchitectureSupport;
-import saltmarcher.quality.errorprone.view.ViewRole;
-import saltmarcher.quality.errorprone.view.ViewSourceDescriptor;
+import saltmarcher.architecture.policy.view.ViewRole;
+import saltmarcher.architecture.policy.view.ViewSourceDescriptor;
 
 @BugPattern(
         name = "DungeonMapContentModelProjectionBoundary",
@@ -18,10 +18,12 @@ import saltmarcher.quality.errorprone.view.ViewSourceDescriptor;
 public final class DungeonMapContentModelProjectionBoundaryChecker extends BugChecker
         implements BugChecker.CompilationUnitTreeMatcher {
 
-    private static final Set<String> FORBIDDEN_PREFIXES = Set.of(
-            "src.domain.dungeon.published.TravelDungeonMapProjectionSnapshot",
-            "src.domain.dungeon.model.travel.helper.TravelDungeonMapProjectionHelper",
-            "src.domain.dungeon.model.travel.helper.TravelDungeonMapProjectionValueHelper");
+    private static final Set<String> FORBIDDEN_PREFIXES =
+            Set.of("src.domain.dungeon.published.TravelDungeonMapProjectionSnapshot");
+
+    private static final Set<String> FORBIDDEN_SIMPLE_NAMES = Set.of(
+            "TravelDungeonMapProjectionHelper",
+            "TravelDungeonMapProjectionValueHelper");
 
     @Override
     public Description matchCompilationUnit(CompilationUnitTree tree, VisitorState state) {
@@ -57,6 +59,11 @@ public final class DungeonMapContentModelProjectionBoundaryChecker extends BugCh
                 return true;
             }
         }
-        return false;
+        String simpleName = referencedType;
+        int packageSeparator = Math.max(simpleName.lastIndexOf('.'), simpleName.lastIndexOf('$'));
+        if (packageSeparator >= 0) {
+            simpleName = simpleName.substring(packageSeparator + 1);
+        }
+        return FORBIDDEN_SIMPLE_NAMES.contains(simpleName);
     }
 }

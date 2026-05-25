@@ -45,10 +45,6 @@ public abstract class AbstractSqliteConnectionFactory {
         return connection;
     }
 
-    public final Path databasePath() {
-        return databasePath;
-    }
-
     protected static Path resolveDatabasePath(String dbFileName) {
         String xdgDataHome = System.getenv("XDG_DATA_HOME");
         if (xdgDataHome != null && !xdgDataHome.isBlank()) {

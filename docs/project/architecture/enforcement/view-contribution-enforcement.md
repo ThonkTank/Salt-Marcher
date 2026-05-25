@@ -28,7 +28,7 @@ shell lifecycle-hook ownership, or generic cross-layer boundary rules beyond
 the direct `*Contribution` role itself. Those stay in the view-layer,
 bootstrap, shell-role, and layering enforcement documents.
 
-Unified focused bundle entrypoint:
+Technical diagnostic route:
 
 - `./gradlew checkViewEnforcement --rerun-tasks --console=plain`
   runs the focused active-root Contribution bundle. Canonical compile-side
@@ -40,13 +40,13 @@ Unified focused bundle entrypoint:
 
 ### May Exist
 
-| Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
+| Invariant ID | Status | Applies When | Mechanical Owner | Diagnostic/Mechanical Route | What It Proves |
 | --- | --- | --- | --- | --- | --- |
 | `view-contribution-active-root-placement` | Enforced Elsewhere | every `*Contribution.java` under `src/view/**` | build-harness `ViewTopologyPerimeterRules`; build-harness `ViewLayerTopologyRules` | `./gradlew checkViewEnforcement` | A view contribution may exist only as an active-root shell entrypoint under `src/view/leftbartabs/**`, `src/view/statetabs/**`, or `src/view/dropdowns/**`. It does not appear under `slotcontent/**` or other non-active-root view locations. |
 
 ### Must Contain
 
-| Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
+| Invariant ID | Status | Applies When | Mechanical Owner | Diagnostic/Mechanical Route | What It Proves |
 | --- | --- | --- | --- | --- | --- |
 | `view-contribution-discovery-entrypoint-shape` | Enforced | every active-root `*Contribution.java` under `src/view/leftbartabs/**`, `src/view/statetabs/**`, or `src/view/dropdowns/**` | Error Prone `ViewContributionEntrypointShape` | `./gradlew compileJava` and `./gradlew checkViewEnforcement` | A view contribution keeps the documented shell-discovery entrypoint shape: `*Contribution` naming, `public final` class shape, public no-arg discovery constructor, `ShellContribution` contract, `registrationSpec()`, and `bind(ShellRuntimeContext)`. |
 | `view-contribution-shell-spec-family-alignment` | Enforced | every active-root `*Contribution.java` under `src/view/**` | Error Prone `ViewContributionEntrypointShape` | `./gradlew compileJava` and `./gradlew checkViewEnforcement` | A contribution constructs exactly one allowed shell contribution spec family, and that family matches its active-root area: `ShellLeftBarTabSpec` for `leftbartabs`, `ShellStateTabSpec` for `statetabs`, and `ShellTopBarSpec` for `dropdowns`. |
@@ -55,13 +55,13 @@ Unified focused bundle entrypoint:
 
 ### Must Not Contain
 
-| Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
+| Invariant ID | Status | Applies When | Mechanical Owner | Diagnostic/Mechanical Route | What It Proves |
 | --- | --- | --- | --- | --- | --- |
 | `view-contribution-dependency-boundary` | Enforced | every active-root `*Contribution.java` under `src/view/**` | Error Prone `ViewContributionDependencyBoundary` | `./gradlew compileJava` and `./gradlew checkViewEnforcement` | A contribution depends directly only on its co-located `*Binder` and on the documented shell registration vocabulary. It does not depend on `javafx/**`, `src/domain/**`, `src/data/**`, `bootstrap/**`, `shell.host/**`, foreign view units, or local non-Binder view-role families. |
 
 ### Communication Contract
 
-| Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
+| Invariant ID | Status | Applies When | Mechanical Owner | Diagnostic/Mechanical Route | What It Proves |
 | --- | --- | --- | --- | --- | --- |
 | `view-contribution-shell-public-contract-and-local-binder-only` | Enforced | every active-root `*Contribution.java` under `src/view/**` | Error Prone `ViewContributionDependencyBoundary`; Error Prone `ViewContributionShellApiAllowlist` | `./gradlew compileJava` and `./gradlew checkViewEnforcement` | A contribution communicates directly only with its co-located `*Binder` and the documented shell registration subset: `ShellContribution`, `ShellContributionSpec`, `ShellBinding`, `ShellRuntimeContext`, exactly one area-matching shell spec family, and registration-local metadata types such as `ContributionKey`, `NavigationGroupSpec`, `NavigationGraphicResource`, `ShellLeftBarTabMode`, `InspectorEntrySpec`, and `InspectorSink`. It does not communicate directly with backend boundaries, shell host internals, or foreign view-role surfaces. |
 | `view-contribution-no-shell-service-lookup` | Enforced | every active-root `*Contribution.java` under `src/view/**` | Error Prone `ViewContributionShellApiAllowlist` | `./gradlew compileJava` and `./gradlew checkViewEnforcement` | A contribution does not call `ShellRuntimeContext.services()`. Runtime service lookup stays out of the role. |

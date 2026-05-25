@@ -22,18 +22,6 @@ public final class SessionPlannerContributionModel {
         this.stateContentModel = Objects.requireNonNull(stateContentModel, "stateContentModel");
     }
 
-    SessionPlannerControlsContentModel controlsContentModel() {
-        return controlsContentModel;
-    }
-
-    SessionPlannerTimelineMainContentModel timelineMainContentModel() {
-        return timelineMainContentModel;
-    }
-
-    SessionPlannerStateContentModel stateContentModel() {
-        return stateContentModel;
-    }
-
     void bindReadback(
             SessionPlannerCurrentSessionModel sessionModel,
             SessionPlannerParticipantsModel participantsModel,

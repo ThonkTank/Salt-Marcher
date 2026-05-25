@@ -17,11 +17,4 @@ public record EncounterGenerationResult(
         message = message == null ? "" : message;
     }
 
-    public EncounterGenerationResult(
-            boolean success,
-            List<EncounterGeneratedAlternative> encounters,
-            String message
-    ) {
-        this(success, encounters, message, null, false, false);
-    }
 }

@@ -219,23 +219,9 @@ public final class ArchitectureContext {
                 .map(path -> path.startsWith("./") ? path.substring(2) : path)
                 .map(path -> path.endsWith("/") ? path.substring(0, path.length() - 1) : path)
                 .filter(path -> !path.isBlank())
-                .peek(ArchitectureContext::requireSafeFocusedPath)
                 .distinct()
                 .sorted()
                 .toList();
-    }
-
-    private static void requireSafeFocusedPath(String path) {
-        boolean unsafe = path.startsWith("/")
-                || Arrays.asList(path.split("/")).contains("..")
-                || path.contains("*")
-                || path.contains("?")
-                || path.contains("[")
-                || path.contains("]");
-        if (unsafe) {
-            throw new IllegalArgumentException(
-                    "Focused verification paths must be repo-relative paths without '..' or glob syntax.");
-        }
     }
 
     private static List<String> declaredDomainContextNames(String content) {

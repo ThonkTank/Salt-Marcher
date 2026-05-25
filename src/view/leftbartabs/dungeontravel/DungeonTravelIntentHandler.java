@@ -9,6 +9,8 @@ import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel;
 import src.view.slotcontent.main.dungeonmap.DungeonMapViewInputEvent;
 
 final class DungeonTravelIntentHandler {
+    private static final double SCROLL_DELTA_ZERO = 0.0;
+
 
     private final DungeonTravelContributionModel presentationModel;
     private final DungeonMapContentModel mapContentModel;
@@ -43,8 +45,7 @@ final class DungeonTravelIntentHandler {
             return;
         }
         int projectionLevelShift = event.projectionLevelShift();
-        int noProjectionLevelShift = projectionLevelShift - projectionLevelShift;
-        if (projectionLevelShift != noProjectionLevelShift) {
+        if (projectionLevelShift != 0) {
             travel.applyDungeonTravelSession(ApplyTravelDungeonSessionCommand.projectionLevel(
                     presentationModel.currentProjectionLevel() + projectionLevelShift));
             return;
@@ -119,14 +120,13 @@ final class DungeonTravelIntentHandler {
             return;
         }
         double scrollDeltaY = event.scrollDeltaY();
-        double neutralScrollDelta = scrollDeltaY - scrollDeltaY;
         double zoomInFactor = 1.1;
-        if (scrollDeltaY > neutralScrollDelta) {
+        if (scrollDeltaY > SCROLL_DELTA_ZERO) {
             mapContentModel.zoomAround(
                     event.position().canvasX(),
                     event.position().canvasY(),
                     zoomInFactor);
-        } else if (scrollDeltaY < neutralScrollDelta) {
+        } else if (scrollDeltaY < SCROLL_DELTA_ZERO) {
             mapContentModel.zoomAround(
                     event.position().canvasX(),
                     event.position().canvasY(),

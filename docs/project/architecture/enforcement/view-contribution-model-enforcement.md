@@ -29,7 +29,7 @@ contract, or `IntentHandler` / `*ViewInputEvent` / legacy `*PublishedEvent`
 protocol and necessity rules. Those stay in the neighboring role-enforcement
 documents and in the view-layer and layering standards.
 
-Merged focused bundle entrypoint:
+Technical diagnostic route:
 
 - `./gradlew checkViewEnforcement --rerun-tasks --console=plain`
   runs the focused active-root `ContributionModel` bundle. Role-shape
@@ -42,14 +42,14 @@ Merged focused bundle entrypoint:
 
 ### Must Contain
 
-| Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
+| Invariant ID | Status | Applies When | Mechanical Owner | Diagnostic/Mechanical Route | What It Proves |
 | --- | --- | --- | --- | --- | --- |
 | `view-contributionmodel-active-root-role-shape` | Enforced | every aggregate projection-model role file in an active root under `src/view/leftbartabs/**`, `src/view/statetabs/**`, or `src/view/dropdowns/**` | build-harness `ViewLayerTopologyRules` | `./gradlew checkViewEnforcement` | Active roots use exactly one aggregate projection-model role named `*ContributionModel.java`; active-root `*ContentModel.java` files are legal only as same-stem passive-View content models and are not alternate aggregate models. |
 | `view-contributionmodel-observable-projection-scope` | Review-Owned | every active-root `*ContributionModel.java` under `src/view/**` | none | none | A `ContributionModel` carries the root-wide observable projection state for one shell-hung contribution, including root-level mode, status, cross-surface selection, readback coordination, and input-relevant facts its same-root `IntentHandler` may need for local interpretation. It orchestrates child `ContentModel`s instead of absorbing their component-specific render and input logic. Those facts remain projection-only and do not become a hidden write-side session mirror or command reconstruction backchannel. |
 
 ### Must Not Contain
 
-| Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
+| Invariant ID | Status | Applies When | Mechanical Owner | Diagnostic/Mechanical Route | What It Proves |
 | --- | --- | --- | --- | --- | --- |
 | `view-contributionmodel-no-outer-layer-or-service-dependencies` | Enforced | every active-root `*ContributionModel.java` under `src/view/**` | Error Prone `ViewContributionModelDependencyBoundary` | `./gradlew compileJava` and `./gradlew checkViewEnforcement` | A `ContributionModel` does not depend on `shell/**`, `bootstrap/**`, `src/data/**`, or root `*ApplicationService` boundaries. |
 | `view-contributionmodel-no-write-side-domain-carriers` | Enforced | every active-root `*ContributionModel.java` under `src/view/**` | Error Prone `ViewContributionModelDependencyBoundary` | `./gradlew compileJava` and `./gradlew checkViewEnforcement` | A `ContributionModel` does not depend on domain internals or write-side `published/**` carrier families such as `*Command`, `*Query`, `*Operation`, or `*Edit`; domain reach stays read-side only. |
@@ -60,7 +60,7 @@ Merged focused bundle entrypoint:
 
 ### Communication Contract
 
-| Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
+| Invariant ID | Status | Applies When | Mechanical Owner | Diagnostic/Mechanical Route | What It Proves |
 | --- | --- | --- | --- | --- | --- |
 | `view-contributionmodel-read-side-only-direct-boundary` | Enforced | every active-root `*ContributionModel.java` under `src/view/**` | Error Prone `ViewContributionModelDependencyBoundary` | `./gradlew compileJava` and `./gradlew checkViewEnforcement` | A `ContributionModel` communicates directly only with read-side domain `published/**` carriers, JavaFX beans or collections, allowed same-surface local value/support types, and same-root or intentionally reused child `*ContentModel` surfaces it orchestrates. In target architecture that read-side boundary is not just passive data access: the `ContributionModel` is also the listener-side owner of root-wide `published/*Model` readback reaction while child `ContentModel`s own component-local projection reaction. |
 | `view-contributionmodel-no-separate-presentation-event-protocol` | Enforced | every active-root `*ContributionModel.java` under `src/view/**` | Error Prone `ViewContributionModelRequestProtocol` | `./gradlew compileJava` | A `ContributionModel` exposes observable state only; it does not grow separate presentation-event, callback, acknowledgement, request-token, or presenter-style communication APIs. |

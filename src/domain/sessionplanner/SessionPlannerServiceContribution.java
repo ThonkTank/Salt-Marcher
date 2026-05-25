@@ -13,10 +13,6 @@ import src.domain.sessionplanner.published.SessionPlannerStatePanelModel;
 
 public final class SessionPlannerServiceContribution implements ServiceContribution {
 
-    @SuppressWarnings({"PMD.UnnecessaryConstructor", "PMD.UncommentedEmptyConstructor"})
-    public SessionPlannerServiceContribution() {
-    }
-
     @Override
     public void register(ServiceRegistry.Builder services) {
         AtomicReference<SessionPlannerServiceAssembly> assembly = new AtomicReference<>();

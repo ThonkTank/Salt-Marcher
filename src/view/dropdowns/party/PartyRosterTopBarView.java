@@ -17,7 +17,6 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 
-@SuppressWarnings("PMD.CouplingBetweenObjects")
 public final class PartyRosterTopBarView extends VBox {
 
     private static final int XP_ADJUSTMENT_STEP = 100;
@@ -27,16 +26,18 @@ public final class PartyRosterTopBarView extends VBox {
     private static final String STYLE_ACCENT = "accent";
     private static final String STYLE_NEUTRAL_ACTION = "neutral-action";
 
-    private final VBox memberListPane = new VBox();
-    private final HBox restActionsPane = new HBox();
-    private final VBox reserveListPane = new VBox();
-    private final TextField reserveSearchField = new TextField();
-    private final Button shortRestButton = new Button("Short Rest");
-    private final Button longRestButton = new Button("Long Rest");
+    private final VBox memberListPane = new StyledVBox("party-list");
+    private final HBox restActionsPane = new StyledHBox("party-rest-actions");
+    private final VBox reserveListPane = new StyledVBox("party-search");
+    private final TextField reserveSearchField = new StyledTextField("party-search-field");
+    private final Button shortRestButton = new StyledButton("Short Rest", STYLE_COMPACT);
+    private final Button longRestButton = new StyledButton("Long Rest", STYLE_COMPACT);
     private final Button newCharacterButton = new Button("+ Neuer Charakter");
-    private final Label summaryLabel = new Label();
-    private final Label restSummaryLabel = new Label();
-    private final Label actionStatusLabel = new Label();
+    private final Label summaryLabel = new StyledLabel("party-summary");
+    private final Label restSummaryLabel = new StyledLabel("party-summary-rest");
+    private final Label actionStatusLabel = new StyledLabel();
+    private final RosterRows rosterRows = new RosterRows();
+    private final RosterEvents rosterEvents = new RosterEvents();
     private Consumer<PartyRosterTopBarViewInputEvent> viewInputEventHandler = ignored -> { };
 
     public PartyRosterTopBarView() {
@@ -44,11 +45,11 @@ public final class PartyRosterTopBarView extends VBox {
         setFillWidth(true);
         configureStaticControls();
         getChildren().addAll(
-                sectionLabel("AKTUELLE PARTY"),
+                PartyRosterChrome.sectionLabel("AKTUELLE PARTY"),
                 memberListPane,
                 restActionsPane,
                 new Separator(),
-                sectionLabel("CHARAKTER HINZUFUEGEN"),
+                PartyRosterChrome.sectionLabel("CHARAKTER HINZUFUEGEN"),
                 reserveSearchField,
                 reserveListPane,
                 newCharacterButton,
@@ -68,25 +69,18 @@ public final class PartyRosterTopBarView extends VBox {
     }
 
     private void configureStaticControls() {
-        memberListPane.getStyleClass().add("party-list");
-        reserveListPane.getStyleClass().add("party-search");
-        reserveSearchField.getStyleClass().add("party-search-field");
         reserveSearchField.setPromptText("Reserve durchsuchen");
         reserveSearchField.setAccessibleText("Reserve-Charaktere durchsuchen");
-        reserveSearchField.textProperty().addListener((ignored, before, after) -> publishReserveSearchChanged(after));
-        restActionsPane.getStyleClass().add("party-rest-actions");
-        shortRestButton.getStyleClass().add(STYLE_COMPACT);
-        longRestButton.getStyleClass().add(STYLE_COMPACT);
+        reserveSearchField.textProperty().addListener((ignored, before, after) ->
+                rosterEvents.publishReserveSearchChanged(after));
         shortRestButton.setAccessibleText("Short Rest, fuer die aktive Party ausfuehren");
         longRestButton.setAccessibleText("Long Rest, fuer die aktive Party ausfuehren");
-        shortRestButton.setOnAction(event -> publishShortRestRequested());
-        longRestButton.setOnAction(event -> publishLongRestRequested());
-        restActionsPane.getChildren().addAll(shortRestButton, longRestButton);
+        shortRestButton.setOnAction(event -> rosterEvents.publishShortRestRequested());
+        longRestButton.setOnAction(event -> rosterEvents.publishLongRestRequested());
+        ((StyledHBox) restActionsPane).setNodes(shortRestButton, longRestButton);
         newCharacterButton.setMaxWidth(Double.MAX_VALUE);
         newCharacterButton.setAccessibleText("+ Neuer Charakter, neuen Charakter erstellen");
-        newCharacterButton.setOnAction(event -> publishCreateEditorRequested());
-        summaryLabel.getStyleClass().add("party-summary");
-        restSummaryLabel.getStyleClass().add("party-summary-rest");
+        newCharacterButton.setOnAction(event -> rosterEvents.publishCreateEditorRequested());
         actionStatusLabel.setWrapText(true);
         actionStatusLabel.setAccessibleRole(AccessibleRole.TEXT);
         actionStatusLabel.setFocusTraversable(false);
@@ -100,31 +94,26 @@ public final class PartyRosterTopBarView extends VBox {
             return;
         }
         boolean actionsDisabled = content.actionsDisabled();
-        memberListPane.getChildren().clear();
-        reserveListPane.getChildren().clear();
-        if (content.storageError()) {
-            memberListPane.getChildren().add(messageLabel(content.storageMessage()));
-        } else if (content.activeMembers().isEmpty()) {
-            memberListPane.getChildren().add(messageLabel("Keine aktiven Party-Mitglieder"));
-        } else {
-            for (PartyRosterTopBarContentModel.MemberModel member : content.activeMembers()) {
-                memberListPane.getChildren().add(memberRow(member, actionsDisabled));
-            }
-        }
-        if (content.allReserveMembers().isEmpty()) {
-            reserveListPane.getChildren().add(messageLabel("Keine Reserve-Charaktere"));
-        } else if (content.reserveMembers().isEmpty()) {
-            reserveListPane.getChildren().add(messageLabel("Keine Treffer in der Reserve"));
-        } else {
-            for (PartyRosterTopBarContentModel.MemberModel member : content.reserveMembers()) {
-                reserveListPane.getChildren().add(reserveMemberButton(member, actionsDisabled));
-            }
-        }
-        shortRestButton.setDisable(content.restActionsDisabled() || actionsDisabled);
-        longRestButton.setDisable(content.restActionsDisabled() || actionsDisabled);
+        rosterRows.showMemberList(content, actionsDisabled);
+        rosterRows.showReserveList(content, actionsDisabled);
+        showPanelActions(content, actionsDisabled);
+        showSummaries(content);
+        showActionStatus(content);
+    }
+
+    private void showPanelActions(PartyRosterTopBarContentModel.PanelContent content, boolean actionsDisabled) {
+        boolean restDisabled = content.restActionsDisabled() || actionsDisabled;
+        shortRestButton.setDisable(restDisabled);
+        longRestButton.setDisable(restDisabled);
         newCharacterButton.setDisable(actionsDisabled);
+    }
+
+    private void showSummaries(PartyRosterTopBarContentModel.PanelContent content) {
         summaryLabel.setText(safe(content.summaryText()));
         restSummaryLabel.setText(safe(content.restSummaryText()));
+    }
+
+    private void showActionStatus(PartyRosterTopBarContentModel.PanelContent content) {
         String actionStatus = safe(content.actionStatus());
         boolean hasActionStatus = !actionStatus.isBlank();
         actionStatusLabel.setText(actionStatus);
@@ -132,13 +121,15 @@ public final class PartyRosterTopBarView extends VBox {
         actionStatusLabel.setVisible(hasActionStatus);
         actionStatusLabel.setManaged(hasActionStatus);
         actionStatusLabel.setFocusTraversable(hasActionStatus);
-        actionStatusLabel.getStyleClass().removeAll("text-warning", STYLE_TEXT_MUTED);
-        actionStatusLabel.getStyleClass().add(content.actionStatusError() ? "text-warning" : STYLE_TEXT_MUTED);
+        ((StyledLabel) actionStatusLabel).replaceStyleClasses(
+                content.actionStatusError() ? "text-warning" : STYLE_TEXT_MUTED,
+                "text-warning",
+                STYLE_TEXT_MUTED);
     }
 
     private void showLoadingPanel() {
-        memberListPane.getChildren().setAll(messageLabel("Lade..."));
-        reserveListPane.getChildren().clear();
+        ((StyledVBox) memberListPane).setNodes(PartyRosterChrome.messageLabel("Lade..."));
+        ((StyledVBox) reserveListPane).clearNodes();
         shortRestButton.setDisable(true);
         longRestButton.setDisable(true);
         newCharacterButton.setDisable(true);
@@ -151,216 +142,355 @@ public final class PartyRosterTopBarView extends VBox {
         actionStatusLabel.setFocusTraversable(false);
     }
 
-    private Node memberRow(PartyRosterTopBarContentModel.MemberModel member, boolean actionsDisabled) {
-        Label identityLabel = clippedLabel(member.identityText(), "bold");
-        HBox.setHgrow(identityLabel, Priority.ALWAYS);
-
-        Button xpDownButton = actionButton(
-                "-XP",
-                STYLE_NEUTRAL_ACTION,
-                "-XP, " + member.name() + " XP verringern",
-                "XP verringern",
-                actionsDisabled,
-                true);
-        xpDownButton.setUserData(member.id());
-        xpDownButton.setOnAction(event -> publishXp(event, -XP_ADJUSTMENT_STEP));
-
-        Button xpUpButton = actionButton(
-                "+XP",
-                STYLE_ACCENT,
-                "+XP, " + member.name() + " XP erhoehen",
-                "XP erhoehen",
-                actionsDisabled,
-                true);
-        xpUpButton.setUserData(member.id());
-        xpUpButton.setOnAction(event -> publishXp(event, XP_ADJUSTMENT_STEP));
-
-        HBox progressRow = new HBox(
-                5,
-                new Label(member.levelLabel()),
-                clippedLabel(member.levelProgressText(), STYLE_TEXT_SECONDARY),
-                new Label(member.nextLevelLabel()),
-                xpDownButton,
-                xpUpButton);
-        progressRow.setAlignment(Pos.CENTER_LEFT);
-        progressRow.getStyleClass().add("party-level-progress-row");
-
-        Button editButton = actionButton(
-                "Edit",
-                STYLE_ACCENT,
-                "Edit, Charakter bearbeiten: " + member.name(),
-                "Charakter bearbeiten",
-                actionsDisabled,
-                false);
-        editButton.setUserData(member.id());
-        editButton.setOnAction(this::publishEditRequested);
-
-        Button removeButton = actionButton(
-                "Entfernen",
-                STYLE_NEUTRAL_ACTION,
-                "Entfernen, aus aktiver Party entfernen: " + member.name(),
-                "Aus aktiver Party entfernen",
-                actionsDisabled,
-                false);
-        removeButton.setUserData(member.id());
-        removeButton.setOnAction(this::publishRemoveRequested);
-
-        Region spacer = new Region();
-        HBox.setHgrow(spacer, Priority.ALWAYS);
-        HBox managementActions = new HBox(6, editButton, removeButton);
-        managementActions.setAlignment(Pos.CENTER_RIGHT);
-
-        HBox headerRow = new HBox(8, identityLabel, progressRow);
-        headerRow.setAlignment(Pos.CENTER_LEFT);
-        headerRow.setMaxWidth(Double.MAX_VALUE);
-
-        HBox actionRow = new HBox(
-                8,
-                clippedLabel(member.combatText(), STYLE_TEXT_SECONDARY),
-                restChipLabel(member),
-                spacer,
-                managementActions);
-        actionRow.setAlignment(Pos.CENTER_LEFT);
-        actionRow.setMaxWidth(Double.MAX_VALUE);
-
-        VBox row = new VBox(headerRow, actionRow);
-        row.getStyleClass().add("party-row");
-        row.setMaxWidth(Double.MAX_VALUE);
-        return row;
-    }
-
-    private Node reserveMemberButton(PartyRosterTopBarContentModel.MemberModel member, boolean actionsDisabled) {
-        Button button = actionButton(
-                member.name() + " (" + member.levelLabel() + ")",
-                STYLE_NEUTRAL_ACTION,
-                member.name() + " (" + member.levelLabel() + "), zur aktiven Party hinzufuegen",
-                "Zur aktiven Party hinzufuegen",
-                actionsDisabled,
-                false);
-        button.setMaxWidth(Double.MAX_VALUE);
-        button.setUserData(member.id());
-        button.setOnAction(this::publishAddExistingRequested);
-        return button;
-    }
-
-    private void publishReserveSearchChanged(String reserveSearchText) {
-        publish(new PartyRosterTopBarViewInputEvent(
-                false,
-                false,
-                false,
-                0L,
-                0,
-                false,
-                false,
-                false,
-                true,
-                reserveSearchText));
-    }
-
-    private void publishShortRestRequested() {
-        publish(new PartyRosterTopBarViewInputEvent(
-                false, false, false, 0L, 0, false, true, false, false, ""));
-    }
-
-    private void publishLongRestRequested() {
-        publish(new PartyRosterTopBarViewInputEvent(
-                false, false, false, 0L, 0, false, false, true, false, ""));
-    }
-
-    private void publishCreateEditorRequested() {
-        publish(new PartyRosterTopBarViewInputEvent(
-                true, false, false, 0L, 0, false, false, false, false, ""));
-    }
-
-    private void publishEditRequested(ActionEvent event) {
-        Object source = event.getSource();
-        Object userData = source instanceof Node node ? node.getUserData() : null;
-        long memberId = userData instanceof Long id ? id : 0L;
-        publish(new PartyRosterTopBarViewInputEvent(
-                false, true, false, memberId, 0, false, false, false, false, ""));
-    }
-
-    private void publishAddExistingRequested(ActionEvent event) {
-        Object source = event.getSource();
-        Object userData = source instanceof Node node ? node.getUserData() : null;
-        long memberId = userData instanceof Long id ? id : 0L;
-        publish(new PartyRosterTopBarViewInputEvent(
-                false, false, true, memberId, 0, false, false, false, false, ""));
-    }
-
-    private void publishRemoveRequested(ActionEvent event) {
-        Object source = event.getSource();
-        Object userData = source instanceof Node node ? node.getUserData() : null;
-        long memberId = userData instanceof Long id ? id : 0L;
-        publish(new PartyRosterTopBarViewInputEvent(
-                false, false, false, memberId, 0, true, false, false, false, ""));
-    }
-
-    private void publishXp(ActionEvent event, int xpDelta) {
-        Object source = event.getSource();
-        Object userData = source instanceof Node node ? node.getUserData() : null;
-        long memberId = userData instanceof Long id ? id : 0L;
-        publish(new PartyRosterTopBarViewInputEvent(
-                false, false, false, memberId, xpDelta, false, false, false, false, ""));
-    }
-
-    private void publish(PartyRosterTopBarViewInputEvent event) {
-        viewInputEventHandler.accept(event);
-    }
-
-    private static Button actionButton(
-            String text,
-            String actionStyle,
-            String accessibleText,
-            String tooltipText,
-            boolean disabled,
-            boolean iconSized
-    ) {
-        Button button = new Button(text);
-        button.getStyleClass().addAll(STYLE_COMPACT, actionStyle);
-        if (iconSized) {
-            button.getStyleClass().add("icon-button");
-        }
-        button.setAccessibleText(accessibleText);
-        button.setTooltip(new Tooltip(tooltipText));
-        button.setDisable(disabled);
-        return button;
-    }
-
-    private static Label clippedLabel(String text, String styleClass) {
-        Label label = new Label(safe(text));
-        label.getStyleClass().add(styleClass);
-        label.setWrapText(false);
-        label.setTextOverrun(OverrunStyle.ELLIPSIS);
-        label.setMinWidth(0);
-        label.setMaxWidth(Double.MAX_VALUE);
-        label.setTooltip(new Tooltip(safe(text)));
-        return label;
-    }
-
-    private static Label restChipLabel(PartyRosterTopBarContentModel.MemberModel member) {
-        Label label = new Label(member.restText());
-        label.getStyleClass().add("party-rest-chip");
-        if (!member.restStyleClass().isBlank()) {
-            label.getStyleClass().add(member.restStyleClass());
-        }
-        return label;
-    }
-
-    private static Label sectionLabel(String text) {
-        Label label = new Label(text);
-        label.getStyleClass().addAll("section-header", STYLE_TEXT_MUTED);
-        return label;
-    }
-
-    private static Label messageLabel(String text) {
-        Label label = new Label(safe(text));
-        label.getStyleClass().addAll(STYLE_TEXT_MUTED, "party-message-label");
-        label.setWrapText(true);
-        return label;
-    }
-
     private static String safe(String value) {
         return value == null ? "" : value;
+    }
+
+    private final class RosterRows {
+
+        private void showMemberList(PartyRosterTopBarContentModel.PanelContent content, boolean actionsDisabled) {
+            ((StyledVBox) memberListPane).clearNodes();
+            if (content.storageError()) {
+                ((StyledVBox) memberListPane).setNodes(PartyRosterChrome.messageLabel(content.storageMessage()));
+                return;
+            }
+            if (content.activeMembers().isEmpty()) {
+                ((StyledVBox) memberListPane).setNodes(PartyRosterChrome.messageLabel("Keine aktiven Party-Mitglieder"));
+                return;
+            }
+            for (PartyRosterTopBarContentModel.MemberModel member : content.activeMembers()) {
+                ((StyledVBox) memberListPane).addNode(memberRow(member, actionsDisabled));
+            }
+        }
+
+        private void showReserveList(PartyRosterTopBarContentModel.PanelContent content, boolean actionsDisabled) {
+            ((StyledVBox) reserveListPane).clearNodes();
+            if (content.allReserveMembers().isEmpty()) {
+                ((StyledVBox) reserveListPane).setNodes(PartyRosterChrome.messageLabel("Keine Reserve-Charaktere"));
+                return;
+            }
+            if (content.reserveMembers().isEmpty()) {
+                ((StyledVBox) reserveListPane).setNodes(PartyRosterChrome.messageLabel("Keine Treffer in der Reserve"));
+                return;
+            }
+            for (PartyRosterTopBarContentModel.MemberModel member : content.reserveMembers()) {
+                ((StyledVBox) reserveListPane).addNode(reserveMemberButton(member, actionsDisabled));
+            }
+        }
+
+        private Node memberRow(PartyRosterTopBarContentModel.MemberModel member, boolean actionsDisabled) {
+            Label identityLabel = PartyRosterChrome.clippedLabel(member.identityText(), "bold");
+            HBox.setHgrow(identityLabel, Priority.ALWAYS);
+
+            Button xpDownButton = memberActionButton(
+                    member.id(),
+                    "-XP",
+                    STYLE_NEUTRAL_ACTION,
+                    "-XP, " + member.name() + " XP verringern",
+                    "XP verringern",
+                    actionsDisabled,
+                    true);
+            xpDownButton.setOnAction(event -> rosterEvents.publishXp(event, -XP_ADJUSTMENT_STEP));
+
+            Button xpUpButton = memberActionButton(
+                    member.id(),
+                    "+XP",
+                    STYLE_ACCENT,
+                    "+XP, " + member.name() + " XP erhoehen",
+                    "XP erhoehen",
+                    actionsDisabled,
+                    true);
+            xpUpButton.setOnAction(event -> rosterEvents.publishXp(event, XP_ADJUSTMENT_STEP));
+
+            HBox progressRow = new StyledHBox(
+                    "party-level-progress-row",
+                    5,
+                    new Label(member.levelLabel()),
+                    PartyRosterChrome.clippedLabel(member.levelProgressText(), STYLE_TEXT_SECONDARY),
+                    new Label(member.nextLevelLabel()),
+                    xpDownButton,
+                    xpUpButton);
+            progressRow.setAlignment(Pos.CENTER_LEFT);
+
+            Button editButton = memberActionButton(
+                    member.id(),
+                    "Edit",
+                    STYLE_ACCENT,
+                    "Edit, Charakter bearbeiten: " + member.name(),
+                    "Charakter bearbeiten",
+                    actionsDisabled,
+                    false);
+            editButton.setOnAction(rosterEvents::publishEditRequested);
+
+            Button removeButton = memberActionButton(
+                    member.id(),
+                    "Entfernen",
+                    STYLE_NEUTRAL_ACTION,
+                    "Entfernen, aus aktiver Party entfernen: " + member.name(),
+                    "Aus aktiver Party entfernen",
+                    actionsDisabled,
+                    false);
+            removeButton.setOnAction(rosterEvents::publishRemoveRequested);
+
+            Region spacer = new Region();
+            HBox.setHgrow(spacer, Priority.ALWAYS);
+            HBox managementActions = new HBox(6, editButton, removeButton);
+            managementActions.setAlignment(Pos.CENTER_RIGHT);
+
+            HBox headerRow = new HBox(8, identityLabel, progressRow);
+            headerRow.setAlignment(Pos.CENTER_LEFT);
+            headerRow.setMaxWidth(Double.MAX_VALUE);
+
+            HBox actionRow = new HBox(
+                    8,
+                    PartyRosterChrome.clippedLabel(member.combatText(), STYLE_TEXT_SECONDARY),
+                    PartyRosterChrome.restChipLabel(member),
+                    spacer,
+                    managementActions);
+            actionRow.setAlignment(Pos.CENTER_LEFT);
+            actionRow.setMaxWidth(Double.MAX_VALUE);
+
+            VBox row = new StyledVBox("party-row", headerRow, actionRow);
+            row.setMaxWidth(Double.MAX_VALUE);
+            return row;
+        }
+
+        private Button reserveMemberButton(PartyRosterTopBarContentModel.MemberModel member, boolean actionsDisabled) {
+            Button button = memberActionButton(
+                    member.id(),
+                    member.name() + " (" + member.levelLabel() + ")",
+                    STYLE_NEUTRAL_ACTION,
+                    member.name() + " (" + member.levelLabel() + "), zur aktiven Party hinzufuegen",
+                    "Zur aktiven Party hinzufuegen",
+                    actionsDisabled,
+                    false);
+            button.setMaxWidth(Double.MAX_VALUE);
+            button.setOnAction(rosterEvents::publishAddExistingRequested);
+            return button;
+        }
+
+        private Button memberActionButton(
+                Long memberId,
+                String text,
+                String actionStyle,
+                String accessibleText,
+                String tooltipText,
+                boolean disabled,
+                boolean iconSized
+        ) {
+            Button button = PartyRosterChrome.actionButton(
+                    text,
+                    actionStyle,
+                    accessibleText,
+                    tooltipText,
+                    disabled,
+                    iconSized);
+            button.setUserData(memberId);
+            return button;
+        }
+    }
+
+    private final class RosterEvents {
+
+        private void publishReserveSearchChanged(String reserveSearchText) {
+            publish(new PartyRosterTopBarViewInputEvent(
+                    false,
+                    false,
+                    false,
+                    0L,
+                    0,
+                    false,
+                    false,
+                    false,
+                    true,
+                    reserveSearchText));
+        }
+
+        private void publishShortRestRequested() {
+            publish(new PartyRosterTopBarViewInputEvent(
+                    false, false, false, 0L, 0, false, true, false, false, ""));
+        }
+
+        private void publishLongRestRequested() {
+            publish(new PartyRosterTopBarViewInputEvent(
+                    false, false, false, 0L, 0, false, false, true, false, ""));
+        }
+
+        private void publishCreateEditorRequested() {
+            publish(new PartyRosterTopBarViewInputEvent(
+                    true, false, false, 0L, 0, false, false, false, false, ""));
+        }
+
+        private void publishEditRequested(ActionEvent event) {
+            publishMemberEvent(event, true, false, false, 0);
+        }
+
+        private void publishAddExistingRequested(ActionEvent event) {
+            publishMemberEvent(event, false, true, false, 0);
+        }
+
+        private void publishRemoveRequested(ActionEvent event) {
+            publishMemberEvent(event, false, false, true, 0);
+        }
+
+        private void publishXp(ActionEvent event, int xpDelta) {
+            publishMemberEvent(event, false, false, false, xpDelta);
+        }
+
+        private void publishMemberEvent(
+                ActionEvent event,
+                boolean editEditorRequested,
+                boolean addExistingRequested,
+                boolean removeRequested,
+                int xpDelta
+        ) {
+            Object source = event.getSource();
+            Object userData = source instanceof Node node ? node.getUserData() : null;
+            long memberId = userData instanceof Long id ? id : 0L;
+            publish(new PartyRosterTopBarViewInputEvent(
+                    false,
+                    editEditorRequested,
+                    addExistingRequested,
+                    memberId,
+                    xpDelta,
+                    removeRequested,
+                    false,
+                    false,
+                    false,
+                    ""));
+        }
+
+        private void publish(PartyRosterTopBarViewInputEvent event) {
+            viewInputEventHandler.accept(event);
+        }
+    }
+
+    private static final class PartyRosterChrome {
+
+        private static Button actionButton(
+                String text,
+                String actionStyle,
+                String accessibleText,
+                String tooltipText,
+                boolean disabled,
+                boolean iconSized
+        ) {
+            StyledButton button = new StyledButton(text, STYLE_COMPACT, actionStyle);
+            if (iconSized) {
+                button.addStyle("icon-button");
+            }
+            button.setAccessibleText(accessibleText);
+            button.setTooltip(new Tooltip(tooltipText));
+            button.setDisable(disabled);
+            return button;
+        }
+
+        private static Label clippedLabel(String text, String styleClass) {
+            Label label = new StyledLabel(safe(text), styleClass);
+            label.setWrapText(false);
+            label.setTextOverrun(OverrunStyle.ELLIPSIS);
+            label.setMinWidth(0);
+            label.setMaxWidth(Double.MAX_VALUE);
+            label.setTooltip(new Tooltip(safe(text)));
+            return label;
+        }
+
+        private static Label restChipLabel(PartyRosterTopBarContentModel.MemberModel member) {
+            StyledLabel label = new StyledLabel(member.restText(), "party-rest-chip");
+            if (!member.restStyleClass().isBlank()) {
+                label.addStyle(member.restStyleClass());
+            }
+            return label;
+        }
+
+        private static Label sectionLabel(String text) {
+            return new StyledLabel(text, "section-header", STYLE_TEXT_MUTED);
+        }
+
+        private static Label messageLabel(String text) {
+            Label label = new StyledLabel(safe(text), STYLE_TEXT_MUTED, "party-message-label");
+            label.setWrapText(true);
+            return label;
+        }
+    }
+
+    private static final class StyledLabel extends Label {
+
+        private StyledLabel() {
+        }
+
+        private StyledLabel(String styleClass) {
+            getStyleClass().add(styleClass);
+        }
+
+        private StyledLabel(String text, String firstStyleClass, String... additionalStyleClasses) {
+            super(text);
+            getStyleClass().add(firstStyleClass);
+            getStyleClass().addAll(additionalStyleClasses);
+        }
+
+        private void addStyle(String styleClass) {
+            getStyleClass().add(styleClass);
+        }
+
+        private void replaceStyleClasses(String replacement, String... removedStyleClasses) {
+            getStyleClass().removeAll(removedStyleClasses);
+            getStyleClass().add(replacement);
+        }
+    }
+
+    private static final class StyledButton extends Button {
+
+        private StyledButton(String text, String... styleClasses) {
+            super(text);
+            getStyleClass().addAll(styleClasses);
+        }
+
+        private void addStyle(String styleClass) {
+            getStyleClass().add(styleClass);
+        }
+    }
+
+    private static final class StyledTextField extends TextField {
+
+        private StyledTextField(String styleClass) {
+            getStyleClass().add(styleClass);
+        }
+    }
+
+    private static final class StyledHBox extends HBox {
+
+        private StyledHBox(String styleClass) {
+            getStyleClass().add(styleClass);
+        }
+
+        private StyledHBox(String styleClass, double spacing, Node... children) {
+            super(spacing, children);
+            getStyleClass().add(styleClass);
+        }
+
+        private void setNodes(Node... nodes) {
+            getChildren().setAll(nodes);
+        }
+    }
+
+    private static final class StyledVBox extends VBox {
+
+        private StyledVBox(String styleClass, Node... children) {
+            super(children);
+            getStyleClass().add(styleClass);
+        }
+
+        private void addNode(Node child) {
+            getChildren().add(child);
+        }
+
+        private void setNodes(Node... nodes) {
+            getChildren().setAll(nodes);
+        }
+
+        private void clearNodes() {
+            getChildren().clear();
+        }
     }
 }

@@ -28,7 +28,4 @@ public final class PartyAdventuringDayLevelProgress {
         return Math.max(0, endLevel - startLevel);
     }
 
-    public boolean gainedLevel() {
-        return levelUps() > 0;
-    }
 }

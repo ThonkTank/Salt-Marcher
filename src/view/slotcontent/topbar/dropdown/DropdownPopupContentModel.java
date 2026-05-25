@@ -22,7 +22,7 @@ public final class DropdownPopupContentModel {
                 ? PopupPresentation.initial()
                 : presentation;
         PopupState current = popupState.get();
-        popupState.set(new PopupState(
+        setPopupState(new PopupState(
                 safePresentation.triggerText(),
                 safePresentation.closedAccessibleText(),
                 safePresentation.openAccessibleText(),
@@ -37,11 +37,16 @@ public final class DropdownPopupContentModel {
     }
 
     public void open() {
-        popupState.set(popupState.get().withOpen(true));
+        setPopupState(popupState.get().withOpen(true));
     }
 
     public void close() {
-        popupState.set(popupState.get().withOpen(false));
+        setPopupState(popupState.get().withOpen(false));
+    }
+
+    private void setPopupState(PopupState state) {
+        PopupState safeState = state == null ? PopupState.initial() : state;
+        popupState.set(safeState);
     }
 
     private static String safe(@Nullable String value) {

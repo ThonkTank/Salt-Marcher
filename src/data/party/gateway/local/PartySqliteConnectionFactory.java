@@ -1,9 +1,8 @@
 package src.data.party.gateway.local;
 
+import java.nio.file.Path;
 import src.data.party.model.PartyPersistenceSchema;
 import src.data.persistencecore.sqlite.AbstractSqliteConnectionFactory;
-
-import java.nio.file.Path;
 
 final class PartySqliteConnectionFactory extends AbstractSqliteConnectionFactory {
 
@@ -11,9 +10,5 @@ final class PartySqliteConnectionFactory extends AbstractSqliteConnectionFactory
         super(
                 resolveDatabasePath(PartyPersistenceSchema.DATABASE_FILE_NAME),
                 Path.of(PartyPersistenceSchema.DATABASE_FILE_NAME).toAbsolutePath().normalize());
-    }
-
-    PartySqliteConnectionFactory(Path databasePath, Path legacyDatabasePath) {
-        super(databasePath, legacyDatabasePath);
     }
 }

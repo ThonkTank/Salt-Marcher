@@ -10,10 +10,6 @@ import shell.api.ShellStateTabSpec;
 
 public final class TravelStateContribution implements ShellContribution {
 
-    @SuppressWarnings({"PMD.UnnecessaryConstructor", "PMD.UncommentedEmptyConstructor"})
-    public TravelStateContribution() {
-    }
-
     @Override
     public ShellContributionSpec registrationSpec() {
         return new ShellStateTabSpec(

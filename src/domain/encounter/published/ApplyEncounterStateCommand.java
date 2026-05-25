@@ -28,23 +28,78 @@ public record ApplyEncounterStateCommand(
     }
 
     public static ApplyEncounterStateCommand action(String actionKey) {
-        return create(actionKey, 0L, 0L, 0, 0L, List.of(), "", 0, 0L, 0, false);
+        return new ApplyEncounterStateCommand(
+                actionFromKey(actionKey),
+                0L,
+                0L,
+                0,
+                0L,
+                List.of(),
+                "",
+                0,
+                0L,
+                0,
+                false);
     }
 
     public static ApplyEncounterStateCommand creature(String actionKey, long creatureId) {
-        return create(actionKey, creatureId, 0L, 0, 0L, List.of(), "", 0, 0L, 0, false);
+        return new ApplyEncounterStateCommand(
+                actionFromKey(actionKey),
+                creatureId,
+                0L,
+                0,
+                0L,
+                List.of(),
+                "",
+                0,
+                0L,
+                0,
+                false);
     }
 
     public static ApplyEncounterStateCommand plan(String actionKey, long planId) {
-        return create(actionKey, 0L, planId, 0, 0L, List.of(), "", 0, 0L, 0, false);
+        return new ApplyEncounterStateCommand(
+                actionFromKey(actionKey),
+                0L,
+                planId,
+                0,
+                0L,
+                List.of(),
+                "",
+                0,
+                0L,
+                0,
+                false);
     }
 
     public static ApplyEncounterStateCommand delta(String actionKey, int delta) {
-        return create(actionKey, 0L, 0L, delta, 0L, List.of(), "", 0, 0L, 0, false);
+        return new ApplyEncounterStateCommand(
+                actionFromKey(actionKey),
+                0L,
+                0L,
+                delta,
+                0L,
+                List.of(),
+                "",
+                0,
+                0L,
+                0,
+                false);
     }
 
     public static ApplyEncounterStateCommand undo(String actionKey, long undoToken) {
-        return create(actionKey, 0L, 0L, 0, undoToken, List.of(), "", 0, 0L, 0, false);
+        return new ApplyEncounterStateCommand(
+                actionFromKey(actionKey),
+                0L,
+                0L,
+                0,
+                undoToken,
+                List.of(),
+                "",
+                0,
+                0L,
+                0,
+                false);
     }
 
     public static ApplyEncounterStateCommand initiatives(
@@ -52,7 +107,18 @@ public record ApplyEncounterStateCommand(
             List<String> ids,
             List<Integer> initiatives
     ) {
-        return create(actionKey, 0L, 0L, 0, 0L, initiativeValues(ids, initiatives), "", 0, 0L, 0, false);
+        return new ApplyEncounterStateCommand(
+                actionFromKey(actionKey),
+                0L,
+                0L,
+                0,
+                0L,
+                initiativeValues(ids, initiatives),
+                "",
+                0,
+                0L,
+                0,
+                false);
     }
 
     public static ApplyEncounterStateCommand hitPoints(
@@ -61,42 +127,48 @@ public record ApplyEncounterStateCommand(
             int amount,
             boolean healing
     ) {
-        return create(actionKey, 0L, 0L, 0, 0L, List.of(), combatantId, 0, 0L, amount, healing);
+        return new ApplyEncounterStateCommand(
+                actionFromKey(actionKey),
+                0L,
+                0L,
+                0,
+                0L,
+                List.of(),
+                combatantId,
+                0,
+                0L,
+                amount,
+                healing);
     }
 
     public static ApplyEncounterStateCommand initiative(String actionKey, String combatantId, int initiative) {
-        return create(actionKey, 0L, 0L, 0, 0L, List.of(), combatantId, initiative, 0L, 0, false);
+        return new ApplyEncounterStateCommand(
+                actionFromKey(actionKey),
+                0L,
+                0L,
+                0,
+                0L,
+                List.of(),
+                combatantId,
+                initiative,
+                0L,
+                0,
+                false);
     }
 
     public static ApplyEncounterStateCommand partyMember(String actionKey, long partyMemberId, int initiative) {
-        return create(actionKey, 0L, 0L, 0, 0L, List.of(), "", initiative, partyMemberId, 0, false);
-    }
-
-    public static ApplyEncounterStateCommand create(
-            String actionKey,
-            long creatureId,
-            long planId,
-            int delta,
-            long undoToken,
-            List<InitiativeValue> initiativeValues,
-            String combatantId,
-            int initiative,
-            long partyMemberId,
-            int amount,
-            boolean healing
-    ) {
         return new ApplyEncounterStateCommand(
                 actionFromKey(actionKey),
-                creatureId,
-                planId,
-                delta,
-                undoToken,
-                initiativeValues,
-                combatantId,
+                0L,
+                0L,
+                0,
+                0L,
+                List.of(),
+                "",
                 initiative,
                 partyMemberId,
-                amount,
-                healing);
+                0,
+                false);
     }
 
     private static Action actionFromKey(String actionKey) {
@@ -110,7 +182,7 @@ public record ApplyEncounterStateCommand(
         List<String> safeIds = ids == null ? List.of() : List.copyOf(ids);
         List<Integer> safeInitiatives = initiatives == null ? List.of() : List.copyOf(initiatives);
         int count = Math.min(safeIds.size(), safeInitiatives.size());
-        java.util.ArrayList<InitiativeValue> values = new java.util.ArrayList<>();
+        List<InitiativeValue> values = new java.util.ArrayList<>();
         for (int index = 0; index < count; index++) {
             values.add(new InitiativeValue(safeIds.get(index), safeInitiatives.get(index)));
         }
@@ -138,13 +210,7 @@ public record ApplyEncounterStateCommand(
         END_COMBAT,
         AWARD_XP,
         RETURN_TO_BUILDER_AFTER_RESULTS,
-        MUTATE_HP;
-
-        public boolean republishesSavedPlans() {
-            return this == REFRESH
-                    || this == OPEN_SAVED_PLAN
-                    || this == SAVE_CURRENT_PLAN;
-        }
+        MUTATE_HP
     }
 
     public record InitiativeValue(

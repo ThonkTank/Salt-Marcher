@@ -83,8 +83,7 @@ belong in that role.
   passive JavaFX content named `*View`; binds only to its own same-stem
   `*ContentModel`, renders already prepared presentation facts from that model,
   captures user input, constructs its own same-stem `*ViewInputEvent` snapshots
-  directly from current widget/raw-event state, keeps no separate semantic
-  local state or decision logic, and emits only those fire-and-forget snapshots
+  directly from current widget/raw-event state, may use private non-semantic `raw*` widget-read helpers, keeps no semantic local state or decision logic, and emits only those fire-and-forget snapshots
 - `ViewInputEvent`
   immutable, co-located technical full-snapshot carrier named
   `*ViewInputEvent`; each interactive passive `*View` owns exactly one

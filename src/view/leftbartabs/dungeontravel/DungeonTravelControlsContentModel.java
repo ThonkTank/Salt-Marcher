@@ -78,12 +78,36 @@ final class DungeonTravelControlsContentModel {
         overlayPanelState.set(safeState);
     }
 
-    record OverlayModeOption(
-            String key,
-            String label,
-            boolean rangeVisible,
-            boolean selectedLevelsVisible
-    ) {
+    static final class OverlayModeOption {
+
+        private final String key;
+        private final String label;
+        private final boolean rangeVisible;
+        private final boolean selectedLevelsVisible;
+
+        private OverlayModeOption(
+                String key,
+                String label,
+                boolean rangeVisible,
+                boolean selectedLevelsVisible
+        ) {
+            this.key = key;
+            this.label = label;
+            this.rangeVisible = rangeVisible;
+            this.selectedLevelsVisible = selectedLevelsVisible;
+        }
+
+        String key() {
+            return key;
+        }
+
+        boolean rangeVisible() {
+            return rangeVisible;
+        }
+
+        boolean selectedLevelsVisible() {
+            return selectedLevelsVisible;
+        }
 
         @Override
         public String toString() {
@@ -91,16 +115,36 @@ final class DungeonTravelControlsContentModel {
         }
     }
 
-    record OverlayPanelState(
-            String modeKey,
-            int levelRange,
-            double opacityPercent,
-            String selectedLevelsText,
-            boolean rangeVisible,
-            boolean selectedVisible,
-            boolean controlsDisabled,
-            String triggerText
-    ) {
+    static final class OverlayPanelState {
+
+        private final String modeKey;
+        private final int levelRange;
+        private final double opacityPercent;
+        private final String selectedLevelsText;
+        private final boolean rangeVisible;
+        private final boolean selectedVisible;
+        private final boolean controlsDisabled;
+        private final String triggerText;
+
+        private OverlayPanelState(
+                String modeKey,
+                int levelRange,
+                double opacityPercent,
+                String selectedLevelsText,
+                boolean rangeVisible,
+                boolean selectedVisible,
+                boolean controlsDisabled,
+                String triggerText
+        ) {
+            this.modeKey = modeKey;
+            this.levelRange = levelRange;
+            this.opacityPercent = opacityPercent;
+            this.selectedLevelsText = selectedLevelsText;
+            this.rangeVisible = rangeVisible;
+            this.selectedVisible = selectedVisible;
+            this.controlsDisabled = controlsDisabled;
+            this.triggerText = triggerText;
+        }
 
         static OverlayPanelState from(DungeonOverlaySettings settings, boolean disabled) {
             DungeonOverlaySettings safeSettings = settings == null ? DungeonOverlaySettings.defaults() : settings;
@@ -114,6 +158,34 @@ final class DungeonTravelControlsContentModel {
                     selectedLevelsMode(safeModeKey),
                     disabled,
                     triggerSummary(safeSettings));
+        }
+
+        String modeKey() {
+            return modeKey;
+        }
+
+        int levelRange() {
+            return levelRange;
+        }
+
+        double opacityPercent() {
+            return opacityPercent;
+        }
+
+        String selectedLevelsText() {
+            return selectedLevelsText;
+        }
+
+        boolean rangeVisible() {
+            return rangeVisible;
+        }
+
+        boolean selectedVisible() {
+            return selectedVisible;
+        }
+
+        String triggerText() {
+            return triggerText;
         }
 
         boolean rangeDisabled() {

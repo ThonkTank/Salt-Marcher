@@ -11,7 +11,7 @@ current ownership lives in the dungeon domain context.
 Context Role: Historical Generation Policy Notes
 Context Name: Travel
 
-- `dungeon/model/travel/**` owns runtime travel-session composition
+- `dungeon/model/worldspace/**` owns runtime travel-session composition
 - travel runtime combines authored `dungeon` truth with party-owned travel
   position
 - travel runtime does not own authored map persistence and does not own party
@@ -34,11 +34,11 @@ Published travel carriers must not own:
 
 `DungeonTravelRuntimeApplicationService` is the callable travel backend
 boundary. It coordinates runtime dungeon-travel session state through
-same-context `dungeon/model/travel/usecase/*UseCase` work.
+same-context `dungeon/model/worldspace/usecase/*UseCase` work.
 
 The root boundary owns inbound command/query intake and same-context use-case
 routing. Runtime session orchestration lives below that boundary in
-`dungeon/model/travel/usecase/*UseCase` code. Concrete party and dungeon
+`dungeon/model/worldspace/usecase/*UseCase` code. Concrete party and dungeon
 adapters are assembled outside the domain and satisfy the use case through
 same-context application data only. Raw authored dungeon travel families stay
 dungeon-owned; dungeon travel publishes read-side model handles, passive

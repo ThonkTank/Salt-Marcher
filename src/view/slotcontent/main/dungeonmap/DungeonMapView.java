@@ -24,18 +24,13 @@ import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel.BoundaryPrimi
 import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel.GlyphPrimitive;
 import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel.MapCanvasPoint;
 import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel.MapCanvasPolygonPrimitive;
-import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel.OverlayPrimitive;
 import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel.PaintStyle;
 import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel.RelationPrimitive;
 import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel.RenderScene;
 import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel.Viewport;
 
-@SuppressWarnings("PMD.LawOfDemeter")
 public class DungeonMapView extends BorderPane {
 
-    private static final Object BOUND_MODEL_KEY = new Object();
-    private static final Object CANVAS_STATE_LISTENER_KEY = new Object();
-    private static final Object CANVAS_SIZE_LISTENER_KEY = new Object();
     private static final DungeonMapViewInputEvent.CanvasInput MOUSE_PRESSED_INPUT =
             new DungeonMapViewInputEvent.CanvasInput(true, false, false, false, false);
     private static final DungeonMapViewInputEvent.CanvasInput MOUSE_DRAGGED_INPUT =
@@ -46,6 +41,7 @@ public class DungeonMapView extends BorderPane {
             new DungeonMapViewInputEvent.CanvasInput(false, false, false, true, false);
     private static final DungeonMapViewInputEvent.CanvasInput SCROLLED_INPUT =
             new DungeonMapViewInputEvent.CanvasInput(false, false, false, false, true);
+    private static final Runnable NO_CANVAS_BINDING = () -> {};
     private static final int[] GRID_STEPS = {1, 5, 10, 25};
     private static final Map<DungeonMapContentModel.RenderColor, Color> FX_COLOR_CACHE = new HashMap<>();
     private static final Color BACKGROUND_COLOR = PaintPalette.color(0x12, 0x18, 0x1c, 1.0);
@@ -60,6 +56,7 @@ public class DungeonMapView extends BorderPane {
     private final Canvas canvas = ViewChrome.createCanvas();
     private final Label overlayMessage = ViewChrome.createOverlayMessage();
     private Consumer<DungeonMapViewInputEvent> viewInputEventHandler = ignored -> {};
+    private Runnable removeCanvasBinding = NO_CANVAS_BINDING;
     private double[] polygonXBuffer = new double[0];
     private double[] polygonYBuffer = new double[0];
 
@@ -84,9 +81,11 @@ public class DungeonMapView extends BorderPane {
         presentationModel.canvasStateProperty().addListener(canvasStateListener);
         canvas.widthProperty().addListener(canvasSizeListener);
         canvas.heightProperty().addListener(canvasSizeListener);
-        getProperties().put(BOUND_MODEL_KEY, presentationModel);
-        getProperties().put(CANVAS_STATE_LISTENER_KEY, canvasStateListener);
-        getProperties().put(CANVAS_SIZE_LISTENER_KEY, canvasSizeListener);
+        removeCanvasBinding = () -> {
+            presentationModel.canvasStateProperty().removeListener(canvasStateListener);
+            canvas.widthProperty().removeListener(canvasSizeListener);
+            canvas.heightProperty().removeListener(canvasSizeListener);
+        };
         redraw(presentationModel.currentCanvasState());
     }
 
@@ -109,19 +108,71 @@ public class DungeonMapView extends BorderPane {
         ViewChrome.showOverlay(overlayMessage, renderScene);
     }
 
-    @SuppressWarnings("unchecked")
     private void removeCurrentCanvasListeners() {
-        Object boundModel = getProperties().remove(BOUND_MODEL_KEY);
-        Object stateListener = getProperties().remove(CANVAS_STATE_LISTENER_KEY);
-        Object sizeListener = getProperties().remove(CANVAS_SIZE_LISTENER_KEY);
-        if (boundModel instanceof DungeonMapContentModel model
-                && stateListener instanceof ChangeListener<?> changeListener) {
-            model.canvasStateProperty()
-                    .removeListener((ChangeListener<? super DungeonMapContentModel.CanvasState>) changeListener);
+        removeCanvasBinding.run();
+        removeCanvasBinding = NO_CANVAS_BINDING;
+    }
+
+    private void requestCanvasFocus() {
+        canvasLayer.requestFocus();
+    }
+
+    private void emitInput(DungeonMapViewInputEvent inputEvent) {
+        viewInputEventHandler.accept(inputEvent);
+    }
+
+    private void preparePolygonBuffers(List<MapCanvasPoint> points, Viewport viewport) {
+        if (polygonXBuffer.length < points.size()) {
+            polygonXBuffer = new double[points.size()];
+            polygonYBuffer = new double[points.size()];
         }
-        if (sizeListener instanceof InvalidationListener listener) {
-            canvas.widthProperty().removeListener(listener);
-            canvas.heightProperty().removeListener(listener);
+        for (int index = 0; index < points.size(); index++) {
+            MapCanvasPoint point = points.get(index);
+            polygonXBuffer[index] = viewport.sceneToScreenX(point.x());
+            polygonYBuffer[index] = viewport.sceneToScreenY(point.y());
+        }
+    }
+
+    private double[] polygonXBuffer() {
+        return polygonXBuffer;
+    }
+
+    private double[] polygonYBuffer() {
+        return polygonYBuffer;
+    }
+
+    private void handleKeyPressed(KeyEvent event) {
+        KeyCode code = event.getCode();
+        if (code == KeyCode.ENTER || code == KeyCode.SPACE) {
+            InputSnapshots.emitKeyboardEvent(
+                    this,
+                    MOUSE_PRESSED_INPUT,
+                    event,
+                    true,
+                    canvas.getWidth(),
+                    canvas.getHeight(),
+                    0.0);
+            InputSnapshots.emitKeyboardEvent(
+                    this,
+                    MOUSE_RELEASED_INPUT,
+                    event,
+                    false,
+                    canvas.getWidth(),
+                    canvas.getHeight(),
+                    0.0);
+            event.consume();
+            return;
+        }
+        if (code == KeyCode.PAGE_UP || code == KeyCode.PAGE_DOWN) {
+            InputSnapshots.emitKeyboardEvent(
+                    this,
+                    SCROLLED_INPUT,
+                    event,
+                    false,
+                    canvas.getWidth(),
+                    canvas.getHeight(),
+                    code == KeyCode.PAGE_UP ? 1.0 : -1.0);
+            event.consume();
         }
     }
 
@@ -133,11 +184,11 @@ public class DungeonMapView extends BorderPane {
             canvasLayer.setOnMouseMoved(event -> InputSnapshots.emitMouseEvent(view, MOUSE_MOVED_INPUT, event));
             canvasLayer.setOnMouseReleased(event -> handleMouseReleased(view, event));
             canvasLayer.setOnScroll(event -> handleScroll(view, event));
-            canvasLayer.setOnKeyPressed(event -> handleKeyPressed(view, event));
+            canvasLayer.setOnKeyPressed(view::handleKeyPressed);
         }
 
         static void handleMousePressed(DungeonMapView view, MouseEvent event) {
-            view.canvasLayer.requestFocus();
+            view.requestCanvasFocus();
             MouseButton button = event.getButton();
             if (button == MouseButton.MIDDLE) {
                 InputSnapshots.emitMouseEvent(view, MOUSE_PRESSED_INPUT, event);
@@ -178,24 +229,6 @@ public class DungeonMapView extends BorderPane {
             event.consume();
         }
 
-        static void handleKeyPressed(DungeonMapView view, KeyEvent event) {
-            KeyCode code = event.getCode();
-            if (code == KeyCode.ENTER || code == KeyCode.SPACE) {
-                InputSnapshots.emitKeyboardEvent(view, MOUSE_PRESSED_INPUT, event, true, 0.0);
-                InputSnapshots.emitKeyboardEvent(view, MOUSE_RELEASED_INPUT, event, false, 0.0);
-                event.consume();
-                return;
-            }
-            if (code == KeyCode.PAGE_UP || code == KeyCode.PAGE_DOWN) {
-                InputSnapshots.emitKeyboardEvent(
-                        view,
-                        SCROLLED_INPUT,
-                        event,
-                        false,
-                        code == KeyCode.PAGE_UP ? 1.0 : -1.0);
-                event.consume();
-            }
-        }
     }
 
     private interface InputSnapshots {
@@ -205,7 +238,7 @@ public class DungeonMapView extends BorderPane {
                 DungeonMapViewInputEvent.CanvasInput input,
                 ScrollEvent event
         ) {
-            view.viewInputEventHandler.accept(new DungeonMapViewInputEvent(
+            view.emitInput(new DungeonMapViewInputEvent(
                     input,
                     new DungeonMapViewInputEvent.CanvasButtons(false, false, false),
                     new DungeonMapViewInputEvent.CanvasModifiers(
@@ -221,7 +254,7 @@ public class DungeonMapView extends BorderPane {
                 DungeonMapViewInputEvent.CanvasInput input,
                 MouseEvent event
         ) {
-            view.viewInputEventHandler.accept(new DungeonMapViewInputEvent(
+            view.emitInput(new DungeonMapViewInputEvent(
                     input,
                     new DungeonMapViewInputEvent.CanvasButtons(
                             event.isPrimaryButtonDown() || event.getButton() == MouseButton.PRIMARY,
@@ -240,18 +273,18 @@ public class DungeonMapView extends BorderPane {
                 DungeonMapViewInputEvent.CanvasInput input,
                 KeyEvent event,
                 boolean primaryButtonDown,
+                double canvasWidth,
+                double canvasHeight,
                 double scrollDeltaY
         ) {
-            view.viewInputEventHandler.accept(new DungeonMapViewInputEvent(
+            view.emitInput(new DungeonMapViewInputEvent(
                     input,
                     new DungeonMapViewInputEvent.CanvasButtons(primaryButtonDown, false, false),
                     new DungeonMapViewInputEvent.CanvasModifiers(
                             event.isControlDown(),
                             event.isShiftDown(),
                             event.isAltDown()),
-                    new DungeonMapViewInputEvent.CanvasPosition(
-                            view.canvas.getWidth() / 2.0,
-                            view.canvas.getHeight() / 2.0),
+                    new DungeonMapViewInputEvent.CanvasPosition(canvasWidth / 2.0, canvasHeight / 2.0),
                     scrollDeltaY));
         }
     }
@@ -343,7 +376,6 @@ public class DungeonMapView extends BorderPane {
             drawSurfaces(view, gc, renderScene.actors(), viewport);
             drawGlyphs(view, gc, renderScene.glyphs(), viewport);
             drawTexts(gc, renderScene.texts(), viewport);
-            drawOverlays(gc, renderScene.overlays(), viewport);
         }
 
         static void clear(GraphicsContext gc, double width, double height) {
@@ -461,30 +493,6 @@ public class DungeonMapView extends BorderPane {
             gc.setTextAlign(TextAlignment.LEFT);
         }
 
-        static void drawOverlays(
-                GraphicsContext gc,
-                List<OverlayPrimitive> overlays,
-                Viewport viewport
-        ) {
-            gc.setTextAlign(TextAlignment.CENTER);
-            for (OverlayPrimitive overlay : overlays) {
-                double width = overlay.width() * viewport.gridSize();
-                double height = overlay.height() * viewport.gridSize();
-                double x = viewport.sceneToScreenX(overlay.centerX()) - width / 2.0;
-                double y = viewport.sceneToScreenY(overlay.centerY()) - height / 2.0;
-                PrimitivePainter.drawLabelBox(
-                        gc,
-                        overlay.style(),
-                        PaintPalette.defaultTextColor(overlay.textColor()),
-                        x,
-                        y,
-                        width,
-                        height,
-                        viewport);
-                gc.fillText(overlay.text(), viewport.sceneToScreenX(overlay.centerX()), y + height * 0.69);
-            }
-            gc.setTextAlign(TextAlignment.LEFT);
-        }
     }
 
     private interface PrimitivePainter {
@@ -499,20 +507,15 @@ public class DungeonMapView extends BorderPane {
             if (!polygonDrawable(points)) {
                 return;
             }
-            ensurePolygonBufferCapacity(view, points.size());
-            for (int index = 0; index < points.size(); index++) {
-                MapCanvasPoint point = points.get(index);
-                view.polygonXBuffer[index] = viewport.sceneToScreenX(point.x());
-                view.polygonYBuffer[index] = viewport.sceneToScreenY(point.y());
-            }
+            view.preparePolygonBuffers(points, viewport);
             applyStyle(gc, style, viewport);
             Color fill = PaintPalette.fxColor(style.fill());
             if (fill != null) {
-                gc.fillPolygon(view.polygonXBuffer, view.polygonYBuffer, points.size());
+                gc.fillPolygon(view.polygonXBuffer(), view.polygonYBuffer(), points.size());
             }
             Color stroke = PaintPalette.fxColor(style.stroke());
             if (stroke != null && style.strokeWidth() > 0.0) {
-                gc.strokePolygon(view.polygonXBuffer, view.polygonYBuffer, points.size());
+                gc.strokePolygon(view.polygonXBuffer(), view.polygonYBuffer(), points.size());
             }
             gc.restore();
         }
@@ -592,14 +595,6 @@ public class DungeonMapView extends BorderPane {
             } else {
                 gc.setLineDashes();
             }
-        }
-
-        static void ensurePolygonBufferCapacity(DungeonMapView view, int pointCount) {
-            if (view.polygonXBuffer.length >= pointCount) {
-                return;
-            }
-            view.polygonXBuffer = new double[pointCount];
-            view.polygonYBuffer = new double[pointCount];
         }
 
         static double polygonCenterX(List<MapCanvasPoint> points) {

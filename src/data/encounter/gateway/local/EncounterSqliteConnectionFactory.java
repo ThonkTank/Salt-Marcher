@@ -11,8 +11,4 @@ final class EncounterSqliteConnectionFactory extends AbstractSqliteConnectionFac
                 resolveDatabasePath(EncounterPersistenceSchema.DATABASE_FILE_NAME),
                 Path.of(EncounterPersistenceSchema.DATABASE_FILE_NAME).toAbsolutePath().normalize());
     }
-
-    EncounterSqliteConnectionFactory(Path databasePath, Path legacyDatabasePath) {
-        super(databasePath, legacyDatabasePath);
-    }
 }

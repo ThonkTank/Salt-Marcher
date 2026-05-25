@@ -28,7 +28,7 @@ surface membership, fixed shell slot vocabulary, shell-host privacy across
 the whole layer, or the `ShellRuntimeContext` runtime-gateway role. Those stay
 in the shell-layer and ShellRuntimeContext enforcement documents.
 
-Unified focused bundle entrypoint:
+Technical diagnostic route:
 
 - `./gradlew checkShellEnforcement --rerun-tasks --console=plain`
   runs the currently active `AppShell`-focused Error Prone check through one
@@ -39,7 +39,7 @@ Unified focused bundle entrypoint:
 
 ### Must Contain
 
-| Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
+| Invariant ID | Status | Applies When | Mechanical Owner | Diagnostic/Mechanical Route | What It Proves |
 | --- | --- | --- | --- | --- | --- |
 | `shell-appshell-leftbar-navigation-and-activation-hosting` | Review-Owned | `shell/host/AppShell.java` left-bar registration and navigation flow | none | none | `AppShell` owns left-bar navigation and contribution activation for registered left-bar tabs. |
 | `shell-appshell-topbar-dropdown-hosting` | Review-Owned | `shell/host/AppShell.java` top-bar registration flow | none | none | `AppShell` owns top-bar dropdown-window hosting for registered top-bar contributions. |
@@ -52,20 +52,20 @@ Unified focused bundle entrypoint:
 
 ### May Contain
 
-| Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
+| Invariant ID | Status | Applies When | Mechanical Owner | Diagnostic/Mechanical Route | What It Proves |
 | --- | --- | --- | --- | --- | --- |
 | `shell-appshell-host-supporting-surface-only` | Review-Owned | every direct dependency from `shell/host/AppShell.java` into neighboring `shell.host/**` support types | none | none | `AppShell` may directly communicate only with shell-owned host support surfaces needed for sidebar, toolbar, workspace, slot validation, and registered-tab bookkeeping. It does not use host-private support types as feature-specific extension seams. |
 | `shell-appshell-shell-api-hosting-contract-only` | Review-Owned | every direct dependency from `shell/host/AppShell.java` into `shell.api/**` | none | none | `AppShell` may directly use only the public shell contracts needed for contribution registration, runtime-context composition, lifecycle-driven tab hosting, and contribution identity: `ContributionKey`, `ShellBinding`, `ShellRuntimeContext`, `ServiceRegistry`, `ShellLeftBarTabSpec`, `ShellTopBarSpec`, and `ShellStateTabSpec`. |
 
 ### Must Not Contain
 
-| Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
+| Invariant ID | Status | Applies When | Mechanical Owner | Diagnostic/Mechanical Route | What It Proves |
 | --- | --- | --- | --- | --- | --- |
 | `shell-appshell-no-long-lived-feature-state-storage` | Review-Owned | `shell/host/AppShell.java` and its host-owned retained state | none | none | `AppShell` does not become a storage home for long-lived feature-authored state. Feature state stays in its owning view or domain surfaces. |
 
 ### Communication Contract
 
-| Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
+| Invariant ID | Status | Applies When | Mechanical Owner | Diagnostic/Mechanical Route | What It Proves |
 | --- | --- | --- | --- | --- | --- |
 | `shell-appshell-registration-surface-only` | Review-Owned | every registration seam from bootstrap into `AppShell` | none | none | `AppShell` communicates with bootstrap and bound shell roots only through the area-specific host registration surface: `registerLeftBarTab(...)`, `registerTopBar(...)`, and `registerStateTab(...)` with the matching `Shell*Spec` plus `ShellBinding` contract. It does not invent feature-specific registration protocols. |
 | `shell-appshell-runtime-context-exposure-only` | Review-Owned | every outward runtime seam from `AppShell` | none | none | `AppShell` exposes shell-scoped runtime access outward only as `runtimeContext()` returning `ShellRuntimeContext`. It does not expose concrete host panes or other host internals as public runtime APIs. |

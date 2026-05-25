@@ -20,17 +20,6 @@ public record EncounterGenerationPreparationUseCase(
     }
 
     public static EncounterGenerationPreparationUseCase success(
-            List<EncounterDraft> drafts
-    ) {
-        return success(
-                drafts,
-                "Encounter options generated.",
-                null,
-                false,
-                false);
-    }
-
-    public static EncounterGenerationPreparationUseCase success(
             List<EncounterDraft> drafts,
             String message,
             @Nullable EncounterGenerationDiagnosticsData diagnostics,

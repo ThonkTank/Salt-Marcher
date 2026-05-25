@@ -320,16 +320,18 @@ abstract class CheckNoDeadCodeTask @Inject constructor(
                     return@forEach
                 }
                 val entry = classesByBinaryName[owner] ?: return@forEach
-                if (isCompilerGeneratedMember(entry, member)) {
+                if (isCompilerGeneratedMember(entry, member) || isStructurallyIntentionalMember(entry, member)) {
                     return@forEach
                 }
                 if ('(' in member) {
                     if (isConstructorMember(owner, member)) {
-                        deadConstructors += DeadMember(entry.sourceRelativePath, "$owner#$member")
-                    } else if (!member.startsWith("static {}")) {
+                        if (!isStructurallyIntentionalConstructor(entry, member)) {
+                            deadConstructors += DeadMember(entry.sourceRelativePath, "$owner#$member")
+                        }
+                    } else if (!member.startsWith("static {}") && !isObjectProtocolOverride(member)) {
                         deadMethods += DeadMember(entry.sourceRelativePath, "$owner#$member")
                     }
-                } else {
+                } else if (!isStructurallyIntentionalField(entry, member)) {
                     deadFields += DeadMember(entry.sourceRelativePath, "$owner#$member")
                 }
             }
@@ -364,30 +366,81 @@ abstract class CheckNoDeadCodeTask @Inject constructor(
     }
 
     private fun isConstructorMember(owner: String, member: String): Boolean {
-        val signaturePrefix = member.substringBefore('(', missingDelimiterValue = "")
-        val memberName = signaturePrefix.substringAfterLast(' ')
-        val simpleOwnerName = owner.substringAfterLast('.').substringAfterLast('$')
-        return memberName == simpleOwnerName
+        return parseReportedConstructor(owner, member) != null
     }
 
-    private fun isCompilerGeneratedMember(entry: ClassEntry, member: String): Boolean {
-        return when (entry.declarationKind) {
-            DeclarationKind.RECORD -> isGeneratedRecordMember(member)
-            DeclarationKind.ENUM -> isGeneratedEnumMember(entry.binaryName, member)
+    private fun isStructurallyIntentionalConstructor(entry: ClassEntry, member: String): Boolean {
+        return entry.utilityNamespace && isPrivateNoArgConstructor(entry.binaryName, member)
+    }
+
+    private fun isStructurallyIntentionalMember(entry: ClassEntry, member: String): Boolean {
+        val method = parseReportedMethod(member) ?: return false
+        return isPublishedModelReadbackContract(entry, method)
+                || isShellRuntimeContextGateway(entry, method)
+                || isLibraryCallbackImplementation(entry, method)
+    }
+
+    private fun isStructurallyIntentionalField(entry: ClassEntry, member: String): Boolean {
+        return parseReportedField(member)?.let(entry.compileTimeConstantFields::contains) == true
+    }
+
+    private fun isPublishedModelReadbackContract(entry: ClassEntry, method: ReportedMethodSignature): Boolean {
+        if (!entry.isTopLevelClass
+            || !entry.binaryName.substringAfterLast('.').endsWith("Model")
+            || !entry.packageName.startsWith("src.domain.")
+            || !entry.packageName.endsWith(".published")
+        ) {
+            return false
+        }
+        return when (method.name) {
+            "current" -> method.parameterTypes.isEmpty() && method.returnType != "void"
+            "subscribe" -> method.returnType == "java.lang.Runnable"
+                    && method.parameterTypes == listOf("java.util.function.Consumer")
             else -> false
         }
     }
 
-    private fun isGeneratedRecordMember(member: String): Boolean {
-        return member == "public final java.lang.String toString()"
-                || member == "public final int hashCode()"
-                || member == "public final boolean equals(java.lang.Object)"
+    private fun isShellRuntimeContextGateway(entry: ClassEntry, method: ReportedMethodSignature): Boolean {
+        return entry.binaryName == "shell.api.ShellRuntimeContext"
+                && method == ReportedMethodSignature(
+                    returnType = "java.lang.Object",
+                    name = "session",
+                    parameterTypes = listOf("java.lang.Class", "java.util.function.Supplier")
+                )
+    }
+
+    private fun isLibraryCallbackImplementation(entry: ClassEntry, method: ReportedMethodSignature): Boolean {
+        return "java.util.Comparator" in entry.implementedInterfaces
+                && method.name == "compare"
+                && method.returnType == "int"
+                && method.parameterTypes.size == 2
+    }
+
+    private fun isCompilerGeneratedMember(entry: ClassEntry, member: String): Boolean {
+        return when (entry.declarationKind) {
+            DeclarationKind.RECORD -> isGeneratedRecordMember(entry, member)
+            DeclarationKind.ENUM -> isGeneratedEnumMember(entry.binaryName, member)
+            else -> isGeneratedMethodMember(entry.generatedMethods, member)
+        } || isGeneratedFieldMember(entry, member)
+    }
+
+    private fun isGeneratedRecordMember(entry: ClassEntry, member: String): Boolean {
+        return isGeneratedMethodMember(entry.generatedMethods, member)
+                || parseReportedConstructor(entry.binaryName, member)?.let(entry.generatedRecordConstructors::contains) == true
     }
 
     private fun isGeneratedEnumMember(owner: String, member: String): Boolean {
-        val simpleOwnerName = owner.substringAfterLast('.').substringAfterLast('$')
-        return member == "public static ${simpleOwnerName}[] values()"
-                || member == "public static ${simpleOwnerName} valueOf(java.lang.String)"
+        val method = parseReportedMethod(member) ?: return false
+        return method == ReportedMethodSignature("${owner}[]", "values", emptyList())
+                || method == ReportedMethodSignature(owner, "valueOf", listOf("java.lang.String"))
+    }
+
+    private fun isGeneratedMethodMember(generatedMethods: Set<ReportedMethodSignature>, member: String): Boolean {
+        return parseReportedMethod(member)?.let(generatedMethods::contains) == true
+    }
+
+    private fun isGeneratedFieldMember(entry: ClassEntry, member: String): Boolean {
+        return parseReportedField(member)?.let(entry.generatedFields::contains) == true
     }
 
     private fun writeReport(findings: DeadCodeFindings) {
@@ -425,8 +478,118 @@ abstract class CheckNoDeadCodeTask @Inject constructor(
             packageName = binaryName.substringBeforeLast('.', missingDelimiterValue = ""),
             sourceRelativePath = loadSourceRelativePath(internalName, metadata.sourceFileName),
             declarationKind = metadata.declarationKind,
-            nestingKind = metadata.nestingKind
+            nestingKind = metadata.nestingKind,
+            implementedInterfaces = metadata.implementedInterfaces,
+            generatedMethods = generatedMethods(metadata),
+            generatedRecordConstructors = generatedRecordConstructors(metadata),
+            generatedFields = generatedFields(metadata),
+            compileTimeConstantFields = compileTimeConstantFields(metadata),
+            utilityNamespace = isUtilityNamespace(metadata)
         )
+    }
+
+    private fun generatedMethods(metadata: ClassMetadata): Set<ReportedMethodSignature> {
+        return buildSet {
+            metadata.methods
+                .filter(MethodMetadata::isCompilerGenerated)
+                .forEach { method -> add(method.toReportedSignature() ?: return@forEach) }
+            if (metadata.declarationKind != DeclarationKind.RECORD) {
+                return@buildSet
+            }
+            metadata.methods
+                .filter(::isGeneratedRecordObjectMethod)
+                .forEach { method -> add(method.toReportedSignature() ?: return@forEach) }
+            metadata.recordComponents.forEach { component ->
+                val accessor = metadata.methods.firstOrNull { method ->
+                    isGeneratedRecordAccessor(method, component)
+                }
+                if (accessor != null) {
+                    add(ReportedMethodSignature(component.javaType, component.name, emptyList()))
+                }
+            }
+        }
+    }
+
+    private fun generatedRecordConstructors(metadata: ClassMetadata): Set<ReportedConstructorSignature> {
+        if (metadata.declarationKind != DeclarationKind.RECORD) {
+            return emptySet()
+        }
+        val canonicalConstructor = metadata.methods.firstOrNull { method ->
+            isCanonicalRecordConstructor(method, metadata.recordComponents)
+        }
+        return if (canonicalConstructor == null) {
+            emptySet()
+        } else {
+            setOf(ReportedConstructorSignature(metadata.recordComponents.map(RecordComponentMetadata::javaType)))
+        }
+    }
+
+    private fun generatedFields(metadata: ClassMetadata): Set<ReportedFieldSignature> {
+        return buildSet {
+            metadata.fields
+                .filter(FieldMetadata::isCompilerGenerated)
+                .forEach { field -> add(field.toReportedSignature()) }
+            if (metadata.declarationKind != DeclarationKind.RECORD) {
+                return@buildSet
+            }
+            metadata.recordComponents.forEach { component ->
+                val field = metadata.fields.firstOrNull { candidate ->
+                    candidate.name == component.name
+                            && candidate.descriptor == component.descriptor
+                            && candidate.isPrivateFinal
+                }
+                if (field != null) {
+                    add(ReportedFieldSignature(component.javaType, component.name))
+                }
+            }
+        }
+    }
+
+    private fun compileTimeConstantFields(metadata: ClassMetadata): Set<ReportedFieldSignature> {
+        return metadata.fields
+            .asSequence()
+            .filter(FieldMetadata::isCompileTimeConstant)
+            .map(FieldMetadata::toReportedSignature)
+            .toSet()
+    }
+
+    private fun isGeneratedRecordObjectMethod(method: MethodMetadata): Boolean {
+        return when (method.name to method.descriptor) {
+            "toString" to "()Ljava/lang/String;" -> method.codeBytes.contentEquals(
+                byteArrayOf(0x2a, 0xba.toByte(), 0, 0, 0, 0, 0xb0.toByte()),
+                maskIndexes = setOf(2, 3)
+            )
+            "hashCode" to "()I" -> method.codeBytes.contentEquals(
+                byteArrayOf(0x2a, 0xba.toByte(), 0, 0, 0, 0, 0xac.toByte()),
+                maskIndexes = setOf(2, 3)
+            )
+            "equals" to "(Ljava/lang/Object;)Z" -> method.codeBytes.contentEquals(
+                byteArrayOf(0x2a, 0x2b, 0xba.toByte(), 0, 0, 0, 0, 0xac.toByte()),
+                maskIndexes = setOf(3, 4)
+            )
+            else -> false
+        }
+    }
+
+    private fun isGeneratedRecordAccessor(
+        method: MethodMetadata,
+        component: RecordComponentMetadata
+    ): Boolean {
+        return method.name == component.name
+                && method.descriptor == "()${component.descriptor}"
+    }
+
+    private fun isCanonicalRecordConstructor(
+        method: MethodMetadata,
+        components: List<RecordComponentMetadata>
+    ): Boolean {
+        return method.name == "<init>" && method.descriptor == components.constructorDescriptor()
+    }
+
+    private fun isUtilityNamespace(metadata: ClassMetadata): Boolean {
+        return metadata.declarationKind == DeclarationKind.CLASS
+                && metadata.fields.none { field -> !field.isStatic && !field.isCompilerGenerated }
+                && metadata.methods.none { method -> !method.isConstructor && !method.isStatic && !method.isCompilerGenerated }
     }
 
     private fun loadFxmlRoots(resourceRoots: List<File>): List<FxmlRoot> {
@@ -623,11 +786,15 @@ abstract class CheckNoDeadCodeTask @Inject constructor(
                 val accessFlags = input.readUnsignedShort()
                 val thisClassIndex = input.readUnsignedShort()
                 input.readUnsignedShort()
-                repeat(input.readUnsignedShort()) {
-                    input.readUnsignedShort()
+                val implementedInterfaces = buildList {
+                    repeat(input.readUnsignedShort()) {
+                        constantPool.className(input.readUnsignedShort())
+                            ?.replace('/', '.')
+                            ?.let(::add)
+                    }
                 }
-                skipMembers(input)
-                skipMembers(input)
+                val fields = readFields(input, constantPool)
+                val methods = readMethods(input, constantPool)
 
                 val thisInternalName = constantPool.className(thisClassIndex)
                     ?: throw IllegalStateException("Missing class name for ${classFile.invariantPath()}.")
@@ -635,6 +802,7 @@ abstract class CheckNoDeadCodeTask @Inject constructor(
                 var innerSimpleName: String? = null
                 var hasEnclosingMethod = false
                 var hasRecordAttribute = false
+                var recordComponents = emptyList<RecordComponentMetadata>()
 
                 repeat(input.readUnsignedShort()) {
                     val attributeName = constantPool.utf8(input.readUnsignedShort())
@@ -671,7 +839,7 @@ abstract class CheckNoDeadCodeTask @Inject constructor(
                         }
                         "Record" -> {
                             hasRecordAttribute = true
-                            input.skipNBytes(attributeLength)
+                            recordComponents = readRecordComponents(input, constantPool, attributeLength)
                         }
                         else -> input.skipNBytes(attributeLength)
                     }
@@ -681,6 +849,10 @@ abstract class CheckNoDeadCodeTask @Inject constructor(
                     sourceFileName = sourceFileName,
                     declarationKind = declarationKind(accessFlags, hasRecordAttribute),
                     nestingKind = nestingKind(internalName, hasEnclosingMethod),
+                    implementedInterfaces = implementedInterfaces,
+                    recordComponents = recordComponents,
+                    fields = fields,
+                    methods = methods,
                     shouldReport = shouldReportClass(
                         internalName = internalName,
                         accessFlags = accessFlags,
@@ -769,7 +941,102 @@ abstract class CheckNoDeadCodeTask @Inject constructor(
             }
             index += 1
         }
-        return ConstantPool(utf8Entries, classNameIndexes)
+        return ConstantPool(
+            utf8Entries = utf8Entries,
+            classNameIndexes = classNameIndexes
+        )
+    }
+
+    private fun readMethods(input: DataInputStream, constantPool: ConstantPool): List<MethodMetadata> {
+        return buildList {
+            repeat(input.readUnsignedShort()) {
+                val accessFlags = input.readUnsignedShort()
+                val name = constantPool.utf8(input.readUnsignedShort()).orEmpty()
+                val descriptor = constantPool.utf8(input.readUnsignedShort()).orEmpty()
+                var codeBytes = ByteArray(0)
+                repeat(input.readUnsignedShort()) {
+                    val attributeName = constantPool.utf8(input.readUnsignedShort())
+                    val attributeLength = input.readInt().toLong() and 0xffffffffL
+                    if (attributeName == "Code") {
+                        codeBytes = readCodeBytes(input)
+                    } else {
+                        input.skipNBytes(attributeLength)
+                    }
+                }
+                add(
+                    MethodMetadata(
+                        accessFlags = accessFlags,
+                        name = name,
+                        descriptor = descriptor,
+                        codeBytes = codeBytes
+                    )
+                )
+            }
+        }
+    }
+
+    private fun readCodeBytes(input: DataInputStream): ByteArray {
+        input.readUnsignedShort()
+        input.readUnsignedShort()
+        val codeBytes = ByteArray(input.readInt())
+        input.readFully(codeBytes)
+        repeat(input.readUnsignedShort()) {
+            input.skipNBytes(8)
+        }
+        repeat(input.readUnsignedShort()) {
+            input.readUnsignedShort()
+            val attributeLength = input.readInt().toLong() and 0xffffffffL
+            input.skipNBytes(attributeLength)
+        }
+        return codeBytes
+    }
+
+    private fun readRecordComponents(
+        input: DataInputStream,
+        constantPool: ConstantPool,
+        attributeLength: Long
+    ): List<RecordComponentMetadata> {
+        var bytesRemaining = attributeLength
+        val componentCount = input.readUnsignedShort()
+        bytesRemaining -= 2
+        return buildList {
+            repeat(componentCount) {
+                val name = constantPool.utf8(input.readUnsignedShort()).orEmpty()
+                val descriptor = constantPool.utf8(input.readUnsignedShort()).orEmpty()
+                val attributesCount = input.readUnsignedShort()
+                bytesRemaining -= 6
+                repeat(attributesCount) {
+                    input.readUnsignedShort()
+                    val componentAttributeLength = input.readInt().toLong() and 0xffffffffL
+                    input.skipNBytes(componentAttributeLength)
+                    bytesRemaining -= 6 + componentAttributeLength
+                }
+                add(RecordComponentMetadata(name, descriptor, javaType(descriptor)))
+            }
+            if (bytesRemaining > 0L) {
+                input.skipNBytes(bytesRemaining)
+            }
+        }
+    }
+
+    private fun readFields(input: DataInputStream, constantPool: ConstantPool): List<FieldMetadata> {
+        return buildList {
+            repeat(input.readUnsignedShort()) {
+                val accessFlags = input.readUnsignedShort()
+                val name = constantPool.utf8(input.readUnsignedShort()).orEmpty()
+                val descriptor = constantPool.utf8(input.readUnsignedShort()).orEmpty()
+                var hasConstantValue = false
+                repeat(input.readUnsignedShort()) {
+                    val attributeName = constantPool.utf8(input.readUnsignedShort())
+                    val attributeLength = input.readInt().toLong() and 0xffffffffL
+                    if (attributeName == "ConstantValue" && attributeLength == 2L) {
+                        hasConstantValue = true
+                    }
+                    input.skipNBytes(attributeLength)
+                }
+                add(FieldMetadata(accessFlags, name, descriptor, hasConstantValue))
+            }
+        }
     }
 
     private fun skipMembers(input: DataInputStream) {
@@ -800,7 +1067,13 @@ private data class ClassEntry(
     val packageName: String,
     val sourceRelativePath: String,
     val declarationKind: DeclarationKind,
-    val nestingKind: NestingKind
+    val nestingKind: NestingKind,
+    val implementedInterfaces: List<String>,
+    val generatedMethods: Set<ReportedMethodSignature>,
+    val generatedRecordConstructors: Set<ReportedConstructorSignature>,
+    val generatedFields: Set<ReportedFieldSignature>,
+    val compileTimeConstantFields: Set<ReportedFieldSignature>,
+    val utilityNamespace: Boolean
 ) {
     val isTopLevelClass: Boolean
         get() = binaryName == topLevelBinaryName
@@ -810,7 +1083,86 @@ private data class ClassMetadata(
     val sourceFileName: String?,
     val declarationKind: DeclarationKind,
     val nestingKind: NestingKind,
+    val implementedInterfaces: List<String>,
+    val recordComponents: List<RecordComponentMetadata>,
+    val fields: List<FieldMetadata>,
+    val methods: List<MethodMetadata>,
     val shouldReport: Boolean
+)
+
+private data class MethodMetadata(
+    val accessFlags: Int,
+    val name: String,
+    val descriptor: String,
+    val codeBytes: ByteArray
+) {
+    override fun equals(other: Any?): Boolean {
+        return other is MethodMetadata
+                && accessFlags == other.accessFlags
+                && name == other.name
+                && descriptor == other.descriptor
+                && codeBytes.contentEquals(other.codeBytes)
+    }
+
+    override fun hashCode(): Int {
+        var result = accessFlags
+        result = 31 * result + name.hashCode()
+        result = 31 * result + descriptor.hashCode()
+        result = 31 * result + codeBytes.contentHashCode()
+        return result
+    }
+
+    val isConstructor: Boolean
+        get() = name == "<init>"
+
+    val isStatic: Boolean
+        get() = accessFlags and ACC_STATIC != 0
+
+    val isCompilerGenerated: Boolean
+        get() = accessFlags and (ACC_SYNTHETIC or ACC_BRIDGE) != 0
+}
+
+private data class RecordComponentMetadata(
+    val name: String,
+    val descriptor: String,
+    val javaType: String
+)
+
+private data class FieldMetadata(
+    val accessFlags: Int,
+    val name: String,
+    val descriptor: String,
+    val hasConstantValue: Boolean
+) {
+    val isStatic: Boolean
+        get() = accessFlags and ACC_STATIC != 0
+
+    val isFinal: Boolean
+        get() = accessFlags and ACC_FINAL != 0
+
+    val isPrivateFinal: Boolean
+        get() = (accessFlags and (ACC_PRIVATE or ACC_FINAL)) == (ACC_PRIVATE or ACC_FINAL)
+
+    val isCompileTimeConstant: Boolean
+        get() = isStatic && isFinal && hasConstantValue && descriptor in ConstantValueDescriptors
+
+    val isCompilerGenerated: Boolean
+        get() = accessFlags and ACC_SYNTHETIC != 0
+}
+
+private data class ReportedMethodSignature(
+    val returnType: String,
+    val name: String,
+    val parameterTypes: List<String>
+)
+
+private data class ReportedConstructorSignature(
+    val parameterTypes: List<String>
+)
+
+private data class ReportedFieldSignature(
+    val type: String,
+    val name: String
 )
 
 private data class FxmlRoot(
@@ -924,6 +1276,7 @@ private data class ConstantPool(
             utf8(nameIndex)
         }
     }
+
 }
 
 private class ContributionTypeInspector(
@@ -966,11 +1319,16 @@ private class ContributionTypeInspector(
     }
 }
 
+private const val ACC_PRIVATE = 0x0002
+private const val ACC_STATIC = 0x0008
+private const val ACC_FINAL = 0x0010
+private const val ACC_BRIDGE = 0x0040
 private const val ACC_ABSTRACT = 0x0400
 private const val ACC_INTERFACE = 0x0200
 private const val ACC_ANNOTATION = 0x2000
 private const val ACC_ENUM = 0x4000
 private const val ACC_SYNTHETIC = 0x1000
+private val ConstantValueDescriptors = setOf("B", "C", "D", "F", "I", "J", "S", "Z", "Ljava/lang/String;")
 private val AllowedExplicitKeepRuleOptions = listOf(
     "-keep ",
     "-keep,",
@@ -989,6 +1347,167 @@ private val CatchAllKeepTargetPattern = Regex("\\b(?:class|interface|enum|@inter
 private val CatchAllKeepMemberPattern = Regex("^(?:public |protected |private )?(?:static )?\\*\\s*;")
 private val JavaIdentifierPattern = Regex("[A-Za-z_$][A-Za-z0-9_$]*")
 private val JavaBinaryNamePattern = Regex("[A-Za-z_$][A-Za-z0-9_$]*(?:[.$][A-Za-z_$][A-Za-z0-9_$]*)*")
+private val ReportedMethodModifiers = setOf(
+    "public",
+    "protected",
+    "private",
+    "static",
+    "final",
+    "synchronized",
+    "bridge",
+    "synthetic",
+    "native",
+    "abstract",
+    "strictfp"
+)
+private val ReportedFieldModifiers = ReportedMethodModifiers + setOf("transient", "volatile")
+
+private fun parseReportedMethod(member: String): ReportedMethodSignature? {
+    val parametersStart = member.indexOf('(')
+    val parametersEnd = member.lastIndexOf(')')
+    if (parametersStart < 0 || parametersEnd < parametersStart) {
+        return null
+    }
+    val prefixTokens = member.substring(0, parametersStart).trim().split(Regex("\\s+"))
+    if (prefixTokens.size < 2) {
+        return null
+    }
+    val methodName = prefixTokens.last()
+    val returnType = prefixTokens
+        .dropLast(1)
+        .lastOrNull { token -> token !in ReportedMethodModifiers }
+        ?: return null
+    val parameterTypes = member.substring(parametersStart + 1, parametersEnd)
+        .parameterTypes()
+    return ReportedMethodSignature(returnType, methodName, parameterTypes)
+}
+
+private fun parseReportedConstructor(owner: String, member: String): ReportedConstructorSignature? {
+    val parametersStart = member.indexOf('(')
+    val parametersEnd = member.lastIndexOf(')')
+    if (parametersStart < 0 || parametersEnd < parametersStart) {
+        return null
+    }
+    val constructorName = member.substring(0, parametersStart).trim().substringAfterLast(' ')
+    val ownerNames = setOf(owner.substringAfterLast('.'), owner.substringAfterLast('$'))
+    if (constructorName !in ownerNames) {
+        return null
+    }
+    return ReportedConstructorSignature(member.substring(parametersStart + 1, parametersEnd).parameterTypes())
+}
+
+private fun isPrivateNoArgConstructor(owner: String, member: String): Boolean {
+    val constructor = parseReportedConstructor(owner, member) ?: return false
+    return constructor.parameterTypes.isEmpty() && member.substringBefore('(').trim().split(Regex("\\s+")).contains("private")
+}
+
+private fun isObjectProtocolOverride(member: String): Boolean {
+    return when (parseReportedMethod(member)) {
+        ReportedMethodSignature("boolean", "equals", listOf("java.lang.Object")),
+        ReportedMethodSignature("int", "hashCode", emptyList()),
+        ReportedMethodSignature("java.lang.String", "toString", emptyList()) -> true
+        else -> false
+    }
+}
+
+private fun parseReportedField(member: String): ReportedFieldSignature? {
+    val tokens = member.trim().split(Regex("\\s+"))
+    if (tokens.size < 2 || '(' in member) {
+        return null
+    }
+    val fieldName = tokens.last()
+    val fieldType = tokens
+        .dropLast(1)
+        .lastOrNull { token -> token !in ReportedFieldModifiers }
+        ?: return null
+    return ReportedFieldSignature(fieldType, fieldName)
+}
+
+private fun MethodMetadata.toReportedSignature(): ReportedMethodSignature? {
+    val descriptor = methodDescriptor(descriptor) ?: return null
+    return ReportedMethodSignature(descriptor.returnType, name, descriptor.parameterTypes)
+}
+
+private fun FieldMetadata.toReportedSignature(): ReportedFieldSignature =
+    ReportedFieldSignature(javaType(descriptor), name)
+
+private fun String.parameterTypes(): List<String> {
+    return trim()
+        .takeIf(String::isNotBlank)
+        ?.split(',')
+        ?.map(String::trim)
+        .orEmpty()
+}
+
+private fun List<RecordComponentMetadata>.constructorDescriptor(): String {
+    return joinToString(prefix = "(", postfix = ")V", separator = "") { component -> component.descriptor }
+}
+
+private fun ByteArray.contentEquals(expected: ByteArray, maskIndexes: Set<Int>): Boolean {
+    if (size != expected.size) {
+        return false
+    }
+    return indices.all { index -> index in maskIndexes || this[index] == expected[index] }
+}
+
+private data class ParsedMethodDescriptor(
+    val parameterTypes: List<String>,
+    val returnType: String
+)
+
+private fun methodDescriptor(descriptor: String): ParsedMethodDescriptor? {
+    if (!descriptor.startsWith('(')) {
+        return null
+    }
+    val parameterTypes = mutableListOf<String>()
+    var index = 1
+    while (index < descriptor.length && descriptor[index] != ')') {
+        val parsed = parseJavaType(descriptor, index) ?: return null
+        parameterTypes += parsed.first
+        index = parsed.second
+    }
+    if (index >= descriptor.length || descriptor[index] != ')') {
+        return null
+    }
+    val returnType = parseJavaType(descriptor, index + 1)?.first ?: return null
+    return ParsedMethodDescriptor(parameterTypes, returnType)
+}
+
+private fun javaType(descriptor: String): String {
+    return parseJavaType(descriptor, 0)?.first.orEmpty()
+}
+
+private fun parseJavaType(descriptor: String, startIndex: Int): Pair<String, Int>? {
+    var index = startIndex
+    var arrayDepth = 0
+    while (index < descriptor.length && descriptor[index] == '[') {
+        arrayDepth += 1
+        index += 1
+    }
+    if (index >= descriptor.length) {
+        return null
+    }
+    val baseType = when (descriptor[index]) {
+        'B' -> "byte" to index + 1
+        'C' -> "char" to index + 1
+        'D' -> "double" to index + 1
+        'F' -> "float" to index + 1
+        'I' -> "int" to index + 1
+        'J' -> "long" to index + 1
+        'S' -> "short" to index + 1
+        'Z' -> "boolean" to index + 1
+        'V' -> "void" to index + 1
+        'L' -> {
+            val endIndex = descriptor.indexOf(';', startIndex = index)
+            if (endIndex < 0) {
+                return null
+            }
+            descriptor.substring(index + 1, endIndex).replace('/', '.') to endIndex + 1
+        }
+        else -> return null
+    }
+    return baseType.first + "[]".repeat(arrayDepth) to baseType.second
+}
 
 private fun Path.invariantPath(): String = toString().replace(File.separatorChar, '/')
 

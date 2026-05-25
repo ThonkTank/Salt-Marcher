@@ -82,6 +82,64 @@ def is_markdown(surface: str) -> bool:
     return surface.endswith(".md") or surface == "AGENTS.md"
 
 
+def is_repo_tool_instruction_surface(surface: str) -> bool:
+    return surface in {
+        "tools/quality/skills/repo-tools/SKILL.md",
+        "tools/quality/skills/code-exploration/SKILL.md",
+        "tools/quality/skills/code-exploration-agent/SKILL.md",
+    }
+
+
+def is_code_exploration_surface(surface: str) -> bool:
+    if is_agent_instruction(surface) and not is_repo_tool_instruction_surface(surface):
+        return False
+    return (
+        is_repo_tool_instruction_surface(surface)
+        or under(surface, "src")
+        or under(surface, "bootstrap")
+        or under(surface, "shell")
+        or is_verification_wiring_surface(surface)
+        or (under(surface, "tools/quality") and not is_markdown(surface))
+    )
+
+
+def is_verification_wiring_surface(surface: str) -> bool:
+    return under(surface, "tools/gradle") or surface in {"build.gradle.kts", "settings.gradle.kts"}
+
+
+def is_quality_tooling_surface(surface: str) -> bool:
+    if is_agent_instruction(surface):
+        return False
+    return under(surface, "tools/quality") or is_verification_wiring_surface(surface)
+
+
+def is_reporting_tool_surface(surface: str) -> bool:
+    return under(surface, "tools/quality/reporting")
+
+
+def is_quality_enforcement_surface(surface: str) -> bool:
+    return (
+        is_quality_tooling_surface(surface)
+        and not is_verification_wiring_surface(surface)
+        and not is_reporting_tool_surface(surface)
+    )
+
+
+def governing_skill_for_agent_metadata(surface: str) -> str | None:
+    suffix = "/agents/openai.yaml"
+    if not surface.endswith(suffix):
+        return None
+    return f"{surface.removesuffix(suffix)}/SKILL.md"
+
+
+def code_exploration_owner(surface: str) -> str | None:
+    if not is_code_exploration_surface(surface):
+        return None
+    if surface == "tools/quality/skills/code-exploration-agent/SKILL.md":
+        return "tools/quality/skills/code-exploration-agent/SKILL.md"
+    return "tools/quality/skills/code-exploration/SKILL.md"
+
+
 def surface_class(surface: str) -> str:
     if is_agent_instruction(surface):
         return "agent instruction"
@@ -91,7 +149,9 @@ def surface_class(surface: str) -> str:
         return "view production code"
     if under(surface, "src") or under(surface, "bootstrap") or under(surface, "shell"):
         return "production code"
-    if under(surface, "tools/quality") or under(surface, "tools/gradle/build-harness"):
+    if is_verification_wiring_surface(surface):
+        return "verification wiring"
+    if is_quality_tooling_surface(surface):
         return "check/enforcement or quality tooling"
     if surface.startswith("docs/project/architecture/"):
         return "project architecture documentation"
@@ -99,13 +159,13 @@ def surface_class(surface: str) -> str:
         return "project verification documentation"
     if surface.startswith("docs/"):
         return "feature or project documentation"
-    if surface in {"build.gradle.kts", "settings.gradle.kts"}:
-        return "verification wiring"
     return "repo surface"
 
 
 def mandatory_skills(surface: str) -> tuple[str, ...]:
-    skills = ["context-hygiene"]
+    skills = ["context-hygiene", "repo-tools"]
+    if is_code_exploration_surface(surface):
+        skills.append("code-exploration")
     if is_agent_instruction(surface):
         skills.append("agent-instruction-engineering")
     if surface.startswith("docs/project/architecture/") or "/architecture/" in surface:
@@ -126,7 +186,7 @@ def mandatory_skills(surface: str) -> tuple[str, ...]:
         skills.extend(["continuous-refactoring", "view-layer-mvvm"])
     elif under(surface, "src") or under(surface, "bootstrap") or under(surface, "shell"):
         skills.append("continuous-refactoring")
-    elif not is_markdown(surface) and (under(surface, "tools/quality") or under(surface, "tools/gradle/build-harness")):
+    elif not is_markdown(surface) and is_quality_tooling_surface(surface):
         skills.append("continuous-refactoring")
     return unique(skills)
 
@@ -137,12 +197,16 @@ def owner_candidates(surface: str) -> tuple[str, ...]:
         "AGENTS.md",
         "docs/project/architecture/agent-context.md",
         "tools/quality/skills/context-hygiene/SKILL.md",
+        "tools/quality/skills/repo-tools/SKILL.md",
     ]
     if is_agent_instruction(surface):
         paths.extend([
             "docs/project/architecture/agent-instructions.md",
             "/home/aaron/.codex/skills/local/agent-instruction-engineering/SKILL.md",
         ])
+        sibling_skill = governing_skill_for_agent_metadata(surface)
+        if sibling_skill is not None:
+            paths.append(sibling_skill)
     if under(surface, "src/domain"):
         paths.extend([
             "docs/project/architecture/patterns/domain-layer.md",
@@ -155,12 +219,15 @@ def owner_candidates(surface: str) -> tuple[str, ...]:
             "tools/quality/skills/view-layer-mvvm/SKILL.md",
             "docs/project/architecture/enforcement/view-layer-enforcement.md",
         ])
-    if under(surface, "tools/quality") or under(surface, "tools/gradle/build-harness"):
+    if is_quality_tooling_surface(surface):
         paths.extend([
             "docs/project/verification/quality-platforms.md",
             "docs/project/verification/quality-platforms-local-gates.md",
             "docs/project/architecture/verification-core.md",
         ])
+    exploration_owner = code_exploration_owner(surface)
+    if exploration_owner is not None:
+        paths.append(exploration_owner)
     if is_markdown(surface):
         paths.append("docs/project/architecture/documentation.md")
     return existing(paths)
@@ -169,15 +236,23 @@ def owner_candidates(surface: str) -> tuple[str, ...]:
 def verification(surface: str) -> tuple[str, ...]:
     if is_markdown(surface) or surface.startswith("docs/"):
         return ("./gradlew checkDocumentationEnforcement --console=plain",)
+    if is_agent_instruction(surface):
+        return (
+            "./gradlew checkDocumentationEnforcement --console=plain for Markdown instruction surfaces plus derived-metadata consistency review against the governing SKILL.md; broader non-Markdown code, Gradle, build-logic, or verification wiring still follows AGENTS.md and quality-platform docs",
+        )
     if under(surface, "src") or under(surface, "bootstrap") or under(surface, "shell"):
         return ("tools/gradle/run-staged-verification.sh production-handoff",)
-    if under(surface, "tools/quality") or under(surface, "tools/gradle/build-harness"):
+    if is_verification_wiring_surface(surface):
         return (
-            "run the focused affected package or canonical layer-surface task",
-            "run direct script smoke checks for reporting-only tools",
+            "tools/gradle/run-staged-verification.sh focused-handoff --path <repo-package-or-resource-dir> [--area <area>] when the affected scope is path-representable",
+            "tools/gradle/run-staged-verification.sh production-handoff when shared verification-core routing, lifecycle wiring, or the public production-code surface is affected",
         )
-    if surface in {"build.gradle.kts", "settings.gradle.kts"}:
-        return ("run focused entrypoints for the affected verification wiring",)
+    if is_reporting_tool_surface(surface):
+        return (
+            "identify the required verification surface from AGENTS.md and quality-platform docs; direct script smoke checks are supplemental diagnostics only",
+        )
+    if is_quality_enforcement_surface(surface):
+        return ("tools/gradle/run-staged-verification.sh focused-handoff --path <affected-package-or-resource-dir> [--area <area>]",)
     return ("identify the required verification surface from AGENTS.md before editing",)
 
 

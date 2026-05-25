@@ -10,10 +10,6 @@ import shell.api.ShellTopBarSpec;
 
 public final class PartyTopBarContribution implements ShellContribution {
 
-    @SuppressWarnings({"PMD.UnnecessaryConstructor", "PMD.UncommentedEmptyConstructor"})
-    public PartyTopBarContribution() {
-    }
-
     @Override
     public ShellContributionSpec registrationSpec() {
         return new ShellTopBarSpec(new ContributionKey("party"), 20);

@@ -2,23 +2,25 @@ package src.data.dungeon.mapper;
 
 import java.util.List;
 import org.jspecify.annotations.Nullable;
-import src.domain.dungeon.model.map.model.DungeonAreaType;
-import src.domain.dungeon.model.map.model.DungeonCell;
-import src.domain.dungeon.model.map.model.DungeonEdge;
-import src.domain.dungeon.model.map.model.DungeonFeatureType;
-import src.domain.dungeon.model.map.model.DungeonTopology;
-import src.domain.dungeon.model.travel.model.session.model.TravelDungeonSessionSurface.AreaData;
-import src.domain.dungeon.model.travel.model.session.model.TravelDungeonSessionSurface.BoundaryData;
-import src.domain.dungeon.model.travel.model.session.model.TravelDungeonSessionSurface.FeatureData;
-import src.domain.dungeon.model.travel.model.session.model.TravelDungeonSessionSurface.MapData;
+import src.domain.dungeon.model.worldspace.model.DungeonAreaType;
+import src.domain.dungeon.model.worldspace.model.DungeonCell;
+import src.domain.dungeon.model.worldspace.model.DungeonEdge;
+import src.domain.dungeon.model.worldspace.model.DungeonFeatureType;
+import src.domain.dungeon.model.worldspace.model.DungeonTopology;
+import src.domain.dungeon.model.worldspace.model.session.model.TravelDungeonSessionSurface.AreaData;
+import src.domain.dungeon.model.worldspace.model.session.model.TravelDungeonSessionSurface.BoundaryData;
+import src.domain.dungeon.model.worldspace.model.session.model.TravelDungeonSessionSurface.FeatureData;
+import src.domain.dungeon.model.worldspace.model.session.model.TravelDungeonSessionSurface.MapData;
 import src.domain.dungeon.published.DungeonAreaSnapshot;
 import src.domain.dungeon.published.DungeonBoundarySnapshot;
 import src.domain.dungeon.published.DungeonCellRef;
 import src.domain.dungeon.published.DungeonFeatureSnapshot;
 import src.domain.dungeon.published.DungeonMapSnapshot;
 
-@SuppressWarnings("PMD.UseUtilityClass")
 public final class TravelDungeonSessionMapMapper {
+
+    private TravelDungeonSessionMapMapper() {
+    }
 
     public static MapData toInternalMap(@Nullable DungeonMapSnapshot map) {
         DungeonMapSnapshot safeMap = map == null ? DungeonMapSnapshot.empty() : map;

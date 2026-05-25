@@ -37,14 +37,18 @@ private class EnforcementBundleBuilder(
     fun archunit(
         taskName: String,
         description: String,
+        sourceRoots: List<String>,
         sourceIncludes: List<String>,
-        includePatterns: List<String>
+        includePatterns: List<String>,
+        inputPaths: List<String> = emptyList()
     ) {
         archunit = EnforcementArchunitTask(
             taskName = taskName,
             description = description,
+            sourceRoots = sourceRoots,
             sourceIncludes = sourceIncludes,
-            includePatterns = includePatterns
+            includePatterns = includePatterns,
+            inputPaths = inputPaths
         )
     }
 
@@ -130,7 +134,7 @@ private fun bundleSelectorTaskName(bundleId: String): String =
     "verify${bundleId.replaceFirstChar(Char::uppercaseChar)}Bundle"
 
 private val viewVerificationSourceRoots = listOf("bootstrap", "shell", "src")
-private val focusedArchunitIncludes = listOf("src/test/java")
+private val buildHarnessArchunitSourceRoots = listOf("tools/gradle/build-harness/src/test/java")
 private val domainVerificationSourceRoots = listOf("shell", "src")
 private val domainVerificationSourceIncludes = listOf(
     "api/ServiceContribution.java",
@@ -154,6 +158,22 @@ private val viewVerificationSourceIncludes = listOf(
     "domain/**/specification/**/*.java",
     "domain/**/value/**/*.java"
 )
+
+private fun EnforcementBundleBuilder.buildHarnessArchunit(
+    taskName: String,
+    description: String,
+    sourceIncludes: List<String>,
+    inputPaths: List<String> = emptyList()
+) {
+    archunit(
+        taskName = taskName,
+        description = description,
+        sourceRoots = buildHarnessArchunitSourceRoots,
+        sourceIncludes = sourceIncludes,
+        includePatterns = sourceIncludes,
+        inputPaths = inputPaths
+    )
+}
 
 private fun EnforcementBundleBuilder.focusedViewRoleRootTask(description: String) {
     selectorTask(description)
@@ -303,7 +323,7 @@ fun standardEnforcementBundleDescriptors(): List<EnforcementBundleDescriptor> = 
     bundle("bootstrapAppBootstrap", 11) {
         selectorTask("Internal selector for the dedicated AppBootstrap enforcement bundle.")
         verificationSources(listOf("bootstrap", "shell"), listOf("**/*.java"))
-        archunit("bootstrapAppBootstrapArchitectureTest", "Run only the AppBootstrap-focused architecture test suite.", focusedArchunitIncludes, listOf("architecture/bootstrap/appbootstrap/**"))
+        buildHarnessArchunit("bootstrapAppBootstrapArchitectureTest", "Run only the AppBootstrap-focused architecture test suite.", listOf("architecture/bootstrap/appbootstrap/**"))
     },
     bundle("layeringArchitecture", 11) {
         selectorTask("Internal selector for the dedicated Layering Architecture enforcement bundle.")
@@ -331,7 +351,7 @@ fun standardEnforcementBundleDescriptors(): List<EnforcementBundleDescriptor> = 
     bundle("bootstrapLayer", 12) {
         selectorTask("Internal selector for the dedicated Bootstrap Layer enforcement bundle.")
         verificationSources(listOf("bootstrap", "shell"), listOf("**/*.java"))
-        archunit("bootstrapLayerArchitectureTest", "Run only the Bootstrap Layer-focused architecture test suite.", focusedArchunitIncludes, listOf("architecture/bootstrap/layer/**"))
+        buildHarnessArchunit("bootstrapLayerArchitectureTest", "Run only the Bootstrap Layer-focused architecture test suite.", listOf("architecture/bootstrap/layer/**"))
         buildHarnessArchitectureRules(listOf("saltmarcher.architecture.bootstrap.layer.BootstrapLayerTopologyRules"))
         buildHarnessTopologyTask()
     },
@@ -343,12 +363,20 @@ fun standardEnforcementBundleDescriptors(): List<EnforcementBundleDescriptor> = 
     },
     bundle("domainLayer", 12) {
         selectorTask("Internal selector for the dedicated Domain Layer enforcement bundle.")
-        errorProneCheckers(listOf("DomainForbiddenInfrastructureDependency", "DomainModuleNoPublishedCarrierDependency", "DomainSourceTopologyPerimeter"))
+        errorProneCheckers(listOf(
+            "DomainForbiddenInfrastructureDependency",
+            "DomainModuleNoPublishedCarrierDependency",
+            "DomainModuleFieldPurity",
+            "DomainPublicConcreteTypeShape",
+            "DomainSourceTopologyPerimeter"))
         verificationSources(domainVerificationSourceRoots, domainVerificationSourceIncludes)
-        archunit("domainLayerArchitectureTest", "Run only the Domain Layer-focused architecture test suite.", focusedArchunitIncludes, listOf("architecture/domain/layer/**"))
-        buildHarnessArchitectureRules(listOf(
-            "saltmarcher.architecture.domain.layer.DomainLayerTopologyRules",
-            "saltmarcher.architecture.domain.layer.DomainModuleBoundaryRules"))
+        buildHarnessArchunit(
+            "domainLayerArchitectureTest",
+            "Run only the Domain Layer-focused architecture test suite.",
+            listOf("architecture/domain/layer/**"),
+            inputPaths = listOf("docs/project/architecture/patterns/domain-layer.md")
+        )
+        buildHarnessArchitectureRules(listOf("saltmarcher.architecture.domain.layer.DomainLayerTopologyRules"))
         buildHarnessDocumentationCoverageSpecs(listOf("domainLayer"))
         buildHarnessTopologyTask()
         buildHarnessDocumentationTask()
@@ -356,7 +384,7 @@ fun standardEnforcementBundleDescriptors(): List<EnforcementBundleDescriptor> = 
     bundle("shellLayer", 12) {
         selectorTask("Internal selector for the dedicated Shell Layer enforcement bundle.")
         verificationSources(listOf("shell"), listOf("**/*.java"))
-        archunit("shellLayerArchitectureTest", "Run only the Shell Layer-focused architecture test suite.", focusedArchunitIncludes, listOf("architecture/shell/layer/**"))
+        buildHarnessArchunit("shellLayerArchitectureTest", "Run only the Shell Layer-focused architecture test suite.", listOf("architecture/shell/layer/**"))
         buildHarnessArchitectureRules(listOf("saltmarcher.architecture.shell.layer.ShellLayerTopologyRules"))
         buildHarnessTopologyTask()
     },
@@ -414,7 +442,7 @@ fun standardEnforcementBundleDescriptors(): List<EnforcementBundleDescriptor> = 
         selectorTask("Internal selector for the dedicated Data Layer enforcement bundle.")
         errorProneCheckers(listOf("ServiceRegistryRegistrationPlacement"))
         verificationSources(listOf("src"), listOf("data/**/gateway/**/*.java", "data/**/mapper/**/*.java", "data/**/model/**/*.java", "data/**/query/**/*.java", "data/**/repository/**/*.java", "data/**/persistencecore/**/*.java", "domain/**/aggregate/**/*.java", "domain/**/context/**/*.java", "domain/**/entity/**/*.java", "domain/**/event/**/*.java", "domain/**/factory/**/*.java", "domain/**/policy/**/*.java", "domain/**/port/**/*.java", "domain/**/published/**/*.java", "domain/**/service/**/*.java", "domain/**/specification/**/*.java", "domain/**/value/**/*.java"))
-        archunit("dataLayerArchitectureTest", "Run only the Data Layer-focused architecture test suite.", focusedArchunitIncludes, listOf("architecture/data/layer/**"))
+        buildHarnessArchunit("dataLayerArchitectureTest", "Run only the Data Layer-focused architecture test suite.", listOf("architecture/data/layer/**"))
         buildHarnessArchitectureRules(listOf("saltmarcher.architecture.data.layer.DataLayerTopologyRules"))
         buildHarnessDocumentationCoverageSpecs(listOf("dataLayer"))
         buildHarnessTopologyTask()
@@ -433,7 +461,7 @@ fun standardEnforcementBundleDescriptors(): List<EnforcementBundleDescriptor> = 
         selectorTask("Internal selector for the dedicated Data Model enforcement bundle.")
         errorProneCheckers(listOf("DataModelSourceShape"))
         verificationSources(listOf("src"), listOf("data/**/model/**/*.java"))
-        archunit("dataModelArchitectureTest", "Run only the Data Model-focused architecture test suite.", focusedArchunitIncludes, listOf("architecture/data/model/**"))
+        buildHarnessArchunit("dataModelArchitectureTest", "Run only the Data Model-focused architecture test suite.", listOf("architecture/data/model/**"))
         buildHarnessArchitectureRules(listOf("saltmarcher.architecture.data.model.DataModelTopologyRules"))
         buildHarnessDocumentationCoverageSpecs(listOf("dataModel"))
         buildHarnessTopologyTask()
@@ -452,27 +480,27 @@ fun standardEnforcementBundleDescriptors(): List<EnforcementBundleDescriptor> = 
         selectorTask("Internal selector for the dedicated Data Gateway enforcement bundle.")
         errorProneCheckers(listOf("DataGatewayReturnTypeBoundary"))
         verificationSources(listOf("src"), listOf("data/**/gateway/**/*.java", "data/**/model/**/*.java", "data/**/persistencecore/**/*.java"))
-        archunit("dataGatewayArchitectureTest", "Run only the Data Gateway-focused architecture test suite.", focusedArchunitIncludes, listOf("architecture/data/gateway/**"))
+        buildHarnessArchunit("dataGatewayArchitectureTest", "Run only the Data Gateway-focused architecture test suite.", listOf("architecture/data/gateway/**"))
         buildHarnessDocumentationCoverageSpecs(listOf("dataGateway"))
         buildHarnessDocumentationTask()
     },
     bundle("dataMapper", 18) {
         selectorTask("Internal selector for the dedicated Data Mapper enforcement bundle.")
-        verificationSources(listOf("src"), listOf("data/**/mapper/**/*.java"))
+        verificationSources(listOf("src"), listOf("data/**/mapper/**/*.java", "domain/**/model/**/*.java"))
         buildHarnessDocumentationCoverageSpecs(listOf("dataMapper"))
         buildHarnessDocumentationTask()
     },
     bundle("dataPersistencecore", 18) {
         selectorTask("Internal selector for the dedicated Data Persistencecore enforcement bundle.")
         verificationSources(listOf("src"), listOf("data/**/persistencecore/**/*.java"))
-        archunit("dataPersistencecoreArchitectureTest", "Run only the Data Persistencecore-focused architecture test suite.", focusedArchunitIncludes, listOf("architecture/data/persistencecore/**"))
+        buildHarnessArchunit("dataPersistencecoreArchitectureTest", "Run only the Data Persistencecore-focused architecture test suite.", listOf("architecture/data/persistencecore/**"))
         buildHarnessDocumentationCoverageSpecs(listOf("dataPersistencecore"))
         buildHarnessDocumentationTask()
     },
     bundle("dataQuery", 18) {
         selectorTask("Internal selector for the dedicated Data Query enforcement bundle.")
         errorProneCheckers(listOf("DataQueryGatewayCollaboratorBoundary", "DataQueryForeignPublishedReplyChannelRoundTrip", "DataQueryGatewayMutationBoundary", "DataQueryPublicSignatureBoundary", "DataQueryRoleContract"))
-        verificationSources(listOf("src"), listOf("data/**/query/**/*.java", "data/**/gateway/**/*.java", "data/**/mapper/**/*.java", "data/**/model/**/*.java", "data/**/persistencecore/**/*.java", "domain/**/*ApplicationService.java", "domain/**/application/**/*.java", "domain/**/aggregate/**/*.java", "domain/**/context/**/*.java", "domain/**/entity/**/*.java", "domain/**/event/**/*.java", "domain/**/factory/**/*.java", "domain/**/policy/**/*.java", "domain/**/port/**/*.java", "domain/**/published/**/*.java", "domain/**/service/**/*.java", "domain/**/specification/**/*.java", "domain/**/value/**/*.java"))
+        verificationSources(listOf("src"), listOf("data/**/query/**/*.java", "data/**/gateway/**/*.java", "data/**/mapper/**/*.java", "data/**/model/**/*.java", "data/**/persistencecore/**/*.java", "domain/**/*ApplicationService.java", "domain/**/application/**/*.java", "domain/**/aggregate/**/*.java", "domain/**/context/**/*.java", "domain/**/entity/**/*.java", "domain/**/event/**/*.java", "domain/**/factory/**/*.java", "domain/**/policy/**/*.java", "domain/**/port/**/*.java", "domain/**/published/**/*.java", "domain/**/model/**/*.java", "domain/**/service/**/*.java", "domain/**/specification/**/*.java", "domain/**/value/**/*.java"))
         buildHarnessArchitectureRules(listOf("saltmarcher.architecture.data.query.DataQueryForeignPublishedPayloadSurfaceRules"))
         buildHarnessDocumentationCoverageSpecs(listOf("dataQuery"))
         buildHarnessTopologyTask()
@@ -481,14 +509,14 @@ fun standardEnforcementBundleDescriptors(): List<EnforcementBundleDescriptor> = 
     bundle("dataRepository", 18) {
         selectorTask("Internal selector for the dedicated Data Repository enforcement bundle.")
         errorProneCheckers(listOf("DataRepositoryRoleContract", "DataRepositoryPublicSignatureBoundary", "DataRepositoryGatewayCollaboratorBoundary"))
-        verificationSources(listOf("src"), listOf("data/**/repository/**/*.java", "data/**/gateway/**/*.java", "data/**/mapper/**/*.java", "data/**/model/**/*.java", "data/**/persistencecore/**/*.java", "domain/**/aggregate/**/*.java", "domain/**/context/**/*.java", "domain/**/entity/**/*.java", "domain/**/event/**/*.java", "domain/**/factory/**/*.java", "domain/**/policy/**/*.java", "domain/**/port/**/*.java", "domain/**/published/**/*.java", "domain/**/service/**/*.java", "domain/**/specification/**/*.java", "domain/**/value/**/*.java"))
+        verificationSources(listOf("src"), listOf("data/**/repository/**/*.java", "data/**/gateway/**/*.java", "data/**/mapper/**/*.java", "data/**/model/**/*.java", "data/**/persistencecore/**/*.java", "domain/**/aggregate/**/*.java", "domain/**/context/**/*.java", "domain/**/entity/**/*.java", "domain/**/event/**/*.java", "domain/**/factory/**/*.java", "domain/**/policy/**/*.java", "domain/**/port/**/*.java", "domain/**/published/**/*.java", "domain/**/model/**/*.java", "domain/**/service/**/*.java", "domain/**/specification/**/*.java", "domain/**/value/**/*.java"))
         buildHarnessDocumentationCoverageSpecs(listOf("dataRepository"))
         buildHarnessDocumentationTask()
     },
     bundle("dataServiceContribution", 18) {
         selectorTask("Internal selector for the dedicated Data ServiceContribution enforcement bundle.")
         errorProneCheckers(listOf("DataServiceContributionConstructionPurity", "DataServiceContributionShellApiAllowlist", "DataServiceContributionRegisterExportShape"))
-        verificationSources(listOf("shell", "src"), listOf("api/**/*.java", "data/**/*ServiceContribution.java", "data/**/repository/**/*.java", "data/**/query/**/*.java", "data/**/gateway/**/*.java", "data/**/mapper/**/*.java", "data/**/model/**/*.java", "data/**/persistencecore/**/*.java", "domain/**/*ApplicationService.java", "domain/**/application/**/*.java", "domain/**/aggregate/**/*.java", "domain/**/context/**/*.java", "domain/**/entity/**/*.java", "domain/**/event/**/*.java", "domain/**/factory/**/*.java", "domain/**/policy/**/*.java", "domain/**/port/**/*.java", "domain/**/published/**/*.java", "domain/**/service/**/*.java", "domain/**/specification/**/*.java", "domain/**/value/**/*.java"))
+        verificationSources(listOf("shell", "src"), listOf("api/**/*.java", "data/**/*ServiceContribution.java", "data/**/repository/**/*.java", "data/**/query/**/*.java", "data/**/gateway/**/*.java", "data/**/mapper/**/*.java", "data/**/model/**/*.java", "data/**/persistencecore/**/*.java", "domain/**/*ApplicationService.java", "domain/**/application/**/*.java", "domain/**/aggregate/**/*.java", "domain/**/context/**/*.java", "domain/**/entity/**/*.java", "domain/**/event/**/*.java", "domain/**/factory/**/*.java", "domain/**/policy/**/*.java", "domain/**/port/**/*.java", "domain/**/published/**/*.java", "domain/**/model/**/*.java", "domain/**/service/**/*.java", "domain/**/specification/**/*.java", "domain/**/value/**/*.java"))
         buildHarnessDocumentationCoverageSpecs(listOf("dataServiceContribution"))
         buildHarnessDocumentationTask()
     },

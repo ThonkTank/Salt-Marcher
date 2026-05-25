@@ -53,15 +53,16 @@ final class CatalogBinder {
             presentationModel.setCreatureDetailSelection(0L);
         });
 
-        models.filterOptions().subscribe(presentationModel::applyCreatureFilterOptions);
-        models.catalog().subscribe(presentationModel::applySearchResult);
-        models.encounterTables().subscribe(presentationModel::applyEncounterTables);
-        models.tuningPreview().subscribe(result -> presentationModel.applyEncounterTuningPreview(result.labels()));
+        models.filterOptions().subscribe(presentationModel.controlsContentModel()::applyCreatureFilterOptions);
+        models.catalog().subscribe(presentationModel.mainContentModel()::applySearchResult);
+        models.encounterTables().subscribe(presentationModel.controlsContentModel()::applyEncounterTables);
+        models.tuningPreview().subscribe(result ->
+                presentationModel.controlsContentModel().applyEncounterTuningPreview(result.labels()));
         models.builderInputs().subscribe(intentHandler::applyEncounterBuilderInputs);
 
-        presentationModel.applyCreatureFilterOptions(models.filterOptions().current());
-        presentationModel.applyEncounterTables(models.encounterTables().current());
-        presentationModel.applyEncounterTuningPreview(models.tuningPreview().current().labels());
+        presentationModel.controlsContentModel().applyCreatureFilterOptions(models.filterOptions().current());
+        presentationModel.controlsContentModel().applyEncounterTables(models.encounterTables().current());
+        presentationModel.controlsContentModel().applyEncounterTuningPreview(models.tuningPreview().current().labels());
         intentHandler.applyEncounterBuilderInputs(models.builderInputs().current());
         return new Binding(controls, main);
     }

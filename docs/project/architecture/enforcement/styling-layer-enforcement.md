@@ -25,20 +25,20 @@ document. Desktop packaging policy, bootstrap feature-independence, and
 passive-`View` legality remain owned by their neighboring enforcement bundles
 except where those surfaces also prove a styling invariant documented here.
 
-Unified focused bundle entrypoint:
+Technical diagnostic route:
 
 - `./gradlew checkStylingEnforcement --rerun-tasks --console=plain`
   runs the currently active styling-layer checks through one root task.
-  Aggregate blocking behavior enters `./gradlew checkStylingEnforcement` and
-  `./gradlew check` through this bundle. The canonical stylesheet-owner proof
-  now stays local to this bundle through typed Gradle tasks plus focused
+  The same mechanical diagnostics are reached by the broader aggregate routes
+  when they include the styling surface. The stylesheet-owner diagnostic now
+  stays local to this bundle through typed Gradle tasks plus focused
   compiler-backed enforcement rules.
 
 ## Invariant Catalog
 
 ### Must Contain
 
-| Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
+| Invariant ID | Status | Applies When | Mechanical Owner | Diagnostic/Mechanical Route | What It Proves |
 | --- | --- | --- | --- | --- | --- |
 | `styling-central-stylesheet-owner-required` | Enforced | active SaltMarcher styling is configured or verified | typed Gradle verification task `checkStylingCentralStylesheetOwner` | `./gradlew checkStylingCentralStylesheetOwner`, `./gradlew checkStylingEnforcement`, and `./gradlew check` | The active application keeps the canonical stylesheet owner at `resources/salt-marcher.css`, and the configured styling path remains bound to that canonical owner. |
 | `styling-central-visual-truth-owner-required` | Review-Owned | active application surfaces need shared semantic colors, fonts, text sizes, borders, strokes, spacing, radii, or semantic variants | none | none | Shared visual truth for ordinary active application styling remains centralized in the styling layer instead of being split across Java packages, ad-hoc constants, or parallel style owners. |
@@ -46,7 +46,7 @@ Unified focused bundle entrypoint:
 
 ### Must Not Contain
 
-| Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
+| Invariant ID | Status | Applies When | Mechanical Owner | Diagnostic/Mechanical Route | What It Proves |
 | --- | --- | --- | --- | --- | --- |
 | `styling-no-extra-stylesheet-files` | Enforced | every stylesheet file with supported extensions in the repository worktree | typed Gradle verification task `checkCentralizedStylesheets` | `./gradlew checkCentralizedStylesheets`, `./gradlew checkStylingEnforcement`, and `./gradlew check` | Active application stylesheet files stay centralized in `resources/salt-marcher.css`; replacement `.css`, `.scss`, `.sass`, `.less`, or `.styl` files elsewhere are forbidden. |
 | `styling-no-programmatic-style-factories-or-static-style-values` | Enforced | every active Java package under `bootstrap`, `shell`, and `src` outside the dedicated passive-`View` direct-render exception | Error Prone `ViewProgrammaticStyling` | `./gradlew checkStylingEnforcement` and `./gradlew check` | Active application code outside the dedicated passive-`View` direct-render exception does not define visual style values through the currently blocked JavaFX style-value constructors, color/paint/font factory methods, or static style-value constants. |
@@ -56,7 +56,7 @@ Unified focused bundle entrypoint:
 
 ### Communication Contract
 
-| Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
+| Invariant ID | Status | Applies When | Mechanical Owner | Diagnostic/Mechanical Route | What It Proves |
 | --- | --- | --- | --- | --- | --- |
 | `styling-bootstrap-loads-central-stylesheet-resource-only` | Review-Owned | desktop launch framing exists and must attach shared application styling to scene or preloader surfaces | none | none | Bootstrap communicates with the styling layer only by loading the canonical stylesheet resource at `resources/salt-marcher.css`; it does not switch to feature-local stylesheet files or alternate stylesheet owners. |
 | `styling-java-to-css-explicit-selector-channel-only` | Enforced | every Java-authored style-class communication seam in `bootstrap/`, `shell/`, and `src/` | typed Gradle verification task `checkDefinedStyleClassSelectors` | `./gradlew checkDefinedStyleClassSelectors`, `./gradlew checkStylingEnforcement`, and `./gradlew check` | Java communicates style selection to centralized CSS only through explicit selector names that the stylesheet owner defines. |

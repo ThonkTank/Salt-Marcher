@@ -158,8 +158,20 @@ public final class BootstrapLayerTopologyRules implements ArchitectureRule {
     }
 
     private static boolean hasPublicNoArgConstructor(String sourceText, String simpleName) {
-        Pattern pattern = Pattern.compile("(?m)^\\s*public\\s+" + Pattern.quote(simpleName) + "\\s*\\(\\s*\\)");
-        return pattern.matcher(sourceText).find();
+        String declarationPrefix = "(?m)^\\s*(?:@[^\\n]+\\s+)*";
+        String optionalConstructorTypeParameters = "(?:<[^>]+>\\s+)?";
+        Pattern publicNoArgConstructorPattern = Pattern.compile(
+                declarationPrefix + "public\\s+" + optionalConstructorTypeParameters
+                        + Pattern.quote(simpleName) + "\\s*\\(\\s*\\)");
+        if (publicNoArgConstructorPattern.matcher(sourceText).find()) {
+            return true;
+        }
+        Pattern anyConstructorPattern = Pattern.compile(declarationPrefix
+                + "(?:(?:public|protected|private)\\s+)?"
+                + optionalConstructorTypeParameters
+                + Pattern.quote(simpleName)
+                + "\\s*\\(");
+        return !anyConstructorPattern.matcher(sourceText).find();
     }
 
     private static List<List<String>> shellTabSpecArgumentLists(String sourceText) {

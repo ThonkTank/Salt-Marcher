@@ -1,0 +1,26 @@
+package src.domain.dungeon.model.worldspace.model;
+
+/**
+ * Owns corridor mutation mechanics while the aggregate remains the public
+ * mutation boundary.
+ */
+public final class DungeonCorridorMutationLogic {
+
+    private static final DungeonCorridorCreationLogic CREATION_SERVICE =
+            new DungeonCorridorCreationLogic();
+    private static final DungeonCorridorMergeDeleteLogic MERGE_DELETE_SERVICE =
+            new DungeonCorridorMergeDeleteLogic();
+
+    public DungeonMap createCorridor(
+            DungeonMap dungeonMap,
+            DungeonCorridorEndpoint start,
+            DungeonCorridorEndpoint end
+    ) {
+        return CREATION_SERVICE.createCorridor(dungeonMap, start, end);
+    }
+
+    public DungeonMap deleteCorridor(DungeonMap dungeonMap, long corridorId) {
+        return MERGE_DELETE_SERVICE.deleteCorridor(dungeonMap, corridorId);
+    }
+
+}

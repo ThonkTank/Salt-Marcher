@@ -31,7 +31,7 @@ itself. Those stay in the neighboring role-enforcement documents and in the
 view-layer and layering standards. This role therefore consumes documented
 same-stem carriers but does not own or synthesize them.
 
-Merged focused bundle entrypoint:
+Technical diagnostic route:
 
 - `./gradlew checkViewEnforcement --rerun-tasks --console=plain`
   runs the focused active-root `IntentHandler` bundle. IntentHandler-existence
@@ -44,7 +44,7 @@ Merged focused bundle entrypoint:
 
 ### May Exist
 
-| Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
+| Invariant ID | Status | Applies When | Mechanical Owner | Diagnostic/Mechanical Route | What It Proves |
 | --- | --- | --- | --- | --- | --- |
 | `view-intenthandler-active-root-count` | Enforced | every active root under `src/view/leftbartabs/**`, `src/view/statetabs/**`, and `src/view/dropdowns/**` | build-harness `ViewLayerTopologyRules` | `./gradlew checkViewEnforcement` and `./gradlew checkViewEnforcement` | Each active root may define at most one local `*IntentHandler.java`. |
 | `view-intenthandler-slotcontent-count` | Enforced | every reusable `slotcontent/**` unit under `src/view/**` | build-harness `ViewLayerTopologyRules` | `./gradlew checkViewEnforcement` and `./gradlew checkViewEnforcement` | Reusable `slotcontent/**` units define no local `*IntentHandler.java`; input interpretation stays in the same-root contribution `IntentHandler`. |
@@ -52,7 +52,7 @@ Merged focused bundle entrypoint:
 
 ### May Contain
 
-| Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
+| Invariant ID | Status | Applies When | Mechanical Owner | Diagnostic/Mechanical Route | What It Proves |
 | --- | --- | --- | --- | --- | --- |
 | `view-intenthandler-projectionmodel-dependency-surface` | Enforced | every `*IntentHandler.java` under `src/view/**` | Error Prone `ViewIntentHandlerDependencyBoundary` | `./gradlew compileJava` | An active-root `IntentHandler` may read only its same-root `*ContributionModel`, same-root child `*ContentModel`, and reused child `slotcontent/**` `*ContentModel` surfaces when it needs local UI facts for interpretation. |
 | `view-intenthandler-viewinputevent-dependency-surface` | Enforced | every `*IntentHandler.java` under `src/view/**` | Error Prone `ViewIntentHandlerDependencyBoundary` and Error Prone `ViewIntentHandlerViewInputEvent` | `./gradlew compileJava` | An active-root `IntentHandler` may consume only same-root or reused child `slotcontent/**` `*ViewInputEvent` families, and those carriers remain the only top-level input protocol it interprets. |
@@ -66,7 +66,7 @@ communication seam obligations documented below.
 
 ### Must Not Contain
 
-| Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
+| Invariant ID | Status | Applies When | Mechanical Owner | Diagnostic/Mechanical Route | What It Proves |
 | --- | --- | --- | --- | --- | --- |
 | `view-intenthandler-no-shell-data-bootstrap-or-javafx-dependencies` | Enforced | every `*IntentHandler.java` under `src/view/**` | Error Prone `ViewIntentHandlerDependencyBoundary` | `./gradlew compileJava` and `./gradlew checkViewEnforcement` | An `IntentHandler` does not depend on `shell/**`, `bootstrap/**`, `src/data/**`, or `javafx/**`. |
 | `view-intenthandler-no-non-applicationservice-domain-dependencies` | Enforced | every `*IntentHandler.java` under `src/view/**` | Error Prone `ViewIntentHandlerDependencyBoundary` | `./gradlew compileJava` and `./gradlew checkViewEnforcement` | An `IntentHandler` does not depend on domain internals outside the matching root `*ApplicationService`. |
@@ -75,14 +75,14 @@ communication seam obligations documented below.
 
 ### Communication Contract
 
-| Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
+| Invariant ID | Status | Applies When | Mechanical Owner | Diagnostic/Mechanical Route | What It Proves |
 | --- | --- | --- | --- | --- | --- |
 | `view-intenthandler-viewinputevent-consume-entrypoint` | Enforced | every `*IntentHandler.java` under `src/view/**` | Error Prone `ViewIntentHandlerViewInputEvent` | `./gradlew compileJava` | An `IntentHandler` exposes fire-and-forget `consume(...)` entrypoints only for same-root or reused child `slotcontent/**` `*ViewInputEvent` families it interprets. |
 | `view-intenthandler-no-viewinputevent-discriminator-dispatch` | Enforced | every legal `consume(...ViewInputEvent)` overload in `*IntentHandler.java` under `src/view/**` | Error Prone `ViewIntentHandlerViewInputEvent` | `./gradlew compileJava` | `IntentHandler.consume(...)` derives meaning from concrete `*ViewInputEvent` snapshot fields instead of dispatching through `event.source()` or `event.action()` command discriminators. |
 
 ## Review-Owned
 
-| Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
+| Invariant ID | Status | Applies When | Mechanical Owner | Diagnostic/Mechanical Route | What It Proves |
 | --- | --- | --- | --- | --- | --- |
 | `view-intenthandler-thin-local-interpretation-semantics` | Review-Owned | every mechanically legal `*IntentHandler.java` under `src/view/**` | none | none | A legal active-root `IntentHandler` still stays a thin input-interpretation role rather than becoming a hidden workflow coordinator. Purely local UI-only state such as selection, tool mode, open/closed flags, or comparable presentation facts may be written directly into the same-root `ContributionModel`, same-root child `ContentModel`s, or intentionally reused child `ContentModel`s without growing a domain seam, while authoritative session or domain transitions leave through one focused root `*ApplicationService` call. |
 | `view-intenthandler-consume-surface-minimality` | Review-Owned | every mechanically legal `*IntentHandler.java` under `src/view/**` | none | none | The legal `consume(...)` entrypoint set is still the minimum local interpretation surface instead of an accumulation of extra technically legal entrypoints and helper protocols. |

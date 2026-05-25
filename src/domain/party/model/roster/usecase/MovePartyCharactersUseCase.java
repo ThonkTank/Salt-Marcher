@@ -23,14 +23,6 @@ public final class MovePartyCharactersUseCase {
         this.publishedStateRepository = Objects.requireNonNull(publishedStateRepository, "publishedStateRepository");
     }
 
-    public void execute(
-            List<Long> characterIds,
-            @Nullable PartyTravelLocation target,
-            boolean attachToPartyToken
-    ) {
-        execute(new TravelCommand(characterIds, TravelTarget.from(target), attachToPartyToken));
-    }
-
     public void execute(TravelCommand command) {
         TravelCommand safeCommand = command == null ? TravelCommand.empty() : command;
         try {
@@ -96,57 +88,6 @@ public final class MovePartyCharactersUseCase {
             String dungeonHeadingName,
             long overworldTileId
     ) {
-
-        public static TravelTarget dungeon(
-                long mapId,
-                String locationKindName,
-                long ownerId,
-                int q,
-                int r,
-                int level,
-                String headingName
-        ) {
-            return new TravelTarget(
-                    true,
-                    mapId,
-                    locationKindName,
-                    ownerId,
-                    q,
-                    r,
-                    level,
-                    headingName,
-                    0L);
-        }
-
-        public static TravelTarget overworld(long mapId, long tileId) {
-            return new TravelTarget(
-                    false,
-                    mapId,
-                    "TILE",
-                    0L,
-                    0,
-                    0,
-                    0,
-                    "SOUTH",
-                    tileId);
-        }
-
-        private static @Nullable TravelTarget from(@Nullable PartyTravelLocation location) {
-            if (location != null && location.isDungeon()) {
-                return dungeon(
-                        location.mapId(),
-                        location.dungeonLocationKind().name(),
-                        location.dungeonOwnerId(),
-                        location.dungeonTile().q(),
-                        location.dungeonTile().r(),
-                        location.dungeonTile().level(),
-                        location.dungeonHeading().name());
-            }
-            if (location != null && location.isOverworld()) {
-                return overworld(location.mapId(), location.overworldTileId());
-            }
-            return null;
-        }
 
         private PartyTravelLocation toLocation() {
             if (dungeon) {

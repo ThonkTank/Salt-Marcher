@@ -25,12 +25,12 @@ placement or runtime-composition contract, or generic cross-layer topology
 outside shell-specific boundaries. Those stay in the bootstrap, focused
 shell-role, view-role, data-layer, data-service-contribution, and layering
 enforcement documents. This file catalogs only the invariants that belong to
-the shell layer as a layer and names where proof currently lives.
+the shell layer as a layer and names where mechanical coverage currently lives.
 
-Unified focused bundle entrypoint:
+Technical diagnostic route:
 
 - `./gradlew checkShellEnforcement --rerun-tasks --console=plain`
-  runs the dedicated shell-layer ArchUnit and build-harness topology proof
+  runs the dedicated shell-layer ArchUnit and build-harness topology diagnostic
   route through one root task. Canonical aggregate blocking behavior remains
   at `./gradlew checkShellEnforcement` and `./gradlew check`.
 
@@ -38,7 +38,7 @@ Unified focused bundle entrypoint:
 
 ### Must Contain
 
-| Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
+| Invariant ID | Status | Applies When | Mechanical Owner | Diagnostic/Mechanical Route | What It Proves |
 | --- | --- | --- | --- | --- | --- |
 | `shell-api-host-topology` | Enforced | every active Java source under `shell/**` | shell-layer bundle build-harness `ShellLayerTopologyRules` | `./gradlew checkShellEnforcement` | Shell Java sources live only under `shell/api` or `shell/host`, preserving the documented split between public shell contract and private shell host implementation. |
 | `shell-api-fixed-public-surface` | Enforced | the public shell boundary under `shell/api/**` | shell-layer bundle build-harness `ShellLayerTopologyRules` | `./gradlew checkShellEnforcement` | The fixed `shell/api` contract remains present and does not silently grow new public extension points. |
@@ -47,7 +47,7 @@ Unified focused bundle entrypoint:
 
 ### Must Not Contain
 
-| Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
+| Invariant ID | Status | Applies When | Mechanical Owner | Diagnostic/Mechanical Route | What It Proves |
 | --- | --- | --- | --- | --- | --- |
 | `shell-no-feature-or-bootstrap-dependencies` | Enforced | every active Java source under `shell/**` | ArchUnit `ShellLayerArchitectureTest` (`shellMustNotReachFeatureInteractorsDomainOrData`, `shellMustStayIndependentFromBootstrap`, and `shellApiMustStayIndependentFromHostAndFeatureLayers`) | `./gradlew checkShellEnforcement` | Shell code does not depend on `src/view/**`, `src/domain/**`, `src/data/**`, or `bootstrap/**`. The shell stays outside feature implementation and outside bootstrap internals. |
 | `shell-no-public-surface-outside-shell-api` | Enforced | every public shell-facing Java source | shell-layer bundle build-harness `ShellLayerTopologyRules` | `./gradlew checkShellEnforcement` | Public shell contracts do not escape into arbitrary shell packages; shell-facing extension points stay confined to the fixed `shell/api/**` surface. |
@@ -56,7 +56,7 @@ Unified focused bundle entrypoint:
 
 ### Communication Contract
 
-| Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
+| Invariant ID | Status | Applies When | Mechanical Owner | Diagnostic/Mechanical Route | What It Proves |
 | --- | --- | --- | --- | --- | --- |
 | `shell-api-independence-boundary` | Enforced | every direct dependency from `shell.api/**` outward | ArchUnit `ShellLayerArchitectureTest` (`shellApiMustStayIndependentFromHostAndFeatureLayers`) | `./gradlew checkShellEnforcement` | The public shell contract stays dependency-clean: `shell.api/**` does not depend on `shell.host/**`, bootstrap, or feature layers. |
 | `shell-host-private-boundary` | Enforced | every direct dependency from non-shell code into `shell.host/**` | ArchUnit `ShellLayerArchitectureTest` (`nonBootstrapCodeMustNotReachShellHostInternals`) plus bootstrap-app-bootstrap bundle ArchUnit `AppBootstrapArchitectureTest` (`bootstrapMustOnlyUseAppShellFromShellHost`) | `./gradlew checkShellEnforcement` and `./gradlew checkBootstrapEnforcement` | `shell.host/**` stays private to the shell layer. External code does not depend on shell host internals, and bootstrap uses only the documented `AppShell` composition point. |

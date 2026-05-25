@@ -23,7 +23,4 @@ public record DungeonSnapshot(
         revision = Math.max(0, revision);
     }
 
-    public DungeonSnapshot withMode(DungeonMapMode nextMode) {
-        return new DungeonSnapshot(mapName, nextMode, map, aggregateSummaries, relationSummaries, revision);
-    }
 }

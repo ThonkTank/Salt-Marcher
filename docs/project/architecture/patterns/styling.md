@@ -50,14 +50,14 @@ bootstrap stylesheet-loading seam, and generic active-code communication rules
 for ordinary node styling. The view-specific document owns the passive-`View`
 direct-render exception and its remaining non-CSS semantics.
 
-The current blocking proof surfaces are `checkStylingEnforcement`,
+The current mechanical diagnostic surfaces are `checkStylingEnforcement`,
 `checkStylingCentralStylesheetOwner`, `checkCentralizedStylesheets`,
 `checkDefinedStyleClassSelectors`, `checkDesktopPackagingInputs`,
 `checkManualNodeStyling`, and `check`.
-`checkStylingEnforcement` is the canonical public styling entrypoint. It
-aggregates the centralized stylesheet-owner, stylesheet-file,
-selector-resolution, broad `ViewProgrammaticStyling` compile surfaces, and the
-passive-`View` direct-render styling placement proof. Its typed
+`checkStylingEnforcement` is the styling technical diagnostic surface, not a
+public handoff proof route. It aggregates the centralized stylesheet-owner,
+stylesheet-file, selector-resolution, broad `ViewProgrammaticStyling` compile
+surfaces, and the passive-`View` direct-render styling placement check. Its typed
 `checkManualNodeStyling` task blocks `setStyle(...)` and passive-`View` manual
 ordinary-node layout styling. Its direct-render
 `ViewDirectRenderStylingPlacement` compiler rule proves only that local JavaFX
@@ -65,7 +65,7 @@ paint/font/stroke style values appear in passive `View` code solely inside the
 documented direct-render exception. The remaining passive-`View`
 direct-render-value derivation and "no local visual system" semantics remain
 review-owned until the repository adopts a dedicated central-token or
-equivalent non-CSS proof surface.
+equivalent non-CSS mechanical surface.
 
 ## References
 

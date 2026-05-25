@@ -24,33 +24,33 @@ layer-wide shell/view/bootstrap isolation, foreign-feature data boundaries,
 gateway-owned source-adapter boundaries, or source-model ownership. Those stay
 in the neighboring data enforcement documents.
 
-Unified focused bundle entrypoint:
+Technical diagnostic route:
 
 - `./gradlew checkDataEnforcement --rerun-tasks --console=plain`
   runs the currently active Data Query-focused Error Prone and build-harness
   topology, and documentation-coverage checks through one root task.
   Canonical compile-side and focused-surface blocking behavior remains
   at `./gradlew compileJava` and `./gradlew checkDataEnforcement`; the focused
-  bundle proof route keeps the query-role checks colocated without pulling the
+  bundle diagnostic route keeps the query-role checks colocated without pulling the
   broader architecture bundles.
 
 ## Invariant Catalog
 
 ### May Contain
 
-| Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
+| Invariant ID | Status | Applies When | Mechanical Owner | Diagnostic/Mechanical Route | What It Proves |
 | --- | --- | --- | --- | --- | --- |
 | `data-query-separate-read-adapter-necessity` | Review-Owned | every current `src/data/**/query/` package and every query adapter under it | none | none | A data feature uses `query/` only when it owns a separate read-only lookup, search, paging, or projection adapter need; `query/` is not a generic convenience bucket, a second `repository/`, or a write boundary. |
 
 ### Must Contain
 
-| Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
+| Invariant ID | Status | Applies When | Mechanical Owner | Diagnostic/Mechanical Route | What It Proves |
 | --- | --- | --- | --- | --- | --- |
 | `data-query-role-contract` | Enforced | every public concrete adapter under `src/data/**/query/` | data-query bundle Error Prone `DataQueryRoleContract` | `./gradlew compileJava` and `./gradlew checkDataEnforcement` | Public concrete query adapters implement matching own-feature read-only domain ports whose names end in `Lookup`, `Catalog`, or `Search`. |
 
 ### Must Not Contain
 
-| Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
+| Invariant ID | Status | Applies When | Mechanical Owner | Diagnostic/Mechanical Route | What It Proves |
 | --- | --- | --- | --- | --- | --- |
 | `data-query-no-source-mechanics` | Review-Owned | every Java type under `src/data/**/query/` | none | none | Query adapters do not reference narrow concrete source APIs directly. |
 | `data-query-no-public-non-adapter-boundary-types` | Enforced | every public type under `src/data/**/query/` that is not a public concrete adapter | data-query bundle Error Prone `DataQueryRoleContract` | `./gradlew compileJava` and `./gradlew checkDataEnforcement` | `query/` exposes no public boundary types except public concrete adapter classes. |
@@ -59,7 +59,7 @@ Unified focused bundle entrypoint:
 
 ### Communication Contract
 
-| Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
+| Invariant ID | Status | Applies When | Mechanical Owner | Diagnostic/Mechanical Route | What It Proves |
 | --- | --- | --- | --- | --- | --- |
 | `data-query-public-port-surface-only` | Enforced | every public concrete query adapter under `src/data/**/query/` | data-query bundle Error Prone `DataQueryRoleContract` | `./gradlew compileJava` and `./gradlew checkDataEnforcement` | Public/protected query adapter methods, including inherited public/protected superclass methods, are limited to the matching own-feature read-only domain port contracts. |
 | `data-query-public-signature-boundary` | Enforced | every public/protected query adapter API | data-query bundle Error Prone `DataQueryPublicSignatureBoundary` | `./gradlew compileJava` and `./gradlew checkDataEnforcement` | Public/protected query adapter signatures, including inherited public/protected superclass methods, do not leak source-local `model/`, `gateway/`, or `persistencecore` types. |
@@ -69,11 +69,11 @@ Unified focused bundle entrypoint:
 
 ## Candidate
 
-| Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
+| Invariant ID | Status | Applies When | Mechanical Owner | Diagnostic/Mechanical Route | What It Proves |
 | --- | --- | --- | --- | --- | --- |
-| `data-query-foreign-published-carrier-thinning-candidate` | Candidate | every query adapter that reads a globally shared foreign passive published carrier through only part of that carrier's globally used accessor surface | none | none | The query adapter may be rebuilding own-feature facts from only a narrow subset of a broader shared foreign published carrier whose full accessor surface is still globally used elsewhere. This is report-only refactor guidance for the foreign published carrier thinning pattern, not a blocker. |
+| `data-query-foreign-published-carrier-thinning-candidate` | Candidate | every query adapter that reads a globally shared foreign passive published carrier through only part of that carrier's globally used accessor surface | none | none | The query adapter may be rebuilding own-feature facts from only a narrow subset of a broader shared foreign published carrier whose full accessor surface is still globally used elsewhere. This is candidate refactor guidance for the foreign published carrier thinning pattern, not a blocker. |
 
-The former report-only shared-carrier candidate scan is retired from the
+The former shared-carrier candidate scan is retired from the
 public verification surface. Narrow foreign published payloads are now tracked
 only through the blocking `DataQueryForeignPublishedPayloadSurfaceRules`
 surface and review of real repository drift.

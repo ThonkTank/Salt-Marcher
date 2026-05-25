@@ -22,7 +22,7 @@ contributions and their Binders:
 
 This document keeps only `ShellRuntimeContext`-local invariants that can be
 decided from `shell/api/ShellRuntimeContext.java` and its direct runtime seams.
-The former dedicated PMD proof surface is retired; current truth here is
+The former dedicated PMD mechanical surface is retired; current truth here is
 review-owned until these shape constraints gain a new owner on the remaining
 Error Prone, ArchUnit, or build-harness stack.
 
@@ -36,7 +36,7 @@ view-role, and layering enforcement documents.
 
 ### Must Contain
 
-| Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
+| Invariant ID | Status | Applies When | Mechanical Owner | Diagnostic/Mechanical Route | What It Proves |
 | --- | --- | --- | --- | --- | --- |
 | `shell-runtime-context-inspector-method-present` | Review-Owned | `shell/api/ShellRuntimeContext.java` | none | none | `ShellRuntimeContext` exposes `inspector()` as one of its fixed public runtime-gateway methods. |
 | `shell-runtime-context-services-method-present` | Review-Owned | `shell/api/ShellRuntimeContext.java` | none | none | `ShellRuntimeContext` exposes `services()` as one of its fixed public runtime-gateway methods. |
@@ -44,13 +44,13 @@ view-role, and layering enforcement documents.
 
 ### Must Not Contain
 
-| Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
+| Invariant ID | Status | Applies When | Mechanical Owner | Diagnostic/Mechanical Route | What It Proves |
 | --- | --- | --- | --- | --- | --- |
 | `shell-runtime-context-no-extra-public-gateway-methods` | Review-Owned | `shell/api/ShellRuntimeContext.java` | none | none | `ShellRuntimeContext` does not expose public runtime-gateway methods beyond the fixed set `inspector`, `services`, and `session`. |
 
 ### Communication Contract
 
-| Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
+| Invariant ID | Status | Applies When | Mechanical Owner | Diagnostic/Mechanical Route | What It Proves |
 | --- | --- | --- | --- | --- | --- |
 | `shell-runtime-context-inspector-details-publication-seam` | Review-Owned | every `ShellRuntimeContext.inspector()` seam | none | none | `inspector()` exposes only the shell-owned details/history publication seam through `InspectorSink`; it does not become a direct shell-host or slot-manipulation API. |
 | `shell-runtime-context-services-root-appservice-lookup-seam` | Review-Owned | every `ShellRuntimeContext.services()` seam | none | none | `services()` exposes only shell-scoped runtime lookup through `ServiceRegistry`; it does not become a second public backend boundary family or a generic feature-service bag. |

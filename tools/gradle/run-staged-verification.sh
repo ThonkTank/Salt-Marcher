@@ -15,9 +15,6 @@ Supported entrypoints:
   focused-handoff
   desktop-install
 
-Focused handoff areas:
-  view, styling, shell, bootstrap, layering, domain, data
-
 Options:
   --fail-fast  Do not add wrapper-owned Gradle --continue.
 
@@ -39,21 +36,6 @@ is_supported_surface() {
     esac
 }
 
-focused_area_task() {
-    case "$1" in
-      view) printf '%s\n' "checkViewEnforcement" ;;
-      styling) printf '%s\n' "checkStylingEnforcement" ;;
-      shell) printf '%s\n' "checkShellEnforcement" ;;
-      bootstrap) printf '%s\n' "checkBootstrapEnforcement" ;;
-      layering) printf '%s\n' "checkLayeringEnforcement" ;;
-      domain) printf '%s\n' "checkDomainEnforcement" ;;
-      data) printf '%s\n' "checkDataEnforcement" ;;
-      *)
-        return 1
-        ;;
-    esac
-}
-
 normalize_focused_path() {
     local path="$1"
     path="${path#./}"
@@ -64,18 +46,14 @@ normalize_focused_path() {
     printf '%s\n' "$path"
 }
 
-infer_focused_area() {
-    case "$1" in
-      src/view|src/view/*) printf '%s\n' "view" ;;
-      src/domain|src/domain/*) printf '%s\n' "domain" ;;
-      src/data|src/data/*) printf '%s\n' "data" ;;
-      shell|shell/*) printf '%s\n' "shell" ;;
-      bootstrap|bootstrap/*) printf '%s\n' "bootstrap" ;;
-      resources|resources/*) printf '%s\n' "styling" ;;
-      *)
+normalize_focused_area() {
+    local area="$1"
+    area="${area#./}"
+    area="${area%/}"
+    if [[ -z "$area" || "$area" == *","* || "$area" == *"*"* || "$area" == *"?"* || "$area" == *"["* ]]; then
         return 1
-        ;;
-    esac
+    fi
+    printf '%s\n' "$area"
 }
 
 append_unique() {
@@ -174,12 +152,10 @@ run_observable_gradle() {
 run_focused_handoff() {
     local args=("$@")
     local index=0
-    local value normalized inferred area task
+    local value normalized area
     local run_compile_integrity=false
     declare -a focused_paths=()
     declare -a explicit_areas=()
-    declare -a selected_areas=()
-    declare -a selected_tasks=()
 
     while [[ $index -lt ${#args[@]} ]]; do
         case "${args[$index]}" in
@@ -204,11 +180,11 @@ run_focused_handoff() {
                 exit 64
             fi
             area="${args[$index]}"
-            focused_area_task "$area" >/dev/null || {
-                echo "[staged-verification] Unsupported focused area: $area" >&2
+            normalized="$(normalize_focused_area "$area")" || {
+                echo "[staged-verification] Invalid focused area: $area" >&2
                 exit 64
             }
-            if value="$(append_unique "$area" "${explicit_areas[@]}")"; then
+            if value="$(append_unique "$normalized" "${explicit_areas[@]}")"; then
                 explicit_areas+=("$value")
             fi
             ;;
@@ -237,37 +213,27 @@ run_focused_handoff() {
         exit 64
     fi
 
-    if [[ ${#explicit_areas[@]} -gt 0 ]]; then
-        selected_areas=("${explicit_areas[@]}")
-    else
-        for normalized in "${focused_paths[@]}"; do
-            inferred="$(infer_focused_area "$normalized")" || {
-                echo "[staged-verification] Could not infer focused area for '$normalized'; pass --area explicitly." >&2
-                exit 64
-            }
-            if value="$(append_unique "$inferred" "${selected_areas[@]}")"; then
-                selected_areas+=("$value")
-            fi
-        done
-    fi
-
-    for area in "${selected_areas[@]}"; do
-        task="$(focused_area_task "$area")"
-        selected_tasks+=("$task")
-    done
-
     echo "[staged-verification] Focused paths: $(join_by_comma "${focused_paths[@]}")"
-    echo "[staged-verification] Focused areas: ${selected_areas[*]}"
-    echo "[staged-verification] Focused tasks: ${selected_tasks[*]}"
-    echo
-
-    if [[ "$run_compile_integrity" == true ]]; then
-        run_observable_gradle "$fail_fast" compileJava compileTestJava
+    if [[ ${#explicit_areas[@]} -gt 0 ]]; then
+        echo "[staged-verification] Focused areas: ${explicit_areas[*]}"
+    else
+        echo "[staged-verification] Focused areas: Gradle-inferred"
     fi
+    if [[ "$run_compile_integrity" == true ]]; then
+        echo "[staged-verification] Focused compile integrity: requested"
+    fi
+    echo
 
     local focused_paths_property="-Dsaltmarcher.focusedVerificationPaths=$(join_by_comma "${focused_paths[@]}")"
     extra_args=("$focused_paths_property" "${extra_args[@]}")
-    run_observable_gradle "$fail_fast" "${selected_tasks[@]}"
+    if [[ ${#explicit_areas[@]} -gt 0 ]]; then
+        local focused_areas_property="-Dsaltmarcher.focusedVerificationAreas=$(join_by_comma "${explicit_areas[@]}")"
+        extra_args=("$focused_areas_property" "${extra_args[@]}")
+    fi
+    if [[ "$run_compile_integrity" == true ]]; then
+        extra_args=("-Dsaltmarcher.focusedHandoffCompileIntegrity=true" "${extra_args[@]}")
+    fi
+    run_observable_gradle "$fail_fast" focused-handoff
 }
 
 if [[ "${requested_surfaces[0]}" == "focused-handoff" ]]; then

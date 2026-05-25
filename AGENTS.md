@@ -71,6 +71,13 @@ document exists.
   does not authorize new gates or broad documentation rewrites by itself.
 - Work that plans, implements, refactors, or reviews a SaltMarcher repo-tracked
   change must use the repo-owned `repo-tools` skill before starting that work.
+- Work that requires implementation planning, refactor planning, or
+  implementation review where existing code behavior, workflow routing,
+  build/check logic, or repo-local tool behavior affects the decision must use
+  the repo-owned `code-exploration` skill before planning or reviewing from
+  nearby files, shared entrypoints, repo-local tools, or tool output.
+- Exploration subagents launched for that workflow must use the repo-owned
+  `code-exploration-agent` skill before reading or reporting.
 - Production-code, check/enforcement, and dependency work must use the
   repo-owned `continuous-refactoring` skill before planning, implementing,
   refactoring, or reviewing. The skill is a workflow rule for keeping cleanup
@@ -79,14 +86,16 @@ document exists.
 - Every repo-tracked implementation pass must receive a risk-based review panel.
   The implementing agent must use the global
   `/home/aaron/.codex/skills/local/adversarial-review/SKILL.md`, launch exactly
-  one Overview subagent that uses
-  `/home/aaron/.codex/skills/local/review-overview/SKILL.md`, wait for its panel
-  plan, and then launch the specialist review subagents from that plan. Every
-  Overview or specialist review subagent must first use the global
+  one Overview coordinator subagent that uses
+  `/home/aaron/.codex/skills/local/review-overview/SKILL.md`, and wait for that
+  coordinator's final review/fix result. The Overview coordinator owns nested
+  specialist reviewer launches and scoped follow-up worker launches for
+  actionable findings. Every Overview or specialist review subagent must first
+  use the global
   `/home/aaron/.codex/skills/local/adversarial-review-agent/SKILL.md`.
   Agent-facing instruction changes must still use
   `agent-instruction-engineering` before that review. A pass without the
-  required completed Overview and review panel remains WIP.
+  required completed Overview-coordinated review and fix result remains WIP.
 - Work under `src/domain/**` must use the repo-owned `domain-layer` skill and
   follow the canonical domain-layer standard before changes are made or
   reviewed.
@@ -135,18 +144,13 @@ document exists.
   `tools/quality/**`, rerun
   `./gradlew checkDocumentationEnforcement --console=plain` from the repository
   root before handoff instead of the full build.
-- A pass without the required production-code handoff or
-  documentation-enforcement rerun is incomplete and must remain WIP.
-- Parallel agent implementation work must not share one live checkout. Each
-  agent must work in its own linked git worktree on its own branch, preferably
-  under `build/codex-worktrees/<topic>/` or a temporary external worktree when
-  the repo-local path is unsuitable.
-- The required local sequence for parallel implementation is: create linked
-  worktree, create or switch to an agent-owned branch inside that worktree,
-  implement there, run the required verification surface there, merge the
-  green branch back into the repo-root `SaltMarcher/` checkout only after the
-  required gate passes, then remove the temporary local branch and linked
-  worktree once the verified result lives in the real local working tree.
+- A pass without the required production-code handoff, focused-handoff proof,
+  or documentation-enforcement rerun is incomplete and must remain WIP.
+- Parallel agent implementation work may share the repo-root checkout only when
+  the caller assigns disjoint write sets and serializes edits to any file that
+  more than one agent might touch. Agents must not create linked worktrees or
+  per-agent temporary isolation branches for parallel implementation unless the
+  user explicitly asks for that workflow.
 - For long verification runs where silent execution makes agent-side
   observation unreliable, prefer `tools/gradle/run-observable-gradle.sh`
   instead of shell loops over many separate `./gradlew` invocations. Use
@@ -156,7 +160,10 @@ document exists.
   <repo-package-or-resource-dir> [--area <area>]` for package-focused local
   proof. The canonical public proof entrypoints are
   `tools/gradle/run-staged-verification.sh production-handoff` for
-  production-code handoff and `./gradlew checkDocumentationEnforcement` for
+  production-code handoff,
+  `tools/gradle/run-staged-verification.sh focused-handoff --path
+  <repo-package-or-resource-dir> [--area <area>]` for package-focused local
+  proof, and `./gradlew checkDocumentationEnforcement --console=plain` for
   documentation checks.
 - `CODEX_THREAD_ID` and `SALTMARCHER_GRADLE_ISOLATION_ID` remain trace labels
   only when a caller explicitly exports them; they are not part of the local
@@ -181,6 +188,8 @@ document exists.
 - [Context Hygiene Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/agent-context.md:1)
 - [Context Hygiene Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/context-hygiene/SKILL.md:1)
 - [Repo Tools Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/repo-tools/SKILL.md:1)
+- [Code Exploration Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/code-exploration/SKILL.md:1)
+- [Code Exploration Agent Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/code-exploration-agent/SKILL.md:1)
 - [Continuous Refactoring Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/continuous-refactoring/SKILL.md:1)
 - [Global Review Overview Skill](/home/aaron/.codex/skills/local/review-overview/SKILL.md:1)
 - [Global Adversarial Review Caller Skill](/home/aaron/.codex/skills/local/adversarial-review/SKILL.md:1)

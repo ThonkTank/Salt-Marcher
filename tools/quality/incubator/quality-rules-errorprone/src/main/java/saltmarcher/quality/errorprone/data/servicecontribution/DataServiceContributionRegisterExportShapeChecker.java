@@ -19,7 +19,7 @@ import javax.lang.model.type.TypeMirror;
 
 @BugPattern(
         name = "DataServiceContributionRegisterExportShape",
-        summary = "Data ServiceContribution roots may export source-backed domain ports and legacy same-feature domain services.",
+        summary = "Data ServiceContribution roots may export only source-backed same-feature domain ports or repositories.",
         severity = BugPattern.SeverityLevel.ERROR)
 public final class DataServiceContributionRegisterExportShapeChecker extends BugChecker
         implements BugChecker.CompilationUnitTreeMatcher {
@@ -40,8 +40,8 @@ public final class DataServiceContributionRegisterExportShapeChecker extends Bug
         if (!DataServiceContributionArchitectureSupport.isServiceCompositionOwner(tree, feature)) {
             return Description.NO_MATCH;
         }
-        String expectedService = "src.domain." + feature + ".model.*.port.*Port, src.domain."
-                + feature + ".*ApplicationService, or src.domain." + feature + ".published.*Model";
+        String expectedService = "src.domain." + feature + ".model.*.port.*Port or src.domain."
+                + feature + ".model.*.repository.*Repository";
         List<String> violations = new ArrayList<>();
         new TreePathScanner<Void, Void>() {
             @Override
@@ -104,8 +104,7 @@ public final class DataServiceContributionRegisterExportShapeChecker extends Bug
 
     private static boolean isAllowedServiceKey(String serviceKey, String feature) {
         return isSameFeatureDomainPort(serviceKey, feature)
-                || isSameFeatureRootApplicationService(serviceKey, feature)
-                || isSameFeaturePublishedModel(serviceKey, feature);
+                || isSameFeatureDomainRepository(serviceKey, feature);
     }
 
     private static boolean isSameFeatureDomainPort(String serviceKey, String feature) {
@@ -118,22 +117,16 @@ public final class DataServiceContributionRegisterExportShapeChecker extends Bug
         return parts.length == 3 && "port".equals(parts[1]);
     }
 
-    private static boolean isSameFeatureRootApplicationService(String serviceKey, String feature) {
-        String expectedPrefix = "src.domain." + feature + ".";
-        if (!serviceKey.startsWith(expectedPrefix)) {
+    private static boolean isSameFeatureDomainRepository(String serviceKey, String feature) {
+        String expectedPrefix = "src.domain." + feature + ".model.";
+        if (!serviceKey.startsWith(expectedPrefix)
+                || !serviceKey.endsWith("Repository")
+                || serviceKey.endsWith("PublishedStateRepository")) {
             return false;
         }
-        String simpleName = serviceKey.substring(expectedPrefix.length());
-        return !simpleName.contains(".") && simpleName.endsWith("ApplicationService");
-    }
-
-    private static boolean isSameFeaturePublishedModel(String serviceKey, String feature) {
-        String expectedPrefix = "src.domain." + feature + ".published.";
-        if (!serviceKey.startsWith(expectedPrefix)) {
-            return false;
-        }
-        String simpleName = serviceKey.substring(expectedPrefix.length());
-        return !simpleName.contains(".") && simpleName.endsWith("Model");
+        String relativeName = serviceKey.substring(expectedPrefix.length());
+        String[] parts = relativeName.split("\\.");
+        return parts.length == 3 && "repository".equals(parts[1]);
     }
 
     private static String ownerTypeName(Symbol symbol) {

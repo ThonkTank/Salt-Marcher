@@ -18,6 +18,11 @@ import javax.lang.model.element.Modifier;
 import javax.tools.JavaCompiler;
 import javax.tools.StandardJavaFileManager;
 import javax.tools.ToolProvider;
+import saltmarcher.architecture.policy.view.ViewPolicy;
+import saltmarcher.architecture.policy.view.ViewRole;
+import saltmarcher.architecture.policy.view.ViewSourceDescriptor;
+import saltmarcher.architecture.policy.view.ViewUnitDescriptor;
+import saltmarcher.architecture.policy.view.ViewUnitKind;
 import saltmarcher.architecture.ArchitectureContext;
 import saltmarcher.architecture.ArchitectureRule;
 import saltmarcher.architecture.SourceFile;
@@ -29,19 +34,35 @@ public final class ViewLayerTopologyRules implements ArchitectureRule {
 
     @Override
     public void check(ArchitectureContext context, ViolationSink violations) {
-        Map<ViewUnitDescriptor, List<ViewSourceDescriptor>> units =
-                ViewTopologyCatalog.groupRecognizedUnits(context.sourceFiles(violations));
-        for (Map.Entry<ViewUnitDescriptor, List<ViewSourceDescriptor>> entry : units.entrySet()) {
+        Map<ViewUnitDescriptor, List<HarnessViewSource>> units = groupRecognizedUnits(context.sourceFiles(violations));
+        for (Map.Entry<ViewUnitDescriptor, List<HarnessViewSource>> entry : units.entrySet()) {
             UnitFacts facts = analyzeUnit(context, entry.getKey(), entry.getValue(), violations);
             validateFileRoles(facts, violations);
             validateUnitShape(facts, violations);
         }
     }
 
+    private static Map<ViewUnitDescriptor, List<HarnessViewSource>> groupRecognizedUnits(List<SourceFile> sourceFiles) {
+        Map<ViewUnitDescriptor, List<HarnessViewSource>> sourcesByUnit = new java.util.TreeMap<>();
+        for (SourceFile sourceFile : sourceFiles) {
+            if (!ViewPolicy.isViewSourcePath(sourceFile.relativePath())) {
+                continue;
+            }
+            ViewSourceDescriptor descriptor = ViewPolicy.describePath(sourceFile.relativePath());
+            if (!descriptor.isRecognizedViewSource()) {
+                continue;
+            }
+            sourcesByUnit
+                    .computeIfAbsent(descriptor.unit(), ignored -> new ArrayList<>())
+                    .add(new HarnessViewSource(sourceFile, descriptor));
+        }
+        return sourcesByUnit;
+    }
+
     private static UnitFacts analyzeUnit(
             ArchitectureContext context,
             ViewUnitDescriptor unit,
-            List<ViewSourceDescriptor> files,
+            List<HarnessViewSource> files,
             ViolationSink violations
     ) {
         List<InteractivePassiveView> interactiveViews = scanInteractivePassiveViews(context, files, violations);
@@ -65,7 +86,7 @@ public final class ViewLayerTopologyRules implements ArchitectureRule {
 
     private static List<InteractivePassiveView> scanInteractivePassiveViews(
             ArchitectureContext context,
-            List<ViewSourceDescriptor> sources,
+            List<HarnessViewSource> sources,
             ViolationSink violations
     ) {
         JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
@@ -77,7 +98,7 @@ public final class ViewLayerTopologyRules implements ArchitectureRule {
 
         List<InteractivePassiveView> interactiveViews = new ArrayList<>();
         try (StandardJavaFileManager fileManager = compiler.getStandardFileManager(null, null, null)) {
-            for (ViewSourceDescriptor source : sources) {
+            for (HarnessViewSource source : sources) {
                 SourceFile sourceFile = source.sourceFile();
                 if (source.role() != ViewRole.VIEW || !sourceFile.content().contains("onViewInputEvent")) {
                     continue;
@@ -95,7 +116,7 @@ public final class ViewLayerTopologyRules implements ArchitectureRule {
             ArchitectureContext context,
             JavaCompiler compiler,
             StandardJavaFileManager fileManager,
-            ViewSourceDescriptor source,
+            HarnessViewSource source,
             List<InteractivePassiveView> interactiveViews,
             ViolationSink violations
     ) {
@@ -119,7 +140,7 @@ public final class ViewLayerTopologyRules implements ArchitectureRule {
     }
 
     private static void validateFileRoles(UnitFacts facts, ViolationSink violations) {
-        for (ViewSourceDescriptor source : facts.files()) {
+        for (HarnessViewSource source : facts.files()) {
             if (source.role().isAllowedIn(facts.unit().kind())) {
                 continue;
             }
@@ -216,7 +237,7 @@ public final class ViewLayerTopologyRules implements ArchitectureRule {
     }
 
     private static void validateProjectionRoleShape(UnitFacts facts, ViolationSink violations) {
-        for (ViewSourceDescriptor source : facts.files()) {
+        for (HarnessViewSource source : facts.files()) {
             if (source.role() == ViewRole.LEGACY_VIEW_MODEL || source.role() == ViewRole.PROJECTOR) {
                 violations.add(source.source(), "view-layer-legacy-projection-role",
                         "View architecture must use *ContributionModel.java or *ContentModel.java and must not retain *ViewModel.java, *PresentationModel.java, or *Projector.java role files.");
@@ -302,14 +323,14 @@ public final class ViewLayerTopologyRules implements ArchitectureRule {
         }
     }
 
-    private static long count(List<ViewSourceDescriptor> files, ViewRole role) {
+    private static long count(List<HarnessViewSource> files, ViewRole role) {
         return files.stream().filter(source -> source.role() == role).count();
     }
 
-    private static Set<String> collectStems(List<ViewSourceDescriptor> files, ViewRole role) {
+    private static Set<String> collectStems(List<HarnessViewSource> files, ViewRole role) {
         return files.stream()
                 .filter(source -> source.role() == role)
-                .map(ViewSourceDescriptor::stem)
+                .map(HarnessViewSource::stem)
                 .filter(stem -> !stem.isBlank())
                 .collect(Collectors.toCollection(java.util.LinkedHashSet::new));
     }
@@ -320,7 +341,7 @@ public final class ViewLayerTopologyRules implements ArchitectureRule {
         private final String viewStem;
         private boolean topLevelVisited;
 
-        private InteractiveViewCollector(ViewSourceDescriptor source) {
+        private InteractiveViewCollector(HarnessViewSource source) {
             this.sourceFile = source.sourceFile();
             this.viewStem = source.stem();
         }
@@ -401,9 +422,30 @@ public final class ViewLayerTopologyRules implements ArchitectureRule {
         }
     }
 
+    private record HarnessViewSource(
+            SourceFile sourceFile,
+            ViewSourceDescriptor descriptor
+    ) {
+        private ViewUnitDescriptor unit() {
+            return descriptor.unit();
+        }
+
+        private ViewRole role() {
+            return descriptor.role();
+        }
+
+        private String source() {
+            return sourceFile.relativePath();
+        }
+
+        private String stem() {
+            return descriptor.role().stem(sourceFile.fileName());
+        }
+    }
+
     private record UnitFacts(
             ViewUnitDescriptor unit,
-            List<ViewSourceDescriptor> files,
+            List<HarnessViewSource> files,
             List<InteractivePassiveView> interactiveViews,
             long contributionCount,
             long binderCount,

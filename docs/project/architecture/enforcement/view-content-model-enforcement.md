@@ -28,7 +28,7 @@ lookup, or `IntentHandler` / `*ViewInputEvent` / legacy `*PublishedEvent`
 protocol rules. Those stay in the neighboring role-enforcement documents and
 in the view-layer and layering standards.
 
-Merged focused bundle entrypoint:
+Technical diagnostic route:
 
 - `./gradlew checkViewEnforcement --rerun-tasks --console=plain`
   runs the focused `ContentModel` bundle. Reusable-unit and active-root
@@ -42,7 +42,7 @@ Merged focused bundle entrypoint:
 
 ### Role Shape
 
-| Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
+| Invariant ID | Status | Applies When | Mechanical Owner | Diagnostic/Mechanical Route | What It Proves |
 | --- | --- | --- | --- | --- | --- |
 | `view-contentmodel-reusable-role-shape` | Enforced | every reusable projection-model role file in `src/view/slotcontent/**` | build-harness `ViewLayerTopologyRules` | `./gradlew checkViewEnforcement` and `./gradlew checkViewEnforcement` | A reusable `slotcontent/**` projection-model role uses the reusable role shape `*ContentModel.java` rather than active-root `*ContributionModel.java` or legacy `*ViewModel.java`, `*PresentationModel.java`, or `*Projector.java` files. |
 | `view-contentmodel-active-root-same-stem-role-shape` | Enforced | every active-root passive `*View.java` under `src/view/leftbartabs/**`, `src/view/statetabs/**`, or `src/view/dropdowns/**` | build-harness `ViewLayerTopologyRules` | `./gradlew checkViewEnforcement` | Every active-root passive `*View.java` must have exactly one co-located same-stem `*ContentModel.java`, and active-root `*ContentModel.java` files are legal only as that paired View-owned content model. |
@@ -57,7 +57,7 @@ Reusable `slotcontent/**` `*ContentModel`s do not pair with reusable local
 
 ### May Contain
 
-| Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
+| Invariant ID | Status | Applies When | Mechanical Owner | Diagnostic/Mechanical Route | What It Proves |
 | --- | --- | --- | --- | --- | --- |
 | `view-contentmodel-observable-bindable-projection-surface` | Review-Owned | every `*ContentModel.java` under `src/view/**` | none | none | A `ContentModel` is a bindable observable projection surface for its paired passive View, not a service, adapter, or imperative workflow owner. |
 | `view-contentmodel-render-relevant-state-scope` | Review-Owned | every `*ContentModel.java` under `src/view/**` | none | none | A `ContentModel` may contain render-relevant state for its own same-stem `View`, such as text, render data, labels, and enablement facts that the passive `View` surface renders. |
@@ -66,7 +66,7 @@ Reusable `slotcontent/**` `*ContentModel`s do not pair with reusable local
 
 ### Must Not Contain
 
-| Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
+| Invariant ID | Status | Applies When | Mechanical Owner | Diagnostic/Mechanical Route | What It Proves |
 | --- | --- | --- | --- | --- | --- |
 | `view-contentmodel-no-nested-input-or-command-carriers` | Enforced | every `*ContentModel.java` under `src/view/**` | Error Prone `ViewContentModelFlatSurface` | `./gradlew compileJava` | A `ContentModel` does not declare nested `*Intent`, `*Input`, `*Request`, `*Command`, `*Query`, `*Operation`, or `*Edit` carrier types. |
 | `view-contentmodel-no-published-to-published-translation` | Enforced | every `*ContentModel.java` under `src/view/**` | Error Prone `ViewContentModelPublishedTranslationBoundary` | `./gradlew compileJava` | A `ContentModel` does not construct domain `published/**` carriers. Read-side normalization and projection publication stay in the owning application-service or runtime projection boundary instead of inside the view layer. |
@@ -74,7 +74,7 @@ Reusable `slotcontent/**` `*ContentModel`s do not pair with reusable local
 
 ### Communication Contract
 
-| Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
+| Invariant ID | Status | Applies When | Mechanical Owner | Diagnostic/Mechanical Route | What It Proves |
 | --- | --- | --- | --- | --- | --- |
 | `view-contentmodel-read-side-and-local-support-direct-boundary-only` | Enforced | every `*ContentModel.java` under `src/view/**` | Error Prone `ViewContentModelDependencyBoundary` | `./gradlew compileJava` and `./gradlew checkViewEnforcement` | A `ContentModel` communicates directly only with read-side domain `published/**` carriers, JavaFX beans or collections, and allowed same-surface local value/support types. In target architecture that includes owning the listener-side reaction for any component-local `published/*Model` readback it projects. |
 | `view-contentmodel-no-shell-data-bootstrap-or-applicationservice-communication` | Enforced | every `*ContentModel.java` under `src/view/**` | Error Prone `ViewContentModelDependencyBoundary` | `./gradlew compileJava` and `./gradlew checkViewEnforcement` | A `ContentModel` does not communicate directly with `shell/**`, `bootstrap/**`, `src/data/**`, or root `*ApplicationService` boundaries. |
@@ -89,7 +89,7 @@ Reusable `slotcontent/**` `*ContentModel`s do not pair with reusable local
   bags after the hard published-translation and dungeon-map projection
   boundaries above
 - mechanizing broader prepared-scene and prepared-hit candidate detection once
-  the report-only view-layer refactor surface has stabilized
+  the view-layer diagnostic candidate surface has stabilized
 
 ## References
 

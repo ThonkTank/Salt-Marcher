@@ -175,6 +175,9 @@ public final class LayeringPassiveCarrierMirrorRules implements ArchitectureRule
 
             nesting.addLast(simpleName);
             try {
+                if (isBoundaryCommandCarrier()) {
+                    return super.visitClass(node, carriers);
+                }
                 if (node.getKind() == Tree.Kind.RECORD) {
                     carriers.add(recordType(node));
                 } else if (node.getKind() == Tree.Kind.ENUM) {
@@ -236,6 +239,12 @@ public final class LayeringPassiveCarrierMirrorRules implements ArchitectureRule
 
         private String simpleName() {
             return nesting.getLast();
+        }
+
+        private boolean isBoundaryCommandCarrier() {
+            return nesting.size() == 1
+                    && simpleName().endsWith("Command")
+                    && relativePath.contains("/published/");
         }
 
         private static boolean isEnumConstant(ClassTree enumTree, VariableTree variable) {

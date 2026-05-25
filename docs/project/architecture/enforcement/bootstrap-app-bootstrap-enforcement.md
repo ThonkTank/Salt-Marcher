@@ -29,10 +29,10 @@ desktop-launch role APIs, or bootstrap-layer discovery root sets. Those stay
 in the neighboring bootstrap-layer, shell-role, view-role, data-role, and
 layering enforcement documents.
 
-Unified focused bundle entrypoint:
+Technical diagnostic route:
 
 - `./gradlew checkBootstrapEnforcement --rerun-tasks --console=plain`
-  runs the dedicated `AppBootstrap` ArchUnit proof route through one root
+  runs the dedicated `AppBootstrap` ArchUnit diagnostic route through one root
   task. Canonical aggregate blocking behavior remains at
   `./gradlew checkBootstrapEnforcement` and `./gradlew check`.
 
@@ -40,13 +40,13 @@ Unified focused bundle entrypoint:
 
 ### May Contain
 
-| Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
+| Invariant ID | Status | Applies When | Mechanical Owner | Diagnostic/Mechanical Route | What It Proves |
 | --- | --- | --- | --- | --- | --- |
 | `bootstrap-appbootstrap-generic-composition-collaborators-only` | Review-Owned | every direct dependency from `bootstrap/AppBootstrap.java` into neighboring bootstrap or shell composition types | none | none | `AppBootstrap` may directly contain only generic startup-composition collaborators and carriers needed for its role: `ShellViewDiscovery`, `ServiceContributionDiscovery`, a local resolved-contribution carrier, `shell.host.AppShell`, `shell.api.ServiceRegistry`, `shell.api.ServiceContribution`, `shell.api.ShellContribution`, `shell.api.ShellRuntimeContext`, `shell.api.ShellBinding`, `shell.api.ShellContributionSpec`, and the supported shell spec families. It does not absorb desktop-launch framing APIs, feature-local helper protocols, or alternate composition-role surfaces. |
 
 ### Must Contain
 
-| Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
+| Invariant ID | Status | Applies When | Mechanical Owner | Diagnostic/Mechanical Route | What It Proves |
 | --- | --- | --- | --- | --- | --- |
 | `bootstrap-appbootstrap-service-contribution-discovery` | Review-Owned | `AppBootstrap.discoverServices()` | none | none | `AppBootstrap` discovers exported `ServiceContribution` roots through its generic data-discovery collaborator instead of using handwritten feature registries. |
 | `bootstrap-appbootstrap-service-registry-population-and-build` | Review-Owned | `AppBootstrap.discoverServices()` | none | none | `AppBootstrap` populates one shared `ServiceRegistry.Builder` from the discovered `ServiceContribution` roots and builds the resulting shared `ServiceRegistry`. |
@@ -63,7 +63,7 @@ Unified focused bundle entrypoint:
 
 ### Must Not Contain
 
-| Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
+| Invariant ID | Status | Applies When | Mechanical Owner | Diagnostic/Mechanical Route | What It Proves |
 | --- | --- | --- | --- | --- | --- |
 | `bootstrap-appbootstrap-no-desktop-launch-framing-or-javafx-ownership` | Review-Owned | every direct dependency or control-flow path in `bootstrap/AppBootstrap.java` | none | none | `AppBootstrap` does not create stages or scenes, apply global startup resources, or coordinate preloader handoff. Desktop launch framing stays in neighboring bootstrap launch roles instead of being absorbed by the startup-composition root. |
 | `bootstrap-appbootstrap-no-feature-name-or-package-branches` | Review-Owned | every control-flow branch in `AppBootstrap` | none | none | `AppBootstrap` does not branch on feature names, feature packages, or feature-specific type identities. Startup and registration logic stays generic. |
@@ -73,7 +73,7 @@ Unified focused bundle entrypoint:
 
 ### Communication Contract
 
-| Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
+| Invariant ID | Status | Applies When | Mechanical Owner | Diagnostic/Mechanical Route | What It Proves |
 | --- | --- | --- | --- | --- | --- |
 | `bootstrap-appbootstrap-shell-host-appshell-composition-surface-only` | Enforced | every direct dependency from `AppBootstrap` into `shell.host/**` and every direct `AppShell` call site in `bootstrap/AppBootstrap.java` | bootstrap-app-bootstrap bundle ArchUnit `AppBootstrapArchitectureTest` (`bootstrapMustOnlyUseAppShellFromShellHost`) | `./gradlew checkBootstrapEnforcement` | `AppBootstrap` communicates with shell host only through the documented `AppShell` composition surface it actually needs: construction from `ServiceRegistry`, `runtimeContext()`, `registerLeftBarTab(...)`, `registerTopBar(...)`, `registerStateTab(...)`, and `navigateTo(...)`. It does not reach host panes, layout internals, or shell lifecycle hooks directly. |
 | `bootstrap-appbootstrap-shell-public-registration-vocabulary-only` | Review-Owned | every direct dependency from `AppBootstrap` into `shell.api/**` | none | none | `AppBootstrap` communicates with shell public contracts only through the documented startup-composition and registration vocabulary for the role: `ServiceContribution`, `ServiceRegistry`, `ShellContribution`, `ShellRuntimeContext`, `ShellBinding`, `ShellContributionSpec`, and the supported shell spec families. |

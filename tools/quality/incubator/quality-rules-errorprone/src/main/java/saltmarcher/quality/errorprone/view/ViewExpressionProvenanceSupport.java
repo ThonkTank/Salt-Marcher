@@ -278,7 +278,7 @@ public final class ViewExpressionProvenanceSupport {
             Symbol.MethodSymbol symbol = ASTHelpers.getSymbol(methodInvocationTree);
             if (symbol != null) {
                 String ownerType = ViewArchitectureSupport.getQualifiedOwnerTypeName(symbol);
-                if (isSameViewHelperOwner(ownerType, qualifiedViewName)) {
+                if (isSameViewHelperOwner(ownerType, qualifiedViewName) && !isRawSnapshotHelper(symbol)) {
                     return new SnapshotViolation(
                             methodInvocationTree,
                             "same-view helper " + ownerType + "." + symbol.getSimpleName() + "()");
@@ -342,6 +342,12 @@ public final class ViewExpressionProvenanceSupport {
                 && (ownerType.equals(qualifiedViewName)
                 || ownerType.startsWith(qualifiedViewName + "$")
                 || ownerType.startsWith(qualifiedViewName + "."));
+    }
+
+    private static boolean isRawSnapshotHelper(Symbol.MethodSymbol methodSymbol) {
+        return methodSymbol != null
+                && methodSymbol.getModifiers().contains(Modifier.PRIVATE)
+                && methodSymbol.getSimpleName().toString().startsWith("raw");
     }
 
     private static boolean isTrackedLocalSymbol(Symbol symbol) {

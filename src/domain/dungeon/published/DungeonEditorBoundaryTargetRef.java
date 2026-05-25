@@ -27,10 +27,6 @@ public record DungeonEditorBoundaryTargetRef(
                 zeroCell());
     }
 
-    public boolean present() {
-        return ownerId > 0L || !topologyRef.equals(DungeonTopologyElementRef.empty()) || !key.isBlank();
-    }
-
     private static DungeonCellRef zeroCell() {
         return new DungeonCellRef(0, 0, 0);
     }

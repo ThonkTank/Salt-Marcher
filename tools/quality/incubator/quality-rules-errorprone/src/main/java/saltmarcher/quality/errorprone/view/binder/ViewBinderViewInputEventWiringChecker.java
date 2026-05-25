@@ -16,8 +16,8 @@ import com.sun.tools.javac.code.Symbol;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import saltmarcher.quality.errorprone.view.ViewArchitectureSupport;
-import saltmarcher.quality.errorprone.view.ViewRole;
-import saltmarcher.quality.errorprone.view.ViewSourceDescriptor;
+import saltmarcher.architecture.policy.view.ViewRole;
+import saltmarcher.architecture.policy.view.ViewSourceDescriptor;
 
 @BugPattern(
         name = "ViewBinderViewInputEventWiring",

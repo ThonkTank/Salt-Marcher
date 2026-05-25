@@ -1,44 +1,36 @@
 package src.view.slotcontent.topbar.dropdown;
 
 import java.util.function.Consumer;
+import javafx.geometry.Bounds;
 import javafx.scene.Node;
+import javafx.scene.Parent;
 import javafx.scene.control.Button;
 import javafx.scene.control.Tooltip;
 import javafx.scene.layout.HBox;
-import src.view.slotcontent.primitives.popup.AnchoredPopupContentModel;
-import src.view.slotcontent.primitives.popup.AnchoredPopupView;
+import javafx.scene.layout.StackPane;
+import javafx.stage.Popup;
 
 public final class DropdownPopupView extends HBox {
 
     private final Button triggerButton = new Button();
-    private final AnchoredPopupContentModel anchoredPopupContentModel = new AnchoredPopupContentModel();
-    private final AnchoredPopupView anchoredPopupView;
+    private final Popup popup = new Popup();
+    private final StackPane popupHost = new StackPane();
 
-    private DropdownPopupContentModel contentModel = new DropdownPopupContentModel();
     private Consumer<DropdownPopupViewInputEvent> viewInputEventHandler = ignored -> { };
-    private javafx.beans.value.ChangeListener<DropdownPopupContentModel.PopupState> popupStateListener;
 
     public DropdownPopupView(Node popupContent) {
-        anchoredPopupView = new AnchoredPopupView(popupContent, () -> triggerButton);
-        anchoredPopupView.bind(anchoredPopupContentModel);
-        anchoredPopupView.onViewInputEvent(event -> {
-            if (event.interaction().isHidden()) {
-                viewInputEventHandler.accept(new DropdownPopupViewInputEvent(false, true));
-            }
-        });
+        popup.setAutoHide(true);
+        popup.setHideOnEscape(true);
+        popupHost.getChildren().setAll(popupContent == null ? java.util.List.of() : java.util.List.of(popupContent));
+        popup.getContent().setAll(popupHost);
+        popup.setOnAutoHide(event -> viewInputEventHandler.accept(new DropdownPopupViewInputEvent(false, true)));
         triggerButton.setOnAction(event -> togglePopup());
         getChildren().add(triggerButton);
-        bind(contentModel);
     }
 
     public void bind(DropdownPopupContentModel contentModel) {
-        if (popupStateListener != null) {
-            this.contentModel.popupStateProperty().removeListener(popupStateListener);
-        }
-        this.contentModel = contentModel == null ? new DropdownPopupContentModel() : contentModel;
-        popupStateListener = (ignored, before, after) -> applyPopupState(after);
-        this.contentModel.popupStateProperty().addListener(popupStateListener);
-        applyPopupState(this.contentModel.currentPopupState());
+        contentModel.popupStateProperty().addListener((ignored, before, after) -> applyPopupState(after));
+        applyPopupState(contentModel.currentPopupState());
     }
 
     public void onViewInputEvent(Consumer<DropdownPopupViewInputEvent> handler) {
@@ -50,23 +42,47 @@ public final class DropdownPopupView extends HBox {
     }
 
     private void applyPopupState(DropdownPopupContentModel.PopupState popupState) {
-        DropdownPopupContentModel.PopupState safeState = popupState == null
-                ? DropdownPopupContentModel.PopupState.initial()
-                : popupState;
-        triggerButton.setText(safeState.triggerText());
-        triggerButton.setMnemonicParsing(safeState.mnemonicParsing());
-        triggerButton.setAccessibleText(safeState.open()
-                ? safeState.openAccessibleText()
-                : safeState.closedAccessibleText());
-        if (safeState.tooltipText().isBlank()) {
+        if (popupState == null) {
+            hidePopupIfShowing();
+            return;
+        }
+        triggerButton.setText(popupState.triggerText());
+        triggerButton.setMnemonicParsing(popupState.mnemonicParsing());
+        triggerButton.setAccessibleText(popupState.open()
+                ? popupState.openAccessibleText()
+                : popupState.closedAccessibleText());
+        if (popupState.tooltipText().isBlank()) {
             triggerButton.setTooltip(null);
         } else {
-            triggerButton.setTooltip(new Tooltip(safeState.tooltipText()));
+            triggerButton.setTooltip(new Tooltip(popupState.tooltipText()));
         }
-        if (safeState.open()) {
-            anchoredPopupContentModel.showTrailing(safeState.popupWidth(), false);
+        if (popupState.open()) {
+            showPopup(popupState.popupWidth());
         } else {
-            anchoredPopupContentModel.hide();
+            hidePopupIfShowing();
+        }
+    }
+
+    private void showPopup(double popupWidth) {
+        if (popup.isShowing()) {
+            return;
+        }
+        triggerButton.applyCss();
+        Parent parent = triggerButton.getParent();
+        if (parent != null) {
+            parent.layout();
+        }
+        Bounds bounds = triggerButton.localToScreen(triggerButton.getBoundsInLocal());
+        if (bounds == null) {
+            viewInputEventHandler.accept(new DropdownPopupViewInputEvent(false, true));
+            return;
+        }
+        popup.show(triggerButton, bounds.getMaxX() - popupWidth, bounds.getMaxY() + 2.0);
+    }
+
+    private void hidePopupIfShowing() {
+        if (popup.isShowing()) {
+            popup.hide();
         }
     }
 }

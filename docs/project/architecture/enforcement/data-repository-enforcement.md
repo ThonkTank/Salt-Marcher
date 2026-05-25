@@ -22,35 +22,35 @@ This document does not own feature-root topology, query-role read semantics,
 gateway source-model shape, or source-model ownership. Those stay in the
 neighboring data enforcement documents.
 
-Unified focused bundle entrypoint:
+Technical diagnostic route:
 
 - `./gradlew checkDataEnforcement --rerun-tasks --console=plain`
-  runs the currently active Data Repository-focused Error Prone, PMD, and
+  runs the currently active Data Repository-focused Error Prone and
   documentation-coverage checks through one root task. Canonical compile-side
   and focused-surface blocking behavior remains at
   `./gradlew compileJava` and `./gradlew checkDataEnforcement`; the focused
-  bundle proof route keeps the repository-role checks colocated without
+  bundle diagnostic route keeps the repository-role checks colocated without
   pulling the broader architecture bundles.
 
 ## Invariant Catalog
 
 ### Must Contain
 
-| Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
+| Invariant ID | Status | Applies When | Mechanical Owner | Diagnostic/Mechanical Route | What It Proves |
 | --- | --- | --- | --- | --- | --- |
 | `data-repository-role-contract` | Enforced | every public concrete adapter under `src/data/**/repository/` | data-repository bundle Error Prone `DataRepositoryRoleContract` | `./gradlew compileJava` and `./gradlew checkDataEnforcement` | Public concrete repository adapters implement a matching own-feature write-oriented domain port contract. |
 
 ### Must Not Contain
 
-| Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
+| Invariant ID | Status | Applies When | Mechanical Owner | Diagnostic/Mechanical Route | What It Proves |
 | --- | --- | --- | --- | --- | --- |
 | `data-repository-no-public-non-adapter-boundary-types` | Enforced | every public type under `src/data/**/repository/` that is not a public concrete adapter | data-repository bundle Error Prone `DataRepositoryRoleContract` | `./gradlew compileJava` and `./gradlew checkDataEnforcement` | `repository/` does not declare public contracts or carriers of its own; public boundary types there are concrete port adapters, while contracts and carriers stay in the owning domain port or published boundary. |
-| `data-repository-no-source-mechanics` | Source-Pattern Enforced | every Java type under `src/data/**/repository/` | data-repository bundle PMD `DataRepositorySourceMechanicsRule` | `./gradlew checkDataEnforcement` | Repository adapters do not reference narrow concrete source APIs directly. |
+| `data-repository-no-source-mechanics` | Review-Owned | every Java type under `src/data/**/repository/` | none | none | Repository adapters should not reference narrow concrete source APIs directly, but no active PMD, Error Prone, ArchUnit, jQAssistant, or build-harness rule currently blocks this exact source-pattern claim. |
 | `data-repository-write-model-role-semantics` | Review-Owned | every repository adapter under `src/data/**/repository/` | none | none | A mechanically legal repository adapter is genuinely a write-model persistence boundary rather than a read-only query, policy helper, or generic data convenience wrapper. |
 
 ### Communication Contract
 
-| Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
+| Invariant ID | Status | Applies When | Mechanical Owner | Diagnostic/Mechanical Route | What It Proves |
 | --- | --- | --- | --- | --- | --- |
 | `data-repository-public-port-surface-only` | Enforced | every public concrete repository adapter under `src/data/**/repository/` | data-repository bundle Error Prone `DataRepositoryRoleContract` | `./gradlew compileJava` and `./gradlew checkDataEnforcement` | Public/protected repository adapter methods, including inherited public/protected superclass methods, are limited to the matching own-feature write-oriented domain port contracts. |
 | `data-repository-public-signature-boundary` | Enforced | every public/protected repository adapter API | data-repository bundle Error Prone `DataRepositoryPublicSignatureBoundary` | `./gradlew compileJava` and `./gradlew checkDataEnforcement` | Public/protected repository adapter signatures, including inherited public/protected superclass methods, do not leak source-local `model/`, `gateway/`, or `persistencecore` types. |

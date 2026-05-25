@@ -24,6 +24,7 @@ sourceSets["main"].java.setSrcDirs(listOf(layout.projectDirectory.dir("src/main/
 
 dependencies {
     implementation("net.sourceforge.pmd:pmd-java:7.23.0")
+    implementation("saltmarcher.architecture:architecture-policy:1.0-SNAPSHOT")
 }
 
 tasks.named<Jar>("jar") {

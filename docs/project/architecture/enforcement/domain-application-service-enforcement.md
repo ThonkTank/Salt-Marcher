@@ -19,7 +19,7 @@ It answers three questions for every root application boundary:
 - what the role MUST NOT contain
 - which direct communication seams the role itself MAY cross
 
-Unified focused bundle entrypoint:
+Technical diagnostic route:
 
 - `./gradlew checkDomainEnforcement --rerun-tasks --console=plain`
 
@@ -27,7 +27,7 @@ Unified focused bundle entrypoint:
 
 ### Must Contain
 
-| Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
+| Invariant ID | Status | Applies When | Mechanical Owner | Diagnostic/Mechanical Route | What It Proves |
 | --- | --- | --- | --- | --- | --- |
 | `domain-applicationservice-root-presence` | Enforced | every active domain context under `src/domain/**` | domain-application-service bundle build-harness `DomainApplicationServiceTopologyRules` and `DomainApplicationServiceDocumentationRules` | `./gradlew checkDocumentationEnforcement` and `./gradlew checkDomainEnforcement` | Each active domain context contains one or more direct root boundary files whose names end with `ApplicationService.java`, and every `Application Service:` marker declared in `DOMAIN.md` resolves to a real direct root file. |
 | `domain-applicationservice-class-shape` | Enforced | every top-level root `*ApplicationService` type under `src/domain/**` | domain-application-service bundle Error Prone `DomainApplicationServiceApiShape` | `./gradlew compileJava` and `./gradlew checkDomainEnforcement` | Root application services are public final top-level classes. |
@@ -36,7 +36,7 @@ Unified focused bundle entrypoint:
 
 ### Must Not Contain
 
-| Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
+| Invariant ID | Status | Applies When | Mechanical Owner | Diagnostic/Mechanical Route | What It Proves |
 | --- | --- | --- | --- | --- | --- |
 | `domain-applicationservice-no-nested-contracts` | Enforced | every root `*ApplicationService.java` under `src/domain/**` | domain-application-service bundle Error Prone `DomainApplicationServiceApiShape` | `./gradlew compileJava` and `./gradlew checkDomainEnforcement` | Root application services do not expose nested public or protected contract types. |
 | `domain-applicationservice-role-reference-boundary` | Enforced | every root `*ApplicationService.java` under `src/domain/**` | domain-application-service bundle Error Prone `DomainApplicationServiceRoleBoundary` | `./gradlew compileJava` and `./gradlew checkDomainEnforcement` | Root services reference only same-context root or model-local `*UseCase` types and same-context `published/*Command` carriers. A same-context `published/*Command` carrier is legal only as the single direct parameter of a public or protected root method, where that same method may null-check the parameter and read its accessors to translate the boundary command into UseCase arguments. A private static one-argument `to*` or `from*` boundary adapter MAY accept one direct same-context `published/*Command` carrier only to flatten that carrier into UseCase-owned input; the adapter return type, local variables, generic parameters, nested type uses, and body are still checked as root-boundary code. The carrier object itself is otherwise illegal as a field, constructor parameter, private/package method parameter, return type, local cache, class/interface generic argument, type-variable bound, supertype generic argument, class-literal/type-use, or argument passed deeper into UseCase/helper/factory work. Foreign root services, ports, repositories, models, helpers, callbacks, and outer-layer types are not legal root-service references. |
@@ -46,7 +46,7 @@ Unified focused bundle entrypoint:
 
 ### Communication Contract
 
-| Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
+| Invariant ID | Status | Applies When | Mechanical Owner | Diagnostic/Mechanical Route | What It Proves |
 | --- | --- | --- | --- | --- | --- |
 | `domain-applicationservice-constructor-composition-boundary` | Review-Owned | every root `*ApplicationService.java` under `src/domain/**` | none | none | Root ApplicationService code stays family-local and thin. It does not become a hidden runtime-composition seam, repository seam, helper seam, or alternate adapter assembly root. |
 | `domain-applicationservice-public-boundary-signature-purity` | Enforced | every public or protected root `ApplicationService` boundary surface | domain-application-service bundle Error Prone `DomainPublicBoundarySignaturePurity` | `./gradlew compileJava` and `./gradlew checkDomainEnforcement` | Root public boundary surfaces do not communicate outer-layer types, same-context private model internals, foreign domain internals, or foreign `published/**` carriers through public fields, methods, supertypes, or type bounds. Root constructor role references are owned by `DomainApplicationServiceRoleBoundary`, not by a second signature-checker allowlist. |
@@ -54,7 +54,7 @@ Unified focused bundle entrypoint:
 
 ### Review-Owned
 
-| Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
+| Invariant ID | Status | Applies When | Mechanical Owner | Diagnostic/Mechanical Route | What It Proves |
 | --- | --- | --- | --- | --- | --- |
 | `domain-applicationservice-no-runtime-composition-ownership` | Review-Owned | every root `*ApplicationService.java` under `src/domain/**` | none | none | A mechanically legal root boundary does not own shell registration, runtime service lookup, repositories, ports, callback protocols, or any alternate runtime-composition seam. |
 | `domain-applicationservice-no-business-policy-ownership` | Review-Owned | every root `*ApplicationService.java` under `src/domain/**` | none | none | Root boundaries behave as family-scoped intent interpretation and routing only; business policy stays below the root. |

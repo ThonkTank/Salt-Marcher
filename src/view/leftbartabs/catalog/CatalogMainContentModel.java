@@ -8,9 +8,7 @@ import javafx.beans.property.ReadOnlyObjectWrapper;
 import src.domain.creatures.published.CreatureCatalogPage;
 import src.domain.creatures.published.CreatureCatalogPageResult;
 import src.domain.creatures.published.CreatureCatalogRow;
-import src.domain.creatures.published.CreatureCatalogSortField;
 import src.domain.creatures.published.CreatureQueryStatus;
-import src.domain.creatures.published.CreatureSortDirection;
 
 public final class CatalogMainContentModel {
 
@@ -76,16 +74,12 @@ public final class CatalogMainContentModel {
         refreshProjection();
     }
 
-    CreatureCatalogSortField currentSortField() {
-        return selectedSort.field();
+    String currentSortFieldName() {
+        return selectedSort.sortFieldName();
     }
 
-    CreatureSortDirection currentSortDirection() {
-        return selectedSort.direction();
-    }
-
-    String currentSortKey() {
-        return selectedSort.key();
+    String currentSortDirectionName() {
+        return selectedSort.sortDirectionName();
     }
 
     int currentPageOffset() {
@@ -96,48 +90,41 @@ public final class CatalogMainContentModel {
         projection.set(MainProjection.from(rows, selectedSort, pageOffset, totalCount, placeholderText));
     }
 
-    private static String safe(String value) {
-        return value == null ? "" : value;
-    }
-
-    private static String formatInteger(long value) {
-        return NumberFormat.getIntegerInstance(Locale.US).format(value);
-    }
-
-    private static <T> List<T> copiedList(List<T> values) {
-        return values == null ? List.of() : List.copyOf(values);
-    }
-
     enum SortOption {
-        NAME_ASC("name-asc", "Name (A-Z)", CreatureCatalogSortField.NAME, CreatureSortDirection.ASCENDING),
-        NAME_DESC("name-desc", "Name (Z-A)", CreatureCatalogSortField.NAME, CreatureSortDirection.DESCENDING),
-        CR_ASC("cr-asc", "CR (aufst.)", CreatureCatalogSortField.CHALLENGE_RATING, CreatureSortDirection.ASCENDING),
-        CR_DESC("cr-desc", "CR (abst.)", CreatureCatalogSortField.CHALLENGE_RATING, CreatureSortDirection.DESCENDING),
-        XP_ASC("xp-asc", "XP (aufst.)", CreatureCatalogSortField.XP, CreatureSortDirection.ASCENDING),
-        XP_DESC("xp-desc", "XP (abst.)", CreatureCatalogSortField.XP, CreatureSortDirection.DESCENDING);
+        NAME_ASC("name-asc", "Name (A-Z)", "NAME", "ASCENDING"),
+        NAME_DESC("name-desc", "Name (Z-A)", "NAME", "DESCENDING"),
+        CR_ASC("cr-asc", "CR (aufst.)", "CHALLENGE_RATING", "ASCENDING"),
+        CR_DESC("cr-desc", "CR (abst.)", "CHALLENGE_RATING", "DESCENDING"),
+        XP_ASC("xp-asc", "XP (aufst.)", "XP", "ASCENDING"),
+        XP_DESC("xp-desc", "XP (abst.)", "XP", "DESCENDING");
 
         private final String key;
         private final String label;
-        private final CreatureCatalogSortField field;
-        private final CreatureSortDirection direction;
+        private final String sortFieldName;
+        private final String sortDirectionName;
 
-        SortOption(String key, String label, CreatureCatalogSortField field, CreatureSortDirection direction) {
+        SortOption(
+                String key,
+                String label,
+                String sortFieldName,
+                String sortDirectionName
+        ) {
             this.key = key;
             this.label = label;
-            this.field = field;
-            this.direction = direction;
+            this.sortFieldName = sortFieldName;
+            this.sortDirectionName = sortDirectionName;
         }
 
         String key() {
             return key;
         }
 
-        CreatureCatalogSortField field() {
-            return field;
+        String sortFieldName() {
+            return sortFieldName;
         }
 
-        CreatureSortDirection direction() {
-            return direction;
+        String sortDirectionName() {
+            return sortDirectionName;
         }
 
         KeyLabel asKeyLabel() {
@@ -166,13 +153,13 @@ public final class CatalogMainContentModel {
             boolean nextPageAvailable
     ) {
         MainProjection {
-            sortOptions = copiedList(sortOptions);
-            columns = copiedList(columns);
-            rows = copiedList(rows);
-            selectedSortKey = safe(selectedSortKey);
-            countLabel = safe(countLabel);
-            pageLabel = safe(pageLabel);
-            placeholderText = safe(placeholderText);
+            sortOptions = Values.copiedList(sortOptions);
+            columns = Values.copiedList(columns);
+            rows = Values.copiedList(rows);
+            selectedSortKey = Values.safe(selectedSortKey);
+            countLabel = Values.safe(countLabel);
+            pageLabel = Values.safe(pageLabel);
+            placeholderText = Values.safe(placeholderText);
         }
 
         static MainProjection initial() {
@@ -203,8 +190,8 @@ public final class CatalogMainContentModel {
 
     record KeyLabel(String key, String label) {
         KeyLabel {
-            key = safe(key);
-            label = safe(label);
+            key = Values.safe(key);
+            label = Values.safe(label);
         }
 
         @Override
@@ -215,7 +202,7 @@ public final class CatalogMainContentModel {
 
     record CatalogRow(long id, List<String> cells) {
         CatalogRow {
-            cells = copiedList(cells);
+            cells = Values.copiedList(cells);
         }
 
         String cell(int index) {
@@ -226,11 +213,26 @@ public final class CatalogMainContentModel {
             return new CatalogRow(
                     creature.id(),
                     List.of(
-                            safe(creature.name()),
-                            safe(creature.challengeRating()),
-                            safe(creature.creatureType()),
-                            safe(creature.size()),
-                            formatInteger(creature.xp())));
+                            Values.safe(creature.name()),
+                            Values.safe(creature.challengeRating()),
+                            Values.safe(creature.creatureType()),
+                            Values.safe(creature.size()),
+                            Values.formatInteger(creature.xp())));
+        }
+    }
+
+    private static final class Values {
+
+        static <T> List<T> copiedList(List<T> values) {
+            return values == null ? List.of() : List.copyOf(values);
+        }
+
+        static String safe(String value) {
+            return value == null ? "" : value;
+        }
+
+        static String formatInteger(long value) {
+            return NumberFormat.getIntegerInstance(Locale.US).format(value);
         }
     }
 }

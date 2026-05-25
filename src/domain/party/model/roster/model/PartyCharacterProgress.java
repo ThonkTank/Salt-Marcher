@@ -54,11 +54,6 @@ public record PartyCharacterProgress(
                 shortRestsTakenSinceLongRest);
     }
 
-    public PartyCharacterProgress awardXp(int xpAmount) {
-        int safeXp = Math.max(0, xpAmount);
-        return adjustXp(safeXp);
-    }
-
     public PartyCharacterProgress adjustXp(int xpDelta) {
         int minimumXp = minimumXpForLevel(level);
         int lowerBound = xpDelta < 0 ? Math.min(currentXp, minimumXp) : 0;

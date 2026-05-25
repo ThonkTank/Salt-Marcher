@@ -21,6 +21,8 @@ final class CatalogIntentHandler {
     private static final int MAX_DIFFICULTY_LEVEL = 4;
 
     private final CatalogContributionModel presentationModel;
+    private final CatalogControlsContentModel controlsModel;
+    private final CatalogMainContentModel mainModel;
     private final CreaturesApplicationService creatures;
     private final EncounterTableApplicationService encounterTables;
     private final EncounterApplicationService encounters;
@@ -32,6 +34,8 @@ final class CatalogIntentHandler {
             EncounterApplicationService encounters
     ) {
         this.presentationModel = Objects.requireNonNull(presentationModel, "presentationModel");
+        controlsModel = presentationModel.controlsContentModel();
+        mainModel = presentationModel.mainContentModel();
         this.creatures = Objects.requireNonNull(creatures, "creatures");
         this.encounterTables = Objects.requireNonNull(encounterTables, "encounterTables");
         this.encounters = Objects.requireNonNull(encounters, "encounters");
@@ -43,12 +47,12 @@ final class CatalogIntentHandler {
             return;
         }
 
-        CatalogControlsContentModel.InteractionState interactionState = presentationModel.currentInteractionState();
+        CatalogControlsContentModel.InteractionState interactionState = controlsModel.interactionState();
         CatalogControlsContentModel.LocalFilterState previousLocalFilters = interactionState.localFilters();
         CatalogControlsContentModel.ControlsState previousDraftControls = interactionState.draftControls();
         CatalogControlsContentModel.ControlsState authoritativeControls = interactionState.domainControls();
 
-        presentationModel.applyControlsDraft(new CatalogControlsContentModel.ControlsDraft(
+        controlsModel.applyControlsDraft(new CatalogControlsContentModel.ControlsDraft(
                 new CatalogControlsContentModel.LocalFilterState(
                         event.nameQuery(),
                         event.challengeRatingMin(),
@@ -83,7 +87,7 @@ final class CatalogIntentHandler {
                 new CatalogControlsContentModel.FilterDropdownState(event.alignmentPopupOpen(), event.alignmentPopupQuery()),
                 new CatalogControlsContentModel.FilterDropdownState(event.encounterTablePopupOpen(), "")));
 
-        CatalogControlsContentModel.InteractionState currentState = presentationModel.currentInteractionState();
+        CatalogControlsContentModel.InteractionState currentState = controlsModel.interactionState();
         if (!previousLocalFilters.equals(currentState.localFilters())) {
             refreshSearch();
         }
@@ -98,11 +102,11 @@ final class CatalogIntentHandler {
                             currentDraftControls.difficulty().auto(),
                             toDifficultyLevel(currentDraftControls.difficulty().value()),
                             currentDraftControls.balance().auto(),
-                            toBalanceLevel(currentDraftControls.balance().value()),
+                            roundedLevel(currentDraftControls.balance().value()),
                             currentDraftControls.amount().auto(),
                             currentDraftControls.amount().value(),
                             currentDraftControls.diversity().auto(),
-                            toDiversityLevel(currentDraftControls.diversity().value()),
+                            roundedLevel(currentDraftControls.diversity().value()),
                             currentDraftControls.encounterTableIds())));
         }
     }
@@ -112,12 +116,12 @@ final class CatalogIntentHandler {
             return;
         }
         if (!event.sortKey().isBlank()) {
-            presentationModel.selectSort(event.sortKey());
+            mainModel.selectSort(event.sortKey());
             refreshSearch();
             return;
         }
         if (event.pageShift() != 0) {
-            presentationModel.shiftPage(event.pageShift());
+            mainModel.shiftPage(event.pageShift());
             refreshSearch();
             return;
         }
@@ -131,29 +135,31 @@ final class CatalogIntentHandler {
     }
 
     private void refreshSearch() {
-        presentationModel.beginSearch();
+        mainModel.beginSearch();
         refreshCatalog();
     }
 
     void applyEncounterBuilderInputs(EncounterBuilderInputs builderInputs) {
-        if (presentationModel.applyEncounterBuilderInputs(builderInputs)) {
+        if (controlsModel.applyEncounterBuilderInputs(builderInputs)) {
             refreshCatalog();
         }
     }
 
     private void refreshCatalog() {
-        creatures.refreshCatalog(RefreshCreatureCatalogCommand.fromSortKey(
-                presentationModel.currentNameQuery(),
-                presentationModel.currentChallengeRatingMin(),
-                presentationModel.currentChallengeRatingMax(),
-                presentationModel.currentSizes(),
-                presentationModel.currentCreatureTypes(),
-                presentationModel.currentCreatureSubtypes(),
-                presentationModel.currentBiomes(),
-                presentationModel.currentAlignments(),
-                presentationModel.currentSortKey(),
+        CatalogControlsContentModel.CreatureFilters searchFilters = controlsModel.currentSearchFilters();
+        creatures.refreshCatalog(new RefreshCreatureCatalogCommand(
+                searchFilters.nameQuery(),
+                searchFilters.challengeRatingMin(),
+                searchFilters.challengeRatingMax(),
+                searchFilters.sizes(),
+                searchFilters.types(),
+                searchFilters.subtypes(),
+                searchFilters.biomes(),
+                searchFilters.alignments(),
+                mainModel.currentSortFieldName(),
+                mainModel.currentSortDirectionName(),
                 50,
-                presentationModel.currentPageOffset()));
+                mainModel.currentPageOffset()));
     }
 
     private void refreshCatalogSources() {
@@ -185,11 +191,7 @@ final class CatalogIntentHandler {
         return DEFAULT_DIFFICULTY_LEVEL;
     }
 
-    private static int toBalanceLevel(double value) {
-        return (int) Math.round(value);
-    }
-
-    private static int toDiversityLevel(double value) {
+    private static int roundedLevel(double value) {
         return (int) Math.round(value);
     }
 }

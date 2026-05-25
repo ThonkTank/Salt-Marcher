@@ -7,6 +7,8 @@ import javafx.beans.property.ReadOnlyObjectWrapper;
 
 final class AdventuringDayTopBarContentModel {
 
+    private static final double WHOLE_DAY_EPSILON = 0.000_000_1;
+
     private final ReadOnlyObjectWrapper<PanelModel> panel = new ReadOnlyObjectWrapper<>();
 
     private List<RowModel> rows = List.of();
@@ -77,145 +79,164 @@ final class AdventuringDayTopBarContentModel {
     }
 
     private CalculationPresentation selectedPresentation() {
-        int totalGroupXp = parseNonNegativeInt(totalGroupXpText);
-        if (expandedLevels(rows).isEmpty()) {
-            return emptyPresentation(progressModeSelected, totalGroupXp);
-        }
-        return progressModeSelected ? progressPresentation(calculation) : budgetPresentation(calculation);
-    }
-
-    private static CalculationPresentation emptyPresentation(boolean progressSelected, int totalGroupXp) {
-        if (progressSelected) {
-            return new CalculationPresentation(List.of("Gesamt-XP: " + xp(totalGroupXp)), List.of());
-        }
-        return new CalculationPresentation(List.of("Tag gesamt: " + xp(0)), List.of());
-    }
-
-    private static CalculationPresentation budgetPresentation(CalculationModel sourceCalculation) {
-        BudgetModel budget = sourceCalculation == null || sourceCalculation.budget() == null
-                ? new BudgetModel(0, 0, 0, 0, 0)
-                : sourceCalculation.budget();
-        return new CalculationPresentation(
-                List.of(
-                        "Tag gesamt: " + xp(budget.totalXp()),
-                        "Pro Drittel: ca. " + xp(budget.perThirdXp()),
-                        "Short Rest 1: nach " + xp(budget.firstShortRestXp()),
-                        "Short Rest 2: nach " + xp(budget.secondShortRestXp())),
-                List.of(
-                        "Short Rest 1: " + xp(budget.firstShortRestXp()),
-                        "Short Rest 2: " + xp(budget.secondShortRestXp()),
-                        "Long Rest: " + xp(budget.totalXp())));
-    }
-
-    private static CalculationPresentation progressPresentation(CalculationModel sourceCalculation) {
-        ProgressModel progress = sourceCalculation == null || sourceCalculation.progress() == null
-                ? new ProgressModel(0, 0, 0, 0, 0.0, 0, 0, List.of(), List.of())
-                : sourceCalculation.progress();
-        return new CalculationPresentation(
-                List.of(
-                        "Gesamt-XP: " + xp(progress.totalGroupXp()),
-                        "XP pro Charakter: " + format(progress.perCharacterAwardedXp()),
-                        "Adventuring Days: " + formatDays(progress.totalDays())
-                                + " (" + progress.fullDays() + " voll)",
-                        "Short Rests: " + progress.shortRests(),
-                        "Long Rests: " + progress.longRests(),
-                        "Level-ups: " + formatLevelProgress(progress.levelProgressions())),
-                progressEventLines(progress.events()));
-    }
-
-    private static List<String> progressEventLines(List<ProgressEventModel> events) {
-        if (events == null || events.isEmpty()) {
-            return List.of();
-        }
-        java.util.ArrayList<String> lines = new java.util.ArrayList<>();
-        for (ProgressEventModel event : events) {
-            lines.add(formatProgressEvent(event));
-        }
-        return List.copyOf(lines);
-    }
-
-    private static String formatProgressEvent(ProgressEventModel model) {
-        ProgressEventModel safeModel = model == null
-                ? new ProgressEventModel(0, ProgressEventTypeModel.LONG_REST, 0, 0, 0, false)
-                : model;
-        String prefix = "Tag " + safeModel.dayNumber() + ", " + xp(safeModel.groupXp()) + ": ";
-        String suffix = safeModel.partialDay() ? " (teilweiser Tag)" : "";
-        return switch (safeModel.type()) {
-            case LEVEL_UP -> prefix + "Level-up auf " + safeModel.newLevel()
-                    + " für " + safeModel.affectedCharacters() + " Charakter"
-                    + (safeModel.affectedCharacters() == 1 ? "" : "e") + suffix;
-            case SHORT_REST -> prefix + "Short Rest" + suffix;
-            case LONG_REST -> prefix + "Long Rest" + suffix;
-        };
-    }
-
-    private static String formatLevelProgress(List<LevelProgressModel> progressions) {
-        if (progressions == null || progressions.isEmpty()) {
-            return "keine";
-        }
-        StringBuilder builder = new StringBuilder();
-        for (LevelProgressModel progression : progressions) {
-            if (!builder.isEmpty()) {
-                builder.append(", ");
-            }
-            builder.append(formatLevelProgressEntry(progression));
-        }
-        return builder.toString();
-    }
-
-    private static String formatLevelProgressEntry(LevelProgressModel progression) {
-        LevelProgressModel safeProgression = progression == null
-                ? new LevelProgressModel(1, 1, 0, 0)
-                : progression;
-        String suffix = safeProgression.levelUps() > 0 ? " -> L" + safeProgression.endLevel() : " bleibt";
-        return safeProgression.characterCount() + "x L" + safeProgression.startLevel() + suffix;
-    }
-
-    private static String xp(int value) {
-        return format(value) + " XP";
-    }
-
-    static List<Integer> expandedLevels(List<RowModel> rowModels) {
-        if (rowModels == null || rowModels.isEmpty()) {
-            return List.of();
-        }
-        List<Integer> levels = new ArrayList<>();
-        for (RowModel row : rowModels) {
-            int count = parseNonNegativeInt(row == null ? "" : row.countText());
-            int level = row == null ? 1 : row.level();
-            for (int index = 0; index < count; index++) {
-                levels.add(level);
-            }
-        }
-        return List.copyOf(levels);
-    }
-
-    static int parseNonNegativeInt(String rawValue) {
-        String safeValue = rawValue == null ? "" : rawValue.trim();
-        if (safeValue.isEmpty()) {
-            return 0;
-        }
-        try {
-            return Math.max(0, Integer.parseInt(safeValue));
-        } catch (NumberFormatException exception) {
-            return 0;
-        }
-    }
-
-    private static String format(int value) {
-        return Integer.toString(Math.max(0, value));
-    }
-
-    private static String formatDays(double value) {
-        double rounded = Math.round(value * 100.0) / 100.0;
-        if (rounded == Math.rint(rounded)) {
-            return Integer.toString((int) rounded);
-        }
-        return Double.toString(rounded);
+        return CalculationPresentationFactory.from(rows, progressModeSelected, totalGroupXpText, calculation);
     }
 
     private static String safe(String value) {
         return value == null ? "" : value;
+    }
+
+    static final class LevelRows {
+
+        private LevelRows() {
+            throw new AssertionError();
+        }
+
+        static List<Integer> expandedLevels(List<RowModel> rowModels) {
+            if (rowModels == null || rowModels.isEmpty()) {
+                return List.of();
+            }
+            List<Integer> levels = new ArrayList<>();
+            for (RowModel row : rowModels) {
+                int count = parseNonNegativeInt(row == null ? "" : row.countText());
+                int level = row == null ? 1 : row.level();
+                for (int index = 0; index < count; index++) {
+                    levels.add(level);
+                }
+            }
+            return List.copyOf(levels);
+        }
+
+        static int parseNonNegativeInt(String rawValue) {
+            String safeValue = rawValue == null ? "" : rawValue.trim();
+            if (safeValue.isEmpty()) {
+                return 0;
+            }
+            try {
+                return Math.max(0, Integer.parseInt(safeValue));
+            } catch (NumberFormatException exception) {
+                return 0;
+            }
+        }
+    }
+
+    private static final class CalculationPresentationFactory {
+
+        private CalculationPresentationFactory() {
+            throw new AssertionError();
+        }
+
+        private static CalculationPresentation from(
+                List<RowModel> rows,
+                boolean progressSelected,
+                String totalGroupXpText,
+                CalculationModel calculation
+        ) {
+            int totalGroupXp = LevelRows.parseNonNegativeInt(totalGroupXpText);
+            if (LevelRows.expandedLevels(rows).isEmpty()) {
+                return emptyPresentation(progressSelected, totalGroupXp);
+            }
+            return progressSelected ? progressPresentation(calculation) : budgetPresentation(calculation);
+        }
+
+        private static CalculationPresentation emptyPresentation(boolean progressSelected, int totalGroupXp) {
+            if (progressSelected) {
+                return new CalculationPresentation(List.of("Gesamt-XP: " + xp(totalGroupXp)), List.of());
+            }
+            return new CalculationPresentation(List.of("Tag gesamt: " + xp(0)), List.of());
+        }
+
+        private static CalculationPresentation budgetPresentation(CalculationModel sourceCalculation) {
+            BudgetModel budget = sourceCalculation == null || sourceCalculation.budget() == null
+                    ? new BudgetModel(0, 0, 0, 0, 0)
+                    : sourceCalculation.budget();
+            return new CalculationPresentation(
+                    List.of(
+                            "Tag gesamt: " + xp(budget.totalXp()),
+                            "Pro Drittel: ca. " + xp(budget.perThirdXp()),
+                            "Short Rest 1: nach " + xp(budget.firstShortRestXp()),
+                            "Short Rest 2: nach " + xp(budget.secondShortRestXp())),
+                    List.of(
+                            "Short Rest 1: " + xp(budget.firstShortRestXp()),
+                            "Short Rest 2: " + xp(budget.secondShortRestXp()),
+                            "Long Rest: " + xp(budget.totalXp())));
+        }
+
+        private static CalculationPresentation progressPresentation(CalculationModel sourceCalculation) {
+            ProgressModel progress = sourceCalculation == null || sourceCalculation.progress() == null
+                    ? new ProgressModel(0, 0, 0, 0, 0.0, 0, 0, List.of(), List.of())
+                    : sourceCalculation.progress();
+            return new CalculationPresentation(
+                    List.of(
+                            "Gesamt-XP: " + xp(progress.totalGroupXp()),
+                            "XP pro Charakter: " + Math.max(0, progress.perCharacterAwardedXp()),
+                            "Adventuring Days: " + formatDays(progress.totalDays())
+                                    + " (" + progress.fullDays() + " voll)",
+                            "Short Rests: " + progress.shortRests(),
+                            "Long Rests: " + progress.longRests(),
+                            "Level-ups: " + formatLevelProgress(progress.levelProgressions())),
+                    progressEventLines(progress.events()));
+        }
+
+        private static List<String> progressEventLines(List<ProgressEventModel> events) {
+            if (events == null || events.isEmpty()) {
+                return List.of();
+            }
+            List<String> lines = new ArrayList<>();
+            for (ProgressEventModel event : events) {
+                lines.add(formatProgressEvent(event));
+            }
+            return List.copyOf(lines);
+        }
+
+        private static String formatProgressEvent(ProgressEventModel model) {
+            ProgressEventModel safeModel = model == null
+                    ? new ProgressEventModel(0, ProgressEventTypeModel.LONG_REST, 0, 0, 0, false)
+                    : model;
+            String prefix = "Tag " + safeModel.dayNumber() + ", " + xp(safeModel.groupXp()) + ": ";
+            String suffix = safeModel.partialDay() ? " (teilweiser Tag)" : "";
+            return switch (safeModel.type()) {
+                case LEVEL_UP -> prefix + "Level-up auf " + safeModel.newLevel()
+                        + " für " + safeModel.affectedCharacters() + " Charakter"
+                        + (safeModel.affectedCharacters() == 1 ? "" : "e") + suffix;
+                case SHORT_REST -> prefix + "Short Rest" + suffix;
+                case LONG_REST -> prefix + "Long Rest" + suffix;
+            };
+        }
+
+        private static String formatLevelProgress(List<LevelProgressModel> progressions) {
+            if (progressions == null || progressions.isEmpty()) {
+                return "keine";
+            }
+            StringBuilder builder = new StringBuilder();
+            for (LevelProgressModel progression : progressions) {
+                if (!builder.isEmpty()) {
+                    builder.append(", ");
+                }
+                LevelProgressModel safeProgression = progression == null
+                        ? new LevelProgressModel(1, 1, 0, 0)
+                        : progression;
+                String suffix = safeProgression.levelUps() > 0 ? " -> L" + safeProgression.endLevel() : " bleibt";
+                builder.append(safeProgression.characterCount())
+                        .append("x L")
+                        .append(safeProgression.startLevel())
+                        .append(suffix);
+            }
+            return builder.toString();
+        }
+
+        private static String xp(int value) {
+            return Math.max(0, value) + " XP";
+        }
+
+        private static String formatDays(double value) {
+            double rounded = Math.round(value * 100.0) / 100.0;
+            long nearestWholeDay = Math.round(rounded);
+            if (Math.abs(rounded - nearestWholeDay) < WHOLE_DAY_EPSILON) {
+                return Long.toString(nearestWholeDay);
+            }
+            return Double.toString(rounded);
+        }
     }
 
     record PanelModel(
@@ -232,7 +253,7 @@ final class AdventuringDayTopBarContentModel {
             rows = rows == null ? List.of() : List.copyOf(rows);
             totalGroupXpText = safe(totalGroupXpText);
             partySummaryText = safe(partySummaryText);
-            calculation = calculation == null ? emptyPresentation(false, 0) : calculation;
+            calculation = calculation == null ? CalculationPresentationFactory.emptyPresentation(false, 0) : calculation;
         }
     }
 

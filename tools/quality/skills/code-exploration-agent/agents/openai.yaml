@@ -1,0 +1,7 @@
+interface:
+  display_name: "Code Exploration Agent"
+  short_description: "Read-only tracing for exploration subagents"
+  default_prompt: "Use $code-exploration-agent inside a SaltMarcher exploration subagent to trace one assigned read-only code question with source-backed evidence and explicit unknowns."
+
+policy:
+  allow_implicit_invocation: true

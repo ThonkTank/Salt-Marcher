@@ -2,9 +2,9 @@ package src.data.dungeon.repository;
 
 import src.data.dungeon.gateway.local.DungeonSqliteGateway;
 import src.data.dungeon.mapper.DungeonMapRecordMapper;
-import src.domain.dungeon.model.map.model.DungeonMap;
-import src.domain.dungeon.model.map.repository.DungeonMapRepository;
-import src.domain.dungeon.model.map.model.DungeonMapIdentity;
+import src.domain.dungeon.model.worldspace.model.DungeonMap;
+import src.domain.dungeon.model.worldspace.repository.DungeonMapRepository;
+import src.domain.dungeon.model.worldspace.model.DungeonMapIdentity;
 
 import java.util.List;
 import java.util.Objects;

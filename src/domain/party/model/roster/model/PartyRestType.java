@@ -19,10 +19,6 @@ public final class PartyRestType {
         return shortRest;
     }
 
-    public String name() {
-        return name;
-    }
-
     @Override
     public boolean equals(Object other) {
         return this == other || (other instanceof PartyRestType restType && name.equals(restType.name));

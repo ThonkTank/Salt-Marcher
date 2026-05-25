@@ -3,7 +3,6 @@ package src.view.leftbartabs.dungeoneditor;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
-import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.published.DungeonMapId;
@@ -27,10 +26,6 @@ public final class DungeonEditorContributionModel {
     DungeonEditorContributionModel(DungeonEditorStateContentModel stateContentModel) {
         this.stateContentModel = Objects.requireNonNull(stateContentModel, "stateContentModel");
         refreshProjection();
-    }
-
-    public ReadOnlyObjectProperty<ControlsProjection> controlsProjectionProperty() {
-        return controlsProjection.getReadOnlyProperty();
     }
 
     public void applyControls(DungeonEditorControlsSnapshot controlsSnapshot) {

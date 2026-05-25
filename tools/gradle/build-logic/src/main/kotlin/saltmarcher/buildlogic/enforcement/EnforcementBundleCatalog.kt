@@ -6,8 +6,10 @@ import java.util.ArrayDeque
 data class EnforcementArchunitTask(
     val taskName: String,
     val description: String,
+    val sourceRoots: List<String>,
     val sourceIncludes: List<String>,
-    val includePatterns: List<String>
+    val includePatterns: List<String>,
+    val inputPaths: List<String> = emptyList()
 )
 
 data class EnforcementJqassistantTask(
@@ -201,6 +203,20 @@ private fun EnforcementBundleDescriptor.validated(): EnforcementBundleDescriptor
         }
         require(task.sourceIncludes.isNotEmpty()) {
             "Enforcement bundle '$bundleId' jQAssistant task '${task.taskName}' must declare sourceIncludes."
+        }
+    }
+    archunit?.let { task ->
+        require(task.taskName.isNotBlank()) {
+            "Enforcement bundle '$bundleId' declares an ArchUnit task with a blank taskName."
+        }
+        require(task.sourceRoots.isNotEmpty()) {
+            "Enforcement bundle '$bundleId' ArchUnit task '${task.taskName}' must declare sourceRoots."
+        }
+        require(task.sourceIncludes.isNotEmpty()) {
+            "Enforcement bundle '$bundleId' ArchUnit task '${task.taskName}' must declare sourceIncludes."
+        }
+        require(task.includePatterns.isNotEmpty()) {
+            "Enforcement bundle '$bundleId' ArchUnit task '${task.taskName}' must declare includePatterns."
         }
     }
 

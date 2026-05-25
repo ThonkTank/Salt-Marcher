@@ -15,10 +15,6 @@ public record EncounterPlan(long id, String name, String generatedLabel, List<En
         }
     }
 
-    public EncounterPlan withId(long nextId) {
-        return new EncounterPlan(nextId, name, generatedLabel, creatures);
-    }
-
     public int creatureCount() {
         int total = 0;
         for (EncounterPlanCreature creature : creatures) {

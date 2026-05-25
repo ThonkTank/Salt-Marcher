@@ -68,11 +68,30 @@ The operative workflow is the repo-owned
 That skill owns trigger-time steps and handoff expectations. This standard owns
 the durable context rules and vocabulary.
 
+The repo-owned
+[Code Exploration Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/code-exploration/SKILL.md:1)
+owns source-backed code-understanding procedure before implementation planning,
+refactor planning, or implementation review when existing behavior, routing,
+build/check logic, or repo-local tool behavior affects the decision. It
+complements context hygiene by tracing entrypoints into internal routing,
+workflow variants, state owners, dynamic seams, and repo-tool evidence before
+an agent plans from existing code behavior.
+
+The repo-owned
+[Code Exploration Agent Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/code-exploration-agent/SKILL.md:1)
+owns the read-only behavior of exploration subagents launched from that
+workflow. The caller-owned `code-exploration` skill remains responsible for
+launch decisions, waiting for findings, and deciding whether unresolved
+unknowns block the current plan.
+
 ## Review Rules
 
 Review must flag:
 
 - implementation copied from nearby files without owner grounding
+- behavior, routing, build/check, or repo-tool claims used for planning or
+  review without `Owner-Proven` or source/command-backed `Evidence-Proven`
+  exploration
 - broad context dumps where a compact Goal/Context/Constraints/Done When
   summary would have been enough
 - new duplicated instruction truth across `AGENTS.md`, `SKILL.md`, standards,

@@ -18,8 +18,8 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 import javax.lang.model.element.Modifier;
 import saltmarcher.quality.errorprone.view.ViewArchitectureSupport;
-import saltmarcher.quality.errorprone.view.ViewRole;
-import saltmarcher.quality.errorprone.view.ViewSourceDescriptor;
+import saltmarcher.architecture.policy.view.ViewRole;
+import saltmarcher.architecture.policy.view.ViewSourceDescriptor;
 
 public final class ViewContributionBoundaryCheckers {
 
@@ -127,8 +127,8 @@ public final class ViewContributionBoundaryCheckers {
             if (!hasPublicFinalClassShape(topLevelClass)) {
                 violations.add("type must be declared public final");
             }
-            if (!hasExplicitPublicNoArgConstructor(topLevelClass)) {
-                violations.add("type must declare an explicit public no-arg constructor for shell discovery");
+            if (!hasPublicNoArgConstructor(topLevelClass)) {
+                violations.add("type must expose a public no-arg constructor for shell discovery");
             }
             if (!implementsShellContribution(topLevelClass)) {
                 violations.add("type must implement shell.api.ShellContribution");
@@ -266,20 +266,23 @@ public final class ViewContributionBoundaryCheckers {
                 && classTree.getModifiers().getFlags().contains(Modifier.FINAL);
     }
 
-    private static boolean hasExplicitPublicNoArgConstructor(ClassTree classTree) {
+    private static boolean hasPublicNoArgConstructor(ClassTree classTree) {
+        boolean hasConstructor = false;
         for (var member : classTree.getMembers()) {
             if (!(member instanceof MethodTree methodTree)) {
                 continue;
             }
             Symbol.MethodSymbol symbol = ASTHelpers.getSymbol(methodTree);
             if (symbol != null
-                    && symbol.isConstructor()
-                    && methodTree.getParameters().isEmpty()
-                    && methodTree.getModifiers().getFlags().contains(Modifier.PUBLIC)) {
-                return true;
+                    && symbol.isConstructor()) {
+                hasConstructor = true;
+                if (methodTree.getParameters().isEmpty()
+                        && methodTree.getModifiers().getFlags().contains(Modifier.PUBLIC)) {
+                    return true;
+                }
             }
         }
-        return false;
+        return !hasConstructor;
     }
 
     private static boolean implementsShellContribution(ClassTree classTree) {

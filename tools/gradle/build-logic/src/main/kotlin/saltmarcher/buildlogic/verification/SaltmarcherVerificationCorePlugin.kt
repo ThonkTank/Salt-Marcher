@@ -2,9 +2,11 @@ package saltmarcher.buildlogic.verification
 
 import org.gradle.api.Plugin
 import org.gradle.api.Project
+import org.gradle.api.Task
 import org.gradle.api.file.RegularFile
-import org.gradle.api.tasks.compile.JavaCompile
+import org.gradle.api.specs.Spec
 import org.gradle.api.tasks.TaskProvider
+import org.gradle.api.tasks.compile.JavaCompile
 import org.gradle.kotlin.dsl.getByType
 import org.gradle.kotlin.dsl.named
 import org.gradle.kotlin.dsl.register
@@ -13,6 +15,7 @@ import saltmarcher.buildlogic.enforcement.BuildHarnessTaskKind
 import saltmarcher.buildlogic.enforcement.EnforcementBundleDescriptor
 import saltmarcher.buildlogic.enforcement.EnforcementBundlesExtension
 import saltmarcher.buildlogic.enforcement.standardEnforcementDiagnosticSurfaceCatalog
+import saltmarcher.buildlogic.shared.FocusedHandoffTaskName
 import saltmarcher.buildlogic.shared.ProductionHandoffCompileIntegrityTaskName
 import saltmarcher.buildlogic.shared.ProductionHandoffHygieneTaskName
 import saltmarcher.buildlogic.shared.ProductionHandoffStructureTaskName
@@ -36,6 +39,14 @@ internal fun Project.configureVerificationCore() {
 
     fun descriptor(bundleId: String): EnforcementBundleDescriptor = enforcementBundles.descriptor(bundleId)
 
+    val activeDescriptors = activeEnforcementBundleIds.map(::descriptor)
+    if (focusedHandoffRequested()) {
+        require(FocusedVerificationPaths.hasSelection()) {
+            "Focused handoff requires at least one focused verification path."
+        }
+    }
+    FocusedVerificationPaths.validateSelection(rootDir, activeDescriptors)
+
     fun defaultBundleDisplayName(bundleId: String): String = bundleId.replaceFirstChar(Char::uppercaseChar)
 
     fun activeSurfaceBuildHarnessTaskNames(kind: BuildHarnessTaskKind): List<String> =
@@ -49,7 +60,7 @@ internal fun Project.configureVerificationCore() {
             .map { surface -> surface.buildHarnessTaskName(kind) }
 
     val focusedCompileTasksByBundleId = registerFocusedCompileTasksByBundleId(
-        activeEnforcementBundleIds.map(::descriptor),
+        activeDescriptors,
         verificationHarness,
         focusedEnforcementBundleMode = enforcementBundles.focusedEnforcementBundleMode
     )
@@ -102,15 +113,16 @@ internal fun Project.configureVerificationCore() {
         }
 
         descriptor.archunit?.let { archunit ->
-            val compileTask = selectedCompileJava
-                ?: error("Missing selected compile task for ArchUnit enforcement bundle '$bundleId'.")
             val archunitTask = verificationHarness.registerFocusedArchunitTestTask(
                 bundleId,
                 archunit.taskName,
                 archunit.description,
-                compileTask,
+                descriptor.verificationSourceRoots,
+                descriptor.verificationSourceIncludes,
+                archunit.sourceRoots,
                 archunit.sourceIncludes,
-                archunit.includePatterns
+                archunit.includePatterns,
+                archunit.inputPaths
             )
             aggregateDependencies += archunitTask
             leafTaskNames += archunitTask.name
@@ -162,6 +174,18 @@ internal fun Project.configureVerificationCore() {
             ) {
                 dependsOn(gradle.includedBuild("build-harness").task(":${surface.buildHarnessTaskName(BuildHarnessTaskKind.TOPOLOGY)}"))
             }
+        }
+    }
+
+    val focusedHandoffCompileIntegrity = systemBoolean("saltmarcher.focusedHandoffCompileIntegrity", defaultValue = false)
+    val focusedHandoffSurfaceTaskNames = FocusedVerificationPaths.selectedSurfaceIds()
+        .map { surfaceId -> diagnosticSurfaceCatalog.surface(surfaceId).diagnosticTaskName }
+    tasks.register(FocusedHandoffTaskName) {
+        group = LifecycleBasePlugin.VERIFICATION_GROUP
+        description = "Run the package-focused handoff surface through Gradle-owned diagnostic surface selection."
+        focusedHandoffSurfaceTaskNames.forEach(::dependsOn)
+        if (focusedHandoffCompileIntegrity) {
+            dependsOn("compileJava", "compileTestJava")
         }
     }
 
@@ -258,7 +282,7 @@ internal fun Project.configureVerificationCore() {
             ),
         productionHandoffHygieneDependencyTaskNames,
         productionHandoffRequested = productionHandoffRequested(),
-        phaseCompletionMarker = productionHandoffMarkerLayout.structureMarker.get().asFile
+        phaseCompletionMarkerPath = productionHandoffMarkerLayout.structureMarker.get().asFile.absolutePath
     )
 
     tasks.register(productionHandoffSurface.publicTaskName) {
@@ -280,17 +304,27 @@ private fun Project.configureProductionHandoffHygieneBarriers(
     barrierTaskNames: List<String>,
     hygieneDependencyTaskNames: List<String>,
     productionHandoffRequested: Boolean,
-    phaseCompletionMarker: java.io.File
+    phaseCompletionMarkerPath: String
 ) {
     val distinctBarrierTaskNames = barrierTaskNames.distinct()
+    val phaseBarrier = ProductionHandoffHygienePhaseBarrier(
+        productionHandoffRequested,
+        phaseCompletionMarkerPath
+    )
     hygieneDependencyTaskNames.distinct().forEach { taskName ->
-        tasks.matching { task -> task.name == taskName }.configureEach {
+        tasks.named(taskName).configure {
             mustRunAfter(distinctBarrierTaskNames)
-            onlyIf("production handoff compile and structure phases completed successfully") {
-                !productionHandoffRequested || phaseCompletionMarker.isFile
-            }
+            onlyIf("production handoff compile and structure phases completed successfully", phaseBarrier)
         }
     }
+}
+
+private data class ProductionHandoffHygienePhaseBarrier(
+    val productionHandoffRequested: Boolean,
+    val phaseCompletionMarkerPath: String
+) : Spec<Task> {
+    override fun isSatisfiedBy(element: Task): Boolean =
+        !productionHandoffRequested || java.io.File(phaseCompletionMarkerPath).isFile
 }
 
 private fun Project.productionHandoffRequested(): Boolean {
@@ -322,6 +356,10 @@ private fun Project.nearMissVerificationRequested(): Boolean {
     )
     return requestedTaskNames.any(requestedSurfaceNames::contains)
 }
+
+private fun Project.focusedHandoffRequested(): Boolean = gradle.startParameter.taskNames
+    .map { taskName -> taskName.substringAfterLast(':') }
+    .any { taskName -> taskName == FocusedHandoffTaskName }
 
 private fun Project.productionHandoffMarkerLayout(): ProductionHandoffMarkerLayout =
     ProductionHandoffMarkerLayout(

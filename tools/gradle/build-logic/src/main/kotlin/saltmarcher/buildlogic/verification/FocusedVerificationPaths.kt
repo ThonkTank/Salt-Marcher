@@ -250,6 +250,7 @@ object FocusedVerificationPaths {
                     }
                 }
                 descriptor.jqassistant?.let { task ->
+                    add(FocusedInputSpec("", listOf(task.sourceConfigPath, "${task.rulesDirPath}/**")))
                     task.sourceRoots.forEach { root ->
                         add(FocusedInputSpec(root, task.sourceIncludes))
                     }

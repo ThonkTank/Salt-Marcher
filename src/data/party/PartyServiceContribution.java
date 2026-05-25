@@ -10,11 +10,6 @@ import src.domain.party.model.roster.repository.PartyRosterRepository;
  */
 public final class PartyServiceContribution implements ServiceContribution {
 
-    @SuppressWarnings("PMD.UnnecessaryConstructor")
-    public PartyServiceContribution() {
-        // Required by passive service contribution discovery.
-    }
-
     @Override
     public void register(ServiceRegistry.Builder builder) {
         builder.register(PartyRosterRepository.class, new SqlitePartyRosterRepository());

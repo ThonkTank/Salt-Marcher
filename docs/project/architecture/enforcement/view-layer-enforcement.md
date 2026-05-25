@@ -24,30 +24,44 @@ Canonical view-layer architecture truth lives only in the
 Role-local API, payload-shape, and dependency-detail rules live only in the
 neighboring `view-*.md` enforcement documents. Repository-wide cross-layer
 rules stay in `layering-architecture-enforcement.md`. This file is a routing
-surface for current layer-wide proof and drift only, not a second architecture
+surface for current layer-wide mechanical coverage and drift only, not a second architecture
 owner.
 
-Focused bundle entrypoint:
+Technical diagnostic route:
 
 - `./gradlew checkViewEnforcement --console=plain` runs the currently
-  active closed-world view-layer topology checks. The focused role tasks
-  `verifyViewLayerBundle`, `verifyViewBundle`, `verifyViewInputEventBundle`,
-  `verifyViewBinderBundle`, `verifyViewContributionBundle`,
-  `verifyViewContributionModelBundle`, `verifyViewContentModelBundle`, and
-  `verifyViewIntentHandlerBundle` consume that same topology proof transitively
-  before their compile-bound role checks run.
-  `checkViewEnforcement`, `check`, and `build` include the same layer-focused
-  proof surface transitively.
+  active closed-world view-layer topology checks. The focused handoff route
+  `tools/gradle/run-staged-verification.sh focused-handoff --path src/view
+  --area view` wires that topology surface alongside the selected role bundle
+  selectors. Direct `verifyView*Bundle` tasks are bundle-local diagnostics; do
+  not treat them by themselves as topology-backed handoff proof.
+  `checkViewEnforcement`, `check`, and `build` include the layer-focused
+  mechanical surface transitively.
 
 Rows below are interpreted only relative to the
 [View Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/view-layer.md:1).
 Where current gates lag that owner, the row names that drift explicitly.
+Build-Harness and Error Prone share View source classification through the
+private `tools/quality/architecture-policy/` implementation library. That
+library centralizes `ViewRole`, `ViewUnitKind`, reusable-slotcontent unit
+recognition, and reuse-tier terms; it does not own the mechanical rows below.
+jQAssistant owns the blocker-backed `ViewLayerReuseDirection` graph rule and
+also runs the `view-layer-cycle-diagnostics` group as a non-blocking graph
+diagnostic. The cycle diagnostics mirror `ViewLayerGraphType`, `viewUnit`,
+`viewRole`, and collapsed top-level role facts so review can see suspicious
+dependency cycles without treating them as proof that the View Layer Standard's
+two presentation-state mutation cycles were violated.
+
+Row-level documentation coverage for this view-layer catalog is review-owned
+until a dedicated `DocumentationCoverageCatalog` spec registers this document.
+`checkDocumentationEnforcement` does not currently prove every view-layer row,
+status, owner, or route in this table.
 
 ## Invariant Catalog
 
 ### Must Contain
 
-| Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
+| Invariant ID | Status | Applies When | Mechanical Owner | Diagnostic/Mechanical Route | What It Proves |
 | --- | --- | --- | --- | --- | --- |
 | `view-layer-active-root-file-role-allowlist` | Enforced | every active root under `src/view/leftbartabs/**`, `src/view/statetabs/**`, and `src/view/dropdowns/**` | build-harness `ViewTopologyPerimeterRules`; build-harness `ViewLayerTopologyRules` | `./gradlew checkViewEnforcement` | Active roots may contain only documented top-level role files: `*Contribution`, `*Binder`, exactly one aggregate `*ContributionModel`, optional `*IntentHandler`, passive `*View`, same-stem `*ContentModel`, and same-stem `*ViewInputEvent` only for interactive Views. |
 | `view-layer-active-root-contribution-count` | Enforced | every active root under `src/view/leftbartabs/**`, `src/view/statetabs/**`, and `src/view/dropdowns/**` | build-harness `ViewLayerTopologyRules` | `./gradlew checkViewEnforcement` | Each active root defines exactly one `*Contribution.java`. |
@@ -67,7 +81,7 @@ Where current gates lag that owner, the row names that drift explicitly.
 
 ### Must Not Contain
 
-| Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
+| Invariant ID | Status | Applies When | Mechanical Owner | Diagnostic/Mechanical Route | What It Proves |
 | --- | --- | --- | --- | --- | --- |
 | `view-layer-slotcontent-no-contribution` | Enforced | every reusable `slotcontent/**` unit under `src/view/**` | build-harness `ViewLayerTopologyRules` | `./gradlew checkViewEnforcement` | Reusable `slotcontent/**` units do not define `*Contribution.java`. |
 | `view-layer-slotcontent-no-binder` | Enforced | every reusable `slotcontent/**` unit under `src/view/**` | build-harness `ViewLayerTopologyRules` | `./gradlew checkViewEnforcement` | Reusable `slotcontent/**` units do not define `*Binder.java`. |
@@ -79,18 +93,18 @@ Where current gates lag that owner, the row names that drift explicitly.
 | `view-layer-no-responsibility-expansion-when-intenthandler-is-absent` | Review-Owned | every reusable `slotcontent/**` unit and every non-interactive active-root unit without a local `*IntentHandler` | none | none | The absence of a reusable local `*IntentHandler` does not expand passive `View` responsibilities; reusable interpretation belongs in the same-root active handler, and non-interactive active-root units stay passive instead of parking interpretation, callback mutation, or write-side publication in the view surface. |
 | `view-layer-no-responsibility-expansion-when-contentmodel-is-absent` | Review-Owned | every passive `*View` that still lacks a same-stem `*ContentModel` during migration | none | none | Missing same-stem ContentModel ownership must still be judged against the [View Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/view-layer.md:1); migration debt does not authorize improvised replacement roles, helper spillover, or View-owned projection logic. |
 | `view-layer-slotcontent-reuse-only` | Review-Owned | every reusable `slotcontent/**` unit under `src/view/**` | none | none | `slotcontent/**` is reserved for genuinely reusable generic components and is not used to hide feature-specific one-off units behind a generic path. |
-| `view-layer-no-reverse-reuse-dependency-direction` | Review-Owned | every dependency or inheritance edge between feature-specific view roots, reusable `slotcontent/**`, and `slotcontent/primitives/**` | none | none | Reuse direction stays one-way: contribution-specific code may depend on reusable `slotcontent/**`, reusable `slotcontent/**` may depend on `slotcontent/primitives/**`, and the reverse direction does not appear. |
+| `view-layer-no-reverse-reuse-dependency-direction` | Enforced | every compiled dependency edge between feature-specific view roots, reusable `slotcontent/**`, and `slotcontent/primitives/**` | view-layer bundle jQAssistant `ViewLayerReuseDirection` | `./gradlew checkViewEnforcement` | Reuse direction stays one-way: contribution-specific code may depend on reusable `slotcontent/**`, reusable `slotcontent/**` may depend on `slotcontent/primitives/**`, and the reverse direction does not appear. |
 | `view-layer-no-legacy-view-role-buckets` | Enforced | every active or reusable unit under `src/view/**` | build-harness `ViewTopologyPerimeterRules`; build-harness `ViewLayerTopologyRules` | `./gradlew checkViewEnforcement` | Legacy `*ViewModel`, `*PresentationModel`, `*Projector`, component-local `View/`, `assembly/`, `Controller/`, `interactor/`, old `api/`, and other foreign role or directory forms are blocked as closed-world topology violations instead of falling through as tolerated legacy buckets. |
 
 ### Communication Contract
 
-| Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
+| Invariant ID | Status | Applies When | Mechanical Owner | Diagnostic/Mechanical Route | What It Proves |
 | --- | --- | --- | --- | --- | --- |
-| `view-layer-two-presentation-state-mutation-cycles-only` | Review-Owned | every path that can mutate presentation state inside an active root or reusable `slotcontent/**` unit | none | none | Presentation-state mutation rules are owned only by the [View Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/view-layer.md:1). This row keeps the layer-wide review claim that no extra mutation protocol appears outside that owner. |
-| `view-layer-viewinputevent-single-outbound-route` | Enforced Elsewhere | every interactive passive `*View` surface inside `src/view/**` | Error Prone `PassiveViewSurfaceBoundary`; Error Prone `ViewBinderViewInputEventWiring`; Error Prone `ViewIntentHandlerViewInputEvent` | `./gradlew compileJava` and `./gradlew checkViewEnforcement` | The single outbound input route is defined only by the [View Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/view-layer.md:1) and the neighboring `View`, `ViewInputEvent`, `Binder`, and `IntentHandler` enforcement docs. This row only aggregates the current proof surface. |
+| `view-layer-two-presentation-state-mutation-cycles-only` | Review-Owned | every path that can mutate presentation state inside an active root or reusable `slotcontent/**` unit | none | none | Presentation-state mutation rules are protocol-level architecture truth owned only by the [View Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/view-layer.md:1). Current blockers constrain individual seams, while the jQAssistant View cycle diagnostics only report dependency-graph cycles; neither mechanically proves the absence of every third mutation protocol in v1. |
+| `view-layer-viewinputevent-single-outbound-route` | Enforced Elsewhere | every interactive passive `*View` surface inside `src/view/**` | Error Prone `PassiveViewSurfaceBoundary`; Error Prone `ViewBinderViewInputEventWiring`; Error Prone `ViewIntentHandlerViewInputEvent` | `./gradlew compileJava` and `./gradlew checkViewEnforcement` | The single outbound input route is defined only by the [View Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/view-layer.md:1) and the neighboring `View`, `ViewInputEvent`, `Binder`, and `IntentHandler` enforcement docs. This row only aggregates the current mechanical surface. |
 | `view-layer-view-contentmodel-bind-only` | Enforced Elsewhere | every passive `*View` surface inside `src/view/**` that receives prepared render state | Error Prone `PassiveViewSurfaceBoundary`; Error Prone `PassiveViewInteractionBoundary` | `./gradlew compileJava` and `./gradlew checkViewEnforcement` | Prepared render state enters a passive `View` only through its own same-stem `bind(SameStemContentModel)` route. Direct `ContributionModel` acquaintance, foreign `ContentModel` acquaintance, project-typed sink payloads, constructor-injected callback relays, and imperative render APIs are not part of the legal route. |
-| `view-layer-no-direct-view-callback-protocols-beside-viewinputevent` | Enforced Elsewhere | every passive `*View.java` under `src/view/**` | Error Prone `PassiveViewSurfaceBoundary` | `./gradlew compileJava` and `./gradlew checkViewEnforcement` | This row aggregates current proof for the single passive-view callback route, including reusable primitive Views. The owner truth remains the [View Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/view-layer.md:1). |
-| `view-layer-no-passive-view-owned-semantic-state-or-pre-intenthandler-snapshot-collapse` | Enforced Elsewhere | every passive `*View.java` and same-stem top-level `*ViewInputEvent` construction path inside `src/view/**` | Error Prone `PassiveViewStateBoundary`; Error Prone `PassiveViewInteractionBoundary`; Error Prone `ViewInputEventSnapshotBoundary` | `./gradlew compileJava` and `./gradlew checkViewEnforcement` | A passive `View` does not open a third local state or interpretation protocol by holding canonical semantic state bags, keeping extra project acquaintances, constructing same-root projection/write carriers, locally reshaping prepared data, or semantically collapsing raw UI state before the local `IntentHandler` interprets the same-stem `*ViewInputEvent` snapshot. |
+| `view-layer-no-direct-view-callback-protocols-beside-viewinputevent` | Enforced Elsewhere | every passive `*View.java` under `src/view/**` | Error Prone `PassiveViewSurfaceBoundary` | `./gradlew compileJava` and `./gradlew checkViewEnforcement` | This row aggregates current mechanical coverage for the single passive-view callback route, including reusable primitive Views. The owner truth remains the [View Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/view-layer.md:1). |
+| `view-layer-no-passive-view-owned-semantic-state-or-pre-intenthandler-snapshot-collapse` | Enforced Elsewhere | every passive `*View.java` and same-stem top-level `*ViewInputEvent` construction path inside `src/view/**` | Error Prone `PassiveViewStateBoundary`; Error Prone `PassiveViewInteractionBoundary`; Error Prone `ViewInputEventSnapshotBoundary` | `./gradlew compileJava` and `./gradlew checkViewEnforcement` | A passive `View` does not open a third local state or interpretation protocol by holding canonical semantic state bags, keeping extra project acquaintances, constructing same-root projection/write carriers, locally reshaping prepared data, or semantically collapsing raw UI state before the local `IntentHandler` interprets the same-stem `*ViewInputEvent` snapshot. Private nested support objects are not state by themselves; their own semantic fields are still inspected. Private `raw*` extraction helpers remain legal only when they read technical widget state for the snapshot and do not interpret meaning. |
 | `view-layer-intenthandler-direct-applicationservice-write-seam` | Enforced Elsewhere | every active-root domain-write path that originates from `*ViewInputEvent` interpretation inside `src/view/**` | Error Prone `ViewIntentHandlerDependencyBoundary`; Error Prone `ViewBinderApplicationSinkWiring`; Error Prone `ViewInputEventBoundary` | `./gradlew compileJava` and `./gradlew checkViewEnforcement` | Domain writes leave the view layer only through direct active-root `IntentHandler -> *ApplicationService` calls. Binder-injected legacy outward-work sinks, active-root `PublishedEvent` callback seams, and `ViewInputEvent` carriers that mirror `PublishedEvent` write protocols are blocked. |
 | `view-layer-no-direct-view-to-applicationservice-path` | Enforced Elsewhere | every passive `*View.java` under `src/view/**` | Error Prone `PassiveViewInteractionBoundary` | `./gradlew compileJava` and `./gradlew checkViewEnforcement` | Passive `View` surfaces do not communicate directly with root `*ApplicationService` boundaries. |
 | `view-layer-no-direct-view-domain-connection-outside-write-and-readback-seams` | Enforced Elsewhere | every direct connection between `src/view/**` and `src/domain/**` | `view-binder-dependency-boundary`; `view-binder-no-legacy-intenthandler-write-sink-injection`; `view-intenthandler-root-applicationservice-boundary-surface`; `view-intenthandler-no-non-applicationservice-domain-dependencies`; `view-contributionmodel-read-side-only-direct-boundary`; `view-contentmodel-read-side-only-direct-boundary`; `view-viewinputevent-view-origin-and-intenthandler-target-only` | see neighboring owner docs and their listed entrypoints | The allowed view/domain seam is owned only by the [View Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/view-layer.md:1) and the neighboring role-specific enforcement docs. This row records the current blocker surface for that contract. |
@@ -98,10 +112,20 @@ Where current gates lag that owner, the row names that drift explicitly.
 
 ## Candidate
 
-| Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
+| Invariant ID | Status | Applies When | Mechanical Owner | Diagnostic/Mechanical Route | What It Proves |
 | --- | --- | --- | --- | --- | --- |
-| `view-layer-slotcontent-genuine-reuse-diagnostic` | Candidate | every future reusable `slotcontent/**` unit under `src/view/**` | none | none | The quality stack could emit a dedicated blocker when a mechanically legal `slotcontent/**` unit is actually feature-specific and not genuinely reusable. |
-| `view-layer-reuse-direction-mechanization` | Enforced | every compiled dependency edge between contribution-specific units, reusable `slotcontent/**`, and `slotcontent/primitives/**` | view-layer bundle jQAssistant `ViewLayerReuseDirection` | `./gradlew checkViewEnforcement` | Reusable `slotcontent/**` code does not depend back upward into feature-specific view roots, and primitive reusable code does not depend upward into feature-specific or non-primitive reusable units. |
+| `view-layer-slotcontent-genuine-reuse-diagnostic` | Candidate | every future reusable `slotcontent/**` unit under `src/view/**` | none | none | The quality stack could emit a non-blocking single-consumer or zero-consumer diagnostic for mechanically legal `slotcontent/**` units. Whether the component is genuinely generic reusable UI remains review-owned. |
+
+## Diagnostic Signals
+
+`Diagnostic` rows name live non-blocking reports. They are evidence for review
+and refactor planning, not `Enforced`, `Enforced Elsewhere`, or `Review-Owned`
+architecture claims by themselves.
+
+| Diagnostic ID | Status | Applies When | Mechanical Owner | Diagnostic Route | What It Reports |
+| --- | --- | --- | --- | --- | --- |
+| `view-layer-unit-cycle-diagnostic` | Diagnostic | every recognized active root or reusable `slotcontent/**` View unit | view-layer bundle jQAssistant `ViewLayerUnitCycleDiagnostic` with `severity="minor"` | `./gradlew checkViewEnforcement`; jQAssistant reports the finding but the generated configuration fails only on `BLOCKER` severity | Recognized View-unit dependency cycles are surfaced for review. A reported cycle is not by itself proof of an illegal third presentation-state mutation protocol. |
+| `view-layer-role-top-level-type-cycle-diagnostic` | Diagnostic | every role-bearing top-level View type inside a recognized View unit | view-layer bundle jQAssistant `ViewLayerRoleTopLevelTypeCycleDiagnostic` with `severity="minor"` | `./gradlew checkViewEnforcement`; jQAssistant reports the finding but the generated configuration fails only on `BLOCKER` severity | Circular dependency paths between role-bearing top-level View types are surfaced for review. The review decides whether the cycle is acceptable wiring, local debt, or evidence of a forbidden role/protocol split. |
 
 ## Review-Owned
 
@@ -111,6 +135,11 @@ Where current gates lag that owner, the row names that drift explicitly.
   instead of hiding view logic behind extra top-level files
 - whether current legacy reusable-slotcontent roles and primitive-only
   exceptions still survive outside the owner target shape
+- whether a jQAssistant-reported View dependency cycle is acceptable wiring,
+  local refactor debt, or evidence of a forbidden extra presentation-state
+  mutation protocol
+- whether the two allowed presentation-state mutation cycles are respected
+  end-to-end when mechanical rows cover only individual seams
 
 ## References
 

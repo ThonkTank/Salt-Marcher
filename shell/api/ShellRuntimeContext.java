@@ -2,6 +2,7 @@ package shell.api;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
+import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -60,7 +61,6 @@ public final class ShellRuntimeContext {
         return created;
     }
 
-    @SuppressWarnings("PMD.CompareObjectsWithEquals")
     private @Nullable Object invokeInspector(Object proxy, Method method, Object[] arguments) {
         String methodName = method.getName();
         if (PUSH_METHOD.equals(methodName)) {
@@ -81,8 +81,14 @@ public final class ShellRuntimeContext {
             return System.identityHashCode(proxy);
         }
         if (EQUALS_METHOD.equals(methodName)) {
-            return proxy == arguments[FIRST_ARGUMENT];
+            return sameIdentity(proxy, arguments[FIRST_ARGUMENT]);
         }
         throw new UnsupportedOperationException("Unsupported InspectorSink method: " + methodName);
+    }
+
+    private static boolean sameIdentity(Object left, Object right) {
+        Map<Object, Boolean> identities = new IdentityHashMap<>();
+        identities.put(left, Boolean.TRUE);
+        return identities.containsKey(right);
     }
 }

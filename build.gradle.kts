@@ -1,5 +1,6 @@
 import com.github.spotbugs.snom.Confidence
 import com.github.spotbugs.snom.Effort
+import com.github.spotbugs.snom.SpotBugsExtension
 import com.github.spotbugs.snom.SpotBugsTask
 import org.gradle.api.plugins.JavaApplication
 import org.gradle.api.plugins.quality.Pmd
@@ -102,6 +103,17 @@ tasks.withType<SpotBugsTask>().configureEach {
         create("xml") {
             required.set(true)
         }
+    }
+}
+
+tasks.named<SpotBugsTask>("spotbugsMain") {
+    this.classes = sourceSets["main"].output.classesDirs
+    auxClassPaths.from(sourceSets["main"].output.classesDirs)
+}
+
+gradle.projectsEvaluated {
+    tasks.named<SpotBugsTask>("spotbugsMain") {
+        init(project.extensions.getByType<SpotBugsExtension>(), false)
     }
 }
 

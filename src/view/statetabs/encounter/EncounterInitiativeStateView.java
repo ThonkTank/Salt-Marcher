@@ -15,7 +15,7 @@ import javafx.scene.layout.VBox;
 
 public final class EncounterInitiativeStateView extends VBox {
 
-    private final VBox initiativeList = new VBox(6);
+    private final VBox initiativeList = new InitiativeListPane();
     private final VBox dialog = buildPane();
     private Consumer<EncounterInitiativeStateViewInputEvent> viewInputEventHandler = ignored -> { };
 
@@ -40,21 +40,11 @@ public final class EncounterInitiativeStateView extends VBox {
         if (panel == null) {
             return;
         }
-        initiativeList.getChildren().clear();
-        String currentKind = "";
-        for (EncounterInitiativeStateContentModel.EntryView entry : panel.entries()) {
-            if (!entry.kind().equals(currentKind)) {
-                currentKind = entry.kind();
-                Label header = sectionHeader("SC".equals(currentKind) ? "Spieler" : currentKind);
-                initiativeList.getChildren().add(header);
-            }
-            initiativeList.getChildren().add(buildInitiativeRow(entry));
-        }
+        ((InitiativeListPane) initiativeList).showPanel(panel);
     }
 
     private VBox buildPane() {
         Label title = new StyledLabel("Initiative", "title");
-        initiativeList.getStyleClass().add("encounter-initiative-list");
 
         Button backButton = new Button("\u2190 Zurueck");
         backButton.setOnAction(event -> publish(new EncounterInitiativeStateViewInputEvent(true, List.of())));
@@ -69,7 +59,7 @@ public final class EncounterInitiativeStateView extends VBox {
         return nextDialog;
     }
 
-    private Node buildInitiativeRow(EncounterInitiativeStateContentModel.EntryView entry) {
+    private static Node buildInitiativeRow(EncounterInitiativeStateContentModel.EntryView entry) {
         InitiativeRow row = new InitiativeRow();
         Label name = new Label(entry.label());
         name.setWrapText(true);
@@ -85,7 +75,7 @@ public final class EncounterInitiativeStateView extends VBox {
 
     private void rollAllInitiatives() {
         int seed = 13;
-        for (ValueSpinner spinner : spinners()) {
+        for (ValueSpinner spinner : ((InitiativeListPane) initiativeList).spinners()) {
             spinner.setNumericValue(seed);
             seed = seed == 19 ? 11 : seed + 2;
         }
@@ -93,27 +83,17 @@ public final class EncounterInitiativeStateView extends VBox {
 
     private void publishInitiativeConfirmation() {
         List<EncounterInitiativeStateViewInputEvent.InitiativeEntry> inputs = new ArrayList<>();
-        for (ValueSpinner spinner : spinners()) {
+        for (ValueSpinner spinner : ((InitiativeListPane) initiativeList).spinners()) {
             inputs.add(spinner.confirmedInput());
         }
         publish(new EncounterInitiativeStateViewInputEvent(false, inputs));
-    }
-
-    private List<ValueSpinner> spinners() {
-        List<ValueSpinner> values = new ArrayList<>();
-        for (Node rowNode : initiativeList.getChildren()) {
-            if (rowNode instanceof InitiativeRow row) {
-                values.addAll(row.spinners());
-            }
-        }
-        return values;
     }
 
     private void publish(EncounterInitiativeStateViewInputEvent input) {
         viewInputEventHandler.accept(input);
     }
 
-    private Label sectionHeader(String text) {
+    private static Label sectionHeader(String text) {
         return new StyledLabel(text, "section-header", "text-muted", "encounter-initiative-section-header");
     }
 
@@ -144,6 +124,36 @@ public final class EncounterInitiativeStateView extends VBox {
         private StyledVBox(double spacing, String styleClass, Node... nodes) {
             super(spacing, nodes);
             getStyleClass().add(styleClass);
+        }
+    }
+
+    private static final class InitiativeListPane extends VBox {
+
+        InitiativeListPane() {
+            super(6);
+            getStyleClass().add("encounter-initiative-list");
+        }
+
+        void showPanel(EncounterInitiativeStateContentModel.PanelModel panel) {
+            getChildren().clear();
+            String currentKind = "";
+            for (EncounterInitiativeStateContentModel.EntryView entry : panel.entries()) {
+                if (!entry.kind().equals(currentKind)) {
+                    currentKind = entry.kind();
+                    getChildren().add(sectionHeader("SC".equals(currentKind) ? "Spieler" : currentKind));
+                }
+                getChildren().add(buildInitiativeRow(entry));
+            }
+        }
+
+        List<ValueSpinner> spinners() {
+            List<ValueSpinner> values = new ArrayList<>();
+            for (Node rowNode : getChildren()) {
+                if (rowNode instanceof InitiativeRow row) {
+                    values.addAll(row.spinners());
+                }
+            }
+            return values;
         }
     }
 

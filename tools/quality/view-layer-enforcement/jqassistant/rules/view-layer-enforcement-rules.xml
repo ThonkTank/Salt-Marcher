@@ -6,14 +6,19 @@
         <includeConstraint refId="saltmarcher:ViewLayerReuseDirection"/>
     </group>
 
-    <concept id="saltmarcher:ViewReuseType">
-        <description>Annotates View-layer types by reusable topology tier.</description>
+    <group id="saltmarcher:view-layer-cycle-diagnostics" severity="minor">
+        <includeConstraint refId="saltmarcher:ViewLayerUnitCycleDiagnostic"/>
+        <includeConstraint refId="saltmarcher:ViewLayerRoleTopLevelTypeCycleDiagnostic"/>
+    </group>
+
+    <concept id="saltmarcher:ViewReuseTier">
+        <description>Concept-only mirror of the shared View policy reusable topology tier.</description>
         <cypher><![CDATA[
             MATCH (type:Java:Type)
             WHERE type.fqn =~ 'src\\.view\\..*'
             WITH type, split(type.fqn, '.') AS segments
             SET
-              type:SaltMarcher:ViewReuseType,
+              type:SaltMarcher:ViewReuseTier,
               type.reuseTier = CASE
                 WHEN size(segments) >= 4 AND segments[2] = 'slotcontent' AND segments[3] = 'primitives' THEN 'PRIMITIVE'
                 WHEN size(segments) >= 3 AND segments[2] = 'slotcontent' THEN 'REUSABLE'
@@ -29,15 +34,104 @@
                   THEN replace(type.fqn, '.', '/') + '.java'
                 ELSE replace(substring(type.fqn, 0, size(type.fqn) - size(type.name) - 1), '.', '/') + '/' + type.sourceFileName
               END
-            RETURN type AS ViewReuseType
+            RETURN type AS ViewReuseTier
+        ]]></cypher>
+    </concept>
+
+    <concept id="saltmarcher:ViewLayerGraphType">
+        <description>Concept-only mirror of the shared View policy unit and collapsed top-level role facts.</description>
+        <cypher><![CDATA[
+            MATCH (type:Java:Type)
+            WHERE type.fqn =~ 'src\\.view\\..*'
+            WITH type, split(type.fqn, '$')[0] AS topLevelFqn
+            WITH type, topLevelFqn, split(topLevelFqn, '.') AS segments
+            WITH type, topLevelFqn, segments, segments[size(segments) - 1] AS topLevelName
+            WITH type, topLevelFqn, segments, topLevelName,
+              CASE
+                WHEN size(segments) = 5 AND segments[2] IN ['leftbartabs', 'statetabs', 'dropdowns']
+                  THEN 'src/view/' + segments[2] + '/' + segments[3]
+                WHEN size(segments) = 6
+                  AND segments[2] = 'slotcontent'
+                  AND segments[3] IN ['controls', 'main', 'state', 'details', 'topbar', 'primitives']
+                  THEN 'src/view/slotcontent/' + segments[3] + '/' + segments[4]
+                ELSE ''
+              END AS viewUnit,
+              CASE
+                WHEN topLevelName ENDS WITH 'Contribution' THEN 'CONTRIBUTION'
+                WHEN topLevelName ENDS WITH 'Binder' THEN 'BINDER'
+                WHEN topLevelName ENDS WITH 'ContributionModel' THEN 'CONTRIBUTION_MODEL'
+                WHEN topLevelName ENDS WITH 'ContentModel' THEN 'CONTENT_MODEL'
+                WHEN topLevelName ENDS WITH 'IntentHandler' THEN 'INTENT_HANDLER'
+                WHEN topLevelName ENDS WITH 'ViewInputEvent' THEN 'VIEW_INPUT_EVENT'
+                WHEN topLevelName ENDS WITH 'PublishedEvent' THEN 'PUBLISHED_EVENT'
+                WHEN topLevelName ENDS WITH 'InspectorEntry' THEN 'INSPECTOR_ENTRY'
+                WHEN topLevelName ENDS WITH 'ViewModel' OR topLevelName ENDS WITH 'PresentationModel' THEN 'LEGACY_VIEW_MODEL'
+                WHEN topLevelName ENDS WITH 'Projector' THEN 'PROJECTOR'
+                WHEN topLevelName ENDS WITH 'View' THEN 'VIEW'
+                ELSE 'UNKNOWN'
+              END AS viewRole
+            SET
+              type:SaltMarcher:ViewLayerGraphType,
+              type.viewUnit = viewUnit,
+              type.topLevelFqn = topLevelFqn,
+              type.viewRole = viewRole,
+              type.viewRoleBearingTopLevel = viewRole <> 'UNKNOWN',
+              type.relativePath = replace(topLevelFqn, '.', '/') + '.java'
+            RETURN type AS ViewLayerGraphType
+        ]]></cypher>
+    </concept>
+
+    <concept id="saltmarcher:ViewLayerUnitDependency">
+        <requiresConcept refId="saltmarcher:ViewLayerGraphType"/>
+        <description>Builds the recognized View-unit dependency graph used by unit-cycle diagnostics.</description>
+        <cypher><![CDATA[
+            OPTIONAL MATCH (oldUnit:SaltMarcher:ViewLayerUnit)
+            WITH collect(oldUnit) AS oldUnits
+            FOREACH (oldUnit IN oldUnits | DETACH DELETE oldUnit)
+            WITH 1 AS _
+            MATCH (sourceType:Java:Type:SaltMarcher:ViewLayerGraphType)-[:DEPENDS_ON]->(targetType:Java:Type:SaltMarcher:ViewLayerGraphType)
+            WHERE sourceType.viewUnit <> ''
+              AND targetType.viewUnit <> ''
+              AND sourceType.viewUnit <> targetType.viewUnit
+            MERGE (sourceUnit:SaltMarcher:ViewLayerUnit {unit: sourceType.viewUnit})
+            MERGE (targetUnit:SaltMarcher:ViewLayerUnit {unit: targetType.viewUnit})
+            MERGE (sourceUnit)-[:VIEW_UNIT_DEPENDS_ON]->(targetUnit)
+            RETURN DISTINCT sourceUnit AS SourceUnit, targetUnit AS TargetUnit
+        ]]></cypher>
+    </concept>
+
+    <concept id="saltmarcher:ViewLayerRoleTopLevelTypeDependency">
+        <requiresConcept refId="saltmarcher:ViewLayerGraphType"/>
+        <description>Builds the collapsed top-level View role dependency graph used by role/type cycle diagnostics.</description>
+        <cypher><![CDATA[
+            OPTIONAL MATCH (oldRoleType:SaltMarcher:ViewLayerRoleTopLevelType)
+            WITH collect(oldRoleType) AS oldRoleTypes
+            FOREACH (oldRoleType IN oldRoleTypes | DETACH DELETE oldRoleType)
+            WITH 1 AS _
+            MATCH (sourceType:Java:Type:SaltMarcher:ViewLayerGraphType)-[:DEPENDS_ON]->(targetType:Java:Type:SaltMarcher:ViewLayerGraphType)
+            WHERE sourceType.viewRoleBearingTopLevel = true
+              AND targetType.viewRoleBearingTopLevel = true
+              AND sourceType.viewUnit <> ''
+              AND targetType.viewUnit <> ''
+              AND sourceType.topLevelFqn <> targetType.topLevelFqn
+            MERGE (sourceRoleType:SaltMarcher:ViewLayerRoleTopLevelType {fqn: sourceType.topLevelFqn})
+            SET
+              sourceRoleType.relativePath = sourceType.relativePath,
+              sourceRoleType.viewRole = sourceType.viewRole
+            MERGE (targetRoleType:SaltMarcher:ViewLayerRoleTopLevelType {fqn: targetType.topLevelFqn})
+            SET
+              targetRoleType.relativePath = targetType.relativePath,
+              targetRoleType.viewRole = targetType.viewRole
+            MERGE (sourceRoleType)-[:VIEW_ROLE_TOP_LEVEL_TYPE_DEPENDS_ON]->(targetRoleType)
+            RETURN DISTINCT sourceRoleType AS SourceRoleType, targetRoleType AS TargetRoleType
         ]]></cypher>
     </concept>
 
     <constraint id="saltmarcher:ViewLayerReuseDirection">
-        <requiresConcept refId="saltmarcher:ViewReuseType"/>
+        <requiresConcept refId="saltmarcher:ViewReuseTier"/>
         <description>Reusable View code must not depend back upward into feature-specific or less reusable tiers.</description>
         <cypher><![CDATA[
-            MATCH (source:Java:Type:SaltMarcher:ViewReuseType)-[:DEPENDS_ON]->(target:Java:Type:SaltMarcher:ViewReuseType)
+            MATCH (source:Java:Type:SaltMarcher:ViewReuseTier)-[:DEPENDS_ON]->(target:Java:Type:SaltMarcher:ViewReuseTier)
             WHERE
               (
                 source.reuseTier = 'REUSABLE'
@@ -53,8 +147,53 @@
               'FEATURE -> REUSABLE -> PRIMITIVE only' AS ExpectedDirection,
               source.reuseTier + ' -> ' + target.reuseTier AS ActualDirection,
               'View-layer reuse dependencies must point from feature-specific roots toward reusable slotcontent and then primitives.' AS Details
+        ]]></cypher>
+        <report primaryColumn="Source" keyColumns="Source, Target, ActualDirection"/>
+    </constraint>
+
+    <constraint id="saltmarcher:ViewLayerUnitCycleDiagnostic">
+        <requiresConcept refId="saltmarcher:ViewLayerUnitDependency"/>
+        <description>Recognized View units should not participate in dependency cycles with other View units.</description>
+        <cypher><![CDATA[
+            MATCH (source:SaltMarcher:ViewLayerUnit)-[:VIEW_UNIT_DEPENDS_ON]->(target:SaltMarcher:ViewLayerUnit)
+            MATCH path = shortestPath((target)-[:VIEW_UNIT_DEPENDS_ON*]->(source))
+            WITH source, target, [source.unit] + [node IN nodes(path) | node.unit] AS cycleUnits
+            WITH source, target,
+              reduce(cycleText = '', unitStep IN cycleUnits |
+                CASE WHEN cycleText = '' THEN toString(unitStep) ELSE cycleText + ' -> ' + toString(unitStep) END
+              ) AS cycleText
+            RETURN DISTINCT
+              source.unit AS Source,
+              target.unit AS Target,
+              'acyclic dependencies between recognized View units' AS ExpectedDirection,
+              source.unit + ' -> ' + target.unit + ' participates in cycle ' + cycleText AS ActualDirection,
+              'View-unit dependency cycles make active roots and reusable slotcontent harder to split and reuse.' AS Details
             ORDER BY Source, Target
         ]]></cypher>
         <report primaryColumn="Source" keyColumns="Source, Target, ActualDirection"/>
     </constraint>
+
+    <constraint id="saltmarcher:ViewLayerRoleTopLevelTypeCycleDiagnostic">
+        <requiresConcept refId="saltmarcher:ViewLayerRoleTopLevelTypeDependency"/>
+        <description>Role-bearing top-level View types should not participate in dependency cycles with other role-bearing top-level View types.</description>
+        <cypher><![CDATA[
+            MATCH (source:SaltMarcher:ViewLayerRoleTopLevelType)-[:VIEW_ROLE_TOP_LEVEL_TYPE_DEPENDS_ON]->(target:SaltMarcher:ViewLayerRoleTopLevelType)
+            MATCH path = shortestPath((target)-[:VIEW_ROLE_TOP_LEVEL_TYPE_DEPENDS_ON*]->(source))
+            WITH source, target, [node IN nodes(path) | node.relativePath] AS returnPath
+            WITH source, target, [source.relativePath] + returnPath AS cyclePath
+            WITH source, target,
+              reduce(cycleText = '', step IN cyclePath |
+                CASE WHEN cycleText = '' THEN toString(step) ELSE cycleText + ' -> ' + toString(step) END
+              ) AS cycleText
+            RETURN DISTINCT
+              source.relativePath AS Source,
+              target.relativePath AS Target,
+              'acyclic dependencies between role-bearing top-level View types' AS ExpectedDirection,
+              source.viewRole + ' -> ' + target.viewRole + ' participates in cycle ' + cycleText AS ActualDirection,
+              'Top-level View roles must not rely on circular role-to-role dependency paths.' AS Details
+            ORDER BY Source, Target
+        ]]></cypher>
+        <report primaryColumn="Source" keyColumns="Source, Target, ActualDirection"/>
+    </constraint>
+
 </jqassistant-rules>

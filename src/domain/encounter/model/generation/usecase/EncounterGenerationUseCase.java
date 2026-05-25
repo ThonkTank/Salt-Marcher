@@ -25,14 +25,6 @@ public final class EncounterGenerationUseCase {
     public EncounterGenerationUseCase(
             EncounterPartyFactsRepository party,
             EncounterCreatureRepository creatures,
-            ApplicationEncounterCreatureCatalogPort creatureCatalog
-    ) {
-        this(party, creatures, creatureCatalog, null, null);
-    }
-
-    public EncounterGenerationUseCase(
-            EncounterPartyFactsRepository party,
-            EncounterCreatureRepository creatures,
             ApplicationEncounterCreatureCatalogPort creatureCatalog,
             @Nullable EncounterTableCandidateRepository encounterTables,
             @Nullable ApplicationEncounterTableCandidatePort tableCandidates

@@ -11,7 +11,7 @@ platforms.
 This subordinate standard defines the detailed local gate inventory beneath
 the umbrella
 [Quality Platforms Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/verification/quality-platforms.md:1).
-Aggregate entrypoints and local worktree invocation policy live in
+Aggregate entrypoints and local invocation plus concurrent-work policy live in
 [Quality Platforms Local Entrypoints](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/verification/quality-platforms-local-entrypoints.md:1).
 
 ## Local Gate Inventory
@@ -31,19 +31,19 @@ SaltMarcher must not add a separate pre-compile cleanup task that mutates the
 `compileJava` classes directory outside Gradle's source-set output model.
 
 Compiler-backed verification that needs Error Prone runs through focused
-verification compiles behind the public `check*Enforcement` layer surfaces and
-the `production-handoff` route. Passive `View` graph and FXML analysis enter
-local quality through `checkViewEnforcement`, while the canonical Domain,
-Data, Shell, Bootstrap, Styling, and Layering entrypoints are
+verification compiles behind technical `check*Enforcement` layer diagnostic
+surfaces and the public `production-handoff` route. Passive `View` graph and
+FXML analysis enter local quality through `checkViewEnforcement`, while the
+technical Domain, Data, Shell, Bootstrap, Styling, and Layering diagnostics are
 `checkDomainEnforcement`, `checkDataEnforcement`, `checkShellEnforcement`,
 `checkBootstrapEnforcement`, `checkStylingEnforcement`, and
 `checkLayeringEnforcement`. Whole-program compiled dead-code analysis enters
 through `checkNoDeadCode`. Internal bundle selector tasks may still exist as
-technical implementation surfaces beneath those layer entrypoints, but they are
+technical implementation surfaces beneath those layer diagnostics, but they are
 not part of the public verification API. Build-harness owner metadata is
 coalesced into one internal task per layer surface and rule kind before
-execution; role-local owner splits do not create public or runnable proof
-routes by themselves. The technical owner split behind the public View route is
+execution; role-local owner splits do not create public proof routes by
+themselves. The technical owner split behind the View diagnostic route is
 now only the build-harness View topology core plus the shared Error Prone View
 core under `tools/quality/incubator/quality-rules-errorprone/**`.
 Focused compile, FXML, and topology paths are wired into the central `check`
@@ -54,10 +54,10 @@ full architecture harness through `check`.
 
 | Platform | Status | Entrypoint | Current policy |
 | --- | --- | --- | --- |
-| PMD non-architecture smells | `Blocking Local Gate` | `./gradlew pmdMain`, `./gradlew pmdStrictMain` | `pmdMain` runs `tools/quality/config/pmd/complexity-ruleset.xml` and `tools/quality/config/pmd/law-of-demeter-ruleset.xml` once on production Java sources and writes the XML/HTML PMD reports. `pmdStrictMain` derives the text-first `build/reports/pmd/main-strict.txt` report from `pmdMain`'s XML result instead of running PMD again. PMD owns non-architecture smell policy plus `UnusedAssignment`, including generic source-smell families such as `LawOfDemeter`, `GodClass`, `CouplingBetweenObjects`, `TooManyMethods`, `TooManyFields`, `UselessOverridingMethod`, and unnecessary casts; focused Error Prone verification compiles own `UnusedLabel`, `UnusedMethod`, `UnusedNestedClass`, and `UnusedVariable` where those checkers are part of the selected enforcement surface. |
+| PMD non-architecture smells | `Blocking Local Gate` | `./gradlew pmdMain`, `./gradlew pmdStrictMain` | `pmdMain` runs `tools/quality/config/pmd/complexity-ruleset.xml` and `tools/quality/config/pmd/law-of-demeter-ruleset.xml` once on production Java sources and writes the XML/HTML PMD reports. `pmdStrictMain` derives the text-first `build/reports/pmd/main-strict.txt` report from `pmdMain`'s XML result instead of running PMD again. PMD owns non-architecture smell policy plus `UnusedAssignment`, including generic source-smell families such as `LawOfDemeter`, `GodClass`, `CouplingBetweenObjects`, `TooManyMethods`, `TooManyFields`, `UselessOverridingMethod`, `UnnecessaryConstructor`, and unnecessary casts; focused Error Prone verification compiles own `UnusedLabel`, `UnusedMethod`, `UnusedNestedClass`, and `UnusedVariable` where those checkers are part of the selected enforcement surface. |
 | Near-miss hygiene checks | `Blocking Local Gate` | `./gradlew checkRewriteNearMisses` | Runs first-party Error Prone checks for Map key-presence checks that compare `Map.get(...)` with `null` and JavaBean-style DTO-overfetching candidates for configured carrier packages. It does not mutate tracked sources. It is a near-miss quality gate, not a proof of redundant `A -> B -> D` carrier-converter chains. Redundant casts are owned by the separate PMD source-smell gate. |
-| Dead code reachability | `Blocking Local Gate` | `./gradlew checkNoDeadCode` | Runs the verification-core whole-program reachability analysis for compiled production declarations: files, top-level types, secondary top-level types, nested and named local types, constructors, methods, and fields. Structural roots currently include the configured JavaFX launcher and preloader classes, exact concrete shell contribution roots matching `ShellViewDiscovery`, exact concrete data service contribution roots matching `ServiceContributionDiscovery`, merged FXML controller resources, `META-INF/services` providers, and the explicit fallback rules in `tools/quality/config/deadcode/keep-rules.pro`. Non-constant runtime reflection is only supported through explicit keep rules. |
-| SpotBugs plus FindSecBugs | `Blocking Local Gate` | `./gradlew spotbugsMain` | Runs bytecode bug and security-smell analysis with SpotBugs effort `MAX` and confidence `MEDIUM`. |
+| Dead code reachability | `Blocking Local Gate` | `./gradlew checkNoDeadCode` | Runs the verification-core whole-program reachability analysis for compiled production declarations: files, top-level types, secondary top-level types, nested and named local types, constructors, methods, and fields. JVM `ConstantValue` fields are not reported because Java inlines compile-time constants and the compiled graph cannot prove source-level reads from bytecode field access. Structural roots currently include the configured JavaFX launcher and preloader classes, exact concrete shell contribution roots matching `ShellViewDiscovery`, exact concrete data service contribution roots matching `ServiceContributionDiscovery`, merged FXML controller resources, `META-INF/services` providers, and the explicit fallback rules in `tools/quality/config/deadcode/keep-rules.pro`. Non-constant runtime reflection is only supported through explicit keep rules. |
+| SpotBugs plus FindSecBugs | `Blocking Local Gate` | `./gradlew spotbugsMain` | Runs bytecode bug and security-smell analysis with SpotBugs effort `MAX` and confidence `MEDIUM`. Generic bytecode-level useless-indirection findings belong to this standard SpotBugs surface when the active SpotBugs detector reports them; SaltMarcher does not add a separate first-party indirection checker or suppress those standard detectors through the local exclude filter. |
 | CPD | `Blocking Local Gate` | `./gradlew cpdMain` | Runs PMD CPD for Java with `minimumTokens = 100`, matching PMD's documented Java example value, and writes its report under the active worktree's normal `build/reports/cpd/` surface. |
 | Lizard | `Blocking Local Gate` | `./gradlew lizardMain` | Runs pinned `lizard==1.21.3` for Java with max cyclomatic complexity `15`, matching Lizard's default warning threshold, and writes its report under the active worktree's normal `build/reports/lizard/` surface. |
 | CKJM ext | `Informational Report` | `./gradlew ckjmMain` | Runs on freshly compiled production classes and writes `main.txt` plus `summary.md` under the active worktree's normal `build/reports/ckjm/` surface. CKJM is a direct report entrypoint and CI artifact source, not a dependency of the blocking `check` / `production-handoff` lifecycle catalog. CKJM hotspot findings remain warnings rather than blocker failures. |
@@ -85,9 +85,35 @@ non-public types, null sentinels, and local naming/style hygiene. The rule file
 must list individual rules explicitly rather than importing whole PMD
 categories. PMD default thresholds also remain active for explicitly enabled
 rules such as `DataClass`, `TooManyFields` (`15`), and `TooManyMethods` (`10`).
-`DataClass` remains blocking but ignores expected passive carriers for
-`src/data/**/model/*PersistenceSchema.java`, `src/data/**/model/*Record.java`,
-and `src/domain/**/published/**` source files.
+`CouplingBetweenObjects`, `ExcessiveImports`, `GodClass`, class-level
+`CyclomaticComplexity`, and `TooManyMethods` run through SaltMarcher
+role-aware PMD classes where stock class/file metrics conflict with
+mechanically enforced canonical role shape. Those classes keep concrete PMD
+findings blocking and do not create a package-wide `src/view/**` exemption:
+they skip only recognized canonical view role files for role-shape metrics,
+and `TooManyMethods` also skips top-level domain `published/**` boundary
+sources whose many passive accessors are published-language shape rather than
+implementation sprawl.
+`DataClass` remains blocking for ordinary classes but ignores Java records and
+expected passive carriers for `src/data/**/model/*PersistenceSchema.java`,
+`src/data/**/model/*Record.java`, and `src/domain/**/published/**` source
+files. Records are already an explicit immutable carrier shape in the domain,
+data, and view-layer standards.
+`LawOfDemeter` remains blocking for production source, but its ruleset ignores
+JavaFX control-composition accessors such as `getChildren`, `getStyleClass`,
+`getItems`, and `getSelectionModel`; those calls are normal passive-view
+construction and binding responsibilities governed by the view-layer gates.
+Role-specific source-pattern PMD rules are not part of the active local gate
+inventory. If a role owner still needs a source-pattern rule, the rule must be
+wired through an explicit active owner and documented with the real blocking
+route before an enforcement row may claim mechanical ownership.
+Generic indirection coverage stays standard-tool-first: PMD owns source-level
+useless override and unnecessary constructor rules, SpotBugs owns active
+bytecode-level useless-indirection findings, and jQAssistant owns only the
+role-aware relay-stack blocker that requires graph traversal. The local handoff
+harness therefore must not add Sonar, Semgrep, CodeQL, Designite, JDeodorant,
+or a new first-party indirection rule unless an owner records the exact gap that
+the current blocking gates cannot express.
 
 `checkRewriteNearMisses` is wired into the shared `check` /
 `production-handoff` lifecycle catalog through focused first-party Error Prone
@@ -98,7 +124,9 @@ because it no longer invokes third-party source rewrite tasks.
 catalog as the single PMD scanner for this surface. It writes XML and HTML
 reports, then finalizes through `pmdStrictMain`, which derives the text report
 and fails the direct or aggregate invocation when the XML report contains PMD
-violations or analysis diagnostics. `pmdTest` is disabled; PMD
+violations or analysis diagnostics. Role-aware metric classification happens
+inside the PMD ruleset itself, not inside the strict text-report derivation.
+`pmdTest` is disabled; PMD
 non-architecture smell policy applies to production source roots, not
 architecture test sources.
 
@@ -154,11 +182,13 @@ wide data carriers and real multi-metric hotspots stay visible even when the
 report does not block the build.
 
 Broader architecture-sprawl signals are therefore intentionally split. Generic
-source smells stay with PMD, cycle blockers stay with the generic and focused
-ArchUnit suites, whole-program dead-code reachability stays with
-`checkNoDeadCode`, and jQAssistant owns the graph diagnostics for relay stacks,
-reuse direction, and role or feature sprawl behind the focused architecture
-surfaces.
+source smells stay with PMD, objective cycle blockers stay with the generic and
+focused ArchUnit suites, whole-program dead-code reachability stays with
+`checkNoDeadCode`, and jQAssistant owns graph analysis where role-aware traversal
+matters. A jQAssistant rule is blocking only when its selected group runs at
+`BLOCKER` severity; the View-layer `view-layer-cycle-diagnostics` group runs at
+minor severity and remains a graph diagnostic until the View owner defines a
+precise forbidden cycle level.
 jQAssistant scan tasks own the classpath and source-root inputs that build the
 local graph store. Analyze tasks own rule directories, analyze groups, and
 reports, so rule-only changes rerun analysis against the existing local store
@@ -174,8 +204,15 @@ Checkstyle metrics and Semgrep are deferred unless current tooling cannot
 express a concrete rule.
 
 Architecture blockers now run only through focused Error Prone verification
-compiles, ArchUnit, and the external build harness behind the public
+compiles, ArchUnit, jQAssistant, and the external build harness behind the public
 architecture and enforcement surfaces.
+Custom architecture blockers must stay engine-specific: PMD and SpotBugs remain
+standard-tool-first for generic hygiene, ArchUnit for simple dependency and cycle
+boundaries, jQAssistant for graph traversal diagnostics, Error Prone for
+compiler-local symbol and AST constraints, and build-harness for repository
+topology, documentation coverage, and source inventory checks. A first-party
+checker that duplicates a standard-tool rule is a retirement candidate unless
+its owner document records the rule gap and public proof route.
 
 ### Repository And Resource Policy
 
@@ -192,7 +229,7 @@ packaging policies that are not language-level architecture rules.
 | `./gradlew checkNoCompiledArtifactsInSource` | `Blocking Local Gate` | `.class` files must not exist under active source roots. |
 | `./gradlew checkDesktopPackagingInputs` | `Blocking Local Gate` | Desktop main/preloader class sources, icon paths, stylesheet path, launcher name, and `StartupWMClass` must be present and valid. |
 | `./gradlew checkDesktopAppImageLayout` | `Blocking Distribution Gate` | Installed desktop app images must keep JavaFX jars on the dedicated JavaFX module path and keep launcher configuration aligned with the packaged layout. |
-| `./gradlew checkViewFxmlResources` | `Blocking Local Gate` | View FXML files must live under the MVVM view-resource tree, avoid inline scripts, and use passive View controllers matching the owning view area. For the complete passive-`View` bundle proof route, use `./gradlew checkViewEnforcement`. |
+| `./gradlew checkViewFxmlResources` | `Blocking Local Gate` | View FXML files must live under the MVVM view-resource tree, avoid inline scripts, and use passive View controllers matching the owning view area. For the complete passive-`View` mechanical diagnostic route, use `./gradlew checkViewEnforcement`. |
 
 The styling rules behind the stylesheet and selector gates, plus the remaining
 direct-render styling invariants for passive `View` surfaces, are defined in
@@ -201,12 +238,11 @@ the
 [Styling Layer Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/styling-layer-enforcement.md:1),
 and
 [View Styling Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/styling-view-enforcement.md:1).
-The canonical styling-layer bundle proof route is
-`./gradlew checkStylingEnforcement`; it aggregates the stylesheet,
-selector, bundle-local stylesheet-owner, compile-side inline-style,
-manual-node-layout styling, and programmatic-styling checks for the layer
-itself.
-The dedicated passive-`View` direct-render placement proof route is
+The styling-layer mechanical diagnostic route is `./gradlew
+checkStylingEnforcement`; it aggregates the stylesheet, selector,
+bundle-local stylesheet-owner, compile-side inline-style, manual-node-layout
+styling, and programmatic-styling checks for the layer itself.
+The passive-`View` direct-render placement diagnostic route also runs through
 `./gradlew checkStylingEnforcement`; centralized stylesheet ownership and
 selector vocabulary remain available through the separate layer-wide direct
 tasks listed above.

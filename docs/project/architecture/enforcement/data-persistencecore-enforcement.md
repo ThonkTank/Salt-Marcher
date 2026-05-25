@@ -24,34 +24,35 @@ foreign-feature boundaries, feature-local adapter contracts, or feature
 `*PersistenceSchema` ownership. Those stay in the neighboring data
 enforcement documents.
 
-Unified focused bundle entrypoint:
+Technical diagnostic route:
 
 - `./gradlew checkDataEnforcement --rerun-tasks --console=plain`
   runs the currently active Data Persistencecore-focused ArchUnit and
-  documentation-coverage checks through one root task. Canonical dependency
-  blocking remains at `./gradlew checkDataEnforcement`; the focused bundle proof
-  route adds the owner-local documentation check without pulling unrelated
-  data-layer, data-role, or cross-layer bundles.
+  documentation-coverage checks through one root task. The same mechanical
+  dependency checks are also reached by the broader public routes when they
+  include the data surface; this diagnostic route adds the owner-local
+  documentation check without pulling unrelated data-layer, data-role, or
+  cross-layer bundles.
 
 ## Invariant Catalog
 
 ### Must Contain
 
-| Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
+| Invariant ID | Status | Applies When | Mechanical Owner | Diagnostic/Mechanical Route | What It Proves |
 | --- | --- | --- | --- | --- | --- |
 | `data-persistencecore-model-generic-schema-helper-semantics` | Review-Owned | every helper under `src/data/persistencecore/model/**` | none | none | `persistencecore/model` contains only generic source-schema helper shapes such as reusable table or column declarations for feature-owned `model/<Feature>PersistenceSchema.java` declarations, rather than feature-local schema declarations or a second source-model home. |
 | `data-persistencecore-sqlite-generic-infrastructure-semantics` | Review-Owned | every helper under `src/data/persistencecore/sqlite/**` | none | none | `persistencecore/sqlite` contains only generic SQLite infrastructure such as reusable connection lifecycle or schema inspection support for feature-local `gateway/local/**` adapters, rather than feature-local source adapters, schema ownership, or runtime composition. |
 
 ### Must Not Contain
 
-| Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
+| Invariant ID | Status | Applies When | Mechanical Owner | Diagnostic/Mechanical Route | What It Proves |
 | --- | --- | --- | --- | --- | --- |
 | `data-persistencecore-no-feature-specific-data-dependencies` | Enforced | every dependency from `src/data/persistencecore/**` into `src/data/<feature>/**` | data-persistencecore bundle ArchUnit `persistencecoreMustStayIndependentFromFeatureSpecificDataPackages` | `./gradlew checkDataEnforcement` | `persistencecore/` does not depend on feature-specific data packages. |
 | `data-persistencecore-no-domain-dependencies` | Enforced | every dependency from `src/data/persistencecore/**` into `src/domain/**` | data-persistencecore bundle ArchUnit `persistencecoreMustNotDependOnDomainTypes` | `./gradlew checkDataEnforcement` | `persistencecore/` does not depend on domain types. |
 
 ### Communication Contract
 
-| Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
+| Invariant ID | Status | Applies When | Mechanical Owner | Diagnostic/Mechanical Route | What It Proves |
 | --- | --- | --- | --- | --- | --- |
 | `data-persistencecore-model-data-internal-consumer-boundary` | Review-Owned | every public helper under `src/data/persistencecore/model/**` | none | none | Generic schema helpers under `persistencecore/model` communicate only with feature-owned `model/<Feature>PersistenceSchema.java` declarations as shared source-schema support; they do not become a feature-local schema declaration surface or an exported feature contract. |
 | `data-persistencecore-sqlite-data-internal-consumer-boundary` | Review-Owned | every public helper under `src/data/persistencecore/sqlite/**` | none | none | Generic SQLite helpers under `persistencecore/sqlite` communicate only with feature-local `gateway/local/**` source adapters as shared SQLite support; they do not become feature-owned gateway facades, schema declarations, or runtime-composition seams. |

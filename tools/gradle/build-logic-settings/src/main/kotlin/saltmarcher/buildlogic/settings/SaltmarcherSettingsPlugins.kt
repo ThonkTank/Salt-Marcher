@@ -7,9 +7,11 @@ import saltmarcher.buildlogic.enforcement.BuildHarnessTaskKind
 import saltmarcher.buildlogic.enforcement.EnforcementBundleCatalog
 import saltmarcher.buildlogic.enforcement.EnforcementBundleDescriptor
 import saltmarcher.buildlogic.enforcement.EnforcementDiagnosticSurfaceCatalog
+import saltmarcher.buildlogic.enforcement.EnforcementDiagnosticSurfaceSpec
 import saltmarcher.buildlogic.enforcement.standardEnforcementBundleCatalog
 import saltmarcher.buildlogic.enforcement.standardEnforcementDiagnosticSurfaceCatalog
 import saltmarcher.buildlogic.shared.CheckTaskName
+import saltmarcher.buildlogic.shared.FocusedHandoffTaskName
 import saltmarcher.buildlogic.shared.ProductionHandoffCompileIntegrityTaskName
 import saltmarcher.buildlogic.shared.ProductionHandoffHygieneTaskName
 import saltmarcher.buildlogic.shared.ProductionHandoffStructureTaskName
@@ -34,6 +36,16 @@ class SaltmarcherRootSettingsPlugin : Plugin<Settings> {
         val internalSelectorTaskToBundleId = bundleCatalog.selectorTaskToBundleId
         val diagnosticSurfaceTaskNames = diagnosticSurfaceCatalog.diagnosticTaskToBundleIds.keys
         val buildHarnessTaskToBundleIds = buildHarnessTaskToBundleIds(diagnosticSurfaceCatalog, bundleCatalog)
+        val archunitTaskToBundleIds = archunitTaskToBundleIds(bundleCatalog)
+        val focusedHandoffSurfaceIds = if (FocusedHandoffTaskName in requestedTaskNames) {
+            focusedHandoffSurfaceIds(diagnosticSurfaceCatalog)
+        } else {
+            emptyList()
+        }
+        val focusedDiagnosticSurfaceIds = (requestedTaskNames
+            .flatMap { taskName -> diagnosticSurfaceIdsForTaskName(diagnosticSurfaceCatalog, taskName) }
+            + focusedHandoffSurfaceIds)
+            .distinct()
         val discoveryBuildRequest = requestedTaskNames.isEmpty() ||
             requestedTaskNames.any(::isDiscoveryTaskName)
         val allBundleVerificationRequest = discoveryBuildRequest ||
@@ -42,20 +54,26 @@ class SaltmarcherRootSettingsPlugin : Plugin<Settings> {
             requestedTaskNames.any(::isFocusedCompileTaskName)
         val requestedBundleIds = requestedTaskNames
             .flatMap { taskName ->
-                diagnosticSurfaceCatalog.diagnosticTaskToBundleIds[taskName]
+                if (taskName == FocusedHandoffTaskName) {
+                    focusedHandoffSurfaceIds.flatMap { surfaceId -> diagnosticSurfaceCatalog.surface(surfaceId).bundleIds }
+                } else {
+                    diagnosticSurfaceCatalog.diagnosticTaskToBundleIds[taskName]
                     ?: internalSelectorTaskToBundleId[taskName]?.let(::listOf)
                     ?: buildHarnessTaskToBundleIds[taskName]
+                    ?: archunitTaskToBundleIds[taskName]
                     ?: emptyList()
+                }
             }
             .distinct()
+        val focusedTaskNames = internalSelectorTaskToBundleId.keys +
+            diagnosticSurfaceTaskNames +
+            buildHarnessTaskToBundleIds.keys +
+            archunitTaskToBundleIds.keys +
+            setOf(FocusedHandoffTaskName)
         val focusedEnforcementBundleMode = requestedTaskNames.isNotEmpty() &&
             requestedBundleIds.isNotEmpty() &&
             requestedTaskNames.none { taskName -> taskName in broadBuildTaskNames } &&
-            requestedTaskNames.all { taskName ->
-                taskName in internalSelectorTaskToBundleId.keys ||
-                    taskName in diagnosticSurfaceTaskNames ||
-                    taskName in buildHarnessTaskToBundleIds.keys
-        }
+            requestedTaskNames.any { taskName -> taskName in focusedTaskNames }
         val activeEnforcementBundleIds = if (focusedEnforcementBundleMode) {
             bundleCatalog.expandedBundleIds(requestedBundleIds)
         } else if (allBundleVerificationRequest) {
@@ -76,7 +94,11 @@ class SaltmarcherRootSettingsPlugin : Plugin<Settings> {
         System.setProperty("saltmarcher.includeQualityRulesErrorProne", requestScope.includeQualityRulesErrorProne.toString())
         System.setProperty("saltmarcher.includeJqassistant", requestScope.includeJqassistant.toString())
         System.setProperty("saltmarcher.discoveryBuildRequest", requestScope.discoveryBuildRequest.toString())
+        System.setProperty("saltmarcher.focusedDiagnosticSurfaceIds", focusedDiagnosticSurfaceIds.joinToString(","))
 
+        if (requestScope.includeBuildHarness || requestScope.includeQualityRulesErrorProne) {
+            includeSaltmarcherBuild(settings, "tools/quality/architecture-policy")
+        }
         if (requestScope.includeBuildHarness) {
             includeSaltmarcherBuild(settings, "tools/gradle/build-harness")
         }
@@ -90,6 +112,34 @@ class SaltmarcherRootSettingsPlugin : Plugin<Settings> {
 }
 
 private fun includeSaltmarcherBuild(settings: Settings, relativePath: String) = settings.includeBuild(relativePath)
+
+private fun diagnosticSurfaceIdsForTaskName(
+    diagnosticSurfaceCatalog: EnforcementDiagnosticSurfaceCatalog,
+    taskName: String
+): List<String> = diagnosticSurfaceCatalog.surfacesInOrder
+    .filter { surface ->
+        taskName == surface.diagnosticTaskName ||
+            BuildHarnessTaskKind.values().any { kind -> taskName == surface.buildHarnessTaskName(kind) }
+    }
+    .map(EnforcementDiagnosticSurfaceSpec::surfaceId)
+
+private fun focusedHandoffSurfaceIds(
+    diagnosticSurfaceCatalog: EnforcementDiagnosticSurfaceCatalog
+): List<String> {
+    val explicitAreas = systemList("saltmarcher.focusedVerificationAreas")
+    if (explicitAreas.isNotEmpty()) {
+        return diagnosticSurfaceCatalog.focusedSurfaceIdsForAreas(explicitAreas)
+    }
+    return diagnosticSurfaceCatalog.focusedSurfaceIdsForPaths(systemList("saltmarcher.focusedVerificationPaths"))
+}
+
+private fun systemList(propertyName: String): List<String> = System.getProperty(propertyName)
+    ?.split(',')
+    .orEmpty()
+    .map(String::trim)
+    .map { value -> value.replace('\\', '/').removePrefix("./").removeSuffix("/") }
+    .filter(String::isNotEmpty)
+    .distinct()
 
 private fun standardBroadBuildTaskNames(): Set<String> = setOf(
     ProductionHandoffTaskName,
@@ -128,6 +178,22 @@ private fun buildHarnessTaskToBundleIds(
     }
     return taskToBundleIds
 }
+
+private fun archunitTaskToBundleIds(bundleCatalog: EnforcementBundleCatalog): Map<String, List<String>> =
+    bundleCatalog.descriptorsById.values
+        .mapNotNull { descriptor ->
+            descriptor.archunit?.let { archunit ->
+                val sourceSetName = "${descriptor.bundleId.replaceFirstChar(Char::lowercaseChar)}EnforcementArchunit"
+                listOf(
+                    archunit.taskName,
+                    "compile${sourceSetName.replaceFirstChar(Char::uppercaseChar)}Java",
+                    "${sourceSetName}Classes",
+                    "process${sourceSetName.replaceFirstChar(Char::uppercaseChar)}Resources"
+                ).map { taskName -> taskName to listOf(descriptor.bundleId) }
+            }
+        }
+        .flatten()
+        .toMap()
 
 private data class VerificationRequestScope(
     val includeBuildHarness: Boolean,
@@ -194,7 +260,8 @@ private fun isDocumentationTaskName(taskName: String): Boolean =
         taskName == "documentationEnforcementCheck"
 
 private fun isFocusedEnforcementTaskName(taskName: String): Boolean =
-    (taskName != "checkDocumentationEnforcement" && taskName.startsWith("check") && taskName.endsWith("Enforcement")) ||
+    taskName == FocusedHandoffTaskName ||
+        (taskName != "checkDocumentationEnforcement" && taskName.startsWith("check") && taskName.endsWith("Enforcement")) ||
         (taskName.startsWith("verify") && taskName.endsWith("Bundle"))
 
 private fun isQualityRulesTaskName(taskName: String): Boolean =

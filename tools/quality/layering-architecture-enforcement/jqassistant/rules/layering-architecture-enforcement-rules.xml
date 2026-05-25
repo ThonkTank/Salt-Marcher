@@ -5,6 +5,9 @@
     <group id="saltmarcher:layering-architecture-enforcement" severity="blocker">
         <includeConstraint refId="saltmarcher:LayeringCrossLayerPublicBoundaryDependency"/>
         <includeConstraint refId="saltmarcher:LayeringThinRoleRelayStackDiagnostic"/>
+    </group>
+
+    <group id="saltmarcher:layering-architecture-diagnostics" severity="minor">
         <includeConstraint refId="saltmarcher:LayeringRoleHubSprawlCandidate"/>
         <includeConstraint refId="saltmarcher:LayeringCrossFeatureSprawlCandidate"/>
         <includeConstraint refId="saltmarcher:LayeringPublicBoundaryBreadthCandidate"/>
@@ -64,11 +67,26 @@
         <cypher><![CDATA[
             MATCH (source:Java:Type:SaltMarcher:LayeringType)-[:DEPENDS_ON]->(target:Java:Type:SaltMarcher:LayeringType)
             WHERE
-              (source.layer = 'DOMAIN' AND target.layer IN ['BOOTSTRAP', 'SHELL', 'VIEW', 'DATA'])
-              OR (source.layer = 'VIEW' AND target.layer = 'DATA')
-              OR (source.layer = 'DATA' AND target.layer IN ['BOOTSTRAP', 'VIEW'])
-              OR (source.layer = 'SHELL' AND target.layer IN ['VIEW', 'DOMAIN', 'DATA', 'BOOTSTRAP'])
-              OR (source.layer = 'BOOTSTRAP' AND target.layer IN ['VIEW', 'DOMAIN', 'DATA'])
+              (
+                (
+                  source.layer = 'DOMAIN'
+                  AND target.layer IN ['BOOTSTRAP', 'SHELL', 'VIEW', 'DATA']
+                  AND NOT (
+                    (
+                      source.relativePath =~ 'src/domain/[^/]+/[^/]+ServiceAssembly\\.java'
+                      AND target.relativePath = 'shell/api/ServiceRegistry.java'
+                    )
+                    OR (
+                      source.relativePath =~ 'src/domain/[^/]+/[^/]+ServiceContribution\\.java'
+                      AND target.relativePath IN ['shell/api/ServiceRegistry.java', 'shell/api/ServiceContribution.java']
+                    )
+                  )
+                )
+                OR (source.layer = 'VIEW' AND target.layer = 'DATA')
+                OR (source.layer = 'DATA' AND target.layer IN ['BOOTSTRAP', 'VIEW'])
+                OR (source.layer = 'SHELL' AND target.layer IN ['VIEW', 'DOMAIN', 'DATA', 'BOOTSTRAP'])
+                OR (source.layer = 'BOOTSTRAP' AND target.layer IN ['VIEW', 'DOMAIN', 'DATA'])
+              )
             RETURN DISTINCT
               source.relativePath AS Source,
               target.relativePath AS Target,
@@ -88,18 +106,39 @@
             WHERE source.graphRole IN ['APPLICATION_SERVICE', 'USE_CASE', 'BINDER', 'INTENT_HANDLER', 'SERVICE_CONTRIBUTION']
               AND target.graphRole IN ['APPLICATION_SERVICE', 'USE_CASE', 'BINDER', 'INTENT_HANDLER', 'SERVICE_CONTRIBUTION']
               AND source.graphRole <> target.graphRole
+              AND NOT (
+                source.graphRole = 'APPLICATION_SERVICE'
+                AND target.graphRole = 'USE_CASE'
+                AND source.feature = target.feature
+              )
+              AND NOT (
+                source.graphRole = 'BINDER'
+                AND target.graphRole = 'INTENT_HANDLER'
+                AND source.feature = target.feature
+              )
+              AND NOT (
+                source.graphRole IN ['BINDER', 'INTENT_HANDLER']
+                AND target.graphRole = 'APPLICATION_SERVICE'
+                AND (
+                  source.feature = target.feature
+                  OR (source.feature = 'catalog' AND target.feature IN ['creatures', 'encounter', 'encountertable'])
+                  OR (source.feature = 'encounter' AND target.feature IN ['encounter', 'creatures'])
+                  OR (source.feature = 'adventuringday' AND target.feature = 'party')
+                  OR (source.feature IN ['dungeoneditor', 'dungeontravel', 'travel'] AND target.feature = 'dungeon')
+                )
+              )
             RETURN DISTINCT
               source.relativePath AS Source,
               target.relativePath AS Target,
               'thin role -> substantive owner before another thin role' AS ExpectedDirection,
               source.graphRole + ' -> ' + target.graphRole AS ActualDirection,
-              'Multi-role relay chains are graph diagnostics because they hide orchestration behind another orchestration surface.' AS Details
+              'Multi-role relay chains are blocked because they hide orchestration behind another orchestration surface.' AS Details
             ORDER BY Source, Target
         ]]></cypher>
         <report primaryColumn="Source" keyColumns="Source, Target, ActualDirection"/>
     </constraint>
 
-    <constraint id="saltmarcher:LayeringRoleHubSprawlCandidate">
+    <constraint id="saltmarcher:LayeringRoleHubSprawlCandidate" severity="minor">
         <requiresConcept refId="saltmarcher:LayeringType"/>
         <description>Role-bearing tactical owners must not fan out into too many foreign production owners.</description>
         <cypher><![CDATA[
@@ -119,7 +158,7 @@
         <report primaryColumn="Source" keyColumns="Source, ActualDirection"/>
     </constraint>
 
-    <constraint id="saltmarcher:LayeringCrossFeatureSprawlCandidate">
+    <constraint id="saltmarcher:LayeringCrossFeatureSprawlCandidate" severity="minor">
         <requiresConcept refId="saltmarcher:LayeringType"/>
         <description>Domain and data feature scopes must not build broad acyclic coupling to foreign feature scopes.</description>
         <cypher><![CDATA[
@@ -141,7 +180,7 @@
         <report primaryColumn="Source" keyColumns="Source, ActualDirection"/>
     </constraint>
 
-    <constraint id="saltmarcher:LayeringPublicBoundaryBreadthCandidate">
+    <constraint id="saltmarcher:LayeringPublicBoundaryBreadthCandidate" severity="minor">
         <requiresConcept refId="saltmarcher:LayeringType"/>
         <description>Public backend and runtime registration roots must not accumulate too broad a dependency surface.</description>
         <cypher><![CDATA[

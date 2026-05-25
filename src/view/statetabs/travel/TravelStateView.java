@@ -1,6 +1,5 @@
 package src.view.statetabs.travel;
 
-import javafx.beans.property.StringProperty;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
@@ -21,29 +20,21 @@ public final class TravelStateView extends VBox {
     private static final int SECTION_HEADER_SLOT = 4;
     private static final int SECTION_VALUE_SLOT = 5;
 
-    private final StyledLabel[] textLabels = new StyledLabel[6];
-    private final StyledLabel[] detailKeyLabels = new StyledLabel[3];
-    private final StyledLabel[] detailValueLabels = new StyledLabel[3];
-    private final VBox actionItems = new VBox(6);
-    private final ActionButton actionButton = new ActionButton();
+    private final Label iconLabel = label("travel-location-icon");
+    private final Label locationLabel = label(STYLE_TEXT_MUTED, "text-italic");
+    private final Label statusLabel = label("travel-status-badge");
+    private final Label contextLabel = label(STYLE_TEXT_MUTED, "text-italic");
+    private final Label sectionHeaderLabel = label("section-header", STYLE_TEXT_MUTED);
+    private final Label sectionValueLabel = label(STYLE_TEXT_MUTED, "text-italic");
+    private final Label detailKeyOneLabel = label(STYLE_TEXT_MUTED);
+    private final Label detailValueOneLabel = label();
+    private final Label detailKeyTwoLabel = label(STYLE_TEXT_MUTED);
+    private final Label detailValueTwoLabel = label();
+    private final Label detailKeyThreeLabel = label(STYLE_TEXT_MUTED);
+    private final Label detailValueThreeLabel = label();
 
     public TravelStateView() {
         getStyleClass().add("travel-pane");
-
-        textLabels[ICON_SLOT] = new StyledLabel("travel-location-icon");
-        textLabels[LOCATION_SLOT] = new StyledLabel(STYLE_TEXT_MUTED, "text-italic");
-        textLabels[STATUS_SLOT] = new StyledLabel("travel-status-badge");
-        textLabels[CONTEXT_SLOT] = new StyledLabel(STYLE_TEXT_MUTED, "text-italic");
-        textLabels[SECTION_HEADER_SLOT] = new StyledLabel("section-header", STYLE_TEXT_MUTED);
-        textLabels[SECTION_VALUE_SLOT] = new StyledLabel(STYLE_TEXT_MUTED, "text-italic");
-        for (int index = 0; index < detailKeyLabels.length; index++) {
-            detailKeyLabels[index] = new StyledLabel(STYLE_TEXT_MUTED);
-            detailValueLabels[index] = new StyledLabel();
-        }
-        actionButton.setMaxWidth(Double.MAX_VALUE);
-        actionButton.setVisible(false);
-        actionButton.setManaged(false);
-        actionItems.setFillWidth(true);
 
         getChildren().addAll(
                 buildLocationRow(),
@@ -54,20 +45,23 @@ public final class TravelStateView extends VBox {
                 buildActionSection());
     }
 
-    StringProperty textProperty(int index) {
-        return textLabels[index].textProperty();
-    }
-
-    StringProperty detailKeyProperty(int index) {
-        return detailKeyLabels[index].textProperty();
-    }
-
-    StringProperty detailValueProperty(int index) {
-        return detailValueLabels[index].textProperty();
+    public void bind(TravelStateContentModel contentModel) {
+        iconLabel.textProperty().bind(contentModel.textProperty(ICON_SLOT));
+        locationLabel.textProperty().bind(contentModel.textProperty(LOCATION_SLOT));
+        statusLabel.textProperty().bind(contentModel.textProperty(STATUS_SLOT));
+        contextLabel.textProperty().bind(contentModel.textProperty(CONTEXT_SLOT));
+        sectionHeaderLabel.textProperty().bind(contentModel.textProperty(SECTION_HEADER_SLOT));
+        sectionValueLabel.textProperty().bind(contentModel.textProperty(SECTION_VALUE_SLOT));
+        detailKeyOneLabel.textProperty().bind(contentModel.detailKeyProperty(0));
+        detailValueOneLabel.textProperty().bind(contentModel.detailValueProperty(0));
+        detailKeyTwoLabel.textProperty().bind(contentModel.detailKeyProperty(1));
+        detailValueTwoLabel.textProperty().bind(contentModel.detailValueProperty(1));
+        detailKeyThreeLabel.textProperty().bind(contentModel.detailKeyProperty(2));
+        detailValueThreeLabel.textProperty().bind(contentModel.detailValueProperty(2));
     }
 
     private HBox buildLocationRow() {
-        HBox row = new HBox(6, textLabels[ICON_SLOT], textLabels[LOCATION_SLOT]);
+        HBox row = new HBox(6, iconLabel, locationLabel);
         row.setAlignment(Pos.CENTER_LEFT);
         return row;
     }
@@ -75,26 +69,34 @@ public final class TravelStateView extends VBox {
     private HBox buildStatusRow() {
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
-        HBox row = new HBox(8, textLabels[STATUS_SLOT], spacer, textLabels[CONTEXT_SLOT]);
+        HBox row = new HBox(8, statusLabel, spacer, contextLabel);
         row.setAlignment(Pos.CENTER_LEFT);
         return row;
     }
 
     private GridPane buildDetailsGrid() {
         GridPane grid = new DetailsGrid();
-        grid.setHgap(12);
-        grid.setVgap(4);
-        int rowIndex = 0;
-        for (int index = 0; index < detailKeyLabels.length; index++) {
-            grid.add(detailKeyLabels[index], 0, rowIndex);
-            grid.add(detailValueLabels[index], 1, rowIndex);
-            rowIndex++;
-        }
+        grid.add(detailKeyOneLabel, 0, 0);
+        grid.add(detailValueOneLabel, 1, 0);
+        grid.add(detailKeyTwoLabel, 0, 1);
+        grid.add(detailValueTwoLabel, 1, 1);
+        grid.add(detailKeyThreeLabel, 0, 2);
+        grid.add(detailValueThreeLabel, 1, 2);
         return grid;
     }
 
     private VBox buildActionSection() {
-        return new VBox(4, textLabels[SECTION_HEADER_SLOT], textLabels[SECTION_VALUE_SLOT], actionItems, actionButton);
+        VBox actionItems = new VBox(6);
+        actionItems.setFillWidth(true);
+        Button actionButton = new StyledButton("accent");
+        actionButton.setMaxWidth(Double.MAX_VALUE);
+        actionButton.setVisible(false);
+        actionButton.setManaged(false);
+        return new VBox(4, sectionHeaderLabel, sectionValueLabel, actionItems, actionButton);
+    }
+
+    private static Label label(String... styles) {
+        return new StyledLabel(styles);
     }
 
     private static final class StyledLabel extends Label {
@@ -106,10 +108,10 @@ public final class TravelStateView extends VBox {
         }
     }
 
-    private static final class ActionButton extends Button {
+    private static final class StyledButton extends Button {
 
-        private ActionButton() {
-            getStyleClass().add("accent");
+        private StyledButton(String style) {
+            getStyleClass().add(style);
         }
     }
 

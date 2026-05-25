@@ -7,10 +7,6 @@ public enum EncounterRequestedDifficulty {
     HARD,
     DEADLY;
 
-    public static EncounterRequestedDifficulty defaultDifficulty() {
-        return MEDIUM;
-    }
-
     public static EncounterRequestedDifficulty autoDifficulty() {
         return AUTO;
     }

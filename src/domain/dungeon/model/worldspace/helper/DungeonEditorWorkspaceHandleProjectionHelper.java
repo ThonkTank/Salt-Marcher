@@ -1,0 +1,42 @@
+package src.domain.dungeon.model.worldspace.helper;
+
+import java.util.ArrayList;
+import java.util.List;
+import org.jspecify.annotations.Nullable;
+import src.domain.dungeon.model.worldspace.model.DungeonCell;
+import src.domain.dungeon.model.worldspace.model.DungeonEditorHandle;
+import src.domain.dungeon.model.worldspace.model.DungeonEditorHandleFacts;
+import src.domain.dungeon.model.worldspace.model.workspace.model.DungeonEditorWorkspaceValues;
+
+public final class DungeonEditorWorkspaceHandleProjectionHelper {
+    public List<DungeonEditorWorkspaceValues.Handle> project(List<DungeonEditorHandleFacts> handles) {
+        List<DungeonEditorWorkspaceValues.Handle> workspaceHandles = new ArrayList<>();
+        List<DungeonEditorHandleFacts> safeHandles = handles == null ? List.of() : List.copyOf(handles);
+        for (DungeonEditorHandleFacts handle : safeHandles) {
+            workspaceHandles.add(handle(handle));
+        }
+        return List.copyOf(workspaceHandles);
+    }
+
+    private static DungeonEditorWorkspaceValues.Handle handle(DungeonEditorHandleFacts handleFacts) {
+        DungeonEditorHandle handle = handleFacts.handle();
+        DungeonEditorWorkspaceValues.Cell workspaceCell = cell(handle.cell());
+        DungeonEditorWorkspaceValues.HandleRef ref = new DungeonEditorWorkspaceValues.HandleRef(
+                handle.type(),
+                handle.topologyRef(),
+                handle.ownerId(),
+                handle.clusterId(),
+                handle.corridorId(),
+                handle.roomId(),
+                handle.index(),
+                workspaceCell,
+                handle.direction().name());
+        return new DungeonEditorWorkspaceValues.Handle(ref, handleFacts.label(), workspaceCell);
+    }
+
+    private static DungeonEditorWorkspaceValues.Cell cell(@Nullable DungeonCell cell) {
+        return cell == null
+                ? DungeonEditorWorkspaceValues.Cell.empty()
+                : new DungeonEditorWorkspaceValues.Cell(cell.q(), cell.r(), cell.level());
+    }
+}

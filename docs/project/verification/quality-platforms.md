@@ -33,14 +33,15 @@ branch-protection expectations, SonarCloud, and CodeScene.
 Broader architecture debt is intentionally split across several owners rather
 than one smell scoreboard. PMD retains generic source-smell families such as
 `LawOfDemeter`, `GodClass`, `CouplingBetweenObjects`, `TooManyMethods`,
-`TooManyFields`, and `UselessOverridingMethod`; generic ArchUnit suites retain
-cycle and broad dependency-direction blockers; `checkNoDeadCode` retains
-whole-program production reachability; CKJM retains hotspot and regression
-reporting; and jQAssistant backs the focused graph diagnostics for role-aware
-relay, reuse direction, and sprawl rules that generic smell tools cannot
-classify by SaltMarcher role semantics.
+`TooManyFields`, `UselessOverridingMethod`, and `UnnecessaryConstructor`;
+SpotBugs retains bytecode bug and security-smell discovery; generic ArchUnit
+suites retain cycle and broad dependency-direction blockers; `checkNoDeadCode`
+retains whole-program production reachability; CKJM retains hotspot and
+regression reporting; and jQAssistant backs the focused graph blockers and
+diagnostics for role-aware relay, reuse direction, and sprawl rules that generic
+smell tools cannot classify by SaltMarcher role semantics.
 
-For unused-code hygiene, the active mechanical scope is split by proof route:
+For unused-code hygiene, the active mechanical scope is split by route:
 focused Error Prone verification compiles behind the production-code handoff
 surface and owns local declaration checks such as `UnusedLabel`, `UnusedMethod`,
 `UnusedNestedClass`, and `UnusedVariable`; PMD retains `UnusedAssignment`
@@ -95,8 +96,8 @@ complete report, but a violating gate must not produce a successful `check` or
 - [Quality Platforms Local Gates](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/verification/quality-platforms-local-gates.md:1)
   owns the detailed local gate inventory
 - [Quality Platforms Local Entrypoints](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/verification/quality-platforms-local-entrypoints.md:1)
-  owns aggregate entrypoints, staged handoff routing, and parallel local
-  worktree policy
+  owns aggregate entrypoints, staged handoff routing, and local concurrent-work
+  coordination policy
 - [Verification Core Architecture](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/verification-core.md:1)
   owns the Gradle-side verification-core architecture behind those surfaces
 - [Quality Platforms CI And Branch Protection](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/verification/quality-platforms-ci-and-branch-protection.md:1)
@@ -146,14 +147,39 @@ clean-as-you-code new-code scope, small-change review practice,
 pull-request-scoped quality feedback, Dependabot pull requests, dry-run-first
 mechanical refactoring, and Codex small validated refactoring passes.
 
+## Custom Checker Admission And Retirement
+
+Standard tools are the default home for new quality and architecture rules.
+Before adding or extending a first-party checker, the owning change must record
+why an existing engine is not sufficient for the rule:
+
+- PMD owns generic Java source-smell and metrics families.
+- SpotBugs and FindSecBugs own bytecode bug and security-smell discovery.
+- ArchUnit owns simple dependency, module, boundary, and cycle rules that can
+  be expressed from compiled classes.
+- jQAssistant owns compiled graph diagnostics for relay stacks, reuse direction,
+  breadth, and sprawl where the rule needs graph traversal.
+- Error Prone owns compiler-local symbol, method-call, signature, and AST rules.
+- build-harness owns source-tree topology, documentation inventories, Markdown
+  coverage, and repository file/resource policy.
+
+A new custom checker must name its owner document, the standard tool considered
+first, the exact gap that forced custom code, the engine owner chosen, the public
+proof route that exposes the result, the false-positive boundary, and the
+condition under which the checker should be retired or replaced. Existing custom
+checkers that become equivalent to a standard-tool rule are candidates for
+retirement rather than permanent exceptions. This governance rule does not add a
+new gate by itself; it constrains future checker changes and the review of
+current custom-rule debt.
+
 ## Architecture Harness Relationship
 
 This standard describes how quality platforms are operated. The architecture
 enforcement documents define which engine owns which class of architecture
 rule.
 
-Operationally, architecture checks enter local quality through two public
-surfaces:
+Operationally, architecture checks enter local quality through public proof
+routes and technical diagnostics. Public proof routes are limited to:
 
 - `checkDocumentationEnforcement`
   runs the dedicated Markdown-backed architecture and enforcement-document
@@ -164,6 +190,9 @@ surfaces:
   non-documentation harness checks for production source, compiled production
   classes, production topology, layer boundaries, role placement, and generic
   architecture behavior.
+- `focused-handoff`
+  runs a scoped public local route only for the reported non-empty package or
+  resource paths, selected area, and engine surfaces that actually ran.
 
 The public API stops there. Role-specific, bundle-specific, layer-surface, or
 architecture-test tasks are no longer part of the public verification contract.
@@ -209,7 +238,7 @@ PMD XML production remains owned by `pmdMain`; the blocking text-first PMD
 handoff owner is `pmdStrictMain`, declared explicitly in the lifecycle catalog
 instead of attached as a hidden finalizer.
 `checkDocumentationEnforcement` remains intentionally separate so
-documentation-only work has a smaller proof route.
+documentation-only work has a smaller public proof route.
 
 Default local proof routing by change type lives in
 `docs/project/verification/quality-platforms-local-entrypoints.md` and
@@ -229,11 +258,11 @@ runtime wrappers forward the canonical public entrypoints, the verification
 core owns the public Gradle lifecycle tasks, and private bundles or rule
 engines stay behind those surfaces.
 
-Wrapper-based local entrypoints keep their public names, but parallel local
-safety now comes from the worktree workflow described in
-`docs/project/verification/quality-platforms-local-entrypoints.md`: one linked git
-worktree plus one branch per agent, verification inside that worktree, and
-merge-back only after the required local surface is green.
+Wrapper-based local entrypoints keep their public names, but local concurrency
+safety is a caller-owned coordination concern described in
+`docs/project/verification/quality-platforms-local-entrypoints.md`: agents that
+share one checkout need disjoint write sets, serialized shared-file edits, and
+literal verification results for the changed surface.
 
 Architecture rule status must not be reclassified here. If a layer standard and
 its matching enforcement document disagree about whether a rule is mechanically

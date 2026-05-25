@@ -12,20 +12,9 @@ import src.domain.encounter.model.generation.model.EncounterTuningIntent;
 
 public final class EncounterAutoTuningHelper {
 
-    private static final List<EncounterDifficultyIntent> AUTO_DIFFICULTIES = List.of(
-            EncounterDifficultyIntent.EASY,
-            EncounterDifficultyIntent.MEDIUM,
-            EncounterDifficultyIntent.HARD,
-            EncounterDifficultyIntent.DEADLY);
-    private static final int DEFAULT_BALANCE_LEVEL = 3;
-    private static final double DEFAULT_AMOUNT_VALUE = 3.0;
-    private static final int DEFAULT_DIVERSITY_LEVEL = 2;
-
     private EncounterAutoTuningHelper() {
     }
 
-    // PMD: the branching is the bounded Auto resolution policy; splitting it would obscure the generated attempt order.
-    @SuppressWarnings({"PMD.CognitiveComplexity", "PMD.CyclomaticComplexity", "PMD.NPathComplexity"})
     public static List<EncounterGenerationAttempt> resolveAttempts(
             EncounterDifficultyIntent requestedDifficulty,
             boolean difficultyAuto,
@@ -41,27 +30,12 @@ public final class EncounterAutoTuningHelper {
         if (!difficultyAuto && !tuning.hasAuto()) {
             return List.of(new EncounterGenerationAttempt(explicitDifficulty, tuning, false));
         }
-
-        SplittableRandom random = new SplittableRandom(generationSeed == 0L ? 1L : generationSeed);
-        List<EncounterGenerationAttempt> attempts = new ArrayList<>();
-        Set<String> seen = new LinkedHashSet<>();
-        addAttempt(attempts, seen, neutralDifficulty(explicitDifficulty, difficultyAuto), neutralTuning(tuning), true);
-        List<EncounterDifficultyIntent> difficultyOrder = shuffledDifficulties(random);
-        while (attempts.size() < limit) {
-            int index = attempts.size() - 1;
-            EncounterDifficultyIntent difficulty = difficultyAuto
-                    ? difficultyOrder.get(Math.floorMod(index, difficultyOrder.size()))
-                    : explicitDifficulty;
-            EncounterTuningIntent resolvedTuning = new EncounterTuningIntent(
-                    tuning.isBalanceAuto() ? 1 + random.nextInt(5) : tuning.balanceLevel(),
-                    tuning.isAmountAuto() ? gaussianLevel(random, DEFAULT_AMOUNT_VALUE, 1.15) : tuning.amountValue(),
-                    tuning.isDiversityAuto() ? 1 + random.nextInt(4) : tuning.diversityLevel());
-            if (!addAttempt(attempts, seen, difficulty, resolvedTuning, true)
-                    && seen.size() >= AUTO_DIFFICULTIES.size() * 5 * 5 * 4) {
-                break;
-            }
-        }
-        return List.copyOf(attempts);
+        return AutoAttemptSequence.resolveAutoAttempts(
+                explicitDifficulty,
+                difficultyAuto,
+                tuning,
+                generationSeed,
+                limit);
     }
 
     public static boolean prefersFallbackDrafts(List<EncounterDraft> candidate, List<EncounterDraft> current) {
@@ -72,56 +46,151 @@ public final class EncounterAutoTuningHelper {
         return drafts == null || drafts.isEmpty() ? Integer.MIN_VALUE : drafts.getFirst().metrics().score();
     }
 
-    private static EncounterDifficultyIntent neutralDifficulty(
-            EncounterDifficultyIntent requestedDifficulty,
-            boolean difficultyAuto
-    ) {
-        return difficultyAuto ? EncounterDifficultyIntent.MEDIUM : requestedDifficulty;
-    }
+    private static final class AutoAttemptSequence {
 
-    private static EncounterTuningIntent neutralTuning(EncounterTuningIntent tuning) {
-        return new EncounterTuningIntent(
-                tuning.isBalanceAuto() ? DEFAULT_BALANCE_LEVEL : tuning.balanceLevel(),
-                tuning.isAmountAuto() ? DEFAULT_AMOUNT_VALUE : tuning.amountValue(),
-                tuning.isDiversityAuto() ? DEFAULT_DIVERSITY_LEVEL : tuning.diversityLevel());
-    }
+        private static final List<EncounterDifficultyIntent> AUTO_DIFFICULTIES = List.of(
+                EncounterDifficultyIntent.EASY,
+                EncounterDifficultyIntent.MEDIUM,
+                EncounterDifficultyIntent.HARD,
+                EncounterDifficultyIntent.DEADLY);
+        private static final int DEFAULT_BALANCE_LEVEL = 3;
+        private static final double DEFAULT_AMOUNT_VALUE = 3.0;
+        private static final int DEFAULT_DIVERSITY_LEVEL = 2;
+        private static final int BALANCE_LEVEL_OPTIONS = 5;
+        private static final int AMOUNT_VALUE_OPTIONS = 401;
+        private static final int DIVERSITY_LEVEL_OPTIONS = 4;
+        private static final int DRAW_LIMIT_MULTIPLIER = 4;
 
-    private static boolean addAttempt(
-            List<EncounterGenerationAttempt> attempts,
-            Set<String> seen,
-            EncounterDifficultyIntent difficulty,
-            EncounterTuningIntent tuning,
-            boolean autoResolved
-    ) {
-        String key = difficulty.name()
-                + ':'
-                + tuning.balanceLevel()
-                + ':'
-                + Math.round(tuning.amountValue() * 100.0)
-                + ':'
-                + tuning.diversityLevel();
-        if (!seen.add(key)) {
-            return false;
+        private static List<EncounterGenerationAttempt> resolveAutoAttempts(
+                EncounterDifficultyIntent explicitDifficulty,
+                boolean difficultyAuto,
+                EncounterTuningIntent tuning,
+                long generationSeed,
+                int limit
+        ) {
+            SplittableRandom random = new SplittableRandom(generationSeed == 0L ? 1L : generationSeed);
+            List<EncounterGenerationAttempt> attempts = new ArrayList<>();
+            Set<String> seen = new LinkedHashSet<>();
+            addAttempt(
+                    attempts,
+                    seen,
+                    difficultyAuto ? EncounterDifficultyIntent.MEDIUM : explicitDifficulty,
+                    neutralTuning(tuning),
+                    true);
+            completeAttempts(
+                    attempts,
+                    seen,
+                    random,
+                    shuffledDifficulties(random),
+                    explicitDifficulty,
+                    difficultyAuto,
+                    tuning,
+                    limit);
+            return List.copyOf(attempts);
         }
-        attempts.add(new EncounterGenerationAttempt(difficulty, tuning, autoResolved));
-        return true;
-    }
 
-    private static List<EncounterDifficultyIntent> shuffledDifficulties(SplittableRandom random) {
-        List<EncounterDifficultyIntent> result = new ArrayList<>(AUTO_DIFFICULTIES);
-        for (int index = result.size() - 1; index > 0; index--) {
-            int swap = random.nextInt(index + 1);
-            EncounterDifficultyIntent current = result.get(index);
-            result.set(index, result.get(swap));
-            result.set(swap, current);
+        private static void completeAttempts(
+                List<EncounterGenerationAttempt> attempts,
+                Set<String> seen,
+                SplittableRandom random,
+                List<EncounterDifficultyIntent> difficultyOrder,
+                EncounterDifficultyIntent explicitDifficulty,
+                boolean difficultyAuto,
+                EncounterTuningIntent tuning,
+                int limit
+        ) {
+            int difficultyOptions = difficultyAuto ? AUTO_DIFFICULTIES.size() : 1;
+            int balanceOptions = tuning.isBalanceAuto() ? BALANCE_LEVEL_OPTIONS : 1;
+            int amountOptions = tuning.isAmountAuto() ? AMOUNT_VALUE_OPTIONS : 1;
+            int diversityOptions = tuning.isDiversityAuto() ? DIVERSITY_LEVEL_OPTIONS : 1;
+            int maximumAttempts = difficultyOptions * balanceOptions * amountOptions * diversityOptions;
+            int remainingDraws = Math.max(limit, maximumAttempts) * DRAW_LIMIT_MULTIPLIER;
+            int probeIndex = 0;
+            while (attempts.size() < limit && remainingDraws > 0) {
+                remainingDraws--;
+                if (!addNextAttempt(
+                        attempts,
+                        seen,
+                        random,
+                        difficultyOrder,
+                        explicitDifficulty,
+                        difficultyAuto,
+                        tuning,
+                        probeIndex)
+                        && seen.size() >= maximumAttempts) {
+                    break;
+                }
+                probeIndex++;
+            }
         }
-        return result;
-    }
 
-    private static double gaussianLevel(SplittableRandom random, double center, double deviation) {
-        double first = Math.max(Double.MIN_VALUE, random.nextDouble());
-        double second = random.nextDouble();
-        double gaussian = Math.sqrt(-2.0 * Math.log(first)) * Math.cos(2.0 * Math.PI * second);
-        return Math.max(1.0, Math.min(5.0, center + gaussian * deviation));
+        private static boolean addNextAttempt(
+                List<EncounterGenerationAttempt> attempts,
+                Set<String> seen,
+                SplittableRandom random,
+                List<EncounterDifficultyIntent> difficultyOrder,
+                EncounterDifficultyIntent explicitDifficulty,
+                boolean difficultyAuto,
+                EncounterTuningIntent tuning,
+                int probeIndex
+        ) {
+            EncounterDifficultyIntent difficulty = difficultyAuto
+                    ? difficultyOrder.get(Math.floorMod(probeIndex, difficultyOrder.size()))
+                    : explicitDifficulty;
+            return addAttempt(attempts, seen, difficulty, nextTuning(tuning, random), true);
+        }
+
+        private static EncounterTuningIntent neutralTuning(EncounterTuningIntent tuning) {
+            return new EncounterTuningIntent(
+                    tuning.isBalanceAuto() ? DEFAULT_BALANCE_LEVEL : tuning.balanceLevel(),
+                    tuning.isAmountAuto() ? DEFAULT_AMOUNT_VALUE : tuning.amountValue(),
+                    tuning.isDiversityAuto() ? DEFAULT_DIVERSITY_LEVEL : tuning.diversityLevel());
+        }
+
+        private static EncounterTuningIntent nextTuning(EncounterTuningIntent tuning, SplittableRandom random) {
+            return new EncounterTuningIntent(
+                    tuning.isBalanceAuto() ? 1 + random.nextInt(BALANCE_LEVEL_OPTIONS) : tuning.balanceLevel(),
+                    tuning.isAmountAuto() ? gaussianLevel(random, DEFAULT_AMOUNT_VALUE, 1.15) : tuning.amountValue(),
+                    tuning.isDiversityAuto() ? 1 + random.nextInt(DIVERSITY_LEVEL_OPTIONS) : tuning.diversityLevel());
+        }
+
+        private static boolean addAttempt(
+                List<EncounterGenerationAttempt> attempts,
+                Set<String> seen,
+                EncounterDifficultyIntent difficulty,
+                EncounterTuningIntent tuning,
+                boolean autoResolved
+        ) {
+            String key = difficulty.name()
+                    + ':'
+                    + tuning.balanceLevel()
+                    + ':'
+                    + Math.round(tuning.amountValue() * 100.0)
+                    + ':'
+                    + tuning.diversityLevel();
+            if (!seen.add(key)) {
+                return false;
+            }
+            attempts.add(new EncounterGenerationAttempt(difficulty, tuning, autoResolved));
+            return true;
+        }
+
+        private static List<EncounterDifficultyIntent> shuffledDifficulties(SplittableRandom random) {
+            List<EncounterDifficultyIntent> result = new ArrayList<>(AUTO_DIFFICULTIES);
+            for (int index = result.size() - 1; index > 0; index--) {
+                int swap = random.nextInt(index + 1);
+                EncounterDifficultyIntent current = result.get(index);
+                result.set(index, result.get(swap));
+                result.set(swap, current);
+            }
+            return result;
+        }
+
+        private static double gaussianLevel(SplittableRandom random, double center, double deviation) {
+            double first = Math.max(Double.MIN_VALUE, random.nextDouble());
+            double second = random.nextDouble();
+            double gaussian = Math.sqrt(-2.0 * Math.log(first)) * Math.cos(2.0 * Math.PI * second);
+            return Math.max(1.0, Math.min(5.0, center + gaussian * deviation));
+        }
     }
 }

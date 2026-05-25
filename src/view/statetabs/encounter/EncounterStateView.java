@@ -17,7 +17,7 @@ public final class EncounterStateView extends VBox {
     private static final int COMBAT_INDEX = 2;
     private static final int RESULTS_INDEX = 3;
 
-    private final StackPane contentArea = new StackPane();
+    private final StackPane contentArea = new EncounterContentStack();
 
     public EncounterStateView(
             Node builderContent,
@@ -25,8 +25,7 @@ public final class EncounterStateView extends VBox {
             Node combatContent,
             Node resultsContent
     ) {
-        contentArea.getChildren().setAll(builderContent, initiativeContent, combatContent, resultsContent);
-        hideAllContent();
+        ((EncounterContentStack) contentArea).setContent(builderContent, initiativeContent, combatContent, resultsContent);
         getStyleClass().add("surface-root");
         setFillWidth(true);
         setVgrow(contentArea, Priority.ALWAYS);
@@ -54,19 +53,30 @@ public final class EncounterStateView extends VBox {
     }
 
     private void showContent(int contentIndex) {
-        for (int index = 0; index < contentArea.getChildren().size(); index++) {
-            showNode(contentArea.getChildren().get(index), index == contentIndex);
-        }
-    }
-
-    private void hideAllContent() {
-        for (Node child : contentArea.getChildren()) {
-            showNode(child, false);
-        }
+        ((EncounterContentStack) contentArea).showContent(contentIndex);
     }
 
     private static void showNode(Node child, boolean selected) {
         child.setVisible(selected);
         child.setManaged(selected);
+    }
+
+    private static final class EncounterContentStack extends StackPane {
+
+        void setContent(
+                Node builderContent,
+                Node initiativeContent,
+                Node combatContent,
+                Node resultsContent
+        ) {
+            getChildren().setAll(builderContent, initiativeContent, combatContent, resultsContent);
+            showContent(-1);
+        }
+
+        void showContent(int contentIndex) {
+            for (int index = 0; index < getChildren().size(); index++) {
+                showNode(getChildren().get(index), index == contentIndex);
+            }
+        }
     }
 }

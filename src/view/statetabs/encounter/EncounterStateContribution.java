@@ -10,10 +10,6 @@ import shell.api.ShellStateTabSpec;
 
 public final class EncounterStateContribution implements ShellContribution {
 
-    @SuppressWarnings({"PMD.UnnecessaryConstructor", "PMD.UncommentedEmptyConstructor"})
-    public EncounterStateContribution() {
-    }
-
     @Override
     public ShellContributionSpec registrationSpec() {
         return new ShellStateTabSpec(

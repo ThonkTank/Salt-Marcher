@@ -8,7 +8,6 @@ import javafx.scene.control.Label;
 import javafx.scene.control.TextArea;
 import javafx.scene.layout.VBox;
 
-@SuppressWarnings("PMD.LawOfDemeter")
 public final class DungeonEditorStateView extends VBox {
 
     private final Label body = new Label();
@@ -17,7 +16,7 @@ public final class DungeonEditorStateView extends VBox {
 
     public DungeonEditorStateView() {
         getStyleClass().addAll("surface-root", "control-stack", "dungeon-state-panel");
-        getChildren().addAll(createStateCard(), narrationCards);
+        getChildren().addAll(new StateCard(body), narrationCards);
     }
 
     public void onViewInputEvent(Consumer<DungeonEditorStateViewInputEvent> handler) {
@@ -40,7 +39,7 @@ public final class DungeonEditorStateView extends VBox {
         narrationCards.getChildren().clear();
         for (DungeonEditorStateContentModel.RoomNarrationCardProjection card
                 : cards == null ? List.<DungeonEditorStateContentModel.RoomNarrationCardProjection>of() : cards) {
-            narrationCards.getChildren().add(narrationCard(card, busy, statusText));
+            narrationCards.getChildren().add(new NarrationCard(card, busy, statusText));
         }
     }
 
@@ -50,64 +49,8 @@ public final class DungeonEditorStateView extends VBox {
         showNarrationCards(resolvedProjection.narrationCards(), resolvedProjection.busy(), resolvedProjection.statusText());
     }
 
-    private VBox narrationCard(
-            DungeonEditorStateContentModel.RoomNarrationCardProjection card,
-            boolean busy,
-            String statusText
-    ) {
-        Label title = new Label(card.roomName());
-        title.getStyleClass().add("panel-title");
-        Label visualTitle = muted("Visueller Eindruck");
-        TextArea visualArea = textArea(card.visualDescription());
-        visualTitle.setLabelFor(visualArea);
-        visualArea.setAccessibleText("Visueller Eindruck");
-        VBox content = new VBox(6, title, visualTitle, visualArea);
-        List<TextArea> exitAreas = new ArrayList<>();
-        for (DungeonEditorStateContentModel.RoomExitNarrationProjection exit : card.exits()) {
-            Label exitTitle = muted(exit.label());
-            TextArea exitArea = textArea(exit.description());
-            exitTitle.setLabelFor(exitArea);
-            exitArea.setAccessibleText(exit.label());
-            exitAreas.add(exitArea);
-            content.getChildren().addAll(exitTitle, exitArea);
-        }
-        visualArea.textProperty().addListener((ignored, before, after) -> emitNarrationInput(
-                card.roomId(),
-                visualArea,
-                exitAreas,
-                false));
-        for (TextArea exitArea : exitAreas) {
-            exitArea.textProperty().addListener((ignored, before, after) -> emitNarrationInput(
-                    card.roomId(),
-                    visualArea,
-                    exitAreas,
-                    false));
-        }
-        Label status = muted(statusText);
-        status.setVisible(statusText != null && !statusText.isBlank());
-        status.setManaged(status.isVisible());
-        Button save = new Button("Speichern");
-        save.setAccessibleText("Narration fuer " + card.roomName() + " speichern");
-        save.getStyleClass().add("toolbar-action-button");
-        save.setDisable(busy);
-        save.setOnAction(event -> emitNarrationInput(card.roomId(), visualArea, exitAreas, true));
-        content.getChildren().addAll(status, save);
-        content.getStyleClass().addAll("card-surface", "content-card");
-        return content;
-    }
-
-    private VBox createStateCard() {
-        Label title = new Label("Editor state");
-        title.getStyleClass().add("panel-title");
-        body.setWrapText(true);
-        VBox card = new VBox(6, title, body);
-        card.getStyleClass().addAll("card-surface", "content-card");
-        return card;
-    }
-
     private static Label muted(String text) {
-        Label label = new Label(text == null ? "" : text);
-        label.getStyleClass().add("text-muted");
+        Label label = new MutedLabel(text);
         label.setWrapText(true);
         return label;
     }
@@ -134,5 +77,85 @@ public final class DungeonEditorStateView extends VBox {
                 visualArea.getText(),
                 exitDescriptions,
                 saveRequested));
+    }
+
+    private final class NarrationCard extends VBox {
+
+        private NarrationCard(
+                DungeonEditorStateContentModel.RoomNarrationCardProjection card,
+                boolean busy,
+                String statusText
+        ) {
+            super(6);
+            TextArea visualArea = textArea(card.visualDescription());
+            List<TextArea> exitAreas = new ArrayList<>();
+            getChildren().addAll(new PanelTitle(card.roomName()), narrationLabel("Visueller Eindruck", visualArea), visualArea);
+            for (DungeonEditorStateContentModel.RoomExitNarrationProjection exit : card.exits()) {
+                TextArea exitArea = textArea(exit.description());
+                exitArea.setAccessibleText(exit.label());
+                exitAreas.add(exitArea);
+                getChildren().addAll(narrationLabel(exit.label(), exitArea), exitArea);
+            }
+            visualArea.textProperty().addListener((ignored, before, after) -> emitNarrationInput(
+                    card.roomId(),
+                    visualArea,
+                    exitAreas,
+                    false));
+            for (TextArea exitArea : exitAreas) {
+                exitArea.textProperty().addListener((ignored, before, after) -> emitNarrationInput(
+                        card.roomId(),
+                        visualArea,
+                        exitAreas,
+                        false));
+            }
+            Label status = muted(statusText);
+            status.setVisible(statusText != null && !statusText.isBlank());
+            status.setManaged(status.isVisible());
+            Button save = new ToolbarActionButton("Speichern");
+            save.setAccessibleText("Narration fuer " + card.roomName() + " speichern");
+            save.setDisable(busy);
+            save.setOnAction(event -> emitNarrationInput(card.roomId(), visualArea, exitAreas, true));
+            getChildren().addAll(status, save);
+            getStyleClass().addAll("card-surface", "content-card");
+        }
+
+        private Label narrationLabel(String text, TextArea area) {
+            Label label = muted(text);
+            label.setLabelFor(area);
+            return label;
+        }
+    }
+
+    private static final class StateCard extends VBox {
+
+        private StateCard(Label body) {
+            super(6, new PanelTitle("Editor state"), body);
+            body.setWrapText(true);
+            getStyleClass().addAll("card-surface", "content-card");
+        }
+    }
+
+    private static final class PanelTitle extends Label {
+
+        private PanelTitle(String text) {
+            super(text);
+            getStyleClass().add("panel-title");
+        }
+    }
+
+    private static final class MutedLabel extends Label {
+
+        private MutedLabel(String text) {
+            super(text == null ? "" : text);
+            getStyleClass().add("text-muted");
+        }
+    }
+
+    private static final class ToolbarActionButton extends Button {
+
+        private ToolbarActionButton(String text) {
+            super(text);
+            getStyleClass().add("toolbar-action-button");
+        }
     }
 }

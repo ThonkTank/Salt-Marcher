@@ -5,10 +5,6 @@ import shell.api.ServiceRegistry;
 
 public final class CreaturesServiceContribution implements ServiceContribution {
 
-    @SuppressWarnings({"PMD.UnnecessaryConstructor", "PMD.UncommentedEmptyConstructor"})
-    public CreaturesServiceContribution() {
-    }
-
     @Override
     public void register(ServiceRegistry.Builder services) {
         CreaturesServiceAssembly assembly = new CreaturesServiceAssembly();
@@ -22,5 +18,8 @@ public final class CreaturesServiceContribution implements ServiceContribution {
         services.registerFactory(
                 src.domain.creatures.published.CreatureDetailModel.class,
                 assembly::createDetailModel);
+        services.registerFactory(
+                src.domain.creatures.published.CreatureEncounterCandidatesModel.class,
+                assembly::createEncounterCandidatesModel);
     }
 }

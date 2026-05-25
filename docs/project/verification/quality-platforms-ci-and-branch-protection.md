@@ -21,7 +21,7 @@ and defines four jobs.
 
 | Job | Status | Current policy |
 | --- | --- | --- |
-| `quality-platforms / production-handoff` | `Required CI Gate` | Runs `tools/gradle/run-staged-verification.sh production-handoff`; this is the single public CI handoff surface for assemble, blocking quality hygiene, and the public `checkArchitecture` aggregate. |
+| `quality-platforms / production-handoff` | `Required CI Gate` | Runs `tools/gradle/run-staged-verification.sh production-handoff`; this is the single public CI handoff surface for assemble, blocking quality hygiene, and internal architecture/build-harness structure checks. |
 | `quality-platforms / ckjm-report` | `Required CI Report` | Runs `tools/gradle/run-observable-gradle.sh ckjmMain` and uploads the CKJM report from `build/reports/ckjm/`. CKJM hotspot regressions stay report-only and surface in the uploaded summary. |
 | `quality-platforms / sonarcloud` | `Required CI Gate` | Runs Gradle `sonar` with `sonar.qualitygate.wait=true`. |
 | `quality-platforms / codescene` | `Required CI Gate` | Runs `python3 tools/quality/scripts/codescene_delta.py`; fails on returned CodeScene `quality-gates`. |
@@ -88,8 +88,9 @@ patterns as warnings.
 
 ## Branch Protection
 
-SaltMarcher should use `linked worktree -> topic branch -> pull request ->
-required checks -> auto-merge or merge queue` for changes into `main`.
+SaltMarcher should use a pull request with required checks before changes enter
+`main`. Local linked worktrees or per-agent branches are optional operator
+choices, not repository governance requirements.
 
 Configure `main` as follows after service secrets and project bindings are in
 place:
@@ -178,8 +179,9 @@ The quality platforms do not replace review judgment.
   work
 - GitHub branch protection, required checks, secrets, variables, and service
   project bindings remain repository configuration, not Gradle behavior
-- local parallel implementation safety is owned by linked worktrees and branch
-  workflow, not by Gradle mutating one shared checkout into per-run snapshots
+- local parallel implementation safety is owned by caller coordination of
+  write sets and shared-file edit ordering, not by Gradle mutating one shared
+  checkout into per-run snapshots
 - whether a PMD, CPD, Lizard, SonarCloud, or CodeScene finding is a symptom of
   a larger design problem remains review-owned even when the immediate gate is
   mechanically enforced

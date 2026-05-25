@@ -9,6 +9,7 @@ import saltmarcher.buildlogic.enforcement.EnforcementBundlesExtension
 import saltmarcher.buildlogic.enforcement.EnforcementDiagnosticSurfaceSpec
 import saltmarcher.buildlogic.enforcement.standardEnforcementDiagnosticSurfaceCatalog
 import saltmarcher.buildlogic.tasks.RepoVerificationMainTask
+import saltmarcher.buildlogic.verification.FocusedVerificationPaths
 
 plugins {
     java
@@ -24,18 +25,16 @@ java {
 val repoRootDir = System.getProperty("saltmarcher.repoRootDir")
     ?.let(::File)
     ?: projectDir.parentFile.parentFile.parentFile
-val focusedVerificationPaths = System.getProperty("saltmarcher.focusedVerificationPaths")
-    ?.split(",")
-    .orEmpty()
-    .map(String::trim)
-    .map { path -> path.replace('\\', '/').removePrefix("./").removeSuffix("/") }
-    .filter(String::isNotEmpty)
-    .distinct()
+val focusedVerificationPaths = FocusedVerificationPaths.selectedPaths()
 
 val enforcementBundles = extensions.getByType(EnforcementBundlesExtension::class.java)
 val focusedEnforcementBundleMode = enforcementBundles.focusedEnforcementBundleMode
 val activeEnforcementBundleIds = enforcementBundles.activeEnforcementBundleIds
 val diagnosticSurfaceCatalog = standardEnforcementDiagnosticSurfaceCatalog(enforcementBundles.catalog)
+FocusedVerificationPaths.validateSelection(
+    repoRootDir,
+    activeEnforcementBundleIds.map { bundleId -> enforcementBundles.descriptor(bundleId) }
+)
 
 val sourceSets = the<SourceSetContainer>()
 
@@ -44,6 +43,10 @@ sourceSets.named("main") {
     resources.setSrcDirs(emptyList<String>())
 }
 val mainSourceSet = sourceSets["main"]
+
+dependencies {
+    implementation("saltmarcher.architecture:architecture-policy:1.0-SNAPSHOT")
+}
 
 fun humanizeBundleLabel(bundleId: String): String = bundleId
     .replace(Regex("([a-z0-9])([A-Z])"), "$1 $2")
@@ -179,20 +182,18 @@ diagnosticSurfaceCatalog.surfacesInOrder.forEach { surface ->
         }
 }
 
-if (!focusedEnforcementBundleMode) {
-    val documentationRootRuleClasses = listOf(
-        "saltmarcher.architecture.documentation.DocumentationHygieneRules",
-        "saltmarcher.architecture.documentation.domain.DomainDocumentationRules"
+val documentationRootRuleClasses = listOf(
+    "saltmarcher.architecture.documentation.DocumentationHygieneRules",
+    "saltmarcher.architecture.documentation.domain.DomainDocumentationRules"
+)
+registerBuildHarnessTask(
+    "documentationEnforcementCheck",
+    "documentation",
+    BuildHarnessTaskSpec(
+        kind = BuildHarnessTaskKind.DOCUMENTATION,
+        ruleClasses = documentationRootRuleClasses
     )
-    registerBuildHarnessTask(
-        "documentationEnforcementCheck",
-        "documentation",
-        BuildHarnessTaskSpec(
-            kind = BuildHarnessTaskKind.DOCUMENTATION,
-            ruleClasses = documentationRootRuleClasses
-        )
-    )
-}
+)
 
 tasks.register<RepoVerificationMainTask>("architectureCheck") {
     group = LifecycleBasePlugin.VERIFICATION_GROUP

@@ -26,8 +26,8 @@ public final class EncounterResultsStateView extends VBox {
     private final Label resultGoldLabel = styledLabel("", "encounter-result-gold");
     private final Label resultLootLabel = styledLabel("", STYLE_TEXT_SECONDARY);
     private final Label resultAwardStatusLabel = styledLabel("", STYLE_TEXT_SECONDARY);
-    private final Slider resultThresholdSlider = percentSlider();
-    private final Slider resultFractionSlider = percentSlider();
+    private final Slider resultThresholdSlider = new PercentSlider();
+    private final Slider resultFractionSlider = new PercentSlider();
     private final Label resultThresholdValueLabel = styledLabel("", "encounter-results-slider-value");
     private final Label resultFractionValueLabel = styledLabel("", "encounter-results-slider-value");
     private VBox controlsBox;
@@ -37,6 +37,7 @@ public final class EncounterResultsStateView extends VBox {
     private Consumer<EncounterResultsStateViewInputEvent> viewInputEventHandler = ignored -> { };
 
     public EncounterResultsStateView() {
+        resultEnemyList.getStyleClass().add("encounter-results-enemy-list");
         getChildren().add(dialog);
         setVgrow(dialog, Priority.ALWAYS);
     }
@@ -56,15 +57,22 @@ public final class EncounterResultsStateView extends VBox {
     private VBox buildPane() {
         Label title = styledLabel("Kampfergebnis", "title");
         resultLootLabel.setWrapText(true);
-        resultEnemyList.getStyleClass().add("encounter-results-enemy-list");
 
         VBox summary = new VBox(2, resultXpLabel, resultPartyLabel, resultGoldLabel, resultLootLabel);
 
-        resultThresholdSlider.valueProperty().addListener((obs, oldValue, newValue) -> publishSelection());
-        resultFractionSlider.valueProperty().addListener((obs, oldValue, newValue) -> publishSelection());
+        resultThresholdSlider.valueChangingProperty().addListener((obs, oldValue, changing) -> {
+            if (!changing) {
+                publishSelection();
+            }
+        });
+        resultFractionSlider.valueChangingProperty().addListener((obs, oldValue, changing) -> {
+            if (!changing) {
+                publishSelection();
+            }
+        });
         controlsBox = new VBox(4,
-                sliderRow("Besiegungsschwelle", resultThresholdSlider, resultThresholdValueLabel),
-                sliderRow("XP-Anteil", resultFractionSlider, resultFractionValueLabel));
+                new SliderRow("Besiegungsschwelle", resultThresholdSlider, resultThresholdValueLabel),
+                new SliderRow("XP-Anteil", resultFractionSlider, resultFractionValueLabel));
 
         resultAwardStatusLabel.setWrapText(true);
         resultAwardButton.setMaxWidth(Double.MAX_VALUE);
@@ -107,48 +115,16 @@ public final class EncounterResultsStateView extends VBox {
         resultAwardButton.setDisable(panel.awardButtonDisabled());
     }
 
-    private void publishSelection() {
-        publish(false, false);
-    }
-
-    private HBox sliderRow(String title, Slider slider, Label valueLabel) {
-        Label label = styledLabel(title, STYLE_TEXT_SECONDARY);
-        label.setLabelFor(slider);
-        slider.setAccessibleText(title);
-        slider.setAccessibleHelp(title + " in Prozent");
-        valueLabel.setAlignment(Pos.CENTER_RIGHT);
-        HBox.setHgrow(slider, Priority.ALWAYS);
-        HBox row = new HBox(8, label, slider, valueLabel);
-        row.setAlignment(Pos.CENTER_LEFT);
-        return row;
-    }
-
-    private Slider percentSlider() {
-        Slider slider = new Slider(0, 1, 1);
-        slider.setMajorTickUnit(0.25);
-        slider.setMinorTickCount(4);
-        slider.setShowTickMarks(true);
-        slider.setShowTickLabels(true);
-        slider.setLabelFormatter(new StringConverter<>() {
-            @Override
-            public String toString(Double value) {
-                return (int) Math.round(value * 100) + "%";
-            }
-
-            @Override
-            public Double fromString(String string) {
-                return 0.0;
-            }
-        });
-        return slider;
-    }
-
     private Separator separator() {
         return new Separator();
     }
 
     private static Label styledLabel(String text, String... styleClasses) {
         return new StyledLabel(text, styleClasses);
+    }
+
+    private void publishSelection() {
+        publish(false, false);
     }
 
     private void publish(boolean awardExperienceRequested, boolean returnToBuilderRequested) {
@@ -166,20 +142,12 @@ public final class EncounterResultsStateView extends VBox {
 
     private void showEnemies(List<EncounterResultsStateContentModel.EnemyView> enemies) {
         resultEnemyList.getChildren().clear();
-        List<EncounterResultsStateContentModel.EnemyView> safeEnemies = enemies == null ? List.of() : enemies;
-        for (EncounterResultsStateContentModel.EnemyView enemy : safeEnemies) {
-            resultEnemyList.getChildren().add(enemyToggle(enemy, this::publishSelection));
+        for (EncounterResultsStateContentModel.EnemyView enemy : enemies == null ? List.<EncounterResultsStateContentModel.EnemyView>of() : enemies) {
+            EnemyToggle toggle = new EnemyToggle(enemy);
+            toggle.setSelected(enemy.selected());
+            toggle.selectedProperty().addListener((obs, oldValue, newValue) -> publishSelection());
+            resultEnemyList.getChildren().add(toggle);
         }
-    }
-
-    private static CheckBox enemyToggle(
-            EncounterResultsStateContentModel.EnemyView enemy,
-            Runnable selectionHandler
-    ) {
-        CheckBox toggle = new EnemyToggle(enemy);
-        toggle.setSelected(enemy.selected());
-        toggle.selectedProperty().addListener((obs, oldValue, newValue) -> selectionHandler.run());
-        return toggle;
     }
 
     private static final class StyledVBox extends VBox {
@@ -205,4 +173,41 @@ public final class EncounterResultsStateView extends VBox {
             getStyleClass().add(STYLE_TEXT_SECONDARY);
         }
     }
+
+    private static final class PercentSlider extends Slider {
+
+        private PercentSlider() {
+            super(0, 1, 1);
+            setMajorTickUnit(0.25);
+            setMinorTickCount(4);
+            setShowTickMarks(true);
+            setShowTickLabels(true);
+            setLabelFormatter(new StringConverter<>() {
+                @Override
+                public String toString(Double value) {
+                    return (int) Math.round(value * 100) + "%";
+                }
+
+                @Override
+                public Double fromString(String string) {
+                    return 0.0;
+                }
+            });
+        }
+    }
+
+    private static final class SliderRow extends HBox {
+
+        private SliderRow(String title, Slider slider, Label valueLabel) {
+            super(8, styledLabel(title, STYLE_TEXT_SECONDARY), slider, valueLabel);
+            Label label = (Label) getChildren().get(0);
+            label.setLabelFor(slider);
+            slider.setAccessibleText(title);
+            slider.setAccessibleHelp(title + " in Prozent");
+            valueLabel.setAlignment(Pos.CENTER_RIGHT);
+            setHgrow(slider, Priority.ALWAYS);
+            setAlignment(Pos.CENTER_LEFT);
+        }
+    }
+
 }

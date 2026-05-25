@@ -1,5 +1,9 @@
 package saltmarcher.architecture.view;
 
+import saltmarcher.architecture.policy.view.ViewPolicy;
+import saltmarcher.architecture.policy.view.ViewRole;
+import saltmarcher.architecture.policy.view.ViewSourceDescriptor;
+import saltmarcher.architecture.policy.view.ViewUnitKind;
 import saltmarcher.architecture.ArchitectureContext;
 import saltmarcher.architecture.ArchitectureRule;
 import saltmarcher.architecture.SourceFile;
@@ -9,15 +13,19 @@ public final class ViewTopologyPerimeterRules implements ArchitectureRule {
 
     @Override
     public void check(ArchitectureContext context, ViolationSink violations) {
-        for (ViewSourceDescriptor descriptor : ViewTopologyCatalog.describeViewSources(context.sourceFiles(violations))) {
+        for (SourceFile sourceFile : context.sourceFiles(violations)) {
+            if (!ViewPolicy.isViewSourcePath(sourceFile.relativePath())) {
+                continue;
+            }
+            ViewSourceDescriptor descriptor = ViewPolicy.describePath(sourceFile.relativePath());
             if (!descriptor.isRecognizedViewSource()) {
-                violations.add(descriptor.source(), "view-topology-directory",
+                violations.add(sourceFile.relativePath(), "view-topology-directory",
                         "View Java sources may live only under src/view/leftbartabs/<entry>/, src/view/statetabs/<entry>/, src/view/dropdowns/<entry>/, or src/view/slotcontent/<controls|main|state|details|topbar|primitives>/<entry>/ as direct files.");
                 continue;
             }
             if (descriptor.role() == ViewRole.UNKNOWN || !descriptor.role().isAllowedIn(descriptor.unit().kind())) {
                 violations.add(
-                        descriptor.source(),
+                        sourceFile.relativePath(),
                         roleRule(descriptor.unit().kind()),
                         roleDetails(descriptor.unit().kind()));
             }

@@ -86,10 +86,6 @@ public record EncounterTuningPreviewData(
         return outcome == Outcome.PARTY_MISSING;
     }
 
-    public boolean storageFailed() {
-        return outcome == Outcome.FAILED;
-    }
-
     public static final class PreviewPoint {
 
         private final double value;

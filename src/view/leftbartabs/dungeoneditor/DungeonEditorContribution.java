@@ -12,10 +12,6 @@ import shell.api.ShellLeftBarTabSpec;
 
 public final class DungeonEditorContribution implements ShellContribution {
 
-    @SuppressWarnings({"PMD.UnnecessaryConstructor", "PMD.UncommentedEmptyConstructor"})
-    public DungeonEditorContribution() {
-    }
-
     @Override
     public ShellContributionSpec registrationSpec() {
         return new ShellLeftBarTabSpec(

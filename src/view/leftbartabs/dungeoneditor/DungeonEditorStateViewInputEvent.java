@@ -13,6 +13,8 @@ public record DungeonEditorStateViewInputEvent(
         visualDescription = visualDescription == null ? "" : visualDescription;
         exitDescriptions = exitDescriptions == null
                 ? List.of()
-                : exitDescriptions.stream().map(description -> description == null ? "" : description).toList();
+                : List.copyOf(exitDescriptions.stream()
+                        .map(description -> description == null ? "" : description)
+                        .toList());
     }
 }

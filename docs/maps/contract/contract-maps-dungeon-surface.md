@@ -16,7 +16,10 @@ the generic maps feature.
 
 Owners:
 
-- provider: `DungeonEditorApplicationService`,
+- provider: `DungeonEditorMapApplicationService`,
+  `DungeonEditorProjectionApplicationService`,
+  `DungeonEditorPointerApplicationService`,
+  `DungeonEditorNarrationApplicationService`,
   `DungeonTravelApplicationService`, and `DungeonTravelRuntimeApplicationService`
 - consumers: dungeon editor and travel view roots,
   and any future runtime-workspace context that needs authored dungeon map
@@ -27,8 +30,8 @@ Owners:
 - committed dungeon map read and selection inspection MUST enter through the
   owning editor or travel runtime boundary for that workspace
 - preview and apply MUST reuse the authored map operation vocabulary owned by
-  `dungeon/model/map/model/DungeonEditorAuthoredOperation` and applied through
-  the authored dungeon mutation use case
+  `dungeon/model/worldspace/model/DungeonEditorAuthoredOperation` and applied
+  through the authored dungeon mutation use case
 - map catalog work MUST use one catalog request and response family
 - travel surface reads and travel moves MUST use one travel request and
   response family
@@ -42,7 +45,7 @@ Owners:
 ### Editor Authored Read
 
 - `SelectDungeonEditorMapCommand`
-- `DungeonEditorSelectionCommand`
+- `ApplyDungeonEditorPointerCommand`
 
 Required context:
 
@@ -56,7 +59,7 @@ Optional context:
 
 ### Editor Authored Mutation
 
-- `DungeonEditorPointerCommand` variants for pointer-driven editor operations
+- `ApplyDungeonEditorPointerCommand` for pointer-driven editor operations
 - focused editor commands for map selection, projection, overlay, tool, and
   room narration work
 

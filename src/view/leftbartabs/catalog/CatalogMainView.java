@@ -22,29 +22,18 @@ public final class CatalogMainView extends BorderPane {
     private static final int FIRST_COLUMN_INDEX = 0;
     private static final int PREVIOUS_PAGE_SHIFT = -1;
     private static final int NEXT_PAGE_SHIFT = 1;
+    private static final long NO_CREATURE_ID = 0L;
     private static final String ACTION_LABEL = "+Add";
     private static final String ACTION_TOOLTIP = "Zum Encounter hinzufügen";
     private static final String CREATURE_ACCESSIBLE_TEXT_PREFIX = "Stat Block: ";
     private static final String ACTION_ACCESSIBLE_TEXT_PREFIX = ACTION_LABEL + ": ";
-    private static final String SORT_KEY_NAME_ASC = "name-asc";
-    private static final String SORT_KEY_NAME_DESC = "name-desc";
-    private static final String SORT_KEY_CR_ASC = "cr-asc";
-    private static final String SORT_KEY_CR_DESC = "cr-desc";
-    private static final String SORT_KEY_XP_ASC = "xp-asc";
-    private static final String SORT_KEY_XP_DESC = "xp-desc";
-    private static final String SORT_LABEL_NAME_ASC = "Name (A-Z)";
-    private static final String SORT_LABEL_NAME_DESC = "Name (Z-A)";
-    private static final String SORT_LABEL_CR_ASC = "CR (aufst.)";
-    private static final String SORT_LABEL_CR_DESC = "CR (abst.)";
-    private static final String SORT_LABEL_XP_ASC = "XP (aufst.)";
-    private static final String SORT_LABEL_XP_DESC = "XP (abst.)";
     private static final String COLUMN_KEY_CHALLENGE_RATING = "cr";
     private static final String COLUMN_KEY_TYPE = "type";
     private static final String COLUMN_KEY_SIZE = "size";
     private static final String COLUMN_KEY_XP = "xp";
 
-    private final Label countLabel = secondaryLabel("0 Monster gefunden");
-    private final Label pageLabel = secondaryLabel("Seite 1 / 1");
+    private final Label countLabel = Chrome.secondaryLabel("0 Monster gefunden");
+    private final Label pageLabel = Chrome.secondaryLabel("Seite 1 / 1");
     private final Button previousButton = new Button("◀ Zurück");
     private final Button nextButton = new Button("Weiter ▶");
     private final ComboBox<Object> sortSelector = new ComboBox<>();
@@ -53,13 +42,13 @@ public final class CatalogMainView extends BorderPane {
 
     public CatalogMainView() {
         getStyleClass().add("surface-root");
-        configureSortSelector(sortSelector, this::publishSortSelection);
-        configureTable(table, this::publishOpenCreature, this::publishAddCreature);
+        Chrome.configureSortSelector(sortSelector, this::publishSortSelection);
+        CatalogTable.configure(table, this::publishCreatureEvent);
         previousButton.setOnAction(event -> publishPageShift(PREVIOUS_PAGE_SHIFT));
         nextButton.setOnAction(event -> publishPageShift(NEXT_PAGE_SHIFT));
-        setTop(topBar(countLabel, sortSelector));
+        setTop(Chrome.topBar(countLabel, sortSelector));
         setCenter(table);
-        setBottom(paginationBar(previousButton, pageLabel, nextButton));
+        setBottom(Chrome.paginationBar(previousButton, pageLabel, nextButton));
     }
 
     public void bind(CatalogMainContentModel contentModel) {
@@ -84,13 +73,12 @@ public final class CatalogMainView extends BorderPane {
         nextButton.setDisable(!projection.nextPageAvailable());
         sortSelector.getItems().setAll(projection.sortOptions());
         selectSortKey(projection.selectedSortKey());
-        applyTableProjection(
+        CatalogTable.applyProjection(
                 table,
                 projection.placeholderText(),
                 projection.rows(),
                 projection.columns(),
-                this::publishOpenCreature,
-                this::publishAddCreature);
+                this::publishCreatureEvent);
     }
 
     private void publishSortSelection(String sortKey) {
@@ -101,16 +89,8 @@ public final class CatalogMainView extends BorderPane {
                 0));
     }
 
-    private void publishOpenCreature(long creatureId) {
-        publishCreatureEvent(creatureId, false);
-    }
-
-    private void publishAddCreature(long creatureId) {
-        publishCreatureEvent(creatureId, true);
-    }
-
     private void publishCreatureEvent(long creatureId, boolean addCreature) {
-        if (!hasCreatureId(creatureId)) {
+        if (creatureId <= NO_CREATURE_ID) {
             return;
         }
         viewInputEventHandler.accept(addCreature
@@ -126,219 +106,194 @@ public final class CatalogMainView extends BorderPane {
                 pageShift));
     }
 
-    private static Label secondaryLabel(String text) {
-        Label label = new Label(text);
-        label.getStyleClass().add("text-secondary");
-        return label;
-    }
-
-    private static HBox topBar(Label countLabel, ComboBox<Object> sortSelector) {
-        HBox topBar = new HBox(8);
-        topBar.getStyleClass().add("catalog-main-topbar");
-        Region spacer = new Region();
-        HBox.setHgrow(spacer, Priority.ALWAYS);
-        Label sortLabel = new Label("Sortierung:");
-        sortLabel.getStyleClass().add("text-muted");
-        topBar.getChildren().addAll(countLabel, spacer, sortLabel, sortSelector);
-        return topBar;
-    }
-
-    private static HBox paginationBar(Button previousButton, Label pageLabel, Button nextButton) {
-        HBox bar = new HBox(8, previousButton, pageLabel, nextButton);
-        bar.getStyleClass().add("catalog-main-pagination");
-        return bar;
-    }
-
-    private static void configureSortSelector(
-            ComboBox<Object> sortSelector,
-            Consumer<String> selectionConsumer
-    ) {
-        sortSelector.setOnAction(event -> {
-            String selectedKey = keyForLabel(sortSelector.getValue() == null ? "" : sortSelector.getValue().toString());
-            if (!selectedKey.isBlank()) {
-                selectionConsumer.accept(selectedKey);
-            }
-        });
-    }
-
     private void selectSortKey(String key) {
-        String label = labelForKey(key);
-        if (label.isBlank()) {
+        if (key == null || key.isBlank()) {
             return;
         }
         sortSelector.setOnAction(event -> { });
         try {
             for (Object selection : sortSelector.getItems()) {
-                if (label.equals(selection.toString())) {
+                if (selection instanceof CatalogMainContentModel.KeyLabel option && key.equals(option.key())) {
                     sortSelector.getSelectionModel().select(selection);
                     return;
                 }
             }
         } finally {
-            configureSortSelector(sortSelector, this::publishSortSelection);
+            Chrome.configureSortSelector(sortSelector, this::publishSortSelection);
         }
     }
 
-    private static void configureTable(
-            TableView<Object> table,
-            Consumer<Long> openCreatureAction,
-            Consumer<Long> addCreatureAction
-    ) {
-        table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
-        table.setPlaceholder(new Label("Lade Monster..."));
-        table.setOnKeyPressed(event -> {
-            if (event.getCode() != KeyCode.ENTER) {
-                return;
-            }
-            long selectedCreatureId = creatureId(table.getSelectionModel().getSelectedItem());
-            if (!hasCreatureId(selectedCreatureId)) {
-                return;
-            }
-            if (event.isShiftDown()) {
-                addCreatureAction.accept(selectedCreatureId);
-            } else {
-                openCreatureAction.accept(selectedCreatureId);
-            }
-            event.consume();
-        });
-    }
+    private static final class Chrome {
 
-    private static boolean hasCreatureId(long creatureId) {
-        return creatureId > 0L;
-    }
-
-    private static void applyTableProjection(
-            TableView<Object> table,
-            String placeholderText,
-            List<CatalogMainContentModel.CatalogRow> rows,
-            List<CatalogMainContentModel.KeyLabel> columns,
-            Consumer<Long> openCreatureAction,
-            Consumer<Long> addCreatureAction
-    ) {
-        if (table.getPlaceholder() instanceof Label label) {
-            label.setText(placeholderText);
+        static Label secondaryLabel(String text) {
+            Label label = new Label(text);
+            label.getStyleClass().add("text-secondary");
+            return label;
         }
-        table.getItems().setAll(rows == null ? List.of() : List.copyOf(rows));
-        table.getColumns().setAll(configuredColumns(columns, openCreatureAction, addCreatureAction));
-    }
 
-    private static List<TableColumn<Object, ?>> configuredColumns(
-            List<CatalogMainContentModel.KeyLabel> columns,
-            Consumer<Long> openCreatureAction,
-            Consumer<Long> addCreatureAction
-    ) {
-        List<CatalogMainContentModel.KeyLabel> safeColumns = columns == null ? List.of() : List.copyOf(columns);
-        TableColumn<Object, ?>[] configuredColumns = new TableColumn[safeColumns.size() + 1];
-        for (int index = 0; index < safeColumns.size(); index++) {
-            configuredColumns[index] = index == FIRST_COLUMN_INDEX
-                    ? createLinkColumn(safeColumns.get(index), openCreatureAction)
-                    : createTextColumn(safeColumns.get(index), index);
+        static HBox topBar(Label countLabel, ComboBox<Object> sortSelector) {
+            Region spacer = new Region();
+            HBox.setHgrow(spacer, Priority.ALWAYS);
+            Label sortLabel = new Label("Sortierung:");
+            sortLabel.getStyleClass().add("text-muted");
+            HBox topBar = new HBox(8, countLabel, spacer, sortLabel, sortSelector);
+            topBar.getStyleClass().add("catalog-main-topbar");
+            return topBar;
         }
-        configuredColumns[safeColumns.size()] = createActionColumn(addCreatureAction);
-        return List.of(configuredColumns);
-    }
 
-    private static TableColumn<Object, String> createTextColumn(
-            CatalogMainContentModel.KeyLabel column,
-            int index
-    ) {
-        TableColumn<Object, String> textColumn = new TableColumn<>(column.label());
-        textColumn.setCellValueFactory(data -> new SimpleStringProperty(cellText(data.getValue(), index)));
-        applyColumnSizing(textColumn, column.key());
-        return textColumn;
-    }
+        static HBox paginationBar(Button previousButton, Label pageLabel, Button nextButton) {
+            HBox bar = new HBox(8, previousButton, pageLabel, nextButton);
+            bar.getStyleClass().add("catalog-main-pagination");
+            return bar;
+        }
 
-    private static TableColumn<Object, Object> createLinkColumn(
-            CatalogMainContentModel.KeyLabel column,
-            Consumer<Long> openCreatureAction
-    ) {
-        TableColumn<Object, Object> linkColumn = new TableColumn<>(column.label());
-        linkColumn.setMinWidth(120);
-        linkColumn.setPrefWidth(200);
-        linkColumn.setCellValueFactory(data -> new ReadOnlyObjectWrapper<>(data.getValue()));
-        linkColumn.setCellFactory(ignored -> new LinkCell(CatalogMainView::creatureId, openCreatureAction));
-        return linkColumn;
-    }
-
-    private static TableColumn<Object, Object> createActionColumn(Consumer<Long> addCreatureAction) {
-        TableColumn<Object, Object> actionColumn = new TableColumn<>("");
-        actionColumn.setMinWidth(55);
-        actionColumn.setPrefWidth(65);
-        actionColumn.setMaxWidth(75);
-        actionColumn.setSortable(false);
-        actionColumn.setCellValueFactory(data -> new ReadOnlyObjectWrapper<>(data.getValue()));
-        actionColumn.setCellFactory(ignored -> new ActionCell(CatalogMainView::creatureId, addCreatureAction));
-        return actionColumn;
-    }
-
-    private static String keyForLabel(String label) {
-        return switch (label) {
-            case SORT_LABEL_NAME_ASC -> SORT_KEY_NAME_ASC;
-            case SORT_LABEL_NAME_DESC -> SORT_KEY_NAME_DESC;
-            case SORT_LABEL_CR_ASC -> SORT_KEY_CR_ASC;
-            case SORT_LABEL_CR_DESC -> SORT_KEY_CR_DESC;
-            case SORT_LABEL_XP_ASC -> SORT_KEY_XP_ASC;
-            case SORT_LABEL_XP_DESC -> SORT_KEY_XP_DESC;
-            default -> "";
-        };
-    }
-
-    private static String labelForKey(String key) {
-        return switch (key) {
-            case SORT_KEY_NAME_ASC -> SORT_LABEL_NAME_ASC;
-            case SORT_KEY_NAME_DESC -> SORT_LABEL_NAME_DESC;
-            case SORT_KEY_CR_ASC -> SORT_LABEL_CR_ASC;
-            case SORT_KEY_CR_DESC -> SORT_LABEL_CR_DESC;
-            case SORT_KEY_XP_ASC -> SORT_LABEL_XP_ASC;
-            case SORT_KEY_XP_DESC -> SORT_LABEL_XP_DESC;
-            default -> "";
-        };
-    }
-
-    private static String cellText(Object row, int index) {
-        return row instanceof CatalogMainContentModel.CatalogRow catalogRow ? catalogRow.cell(index) : "";
-    }
-
-    private static long creatureId(Object row) {
-        return row instanceof CatalogMainContentModel.CatalogRow catalogRow ? catalogRow.id() : 0L;
-    }
-
-    private static void applyColumnSizing(TableColumn<Object, String> textColumn, String key) {
-        switch (key) {
-            case COLUMN_KEY_CHALLENGE_RATING -> setColumnSizing(textColumn, 40, 50, 60);
-            case COLUMN_KEY_TYPE -> setColumnSizing(textColumn, 80, 110, 150);
-            case COLUMN_KEY_SIZE -> setColumnSizing(textColumn, 65, 85, 100);
-            case COLUMN_KEY_XP -> setColumnSizing(textColumn, 45, 60, 75);
-            default -> {
-                textColumn.setMinWidth(70);
-                textColumn.setPrefWidth(110);
-            }
+        static void configureSortSelector(
+                ComboBox<Object> sortSelector,
+                Consumer<String> selectionConsumer
+        ) {
+            sortSelector.setOnAction(event -> {
+                if (sortSelector.getValue() instanceof CatalogMainContentModel.KeyLabel selected
+                        && !selected.key().isBlank()) {
+                    selectionConsumer.accept(selected.key());
+                }
+            });
         }
     }
 
-    private static void setColumnSizing(
-            TableColumn<Object, String> textColumn,
-            double minWidth,
-            double prefWidth,
-            double maxWidth
-    ) {
-        textColumn.setMinWidth(minWidth);
-        textColumn.setPrefWidth(prefWidth);
-        textColumn.setMaxWidth(maxWidth);
+    private static final class CatalogTable {
+
+        static void configure(
+                TableView<Object> table,
+                CreatureAction action
+        ) {
+            table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+            table.setPlaceholder(new Label("Lade Monster..."));
+            table.setOnKeyPressed(event -> {
+                if (event.getCode() != KeyCode.ENTER) {
+                    return;
+                }
+                long selectedCreatureId = creatureId(table.getSelectionModel().getSelectedItem());
+                if (selectedCreatureId <= NO_CREATURE_ID) {
+                    return;
+                }
+                action.accept(selectedCreatureId, event.isShiftDown());
+                event.consume();
+            });
+        }
+
+        static void applyProjection(
+                TableView<Object> table,
+                String placeholderText,
+                List<CatalogMainContentModel.CatalogRow> rows,
+                List<CatalogMainContentModel.KeyLabel> columns,
+                CreatureAction action
+        ) {
+            if (table.getPlaceholder() instanceof Label label) {
+                label.setText(placeholderText);
+            }
+            table.getItems().setAll(rows == null ? List.of() : List.copyOf(rows));
+            table.getColumns().setAll(configuredColumns(columns, action));
+        }
+
+        private static List<TableColumn<Object, ?>> configuredColumns(
+                List<CatalogMainContentModel.KeyLabel> columns,
+                CreatureAction action
+        ) {
+            List<CatalogMainContentModel.KeyLabel> safeColumns = columns == null ? List.of() : List.copyOf(columns);
+            TableColumn<Object, ?>[] configuredColumns = new TableColumn[safeColumns.size() + 1];
+            for (int index = 0; index < safeColumns.size(); index++) {
+                configuredColumns[index] = index == FIRST_COLUMN_INDEX
+                        ? createLinkColumn(safeColumns.get(index), action)
+                        : createTextColumn(safeColumns.get(index), index);
+            }
+            configuredColumns[safeColumns.size()] = createActionColumn(action);
+            return List.of(configuredColumns);
+        }
+
+        private static TableColumn<Object, String> createTextColumn(
+                CatalogMainContentModel.KeyLabel column,
+                int index
+        ) {
+            TableColumn<Object, String> textColumn = new TableColumn<>(column.label());
+            textColumn.setCellValueFactory(data -> new SimpleStringProperty(cellText(data.getValue(), index)));
+            applyColumnSizing(textColumn, column.key());
+            return textColumn;
+        }
+
+        private static TableColumn<Object, Object> createLinkColumn(
+                CatalogMainContentModel.KeyLabel column,
+                CreatureAction action
+        ) {
+            TableColumn<Object, Object> linkColumn = new TableColumn<>(column.label());
+            linkColumn.setMinWidth(120);
+            linkColumn.setPrefWidth(200);
+            linkColumn.setCellValueFactory(data -> new ReadOnlyObjectWrapper<>(data.getValue()));
+            linkColumn.setCellFactory(ignored -> new LinkCell(CatalogTable::creatureId, action));
+            return linkColumn;
+        }
+
+        private static TableColumn<Object, Object> createActionColumn(CreatureAction action) {
+            TableColumn<Object, Object> actionColumn = new TableColumn<>("");
+            actionColumn.setMinWidth(55);
+            actionColumn.setPrefWidth(65);
+            actionColumn.setMaxWidth(75);
+            actionColumn.setSortable(false);
+            actionColumn.setCellValueFactory(data -> new ReadOnlyObjectWrapper<>(data.getValue()));
+            actionColumn.setCellFactory(ignored -> new ActionCell(CatalogTable::creatureId, action));
+            return actionColumn;
+        }
+
+        private static String cellText(Object row, int index) {
+            return row instanceof CatalogMainContentModel.CatalogRow catalogRow ? catalogRow.cell(index) : "";
+        }
+
+        private static long creatureId(Object row) {
+            return row instanceof CatalogMainContentModel.CatalogRow catalogRow ? catalogRow.id() : 0L;
+        }
+
+        private static void applyColumnSizing(TableColumn<Object, String> textColumn, String key) {
+            switch (key) {
+                case COLUMN_KEY_CHALLENGE_RATING -> setColumnSizing(textColumn, 40, 50, 60);
+                case COLUMN_KEY_TYPE -> setColumnSizing(textColumn, 80, 110, 150);
+                case COLUMN_KEY_SIZE -> setColumnSizing(textColumn, 65, 85, 100);
+                case COLUMN_KEY_XP -> setColumnSizing(textColumn, 45, 60, 75);
+                default -> {
+                    textColumn.setMinWidth(70);
+                    textColumn.setPrefWidth(110);
+                }
+            }
+        }
+
+        private static void setColumnSizing(
+                TableColumn<Object, String> textColumn,
+                double minWidth,
+                double prefWidth,
+                double maxWidth
+        ) {
+            textColumn.setMinWidth(minWidth);
+            textColumn.setPrefWidth(prefWidth);
+            textColumn.setMaxWidth(maxWidth);
+        }
+    }
+
+    @FunctionalInterface
+    private interface CreatureAction {
+
+        void accept(long creatureId, boolean addCreature);
     }
 
     private static final class LinkCell extends TableCell<Object, Object> {
 
         private final Button button = new Button();
         private final java.util.function.ToLongFunction<Object> creatureIdReader;
-        private final Consumer<Long> openCreatureAction;
+        private final CreatureAction action;
 
         LinkCell(
                 java.util.function.ToLongFunction<Object> creatureIdReader,
-                Consumer<Long> openCreatureAction
+                CreatureAction action
         ) {
             this.creatureIdReader = creatureIdReader;
-            this.openCreatureAction = openCreatureAction;
+            this.action = action;
             button.getStyleClass().addAll("creature-link", "flat");
             button.setOnAction(event -> {
                 Object row = getItem();
@@ -346,7 +301,7 @@ public final class CatalogMainView extends BorderPane {
                 if (owningTable != null && row != null) {
                     owningTable.getSelectionModel().select(row);
                 }
-                openCreatureAction.accept(creatureIdReader.applyAsLong(row));
+                action.accept(creatureIdReader.applyAsLong(row), false);
             });
         }
 
@@ -354,7 +309,7 @@ public final class CatalogMainView extends BorderPane {
         protected void updateItem(Object row, boolean empty) {
             super.updateItem(row, empty);
             Object displayRow = empty ? null : row;
-            String creatureName = cellText(displayRow, FIRST_COLUMN_INDEX);
+            String creatureName = CatalogTable.cellText(displayRow, FIRST_COLUMN_INDEX);
             button.setText(creatureName);
             button.setAccessibleText(displayRow == null ? "" : CREATURE_ACCESSIBLE_TEXT_PREFIX + creatureName);
             setText(null);
@@ -366,14 +321,14 @@ public final class CatalogMainView extends BorderPane {
 
         private final Button button = new Button(ACTION_LABEL);
         private final java.util.function.ToLongFunction<Object> creatureIdReader;
-        private final Consumer<Long> addCreatureAction;
+        private final CreatureAction action;
 
         ActionCell(
                 java.util.function.ToLongFunction<Object> creatureIdReader,
-                Consumer<Long> addCreatureAction
+                CreatureAction action
         ) {
             this.creatureIdReader = creatureIdReader;
-            this.addCreatureAction = addCreatureAction;
+            this.action = action;
             button.getStyleClass().addAll("accent", "compact");
             button.setTooltip(new Tooltip(ACTION_TOOLTIP));
             button.setOnAction(event -> {
@@ -382,7 +337,7 @@ public final class CatalogMainView extends BorderPane {
                 if (owningTable != null && row != null) {
                     owningTable.getSelectionModel().select(row);
                 }
-                addCreatureAction.accept(creatureIdReader.applyAsLong(row));
+                action.accept(creatureIdReader.applyAsLong(row), true);
             });
         }
 
@@ -390,7 +345,9 @@ public final class CatalogMainView extends BorderPane {
         protected void updateItem(Object row, boolean empty) {
             super.updateItem(row, empty);
             Object displayRow = empty ? null : row;
-            button.setAccessibleText(displayRow == null ? "" : ACTION_ACCESSIBLE_TEXT_PREFIX + cellText(displayRow, FIRST_COLUMN_INDEX));
+            button.setAccessibleText(displayRow == null
+                    ? ""
+                    : ACTION_ACCESSIBLE_TEXT_PREFIX + CatalogTable.cellText(displayRow, FIRST_COLUMN_INDEX));
             setGraphic(displayRow == null ? null : button);
         }
     }

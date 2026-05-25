@@ -11,7 +11,6 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 
-@SuppressWarnings("PMD.LawOfDemeter")
 public final class PartyTopBarView extends HBox {
 
     static final double POPUP_WIDTH = 380.0;
@@ -19,11 +18,11 @@ public final class PartyTopBarView extends HBox {
     static final String TOOLTIP_TEXT = "Party-Panel öffnen (Alt+P)";
 
     private Consumer<PartyTopBarViewInputEvent> viewInputEventHandler = ignored -> { };
-    private final Label headerLabel = new Label();
+    private final Label headerLabel = new StyledLabel();
 
     public PartyTopBarView(Node... content) {
         getStyleClass().add("party-topbar-root");
-        getChildren().add(buildPanel(content));
+        getChildren().add(new PartyPanel(new PartyHeader(headerLabel, new CloseButton()), content));
     }
 
     public void bind(PartyTopBarContentModel contentModel) {
@@ -35,26 +34,46 @@ public final class PartyTopBarView extends HBox {
         viewInputEventHandler = handler == null ? ignored -> { } : handler;
     }
 
-    private VBox buildPanel(Node... content) {
-        Button closeButton = new Button("x");
-        addStyleClass(closeButton, "compact");
-        closeButton.setAccessibleText("Party-Panel schließen");
-        closeButton.setOnAction(event -> viewInputEventHandler.accept(new PartyTopBarViewInputEvent(true)));
-        Region headerSpacer = new Region();
-        setHgrow(headerSpacer, Priority.ALWAYS);
-        addStyleClass(headerLabel, "title-large");
-        HBox header = new HBox(6, headerLabel, headerSpacer, closeButton);
-        addStyleClass(header, "party-header");
-        header.setAlignment(Pos.CENTER_LEFT);
+    private final class CloseButton extends Button {
 
-        VBox panel = new VBox(10, header);
-        panel.getChildren().addAll(content);
-        addStyleClass(panel, "party-panel");
-        panel.setFillWidth(true);
-        return panel;
+        private CloseButton() {
+            super("x");
+            getStyleClass().add("compact");
+            setAccessibleText("Party-Panel schließen");
+            setOnAction(event -> viewInputEventHandler.accept(new PartyTopBarViewInputEvent(true)));
+        }
     }
 
-    private static void addStyleClass(javafx.scene.Node node, String styleClass) {
-        node.getStyleClass().add(styleClass);
+    private static final class PartyHeader extends HBox {
+
+        private PartyHeader(Node title, Node closeButton) {
+            super(6, title, new HeaderSpacer(), closeButton);
+            getStyleClass().add("party-header");
+            setAlignment(Pos.CENTER_LEFT);
+        }
+    }
+
+    private static final class HeaderSpacer extends Region {
+
+        private HeaderSpacer() {
+            setHgrow(this, Priority.ALWAYS);
+        }
+    }
+
+    private static final class PartyPanel extends VBox {
+
+        private PartyPanel(Node header, Node... content) {
+            super(10, header);
+            getStyleClass().add("party-panel");
+            setFillWidth(true);
+            getChildren().addAll(content);
+        }
+    }
+
+    private static final class StyledLabel extends Label {
+
+        private StyledLabel() {
+            getStyleClass().add("title-large");
+        }
     }
 }

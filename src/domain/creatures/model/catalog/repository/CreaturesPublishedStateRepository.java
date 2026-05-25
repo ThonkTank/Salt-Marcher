@@ -18,6 +18,8 @@ public interface CreaturesPublishedStateRepository {
 
     void publishCreatureDetail(CreatureDetailPublication result);
 
+    void publishEncounterCandidates(EncounterCandidatesPublication result);
+
     final class FilterOptionsPublication {
         private final String status;
         private final CreatureCatalogData.DistinctFilterValues values;
@@ -81,6 +83,27 @@ public interface CreaturesPublishedStateRepository {
 
         public @Nullable CreatureProfile detail() {
             return detail;
+        }
+    }
+
+    final class EncounterCandidatesPublication {
+        private final String status;
+        private final List<CreatureCatalogData.EncounterCandidateProfile> candidates;
+
+        public EncounterCandidatesPublication(
+                String status,
+                List<CreatureCatalogData.EncounterCandidateProfile> candidates
+        ) {
+            this.status = status == null ? STORAGE_ERROR : status;
+            this.candidates = candidates == null ? List.of() : List.copyOf(candidates);
+        }
+
+        public String status() {
+            return status;
+        }
+
+        public List<CreatureCatalogData.EncounterCandidateProfile> candidates() {
+            return List.copyOf(candidates);
         }
     }
 }

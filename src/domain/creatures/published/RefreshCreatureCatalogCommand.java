@@ -12,11 +12,13 @@ public record RefreshCreatureCatalogCommand(
         List<String> creatureSubtypes,
         List<String> biomes,
         List<String> alignments,
-        @Nullable CreatureCatalogSortField sortField,
-        @Nullable CreatureSortDirection sortDirection,
+        @Nullable String sortFieldName,
+        @Nullable String sortDirectionName,
         int pageSize,
         int pageOffset
 ) {
+    private static final String DEFAULT_SORT_FIELD = "NAME";
+    private static final String DEFAULT_SORT_DIRECTION = "ASCENDING";
 
     public RefreshCreatureCatalogCommand {
         sizes = copyStrings(sizes);
@@ -24,68 +26,36 @@ public record RefreshCreatureCatalogCommand(
         creatureSubtypes = copyStrings(creatureSubtypes);
         biomes = copyStrings(biomes);
         alignments = copyStrings(alignments);
+        sortFieldName = sortFieldName == null ? DEFAULT_SORT_FIELD : sortFieldName;
+        sortDirectionName = sortDirectionName == null ? DEFAULT_SORT_DIRECTION : sortDirectionName;
     }
 
-    public static RefreshCreatureCatalogCommand defaults() {
-        return new RefreshCreatureCatalogCommand(
-                null,
-                null,
-                null,
-                List.of(),
-                List.of(),
-                List.of(),
-                List.of(),
-                List.of(),
-                null,
-                null,
-                50,
-                0);
+    @Override
+    public List<String> sizes() {
+        return copyStrings(sizes);
     }
 
-    public static RefreshCreatureCatalogCommand fromSortKey(
-            @Nullable String nameQuery,
-            @Nullable String challengeRatingMin,
-            @Nullable String challengeRatingMax,
-            List<String> sizes,
-            List<String> creatureTypes,
-            List<String> creatureSubtypes,
-            List<String> biomes,
-            List<String> alignments,
-            @Nullable String sortKey,
-            int pageSize,
-            int pageOffset
-    ) {
-        SortRequest sort = SortRequest.fromKey(sortKey);
-        return new RefreshCreatureCatalogCommand(
-                nameQuery,
-                challengeRatingMin,
-                challengeRatingMax,
-                sizes,
-                creatureTypes,
-                creatureSubtypes,
-                biomes,
-                alignments,
-                sort.field(),
-                sort.direction(),
-                pageSize,
-                pageOffset);
+    @Override
+    public List<String> creatureTypes() {
+        return copyStrings(creatureTypes);
+    }
+
+    @Override
+    public List<String> creatureSubtypes() {
+        return copyStrings(creatureSubtypes);
+    }
+
+    @Override
+    public List<String> biomes() {
+        return copyStrings(biomes);
+    }
+
+    @Override
+    public List<String> alignments() {
+        return copyStrings(alignments);
     }
 
     private static List<String> copyStrings(@Nullable List<String> values) {
         return values == null ? List.of() : List.copyOf(values);
-    }
-
-    private record SortRequest(CreatureCatalogSortField field, CreatureSortDirection direction) {
-
-        static SortRequest fromKey(@Nullable String sortKey) {
-            return switch (sortKey == null ? "" : sortKey) {
-                case "name-desc" -> new SortRequest(CreatureCatalogSortField.NAME, CreatureSortDirection.DESCENDING);
-                case "cr-asc" -> new SortRequest(CreatureCatalogSortField.CHALLENGE_RATING, CreatureSortDirection.ASCENDING);
-                case "cr-desc" -> new SortRequest(CreatureCatalogSortField.CHALLENGE_RATING, CreatureSortDirection.DESCENDING);
-                case "xp-asc" -> new SortRequest(CreatureCatalogSortField.XP, CreatureSortDirection.ASCENDING);
-                case "xp-desc" -> new SortRequest(CreatureCatalogSortField.XP, CreatureSortDirection.DESCENDING);
-                default -> new SortRequest(CreatureCatalogSortField.NAME, CreatureSortDirection.ASCENDING);
-            };
-        }
     }
 }

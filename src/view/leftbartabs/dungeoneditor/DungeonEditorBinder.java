@@ -6,7 +6,10 @@ import javafx.scene.Node;
 import shell.api.ShellBinding;
 import shell.api.ShellRuntimeContext;
 import shell.api.ShellSlot;
-import src.domain.dungeon.DungeonEditorApplicationService;
+import src.domain.dungeon.DungeonEditorMapApplicationService;
+import src.domain.dungeon.DungeonEditorNarrationApplicationService;
+import src.domain.dungeon.DungeonEditorPointerApplicationService;
+import src.domain.dungeon.DungeonEditorProjectionApplicationService;
 import src.domain.dungeon.published.DungeonEditorControlsModel;
 import src.domain.dungeon.published.DungeonEditorControlsSnapshot;
 import src.domain.dungeon.published.DungeonEditorMapSurfaceModel;
@@ -25,7 +28,14 @@ final class DungeonEditorBinder {
     }
 
     ShellBinding bind() {
-        DungeonEditorApplicationService editor = runtimeContext.services().require(DungeonEditorApplicationService.class);
+        DungeonEditorMapApplicationService mapEditor =
+                runtimeContext.services().require(DungeonEditorMapApplicationService.class);
+        DungeonEditorProjectionApplicationService projectionEditor =
+                runtimeContext.services().require(DungeonEditorProjectionApplicationService.class);
+        DungeonEditorPointerApplicationService pointerEditor =
+                runtimeContext.services().require(DungeonEditorPointerApplicationService.class);
+        DungeonEditorNarrationApplicationService narrationEditor =
+                runtimeContext.services().require(DungeonEditorNarrationApplicationService.class);
         DungeonEditorControlsModel controlsModel = runtimeContext.services().require(DungeonEditorControlsModel.class);
         DungeonEditorMapSurfaceModel mapSurfaceModel = runtimeContext.services().require(DungeonEditorMapSurfaceModel.class);
         DungeonEditorStateModel stateModel = runtimeContext.services().require(DungeonEditorStateModel.class);
@@ -39,7 +49,10 @@ final class DungeonEditorBinder {
                         controlsContentModel,
                         stateContentModel,
                         mapContentModel,
-                        editor);
+                        mapEditor,
+                        projectionEditor,
+                        pointerEditor,
+                        narrationEditor);
         DungeonEditorControlsView controls = new DungeonEditorControlsView();
         DungeonMapView main = new DungeonMapView();
         DungeonEditorStateView state = new DungeonEditorStateView();

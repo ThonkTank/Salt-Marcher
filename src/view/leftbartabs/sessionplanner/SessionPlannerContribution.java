@@ -12,10 +12,6 @@ import shell.api.ShellRuntimeContext;
 
 public final class SessionPlannerContribution implements ShellContribution {
 
-    @SuppressWarnings({"PMD.UnnecessaryConstructor", "PMD.UncommentedEmptyConstructor"})
-    public SessionPlannerContribution() {
-    }
-
     @Override
     public ShellContributionSpec registrationSpec() {
         return new ShellLeftBarTabSpec(

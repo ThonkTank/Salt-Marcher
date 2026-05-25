@@ -7,14 +7,8 @@ import src.domain.sessionplanner.model.session.repository.SessionPlanRepository;
 
 public final class SessionPlannerServiceContribution implements ServiceContribution {
 
-    @SuppressWarnings("PMD.UnnecessaryConstructor")
-    public SessionPlannerServiceContribution() {
-        // Required by passive service contribution discovery.
-    }
-
     @Override
     public void register(ServiceRegistry.Builder builder) {
-        SessionPlanRepository repository = new SqliteSessionPlanRepository();
-        new SessionPlannerServiceAssembly(repository).register(builder);
+        builder.register(SessionPlanRepository.class, new SqliteSessionPlanRepository());
     }
 }

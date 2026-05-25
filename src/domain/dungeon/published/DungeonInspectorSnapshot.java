@@ -12,10 +12,6 @@ public record DungeonInspectorSnapshot(
         List<RoomNarrationCard> roomNarrations
 ) {
 
-    public DungeonInspectorSnapshot(String title, String summary, List<String> facts) {
-        this(title, summary, facts, List.of());
-    }
-
     public DungeonInspectorSnapshot {
         title = title == null || title.isBlank() ? "Dungeon" : title;
         summary = summary == null ? "" : summary;

@@ -1,2 +1,3 @@
 groups:
   - saltmarcher:layering-architecture-enforcement
+  - saltmarcher:layering-architecture-diagnostics

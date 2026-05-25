@@ -41,19 +41,19 @@ user-facing command ergonomics.
 
 Runtime wrappers MAY know canonical verification surface names and the
 production-handoff phase task names. They MAY know `focused-handoff` as a
-named local entrypoint, but area selection, task resolution, engine selection,
-and path-to-input validation belong to the verification core. Runtime wrappers
-MUST NOT know bundle member tasks, internal rule lists, or architecture-rule
-ownership.
+named local entrypoint, but focused area selection, task resolution, engine
+selection, and path-to-input validation belong to the verification core.
+Runtime wrappers MUST NOT know bundle member tasks, diagnostic task names,
+internal rule lists, or architecture-rule ownership.
 `tools/gradle/run-staged-verification.sh` routes the canonical
 `production-handoff` surface to the Gradle-owned `production-handoff`
 lifecycle task. The verification core routes that lifecycle task through the
 internal `productionHandoffCompileIntegrity`, `productionHandoffStructure`, and
 `productionHandoffHygiene` phase tasks.
-Other staged surfaces forward to one same-named Gradle lifecycle task.
-`focused-handoff` is different: it normalizes repo-relative path arguments and
-forwards focus intent to Gradle, while the verification core decides which
-diagnostic surface and engine inputs are actually active.
+Other staged surfaces, including `focused-handoff`, forward to one same-named Gradle lifecycle task. The `focused-handoff` wrapper only forwards focused
+paths, optional area ids, optional compile integrity intent, and investigation
+flags as properties; the verification core decides the diagnostic surfaces and
+engine inputs.
 `tools/gradle/run-observable-gradle.sh` remains a generic runtime wrapper for
 one Gradle invocation.
 
@@ -86,6 +86,7 @@ Mechanically enforced public verification surfaces are:
 
 - documentation surface: `checkDocumentationEnforcement`
 - production-code surface: `production-handoff`
+- package-focused local handoff surface: `focused-handoff`
 
 `desktop-install` remains a convenience installation entrypoint, not a public
 verification surface. Root-owned hygiene and architecture tasks such as
@@ -97,6 +98,11 @@ not a second public API.
 The verification core owns the mapping from a public surface to its underlying
 Gradle dependencies. Root build scripts MUST consume this core instead of
 reconstructing the surface model themselves.
+For `focused-handoff`, the core derives selected diagnostic surfaces from the
+typed diagnostic surface catalog, the `saltmarcher.focusedVerificationPaths`
+property, optional `saltmarcher.focusedVerificationAreas`, and optional
+`saltmarcher.focusedHandoffCompileIntegrity`. The shell wrapper MUST NOT map
+areas such as `domain` or `view` to private `check*Enforcement` task names.
 The shared root-owned owners behind `production-handoff` are declared in one
 typed verification lifecycle catalog and split into three phases:
 `productionHandoffCompileIntegrity` for compile and included-build integrity,
@@ -154,6 +160,10 @@ coalesced by the verification core before Gradle execution: broad
 task, while technical layer surfaces keep one focused topology task for
 diagnosis. Role-local owner splits MUST NOT create one runnable build-harness
 JVM scan per owner document.
+New or materially expanded bundle descriptors MUST carry a review-owned
+governance rationale: standard tool considered first, custom-rule gap, selected
+engine owner, public proof surface, and retirement trigger. That rationale does
+not make bundle-local `check*` tasks public handoff proof.
 The public `checkDocumentationEnforcement` surface consumes the root
 documentation check plus the coalesced per-surface documentation tasks; those
 surface tasks remain private dependencies and MUST NOT become public
@@ -169,12 +179,9 @@ hard-coded barrier lists.
 
 ### 4. Rule Implementation
 
-Private rule implementation lives in build-harness, Error Prone rules,
-ArchUnit suites, typed Gradle tasks, and the generic documentation-coverage
-catalog plus the small set of remaining custom documentation rules.
-
-Rule engines MUST remain ignorant of public surface routing, shell wrappers,
-production-handoff flows, and runtime UX concerns.
+Private rule implementation lives in build-harness, Error Prone rules, ArchUnit suites, typed Gradle tasks, documentation coverage, and custom documentation rules.
+`tools/quality/architecture-policy/` is a private shared vocabulary library for Build-Harness and Error Prone View classification (`ViewRole`, `ViewUnitKind`, `slotcontent/**`, reuse tiers); jQAssistant mirrors those terms only as Cypher concepts. It is not a public surface, bundle, third View engine owner, or gate.
+Rule engines MUST remain ignorant of public surface routing, shell wrappers, production-handoff flows, and runtime UX concerns.
 
 ## Dependency Direction
 
@@ -201,28 +208,33 @@ Forbidden shortcuts:
 ## Focused Surface Propagation
 
 Focused verification selection is computed from requested production-handoff,
-technical layer-surface, direct build-harness diagnostic, or bundle-selector
-task names during root settings evaluation by the `saltmarcher.settings` plugin
-from `tools/gradle/build-logic-settings`. Technical layer surfaces and direct
-build-harness diagnostics expand to their owning bundle ids there, and direct
-internal bundle-selector task requests are still translated to the same
-bundle-id set. Those selector and diagnostic tasks stay technical
+focused-handoff, technical layer-surface, direct build-harness diagnostic, or
+bundle-selector task names during root settings evaluation by the
+`saltmarcher.settings` plugin from `tools/gradle/build-logic-settings`.
+`focused-handoff` expands focused paths and optional area ids through the typed
+diagnostic surface catalog before selecting bundle ids. Technical layer
+surfaces and direct build-harness diagnostics expand to their owning bundle ids
+there, and direct internal bundle-selector task requests are still translated
+to the same bundle-id set. Those selector and diagnostic tasks stay technical
 implementation seams, not a second public verification API. The settings plugin
 also classifies the requested surface into the engines that the task graph can
 consume. Focused surfaces MUST NOT include build-harness, quality-rules, or
 Error Prone included builds, and MUST NOT register jQAssistant engine tasks,
 unless the selected surface or active bundle descriptors require that engine.
-The build publishes three focused-selection facts to the included builds:
-
-- `saltmarcher.repoRootDir`
-- `saltmarcher.focusedEnforcementBundleMode`
-- `saltmarcher.activeEnforcementBundleIds`
+The build publishes four focused-selection facts to the included builds:
+`saltmarcher.repoRootDir`, `saltmarcher.focusedEnforcementBundleMode`,
+`saltmarcher.activeEnforcementBundleIds`, and
+`saltmarcher.focusedDiagnosticSurfaceIds`.
 
 The root build also publishes internal request-scope booleans for
 build-harness, quality-rules, quality-rules-errorprone included builds,
 jQAssistant task registration, and discovery requests. Those booleans are
 graph-pruning facts, not public verification surfaces and not proof-strength
 modifiers.
+`saltmarcher.focusedDiagnosticSurfaceIds` is the settings-owned selected
+diagnostic surface fact. Root build logic and included builds consume it for
+path-to-area validation and focused task registration; they MUST NOT recompute
+surface selection from shell wrapper task-name mappings.
 Focused path requests MUST be non-empty, repo-relative directories that exist
 inside the active checkout, match the selected or inferred area, and contain at
 least one input consumed by the selected focused surface. A path that is
@@ -326,9 +338,7 @@ cache compatibility should be earned inside the actual task graph and surfaced
 through normal Gradle behavior, not through a second same-worktree isolation
 layer. Focused, documentation, and broad dry-run surfaces may use Gradle
 configuration-cache reuse when their task graph is compatible, and handoff
-claims must report the literal store or reuse result. Parallel local safety now
-comes from linked git worktrees on separate branches, not from wrapper-managed
-cache or build-directory rewriting.
+claims must report the literal store or reuse result. Parallel local safety is caller-owned write-set coordination; the wrapper does not manufacture per-agent cache or build-directory isolation.
 
 ## References
 

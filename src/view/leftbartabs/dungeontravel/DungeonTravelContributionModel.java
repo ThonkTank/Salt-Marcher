@@ -1,11 +1,8 @@
 package src.view.leftbartabs.dungeontravel;
 
 import java.util.List;
-import javafx.beans.property.ReadOnlyIntegerProperty;
 import javafx.beans.property.ReadOnlyIntegerWrapper;
-import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.ReadOnlyObjectWrapper;
-import javafx.beans.property.ReadOnlyStringProperty;
 import javafx.beans.property.ReadOnlyStringWrapper;
 import src.domain.dungeon.published.TravelDungeonAction;
 import src.domain.dungeon.published.TravelDungeonSnapshot;
@@ -24,26 +21,6 @@ public final class DungeonTravelContributionModel {
 
     public DungeonTravelContributionModel() {
         refreshStateText(null);
-    }
-
-    public ReadOnlyObjectProperty<List<ActionProjection>> actionsProperty() {
-        return actions.getReadOnlyProperty();
-    }
-
-    public ReadOnlyStringProperty stateProperty() {
-        return state.getReadOnlyProperty();
-    }
-
-    public ReadOnlyStringProperty mapNameProperty() {
-        return mapName.getReadOnlyProperty();
-    }
-
-    public ReadOnlyObjectProperty<OverlayProjection> overlaySettingsProperty() {
-        return overlaySettings.getReadOnlyProperty();
-    }
-
-    public ReadOnlyIntegerProperty projectionLevelProperty() {
-        return projectionLevel.getReadOnlyProperty();
     }
 
     int currentProjectionLevel() {
@@ -121,10 +98,6 @@ public final class DungeonTravelContributionModel {
             return buttonLabel;
         }
 
-        boolean hasDescription() {
-            return !descriptionText.isBlank();
-        }
-
         String descriptionText() {
             return descriptionText;
         }
@@ -159,22 +132,13 @@ public final class DungeonTravelContributionModel {
     static final class OverlayProjection {
 
         private final OverlayMode mode;
-        private final int levelRange;
-        private final double opacity;
-        private final List<Integer> selectedLevels;
         private final DungeonOverlaySettings overlaySettings;
 
         private OverlayProjection(
                 OverlayMode mode,
-                int levelRange,
-                double opacity,
-                List<Integer> selectedLevels,
                 DungeonOverlaySettings overlaySettings
         ) {
             this.mode = OverlayMode.safe(mode);
-            this.levelRange = Math.max(0, levelRange);
-            this.opacity = Math.max(0.0, Math.min(1.0, opacity));
-            this.selectedLevels = selectedLevels == null ? List.of() : List.copyOf(selectedLevels);
             this.overlaySettings = overlaySettings == null ? DungeonOverlaySettings.defaults() : overlaySettings;
         }
 
@@ -187,30 +151,11 @@ public final class DungeonTravelContributionModel {
                     overlaySettings == null ? DungeonOverlaySettings.defaults() : overlaySettings;
             return new OverlayProjection(
                     OverlayMode.fromKey(safeOverlay.modeKey()),
-                    safeOverlay.levelRange(),
-                    safeOverlay.opacity(),
-                    safeOverlay.selectedLevels(),
                     safeOverlay);
-        }
-
-        String modeKey() {
-            return mode.key();
         }
 
         String overlayLabel() {
             return mode.contributionLabel();
-        }
-
-        int levelRange() {
-            return levelRange;
-        }
-
-        double opacity() {
-            return opacity;
-        }
-
-        List<Integer> selectedLevels() {
-            return selectedLevels;
         }
 
         DungeonOverlaySettings overlaySettings() {
@@ -219,7 +164,7 @@ public final class DungeonTravelContributionModel {
 
     }
 
-    enum OverlayMode {
+    private enum OverlayMode {
         OFF("OFF", "Overlays aus"),
         NEARBY("NEARBY", "Nahe Ebenen"),
         SELECTED("SELECTED", "Ausgewählte Ebenen");
@@ -230,10 +175,6 @@ public final class DungeonTravelContributionModel {
         OverlayMode(String key, String contributionLabel) {
             this.key = key;
             this.contributionLabel = contributionLabel;
-        }
-
-        String key() {
-            return key;
         }
 
         String contributionLabel() {

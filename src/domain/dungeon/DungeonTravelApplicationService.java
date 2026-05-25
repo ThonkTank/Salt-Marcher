@@ -1,8 +1,8 @@
 package src.domain.dungeon;
 
 import java.util.Objects;
-import src.domain.dungeon.model.travel.usecase.PublishDungeonTravelMoveUseCase;
-import src.domain.dungeon.model.travel.usecase.PublishDungeonTravelSurfaceUseCase;
+import src.domain.dungeon.model.worldspace.usecase.PublishDungeonTravelMoveUseCase;
+import src.domain.dungeon.model.worldspace.usecase.PublishDungeonTravelSurfaceUseCase;
 import src.domain.dungeon.published.DungeonTravelCommand;
 
 /**

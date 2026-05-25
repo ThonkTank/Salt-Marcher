@@ -10,10 +10,6 @@ import src.domain.encounter.published.SavedEncounterPlanListModel;
 
 public final class EncounterServiceContribution implements ServiceContribution {
 
-    @SuppressWarnings({"PMD.UnnecessaryConstructor", "PMD.UncommentedEmptyConstructor"})
-    public EncounterServiceContribution() {
-    }
-
     @Override
     public void register(ServiceRegistry.Builder services) {
         EncounterServiceAssembly assembly = new EncounterServiceAssembly();

@@ -30,7 +30,7 @@ final class AdventuringDayTopBarContributionModel {
     InputSource inputSource() {
         return new InputSource(
                 sourceMode == PartySourceMode.ACTIVE_PARTY,
-                rowsFromLevels(activePartyLevels));
+                PartyLevelRows.rowsFromLevels(activePartyLevels));
     }
 
     void showInputProjection(
@@ -79,7 +79,7 @@ final class AdventuringDayTopBarContributionModel {
             contentModel.showCalculation(AdventuringDayTopBarContentModel.CalculationModel.empty(totalGroupXp));
             return;
         }
-        contentModel.showCalculation(mapCalculation(result.calculation()));
+        contentModel.showCalculation(CalculationReadbackMapper.mapCalculation(result.calculation()));
     }
 
     private void applySummary(List<Integer> summaryLevels, int remainingToShortRest, int remainingToLongRest) {
@@ -95,18 +95,18 @@ final class AdventuringDayTopBarContributionModel {
             rebuildPanel(nextRows);
             return;
         }
-        List<Integer> nextActivePartyLevels = sanitizeLevels(summaryLevels);
+        List<Integer> nextActivePartyLevels = PartyLevelRows.sanitizeLevels(summaryLevels);
         boolean changed = !nextActivePartyLevels.equals(activePartyLevels);
         activePartyLevels = nextActivePartyLevels;
         activePartyRefreshFailed = false;
         if (sourceMode == PartySourceMode.ACTIVE_PARTY) {
-            nextRows = rowsFromLevels(activePartyLevels);
+            nextRows = PartyLevelRows.rowsFromLevels(activePartyLevels);
             activePartyChangedSinceCustomEdit = false;
         } else if (changed) {
             activePartyChangedSinceCustomEdit = true;
         }
-        triggerText.set("SR " + format(remainingToShortRest)
-                + " \u00b7 LR " + format(remainingToLongRest) + " \u25be");
+        triggerText.set("SR " + Math.max(0, remainingToShortRest)
+                + " \u00b7 LR " + Math.max(0, remainingToLongRest) + " \u25be");
         rebuildPanel(nextRows);
     }
 
@@ -129,108 +129,8 @@ final class AdventuringDayTopBarContributionModel {
         } else if (sourceMode == PartySourceMode.CUSTOM && activePartyChangedSinceCustomEdit) {
             sourceLabel += " · Aktive Party geändert";
         }
-        int characterCount = AdventuringDayTopBarContentModel.expandedLevels(currentRows).size();
+        int characterCount = AdventuringDayTopBarContentModel.LevelRows.expandedLevels(currentRows).size();
         return characterCount == 0 ? sourceLabel : sourceLabel + ": " + characterCount + " Charaktere";
-    }
-
-    private static AdventuringDayTopBarContentModel.CalculationModel mapCalculation(
-            AdventuringDayCalculation calculation
-    ) {
-        return new AdventuringDayTopBarContentModel.CalculationModel(
-                new AdventuringDayTopBarContentModel.BudgetModel(
-                        calculation.budget().totalBudgetXp(),
-                        calculation.budget().perThirdXp(),
-                        calculation.budget().firstShortRestXp(),
-                        calculation.budget().secondShortRestXp(),
-                        calculation.budget().characterCount()),
-                new AdventuringDayTopBarContentModel.ProgressModel(
-                        calculation.progress().totalGroupXp(),
-                        calculation.progress().perCharacterAwardedXp(),
-                        calculation.progress().partySize(),
-                        calculation.progress().fullDays(),
-                        calculation.progress().totalDays(),
-                        calculation.progress().shortRests(),
-                        calculation.progress().longRests(),
-                        levelProgressModels(calculation),
-                        progressEventModels(calculation)));
-    }
-
-    private static List<AdventuringDayTopBarContentModel.LevelProgressModel> levelProgressModels(
-            AdventuringDayCalculation calculation
-    ) {
-        ArrayList<AdventuringDayTopBarContentModel.LevelProgressModel> models = new ArrayList<>();
-        for (var progress : calculation.progress().levelProgressions()) {
-            models.add(new AdventuringDayTopBarContentModel.LevelProgressModel(
-                    progress.startLevel(),
-                    progress.endLevel(),
-                    progress.characterCount(),
-                    progress.levelUps()));
-        }
-        return List.copyOf(models);
-    }
-
-    private static List<AdventuringDayTopBarContentModel.ProgressEventModel> progressEventModels(
-            AdventuringDayCalculation calculation
-    ) {
-        ArrayList<AdventuringDayTopBarContentModel.ProgressEventModel> models = new ArrayList<>();
-        for (var event : calculation.progress().events()) {
-            models.add(new AdventuringDayTopBarContentModel.ProgressEventModel(
-                    event.groupXp(),
-                    AdventuringDayTopBarContentModel.ProgressEventTypeModel.fromName(
-                            event.type() == null ? "" : event.type().toString()),
-                    event.dayNumber(),
-                    event.newLevel(),
-                    event.affectedCharacters(),
-                    event.partialDay()));
-        }
-        return List.copyOf(models);
-    }
-
-    private static List<AdventuringDayTopBarContentModel.RowModel> rowsFromLevels(List<Integer> levels) {
-        if (levels == null || levels.isEmpty()) {
-            return List.of();
-        }
-        int[] countsByLevel = new int[21];
-        for (Integer level : sanitizeLevels(levels)) {
-            countsByLevel[level]++;
-        }
-        List<AdventuringDayTopBarContentModel.RowModel> nextRows = new ArrayList<>();
-        for (int level = 1; level < countsByLevel.length; level++) {
-            int count = countsByLevel[level];
-            if (count > 0) {
-                nextRows.add(new AdventuringDayTopBarContentModel.RowModel(level, Integer.toString(count)));
-            }
-        }
-        return List.copyOf(nextRows);
-    }
-
-    private static List<Integer> sanitizeLevels(List<Integer> levels) {
-        if (levels == null || levels.isEmpty()) {
-            return List.of();
-        }
-        List<Integer> normalized = new ArrayList<>();
-        for (Integer level : levels) {
-            if (level != null) {
-                normalized.add(Math.max(1, Math.min(20, level)));
-            }
-        }
-        return List.copyOf(normalized);
-    }
-
-    private static int parseNonNegativeInt(String rawValue) {
-        String safeValue = rawValue == null ? "" : rawValue.trim();
-        if (safeValue.isEmpty()) {
-            return 0;
-        }
-        try {
-            return Math.max(0, Integer.parseInt(safeValue));
-        } catch (NumberFormatException exception) {
-            return 0;
-        }
-    }
-
-    private static String format(int value) {
-        return Integer.toString(Math.max(0, value));
     }
 
     private enum PartySourceMode {
@@ -242,6 +142,104 @@ final class AdventuringDayTopBarContributionModel {
 
         InputSource {
             activePartyRows = activePartyRows == null ? List.of() : List.copyOf(activePartyRows);
+        }
+    }
+
+    private static final class CalculationReadbackMapper {
+
+        private CalculationReadbackMapper() {
+            throw new AssertionError();
+        }
+
+        private static AdventuringDayTopBarContentModel.CalculationModel mapCalculation(
+                AdventuringDayCalculation calculation
+        ) {
+            return new AdventuringDayTopBarContentModel.CalculationModel(
+                    new AdventuringDayTopBarContentModel.BudgetModel(
+                            calculation.budget().totalBudgetXp(),
+                            calculation.budget().perThirdXp(),
+                            calculation.budget().firstShortRestXp(),
+                            calculation.budget().secondShortRestXp(),
+                            calculation.budget().characterCount()),
+                    new AdventuringDayTopBarContentModel.ProgressModel(
+                            calculation.progress().totalGroupXp(),
+                            calculation.progress().perCharacterAwardedXp(),
+                            calculation.progress().partySize(),
+                            calculation.progress().fullDays(),
+                            calculation.progress().totalDays(),
+                            calculation.progress().shortRests(),
+                            calculation.progress().longRests(),
+                            levelProgressModels(calculation),
+                            progressEventModels(calculation)));
+        }
+
+        private static List<AdventuringDayTopBarContentModel.LevelProgressModel> levelProgressModels(
+                AdventuringDayCalculation calculation
+        ) {
+            List<AdventuringDayTopBarContentModel.LevelProgressModel> models = new ArrayList<>();
+            for (var progress : calculation.progress().levelProgressions()) {
+                models.add(new AdventuringDayTopBarContentModel.LevelProgressModel(
+                        progress.startLevel(),
+                        progress.endLevel(),
+                        progress.characterCount(),
+                        progress.levelUps()));
+            }
+            return List.copyOf(models);
+        }
+
+        private static List<AdventuringDayTopBarContentModel.ProgressEventModel> progressEventModels(
+                AdventuringDayCalculation calculation
+        ) {
+            List<AdventuringDayTopBarContentModel.ProgressEventModel> models = new ArrayList<>();
+            for (var event : calculation.progress().events()) {
+                models.add(new AdventuringDayTopBarContentModel.ProgressEventModel(
+                        event.groupXp(),
+                        AdventuringDayTopBarContentModel.ProgressEventTypeModel.fromName(
+                                event.type() == null ? "" : event.type().toString()),
+                        event.dayNumber(),
+                        event.newLevel(),
+                        event.affectedCharacters(),
+                        event.partialDay()));
+            }
+            return List.copyOf(models);
+        }
+    }
+
+    private static final class PartyLevelRows {
+
+        private PartyLevelRows() {
+            throw new AssertionError();
+        }
+
+        private static List<AdventuringDayTopBarContentModel.RowModel> rowsFromLevels(List<Integer> levels) {
+            if (levels == null || levels.isEmpty()) {
+                return List.of();
+            }
+            int[] countsByLevel = new int[21];
+            for (Integer level : sanitizeLevels(levels)) {
+                countsByLevel[level]++;
+            }
+            List<AdventuringDayTopBarContentModel.RowModel> nextRows = new ArrayList<>();
+            for (int level = 1; level < countsByLevel.length; level++) {
+                int count = countsByLevel[level];
+                if (count > 0) {
+                    nextRows.add(new AdventuringDayTopBarContentModel.RowModel(level, Integer.toString(count)));
+                }
+            }
+            return List.copyOf(nextRows);
+        }
+
+        private static List<Integer> sanitizeLevels(List<Integer> levels) {
+            if (levels == null || levels.isEmpty()) {
+                return List.of();
+            }
+            List<Integer> normalized = new ArrayList<>();
+            for (Integer level : levels) {
+                if (level != null) {
+                    normalized.add(Math.max(1, Math.min(20, level)));
+                }
+            }
+            return List.copyOf(normalized);
         }
     }
 }

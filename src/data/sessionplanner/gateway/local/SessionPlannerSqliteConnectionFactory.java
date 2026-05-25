@@ -11,8 +11,4 @@ final class SessionPlannerSqliteConnectionFactory extends AbstractSqliteConnecti
                 resolveDatabasePath(SessionPlannerPersistenceSchema.DATABASE_FILE_NAME),
                 Path.of(SessionPlannerPersistenceSchema.DATABASE_FILE_NAME).toAbsolutePath().normalize());
     }
-
-    SessionPlannerSqliteConnectionFactory(Path databasePath, Path legacyDatabasePath) {
-        super(databasePath, legacyDatabasePath);
-    }
 }

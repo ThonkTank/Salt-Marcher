@@ -13,10 +13,6 @@ import shell.api.ShellLeftBarTabSpec;
 
 public final class CatalogContribution implements ShellContribution {
 
-    @SuppressWarnings({"PMD.UnnecessaryConstructor", "PMD.UncommentedEmptyConstructor"})
-    public CatalogContribution() {
-    }
-
     @Override
     public ShellContributionSpec registrationSpec() {
         return new ShellLeftBarTabSpec(

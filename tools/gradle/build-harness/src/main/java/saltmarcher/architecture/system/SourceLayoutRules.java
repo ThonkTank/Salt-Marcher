@@ -6,7 +6,7 @@ import saltmarcher.architecture.ArchitectureRule;
 import saltmarcher.architecture.SourceFile;
 import saltmarcher.architecture.ViolationSink;
 import saltmarcher.architecture.domain.DomainRoleTopologySupport;
-import saltmarcher.architecture.view.ViewTopologyCatalog;
+import saltmarcher.architecture.policy.view.ViewPolicy;
 
 public final class SourceLayoutRules implements ArchitectureRule {
     @Override
@@ -84,7 +84,7 @@ public final class SourceLayoutRules implements ArchitectureRule {
             return;
         }
 
-        if (ViewTopologyCatalog.describe(sourceFile).isRecognizedViewSource()) {
+        if (ViewPolicy.describePath(sourceFile.relativePath()).isRecognizedViewSource()) {
             return;
         }
 

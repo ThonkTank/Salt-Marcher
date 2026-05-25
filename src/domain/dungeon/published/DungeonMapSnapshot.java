@@ -27,16 +27,6 @@ public record DungeonMapSnapshot(
             int width,
             int height,
             List<DungeonAreaSnapshot> areas,
-            List<DungeonBoundarySnapshot> boundaries
-    ) {
-        this(topology, width, height, areas, boundaries, List.of(), List.of());
-    }
-
-    public DungeonMapSnapshot(
-            DungeonTopologyKind topology,
-            int width,
-            int height,
-            List<DungeonAreaSnapshot> areas,
             List<DungeonBoundarySnapshot> boundaries,
             List<DungeonFeatureSnapshot> features
     ) {
@@ -65,13 +55,6 @@ public record DungeonMapSnapshot(
     @Override
     public List<DungeonEditorHandleSnapshot> editorHandles() {
         return immutableEditorHandles(editorHandles);
-    }
-
-    public List<DungeonCellRef> allCells() {
-        return java.util.stream.Stream.concat(
-                        areas.stream().flatMap(area -> area.cells().stream()),
-                        features.stream().flatMap(feature -> feature.cells().stream()))
-                .toList();
     }
 
     private static DungeonTopologyKind defaultTopology(DungeonTopologyKind topology) {

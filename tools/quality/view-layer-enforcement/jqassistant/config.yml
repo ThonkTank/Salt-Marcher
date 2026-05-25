@@ -1,2 +1,3 @@
 groups:
   - saltmarcher:view-layer-enforcement
+  - saltmarcher:view-layer-cycle-diagnostics

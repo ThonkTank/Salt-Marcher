@@ -12,6 +12,11 @@ import src.domain.sessionplanner.published.SessionPlannerSessionSnapshot;
 
 public final class SessionPlannerControlsContentModel {
 
+    private static final String STYLE_TEXT_SECONDARY = "text-secondary";
+    private static final String STYLE_BUDGET_OK = "session-planner-budget-ok";
+    private static final String STYLE_BUDGET_OVER = "session-planner-budget-over";
+    private static final String XP_SUFFIX = " XP";
+
     private final ReadOnlyObjectWrapper<Projection> projection =
             new ReadOnlyObjectWrapper<>(Projection.empty());
     private SessionPlannerSessionSnapshot sessionSnapshot = SessionPlannerSessionSnapshot.empty("");
@@ -109,6 +114,7 @@ public final class SessionPlannerControlsContentModel {
                     : "Noch kein Encounter fuer State-Panel ausgewaehlt";
             return new SessionModel(
                     safe.sessionId(),
+                    "Session #" + Math.max(0L, safe.sessionId()),
                     safe.encounterDaysText(),
                     safe.hasSelectedEncounter(),
                     selectionText);
@@ -123,14 +129,24 @@ public final class SessionPlannerControlsContentModel {
         private static BudgetModel mapBudget(SessionPlannerSessionSnapshot.XpBudgetState budget) {
             SessionPlannerSessionSnapshot.XpBudgetState safe =
                     budget == null ? SessionPlannerSessionSnapshot.XpBudgetState.empty() : budget;
+            String totalBudgetText = formatXp(safe.totalBudgetXp());
+            String plannedXpText = formatXp(safe.plannedEncounterXp());
+            String remainingXpText = formatXp(safe.remainingXp());
+            String overBudgetText = formatXp(safe.overBudgetXp());
             return new BudgetModel(
                     safe.available(),
-                    formatXp(safe.totalBudgetXp()),
-                    formatXp(safe.plannedEncounterXp()),
-                    formatXp(safe.remainingXp()),
-                    formatXp(safe.overBudgetXp()),
+                    totalBudgetText,
+                    plannedXpText,
+                    remainingXpText,
+                    overBudgetText,
+                    "Budget " + totalBudgetText + XP_SUFFIX,
+                    "Geplant " + plannedXpText + XP_SUFFIX,
+                    safe.overBudget()
+                            ? overBudgetText + XP_SUFFIX + " ueber"
+                            : remainingXpText + XP_SUFFIX + " frei",
                     safe.progressFraction(),
                     safe.overBudget(),
+                    safe.overBudget() ? STYLE_BUDGET_OVER : STYLE_BUDGET_OK,
                     milestoneText(safe.firstShortRestXp(), safe.secondShortRestXp()),
                     safe.summary());
         }
@@ -163,7 +179,10 @@ public final class SessionPlannerControlsContentModel {
                     plan.adjustedXp(),
                     plan.difficultyLabel(),
                     plan.statusText(),
-                    plan.importEnabled());
+                    plan.importEnabled(),
+                    "An Session anhaengen",
+                    "accent",
+                    !plan.importEnabled());
         }
 
         private static PartyMemberModel mapPartyMember(
@@ -174,6 +193,10 @@ public final class SessionPlannerControlsContentModel {
                     member.characterId(),
                     member.name(),
                     member.level(),
+                    alreadyInSession,
+                    "Level " + member.level(),
+                    alreadyInSession ? "Schon in Session" : "Hinzufuegen",
+                    alreadyInSession ? "flat" : "accent",
                     alreadyInSession);
         }
 
@@ -189,7 +212,10 @@ public final class SessionPlannerControlsContentModel {
                     participant.level(),
                     participant.available(),
                     label,
-                    true);
+                    true,
+                    participant.available() ? STYLE_TEXT_SECONDARY : "session-planner-gap-active",
+                    "Entfernen",
+                    false);
         }
 
         private static String milestoneText(int firstShortRestXp, int secondShortRestXp) {
@@ -210,18 +236,25 @@ public final class SessionPlannerControlsContentModel {
 
         record SessionModel(
                 long sessionId,
+                String sessionIdText,
                 String encounterDaysText,
                 boolean hasSelectedEncounter,
                 String selectionText
         ) {
 
             SessionModel {
+                sessionIdText = sessionIdText == null ? "" : sessionIdText;
                 encounterDaysText = encounterDaysText == null ? "1" : encounterDaysText;
                 selectionText = selectionText == null ? "" : selectionText;
             }
 
             static SessionModel empty() {
-                return new SessionModel(0L, "1", false, "Noch kein Encounter fuer State-Panel ausgewaehlt");
+                return new SessionModel(
+                        0L,
+                        "Session #0",
+                        "1",
+                        false,
+                        "Noch kein Encounter fuer State-Panel ausgewaehlt");
             }
         }
 
@@ -247,8 +280,12 @@ public final class SessionPlannerControlsContentModel {
                 String plannedXpText,
                 String remainingXpText,
                 String overBudgetText,
+                String totalBudgetLine,
+                String plannedXpLine,
+                String remainingXpLine,
                 double progressFraction,
                 boolean overBudget,
+                String budgetStyleClass,
                 String milestonesText,
                 String summaryText
         ) {
@@ -258,6 +295,10 @@ public final class SessionPlannerControlsContentModel {
                 plannedXpText = safeText(plannedXpText);
                 remainingXpText = safeText(remainingXpText);
                 overBudgetText = safeText(overBudgetText);
+                totalBudgetLine = safeText(totalBudgetLine);
+                plannedXpLine = safeText(plannedXpLine);
+                remainingXpLine = safeText(remainingXpLine);
+                budgetStyleClass = safeText(budgetStyleClass);
                 milestonesText = safeText(milestonesText);
                 summaryText = safeText(summaryText);
             }
@@ -269,8 +310,12 @@ public final class SessionPlannerControlsContentModel {
                         "0",
                         "0",
                         "0",
+                        "Budget 0 XP",
+                        "Geplant 0 XP",
+                        "0 XP frei",
                         0.0,
                         false,
+                        STYLE_BUDGET_OK,
                         "Keine Rast-Meilensteine",
                         "Kein XP-Budget verfuegbar.");
             }
@@ -317,7 +362,10 @@ public final class SessionPlannerControlsContentModel {
                 int adjustedXp,
                 String difficultyLabel,
                 String statusText,
-                boolean importEnabled
+                boolean importEnabled,
+                String actionText,
+                String actionStyleClass,
+                boolean actionDisabled
         ) {
 
             AvailablePlanModel {
@@ -325,6 +373,8 @@ public final class SessionPlannerControlsContentModel {
                 summaryText = safeText(summaryText);
                 difficultyLabel = safeText(difficultyLabel);
                 statusText = safeText(statusText);
+                actionText = safeText(actionText);
+                actionStyleClass = safeText(actionStyleClass);
             }
         }
 
@@ -332,11 +382,18 @@ public final class SessionPlannerControlsContentModel {
                 long characterId,
                 String name,
                 int level,
-                boolean alreadyInSession
+                boolean alreadyInSession,
+                String detailText,
+                String actionText,
+                String actionStyleClass,
+                boolean actionDisabled
         ) {
 
             PartyMemberModel {
                 name = safeText(name);
+                detailText = safeText(detailText);
+                actionText = safeText(actionText);
+                actionStyleClass = safeText(actionStyleClass);
             }
         }
 
@@ -346,12 +403,17 @@ public final class SessionPlannerControlsContentModel {
                 int level,
                 boolean available,
                 String detail,
-                boolean removable
+                boolean removable,
+                String detailStyleClass,
+                String actionText,
+                boolean actionDisabled
         ) {
 
             SessionParticipantModel {
                 name = safeText(name);
                 detail = safeText(detail);
+                detailStyleClass = safeText(detailStyleClass);
+                actionText = safeText(actionText);
             }
         }
 

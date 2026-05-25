@@ -52,16 +52,16 @@ SaltMarcher keeps review instructions in global skills, not in this standard.
   `/home/aaron/.codex/skills/local/adversarial-review/SKILL.md` before
   starting the mandatory adversarial review step.
 - For implementation handoff, the implementing agent must launch one Overview
-  subagent that reads
+  coordinator subagent that reads
   `/home/aaron/.codex/skills/local/adversarial-review-agent/SKILL.md` first and
   then applies `/home/aaron/.codex/skills/local/review-overview/SKILL.md`.
-- The Overview subagent returns the reviewability decision, responsibility
-  slices, required specialist skills, and ready-to-send reviewer briefs. It must
-  not launch other subagents.
-- The implementing agent waits for the Overview result, then launches the
-  specialist review panel from that result. If the Overview result says the
-  change is not reviewable, the pass remains WIP until the named blocker is
-  fixed and Overview is rerun.
+- The Overview coordinator returns the reviewability decision, responsibility
+  slices, required specialist skills, specialist review outcomes, scoped
+  follow-up fix outcomes, and the final clean-or-blocked result.
+- The Overview coordinator owns nested specialist review launches and scoped
+  follow-up worker launches. If the Overview result says the change is not
+  reviewable or remains blocked, the pass remains WIP until the named blocker
+  is fixed and Overview is rerun.
 - Specialist review subagents read
   `/home/aaron/.codex/skills/local/adversarial-review-agent/SKILL.md` before
   reviewing.
@@ -73,6 +73,10 @@ SaltMarcher keeps review instructions in global skills, not in this standard.
 
 - Covered Markdown-only instruction changes that stay inside the documentation
   gate scope use `./gradlew checkDocumentationEnforcement --console=plain`.
+- Covered instruction-only changes that also include `agents/openai.yaml` use
+  `./gradlew checkDocumentationEnforcement --console=plain` for the Markdown
+  instruction surfaces plus explicit derived-metadata consistency review
+  against the governing `SKILL.md`.
 - Covered changes that also touch non-Markdown code, Gradle, build logic, or
   non-covered surfaces still follow the broader verification path owned by
   `AGENTS.md` and the quality-platform standards.
@@ -107,8 +111,8 @@ When a covered artifact changes, reviewers must check:
 - Did the change introduce duplicate or conflicting truth across covered
   surfaces?
 - Does the chosen verification path match the actual changed surfaces?
-- Did the implementing agent obtain and follow a global `review-overview` panel
-  plan before launching specialist review subagents?
+- Did the implementing agent obtain a completed global `review-overview`
+  coordinator result before handoff?
 - Did any specialist review skill used for the pass remain a read-only review
   lens instead of becoming a competing repo-owned workflow?
 

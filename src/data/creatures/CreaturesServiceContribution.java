@@ -10,11 +10,6 @@ import src.domain.creatures.model.catalog.port.CreatureCatalogPort;
  */
 public final class CreaturesServiceContribution implements ServiceContribution {
 
-    @SuppressWarnings("PMD.UnnecessaryConstructor")
-    public CreaturesServiceContribution() {
-        // Required by passive service contribution discovery.
-    }
-
     @Override
     public void register(ServiceRegistry.Builder builder) {
         builder.register(CreatureCatalogPort.class, new SqliteCreatureCatalogQueryAdapter());

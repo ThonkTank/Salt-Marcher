@@ -14,7 +14,13 @@
         </properties>
     </rule>
 
-    <rule ref="category/java/design.xml/CyclomaticComplexity">
+    <rule name="CyclomaticComplexity"
+          language="java"
+          since="7.0.0"
+          message="The {0} ''{1}'' has a cyclomatic complexity of {2}."
+          class="saltmarcher.quality.pmd.hygiene.RoleAwareCyclomaticComplexityRule"
+          externalInfoUrl="https://docs.pmd-code.org/pmd-doc-7.23.0/pmd_rules_java_design.html#cyclomaticcomplexity">
+        <priority>3</priority>
         <properties>
             <property name="classReportLevel" value="80" />
             <property name="methodReportLevel" value="10" />
@@ -27,7 +33,13 @@
         </properties>
     </rule>
 
-    <rule ref="category/java/design.xml/CouplingBetweenObjects">
+    <rule name="CouplingBetweenObjects"
+          language="java"
+          since="1.04"
+          message="A value of {0} may denote a high amount of coupling within the class (threshold: {1})"
+          class="saltmarcher.quality.pmd.hygiene.RoleAwareCouplingBetweenObjectsRule"
+          externalInfoUrl="https://docs.pmd-code.org/pmd-doc-7.23.0/pmd_rules_java_design.html#couplingbetweenobjects">
+        <priority>3</priority>
         <properties>
             <property name="threshold" value="20" />
         </properties>
@@ -52,15 +64,36 @@
         </properties>
     </rule>
 
-    <rule ref="category/java/design.xml/TooManyMethods" />
+    <rule name="TooManyMethods"
+          language="java"
+          since="4.2"
+          message="This class has too many methods, consider refactoring it."
+          class="saltmarcher.quality.pmd.hygiene.RoleAwareTooManyMethodsRule"
+          externalInfoUrl="https://docs.pmd-code.org/pmd-doc-7.23.0/pmd_rules_java_design.html#toomanymethods">
+        <priority>3</priority>
+    </rule>
 
     <rule ref="category/java/design.xml/TooManyFields" />
 
     <rule ref="category/java/design.xml/ExcessivePublicCount" />
 
-    <rule ref="category/java/design.xml/ExcessiveImports" />
+    <rule name="ExcessiveImports"
+          language="java"
+          since="1.04"
+          message="A high number of imports ({0}) can indicate a high degree of coupling within an object; current threshold is {1}."
+          class="saltmarcher.quality.pmd.hygiene.RoleAwareExcessiveImportsRule"
+          externalInfoUrl="https://docs.pmd-code.org/pmd-doc-7.23.0/pmd_rules_java_design.html#excessiveimports">
+        <priority>3</priority>
+    </rule>
 
-    <rule ref="category/java/design.xml/GodClass" />
+    <rule name="GodClass"
+          language="java"
+          since="5.0"
+          message="Possible God Class (WMC={0}, ATFD={1}, TCC={2}%)"
+          class="saltmarcher.quality.pmd.hygiene.RoleAwareGodClassRule"
+          externalInfoUrl="https://docs.pmd-code.org/pmd-doc-7.23.0/pmd_rules_java_design.html#godclass">
+        <priority>3</priority>
+    </rule>
 
     <rule name="DataClass"
           language="java"

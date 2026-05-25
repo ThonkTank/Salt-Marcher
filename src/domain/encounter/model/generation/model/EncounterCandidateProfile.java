@@ -23,14 +23,6 @@ public final class EncounterCandidateProfile {
     public EncounterCandidateProfile(
             EncounterCreatureFacts facts,
             EncounterCandidateCombatStats combatStats,
-            EncounterRole role
-    ) {
-        this(facts, combatStats, role, 1);
-    }
-
-    public EncounterCandidateProfile(
-            EncounterCreatureFacts facts,
-            EncounterCandidateCombatStats combatStats,
             EncounterRole role,
             int selectionWeight
     ) {
@@ -54,10 +46,6 @@ public final class EncounterCandidateProfile {
 
     public EncounterRole role() {
         return role;
-    }
-
-    public String roleLabel() {
-        return role.label();
     }
 
     public EncounterCreatureFacts facts() {

@@ -38,14 +38,18 @@ Published dungeon carriers must not own:
 ## Application Boundary
 
 Application Service: DungeonTravelApplicationService
-Application Service: DungeonEditorApplicationService
+Application Service: DungeonEditorMapApplicationService
+Application Service: DungeonEditorProjectionApplicationService
+Application Service: DungeonEditorPointerApplicationService
+Application Service: DungeonEditorNarrationApplicationService
 Application Service: DungeonTravelRuntimeApplicationService
 
 `application/` coordinates authored dungeon load, mutate, save, search, and
 raw travel-surface queries through the domain-owned ports. The root
 application-service family maps authored dungeon truth and derived results
 into `published/` carriers while editor runtime and travel runtime stay in
-explicit dungeon model families. Render ownership stays in the view layer.
+the explicit dungeon worldspace model family. Render ownership stays in the
+view layer.
 
 ## Aggregate Model
 
@@ -79,11 +83,11 @@ Core invariants:
 - `dungeon` publishes authored `DungeonSnapshot`,
   `DungeonOperationResult`, `DungeonInspectorSnapshot`, raw travel surfaces,
   and travel-action results rooted in authored dungeon truth
-- `dungeon/model/editor/**` owns runtime editor-session composition that
+- `dungeon/model/worldspace/**` owns runtime editor-session composition that
   combines authored dungeon facts with session-local selection, tool, preview,
   overlay, projection level, and pointer interpretation
-- `dungeon/model/travel/**` owns runtime session composition that combines raw
-  dungeon facts with party-owned position state
+- `dungeon/model/worldspace/**` owns runtime session composition that combines
+  raw dungeon facts with party-owned position state
 - `dungeon` does not own party roster truth or persisted party travel position
 - `dungeon` does not publish render-ready map-canvas primitives
 

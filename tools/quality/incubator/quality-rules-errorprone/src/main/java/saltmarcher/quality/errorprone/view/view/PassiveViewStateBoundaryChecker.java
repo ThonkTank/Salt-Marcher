@@ -23,7 +23,7 @@ import javax.lang.model.element.Modifier;
 import javax.lang.model.type.TypeMirror;
 import saltmarcher.quality.errorprone.view.ViewArchitectureSupport;
 import saltmarcher.quality.errorprone.view.ViewExpressionProvenanceSupport;
-import saltmarcher.quality.errorprone.view.ViewSourceDescriptor;
+import saltmarcher.architecture.policy.view.ViewSourceDescriptor;
 
 @BugPattern(
         name = "PassiveViewStateBoundary",
@@ -259,6 +259,9 @@ public final class PassiveViewStateBoundaryChecker extends BugChecker
         if (referencedType == null || referencedType.isBlank()) {
             return false;
         }
+        if (isSameViewNestedReference(referencedType, qualifiedViewName)) {
+            return false;
+        }
         if (referencedType.startsWith("src.domain.")
                 || referencedType.startsWith("src.data.")
                 || referencedType.startsWith("shell.")
@@ -268,6 +271,10 @@ public final class PassiveViewStateBoundaryChecker extends BugChecker
                 || ViewArchitectureSupport.isRecognizedViewReference(referencedType)) {
             return true;
         }
+        return false;
+    }
+
+    private static boolean isSameViewNestedReference(String referencedType, String qualifiedViewName) {
         return referencedType.startsWith(qualifiedViewName + "$")
                 || referencedType.startsWith(qualifiedViewName + ".");
     }

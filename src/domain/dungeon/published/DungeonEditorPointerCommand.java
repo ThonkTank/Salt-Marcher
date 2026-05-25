@@ -1,15 +1,6 @@
 package src.domain.dungeon.published;
 
-public sealed interface DungeonEditorPointerCommand permits
-        CreateDungeonEditorCorridorCommand,
-        CreateDungeonEditorDoorCommand,
-        CreateDungeonEditorWallCommand,
-        DeleteDungeonEditorCorridorCommand,
-        DeleteDungeonEditorDoorCommand,
-        DeleteDungeonEditorRoomCommand,
-        DeleteDungeonEditorWallCommand,
-        DungeonEditorSelectionCommand,
-        PaintDungeonEditorRoomCommand {
+public sealed interface DungeonEditorPointerCommand permits ApplyDungeonEditorPointerCommand {
 
     DungeonEditorPointerSample pointer();
 

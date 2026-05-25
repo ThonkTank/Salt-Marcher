@@ -18,8 +18,8 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 import javax.lang.model.type.TypeKind;
 import saltmarcher.quality.errorprone.view.ViewArchitectureSupport;
-import saltmarcher.quality.errorprone.view.ViewRole;
-import saltmarcher.quality.errorprone.view.ViewSourceDescriptor;
+import saltmarcher.architecture.policy.view.ViewRole;
+import saltmarcher.architecture.policy.view.ViewSourceDescriptor;
 
 @BugPattern(
         name = "ViewBinderApplicationServiceReadback",

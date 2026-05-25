@@ -12,10 +12,6 @@ import src.domain.party.published.PartyTravelPositionsModel;
 
 public final class PartyServiceContribution implements ServiceContribution {
 
-    @SuppressWarnings({"PMD.UnnecessaryConstructor", "PMD.UncommentedEmptyConstructor"})
-    public PartyServiceContribution() {
-    }
-
     @Override
     public void register(ServiceRegistry.Builder services) {
         PartyServiceAssembly assembly = new PartyServiceAssembly();

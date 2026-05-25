@@ -1,15 +1,15 @@
 Status: Active
 Owner: SaltMarcher Team
 Last Reviewed: 2026-05-14
-Source of Truth: Aggregate entrypoints, staged handoff routing, and concurrent
-local invocation policy for SaltMarcher quality platforms.
+Source of Truth: Aggregate entrypoints, staged handoff routing, and local
+invocation policy for SaltMarcher quality platforms.
 
 # Quality Platforms Local Entrypoints
 
 ## Purpose
 
-This subordinate standard owns local aggregate entrypoints and concurrent
-worktree invocation policy beneath the umbrella
+This subordinate standard owns local aggregate entrypoints and local invocation
+policy beneath the umbrella
 [Quality Platforms Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/verification/quality-platforms.md:1).
 Individual local gate behavior lives in
 [Quality Platforms Local Gates](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/verification/quality-platforms-local-gates.md:1).
@@ -46,10 +46,12 @@ quality-hygiene tool owners inside Gradle.
 For check-only implementation work limited to concrete enforcement packages or
 verification-only wiring under `tools/**`, `build.gradle.kts`, or
 `settings.gradle.kts`, the narrow local proof route is the documented
-`focused-handoff` wrapper entrypoint when the affected scope can be represented
-as package or resource paths. Shared production-code routing changes still add
-the required `production-handoff` route. Focused package and layer-surface
-tasks remain technical diagnostics, not public proof owners.
+`focused-handoff` route when the affected scope can be represented as package
+or resource paths. The wrapper forwards only focused paths, optional area ids,
+optional compile-integrity intent, and investigation flags; Gradle owns the
+diagnostic task selection behind the route. Shared production-code routing
+changes still add the required `production-handoff` route. Focused package and
+layer-surface tasks remain technical diagnostics, not public proof owners.
 
 `tools/gradle/run-staged-verification.sh focused-handoff --path
 <repo-package-or-resource-dir> [--area <area>]` is the package-focused local
@@ -61,9 +63,9 @@ validated by the selected focused engines.
 
 Focused paths are repo-relative package or resource directories such as
 `src/domain/encounter` or `src/view/sessionplanner`; ambiguous roots require
-explicit `--area <area>`. The optional `--with compile-integrity` step runs the
-normal broad compile integrity checks separately before the focused surfaces so
-the focused task graph stays eligible for existing bundle selection.
+explicit `--area <area>`. The optional `--with compile-integrity` flag requests
+the normal broad compile integrity checks as Gradle-owned dependencies of the
+focused handoff lifecycle task.
 
 `focused-handoff` is not a replacement for `production-handoff`, not the proof
 route for shared verification-core lifecycle or routing changes, and not enough
@@ -84,9 +86,9 @@ documentation checks. It is intentionally outside `check` and `build` so
 documentation-only changes use a narrower proof route.
 
 A completed implementation pass is incomplete until the required
-production-code handoff, check-only package/layer rerun, or
-documentation-enforcement rerun has completed, or a concrete blocker has been
-reported.
+production-code handoff, documented focused-handoff proof for scoped package or
+resource work, or documentation-enforcement rerun has completed, or a concrete
+blocker has been reported.
 
 Public local proof entrypoints are:
 
@@ -94,6 +96,12 @@ Public local proof entrypoints are:
   Runs the public Gradle `production-handoff` lifecycle task through the
   observable wrapper. The verification core keeps compile integrity, structure,
   and hygiene as internal phase tasks behind that public surface.
+- `tools/gradle/run-staged-verification.sh focused-handoff --path
+  <repo-package-or-resource-dir> [--area <area>] [--with compile-integrity]`
+  Runs the public Gradle `focused-handoff` lifecycle task through the
+  observable wrapper. The verification core derives diagnostic surfaces from
+  the typed catalog and focused properties; the shell wrapper must not map
+  areas to private `check*Enforcement` task names.
 - `./gradlew checkDocumentationEnforcement --console=plain`
   Aggregates focused Markdown-backed architecture and enforcement-document
   coverage through `:build-harness:documentationEnforcementCheck` plus the
@@ -101,9 +109,9 @@ Public local proof entrypoints are:
 Internal `verify*Bundle` selector tasks may still exist for typed harness
 selection and internal ownership routing, but they are not public proof
 entrypoints and must not replace the canonical production-handoff command
-above. Canonical layer-surface tasks such as `checkViewEnforcement` may still
-exist as technical diagnostics and focused local rerun points, but they are not
-separate public production-code proof owners.
+above. Technical layer-surface tasks such as `checkViewEnforcement` may still
+exist as diagnostics and focused local rerun points, but they are not separate
+public production-code proof owners.
 Build-harness topology and documentation metadata is coalesced by layer surface
 and rule kind before Gradle execution; role-local owner metadata names are not
 public or runnable proof entrypoints unless this document explicitly lists them
@@ -118,7 +126,7 @@ Focused investigation entrypoints are `compileJava`, `pmdMain`,
 `pmdStrictMain`, `checkRewriteNearMisses`, `spotbugsMain`, `cpdMain`,
 `lizardMain`, `ckjmMain`, repository/resource policy checks, technical
 `check*Enforcement` layer surfaces, `checkDocumentationEnforcement`, and the
-wrapper-only `focused-handoff` route, each run through its documented command
+Gradle-owned `focused-handoff` route, each run through its documented command
 shape. Investigation tasks are not alternate production-handoff entries.
 
 ## Runtime Wrapper Policy
@@ -155,27 +163,19 @@ example, environments without required IPv4 bind support are reported as an
 environment issue rather than a checker failure. This hint is not a pre-Gradle
 socket preflight.
 
-## Parallel Local Worktrees
+## Local Concurrent Work
 
-Local Gradle gates support concurrent agent work through checkout separation,
-not through wrapper-managed same-worktree isolation.
+Local Gradle gates do not provide wrapper-managed same-checkout isolation. When
+multiple agents work in one checkout, the caller owns write-set coordination:
+assign disjoint file scopes, serialize edits to shared files, and report which
+paths each agent owned. Linked worktrees or per-agent branches are optional
+operator choices only when explicitly requested, not a SaltMarcher governance
+requirement.
 
-Parallel implementation work MUST use one linked git worktree plus one branch
-per agent. The preferred local shape is:
-
-1. create a linked worktree under `build/codex-worktrees/<topic>/`
-2. create or switch to an agent-owned branch inside that worktree
-3. implement and verify there with the normal public Gradle entrypoints
-4. merge back into the repo-root `SaltMarcher/` checkout only after the
-   required local verification surface is green
-5. remove the temporary linked worktree and delete the temporary local branch
-   once the verified result lives in the real local working tree
-
-This keeps each agent's mutable `build/` and `.gradle/` state naturally scoped
-to its own filesystem tree. The harness no longer creates per-invocation
-`.gradle/isolated-runs/**` roots, synthetic included-build mirrors,
-wrapper-published plugin repositories, generated descriptor snapshots, or
-wrapper-owned retained-failure export surfaces.
+The harness no longer creates per-invocation `.gradle/isolated-runs/**` roots,
+synthetic included-build mirrors, wrapper-published plugin repositories,
+generated descriptor snapshots, or wrapper-owned retained-failure export
+surfaces.
 
 The verification core still computes focused bundle selection during settings
 evaluation and still registers the same technical layer surfaces,

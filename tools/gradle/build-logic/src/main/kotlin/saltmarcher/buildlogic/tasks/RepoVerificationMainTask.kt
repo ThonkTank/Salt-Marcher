@@ -66,6 +66,7 @@ abstract class RepoVerificationMainTask : DefaultTask() {
             args(verificationArgs.get())
         }
 
+        Files.createDirectories(markerPath.parent)
         Files.writeString(markerPath, "passed\n")
     }
 }

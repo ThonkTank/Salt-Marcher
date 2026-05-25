@@ -1,5 +1,6 @@
 package src.view.leftbartabs.dungeoneditor;
 
+import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
@@ -25,7 +26,6 @@ import javafx.scene.layout.VBox;
 import javafx.util.StringConverter;
 import org.jspecify.annotations.Nullable;
 
-@SuppressWarnings("PMD.LawOfDemeter")
 public final class DungeonEditorControlsView extends VBox {
 
     private Consumer<DungeonEditorControlsViewInputEvent> viewInputEventHandler = ignored -> { };
@@ -611,7 +611,8 @@ public final class DungeonEditorControlsView extends VBox {
     }
 
     private static <T> @Nullable T firstComboItem(ComboBox<T> comboBox) {
-        return comboBox.getItems().isEmpty() ? null : comboBox.getItems().get(0);
+        Iterator<T> items = comboItems(comboBox).iterator();
+        return items.hasNext() ? items.next() : null;
     }
 
     private static <T> void selectMapItem(ComboBox<T> comboBox, @Nullable T selectedItem) {

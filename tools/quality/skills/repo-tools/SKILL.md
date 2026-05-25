@@ -39,6 +39,19 @@ repo-tracked change:
 - Read the governing skill before setup, indexing, rendering, interpreting, or
   citing callchain output.
 
+### Agent Context Map
+
+- Tool path: `tools/quality/reporting/agent_context_map.py`
+- Helps with: orientation for a repo path's surface class, mandatory skills,
+  canonical owner candidates, feature docs, verification guidance, and local
+  continuous-refactoring candidates.
+- Governing skill: this `repo-tools` skill.
+- Evidence strength: `Candidate` orientation only. The output is not a
+  canonical owner, verification gate, or substitute for reading the listed
+  owners.
+- Typical use:
+  `python3 tools/quality/reporting/agent_context_map.py --surface <path>`
+
 ## Handoff
 
 Report repo-tool usage only when it affected the work:

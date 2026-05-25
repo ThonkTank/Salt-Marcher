@@ -49,7 +49,4 @@ public final class PartyAdventuringDayPlan {
         return characterCount;
     }
 
-    public boolean hasCharacters() {
-        return characterCount > 0;
-    }
 }

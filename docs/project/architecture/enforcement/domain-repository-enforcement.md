@@ -21,8 +21,9 @@ Technical diagnostic route:
 
 No package-focused handoff route is currently documented for the underlying
 Error Prone checker source package. The focused wrapper does not currently
-accept `tools/quality/incubator/quality-rules-errorprone/**`, and
-`compileJava` is not a proof route for this checker.
+accept `tools/quality/incubator/quality-rules-errorprone/**`; `compileJava`
+is the compile-time Error Prone proof route for checker diagnostics, and
+`checkDomainEnforcement` is the role-bundle route.
 
 ## Invariant Catalog
 
@@ -39,7 +40,7 @@ accept `tools/quality/incubator/quality-rules-errorprone/**`, and
 | Invariant ID | Status | Applies When | Mechanical Owner | Diagnostic/Mechanical Route | What It Proves |
 | --- | --- | --- | --- | --- | --- |
 | `domain-repository-no-src-data-type-leaks` | Review-Owned | every repository under `src/domain/**` | none | none | Repositories do not expose `src.data/**` types or foreign published carriers through same-context signatures or broader role concerns. Foreign published non-`*Model` carriers may be used internally when needed to call foreign root services. |
-| `domain-repository-no-same-context-published-state-channel` | Enforced | every repository under `src/domain/**` | domain-repository bundle Error Prone `DomainRepositoryPublishedStateBoundary` | `./gradlew checkDomainEnforcement` | Generic repositories do not replace same-context `published/*Model` readback with `publish*` methods and are mechanically covered for exact/generic `Object` signature channels; ordinary `String`, `Optional`, `List`, `Set`, `Map`, or `.published.` data-access signatures are not blocked by this rule. The specialized `*PublishedStateRepository` suffix may expose public/protected methods only when they are `void publish*` methods with at least one syntactically typed same-context internal payload from `model/<family>/model/**`, `model/<family>/usecase/**`, `model/<family>/repository/**`, or a repository-local nested publication record, and the suffix type must not declare an extends or implements clause that could expose inherited repository methods. For declared `*PublishedStateRepository.publish*` methods, the strict syntactic payload proof rejects `Object`, raw `String`, Java collection/map/optional signatures, generic signatures containing those carriers, and `.published.` payloads. It does not prove that every accepted payload is the semantically correct publication record for the use case. |
+| `domain-repository-no-same-context-published-state-channel` | Enforced | every repository under `src/domain/**` | domain-repository bundle Error Prone `DomainRepositoryPublishedStateBoundary` | `./gradlew compileJava` and `./gradlew checkDomainEnforcement` | Generic repositories do not replace same-context `published/*Model` readback with `publish*` methods and are mechanically covered for exact/generic `Object` signature channels; ordinary `String`, `Optional`, `List`, `Set`, `Map`, or `.published.` data-access signatures are not blocked by this rule. The specialized `*PublishedStateRepository` suffix may expose public/protected methods only when they are `void publish*` methods with at least one syntactically typed same-context internal payload from `model/<family>/model/**`, `model/<family>/usecase/**`, `model/<family>/repository/**`, or a repository-local nested publication record, and the suffix type must not declare an extends or implements clause that could expose inherited repository methods. For declared `*PublishedStateRepository.publish*` methods, the strict syntactic payload proof rejects `Object`, raw `String`, Java collection/map/optional signatures, generic signatures containing those carriers, and `.published.` payloads. It does not prove that every accepted payload is the semantically correct publication record for the use case. |
 
 ### Communication Contract
 

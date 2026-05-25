@@ -37,17 +37,19 @@ invariants.
   `published/*Model` handles for editor and travel model families; both
   subscribe to emitted snapshots and deliver those snapshots into the dungeon
   map slotcontent `ContentModel`
-- `DungeonEditorBinder` also owns reverse pointer-event translation from
-  `DungeonMapViewInputEvent` into dungeon-editor input wiring
+- `DungeonEditorBinder` wires `DungeonMapViewInputEvent` into the same-root
+  `DungeonEditorIntentHandler`, which owns pointer-event interpretation and
+  command translation
 - the active-root dungeon `ContributionModel` owns aggregate controls,
   inspector, status, and other non-canvas projection state, but must not
   mirror dungeon map render projection as a second render path
 - the optional active-root dungeon `IntentHandler` owns input interpretation
 - `DungeonTravelApplicationService` is the callable authored-dungeon backend
   boundary for raw travel surfaces
-- `DungeonEditorApplicationService` is the only callable runtime
+- the `DungeonEditor*ApplicationService` root family is the callable runtime
   dungeon-editor backend boundary and owns editor read, catalog change,
-  preview, and apply orchestration over authored dungeon truth
+  projection, narration, preview, and apply orchestration over authored
+  dungeon truth
 - `DungeonTravelRuntimeApplicationService` is the only callable runtime dungeon-travel
   backend boundary
 - dungeon `published/**` owns dungeon-native authored carriers and raw travel
@@ -61,15 +63,16 @@ invariants.
 
 ### Surface Read
 
-`Dungeon*Binder -> DungeonEditorApplicationService or DungeonTravelRuntimeApplicationService -> dungeon published/*Model -> Dungeon*Snapshot or TravelDungeonSnapshot -> DungeonMapContentModel -> DungeonMapContentModel.RenderScene -> DungeonMapView -> Dungeon*MainView`
+`Dungeon*Binder -> dungeon published/*Model -> Dungeon*Snapshot or TravelDungeonSnapshot -> DungeonMapContentModel -> DungeonMapContentModel.RenderScene -> DungeonMapView -> Dungeon*MainView`
 
-For the editor workspace, `DungeonEditorApplicationService` composes that
-runtime snapshot from dungeon editor model use cases over authored dungeon
-truth. Catalog changes enter through the same editor backend boundary.
+For the editor workspace, the `DungeonEditor*ApplicationService` family
+composes that runtime snapshot from dungeon editor model use cases over
+authored dungeon truth. Catalog changes enter through the editor map backend
+boundary.
 
 ### Preview And Apply
 
-`Dungeon*MainView -> DungeonMapViewInputEvent -> DungeonEditorBinder wiring -> same-root Dungeon*IntentHandler -> DungeonEditorPublishedEvent -> DungeonEditorBinder -> DungeonEditorApplicationService -> DungeonEditorModel -> DungeonEditorSnapshot -> DungeonEditorMapProjectionSnapshot -> DungeonMapContentModel -> DungeonMapContentModel.RenderScene -> DungeonMapView -> Dungeon*MainView`
+`Dungeon*MainView -> DungeonMapViewInputEvent -> DungeonEditorBinder wiring -> same-root Dungeon*IntentHandler -> ApplyDungeonEditorPointerCommand -> DungeonEditorPointerApplicationService -> DungeonEditorModel -> DungeonEditorSnapshot -> DungeonEditorMapProjectionSnapshot -> DungeonMapContentModel -> DungeonMapContentModel.RenderScene -> DungeonMapView -> Dungeon*MainView`
 
 Preview and apply reuse the same authored dungeon edit body and differ only in
 the boundary wrapper and commit semantics.
@@ -88,7 +91,7 @@ lives only in the
 
 ### Map Catalog
 
-`editor controls -> DungeonEditorBinder -> DungeonEditorApplicationService -> catalog result`
+`editor controls -> DungeonEditorBinder -> DungeonEditorMapApplicationService -> catalog result`
 
 Catalog behavior remains separate from the shared canvas scene path while
 sharing the editor backend boundary.

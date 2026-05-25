@@ -53,165 +53,48 @@ public final class CatalogControlsContentModel {
 
     private final ReadOnlyObjectWrapper<ControlsProjection> projection =
             new ReadOnlyObjectWrapper<>(ControlsProjection.initial());
-    private LocalFilterState localFilters = LocalFilterState.empty();
-    private ControlsState authoritativeControls = ControlsState.empty();
-    private ControlsState controlsState = ControlsState.empty();
-    private FilterOptionsProjection filterOptions =
-            FilterOptionsProjection.empty();
-    private FilterDropdownState sizeDropdownState =
-            FilterDropdownState.closed();
-    private FilterDropdownState typeDropdownState =
-            FilterDropdownState.closed();
-    private FilterDropdownState subtypeDropdownState =
-            FilterDropdownState.closed();
-    private FilterDropdownState biomeDropdownState =
-            FilterDropdownState.closed();
-    private FilterDropdownState alignmentDropdownState =
-            FilterDropdownState.closed();
-    private FilterDropdownState encounterTableDropdownState =
-            FilterDropdownState.closed();
-    private List<EncounterTableOption> encounterTableOptions = List.of();
+    private final CatalogControlsContentState state = new CatalogControlsContentState();
 
     ReadOnlyObjectProperty<ControlsProjection> projectionProperty() {
         return projection.getReadOnlyProperty();
     }
 
     void applyControlsDraft(ControlsDraft draft) {
-        ControlsDraft safeDraft = draft == null
-                ? new ControlsDraft(
-                        LocalFilterState.empty(),
-                        ControlsState.empty(),
-                        FilterDropdownState.closed(),
-                        FilterDropdownState.closed(),
-                        FilterDropdownState.closed(),
-                        FilterDropdownState.closed(),
-                        FilterDropdownState.closed(),
-                        FilterDropdownState.closed())
-                : draft;
-        localFilters = safeDraft.localFilters();
-        controlsState = safeDraft.controlsState();
-        sizeDropdownState = safeDraft.sizeDropdownState();
-        typeDropdownState = safeDraft.typeDropdownState();
-        subtypeDropdownState = safeDraft.subtypeDropdownState();
-        biomeDropdownState = safeDraft.biomeDropdownState();
-        alignmentDropdownState = safeDraft.alignmentDropdownState();
-        encounterTableDropdownState = safeDraft.encounterTableDropdownState();
+        state.applyControlsDraft(draft);
         refreshProjection();
     }
 
     void applyCreatureFilterOptions(CreatureFilterOptionsResult result) {
-        CreatureFilterOptions options = result == null || result.options() == null
-                ? CreatureFilterOptions.empty()
-                : result.options();
-        filterOptions = new FilterOptionsProjection(
-                options.sizes(),
-                options.types(),
-                options.subtypes(),
-                options.biomes(),
-                options.alignments(),
-                options.challengeRatings());
-        localFilters = localFilters.retainAvailable(filterOptions);
+        state.applyCreatureFilterOptions(result);
         refreshProjection();
     }
 
     boolean applyEncounterBuilderInputs(EncounterBuilderInputs builderInputs) {
-        ControlsState previousAuthoritative = authoritativeControls;
-        ControlsState next =
-                ControlsState.fromBuilderInputs(builderInputs, previousAuthoritative);
-        authoritativeControls = next;
-        controlsState = next;
+        boolean searchControlsChanged = state.applyEncounterBuilderInputs(builderInputs);
         refreshProjection();
-        return ControlsState.searchControlsChanged(previousAuthoritative, next);
+        return searchControlsChanged;
     }
 
     void applyEncounterTables(EncounterTableCatalogResult result) {
-        if (result == null || result.status() != EncounterTableReadStatus.SUCCESS) {
-            encounterTableOptions = List.of();
-            refreshProjection();
-            return;
-        }
-        encounterTableOptions = result.tables().stream()
-                .map(EncounterTableOption::fromSummary)
-                .toList();
+        state.applyEncounterTables(result);
         refreshProjection();
     }
 
     void applyEncounterTuningPreview(EncounterTuningPreviewLabels labels) {
-        authoritativeControls = authoritativeControls.withPreviewLabels(labels);
-        controlsState = controlsState.withPreviewLabels(labels);
+        state.applyEncounterTuningPreview(labels);
         refreshProjection();
     }
 
     InteractionState interactionState() {
-        return new InteractionState(localFilters, controlsState, authoritativeControls);
+        return state.interactionState();
     }
 
     CreatureFilters currentSearchFilters() {
-        return mergedFilters(localFilters, authoritativeControls);
+        return state.currentSearchFilters();
     }
 
     private void refreshProjection() {
-        CreatureFilters creatureFilters = mergedFilters(localFilters, controlsState);
-        projection.set(ControlsProjection.from(
-                filterOptions,
-                creatureFilters,
-                sizeDropdownState,
-                typeDropdownState,
-                subtypeDropdownState,
-                biomeDropdownState,
-                alignmentDropdownState,
-                encounterTableDropdownState,
-                encounterTableOptions,
-                FilterChip.from(creatureFilters, encounterTableOptions, controlsState),
-                controlsState));
-    }
-
-    private static CreatureFilters mergedFilters(
-            LocalFilterState local,
-            ControlsState controls
-    ) {
-        LocalFilterState safeLocal = local == null
-                ? LocalFilterState.empty()
-                : local;
-        ControlsState safeControls = controls == null
-                ? ControlsState.empty()
-                : controls;
-        return new CreatureFilters(
-                safeLocal.nameQuery(),
-                safeLocal.challengeRatingMin(),
-                safeLocal.challengeRatingMax(),
-                safeLocal.sizes(),
-                safeControls.creatureTypes(),
-                safeControls.creatureSubtypes(),
-                safeControls.biomes(),
-                safeLocal.alignments());
-    }
-
-    private static <T> List<T> copiedList(List<T> values) {
-        return values == null ? List.of() : List.copyOf(values);
-    }
-
-    private static String safe(String value) {
-        return value == null ? "" : value;
-    }
-
-    private static String defaultCrMinimum(String value) {
-        return value == null || value.isBlank() ? "0" : value;
-    }
-
-    private static String defaultCrMaximum(String value) {
-        return value == null || value.isBlank() ? "30" : value;
-    }
-
-    private static <T> List<T> retainAvailable(List<T> selectedValues, List<T> availableValues) {
-        if (selectedValues == null || selectedValues.isEmpty()) {
-            return List.of();
-        }
-        List<T> safeAvailable = availableValues == null ? List.of() : List.copyOf(availableValues);
-        return selectedValues.stream()
-                .filter(safeAvailable::contains)
-                .distinct()
-                .toList();
+        projection.set(state.projection());
     }
 
     record ControlsProjection(
@@ -238,8 +121,8 @@ public final class CatalogControlsContentModel {
             encounterTableDropdownState = encounterTableDropdownState == null
                     ? FilterDropdownState.closed()
                     : encounterTableDropdownState;
-            encounterTableOptions = copiedList(encounterTableOptions);
-            chips = copiedList(chips);
+            encounterTableOptions = Values.copiedList(encounterTableOptions);
+            chips = Values.copiedList(chips);
             controlsState = controlsState == null ? ControlsState.empty() : controlsState;
         }
 
@@ -258,32 +141,6 @@ public final class CatalogControlsContentModel {
                     ControlsState.empty());
         }
 
-        static ControlsProjection from(
-                FilterOptionsProjection filterOptions,
-                CreatureFilters creatureFilters,
-                FilterDropdownState sizeDropdownState,
-                FilterDropdownState typeDropdownState,
-                FilterDropdownState subtypeDropdownState,
-                FilterDropdownState biomeDropdownState,
-                FilterDropdownState alignmentDropdownState,
-                FilterDropdownState encounterTableDropdownState,
-                List<EncounterTableOption> encounterTableOptions,
-                List<FilterChip> chips,
-                ControlsState controlsState
-        ) {
-            return new ControlsProjection(
-                    FilterOptionsProjection.from(filterOptions),
-                    CreatureFilters.from(creatureFilters),
-                    FilterDropdownState.from(sizeDropdownState),
-                    FilterDropdownState.from(typeDropdownState),
-                    FilterDropdownState.from(subtypeDropdownState),
-                    FilterDropdownState.from(biomeDropdownState),
-                    FilterDropdownState.from(alignmentDropdownState),
-                    FilterDropdownState.from(encounterTableDropdownState),
-                    copiedList(encounterTableOptions).stream().map(EncounterTableOption::from).toList(),
-                    copiedList(chips).stream().map(FilterChip::from).toList(),
-                    ControlsState.from(controlsState));
-        }
     }
 
     record CreatureFilters(
@@ -297,14 +154,14 @@ public final class CatalogControlsContentModel {
             List<String> alignments
     ) {
         CreatureFilters {
-            nameQuery = safe(nameQuery);
-            challengeRatingMin = safe(challengeRatingMin);
-            challengeRatingMax = safe(challengeRatingMax);
-            sizes = copiedList(sizes);
-            types = copiedList(types);
-            subtypes = copiedList(subtypes);
-            biomes = copiedList(biomes);
-            alignments = copiedList(alignments);
+            nameQuery = Values.safe(nameQuery);
+            challengeRatingMin = Values.safe(challengeRatingMin);
+            challengeRatingMax = Values.safe(challengeRatingMax);
+            sizes = Values.copiedList(sizes);
+            types = Values.copiedList(types);
+            subtypes = Values.copiedList(subtypes);
+            biomes = Values.copiedList(biomes);
+            alignments = Values.copiedList(alignments);
         }
 
         static CreatureFilters empty() {
@@ -325,6 +182,24 @@ public final class CatalogControlsContentModel {
                     safeFilters.biomes(),
                     safeFilters.alignments());
         }
+
+        static CreatureFilters merged(LocalFilterState local, ControlsState controls) {
+            LocalFilterState safeLocal = local == null
+                    ? LocalFilterState.empty()
+                    : local;
+            ControlsState safeControls = controls == null
+                    ? ControlsState.empty()
+                    : controls;
+            return new CreatureFilters(
+                    safeLocal.nameQuery(),
+                    safeLocal.challengeRatingMin(),
+                    safeLocal.challengeRatingMax(),
+                    safeLocal.sizes(),
+                    safeControls.creatureTypes(),
+                    safeControls.creatureSubtypes(),
+                    safeControls.biomes(),
+                    safeLocal.alignments());
+        }
     }
 
     record FilterOptionsProjection(
@@ -336,12 +211,12 @@ public final class CatalogControlsContentModel {
             List<String> challengeRatings
     ) {
         FilterOptionsProjection {
-            sizes = copiedList(sizes);
-            types = copiedList(types);
-            subtypes = copiedList(subtypes);
-            biomes = copiedList(biomes);
-            alignments = copiedList(alignments);
-            challengeRatings = copiedList(challengeRatings);
+            sizes = Values.copiedList(sizes);
+            types = Values.copiedList(types);
+            subtypes = Values.copiedList(subtypes);
+            biomes = Values.copiedList(biomes);
+            alignments = Values.copiedList(alignments);
+            challengeRatings = Values.copiedList(challengeRatings);
         }
 
         static FilterOptionsProjection empty() {
@@ -373,10 +248,10 @@ public final class CatalogControlsContentModel {
             SliderProjection diversity
     ) {
         ControlsState {
-            creatureTypes = copiedList(creatureTypes);
-            creatureSubtypes = copiedList(creatureSubtypes);
-            biomes = copiedList(biomes);
-            encounterTableIds = copiedList(encounterTableIds);
+            creatureTypes = Values.copiedList(creatureTypes);
+            creatureSubtypes = Values.copiedList(creatureSubtypes);
+            biomes = Values.copiedList(biomes);
+            encounterTableIds = Values.copiedList(encounterTableIds);
             difficulty = difficulty == null ? SliderProjection.empty() : difficulty;
             balance = balance == null ? SliderProjection.empty() : balance;
             amount = amount == null ? SliderProjection.empty() : amount;
@@ -444,34 +319,29 @@ public final class CatalogControlsContentModel {
                             DEFAULT_DIVERSITY_LABELS));
         }
 
-        ControlsState withPreviewLabels(EncounterTuningPreviewLabels labels) {
-            List<EncounterTuningPreviewLabels.PreviewLabel> difficultyLabels =
-                    labels == null ? List.of() : labels.difficultyLabels();
-            List<EncounterTuningPreviewLabels.PreviewLabel> balanceLabels =
-                    labels == null ? List.of() : labels.balanceLabels();
-            List<EncounterTuningPreviewLabels.PreviewLabel> amountLabels =
-                    labels == null ? List.of() : labels.amountLabels();
-            List<EncounterTuningPreviewLabels.PreviewLabel> diversityLabels =
-                    labels == null ? List.of() : labels.diversityLabels();
+        ControlsState withPreviewLabels(CatalogControlsPreviewLabels labels) {
+            CatalogControlsPreviewLabels safeLabels = labels == null
+                    ? CatalogControlsPreviewLabels.empty()
+                    : labels;
             return new ControlsState(
                     creatureTypes,
                     creatureSubtypes,
                     biomes,
                     encounterTableIds,
                     difficulty.withPreviewLabels(
-                            difficultyLabels,
+                            safeLabels.difficultyLabels(),
                             DEFAULT_DIFFICULTY_LABELS,
                             DEFAULT_DIFFICULTY_VALUE),
                     balance.withPreviewLabels(
-                            balanceLabels,
+                            safeLabels.balanceLabels(),
                             DEFAULT_BALANCE_LABELS,
                             DEFAULT_BALANCE_VALUE),
                     amount.withPreviewLabels(
-                            amountLabels,
+                            safeLabels.amountLabels(),
                             DEFAULT_AMOUNT_LABELS,
                             DEFAULT_AMOUNT_VALUE),
                     diversity.withPreviewLabels(
-                            diversityLabels,
+                            safeLabels.diversityLabels(),
                             DEFAULT_DIVERSITY_LABELS,
                             DEFAULT_DIVERSITY_VALUE));
         }
@@ -488,7 +358,7 @@ public final class CatalogControlsContentModel {
     record SliderProjection(boolean auto, double value, List<PreviewLabel> labels) {
         SliderProjection {
             value = Double.isFinite(value) ? value : 0.0;
-            labels = copiedList(labels);
+            labels = Values.copiedList(labels);
         }
 
         static SliderProjection empty() {
@@ -568,13 +438,13 @@ public final class CatalogControlsContentModel {
         }
 
         SliderProjection withPreviewLabels(
-                List<EncounterTuningPreviewLabels.PreviewLabel> previewLabels,
+                List<PreviewLabel> previewLabels,
                 List<PreviewLabel> fallback,
                 double defaultValue
         ) {
             List<PreviewLabel> labels = previewLabels == null || previewLabels.isEmpty()
                     ? fallback
-                    : previewLabels.stream().map(label -> new PreviewLabel(label.value(), label.label())).toList();
+                    : previewLabels;
             return create(auto, value, labels, defaultValue, fallback);
         }
 
@@ -600,7 +470,7 @@ public final class CatalogControlsContentModel {
 
     record PreviewLabel(double value, String label) {
         PreviewLabel {
-            label = safe(label);
+            label = Values.safe(label);
         }
 
         static PreviewLabel from(PreviewLabel label) {
@@ -612,11 +482,6 @@ public final class CatalogControlsContentModel {
         EncounterTableOption {
             name = name == null || name.isBlank() ? "Tabelle " + tableId : name;
         }
-
-        static EncounterTableOption fromSummary(EncounterTableSummary summary) {
-            return new EncounterTableOption(summary.tableId(), summary.name(), summary.linkedLootTableId());
-        }
-
         static EncounterTableOption from(EncounterTableOption option) {
             return option == null
                     ? new EncounterTableOption(0L, "", null)
@@ -626,9 +491,9 @@ public final class CatalogControlsContentModel {
 
     record FilterChip(String key, String label, String styleClass) {
         FilterChip {
-            key = safe(key);
-            label = safe(label);
-            styleClass = safe(styleClass);
+            key = Values.safe(key);
+            label = Values.safe(label);
+            styleClass = Values.safe(styleClass);
         }
 
         static FilterChip from(FilterChip chip) {
@@ -650,9 +515,9 @@ public final class CatalogControlsContentModel {
             if (!safeFilters.challengeRatingMin().isBlank() || !safeFilters.challengeRatingMax().isBlank()) {
                 chips.add(new FilterChip(
                         CHALLENGE_RATING_CHIP_KEY,
-                        "CR: " + defaultCrMinimum(safeFilters.challengeRatingMin())
+                        "CR: " + Values.defaultCrMinimum(safeFilters.challengeRatingMin())
                                 + "-"
-                                + defaultCrMaximum(safeFilters.challengeRatingMax()),
+                                + Values.defaultCrMaximum(safeFilters.challengeRatingMax()),
                         "chip-cr"));
             }
             add(chips, "size", safeFilters.sizes(), "chip-size");
@@ -674,7 +539,7 @@ public final class CatalogControlsContentModel {
         }
 
         private static void add(List<FilterChip> chips, String prefix, List<String> values, String styleClass) {
-            for (String value : copiedList(values)) {
+            for (String value : Values.copiedList(values)) {
                 chips.add(new FilterChip(prefix + ":" + value, value, styleClass));
             }
         }
@@ -683,7 +548,7 @@ public final class CatalogControlsContentModel {
             if (tableId == null) {
                 return null;
             }
-            for (EncounterTableOption option : copiedList(options)) {
+            for (EncounterTableOption option : Values.copiedList(options)) {
                 if (option.tableId() == tableId.longValue()) {
                     return option;
                 }
@@ -694,7 +559,7 @@ public final class CatalogControlsContentModel {
 
     record FilterDropdownState(boolean open, String searchQuery) {
         FilterDropdownState {
-            searchQuery = safe(searchQuery);
+            searchQuery = Values.safe(searchQuery);
         }
 
         static FilterDropdownState closed() {
@@ -753,11 +618,11 @@ public final class CatalogControlsContentModel {
             List<String> alignments
     ) {
         LocalFilterState {
-            nameQuery = safe(nameQuery);
-            challengeRatingMin = safe(challengeRatingMin);
-            challengeRatingMax = safe(challengeRatingMax);
-            sizes = copiedList(sizes);
-            alignments = copiedList(alignments);
+            nameQuery = Values.safe(nameQuery);
+            challengeRatingMin = Values.safe(challengeRatingMin);
+            challengeRatingMax = Values.safe(challengeRatingMax);
+            sizes = Values.copiedList(sizes);
+            alignments = Values.copiedList(alignments);
         }
 
         static LocalFilterState empty() {
@@ -770,8 +635,215 @@ public final class CatalogControlsContentModel {
                     nameQuery,
                     challengeRatingMin,
                     challengeRatingMax,
-                    CatalogControlsContentModel.retainAvailable(sizes, safeOptions.sizes()),
-                    CatalogControlsContentModel.retainAvailable(alignments, safeOptions.alignments()));
+                    Values.retainAvailable(sizes, safeOptions.sizes()),
+                    Values.retainAvailable(alignments, safeOptions.alignments()));
+        }
+    }
+
+    static final class Values {
+
+        static <T> List<T> copiedList(List<T> values) {
+            return values == null ? List.of() : List.copyOf(values);
+        }
+
+        static String safe(String value) {
+            return value == null ? "" : value;
+        }
+
+        static String defaultCrMinimum(String value) {
+            return value == null || value.isBlank() ? "0" : value;
+        }
+
+        static String defaultCrMaximum(String value) {
+            return value == null || value.isBlank() ? "30" : value;
+        }
+
+        static <T> List<T> retainAvailable(List<T> selectedValues, List<T> availableValues) {
+            if (selectedValues == null || selectedValues.isEmpty()) {
+                return List.of();
+            }
+            List<T> safeAvailable = availableValues == null ? List.of() : List.copyOf(availableValues);
+            return selectedValues.stream()
+                    .filter(safeAvailable::contains)
+                    .distinct()
+                    .toList();
+        }
+
+        private Values() {
+        }
+    }
+    private static final class CatalogControlsContentState {
+    
+        private CatalogControlsContentModel.LocalFilterState localFilters =
+                CatalogControlsContentModel.LocalFilterState.empty();
+        private CatalogControlsContentModel.ControlsState authoritativeControls =
+                CatalogControlsContentModel.ControlsState.empty();
+        private CatalogControlsContentModel.ControlsState controlsState =
+                CatalogControlsContentModel.ControlsState.empty();
+        private CatalogControlsContentModel.FilterOptionsProjection filterOptions =
+                CatalogControlsContentModel.FilterOptionsProjection.empty();
+        private CatalogControlsContentModel.FilterDropdownState sizeDropdownState =
+                CatalogControlsContentModel.FilterDropdownState.closed();
+        private CatalogControlsContentModel.FilterDropdownState typeDropdownState =
+                CatalogControlsContentModel.FilterDropdownState.closed();
+        private CatalogControlsContentModel.FilterDropdownState subtypeDropdownState =
+                CatalogControlsContentModel.FilterDropdownState.closed();
+        private CatalogControlsContentModel.FilterDropdownState biomeDropdownState =
+                CatalogControlsContentModel.FilterDropdownState.closed();
+        private CatalogControlsContentModel.FilterDropdownState alignmentDropdownState =
+                CatalogControlsContentModel.FilterDropdownState.closed();
+        private CatalogControlsContentModel.FilterDropdownState encounterTableDropdownState =
+                CatalogControlsContentModel.FilterDropdownState.closed();
+        private List<CatalogControlsContentModel.EncounterTableOption> encounterTableOptions = List.of();
+    
+        void applyControlsDraft(CatalogControlsContentModel.ControlsDraft draft) {
+            CatalogControlsContentModel.ControlsDraft safeDraft = draft == null
+                    ? new CatalogControlsContentModel.ControlsDraft(
+                            CatalogControlsContentModel.LocalFilterState.empty(),
+                            CatalogControlsContentModel.ControlsState.empty(),
+                            CatalogControlsContentModel.FilterDropdownState.closed(),
+                            CatalogControlsContentModel.FilterDropdownState.closed(),
+                            CatalogControlsContentModel.FilterDropdownState.closed(),
+                            CatalogControlsContentModel.FilterDropdownState.closed(),
+                            CatalogControlsContentModel.FilterDropdownState.closed(),
+                            CatalogControlsContentModel.FilterDropdownState.closed())
+                    : draft;
+            localFilters = safeDraft.localFilters();
+            controlsState = safeDraft.controlsState();
+            sizeDropdownState = safeDraft.sizeDropdownState();
+            typeDropdownState = safeDraft.typeDropdownState();
+            subtypeDropdownState = safeDraft.subtypeDropdownState();
+            biomeDropdownState = safeDraft.biomeDropdownState();
+            alignmentDropdownState = safeDraft.alignmentDropdownState();
+            encounterTableDropdownState = safeDraft.encounterTableDropdownState();
+        }
+    
+        void applyCreatureFilterOptions(CreatureFilterOptionsResult result) {
+            CreatureFilterOptions options = result == null || result.options() == null
+                    ? CreatureFilterOptions.empty()
+                    : result.options();
+            filterOptions = new CatalogControlsContentModel.FilterOptionsProjection(
+                    options.sizes(),
+                    options.types(),
+                    options.subtypes(),
+                    options.biomes(),
+                    options.alignments(),
+                    options.challengeRatings());
+            localFilters = localFilters.retainAvailable(filterOptions);
+        }
+    
+        boolean applyEncounterBuilderInputs(EncounterBuilderInputs builderInputs) {
+            CatalogControlsContentModel.ControlsState previousAuthoritative = authoritativeControls;
+            CatalogControlsContentModel.ControlsState next =
+                    CatalogControlsContentModel.ControlsState.fromBuilderInputs(builderInputs, previousAuthoritative);
+            authoritativeControls = next;
+            controlsState = next;
+            return CatalogControlsContentModel.ControlsState.searchControlsChanged(previousAuthoritative, next);
+        }
+    
+        void applyEncounterTables(EncounterTableCatalogResult result) {
+            if (result == null || result.status() != EncounterTableReadStatus.SUCCESS) {
+                encounterTableOptions = List.of();
+                return;
+            }
+            encounterTableOptions = result.tables().stream()
+                    .map(CatalogControlsContentState::encounterTableOption)
+                    .toList();
+        }
+    
+        void applyEncounterTuningPreview(EncounterTuningPreviewLabels labels) {
+            CatalogControlsPreviewLabels previewLabels = CatalogControlsPreviewLabels.from(labels);
+            authoritativeControls = authoritativeControls.withPreviewLabels(previewLabels);
+            controlsState = controlsState.withPreviewLabels(previewLabels);
+        }
+    
+        CatalogControlsContentModel.InteractionState interactionState() {
+            return new CatalogControlsContentModel.InteractionState(
+                    localFilters,
+                    controlsState,
+                    authoritativeControls);
+        }
+    
+        CatalogControlsContentModel.CreatureFilters currentSearchFilters() {
+            return CatalogControlsContentModel.CreatureFilters.merged(localFilters, authoritativeControls);
+        }
+    
+        CatalogControlsContentModel.ControlsProjection projection() {
+            CatalogControlsContentModel.CreatureFilters creatureFilters =
+                    CatalogControlsContentModel.CreatureFilters.merged(localFilters, controlsState);
+            return new CatalogControlsContentModel.ControlsProjection(
+                    CatalogControlsContentModel.FilterOptionsProjection.from(filterOptions),
+                    CatalogControlsContentModel.CreatureFilters.from(creatureFilters),
+                    CatalogControlsContentModel.FilterDropdownState.from(sizeDropdownState),
+                    CatalogControlsContentModel.FilterDropdownState.from(typeDropdownState),
+                    CatalogControlsContentModel.FilterDropdownState.from(subtypeDropdownState),
+                    CatalogControlsContentModel.FilterDropdownState.from(biomeDropdownState),
+                    CatalogControlsContentModel.FilterDropdownState.from(alignmentDropdownState),
+                    CatalogControlsContentModel.FilterDropdownState.from(encounterTableDropdownState),
+                    CatalogControlsContentModel.Values.copiedList(encounterTableOptions)
+                            .stream()
+                            .map(CatalogControlsContentModel.EncounterTableOption::from)
+                            .toList(),
+                    CatalogControlsContentModel.FilterChip.from(creatureFilters, encounterTableOptions, controlsState)
+                            .stream()
+                            .map(CatalogControlsContentModel.FilterChip::from)
+                            .toList(),
+                    CatalogControlsContentModel.ControlsState.from(controlsState));
+        }
+    
+        private static CatalogControlsContentModel.EncounterTableOption encounterTableOption(
+                EncounterTableSummary summary
+        ) {
+            return new CatalogControlsContentModel.EncounterTableOption(
+                    summary.tableId(),
+                    summary.name(),
+                    summary.linkedLootTableId());
+        }
+    }
+    
+    private record CatalogControlsPreviewLabels(
+            List<CatalogControlsContentModel.PreviewLabel> difficultyLabels,
+            List<CatalogControlsContentModel.PreviewLabel> balanceLabels,
+            List<CatalogControlsContentModel.PreviewLabel> amountLabels,
+            List<CatalogControlsContentModel.PreviewLabel> diversityLabels
+    ) {
+        CatalogControlsPreviewLabels {
+            difficultyLabels = copy(difficultyLabels);
+            balanceLabels = copy(balanceLabels);
+            amountLabels = copy(amountLabels);
+            diversityLabels = copy(diversityLabels);
+        }
+    
+        static CatalogControlsPreviewLabels empty() {
+            return new CatalogControlsPreviewLabels(List.of(), List.of(), List.of(), List.of());
+        }
+    
+        static CatalogControlsPreviewLabels from(EncounterTuningPreviewLabels previewLabels) {
+            if (previewLabels == null) {
+                return empty();
+            }
+            return new CatalogControlsPreviewLabels(
+                    previewLabels(previewLabels.difficultyLabels()),
+                    previewLabels(previewLabels.balanceLabels()),
+                    previewLabels(previewLabels.amountLabels()),
+                    previewLabels(previewLabels.diversityLabels()));
+        }
+    
+        private static List<CatalogControlsContentModel.PreviewLabel> previewLabels(
+                List<EncounterTuningPreviewLabels.PreviewLabel> labels
+        ) {
+            if (labels == null || labels.isEmpty()) {
+                return List.of();
+            }
+            return labels.stream()
+                    .map(label -> new CatalogControlsContentModel.PreviewLabel(label.value(), label.label()))
+                    .toList();
+        }
+    
+        private static List<CatalogControlsContentModel.PreviewLabel> copy(
+                List<CatalogControlsContentModel.PreviewLabel> labels
+        ) {
+            return labels == null ? List.of() : List.copyOf(labels);
         }
     }
 }

@@ -30,7 +30,7 @@ type legality. Those live in the neighboring role-specific owner docs.
 
 ### Must Exist
 
-| Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
+| Invariant ID | Status | Applies When | Mechanical Owner | Diagnostic/Mechanical Route | What It Proves |
 | --- | --- | --- | --- | --- | --- |
 | `domain-context-document-presence` | Enforced | every active domain context under `src/domain/**` | `domain-context-enforcement` bundle `DomainContextDocumentationRules` | `./gradlew checkDomainEnforcement` | Every active domain context has a `DOMAIN.md` contract document. |
 | `domain-context-name-marker` | Enforced | every `src/domain/<context>/DOMAIN.md` | `domain-context-enforcement` bundle `DomainContextDocumentationRules` | `./gradlew checkDomainEnforcement` | Each context document declares exactly one `Context Name: <PascalContext>` marker. |
@@ -39,7 +39,7 @@ type legality. Those live in the neighboring role-specific owner docs.
 
 ### Must Contain
 
-| Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
+| Invariant ID | Status | Applies When | Mechanical Owner | Diagnostic/Mechanical Route | What It Proves |
 | --- | --- | --- | --- | --- | --- |
 | `domain-context-base-sections` | Enforced | every `src/domain/<context>/DOMAIN.md` | `domain-context-enforcement` bundle `DomainContextDocumentationRules` | `./gradlew checkDomainEnforcement` | Every context document includes non-empty `Context Role`, `Published Language`, `Application Boundary`, and `Ubiquitous Language` sections. |
 | `domain-context-application-service-marker` | Enforced | every `src/domain/<context>/DOMAIN.md` | `domain-context-enforcement` bundle `DomainContextDocumentationRules` | `./gradlew checkDomainEnforcement` | Every context document declares at least one `Application Service: <TypeName>` marker inside `## Application Boundary`. |
@@ -56,7 +56,7 @@ type legality. Those live in the neighboring role-specific owner docs.
 
 ### Must Not Contain
 
-| Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
+| Invariant ID | Status | Applies When | Mechanical Owner | Diagnostic/Mechanical Route | What It Proves |
 | --- | --- | --- | --- | --- | --- |
 | `domain-context-authored-truth-write-model-required` | Enforced | every context whose `Context Role:` owns authored truth | `domain-context-enforcement` bundle `DomainContextDocumentationRules` | `./gradlew checkDomainEnforcement` | Authored-truth contexts do not declare `Write Model: None`. |
 | `domain-context-generation-policy-write-model-none` | Enforced | every `Generation Policy Context` | `domain-context-enforcement` bundle `DomainContextDocumentationRules` | `./gradlew checkDomainEnforcement` | Generation-policy contexts explicitly declare `Write Model: None` instead of smuggling in a persistent authored write model. |
@@ -67,7 +67,7 @@ type legality. Those live in the neighboring role-specific owner docs.
 
 ### Communication Contract
 
-| Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
+| Invariant ID | Status | Applies When | Mechanical Owner | Diagnostic/Mechanical Route | What It Proves |
 | --- | --- | --- | --- | --- | --- |
 | `domain-context-standard-relationship-coverage` | Enforced | the `## Context Relationships` section in the Domain Layer Standard | `domain-context-enforcement` bundle `DomainContextDocumentationRules` | `./gradlew checkDomainEnforcement` | The canonical context-relationship map lists every active context exactly once, keeps role markers aligned, and does not keep stale relationship bullets. |
 | `domain-context-party-publishes-downstream-facts` | Review-Owned | the `party` bullet in `## Context Relationships` and the matching `src/domain/party/DOMAIN.md` contract | none | none | The `party` context documents its public communication as publishing roster, membership, XP, rest-cadence, adventuring-day, and character-travel facts to downstream contexts. |

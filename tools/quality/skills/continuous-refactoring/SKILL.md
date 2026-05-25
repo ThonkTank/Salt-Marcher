@@ -60,8 +60,8 @@ manifests:
     files and keep the literal result available for review.
 11. Before starting the review step, read and follow the global caller skill
     `/home/aaron/.codex/skills/local/adversarial-review/SKILL.md`; it requires a
-    main-agent-launched `review-overview` pass before specialist reviewers are
-    launched.
+    main-agent-launched `review-overview` coordinator pass that owns nested
+    specialist review and scoped follow-up worker launches before handoff.
 
 ## Evidence Sources
 

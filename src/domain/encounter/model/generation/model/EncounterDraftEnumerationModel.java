@@ -89,10 +89,6 @@ final class EncounterDraftEnumerationModel {
                 composition.entries()));
     }
 
-    static List<EncounterDraft> topDrafts(Collection<EncounterDraft> drafts, int limit) {
-        return EncounterDraftRankingModel.topDrafts(drafts, limit);
-    }
-
     private static Map<Long, EncounterCandidateProfile> profileLookup(EncounterDraftBuildRequest request) {
         Map<Long, EncounterCandidateProfile> profiles = new LinkedHashMap<>();
         for (EncounterCandidateProfile locked : request.lockedProfiles()) {

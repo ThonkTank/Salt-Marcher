@@ -57,7 +57,7 @@ final class AdventuringDayTopBarIntentHandler {
 
     private CalculationRequest applyInputProjection(AdventuringDayTopBarViewInputEvent event) {
         String totalGroupXpText = event.totalGroupXpText();
-        int totalGroupXp = AdventuringDayTopBarContentModel.parseNonNegativeInt(totalGroupXpText);
+        int totalGroupXp = AdventuringDayTopBarContentModel.LevelRows.parseNonNegativeInt(totalGroupXpText);
         List<AdventuringDayTopBarContentModel.RowModel> eventRows = normalizeRows(event.rows());
         AdventuringDayTopBarContributionModel.InputSource inputSource = presentationModel.inputSource();
         List<AdventuringDayTopBarContentModel.RowModel> nextRows;
@@ -108,7 +108,7 @@ final class AdventuringDayTopBarIntentHandler {
                     inputSource.activePartySource(),
                     false);
         }
-        List<Integer> levels = AdventuringDayTopBarContentModel.expandedLevels(nextRows);
+        List<Integer> levels = AdventuringDayTopBarContentModel.LevelRows.expandedLevels(nextRows);
         if (levels.isEmpty()) {
             return null;
         }

@@ -72,20 +72,20 @@ public final class SessionPlannerPersistenceSchema {
                     + ")";
 
     public static final String CREATE_SESSION_PARTICIPANTS_ORDER_INDEX_SQL =
-            createSessionOrderIndexSql("idx_session_planner_participants_order", SESSION_PARTICIPANTS_TABLE);
+            "CREATE INDEX IF NOT EXISTS idx_session_planner_participants_order ON "
+                    + SESSION_PARTICIPANTS_TABLE + SESSION_ORDER_INDEX_COLUMNS;
 
     public static final String CREATE_SESSION_ENCOUNTERS_ORDER_INDEX_SQL =
-            createSessionOrderIndexSql("idx_session_planner_encounters_order", SESSION_ENCOUNTERS_TABLE);
+            "CREATE INDEX IF NOT EXISTS idx_session_planner_encounters_order ON "
+                    + SESSION_ENCOUNTERS_TABLE + SESSION_ORDER_INDEX_COLUMNS;
 
     public static final String CREATE_SESSION_RESTS_ORDER_INDEX_SQL =
-            createSessionOrderIndexSql("idx_session_planner_rests_order", SESSION_RESTS_TABLE);
+            "CREATE INDEX IF NOT EXISTS idx_session_planner_rests_order ON "
+                    + SESSION_RESTS_TABLE + SESSION_ORDER_INDEX_COLUMNS;
 
     public static final String CREATE_SESSION_LOOT_PLACEHOLDERS_ORDER_INDEX_SQL =
-            createSessionOrderIndexSql("idx_session_planner_loot_order", SESSION_LOOT_PLACEHOLDERS_TABLE);
-
-    private static String createSessionOrderIndexSql(String indexName, String tableName) {
-        return "CREATE INDEX IF NOT EXISTS " + indexName + " ON " + tableName + SESSION_ORDER_INDEX_COLUMNS;
-    }
+            "CREATE INDEX IF NOT EXISTS idx_session_planner_loot_order ON "
+                    + SESSION_LOOT_PLACEHOLDERS_TABLE + SESSION_ORDER_INDEX_COLUMNS;
 
     private SessionPlannerPersistenceSchema() {
     }

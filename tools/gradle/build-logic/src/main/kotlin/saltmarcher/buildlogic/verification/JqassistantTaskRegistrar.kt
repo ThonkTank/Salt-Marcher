@@ -30,13 +30,15 @@ internal class JqassistantTaskRegistrar(
         taskSpec: EnforcementJqassistantTask,
         mainClassesDirectory: Provider<Directory>,
         sourceRoots: FileCollection,
+        outputKey: String?,
         dependsOnTasks: List<Any>
     ): JqassistantTaskPair {
         val scanTaskName = taskSpec.taskName.replaceFirst("Analyze", "Scan")
         val rulesDirectory = project.layout.projectDirectory.dir(taskSpec.rulesDirPath)
         val ruleGroups = loadJqassistantRuleGroups(project.file(taskSpec.sourceConfigPath))
-        val storeDirectory = project.layout.buildDirectory.dir("tools/jqassistant/$bundleId/store")
-        val reportsDirectory = project.layout.buildDirectory.dir("reports/jqassistant/$bundleId")
+        val outputPath = outputKey?.let { key -> "$bundleId/$key" } ?: bundleId
+        val storeDirectory = project.layout.buildDirectory.dir("tools/jqassistant/$outputPath/store")
+        val reportsDirectory = project.layout.buildDirectory.dir("reports/jqassistant/$outputPath")
         val scanTask = project.tasks.register<JqassistantScanTask>(scanTaskName) {
             group = LifecycleBasePlugin.VERIFICATION_GROUP
             description = "Scan SaltMarcher classes and source roots for ${taskSpec.description}"

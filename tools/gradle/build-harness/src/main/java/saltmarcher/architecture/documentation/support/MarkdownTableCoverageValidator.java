@@ -14,8 +14,9 @@ public final class MarkdownTableCoverageValidator {
 
     private static final List<String> MECHANICAL_STATUSES = List.of(
             "Enforced",
-            "Enforced Elsewhere",
-            "Source-Pattern Enforced");
+            "Enforced Elsewhere");
+    private static final String CANDIDATE_STATUS = "Candidate";
+    private static final String NON_BLOCKING_DIAGNOSTIC_ROUTE = "non-blocking diagnostic";
 
     private MarkdownTableCoverageValidator() {
     }
@@ -104,11 +105,20 @@ public final class MarkdownTableCoverageValidator {
                             + expectedRow.status() + "`, not `" + actualStatus + "`.");
             return;
         }
-        if (expectedRow.requiresMechanicalOwner() && !MECHANICAL_STATUSES.contains(actualStatus)) {
+        if (expectedRow.requiresMechanicalOwner() && !allowsMechanicalOwnerStatus(expectedRow, actualStatus)) {
             violations.add(documentPath, coverageRule,
                     "Coverage row for `" + expectedRow.ruleId()
                             + "` must use an enforced status when it names mechanical owners.");
         }
+    }
+
+    private static boolean allowsMechanicalOwnerStatus(ExpectedRow expectedRow, String actualStatus) {
+        if (MECHANICAL_STATUSES.contains(actualStatus)) {
+            return true;
+        }
+        return CANDIDATE_STATUS.equals(actualStatus)
+                && expectedRow.requiredEntrypoints().stream()
+                .anyMatch(entrypoint -> entrypoint.contains(NON_BLOCKING_DIAGNOSTIC_ROUTE));
     }
 
     private static void validateMechanicalOwner(
@@ -144,7 +154,7 @@ public final class MarkdownTableCoverageValidator {
             if (!actualEntrypoint.contains(requiredEntrypoint)) {
                 violations.add(documentPath, coverageRule,
                         "Coverage row for `" + expectedRow.ruleId()
-                                + "` must name blocking entrypoint `" + requiredEntrypoint + "`.");
+                                + "` must name route `" + requiredEntrypoint + "`.");
             }
         }
     }

@@ -10,10 +10,6 @@ import shell.api.ShellTopBarSpec;
 
 public final class AdventuringDayTopBarContribution implements ShellContribution {
 
-    @SuppressWarnings({"PMD.UnnecessaryConstructor", "PMD.UncommentedEmptyConstructor"})
-    public AdventuringDayTopBarContribution() {
-    }
-
     @Override
     public ShellContributionSpec registrationSpec() {
         return new ShellTopBarSpec(new ContributionKey("adventuring-day"), 10);

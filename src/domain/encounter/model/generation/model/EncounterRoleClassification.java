@@ -16,10 +16,6 @@ public record EncounterRoleClassification(
         tags = tags == null ? List.of() : List.copyOf(tags);
     }
 
-    public EncounterRoleClassification(EncounterRole role) {
-        this(role, List.of());
-    }
-
     @Override
     public List<String> tags() {
         return List.copyOf(tags);

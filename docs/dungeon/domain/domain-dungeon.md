@@ -12,7 +12,7 @@ Context Role: Authored World-Space Context
 Context Name: Dungeon
 
 - `dungeon` owns authored dungeon map truth plus transient runtime editor and
-  travel model families over that same map truth
+  travel state inside one worldspace model family over that same map truth
 - `DungeonMap` is the aggregate root for one authored map
 - authored committed snapshots, authored operation results, authored selection
   inspectors, and raw travel surfaces are projections over the same authored
@@ -45,9 +45,9 @@ Current state:
   corridor-side endpoints by stable topology ref
 - generic corridor-tool clicks are resolved into authored doors or authored
   corridor anchors before the aggregate commits a corridor mutation
-- runtime editor-session composition lives in `dungeon/model/editor/**`
+- runtime editor-session composition lives in `dungeon/model/worldspace/**`
 - runtime travel derives from committed authored truth plus party-owned runtime
-  state in `dungeon/model/travel/**`
+  state in `dungeon/model/worldspace/**`
 - search and write-model persistence are separate outbound contracts
 
 Target state:
@@ -73,7 +73,8 @@ Derived state must not become a second source of truth. This includes:
 
 Application-owned editor and travel session state may exist outside the
 authored write model when it is not persisted as dungeon truth. That state is
-owned by explicit dungeon model families, not by separate domain contexts.
+owned by the explicit dungeon worldspace model family, not by separate domain
+contexts.
 
 ## Aggregate Model
 
@@ -101,14 +102,17 @@ topology.
 
 Application services coordinate load, mutate, save, search, and raw travel
 surface queries through these ports. Party-aware runtime travel-session
-composition belongs to the `dungeon/model/travel/**` family and consumes party
-position through explicit seams; dungeon still does not own party roster truth
-or persisted party travel position.
+composition belongs to the `dungeon/model/worldspace/**` family and consumes
+party position through explicit seams; dungeon still does not own party roster
+truth or persisted party travel position.
 
 Active root boundaries:
 
 - `DungeonTravelApplicationService`
-- `DungeonEditorApplicationService`
+- `DungeonEditorMapApplicationService`
+- `DungeonEditorProjectionApplicationService`
+- `DungeonEditorPointerApplicationService`
+- `DungeonEditorNarrationApplicationService`
 - `DungeonTravelRuntimeApplicationService`
 
 ## Invariants
@@ -129,10 +133,10 @@ Active root boundaries:
   `DungeonOperationResult`, `DungeonInspectorSnapshot`, raw travel surfaces,
   editor runtime snapshots, travel runtime snapshots, and travel-action
   results rooted in authored dungeon truth
-- `dungeon/model/editor/**` owns runtime editor-session composition that
+- `dungeon/model/worldspace/**` owns runtime editor-session composition that
   combines authored dungeon facts with session-local selection, tool, preview,
   overlay, projection level, and pointer interpretation
-- `dungeon/model/travel/**` owns runtime travel-session composition that
+- `dungeon/model/worldspace/**` owns runtime travel-session composition that
   combines raw dungeon facts with party-owned position state
 - `dungeon` does not own party roster truth or persisted party travel position
 - `dungeon` does not publish render-ready cells, edges, labels, markers,

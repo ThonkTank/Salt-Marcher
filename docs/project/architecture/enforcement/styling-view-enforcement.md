@@ -29,19 +29,19 @@ document.
 
 ### May Contain
 
-| Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
+| Invariant ID | Status | Applies When | Mechanical Owner | Diagnostic/Mechanical Route | What It Proves |
 | --- | --- | --- | --- | --- | --- |
 | `styling-view-direct-render-javafx-rendering-apis-only-for-non-css-surfaces` | Enforced | a passive `*View` must style a direct-rendered JavaFX surface such as `Canvas`, `GraphicsContext`, or shape drawing that a stylesheet selector cannot express directly | Error Prone `ViewDirectRenderStylingPlacement` | `./gradlew checkStylingEnforcement` and `./gradlew check` | A passive `View` may contain JavaFX paint, font, or stroke styling code only for the documented direct-render exception. Ordinary node styling still belongs to centralized stylesheet selectors. |
 
 ### Must Not Contain
 
-| Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
+| Invariant ID | Status | Applies When | Mechanical Owner | Diagnostic/Mechanical Route | What It Proves |
 | --- | --- | --- | --- | --- | --- |
 | `styling-view-direct-render-no-local-visual-system` | Review-Owned | a direct-rendered passive `View` uses JavaFX paint, font, or stroke APIs because no stylesheet selector can express the rendering surface | none | none | Even inside the direct-render exception, the passive `View` does not contain a locally invented palette, typography system, stroke vocabulary, or other replacement visual truth. Semantic colors, typography, and related visual meaning stay centralized. |
 
 ### Communication Contract
 
-| Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
+| Invariant ID | Status | Applies When | Mechanical Owner | Diagnostic/Mechanical Route | What It Proves |
 | --- | --- | --- | --- | --- | --- |
 | `styling-view-direct-render-central-value-consumption-only` | Review-Owned | a direct-rendered passive `View` must style a rendering surface through JavaFX graphics APIs | none | none | A direct-rendered surface communicates with centralized styling only by consuming centrally owned visual values; it does not create an alternate local styling system through ad-hoc colors, gradients, fonts, or stroke conventions. |
 

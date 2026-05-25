@@ -28,8 +28,8 @@ public final class EncounterCombatStateView extends VBox {
 
     private final Label combatRoundLabel = new CombatStyledLabel("", "title");
     private final Label combatStatusLabel = new CombatStyledLabel("", STYLE_TEXT_SECONDARY);
-    private final VBox combatCardList = new VBox(6);
-    private final HBox endCombatActions = new HBox(6);
+    private final VBox combatCardList = new CombatCardListPane();
+    private final HBox endCombatActions = new EndCombatActionsPane();
     private final Button addPartyButton = new CombatStyledButton("SC hinzufuegen", "compact", "neutral-action");
     private final VBox dialog = buildPane();
     private Consumer<EncounterCombatStateViewInputEvent> viewInputEventHandler = ignored -> { };
@@ -62,12 +62,11 @@ public final class EncounterCombatStateView extends VBox {
         showPartyCandidates(
                 safePanel.missingPartyMembers(),
                 this::publishPartyMemberJoin);
-        showCombatCards(safePanel.cards(), contentModel, new CombatCardActionSink());
-        showEndCombatState(safePanel.allEnemiesDefeated());
+        ((CombatCardListPane) combatCardList).showCards(safePanel.cards(), contentModel, new CombatCardActionSink());
+        ((EndCombatActionsPane) endCombatActions).showEndCombatState(safePanel.allEnemiesDefeated(), this::publish);
     }
 
     private VBox buildPane() {
-        combatCardList.getStyleClass().add("encounter-combat-card-list");
         HBox actions = new HBox(addPartyButton);
         actions.setAlignment(Pos.CENTER_RIGHT);
         VBox header = new VBox(2, combatRoundLabel, combatStatusLabel, actions);
@@ -83,42 +82,6 @@ public final class EncounterCombatStateView extends VBox {
         VBox nextDialog = new CombatStyledVBox(10, "dialog-surface", header, combatCardList, footer);
         setVgrow(combatCardList, Priority.ALWAYS);
         return nextDialog;
-    }
-
-    private void showCombatCards(
-            List<EncounterCombatStateContentModel.CardView> cards,
-            EncounterCombatStateContentModel contentModel,
-            EncounterCombatCardActions actions
-    ) {
-        List<Node> cardNodes = new ArrayList<>();
-        for (EncounterCombatStateContentModel.CardView card : cards == null ? List.<EncounterCombatStateContentModel.CardView>of() : cards) {
-            cardNodes.add(new EncounterCombatCardPane(card, contentModel, actions));
-        }
-        combatCardList.getChildren().setAll(cardNodes);
-    }
-
-    private void showEndCombatState(boolean allEnemiesDefeated) {
-        CombatStyledButton end = new CombatStyledButton(
-                "_Kampf beenden",
-                allEnemiesDefeated ? STYLE_ACCENT : "");
-        end.setMaxWidth(Double.MAX_VALUE);
-        HBox.setHgrow(end, Priority.ALWAYS);
-        end.setOnAction(event -> showEndCombatConfirmState(allEnemiesDefeated));
-        endCombatActions.getChildren().setAll(end);
-    }
-
-    private void showEndCombatConfirmState(boolean allEnemiesDefeated) {
-        CombatStyledButton cancel = new CombatStyledButton("Abbruch");
-        CombatStyledButton confirm = allEnemiesDefeated
-                ? new CombatStyledButton("_Bestaetigen!", STYLE_ACCENT)
-                : new CombatStyledButton("_Bestaetigen!");
-        cancel.setMaxWidth(Double.MAX_VALUE);
-        confirm.setMaxWidth(Double.MAX_VALUE);
-        HBox.setHgrow(cancel, Priority.ALWAYS);
-        HBox.setHgrow(confirm, Priority.ALWAYS);
-        cancel.setOnAction(event -> showEndCombatState(allEnemiesDefeated));
-        confirm.setOnAction(event -> publish(new EncounterCombatStateViewInputEvent.EndCombatInput()));
-        endCombatActions.getChildren().setAll(cancel, confirm);
     }
 
     private void showPartyCandidates(
@@ -261,6 +224,65 @@ public final class EncounterCombatStateView extends VBox {
         void changeHitPoints(String cardId, String actionId, int amount);
 
         void editInitiative(String cardId, int initiative);
+    }
+
+    private static final class CombatCardListPane extends VBox {
+
+        CombatCardListPane() {
+            super(6);
+            getStyleClass().add("encounter-combat-card-list");
+        }
+
+        void showCards(
+                List<EncounterCombatStateContentModel.CardView> cards,
+                EncounterCombatStateContentModel contentModel,
+                EncounterCombatCardActions actions
+        ) {
+            List<Node> cardNodes = new ArrayList<>();
+            for (EncounterCombatStateContentModel.CardView card
+                    : cards == null ? List.<EncounterCombatStateContentModel.CardView>of() : cards) {
+                cardNodes.add(new EncounterCombatCardPane(card, contentModel, actions));
+            }
+            getChildren().setAll(cardNodes);
+        }
+    }
+
+    private static final class EndCombatActionsPane extends HBox {
+
+        EndCombatActionsPane() {
+            super(6);
+            setAlignment(Pos.CENTER);
+        }
+
+        void showEndCombatState(
+                boolean allEnemiesDefeated,
+                Consumer<EncounterCombatStateViewInputEvent.Interaction> publisher
+        ) {
+            CombatStyledButton end = new CombatStyledButton(
+                    "_Kampf beenden",
+                    allEnemiesDefeated ? STYLE_ACCENT : "");
+            end.setMaxWidth(Double.MAX_VALUE);
+            setHgrow(end, Priority.ALWAYS);
+            end.setOnAction(event -> showEndCombatConfirmState(allEnemiesDefeated, publisher));
+            getChildren().setAll(end);
+        }
+
+        private void showEndCombatConfirmState(
+                boolean allEnemiesDefeated,
+                Consumer<EncounterCombatStateViewInputEvent.Interaction> publisher
+        ) {
+            CombatStyledButton cancel = new CombatStyledButton("Abbruch");
+            CombatStyledButton confirm = allEnemiesDefeated
+                    ? new CombatStyledButton("_Bestaetigen!", STYLE_ACCENT)
+                    : new CombatStyledButton("_Bestaetigen!");
+            cancel.setMaxWidth(Double.MAX_VALUE);
+            confirm.setMaxWidth(Double.MAX_VALUE);
+            setHgrow(cancel, Priority.ALWAYS);
+            setHgrow(confirm, Priority.ALWAYS);
+            cancel.setOnAction(event -> showEndCombatState(allEnemiesDefeated, publisher));
+            confirm.setOnAction(event -> publisher.accept(new EncounterCombatStateViewInputEvent.EndCombatInput()));
+            getChildren().setAll(cancel, confirm);
+        }
     }
 
     private static final class EncounterCombatHpMeter extends StackPane {

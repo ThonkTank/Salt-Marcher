@@ -14,26 +14,32 @@ import src.domain.party.published.UpdateCharacterCommand;
 import src.view.slotcontent.topbar.dropdown.DropdownPopupContentModel;
 import src.view.slotcontent.topbar.dropdown.DropdownPopupViewInputEvent;
 
-@SuppressWarnings({
-        "PMD.GodClass",
-        "PMD.TooManyMethods"
-})
 final class PartyTopBarIntentHandler {
 
     private static final String CHARACTER_NOT_FOUND = "Charakter konnte nicht gefunden werden.";
 
-    private final PartyTopBarContributionModel presentationModel;
     private final DropdownPopupContentModel popupContentModel;
-    private final PartyApplicationService party;
+    private final RosterActions rosterActions;
+    private final EditorActions editorActions;
 
     PartyTopBarIntentHandler(
-            PartyTopBarContributionModel presentationModel,
-            DropdownPopupContentModel popupContentModel,
-            PartyApplicationService party
+        PartyTopBarContributionModel presentationModel,
+        DropdownPopupContentModel popupContentModel,
+        PartyApplicationService party
     ) {
-        this.presentationModel = Objects.requireNonNull(presentationModel, "presentationModel");
+        PartyTopBarContributionModel safeModel = Objects.requireNonNull(presentationModel, "presentationModel");
         this.popupContentModel = Objects.requireNonNull(popupContentModel, "popupContentModel");
-        this.party = Objects.requireNonNull(party, "party");
+        PartyApplicationService safeParty = Objects.requireNonNull(party, "party");
+        MutationActions mutationActions = new MutationActions(
+                safeModel.rosterContentModel(),
+                safeModel.editorContentModel(),
+                safeModel.mutationState());
+        this.rosterActions = new RosterActions(
+                safeModel.rosterContentModel(),
+                safeModel.editorContentModel(),
+                mutationActions,
+                safeParty);
+        this.editorActions = new EditorActions(safeModel.editorContentModel(), mutationActions, safeParty);
     }
 
     void consume(PartyTopBarViewInputEvent event) {
@@ -55,301 +61,402 @@ final class PartyTopBarIntentHandler {
         }
     }
 
-    @SuppressWarnings("PMD.CyclomaticComplexity")
     void consume(PartyRosterTopBarViewInputEvent event) {
-        if (event == null) {
-            return;
-        }
-        if (event.reserveSearchChanged()) {
-            presentationModel.updateReserveSearch(event.reserveSearchText());
-            return;
-        }
-        if (event.createEditorRequested()) {
-            presentationModel.openCreateEditor();
-            return;
-        }
-        if (event.editEditorRequested()) {
-            if (!presentationModel.openEditEditor(event.memberId())) {
-                presentationModel.rejectMutation(CHARACTER_NOT_FOUND);
-            }
-            return;
-        }
-        if (event.addExistingRequested()) {
-            addExisting(event.memberId());
-            return;
-        }
-        if (event.removeRequested()) {
-            removeFromParty(event.memberId());
-            return;
-        }
-        if (event.xpDelta() != 0) {
-            adjustXp(event.memberId(), event.xpDelta());
-            return;
-        }
-        if (event.shortRestRequested()) {
-            performShortRest(
-                    "Short Rest wurde für die aktive Party ausgeführt.");
-            return;
-        }
-        if (event.longRestRequested()) {
-            performLongRest(
-                    "Long Rest wurde für die aktive Party ausgeführt.");
-        }
+        rosterActions.consume(event);
     }
 
     void consume(PartyEditorTopBarViewInputEvent event) {
-        if (event == null) {
-            return;
+        editorActions.consume(event);
+    }
+
+    private static final class RosterActions {
+
+        private final PartyRosterTopBarContentModel rosterContentModel;
+        private final PartyEditorTopBarContentModel editorContentModel;
+        private final MutationActions mutationActions;
+        private final PartyApplicationService party;
+
+        private RosterActions(
+                PartyRosterTopBarContentModel rosterContentModel,
+                PartyEditorTopBarContentModel editorContentModel,
+                MutationActions mutationActions,
+                PartyApplicationService party
+        ) {
+            this.rosterContentModel = rosterContentModel;
+            this.editorContentModel = editorContentModel;
+            this.mutationActions = mutationActions;
+            this.party = party;
         }
-        PartyEditorTopBarViewInputEvent.EditorDraft draft = event.draft();
-        presentationModel.syncEditorDraft(
-                draft.name(),
-                draft.playerName(),
-                draft.rawLevel(),
-                draft.rawPassivePerception(),
-                draft.rawArmorClass());
-        if (event.cancelRequested()) {
-            presentationModel.cancelEditor();
-            return;
+
+        private void consume(PartyRosterTopBarViewInputEvent event) {
+            if (event == null) {
+                return;
+            }
+            if (consumeLocalAction(event)) {
+                return;
+            }
+            if (consumeMemberAction(event)) {
+                return;
+            }
+            consumeRestAction(event);
         }
-        if (event.submitRequested()) {
-            PartyEditorTopBarContentModel.EditorPanelModel editorPanel = presentationModel.currentEditorPanel();
+
+        private boolean consumeLocalAction(PartyRosterTopBarViewInputEvent event) {
+            if (event.reserveSearchChanged()) {
+                rosterContentModel.showReserveSearch(event.reserveSearchText());
+                return true;
+            }
+            if (event.createEditorRequested()) {
+                editorContentModel.openCreateEditor();
+                return true;
+            }
+            if (event.editEditorRequested()) {
+                if (!openEditEditor(event.memberId())) {
+                    mutationActions.rejectMutation(CHARACTER_NOT_FOUND);
+                }
+                return true;
+            }
+            return false;
+        }
+
+        private boolean consumeMemberAction(PartyRosterTopBarViewInputEvent event) {
+            if (event.addExistingRequested()) {
+                changeMembership(event.memberId(), MembershipState.ACTIVE, " wurde zur aktiven Party hinzugefügt.");
+                return true;
+            }
+            if (event.removeRequested()) {
+                changeMembership(event.memberId(), MembershipState.RESERVE, " wurde aus der aktiven Party entfernt.");
+                return true;
+            }
+            if (event.xpDelta() != 0) {
+                adjustXp(event.memberId(), event.xpDelta());
+                return true;
+            }
+            return false;
+        }
+
+        private void consumeRestAction(PartyRosterTopBarViewInputEvent event) {
+            if (event.shortRestRequested()) {
+                performRest(RestType.SHORT_REST, "Short Rest wurde für die aktive Party ausgeführt.");
+                return;
+            }
+            if (event.longRestRequested()) {
+                performRest(RestType.LONG_REST, "Long Rest wurde für die aktive Party ausgeführt.");
+            }
+        }
+
+        private void changeMembership(long memberId, MembershipState membershipState, String successSuffix) {
+            if (!MutationSupport.validId(memberId)) {
+                mutationActions.rejectMutation(CHARACTER_NOT_FOUND);
+                return;
+            }
+            String memberName = rosterContentModel.memberName(memberId);
+            String successMessage = MutationSupport.displayName(memberName) + successSuffix;
+            if (!mutationActions.beginMutation(successMessage)) {
+                return;
+            }
+            party.setMembership(new SetPartyMembershipCommand(memberId, membershipState));
+        }
+
+        private void adjustXp(long memberId, int xpDelta) {
+            if (xpDelta == 0) {
+                mutationActions.rejectMutation("XP-Korrektur darf nicht 0 sein.");
+                return;
+            }
+            if (!MutationSupport.validId(memberId)) {
+                mutationActions.rejectMutation(CHARACTER_NOT_FOUND);
+                return;
+            }
+            String memberName = rosterContentModel.memberName(memberId);
+            int amount = Math.abs(xpDelta);
+            String successMessage = xpDelta > 0
+                    ? MutationSupport.displayName(memberName) + " erhielt " + amount + " XP."
+                    : MutationSupport.displayName(memberName) + " verlor bis zu " + amount + " XP.";
+            if (!mutationActions.beginMutation(successMessage)) {
+                return;
+            }
+            party.adjustXp(new AdjustPartyXpCommand(java.util.List.of(memberId), xpDelta));
+        }
+
+        private void performRest(RestType restType, String successMessage) {
+            if (!mutationActions.beginMutation(successMessage)) {
+                return;
+            }
+            party.performRest(new PerformPartyRestCommand(restType));
+        }
+
+        private boolean openEditEditor(long memberId) {
+            PartyRosterTopBarContentModel.MemberModel member = rosterContentModel.findMember(memberId);
+            if (member == null) {
+                return false;
+            }
+            editorContentModel.showEditor(PartyEditorTopBarContentModel.EditorPanelModel.editDraft(
+                    memberId,
+                    member.name(),
+                    member.playerName(),
+                    Integer.toString(member.level()),
+                    Integer.toString(member.passivePerception()),
+                    Integer.toString(member.armorClass())));
+            return true;
+        }
+    }
+
+    private static final class EditorActions {
+
+        private final PartyEditorTopBarContentModel editorContentModel;
+        private final MutationActions mutationActions;
+        private final PartyApplicationService party;
+
+        private EditorActions(
+                PartyEditorTopBarContentModel editorContentModel,
+                MutationActions mutationActions,
+                PartyApplicationService party
+        ) {
+            this.editorContentModel = editorContentModel;
+            this.mutationActions = mutationActions;
+            this.party = party;
+        }
+
+        private void consume(PartyEditorTopBarViewInputEvent event) {
+            if (event == null) {
+                return;
+            }
+            PartyEditorTopBarViewInputEvent.EditorDraft draft = event.draft();
+            editorContentModel.syncDraft(
+                    draft.name(),
+                    draft.playerName(),
+                    draft.rawLevel(),
+                    draft.rawPassivePerception(),
+                    draft.rawArmorClass());
+            if (event.cancelRequested()) {
+                editorContentModel.cancelEditor();
+                return;
+            }
+            if (event.submitRequested()) {
+                submit(draft);
+                return;
+            }
+            if (event.deleteConfirmationRequested()) {
+                editorContentModel.requestDeleteConfirmation();
+                return;
+            }
+            if (event.deleteConfirmationCancelled()) {
+                editorContentModel.cancelDeleteConfirmation();
+                return;
+            }
+            if (event.deleteConfirmed()) {
+                PartyEditorTopBarContentModel.EditorPanelModel editorPanel = editorContentModel.currentEditorPanel();
+                deleteCharacter(editorPanel.memberId(), editorPanel.deleteTargetName());
+            }
+        }
+
+        private void submit(PartyEditorTopBarViewInputEvent.EditorDraft draft) {
+            PartyEditorTopBarContentModel.EditorPanelModel editorPanel = editorContentModel.currentEditorPanel();
             if (editorPanel.editingExisting()) {
-                updateCharacter(editorPanel.memberId(), event.draft());
-            } else {
-                createCharacter(event.draft());
+                updateCharacter(editorPanel.memberId(), draft);
+                return;
             }
-            return;
+            createCharacter(draft);
         }
-        if (event.deleteConfirmationRequested()) {
-            presentationModel.requestDeleteConfirmation();
-            return;
-        }
-        if (event.deleteConfirmationCancelled()) {
-            presentationModel.cancelDeleteConfirmation();
-            return;
-        }
-        if (event.deleteConfirmed()) {
-            PartyEditorTopBarContentModel.EditorPanelModel editorPanel = presentationModel.currentEditorPanel();
-            deleteCharacter(editorPanel.memberId(), editorPanel.deleteTargetName());
-        }
-    }
 
-    private void addExisting(long memberId) {
-        if (!validId(memberId)) {
-            presentationModel.rejectMutation(CHARACTER_NOT_FOUND);
-            return;
-        }
-        String memberName = presentationModel.memberName(memberId);
-        String successMessage = displayName(memberName) + " wurde zur aktiven Party hinzugefügt.";
-        if (!presentationModel.beginMutation(successMessage)) {
-            return;
-        }
-        party.setMembership(new SetPartyMembershipCommand(memberId, MembershipState.ACTIVE));
-    }
-
-    private void removeFromParty(long memberId) {
-        if (!validId(memberId)) {
-            presentationModel.rejectMutation(CHARACTER_NOT_FOUND);
-            return;
-        }
-        String memberName = presentationModel.memberName(memberId);
-        String successMessage = displayName(memberName) + " wurde aus der aktiven Party entfernt.";
-        if (!presentationModel.beginMutation(successMessage)) {
-            return;
-        }
-        party.setMembership(new SetPartyMembershipCommand(memberId, MembershipState.RESERVE));
-    }
-
-    private void deleteCharacter(long memberId, String memberName) {
-        if (!validId(memberId)) {
-            presentationModel.rejectMutation(CHARACTER_NOT_FOUND);
-            return;
-        }
-        String successMessage = displayName(memberName) + " wurde gelöscht.";
-        if (!presentationModel.beginEditorMutation(successMessage)) {
-            return;
-        }
-        party.deleteCharacter(new DeleteCharacterCommand(memberId));
-    }
-
-    private void adjustXp(long memberId, int xpDelta) {
-        if (xpDelta == 0) {
-            presentationModel.rejectMutation("XP-Korrektur darf nicht 0 sein.");
-            return;
-        }
-        if (!validId(memberId)) {
-            presentationModel.rejectMutation(CHARACTER_NOT_FOUND);
-            return;
-        }
-        String memberName = presentationModel.memberName(memberId);
-        int amount = Math.abs(xpDelta);
-        String successMessage = xpDelta > 0
-                ? displayName(memberName) + " erhielt " + amount + " XP."
-                : displayName(memberName) + " verlor bis zu " + amount + " XP.";
-        if (!presentationModel.beginMutation(successMessage)) {
-            return;
-        }
-        party.adjustXp(new AdjustPartyXpCommand(java.util.List.of(memberId), xpDelta));
-    }
-
-    private void performShortRest(String successMessage) {
-        if (!presentationModel.beginMutation(successMessage)) {
-            return;
-        }
-        party.performRest(new PerformPartyRestCommand(RestType.SHORT_REST));
-    }
-
-    private void performLongRest(String successMessage) {
-        if (!presentationModel.beginMutation(successMessage)) {
-            return;
-        }
-        party.performRest(new PerformPartyRestCommand(RestType.LONG_REST));
-    }
-
-    private void createCharacter(PartyEditorTopBarViewInputEvent.EditorDraft draft) {
-        ParsedDraft parsedDraft = parseDraft(draft);
-        if (!parsedDraft.valid()) {
-            presentationModel.rejectMutation(parsedDraft.message());
-            return;
-        }
-        String name = safe(parsedDraft.name());
-        String successMessage = displayName(name) + " wurde erstellt und zur Party hinzugefügt.";
-        if (!presentationModel.beginEditorMutation(successMessage)) {
-            return;
-        }
-        party.createCharacter(new CreateCharacterCommand(
-                new CharacterDraft(
-                        name,
-                        parsedDraft.playerName(),
-                        parsedDraft.level(),
-                        parsedDraft.passivePerception(),
-                        parsedDraft.armorClass()),
-                MembershipState.ACTIVE));
-    }
-
-    private void updateCharacter(long memberId, PartyEditorTopBarViewInputEvent.EditorDraft draft) {
-        if (!validId(memberId)) {
-            presentationModel.rejectMutation("Charakter konnte nicht gefunden werden.");
-            return;
-        }
-        ParsedDraft parsedDraft = parseDraft(draft);
-        if (!parsedDraft.valid()) {
-            presentationModel.rejectMutation(parsedDraft.message());
-            return;
-        }
-        String name = safe(parsedDraft.name());
-        String successMessage = displayName(name) + " wurde gespeichert.";
-        if (!presentationModel.beginEditorMutation(successMessage)) {
-            return;
-        }
-        party.updateCharacter(new UpdateCharacterCommand(
-                memberId,
-                new CharacterDraft(
-                        name,
-                        parsedDraft.playerName(),
-                        parsedDraft.level(),
-                        parsedDraft.passivePerception(),
-                        parsedDraft.armorClass())));
-    }
-
-    private static ParsedDraft parseDraft(PartyEditorTopBarViewInputEvent.EditorDraft draft) {
-        String name = safe(draft == null ? "" : draft.name()).trim();
-        if (name.isEmpty()) {
-            return ParsedDraft.invalid("Charaktername fehlt.");
-        }
-        ParsedInteger level = parseInteger(draft == null ? "" : draft.rawLevel(), "Level", 1, 20);
-        if (!level.valid()) {
-            return ParsedDraft.invalid(level.message());
-        }
-        ParsedInteger passivePerception = parseInteger(
-                draft == null ? "" : draft.rawPassivePerception(),
-                "Passive Perception",
-                1,
-                99);
-        if (!passivePerception.valid()) {
-            return ParsedDraft.invalid(passivePerception.message());
-        }
-        ParsedInteger armorClass = parseInteger(draft == null ? "" : draft.rawArmorClass(), "AC", 1, 99);
-        if (!armorClass.valid()) {
-            return ParsedDraft.invalid(armorClass.message());
-        }
-        return ParsedDraft.valid(
-                name,
-                safe(draft == null ? "" : draft.playerName()).trim(),
-                level.value(),
-                passivePerception.value(),
-                armorClass.value());
-    }
-
-    private static ParsedInteger parseInteger(String rawValue, String label, int min, int max) {
-        String trimmed = safe(rawValue).trim();
-        if (trimmed.isEmpty()) {
-            return ParsedInteger.invalid(label + " fehlt.");
-        }
-        try {
-            int value = Integer.parseInt(trimmed);
-            if (value < min || value > max) {
-                return ParsedInteger.invalid(label + " muss zwischen " + min + " und " + max + " liegen.");
+        private void deleteCharacter(long memberId, String memberName) {
+            if (!MutationSupport.validId(memberId)) {
+                mutationActions.rejectMutation(CHARACTER_NOT_FOUND);
+                return;
             }
-            return ParsedInteger.valid(value);
-        } catch (NumberFormatException exception) {
-            return ParsedInteger.invalid(label + " muss eine Zahl sein.");
+            String successMessage = MutationSupport.displayName(memberName) + " wurde gelöscht.";
+            if (!mutationActions.beginEditorMutation(successMessage)) {
+                return;
+            }
+            party.deleteCharacter(new DeleteCharacterCommand(memberId));
+        }
+
+        private void createCharacter(PartyEditorTopBarViewInputEvent.EditorDraft draft) {
+            ParsedDraft parsedDraft = DraftParser.parse(draft);
+            if (!parsedDraft.valid()) {
+                mutationActions.rejectMutation(parsedDraft.message);
+                return;
+            }
+            String name = MutationSupport.safe(parsedDraft.name);
+            String successMessage = MutationSupport.displayName(name) + " wurde erstellt und zur Party hinzugefügt.";
+            if (!mutationActions.beginEditorMutation(successMessage)) {
+                return;
+            }
+            party.createCharacter(new CreateCharacterCommand(
+                    new CharacterDraft(
+                            name,
+                            parsedDraft.playerName,
+                            parsedDraft.level,
+                            parsedDraft.passivePerception,
+                            parsedDraft.armorClass),
+                    MembershipState.ACTIVE));
+        }
+
+        private void updateCharacter(long memberId, PartyEditorTopBarViewInputEvent.EditorDraft draft) {
+            if (!MutationSupport.validId(memberId)) {
+                mutationActions.rejectMutation("Charakter konnte nicht gefunden werden.");
+                return;
+            }
+            ParsedDraft parsedDraft = DraftParser.parse(draft);
+            if (!parsedDraft.valid()) {
+                mutationActions.rejectMutation(parsedDraft.message);
+                return;
+            }
+            String name = MutationSupport.safe(parsedDraft.name);
+            String successMessage = MutationSupport.displayName(name) + " wurde gespeichert.";
+            if (!mutationActions.beginEditorMutation(successMessage)) {
+                return;
+            }
+            party.updateCharacter(new UpdateCharacterCommand(
+                    memberId,
+                    new CharacterDraft(
+                            name,
+                            parsedDraft.playerName,
+                            parsedDraft.level,
+                            parsedDraft.passivePerception,
+                            parsedDraft.armorClass)));
         }
     }
 
-    private static boolean validId(long id) {
-        return id > 0L;
-    }
+    private static final class MutationActions {
 
-    private static String displayName(String name) {
-        String safeName = safe(name).trim();
-        return safeName.isEmpty() ? "Der Charakter" : safeName;
-    }
+        private final PartyRosterTopBarContentModel rosterContentModel;
+        private final PartyEditorTopBarContentModel editorContentModel;
+        private final PartyTopBarContributionModel.MutationState mutationState;
 
-    private static String safe(String value) {
-        return value == null ? "" : value;
-    }
-
-    private record ParsedDraft(
-            String name,
-            String playerName,
-            int level,
-            int passivePerception,
-            int armorClass,
-            boolean accepted,
-            String message
-    ) {
-
-        private ParsedDraft {
-            name = safe(name);
-            playerName = safe(playerName);
-            message = safe(message);
+        private MutationActions(
+                PartyRosterTopBarContentModel rosterContentModel,
+                PartyEditorTopBarContentModel editorContentModel,
+                PartyTopBarContributionModel.MutationState mutationState
+        ) {
+            this.rosterContentModel = rosterContentModel;
+            this.editorContentModel = editorContentModel;
+            this.mutationState = mutationState;
         }
 
-        private boolean valid() {
-            return accepted && message.isBlank();
+        private boolean beginMutation(String successMessage) {
+            return beginMutation(successMessage, false);
         }
 
-        private static ParsedDraft valid(
+        private boolean beginEditorMutation(String successMessage) {
+            return beginMutation(successMessage, true);
+        }
+
+        private void rejectMutation(String message) {
+            rosterContentModel.showStatus(message, true);
+        }
+
+        private boolean beginMutation(String successMessage, boolean hideEditorOnSuccess) {
+            if (!mutationState.begin(successMessage, hideEditorOnSuccess)) {
+                rejectMutation("Party-Aktion laeuft bereits.");
+                return false;
+            }
+            rosterContentModel.showPending("Speichere...");
+            editorContentModel.showActionsDisabled(true);
+            return true;
+        }
+    }
+
+    private static final class DraftParser {
+
+        private static ParsedDraft parse(PartyEditorTopBarViewInputEvent.EditorDraft draft) {
+            String name = MutationSupport.safe(draft == null ? "" : draft.name()).trim();
+            ParsedInteger level = parseInteger(draft == null ? "" : draft.rawLevel(), "Level", 1, 20);
+            ParsedInteger passivePerception = parseInteger(
+                    draft == null ? "" : draft.rawPassivePerception(),
+                    "Passive Perception",
+                    1,
+                    99);
+            ParsedInteger armorClass = parseInteger(draft == null ? "" : draft.rawArmorClass(), "AC", 1, 99);
+            return ParsedDraft.from(
+                    name,
+                    MutationSupport.safe(draft == null ? "" : draft.playerName()).trim(),
+                    level,
+                    passivePerception,
+                    armorClass);
+        }
+
+        private static ParsedInteger parseInteger(String rawValue, String label, int min, int max) {
+            String trimmed = MutationSupport.safe(rawValue).trim();
+            if (trimmed.isEmpty()) {
+                return ParsedInteger.invalid(label + " fehlt.");
+            }
+            try {
+                int value = Integer.parseInt(trimmed);
+                if (value < min || value > max) {
+                    return ParsedInteger.invalid(label + " muss zwischen " + min + " und " + max + " liegen.");
+                }
+                return ParsedInteger.valid(value);
+            } catch (NumberFormatException exception) {
+                return ParsedInteger.invalid(label + " muss eine Zahl sein.");
+            }
+        }
+    }
+
+    private static final class ParsedDraft {
+
+        private final String name;
+        private final String playerName;
+        private final int level;
+        private final int passivePerception;
+        private final int armorClass;
+        private final String message;
+
+        private ParsedDraft(
                 String name,
                 String playerName,
                 int level,
                 int passivePerception,
-                int armorClass
+                int armorClass,
+                String message
         ) {
-            return new ParsedDraft(name, playerName, level, passivePerception, armorClass, true, "");
+            this.name = MutationSupport.safe(name);
+            this.playerName = MutationSupport.safe(playerName);
+            this.level = level;
+            this.passivePerception = passivePerception;
+            this.armorClass = armorClass;
+            this.message = MutationSupport.safe(message);
+        }
+
+        private boolean valid() {
+            return message.isBlank();
+        }
+
+        private static ParsedDraft from(
+                String name,
+                String playerName,
+                ParsedInteger level,
+                ParsedInteger passivePerception,
+                ParsedInteger armorClass
+        ) {
+            if (name.isEmpty()) {
+                return invalid("Charaktername fehlt.");
+            }
+            if (!level.valid()) {
+                return invalid(level.message);
+            }
+            if (!passivePerception.valid()) {
+                return invalid(passivePerception.message);
+            }
+            if (!armorClass.valid()) {
+                return invalid(armorClass.message);
+            }
+            return new ParsedDraft(name, playerName, level.value, passivePerception.value, armorClass.value, "");
         }
 
         private static ParsedDraft invalid(String message) {
-            return new ParsedDraft("", "", 0, 0, 0, false, message);
+            return new ParsedDraft("", "", 0, 0, 0, message);
         }
     }
 
-    private record ParsedInteger(int value, String message) {
+    private static final class ParsedInteger {
 
-        private ParsedInteger {
-            message = safe(message);
+        private final int value;
+        private final String message;
+
+        private ParsedInteger(int value, String message) {
+            this.value = value;
+            this.message = MutationSupport.safe(message);
         }
 
         private boolean valid() {
@@ -362,6 +469,22 @@ final class PartyTopBarIntentHandler {
 
         private static ParsedInteger invalid(String message) {
             return new ParsedInteger(0, message);
+        }
+    }
+
+    private static final class MutationSupport {
+
+        private static boolean validId(long id) {
+            return id > 0L;
+        }
+
+        private static String displayName(String name) {
+            String safeName = safe(name).trim();
+            return safeName.isEmpty() ? "Der Charakter" : safeName;
+        }
+
+        private static String safe(String value) {
+            return value == null ? "" : value;
         }
     }
 }

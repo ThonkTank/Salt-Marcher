@@ -15,10 +15,6 @@ public final class PartyMutationStatus {
         this.name = name;
     }
 
-    public String name() {
-        return name;
-    }
-
     public static PartyMutationStatus storageError() {
         return STORAGE_ERROR;
     }

@@ -28,7 +28,7 @@ enforcement documents.
 
 ### Must Contain
 
-| Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
+| Invariant ID | Status | Applies When | Mechanical Owner | Diagnostic/Mechanical Route | What It Proves |
 | --- | --- | --- | --- | --- | --- |
 | `bootstrap-desktop-launch-framing-ownership` | Review-Owned | the repository ships a desktop app entrypoint or packaged startup preloader under `bootstrap/**` | none | none | Desktop launch framing lives in the bootstrap layer and stays limited to shell startup framing such as stage/scene creation, startup resource application, and preloader handoff rather than becoming feature UI or shell-host behavior. |
 | `bootstrap-view-discovery-root-set` | Enforced | bootstrap discovers shell-facing UI registration roots | bootstrap-layer bundle build-harness `BootstrapLayerTopologyRules` | `./gradlew checkBootstrapEnforcement` | Bootstrap discovery sees only active-root `*Contribution` entrypoints under `src/view/leftbartabs/**`, `src/view/statetabs/**`, and `src/view/dropdowns/**`; reusable `slotcontent/**` is not a bootstrap discovery root. |
@@ -40,7 +40,7 @@ enforcement documents.
 
 ### Must Not Contain
 
-| Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
+| Invariant ID | Status | Applies When | Mechanical Owner | Diagnostic/Mechanical Route | What It Proves |
 | --- | --- | --- | --- | --- | --- |
 | `bootstrap-no-feature-implementation-dependencies` | Enforced | every active Java source under `bootstrap/**` | bootstrap-layer bundle ArchUnit `bootstrapMustStayOutsideFeatureCode` | `./gradlew checkBootstrapEnforcement` | Bootstrap code stays outside concrete feature implementation code instead of becoming a handwritten feature registry or feature behavior host. |
 | `bootstrap-no-feature-specific-business-or-presentation-ownership` | Review-Owned | every bootstrap type under `bootstrap/**` | none | none | A mechanically legal bootstrap type still does not absorb feature-specific business rules, presentation-state mutation, or feature-local runtime policy. |

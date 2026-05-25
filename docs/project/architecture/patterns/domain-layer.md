@@ -1,19 +1,19 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-05-08
+Last Reviewed: 2026-05-25
 Source of Truth: Binding domain-layer pattern, role ownership, communication seams, context map, and topology for `src/domain/**`.
 
 # Domain Layer Standard
 
 ## Goal
-
 SaltMarcher treats `src/domain/**` as the application core. Domain code owns
 business meaning, current work state, workflow orchestration, published domain
 language, cross-context coordination seams, and same-context backend service
 assembly below the view layer. It does not own UI translation, persistence
 mechanics, data-source records, SQL, filesystem, network, or framework
-concerns. Runtime service composition is legal only in direct context-root
-`*ServiceContribution` and optional `*ServiceAssembly` files.
+concerns. Runtime service composition and same-context assembly decomposition
+are legal only in direct context-root `*ServiceContribution` and optional
+package-private `*ServiceAssembly` files.
 
 This document is the sole architectural source of truth for `src/domain/**`.
 The repo-owned `tools/quality/skills/domain-layer/SKILL.md` operationalizes
@@ -23,34 +23,18 @@ review-owned rows, and current mechanical drift, but they must not redefine
 the pattern or become a second architecture owner.
 
 ## Current State And Target State
+Current state: production still contains legacy tactical packages and blockers that enforcement documents must describe as drift, not target architecture.
 
-Current state: production still contains some legacy tactical packages and blockers that cover that migration shape. Enforcement documents must describe
-remaining drift literally instead of making it the target architecture.
-
-Target state:
-
-- one context MAY expose one or more direct root `*ApplicationService` files,
-  one per decision family
-- `ApplicationService` interprets inbound intent only when the view-side
-  `IntentHandler` lacks domain decision context, then routes to exactly one
-  focused `UseCase`
-- `UseCase` owns exactly one work operation and orchestration only
-- `Helper` owns pure explicit work steps and reads no current context
-- `Constants` owns immutable shared constants
-- `Model` owns internal dynamic work state
-- `Published` is the only outward communication seam
-- `Port` is the inbound domain-internal listener role for foreign published
-  state
-- `Repository` is the outbound domain role for foreign domain writes and
-  layered data access; the narrow `*PublishedStateRepository` subtype is a
-  same-context publication sink, not a foreign-write repository
-- `ServiceContribution` is the direct context-root runtime discovery role for
-  registering same-context domain services
-- `ServiceAssembly` is the optional direct context-root constructor-wiring
-  collaborator for one same-context `ServiceContribution`
+Target state: each context uses only the closed role family below. Roots expose
+family `*ApplicationService`, direct-root `*ServiceContribution`, and optional
+package-private `*ServiceAssembly` files for composition and same-context
+published-state decomposition. `ApplicationService` stays thin, `UseCase` owns
+one operation, `Model` owns work state, `Published` owns outward language,
+`Helper`/`Constants` own pure support, `Port` consumes foreign published state,
+and `Repository` owns outbound foreign writes or layered data access. The narrow
+`*PublishedStateRepository` subtype is only a same-context publication sink.
 
 ## Role Family
-
 The closed architectural role family is:
 
 | Role | Meaning |
@@ -64,7 +48,7 @@ The closed architectural role family is:
 | `Port` | Inbound listener on foreign published state. |
 | `Repository` | Outbound trigger for foreign domain work, layered data access, or the narrow same-context `*PublishedStateRepository` publication-sink subtype. |
 | `ServiceContribution` | Context-root runtime discovery and registration role. |
-| `ServiceAssembly` | Optional context-root constructor-wiring collaborator. |
+| `ServiceAssembly` | Optional package-private context-root service composition or same-context published-state assembly part. |
 
 Any topology outside this closed role family is illegal.
 
@@ -97,7 +81,8 @@ Any topology outside this closed role family is illegal.
   listeners, not by polling foreign internals
 - domain code does not depend on `bootstrap/**`, `src/view/**`, `src/data/**`,
   JavaFX, SQL, filesystem, network, or runtime composition APIs outside the
-  narrow direct-root `ServiceContribution`/`ServiceAssembly` exception
+  narrow direct-root `ServiceContribution`/package-private `ServiceAssembly`
+  exception
 
 ## Canonical Flows
 
@@ -119,8 +104,9 @@ Published`
 
 ### Backend Registration
 
-`bootstrap discovery -> context ServiceContribution -> context ServiceAssembly
--> family ApplicationService / published Model registration`
+`bootstrap discovery -> context ServiceContribution -> package-private
+ServiceAssembly parts -> family ApplicationService / published Model
+registration`
 
 ## Role Contracts
 
@@ -248,21 +234,25 @@ Published`
 
 ### `*ServiceAssembly.java`
 
-- optional direct root file under `src/domain/<context>/`
-- named `<Context>ServiceAssembly.java`
-- package-private constructor-wiring collaborator used only by the same-context
-  `ServiceContribution`
-- may require foreign public domain services and published models from
-  `ServiceRegistry` to construct same-context repositories, ports, use cases,
-  application services, and published models
-- may host a private or package-private runtime-owned `PublishedState`
-  implementation for same-context `*PublishedStateRepository` when that type
-  only owns cache/listener fanout and mapping from typed internal publication
-  records to same-context `published/*Model`
-- does not implement `ServiceContribution` and does not own business policy,
-  persistence mechanics, source queries, public backend APIs, or reusable
-  factories; any mapping it hosts is limited to the `PublishedState`
-  publication-sink exception above
+- optional package-private `final` direct root file named
+  `<Context>*ServiceAssembly.java`; `<Context>ServiceAssembly.java` is the
+  same-context `ServiceContribution` aggregator
+- never a public backend boundary
+- may be constructed or called only by the same-context `ServiceContribution`
+  or another same-context `*ServiceAssembly`
+- may construct same-context repositories, ports, use cases, application
+  services, and published models; may require foreign public domain services
+  and published models from `ServiceRegistry` only for that construction
+- may host same-context published-state assembly parts: runtime-owned channel
+  support and deterministic mapping from typed internal records to
+  same-context `published/**` carriers
+- same-context projection methods are legal only for assembling published-state
+  or application-service surface output from supplied same-context internal
+  records; they must not query source state, own business policy, or become
+  generic reusable helpers
+- does not implement `ServiceContribution` and does not own persistence
+  mechanics, source queries, public backend APIs, foreign-write protocols, or
+  reusable factories
 
 ## Domain Topology
 
@@ -305,7 +295,7 @@ Rules:
   only non-model subordinate role buckets under a model family
 - non-model role buckets stay direct-file only
 - direct root Java files under `src/domain/<context>/` are limited to
-  `*ApplicationService.java`, `*ServiceContribution.java`, and optional
+  `*ApplicationService.java`, `*ServiceContribution.java`, and package-private
   `*ServiceAssembly.java`
 - direct Java files under named model families are forbidden; Java files belong
   in an explicit role package
@@ -322,7 +312,7 @@ Rules:
 - `creatures`: Reference Catalog Context.
 - `encounter`: Roster Truth Context.
 - `encountertable`: Reference Catalog Context.
-- `dungeon`: Authored World-Space Context with editor-runtime and travel-runtime model families.
+- `dungeon`: Authored World-Space Context with one worldspace model family for authored map truth, editor runtime, and travel runtime.
 - `sessionplanner`: Roster Truth Context.
 
 ## Context Relationships <!-- mechanical-domain-dependencies: encounter=creatures,encountertable,party; sessionplanner=encounter,party -->
@@ -341,7 +331,8 @@ Rules:
   weighted candidate rows.
 - `dungeon`: `Authored World-Space Context`; owns authored world-space truth
   independently of party, creatures, and encounter. Runtime editor and travel
-  composition are dungeon model families over the same authored map facts.
+  composition are roles inside the same dungeon worldspace model family over
+  the same authored map facts.
   Editor session state, preview, selection, overlay, projection level, pointer
   interpretation, travel overlay, travel projection level, and overworld
   fallback remain transient runtime state and never become authored dungeon
