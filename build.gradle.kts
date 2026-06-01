@@ -171,6 +171,7 @@ tasks.register<JavaExec>("dungeonEditorBehaviorHarness") {
     mainClass.set("src.view.leftbartabs.dungeoneditor.DungeonEditorToolBehaviorHarness")
     inputs.files(fileTree("docs/dungeon/verification") {
         include("verification-dungeon-editor-tool-behavior.md")
+        include("verification-dungeon-core-model-invariants.md")
         include("verification-dungeon-editor-fixtures.md")
         include("verification-dungeon-editor-map-controls.md")
         include("verification-dungeon-editor-selection-room-wall-door.md")

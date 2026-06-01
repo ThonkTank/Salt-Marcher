@@ -1800,6 +1800,25 @@ final class DungeonEditorBehaviorHarnessSupport {
         }
     }
 
+    static void recordModelInvariant(
+            List<String> results,
+            String ownerSuite,
+            String invariantId,
+            String description
+    ) {
+        if (ownerSuite == null || ownerSuite.isBlank()) {
+            throw new IllegalStateException("Model invariant rows must declare an owner suite.");
+        }
+        if (invariantId == null || !invariantId.matches("DGI-[A-Z]+-[0-9]{3}")) {
+            throw new IllegalStateException("Model invariant rows must declare a DGI-* invariant id: " + invariantId);
+        }
+        if (description == null || description.isBlank()) {
+            throw new IllegalStateException("Model invariant rows must declare a description.");
+        }
+        results.add("OwnerSuite=" + ownerSuite + "; ProofType=ModelInvariant; "
+                + invariantId + " Qualified: " + description);
+    }
+
     static void click(ButtonBase button) {
         button.fire();
     }

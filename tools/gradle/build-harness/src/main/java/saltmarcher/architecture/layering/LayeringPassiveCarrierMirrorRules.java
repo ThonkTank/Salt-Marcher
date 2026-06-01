@@ -178,9 +178,9 @@ public final class LayeringPassiveCarrierMirrorRules implements ArchitectureRule
                 if (isBoundaryCommandCarrier()) {
                     return super.visitClass(node, carriers);
                 }
-                if (node.getKind() == Tree.Kind.RECORD) {
+                if (node.getKind() == Tree.Kind.RECORD && isPassiveRecord(node)) {
                     carriers.add(recordType(node));
-                } else if (node.getKind() == Tree.Kind.ENUM) {
+                } else if (node.getKind() == Tree.Kind.ENUM && isPassiveEnum(node)) {
                     carriers.add(enumType(node));
                 }
                 return super.visitClass(node, carriers);
@@ -248,7 +248,10 @@ public final class LayeringPassiveCarrierMirrorRules implements ArchitectureRule
         }
 
         private static boolean isEnumConstant(ClassTree enumTree, VariableTree variable) {
-            if (!(variable.getInitializer() instanceof NewClassTree)) {
+            if (!(variable.getInitializer() instanceof NewClassTree newClass)) {
+                return false;
+            }
+            if (newClass.getClassBody() != null) {
                 return false;
             }
             if (!variable.getModifiers().getFlags().containsAll(Set.of(Modifier.PUBLIC, Modifier.STATIC, Modifier.FINAL))) {
@@ -262,6 +265,36 @@ public final class LayeringPassiveCarrierMirrorRules implements ArchitectureRule
             return variable.getInitializer() == null
                     && variable.getType() != null
                     && variable.getModifiers().getFlags().containsAll(Set.of(Modifier.PRIVATE, Modifier.FINAL));
+        }
+
+        private static boolean isPassiveRecord(ClassTree node) {
+            for (Tree member : node.getMembers()) {
+                if (member instanceof VariableTree variable && isRecordComponent(variable)) {
+                    continue;
+                }
+                if (isEmptyStatement(member)) {
+                    continue;
+                }
+                return false;
+            }
+            return true;
+        }
+
+        private static boolean isPassiveEnum(ClassTree node) {
+            for (Tree member : node.getMembers()) {
+                if (member instanceof VariableTree variable && isEnumConstant(node, variable)) {
+                    continue;
+                }
+                if (isEmptyStatement(member)) {
+                    continue;
+                }
+                return false;
+            }
+            return true;
+        }
+
+        private static boolean isEmptyStatement(Tree member) {
+            return member.getKind() == Tree.Kind.EMPTY_STATEMENT;
         }
     }
 

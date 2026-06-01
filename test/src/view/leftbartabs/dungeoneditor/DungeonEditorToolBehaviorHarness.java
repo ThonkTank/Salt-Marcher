@@ -18,6 +18,7 @@ public final class DungeonEditorToolBehaviorHarness {
                 DungeonEditorMapControlsHarness.run(results);
                 DungeonEditorProjectionOverlayHarness.run(results);
                 DungeonEditorSelectionHarness.run(results);
+                DungeonGeometryInvariantHarness.run(results);
                 DungeonEditorStairHarness.run(results);
                 DungeonEditorTransitionHarness.run(results);
                 DungeonEditorCorridorHarness.run(results);

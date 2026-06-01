@@ -3,6 +3,8 @@ package src.domain.dungeon.model.worldspace.model;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import src.domain.dungeon.model.core.model.geometry.Cell;
+import src.domain.dungeon.model.core.model.geometry.Edge;
 
 public final class DungeonEdge {
     private final DungeonCell from;
@@ -25,57 +27,22 @@ public final class DungeonEdge {
     }
 
     public static DungeonEdge sideOf(DungeonCell cell, DungeonEdgeDirection direction) {
-        DungeonCell origin = cell == null ? new DungeonCell(0, 0, 0) : cell;
-        DungeonEdgeDirection resolvedDirection = direction == null ? DungeonEdgeDirection.NORTH : direction;
-        if (resolvedDirection == DungeonEdgeDirection.NORTH) {
-            return new DungeonEdge(origin, offset(origin, 1, 0));
-        }
-        if (resolvedDirection == DungeonEdgeDirection.EAST) {
-            return new DungeonEdge(offset(origin, 1, 0), offset(origin, 1, 1));
-        }
-        if (resolvedDirection == DungeonEdgeDirection.SOUTH) {
-            return new DungeonEdge(offset(origin, 0, 1), offset(origin, 1, 1));
-        }
-        return new DungeonEdge(origin, offset(origin, 0, 1));
+        Edge edge =
+                Edge.sideOf(
+                        cell == null ? new Cell(0, 0, 0) : cell.geometry(),
+                        direction == null ? DungeonEdgeDirection.NORTH.geometry() : direction.geometry());
+        return fromGeometry(edge);
     }
 
     public List<DungeonCell> touchingCells() {
-        if (from == null || to == null || from.level() != to.level()) {
+        if (from == null || to == null) {
             return List.of();
         }
-        if (from.r() == to.r()) {
-            return horizontalTouchingCells();
-        }
-        if (from.q() == to.q()) {
-            return verticalTouchingCells();
-        }
-        return List.of();
-    }
-
-    private List<DungeonCell> horizontalTouchingCells() {
-        int minQ = Math.min(from.q(), to.q());
-        int maxQ = Math.max(from.q(), to.q());
         List<DungeonCell> result = new ArrayList<>();
-        for (int q = minQ; q < maxQ; q++) {
-            result.add(new DungeonCell(q, from.r() - 1, from.level()));
-            result.add(new DungeonCell(q, from.r(), from.level()));
+        for (Cell cell : geometry().touchingCells()) {
+            result.add(DungeonCell.fromGeometry(cell));
         }
         return List.copyOf(result);
-    }
-
-    private List<DungeonCell> verticalTouchingCells() {
-        int minR = Math.min(from.r(), to.r());
-        int maxR = Math.max(from.r(), to.r());
-        List<DungeonCell> result = new ArrayList<>();
-        for (int r = minR; r < maxR; r++) {
-            result.add(new DungeonCell(from.q() - 1, r, from.level()));
-            result.add(new DungeonCell(from.q(), r, from.level()));
-        }
-        return List.copyOf(result);
-    }
-
-    private static DungeonCell offset(DungeonCell cell, int deltaQ, int deltaR) {
-        return new DungeonCell(cell.q() + deltaQ, cell.r() + deltaR, cell.level());
     }
 
     @Override
@@ -93,5 +60,15 @@ public final class DungeonEdge {
     @Override
     public String toString() {
         return "DungeonEdge[from=" + from + ", to=" + to + "]";
+    }
+
+    private Edge geometry() {
+        return new Edge(from.geometry(), to.geometry());
+    }
+
+    private static DungeonEdge fromGeometry(Edge edge) {
+        return new DungeonEdge(
+                DungeonCell.fromGeometry(edge.from()),
+                DungeonCell.fromGeometry(edge.to()));
     }
 }

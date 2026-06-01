@@ -3,6 +3,8 @@ package src.domain.dungeon.model.worldspace.model;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import src.domain.dungeon.model.core.model.geometry.Cell;
+import src.domain.dungeon.model.core.model.geometry.CellOrdering;
 
 final class DungeonCellOrdering {
 
@@ -10,20 +12,17 @@ final class DungeonCellOrdering {
     }
 
     static List<DungeonCell> sortedCells(Iterable<DungeonCell> cells) {
-        List<DungeonCell> result = new ArrayList<>();
+        List<Cell> geometryCells = new ArrayList<>();
         for (DungeonCell cell : cells == null ? List.<DungeonCell>of() : cells) {
             if (cell != null) {
-                result.add(cell);
+                geometryCells.add(cell.geometry());
             }
         }
-        List<DungeonCell> unique = new ArrayList<>();
-        for (DungeonCell cell : result) {
-            if (!unique.contains(cell)) {
-                unique.add(cell);
-            }
+        List<DungeonCell> result = new ArrayList<>();
+        for (Cell cell : CellOrdering.sortedCells(geometryCells)) {
+            result.add(DungeonCell.fromGeometry(cell));
         }
-        unique.sort(DungeonCellOrdering::compareCells);
-        return List.copyOf(unique);
+        return List.copyOf(result);
     }
 
     static List<Set<DungeonCell>> sortedComponents(Iterable<Set<DungeonCell>> components) {
@@ -47,15 +46,7 @@ final class DungeonCellOrdering {
         if (right == null) {
             return 1;
         }
-        int levelComparison = Integer.compare(left.level(), right.level());
-        if (levelComparison != 0) {
-            return levelComparison;
-        }
-        int rowComparison = Integer.compare(left.r(), right.r());
-        if (rowComparison != 0) {
-            return rowComparison;
-        }
-        return Integer.compare(left.q(), right.q());
+        return CellOrdering.compareCells(left.geometry(), right.geometry());
     }
 
     private static int minimumLevel(Set<DungeonCell> component) {

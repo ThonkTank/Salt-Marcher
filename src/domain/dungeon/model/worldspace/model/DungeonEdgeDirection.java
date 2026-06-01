@@ -1,29 +1,31 @@
 package src.domain.dungeon.model.worldspace.model;
 
 import java.util.Locale;
+import src.domain.dungeon.model.core.model.geometry.Cell;
+import src.domain.dungeon.model.core.model.geometry.Direction;
 
-public final class DungeonEdgeDirection {
-    public static final DungeonEdgeDirection NORTH = new DungeonEdgeDirection("NORTH", 0, -1);
-    public static final DungeonEdgeDirection EAST = new DungeonEdgeDirection("EAST", 1, 0);
-    public static final DungeonEdgeDirection SOUTH = new DungeonEdgeDirection("SOUTH", 0, 1);
-    public static final DungeonEdgeDirection WEST = new DungeonEdgeDirection("WEST", -1, 0);
-    private static final DungeonEdgeDirection[] CARDINAL = {NORTH, EAST, SOUTH, WEST};
+public enum DungeonEdgeDirection {
+    NORTH(Direction.NORTH),
+    EAST(Direction.EAST),
+    SOUTH(Direction.SOUTH),
+    WEST(Direction.WEST);
 
-    private final String name;
-    private final int deltaQ;
-    private final int deltaR;
+    private final Direction geometry;
 
-    private DungeonEdgeDirection(String name, int deltaQ, int deltaR) {
-        this.name = name;
-        this.deltaQ = deltaQ;
-        this.deltaR = deltaR;
+    DungeonEdgeDirection(Direction geometry) {
+        this.geometry = geometry;
     }
 
     public static DungeonEdgeDirection parse(String value) {
         if (value == null || value.isBlank()) {
             return NORTH;
         }
-        return valueOf(value.trim().toUpperCase(Locale.ROOT));
+        return switch (value.trim().toUpperCase(Locale.ROOT)) {
+            case "EAST" -> EAST;
+            case "SOUTH" -> SOUTH;
+            case "WEST" -> WEST;
+            default -> NORTH;
+        };
     }
 
     public static DungeonEdgeDirection fromCode(int code) {
@@ -35,40 +37,20 @@ public final class DungeonEdgeDirection {
         };
     }
 
-    public static DungeonEdgeDirection valueOf(String name) {
-        return switch (name) {
-            case "EAST" -> EAST;
-            case "SOUTH" -> SOUTH;
-            case "WEST" -> WEST;
-            default -> NORTH;
-        };
-    }
-
-    public static DungeonEdgeDirection[] values() {
-        return CARDINAL.clone();
-    }
-
     public DungeonCell neighborOf(DungeonCell cell) {
-        if (cell == null) {
-            return new DungeonCell(deltaQ, deltaR, 0);
-        }
-        return new DungeonCell(cell.q() + deltaQ, cell.r() + deltaR, cell.level());
+        Cell geometryCell = cell == null ? new Cell(0, 0, 0) : cell.geometry();
+        return DungeonCell.fromGeometry(geometry.neighborOf(geometryCell));
     }
 
     public int deltaQ() {
-        return deltaQ;
+        return geometry.deltaQ();
     }
 
     public int deltaR() {
-        return deltaR;
+        return geometry.deltaR();
     }
 
-    public String name() {
-        return name;
-    }
-
-    @Override
-    public String toString() {
-        return name;
+    Direction geometry() {
+        return geometry;
     }
 }

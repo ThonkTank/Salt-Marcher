@@ -1,52 +1,59 @@
 package src.domain.dungeon.model.worldspace.model;
 
 import java.util.Objects;
+import src.domain.dungeon.model.core.model.geometry.Cell;
 
 /**
  * Domain-local cell value object.
  */
 public final class DungeonCell {
-    private final int q;
-    private final int r;
-    private final int level;
+    private final Cell geometry;
 
     public DungeonCell(
             int q,
             int r,
             int level
     ) {
-        this.q = q;
-        this.r = r;
-        this.level = level;
+        this(new Cell(q, r, level));
+    }
+
+    private DungeonCell(Cell geometry) {
+        this.geometry = Objects.requireNonNull(geometry);
+    }
+
+    static DungeonCell fromGeometry(Cell geometry) {
+        return new DungeonCell(geometry);
+    }
+
+    Cell geometry() {
+        return geometry;
     }
 
     public int q() {
-        return q;
+        return geometry.q();
     }
 
     public int r() {
-        return r;
+        return geometry.r();
     }
 
     public int level() {
-        return level;
+        return geometry.level();
     }
 
     @Override
     public boolean equals(Object other) {
         return other instanceof DungeonCell that
-                && q == that.q
-                && r == that.r
-                && level == that.level;
+                && geometry.equals(that.geometry);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(q, r, level);
+        return geometry.hashCode();
     }
 
     @Override
     public String toString() {
-        return "DungeonCell[q=" + q + ", r=" + r + ", level=" + level + "]";
+        return "DungeonCell[q=" + q() + ", r=" + r() + ", level=" + level() + "]";
     }
 }

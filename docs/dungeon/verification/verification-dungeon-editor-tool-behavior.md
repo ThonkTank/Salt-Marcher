@@ -164,7 +164,13 @@ The behavior matrix is split by route owner and harness suite group:
 
 These files own the row-level `DE-*` expectations; this document owns the
 shared proof model, status vocabulary, gesture convention, route ownership, and
-completion criteria.
+completion criteria. Model invariant rows use their own invariant ids and do
+not close catalog `Ready` real-route rows.
+
+Supplemental model-invariant proof rows are documented separately in
+[Core model invariants](verification-dungeon-core-model-invariants.md). They
+publish through the public aggregator as `ProofType=ModelInvariant`, but they
+are not editor behavior matrix route rows.
 
 ## Catalog Completion Criteria
 
@@ -271,6 +277,9 @@ Route ownership is:
 
 All listed route-owned rows are `RealRoute` proofs. `DE-STATE-002` remains a
 cataloged `Re-scoped` row and has no required harness proof owner.
+Core model invariant rows are documented in
+[Dungeon Core Model Invariants](verification-dungeon-core-model-invariants.md)
+and publish `ProofType=ModelInvariant`.
 
 ## References
 
