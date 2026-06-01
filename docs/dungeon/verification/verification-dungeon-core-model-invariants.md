@@ -37,6 +37,7 @@ use the editor behavior catalog's `Ready` route status vocabulary.
 | ID | OwnerSuite | Scope | Expected invariant |
 | --- | --- | --- | --- |
 | `DGI-CMP-001` | `DungeonComponentInvariantHarness` | `core/model/component/StairExit` | Stair exits keep local id, position, and label invariants; missing positions are rejected by core while legacy defaults remain in transitional adapters. |
+| `DGI-CMP-002` | `DungeonComponentInvariantHarness` | `core/model/component/CorridorAnchor` | Corridor anchors keep local id, host corridor id normalization, position, relocation, and position-match invariants; missing positions are rejected by core while legacy defaults remain in transitional adapters. |
 
 ## References
 

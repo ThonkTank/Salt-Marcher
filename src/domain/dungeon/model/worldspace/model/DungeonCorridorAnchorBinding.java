@@ -1,5 +1,8 @@
 package src.domain.dungeon.model.worldspace.model;
 
+import src.domain.dungeon.model.core.model.component.CorridorAnchor;
+import src.domain.dungeon.model.core.model.geometry.Cell;
+
 public record DungeonCorridorAnchorBinding(
         long anchorId,
         long hostCorridorId,
@@ -8,18 +11,31 @@ public record DungeonCorridorAnchorBinding(
 ) {
 
     public DungeonCorridorAnchorBinding {
-        anchorId = Math.max(0L, anchorId);
-        hostCorridorId = Math.max(0L, hostCorridorId);
-        absoluteCell = absoluteCell == null ? new DungeonCell(0, 0, 0) : absoluteCell;
+        CorridorAnchor anchor = new CorridorAnchor(
+                anchorId,
+                hostCorridorId,
+                absoluteCell == null ? new Cell(0, 0, 0) : absoluteCell.geometry());
+        anchorId = anchor.anchorId();
+        hostCorridorId = anchor.hostCorridorId();
+        absoluteCell = DungeonCell.fromGeometry(anchor.position());
         topologyRef = topologyRef == null || !topologyRef.present() ? DungeonTopologyRef.corridorAnchor(anchorId) : topologyRef;
     }
 
     public DungeonCorridorAnchorBinding withAbsoluteCell(DungeonCell nextCell) {
-        return new DungeonCorridorAnchorBinding(anchorId, hostCorridorId, nextCell, topologyRef);
+        CorridorAnchor moved = new CorridorAnchor(anchorId, hostCorridorId, absoluteCell.geometry())
+                .withPosition(nextCell == null ? new Cell(0, 0, 0) : nextCell.geometry());
+        return new DungeonCorridorAnchorBinding(
+                moved.anchorId(),
+                moved.hostCorridorId(),
+                DungeonCell.fromGeometry(moved.position()),
+                topologyRef);
     }
 
     public boolean matches(DungeonTopologyRef ref, DungeonCell anchorCell) {
-        return matchesTopologyRef(ref) || absoluteCell.equals(anchorCell);
+        return matchesTopologyRef(ref)
+                || anchorCell != null
+                && new CorridorAnchor(anchorId, hostCorridorId, absoluteCell.geometry())
+                        .matchesPosition(anchorCell.geometry());
     }
 
     public boolean matchesTopologyRef(DungeonTopologyRef ref) {
