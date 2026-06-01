@@ -169,19 +169,26 @@ tasks.register<JavaExec>("dungeonEditorBehaviorHarness") {
     dependsOn(tasks.named(dungeonEditorBehaviorHarness.classesTaskName))
     classpath = dungeonEditorBehaviorHarness.runtimeClasspath
     mainClass.set("src.view.leftbartabs.dungeoneditor.DungeonEditorToolBehaviorHarness")
-    inputs.file("docs/dungeon/verification/verification-dungeon-editor-tool-behavior.md")
-        .withPropertyName("dungeonEditorBehaviorCatalog")
+    inputs.files(fileTree("docs/dungeon/verification") {
+        include("verification-dungeon-editor-tool-behavior.md")
+        include("verification-dungeon-editor-fixtures.md")
+        include("verification-dungeon-editor-map-controls.md")
+        include("verification-dungeon-editor-selection-room-wall-door.md")
+        include("verification-dungeon-editor-corridors.md")
+        include("verification-dungeon-editor-stairs-transitions.md")
+    })
+        .withPropertyName("dungeonEditorBehaviorCatalogs")
         .withPathSensitivity(PathSensitivity.RELATIVE)
     outputs.dir(dungeonEditorBehaviorHarnessResultsDir)
     outputs.upToDateWhen { false }
     doFirst {
-        delete(dungeonEditorBehaviorHarnessDataDir)
-        delete(dungeonEditorBehaviorHarnessResultsDir)
-        mkdir(dungeonEditorBehaviorHarnessDataDir)
-        mkdir(dungeonEditorBehaviorHarnessDataDir.get().dir("salt-marcher"))
+        val runDataDir = dungeonEditorBehaviorHarnessDataDir.get()
+            .dir("run-" + System.currentTimeMillis() + "-" + ProcessHandle.current().pid())
+        mkdir(runDataDir)
+        mkdir(runDataDir.dir("salt-marcher"))
         mkdir(dungeonEditorBehaviorHarnessResultsDir)
+        environment("XDG_DATA_HOME", runDataDir.asFile.absolutePath)
     }
-    environment("XDG_DATA_HOME", dungeonEditorBehaviorHarnessDataDir.get().asFile.absolutePath)
     systemProperty("saltmarcher.dungeonEditorBehavior.resultsDir", dungeonEditorBehaviorHarnessResultsDir.get().asFile.absolutePath)
 }
 

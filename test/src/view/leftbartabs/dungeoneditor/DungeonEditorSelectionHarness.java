@@ -1,0 +1,327 @@
+package src.view.leftbartabs.dungeoneditor;
+
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
+import javafx.geometry.Bounds;
+import javafx.event.ActionEvent;
+import javafx.geometry.Point2D;
+import javafx.scene.Parent;
+import javafx.scene.control.ButtonBase;
+import javafx.scene.control.CheckBox;
+import javafx.scene.control.ComboBox;
+import javafx.scene.control.Label;
+import javafx.scene.control.Slider;
+import javafx.scene.control.Spinner;
+import javafx.scene.control.TextArea;
+import javafx.scene.control.TextField;
+import javafx.scene.control.ToggleButton;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.MouseButton;
+import javafx.scene.input.MouseEvent;
+import javafx.scene.layout.HBox;
+import javafx.stage.Window;
+import src.domain.dungeon.model.worldspace.model.DungeonCell;
+import src.domain.dungeon.model.worldspace.model.DungeonEdgeDirection;
+import src.domain.dungeon.published.DungeonEditorControlsModel;
+import src.domain.dungeon.published.DungeonEditorControlsSnapshot;
+import src.domain.dungeon.published.DungeonEditorMapSurfaceModel;
+import src.domain.dungeon.published.DungeonEditorMapSurfaceSnapshot;
+import src.domain.dungeon.published.DungeonEditorPreview;
+import src.domain.dungeon.published.DungeonEditorStateSnapshot;
+import src.domain.dungeon.published.DungeonEditorTopologyElementRef;
+import src.domain.dungeon.published.DungeonEditorViewMode;
+import src.domain.dungeon.published.DungeonEdgeRef;
+import src.domain.dungeon.published.DungeonInspectorSnapshot;
+import src.domain.dungeon.published.DungeonMapSummary;
+import src.domain.dungeon.published.DungeonOverlaySettings;
+import src.domain.dungeon.published.DungeonTopologyElementRef;
+import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel;
+import src.view.slotcontent.main.dungeonmap.DungeonMapView;
+
+import static src.view.leftbartabs.dungeoneditor.DungeonEditorBehaviorHarnessSupport.*;
+
+final class DungeonEditorSelectionHarness {
+
+    private static final String OWNER = "DungeonEditorSelectionHarness";
+
+    private DungeonEditorSelectionHarness() {
+    }
+
+    static void run(List<String> results) throws Exception {
+        route(results, () -> verifySelectionThroughMapView(results));
+        route(results, () -> verifyDoorSelectionThroughMapView(results));
+        route(results, () -> verifyStairSelectionThroughMapView(results));
+        route(results, () -> verifyCorridorSelectionThroughMapView(results));
+    }
+
+    private static void route(
+            List<String> results,
+            DungeonEditorBehaviorHarnessSupport.ThrowingRunnable action
+    ) throws Exception {
+        DungeonEditorBehaviorHarnessSupport.runRouteProof(results, OWNER, action);
+    }
+
+    private static void verifySelectionThroughMapView(List<String> results) {
+        HarnessRuntime runtime = HarnessRuntime.create();
+        HarnessBinding binding = bindHarness(runtime);
+        DungeonEditorControlsView controls = binding.controls();
+        DungeonMapView mapView = binding.mapView();
+
+        long mapId = createMapThroughControls(controls, runtime, "Selection Map");
+        runtime.database().seedF1SingleRoom(mapId, "R1", 0, 1, 1);
+        long geometryRowsBefore = runtime.database().countAuthoredGeometryRows(mapId);
+        createMapThroughControls(controls, runtime, "Selection Reload Hop");
+        selectMap(controls, "Selection Map");
+        List<String> authoredStateBefore = runtime.database().authoredGeometryState(mapId);
+        click(button(controls, "Auswahl"));
+        DungeonEditorMapSurfaceSnapshot loadedSurface = runtime.mapSurfaceModel().current();
+        var roomArea = loadedSurface.surface().map().areas().stream()
+                .filter(area -> "R1".equals(area.label()))
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("F1_SINGLE_ROOM R1 area not loaded."));
+        DungeonEditorTopologyElementRef roomRef = roomArea.topologyRef();
+        long roomClusterId = roomArea.clusterId();
+
+        DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
+        fireMapMousePressed(
+                mapView,
+                MouseButton.PRIMARY,
+                viewport.sceneToScreenX(2.5),
+                viewport.sceneToScreenY(2.5),
+                false);
+
+        DungeonEditorStateSnapshot selectedState = runtime.stateModel().current();
+        DungeonEditorMapSurfaceSnapshot selectedSurface = runtime.mapSurfaceModel().current();
+        assertSelectionMatches(roomRef, roomClusterId, selectedState.selection(), "DE-SEL-001 state model");
+        assertSelectionMatches(roomRef, roomClusterId, selectedSurface.selection(), "DE-SEL-001 map surface");
+        assertTrue(selectedState.inspector() != null, "DE-SEL-001 inspector is published for the selected room");
+        assertTrue(
+                selectedState.inspector().title().contains("R1") || selectedState.inspector().facts().stream()
+                        .anyMatch(fact -> fact.contains("R1") || fact.contains(String.valueOf(roomRef.id()))),
+                "DE-SEL-001 inspector identifies the selected room");
+        assertTrue(renderHasSelectedSurfacePrimitive(binding.mapContentModel(), roomRef),
+                "DE-SEL-001 render scene highlights the selected room surface");
+        assertCanvasPaintedAtScene(mapView, 2.5, 2.5,
+                "DE-SEL-001 rendered canvas paints the selected room coordinates");
+        assertEquals(geometryRowsBefore, runtime.database().countAuthoredGeometryRows(mapId),
+                "DE-SEL-001 leaves authored DB rows unchanged");
+        assertEquals(authoredStateBefore, runtime.database().authoredGeometryState(mapId),
+                "DE-SEL-001 leaves authored DB state unchanged");
+        results.add("DE-SEL-001 Ready: DungeonMapView primary click -> SQLite unchanged -> room selection");
+
+        fireMapMousePressed(
+                mapView,
+                MouseButton.PRIMARY,
+                viewport.sceneToScreenX(8.5),
+                viewport.sceneToScreenY(8.5),
+                false);
+
+        DungeonEditorStateSnapshot clearedState = runtime.stateModel().current();
+        DungeonEditorMapSurfaceSnapshot clearedSurface = runtime.mapSurfaceModel().current();
+        assertEmptySelection(clearedState.selection(), "DE-SEL-005 state model");
+        assertEmptySelection(clearedSurface.selection(), "DE-SEL-005 map surface");
+        assertTrue(clearedState.inspector() == null, "DE-SEL-005 inspector clears after empty-grid click");
+        assertTrue(!renderHasSelectedSurfacePrimitive(binding.mapContentModel(), roomRef),
+                "DE-SEL-005 render scene removes the room highlight");
+        assertTrue(!surfaceCellSet(clearedSurface).contains("8,8,0"),
+                "DE-SEL-005 clicked empty grid coordinate remains empty");
+        assertEquals(geometryRowsBefore, runtime.database().countAuthoredGeometryRows(mapId),
+                "DE-SEL-005 leaves authored DB rows unchanged");
+        assertEquals(authoredStateBefore, runtime.database().authoredGeometryState(mapId),
+                "DE-SEL-005 leaves authored DB state unchanged");
+        results.add("DE-SEL-005 Ready: DungeonMapView empty primary click -> SQLite unchanged -> selection cleared");
+    }
+
+
+    private static void verifyDoorSelectionThroughMapView(List<String> results) {
+        HarnessRuntime runtime = HarnessRuntime.create();
+        HarnessBinding binding = bindHarness(runtime);
+        DungeonEditorControlsView controls = binding.controls();
+        DungeonMapView mapView = binding.mapView();
+
+        long mapId = createMapThroughControls(controls, runtime, "Door Selection Map");
+        runtime.database().seedF4WalledRoomWithDoor(mapId);
+        long geometryRowsBefore = runtime.database().countAuthoredGeometryRows(mapId);
+        createMapThroughControls(controls, runtime, "Door Selection Reload Hop");
+        selectMap(controls, "Door Selection Map");
+        List<String> authoredStateBefore = runtime.database().authoredGeometryState(mapId);
+        click(button(controls, "Auswahl"));
+        assertEquals(1L, runtime.database().countDoorBoundariesAt(mapId, 1, 0, "EAST"),
+                "DE-SEL-002 fixture contains one east door boundary");
+        var doorBoundary = runtime.mapSurfaceModel().current().surface().map().boundaries().stream()
+                .filter(boundary -> "door".equalsIgnoreCase(boundary.kind()))
+                .filter(boundary -> boundary.edge().from().q() == 4 && boundary.edge().from().r() == 2)
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("DE-SEL-002 door boundary not loaded."));
+        Point2D doorMidpoint = boundaryMidpointNear(binding.mapContentModel(), "DOOR", 4.0, 2.5);
+        assertEquals("BOUNDARY", binding.mapContentModel()
+                        .resolvePointerTarget(doorMidpoint.getX(), doorMidpoint.getY())
+                        .targetKind()
+                        .name(),
+                "DE-SEL-002 render hit index resolves the door midpoint as a boundary");
+        DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
+
+        fireMapMousePressed(
+                mapView,
+                MouseButton.PRIMARY,
+                viewport.sceneToScreenX(doorMidpoint.getX()),
+                viewport.sceneToScreenY(doorMidpoint.getY()),
+                false);
+
+        DungeonEditorStateSnapshot selectedState = runtime.stateModel().current();
+        DungeonEditorMapSurfaceSnapshot selectedSurface = runtime.mapSurfaceModel().current();
+        assertEquals(doorBoundary.topologyRef(), selectedState.selection().topologyRef(),
+                "DE-SEL-002 state model selected door topology ref");
+        assertEquals(doorBoundary.topologyRef(), selectedSurface.selection().topologyRef(),
+                "DE-SEL-002 map surface selected door topology ref");
+        assertDoorInspector(selectedState.inspector(), doorBoundary.topologyRef(), doorBoundary.label());
+        assertDoorOwningRoomFacts(selectedSurface, doorBoundary);
+        assertTrue(renderHasBoundaryPrimitive(binding.mapContentModel(), doorBoundary.topologyRef()),
+                "DE-SEL-002 render scene contains the selected door boundary primitive");
+        assertTrue(renderHasSelectedDoorBoundaryPrimitive(binding.mapContentModel(), doorBoundary.topologyRef()),
+                "DE-SEL-002 render scene styles the selected door boundary distinctly");
+        assertTrue(selectedDoorBoundaryDiffersFromNormalDoorStyle(binding.mapContentModel(), doorBoundary.topologyRef()),
+                "DE-SEL-002 selected door boundary differs from normal door styling");
+        assertCanvasPaintedAtScene(mapView, doorMidpoint.getX(), doorMidpoint.getY(),
+                "DE-SEL-002 rendered canvas paints the selected door edge");
+        assertEquals(geometryRowsBefore, runtime.database().countAuthoredGeometryRows(mapId),
+                "DE-SEL-002 leaves authored DB row count unchanged");
+        assertEquals(authoredStateBefore, runtime.database().authoredGeometryState(mapId),
+                "DE-SEL-002 leaves authored DB state unchanged");
+
+        results.add("DE-SEL-002 Ready: DungeonMapView door click -> SQLite unchanged -> door selection");
+    }
+
+
+    private static void verifyStairSelectionThroughMapView(List<String> results) {
+        HarnessRuntime runtime = HarnessRuntime.create();
+        HarnessBinding binding = bindHarness(runtime);
+        DungeonEditorControlsView controls = binding.controls();
+        DungeonMapView mapView = binding.mapView();
+
+        long mapId = createMapThroughControls(controls, runtime, "Stair Selection Map");
+        createMapThroughControls(controls, runtime, "Stair Selection Reload Hop");
+        runtime.database().seedF7StairAnchor(mapId);
+        selectMap(controls, "Stair Selection Map");
+        long geometryRowsBefore = runtime.database().countAuthoredGeometryRows(mapId);
+        List<String> authoredStateBefore = runtime.database().authoredGeometryState(mapId);
+        click(button(controls, "Auswahl"));
+
+        var stairFeature = runtime.mapSurfaceModel().current().surface().map().features().stream()
+                .filter(feature -> "STAIR".equals(feature.kind()))
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("F7_STAIR_ANCHOR stair feature not loaded."));
+        var stairHandle = runtime.mapSurfaceModel().current().surface().map().editorHandles().stream()
+                .filter(handle -> "STAIR_ANCHOR".equals(handle.ref().kind().name()))
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("F7_STAIR_ANCHOR stair handle not loaded."));
+        DungeonEditorTopologyElementRef stairRef = stairFeature.topologyRef();
+        assertEquals(stairRef, editorTopologyRef(stairHandle.ref().topologyRef()),
+                "DE-SEL-003 stair feature and handle share topology ref");
+        assertTrue(runtime.mapSurfaceModel().current().surface().map().features().stream()
+                        .anyMatch(feature -> feature.cells().stream()
+                                .anyMatch(cell -> cell.q() == 2 && cell.r() == 2 && cell.level() == 0)),
+                "DE-SEL-003 published stair feature includes anchor coordinate");
+        assertTrue(stairFeature.cells().stream()
+                        .anyMatch(cell -> cell.q() == 2 && cell.r() == 0 && cell.level() == 1),
+                "DE-SEL-003 published stair feature includes upper exit coordinate");
+        assertEquals("HANDLE", binding.mapContentModel()
+                        .resolvePointerTarget(
+                                glyphCenterForRef(binding.mapContentModel(), stairRef).getX(),
+                                glyphCenterForRef(binding.mapContentModel(), stairRef).getY())
+                        .targetKind()
+                        .name(),
+                "DE-SEL-003 render hit index resolves the stair marker as a handle");
+
+        DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
+        Point2D stairCenter = glyphCenterForRef(binding.mapContentModel(), stairRef);
+        fireMapMousePressed(
+                mapView,
+                MouseButton.PRIMARY,
+                viewport.sceneToScreenX(stairCenter.getX()),
+                viewport.sceneToScreenY(stairCenter.getY()),
+                false);
+
+        DungeonEditorStateSnapshot selectedState = runtime.stateModel().current();
+        DungeonEditorMapSurfaceSnapshot selectedSurface = runtime.mapSurfaceModel().current();
+        assertEquals(stairRef, selectedState.selection().topologyRef(),
+                "DE-SEL-003 state model selected stair topology ref");
+        assertEquals(stairRef, selectedSurface.selection().topologyRef(),
+                "DE-SEL-003 map surface selected stair topology ref");
+        assertTrue(selectedState.selection().handleRef() != null,
+                "DE-SEL-003 state model selected stair handle ref is present");
+        assertEquals(stairHandle.ref().kind(), selectedState.selection().handleRef().kind(),
+                "DE-SEL-003 state model selected stair handle kind");
+        assertEquals(stairHandle.ref().topologyRef(), selectedState.selection().handleRef().topologyRef(),
+                "DE-SEL-003 state model selected stair handle topology ref");
+        assertTrue(selectedState.inspector() != null, "DE-SEL-003 inspector is published for selected stair");
+        assertTrue(selectedState.inspector().title().contains("S1")
+                        || selectedState.inspector().facts().stream()
+                        .anyMatch(fact -> fact.contains("STAIR") || fact.contains(String.valueOf(stairRef.id()))),
+                "DE-SEL-003 inspector identifies selected stair");
+        assertTrue(renderHasSelectedGlyphPrimitive(binding.mapContentModel(), stairRef),
+                "DE-SEL-003 render scene highlights the selected stair marker");
+        assertTrue(renderHasSelectedSurfacePrimitive(binding.mapContentModel(), stairRef),
+                "DE-SEL-003 render scene highlights the selected active-level stair path cell");
+        assertCanvasPaintedAtScene(mapView, stairCenter.getX(), stairCenter.getY(),
+                "DE-SEL-003 rendered canvas paints the selected stair marker");
+        assertEquals(geometryRowsBefore, runtime.database().countAuthoredGeometryRows(mapId),
+                "DE-SEL-003 leaves authored DB row count unchanged");
+        assertEquals(authoredStateBefore, runtime.database().authoredGeometryState(mapId),
+                "DE-SEL-003 leaves authored DB state unchanged");
+
+        results.add("DE-SEL-003 Ready: DungeonMapView stair handle click -> SQLite unchanged -> stair selection");
+    }
+
+
+    private static void verifyCorridorSelectionThroughMapView(List<String> results) {
+        HarnessRuntime runtime = HarnessRuntime.create();
+        HarnessBinding binding = bindHarness(runtime);
+        DungeonEditorControlsView controls = binding.controls();
+        DungeonMapView mapView = binding.mapView();
+
+        long mapId = createMapThroughControls(controls, runtime, "Corridor Selection Map");
+        runtime.database().seedCorridorWithAnchor(mapId);
+        long geometryRowsBefore = runtime.database().countAuthoredGeometryRows(mapId);
+        createMapThroughControls(controls, runtime, "Corridor Selection Reload Hop");
+        selectMap(controls, "Corridor Selection Map");
+        List<String> authoredStateBefore = runtime.database().authoredGeometryState(mapId);
+        click(button(controls, "Auswahl"));
+        var corridorAnchor = runtime.mapSurfaceModel().current().surface().map().editorHandles().stream()
+                .filter(handle -> "CORRIDOR_ANCHOR".equals(handle.ref().kind().name()))
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("F5_CORRIDOR_WITH_ANCHOR anchor handle not loaded."));
+        DungeonEditorTopologyElementRef anchorRef = editorTopologyRef(corridorAnchor.ref().topologyRef());
+        DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
+        Point2D anchorCenter = glyphCenterForRef(binding.mapContentModel(), anchorRef);
+
+        fireMapMousePressed(
+                mapView,
+                MouseButton.PRIMARY,
+                viewport.sceneToScreenX(anchorCenter.getX()),
+                viewport.sceneToScreenY(anchorCenter.getY()),
+                false);
+
+        DungeonEditorStateSnapshot selectedState = runtime.stateModel().current();
+        DungeonEditorMapSurfaceSnapshot selectedSurface = runtime.mapSurfaceModel().current();
+        assertEquals(anchorRef, selectedState.selection().topologyRef(),
+                "DE-SEL-004 state model selected corridor-anchor topology ref");
+        assertEquals(anchorRef, selectedSurface.selection().topologyRef(),
+                "DE-SEL-004 map surface selected corridor-anchor topology ref");
+        assertEquals(corridorAnchor.ref(), selectedState.selection().handleRef(),
+                "DE-SEL-004 state model selected handle ref");
+        assertTrue(selectedState.inspector() != null, "DE-SEL-004 inspector is published for selected corridor anchor");
+        assertTrue(renderHasSelectedGlyphPrimitive(binding.mapContentModel(), anchorRef),
+                "DE-SEL-004 render scene highlights the selected corridor-anchor handle");
+        assertCanvasPaintedAtScene(mapView, 6.5, 3.5,
+                "DE-SEL-004 rendered canvas paints the selected anchor corridor route");
+        assertEquals(geometryRowsBefore, runtime.database().countAuthoredGeometryRows(mapId),
+                "DE-SEL-004 leaves authored DB row count unchanged");
+        assertEquals(authoredStateBefore, runtime.database().authoredGeometryState(mapId),
+                "DE-SEL-004 leaves authored DB state unchanged");
+
+        results.add("DE-SEL-004 Ready: DungeonMapView corridor-anchor click -> SQLite unchanged -> anchor selection");
+    }
+
+}
