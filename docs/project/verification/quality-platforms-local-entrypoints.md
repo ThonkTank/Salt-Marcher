@@ -150,6 +150,13 @@ handoff still fails overall when any blocking dependency fails. The command
 `tools/gradle/run-staged-verification.sh --fail-fast production-handoff`
 preserves the same public surface while omitting the wrapper's default
 `--continue`.
+Wrapper-based `production-handoff` also requests Gradle configuration cache by
+default so compatible broad handoff graphs can store and reuse configuration
+state through normal Gradle behavior. Callers may pass an explicit
+`--configuration-cache` or `--no-configuration-cache` form after `--` for
+investigation; the wrapper then leaves configuration-cache policy caller-owned.
+Handoff reports must cite the literal Gradle store or reuse line from the run
+log when configuration cache participates.
 Direct raw `./gradlew` invocations remain explicit and only aggregate failures
 when the caller passes `--continue`.
 

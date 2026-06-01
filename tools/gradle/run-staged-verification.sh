@@ -80,6 +80,27 @@ join_by_comma() {
     printf '%s' "$joined"
 }
 
+contains_configuration_cache_flag() {
+    local arg
+    for arg in "$@"; do
+        case "$arg" in
+          --configuration-cache|--configuration-cache=*|--no-configuration-cache|--no-configuration-cache=*)
+            return 0
+            ;;
+        esac
+    done
+    return 1
+}
+
+request_production_handoff_configuration_cache() {
+    if contains_configuration_cache_flag "${extra_args[@]}"; then
+        echo "[staged-verification] Configuration cache: caller-owned"
+        return
+    fi
+    echo "[staged-verification] Configuration cache: requested by production-handoff default"
+    extra_args=("--configuration-cache" "${extra_args[@]}")
+}
+
 declare -a requested_surfaces=()
 declare -a extra_args=()
 fail_fast=false
@@ -116,6 +137,7 @@ run_surface() {
     echo
 
     if [[ "$surface" == "production-handoff" ]]; then
+        request_production_handoff_configuration_cache
         run_observable_gradle "$fail_fast" production-handoff
         return
     fi
