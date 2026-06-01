@@ -11,8 +11,9 @@ invariants.
 Context Role: Authored World-Space Context
 Context Name: Dungeon
 
-- `dungeon` owns authored dungeon map truth plus transient runtime editor and
-  travel state inside one worldspace model family over that same map truth
+- `dungeon` owns authored dungeon map truth in the `core` model family plus
+  transient editor and travel runtime state in the `runtime` model family over
+  that same authored truth
 - `DungeonMap` is the aggregate root for one authored map
 - authored committed snapshots, authored operation results, authored selection
   inspectors, and raw travel surfaces are projections over the same authored
@@ -45,19 +46,22 @@ Current state:
   corridor-side endpoints by stable topology ref
 - generic corridor-tool clicks are resolved into authored doors or authored
   corridor anchors before the aggregate commits a corridor mutation
-- runtime editor-session composition lives in `dungeon/model/worldspace/**`
-- runtime travel derives from committed authored truth plus party-owned runtime
-  state in `dungeon/model/worldspace/**`
+- the current implementation still uses `dungeon/model/worldspace/**` for
+  authored model work, editor runtime, and travel runtime
 - search and write-model persistence are separate outbound contracts
 
 Target state:
 
+- `worldspace` is no longer the target model family
+- authored dungeon truth lives under `dungeon/model/core/model/**`
+- editor and travel runtime state live under `dungeon/model/runtime/model/**`
 - topology repair, split or merge behavior, identity preservation, and derived
-  rebuild rules remain in the dungeon domain
-- editor and authored travel share dungeon truth while keeping authored
+  rebuild rules remain in the dungeon domain and move to the deepest owning
+  core object instead of staying in broad operation or helper classes
+- editor and travel runtime consume core dungeon truth while keeping authored
   persistence in `DungeonMap` only
-- map-owned topology remains the behavioral owner instead of leaking into view
-  or data layers
+- map-owned topology remains the behavioral owner instead of leaking into view,
+  data, runtime session, or projection layers
 
 ## Write Model
 
@@ -73,8 +77,8 @@ Derived state must not become a second source of truth. This includes:
 
 Application-owned editor and travel session state may exist outside the
 authored write model when it is not persisted as dungeon truth. That state is
-owned by the explicit dungeon worldspace model family, not by separate domain
-contexts.
+owned by the explicit dungeon `runtime` model family, not by separate domain
+contexts and not by the authored `core` model.
 
 ## Aggregate Model
 
@@ -94,6 +98,41 @@ DungeonMap
 
 The aggregate is the transaction boundary and the behavioral owner of mutable
 topology.
+
+## Core And Runtime Model Families
+
+Initial Target Family: `core`
+
+`core` owns authored dungeon truth. Create these model-role subpackages only
+as productive migration paths need them:
+
+- `model/core/model/geometry` for pure immutable geometry, topology values,
+  and spatial rules
+- `model/core/model/component` for smallest authored parts with local
+  invariants, local mutation, and binding or deletion rules
+- `model/core/model/structure` for composed authored structures and
+  cross-component behavior
+- `model/core/model/graph` for read-only relationship queries and derivations
+  between authored structures; no mutations
+- `model/core/model/projection` for render-neutral derived read facts only
+
+Initial Target Family: `runtime`
+
+`runtime` owns transient editor and travel state over core truth. Create these
+model-role subpackages only as productive migration paths need them:
+
+- `model/runtime/model/editor/session` for editor session state such as tool,
+  view mode, overlay, drafts, and preview state
+- `model/runtime/model/editor/interaction` for transient on-map interaction
+  objects such as selection targets, handles, labels, hit targets, and drag
+  intents
+- `model/runtime/model/travel/session` for travel-session state over core truth and
+  party-owned position facts
+- `model/runtime/model/travel/projection` for derived travel read facts
+
+`runtime` must never own authored dungeon truth. `projection` must remain
+read-only and derived; it must not become persisted truth, render-owned truth,
+or a second source of authored dungeon meaning.
 
 ## Stair Geometry Domain Truth
 
@@ -151,12 +190,13 @@ authored truth.
 
 - `DungeonMapRepository`
 - `DungeonMapSearch`
+- party travel-position published-state port
 
 Application services coordinate load, mutate, save, search, and raw travel
 surface queries through these ports. Party-aware runtime travel-session
-composition belongs to the `dungeon/model/worldspace/**` family and consumes
-party position through explicit seams; dungeon still does not own party roster
-truth or persisted party travel position.
+composition belongs to the `dungeon/model/runtime/model/**` family and consumes
+party published travel-position facts through dungeon-owned ports; dungeon still
+does not own party roster truth or persisted party travel position.
 
 Active root boundaries:
 
@@ -191,10 +231,12 @@ Active root boundaries:
   `DungeonOperationResult`, `DungeonInspectorSnapshot`, raw travel surfaces,
   editor runtime snapshots, travel runtime snapshots, and travel-action
   results rooted in authored dungeon truth
-- `dungeon/model/worldspace/**` owns runtime editor-session composition that
+- `dungeon/model/core/model/**` owns authored dungeon truth and the structures
+  that mutate it
+- `dungeon/model/runtime/model/**` owns runtime editor-session composition that
   combines authored dungeon facts with session-local selection, tool, preview,
   overlay, projection level, and pointer interpretation
-- `dungeon/model/worldspace/**` owns runtime travel-session composition that
+- `dungeon/model/runtime/model/**` owns runtime travel-session composition that
   combines raw dungeon facts with party-owned position state
 - `dungeon` does not own party roster truth or persisted party travel position
 - `dungeon` does not publish render-ready cells, edges, labels, markers,
@@ -203,7 +245,7 @@ Active root boundaries:
 
 ## References
 
-- [Dungeon Feature Requirements](./requirements-dungeon.md)
+- [Dungeon Feature Requirements](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/dungeon/requirements/requirements-dungeon.md:1)
 - [Dungeon Map Adoption Architecture](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/maps/architecture/architecture-maps-dungeon-adoption.md:1)
 - [Dungeon Map Surface Contract](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/maps/contract/contract-maps-dungeon-surface.md:1)
-- [Dungeon Persistence Contract](./contract-dungeon-persistence.md)
+- [Dungeon Persistence Contract](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/dungeon/contract/contract-dungeon-persistence.md:1)

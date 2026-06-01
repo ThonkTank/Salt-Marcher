@@ -312,10 +312,10 @@ Rules:
 - `creatures`: Reference Catalog Context.
 - `encounter`: Roster Truth Context.
 - `encountertable`: Reference Catalog Context.
-- `dungeon`: Authored World-Space Context with one worldspace model family for authored map truth, editor runtime, and travel runtime.
+- `dungeon`: Authored World-Space Context with `core` truth and runtime.
 - `sessionplanner`: Roster Truth Context.
 
-## Context Relationships <!-- mechanical-domain-dependencies: encounter=creatures,encountertable,party; sessionplanner=encounter,party -->
+## Context Relationships <!-- mechanical-domain-dependencies: dungeon=party; encounter=creatures,encountertable,party; sessionplanner=encounter,party -->
 
 - `party`: `Party Character State Context`; publishes roster, membership, XP,
   rest cadence, adventuring-day facts, and character travel-position facts to
@@ -330,21 +330,21 @@ Rules:
   snapshots through layered data access and publishes table summaries and
   weighted candidate rows.
 - `dungeon`: `Authored World-Space Context`; owns authored world-space truth
-  independently of party, creatures, and encounter. Runtime editor and travel
-  composition are roles inside the same dungeon worldspace model family over
-  the same authored map facts.
+  independently of party, creatures, and encounter. Authored truth lives in
+  `core`; editor and travel runtime composition live in `runtime` over the same
+  authored map facts.
   Editor session state, preview, selection, overlay, projection level, pointer
   interpretation, travel overlay, travel projection level, and overworld
   fallback remain transient runtime state and never become authored dungeon
-  persistence. Party-owned travel position reaches dungeon runtime travel only
-  through outer repository adaptation, not by making party truth dungeon-owned.
+  persistence. Party-owned travel-position facts reach dungeon runtime travel
+  only through dungeon-owned ports over party published state, not by making
+  party truth dungeon-owned.
 - `sessionplanner`: `Roster Truth Context`; consumes `party` and `encounter`
   published state through own ports to persist one session plan for participant
   references, encounter order, allocations, rest placement, placeholders, and
   selected encounter context.
 
 ## References
-
 - [Layering Architecture Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/layering-architecture.md:1)
 - [Domain Layer Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/domain-layer-enforcement.md:1)
 - [Domain Context Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/domain-context-enforcement.md:1)

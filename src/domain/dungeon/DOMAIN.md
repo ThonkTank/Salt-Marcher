@@ -15,7 +15,8 @@ migration. Canonical feature-owned documentation lives at:
 Context Role: Authored World-Space Context
 Context Name: Dungeon
 
-- `dungeon` owns authored dungeon map truth
+- `dungeon` owns authored dungeon map truth; canonical target-family placement
+  is defined by `docs/dungeon/domain/domain-dungeon.md`
 - `DungeonMap` is the aggregate root for one authored map
 - authored committed snapshots, authored operation results, authored selection
   inspectors, and raw travel surfaces are projections over the same authored
@@ -47,9 +48,9 @@ Application Service: DungeonTravelRuntimeApplicationService
 `application/` coordinates authored dungeon load, mutate, save, search, and
 raw travel-surface queries through the domain-owned ports. The root
 application-service family maps authored dungeon truth and derived results
-into `published/` carriers while editor runtime and travel runtime stay in
-the explicit dungeon worldspace model family. Render ownership stays in the
-view layer.
+into `published/` carriers while editor runtime and travel runtime remain
+same-context dungeon runtime state as defined by the canonical dungeon domain
+document. Render ownership stays in the view layer.
 
 ## Aggregate Model
 
@@ -83,11 +84,10 @@ Core invariants:
 - `dungeon` publishes authored `DungeonSnapshot`,
   `DungeonOperationResult`, `DungeonInspectorSnapshot`, raw travel surfaces,
   and travel-action results rooted in authored dungeon truth
-- `dungeon/model/worldspace/**` owns runtime editor-session composition that
-  combines authored dungeon facts with session-local selection, tool, preview,
-  overlay, projection level, and pointer interpretation
-- `dungeon/model/worldspace/**` owns runtime session composition that combines
-  raw dungeon facts with party-owned position state
+- dungeon runtime travel consumes party-owned travel-position facts only through
+  dungeon-owned ports over party published state
+- canonical dungeon documentation owns target model-family placement for
+  authored truth, editor runtime composition, and travel runtime composition
 - `dungeon` does not own party roster truth or persisted party travel position
 - `dungeon` does not publish render-ready map-canvas primitives
 
@@ -110,6 +110,10 @@ Derived state must not become a second source of truth. This includes:
 - `DungeonMapId`: stable authored map identity.
 - `Topology Ref`: stable identity for a selectable and mutable map element.
 - `Authored Geometry`: topology-backed map shape owned by the aggregate.
+- `Core Model`: canonical authored-truth family defined by the dungeon domain
+  document.
+- `Runtime Model`: canonical transient editor and travel family defined by the
+  dungeon domain document.
 
 ## References
 

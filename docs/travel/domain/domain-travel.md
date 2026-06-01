@@ -1,84 +1,21 @@
-Status: Draft
+Status: Deprecated
 Owner: SaltMarcher Team
 Last Reviewed: 2026-05-03
-Source of Truth: Historical runtime travel composition notes. Canonical
-current ownership lives in the dungeon domain context.
+Source of Truth: Deprecated historical notes; canonical runtime ownership lives
+in `docs/dungeon/domain/domain-dungeon.md`.
 
-# Travel Domain Model
+# Historical Travel Domain Notes
 
-## Context Role
+This file is retained only as a historical terminology pointer during
+migration. It is not the canonical owner for travel runtime model placement,
+application boundaries, commands, invariants, or persistence policy.
 
-Context Role: Historical Generation Policy Notes
-Context Name: Travel
+Canonical runtime ownership:
 
-- `dungeon/model/worldspace/**` owns runtime travel-session composition
-- travel runtime combines authored `dungeon` truth with party-owned travel
-  position
-- travel runtime does not own authored map persistence and does not own party
-  roster truth
+- [Dungeon Domain Model](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/dungeon/domain/domain-dungeon.md:1)
 
-## Published Language
-
-`dungeon/published/` owns the runtime-travel boundary for active workspaces,
-workflow commands, workspace-state readback, travel-surface facts, and overlay
-settings.
-
-Published travel carriers must not own:
-
-- authored dungeon invariants
-- party roster truth
-- render-widget state
-- shell lifecycle
-
-## Application Boundary
-
-`DungeonTravelRuntimeApplicationService` is the callable travel backend
-boundary. It coordinates runtime dungeon-travel session state through
-same-context `dungeon/model/worldspace/usecase/*UseCase` work.
-
-The root boundary owns inbound command/query intake and same-context use-case
-routing. Runtime session orchestration lives below that boundary in
-`dungeon/model/worldspace/usecase/*UseCase` code. Concrete party and dungeon
-adapters are assembled outside the domain and satisfy the use case through
-same-context application data only. Raw authored dungeon travel families stay
-dungeon-owned; dungeon travel publishes read-side model handles, passive
-travel-surface payloads, and overlay settings only.
-
-## Commands And Invariants
-
-Write Model: None
-
-Commands entering the model are:
-
-- load runtime dungeon travel
-- apply runtime dungeon travel session changes
-
-Core invariants:
-
-- runtime travel session state is not authored dungeon truth
-- runtime travel position is persisted only through the party context
-- authored dungeon traversal facts are loaded from the dungeon context only
-
-## Consistency Model
-
-`travel` owns transient runtime session state only.
-
-- overlay settings are session-local
-- projection level is session-local
-- current runtime workspace state is rebuilt from dungeon truth plus party
-  position
-- party and dungeon carrier translation happens in the outer data adapter
-  before same-context application data reaches the use case
-- no separate `travel` persistence store is introduced
-
-## Ephemeral Policy Rationale
-
-The interactive travel workspace owns only transient runtime composition over
-public party position state and authored dungeon traversal facts. Its decisions
-are overlay state, projection level, refresh or action sequencing, and
-overworld fallback handling for the current session, not persisted authored
-truth. A future durable travel write model would require an explicit new owner
-instead of being absorbed into this generation-policy context.
+Historical terms below may help when reading older code or pass logs, but they
+must not be extended as active model truth.
 
 ## Ubiquitous Language
 

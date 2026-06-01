@@ -338,7 +338,7 @@ public final class DocumentationCoverageCatalog {
                             row("domain-context-creatures-publishes-policy-input-facts", "Review-Owned"),
                             row("domain-context-encounter-consumes-foreign-public-boundaries", "Review-Owned"),
                             row("domain-context-encountertable-data-adapter-ingest-and-public-export", "Review-Owned"),
-                            row("domain-context-dungeon-no-domain-relationship-to-other-active-contexts", "Review-Owned"),
+                            row("domain-context-dungeon-consumes-party-travel-position", "Review-Owned"),
                             row("domain-context-sessionplanner-consumes-party-and-encounter-public-boundaries", "Review-Owned")))),
             Map.entry("domainHelper", spec(
                     "docs/project/architecture/enforcement/domain-helper-enforcement.md",
