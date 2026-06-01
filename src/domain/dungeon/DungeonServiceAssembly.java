@@ -33,6 +33,12 @@ final class DungeonServiceAssembly {
         services.registerFactory(
                 DungeonEditorNarrationApplicationService.class,
                 registry -> editorRuntime.narrationService(registry, authoredPublishedState));
+        services.registerFactory(
+                DungeonEditorTransitionApplicationService.class,
+                registry -> editorRuntime.transitionService(registry, authoredPublishedState));
+        services.registerFactory(
+                DungeonEditorStairApplicationService.class,
+                registry -> editorRuntime.stairService(registry, authoredPublishedState));
         editorPublishedState.registerModels(services);
     }
 }

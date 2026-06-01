@@ -1,6 +1,7 @@
 package src.data.dungeon.repository;
 
 import src.data.dungeon.gateway.local.DungeonSqliteGateway;
+import src.data.dungeon.gateway.local.DungeonSqliteMapBatchGateway;
 import src.data.dungeon.mapper.DungeonMapRecordMapper;
 import src.domain.dungeon.model.worldspace.model.DungeonMap;
 import src.domain.dungeon.model.worldspace.repository.DungeonMapRepository;
@@ -13,18 +14,33 @@ import java.util.Optional;
 public final class SqliteDungeonMapRepository implements DungeonMapRepository {
 
     private final DungeonSqliteGateway gateway;
+    private final DungeonSqliteMapBatchGateway batchGateway;
 
     public SqliteDungeonMapRepository() {
-        this(new DungeonSqliteGateway());
+        this(new DungeonSqliteGateway(), new DungeonSqliteMapBatchGateway());
     }
 
-    SqliteDungeonMapRepository(DungeonSqliteGateway gateway) {
+    SqliteDungeonMapRepository(
+            DungeonSqliteGateway gateway,
+            DungeonSqliteMapBatchGateway batchGateway
+    ) {
         this.gateway = Objects.requireNonNull(gateway, "gateway");
+        this.batchGateway = Objects.requireNonNull(batchGateway, "batchGateway");
     }
 
     @Override
     public DungeonMapIdentity nextMapId() {
         return new DungeonMapIdentity(gateway.nextMapId());
+    }
+
+    @Override
+    public long nextStairId() {
+        return gateway.nextStairId();
+    }
+
+    @Override
+    public long nextTransitionId() {
+        return gateway.nextTransitionId();
     }
 
     @Override
@@ -50,6 +66,19 @@ public final class SqliteDungeonMapRepository implements DungeonMapRepository {
     @Override
     public DungeonMap save(DungeonMap dungeonMap) {
         return DungeonMapRecordMapper.toDomain(gateway.saveMap(DungeonMapRecordMapper.toRecord(dungeonMap)));
+    }
+
+    @Override
+    public List<DungeonMap> saveAll(List<DungeonMap> dungeonMaps) {
+        if (dungeonMaps == null || dungeonMaps.isEmpty()) {
+            return List.of();
+        }
+        return batchGateway.saveMaps(dungeonMaps.stream()
+                        .map(DungeonMapRecordMapper::toRecord)
+                        .toList())
+                .stream()
+                .map(DungeonMapRecordMapper::toDomain)
+                .toList();
     }
 
     @Override

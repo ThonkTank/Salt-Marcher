@@ -13,14 +13,28 @@ public final class DungeonCorridorMutationLogic {
 
     public DungeonMap createCorridor(
             DungeonMap dungeonMap,
+            long stairId,
             DungeonCorridorEndpoint start,
             DungeonCorridorEndpoint end
     ) {
-        return CREATION_SERVICE.createCorridor(dungeonMap, start, end);
+        return CREATION_SERVICE.createCorridor(dungeonMap, stairId, start, end);
     }
 
-    public DungeonMap deleteCorridor(DungeonMap dungeonMap, long corridorId) {
-        return MERGE_DELETE_SERVICE.deleteCorridor(dungeonMap, corridorId);
+    public DungeonMap deleteCorridor(
+            DungeonMap dungeonMap,
+            long corridorId,
+            String targetKind,
+            long topologyRefId,
+            long roomId,
+            int waypointIndex
+    ) {
+        return MERGE_DELETE_SERVICE.deleteCorridor(
+                dungeonMap,
+                corridorId,
+                targetKind,
+                topologyRefId,
+                roomId,
+                waypointIndex);
     }
 
 }

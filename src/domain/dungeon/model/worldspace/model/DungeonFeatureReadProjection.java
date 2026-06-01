@@ -30,7 +30,8 @@ public final class DungeonFeatureReadProjection {
                     stair.name(),
                     DungeonCellOrdering.sortedCells(stair.occupiedCells()),
                     stairDescription(stair),
-                    stairDestinationLabel(stair)));
+                    stairDestinationLabel(stair),
+                    stairFacts(stair)));
             if (stair.corridorId() != null) {
                 relations.add(new DungeonRelationGraph.FeatureRelation(
                         stair.stairId(),
@@ -96,14 +97,19 @@ public final class DungeonFeatureReadProjection {
         return String.join(", ", labels);
     }
 
+    private static List<String> stairFacts(DungeonStair stair) {
+        if (stair == null) {
+            return List.of();
+        }
+        return List.of(
+                "shape: " + stair.shape().name(),
+                "direction: " + stair.direction().name(),
+                "dimension1: " + stair.dimension1(),
+                "dimension2: " + stair.dimension2());
+    }
+
     private static String transitionDescription(DungeonTransition transition) {
-        if (transition == null) {
-            return "";
-        }
-        if (!transition.description().isBlank()) {
-            return transition.description();
-        }
-        return transition.label() + " fuehrt zu " + destinationLabel(transition.destination()) + ".";
+        return transition == null ? "" : transition.description();
     }
 
     private static String destinationLabel(DungeonTransitionDestination destination) {

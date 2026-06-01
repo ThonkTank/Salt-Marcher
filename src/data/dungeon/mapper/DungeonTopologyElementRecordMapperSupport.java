@@ -12,6 +12,7 @@ import src.domain.dungeon.model.worldspace.model.DungeonTopologyElementKind;
 import src.domain.dungeon.model.worldspace.model.DungeonTopologyRef;
 
 final class DungeonTopologyElementRecordMapperSupport {
+    private static final String OPEN_EDGE_TYPE = "OPEN";
 
     private DungeonTopologyElementRecordMapperSupport() {
     }
@@ -61,6 +62,9 @@ final class DungeonTopologyElementRecordMapperSupport {
 
     static DungeonTopologyRef topologyRef(String edgeType, @Nullable Long topologyElementId) {
         if (topologyElementId == null || topologyElementId <= 0L) {
+            return DungeonTopologyRef.empty();
+        }
+        if (OPEN_EDGE_TYPE.equalsIgnoreCase(edgeType == null ? "" : edgeType.trim())) {
             return DungeonTopologyRef.empty();
         }
         return new DungeonTopologyRef(

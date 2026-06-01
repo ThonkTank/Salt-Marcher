@@ -94,15 +94,10 @@ final class InspectorPane extends VBox implements InspectorSink {
         showState(entry.title(), content, footer);
     }
 
-    @SuppressWarnings("PMD.AvoidCatchingGenericException")
     private @Nullable Node safeNode(Supplier<Node> supplier, @Nullable String fallbackText) {
-        try {
-            Node node = supplier.get();
-            if (node != null) {
-                return node;
-            }
-        } catch (RuntimeException ignored) {
-            // The shell should stay passive and resilient if a view publishes invalid content.
+        Node node = suppliedNode(supplier);
+        if (node != null) {
+            return node;
         }
         if (fallbackText == null) {
             return null;
@@ -113,6 +108,15 @@ final class InspectorPane extends VBox implements InspectorSink {
         VBox box = new VBox(label);
         box.setPadding(new Insets(12));
         return box;
+    }
+
+    private @Nullable Node suppliedNode(Supplier<Node> supplier) {
+        try {
+            return supplier.get();
+        } catch (IllegalArgumentException | IllegalStateException exception) {
+            // The shell should stay passive and resilient if a view publishes invalid content.
+            return null;
+        }
     }
 
     private void showState(String title, Node content, @Nullable Node footer) {

@@ -10,81 +10,54 @@ public final class ApplyDungeonEditorToolWorkflowUseCase {
 
     private final Map<ToolInput, ToolWorkflow> workflows;
 
-    public ApplyDungeonEditorToolWorkflowUseCase(
-            ApplyDungeonEditorSelectionUseCase applySelectionUseCase,
-            ApplyDungeonEditorPaintRoomUseCase applyPaintRoomUseCase,
-            ApplyDungeonEditorDeleteRoomUseCase applyDeleteRoomUseCase,
-            ApplyDungeonEditorCreateWallUseCase applyCreateWallUseCase,
-            ApplyDungeonEditorDeleteWallUseCase applyDeleteWallUseCase,
-            ApplyDungeonEditorCreateDoorUseCase applyCreateDoorUseCase,
-            ApplyDungeonEditorDeleteDoorUseCase applyDeleteDoorUseCase,
-            ApplyDungeonEditorCreateCorridorUseCase applyCreateCorridorUseCase,
-            ApplyDungeonEditorDeleteCorridorUseCase applyDeleteCorridorUseCase
-    ) {
+    public ApplyDungeonEditorToolWorkflowUseCase(ToolWorkflowUseCases useCases) {
         Map<ToolInput, ToolWorkflow> registeredWorkflows = new EnumMap<>(ToolInput.class);
+        ToolWorkflowUseCases safeUseCases = Objects.requireNonNull(useCases, "useCases");
         registeredWorkflows.put(
                 ToolInput.SELECT,
-                new ToolWorkflow(
-                        applySelectionUseCase::press,
-                        applySelectionUseCase::drag,
-                        applySelectionUseCase::release,
-                        applySelectionUseCase::hover));
+                safeUseCases.selection().workflow());
         registeredWorkflows.put(
                 ToolInput.ROOM_PAINT,
-                new ToolWorkflow(
-                        applyPaintRoomUseCase::press,
-                        applyPaintRoomUseCase::drag,
-                        applyPaintRoomUseCase::release,
-                        null));
+                        safeUseCases.room().primary().withoutHover());
         registeredWorkflows.put(
                 ToolInput.ROOM_DELETE,
-                new ToolWorkflow(
-                        applyDeleteRoomUseCase::press,
-                        applyDeleteRoomUseCase::drag,
-                        applyDeleteRoomUseCase::release,
-                        null));
+                        safeUseCases.room().delete().withoutHover());
         registeredWorkflows.put(
                 ToolInput.WALL_CREATE,
-                new ToolWorkflow(
-                        applyCreateWallUseCase::press,
-                        applyCreateWallUseCase::drag,
-                        null,
-                        applyCreateWallUseCase::hover));
+                        safeUseCases.wall().primary().workflow());
         registeredWorkflows.put(
                 ToolInput.WALL_DELETE,
-                new ToolWorkflow(
-                        applyDeleteWallUseCase::press,
-                        applyDeleteWallUseCase::drag,
-                        null,
-                        applyDeleteWallUseCase::hover));
+                        safeUseCases.wall().delete().workflow());
         registeredWorkflows.put(
                 ToolInput.DOOR_CREATE,
-                new ToolWorkflow(
-                        applyCreateDoorUseCase::press,
-                        applyCreateDoorUseCase::drag,
-                        applyCreateDoorUseCase::release,
-                        applyCreateDoorUseCase::hover));
+                        safeUseCases.door().primary().workflow());
         registeredWorkflows.put(
                 ToolInput.DOOR_DELETE,
-                new ToolWorkflow(
-                        applyDeleteDoorUseCase::press,
-                        applyDeleteDoorUseCase::drag,
-                        applyDeleteDoorUseCase::release,
-                        applyDeleteDoorUseCase::hover));
+                        safeUseCases.door().delete().workflow());
         registeredWorkflows.put(
                 ToolInput.CORRIDOR_CREATE,
-                new ToolWorkflow(
-                        applyCreateCorridorUseCase::press,
-                        null,
-                        null,
-                        applyCreateCorridorUseCase::hover));
+                        safeUseCases.corridor().primary().pressAndHoverOnly());
         registeredWorkflows.put(
                 ToolInput.CORRIDOR_DELETE,
-                new ToolWorkflow(
-                        applyDeleteCorridorUseCase::press,
-                        null,
-                        null,
-                        applyDeleteCorridorUseCase::hover));
+                        safeUseCases.corridor().delete().pressAndHoverOnly());
+        registeredWorkflows.put(
+                ToolInput.STAIR_CREATE,
+                safeUseCases.stairCreate().pressOnly());
+        registeredWorkflows.put(
+                ToolInput.STAIR_CREATE_SQUARE,
+                safeUseCases.stairCreateSquare().pressOnly());
+        registeredWorkflows.put(
+                ToolInput.STAIR_CREATE_CIRCULAR,
+                safeUseCases.stairCreateCircular().pressOnly());
+        registeredWorkflows.put(
+                ToolInput.STAIR_DELETE,
+                safeUseCases.stairDelete().pressOnly());
+        registeredWorkflows.put(
+                ToolInput.TRANSITION_CREATE,
+                safeUseCases.transitionCreate().pressOnly());
+        registeredWorkflows.put(
+                ToolInput.TRANSITION_DELETE,
+                safeUseCases.transitionDelete().pressOnly());
         workflows = Map.copyOf(registeredWorkflows);
     }
 
@@ -141,6 +114,12 @@ public final class ApplyDungeonEditorToolWorkflowUseCase {
         DOOR_DELETE,
         CORRIDOR_CREATE,
         CORRIDOR_DELETE,
+        STAIR_CREATE,
+        STAIR_CREATE_SQUARE,
+        STAIR_CREATE_CIRCULAR,
+        STAIR_DELETE,
+        TRANSITION_CREATE,
+        TRANSITION_DELETE,
         UNSUPPORTED;
 
         public static ToolInput fromName(String name) {
@@ -162,7 +141,7 @@ public final class ApplyDungeonEditorToolWorkflowUseCase {
     }
 
     @FunctionalInterface
-    private interface PointerAction {
+    public interface PointerAction {
         void apply(MainViewInput input);
     }
 
@@ -176,6 +155,67 @@ public final class ApplyDungeonEditorToolWorkflowUseCase {
             if (action != null) {
                 action.apply(input);
             }
+        }
+    }
+
+    public record ToolWorkflowUseCases(
+            PointerToolUseCase selection,
+            PairedToolUseCases room,
+            PairedToolUseCases wall,
+            PairedToolUseCases door,
+            PairedToolUseCases corridor,
+            PointerToolUseCase stairCreate,
+            PointerToolUseCase stairCreateSquare,
+            PointerToolUseCase stairCreateCircular,
+            PointerToolUseCase stairDelete,
+            PointerToolUseCase transitionCreate,
+            PointerToolUseCase transitionDelete
+    ) {
+        public ToolWorkflowUseCases {
+            selection = Objects.requireNonNull(selection, "selection");
+            room = Objects.requireNonNull(room, "room");
+            wall = Objects.requireNonNull(wall, "wall");
+            door = Objects.requireNonNull(door, "door");
+            corridor = Objects.requireNonNull(corridor, "corridor");
+            stairCreate = Objects.requireNonNull(stairCreate, "stairCreate");
+            stairCreateSquare = Objects.requireNonNull(stairCreateSquare, "stairCreateSquare");
+            stairCreateCircular = Objects.requireNonNull(stairCreateCircular, "stairCreateCircular");
+            stairDelete = Objects.requireNonNull(stairDelete, "stairDelete");
+            transitionCreate = Objects.requireNonNull(transitionCreate, "transitionCreate");
+            transitionDelete = Objects.requireNonNull(transitionDelete, "transitionDelete");
+        }
+    }
+
+    public record PointerToolUseCase(
+            @Nullable PointerAction press,
+            @Nullable PointerAction drag,
+            @Nullable PointerAction release,
+            @Nullable PointerAction hover
+    ) {
+        ToolWorkflow workflow() {
+            return new ToolWorkflow(press, drag, release, hover);
+        }
+
+        ToolWorkflow withoutHover() {
+            return new ToolWorkflow(press, drag, release, null);
+        }
+
+        ToolWorkflow pressAndHoverOnly() {
+            return new ToolWorkflow(press, null, null, hover);
+        }
+
+        ToolWorkflow pressOnly() {
+            return new ToolWorkflow(press, null, null, null);
+        }
+    }
+
+    public record PairedToolUseCases(
+            PointerToolUseCase primary,
+            PointerToolUseCase delete
+    ) {
+        public PairedToolUseCases {
+            primary = Objects.requireNonNull(primary, "primary");
+            delete = Objects.requireNonNull(delete, "delete");
         }
     }
 }

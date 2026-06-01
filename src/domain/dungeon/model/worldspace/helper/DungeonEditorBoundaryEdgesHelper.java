@@ -33,6 +33,26 @@ public final class DungeonEditorBoundaryEdgesHelper {
         return Set.copyOf(result);
     }
 
+    public Set<EdgeKey> existingWithinCells(
+            DungeonEditorWorkspaceValues.MapSnapshot snapshot,
+            Set<CellKey> cells,
+            int level,
+            DungeonEditorWorkspaceValues.BoundaryKind kind
+    ) {
+        return existingInternal(snapshot, internal(cells), level, kind);
+    }
+
+    public Set<EdgeKey> existingAlongClusterBoundary(
+            DungeonEditorWorkspaceValues.MapSnapshot snapshot,
+            Set<CellKey> cells,
+            int level,
+            DungeonEditorWorkspaceValues.BoundaryKind kind
+    ) {
+        Set<EdgeKey> clusterEdges = new LinkedHashSet<>(internal(cells));
+        clusterEdges.addAll(outer(cells));
+        return existingInternal(snapshot, clusterEdges, level, kind);
+    }
+
     public Set<EdgeKey> outer(Set<CellKey> cells) {
         Set<EdgeKey> result = new LinkedHashSet<>();
         for (CellKey cell : cells) {

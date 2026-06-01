@@ -26,8 +26,13 @@ Before planning, implementing, refactoring, or reviewing a repo-tracked change:
    or `Suspect`.
 4. Identify `Constraints`: scope boundary, mandatory skills, verification
    route, source-reference needs, and forbidden shortcuts.
-5. Define `Done When`: literal check/review/handoff facts needed for completion.
-6. Keep only the context that affects the current task. Link to canonical
+5. Define `Done When`: literal check/review/handoff facts needed for
+   completion, including the current implementation pass log and required
+   aggregated review pass log state for repo-tracked changes.
+6. Inspect relevant available local pass logs under `build/agent-pass-logs/`
+   when the task resumes, reviews, or continues a touched scope from prior
+   implementation or review work.
+7. Keep only the context that affects the current task. Link to canonical
    owners instead of copying their rules into new prose.
 
 ## Defaults
@@ -39,7 +44,8 @@ Before planning, implementing, refactoring, or reviewing a repo-tracked change:
 - Prefer deleting, linking, or splitting stale context before adding new text.
 - If a workflow repeats across `AGENTS.md`, `SKILL.md`, architecture standards,
   and verification docs, keep the protocol in one owner and reduce other
-  surfaces to routing text.
+  surfaces to routing text. For implementation and review pass logs, the owner
+  is `docs/project/architecture/agent-instructions.md`.
 - If external sources influence a decision, use the global `source-references`
   skill and cite the preserved local mirror path.
 
@@ -52,8 +58,16 @@ For covered work, report context hygiene only when it affected the change:
 - `Context deduplicated`: name the surfaces where repeated protocol text was
   replaced by routing text.
 
+For every repo-tracked change, also report:
+
+- `Pass logs`: name the current implementation log path and the required review
+  aggregation log status.
+
 Do not create a separate context ledger, changelog, or plan file just to record
-this evidence.
+this evidence. The generated implementation and review pass logs required by
+`docs/project/architecture/agent-instructions.md` are the only standard
+exception; keep them under `build/agent-pass-logs/` and do not treat them as
+canonical documentation.
 
 ## References
 

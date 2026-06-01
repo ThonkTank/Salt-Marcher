@@ -13,6 +13,10 @@ public interface DungeonMapRepository {
 
     DungeonMapIdentity nextMapId();
 
+    long nextStairId();
+
+    long nextTransitionId();
+
     Optional<DungeonMap> findById(DungeonMapIdentity mapId);
 
     List<DungeonMap> searchByName(String query);
@@ -20,6 +24,8 @@ public interface DungeonMapRepository {
     Optional<DungeonMap> firstMap();
 
     DungeonMap save(DungeonMap dungeonMap);
+
+    List<DungeonMap> saveAll(List<DungeonMap> dungeonMaps);
 
     void delete(DungeonMapIdentity mapId);
 }

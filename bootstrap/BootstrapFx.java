@@ -9,13 +9,13 @@ final class BootstrapFx {
     private BootstrapFx() {
     }
 
-    @SuppressWarnings("PMD.LawOfDemeter")
     static void addStylesheet(Scene scene, String stylesheet) {
-        scene.getStylesheets().add(stylesheet);
+        var stylesheets = scene.getStylesheets();
+        stylesheets.add(stylesheet);
     }
 
-    @SuppressWarnings("PMD.LawOfDemeter")
     static void setWindowIcon(Stage stage, Image icon) {
-        stage.getIcons().setAll(icon);
+        var icons = stage.getIcons();
+        icons.setAll(icon);
     }
 }

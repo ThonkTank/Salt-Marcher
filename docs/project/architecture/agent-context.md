@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-05-11
+Last Reviewed: 2026-05-26
 Source of Truth: Context-hygiene rules for SaltMarcher coding agents,
 including task context shape, suspicious-repo defaults, and placement of
 repeatable context workflows.
@@ -44,6 +44,10 @@ for a durable plan.
   proof ownership.
 - Do not turn review, verification, or source-reference handoff evidence into a
   separate changelog, PR template, or ledger unless the user explicitly asks.
+- Generated implementation and review pass logs are the narrow exception:
+  `docs/project/architecture/agent-instructions.md` owns their purpose and
+  schema, and `build/agent-pass-logs/` holds them as operational evidence, not
+  canonical documentation or a second context ledger.
 - If two instruction surfaces repeat one workflow, keep the protocol in the
   owning skill or standard and replace the others with short routing text.
 

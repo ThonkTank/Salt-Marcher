@@ -24,7 +24,11 @@ final class DungeonEditorBoundaryVertexUseCase {
     ) {
         Set<CellKey> cells = clusterCellsFor(snapshot, clusterId, vertex.level());
         Set<EdgeKey> edges = deleteMode
-                ? existingInternalEdges(snapshot, cells, vertex.level(), DungeonEditorWorkspaceValues.BoundaryKind.WALL)
+                ? boundaryEdges.existingAlongClusterBoundary(
+                        snapshot,
+                        cells,
+                        vertex.level(),
+                        DungeonEditorWorkspaceValues.BoundaryKind.WALL)
                 : boundaryEdges.internal(cells);
         return DungeonEditorBoundaryEdgesHelper.touchesAny(edges, DungeonEditorInteractionValues.vertexKey(vertex));
     }
@@ -35,7 +39,7 @@ final class DungeonEditorBoundaryVertexUseCase {
             VertexKey vertex
     ) {
         Set<CellKey> cells = clusterCellsFor(snapshot, clusterId, vertex.level());
-        Set<EdgeKey> edges = new LinkedHashSet<>(existingInternalEdges(
+        Set<EdgeKey> edges = new LinkedHashSet<>(boundaryEdges.existingWithinCells(
                 snapshot,
                 cells,
                 vertex.level(),
@@ -59,12 +63,4 @@ final class DungeonEditorBoundaryVertexUseCase {
         return clusterCellsByCluster(snapshot, level).getOrDefault(clusterId, Set.of());
     }
 
-    private Set<EdgeKey> existingInternalEdges(
-            DungeonEditorWorkspaceValues.MapSnapshot snapshot,
-            Set<CellKey> cells,
-            int level,
-            DungeonEditorWorkspaceValues.BoundaryKind kind
-    ) {
-        return boundaryEdges.existingInternal(snapshot, boundaryEdges.internal(cells), level, kind);
-    }
 }

@@ -27,7 +27,6 @@ final class DungeonTravelRuntimeServiceAssembly {
                         services.require(src.domain.dungeon.model.worldspace.repository.TravelDungeonSessionRepository.class));
         DungeonTravelRuntimePublishedStateServiceAssembly publishedState =
                 new DungeonTravelRuntimePublishedStateServiceAssembly();
-        publishedState.publishCurrentSession(applyUseCase.snapshot());
         src.domain.dungeon.model.worldspace.usecase.PublishTravelDungeonSessionUseCase publishUseCase =
                 new src.domain.dungeon.model.worldspace.usecase.PublishTravelDungeonSessionUseCase(applyUseCase, publishedState);
         TravelRuntimeComponent candidate = new TravelRuntimeComponent(

@@ -63,7 +63,7 @@ final class DungeonEditorBoundaryPathUseCase {
         if (route.isEmpty()) {
             return PathResult.empty();
         }
-        Set<EdgeKey> doors = existingInternalEdges(
+        Set<EdgeKey> doors = boundaryEdges.existingWithinCells(
                 snapshot,
                 cells,
                 start.level(),
@@ -79,7 +79,7 @@ final class DungeonEditorBoundaryPathUseCase {
             VertexKey start,
             VertexKey goal
     ) {
-        Set<EdgeKey> walls = existingInternalEdges(
+        Set<EdgeKey> walls = boundaryEdges.existingAlongClusterBoundary(
                 snapshot,
                 cells,
                 start.level(),
@@ -88,12 +88,4 @@ final class DungeonEditorBoundaryPathUseCase {
         return route.isEmpty() ? PathResult.empty() : new PathResult(route, new LinkedHashSet<>(route));
     }
 
-    private Set<EdgeKey> existingInternalEdges(
-            DungeonEditorWorkspaceValues.MapSnapshot snapshot,
-            Set<CellKey> cells,
-            int level,
-            DungeonEditorWorkspaceValues.BoundaryKind kind
-    ) {
-        return boundaryEdges.existingInternal(snapshot, boundaryEdges.internal(cells), level, kind);
-    }
 }

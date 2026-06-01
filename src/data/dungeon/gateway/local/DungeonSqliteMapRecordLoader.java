@@ -100,29 +100,7 @@ final class DungeonSqliteMapRecordLoader {
             Connection connection,
             long mapId
     ) throws SQLException {
-        try (PreparedStatement statement = connection.prepareStatement(
-                "SELECT " + COLUMN_CLUSTER_ID + ", " + COLUMN_LEVEL_Z + ", vertex_index, relative_x, relative_y"
-                        + SQL_FROM + DungeonPersistenceSchema.ROOM_CLUSTER_VERTICES_TABLE
-                        + SQL_WHERE + COLUMN_CLUSTER_ID + " IN (SELECT " + COLUMN_CLUSTER_ID + SQL_FROM
-                        + DungeonPersistenceSchema.ROOM_CLUSTERS_TABLE
-                        + WHERE_DUNGEON_MAP_ID_SUBQUERY
-                        + " ORDER BY " + COLUMN_CLUSTER_ID + ", " + COLUMN_LEVEL_Z + ", vertex_index")) {
-            statement.setLong(1, mapId);
-            try (ResultSet resultSet = statement.executeQuery()) {
-                Map<Long, List<DungeonRoomClusterVertexRecord>> records = new LinkedHashMap<>();
-                while (resultSet.next()) {
-                    long clusterId = resultSet.getLong(COLUMN_CLUSTER_ID);
-                    records.computeIfAbsent(clusterId, ignored -> new ArrayList<>())
-                            .add(new DungeonRoomClusterVertexRecord(
-                                    clusterId,
-                                    resultSet.getInt(COLUMN_LEVEL_Z),
-                                    resultSet.getInt("vertex_index"),
-                                    resultSet.getInt("relative_x"),
-                                    resultSet.getInt("relative_y")));
-                }
-                return DungeonSqliteStatementSupport.copyGrouped(records);
-            }
-        }
+        return DungeonSqliteClusterVertexLoader.load(connection, mapId);
     }
 
     private static Map<Long, List<DungeonClusterBoundaryRecord>> loadClusterBoundaries(

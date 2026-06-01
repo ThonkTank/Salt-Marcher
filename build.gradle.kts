@@ -4,6 +4,7 @@ import com.github.spotbugs.snom.SpotBugsExtension
 import com.github.spotbugs.snom.SpotBugsTask
 import org.gradle.api.plugins.JavaApplication
 import org.gradle.api.plugins.quality.Pmd
+import org.gradle.api.tasks.JavaExec
 import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.compile.JavaCompile
 import org.gradle.api.tasks.testing.Test
@@ -63,8 +64,22 @@ sourceSets {
     test {
         java {
             setSrcDirs(listOf("test"))
+            exclude("src/view/leftbartabs/dungeoneditor/**")
         }
     }
+}
+
+val dungeonEditorBehaviorHarness by sourceSets.creating {
+    java {
+        setSrcDirs(listOf("test"))
+        include("src/view/leftbartabs/dungeoneditor/**")
+    }
+    resources {
+        setSrcDirs(emptyList<String>())
+    }
+    compileClasspath += sourceSets["main"].output
+    compileClasspath += sourceSets["main"].compileClasspath
+    runtimeClasspath += output + compileClasspath + sourceSets["main"].runtimeClasspath
 }
 
 dependencies {
@@ -145,7 +160,32 @@ tasks.test {
     exclude("architecture/**")
 }
 
-val mainJavaClassesDir = tasks.named<JavaCompile>("compileJava").flatMap { task -> task.destinationDirectory }
+val dungeonEditorBehaviorHarnessDataDir = layout.buildDirectory.dir("dungeon-editor-behavior-data")
+val dungeonEditorBehaviorHarnessResultsDir = layout.buildDirectory.dir("dungeon-editor-behavior-results")
+
+tasks.register<JavaExec>("dungeonEditorBehaviorHarness") {
+    group = LifecycleBasePlugin.VERIFICATION_GROUP
+    description = "Run the focused view-driven Dungeon Editor behavior harness."
+    dependsOn(tasks.named(dungeonEditorBehaviorHarness.classesTaskName))
+    classpath = dungeonEditorBehaviorHarness.runtimeClasspath
+    mainClass.set("src.view.leftbartabs.dungeoneditor.DungeonEditorToolBehaviorHarness")
+    inputs.file("docs/dungeon/verification/verification-dungeon-editor-tool-behavior.md")
+        .withPropertyName("dungeonEditorBehaviorCatalog")
+        .withPathSensitivity(PathSensitivity.RELATIVE)
+    outputs.dir(dungeonEditorBehaviorHarnessResultsDir)
+    outputs.upToDateWhen { false }
+    doFirst {
+        delete(dungeonEditorBehaviorHarnessDataDir)
+        delete(dungeonEditorBehaviorHarnessResultsDir)
+        mkdir(dungeonEditorBehaviorHarnessDataDir)
+        mkdir(dungeonEditorBehaviorHarnessDataDir.get().dir("salt-marcher"))
+        mkdir(dungeonEditorBehaviorHarnessResultsDir)
+    }
+    environment("XDG_DATA_HOME", dungeonEditorBehaviorHarnessDataDir.get().asFile.absolutePath)
+    systemProperty("saltmarcher.dungeonEditorBehavior.resultsDir", dungeonEditorBehaviorHarnessResultsDir.get().asFile.absolutePath)
+}
+
+val mainJavaClassesDir = layout.buildDirectory.dir("classes/java/main")
 
 val architectureTest by tasks.registering(Test::class) {
     group = LifecycleBasePlugin.VERIFICATION_GROUP

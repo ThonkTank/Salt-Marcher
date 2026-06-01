@@ -7,6 +7,8 @@ import java.util.Map;
 import java.util.Set;
 
 final class DungeonCorridorCellProjection {
+    private static final int SINGLE_ROUTE_TERMINUS_COUNT = 1;
+    private static final int FULL_ROUTE_TERMINUS_COUNT = 2;
 
     List<DungeonCell> corridorCells(
             DungeonCorridor corridor,
@@ -14,16 +16,12 @@ final class DungeonCorridorCellProjection {
             List<DungeonCorridorEndpointResolver.CorridorEndpoint> endpoints,
             Set<DungeonCell> roomCells
     ) {
-        List<DungeonCell> backbone = corridor.bindings().waypoints().isEmpty()
+        boolean authoredBackbone = !corridor.bindings().waypoints().isEmpty();
+        List<DungeonCell> backbone = !authoredBackbone
                 ? endpointCells(endpoints)
-                : corridorWaypoints(corridor.bindings().waypoints(), clustersById);
+                : authoredRouteCells(corridor.bindings().waypoints(), clustersById, endpoints);
         Set<DungeonCell> cells = new LinkedHashSet<>();
-        addRouteCells(cells, backbone, roomCells);
-        if (!backbone.isEmpty()) {
-            for (DungeonCorridorEndpointResolver.CorridorEndpoint endpoint : endpoints) {
-                addRouteCells(cells, List.of(endpoint.corridorCell(), nearestCell(endpoint.corridorCell(), backbone)), roomCells);
-            }
-        }
+        addRouteCells(cells, backbone, roomCells, !authoredBackbone);
         if (cells.isEmpty()) {
             for (DungeonCorridorEndpointResolver.CorridorEndpoint endpoint : endpoints) {
                 if (!roomCells.contains(endpoint.corridorCell())) {
@@ -47,6 +45,48 @@ final class DungeonCorridorCellProjection {
         return List.copyOf(result);
     }
 
+    private static List<DungeonCell> authoredRouteCells(
+            List<DungeonCorridorWaypoint> waypoints,
+            Map<Long, DungeonRoomCluster> clustersById,
+            List<DungeonCorridorEndpointResolver.CorridorEndpoint> endpoints
+    ) {
+        List<DungeonCell> waypointCells = corridorWaypoints(waypoints, clustersById);
+        List<DungeonCorridorEndpointResolver.CorridorEndpoint> termini = routeTermini(endpoints);
+        if (termini.isEmpty()) {
+            return waypointCells;
+        }
+        List<DungeonCell> result = new ArrayList<>();
+        result.add(termini.getFirst().corridorCell());
+        result.addAll(waypointCells);
+        if (termini.size() > SINGLE_ROUTE_TERMINUS_COUNT) {
+            result.add(termini.getLast().corridorCell());
+        }
+        return List.copyOf(result);
+    }
+
+    private static List<DungeonCorridorEndpointResolver.CorridorEndpoint> routeTermini(
+            List<DungeonCorridorEndpointResolver.CorridorEndpoint> endpoints
+    ) {
+        List<DungeonCorridorEndpointResolver.CorridorEndpoint> doorEndpoints = new ArrayList<>();
+        List<DungeonCorridorEndpointResolver.CorridorEndpoint> allEndpoints = new ArrayList<>();
+        for (DungeonCorridorEndpointResolver.CorridorEndpoint endpoint
+                : endpoints == null ? List.<DungeonCorridorEndpointResolver.CorridorEndpoint>of() : endpoints) {
+            if (endpoint != null) {
+                allEndpoints.add(endpoint);
+                if (endpoint.isDoor()) {
+                    doorEndpoints.add(endpoint);
+                }
+            }
+        }
+        if (doorEndpoints.size() >= FULL_ROUTE_TERMINUS_COUNT) {
+            return List.of(doorEndpoints.getFirst(), doorEndpoints.getLast());
+        }
+        if (allEndpoints.size() <= FULL_ROUTE_TERMINUS_COUNT) {
+            return List.copyOf(allEndpoints);
+        }
+        return List.of(allEndpoints.getFirst(), allEndpoints.getLast());
+    }
+
     private static List<DungeonCell> corridorWaypoints(
             List<DungeonCorridorWaypoint> waypoints,
             Map<Long, DungeonRoomCluster> clustersById
@@ -62,7 +102,12 @@ final class DungeonCorridorCellProjection {
         return List.copyOf(result);
     }
 
-    private static void addRouteCells(Set<DungeonCell> cells, List<DungeonCell> routeNodes, Set<DungeonCell> roomCells) {
+    private static void addRouteCells(
+            Set<DungeonCell> cells,
+            List<DungeonCell> routeNodes,
+            Set<DungeonCell> roomCells,
+            boolean filterRoomCells
+    ) {
         if (routeNodes == null || routeNodes.isEmpty()) {
             return;
         }
@@ -72,7 +117,7 @@ final class DungeonCorridorCellProjection {
         }
         for (int index = 1; index < routeNodes.size(); index++) {
             for (DungeonCell cell : manhattanPath(routeNodes.get(index - 1), routeNodes.get(index))) {
-                if (!roomCells.contains(cell)) {
+                if (!filterRoomCells || !roomCells.contains(cell)) {
                     cells.add(cell);
                 }
             }
@@ -100,41 +145,6 @@ final class DungeonCorridorCellProjection {
             result.add(new DungeonCell(end.q(), end.r(), end.level()));
         }
         return List.copyOf(result);
-    }
-
-    private static DungeonCell nearestCell(DungeonCell origin, List<DungeonCell> candidates) {
-        DungeonCell result = origin;
-        for (DungeonCell candidate : candidates == null ? List.<DungeonCell>of() : candidates) {
-            if (candidate != null && betterCandidate(candidate, result, origin)) {
-                result = candidate;
-            }
-        }
-        return result;
-    }
-
-    private static int manhattan(DungeonCell left, DungeonCell right) {
-        if (left == null || right == null) {
-            return Integer.MAX_VALUE;
-        }
-        return Math.abs(left.q() - right.q())
-                + Math.abs(left.r() - right.r())
-                + Math.abs(left.level() - right.level());
-    }
-
-    private static boolean betterCandidate(DungeonCell candidate, DungeonCell current, DungeonCell origin) {
-        int distanceComparison = Integer.compare(manhattan(origin, candidate), manhattan(origin, current));
-        if (distanceComparison != 0) {
-            return distanceComparison < 0;
-        }
-        int levelComparison = Integer.compare(candidate.level(), current.level());
-        if (levelComparison != 0) {
-            return levelComparison < 0;
-        }
-        int rowComparison = Integer.compare(candidate.r(), current.r());
-        if (rowComparison != 0) {
-            return rowComparison < 0;
-        }
-        return candidate.q() < current.q();
     }
 
     private static int compareCells(DungeonCell left, DungeonCell right) {

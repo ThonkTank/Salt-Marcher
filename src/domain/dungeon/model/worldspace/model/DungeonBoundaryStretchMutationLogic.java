@@ -89,6 +89,9 @@ final class DungeonBoundaryStretchMutationLogic {
                 return Optional.empty();
             }
         }
+        if (!replaceStretchEdges(target, stretch, currentLevelCells, boundaries)) {
+            return Optional.empty();
+        }
         return Optional.of(new StretchMutationResult(
                 nextCellsByLevel,
                 GEOMETRY_SERVICE.filterBoundaries(boundaries.values(), nextCellsByLevel, target.cluster().center())));

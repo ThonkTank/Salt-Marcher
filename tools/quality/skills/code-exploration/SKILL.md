@@ -33,7 +33,10 @@ covered work:
    behavior.
 7. Classify claims with the canonical context trust levels:
    `Owner-Proven`, `Evidence-Proven`, `Candidate`, or `Suspect`.
-8. Plan only from `Owner-Proven` or source/command-backed `Evidence-Proven`
+8. For implementation review or continuation work, inspect relevant available
+   pass logs under `build/agent-pass-logs/` and classify them as operational
+   history, not as canonical source truth.
+9. Plan only from `Owner-Proven` or source/command-backed `Evidence-Proven`
    facts. Treat `Candidate` and `Suspect` claims as risks, follow-up questions,
    or scope boundaries.
 
@@ -54,6 +57,9 @@ Keep the exploration compact but source-backed:
 - `Tools`: repo-local tools used, their governing skill, and evidence strength.
 - `Unknowns`: seams not proven deeply enough for the requested plan; unknowns
   are notes, not authority.
+- `Pass logs`: implementation or review history inspected, including repeated
+  reversals, looped edits, growing complexity, architecture friction, recurring
+  smells, or governance/check misses when they affect the decision.
 
 Do not create a separate exploration document unless the user asks for one. Use
 this shape mentally, in a plan, or in handoff when it materially affects the
@@ -105,6 +111,8 @@ Report code exploration only when it affected the work:
 
 - `Code exploration`: entrypoint, dispatch path, variants checked, and state
   owner.
+- `Pass logs inspected`: relevant log paths and any trend that affected the
+  plan or review.
 - `Repo tool used`: tool, governing skill, selector or scope, and evidence
   strength.
 - `Unknown deferred`: unresolved seam and why it does not block the current

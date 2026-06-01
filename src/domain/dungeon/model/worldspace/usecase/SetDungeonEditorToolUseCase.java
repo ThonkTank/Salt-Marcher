@@ -5,17 +5,14 @@ import src.domain.dungeon.model.worldspace.model.session.model.DungeonEditorSess
 
 public final class SetDungeonEditorToolUseCase {
     private final DungeonEditorSessionWorkflow workflow;
-    private final BuildDungeonEditorSnapshotUseCase snapshotBuilder;
     private final PublishDungeonEditorSnapshotUseCase snapshotPublicationUseCase;
     private final InterpretDungeonEditorMainViewInputUseCase mainViewInterpreter;
     public SetDungeonEditorToolUseCase(
             DungeonEditorSessionWorkflow workflow,
-            BuildDungeonEditorSnapshotUseCase snapshotBuilder,
             InterpretDungeonEditorMainViewInputUseCase mainViewInterpreter,
             PublishDungeonEditorSnapshotUseCase snapshotPublicationUseCase
     ) {
         this.workflow = Objects.requireNonNull(workflow, "workflow");
-        this.snapshotBuilder = Objects.requireNonNull(snapshotBuilder, "snapshotBuilder");
         this.snapshotPublicationUseCase =
                 Objects.requireNonNull(snapshotPublicationUseCase, "snapshotPublicationUseCase");
         this.mainViewInterpreter = Objects.requireNonNull(mainViewInterpreter, "mainViewInterpreter");
@@ -24,6 +21,6 @@ public final class SetDungeonEditorToolUseCase {
     public void execute(String toolName) {
         mainViewInterpreter.clear();
         workflow.setTool(toolName);
-        snapshotPublicationUseCase.execute(workflow.reconcileSnapshot(snapshotBuilder.execute(workflow.session())));
+        snapshotPublicationUseCase.executeToolSelection(workflow.session());
     }
 }

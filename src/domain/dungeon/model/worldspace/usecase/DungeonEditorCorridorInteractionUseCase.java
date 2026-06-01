@@ -1,6 +1,8 @@
 package src.domain.dungeon.model.worldspace.usecase;
 
 import src.domain.dungeon.model.worldspace.helper.DungeonEditorCorridorTargetHelper;
+import src.domain.dungeon.model.worldspace.helper.DungeonEditorCorridorFacingTargetHelper;
+import src.domain.dungeon.model.worldspace.helper.DungeonEditorCorridorRoutePreviewValidationHelper;
 import src.domain.dungeon.model.worldspace.model.interaction.model.DungeonEditorMainViewEffect;
 import src.domain.dungeon.model.worldspace.model.interaction.model.DungeonEditorMainViewInteractionValues.CorridorDraft;
 import src.domain.dungeon.model.worldspace.model.interaction.model.DungeonEditorMainViewInteractionValues.InteractionState;
@@ -12,6 +14,10 @@ import src.domain.dungeon.model.worldspace.model.workspace.model.DungeonEditorWo
 
 final class DungeonEditorCorridorInteractionUseCase {
     private final DungeonEditorCorridorTargetHelper targetService = new DungeonEditorCorridorTargetHelper();
+    private final DungeonEditorCorridorFacingTargetHelper facingTargetHelper =
+            new DungeonEditorCorridorFacingTargetHelper();
+    private final DungeonEditorCorridorRoutePreviewValidationHelper routeValidationHelper =
+            new DungeonEditorCorridorRoutePreviewValidationHelper();
 
     DungeonEditorMainViewInterpretation press(
             PointerState input,
@@ -19,21 +25,21 @@ final class DungeonEditorCorridorInteractionUseCase {
             DungeonEditorSessionValues.Tool selectedTool,
             InteractionState state
     ) {
-        if (!input.primaryButtonDown()) {
-            return new DungeonEditorMainViewInterpretation(state, DungeonEditorMainViewEffect.none());
-        }
         if (selectedTool == DungeonEditorSessionValues.Tool.CORRIDOR_DELETE) {
             PendingCorridorTarget target = targetService.resolveDeleteTarget(input);
             InteractionState nextState = state.withCorridorDraft(CorridorDraft.none());
-            long corridorId = target == null ? 0L : target.deleteCorridorId();
-            if (DungeonEditorWorkspaceValues.hasId(corridorId)) {
+            DungeonEditorSessionValues.DeleteCorridorPreview preview = deletePreview(target);
+            if (DungeonEditorWorkspaceValues.hasId(preview.corridorId())) {
                 return new DungeonEditorMainViewInterpretation(
                         nextState,
                         DungeonEditorMainViewEffect.applyWithStatus(
-                                new DungeonEditorSessionValues.DeleteCorridorPreview(corridorId),
+                                preview,
                                 ""));
             }
             return new DungeonEditorMainViewInterpretation(nextState, DungeonEditorMainViewEffect.clearedSelection());
+        }
+        if (!input.primaryButtonDown()) {
+            return new DungeonEditorMainViewInterpretation(state, DungeonEditorMainViewEffect.none());
         }
         PendingCorridorTarget target = targetService.resolveCreateTarget(input, snapshot);
         if (target == null) {
@@ -56,7 +62,15 @@ final class DungeonEditorCorridorInteractionUseCase {
                     nextState,
                     DungeonEditorMainViewEffect.select(target.selection(), ""));
         }
-        return new DungeonEditorMainViewInterpretation(nextState, applyCorridorDraft(start, target));
+        FacingTargets facingTargets = facingTargets(start, target, snapshot);
+        if (!routeValidationHelper.hasValidRoute(snapshot, facingTargets.start(), facingTargets.target())) {
+            return new DungeonEditorMainViewInterpretation(
+                    nextState,
+                    DungeonEditorMainViewEffect.select(facingTargets.target().selection(), "Korridorroute blockiert."));
+        }
+        return new DungeonEditorMainViewInterpretation(
+                nextState,
+                applyCorridorDraft(facingTargets.start(), facingTargets.target()));
     }
 
     DungeonEditorMainViewEffect preview(
@@ -70,8 +84,7 @@ final class DungeonEditorCorridorInteractionUseCase {
             if (target == null || !DungeonEditorWorkspaceValues.hasId(target.deleteCorridorId())) {
                 return DungeonEditorMainViewEffect.clearPreviewIfNeeded(true);
             }
-            return DungeonEditorMainViewEffect.preview(
-                    new DungeonEditorSessionValues.DeleteCorridorPreview(target.deleteCorridorId()));
+            return DungeonEditorMainViewEffect.preview(deletePreview(target));
         }
         if (!state.corridorDraft().present()) {
             return DungeonEditorMainViewEffect.clearPreviewIfNeeded(true);
@@ -81,8 +94,7 @@ final class DungeonEditorCorridorInteractionUseCase {
         if (target == null || start.targetKey().equals(target.targetKey()) || start.endpoint() == null || target.endpoint() == null) {
             return DungeonEditorMainViewEffect.clearPreviewIfNeeded(true);
         }
-        return DungeonEditorMainViewEffect.preview(
-                new DungeonEditorSessionValues.CorridorCreatePreview(start.endpoint(), target.endpoint()));
+        return createPreview(start, target, snapshot);
     }
 
     private static DungeonEditorMainViewEffect applyCorridorDraft(PendingCorridorTarget start, PendingCorridorTarget target) {
@@ -91,5 +103,51 @@ final class DungeonEditorCorridorInteractionUseCase {
                     new DungeonEditorSessionValues.CorridorCreatePreview(start.endpoint(), target.endpoint()));
         }
         return DungeonEditorMainViewEffect.none();
+    }
+
+    private static DungeonEditorSessionValues.DeleteCorridorPreview deletePreview(PendingCorridorTarget target) {
+        if (target == null) {
+            return new DungeonEditorSessionValues.DeleteCorridorPreview(0L);
+        }
+        var handle = target.selection().handleRef();
+        String targetKind = handle.topologyRef().present() || handle.corridorId() > 0L
+                ? handle.kind().name()
+                : "CORRIDOR";
+        return new DungeonEditorSessionValues.DeleteCorridorPreview(
+                target.deleteCorridorId(),
+                targetKind,
+                handle.topologyRef().id(),
+                handle.roomId(),
+                handle.index());
+    }
+
+    private DungeonEditorMainViewEffect createPreview(
+            PendingCorridorTarget start,
+            PendingCorridorTarget target,
+            DungeonEditorWorkspaceValues.MapSnapshot snapshot
+    ) {
+        FacingTargets facingTargets = facingTargets(start, target, snapshot);
+        if (!routeValidationHelper.hasValidRoute(snapshot, facingTargets.start(), facingTargets.target())) {
+            return DungeonEditorMainViewEffect.clearPreviewIfNeeded(true);
+        }
+        return DungeonEditorMainViewEffect.preview(
+                new DungeonEditorSessionValues.CorridorCreatePreview(
+                        facingTargets.start().endpoint(),
+                        facingTargets.target().endpoint()));
+    }
+
+    private FacingTargets facingTargets(
+            PendingCorridorTarget start,
+            PendingCorridorTarget target,
+            DungeonEditorWorkspaceValues.MapSnapshot snapshot
+    ) {
+        PendingCorridorTarget facedStart = facingTargetHelper.resolveFacingTarget(start, target, snapshot);
+        PendingCorridorTarget facedTarget = facingTargetHelper.resolveFacingTarget(target, facedStart, snapshot);
+        return new FacingTargets(
+                facingTargetHelper.resolveFacingTarget(facedStart, facedTarget, snapshot),
+                facedTarget);
+    }
+
+    private record FacingTargets(PendingCorridorTarget start, PendingCorridorTarget target) {
     }
 }

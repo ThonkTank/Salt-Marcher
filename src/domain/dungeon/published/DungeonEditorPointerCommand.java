@@ -96,6 +96,22 @@ public sealed interface DungeonEditorPointerCommand permits ApplyDungeonEditorPo
         return boundaryOrEmpty().kind().name();
     }
 
+    default String transitionDestinationTypeName() {
+        return "";
+    }
+
+    default long transitionDestinationMapId() {
+        return 0L;
+    }
+
+    default long transitionDestinationTileId() {
+        return 0L;
+    }
+
+    default long transitionDestinationTransitionId() {
+        return 0L;
+    }
+
     default String pointerBoundaryKey() {
         return boundaryOrEmpty().key();
     }

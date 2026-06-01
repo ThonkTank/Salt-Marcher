@@ -101,8 +101,12 @@ files. Records are already an explicit immutable carrier shape in the domain,
 data, and view-layer standards.
 `LawOfDemeter` remains blocking for production source, but its ruleset ignores
 JavaFX control-composition accessors such as `getChildren`, `getStyleClass`,
-`getItems`, and `getSelectionModel`; those calls are normal passive-view
-construction and binding responsibilities governed by the view-layer gates.
+`getItems`, `getSelectionModel`, `getStylesheets`, and `getIcons`; those calls
+are normal JavaFX composition, resource, and startup responsibilities governed
+by the view, shell, and bootstrap gates. The same false-positive boundary allows
+only the JavaFX preloader `javaFxPreloaderStateChangeNotification.getType()`
+read used to distinguish startup phases. This is a framework-accessor allowance
+only; it must not become a package-family or feature-family exemption.
 Role-specific source-pattern PMD rules are not part of the active local gate
 inventory. If a role owner still needs a source-pattern rule, the rule must be
 wired through an explicit active owner and documented with the real blocking

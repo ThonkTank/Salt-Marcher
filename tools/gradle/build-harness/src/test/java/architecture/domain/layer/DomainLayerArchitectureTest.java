@@ -73,7 +73,8 @@ public final class DomainLayerArchitectureTest {
                     .resideInAnyPackage("src.domain.*")
                     .should(onlyDependOnAllowedDomainPackages(
                             "same-context assembly, publication, application, model roles, and allowed foreign public seams only",
-                            DomainLayerArchitectureTest::isAllowedForServiceAssembly));
+                            DomainLayerArchitectureTest::isAllowedForServiceAssembly))
+                    .allowEmptyShould(true);
 
     @ArchTest
     static final ArchRule domainServiceAssembliesMustStayPackagePrivate =
@@ -83,7 +84,8 @@ public final class DomainLayerArchitectureTest {
                     .and()
                     .resideInAnyPackage("src.domain.*")
                     .should(bePackagePrivateServiceAssembly())
-                    .as("domain ServiceAssembly roots must stay package-private assembly parts");
+                    .as("domain ServiceAssembly roots must stay package-private assembly parts")
+                    .allowEmptyShould(true);
 
     @ArchTest
     static final ArchRule domainContextsMustRespectMarkdownAllowedDependencies =

@@ -9,7 +9,7 @@ public record DungeonMapViewInputEvent(
 ) {
 
     public DungeonMapViewInputEvent {
-        input = input == null ? new CanvasInput(false, false, true, false, false) : input;
+        input = input == null ? new CanvasInput(false, false, true, false, false, false) : input;
         buttons = buttons == null ? new CanvasButtons(false, false, false) : buttons;
         modifiers = modifiers == null ? new CanvasModifiers(false, false, false) : modifiers;
         position = position == null ? new CanvasPosition(0.0, 0.0) : position;
@@ -20,7 +20,8 @@ public record DungeonMapViewInputEvent(
             boolean mouseDragged,
             boolean mouseMoved,
             boolean mouseReleased,
-            boolean scrolled
+            boolean scrolled,
+            boolean escapePressed
     ) {
         public CanvasInput {
             int rawEvents = 0;
@@ -29,6 +30,7 @@ public record DungeonMapViewInputEvent(
             rawEvents += mouseMoved ? 1 : 0;
             rawEvents += mouseReleased ? 1 : 0;
             rawEvents += scrolled ? 1 : 0;
+            rawEvents += escapePressed ? 1 : 0;
             int exactlyOneRawInput = Boolean.TRUE.compareTo(Boolean.FALSE);
             if (rawEvents != exactlyOneRawInput) {
                 throw new IllegalArgumentException("Exactly one raw canvas input must be selected.");

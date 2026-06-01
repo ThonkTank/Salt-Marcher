@@ -13,14 +13,36 @@ final class DungeonCorridorMergeDeleteLogic {
     private static final DungeonCorridorAnchorPruningRules ANCHOR_PRUNING_POLICY =
             new DungeonCorridorAnchorPruningRules();
     private static final DungeonMapLookupLogic LOOKUP_SERVICE = new DungeonMapLookupLogic();
+    private static final DungeonCorridorTargetDeleteLogic TARGET_DELETE_SERVICE =
+            new DungeonCorridorTargetDeleteLogic();
 
-    DungeonMap deleteCorridor(DungeonMap dungeonMap, long corridorId) {
+    DungeonMap deleteCorridor(
+            DungeonMap dungeonMap,
+            long corridorId,
+            String targetKind,
+            long topologyRefId,
+            long roomId,
+            int waypointIndex
+    ) {
         Objects.requireNonNull(dungeonMap, "dungeonMap");
         if (MUTATION_RULES.invalidCorridorId(corridorId)) {
             return dungeonMap;
         }
         DungeonCorridor existing = LOOKUP_SERVICE.corridor(dungeonMap, corridorId);
-        if (existing == null || ANCHOR_PRUNING_POLICY.ownedAnchorStillReferenced(dungeonMap.connections().corridors(), existing)) {
+        if (existing == null) {
+            return dungeonMap;
+        }
+        String safeKind = targetKind == null ? "CORRIDOR" : targetKind;
+        if (!"CORRIDOR".equals(safeKind)) {
+            return TARGET_DELETE_SERVICE.deleteTarget(
+                    dungeonMap,
+                    existing,
+                    safeKind,
+                    topologyRefId,
+                    roomId,
+                    waypointIndex);
+        }
+        if (ANCHOR_PRUNING_POLICY.ownedAnchorStillReferenced(dungeonMap.connections().corridors(), existing)) {
             return dungeonMap;
         }
         return CONNECTION_NORMALIZATION_SERVICE.copyWithConnections(

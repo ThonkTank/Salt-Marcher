@@ -60,6 +60,9 @@ public final class ApplyDungeonEditorSessionEffectUseCase {
                 applyOperationUseCase.execute(workflow.session().selectedMapId(), applyPreview);
             }
             workflow.clearPreviewWithStatus(currentFacts().mutationStatusText());
+            if (clearsSelectionAfterApply(applyPreview)) {
+                workflow.applyEffect(DungeonEditorMainViewEffect.clearedSelection());
+            }
         }
         publishCurrent();
     }
@@ -69,5 +72,17 @@ public final class ApplyDungeonEditorSessionEffectUseCase {
                 workflow.session().selectedMapId(),
                 workflow.session().selection(),
                 workflow.session().preview());
+    }
+
+    private static boolean clearsSelectionAfterApply(DungeonEditorSessionValues.Preview preview) {
+        return switch (preview) {
+            case DungeonEditorSessionValues.RoomRectanglePreview room -> room.deleteMode();
+            case DungeonEditorSessionValues.ClusterBoundariesPreview boundaries -> boundaries.deleteMode();
+            case DungeonEditorSessionValues.DeleteCorridorPreview ignored -> true;
+            case DungeonEditorSessionValues.NoPreview ignored -> false;
+            case DungeonEditorSessionValues.CorridorCreatePreview ignored -> false;
+            case DungeonEditorSessionValues.MoveHandlePreview ignored -> false;
+            case DungeonEditorSessionValues.MoveBoundaryStretchPreview ignored -> false;
+        };
     }
 }

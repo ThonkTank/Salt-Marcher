@@ -4,9 +4,11 @@ import java.util.List;
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.worldspace.model.DungeonDerivedState;
+import src.domain.dungeon.model.worldspace.model.DungeonCell;
 import src.domain.dungeon.model.worldspace.model.DungeonMap;
 import src.domain.dungeon.model.worldspace.model.DungeonMapIdentity;
 import src.domain.dungeon.model.worldspace.model.DungeonMapOperationFeedbackRules;
+import src.domain.dungeon.model.worldspace.model.DungeonTransitionDestination;
 import src.domain.dungeon.model.worldspace.repository.DungeonMapRepository;
 
 /**
@@ -80,6 +82,40 @@ public final class ApplyDungeonEditorOperationUseCase {
                 snapshot(mutated, derived),
                 OPERATION_FEEDBACK_POLICY.validationMessages(current, mutated),
                 OPERATION_FEEDBACK_POLICY.reactionMessages(current, mutated));
+    }
+
+    boolean canCreateStair(
+            @Nullable DungeonMapIdentity mapId,
+            @Nullable DungeonCell anchor,
+            String shapeName
+    ) {
+        return anchor != null && currentMap(mapId).canCreateStair(anchor, shapeName);
+    }
+
+    boolean canCreateTransition(
+            @Nullable DungeonMapIdentity mapId,
+            @Nullable DungeonCell anchor,
+            @Nullable DungeonTransitionDestination destination
+    ) {
+        return anchor != null
+                && destination != null
+                && currentMap(mapId).canCreateTransition(
+                        anchor,
+                        destination.isDungeonMapDestination(),
+                        destination.mapId(),
+                        destination.tileId(),
+                        destination.transitionId());
+    }
+
+    boolean canSaveStairGeometry(
+            @Nullable DungeonMapIdentity mapId,
+            long stairId,
+            String shapeName,
+            String directionName,
+            int dimension1,
+            int dimension2
+    ) {
+        return currentMap(mapId).canSaveStairGeometry(stairId, shapeName, directionName, dimension1, dimension2);
     }
 
     private LoadDungeonSnapshotUseCase.DungeonSnapshotData snapshot(DungeonMap dungeonMap, DungeonDerivedState derived) {

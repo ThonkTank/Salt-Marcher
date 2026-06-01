@@ -447,6 +447,13 @@
 .text-field:focused {
     -fx-border-color: -sm-accent-hover;
 }
+.coordinate-field {
+    -fx-pref-column-count: 4;
+}
+.coordinate-value {
+    -fx-min-width: 3em;
+    -fx-alignment: center-left;
+}
 
 /* ---- TableView ---- */
 .table-view {
@@ -900,6 +907,9 @@
 .dungeon-overlay-range-spinner {
     -fx-pref-width: 84;
 }
+.dungeon-overlay-levels-field {
+    -fx-pref-column-count: 10;
+}
 .dungeon-editor-popup {
     -fx-padding: 10;
     -fx-spacing: 4;
@@ -912,6 +922,12 @@
 }
 .dungeon-state-panel {
     -fx-padding: 12;
+}
+.dungeon-state-card-stack {
+    -fx-spacing: 8;
+}
+.coordinate-row {
+    -fx-spacing: 6;
 }
 
 .control-toolbar {

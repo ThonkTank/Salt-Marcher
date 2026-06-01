@@ -113,7 +113,7 @@ final class DungeonClusterRecordMapperSupport {
                         boundary.relativeCell().r(),
                         boundary.direction().name(),
                         boundary.kind().name(),
-                        boundary.resolvedTopologyRef(cluster.center()).id()));
+                        boundary.kind().renderable() ? boundary.resolvedTopologyRef(cluster.center()).id() : null));
             }
         }
         return List.copyOf(result);
@@ -126,4 +126,5 @@ final class DungeonClusterRecordMapperSupport {
         }
         return Map.copyOf(result);
     }
+
 }

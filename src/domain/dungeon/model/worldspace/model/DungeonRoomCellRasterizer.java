@@ -8,6 +8,8 @@ import java.util.Set;
 
 final class DungeonRoomCellRasterizer {
 
+    private static final int UNIT_RECTANGLE_VERTEX_COUNT = 4;
+
     Set<DungeonCell> cellsFromRelativeVertices(
             DungeonCell center,
             int level,
@@ -17,6 +19,12 @@ final class DungeonRoomCellRasterizer {
         List<List<DungeonCell>> loops = splitLoops(relativeVertices, loopSeparator);
         if (loops.isEmpty()) {
             return Set.of(new DungeonCell(center.q(), center.r(), level));
+        }
+        RasterizedCells unitLoopCells = new UnitRectangleLoopRasterizer(center, level).cellsFrom(loops);
+        if (unitLoopCells.matched()) {
+            return unitLoopCells.cells().isEmpty()
+                    ? Set.of(new DungeonCell(center.q(), center.r(), level))
+                    : Set.copyOf(unitLoopCells.cells());
         }
         Bounds bounds = bounds(loops);
         Set<DungeonCell> cells = new LinkedHashSet<>();
@@ -34,6 +42,10 @@ final class DungeonRoomCellRasterizer {
         if (center == null || cells == null || cells.isEmpty()) {
             return List.of();
         }
+        List<DungeonCell> rectangularLoop = rectangularLoop(center, cells);
+        if (!rectangularLoop.isEmpty()) {
+            return rectangularLoop;
+        }
         List<DungeonCell> vertices = new ArrayList<>();
         for (DungeonCell cell : DungeonCellOrdering.sortedCells(cells)) {
             int q = cell.q() - center.q();
@@ -45,6 +57,60 @@ final class DungeonRoomCellRasterizer {
             vertices.add(loopSeparator);
         }
         return List.copyOf(vertices);
+    }
+
+    private static List<DungeonCell> rectangularLoop(DungeonCell center, List<DungeonCell> cells) {
+        Bounds bounds = cellBounds(cells);
+        if (!sameLevel(cells) || !filledRectangle(cells, bounds)) {
+            return List.of();
+        }
+        int level = cells.getFirst().level();
+        return List.of(
+                new DungeonCell(bounds.minQ() - center.q(), bounds.minR() - center.r(), level),
+                new DungeonCell(bounds.maxQ() + 1 - center.q(), bounds.minR() - center.r(), level),
+                new DungeonCell(bounds.maxQ() + 1 - center.q(), bounds.maxR() + 1 - center.r(), level),
+                new DungeonCell(bounds.minQ() - center.q(), bounds.maxR() + 1 - center.r(), level));
+    }
+
+    private static Bounds cellBounds(List<DungeonCell> cells) {
+        int minQ = cells.getFirst().q();
+        int maxQ = minQ;
+        int minR = cells.getFirst().r();
+        int maxR = minR;
+        for (DungeonCell cell : cells) {
+            minQ = Math.min(minQ, cell.q());
+            maxQ = Math.max(maxQ, cell.q());
+            minR = Math.min(minR, cell.r());
+            maxR = Math.max(maxR, cell.r());
+        }
+        return new Bounds(minQ, maxQ, minR, maxR);
+    }
+
+    private static boolean sameLevel(List<DungeonCell> cells) {
+        int level = cells.getFirst().level();
+        for (DungeonCell cell : cells) {
+            if (cell.level() != level) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static boolean filledRectangle(List<DungeonCell> cells, Bounds bounds) {
+        Set<DungeonCell> cellSet = new LinkedHashSet<>(cells);
+        int expectedSize = (bounds.maxQ() - bounds.minQ() + 1) * (bounds.maxR() - bounds.minR() + 1);
+        if (cellSet.size() != expectedSize) {
+            return false;
+        }
+        int level = cells.getFirst().level();
+        for (int q = bounds.minQ(); q <= bounds.maxQ(); q++) {
+            for (int r = bounds.minR(); r <= bounds.maxR(); r++) {
+                if (!cellSet.contains(new DungeonCell(q, r, level))) {
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 
     private static List<List<DungeonCell>> splitLoops(List<DungeonCell> vertices, DungeonCell loopSeparator) {
@@ -105,6 +171,66 @@ final class DungeonRoomCellRasterizer {
     }
 
     private record Bounds(int minQ, int maxQ, int minR, int maxR) {
+    }
+
+    private record RasterizedCells(boolean matched, Set<DungeonCell> cells) {
+    }
+
+    private record UnitRectangleLoopRasterizer(DungeonCell center, int level) {
+
+        private RasterizedCells cellsFrom(List<List<DungeonCell>> loops) {
+            Set<DungeonCell> cells = new LinkedHashSet<>();
+            for (List<DungeonCell> loop : loops) {
+                DungeonCell cell = cellFrom(loop);
+                if (cell == null) {
+                    return new RasterizedCells(false, Set.of());
+                }
+                if (!cells.add(cell)) {
+                    cells.remove(cell);
+                }
+            }
+            return new RasterizedCells(true, cells);
+        }
+
+        private DungeonCell cellFrom(List<DungeonCell> loop) {
+            if (loop.size() != UNIT_RECTANGLE_VERTEX_COUNT) {
+                return null;
+            }
+            Bounds bounds = unitLoopBounds(loop);
+            if (bounds.maxQ() - bounds.minQ() != 1 || bounds.maxR() - bounds.minR() != 1) {
+                return null;
+            }
+            if (!containsCorner(loop, bounds.minQ(), bounds.minR())
+                    || !containsCorner(loop, bounds.maxQ(), bounds.minR())
+                    || !containsCorner(loop, bounds.maxQ(), bounds.maxR())
+                    || !containsCorner(loop, bounds.minQ(), bounds.maxR())) {
+                return null;
+            }
+            return new DungeonCell(center.q() + bounds.minQ(), center.r() + bounds.minR(), level);
+        }
+
+        private Bounds unitLoopBounds(List<DungeonCell> loop) {
+            int minQ = loop.getFirst().q();
+            int maxQ = minQ;
+            int minR = loop.getFirst().r();
+            int maxR = minR;
+            for (DungeonCell vertex : loop) {
+                minQ = Math.min(minQ, vertex.q());
+                maxQ = Math.max(maxQ, vertex.q());
+                minR = Math.min(minR, vertex.r());
+                maxR = Math.max(maxR, vertex.r());
+            }
+            return new Bounds(minQ, maxQ, minR, maxR);
+        }
+
+        private boolean containsCorner(List<DungeonCell> loop, int q, int r) {
+            for (DungeonCell vertex : loop) {
+                if (vertex.q() == q && vertex.r() == r) {
+                    return true;
+                }
+            }
+            return false;
+        }
     }
 
     private static boolean polygonContainsCell(List<DungeonCell> polygon, int q, int r) {

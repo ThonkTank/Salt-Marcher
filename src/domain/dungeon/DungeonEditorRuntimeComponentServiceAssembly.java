@@ -18,14 +18,18 @@ final class DungeonEditorRuntimeComponentServiceAssembly {
                 DungeonEditorMapApplicationServiceAssembly.create(runtime),
                 DungeonEditorProjectionApplicationServiceAssembly.create(runtime),
                 DungeonEditorPointerApplicationServiceAssembly.create(runtime),
-                DungeonEditorNarrationApplicationServiceAssembly.create(runtime));
+                DungeonEditorNarrationApplicationServiceAssembly.create(runtime),
+                DungeonEditorTransitionApplicationServiceAssembly.create(runtime),
+                DungeonEditorStairApplicationServiceAssembly.create(runtime));
     }
 
     record EditorRuntimeComponent(
             DungeonEditorMapApplicationService mapService,
             DungeonEditorProjectionApplicationService projectionService,
             DungeonEditorPointerApplicationService pointerService,
-            DungeonEditorNarrationApplicationService narrationService
+            DungeonEditorNarrationApplicationService narrationService,
+            DungeonEditorTransitionApplicationService transitionService,
+            DungeonEditorStairApplicationService stairService
     ) {
     }
 }

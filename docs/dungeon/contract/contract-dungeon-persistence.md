@@ -1,6 +1,6 @@
 Status: Draft
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-26
+Last Reviewed: 2026-05-28
 Source of Truth: Dungeon persistence boundary, stored truth, adapter mapping
 rules, and schema ownership.
 
@@ -45,6 +45,9 @@ Persisted authored truth includes:
 - `DungeonMapSearch` owns read-oriented map lookup
 - SQLite adapters translate source-local rows into dungeon-domain values and
   aggregates
+- multi-map authored repository writes MUST commit all supplied domain maps
+  together or roll back all supplied domain maps together; adapters persist
+  only the supplied domain maps and do not infer additional authored maps
 - SQLite rows MUST NOT become the owner of topology behavior, semantic repair
   policy, preview logic, or travel semantics
 
@@ -56,6 +59,52 @@ Persisted authored truth includes:
 - legacy-compatible detail tables remain source-local storage and correlation
   detail, not alternate semantic owners
 
+## Room Boundary Edge Semantics
+
+`dungeon_room_cluster_edges` stores authored boundary overrides for keyed room
+cluster edges:
+
+- no row means the edge is un-authored; room perimeter walls may be derived from
+  room cells
+- `edge_type='WALL'` means an authored renderable wall edge
+- `edge_type='DOOR'` means an authored renderable door edge
+- `edge_type='OPEN'` means an authored negative perimeter override that
+  suppresses derived wall publication for that keyed edge
+
+`OPEN` rows MUST have no topology element identity and MUST NOT create
+`dungeon_topology_elements` rows. Adapter reads and writes MUST preserve
+`OPEN` rows as authored persistence truth, while published map and render
+surfaces emit no boundary primitive for them.
+
+## Stair Stored Geometry Semantics
+
+`dungeon_stairs` stores the scalar stair geometry spec:
+
+- `shape` stores the domain stair shape name
+- `direction` stores the cardinal direction code: `0=NORTH`, `1=EAST`,
+  `2=SOUTH`, `3=WEST`
+- `dimension1` and `dimension2` store the requirements-owned shape parameters
+- `corridor_id` stores the optional owning corridor binding for generated
+  cross-level corridor stair segments
+
+`dungeon_stair_path_nodes` stores the committed path produced by the dungeon
+domain recompute, ordered by `sort_order`. `dungeon_stair_exits` stores the
+committed generated exits and labels for the same stair. These rows are
+persisted authored geometry facts, but their meaning is owned by the dungeon
+domain model rather than by adapter-local recompute logic.
+
+SQLite adapters MUST persist the domain-provided stair spec, path nodes, exits,
+and corridor binding as one stair record graph. They MUST NOT infer missing path
+nodes, generate exits, choose labels, or repair corridor bindings during read or
+write. Malformed stair rows, unsupported scalar combinations, missing generated
+path or exit rows for a readable stair, or dangling corridor bindings are
+boundary errors for the domain/repository result, not view-layer behavior.
+
+Legacy `LADDER` and `RECTANGULAR` shape rows remain readable compatibility
+inputs. New editor-authored stair creation is governed by the requirements-owned
+visible shapes and must not require a schema change to avoid those legacy enum
+values.
+
 ## Validation And Error Behavior
 
 - authored persistence writes MUST reject incomplete identity, topology, or
@@ -65,6 +114,9 @@ Persisted authored truth includes:
   SQLite failures to the view layer
 - preview state, render structures, and other explicit non-persisted truth MUST
   be rejected from authored write payloads
+- stair persistence writes MUST reject a stair record graph whose scalar spec,
+  path nodes, exits, or corridor binding is incomplete for the domain-authored
+  stair being saved
 
 ## Migration And Stability Rules
 

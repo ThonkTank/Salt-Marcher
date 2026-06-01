@@ -27,6 +27,36 @@ public record DungeonTransition(
         return anchor != null;
     }
 
+    public DungeonTransition withDescription(String nextDescription) {
+        return new DungeonTransition(
+                transitionId,
+                mapId,
+                nextDescription,
+                anchor,
+                destination,
+                linkedTransitionId);
+    }
+
+    public DungeonTransition withDestination(DungeonTransitionDestination nextDestination) {
+        return new DungeonTransition(
+                transitionId,
+                mapId,
+                description,
+                anchor,
+                nextDestination,
+                linkedTransitionId);
+    }
+
+    public DungeonTransition withLinkedTransitionId(@Nullable Long nextLinkedTransitionId) {
+        return new DungeonTransition(
+                transitionId,
+                mapId,
+                description,
+                anchor,
+                destination,
+                nextLinkedTransitionId);
+    }
+
     private static @Nullable Long normalizedLinkedTransitionId(@Nullable Long transitionId) {
         return transitionId == null || transitionId <= 0L ? null : transitionId;
     }

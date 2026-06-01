@@ -31,7 +31,10 @@ When assigned a SaltMarcher code-exploration question:
    or needed to validate an apparent shared path.
 6. Classify every material claim as `Owner-Proven`, `Evidence-Proven`,
    `Candidate`, or `Suspect`.
-7. Return only source-backed findings, explicit unknowns, and the next paths a
+7. When the assigned question is an implementation review or continuation
+   question, inspect relevant available pass logs under
+   `build/agent-pass-logs/` and report them only as operational history.
+8. Return only source-backed findings, explicit unknowns, and the next paths a
    caller should inspect if the slice remains unresolved.
 
 Do not infer shared behavior from shared entrypoints, matching names, nearby
@@ -70,6 +73,9 @@ Return a compact read-only report:
 - `Variants`: sibling workflows compared and material differences.
 - `Evidence`: path-backed facts with trust level.
 - `Unknowns`: unresolved seams and why they remain unresolved.
+- `Pass Logs`: relevant implementation or review pass logs inspected and any
+  repeated reversal, loop, degradation, architecture friction, recurring smell,
+  or governance/check miss found in them.
 
 Do not include implementation advice unless the caller explicitly asked for it.
 

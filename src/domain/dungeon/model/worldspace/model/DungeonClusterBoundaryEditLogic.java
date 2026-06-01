@@ -69,6 +69,11 @@ final class DungeonClusterBoundaryEditLogic {
         Map<Long, List<DungeonCell>> roomCells = CELL_PROJECTOR.cellsByRoom(target.cluster(), target.rooms());
         boolean changed = false;
         for (DungeonEdge edge : edges) {
+            if (deleteBoundary) {
+                changed = removeExistingBoundaryIfAllowed(dungeonMap, target, boundaries, resolvedKind, edge)
+                        || changed;
+                continue;
+            }
             DungeonClusterBoundary candidate = GEOMETRY_SERVICE.boundaryForEdge(
                     edge == null || edge.from() == null ? Set.of() : Set.copyOf(target.cellsAt(edge.from().level())),
                     target.cluster().center(),
@@ -81,13 +86,120 @@ final class DungeonClusterBoundaryEditLogic {
             }
             DungeonBoundaryKey key = DungeonBoundaryKey.from(candidate.absoluteEdge(target.cluster().center()));
             DungeonClusterBoundary existing = boundaries.get(key);
-            changed = deleteBoundary
-                    ? DOOR_RULES.removeBoundaryIfAllowed(dungeonMap, target, boundaries, resolvedKind, key, existing)
-                    || changed
-                    : DOOR_RULES.upsertBoundaryIfAllowed(roomCells, boundaries, resolvedKind, edge, key, existing, candidate)
+            changed = DOOR_RULES.upsertBoundaryIfAllowed(
+                    roomCells,
+                    boundaries,
+                    resolvedKind,
+                    edge,
+                    key,
+                    existing,
+                    candidate)
                     || changed;
         }
         return new BoundaryEditResult(DungeonClusterBoundaryOrdering.boundariesByLevel(boundaries.values()), changed);
+    }
+
+    private boolean removeExistingBoundaryIfAllowed(
+            DungeonMap dungeonMap,
+            DungeonRoomTopologyClusterWork target,
+            Map<DungeonBoundaryKey, DungeonClusterBoundary> boundaries,
+            DungeonClusterBoundaryKind resolvedKind,
+            DungeonEdge edge
+    ) {
+        if (!validBoundaryEdge(edge)) {
+            return false;
+        }
+        DungeonBoundaryKey key = DungeonBoundaryKey.from(edge);
+        DungeonClusterBoundary existing = boundaries.get(key);
+        return resolvedKind == DungeonClusterBoundaryKind.WALL
+                ? deleteWallBoundary(target, boundaries, edge, key, existing)
+                : deleteDoorBoundary(dungeonMap, target, boundaries, resolvedKind, key, existing);
+    }
+
+    private boolean validBoundaryEdge(DungeonEdge edge) {
+        if (edge == null || edge.from() == null || edge.to() == null) {
+            return false;
+        }
+        List<DungeonCell> touchingCells = DungeonCellOrdering.sortedCells(edge.touchingCells());
+        return touchingCells.size() == 2 && touchingCells.getFirst().level() == touchingCells.get(1).level();
+    }
+
+    private boolean deleteWallBoundary(
+            DungeonRoomTopologyClusterWork target,
+            Map<DungeonBoundaryKey, DungeonClusterBoundary> boundaries,
+            DungeonEdge edge,
+            DungeonBoundaryKey key,
+            DungeonClusterBoundary existing
+    ) {
+        if (existing != null && existing.kind() == DungeonClusterBoundaryKind.DOOR) {
+            return false;
+        }
+        if (existing != null) {
+            boundaries.remove(key);
+        }
+        return insertOpenBoundaryIfNeeded(target, boundaries, edge, key, existing);
+    }
+
+    private boolean deleteDoorBoundary(
+            DungeonMap dungeonMap,
+            DungeonRoomTopologyClusterWork target,
+            Map<DungeonBoundaryKey, DungeonClusterBoundary> boundaries,
+            DungeonClusterBoundaryKind resolvedKind,
+            DungeonBoundaryKey key,
+            DungeonClusterBoundary existing
+    ) {
+        if (!DOOR_RULES.removeBoundaryIfAllowed(dungeonMap, target, boundaries, resolvedKind, key, existing)) {
+            return false;
+        }
+        insertWallBoundaryAfterDoorDelete(boundaries, key, existing);
+        return true;
+    }
+
+    private void insertWallBoundaryAfterDoorDelete(
+            Map<DungeonBoundaryKey, DungeonClusterBoundary> boundaries,
+            DungeonBoundaryKey key,
+            DungeonClusterBoundary existing
+    ) {
+        if (existing == null) {
+            return;
+        }
+        boundaries.put(key, new DungeonClusterBoundary(
+                existing.clusterId(),
+                existing.level(),
+                existing.relativeCell(),
+                existing.direction(),
+                DungeonClusterBoundaryKind.WALL,
+                DungeonTopologyRef.empty()));
+    }
+
+    private boolean insertOpenBoundaryIfNeeded(
+            DungeonRoomTopologyClusterWork target,
+            Map<DungeonBoundaryKey, DungeonClusterBoundary> boundaries,
+            DungeonEdge edge,
+            DungeonBoundaryKey key,
+            DungeonClusterBoundary existing
+    ) {
+        if (existing == null) {
+            DungeonClusterBoundary openBoundary = GEOMETRY_SERVICE.openBoundaryForEdge(
+                    Set.copyOf(target.cellsAt(edge.from().level())),
+                    target.cluster().center(),
+                    target.cluster().clusterId(),
+                    edge);
+            if (openBoundary == null || boundaries.containsKey(key)) {
+                return false;
+            }
+            boundaries.put(key, openBoundary);
+            return true;
+        }
+        DungeonClusterBoundary openBoundary = GEOMETRY_SERVICE.openBoundaryForEdge(
+                Set.copyOf(target.cellsAt(edge.from().level())),
+                target.cluster().center(),
+                target.cluster().clusterId(),
+                edge);
+        if (openBoundary != null) {
+            boundaries.put(key, openBoundary);
+        }
+        return true;
     }
 
     private boolean invalidBoundaryEditRequest(long clusterId, List<DungeonEdge> edges) {

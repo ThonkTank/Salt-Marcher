@@ -104,6 +104,9 @@ public record DungeonMapTopology(
         for (DungeonRoomCluster cluster : topology == null ? List.<DungeonRoomCluster>of() : topology.roomClusters()) {
             for (List<DungeonClusterBoundary> boundaries : cluster.boundariesByLevel().values()) {
                 for (DungeonClusterBoundary boundary : boundaries) {
+                    if (!boundary.kind().renderable()) {
+                        continue;
+                    }
                     DungeonTopologyRef ref = boundary.resolvedTopologyRef(cluster.center());
                     result.add(new DungeonTopologyBinding(
                             ref,

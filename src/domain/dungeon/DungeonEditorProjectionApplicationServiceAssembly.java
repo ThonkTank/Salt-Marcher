@@ -16,7 +16,6 @@ final class DungeonEditorProjectionApplicationServiceAssembly {
                         runtime.snapshotPublicationUseCase()),
                 new src.domain.dungeon.model.worldspace.usecase.SetDungeonEditorToolUseCase(
                         runtime.workflow(),
-                        runtime.snapshotBuilder(),
                         runtime.mainViewInterpreter(),
                         runtime.snapshotPublicationUseCase()),
                 new src.domain.dungeon.model.worldspace.usecase.ShiftDungeonEditorProjectionLevelUseCase(

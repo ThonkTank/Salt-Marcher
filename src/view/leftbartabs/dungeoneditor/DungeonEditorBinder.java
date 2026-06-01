@@ -10,6 +10,8 @@ import src.domain.dungeon.DungeonEditorMapApplicationService;
 import src.domain.dungeon.DungeonEditorNarrationApplicationService;
 import src.domain.dungeon.DungeonEditorPointerApplicationService;
 import src.domain.dungeon.DungeonEditorProjectionApplicationService;
+import src.domain.dungeon.DungeonEditorStairApplicationService;
+import src.domain.dungeon.DungeonEditorTransitionApplicationService;
 import src.domain.dungeon.published.DungeonEditorControlsModel;
 import src.domain.dungeon.published.DungeonEditorControlsSnapshot;
 import src.domain.dungeon.published.DungeonEditorMapSurfaceModel;
@@ -36,6 +38,10 @@ final class DungeonEditorBinder {
                 runtimeContext.services().require(DungeonEditorPointerApplicationService.class);
         DungeonEditorNarrationApplicationService narrationEditor =
                 runtimeContext.services().require(DungeonEditorNarrationApplicationService.class);
+        DungeonEditorTransitionApplicationService transitionEditor =
+                runtimeContext.services().require(DungeonEditorTransitionApplicationService.class);
+        DungeonEditorStairApplicationService stairEditor =
+                runtimeContext.services().require(DungeonEditorStairApplicationService.class);
         DungeonEditorControlsModel controlsModel = runtimeContext.services().require(DungeonEditorControlsModel.class);
         DungeonEditorMapSurfaceModel mapSurfaceModel = runtimeContext.services().require(DungeonEditorMapSurfaceModel.class);
         DungeonEditorStateModel stateModel = runtimeContext.services().require(DungeonEditorStateModel.class);
@@ -49,10 +55,13 @@ final class DungeonEditorBinder {
                         controlsContentModel,
                         stateContentModel,
                         mapContentModel,
-                        mapEditor,
-                        projectionEditor,
-                        pointerEditor,
-                        narrationEditor);
+                        new DungeonEditorIntentHandler.ApplicationServices(
+                                mapEditor,
+                                projectionEditor,
+                                pointerEditor,
+                                narrationEditor,
+                                transitionEditor,
+                                stairEditor));
         DungeonEditorControlsView controls = new DungeonEditorControlsView();
         DungeonMapView main = new DungeonMapView();
         DungeonEditorStateView state = new DungeonEditorStateView();

@@ -1,6 +1,6 @@
 Status: Draft
 Owner: SaltMarcher Team
-Last Reviewed: 2026-05-03
+Last Reviewed: 2026-05-28
 Source of Truth: Dungeon write model, ownership boundaries, and domain
 invariants.
 
@@ -95,6 +95,58 @@ DungeonMap
 The aggregate is the transaction boundary and the behavioral owner of mutable
 topology.
 
+## Stair Geometry Domain Truth
+
+`DungeonMap` owns stair geometry as authored connection truth. A stair's
+domain value is a `StairGeometrySpec` plus stable map-owned identity:
+
+- stable stair id and topology ref
+- shape, anchor cell, direction, `dimension1`, and `dimension2`
+- generated path cells
+- generated exits
+- optional owning corridor id for cross-level corridor segments
+
+The domain, not the view or data adapter, owns deterministic stair recompute.
+When shape, direction, dimensions, anchor, or exit span changes through a full
+stair edit, the aggregate must recompute the generated path and exits in the
+same mutation that preserves the stair identity. Direct handle movement of one
+path node is a narrower mutation and does not imply a full geometry recompute.
+
+Stair invariants:
+
+- supported editor-authored shapes are `STRAIGHT`, `SQUARE`, and `CIRCULAR`
+- legacy or imported stored shapes may be loaded for compatibility, but new
+  editor-authored stair creation must use one of the supported shapes above
+- direction is a cardinal dungeon edge direction
+- dimensions must already satisfy the requirements-owned min/max bounds before
+  the aggregate accepts the mutation
+- every readable stair has at least one path cell and at least two exits on
+  distinct levels
+- generated path cells are deterministic and unique for one stair
+- generated exits are ordered by level role and own stable exit ids where the
+  same role survives recompute
+- generated exit labels are domain-owned defaults unless a future state-panel
+  label edit creates explicit authored labels
+
+Cross-level corridor binding:
+
+- a corridor that connects authored endpoints on different levels owns the
+  intermediate stair segment through the stair's corridor binding
+- the bound stair remains selectable as a stair feature, but its edits must
+  preserve the owning corridor's endpoint levels and route continuity
+- deleting a bound stair directly is rejected; deleting the owning corridor
+  branch is the mutation that may remove the bound stair segment
+
+The aggregate rejects detected invalid stair geometry atomically. Rejection
+preserves the previous stair, path, exits, topology binding, selection target,
+and authored revision. Editor-authored create and full-recompute routes reject
+unsupported editor shapes, non-cardinal directions, out-of-range dimensions,
+nonunique generated path cells, and room-interior crossings outside generated
+exits when those values reach the aggregate. The current real View route
+constrains selected-stair shape and direction to supported values and proves
+rejection of invalid dimensions and room-interior crossings without mutating
+authored truth.
+
 ## Domain-Owned Ports
 
 - `DungeonMapRepository`
@@ -113,6 +165,8 @@ Active root boundaries:
 - `DungeonEditorProjectionApplicationService`
 - `DungeonEditorPointerApplicationService`
 - `DungeonEditorNarrationApplicationService`
+- `DungeonEditorStairApplicationService`
+- `DungeonEditorTransitionApplicationService`
 - `DungeonTravelRuntimeApplicationService`
 
 ## Invariants
@@ -126,6 +180,10 @@ Active root boundaries:
 - authored corridor anchors belong to one host corridor and may be referenced
   by other corridor segments
 - a corridor owning still-referenced anchors cannot be deleted
+- stair geometry recompute is aggregate-owned and must not be performed by view
+  models or SQLite adapters
+- bound stair segments cannot outlive the owning corridor and cannot be deleted
+  independently from that owning corridor branch
 
 ## Cross-Context Boundary
 

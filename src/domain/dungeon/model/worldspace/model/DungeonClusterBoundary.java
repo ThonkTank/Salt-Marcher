@@ -42,11 +42,18 @@ public record DungeonClusterBoundary(
         return kind == DungeonClusterBoundaryKind.DOOR;
     }
 
+    public boolean isOpen() {
+        return kind == DungeonClusterBoundaryKind.OPEN;
+    }
+
     public boolean matchesAbsoluteEdge(DungeonCell center, DungeonEdge edge) {
         return edge != null && DungeonBoundaryKey.from(absoluteEdge(center)).equals(DungeonBoundaryKey.from(edge));
     }
 
     public DungeonTopologyRef resolvedTopologyRef(DungeonCell center) {
+        if (isOpen()) {
+            return DungeonTopologyRef.empty();
+        }
         if (topologyRef.present()) {
             return topologyRef;
         }

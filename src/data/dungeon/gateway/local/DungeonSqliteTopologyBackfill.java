@@ -15,12 +15,17 @@ final class DungeonSqliteTopologyBackfill {
             "(dungeon_map_id, element_kind, element_id, cluster_id, corridor_id, label, sort_order)";
     private static final DungeonSqliteBoundaryTopologyBackfill BOUNDARY_BACKFILL =
             new DungeonSqliteBoundaryTopologyBackfill();
+    private static final DungeonSqliteOpenBoundaryTopologyCleanup OPEN_BOUNDARY_TOPOLOGY_CLEANUP =
+            new DungeonSqliteOpenBoundaryTopologyCleanup();
     private static final DungeonSqliteSeedMapCleanup SEED_MAP_CLEANUP =
             new DungeonSqliteSeedMapCleanup();
 
     void apply(Connection connection, boolean topologyTableExisted) throws SQLException {
-        if (!topologyTableExisted || topologyTableIsEmpty(connection)) {
+        boolean topologyNeedsBackfill = !topologyTableExisted || topologyTableIsEmpty(connection);
+        if (topologyNeedsBackfill) {
             backfillTopologyElements(connection);
+        } else if (OPEN_BOUNDARY_TOPOLOGY_CLEANUP.hasStaleOpenBoundaryTopologyRefs(connection)) {
+            OPEN_BOUNDARY_TOPOLOGY_CLEANUP.apply(connection);
         }
         SEED_MAP_CLEANUP.apply(connection);
     }

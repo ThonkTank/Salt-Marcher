@@ -86,7 +86,7 @@ public final class DungeonCorridorEndpointResolutionLogic {
                     ? corridor.withAnchorBinding(created)
                     : corridor);
         }
-        DungeonMap mapped = CONNECTION_NORMALIZATION_SERVICE.copyWithConnections(
+        DungeonMap mapped = copyWithUnprunedConnections(
                 dungeonMap,
                 new ConnectionCatalog(
                         List.copyOf(updatedCorridors),
@@ -158,6 +158,18 @@ public final class DungeonCorridorEndpointResolutionLogic {
             }
         }
         return result + 1L;
+    }
+
+    private static DungeonMap copyWithUnprunedConnections(DungeonMap dungeonMap, ConnectionCatalog nextConnections) {
+        return new DungeonMap(
+                dungeonMap.metadata(),
+                dungeonMap.topology(),
+                dungeonMap.topologyIndex(),
+                dungeonMap.spaces(),
+                dungeonMap.rooms(),
+                nextConnections,
+                dungeonMap.features(),
+                dungeonMap.revision() + 1L);
     }
 
     public record ResolvedEndpointResult(DungeonMap map, ResolvedCorridorEndpoint endpoint) {

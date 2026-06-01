@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-05-11
+Last Reviewed: 2026-05-26
 Source of Truth: Governance for agent instruction surfaces, the mandatory
 global instruction skill, and ownership boundaries between instruction
 artifacts.
@@ -69,6 +69,91 @@ SaltMarcher keeps review instructions in global skills, not in this standard.
   not create repo-local copies unless the user explicitly asks for a
   SaltMarcher-owned fork.
 
+## Implementation And Review Pass Logs
+
+SaltMarcher uses local pass logs as generated operational evidence for
+detecting repeated loops, reversals, quality drift, and architecture friction.
+They are not canonical documentation and must not redefine requirements,
+contracts, architecture, domain truth, or verification policy.
+
+- Implementation agents must write one implementation pass log after each
+  repo-tracked implementation pass and before starting the required Overview
+  handoff review.
+- Overview coordinators and specialist review agents must read the relevant
+  available implementation and review pass logs before classifying final review
+  status.
+- Nested specialist reviewers remain read-only. They must not write files
+  directly; they include pass-log evidence and trend observations in their
+  reviewer output.
+- The required review pass log is an aggregated Overview review-cycle log. The
+  main handoff agent writes it after each completed Overview review cycle from
+  the Overview result and reviewer outputs. If nested review orchestration is
+  unavailable and the main agent runs the top-level fallback review route, the
+  main handoff agent writes the aggregated review pass log from the direct
+  reviewer outputs.
+- Pass logs live under `build/agent-pass-logs/` and are generated local
+  evidence. Do not commit them and do not cite them as canonical truth.
+- Missing pass logs for prior work do not block a pass by themselves, but a
+  required current implementation or review pass without its log remains WIP
+  until the log is written or the blocker is reported.
+- If the build directory has been cleaned, reviewers treat the missing logs as
+  unavailable operational history rather than as evidence that no prior loop or
+  degradation occurred.
+
+Implementation log filenames must use:
+
+- `build/agent-pass-logs/YYYY-MM-DD-<kebab-task-slug>-implementation.md`
+
+Review aggregation log filenames must use:
+
+- `build/agent-pass-logs/YYYY-MM-DD-<kebab-task-slug>-review.md`
+
+Use the local calendar date from the log timestamp. If the exact filename
+already exists for a later same-day pass, append `-2`, `-3`, or the next
+integer before the suffix. Each log must start with one of these headings:
+
+- `# Implementation Pass Log: <task summary>`
+- `# Review Pass Log: <task summary>`
+
+The first metadata line must be `Timestamp: YYYY-MM-DD HH:MM:SS TZ +HHMM`,
+using the local time, named timezone, numeric offset, and exact time the log is
+written. Include `Parent Pass Log:` or `Related Pass Logs:` when the pass
+continues, reviews, or fixes known prior work.
+
+An implementation pass log must include:
+
+- exact local timestamp, actor role, task goal, and scope boundary
+- parent or related pass-log paths when known
+- touched paths and intentionally untouched dirty paths
+- owner documents and mandatory skills used
+- implementation summary and key tradeoffs
+- verification commands and literal results
+- reversals, reimplemented work, abandoned approaches, or repeated edits to the
+  same behavior
+- architecture, quality, maintainability, elegance, or performance friction
+  observed while implementing
+- open blockers and review needs
+
+A review pass log must include:
+
+- exact local timestamp, Overview aggregation role or main fallback handoff
+  role, reviewed scope, and reviewed pass-log paths
+- verification evidence inspected
+- selected review panel or unavailable nested-review blocker
+- findings and fix outcomes
+- trend observations, including repeated reversals, looped implementation,
+  growing complexity, recurring smells, architecture loopholes, or repeated
+  governance/check misses
+- escalation recommendations when systemic governance, skill, check, or
+  architecture changes may prevent recurrence
+- final clean, blocked, or WIP status
+
+When a review agent sees a systemic trend instead of an isolated defect, it
+must report that trend explicitly. If the trend suggests an architecture-model,
+governance, skill, or mechanical-check change, the review must classify it as a
+separate systemic finding unless the user or current scope explicitly includes
+that change.
+
 ## Verification Path
 
 - Covered Markdown-only instruction changes that stay inside the documentation
@@ -115,6 +200,10 @@ When a covered artifact changes, reviewers must check:
   coordinator result before handoff?
 - Did any specialist review skill used for the pass remain a read-only review
   lens instead of becoming a competing repo-owned workflow?
+- Did the implementation agent and Overview coordinator, or main fallback
+  handoff agent, write and use the required local pass logs?
+- Did the review inspect pass logs for repeated reversals, loops, degradation,
+  architecture friction, recurring smells, or governance/check misses?
 
 ## References
 

@@ -23,6 +23,10 @@ public final class ApplyDungeonEditorCreateWallUseCase {
         toolUseCase.dragBoundary(input, DungeonEditorSessionValues.Tool.WALL_CREATE);
     }
 
+    public void release(MainViewInput input) {
+        toolUseCase.releaseBoundary(input, DungeonEditorSessionValues.Tool.WALL_CREATE);
+    }
+
     public void hover(MainViewInput input) {
         toolUseCase.hoverBoundary(input, DungeonEditorSessionValues.Tool.WALL_CREATE);
     }

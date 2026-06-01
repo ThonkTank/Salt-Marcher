@@ -23,6 +23,10 @@ public final class ApplyDungeonEditorDeleteWallUseCase {
         toolUseCase.dragBoundary(input, DungeonEditorSessionValues.Tool.WALL_DELETE);
     }
 
+    public void release(MainViewInput input) {
+        toolUseCase.releaseBoundary(input, DungeonEditorSessionValues.Tool.WALL_DELETE);
+    }
+
     public void hover(MainViewInput input) {
         toolUseCase.hoverBoundary(input, DungeonEditorSessionValues.Tool.WALL_DELETE);
     }

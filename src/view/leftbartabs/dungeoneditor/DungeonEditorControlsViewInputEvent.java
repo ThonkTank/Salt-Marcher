@@ -15,8 +15,8 @@ public record DungeonEditorControlsViewInputEvent(
             @Nullable ProjectionSnapshot projection,
             @Nullable OverlaySnapshot overlay
     ) {
-        this.map = map == null ? new MapSnapshot(0L, null, false, false, false, false, false, false, false) : map;
-        this.tool = tool == null ? new ToolSnapshot(null, null, false) : tool;
+        this.map = map == null ? new MapSnapshot(0L, null, false, false, false, false, false, false, false, false) : map;
+        this.tool = tool == null ? new ToolSnapshot(null, null, null, false) : tool;
         this.projection = projection == null ? new ProjectionSnapshot(null, 0) : projection;
         this.overlay = overlay == null ? new OverlaySnapshot(null, 0, 0.0, null) : overlay;
     }
@@ -30,34 +30,19 @@ public record DungeonEditorControlsViewInputEvent(
             boolean deleteControlActivated,
             boolean dismissControlActivated,
             boolean submitControlActivated,
-            boolean confirmDeleteControlActivated
+            boolean confirmDeleteControlActivated,
+            boolean reloadControlActivated
     ) {
-        public MapSnapshot(
-                long selectedMapIdValue,
-                @Nullable String editorDraftName,
-                boolean editorInputObserved,
-                boolean createControlActivated,
-                boolean renameControlActivated,
-                boolean deleteControlActivated,
-                boolean dismissControlActivated,
-                boolean submitControlActivated,
-                boolean confirmDeleteControlActivated
-        ) {
-            this.selectedMapIdValue = Math.max(0L, selectedMapIdValue);
-            this.editorDraftName = editorDraftName == null ? "" : editorDraftName;
-            this.editorInputObserved = editorInputObserved;
-            this.createControlActivated = createControlActivated;
-            this.renameControlActivated = renameControlActivated;
-            this.deleteControlActivated = deleteControlActivated;
-            this.dismissControlActivated = dismissControlActivated;
-            this.submitControlActivated = submitControlActivated;
-            this.confirmDeleteControlActivated = confirmDeleteControlActivated;
+        public MapSnapshot {
+            selectedMapIdValue = Math.max(0L, selectedMapIdValue);
+            editorDraftName = editorDraftName == null ? "" : editorDraftName;
         }
     }
 
     public record ToolSnapshot(
             String requestedFamilyKey,
             String selectedToolKey,
+            String selectedOptionKey,
             boolean dismissControlActivated
     ) {
         public ToolSnapshot(
@@ -65,8 +50,18 @@ public record DungeonEditorControlsViewInputEvent(
                 @Nullable String selectedToolKey,
                 boolean dismissControlActivated
         ) {
+            this(requestedFamilyKey, selectedToolKey, selectedToolKey, dismissControlActivated);
+        }
+
+        public ToolSnapshot(
+                @Nullable String requestedFamilyKey,
+                @Nullable String selectedToolKey,
+                @Nullable String selectedOptionKey,
+                boolean dismissControlActivated
+        ) {
             this.requestedFamilyKey = requestedFamilyKey == null ? "" : requestedFamilyKey.strip();
             this.selectedToolKey = selectedToolKey == null ? "" : selectedToolKey.strip();
+            this.selectedOptionKey = selectedOptionKey == null ? "" : selectedOptionKey.strip();
             this.dismissControlActivated = dismissControlActivated;
         }
     }

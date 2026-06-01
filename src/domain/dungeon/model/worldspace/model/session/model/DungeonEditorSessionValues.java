@@ -54,6 +54,8 @@ public final class DungeonEditorSessionValues {
         public static final Tool CORRIDOR_CREATE = new Tool("CORRIDOR_CREATE");
         public static final Tool CORRIDOR_DELETE = new Tool("CORRIDOR_DELETE");
         public static final Tool STAIR_CREATE = new Tool("STAIR_CREATE");
+        public static final Tool STAIR_CREATE_SQUARE = new Tool("STAIR_CREATE_SQUARE");
+        public static final Tool STAIR_CREATE_CIRCULAR = new Tool("STAIR_CREATE_CIRCULAR");
         public static final Tool STAIR_DELETE = new Tool("STAIR_DELETE");
         public static final Tool TRANSITION_CREATE = new Tool("TRANSITION_CREATE");
         public static final Tool TRANSITION_DELETE = new Tool("TRANSITION_DELETE");
@@ -69,6 +71,8 @@ public final class DungeonEditorSessionValues {
                 CORRIDOR_CREATE,
                 CORRIDOR_DELETE,
                 STAIR_CREATE,
+                STAIR_CREATE_SQUARE,
+                STAIR_CREATE_CIRCULAR,
                 STAIR_DELETE,
                 TRANSITION_CREATE,
                 TRANSITION_DELETE
@@ -304,13 +308,47 @@ public final class DungeonEditorSessionValues {
 
     public static final class DeleteCorridorPreview implements Preview {
         private final long corridorId;
+        private final String targetKind;
+        private final long topologyRefId;
+        private final long roomId;
+        private final int waypointIndex;
 
         public DeleteCorridorPreview(long corridorId) {
+            this(corridorId, "CORRIDOR", 0L, 0L, 0);
+        }
+
+        public DeleteCorridorPreview(
+                long corridorId,
+                String targetKind,
+                long topologyRefId,
+                long roomId,
+                int waypointIndex
+        ) {
             this.corridorId = Math.max(0L, corridorId);
+            this.targetKind = targetKind == null || targetKind.isBlank() ? "CORRIDOR" : targetKind;
+            this.topologyRefId = Math.max(0L, topologyRefId);
+            this.roomId = Math.max(0L, roomId);
+            this.waypointIndex = Math.max(0, waypointIndex);
         }
 
         public long corridorId() {
             return corridorId;
+        }
+
+        public String targetKind() {
+            return targetKind;
+        }
+
+        public long topologyRefId() {
+            return topologyRefId;
+        }
+
+        public long roomId() {
+            return roomId;
+        }
+
+        public int waypointIndex() {
+            return waypointIndex;
         }
     }
 

@@ -121,7 +121,8 @@ final class DungeonCellTraversalSupport {
         }
         DungeonBoundaryKey movement = DungeonBoundaryKey.from(movementEdge);
         for (DungeonClusterBoundary barrier : barriers) {
-            if (barrier != null && DungeonBoundaryKey.from(barrier.absoluteEdge(center)).equals(movement)) {
+            if (barrier != null && !barrier.isOpen()
+                    && DungeonBoundaryKey.from(barrier.absoluteEdge(center)).equals(movement)) {
                 return true;
             }
         }

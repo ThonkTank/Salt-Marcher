@@ -9,7 +9,9 @@ public final class DungeonEditorNarrationApplicationService {
 
     private final SaveDungeonEditorRoomNarrationUseCase saveRoomNarrationUseCase;
 
-    DungeonEditorNarrationApplicationService(SaveDungeonEditorRoomNarrationUseCase saveRoomNarrationUseCase) {
+    DungeonEditorNarrationApplicationService(
+            SaveDungeonEditorRoomNarrationUseCase saveRoomNarrationUseCase
+    ) {
         this.saveRoomNarrationUseCase = Objects.requireNonNull(
                 saveRoomNarrationUseCase,
                 "saveRoomNarrationUseCase");

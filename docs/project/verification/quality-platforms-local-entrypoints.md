@@ -126,8 +126,10 @@ Focused investigation entrypoints are `compileJava`, `pmdMain`,
 `pmdStrictMain`, `checkRewriteNearMisses`, `spotbugsMain`, `cpdMain`,
 `lizardMain`, `ckjmMain`, repository/resource policy checks, technical
 `check*Enforcement` layer surfaces, `checkDocumentationEnforcement`, and the
-Gradle-owned `focused-handoff` route, each run through its documented command
-shape. Investigation tasks are not alternate production-handoff entries.
+feature-scoped `./gradlew dungeonEditorBehaviorHarness --console=plain`
+route for Dungeon Editor behavior catalog work, and the Gradle-owned
+`focused-handoff` route, each run through its documented command shape.
+Investigation tasks are not alternate production-handoff entries.
 
 ## Runtime Wrapper Policy
 

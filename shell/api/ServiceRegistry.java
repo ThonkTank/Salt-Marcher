@@ -94,14 +94,10 @@ public final class ServiceRegistry {
         }
 
         public ServiceRegistry build() {
-            ServiceRegistry registry = new ServiceRegistry(
+            return new ServiceRegistry(
                     new LinkedHashMap<>(services),
                     new LinkedHashMap<>(factories),
                     false);
-            for (Class<?> serviceType : factories.keySet()) {
-                registry.require(serviceType);
-            }
-            return new ServiceRegistry(registry.services);
         }
     }
 }

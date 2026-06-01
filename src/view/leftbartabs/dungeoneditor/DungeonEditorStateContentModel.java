@@ -8,16 +8,33 @@ import java.util.Set;
 import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import org.jspecify.annotations.Nullable;
+import src.domain.dungeon.published.DungeonEditorHandleKind;
+import src.domain.dungeon.published.DungeonEditorHandleRef;
 import src.domain.dungeon.published.DungeonInspectorSnapshot;
 import src.domain.dungeon.published.DungeonEditorPreview;
 import src.domain.dungeon.published.DungeonEditorStateSnapshot;
+import src.domain.dungeon.published.DungeonEditorTopologyElementRef;
+import src.domain.dungeon.published.DungeonTopologyElementKind;
 
 final class DungeonEditorStateContentModel {
+    private static final long NO_TRANSITION_ID = 0L;
+    private static final long NO_STAIR_ID = 0L;
+    private static final long NO_SELECTED_MAP_ID = 0L;
+    private static final String STAIR_KIND = "STAIR";
+    private static final String TRANSITION_CREATE_TOOL = "TRANSITION_CREATE";
+
     private final ReadOnlyObjectWrapper<StateProjection> stateProjection =
             new ReadOnlyObjectWrapper<>(StateProjection.initial());
     private final Map<VisualDraftKey, String> visualDrafts = new HashMap<>();
     private final Map<ExitDraftKey, String> exitDrafts = new HashMap<>();
+    private final Map<CorridorPointDraftKey, CorridorPointDraft> corridorPointDrafts = new HashMap<>();
+    private final Map<TransitionDraftKey, String> transitionDrafts = new HashMap<>();
+    private final Map<TransitionDestinationDraftKey, TransitionDestinationDraft> transitionDestinationDrafts =
+            new HashMap<>();
+    private final Map<StairGeometryDraftKey, StairGeometryDraft> stairGeometryDrafts = new HashMap<>();
     private StateProjectionContext currentContext = StateProjectionContext.empty();
+    private @Nullable DungeonEditorHandleRef currentEditableCorridorHandle;
+    private long currentSelectedTransitionId;
 
     ReadOnlyObjectProperty<StateProjection> stateProjectionProperty() {
         return stateProjection.getReadOnlyProperty();
@@ -36,12 +53,35 @@ final class DungeonEditorStateContentModel {
         currentContext = safeContext;
         List<RoomNarrationCardProjection> narrationCards =
                 ProjectionTextSupport.toNarrationCards(safeSnapshot.inspector());
-        pruneDrafts(safeContext.selectedMapIdValue(), narrationCards);
+        DungeonEditorHandleRef editableCorridorHandle = editableCorridorHandle(safeSnapshot.selection());
+        TransitionDescriptionProjection transitionDescription = transitionDescriptionProjection(
+                safeContext.selectedMapIdValue(),
+                safeSnapshot.selection(),
+                safeSnapshot.inspector());
+        TransitionDestinationProjection transitionDestination = transitionDestinationProjection(
+                safeContext,
+                safeSnapshot.selection());
+        StairGeometryProjection stairGeometry = stairGeometryProjection(
+                safeContext.selectedMapIdValue(),
+                safeSnapshot.selection(),
+                safeSnapshot.inspector());
+        currentEditableCorridorHandle = editableCorridorHandle;
+        currentSelectedTransitionId = selectedTransitionId(safeSnapshot.selection());
+        pruneDrafts(
+                safeContext.selectedMapIdValue(),
+                narrationCards,
+                editableCorridorHandle,
+                transitionDescription,
+                stairGeometry);
         stateProjection.set(new StateProjection(
                 ProjectionTextSupport.stateTextFor(safeSnapshot, safeContext),
                 safeContext.statusText(),
                 safeContext.busy(),
-                applyDrafts(safeContext.selectedMapIdValue(), narrationCards)));
+                applyDrafts(safeContext.selectedMapIdValue(), narrationCards),
+                corridorPointProjection(safeContext.selectedMapIdValue(), editableCorridorHandle),
+                transitionDestination,
+                transitionDescription,
+                stairGeometry));
     }
 
     @Nullable RoomNarrationCardProjection currentNarrationCard(long roomId) {
@@ -77,6 +117,101 @@ final class DungeonEditorStateContentModel {
         long selectedMapIdValue = currentContext.selectedMapIdValue();
         visualDrafts.remove(new VisualDraftKey(selectedMapIdValue, roomId));
         exitDrafts.keySet().removeIf(key -> key.selectedMapIdValue() == selectedMapIdValue && key.roomId() == roomId);
+    }
+
+    @Nullable DungeonEditorHandleRef currentEditableCorridorHandle() {
+        return currentEditableCorridorHandle;
+    }
+
+    void updateCorridorPointDraft(String q, String r) {
+        DungeonEditorHandleRef handleRef = currentEditableCorridorHandle;
+        if (handleRef == null) {
+            return;
+        }
+        corridorPointDrafts.put(
+                CorridorPointDraftKey.from(currentContext.selectedMapIdValue(), handleRef),
+                new CorridorPointDraft(q, r));
+    }
+
+    void clearCorridorPointDraft(DungeonEditorHandleRef handleRef) {
+        if (handleRef == null) {
+            return;
+        }
+        corridorPointDrafts.remove(CorridorPointDraftKey.from(currentContext.selectedMapIdValue(), handleRef));
+    }
+
+    void updateTransitionDescriptionDraft(long transitionId, String description) {
+        if (transitionId <= NO_TRANSITION_ID) {
+            return;
+        }
+        transitionDrafts.put(
+                new TransitionDraftKey(currentContext.selectedMapIdValue(), transitionId),
+                description == null ? "" : description);
+    }
+
+    void clearTransitionDescriptionDraft(long transitionId) {
+        transitionDrafts.remove(new TransitionDraftKey(currentContext.selectedMapIdValue(), transitionId));
+    }
+
+    void updateTransitionDestinationDraft(
+            String destinationType,
+            String mapId,
+            String tileId,
+            String transitionId,
+            boolean bidirectional
+    ) {
+        long selectedMapIdValue = currentContext.selectedMapIdValue();
+        if (selectedMapIdValue <= NO_SELECTED_MAP_ID) {
+            return;
+        }
+        transitionDestinationDrafts.put(
+                transitionDestinationDraftKey(selectedMapIdValue, currentSelectedTransitionId),
+                new TransitionDestinationDraft(destinationType, mapId, tileId, transitionId, bidirectional));
+    }
+
+    String currentTransitionDestinationType() {
+        return currentTransitionDestinationDraft().destinationType();
+    }
+
+    long currentTransitionDestinationMapId() {
+        return positiveLong(currentTransitionDestinationDraft().mapId());
+    }
+
+    long currentTransitionDestinationTileId() {
+        return positiveLong(currentTransitionDestinationDraft().tileId());
+    }
+
+    long currentTransitionDestinationTransitionId() {
+        return positiveLong(currentTransitionDestinationDraft().transitionId());
+    }
+
+    long currentSelectedTransitionId() {
+        return currentSelectedTransitionId;
+    }
+
+    private TransitionDestinationDraft currentTransitionDestinationDraft() {
+        return transitionDestinationDrafts.getOrDefault(
+                transitionDestinationDraftKey(currentContext.selectedMapIdValue(), currentSelectedTransitionId),
+                TransitionDestinationDraft.defaultDraft());
+    }
+
+    void updateStairGeometryDraft(
+            long stairId,
+            String shapeName,
+            String directionName,
+            String dimension1,
+            String dimension2
+    ) {
+        if (stairId <= NO_STAIR_ID) {
+            return;
+        }
+        stairGeometryDrafts.put(
+                new StairGeometryDraftKey(currentContext.selectedMapIdValue(), stairId),
+                new StairGeometryDraft(shapeName, directionName, dimension1, dimension2));
+    }
+
+    void clearStairGeometryDraft(long stairId) {
+        stairGeometryDrafts.remove(new StairGeometryDraftKey(currentContext.selectedMapIdValue(), stairId));
     }
 
     String currentVisualDescription(RoomNarrationCardProjection card) {
@@ -119,7 +254,13 @@ final class DungeonEditorStateContentModel {
                 .toList();
     }
 
-    private void pruneDrafts(long selectedMapIdValue, List<RoomNarrationCardProjection> cards) {
+    private void pruneDrafts(
+            long selectedMapIdValue,
+            List<RoomNarrationCardProjection> cards,
+            @Nullable DungeonEditorHandleRef corridorHandle,
+            @Nullable TransitionDescriptionProjection transitionDescription,
+            @Nullable StairGeometryProjection stairGeometry
+    ) {
         Set<VisualDraftKey> visibleVisuals = new HashSet<>();
         Set<ExitDraftKey> visibleExits = new HashSet<>();
         for (RoomNarrationCardProjection card : cards) {
@@ -132,13 +273,160 @@ final class DungeonEditorStateContentModel {
                 && !visibleVisuals.contains(key));
         exitDrafts.keySet().removeIf(key -> key.selectedMapIdValue() == selectedMapIdValue
                 && !visibleExits.contains(key));
+        CorridorPointDraftKey visibleCorridorPoint = corridorHandle == null
+                ? null
+                : CorridorPointDraftKey.from(selectedMapIdValue, corridorHandle);
+        corridorPointDrafts.keySet().removeIf(key -> key.selectedMapIdValue() == selectedMapIdValue
+                && !key.equals(visibleCorridorPoint));
+        TransitionDraftKey visibleTransition = transitionDescription == null
+                ? null
+                : new TransitionDraftKey(selectedMapIdValue, transitionDescription.transitionId());
+        transitionDrafts.keySet().removeIf(key -> key.selectedMapIdValue() == selectedMapIdValue
+                && !key.equals(visibleTransition));
+        StairGeometryDraftKey visibleStair = stairGeometry == null
+                ? null
+                : new StairGeometryDraftKey(selectedMapIdValue, stairGeometry.stairId());
+        stairGeometryDrafts.keySet().removeIf(key -> key.selectedMapIdValue() == selectedMapIdValue
+                && !key.equals(visibleStair));
+        transitionDestinationDrafts.keySet().removeIf(key -> key.selectedMapIdValue() == selectedMapIdValue
+                && !key.equals(transitionDestinationDraftKey(selectedMapIdValue, currentSelectedTransitionId)));
+    }
+
+    private @Nullable CorridorPointProjection corridorPointProjection(
+            long selectedMapIdValue,
+            @Nullable DungeonEditorHandleRef handleRef
+    ) {
+        if (handleRef == null) {
+            return null;
+        }
+        CorridorPointDraftKey draftKey = CorridorPointDraftKey.from(selectedMapIdValue, handleRef);
+        CorridorPointDraft draft = corridorPointDrafts.getOrDefault(
+                draftKey,
+                CorridorPointDraft.from(handleRef));
+        return new CorridorPointProjection(
+                corridorPointLabel(handleRef.kind()),
+                draft.q(),
+                draft.r(),
+                Integer.toString(handleRef.cell().level()));
+    }
+
+    private static @Nullable DungeonEditorHandleRef editableCorridorHandle(
+            DungeonEditorStateSnapshot.Selection selection
+    ) {
+        DungeonEditorStateSnapshot.Selection safeSelection = selection == null
+                ? DungeonEditorStateSnapshot.Selection.empty()
+                : selection;
+        DungeonEditorHandleRef handleRef = safeSelection.handleRef();
+        if (handleRef == null || !isEditableCorridorPoint(handleRef)) {
+            return null;
+        }
+        return handleRef;
+    }
+
+    private static boolean isEditableCorridorPoint(DungeonEditorHandleRef handleRef) {
+        DungeonEditorHandleKind kind = handleRef.kind();
+        DungeonTopologyElementKind topologyKind = handleRef.topologyRef().kind();
+        return (kind == DungeonEditorHandleKind.CORRIDOR_ANCHOR
+                || kind == DungeonEditorHandleKind.CORRIDOR_WAYPOINT)
+                && (topologyKind == DungeonTopologyElementKind.CORRIDOR
+                        || topologyKind == DungeonTopologyElementKind.CORRIDOR_ANCHOR);
+    }
+
+    private static String corridorPointLabel(DungeonEditorHandleKind kind) {
+        return kind == DungeonEditorHandleKind.CORRIDOR_WAYPOINT
+                ? "Korridor-Wegpunkt"
+                : "Korridor-Anker";
+    }
+
+    private @Nullable TransitionDescriptionProjection transitionDescriptionProjection(
+            long selectedMapIdValue,
+            DungeonEditorStateSnapshot.Selection selection,
+            @Nullable DungeonInspectorSnapshot inspector
+    ) {
+        DungeonEditorTopologyElementRef topologyRef = selection == null
+                ? DungeonEditorTopologyElementRef.empty()
+                : selection.topologyRef();
+        if (!"TRANSITION".equals(topologyRef.kind()) || topologyRef.id() <= 0L) {
+            return null;
+        }
+        String title = inspector == null || inspector.title().isBlank()
+                ? "Übergang " + topologyRef.id()
+                : inspector.title();
+        String description = inspector == null ? "" : inspector.summary();
+        String draft = transitionDrafts.getOrDefault(
+                new TransitionDraftKey(selectedMapIdValue, topologyRef.id()),
+                description);
+        return new TransitionDescriptionProjection(topologyRef.id(), title, draft);
+    }
+
+    private @Nullable TransitionDestinationProjection transitionDestinationProjection(
+            StateProjectionContext context,
+            DungeonEditorStateSnapshot.Selection selection
+    ) {
+        if (context.selectedMapIdValue() <= NO_SELECTED_MAP_ID) {
+            return null;
+        }
+        long selectedTransitionId = selectedTransitionId(selection);
+        if (!TRANSITION_CREATE_TOOL.equals(context.selectedToolKey()) && selectedTransitionId <= NO_TRANSITION_ID) {
+            return null;
+        }
+        TransitionDestinationDraft draft = transitionDestinationDrafts.getOrDefault(
+                transitionDestinationDraftKey(context.selectedMapIdValue(), selectedTransitionId),
+                TransitionDestinationDraft.defaultDraft());
+        return new TransitionDestinationProjection(
+                selectedTransitionId > NO_TRANSITION_ID ? "Übergang-Verknüpfung" : "Übergang-Ziel",
+                selectedTransitionId,
+                draft.destinationType(),
+                draft.mapId(),
+                draft.tileId(),
+                draft.transitionId(),
+                draft.bidirectional());
+    }
+
+    private static long selectedTransitionId(DungeonEditorStateSnapshot.Selection selection) {
+        DungeonEditorTopologyElementRef topologyRef = selection == null
+                ? DungeonEditorTopologyElementRef.empty()
+                : selection.topologyRef();
+        return "TRANSITION".equals(topologyRef.kind()) ? topologyRef.id() : 0L;
+    }
+
+    private @Nullable StairGeometryProjection stairGeometryProjection(
+            long selectedMapIdValue,
+            DungeonEditorStateSnapshot.Selection selection,
+            @Nullable DungeonInspectorSnapshot inspector
+    ) {
+        DungeonEditorTopologyElementRef topologyRef = selection == null
+                ? DungeonEditorTopologyElementRef.empty()
+                : selection.topologyRef();
+        if (!STAIR_KIND.equals(topologyRef.kind()) || topologyRef.id() <= 0L || inspector == null) {
+            return null;
+        }
+        StairGeometryDraft model = StairGeometryDraft.fromFacts(inspector.facts());
+        if (model == null) {
+            return null;
+        }
+        StairGeometryDraft draft = stairGeometryDrafts.getOrDefault(
+                new StairGeometryDraftKey(selectedMapIdValue, topologyRef.id()),
+                model);
+        String label = inspector.title().isBlank() ? "Treppe " + topologyRef.id() : inspector.title();
+        return new StairGeometryProjection(
+                topologyRef.id(),
+                label,
+                draft.shapeName(),
+                draft.directionName(),
+                draft.dimension1(),
+                draft.dimension2());
     }
 
     record StateProjection(
             String stateText,
             String statusText,
             boolean busy,
-            List<RoomNarrationCardProjection> narrationCards
+            List<RoomNarrationCardProjection> narrationCards,
+            @Nullable CorridorPointProjection corridorPoint,
+            @Nullable TransitionDestinationProjection transitionDestination,
+            @Nullable TransitionDescriptionProjection transitionDescription,
+            @Nullable StairGeometryProjection stairGeometry
     ) {
         StateProjection {
             stateText = stateText == null ? "" : stateText;
@@ -147,7 +435,7 @@ final class DungeonEditorStateContentModel {
         }
 
         static StateProjection initial() {
-            return new StateProjection("", "", false, List.of());
+            return new StateProjection("", "", false, List.of(), null, null, null, null);
         }
     }
 
@@ -156,6 +444,7 @@ final class DungeonEditorStateContentModel {
             String statusText,
             boolean busy,
             String selectedToolLabel,
+            String selectedToolKey,
             String viewModeLabel,
             int projectionLevel,
             String overlayLabel
@@ -164,6 +453,7 @@ final class DungeonEditorStateContentModel {
             selectedMapIdValue = Math.max(0L, selectedMapIdValue);
             statusText = statusText == null ? "" : statusText;
             selectedToolLabel = selectedToolLabel == null ? "Auswahl" : selectedToolLabel;
+            selectedToolKey = selectedToolKey == null ? "" : selectedToolKey;
             viewModeLabel = normalizeViewModeKey(viewModeLabel);
             projectionLevel = Math.max(0, projectionLevel);
             overlayLabel = overlayLabel == null ? "" : overlayLabel;
@@ -175,6 +465,7 @@ final class DungeonEditorStateContentModel {
                     "",
                     false,
                     "Auswahl",
+                    "",
                     "Grid",
                     0,
                     "");
@@ -210,6 +501,69 @@ final class DungeonEditorStateContentModel {
 
         RoomExitNarrationProjection withDescription(String nextDescription) {
             return new RoomExitNarrationProjection(label, q, r, level, direction, nextDescription);
+        }
+    }
+
+    record CorridorPointProjection(
+            String label,
+            String q,
+            String r,
+            String level
+    ) {
+        CorridorPointProjection {
+            label = label == null || label.isBlank() ? "Korridorpunkt" : label;
+            q = q == null ? "" : q;
+            r = r == null ? "" : r;
+            level = level == null ? "" : level;
+        }
+    }
+
+    record TransitionDescriptionProjection(
+            long transitionId,
+            String label,
+            String description
+    ) {
+        TransitionDescriptionProjection {
+            transitionId = Math.max(0L, transitionId);
+            label = label == null || label.isBlank() ? "Übergang" : label;
+            description = description == null ? "" : description;
+        }
+    }
+
+    record TransitionDestinationProjection(
+            String label,
+            long sourceTransitionId,
+            String destinationType,
+            String mapId,
+            String tileId,
+            String transitionId,
+            boolean bidirectional
+    ) {
+        TransitionDestinationProjection {
+            label = label == null || label.isBlank() ? "Übergang-Ziel" : label;
+            sourceTransitionId = Math.max(0L, sourceTransitionId);
+            destinationType = transitionDestinationType(destinationType);
+            mapId = mapId == null ? "" : mapId.strip();
+            tileId = tileId == null ? "" : tileId.strip();
+            transitionId = transitionId == null ? "" : transitionId.strip();
+        }
+    }
+
+    record StairGeometryProjection(
+            long stairId,
+            String label,
+            String shapeName,
+            String directionName,
+            String dimension1,
+            String dimension2
+    ) {
+        StairGeometryProjection {
+            stairId = Math.max(0L, stairId);
+            label = label == null || label.isBlank() ? "Treppe" : label;
+            shapeName = shapeName == null || shapeName.isBlank() ? "STRAIGHT" : shapeName;
+            directionName = directionName == null || directionName.isBlank() ? "NORTH" : directionName;
+            dimension1 = dimension1 == null ? "" : dimension1;
+            dimension2 = dimension2 == null ? "" : dimension2;
         }
     }
 
@@ -253,6 +607,154 @@ final class DungeonEditorStateContentModel {
                     safeExit.level(),
                     safeExit.direction());
         }
+    }
+
+    private record CorridorPointDraft(String q, String r) {
+        CorridorPointDraft {
+            q = q == null ? "" : q.strip();
+            r = r == null ? "" : r.strip();
+        }
+
+        static CorridorPointDraft from(DungeonEditorHandleRef handleRef) {
+            if (handleRef == null) {
+                return new CorridorPointDraft("0", "0");
+            }
+            return new CorridorPointDraft(
+                    Integer.toString(handleRef.cell().q()),
+                    Integer.toString(handleRef.cell().r()));
+        }
+    }
+
+    private record CorridorPointDraftKey(
+            long selectedMapIdValue,
+            String kind,
+            String topologyKind,
+            long topologyId,
+            long corridorId,
+            int index
+    ) {
+        CorridorPointDraftKey {
+            selectedMapIdValue = Math.max(0L, selectedMapIdValue);
+            kind = kind == null ? "" : kind;
+            topologyKind = topologyKind == null ? "" : topologyKind;
+            topologyId = Math.max(0L, topologyId);
+            corridorId = Math.max(0L, corridorId);
+            index = Math.max(0, index);
+        }
+
+        static CorridorPointDraftKey from(long selectedMapIdValue, DungeonEditorHandleRef handleRef) {
+            if (handleRef == null) {
+                return new CorridorPointDraftKey(selectedMapIdValue, "", "", 0L, 0L, 0);
+            }
+            return new CorridorPointDraftKey(
+                    selectedMapIdValue,
+                    handleRef.kind().name(),
+                    handleRef.topologyRef().kind().name(),
+                    handleRef.topologyRef().id(),
+                    handleRef.corridorId(),
+                    handleRef.index());
+        }
+    }
+
+    private record TransitionDraftKey(long selectedMapIdValue, long transitionId) {
+        TransitionDraftKey {
+            selectedMapIdValue = Math.max(0L, selectedMapIdValue);
+            transitionId = Math.max(0L, transitionId);
+        }
+    }
+
+    private record TransitionDestinationDraftKey(long selectedMapIdValue, long sourceTransitionId) {
+        TransitionDestinationDraftKey {
+            selectedMapIdValue = Math.max(0L, selectedMapIdValue);
+            sourceTransitionId = Math.max(0L, sourceTransitionId);
+        }
+    }
+
+    private record TransitionDestinationDraft(
+            String destinationType,
+            String mapId,
+            String tileId,
+            String transitionId,
+            boolean bidirectional
+    ) {
+        TransitionDestinationDraft {
+            destinationType = transitionDestinationType(destinationType);
+            mapId = mapId == null ? "" : mapId.strip();
+            tileId = tileId == null ? "" : tileId.strip();
+            transitionId = transitionId == null ? "" : transitionId.strip();
+        }
+
+        static TransitionDestinationDraft defaultDraft() {
+            return new TransitionDestinationDraft("OVERWORLD_TILE", "", "", "", true);
+        }
+    }
+
+    private record StairGeometryDraftKey(long selectedMapIdValue, long stairId) {
+        StairGeometryDraftKey {
+            selectedMapIdValue = Math.max(0L, selectedMapIdValue);
+            stairId = Math.max(0L, stairId);
+        }
+    }
+
+    private record StairGeometryDraft(
+            String shapeName,
+            String directionName,
+            String dimension1,
+            String dimension2
+    ) {
+        StairGeometryDraft {
+            shapeName = shapeName == null || shapeName.isBlank() ? "STRAIGHT" : shapeName.strip();
+            directionName = directionName == null || directionName.isBlank() ? "NORTH" : directionName.strip();
+            dimension1 = dimension1 == null ? "" : dimension1.strip();
+            dimension2 = dimension2 == null ? "" : dimension2.strip();
+        }
+
+        private static @Nullable StairGeometryDraft fromFacts(List<String> facts) {
+            Map<String, String> values = new HashMap<>();
+            for (String fact : facts == null ? List.<String>of() : facts) {
+                int separator = fact.indexOf(':');
+                if (separator > 0) {
+                    values.put(fact.substring(0, separator).strip(), fact.substring(separator + 1).strip());
+                }
+            }
+            String shape = values.get("shape");
+            String direction = values.get("direction");
+            String dimension1 = values.get("dimension1");
+            String dimension2 = values.get("dimension2");
+            if (shape == null || direction == null || dimension1 == null || dimension2 == null) {
+                return null;
+            }
+            return new StairGeometryDraft(shape, direction, dimension1, dimension2);
+        }
+    }
+
+    private static String transitionDestinationType(String value) {
+        String normalized = value == null ? "" : value.strip().toUpperCase(java.util.Locale.ROOT);
+        if (normalized.isBlank()) {
+            return "OVERWORLD_TILE";
+        }
+        if ("DUNGEON_MAP".equals(normalized) || "OVERWORLD_TILE".equals(normalized)) {
+            return normalized;
+        }
+        return normalized;
+    }
+
+    private static long positiveLong(String value) {
+        if (value == null || value.isBlank()) {
+            return 0L;
+        }
+        try {
+            return Math.max(0L, Long.parseLong(value.strip()));
+        } catch (NumberFormatException ignored) {
+            return 0L;
+        }
+    }
+
+    private static TransitionDestinationDraftKey transitionDestinationDraftKey(
+            long selectedMapIdValue,
+            long sourceTransitionId
+    ) {
+        return new TransitionDestinationDraftKey(selectedMapIdValue, Math.max(0L, sourceTransitionId));
     }
 
     private static final class ProjectionTextSupport {

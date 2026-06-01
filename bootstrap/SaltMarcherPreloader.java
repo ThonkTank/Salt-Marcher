@@ -69,19 +69,19 @@ public final class SaltMarcherPreloader extends Preloader {
         return scene;
     }
 
-    @SuppressWarnings("PMD.LawOfDemeter")
-    private static boolean beforeStart(StateChangeNotification notification) {
-        return notification.getType() == StateChangeNotification.Type.BEFORE_START;
+    private static boolean beforeStart(StateChangeNotification javaFxPreloaderStateChangeNotification) {
+        StateChangeNotification.Type type = javaFxPreloaderStateChangeNotification.getType();
+        return type == StateChangeNotification.Type.BEFORE_START;
     }
 
-    @SuppressWarnings("PMD.LawOfDemeter")
     private static void addStyleClass(Label label, String styleClass) {
-        label.getStyleClass().add(styleClass);
+        var styleClasses = label.getStyleClass();
+        styleClasses.add(styleClass);
     }
 
-    @SuppressWarnings("PMD.LawOfDemeter")
     private static void addStyleClass(VBox box, String styleClass) {
-        box.getStyleClass().add(styleClass);
+        var styleClasses = box.getStyleClass();
+        styleClasses.add(styleClass);
     }
 
     public static final class AppReadyNotification implements PreloaderNotification {

@@ -1,6 +1,7 @@
 package src.domain.dungeon.model.worldspace.usecase;
 
 import java.util.Objects;
+import src.domain.dungeon.model.worldspace.model.session.model.DungeonEditorSession;
 import src.domain.dungeon.model.worldspace.model.session.model.DungeonEditorSessionSnapshot;
 
 public final class PublishDungeonEditorSnapshotUseCase {
@@ -12,5 +13,10 @@ public final class PublishDungeonEditorSnapshotUseCase {
 
     public void execute(DungeonEditorSessionSnapshot.SnapshotData snapshot) {
         publication.publishEditorSnapshot(Objects.requireNonNull(snapshot, "snapshot"));
+    }
+
+    public void executeToolSelection(DungeonEditorSession session) {
+        DungeonEditorSession safeSession = session == null ? DungeonEditorSession.empty() : session;
+        publication.publishEditorToolSelection(safeSession.selectedTool(), safeSession.statusText());
     }
 }

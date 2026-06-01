@@ -3,6 +3,9 @@ package src.domain.dungeon.model.worldspace.model;
 import java.util.Locale;
 
 public final class DungeonTopologyElementKind {
+    private static final String DOOR_KIND = "door";
+    private static final String OPEN_KIND = "open";
+
     public static final DungeonTopologyElementKind EMPTY = new DungeonTopologyElementKind("EMPTY");
     public static final DungeonTopologyElementKind ROOM = new DungeonTopologyElementKind("ROOM");
     public static final DungeonTopologyElementKind CORRIDOR = new DungeonTopologyElementKind("CORRIDOR");
@@ -39,7 +42,14 @@ public final class DungeonTopologyElementKind {
         if (kind == null || kind.isBlank()) {
             return WALL;
         }
-        return "door".equals(kind.trim().toLowerCase(Locale.ROOT)) ? DOOR : WALL;
+        String normalized = kind.trim().toLowerCase(Locale.ROOT);
+        if (DOOR_KIND.equals(normalized)) {
+            return DOOR;
+        }
+        if (OPEN_KIND.equals(normalized)) {
+            return EMPTY;
+        }
+        return WALL;
     }
 
     public static DungeonTopologyElementKind fromFeatureType(DungeonFeatureType kind) {

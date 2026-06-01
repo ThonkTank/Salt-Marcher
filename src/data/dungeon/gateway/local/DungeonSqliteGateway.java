@@ -17,12 +17,11 @@ public final class DungeonSqliteGateway {
 
     private static final String INSERT_INTO = "INSERT INTO ";
     private static final String SQL_FROM = " FROM ";
-    private static final String SQL_WHERE = " WHERE ";
     private static final String SELECT_MAP_COLUMNS = "SELECT dungeon_map_id, name";
-    private static final String WHERE_DUNGEON_MAP_ID = SQL_WHERE + "dungeon_map_id=?";
 
-    private final DungeonSqliteConnectionFactory connectionFactory;
-    private final DungeonSqliteSchemaManager schemaManager;
+    private final DungeonSqliteConnectionSupport connectionSupport;
+    private final DungeonSqliteMapBatchGateway batchGateway;
+    private final DungeonSqliteIdentityReservation identityReservation;
 
     public DungeonSqliteGateway() {
         this(new DungeonSqliteConnectionFactory(), new DungeonSqliteSchemaManager());
@@ -32,21 +31,26 @@ public final class DungeonSqliteGateway {
             DungeonSqliteConnectionFactory connectionFactory,
             DungeonSqliteSchemaManager schemaManager
     ) {
-        this.connectionFactory = connectionFactory;
-        this.schemaManager = schemaManager;
+        connectionSupport = new DungeonSqliteConnectionSupport(connectionFactory, schemaManager);
+        batchGateway = new DungeonSqliteMapBatchGateway(connectionFactory, schemaManager);
+        identityReservation = new DungeonSqliteIdentityReservation(connectionFactory, schemaManager);
     }
 
     public List<DungeonMapRecord> searchMaps(String query) {
         String normalized = query == null ? "" : query.trim().toLowerCase(Locale.ROOT);
-        try (Connection connection = openReadyConnection();
-             PreparedStatement statement = connection.prepareStatement(
+        try (Connection connection = connectionSupport.openReadyConnection();
+            PreparedStatement statement = connection.prepareStatement(
                      SELECT_MAP_COLUMNS + SQL_FROM
                              + DungeonPersistenceSchema.MAPS_TABLE
                              + " ORDER BY name COLLATE NOCASE, dungeon_map_id")) {
             List<DungeonMapRecord> records = new ArrayList<>();
             try (ResultSet resultSet = statement.executeQuery()) {
                 while (resultSet.next()) {
-                    DungeonMapRecord record = DungeonSqliteMapRecordLoader.load(connection, resultSet);
+                    DungeonMapRecord record = new DungeonMapRecord(
+                            resultSet.getLong("dungeon_map_id"),
+                            resultSet.getString("name"),
+                            1L,
+                            null);
                     if (normalized.isBlank() || record.name().toLowerCase(Locale.ROOT).contains(normalized)) {
                         records.add(record);
                     }
@@ -59,7 +63,7 @@ public final class DungeonSqliteGateway {
     }
 
     public Optional<DungeonMapRecord> firstMap() {
-        try (Connection connection = openReadyConnection();
+        try (Connection connection = connectionSupport.openReadyConnection();
              PreparedStatement statement = connection.prepareStatement(
                      SELECT_MAP_COLUMNS + SQL_FROM
                              + DungeonPersistenceSchema.MAPS_TABLE
@@ -76,8 +80,8 @@ public final class DungeonSqliteGateway {
     }
 
     public Optional<DungeonMapRecord> findMap(long mapId) {
-        try (Connection connection = openReadyConnection()) {
-            return findMap(connection, mapId);
+        try (Connection connection = connectionSupport.openReadyConnection()) {
+            return DungeonSqliteConnectionSupport.findMap(connection, mapId);
         } catch (SQLException exception) {
             throw new IllegalStateException("Failed to load dungeon map from SQLite.", exception);
         }
@@ -87,28 +91,12 @@ public final class DungeonSqliteGateway {
         if (record == null) {
             throw new IllegalArgumentException("record must not be null");
         }
-        try (Connection connection = openReadyConnection()) {
-            boolean previousAutoCommit = connection.getAutoCommit();
-            connection.setAutoCommit(false);
-            try {
-                DungeonSqliteMapRecordWriter.persist(connection, record);
-                DungeonSqliteConnectionPersistence.persist(connection, record);
-                DungeonSqliteTopologyElementGateway.persist(connection, record);
-                connection.commit();
-                return findMap(connection, record.mapId()).orElse(record);
-            } catch (SQLException exception) {
-                rollbackQuietly(connection);
-                throw new IllegalStateException("Failed to save dungeon map to SQLite.", exception);
-            } finally {
-                connection.setAutoCommit(previousAutoCommit);
-            }
-        } catch (SQLException exception) {
-            throw new IllegalStateException("Failed to save dungeon map to SQLite.", exception);
-        }
+        List<DungeonMapRecord> savedRecords = batchGateway.saveMaps(List.of(record));
+        return savedRecords.isEmpty() ? record : savedRecords.get(0);
     }
 
     public void deleteMap(long mapId) {
-        try (Connection connection = openReadyConnection()) {
+        try (Connection connection = connectionSupport.openReadyConnection()) {
             DungeonSqliteMapRecordWriter.deleteMap(connection, mapId);
         } catch (SQLException exception) {
             throw new IllegalStateException("Failed to delete dungeon map from SQLite.", exception);
@@ -116,7 +104,7 @@ public final class DungeonSqliteGateway {
     }
 
     public long nextMapId() {
-        try (Connection connection = openReadyConnection();
+        try (Connection connection = connectionSupport.openReadyConnection();
              PreparedStatement statement = connection.prepareStatement(
                      INSERT_INTO + DungeonPersistenceSchema.MAPS_TABLE + "(name) VALUES(?)",
                      Statement.RETURN_GENERATED_KEYS)) {
@@ -136,37 +124,12 @@ public final class DungeonSqliteGateway {
         }
     }
 
-    private Optional<DungeonMapRecord> findMap(Connection connection, long mapId) throws SQLException {
-        try (PreparedStatement statement = connection.prepareStatement(
-                SELECT_MAP_COLUMNS + SQL_FROM
-                        + DungeonPersistenceSchema.MAPS_TABLE
-                        + WHERE_DUNGEON_MAP_ID)) {
-            statement.setLong(1, mapId);
-            try (ResultSet resultSet = statement.executeQuery()) {
-                if (resultSet.next()) {
-                    return Optional.of(DungeonSqliteMapRecordLoader.load(connection, resultSet));
-                }
-                return Optional.empty();
-            }
-        }
+    public long nextStairId() {
+        return identityReservation.nextStairId();
     }
 
-    private Connection openReadyConnection() throws SQLException {
-        Connection connection = connectionFactory.openConnection();
-        try {
-            schemaManager.ensureSchema(connection);
-            return connection;
-        } catch (SQLException exception) {
-            connection.close();
-            throw exception;
-        }
+    public long nextTransitionId() {
+        return identityReservation.nextTransitionId();
     }
 
-    private static void rollbackQuietly(Connection connection) {
-        try {
-            connection.rollback();
-        } catch (SQLException ignored) {
-            // Preserve the original storage failure that triggered the rollback.
-        }
-    }
 }

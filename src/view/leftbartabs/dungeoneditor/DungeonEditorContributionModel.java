@@ -115,6 +115,7 @@ public final class DungeonEditorContributionModel {
                             statusText,
                             false,
                             selectedToolLabel,
+                            safeSource.selectedTool().name(),
                             viewModeLabel,
                             clampedProjectionLevel,
                             overlayProjection.overlayLabel());

@@ -1838,11 +1838,19 @@ public final class DungeonMapContentModel {
         }
 
         private static PaintStyle visibleStyle(DungeonMapRenderState.Edge edge) {
-            RenderColor stroke = edge.isDoor()
-                    ? ScenePalette.DOOR_STROKE
-                    : edge.selected() ? ScenePalette.HIGHLIGHT_STROKE : ScenePalette.WALL_STROKE;
-            double strokeWidth = edge.isDoor() ? 3.6 / 32.0 : edge.selected() ? 2.8 / 32.0 : 2.0 / 32.0;
+            RenderColor stroke = edge.selected()
+                    ? ScenePalette.HIGHLIGHT_STROKE
+                    : edge.isDoor() ? ScenePalette.DOOR_STROKE : ScenePalette.WALL_STROKE;
+            double strokeWidth = edge.selected() ? selectedStrokeWidth(edge) : unselectedStrokeWidth(edge);
             return new PaintStyle(null, stroke, strokeWidth, 1.0, false);
+        }
+
+        private static double selectedStrokeWidth(DungeonMapRenderState.Edge edge) {
+            return edge.isDoor() ? 4.2 / 32.0 : 2.8 / 32.0;
+        }
+
+        private static double unselectedStrokeWidth(DungeonMapRenderState.Edge edge) {
+            return edge.isDoor() ? 3.6 / 32.0 : 2.0 / 32.0;
         }
     }
 
@@ -2026,6 +2034,8 @@ public final class DungeonMapContentModel {
         labels.put(DungeonEditorTool.CORRIDOR_CREATE, "Korridor erstellen");
         labels.put(DungeonEditorTool.CORRIDOR_DELETE, "Korridor löschen");
         labels.put(DungeonEditorTool.STAIR_CREATE, "Treppe erstellen");
+        labels.put(DungeonEditorTool.STAIR_CREATE_SQUARE, "Treppe erstellen");
+        labels.put(DungeonEditorTool.STAIR_CREATE_CIRCULAR, "Treppe erstellen");
         labels.put(DungeonEditorTool.STAIR_DELETE, "Treppe löschen");
         labels.put(DungeonEditorTool.TRANSITION_CREATE, "Übergang erstellen");
         labels.put(DungeonEditorTool.TRANSITION_DELETE, "Übergang löschen");
@@ -2335,10 +2345,12 @@ public final class DungeonMapContentModel {
         int movedQ = cell.q() + movePreview.deltaQ();
         int movedR = cell.r() + movePreview.deltaR();
         int movedLevel = cell.level() + movePreview.deltaLevel();
+        double markerQ = EditorElementKinds.handleMarkerCoordinate(ref.kind(), movedQ);
+        double markerR = EditorElementKinds.handleMarkerCoordinate(ref.kind(), movedR);
         markers.add(new DungeonMapRenderState.Marker(
                 EditorElementKinds.handleMarkerLabel(ref.kind()),
-                movedQ + 0.5,
-                movedR + 0.5,
+                markerQ,
+                markerR,
                 movedLevel,
                 EditorElementKinds.handleMarkerKind(ref.kind()),
                 true,
@@ -2800,10 +2812,12 @@ public final class DungeonMapContentModel {
             boolean preview
     ) {
         DungeonEditorHandleRef ref = handle.ref();
+        double markerQ = EditorElementKinds.handleMarkerCoordinate(ref.kind(), handle.cell().q());
+        double markerR = EditorElementKinds.handleMarkerCoordinate(ref.kind(), handle.cell().r());
         return new DungeonMapRenderState.Marker(
                 EditorElementKinds.handleMarkerLabel(ref.kind()),
-                handle.cell().q() + 0.5,
-                handle.cell().r() + 0.5,
+                markerQ,
+                markerR,
                 handle.cell().level(),
                 EditorElementKinds.handleMarkerKind(ref.kind()),
                 EditorSelectionFacts.selectedHandle(ref, selection),
@@ -2954,7 +2968,14 @@ public final class DungeonMapContentModel {
         return DungeonMapRenderState.MarkerKind.WAYPOINT;
     }
 
+    static double handleMarkerCoordinate(DungeonEditorHandleKind kind, int coordinate) {
+        return kind == DungeonEditorHandleKind.CLUSTER_CORNER ? coordinate : coordinate + 0.5;
+    }
+
     static String handleMarkerLabel(DungeonEditorHandleKind kind) {
+        if (kind == DungeonEditorHandleKind.CLUSTER_CORNER) {
+            return "+";
+        }
         if (kind == DungeonEditorHandleKind.DOOR) {
             return "D";
         }

@@ -63,6 +63,10 @@ public record DungeonCorridorBindings(
         return new DungeonCorridorBindings(waypoints, doorBindings, anchorBindings, updated);
     }
 
+    public DungeonCorridorBindings withWaypoints(List<DungeonCorridorWaypoint> nextWaypoints) {
+        return new DungeonCorridorBindings(nextWaypoints, doorBindings, anchorBindings, anchorRefs);
+    }
+
     public DungeonCorridorBindings replaceAnchorBindings(List<DungeonCorridorAnchorBinding> updatedBindings) {
         return new DungeonCorridorBindings(waypoints, doorBindings, updatedBindings, anchorRefs);
     }

@@ -50,8 +50,15 @@ public final class DungeonEditorAuthoredOperation {
         return new DungeonEditorAuthoredOperation(new CreateCorridor(start, end));
     }
 
-    public static DungeonEditorAuthoredOperation deleteCorridor(long corridorId) {
-        return new DungeonEditorAuthoredOperation(new DeleteCorridor(corridorId));
+    public static DungeonEditorAuthoredOperation deleteCorridor(
+            long corridorId,
+            String targetKind,
+            long topologyRefId,
+            long roomId,
+            int waypointIndex
+    ) {
+        return new DungeonEditorAuthoredOperation(
+                new DeleteCorridor(corridorId, targetKind, topologyRefId, roomId, waypointIndex));
     }
 
     public static DungeonEditorAuthoredOperation moveEditorHandle(
@@ -170,15 +177,19 @@ public final class DungeonEditorAuthoredOperation {
         }
     }
 
-    public static final class DeleteCorridor implements Variant {
-        private final long corridorId;
-
-        private DeleteCorridor(long corridorId) {
-            this.corridorId = Math.max(0L, corridorId);
-        }
-
-        public long corridorId() {
-            return corridorId;
+    public record DeleteCorridor(
+            long corridorId,
+            String targetKind,
+            long topologyRefId,
+            long roomId,
+            int waypointIndex
+    ) implements Variant {
+        public DeleteCorridor {
+            corridorId = Math.max(0L, corridorId);
+            targetKind = targetKind == null || targetKind.isBlank() ? "CORRIDOR" : targetKind;
+            topologyRefId = Math.max(0L, topologyRefId);
+            roomId = Math.max(0L, roomId);
+            waypointIndex = Math.max(0, waypointIndex);
         }
     }
 

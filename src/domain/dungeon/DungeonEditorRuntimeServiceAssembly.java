@@ -42,6 +42,20 @@ final class DungeonEditorRuntimeServiceAssembly {
         return component(registry, publishedState).narrationService();
     }
 
+    DungeonEditorTransitionApplicationService transitionService(
+            ServiceRegistry registry,
+            DungeonAuthoredPublishedStateServiceAssembly publishedState
+    ) {
+        return component(registry, publishedState).transitionService();
+    }
+
+    DungeonEditorStairApplicationService stairService(
+            ServiceRegistry registry,
+            DungeonAuthoredPublishedStateServiceAssembly publishedState
+    ) {
+        return component(registry, publishedState).stairService();
+    }
+
     private DungeonEditorRuntimeComponentServiceAssembly.EditorRuntimeComponent component(
             ServiceRegistry registry,
             DungeonAuthoredPublishedStateServiceAssembly publishedState

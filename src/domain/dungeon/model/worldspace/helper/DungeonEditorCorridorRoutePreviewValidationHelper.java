@@ -1,0 +1,95 @@
+package src.domain.dungeon.model.worldspace.helper;
+
+import java.util.LinkedHashSet;
+import java.util.Set;
+import org.jspecify.annotations.Nullable;
+import src.domain.dungeon.model.worldspace.model.interaction.model.DungeonEditorInteractionValues.CellKey;
+import src.domain.dungeon.model.worldspace.model.interaction.model.DungeonEditorInteractionValues.TravelHeading;
+import src.domain.dungeon.model.worldspace.model.interaction.model.DungeonEditorMainViewInteractionValues.PendingCorridorTarget;
+import src.domain.dungeon.model.worldspace.model.workspace.model.DungeonEditorWorkspaceValues;
+
+public final class DungeonEditorCorridorRoutePreviewValidationHelper {
+
+    public boolean hasValidRoute(
+            DungeonEditorWorkspaceValues.MapSnapshot snapshot,
+            PendingCorridorTarget start,
+            PendingCorridorTarget end
+    ) {
+        DungeonEditorWorkspaceValues.Cell startCell = corridorCell(start.endpoint());
+        DungeonEditorWorkspaceValues.Cell endCell = corridorCell(end.endpoint());
+        if (snapshot == null || startCell == null || endCell == null || startCell.level() != endCell.level()) {
+            return true;
+        }
+        Set<CellKey> roomCells = roomCells(snapshot);
+        return !horizontalRouteBlocked(startCell, endCell, roomCells);
+    }
+
+    DungeonEditorWorkspaceValues.@Nullable Cell corridorCell(
+            DungeonEditorWorkspaceValues.CorridorEndpoint endpoint
+    ) {
+        return switch (endpoint) {
+            case DungeonEditorWorkspaceValues.CorridorDoorEndpoint door ->
+                    neighbor(door.roomCell(), travelHeading(door.direction()));
+            case DungeonEditorWorkspaceValues.CorridorAnchorEndpoint anchor -> anchor.anchorCell();
+            case null -> null;
+        };
+    }
+
+    private static Set<CellKey> roomCells(DungeonEditorWorkspaceValues.MapSnapshot snapshot) {
+        Set<CellKey> result = new LinkedHashSet<>();
+        for (DungeonEditorWorkspaceValues.Area area : snapshot.areas()) {
+            if (area.kind().isRoom()) {
+                for (DungeonEditorWorkspaceValues.Cell cell : area.cells()) {
+                    result.add(new CellKey(cell.q(), cell.r(), cell.level()));
+                }
+            }
+        }
+        return Set.copyOf(result);
+    }
+
+    private static boolean horizontalRouteBlocked(
+            DungeonEditorWorkspaceValues.Cell start,
+            DungeonEditorWorkspaceValues.Cell end,
+            Set<CellKey> roomCells
+    ) {
+        int q = start.q();
+        int r = start.r();
+        Set<CellKey> route = new LinkedHashSet<>();
+        route.add(new CellKey(q, r, start.level()));
+        while (q != end.q()) {
+            q += Integer.compare(end.q(), q);
+            route.add(new CellKey(q, r, start.level()));
+        }
+        while (r != end.r()) {
+            r += Integer.compare(end.r(), r);
+            route.add(new CellKey(q, r, start.level()));
+        }
+        return routeContainsRoom(route, roomCells);
+    }
+
+    private static boolean routeContainsRoom(Set<CellKey> route, Set<CellKey> roomCells) {
+        for (CellKey cell : route) {
+            if (roomCells.contains(cell)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static DungeonEditorWorkspaceValues.Cell neighbor(
+            DungeonEditorWorkspaceValues.Cell cell,
+            TravelHeading direction
+    ) {
+        CellKey key = new CellKey(cell.q(), cell.r(), cell.level()).neighbor(direction);
+        return new DungeonEditorWorkspaceValues.Cell(key.q(), key.r(), key.level());
+    }
+
+    private static TravelHeading travelHeading(@Nullable String direction) {
+        for (TravelHeading heading : TravelHeading.values()) {
+            if (heading.name().equals(direction)) {
+                return heading;
+            }
+        }
+        return TravelHeading.NORTH;
+    }
+}

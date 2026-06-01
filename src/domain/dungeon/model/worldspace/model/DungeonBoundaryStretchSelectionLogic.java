@@ -93,7 +93,7 @@ final class DungeonBoundaryStretchSelectionLogic {
         DungeonBoundaryKey key = DungeonBoundaryKey.from(edge);
         DungeonClusterBoundary existing = boundaries.get(key);
         boolean outer = touch.insideCount() == 1;
-        if ((outer && existing != null) || (!outer && existing == null)) {
+        if (!outer && existing == null) {
             return Optional.empty();
         }
         return Optional.of(new StretchSeed(
@@ -154,7 +154,7 @@ final class DungeonBoundaryStretchSelectionLogic {
     }
 
     private boolean boundaryPresenceMatches(StretchSeed seed, @Nullable DungeonClusterBoundary existing) {
-        return seed.outer() ? existing == null : existing != null;
+        return seed.outer() || existing != null;
     }
 
     private List<StretchEdge> sortedStretchEdges(

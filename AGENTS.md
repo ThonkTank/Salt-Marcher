@@ -96,6 +96,15 @@ document exists.
   Agent-facing instruction changes must still use
   `agent-instruction-engineering` before that review. A pass without the
   required completed Overview-coordinated review and fix result remains WIP.
+- Every repo-tracked implementation pass must write the local implementation
+  pass log required by `docs/project/architecture/agent-instructions.md` before
+  the Overview handoff review. Every completed Overview review cycle must
+  produce the aggregated review pass log required by that standard. Read-only
+  nested specialist reviewers do not write files directly; they read relevant
+  available pass logs and report repeated reversals, looped implementation,
+  quality degradation, architecture friction, recurring smells, or
+  governance/check misses in their reviewer output so the Overview
+  coordinator, or main fallback handoff, can aggregate them.
 - Work under `src/domain/**` must use the repo-owned `domain-layer` skill and
   follow the canonical domain-layer standard before changes are made or
   reviewed.

@@ -3,9 +3,9 @@ package src.domain.dungeon.model.worldspace.usecase;
 import java.util.ArrayList;
 import java.util.List;
 import org.jspecify.annotations.Nullable;
+import src.domain.dungeon.model.worldspace.helper.DungeonEditorClusterHandleProjectionHelper;
 import src.domain.dungeon.model.worldspace.model.DungeonMap;
 import src.domain.dungeon.model.worldspace.model.DungeonCorridor;
-import src.domain.dungeon.model.worldspace.model.DungeonRoom;
 import src.domain.dungeon.model.worldspace.model.DungeonRoomCluster;
 import src.domain.dungeon.model.worldspace.model.DungeonStair;
 import src.domain.dungeon.model.worldspace.model.DungeonCell;
@@ -21,55 +21,20 @@ import src.domain.dungeon.model.worldspace.model.DungeonTopologyRef;
  * Publishes authored editor handles from one dungeon map snapshot.
  */
 public final class PublishDungeonEditorHandlesUseCase {
+    private static final DungeonEditorClusterHandleProjectionHelper CLUSTER_HANDLE_HELPER =
+            new DungeonEditorClusterHandleProjectionHelper();
 
     public List<DungeonEditorHandleFacts> execute(@Nullable DungeonMap dungeonMap) {
         if (dungeonMap == null) {
             return List.of();
         }
         List<DungeonEditorHandleFacts> result = new ArrayList<>();
-        appendClusterLabelHandles(result, dungeonMap);
+        result.addAll(CLUSTER_HANDLE_HELPER.project(dungeonMap));
         appendDoorHandles(result, dungeonMap);
         appendAnchorHandles(result, dungeonMap);
         appendWaypointHandles(result, dungeonMap);
         appendStairHandles(result, dungeonMap);
         return List.copyOf(result);
-    }
-
-    private static void appendClusterLabelHandles(List<DungeonEditorHandleFacts> result, DungeonMap dungeonMap) {
-        for (DungeonRoomCluster cluster : dungeonMap.topology().roomClusters()) {
-            List<DungeonRoom> rooms = roomsForCluster(dungeonMap, cluster.clusterId());
-            if (rooms.isEmpty()) {
-                continue;
-            }
-            DungeonRoom room = rooms.getFirst();
-            result.add(new DungeonEditorHandleFacts(
-                    new DungeonEditorHandle(
-                            DungeonEditorHandleType.CLUSTER_LABEL,
-                            new DungeonTopologyRef(DungeonTopologyElementKind.ROOM, room.roomId()),
-                            room.roomId(),
-                            cluster.clusterId(),
-                            0L,
-                            room.roomId(),
-                            0,
-                            cluster.center(),
-                            DungeonEdgeDirection.NORTH),
-                    room.name()));
-        }
-    }
-
-    private static List<DungeonRoom> roomsForCluster(DungeonMap dungeonMap, long clusterId) {
-        List<DungeonRoom> rooms = new ArrayList<>();
-        for (DungeonRoom room : dungeonMap.rooms().rooms()) {
-            if (room.clusterId() == clusterId) {
-                rooms.add(room);
-            }
-        }
-        rooms.sort(PublishDungeonEditorHandlesUseCase::compareByRoomId);
-        return List.copyOf(rooms);
-    }
-
-    private static int compareByRoomId(DungeonRoom left, DungeonRoom right) {
-        return Long.compare(left.roomId(), right.roomId());
     }
 
     private static void appendDoorHandles(List<DungeonEditorHandleFacts> result, DungeonMap dungeonMap) {

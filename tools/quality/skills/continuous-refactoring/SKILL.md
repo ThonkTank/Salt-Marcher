@@ -58,7 +58,12 @@ manifests:
    combines them with product work.
 10. Run the required SaltMarcher verification surface for the actual changed
     files and keep the literal result available for review.
-11. Before starting the review step, read and follow the global caller skill
+11. Write the implementation pass log required by
+    `docs/project/architecture/agent-instructions.md` under
+    `build/agent-pass-logs/`. Include local cleanup decisions, abandoned
+    approaches, reversals, repeated edits, architecture friction, quality
+    tradeoffs, and verification results.
+12. Before starting the review step, read and follow the global caller skill
     `/home/aaron/.codex/skills/local/adversarial-review/SKILL.md`; it requires a
     main-agent-launched `review-overview` coordinator pass that owns nested
     specialist review and scoped follow-up worker launches before handoff.
@@ -109,6 +114,10 @@ Every covered handoff must report one of these exact statuses:
 
 Every covered handoff must also report the adversarial review outcome required
 by the global adversarial-review caller skill.
+
+Every covered handoff must report the implementation pass log path and, when
+review completed, the review pass log path or the blocker that prevented the
+review log from being written.
 
 Also report out-of-scope blockers discovered while running required gates. Do
 not claim that global debt is solved because a scoped pass is clean.

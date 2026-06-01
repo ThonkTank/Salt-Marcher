@@ -111,6 +111,7 @@ final class BuildDungeonSelectionFactsUseCase {
                     facts.add(SelectionFacts.refFact(topologyRef));
                     facts.add(SelectionFacts.factLine(FACT_KIND, feature.kind()));
                     SelectionFacts.appendFactIfPresent(facts, "target", feature.destinationLabel());
+                    facts.addAll(feature.facts());
                     return new LoadDungeonSnapshotUseCase.InspectorSnapshotData(
                             feature.label(),
                             feature.description(),

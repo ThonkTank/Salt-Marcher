@@ -90,6 +90,9 @@ final class DungeonRoomBoundaryProjectionState {
         if (!seenBoundaries.add(key)) {
             return;
         }
+        if (boundary.isOpen()) {
+            return;
+        }
         long boundaryId = key.stableId();
         nextPrimitiveId = Math.max(nextPrimitiveId, boundaryId + 1L);
         String kind = boundary.kind().primitiveKind();

@@ -2,6 +2,7 @@ package src.domain.dungeon.model.worldspace.model;
 
 public final class DungeonEditorHandleType {
     public static final DungeonEditorHandleType CLUSTER_LABEL = new DungeonEditorHandleType("CLUSTER_LABEL");
+    public static final DungeonEditorHandleType CLUSTER_CORNER = new DungeonEditorHandleType("CLUSTER_CORNER");
     public static final DungeonEditorHandleType DOOR = new DungeonEditorHandleType("DOOR");
     public static final DungeonEditorHandleType CORRIDOR_ANCHOR = new DungeonEditorHandleType("CORRIDOR_ANCHOR");
     public static final DungeonEditorHandleType CORRIDOR_WAYPOINT = new DungeonEditorHandleType("CORRIDOR_WAYPOINT");
@@ -15,6 +16,7 @@ public final class DungeonEditorHandleType {
 
     public static DungeonEditorHandleType valueOf(String name) {
         return switch (name) {
+            case "CLUSTER_CORNER" -> CLUSTER_CORNER;
             case "DOOR" -> DOOR;
             case "CORRIDOR_ANCHOR" -> CORRIDOR_ANCHOR;
             case "CORRIDOR_WAYPOINT" -> CORRIDOR_WAYPOINT;

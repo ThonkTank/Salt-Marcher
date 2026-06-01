@@ -18,10 +18,20 @@ public final class BuildDungeonEditorMainViewInputUseCase {
             double canvasY,
             boolean primaryButtonDown,
             boolean secondaryButtonDown,
-            PointerTargetInput target
+            PointerTargetInput target,
+            String transitionDestinationTypeName,
+            long transitionDestinationMapId,
+            long transitionDestinationTileId,
+            long transitionDestinationTransitionId
     ) {
         public MainViewInput {
             target = target == null ? PointerTargetInput.empty() : target;
+            transitionDestinationTypeName = transitionDestinationTypeName == null
+                    ? ""
+                    : transitionDestinationTypeName.trim();
+            transitionDestinationMapId = Math.max(0L, transitionDestinationMapId);
+            transitionDestinationTileId = Math.max(0L, transitionDestinationTileId);
+            transitionDestinationTransitionId = Math.max(0L, transitionDestinationTransitionId);
         }
 
         private DungeonEditorMainViewInput mainViewInput() {
@@ -289,12 +299,14 @@ public final class BuildDungeonEditorMainViewInputUseCase {
 
     public static final class HandleKindInput implements NamedInput {
         public static final HandleKindInput CLUSTER_LABEL = new HandleKindInput("CLUSTER_LABEL");
+        public static final HandleKindInput CLUSTER_CORNER = new HandleKindInput("CLUSTER_CORNER");
         public static final HandleKindInput DOOR = new HandleKindInput("DOOR");
         public static final HandleKindInput CORRIDOR_ANCHOR = new HandleKindInput("CORRIDOR_ANCHOR");
         public static final HandleKindInput CORRIDOR_WAYPOINT = new HandleKindInput("CORRIDOR_WAYPOINT");
         public static final HandleKindInput STAIR_ANCHOR = new HandleKindInput("STAIR_ANCHOR");
         private static final HandleKindInput[] VALUES = {
                 CLUSTER_LABEL,
+                CLUSTER_CORNER,
                 DOOR,
                 CORRIDOR_ANCHOR,
                 CORRIDOR_WAYPOINT,

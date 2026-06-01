@@ -12,17 +12,16 @@ public final class DungeonEditorHandleMovementLogic {
     private static final DungeonCorridorConnectionNormalizationLogic CONNECTION_NORMALIZATION_SERVICE =
             new DungeonCorridorConnectionNormalizationLogic();
     private static final DungeonTopologyMovementLogic TOPOLOGY_MOVEMENT_SERVICE = new DungeonTopologyMovementLogic();
+    private static final DungeonClusterCornerMoveLogic CLUSTER_CORNER_MOVEMENT_SERVICE =
+            new DungeonClusterCornerMoveLogic();
 
     public DungeonMap moveEditorHandle(DungeonMap dungeonMap, DungeonEditorHandle handle, int deltaQ, int deltaR, int deltaLevel) {
         Objects.requireNonNull(dungeonMap, "dungeonMap");
         if (handle == null || isStationary(deltaQ, deltaR, deltaLevel)) {
             return dungeonMap;
         }
-        if (handle.type() == DungeonEditorHandleType.CLUSTER_LABEL) {
-            long clusterId = handle.clusterId() > 0L
-                    ? handle.clusterId()
-                    : dungeonMap.topologyIndex().clusterIdFor(handle.topologyRef()).orElse(0L);
-            return TOPOLOGY_MOVEMENT_SERVICE.moveCluster(dungeonMap, clusterId, deltaQ, deltaR, deltaLevel);
+        if (roomHandle(handle)) {
+            return moveRoomHandle(dungeonMap, handle, deltaQ, deltaR, deltaLevel);
         }
         if (handle.type() == DungeonEditorHandleType.DOOR) {
             return moveDoorBinding(dungeonMap, handle, deltaQ, deltaR, deltaLevel);
@@ -37,6 +36,27 @@ public final class DungeonEditorHandleMovementLogic {
             return moveStairAnchor(dungeonMap, handle, deltaQ, deltaR, deltaLevel);
         }
         return dungeonMap;
+    }
+
+    private static boolean roomHandle(DungeonEditorHandle handle) {
+        return handle.type() == DungeonEditorHandleType.CLUSTER_LABEL
+                || handle.type() == DungeonEditorHandleType.CLUSTER_CORNER;
+    }
+
+    private static DungeonMap moveRoomHandle(
+            DungeonMap dungeonMap,
+            DungeonEditorHandle handle,
+            int deltaQ,
+            int deltaR,
+            int deltaLevel
+    ) {
+        if (handle.type() == DungeonEditorHandleType.CLUSTER_CORNER) {
+            return CLUSTER_CORNER_MOVEMENT_SERVICE.moveCorner(dungeonMap, handle, deltaQ, deltaR, deltaLevel);
+        }
+        long clusterId = handle.clusterId() > 0L
+                ? handle.clusterId()
+                : dungeonMap.topologyIndex().clusterIdFor(handle.topologyRef()).orElse(0L);
+        return TOPOLOGY_MOVEMENT_SERVICE.moveCluster(dungeonMap, clusterId, deltaQ, deltaR, deltaLevel);
     }
 
     private static DungeonMap moveDoorBinding(DungeonMap dungeonMap, DungeonEditorHandle handle, int deltaQ, int deltaR, int deltaLevel) {

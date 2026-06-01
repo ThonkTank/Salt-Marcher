@@ -40,7 +40,7 @@ public final class BuildDungeonEditorSnapshotUseCase {
         DungeonEditorSession safeState = DungeonEditorSnapshotStateProjectionHelper.safeState(state);
         searchMapsUseCase.execute("");
         List<MapSummary> maps = currentDungeonFacts.currentFacts(null, safeState.selection(), safeState.preview()).maps();
-        @Nullable MapId resolvedMapId = resolveSelectedMapId(safeState.selectedMapId(), maps);
+        @Nullable MapId resolvedMapId = resolveSelectedMapId(safeState, maps);
         refreshAuthoredSurface(resolvedMapId, safeState);
         DungeonEditorDungeonFacts surfaceFacts = currentDungeonFacts.currentFacts(
                 resolvedMapId,
@@ -97,12 +97,17 @@ public final class BuildDungeonEditorSnapshotUseCase {
                 || selection.clusterSelection();
     }
 
-    private static @Nullable MapId resolveSelectedMapId(@Nullable MapId requestedMapId, List<MapSummary> maps) {
-        if (requestedMapId != null) {
-            for (MapSummary summary : maps) {
-                if (requestedMapId.equals(summary.mapId())) {
-                    return requestedMapId;
-                }
+    private static @Nullable MapId resolveSelectedMapId(DungeonEditorSession state, List<MapSummary> maps) {
+        @Nullable MapId requestedMapId = state.selectedMapId();
+        if (requestedMapId == null && state.statusText().isBlank()) {
+            return null;
+        }
+        if (requestedMapId == null) {
+            return maps.isEmpty() ? null : maps.getFirst().mapId();
+        }
+        for (MapSummary summary : maps) {
+            if (requestedMapId.equals(summary.mapId())) {
+                return requestedMapId;
             }
         }
         return maps.isEmpty() ? null : maps.getFirst().mapId();

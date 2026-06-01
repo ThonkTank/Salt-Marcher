@@ -19,7 +19,9 @@ import src.domain.dungeon.model.worldspace.model.DungeonTopologyRef;
 public final class DungeonEditorMainViewInteractionValues {
 
     public static final String CLUSTER_LABEL_KIND = "CLUSTER_LABEL";
+    public static final String CLUSTER_CORNER_KIND = "CLUSTER_CORNER";
     public static final String CORRIDOR_ANCHOR_KIND = "CORRIDOR_ANCHOR";
+    public static final String CORRIDOR_WAYPOINT_KIND = "CORRIDOR_WAYPOINT";
     public static final String DOOR_KIND = "DOOR";
     public static final String EMPTY_KIND = "EMPTY";
     public static final String ROOM_KIND = "ROOM";
@@ -142,8 +144,16 @@ public final class DungeonEditorMainViewInteractionValues {
             return CLUSTER_LABEL_KIND.equals(kind);
         }
 
+        public boolean clusterCorner() {
+            return CLUSTER_CORNER_KIND.equals(kind);
+        }
+
         public boolean corridorAnchor() {
             return CORRIDOR_ANCHOR_KIND.equals(kind);
+        }
+
+        public boolean corridorWaypoint() {
+            return CORRIDOR_WAYPOINT_KIND.equals(kind);
         }
 
         public boolean doorHandle() {
@@ -236,7 +246,7 @@ public final class DungeonEditorMainViewInteractionValues {
         }
 
         public boolean clusterSelection() {
-            return kind == HitKind.LABEL || handleRef.clusterLabel();
+            return kind == HitKind.LABEL || handleRef.clusterLabel() || handleRef.clusterCorner();
         }
 
         public DungeonEditorWorkspaceValues.HandleRef dragHandleRef() {

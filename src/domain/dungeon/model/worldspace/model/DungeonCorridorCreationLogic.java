@@ -14,14 +14,22 @@ final class DungeonCorridorCreationLogic {
     private static final DungeonCorridorSemanticsRules CORRIDOR_SEMANTICS_POLICY =
             new DungeonCorridorSemanticsRules();
     private static final DungeonCorridorMutationRules MUTATION_RULES = new DungeonCorridorMutationRules();
+    private static final DungeonCorridorRouteValidationLogic ROUTE_VALIDATION_SERVICE =
+            new DungeonCorridorRouteValidationLogic();
+    private static final DungeonCorridorRouteSplitLogic ROUTE_SPLIT_SERVICE = new DungeonCorridorRouteSplitLogic();
 
     DungeonMap createCorridor(
             DungeonMap dungeonMap,
+            long stairId,
             DungeonCorridorEndpoint start,
             DungeonCorridorEndpoint end
     ) {
         Objects.requireNonNull(dungeonMap, "dungeonMap");
         if (!validCreateEndpoints(start, end) || MUTATION_RULES.sameClusterOnly(dungeonMap, start, end)) {
+            return dungeonMap;
+        }
+        List<DungeonCell> routeCells = ROUTE_VALIDATION_SERVICE.routeCells(dungeonMap, start, end);
+        if (!ROUTE_VALIDATION_SERVICE.hasValidRoute(dungeonMap, start, end)) {
             return dungeonMap;
         }
         DungeonCorridorEndpointResolutionLogic.ResolvedEndpointResult startResolved =
@@ -38,18 +46,37 @@ final class DungeonCorridorCreationLogic {
             return dungeonMap;
         }
         DungeonCorridor corridor = bindEndpoints(startResolved, endResolved, start.level());
+        corridor = ROUTE_SPLIT_SERVICE.bindInteriorRouteAnchors(
+                endResolved.map(),
+                corridor,
+                routeCells,
+                startResolved,
+                endResolved);
         List<DungeonCorridor> nextCorridors = new ArrayList<>(endResolved.map().connections().corridors());
         nextCorridors.add(corridor);
+        ConnectionCatalog nextConnections = new ConnectionCatalog(
+                List.copyOf(nextCorridors),
+                endResolved.map().connections().stairs(),
+                endResolved.map().connections().transitions());
+        if (!start.sameLevelAs(end)) {
+            DungeonCell upperExit = new DungeonCell(
+                    routeCells.getLast().q(),
+                    routeCells.getLast().r(),
+                    end.level());
+            nextConnections = nextConnections.withCorridorBoundStair(
+                    stairId,
+                    endResolved.map().metadata().mapId().value(),
+                    corridor.corridorId(),
+                    routeCells,
+                    upperExit);
+        }
         return CONNECTION_NORMALIZATION_SERVICE.copyWithConnections(
                 endResolved.map(),
-                new ConnectionCatalog(
-                        List.copyOf(nextCorridors),
-                        endResolved.map().connections().stairs(),
-                        endResolved.map().connections().transitions()));
+                nextConnections);
     }
 
     private boolean validCreateEndpoints(DungeonCorridorEndpoint start, DungeonCorridorEndpoint end) {
-        return start != null && end != null && start.present() && end.present() && start.sameLevelAs(end);
+        return start != null && end != null && start.present() && end.present();
     }
 
     private boolean corridorAlreadyExists(

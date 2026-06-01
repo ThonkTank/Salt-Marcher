@@ -34,10 +34,10 @@ public final class DungeonCorridorAnchorPruningRules {
         }
         for (DungeonCorridor candidate : corridors == null ? List.<DungeonCorridor>of() : corridors) {
             if (candidateReferencesOwnedAnchor(candidate, owner, ownedRefs)) {
-                return false;
+                return true;
             }
         }
-        return true;
+        return false;
     }
 
     private List<DungeonCorridorAnchorBinding> keptBindings(DungeonCorridor corridor, AnchorUsage usage) {

@@ -38,7 +38,7 @@ final class InterpretDungeonEditorMainViewDragUseCase {
             DungeonEditorSessionValues.Tool boundaryTool,
             InteractionState state
     ) {
-        if (!input.primaryButtonDown()) {
+        if (!boundaryDragMatchesTool(input, boundaryTool)) {
             return new DungeonEditorMainViewInterpretation(state, DungeonEditorMainViewEffect.none());
         }
         return new DungeonEditorMainViewInterpretation(state, boundaryDraft.preview(input, snapshot, boundaryTool, state));
@@ -66,6 +66,13 @@ final class InterpretDungeonEditorMainViewDragUseCase {
             return DungeonEditorMainViewEffect.clearPreviewIfNeeded(true);
         }
         return DungeonEditorMainViewEffect.preview(stretchSession.preview());
+    }
+
+    private static boolean boundaryDragMatchesTool(
+            PointerState input,
+            DungeonEditorSessionValues.Tool boundaryTool
+    ) {
+        return boundaryTool.deleteMode() ? input.secondaryButtonDown() : input.primaryButtonDown();
     }
 
 }

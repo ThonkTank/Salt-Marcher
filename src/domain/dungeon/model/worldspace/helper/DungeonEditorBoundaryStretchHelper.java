@@ -38,8 +38,8 @@ public final class DungeonEditorBoundaryStretchHelper {
                 DungeonEditorSessionValues.Selection currentSelection,
                 StretchEdges edges
         ) {
-            BoundaryTarget boundaryTarget = input == null ? null : input.boundaryTarget();
-            if (input == null || !input.primaryButtonDown() || boundaryTarget == null || !boundaryTarget.present()) {
+            BoundaryTarget boundaryTarget = stretchBoundaryTarget(input);
+            if (boundaryTarget == null) {
                 return null;
             }
             StretchOrientation orientation = StretchGeometry.orientation(boundaryTarget);
@@ -56,6 +56,17 @@ public final class DungeonEditorBoundaryStretchHelper {
                 return null;
             }
             return session(input, sourceEdges, orientation, selection(snapshot, currentSelection, clusterId, boundaryTarget), clusterId);
+        }
+
+        private static @Nullable BoundaryTarget stretchBoundaryTarget(@Nullable PointerState input) {
+            if (input == null || !input.primaryButtonDown()) {
+                return null;
+            }
+            BoundaryTarget boundaryTarget = input.boundaryTarget();
+            if (boundaryTarget == null || !boundaryTarget.present() || boundaryTarget.doorKind()) {
+                return null;
+            }
+            return boundaryTarget;
         }
 
         private static BoundaryStretchSession session(

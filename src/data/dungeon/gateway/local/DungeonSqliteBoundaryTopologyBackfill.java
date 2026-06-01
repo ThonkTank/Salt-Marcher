@@ -16,7 +16,12 @@ final class DungeonSqliteBoundaryTopologyBackfill {
     private static final String TOPOLOGY_INSERT_COLUMNS =
             "(dungeon_map_id, element_kind, element_id, cluster_id, corridor_id, label, sort_order)";
     private static final String COLUMN_LEVEL_Z = "level_z";
+    private static final String COLUMN_CLUSTER_ID = "cluster_id";
+    private static final String COLUMN_EDGE_DIRECTION = "edge_direction";
     private static final String DOOR = "DOOR";
+    private static final String OPEN = "OPEN";
+    private static final DungeonSqliteOpenBoundaryTopologyCleanup OPEN_TOPOLOGY_CLEANUP =
+            new DungeonSqliteOpenBoundaryTopologyCleanup();
 
     void apply(Connection connection) throws SQLException {
         backfillClusterBoundaryTopologyElements(connection);
@@ -41,29 +46,40 @@ final class DungeonSqliteBoundaryTopologyBackfill {
                         resultSet.getInt("center_x") + resultSet.getInt("cell_x"),
                         resultSet.getInt("center_y") + resultSet.getInt("cell_y"),
                         resultSet.getInt(COLUMN_LEVEL_Z),
-                        resultSet.getString("edge_direction"));
+                        resultSet.getString(COLUMN_EDGE_DIRECTION));
                 String kind = boundaryKind(resultSet.getString("edge_type"));
+                if (OPEN.equals(kind)) {
+                    update.setNull(1, java.sql.Types.INTEGER);
+                    update.setLong(2, resultSet.getLong(COLUMN_CLUSTER_ID));
+                    update.setInt(3, resultSet.getInt(COLUMN_LEVEL_Z));
+                    update.setInt(4, resultSet.getInt("cell_x"));
+                    update.setInt(5, resultSet.getInt("cell_y"));
+                    update.setString(6, resultSet.getString(COLUMN_EDGE_DIRECTION));
+                    update.addBatch();
+                    continue;
+                }
                 insertTopologyElement(
                         insert,
                         resultSet.getLong("dungeon_map_id"),
                         kind,
                         elementId,
-                        resultSet.getLong("cluster_id"),
+                        resultSet.getLong(COLUMN_CLUSTER_ID),
                         null,
                         labelFor(kind),
                         sortOrder);
                 sortOrder++;
                 update.setLong(1, elementId);
-                update.setLong(2, resultSet.getLong("cluster_id"));
+                update.setLong(2, resultSet.getLong(COLUMN_CLUSTER_ID));
                 update.setInt(3, resultSet.getInt(COLUMN_LEVEL_Z));
                 update.setInt(4, resultSet.getInt("cell_x"));
                 update.setInt(5, resultSet.getInt("cell_y"));
-                update.setString(6, resultSet.getString("edge_direction"));
+                update.setString(6, resultSet.getString(COLUMN_EDGE_DIRECTION));
                 update.addBatch();
             }
             insert.executeBatch();
             update.executeBatch();
         }
+        OPEN_TOPOLOGY_CLEANUP.apply(connection);
     }
 
     private static void backfillCorridorDoorTopologyElements(Connection connection) throws SQLException {
@@ -134,14 +150,18 @@ final class DungeonSqliteBoundaryTopologyBackfill {
     }
 
     private static String boundaryKind(String value) {
-        return DOOR.equalsIgnoreCase(value == null ? "" : value.trim()) ? DOOR : "WALL";
+        String normalized = value == null ? "" : value.trim().toUpperCase(Locale.ROOT);
+        if (DOOR.equals(normalized)) {
+            return DOOR;
+        }
+        return OPEN.equals(normalized) ? OPEN : "WALL";
     }
 
     private static String labelFor(String kind) {
         return DOOR.equals(kind) ? "Door" : "Wall";
     }
 
-    private static long boundaryStableId(int q, int r, int level, String direction) {
+    static long boundaryStableId(int q, int r, int level, String direction) {
         DirectionStep step = DirectionStep.from(direction);
         Cell first = step.start(q, r, level);
         Cell second = step.end(q, r, level);

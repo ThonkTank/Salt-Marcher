@@ -1,6 +1,8 @@
 package src.view.leftbartabs.dungeoneditor;
 
+import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.ReadOnlyObjectWrapper;
@@ -19,6 +21,7 @@ final class DungeonEditorControlsContentModel {
             new ReadOnlyObjectWrapper<>(ProjectionState.initial());
     private final ReadOnlyObjectWrapper<ToolProjection> toolProjection =
             new ReadOnlyObjectWrapper<>(ToolProjection.initial());
+    private final Map<ToolFamily, String> selectedFamilyOptionKeys = new EnumMap<>(ToolFamily.class);
 
     ReadOnlyObjectProperty<MapProjection> mapProjectionProperty() {
         return mapProjection.getReadOnlyProperty();
@@ -60,7 +63,10 @@ final class DungeonEditorControlsContentModel {
                 busy,
                 viewMode,
                 graphViewLabel().equals(normalizeViewModeKey(viewMode))));
-        toolProjection.set(new ToolProjection(selectedTool));
+        if (defaultToolLabel().equals(selectedTool)) {
+            selectedFamilyOptionKeys.clear();
+        }
+        toolProjection.set(new ToolProjection(selectedTool, toolControls()));
     }
 
     List<OverlayModeOption> overlayModeOptions() {
@@ -71,7 +77,20 @@ final class DungeonEditorControlsContentModel {
     }
 
     ToolControls toolControls() {
-        return ToolControls.current();
+        return ToolControls.current(selectedFamilyOptionKeys);
+    }
+
+    void rememberToolSelection(String requestedFamilyKey, String selectedToolKey, String selectedOptionKey) {
+        ToolFamily requestedFamily = ToolFamily.fromKey(requestedFamilyKey);
+        ToolFamily selectedFamily = ToolFamily.fromToolKey(selectedToolKey);
+        ToolFamily family = selectedFamily == null ? requestedFamily : selectedFamily;
+        String optionKey = selectedOptionKey == null || selectedOptionKey.isBlank()
+                ? selectedToolKey
+                : selectedOptionKey;
+        if (family != null && family.containsOptionKey(optionKey)) {
+            selectedFamilyOptionKeys.put(family, optionKey);
+            toolProjection.set(new ToolProjection(toolProjection.get().selectedTool(), toolControls()));
+        }
     }
 
     MapEditorUiState currentMapEditorUiState() {
@@ -378,15 +397,16 @@ final class DungeonEditorControlsContentModel {
         }
     }
 
-    record ToolProjection(String selectedTool) {
+    record ToolProjection(String selectedTool, ToolControls toolControls) {
         ToolProjection {
             selectedTool = selectedTool == null || selectedTool.isBlank()
                     ? defaultToolLabel()
                     : selectedTool;
+            toolControls = toolControls == null ? ToolControls.current(Map.of()) : toolControls;
         }
 
         static ToolProjection initial() {
-            return new ToolProjection(defaultToolLabel());
+            return new ToolProjection(defaultToolLabel(), ToolControls.current(Map.of()));
         }
     }
 
@@ -395,33 +415,202 @@ final class DungeonEditorControlsContentModel {
             String gridView,
             String graphView,
             ToolButton select,
-            ToolButton room,
-            ToolButton roomDelete,
-            ToolButton wall,
-            ToolButton wallDelete,
-            ToolButton door,
-            ToolButton doorDelete,
-            ToolButton corridor,
-            ToolButton corridorDelete
+            ToolFamilyButton room,
+            ToolFamilyButton wall,
+            ToolFamilyButton door,
+            ToolFamilyButton corridor,
+            ToolFamilyButton stair,
+            ToolFamilyButton transition
     ) {
-        private static ToolControls current() {
+        private static ToolControls current(Map<ToolFamily, String> selectedFamilyOptionKeys) {
             return new ToolControls(
                     defaultToolLabel(),
                     gridViewLabel(),
                     graphViewLabel(),
                     new ToolButton(defaultToolLabel(), defaultToolLabel(), DungeonEditorTool.SELECT.name()),
-                    new ToolButton("Raum", "Raum malen", DungeonEditorTool.ROOM_PAINT.name()),
-                    new ToolButton("Raum löschen", "Raum löschen", DungeonEditorTool.ROOM_DELETE.name()),
-                    new ToolButton("Wand", "Wand setzen", DungeonEditorTool.WALL_CREATE.name()),
-                    new ToolButton("Wand löschen", "Wand löschen", DungeonEditorTool.WALL_DELETE.name()),
-                    new ToolButton("Tür", "Tür setzen", DungeonEditorTool.DOOR_CREATE.name()),
-                    new ToolButton("Tür löschen", "Tür löschen", DungeonEditorTool.DOOR_DELETE.name()),
-                    new ToolButton("Korridor", "Korridor erstellen", DungeonEditorTool.CORRIDOR_CREATE.name()),
-                    new ToolButton("Korridor löschen", "Korridor löschen", DungeonEditorTool.CORRIDOR_DELETE.name()));
+                    ToolFamily.ROOM.toButton(selectedFamilyOptionKeys),
+                    ToolFamily.WALL.toButton(selectedFamilyOptionKeys),
+                    ToolFamily.DOOR.toButton(selectedFamilyOptionKeys),
+                    ToolFamily.CORRIDOR.toButton(selectedFamilyOptionKeys),
+                    ToolFamily.STAIR.toButton(selectedFamilyOptionKeys),
+                    ToolFamily.TRANSITION.toButton(selectedFamilyOptionKeys));
         }
     }
 
-    record ToolButton(String label, String selectedLabel, String key) { }
+    record ToolFamilyButton(
+            String familyKey,
+            String label,
+            String selectedOptionKey,
+            List<ToolButton> options
+    ) {
+        ToolFamilyButton {
+            familyKey = familyKey == null ? "" : familyKey;
+            label = label == null ? "" : label;
+            selectedOptionKey = selectedOptionKey == null ? "" : selectedOptionKey;
+            options = options == null ? List.of() : List.copyOf(options);
+        }
+
+        ToolButton selectedOption() {
+            for (ToolButton option : options) {
+                if (option.key().equals(selectedOptionKey)) {
+                    return option;
+                }
+            }
+            return options.isEmpty() ? new ToolButton(label, label, selectedOptionKey) : options.getFirst();
+        }
+
+        boolean hasSecondaryOptions() {
+            return options.size() > 1;
+        }
+
+        boolean selectedByLabel(String selectedToolLabel) {
+            for (ToolButton option : options) {
+                if (option.selectedLabel().equals(selectedToolLabel)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+    }
+
+    record ToolButton(String label, String selectedLabel, String key, String toolKey, boolean enabled) {
+        ToolButton(String label, String selectedLabel, String key) {
+            this(label, selectedLabel, key, key, true);
+        }
+    }
+
+    enum ToolFamily {
+        ROOM("ROOM", "Raum", DungeonEditorTool.ROOM_PAINT),
+        WALL("WALL", "Wand", DungeonEditorTool.WALL_CREATE),
+        DOOR("DOOR", "Tür", DungeonEditorTool.DOOR_CREATE),
+        CORRIDOR("CORRIDOR", "Korridor", DungeonEditorTool.CORRIDOR_CREATE),
+        STAIR(
+                "STAIR",
+                "Treppe",
+                DungeonEditorTool.STAIR_CREATE,
+                new ToolOptionSpec(
+                        "STAIR_STRAIGHT",
+                        "Gerade",
+                        DungeonEditorTool.STAIR_CREATE,
+                        true),
+                new ToolOptionSpec(
+                        "STAIR_ANGULAR_SPIRAL",
+                        "Eckspirale",
+                        DungeonEditorTool.STAIR_CREATE_SQUARE,
+                        true),
+                new ToolOptionSpec(
+                        "STAIR_ROUND_SPIRAL",
+                        "Rundspirale",
+                        DungeonEditorTool.STAIR_CREATE_CIRCULAR,
+                        true)),
+        TRANSITION("TRANSITION", "Übergang", DungeonEditorTool.TRANSITION_CREATE);
+
+        private final String key;
+        private final String label;
+        private final DungeonEditorTool primaryTool;
+        private final List<ToolOptionSpec> optionSpecs;
+
+        ToolFamily(String key, String label, DungeonEditorTool primaryTool, ToolOptionSpec... optionSpecs) {
+            this.key = key;
+            this.label = label;
+            this.primaryTool = primaryTool;
+            this.optionSpecs = List.copyOf(List.of(optionSpecs));
+        }
+
+        private ToolFamilyButton toButton(Map<ToolFamily, String> selectedFamilyOptionKeys) {
+            return new ToolFamilyButton(
+                    key,
+                    label,
+                    selectedOptionKey(selectedFamilyOptionKeys),
+                    toolOptions());
+        }
+
+        private String selectedOptionKey(Map<ToolFamily, String> selectedFamilyOptionKeys) {
+            String rememberedKey = selectedFamilyOptionKeys.get(this);
+            return containsOptionKey(rememberedKey) ? rememberedKey : toolOptions().getFirst().key();
+        }
+
+        private boolean containsToolKey(@Nullable String toolKey) {
+            if (primaryTool.name().equals(toolKey)) {
+                return true;
+            }
+            for (ToolButton option : toolOptions()) {
+                if (option.toolKey().equals(toolKey)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        private boolean containsOptionKey(@Nullable String optionKey) {
+            if (optionKey == null || optionKey.isBlank()) {
+                return false;
+            }
+            for (ToolButton option : toolOptions()) {
+                if (option.enabled() && option.key().equals(optionKey)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        private List<ToolButton> toolOptions() {
+            if (optionSpecs.isEmpty()) {
+                return List.of(toToolButton(primaryTool));
+            }
+            String selectedLabel = labelOf(primaryTool);
+            return optionSpecs.stream()
+                    .map(option -> new ToolButton(
+                            option.label(),
+                            selectedLabel,
+                            option.key(),
+                            option.toolKey(),
+                            option.enabled()))
+                    .toList();
+        }
+
+        private static ToolButton toToolButton(DungeonEditorTool tool) {
+            String label = labelOf(tool);
+            return new ToolButton(label, label, tool.name());
+        }
+
+        private static @Nullable ToolFamily fromKey(@Nullable String familyKey) {
+            if (familyKey == null || familyKey.isBlank()) {
+                return null;
+            }
+            for (ToolFamily family : values()) {
+                if (family.key.equalsIgnoreCase(familyKey.strip())) {
+                    return family;
+                }
+            }
+            return null;
+        }
+
+        private static @Nullable ToolFamily fromToolKey(@Nullable String selectedToolKey) {
+            if (selectedToolKey == null || selectedToolKey.isBlank()) {
+                return null;
+            }
+            for (ToolFamily family : values()) {
+                if (family.containsToolKey(selectedToolKey.strip())) {
+                    return family;
+                }
+            }
+            return null;
+        }
+    }
+
+    private record ToolOptionSpec(String key, String label, String toolKey, boolean enabled) {
+        ToolOptionSpec(String key, String label, DungeonEditorTool tool, boolean enabled) {
+            this(key, label, tool == null ? "" : tool.name(), enabled);
+        }
+
+        ToolOptionSpec {
+            key = key == null ? "" : key;
+            label = label == null ? "" : label;
+            toolKey = toolKey == null ? "" : toolKey;
+        }
+
+    }
 
     static String defaultToolLabel() {
         return "Auswahl";
@@ -491,7 +680,7 @@ final class DungeonEditorControlsContentModel {
 
         private static String transitionToolLabel(DungeonEditorTool tool) {
             return switch (tool) {
-                case STAIR_CREATE -> "Treppe erstellen";
+                case STAIR_CREATE, STAIR_CREATE_SQUARE, STAIR_CREATE_CIRCULAR -> "Treppe erstellen";
                 case STAIR_DELETE -> "Treppe löschen";
                 case TRANSITION_CREATE -> "Übergang erstellen";
                 case TRANSITION_DELETE -> "Übergang löschen";
