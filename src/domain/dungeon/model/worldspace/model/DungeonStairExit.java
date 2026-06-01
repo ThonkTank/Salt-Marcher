@@ -1,5 +1,8 @@
 package src.domain.dungeon.model.worldspace.model;
 
+import src.domain.dungeon.model.core.model.component.StairExit;
+import src.domain.dungeon.model.core.model.geometry.Cell;
+
 public record DungeonStairExit(
         long exitId,
         DungeonCell position,
@@ -7,10 +10,12 @@ public record DungeonStairExit(
 ) {
 
     public DungeonStairExit {
-        exitId = Math.max(0L, exitId);
-        position = position == null ? new DungeonCell(0, 0, 0) : position;
-        label = label == null || label.isBlank()
-                ? "Ausgang z=" + position.level() + " (" + position.q() + "," + position.r() + ")"
-                : label.trim();
+        StairExit component = new StairExit(
+                exitId,
+                position == null ? new Cell(0, 0, 0) : position.geometry(),
+                label);
+        exitId = component.exitId();
+        position = DungeonCell.fromGeometry(component.position());
+        label = component.label();
     }
 }
