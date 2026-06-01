@@ -2,10 +2,17 @@ package src.view.leftbartabs.dungeoneditor;
 
 import java.util.List;
 import src.domain.dungeon.model.core.model.component.CorridorAnchor;
+import src.domain.dungeon.model.core.model.component.CorridorDoorBinding;
+import src.domain.dungeon.model.core.model.component.CorridorWaypoint;
 import src.domain.dungeon.model.core.model.component.StairExit;
 import src.domain.dungeon.model.core.model.geometry.Cell;
+import src.domain.dungeon.model.core.model.geometry.Direction;
 import src.domain.dungeon.model.worldspace.model.DungeonCell;
 import src.domain.dungeon.model.worldspace.model.DungeonCorridorAnchorBinding;
+import src.domain.dungeon.model.worldspace.model.DungeonCorridorAnchorRef;
+import src.domain.dungeon.model.worldspace.model.DungeonCorridorDoorBinding;
+import src.domain.dungeon.model.worldspace.model.DungeonCorridorWaypoint;
+import src.domain.dungeon.model.worldspace.model.DungeonEdgeDirection;
 import src.domain.dungeon.model.worldspace.model.DungeonStairExit;
 import src.domain.dungeon.model.worldspace.model.DungeonTopologyRef;
 
@@ -29,6 +36,12 @@ final class DungeonComponentInvariantHarness {
                 OWNER,
                 "DGI-CMP-002",
                 "CorridorAnchor keeps local id, host corridor id normalization, position, relocation, and position-match invariants");
+        assertCorridorBindingComponentInvariants();
+        DungeonEditorBehaviorHarnessSupport.recordModelInvariant(
+                results,
+                OWNER,
+                "DGI-CMP-003",
+                "Corridor binding components keep local door and waypoint values plus transitional adapter compatibility");
     }
 
     private static void assertStairExitInvariants() {
@@ -118,6 +131,76 @@ final class DungeonComponentInvariantHarness {
         assertFalse(moved.matches(null, new DungeonCell(4, 6, 1)), "adapter cell mismatch");
     }
 
+    private static void assertCorridorBindingComponentInvariants() {
+        CorridorDoorBinding door = new CorridorDoorBinding(-1L, -2L, new Cell(3, 4, 1), Direction.EAST);
+        assertEquals(0L, door.roomId(), "door binding room lower bound");
+        assertEquals(0L, door.clusterId(), "door binding cluster lower bound");
+
+        CorridorDoorBinding retainedDoor = new CorridorDoorBinding(7L, 11L, new Cell(1, 2, 0), Direction.SOUTH);
+        assertEquals(7L, retainedDoor.roomId(), "door binding room id preservation");
+        assertEquals(11L, retainedDoor.clusterId(), "door binding cluster id preservation");
+        assertEquals(new Cell(1, 2, 0), retainedDoor.relativeCell(), "door binding relative cell");
+        assertEquals(Direction.SOUTH, retainedDoor.direction(), "door binding direction");
+
+        CorridorWaypoint waypoint = new CorridorWaypoint(-3L, new Cell(2, 3, 4), 4);
+        assertEquals(0L, waypoint.clusterId(), "waypoint cluster lower bound");
+        assertEquals(new Cell(7, 9, 4), waypoint.absoluteCell(new Cell(5, 6, 4)), "waypoint absolute cell");
+
+        assertThrowsNullCorridorBindingComponentValues();
+        assertWorldspaceCorridorBindingAdapterCompatibility();
+    }
+
+    private static void assertThrowsNullCorridorBindingComponentValues() {
+        assertThrowsNull(
+                () -> new CorridorDoorBinding(1L, 2L, null, Direction.NORTH),
+                "corridor door binding null cell");
+        assertThrowsNull(
+                () -> new CorridorDoorBinding(1L, 2L, new Cell(0, 0, 0), null),
+                "corridor door binding null direction");
+        assertThrowsNull(
+                () -> new CorridorWaypoint(1L, null, 0),
+                "corridor waypoint null relative cell");
+    }
+
+    private static void assertWorldspaceCorridorBindingAdapterCompatibility() {
+        DungeonCorridorDoorBinding defaultedDoor = new DungeonCorridorDoorBinding(-1L, -2L, null, null, null);
+        assertEquals(0L, defaultedDoor.roomId(), "adapter door room lower bound");
+        assertEquals(0L, defaultedDoor.clusterId(), "adapter door cluster lower bound");
+        assertEquals(new DungeonCell(0, 0, 0), defaultedDoor.relativeCell(), "adapter door null cell default");
+        assertEquals(DungeonEdgeDirection.NORTH, defaultedDoor.direction(), "adapter door null direction default");
+        assertEquals(DungeonTopologyRef.empty(), defaultedDoor.topologyRef(), "adapter door null topology ref");
+
+        DungeonCorridorDoorBinding retainedDoor = new DungeonCorridorDoorBinding(
+                12L,
+                14L,
+                new DungeonCell(2, 3, 1),
+                DungeonEdgeDirection.WEST,
+                DungeonTopologyRef.door(21L));
+        assertEquals(12L, retainedDoor.roomId(), "adapter door room id preservation");
+        assertEquals(14L, retainedDoor.clusterId(), "adapter door cluster id preservation");
+        assertEquals(new DungeonCell(2, 3, 1), retainedDoor.relativeCell(), "adapter door relative cell");
+        assertEquals(DungeonEdgeDirection.WEST, retainedDoor.direction(), "adapter door direction");
+        assertTrue(retainedDoor.hasTopologyRef(), "adapter door topology ref present");
+
+        DungeonCorridorAnchorRef defaultedRef = new DungeonCorridorAnchorRef(-3L, null);
+        assertEquals(0L, defaultedRef.hostCorridorId(), "adapter anchor ref host lower bound");
+        assertEquals(DungeonTopologyRef.empty(), defaultedRef.topologyRef(), "adapter anchor ref null topology");
+        assertFalse(defaultedRef.present(), "adapter anchor ref missing topology");
+        DungeonCorridorAnchorRef retainedRef = new DungeonCorridorAnchorRef(5L, DungeonTopologyRef.corridorAnchor(6L));
+        assertEquals(5L, retainedRef.hostCorridorId(), "adapter anchor ref host preservation");
+        assertTrue(retainedRef.present(), "adapter anchor ref present");
+
+        DungeonCorridorWaypoint defaultedWaypoint = new DungeonCorridorWaypoint(-9L, null, 2);
+        assertEquals(0L, defaultedWaypoint.clusterId(), "adapter waypoint cluster lower bound");
+        assertEquals(new DungeonCell(0, 0, 2), defaultedWaypoint.relativeCell(), "adapter waypoint null default");
+        assertEquals(new DungeonCell(4, 5, 2), defaultedWaypoint.absoluteCell(new DungeonCell(4, 5, 2)),
+                "adapter waypoint absolute default");
+        DungeonCorridorWaypoint retainedWaypoint = new DungeonCorridorWaypoint(17L, new DungeonCell(1, -2, 3), 3);
+        assertEquals(17L, retainedWaypoint.clusterId(), "adapter waypoint cluster preservation");
+        assertEquals(new DungeonCell(8, 5, 3), retainedWaypoint.absoluteCell(new DungeonCell(7, 7, 3)),
+                "adapter waypoint absolute retained");
+    }
+
     private static void assertTrue(boolean condition, String label) {
         if (!condition) {
             throw new IllegalStateException(label + " expected true");
@@ -128,6 +211,15 @@ final class DungeonComponentInvariantHarness {
         if (condition) {
             throw new IllegalStateException(label + " expected false");
         }
+    }
+
+    private static void assertThrowsNull(Runnable action, String label) {
+        try {
+            action.run();
+        } catch (NullPointerException expected) {
+            return;
+        }
+        throw new IllegalStateException(label + " expected NullPointerException");
     }
 
     private static void assertEquals(Object expected, Object actual, String label) {
