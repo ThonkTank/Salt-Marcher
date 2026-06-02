@@ -1,8 +1,11 @@
 package src.domain.dungeon.model.worldspace.helper;
 
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
 import org.jspecify.annotations.Nullable;
+import src.domain.dungeon.model.core.model.geometry.Cell;
+import src.domain.dungeon.model.core.model.geometry.Route;
 import src.domain.dungeon.model.worldspace.model.interaction.model.DungeonEditorInteractionValues.CellKey;
 import src.domain.dungeon.model.worldspace.model.interaction.model.DungeonEditorInteractionValues.TravelHeading;
 import src.domain.dungeon.model.worldspace.model.interaction.model.DungeonEditorMainViewInteractionValues.PendingCorridorTarget;
@@ -52,28 +55,24 @@ public final class DungeonEditorCorridorRoutePreviewValidationHelper {
             DungeonEditorWorkspaceValues.Cell end,
             Set<CellKey> roomCells
     ) {
-        int q = start.q();
-        int r = start.r();
-        Set<CellKey> route = new LinkedHashSet<>();
-        route.add(new CellKey(q, r, start.level()));
-        while (q != end.q()) {
-            q += Integer.compare(end.q(), q);
-            route.add(new CellKey(q, r, start.level()));
-        }
-        while (r != end.r()) {
-            r += Integer.compare(end.r(), r);
-            route.add(new CellKey(q, r, start.level()));
-        }
-        return routeContainsRoom(route, roomCells);
+        return routeContainsRoom(Route.horizontalFirstOnStartLevel(toCoreCell(start), toCoreCell(end)), roomCells);
     }
 
-    private static boolean routeContainsRoom(Set<CellKey> route, Set<CellKey> roomCells) {
-        for (CellKey cell : route) {
-            if (roomCells.contains(cell)) {
+    private static boolean routeContainsRoom(List<Cell> route, Set<CellKey> roomCells) {
+        for (Cell cell : route) {
+            if (roomCells.contains(cellKey(cell))) {
                 return true;
             }
         }
         return false;
+    }
+
+    private static Cell toCoreCell(DungeonEditorWorkspaceValues.Cell cell) {
+        return new Cell(cell.q(), cell.r(), cell.level());
+    }
+
+    private static CellKey cellKey(Cell cell) {
+        return new CellKey(cell.q(), cell.r(), cell.level());
     }
 
     private static DungeonEditorWorkspaceValues.Cell neighbor(
