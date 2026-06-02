@@ -23,4 +23,15 @@ public record DungeonCorridorWaypoint(
         return DungeonCell.fromGeometry(new CorridorWaypoint(clusterId, relativeCell.geometry(), level)
                 .absoluteCell(center.geometry()));
     }
+
+    CorridorWaypoint toCore() {
+        return new CorridorWaypoint(clusterId, relativeCell.geometry(), level);
+    }
+
+    static DungeonCorridorWaypoint fromCore(CorridorWaypoint waypoint) {
+        return new DungeonCorridorWaypoint(
+                waypoint.clusterId(),
+                DungeonCell.fromGeometry(waypoint.relativeCell()),
+                waypoint.level());
+    }
 }

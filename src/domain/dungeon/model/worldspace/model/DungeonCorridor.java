@@ -2,6 +2,7 @@ package src.domain.dungeon.model.worldspace.model;
 
 
 import java.util.List;
+import src.domain.dungeon.model.core.model.structure.CorridorRoomSet;
 
 public record DungeonCorridor(
         long corridorId,
@@ -11,7 +12,7 @@ public record DungeonCorridor(
         DungeonCorridorBindings bindings
 ) {
     public DungeonCorridor {
-        roomIds = DungeonCorridorRoomIds.normalized(roomIds);
+        roomIds = new CorridorRoomSet(roomIds).roomIds();
         bindings = bindings == null ? DungeonCorridorBindings.empty() : bindings;
     }
 
@@ -29,17 +30,17 @@ public record DungeonCorridor(
     }
 
     public DungeonCorridor withAddedRoom(long roomId) {
-        if (roomId <= 0L || roomIds.contains(roomId)) {
+        CorridorRoomSet updated = new CorridorRoomSet(roomIds).withAdded(roomId);
+        List<Long> updatedRoomIds = updated.roomIds();
+        if (updatedRoomIds.equals(roomIds)) {
             return this;
         }
-        List<Long> updated = new java.util.ArrayList<>(roomIds);
-        updated.add(roomId);
         return new DungeonCorridor(
                 corridorId,
                 mapId,
                 level,
-                updated,
-                bindings.sanitizedForRooms(updated));
+                updatedRoomIds,
+                bindings.sanitizedForRooms(updatedRoomIds));
     }
 
     public DungeonCorridor withDoorBinding(DungeonCorridorDoorBinding binding) {

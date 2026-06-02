@@ -15,7 +15,8 @@ Model invariant rows are published through the existing
 `dungeonEditorBehaviorHarness` aggregator until a separate core-model proof
 entrypoint is requested. This document does not introduce a new public Gradle
 gate; a dedicated core-model proof entrypoint is a future decision for when
-model-only proof grows enough to justify that surface. Each row must include:
+model-only proof grows enough to justify that surface. Each published harness
+summary row must include:
 
 - `OwnerSuite`
 - `ProofType=ModelInvariant`
@@ -39,6 +40,12 @@ use the editor behavior catalog's `Ready` route status vocabulary.
 | `DGI-CMP-001` | `DungeonComponentInvariantHarness` | `core/model/component/StairExit` | Stair exits keep local id, position, and label invariants; missing positions are rejected by core while legacy defaults remain in transitional adapters. |
 | `DGI-CMP-002` | `DungeonComponentInvariantHarness` | `core/model/component/CorridorAnchor` | Corridor anchors keep local id, host corridor id normalization, position, relocation, and position-match invariants; missing positions are rejected by core while legacy defaults remain in transitional adapters. |
 | `DGI-CMP-003` | `DungeonComponentInvariantHarness` | `core/model/component/CorridorDoorBinding`, `CorridorWaypoint` | Corridor binding components keep local door and waypoint values plus transitional adapter compatibility; topology refs and anchor-reference ownership remain transitional until the structure or graph owner is migrated. |
+
+## Structure Invariants
+
+| ID | OwnerSuite | Scope | Expected invariant |
+| --- | --- | --- | --- |
+| `DGI-STR-001` | `DungeonStructureInvariantHarness` | `core/model/structure/CorridorRoomSet`, `CorridorBindings` | Corridor structure owns room-set normalization and ref-free binding container rules. Topology-ref identity, persistence/readback, route repair/deletion, and runtime graph ownership are outside this model-invariant row and require RealRoute `DE-*` proof or future core topology/graph proof. |
 
 ## References
 

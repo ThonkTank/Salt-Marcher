@@ -28,6 +28,11 @@ public record DungeonCorridorDoorBinding(
     public boolean hasTopologyRef() {
         return topologyRef.present();
     }
+
+    CorridorDoorBinding toCore() {
+        return new CorridorDoorBinding(roomId, clusterId, relativeCell.geometry(), direction.geometry());
+    }
+
     private static DungeonEdgeDirection fromGeometry(Direction direction) {
         return switch (direction) {
             case NORTH -> DungeonEdgeDirection.NORTH;
