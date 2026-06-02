@@ -5,6 +5,8 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import src.domain.dungeon.model.core.model.geometry.Cell;
+import src.domain.dungeon.model.core.model.geometry.Route;
 
 final class DungeonCorridorRouteValidationLogic {
     private static final DungeonCorridorConnectionNormalizationLogic CONNECTION_NORMALIZATION_SERVICE =
@@ -25,10 +27,7 @@ final class DungeonCorridorRouteValidationLogic {
         if (startCell == null || endCell == null) {
             return List.of();
         }
-        DungeonCell routeEnd = startCell.level() == endCell.level()
-                ? endCell
-                : new DungeonCell(endCell.q(), endCell.r(), startCell.level());
-        return horizontalFirst(startCell, routeEnd);
+        return worldspaceCells(Route.horizontalFirstOnStartLevel(startCell.geometry(), endCell.geometry()));
     }
 
     private DungeonCell corridorCell(DungeonMap dungeonMap, DungeonCorridorEndpoint endpoint) {
@@ -72,33 +71,10 @@ final class DungeonCorridorRouteValidationLogic {
         return List.copyOf(result);
     }
 
-    private static List<DungeonCell> horizontalFirst(DungeonCell start, DungeonCell end) {
-        return route(start, end, true);
-    }
-
-    private static List<DungeonCell> route(DungeonCell start, DungeonCell end, boolean horizontalFirst) {
+    private static List<DungeonCell> worldspaceCells(List<Cell> cells) {
         List<DungeonCell> result = new ArrayList<>();
-        int q = start.q();
-        int r = start.r();
-        int level = start.level();
-        result.add(new DungeonCell(q, r, level));
-        int firstTarget = horizontalFirst ? end.q() : end.r();
-        int secondTarget = horizontalFirst ? end.r() : end.q();
-        while ((horizontalFirst ? q : r) != firstTarget) {
-            if (horizontalFirst) {
-                q += Integer.compare(firstTarget, q);
-            } else {
-                r += Integer.compare(firstTarget, r);
-            }
-            result.add(new DungeonCell(q, r, level));
-        }
-        while ((horizontalFirst ? r : q) != secondTarget) {
-            if (horizontalFirst) {
-                r += Integer.compare(secondTarget, r);
-            } else {
-                q += Integer.compare(secondTarget, q);
-            }
-            result.add(new DungeonCell(q, r, level));
+        for (Cell cell : cells) {
+            result.add(DungeonCell.fromGeometry(cell));
         }
         return List.copyOf(result);
     }

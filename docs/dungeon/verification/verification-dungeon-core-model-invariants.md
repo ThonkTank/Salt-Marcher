@@ -32,6 +32,7 @@ use the editor behavior catalog's `Ready` route status vocabulary.
 | `DGI-GEO-001` | `DungeonGeometryInvariantHarness` | `core/model/geometry/Direction` and `Cell` | Direction neighbor deltas preserve cell level and cardinal offsets. |
 | `DGI-GEO-002` | `DungeonGeometryInvariantHarness` | `core/model/geometry/Edge` | `Edge.sideOf` and `touchingCells` return the two authored cells adjacent to each cardinal side and reject non-orthogonal edge adjacency. |
 | `DGI-GEO-003` | `DungeonGeometryInvariantHarness` | `core/model/geometry/CellOrdering` | Cell ordering deduplicates cells and orders by level, row, then column. |
+| `DGI-GEO-004` | `DungeonGeometryInvariantHarness` | `core/model/geometry/Route` | Route creates horizontal-first corridor cells and owns the explicit policy difference between level-transition paths and validation paths that stay on the start level. |
 
 ## Component Invariants
 

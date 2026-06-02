@@ -5,6 +5,7 @@ import src.domain.dungeon.model.core.model.geometry.Cell;
 import src.domain.dungeon.model.core.model.geometry.CellOrdering;
 import src.domain.dungeon.model.core.model.geometry.Direction;
 import src.domain.dungeon.model.core.model.geometry.Edge;
+import src.domain.dungeon.model.core.model.geometry.Route;
 
 final class DungeonGeometryInvariantHarness {
 
@@ -32,6 +33,12 @@ final class DungeonGeometryInvariantHarness {
                 OWNER,
                 "DGI-GEO-003",
                 "CellOrdering deduplicates cells and orders by level, row, then column");
+        assertRouteInvariant();
+        DungeonEditorBehaviorHarnessSupport.recordModelInvariant(
+                results,
+                OWNER,
+                "DGI-GEO-004",
+                "Route creates horizontal-first corridor cells with explicit level-transition policy");
     }
 
     private static void assertDirectionNeighborInvariants() {
@@ -74,6 +81,26 @@ final class DungeonGeometryInvariantHarness {
                 List.of(new Cell(0, 0, -1), new Cell(1, 1, 0), new Cell(3, 2, 0), new Cell(2, 0, 1)),
                 sorted,
                 "sorted unique cells");
+    }
+
+    private static void assertRouteInvariant() {
+        assertCells(
+                List.of(
+                        new Cell(1, 1, 0),
+                        new Cell(2, 1, 0),
+                        new Cell(3, 1, 0),
+                        new Cell(3, 2, 0),
+                        new Cell(3, 3, 0)),
+                Route.horizontalFirst(new Cell(1, 1, 0), new Cell(3, 3, 0)),
+                "horizontal-first route");
+        assertCells(
+                List.of(new Cell(1, 1, 0), new Cell(2, 1, 0), new Cell(2, 1, 1)),
+                Route.horizontalFirst(new Cell(1, 1, 0), new Cell(2, 1, 1)),
+                "route preserves explicit level transition");
+        assertCells(
+                List.of(new Cell(1, 1, 0), new Cell(2, 1, 0)),
+                Route.horizontalFirstOnStartLevel(new Cell(1, 1, 0), new Cell(2, 1, 1)),
+                "route can stay on start level for authored corridor validation");
     }
 
     private static void assertCell(Cell expected, Cell actual, String label) {

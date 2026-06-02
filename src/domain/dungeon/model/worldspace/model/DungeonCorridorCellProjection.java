@@ -5,6 +5,8 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import src.domain.dungeon.model.core.model.geometry.Cell;
+import src.domain.dungeon.model.core.model.geometry.Route;
 
 final class DungeonCorridorCellProjection {
     private static final int SINGLE_ROUTE_TERMINUS_COUNT = 1;
@@ -116,7 +118,7 @@ final class DungeonCorridorCellProjection {
             return;
         }
         for (int index = 1; index < routeNodes.size(); index++) {
-            for (DungeonCell cell : manhattanPath(routeNodes.get(index - 1), routeNodes.get(index))) {
+            for (DungeonCell cell : routeCells(routeNodes.get(index - 1), routeNodes.get(index))) {
                 if (!filterRoomCells || !roomCells.contains(cell)) {
                     cells.add(cell);
                 }
@@ -124,25 +126,17 @@ final class DungeonCorridorCellProjection {
         }
     }
 
-    private static List<DungeonCell> manhattanPath(DungeonCell start, DungeonCell end) {
+    private static List<DungeonCell> routeCells(DungeonCell start, DungeonCell end) {
         if (start == null || end == null) {
             return List.of();
         }
+        return worldspaceCells(Route.horizontalFirst(start.geometry(), end.geometry()));
+    }
+
+    private static List<DungeonCell> worldspaceCells(List<Cell> cells) {
         List<DungeonCell> result = new ArrayList<>();
-        int q = start.q();
-        int r = start.r();
-        int level = start.level();
-        result.add(new DungeonCell(q, r, level));
-        while (q != end.q()) {
-            q += Integer.compare(end.q(), q);
-            result.add(new DungeonCell(q, r, level));
-        }
-        while (r != end.r()) {
-            r += Integer.compare(end.r(), r);
-            result.add(new DungeonCell(q, r, level));
-        }
-        if (level != end.level()) {
-            result.add(new DungeonCell(end.q(), end.r(), end.level()));
+        for (Cell cell : cells) {
+            result.add(DungeonCell.fromGeometry(cell));
         }
         return List.copyOf(result);
     }
