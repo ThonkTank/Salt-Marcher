@@ -48,6 +48,7 @@ use the editor behavior catalog's `Ready` route status vocabulary.
 | --- | --- | --- | --- |
 | `DGI-STR-001` | `DungeonStructureInvariantHarness` | `core/model/structure/CorridorRoomSet`, `CorridorBindings` | Corridor structure owns room-set normalization/removal, binding container rules, door removal by room, anchor binding/ref replacement by local anchor id, and target-local waypoint or anchor-ref removal. Topology-ref identity, persistence/readback, map-level route repair/deletion, and runtime graph ownership remain outside this model-invariant row and require RealRoute `DE-*` proof or future core topology/graph proof. |
 | `DGI-STR-002` | `DungeonStructureInvariantHarness` | transitional `worldspace/model/DungeonCorridorBindings` adapter compatibility | Transitional corridor bindings adapter preserves topology-ref identity for anchor binding/ref replacement and surviving door bindings after door removal while topology ownership remains outside core structure until a future topology/graph owner migration. |
+| `DGI-STR-003` | `DungeonStructureInvariantHarness` | `core/model/structure/CorridorRoutePlan` plus transitional `worldspace/model/DungeonCorridorBindings` adapter compatibility | Corridor structure owns interior route-anchor selection and waypoint planning for route splits. The transitional adapter preserves selected anchor topology refs when publishing the core-planned anchor refs back through `worldspace`. |
 
 ## References
 

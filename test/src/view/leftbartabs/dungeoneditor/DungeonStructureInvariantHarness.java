@@ -9,6 +9,7 @@ import src.domain.dungeon.model.core.model.geometry.Cell;
 import src.domain.dungeon.model.core.model.geometry.Direction;
 import src.domain.dungeon.model.core.model.structure.CorridorBindings;
 import src.domain.dungeon.model.core.model.structure.CorridorRoomSet;
+import src.domain.dungeon.model.core.model.structure.CorridorRoutePlan;
 import src.domain.dungeon.model.worldspace.model.DungeonCell;
 import src.domain.dungeon.model.worldspace.model.DungeonCorridor;
 import src.domain.dungeon.model.worldspace.model.DungeonCorridorBindings;
@@ -38,6 +39,13 @@ final class DungeonStructureInvariantHarness {
                 "DGI-STR-002",
                 "Transitional corridor bindings adapter preserves anchor and surviving door topology-ref identity "
                         + "without moving topology ownership into core structure");
+        assertCorridorRoutePlanInvariants();
+        DungeonEditorBehaviorHarnessSupport.recordModelInvariant(
+                results,
+                OWNER,
+                "DGI-STR-003",
+                "Corridor structure owns interior route-anchor selection and waypoint planning while topology "
+                        + "identity remains adapter-owned");
     }
 
     private static void assertCorridorStructureInvariants() {
@@ -112,6 +120,36 @@ final class DungeonStructureInvariantHarness {
         assertWorldspaceCorridorRoomSetAdapterCompatibility();
     }
 
+    private static void assertCorridorRoutePlanInvariants() {
+        CorridorRoutePlan plan = new CorridorRoutePlan(
+                List.of(new Cell(0, 0, 0), new Cell(1, 0, 0), new Cell(2, 0, 0)),
+                10L,
+                new Cell(0, 0, 0));
+        CorridorAnchor higherHostAnchor = new CorridorAnchor(9L, 30L, new Cell(1, 0, 0));
+        CorridorAnchor selectedAnchor = new CorridorAnchor(5L, 20L, new Cell(1, 0, 0));
+        CorridorBindings planned = plan.bindInteriorAnchors(
+                CorridorBindings.empty(),
+                List.of(higherHostAnchor, selectedAnchor));
+        assertEquals(List.of(new CorridorAnchorRef(20L, 5L)), planned.anchorRefs(),
+                "route plan selects lowest host/anchor at interior cell");
+        assertEquals(List.of(new CorridorWaypoint(10L, new Cell(1, 0, 0), 0)), planned.waypoints(),
+                "route plan creates relative interior waypoint");
+        assertEquals(CorridorBindings.empty(),
+                new CorridorRoutePlan(
+                        List.of(new Cell(0, 0, 0), new Cell(1, 0, 0)),
+                        10L,
+                        new Cell(0, 0, 0))
+                        .bindInteriorAnchors(CorridorBindings.empty(), List.of(selectedAnchor)),
+                "short route plan leaves bindings unchanged");
+        assertEquals(CorridorBindings.empty(),
+                new CorridorRoutePlan(
+                        List.of(new Cell(0, 0, 0), new Cell(1, 0, 0), new Cell(2, 0, 0)),
+                        0L,
+                        new Cell(0, 0, 0))
+                        .bindInteriorAnchors(CorridorBindings.empty(), List.of(selectedAnchor)),
+                "missing waypoint cluster leaves bindings unchanged");
+    }
+
     private static void assertWorldspaceAdapterPreservesTopologyRefIdentity() {
         src.domain.dungeon.model.worldspace.model.DungeonTopologyRef stableRef =
                 src.domain.dungeon.model.worldspace.model.DungeonTopologyRef.corridorAnchor(30L);
@@ -159,6 +197,35 @@ final class DungeonStructureInvariantHarness {
         DungeonCorridorBindings afterDoorRemoval = doorBindings.withoutDoorBindingForRoom(4L);
         assertEquals(List.of(survivingDoor), afterDoorRemoval.doorBindings(),
                 "adapter door removal preserves surviving door topology ref");
+
+        src.domain.dungeon.model.worldspace.model.DungeonTopologyRef splitAnchorRef =
+                src.domain.dungeon.model.worldspace.model.DungeonTopologyRef.corridorAnchor(70L);
+        src.domain.dungeon.model.worldspace.model.DungeonCorridorAnchorBinding splitAnchor =
+                new src.domain.dungeon.model.worldspace.model.DungeonCorridorAnchorBinding(
+                        7L,
+                        40L,
+                        new DungeonCell(1, 0, 0),
+                        splitAnchorRef);
+        DungeonCorridorBindings splitBindings = DungeonCorridorBindings.empty().withInteriorRouteAnchors(
+                new CorridorRoutePlan(
+                        List.of(new Cell(0, 0, 0), new Cell(1, 0, 0), new Cell(2, 0, 0)),
+                        10L,
+                        new Cell(0, 0, 0)),
+                List.of(splitAnchor));
+        assertEquals(List.of(new src.domain.dungeon.model.worldspace.model.DungeonCorridorAnchorRef(40L, splitAnchorRef)),
+                splitBindings.anchorRefs(),
+                "adapter route split preserves selected anchor topology ref");
+        DungeonCorridorBindings existingCustomRef = DungeonCorridorBindings.empty().withAnchorRef(
+                new src.domain.dungeon.model.worldspace.model.DungeonCorridorAnchorRef(40L, splitAnchorRef));
+        DungeonCorridorBindings deduplicatedSplitBindings = existingCustomRef.withInteriorRouteAnchors(
+                new CorridorRoutePlan(
+                        List.of(new Cell(0, 0, 0), new Cell(1, 0, 0), new Cell(2, 0, 0)),
+                        10L,
+                        new Cell(0, 0, 0)),
+                List.of(splitAnchor));
+        assertEquals(List.of(new src.domain.dungeon.model.worldspace.model.DungeonCorridorAnchorRef(40L, splitAnchorRef)),
+                deduplicatedSplitBindings.anchorRefs(),
+                "adapter route split deduplicates existing custom topology ref");
     }
 
     private static void assertWorldspaceCorridorRoomSetAdapterCompatibility() {

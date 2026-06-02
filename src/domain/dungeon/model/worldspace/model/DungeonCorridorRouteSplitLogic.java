@@ -1,10 +1,10 @@
 package src.domain.dungeon.model.worldspace.model;
 
 import java.util.ArrayList;
-import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Set;
 import org.jspecify.annotations.Nullable;
+import src.domain.dungeon.model.core.model.geometry.Cell;
+import src.domain.dungeon.model.core.model.structure.CorridorRoutePlan;
 
 final class DungeonCorridorRouteSplitLogic {
     private static final int MINIMUM_INTERIOR_SPLIT_ROUTE_CELLS = 3;
@@ -25,17 +25,11 @@ final class DungeonCorridorRouteSplitLogic {
         if (clusterCenter == null) {
             return corridor;
         }
-        DungeonCorridor updated = corridor;
-        List<DungeonCorridorWaypoint> waypoints = new ArrayList<>();
-        Set<DungeonTopologyRef> attachedRefs = new LinkedHashSet<>();
-        for (int index = 1; index < routeCells.size() - 1; index++) {
-            DungeonCorridorAnchorBinding anchor = routeAnchorAt(dungeonMap, routeCells.get(index));
-            if (anchor != null && attachedRefs.add(anchor.topologyRef())) {
-                updated = updated.withAnchorRef(new DungeonCorridorAnchorRef(anchor.hostCorridorId(), anchor.topologyRef()));
-                waypoints.add(waypointFor(waypointClusterId, clusterCenter, anchor.absoluteCell()));
-            }
-        }
-        return waypoints.isEmpty() ? updated : updated.withBindings(updated.bindings().withWaypoints(waypoints));
+        CorridorRoutePlan routePlan = new CorridorRoutePlan(
+                coreRouteCells(routeCells),
+                waypointClusterId,
+                clusterCenter.geometry());
+        return corridor.withBindings(corridor.bindings().withInteriorRouteAnchors(routePlan, routeAnchors(dungeonMap)));
     }
 
     private static long waypointClusterId(
@@ -64,48 +58,25 @@ final class DungeonCorridorRouteSplitLogic {
         return null;
     }
 
-    private static DungeonCorridorWaypoint waypointFor(
-            long clusterId,
-            DungeonCell clusterCenter,
-            DungeonCell absoluteCell
-    ) {
-        return new DungeonCorridorWaypoint(
-                clusterId,
-                new DungeonCell(
-                        absoluteCell.q() - clusterCenter.q(),
-                        absoluteCell.r() - clusterCenter.r(),
-                        absoluteCell.level()),
-                absoluteCell.level());
-    }
-
-    @Nullable
-    private static DungeonCorridorAnchorBinding routeAnchorAt(DungeonMap dungeonMap, DungeonCell cell) {
-        DungeonCorridorAnchorBinding result = null;
+    private static List<DungeonCorridorAnchorBinding> routeAnchors(DungeonMap dungeonMap) {
+        List<DungeonCorridorAnchorBinding> result = new ArrayList<>();
         for (DungeonCorridor corridor : dungeonMap.connections().corridors()) {
             for (DungeonCorridorAnchorBinding anchor : corridor.bindings().anchorBindings()) {
-                if (anchor != null && anchor.absoluteCell().equals(cell) && betterAnchor(anchor, result)) {
-                    result = anchor;
+                if (anchor != null) {
+                    result.add(anchor);
                 }
             }
         }
-        return result;
+        return List.copyOf(result);
     }
 
-    private static boolean betterAnchor(
-            DungeonCorridorAnchorBinding candidate,
-            @Nullable DungeonCorridorAnchorBinding current
-    ) {
-        if (current == null) {
-            return true;
+    private static List<Cell> coreRouteCells(List<DungeonCell> routeCells) {
+        List<Cell> result = new ArrayList<>();
+        for (DungeonCell cell : routeCells) {
+            if (cell != null) {
+                result.add(cell.geometry());
+            }
         }
-        int hostComparison = Long.compare(candidate.hostCorridorId(), current.hostCorridorId());
-        if (hostComparison != 0) {
-            return hostComparison < 0;
-        }
-        int anchorComparison = Long.compare(candidate.anchorId(), current.anchorId());
-        if (anchorComparison != 0) {
-            return anchorComparison < 0;
-        }
-        return candidate.topologyRef().id() < current.topologyRef().id();
+        return List.copyOf(result);
     }
 }
