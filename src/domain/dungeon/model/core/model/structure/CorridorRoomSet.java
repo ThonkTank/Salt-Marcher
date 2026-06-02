@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Set;
 
 public record CorridorRoomSet(List<Long> roomIds) {
+    private static final long MISSING_ROOM_ID = 0L;
 
     public CorridorRoomSet {
         roomIds = normalized(roomIds);
@@ -16,11 +17,11 @@ public record CorridorRoomSet(List<Long> roomIds) {
     }
 
     public boolean connects(long roomId) {
-        return roomId > 0L && roomIds.contains(roomId);
+        return roomId > MISSING_ROOM_ID && roomIds.contains(roomId);
     }
 
     public CorridorRoomSet withAdded(long roomId) {
-        if (roomId <= 0L || roomIds.contains(roomId)) {
+        if (roomId <= MISSING_ROOM_ID || roomIds.contains(roomId)) {
             return this;
         }
         Set<Long> updated = new LinkedHashSet<>(roomIds);
@@ -28,10 +29,19 @@ public record CorridorRoomSet(List<Long> roomIds) {
         return new CorridorRoomSet(List.copyOf(updated));
     }
 
+    public CorridorRoomSet without(long roomId) {
+        if (roomId <= MISSING_ROOM_ID || !roomIds.contains(roomId)) {
+            return this;
+        }
+        Set<Long> updated = new LinkedHashSet<>(roomIds);
+        updated.remove(roomId);
+        return new CorridorRoomSet(List.copyOf(updated));
+    }
+
     private static List<Long> normalized(List<Long> roomIds) {
         Set<Long> result = new LinkedHashSet<>();
         for (Long roomId : roomIds == null ? List.<Long>of() : roomIds) {
-            if (roomId != null && roomId > 0L) {
+            if (roomId != null && roomId > MISSING_ROOM_ID) {
                 result.add(roomId);
             }
         }

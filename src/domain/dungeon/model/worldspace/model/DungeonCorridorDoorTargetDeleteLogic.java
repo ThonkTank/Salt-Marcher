@@ -1,7 +1,6 @@
 package src.domain.dungeon.model.worldspace.model;
 
-import java.util.ArrayList;
-import java.util.List;
+import src.domain.dungeon.model.core.model.structure.CorridorRoomSet;
 
 final class DungeonCorridorDoorTargetDeleteLogic {
     private static final long NO_ID = 0L;
@@ -18,16 +17,14 @@ final class DungeonCorridorDoorTargetDeleteLogic {
         if (removed == null) {
             return corridor;
         }
-        DungeonCorridorBindings nextBindings = new DungeonCorridorBindings(
-                WAYPOINT_PRUNING_SERVICE.waypointsAfterDoorRemoval(dungeonMap, corridor, removed),
-                doorBindingsWithout(corridor, removed),
-                corridor.bindings().anchorBindings(),
-                corridor.bindings().anchorRefs());
+        DungeonCorridorBindings nextBindings = corridor.bindings()
+                .withoutDoorBindingForRoom(removed.roomId())
+                .withWaypoints(WAYPOINT_PRUNING_SERVICE.waypointsAfterDoorRemoval(dungeonMap, corridor, removed));
         return new DungeonCorridor(
                 corridor.corridorId(),
                 corridor.mapId(),
                 corridor.level(),
-                roomIdsWithout(corridor, removed.roomId()),
+                new CorridorRoomSet(corridor.roomIds()).without(removed.roomId()).roomIds(),
                 nextBindings);
     }
 
@@ -45,26 +42,4 @@ final class DungeonCorridorDoorTargetDeleteLogic {
                 || (roomId > NO_ID && binding.roomId() == roomId);
     }
 
-    private List<DungeonCorridorDoorBinding> doorBindingsWithout(
-            DungeonCorridor corridor,
-            DungeonCorridorDoorBinding removed
-    ) {
-        List<DungeonCorridorDoorBinding> nextBindings = new ArrayList<>();
-        for (DungeonCorridorDoorBinding binding : corridor.bindings().doorBindings()) {
-            if (binding != null && !binding.equals(removed)) {
-                nextBindings.add(binding);
-            }
-        }
-        return List.copyOf(nextBindings);
-    }
-
-    private List<Long> roomIdsWithout(DungeonCorridor corridor, long roomId) {
-        List<Long> nextRoomIds = new ArrayList<>();
-        for (Long existingRoomId : corridor.roomIds()) {
-            if (existingRoomId != null && existingRoomId != roomId) {
-                nextRoomIds.add(existingRoomId);
-            }
-        }
-        return List.copyOf(nextRoomIds);
-    }
 }

@@ -15,6 +15,7 @@ public record CorridorBindings(
         List<CorridorAnchorRef> anchorRefs
 ) {
     private static final long MISSING_ANCHOR_ID = 0L;
+    private static final long MISSING_ROOM_ID = 0L;
 
     public CorridorBindings {
         waypoints = waypoints == null ? List.of() : List.copyOf(waypoints);
@@ -56,6 +57,19 @@ public record CorridorBindings(
             }
         }
         updated.add(binding);
+        return new CorridorBindings(waypoints, updated, anchorBindings, anchorRefs);
+    }
+
+    public CorridorBindings withoutDoorBindingForRoom(long roomId) {
+        if (roomId <= MISSING_ROOM_ID) {
+            return this;
+        }
+        List<CorridorDoorBinding> updated = new ArrayList<>();
+        for (CorridorDoorBinding binding : doorBindings) {
+            if (binding.roomId() != roomId) {
+                updated.add(binding);
+            }
+        }
         return new CorridorBindings(waypoints, updated, anchorBindings, anchorRefs);
     }
 
@@ -122,6 +136,15 @@ public record CorridorBindings(
 
     public CorridorBindings withWaypoints(List<CorridorWaypoint> nextWaypoints) {
         return new CorridorBindings(nextWaypoints, doorBindings, anchorBindings, anchorRefs);
+    }
+
+    public List<CorridorWaypoint> waypointsBetweenEndpointIndexes(int firstIndex, int secondIndex) {
+        int start = Math.min(firstIndex, secondIndex) + 1;
+        int end = Math.max(firstIndex, secondIndex);
+        if (firstIndex < 0 || secondIndex < 0 || end >= waypoints.size() || Math.abs(firstIndex - secondIndex) <= 1) {
+            return List.of();
+        }
+        return List.copyOf(waypoints.subList(start, end));
     }
 
     public CorridorBindings withAnchorBindings(List<CorridorAnchor> nextAnchorBindings) {

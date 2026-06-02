@@ -18,12 +18,7 @@ final class DungeonCorridorDoorWaypointPruningLogic {
         }
         int anchorIndex = waypointIndexAt(dungeonMap, corridor, anchorCell);
         int doorIndex = waypointIndexAt(dungeonMap, corridor, remainingDoorCell);
-        if (anchorIndex < 0 || doorIndex < 0 || Math.abs(anchorIndex - doorIndex) <= 1) {
-            return List.of();
-        }
-        int start = Math.min(anchorIndex, doorIndex) + 1;
-        int end = Math.max(anchorIndex, doorIndex);
-        return List.copyOf(corridor.bindings().waypoints().subList(start, end));
+        return corridor.bindings().waypointsBetweenEndpointIndexes(anchorIndex, doorIndex);
     }
 
     private DungeonCell firstAnchorCell(DungeonCorridor corridor) {

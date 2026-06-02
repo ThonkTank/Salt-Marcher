@@ -44,6 +44,10 @@ public record DungeonCorridorBindings(
                 anchorRefs);
     }
 
+    public DungeonCorridorBindings withoutDoorBindingForRoom(long roomId) {
+        return withCoreBindings(coreBindings().withoutDoorBindingForRoom(roomId), null);
+    }
+
     public DungeonCorridorBindings withAnchorBinding(DungeonCorridorAnchorBinding binding) {
         if (binding == null || !binding.topologyRef().present()) {
             return this;
@@ -95,6 +99,10 @@ public record DungeonCorridorBindings(
     public DungeonCorridorBindings withWaypoints(List<DungeonCorridorWaypoint> nextWaypoints) {
         CorridorBindings updatedCore = coreBindings().withWaypoints(coreWaypoints(nextWaypoints));
         return withCoreBindings(updatedCore, null);
+    }
+
+    public List<DungeonCorridorWaypoint> waypointsBetweenEndpointIndexes(int firstIndex, int secondIndex) {
+        return worldspaceWaypoints(coreBindings().waypointsBetweenEndpointIndexes(firstIndex, secondIndex));
     }
 
     public DungeonCorridorBindings withoutAnchorRefAndRouteWaypoints(long anchorId) {
