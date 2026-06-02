@@ -41,4 +41,8 @@ public record DungeonCorridorAnchorBinding(
     public boolean matchesTopologyRef(DungeonTopologyRef ref) {
         return ref != null && ref.present() && topologyRef.equals(ref);
     }
+
+    public CorridorAnchor toCore() {
+        return new CorridorAnchor(anchorId, hostCorridorId, absoluteCell.geometry());
+    }
 }

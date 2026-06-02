@@ -2,6 +2,7 @@ package src.view.leftbartabs.dungeoneditor;
 
 import java.util.List;
 import src.domain.dungeon.model.core.model.component.CorridorAnchor;
+import src.domain.dungeon.model.core.model.component.CorridorAnchorRef;
 import src.domain.dungeon.model.core.model.component.CorridorDoorBinding;
 import src.domain.dungeon.model.core.model.component.CorridorWaypoint;
 import src.domain.dungeon.model.core.model.component.StairExit;
@@ -41,7 +42,7 @@ final class DungeonComponentInvariantHarness {
                 results,
                 OWNER,
                 "DGI-CMP-003",
-                "Corridor binding components keep local door and waypoint values plus transitional adapter compatibility");
+                "Corridor binding components keep local door, waypoint, and anchor-ref values plus transitional adapter compatibility");
     }
 
     private static void assertStairExitInvariants() {
@@ -145,6 +146,16 @@ final class DungeonComponentInvariantHarness {
         CorridorWaypoint waypoint = new CorridorWaypoint(-3L, new Cell(2, 3, 4), 4);
         assertEquals(0L, waypoint.clusterId(), "waypoint cluster lower bound");
         assertEquals(new Cell(7, 9, 4), waypoint.absoluteCell(new Cell(5, 6, 4)), "waypoint absolute cell");
+
+        CorridorAnchorRef missingRef = new CorridorAnchorRef(-4L, -5L);
+        assertEquals(0L, missingRef.hostCorridorId(), "anchor ref host lower bound");
+        assertEquals(0L, missingRef.anchorId(), "anchor ref id lower bound");
+        assertFalse(missingRef.present(), "missing anchor ref absent");
+
+        CorridorAnchorRef presentRef = new CorridorAnchorRef(9L, 10L);
+        assertEquals(9L, presentRef.hostCorridorId(), "anchor ref host id preservation");
+        assertEquals(10L, presentRef.anchorId(), "anchor ref id preservation");
+        assertTrue(presentRef.present(), "anchor ref present");
 
         assertThrowsNullCorridorBindingComponentValues();
         assertWorldspaceCorridorBindingAdapterCompatibility();

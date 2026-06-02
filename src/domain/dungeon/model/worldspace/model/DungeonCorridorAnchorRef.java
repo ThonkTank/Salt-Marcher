@@ -1,5 +1,7 @@
 package src.domain.dungeon.model.worldspace.model;
 
+import src.domain.dungeon.model.core.model.component.CorridorAnchorRef;
+
 public record DungeonCorridorAnchorRef(
         long hostCorridorId,
         DungeonTopologyRef topologyRef
@@ -12,6 +14,10 @@ public record DungeonCorridorAnchorRef(
 
     public boolean present() {
         return hostCorridorId > 0L && topologyRef.present();
+    }
+
+    public CorridorAnchorRef toCore() {
+        return new CorridorAnchorRef(hostCorridorId, topologyRef.id());
     }
 
 }

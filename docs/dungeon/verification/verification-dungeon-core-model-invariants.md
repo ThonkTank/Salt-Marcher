@@ -40,13 +40,13 @@ use the editor behavior catalog's `Ready` route status vocabulary.
 | --- | --- | --- | --- |
 | `DGI-CMP-001` | `DungeonComponentInvariantHarness` | `core/model/component/StairExit` | Stair exits keep local id, position, and label invariants; missing positions are rejected by core while legacy defaults remain in transitional adapters. |
 | `DGI-CMP-002` | `DungeonComponentInvariantHarness` | `core/model/component/CorridorAnchor` | Corridor anchors keep local id, host corridor id normalization, position, relocation, and position-match invariants; missing positions are rejected by core while legacy defaults remain in transitional adapters. |
-| `DGI-CMP-003` | `DungeonComponentInvariantHarness` | `core/model/component/CorridorDoorBinding`, `CorridorWaypoint` | Corridor binding components keep local door and waypoint values plus transitional adapter compatibility; topology refs and anchor-reference ownership remain transitional until the structure or graph owner is migrated. |
+| `DGI-CMP-003` | `DungeonComponentInvariantHarness` | `core/model/component/CorridorDoorBinding`, `CorridorWaypoint`, `CorridorAnchorRef` | Corridor binding components keep local door, waypoint, and anchor-reference values plus transitional adapter compatibility. Topology refs remain transitional adapter identity until the structure or graph owner is migrated. |
 
 ## Structure Invariants
 
 | ID | OwnerSuite | Scope | Expected invariant |
 | --- | --- | --- | --- |
-| `DGI-STR-001` | `DungeonStructureInvariantHarness` | `core/model/structure/CorridorRoomSet`, `CorridorBindings` | Corridor structure owns room-set normalization and ref-free binding container rules. Topology-ref identity, persistence/readback, route repair/deletion, and runtime graph ownership are outside this model-invariant row and require RealRoute `DE-*` proof or future core topology/graph proof. |
+| `DGI-STR-001` | `DungeonStructureInvariantHarness` | `core/model/structure/CorridorRoomSet`, `CorridorBindings` | Corridor structure owns room-set normalization, binding container rules, anchor binding/ref replacement, and target-local waypoint or anchor-ref removal. Topology-ref identity, persistence/readback, map-level route repair/deletion, and runtime graph ownership remain outside this model-invariant row and require RealRoute `DE-*` proof or future core topology/graph proof. |
 
 ## References
 
