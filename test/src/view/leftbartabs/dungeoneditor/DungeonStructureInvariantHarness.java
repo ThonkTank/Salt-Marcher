@@ -7,6 +7,7 @@ import src.domain.dungeon.model.core.model.component.CorridorDoorBinding;
 import src.domain.dungeon.model.core.model.component.CorridorWaypoint;
 import src.domain.dungeon.model.core.model.geometry.Cell;
 import src.domain.dungeon.model.core.model.geometry.Direction;
+import src.domain.dungeon.model.core.model.structure.Corridor;
 import src.domain.dungeon.model.core.model.structure.CorridorBindings;
 import src.domain.dungeon.model.core.model.structure.CorridorRoomSet;
 import src.domain.dungeon.model.core.model.structure.CorridorRoutePlan;
@@ -45,6 +46,13 @@ final class DungeonStructureInvariantHarness {
                 OWNER,
                 "DGI-STR-003",
                 "Corridor structure owns interior route-anchor selection and waypoint planning while topology "
+                        + "identity remains adapter-owned");
+        assertCorridorTargetDeleteInvariants();
+        DungeonEditorBehaviorHarnessSupport.recordModelInvariant(
+                results,
+                OWNER,
+                "DGI-STR-004",
+                "Corridor structure owns target-local door, anchor, and waypoint delete behavior while topology "
                         + "identity remains adapter-owned");
     }
 
@@ -110,12 +118,6 @@ final class DungeonStructureInvariantHarness {
                 withAnchors.withWaypoints(List.of(waypoint, secondWaypoint, thirdWaypoint));
         assertEquals(List.of(secondWaypoint), threeWaypointBindings.waypointsBetweenEndpointIndexes(0, 2),
                 "non-adjacent endpoint indexes prune interior waypoints");
-
-        CorridorBindings sanitized = replaced.sanitizedForRooms(new CorridorRoomSet(List.of(4L)));
-        assertEquals(List.of(replacement), sanitized.doorBindings(), "sanitized door bindings follow room set");
-        assertEquals(List.of(waypoint), sanitized.waypoints(), "sanitized bindings keep route waypoints");
-        assertEquals(CorridorBindings.empty(), replaced.sanitizedForRooms(new CorridorRoomSet(List.of())),
-                "empty room set clears corridor bindings");
 
         assertWorldspaceCorridorRoomSetAdapterCompatibility();
     }
@@ -194,7 +196,14 @@ final class DungeonStructureInvariantHarness {
                 src.domain.dungeon.model.worldspace.model.DungeonTopologyRef.door(60L));
         DungeonCorridorBindings doorBindings =
                 new DungeonCorridorBindings(List.of(), List.of(removedDoor, survivingDoor), List.of(), List.of());
-        DungeonCorridorBindings afterDoorRemoval = doorBindings.withoutDoorBindingForRoom(4L);
+        DungeonCorridorBindings afterDoorRemoval = new DungeonCorridor(
+                3L,
+                5L,
+                0,
+                List.of(4L, 6L),
+                doorBindings)
+                .withoutDoorTarget(removedDoor, false, -1, -1)
+                .bindings();
         assertEquals(List.of(survivingDoor), afterDoorRemoval.doorBindings(),
                 "adapter door removal preserves surviving door topology ref");
 
@@ -242,9 +251,89 @@ final class DungeonStructureInvariantHarness {
         adapterRoomIds.add(1, null);
         DungeonCorridor corridor = new DungeonCorridor(3L, 5L, 0, adapterRoomIds, bindings);
         assertEquals(List.of(4L), corridor.roomIds(), "adapter corridor delegates room set normalization");
-        assertTrue(corridor.connectsRoom(4L), "adapter corridor connects normalized room");
         assertEquals(List.of(4L, 6L), corridor.withDoorBinding(secondDoor).roomIds(),
                 "adapter corridor adds door room through core room set");
+    }
+
+    private static void assertCorridorTargetDeleteInvariants() {
+        CorridorWaypoint firstWaypoint = new CorridorWaypoint(7L, new Cell(1, 2, 0), 0);
+        CorridorWaypoint secondWaypoint = new CorridorWaypoint(7L, new Cell(2, 2, 0), 0);
+        CorridorWaypoint thirdWaypoint = new CorridorWaypoint(7L, new Cell(3, 2, 0), 0);
+        CorridorDoorBinding firstDoor = new CorridorDoorBinding(4L, 10L, new Cell(0, 1, 0), Direction.NORTH);
+        CorridorDoorBinding secondDoor = new CorridorDoorBinding(6L, 11L, new Cell(2, 3, 0), Direction.EAST);
+        CorridorAnchorRef anchorRef = new CorridorAnchorRef(12L, 5L);
+        Corridor corridor = new Corridor(
+                3L,
+                9L,
+                0,
+                List.of(4L, 6L),
+                new CorridorBindings(
+                        List.of(firstWaypoint, secondWaypoint, thirdWaypoint),
+                        List.of(firstDoor, secondDoor),
+                        List.of(),
+                        List.of(anchorRef)));
+
+        Corridor withoutDoor = corridor.withoutDoorTarget(firstDoor, true, 0, 2);
+        assertEquals(List.of(6L), withoutDoor.roomIds(), "core door target delete removes room");
+        assertEquals(List.of(secondDoor), withoutDoor.bindings().doorBindings(),
+                "core door target delete removes door binding");
+        assertEquals(List.of(secondWaypoint), withoutDoor.bindings().waypoints(),
+                "core door target delete prunes branch waypoints");
+
+        Corridor withoutDoorWithoutEndpointFacts = corridor.withoutDoorTarget(firstDoor, false, -1, -1);
+        assertEquals(List.of(firstWaypoint, secondWaypoint, thirdWaypoint),
+                withoutDoorWithoutEndpointFacts.bindings().waypoints(),
+                "core door target delete preserves waypoints when adapter lacks endpoint facts");
+
+        Corridor withoutAnchor = corridor.withoutAnchorTarget(5L);
+        assertEquals(List.of(), withoutAnchor.bindings().anchorRefs(), "core anchor target delete removes anchor ref");
+        assertEquals(List.of(), withoutAnchor.bindings().waypoints(), "core anchor target delete clears route waypoints");
+        assertEquals(List.of(firstWaypoint, thirdWaypoint),
+                corridor.withoutWaypointTarget(1).bindings().waypoints(),
+                "core waypoint target delete removes selected waypoint");
+
+        assertWorldspaceCorridorTargetDeleteAdapterCompatibility();
+    }
+
+    private static void assertWorldspaceCorridorTargetDeleteAdapterCompatibility() {
+        src.domain.dungeon.model.worldspace.model.DungeonTopologyRef customAnchorRef =
+                src.domain.dungeon.model.worldspace.model.DungeonTopologyRef.corridorAnchor(70L);
+        DungeonCorridorBindings bindings = new DungeonCorridorBindings(
+                List.of(new src.domain.dungeon.model.worldspace.model.DungeonCorridorWaypoint(
+                        7L,
+                        new DungeonCell(1, 2, 0),
+                        0)),
+                List.of(),
+                List.of(),
+                List.of(new src.domain.dungeon.model.worldspace.model.DungeonCorridorAnchorRef(12L, customAnchorRef)));
+        DungeonCorridor corridor = new DungeonCorridor(3L, 9L, 0, List.of(), bindings);
+        DungeonCorridor withoutAnchor = corridor.withoutAnchorTarget(customAnchorRef.id());
+        assertEquals(List.of(), withoutAnchor.bindings().anchorRefs(),
+                "adapter anchor target delete follows topology ref id");
+        assertEquals(List.of(), withoutAnchor.bindings().waypoints(),
+                "adapter anchor target delete clears route waypoints through core");
+
+        DungeonCorridorDoorBinding firstDoor = new DungeonCorridorDoorBinding(
+                4L,
+                10L,
+                new DungeonCell(0, 1, 0),
+                DungeonEdgeDirection.NORTH,
+                src.domain.dungeon.model.worldspace.model.DungeonTopologyRef.door(40L));
+        DungeonCorridorDoorBinding secondDoor = new DungeonCorridorDoorBinding(
+                6L,
+                11L,
+                new DungeonCell(2, 3, 0),
+                DungeonEdgeDirection.EAST,
+                src.domain.dungeon.model.worldspace.model.DungeonTopologyRef.door(60L));
+        DungeonCorridor doorCorridor = new DungeonCorridor(
+                4L,
+                9L,
+                0,
+                List.of(4L, 6L),
+                new DungeonCorridorBindings(List.of(), List.of(firstDoor, secondDoor), List.of(), List.of()));
+        assertEquals(List.of(secondDoor),
+                doorCorridor.withoutDoorTarget(firstDoor, false, -1, -1).bindings().doorBindings(),
+                "adapter door target delete preserves surviving topology ref");
     }
 
     private static void assertTrue(boolean condition, String label) {

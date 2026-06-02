@@ -2,7 +2,6 @@ package src.domain.dungeon.model.worldspace.model;
 
 import java.util.List;
 import src.domain.dungeon.model.core.model.structure.CorridorBindings;
-import src.domain.dungeon.model.core.model.structure.CorridorRoomSet;
 import src.domain.dungeon.model.core.model.structure.CorridorRoutePlan;
 
 public record DungeonCorridorBindings(
@@ -21,20 +20,6 @@ public record DungeonCorridorBindings(
 
     public static DungeonCorridorBindings empty() {
         return new DungeonCorridorBindings(List.of(), List.of(), List.of(), List.of());
-    }
-
-    public DungeonCorridorBindings withDoorBinding(DungeonCorridorDoorBinding binding) {
-        if (binding == null) {
-            return this;
-        }
-        CorridorBindings updatedCore = DungeonCorridorBindingsCoreAdapter.toCore(this).withDoorBinding(binding.toCore());
-        return DungeonCorridorBindingsCoreAdapter.fromCore(this, updatedCore, binding);
-    }
-
-    public DungeonCorridorBindings withoutDoorBindingForRoom(long roomId) {
-        CorridorBindings updatedCore =
-                DungeonCorridorBindingsCoreAdapter.toCore(this).withoutDoorBindingForRoom(roomId);
-        return DungeonCorridorBindingsCoreAdapter.fromCore(this, updatedCore, null);
     }
 
     public DungeonCorridorBindings withAnchorBinding(DungeonCorridorAnchorBinding binding) {
@@ -92,28 +77,6 @@ public record DungeonCorridorBindings(
                         List.of()));
     }
 
-    public DungeonCorridorBindings withWaypoints(List<DungeonCorridorWaypoint> nextWaypoints) {
-        CorridorBindings updatedCore = DungeonCorridorBindingsCoreAdapter.toCore(this)
-                .withWaypoints(DungeonCorridorBindingsCoreAdapter.coreWaypoints(nextWaypoints));
-        return DungeonCorridorBindingsCoreAdapter.fromCore(this, updatedCore, null);
-    }
-
-    public List<DungeonCorridorWaypoint> waypointsBetweenEndpointIndexes(int firstIndex, int secondIndex) {
-        return DungeonCorridorBindingsCoreAdapter.worldspaceWaypoints(
-                DungeonCorridorBindingsCoreAdapter.toCore(this)
-                        .waypointsBetweenEndpointIndexes(firstIndex, secondIndex));
-    }
-
-    public DungeonCorridorBindings withoutAnchorRefAndRouteWaypoints(long anchorId) {
-        CorridorBindings updatedCore =
-                DungeonCorridorBindingsCoreAdapter.toCore(this).withoutAnchorRefAndRouteWaypoints(anchorId);
-        return DungeonCorridorBindingsCoreAdapter.fromCore(this, updatedCore, null);
-    }
-
-    public DungeonCorridorBindings withoutWaypoint(int waypointIndex) {
-        CorridorBindings updatedCore = DungeonCorridorBindingsCoreAdapter.toCore(this).withoutWaypoint(waypointIndex);
-        return DungeonCorridorBindingsCoreAdapter.fromCore(this, updatedCore, null);
-    }
 
     public DungeonCorridorBindings withInteriorRouteAnchors(
             CorridorRoutePlan routePlan,
@@ -144,12 +107,4 @@ public record DungeonCorridorBindings(
         return DungeonCorridorBindingsCoreAdapter.fromCore(source, updatedCore, null);
     }
 
-    public DungeonCorridorBindings sanitizedForRooms(List<Long> roomIds) {
-        CorridorRoomSet rooms = new CorridorRoomSet(roomIds);
-        if (rooms.roomIds().isEmpty()) {
-            return empty();
-        }
-        CorridorBindings sanitizedCore = DungeonCorridorBindingsCoreAdapter.toCore(this).sanitizedForRooms(rooms);
-        return DungeonCorridorBindingsCoreAdapter.fromCore(this, sanitizedCore, null);
-    }
 }

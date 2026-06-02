@@ -1,11 +1,9 @@
 package src.domain.dungeon.model.worldspace.model;
 
-import src.domain.dungeon.model.core.model.structure.CorridorRoomSet;
-
 final class DungeonCorridorDoorTargetDeleteLogic {
     private static final long NO_ID = 0L;
-    private static final DungeonCorridorDoorWaypointPruningLogic WAYPOINT_PRUNING_SERVICE =
-            new DungeonCorridorDoorWaypointPruningLogic();
+    private static final DungeonCorridorDoorEndpointIndexAdapter ENDPOINT_INDEX_ADAPTER =
+            new DungeonCorridorDoorEndpointIndexAdapter();
 
     DungeonCorridor deleteDoor(
             DungeonMap dungeonMap,
@@ -17,15 +15,13 @@ final class DungeonCorridorDoorTargetDeleteLogic {
         if (removed == null) {
             return corridor;
         }
-        DungeonCorridorBindings nextBindings = corridor.bindings()
-                .withoutDoorBindingForRoom(removed.roomId())
-                .withWaypoints(WAYPOINT_PRUNING_SERVICE.waypointsAfterDoorRemoval(dungeonMap, corridor, removed));
-        return new DungeonCorridor(
-                corridor.corridorId(),
-                corridor.mapId(),
-                corridor.level(),
-                new CorridorRoomSet(corridor.roomIds()).without(removed.roomId()).roomIds(),
-                nextBindings);
+        DungeonCorridorDoorEndpointIndexAdapter.EndpointIndexes endpointIndexes =
+                ENDPOINT_INDEX_ADAPTER.afterDoorRemoval(dungeonMap, corridor, removed);
+        return corridor.withoutDoorTarget(
+                removed,
+                endpointIndexes.pruneWaypoints(),
+                endpointIndexes.firstEndpointIndex(),
+                endpointIndexes.secondEndpointIndex());
     }
 
     private DungeonCorridorDoorBinding removedDoorBinding(DungeonCorridor corridor, long topologyRefId, long roomId) {

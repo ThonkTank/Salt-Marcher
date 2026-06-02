@@ -155,17 +155,4 @@ public record CorridorBindings(
         return new CorridorBindings(waypoints, doorBindings, anchorBindings, nextAnchorRefs);
     }
 
-    public CorridorBindings sanitizedForRooms(CorridorRoomSet rooms) {
-        Objects.requireNonNull(rooms);
-        if (rooms.roomIds().isEmpty()) {
-            return empty();
-        }
-        List<CorridorDoorBinding> sanitizedDoors = new ArrayList<>();
-        for (CorridorDoorBinding binding : doorBindings) {
-            if (rooms.connects(binding.roomId())) {
-                sanitizedDoors.add(binding);
-            }
-        }
-        return new CorridorBindings(waypoints, sanitizedDoors, anchorBindings, anchorRefs);
-    }
 }

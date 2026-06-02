@@ -19,8 +19,8 @@ final class DungeonCorridorTargetDeleteLogic {
     ) {
         DungeonCorridor updated = switch (targetKind) {
             case "DOOR" -> DOOR_TARGET_DELETE_SERVICE.deleteDoor(dungeonMap, existing, topologyRefId, roomId);
-            case "CORRIDOR_ANCHOR" -> withoutAnchor(existing, topologyRefId);
-            case "CORRIDOR_WAYPOINT" -> withoutWaypoint(existing, waypointIndex);
+            case "CORRIDOR_ANCHOR" -> existing.withoutAnchorTarget(topologyRefId);
+            case "CORRIDOR_WAYPOINT" -> existing.withoutWaypointTarget(waypointIndex);
             default -> existing;
         };
         if (updated.equals(existing) || updated.endpointCount() < 2) {
@@ -32,14 +32,6 @@ final class DungeonCorridorTargetDeleteLogic {
                         withUpdatedCorridor(dungeonMap, updated),
                         dungeonMap.connections().stairs(),
                         dungeonMap.connections().transitions()));
-    }
-
-    private DungeonCorridor withoutAnchor(DungeonCorridor corridor, long topologyRefId) {
-        return corridor.withBindings(corridor.bindings().withoutAnchorRefAndRouteWaypoints(topologyRefId));
-    }
-
-    private DungeonCorridor withoutWaypoint(DungeonCorridor corridor, int waypointIndex) {
-        return corridor.withBindings(corridor.bindings().withoutWaypoint(waypointIndex));
     }
 
     private List<DungeonCorridor> withUpdatedCorridor(DungeonMap dungeonMap, DungeonCorridor updated) {

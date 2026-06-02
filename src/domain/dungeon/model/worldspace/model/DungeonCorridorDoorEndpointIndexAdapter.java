@@ -1,12 +1,10 @@
 package src.domain.dungeon.model.worldspace.model;
 
-import java.util.List;
-
-final class DungeonCorridorDoorWaypointPruningLogic {
+final class DungeonCorridorDoorEndpointIndexAdapter {
     private static final int NOT_FOUND = -1;
     private static final DungeonMapLookupLogic LOOKUP_SERVICE = new DungeonMapLookupLogic();
 
-    List<DungeonCorridorWaypoint> waypointsAfterDoorRemoval(
+    EndpointIndexes afterDoorRemoval(
             DungeonMap dungeonMap,
             DungeonCorridor corridor,
             DungeonCorridorDoorBinding removed
@@ -14,11 +12,11 @@ final class DungeonCorridorDoorWaypointPruningLogic {
         DungeonCell anchorCell = firstAnchorCell(corridor);
         DungeonCell remainingDoorCell = firstRemainingDoorCell(dungeonMap, corridor, removed);
         if (anchorCell == null || remainingDoorCell == null) {
-            return corridor.bindings().waypoints();
+            return EndpointIndexes.unpruned();
         }
-        int anchorIndex = waypointIndexAt(dungeonMap, corridor, anchorCell);
-        int doorIndex = waypointIndexAt(dungeonMap, corridor, remainingDoorCell);
-        return corridor.bindings().waypointsBetweenEndpointIndexes(anchorIndex, doorIndex);
+        return EndpointIndexes.pruned(
+                waypointIndexAt(dungeonMap, corridor, anchorCell),
+                waypointIndexAt(dungeonMap, corridor, remainingDoorCell));
     }
 
     private DungeonCell firstAnchorCell(DungeonCorridor corridor) {
@@ -62,5 +60,19 @@ final class DungeonCorridorDoorWaypointPruningLogic {
             }
         }
         return NOT_FOUND;
+    }
+
+    record EndpointIndexes(
+            boolean pruneWaypoints,
+            int firstEndpointIndex,
+            int secondEndpointIndex
+    ) {
+        static EndpointIndexes unpruned() {
+            return new EndpointIndexes(false, 0, 0);
+        }
+
+        static EndpointIndexes pruned(int firstEndpointIndex, int secondEndpointIndex) {
+            return new EndpointIndexes(true, firstEndpointIndex, secondEndpointIndex);
+        }
     }
 }
