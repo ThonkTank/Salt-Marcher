@@ -18,18 +18,18 @@ final class DungeonEditorRuntimeFoundationServiceAssembly {
                 DungeonEditorAuthoredUseCasesServiceAssembly.create(registry, publishedState, dungeonState);
         src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionWorkflow workflow =
                 new src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionWorkflow();
-        src.domain.dungeon.model.worldspace.usecase.InterpretDungeonEditorMainViewInputUseCase mainViewInterpreter =
-                new src.domain.dungeon.model.worldspace.usecase.InterpretDungeonEditorMainViewInputUseCase();
-        src.domain.dungeon.model.worldspace.usecase.BuildDungeonEditorSnapshotUseCase snapshotBuilder =
-                new src.domain.dungeon.model.worldspace.usecase.BuildDungeonEditorSnapshotUseCase(
+        src.domain.dungeon.model.runtime.usecase.InterpretDungeonEditorMainViewInputUseCase mainViewInterpreter =
+                new src.domain.dungeon.model.runtime.usecase.InterpretDungeonEditorMainViewInputUseCase();
+        src.domain.dungeon.model.runtime.usecase.BuildDungeonEditorSnapshotUseCase snapshotBuilder =
+                new src.domain.dungeon.model.runtime.usecase.BuildDungeonEditorSnapshotUseCase(
                         authoredUseCases.searchMapsUseCase(),
                         authoredUseCases.loadMapUseCase(),
                         authoredUseCases.previewOperationUseCase(),
                         dungeonState);
-        src.domain.dungeon.model.worldspace.usecase.PublishDungeonEditorSnapshotUseCase snapshotPublicationUseCase =
-                new src.domain.dungeon.model.worldspace.usecase.PublishDungeonEditorSnapshotUseCase(editorPublishedState);
-        src.domain.dungeon.model.worldspace.usecase.ApplyDungeonEditorSessionEffectUseCase effectUseCase =
-                new src.domain.dungeon.model.worldspace.usecase.ApplyDungeonEditorSessionEffectUseCase(
+        src.domain.dungeon.model.runtime.usecase.PublishDungeonEditorSnapshotUseCase snapshotPublicationUseCase =
+                new src.domain.dungeon.model.runtime.usecase.PublishDungeonEditorSnapshotUseCase(editorPublishedState);
+        src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorSessionEffectUseCase effectUseCase =
+                new src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorSessionEffectUseCase(
                         workflow,
                         authoredUseCases.applyOperationUseCase(),
                         dungeonState,
@@ -50,10 +50,10 @@ final class DungeonEditorRuntimeFoundationServiceAssembly {
             DungeonEditorAuthoredUseCasesServiceAssembly.AuthoredUseCases authoredUseCases,
             src.domain.dungeon.model.runtime.editor.session.DungeonEditorDungeonState dungeonState,
             src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionWorkflow workflow,
-            src.domain.dungeon.model.worldspace.usecase.InterpretDungeonEditorMainViewInputUseCase mainViewInterpreter,
-            src.domain.dungeon.model.worldspace.usecase.BuildDungeonEditorSnapshotUseCase snapshotBuilder,
-            src.domain.dungeon.model.worldspace.usecase.PublishDungeonEditorSnapshotUseCase snapshotPublicationUseCase,
-            src.domain.dungeon.model.worldspace.usecase.ApplyDungeonEditorSessionEffectUseCase effectUseCase
+            src.domain.dungeon.model.runtime.usecase.InterpretDungeonEditorMainViewInputUseCase mainViewInterpreter,
+            src.domain.dungeon.model.runtime.usecase.BuildDungeonEditorSnapshotUseCase snapshotBuilder,
+            src.domain.dungeon.model.runtime.usecase.PublishDungeonEditorSnapshotUseCase snapshotPublicationUseCase,
+            src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorSessionEffectUseCase effectUseCase
     ) {
     }
 }

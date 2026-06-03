@@ -3,10 +3,11 @@ package src.domain.dungeon.model.worldspace.usecase;
 import java.util.Locale;
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
+import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionWorkflow;
+import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorSessionEffectUseCase;
+import src.domain.dungeon.model.runtime.usecase.BuildDungeonEditorMainViewInputUseCase.MainViewInput;
 import src.domain.dungeon.model.worldspace.DungeonCell;
 import src.domain.dungeon.model.worldspace.DungeonTransitionDestination;
-import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionWorkflow;
-import src.domain.dungeon.model.worldspace.usecase.BuildDungeonEditorMainViewInputUseCase.MainViewInput;
 
 public final class ApplyDungeonEditorCreateTransitionUseCase {
     private static final String INVALID_TRANSITION_DESTINATION_STATUS = "Uebergangsziel ungueltig.";

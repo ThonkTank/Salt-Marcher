@@ -5,8 +5,10 @@ import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorMainView
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionValues;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionWorkflow;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues.MapSnapshot;
-import src.domain.dungeon.model.worldspace.usecase.BuildDungeonEditorMainViewInputUseCase.MainViewInput;
-import src.domain.dungeon.model.worldspace.usecase.InterpretDungeonEditorMainViewInputUseCase.PointerAction;
+import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorSessionEffectUseCase;
+import src.domain.dungeon.model.runtime.usecase.BuildDungeonEditorMainViewInputUseCase.MainViewInput;
+import src.domain.dungeon.model.runtime.usecase.InterpretDungeonEditorMainViewInputUseCase.PointerAction;
+import src.domain.dungeon.model.runtime.usecase.InterpretDungeonEditorMainViewInputUseCase;
 
 final class DungeonEditorApplyToolUseCase {
     private final DungeonEditorSessionWorkflow workflow;

@@ -2,7 +2,9 @@ package src.domain.dungeon.model.worldspace.usecase;
 
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionValues;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionWorkflow;
-import src.domain.dungeon.model.worldspace.usecase.BuildDungeonEditorMainViewInputUseCase.MainViewInput;
+import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorSessionEffectUseCase;
+import src.domain.dungeon.model.runtime.usecase.BuildDungeonEditorMainViewInputUseCase.MainViewInput;
+import src.domain.dungeon.model.runtime.usecase.InterpretDungeonEditorMainViewInputUseCase;
 
 public final class ApplyDungeonEditorDeleteCorridorUseCase {
     private final DungeonEditorApplyToolUseCase toolUseCase;

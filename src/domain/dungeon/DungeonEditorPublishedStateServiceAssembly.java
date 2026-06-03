@@ -2,7 +2,8 @@ package src.domain.dungeon;
 
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionSnapshot;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionValues;
-import src.domain.dungeon.model.worldspace.usecase.DungeonEditorSnapshotPublication;
+import src.domain.dungeon.model.runtime.repository.DungeonEditorSnapshotPublishedStateRepository;
+import src.domain.dungeon.model.runtime.repository.DungeonEditorSnapshotPublishedStateRepository.ToolSelectionPublication;
 import src.domain.dungeon.published.DungeonEditorControlsModel;
 import src.domain.dungeon.published.DungeonEditorControlsSnapshot;
 import src.domain.dungeon.published.DungeonEditorMapSurfaceModel;
@@ -13,7 +14,7 @@ import src.domain.dungeon.published.DungeonEditorStateSnapshot;
 import src.domain.dungeon.published.DungeonEditorSurface;
 import src.domain.dungeon.published.DungeonEditorTool;
 
-final class DungeonEditorPublishedStateServiceAssembly implements DungeonEditorSnapshotPublication {
+final class DungeonEditorPublishedStateServiceAssembly implements DungeonEditorSnapshotPublishedStateRepository {
 
     private final DungeonPublishedChannelServiceAssembly<DungeonEditorControlsSnapshot> controls =
             new DungeonPublishedChannelServiceAssembly<>(DungeonEditorControlsSnapshot.empty(""));
@@ -52,9 +53,13 @@ final class DungeonEditorPublishedStateServiceAssembly implements DungeonEditorS
     }
 
     @Override
-    public void publishEditorToolSelection(DungeonEditorSessionValues.Tool selectedTool, String statusText) {
-        DungeonEditorTool publishedTool = DungeonEditorValueProjectionServiceAssembly.tool(selectedTool);
-        String safeStatusText = statusText == null ? "" : statusText;
+    public void publishEditorToolSelection(ToolSelectionPublication publication) {
+        ToolSelectionPublication safePublication = publication == null
+                ? new ToolSelectionPublication(DungeonEditorSessionValues.Tool.defaultTool().name(), "")
+                : publication;
+        DungeonEditorTool publishedTool = DungeonEditorValueProjectionServiceAssembly.tool(
+                DungeonEditorSessionValues.Tool.fromName(safePublication.selectedToolName()));
+        String safeStatusText = safePublication.statusText();
         controls.publish(controlsSnapshot(controls.current(), publishedTool, safeStatusText));
         mapSurface.publish(mapSurfaceSnapshot(mapSurface.current(), publishedTool));
         state.publish(stateSnapshot(state.current(), publishedTool, safeStatusText));

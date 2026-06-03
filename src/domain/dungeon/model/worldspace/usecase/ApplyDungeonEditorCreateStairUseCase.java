@@ -1,10 +1,11 @@
 package src.domain.dungeon.model.worldspace.usecase;
 
 import java.util.Objects;
+import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionWorkflow;
+import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorSessionEffectUseCase;
+import src.domain.dungeon.model.runtime.usecase.BuildDungeonEditorMainViewInputUseCase.MainViewInput;
 import src.domain.dungeon.model.worldspace.DungeonCell;
 import src.domain.dungeon.model.worldspace.DungeonStairShape;
-import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionWorkflow;
-import src.domain.dungeon.model.worldspace.usecase.BuildDungeonEditorMainViewInputUseCase.MainViewInput;
 
 public final class ApplyDungeonEditorCreateStairUseCase {
     private static final String INVALID_STAIR_GEOMETRY_STATUS = "Treppengeometrie ungueltig.";

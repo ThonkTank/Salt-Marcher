@@ -9,20 +9,20 @@ final class DungeonEditorProjectionApplicationServiceAssembly {
             DungeonEditorRuntimeFoundationServiceAssembly.RuntimeFoundation runtime
     ) {
         return new DungeonEditorProjectionApplicationService(
-                new src.domain.dungeon.model.worldspace.usecase.SetDungeonEditorViewModeUseCase(
+                new src.domain.dungeon.model.runtime.usecase.SetDungeonEditorViewModeUseCase(
                         runtime.workflow(),
                         runtime.snapshotBuilder(),
                         runtime.mainViewInterpreter(),
                         runtime.snapshotPublicationUseCase()),
-                new src.domain.dungeon.model.worldspace.usecase.SetDungeonEditorToolUseCase(
+                new src.domain.dungeon.model.runtime.usecase.SetDungeonEditorToolUseCase(
                         runtime.workflow(),
                         runtime.mainViewInterpreter(),
                         runtime.snapshotPublicationUseCase()),
-                new src.domain.dungeon.model.worldspace.usecase.ShiftDungeonEditorProjectionLevelUseCase(
+                new src.domain.dungeon.model.runtime.usecase.ShiftDungeonEditorProjectionLevelUseCase(
                         runtime.workflow(),
                         runtime.snapshotBuilder(),
                         runtime.snapshotPublicationUseCase()),
-                new src.domain.dungeon.model.worldspace.usecase.SetDungeonEditorOverlayUseCase(
+                new src.domain.dungeon.model.runtime.usecase.SetDungeonEditorOverlayUseCase(
                         runtime.workflow(),
                         runtime.snapshotBuilder(),
                         runtime.snapshotPublicationUseCase()));

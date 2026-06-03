@@ -4,8 +4,10 @@ import java.util.Objects;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionValues;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionWorkflow;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues.MapSnapshot;
-import src.domain.dungeon.model.worldspace.usecase.BuildDungeonEditorMainViewInputUseCase.MainViewInput;
-import src.domain.dungeon.model.worldspace.usecase.InterpretDungeonEditorMainViewInputUseCase.PointerAction;
+import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorSessionEffectUseCase;
+import src.domain.dungeon.model.runtime.usecase.BuildDungeonEditorMainViewInputUseCase.MainViewInput;
+import src.domain.dungeon.model.runtime.usecase.InterpretDungeonEditorMainViewInputUseCase.PointerAction;
+import src.domain.dungeon.model.runtime.usecase.InterpretDungeonEditorMainViewInputUseCase;
 
 public final class ApplyDungeonEditorDeleteRoomUseCase {
     private final DungeonEditorSessionWorkflow workflow;

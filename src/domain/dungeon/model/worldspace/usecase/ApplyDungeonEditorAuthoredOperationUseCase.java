@@ -1,9 +1,9 @@
 package src.domain.dungeon.model.worldspace.usecase;
 
 import java.util.Objects;
-import src.domain.dungeon.model.worldspace.helper.DungeonEditorAuthoredOperationHelper;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionValues;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues.MapId;
+import src.domain.dungeon.model.runtime.helper.DungeonEditorAuthoredOperationHelper;
 import src.domain.dungeon.model.worldspace.DungeonEditorAuthoredOperation;
 import src.domain.dungeon.model.worldspace.DungeonMapIdentity;
 

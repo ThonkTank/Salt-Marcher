@@ -1,10 +1,10 @@
 package src.domain.dungeon;
 
 import java.util.Objects;
-import src.domain.dungeon.model.worldspace.usecase.SetDungeonEditorOverlayUseCase;
-import src.domain.dungeon.model.worldspace.usecase.SetDungeonEditorToolUseCase;
-import src.domain.dungeon.model.worldspace.usecase.SetDungeonEditorViewModeUseCase;
-import src.domain.dungeon.model.worldspace.usecase.ShiftDungeonEditorProjectionLevelUseCase;
+import src.domain.dungeon.model.runtime.usecase.SetDungeonEditorOverlayUseCase;
+import src.domain.dungeon.model.runtime.usecase.SetDungeonEditorToolUseCase;
+import src.domain.dungeon.model.runtime.usecase.SetDungeonEditorViewModeUseCase;
+import src.domain.dungeon.model.runtime.usecase.ShiftDungeonEditorProjectionLevelUseCase;
 import src.domain.dungeon.published.SetDungeonEditorOverlayCommand;
 import src.domain.dungeon.published.SetDungeonEditorToolCommand;
 import src.domain.dungeon.published.SetDungeonEditorViewModeCommand;

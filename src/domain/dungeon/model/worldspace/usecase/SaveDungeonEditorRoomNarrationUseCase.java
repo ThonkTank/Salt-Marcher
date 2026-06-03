@@ -5,6 +5,7 @@ import java.util.Objects;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorRoomNarrationInput;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionWorkflow;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues;
+import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorSessionEffectUseCase;
 
 public final class SaveDungeonEditorRoomNarrationUseCase {
     private final DungeonEditorSessionWorkflow workflow;
