@@ -1,5 +1,8 @@
 package src.domain.dungeon.model.worldspace;
 
+import src.domain.dungeon.model.core.component.CorridorWaypoint;
+import src.domain.dungeon.model.core.geometry.Cell;
+
 final class DungeonCorridorDoorEndpointIndexAdapter {
     private static final int NOT_FOUND = -1;
     private static final DungeonMapLookupLogic LOOKUP_SERVICE = new DungeonMapLookupLogic();
@@ -52,10 +55,10 @@ final class DungeonCorridorDoorEndpointIndexAdapter {
 
     private int waypointIndexAt(DungeonMap dungeonMap, DungeonCorridor corridor, DungeonCell cell) {
         for (int index = 0; index < corridor.bindings().waypoints().size(); index++) {
-            DungeonCorridorWaypoint waypoint = corridor.bindings().waypoints().get(index);
+            CorridorWaypoint waypoint = corridor.bindings().waypoints().get(index);
             DungeonRoomCluster cluster = LOOKUP_SERVICE.cluster(dungeonMap, waypoint.clusterId());
-            DungeonCell center = cluster == null ? new DungeonCell(0, 0, cell.level()) : cluster.center();
-            if (waypoint.absoluteCell(center).equals(cell)) {
+            Cell center = cluster == null ? new Cell(0, 0, cell.level()) : cluster.center().geometry();
+            if (waypoint.absoluteCell(center).equals(cell.geometry())) {
                 return index;
             }
         }

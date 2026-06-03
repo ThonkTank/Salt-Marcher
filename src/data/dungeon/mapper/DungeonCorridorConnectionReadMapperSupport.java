@@ -7,13 +7,14 @@ import src.data.dungeon.model.DungeonCorridorAnchorRefRecord;
 import src.data.dungeon.model.DungeonCorridorDoorBindingRecord;
 import src.data.dungeon.model.DungeonCorridorRecord;
 import src.data.dungeon.model.DungeonCorridorWaypointRecord;
+import src.domain.dungeon.model.core.component.CorridorWaypoint;
+import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.worldspace.DungeonCorridor;
 import src.domain.dungeon.model.worldspace.DungeonCell;
 import src.domain.dungeon.model.worldspace.DungeonCorridorAnchorBinding;
 import src.domain.dungeon.model.worldspace.DungeonCorridorAnchorRef;
 import src.domain.dungeon.model.worldspace.DungeonCorridorBindings;
 import src.domain.dungeon.model.worldspace.DungeonCorridorDoorBinding;
-import src.domain.dungeon.model.worldspace.DungeonCorridorWaypoint;
 import src.domain.dungeon.model.worldspace.DungeonEdgeDirection;
 
 final class DungeonCorridorConnectionReadMapperSupport {
@@ -38,13 +39,13 @@ final class DungeonCorridorConnectionReadMapperSupport {
         return List.copyOf(result);
     }
 
-    private static List<DungeonCorridorWaypoint> toWaypoints(List<DungeonCorridorWaypointRecord> records) {
-        List<DungeonCorridorWaypoint> result = new ArrayList<>();
+    private static List<CorridorWaypoint> toWaypoints(List<DungeonCorridorWaypointRecord> records) {
+        List<CorridorWaypoint> result = new ArrayList<>();
         for (DungeonCorridorWaypointRecord record
                 : records == null ? List.<DungeonCorridorWaypointRecord>of() : records) {
-            result.add(new DungeonCorridorWaypoint(
+            result.add(new CorridorWaypoint(
                     record.clusterId(),
-                    new DungeonCell(record.relativeX(), record.relativeY(), record.relativeZ()),
+                    new Cell(record.relativeX(), record.relativeY(), record.relativeZ()),
                     record.relativeZ()));
         }
         return List.copyOf(result);

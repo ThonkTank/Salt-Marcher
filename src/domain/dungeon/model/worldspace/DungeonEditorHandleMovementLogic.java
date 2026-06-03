@@ -3,6 +3,8 @@ package src.domain.dungeon.model.worldspace;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import src.domain.dungeon.model.core.component.CorridorWaypoint;
+import src.domain.dungeon.model.core.geometry.Cell;
 
 /**
  * Owns editor-handle movement while the aggregate remains the public entrypoint.
@@ -141,12 +143,12 @@ public final class DungeonEditorHandleMovementLogic {
                 movedCorridors.add(corridor);
                 continue;
             }
-            List<DungeonCorridorWaypoint> waypoints = new ArrayList<>();
+            List<CorridorWaypoint> waypoints = new ArrayList<>();
             for (int index = 0; index < corridor.bindings().waypoints().size(); index++) {
-                DungeonCorridorWaypoint waypoint = corridor.bindings().waypoints().get(index);
+                CorridorWaypoint waypoint = corridor.bindings().waypoints().get(index);
                 if (index == handle.index()) {
-                    DungeonCell moved = movedCell(waypoint.relativeCell(), deltaQ, deltaR, deltaLevel);
-                    waypoints.add(new DungeonCorridorWaypoint(waypoint.clusterId(), moved, waypoint.level() + deltaLevel));
+                    Cell moved = movedCell(waypoint.relativeCell(), deltaQ, deltaR, deltaLevel);
+                    waypoints.add(new CorridorWaypoint(waypoint.clusterId(), moved, waypoint.level() + deltaLevel));
                     changed = true;
                 } else {
                     waypoints.add(waypoint);
@@ -202,6 +204,11 @@ public final class DungeonEditorHandleMovementLogic {
     private static DungeonCell movedCell(DungeonCell cell, int deltaQ, int deltaR, int deltaLevel) {
         DungeonCell safeCell = cell == null ? new DungeonCell(0, 0, 0) : cell;
         return new DungeonCell(safeCell.q() + deltaQ, safeCell.r() + deltaR, safeCell.level() + deltaLevel);
+    }
+
+    private static Cell movedCell(Cell cell, int deltaQ, int deltaR, int deltaLevel) {
+        Cell safeCell = cell == null ? new Cell(0, 0, 0) : cell;
+        return new Cell(safeCell.q() + deltaQ, safeCell.r() + deltaR, safeCell.level() + deltaLevel);
     }
 
     private static boolean isStationary(int deltaQ, int deltaR, int deltaLevel) {

@@ -7,11 +7,11 @@ import src.data.dungeon.model.DungeonCorridorAnchorRefRecord;
 import src.data.dungeon.model.DungeonCorridorDoorBindingRecord;
 import src.data.dungeon.model.DungeonCorridorRecord;
 import src.data.dungeon.model.DungeonCorridorWaypointRecord;
+import src.domain.dungeon.model.core.component.CorridorWaypoint;
 import src.domain.dungeon.model.worldspace.DungeonCorridor;
 import src.domain.dungeon.model.worldspace.DungeonCorridorAnchorBinding;
 import src.domain.dungeon.model.worldspace.DungeonCorridorAnchorRef;
 import src.domain.dungeon.model.worldspace.DungeonCorridorDoorBinding;
-import src.domain.dungeon.model.worldspace.DungeonCorridorWaypoint;
 
 final class DungeonCorridorConnectionWriteMapperSupport {
 
@@ -36,11 +36,11 @@ final class DungeonCorridorConnectionWriteMapperSupport {
 
     private static List<DungeonCorridorWaypointRecord> toWaypointRecords(
             long corridorId,
-            List<DungeonCorridorWaypoint> waypoints
+            List<CorridorWaypoint> waypoints
     ) {
         List<DungeonCorridorWaypointRecord> result = new ArrayList<>();
-        for (DungeonCorridorWaypoint waypoint
-                : waypoints == null ? List.<DungeonCorridorWaypoint>of() : waypoints) {
+        for (CorridorWaypoint waypoint
+                : waypoints == null ? List.<CorridorWaypoint>of() : waypoints) {
             result.add(new DungeonCorridorWaypointRecord(
                     corridorId,
                     waypoint.clusterId(),

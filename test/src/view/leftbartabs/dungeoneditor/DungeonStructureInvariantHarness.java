@@ -330,9 +330,9 @@ final class DungeonStructureInvariantHarness {
         src.domain.dungeon.model.worldspace.DungeonTopologyRef customAnchorRef =
                 src.domain.dungeon.model.worldspace.DungeonTopologyRef.corridorAnchor(70L);
         DungeonCorridorBindings bindings = new DungeonCorridorBindings(
-                List.of(new src.domain.dungeon.model.worldspace.DungeonCorridorWaypoint(
+                List.of(new CorridorWaypoint(
                         7L,
-                        new DungeonCell(1, 2, 0),
+                        new Cell(1, 2, 0),
                         0)),
                 List.of(),
                 List.of(),

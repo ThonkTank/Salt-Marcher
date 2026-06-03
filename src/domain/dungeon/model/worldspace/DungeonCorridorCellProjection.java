@@ -5,6 +5,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import src.domain.dungeon.model.core.component.CorridorWaypoint;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.Route;
 
@@ -48,7 +49,7 @@ final class DungeonCorridorCellProjection {
     }
 
     private static List<DungeonCell> authoredRouteCells(
-            List<DungeonCorridorWaypoint> waypoints,
+            List<CorridorWaypoint> waypoints,
             Map<Long, DungeonRoomCluster> clustersById,
             List<DungeonCorridorEndpointResolver.CorridorEndpoint> endpoints
     ) {
@@ -90,16 +91,16 @@ final class DungeonCorridorCellProjection {
     }
 
     private static List<DungeonCell> corridorWaypoints(
-            List<DungeonCorridorWaypoint> waypoints,
+            List<CorridorWaypoint> waypoints,
             Map<Long, DungeonRoomCluster> clustersById
     ) {
         List<DungeonCell> result = new ArrayList<>();
-        for (DungeonCorridorWaypoint waypoint : waypoints) {
+        for (CorridorWaypoint waypoint : waypoints) {
             DungeonRoomCluster cluster = clustersById.get(waypoint.clusterId());
-            DungeonCell center = cluster == null
-                    ? new DungeonCell(0, 0, waypoint.level())
-                    : cluster.center();
-            result.add(waypoint.absoluteCell(center));
+            Cell center = cluster == null
+                    ? new Cell(0, 0, waypoint.level())
+                    : cluster.center().geometry();
+            result.add(DungeonCell.fromGeometry(waypoint.absoluteCell(center)));
         }
         return List.copyOf(result);
     }

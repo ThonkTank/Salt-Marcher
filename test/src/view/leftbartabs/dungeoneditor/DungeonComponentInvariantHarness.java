@@ -12,7 +12,6 @@ import src.domain.dungeon.model.worldspace.DungeonCell;
 import src.domain.dungeon.model.worldspace.DungeonCorridorAnchorBinding;
 import src.domain.dungeon.model.worldspace.DungeonCorridorAnchorRef;
 import src.domain.dungeon.model.worldspace.DungeonCorridorDoorBinding;
-import src.domain.dungeon.model.worldspace.DungeonCorridorWaypoint;
 import src.domain.dungeon.model.worldspace.DungeonEdgeDirection;
 import src.domain.dungeon.model.worldspace.DungeonStairExit;
 import src.domain.dungeon.model.worldspace.DungeonTopologyRef;
@@ -201,15 +200,22 @@ final class DungeonComponentInvariantHarness {
         assertEquals(5L, retainedRef.hostCorridorId(), "adapter anchor ref host preservation");
         assertTrue(retainedRef.present(), "adapter anchor ref present");
 
-        DungeonCorridorWaypoint defaultedWaypoint = new DungeonCorridorWaypoint(-9L, null, 2);
+        CorridorWaypoint defaultedWaypoint = corridorWaypoint(-9L, null, 2);
         assertEquals(0L, defaultedWaypoint.clusterId(), "adapter waypoint cluster lower bound");
-        assertEquals(new DungeonCell(0, 0, 2), defaultedWaypoint.relativeCell(), "adapter waypoint null default");
-        assertEquals(new DungeonCell(4, 5, 2), defaultedWaypoint.absoluteCell(new DungeonCell(4, 5, 2)),
+        assertEquals(new Cell(0, 0, 2), defaultedWaypoint.relativeCell(), "adapter waypoint null default");
+        assertEquals(new Cell(4, 5, 2), defaultedWaypoint.absoluteCell(new Cell(4, 5, 2)),
                 "adapter waypoint absolute default");
-        DungeonCorridorWaypoint retainedWaypoint = new DungeonCorridorWaypoint(17L, new DungeonCell(1, -2, 3), 3);
+        CorridorWaypoint retainedWaypoint = corridorWaypoint(17L, new DungeonCell(1, -2, 3), 3);
         assertEquals(17L, retainedWaypoint.clusterId(), "adapter waypoint cluster preservation");
-        assertEquals(new DungeonCell(8, 5, 3), retainedWaypoint.absoluteCell(new DungeonCell(7, 7, 3)),
+        assertEquals(new Cell(8, 5, 3), retainedWaypoint.absoluteCell(new Cell(7, 7, 3)),
                 "adapter waypoint absolute retained");
+    }
+
+    private static CorridorWaypoint corridorWaypoint(long clusterId, DungeonCell relativeCell, int level) {
+        Cell cell = relativeCell == null
+                ? new Cell(0, 0, level)
+                : new Cell(relativeCell.q(), relativeCell.r(), relativeCell.level());
+        return new CorridorWaypoint(clusterId, cell, level);
     }
 
     private static void assertTrue(boolean condition, String label) {

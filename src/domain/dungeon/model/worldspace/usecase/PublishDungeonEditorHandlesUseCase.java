@@ -3,6 +3,7 @@ package src.domain.dungeon.model.worldspace.usecase;
 import java.util.ArrayList;
 import java.util.List;
 import org.jspecify.annotations.Nullable;
+import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.worldspace.helper.DungeonEditorClusterHandleProjectionHelper;
 import src.domain.dungeon.model.worldspace.DungeonMap;
 import src.domain.dungeon.model.worldspace.DungeonCorridor;
@@ -72,8 +73,8 @@ public final class PublishDungeonEditorHandlesUseCase {
                 var waypoint = corridor.bindings().waypoints().get(index);
                 DungeonRoomCluster cluster = cluster(dungeonMap, waypoint.clusterId());
                 DungeonCell absolute = cluster == null
-                        ? waypoint.relativeCell()
-                        : waypoint.absoluteCell(cluster.center());
+                        ? worldspaceCell(waypoint.relativeCell())
+                        : worldspaceCell(waypoint.absoluteCell(coreCell(cluster.center())));
                 result.add(new DungeonEditorHandleFacts(
                         new DungeonEditorHandle(
                                 DungeonEditorHandleType.CORRIDOR_WAYPOINT,
@@ -88,6 +89,14 @@ public final class PublishDungeonEditorHandlesUseCase {
                         "Wegpunkt " + (index + 1)));
             }
         }
+    }
+
+    private static DungeonCell worldspaceCell(Cell cell) {
+        return new DungeonCell(cell.q(), cell.r(), cell.level());
+    }
+
+    private static Cell coreCell(DungeonCell cell) {
+        return new Cell(cell.q(), cell.r(), cell.level());
     }
 
     private static void appendAnchorHandles(List<DungeonEditorHandleFacts> result, DungeonMap dungeonMap) {

@@ -1,11 +1,12 @@
 package src.domain.dungeon.model.worldspace;
 
 import java.util.List;
+import src.domain.dungeon.model.core.component.CorridorWaypoint;
 import src.domain.dungeon.model.core.structure.corridor.CorridorBindings;
 import src.domain.dungeon.model.core.structure.corridor.CorridorRoutePlan;
 
 public record DungeonCorridorBindings(
-        List<DungeonCorridorWaypoint> waypoints,
+        List<CorridorWaypoint> waypoints,
         List<DungeonCorridorDoorBinding> doorBindings,
         List<DungeonCorridorAnchorBinding> anchorBindings,
         List<DungeonCorridorAnchorRef> anchorRefs
@@ -34,7 +35,7 @@ public record DungeonCorridorBindings(
         }
         CorridorBindings currentCore = DungeonCorridorBindingsCoreAdapter.toCore(this);
         CorridorBindings updatedCore = new CorridorBindings(
-                DungeonCorridorBindingsCoreAdapter.coreWaypoints(waypoints),
+                waypoints,
                 currentCore.doorBindings(),
                 DungeonCorridorAnchorTopologyRefAdapter.coreAnchorBindings(updated),
                 currentCore.anchorRefs())
@@ -61,7 +62,7 @@ public record DungeonCorridorBindings(
         }
         CorridorBindings currentCore = DungeonCorridorBindingsCoreAdapter.toCore(this);
         CorridorBindings updatedCore = new CorridorBindings(
-                DungeonCorridorBindingsCoreAdapter.coreWaypoints(waypoints),
+                waypoints,
                 currentCore.doorBindings(),
                 currentCore.anchorBindings(),
                 DungeonCorridorAnchorTopologyRefAdapter.coreAnchorRefs(updated))
