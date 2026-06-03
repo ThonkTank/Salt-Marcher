@@ -14,7 +14,7 @@ public record TravelTransitionTarget(
         kind = kind == null ? TargetKind.DUNGEON_MAP : kind;
         mapId = Math.max(0L, mapId);
         tileId = kind.isOverworldTile() ? Math.max(0L, tileId) : 0L;
-        transitionId = Math.max(NO_TRANSITION_ID, transitionId);
+        transitionId = kind.isDungeonMap() ? Math.max(NO_TRANSITION_ID, transitionId) : NO_TRANSITION_ID;
     }
 
     public static TravelTransitionTarget dungeonMap(long mapId, @Nullable Long transitionId) {
