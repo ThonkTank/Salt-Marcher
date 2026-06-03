@@ -1,11 +1,7 @@
-package src.domain.dungeon.model.runtime.editor.interaction;
+package src.domain.dungeon.model.worldspace;
 
-import src.domain.dungeon.model.worldspace.DungeonCell;
-import src.domain.dungeon.model.worldspace.DungeonEdgeDirection;
-import src.domain.dungeon.model.worldspace.DungeonTopologyRef;
-
-public record DungeonEditorHandle(
-        DungeonEditorHandleType type,
+public record DungeonEditorHandleProjection(
+        DungeonEditorHandleProjectionKind kind,
         DungeonTopologyRef topologyRef,
         long ownerId,
         long clusterId,
@@ -13,11 +9,11 @@ public record DungeonEditorHandle(
         long roomId,
         int index,
         DungeonCell cell,
-        DungeonEdgeDirection direction
+        DungeonEdgeDirection direction,
+        String label
 ) {
-
-    public DungeonEditorHandle {
-        type = type == null ? DungeonEditorHandleType.CLUSTER_LABEL : type;
+    public DungeonEditorHandleProjection {
+        kind = kind == null ? DungeonEditorHandleProjectionKind.defaultKind() : kind;
         topologyRef = topologyRef == null ? DungeonTopologyRef.empty() : topologyRef;
         ownerId = Math.max(0L, ownerId);
         clusterId = Math.max(0L, clusterId);
@@ -26,5 +22,6 @@ public record DungeonEditorHandle(
         index = Math.max(0, index);
         cell = cell == null ? new DungeonCell(0, 0, 0) : cell;
         direction = direction == null ? DungeonEdgeDirection.NORTH : direction;
+        label = label == null || label.isBlank() ? kind.name() : label.trim();
     }
 }

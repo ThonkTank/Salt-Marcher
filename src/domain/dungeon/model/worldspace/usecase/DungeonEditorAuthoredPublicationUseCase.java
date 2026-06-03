@@ -2,7 +2,6 @@ package src.domain.dungeon.model.worldspace.usecase;
 
 import java.util.List;
 import org.jspecify.annotations.Nullable;
-import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorHandleFacts;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorDungeonState;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues.MapSnapshot;
 import src.domain.dungeon.model.runtime.helper.DungeonEditorWorkspaceAreaProjectionHelper;
@@ -13,6 +12,7 @@ import src.domain.dungeon.model.worldspace.DungeonDerivedState;
 import src.domain.dungeon.model.worldspace.DungeonMapFacts;
 import src.domain.dungeon.model.worldspace.DungeonTopology;
 import src.domain.dungeon.model.worldspace.repository.DungeonAuthoredPublishedStateRepository;
+import src.domain.dungeon.model.worldspace.DungeonEditorHandleProjection;
 
 public final class DungeonEditorAuthoredPublicationUseCase {
     private final DungeonEditorWorkspaceAreaProjectionHelper areas = new DungeonEditorWorkspaceAreaProjectionHelper();
@@ -23,10 +23,10 @@ public final class DungeonEditorAuthoredPublicationUseCase {
     public Publication execute(
             String mapName,
             @Nullable DungeonDerivedState derived,
-            List<DungeonEditorHandleFacts> editorHandles,
+            List<DungeonEditorHandleProjection> editorHandles,
             long revision
     ) {
-        List<DungeonEditorHandleFacts> safeEditorHandles = editorHandles == null
+        List<DungeonEditorHandleProjection> safeEditorHandles = editorHandles == null
                 ? List.of()
                 : List.copyOf(editorHandles);
         return new Publication(
@@ -43,7 +43,7 @@ public final class DungeonEditorAuthoredPublicationUseCase {
     private DungeonEditorDungeonState.SnapshotFacts stateFacts(
             String mapName,
             @Nullable DungeonDerivedState derived,
-            List<DungeonEditorHandleFacts> editorHandles,
+            List<DungeonEditorHandleProjection> editorHandles,
             long revision
     ) {
         return new DungeonEditorDungeonState.SnapshotFacts(
@@ -54,7 +54,7 @@ public final class DungeonEditorAuthoredPublicationUseCase {
 
     private MapSnapshot workspaceSnapshot(
             @Nullable DungeonDerivedState derived,
-            List<DungeonEditorHandleFacts> sourceHandles
+            List<DungeonEditorHandleProjection> sourceHandles
     ) {
         DungeonMapFacts safeFacts = safeFacts(derived);
         return new MapSnapshot(
@@ -70,7 +70,7 @@ public final class DungeonEditorAuthoredPublicationUseCase {
     private static DungeonAuthoredPublishedStateRepository.SnapshotPublication repositoryPublication(
             String mapName,
             @Nullable DungeonDerivedState derived,
-            List<DungeonEditorHandleFacts> editorHandles,
+            List<DungeonEditorHandleProjection> editorHandles,
             long revision
     ) {
         return new DungeonAuthoredPublishedStateRepository.SnapshotPublication(

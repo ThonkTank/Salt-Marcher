@@ -2,13 +2,13 @@ package src.domain.dungeon.model.worldspace.usecase;
 
 import java.util.List;
 import java.util.Objects;
-import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorHandleFacts;
 import src.domain.dungeon.model.worldspace.DungeonCell;
 import src.domain.dungeon.model.worldspace.DungeonDerivedState;
 import src.domain.dungeon.model.worldspace.DungeonEdgeDirection;
 import src.domain.dungeon.model.worldspace.DungeonMap;
 import src.domain.dungeon.model.worldspace.DungeonMapIdentity;
 import src.domain.dungeon.model.worldspace.DungeonTopologyRef;
+import src.domain.dungeon.model.worldspace.DungeonEditorHandleProjection;
 
 /**
  * Loads the current committed dungeon snapshot.
@@ -18,7 +18,7 @@ public final class LoadDungeonSnapshotUseCase {
     public record DungeonSnapshotData(
             String mapName,
             DungeonDerivedState derived,
-            List<DungeonEditorHandleFacts> editorHandles,
+            List<DungeonEditorHandleProjection> editorHandles,
             long revision
     ) {
         public DungeonSnapshotData {

@@ -3,9 +3,6 @@ package src.domain.dungeon.model.worldspace.helper;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorHandle;
-import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorHandleFacts;
-import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorHandleType;
 import src.domain.dungeon.model.worldspace.DungeonCell;
 import src.domain.dungeon.model.worldspace.DungeonEdgeDirection;
 import src.domain.dungeon.model.worldspace.DungeonMap;
@@ -14,13 +11,15 @@ import src.domain.dungeon.model.worldspace.DungeonRoomCellProjection;
 import src.domain.dungeon.model.worldspace.DungeonRoomCluster;
 import src.domain.dungeon.model.worldspace.DungeonTopologyElementKind;
 import src.domain.dungeon.model.worldspace.DungeonTopologyRef;
+import src.domain.dungeon.model.worldspace.DungeonEditorHandleProjection;
+import src.domain.dungeon.model.worldspace.DungeonEditorHandleProjectionKind;
 
 public final class DungeonEditorClusterHandleProjectionHelper {
 
     private static final DungeonRoomCellProjection CELL_PROJECTOR = new DungeonRoomCellProjection();
 
-    public List<DungeonEditorHandleFacts> project(DungeonMap dungeonMap) {
-        List<DungeonEditorHandleFacts> result = new ArrayList<>();
+    public List<DungeonEditorHandleProjection> project(DungeonMap dungeonMap) {
+        List<DungeonEditorHandleProjection> result = new ArrayList<>();
         if (dungeonMap == null) {
             return List.of();
         }
@@ -31,7 +30,7 @@ public final class DungeonEditorClusterHandleProjectionHelper {
     }
 
     private static void appendClusterHandles(
-            List<DungeonEditorHandleFacts> result,
+            List<DungeonEditorHandleProjection> result,
             DungeonMap dungeonMap,
             DungeonRoomCluster cluster
     ) {
@@ -46,18 +45,17 @@ public final class DungeonEditorClusterHandleProjectionHelper {
         }
     }
 
-    private static DungeonEditorHandleFacts clusterLabel(DungeonRoomCluster cluster, DungeonRoom room) {
-        return new DungeonEditorHandleFacts(
-                new DungeonEditorHandle(
-                        DungeonEditorHandleType.CLUSTER_LABEL,
-                        new DungeonTopologyRef(DungeonTopologyElementKind.ROOM, room.roomId()),
-                        room.roomId(),
-                        cluster.clusterId(),
-                        0L,
-                        room.roomId(),
-                        0,
-                        cluster.center(),
-                        DungeonEdgeDirection.NORTH),
+    private static DungeonEditorHandleProjection clusterLabel(DungeonRoomCluster cluster, DungeonRoom room) {
+        return new DungeonEditorHandleProjection(
+                DungeonEditorHandleProjectionKind.CLUSTER_LABEL,
+                new DungeonTopologyRef(DungeonTopologyElementKind.ROOM, room.roomId()),
+                room.roomId(),
+                cluster.clusterId(),
+                0L,
+                room.roomId(),
+                0,
+                cluster.center(),
+                DungeonEdgeDirection.NORTH,
                 room.name());
     }
 
@@ -77,7 +75,7 @@ public final class DungeonEditorClusterHandleProjectionHelper {
     }
 
     private static void appendClusterCornerHandles(
-            List<DungeonEditorHandleFacts> result,
+            List<DungeonEditorHandleProjection> result,
             DungeonRoomCluster cluster,
             DungeonRoom room,
             int level,
@@ -89,23 +87,22 @@ public final class DungeonEditorClusterHandleProjectionHelper {
         }
     }
 
-    private static DungeonEditorHandleFacts clusterCorner(
+    private static DungeonEditorHandleProjection clusterCorner(
             DungeonRoomCluster cluster,
             DungeonRoom room,
             DungeonCell corner,
             int index
     ) {
-        return new DungeonEditorHandleFacts(
-                new DungeonEditorHandle(
-                        DungeonEditorHandleType.CLUSTER_CORNER,
-                        new DungeonTopologyRef(DungeonTopologyElementKind.ROOM, room.roomId()),
-                        room.roomId(),
-                        cluster.clusterId(),
-                        0L,
-                        room.roomId(),
-                        index,
-                        corner,
-                        DungeonEdgeDirection.NORTH),
+        return new DungeonEditorHandleProjection(
+                DungeonEditorHandleProjectionKind.CLUSTER_CORNER,
+                new DungeonTopologyRef(DungeonTopologyElementKind.ROOM, room.roomId()),
+                room.roomId(),
+                cluster.clusterId(),
+                0L,
+                room.roomId(),
+                index,
+                corner,
+                DungeonEdgeDirection.NORTH,
                 "Ecke " + (index + 1));
     }
 

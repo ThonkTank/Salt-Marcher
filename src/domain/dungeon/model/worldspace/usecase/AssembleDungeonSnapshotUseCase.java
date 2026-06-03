@@ -2,9 +2,9 @@ package src.domain.dungeon.model.worldspace.usecase;
 
 import java.util.List;
 import java.util.Objects;
-import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorHandleFacts;
 import src.domain.dungeon.model.worldspace.DungeonMap;
 import src.domain.dungeon.model.worldspace.DungeonDerivedState;
+import src.domain.dungeon.model.worldspace.DungeonEditorHandleProjection;
 
 /**
  * Assembles committed dungeon snapshot data from authored truth and derived state.
@@ -19,7 +19,7 @@ public final class AssembleDungeonSnapshotUseCase {
 
     public LoadDungeonSnapshotUseCase.DungeonSnapshotData execute(
             DungeonMap dungeonMap,
-            List<DungeonEditorHandleFacts> editorHandles
+            List<DungeonEditorHandleProjection> editorHandles
     ) {
         return execute(dungeonMap, derive.execute(dungeonMap), editorHandles);
     }
@@ -27,7 +27,7 @@ public final class AssembleDungeonSnapshotUseCase {
     public LoadDungeonSnapshotUseCase.DungeonSnapshotData execute(
             DungeonMap dungeonMap,
             DungeonDerivedState derived,
-            List<DungeonEditorHandleFacts> editorHandles
+            List<DungeonEditorHandleProjection> editorHandles
     ) {
         return new LoadDungeonSnapshotUseCase.DungeonSnapshotData(
                 dungeonMap.metadata().mapName(),

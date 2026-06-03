@@ -1,6 +1,7 @@
 package src.domain.dungeon.model.runtime.usecase;
 
 import org.jspecify.annotations.Nullable;
+import src.domain.dungeon.model.runtime.travel.projection.TravelAuthoredSurfaceProjectionMapper;
 import src.domain.dungeon.model.runtime.travel.projection.TravelSurfaceProjection;
 import src.domain.dungeon.model.runtime.travel.projection.TravelPositionFacts;
 import src.domain.dungeon.model.runtime.travel.projection.TravelSurfaceFacts;
@@ -39,8 +40,7 @@ public final class LoadDungeonTravelSurfaceUseCase {
         TravelPositionFacts position = input == null ? null : input.position();
         DungeonMap dungeonMap = loadMap(position);
         return projector.project(
-                dungeonMap,
-                derive.execute(dungeonMap),
+                TravelAuthoredSurfaceProjectionMapper.from(dungeonMap, derive.execute(dungeonMap)),
                 position,
                 "Token auf der Karte ziehen");
     }

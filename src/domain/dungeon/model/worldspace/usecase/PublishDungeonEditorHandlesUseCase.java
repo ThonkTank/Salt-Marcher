@@ -4,9 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.core.geometry.Cell;
-import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorHandle;
-import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorHandleFacts;
-import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorHandleType;
 import src.domain.dungeon.model.worldspace.helper.DungeonEditorClusterHandleProjectionHelper;
 import src.domain.dungeon.model.worldspace.DungeonMap;
 import src.domain.dungeon.model.worldspace.DungeonCorridor;
@@ -17,6 +14,8 @@ import src.domain.dungeon.model.worldspace.DungeonEdgeDirection;
 import src.domain.dungeon.model.worldspace.DungeonStairExit;
 import src.domain.dungeon.model.worldspace.DungeonTopologyElementKind;
 import src.domain.dungeon.model.worldspace.DungeonTopologyRef;
+import src.domain.dungeon.model.worldspace.DungeonEditorHandleProjection;
+import src.domain.dungeon.model.worldspace.DungeonEditorHandleProjectionKind;
 
 /**
  * Publishes authored editor handles from one dungeon map snapshot.
@@ -25,11 +24,11 @@ public final class PublishDungeonEditorHandlesUseCase {
     private static final DungeonEditorClusterHandleProjectionHelper CLUSTER_HANDLE_HELPER =
             new DungeonEditorClusterHandleProjectionHelper();
 
-    public List<DungeonEditorHandleFacts> execute(@Nullable DungeonMap dungeonMap) {
+    public List<DungeonEditorHandleProjection> execute(@Nullable DungeonMap dungeonMap) {
         if (dungeonMap == null) {
             return List.of();
         }
-        List<DungeonEditorHandleFacts> result = new ArrayList<>();
+        List<DungeonEditorHandleProjection> result = new ArrayList<>();
         result.addAll(CLUSTER_HANDLE_HELPER.project(dungeonMap));
         appendDoorHandles(result, dungeonMap);
         appendAnchorHandles(result, dungeonMap);
@@ -38,7 +37,7 @@ public final class PublishDungeonEditorHandlesUseCase {
         return List.copyOf(result);
     }
 
-    private static void appendDoorHandles(List<DungeonEditorHandleFacts> result, DungeonMap dungeonMap) {
+    private static void appendDoorHandles(List<DungeonEditorHandleProjection> result, DungeonMap dungeonMap) {
         for (DungeonCorridor corridor : dungeonMap.connections().corridors()) {
             for (int index = 0; index < corridor.bindings().doorBindings().size(); index++) {
                 var binding = corridor.bindings().doorBindings().get(index);
@@ -51,23 +50,22 @@ public final class PublishDungeonEditorHandlesUseCase {
                                 cluster.center().r() + roomCell.r(),
                                 roomCell.level());
                 DungeonCell corridorCell = binding.direction().neighborOf(absoluteRoomCell);
-                result.add(new DungeonEditorHandleFacts(
-                        new DungeonEditorHandle(
-                                DungeonEditorHandleType.DOOR,
-                                binding.topologyRef(),
-                                binding.topologyRef().present() ? binding.topologyRef().id() : corridor.corridorId(),
-                                binding.clusterId(),
-                                corridor.corridorId(),
-                                binding.roomId(),
-                                index,
-                                corridorCell,
-                                binding.direction()),
+                result.add(new DungeonEditorHandleProjection(
+                        DungeonEditorHandleProjectionKind.DOOR,
+                        binding.topologyRef(),
+                        binding.topologyRef().present() ? binding.topologyRef().id() : corridor.corridorId(),
+                        binding.clusterId(),
+                        corridor.corridorId(),
+                        binding.roomId(),
+                        index,
+                        corridorCell,
+                        binding.direction(),
                         "Tür " + corridor.corridorId() + "." + (index + 1)));
             }
         }
     }
 
-    private static void appendWaypointHandles(List<DungeonEditorHandleFacts> result, DungeonMap dungeonMap) {
+    private static void appendWaypointHandles(List<DungeonEditorHandleProjection> result, DungeonMap dungeonMap) {
         for (DungeonCorridor corridor : dungeonMap.connections().corridors()) {
             for (int index = 0; index < corridor.bindings().waypoints().size(); index++) {
                 var waypoint = corridor.bindings().waypoints().get(index);
@@ -75,17 +73,16 @@ public final class PublishDungeonEditorHandlesUseCase {
                 DungeonCell absolute = cluster == null
                         ? worldspaceCell(waypoint.relativeCell())
                         : worldspaceCell(waypoint.absoluteCell(coreCell(cluster.center())));
-                result.add(new DungeonEditorHandleFacts(
-                        new DungeonEditorHandle(
-                                DungeonEditorHandleType.CORRIDOR_WAYPOINT,
-                                new DungeonTopologyRef(DungeonTopologyElementKind.CORRIDOR, corridor.corridorId()),
-                                corridor.corridorId(),
-                                waypoint.clusterId(),
-                                corridor.corridorId(),
-                                0L,
-                                index,
-                                absolute,
-                                DungeonEdgeDirection.NORTH),
+                result.add(new DungeonEditorHandleProjection(
+                        DungeonEditorHandleProjectionKind.CORRIDOR_WAYPOINT,
+                        new DungeonTopologyRef(DungeonTopologyElementKind.CORRIDOR, corridor.corridorId()),
+                        corridor.corridorId(),
+                        waypoint.clusterId(),
+                        corridor.corridorId(),
+                        0L,
+                        index,
+                        absolute,
+                        DungeonEdgeDirection.NORTH,
                         "Wegpunkt " + (index + 1)));
             }
         }
@@ -99,27 +96,26 @@ public final class PublishDungeonEditorHandlesUseCase {
         return new Cell(cell.q(), cell.r(), cell.level());
     }
 
-    private static void appendAnchorHandles(List<DungeonEditorHandleFacts> result, DungeonMap dungeonMap) {
+    private static void appendAnchorHandles(List<DungeonEditorHandleProjection> result, DungeonMap dungeonMap) {
         for (DungeonCorridor corridor : dungeonMap.connections().corridors()) {
             for (int index = 0; index < corridor.bindings().anchorBindings().size(); index++) {
                 var anchor = corridor.bindings().anchorBindings().get(index);
-                result.add(new DungeonEditorHandleFacts(
-                        new DungeonEditorHandle(
-                                DungeonEditorHandleType.CORRIDOR_ANCHOR,
-                                anchor.topologyRef(),
-                                anchor.anchorId(),
-                                0L,
-                                corridor.corridorId(),
-                                0L,
-                                index,
-                                anchor.absoluteCell(),
-                                DungeonEdgeDirection.NORTH),
+                result.add(new DungeonEditorHandleProjection(
+                        DungeonEditorHandleProjectionKind.CORRIDOR_ANCHOR,
+                        anchor.topologyRef(),
+                        anchor.anchorId(),
+                        0L,
+                        corridor.corridorId(),
+                        0L,
+                        index,
+                        anchor.absoluteCell(),
+                        DungeonEdgeDirection.NORTH,
                         "Korridoranker " + (index + 1)));
             }
         }
     }
 
-    private static void appendStairHandles(List<DungeonEditorHandleFacts> result, DungeonMap dungeonMap) {
+    private static void appendStairHandles(List<DungeonEditorHandleProjection> result, DungeonMap dungeonMap) {
         for (DungeonStair stair : dungeonMap.connections().stairs()) {
             for (int index = 0; index < stair.path().size(); index++) {
                 result.add(stairHandle(stair, stair.path().get(index), index, "Treppenanker " + (index + 1)));
@@ -132,18 +128,17 @@ public final class PublishDungeonEditorHandlesUseCase {
         }
     }
 
-    private static DungeonEditorHandleFacts stairHandle(DungeonStair stair, DungeonCell cell, int index, String label) {
-        return new DungeonEditorHandleFacts(
-                new DungeonEditorHandle(
-                        DungeonEditorHandleType.STAIR_ANCHOR,
-                        new DungeonTopologyRef(DungeonTopologyElementKind.STAIR, stair.stairId()),
-                        stair.stairId(),
-                        0L,
-                        stair.corridorId() == null ? 0L : stair.corridorId(),
-                        0L,
-                        index,
-                        cell,
-                        stair.direction()),
+    private static DungeonEditorHandleProjection stairHandle(DungeonStair stair, DungeonCell cell, int index, String label) {
+        return new DungeonEditorHandleProjection(
+                DungeonEditorHandleProjectionKind.STAIR_ANCHOR,
+                new DungeonTopologyRef(DungeonTopologyElementKind.STAIR, stair.stairId()),
+                stair.stairId(),
+                0L,
+                stair.corridorId() == null ? 0L : stair.corridorId(),
+                0L,
+                index,
+                cell,
+                stair.direction(),
                 label);
     }
 

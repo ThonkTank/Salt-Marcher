@@ -2,36 +2,28 @@ package src.domain.dungeon.model.runtime.travel.projection;
 
 
 import java.util.ArrayList;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.Direction;
-import src.domain.dungeon.model.worldspace.DungeonAreaFacts;
-import src.domain.dungeon.model.worldspace.DungeonAreaType;
-import src.domain.dungeon.model.worldspace.DungeonDerivedState;
-import src.domain.dungeon.model.worldspace.DungeonMap;
-import src.domain.dungeon.model.worldspace.DungeonRelationGraph;
-import src.domain.dungeon.model.worldspace.DungeonRoom;
-import src.domain.dungeon.model.worldspace.DungeonRoomExitDescription;
+import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionSurface.AreaData;
+import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionValues.AreaKind;
 
 final class TraversalActionCatalog {
 
     List<TravelActionFacts> describe(
-            DungeonMap dungeonMap,
-            DungeonDerivedState derived,
+            TravelAuthoredSurface authoredSurface,
             List<TraversalLink> traversalLinks,
-            @Nullable DungeonAreaFacts activeArea,
+            @Nullable AreaData activeArea,
             Set<Cell> activeSurfaceCells,
             TravelPositionFacts position
     ) {
-        if (dungeonMap == null || derived == null || activeSurfaceCells == null || activeSurfaceCells.isEmpty()) {
+        if (authoredSurface == null || activeSurfaceCells == null || activeSurfaceCells.isEmpty()) {
             return List.of();
         }
         return TraversalActionComposer.describe(
-                dungeonMap,
-                derived,
+                authoredSurface,
                 traversalLinks == null ? List.of() : traversalLinks,
                 activeArea,
                 activeSurfaceCells,
@@ -41,10 +33,9 @@ final class TraversalActionCatalog {
     private static final class TraversalActionComposer {
 
         private static List<TravelActionFacts> describe(
-                DungeonMap dungeonMap,
-                DungeonDerivedState derived,
+                TravelAuthoredSurface authoredSurface,
                 List<TraversalLink> traversalLinks,
-                @Nullable DungeonAreaFacts activeArea,
+                @Nullable AreaData activeArea,
                 Set<Cell> activeSurfaceCells,
                 TravelPositionFacts position
         ) {
@@ -55,7 +46,7 @@ final class TraversalActionCatalog {
                 String label = candidate.link().source().kind().isDoor()
                         ? "Tür " + doorNumber
                         : candidate.link().source().label();
-                String destinationLabel = TraversalDestinationLabelResolver.resolve(derived, activeArea, candidate);
+                String destinationLabel = TraversalDestinationLabelResolver.resolve(authoredSurface, activeArea, candidate);
                 if (candidate.link().source().kind().isDoor()) {
                     doorNumber++;
                 }
@@ -65,13 +56,13 @@ final class TraversalActionCatalog {
                         label,
                         destinationLabel,
                         TraversalNarrationProjector.describe(
-                                dungeonMap,
+                                authoredSurface,
                                 activeArea,
                                 position.heading(),
                                 candidate,
                                 destinationLabel),
                         new TravelPositionFacts(
-                                dungeonMap.metadata().mapId().value(),
+                                authoredSurface.header().mapId(),
                                 TravelPositionFacts.LocationKind.TILE,
                                 candidate.target().areaId(),
                                 candidate.target().tile(),
@@ -119,8 +110,8 @@ final class TraversalActionCatalog {
     private static final class TraversalDestinationLabelResolver {
 
         private static String resolve(
-                DungeonDerivedState derived,
-                @Nullable DungeonAreaFacts activeArea,
+                TravelAuthoredSurface authoredSurface,
+                @Nullable AreaData activeArea,
                 TraversalCandidate candidate
         ) {
             TraversalEndpoint target = candidate.target();
@@ -129,53 +120,24 @@ final class TraversalActionCatalog {
             }
             if (candidate.link().source().kind().isDoor()
                     && activeArea != null
-                    && activeArea.kind() == DungeonAreaType.ROOM
-                    && targetArea(derived, target).kind() == DungeonAreaType.CORRIDOR) {
-                List<String> corridorTargets = corridorTargetLabels(derived, activeArea, target.areaId());
+                    && activeArea.kind().equals(AreaKind.ROOM)
+                    && TravelAuthoredSurfaceQueries.areaById(authoredSurface, target.areaId()).kind()
+                            .equals(AreaKind.CORRIDOR)) {
+                List<String> corridorTargets =
+                        TravelAuthoredSurfaceQueries.corridorTargetLabels(authoredSurface, activeArea, target.areaId());
                 if (!corridorTargets.isEmpty()) {
                     return String.join(", ", corridorTargets);
                 }
             }
             return target.areaLabel();
         }
-
-        private static DungeonAreaFacts targetArea(DungeonDerivedState derived, TraversalEndpoint target) {
-            for (DungeonAreaFacts area : derived.map().areas()) {
-                if (area != null && area.id() == target.areaId()) {
-                    return area;
-                }
-            }
-            return new DungeonAreaFacts(DungeonAreaType.ROOM, 0L, "", List.of());
-        }
-
-        private static List<String> corridorTargetLabels(
-                DungeonDerivedState derived,
-                DungeonAreaFacts activeArea,
-                long corridorId
-        ) {
-            if (derived.relations() == null) {
-                return List.of();
-            }
-            Set<String> labels = new LinkedHashSet<>();
-            for (DungeonRelationGraph.ConnectionRelation connection : derived.relations().connections()) {
-                if (connection.corridorId() != corridorId || connection.roomId() == activeArea.id()) {
-                    continue;
-                }
-                for (DungeonAreaFacts area : derived.map().areas()) {
-                    if (area != null && area.kind() == DungeonAreaType.ROOM && area.id() == connection.roomId()) {
-                        labels.add(area.label());
-                    }
-                }
-            }
-            return List.copyOf(labels);
-        }
     }
 
     private static final class TraversalNarrationProjector {
 
         private static String describe(
-                DungeonMap dungeonMap,
-                @Nullable DungeonAreaFacts activeArea,
+                TravelAuthoredSurface authoredSurface,
+                @Nullable AreaData activeArea,
                 TravelHeading heading,
                 TraversalCandidate candidate,
                 String destinationLabel
@@ -186,7 +148,7 @@ final class TraversalActionCatalog {
                         : candidate.target().areaLabel();
                 return "Über " + candidate.link().source().label() + " gelangt ihr zu " + target + ".";
             }
-            String subject = narratedExit(dungeonMap, activeArea, candidate);
+            String subject = narratedExit(authoredSurface, activeArea, candidate);
             if (subject.isBlank()) {
                 subject = "eine Tür";
             }
@@ -195,42 +157,15 @@ final class TraversalActionCatalog {
         }
 
         private static String narratedExit(
-                DungeonMap dungeonMap,
-                @Nullable DungeonAreaFacts activeArea,
+                TravelAuthoredSurface authoredSurface,
+                @Nullable AreaData activeArea,
                 TraversalCandidate candidate
         ) {
-            if (activeArea == null || activeArea.kind() != DungeonAreaType.ROOM) {
-                return "";
-            }
-            DungeonRoom room = roomFor(dungeonMap, activeArea);
-            if (room == null) {
-                return "";
-            }
-            return exitDescription(room, candidate);
-        }
-
-        private static @Nullable DungeonRoom roomFor(DungeonMap dungeonMap, DungeonAreaFacts activeArea) {
-            for (DungeonRoom candidateRoom : dungeonMap.rooms().rooms()) {
-                if (candidateRoom != null && candidateRoom.roomId() == activeArea.id()) {
-                    return candidateRoom;
-                }
-            }
-            return null;
-        }
-
-        private static String exitDescription(DungeonRoom room, TraversalCandidate candidate) {
-            for (DungeonRoomExitDescription description : room.narration().exitDescriptions()) {
-                if (description != null && sameExit(description, candidate) && !description.description().isBlank()) {
-                    return description.description();
-                }
-            }
-            return "";
-        }
-
-        private static boolean sameExit(DungeonRoomExitDescription description, TraversalCandidate candidate) {
-            return candidate.source().tile().equals(TravelGeometryProjectionMapper.toCoreCell(description.roomCell()))
-                    && candidate.direction() == directionFromName(
-                            description.direction() == null ? "" : description.direction().name());
+            return TravelAuthoredSurfaceQueries.narratedExit(
+                    authoredSurface,
+                    activeArea,
+                    candidate.source().tile(),
+                    candidate.direction());
         }
 
         private static String relativePrefix(@Nullable Direction direction, TravelHeading heading) {
@@ -321,15 +256,6 @@ final class TraversalActionCatalog {
             return 3;
         }
         return 0;
-    }
-
-    private static Direction directionFromName(String name) {
-        return switch (name == null ? "" : name.trim()) {
-            case "EAST" -> Direction.EAST;
-            case "SOUTH" -> Direction.SOUTH;
-            case "WEST" -> Direction.WEST;
-            default -> Direction.NORTH;
-        };
     }
 
     private static String sourceLabel(TraversalCandidate candidate) {

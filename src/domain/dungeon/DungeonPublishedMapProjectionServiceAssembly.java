@@ -1,11 +1,10 @@
 package src.domain.dungeon;
 
 import java.util.List;
-import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorHandle;
-import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorHandleFacts;
 import src.domain.dungeon.model.worldspace.DungeonAreaType;
 import src.domain.dungeon.model.worldspace.DungeonTopology;
 import src.domain.dungeon.model.worldspace.DungeonTopologyRef;
+import src.domain.dungeon.model.worldspace.DungeonEditorHandleProjection;
 import src.domain.dungeon.published.DungeonTopologyKind;
 
 final class DungeonPublishedMapProjectionServiceAssembly {
@@ -25,12 +24,12 @@ final class DungeonPublishedMapProjectionServiceAssembly {
 
     static src.domain.dungeon.published.DungeonMapSnapshot mapSnapshot(
             src.domain.dungeon.model.worldspace.DungeonMapFacts facts,
-            List<DungeonEditorHandleFacts> handles
+            List<DungeonEditorHandleProjection> handles
     ) {
         src.domain.dungeon.model.worldspace.DungeonMapFacts safeFacts = facts == null
                 ? new src.domain.dungeon.model.worldspace.DungeonMapFacts(DungeonTopology.SQUARE, 1, 1, List.of(), List.of())
                 : facts;
-        List<DungeonEditorHandleFacts> safeHandles = handles == null ? List.of() : List.copyOf(handles);
+        List<DungeonEditorHandleProjection> safeHandles = handles == null ? List.of() : List.copyOf(handles);
         return new src.domain.dungeon.published.DungeonMapSnapshot(
                 topology(safeFacts),
                 safeFacts.width(),
@@ -89,16 +88,16 @@ final class DungeonPublishedMapProjectionServiceAssembly {
                 topologyRef(area.topologyRef()));
     }
 
-    private static src.domain.dungeon.published.DungeonEditorHandleSnapshot handle(DungeonEditorHandleFacts handle) {
+    private static src.domain.dungeon.published.DungeonEditorHandleSnapshot handle(DungeonEditorHandleProjection handle) {
         return new src.domain.dungeon.published.DungeonEditorHandleSnapshot(
-                handleRef(handle.handle()),
+                handleRef(handle),
                 handle.label(),
-                cell(handle.handle().cell()));
+                cell(handle.cell()));
     }
 
-    private static src.domain.dungeon.published.DungeonEditorHandleRef handleRef(DungeonEditorHandle handle) {
+    private static src.domain.dungeon.published.DungeonEditorHandleRef handleRef(DungeonEditorHandleProjection handle) {
         return new src.domain.dungeon.published.DungeonEditorHandleRef(
-                src.domain.dungeon.published.DungeonEditorHandleKind.valueOf(handle.type().name()),
+                src.domain.dungeon.published.DungeonEditorHandleKind.valueOf(handle.kind().name()),
                 topologyRef(handle.topologyRef()),
                 handle.ownerId(),
                 handle.clusterId(),

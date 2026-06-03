@@ -2,59 +2,44 @@ package src.domain.dungeon.model.runtime.travel.projection;
 
 
 import java.util.ArrayList;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.core.geometry.Cell;
-import src.domain.dungeon.model.worldspace.DungeonAreaFacts;
-import src.domain.dungeon.model.worldspace.DungeonCell;
-import src.domain.dungeon.model.worldspace.DungeonDerivedState;
-import src.domain.dungeon.model.worldspace.DungeonFeatureFacts;
-import src.domain.dungeon.model.worldspace.DungeonFeatureType;
-import src.domain.dungeon.model.worldspace.DungeonMap;
-import src.domain.dungeon.model.worldspace.DungeonMapAuthoring;
-import src.domain.dungeon.model.worldspace.DungeonMapFacts;
-import src.domain.dungeon.model.worldspace.DungeonMapIdentity;
-import src.domain.dungeon.model.worldspace.DungeonTransition;
-import src.domain.dungeon.model.worldspace.DungeonTransitionDestination;
+import src.domain.dungeon.model.runtime.travel.projection.TravelAuthoredSurface.Transition;
+import src.domain.dungeon.model.runtime.travel.projection.TravelAuthoredSurface.TransitionDestination;
+import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionSurface.AreaData;
+import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionSurface.FeatureData;
 
 public final class TravelSurfaceProjection {
 
     public TravelSurfaceFacts project(
-            DungeonMap dungeonMap,
-            DungeonDerivedState derived,
+            TravelAuthoredSurface authoredSurface,
             @Nullable TravelPositionFacts preferredPosition,
             String statusLabel
     ) {
-        DungeonMap safeMap = dungeonMap == null
-                ? DungeonMapAuthoring.empty(new DungeonMapIdentity(1L), "Dungeon")
-                : dungeonMap;
-        DungeonMapFacts mapFacts = derived == null ? null : derived.map();
-        DungeonMapFacts safeFacts = mapFacts == null
-                ? new DungeonMapFacts(safeMap.topology().topology(), 1, 1, List.of(), List.of())
-                : mapFacts;
-        TravelPositionFacts position = resolvePosition(safeMap, safeFacts, preferredPosition);
-        DungeonCell authoredTile = TravelGeometryProjectionMapper.toWorldspaceCell(position.tile());
-        SurfaceScope scope = SurfaceScopeResolver.resolve(safeFacts, authoredTile);
+        TravelAuthoredSurface surface = authoredSurface == null
+                ? TravelAuthoredSurface.empty()
+                : authoredSurface;
+        TravelPositionFacts position = resolvePosition(surface, preferredPosition);
+        SurfaceScope scope = SurfaceScopeResolver.resolve(surface, position.tile());
         List<TravelActionFacts> actions = new ArrayList<>();
         actions.addAll(new TraversalActionCatalog().describe(
-                safeMap,
-                derived,
-                new TraversalLinkProjection().project(safeMap, safeFacts),
+                surface,
+                new TraversalLinkProjection().project(surface),
                 scope.area(),
                 scope.cells(),
                 position));
-        actions.addAll(TransitionActionProjector.describe(safeMap, scope, position));
+        actions.addAll(TransitionActionProjector.describe(surface, scope, position));
         return new TravelSurfaceFacts(
-                safeMap.metadata().mapId().value(),
-                safeMap.metadata().mapName(),
-                safeMap.revision(),
-                TravelSurfaceMapProjectionMapper.toRuntimeMap(safeFacts),
+                surface.header().mapId(),
+                surface.header().mapName(),
+                surface.header().revision(),
+                surface.map(),
                 position,
                 scope.title(),
                 scope.areaLabel(),
-                tileLabel(authoredTile),
+                tileLabel(position.tile()),
                 headingLabel(position.heading()),
                 statusLabel,
                 scope.description(),
@@ -62,14 +47,16 @@ public final class TravelSurfaceProjection {
     }
 
     public TravelPositionFacts resolvePosition(
-            DungeonMap dungeonMap,
-            DungeonMapFacts mapFacts,
+            TravelAuthoredSurface authoredSurface,
             @Nullable TravelPositionFacts preferredPosition
     ) {
-        return TravelPositionResolver.resolve(dungeonMap, mapFacts, preferredPosition);
+        TravelAuthoredSurface surface = authoredSurface == null
+                ? TravelAuthoredSurface.empty()
+                : authoredSurface;
+        return TravelPositionResolver.resolve(surface, preferredPosition);
     }
 
-    private static String tileLabel(DungeonCell tile) {
+    private static String tileLabel(Cell tile) {
         return "x=" + tile.q() + " y=" + tile.r() + " z=" + tile.level();
     }
 
@@ -79,7 +66,7 @@ public final class TravelSurfaceProjection {
     }
 
     private record SurfaceScope(
-            @Nullable DungeonAreaFacts area,
+            @Nullable AreaData area,
             String title,
             String areaLabel,
             String description,
@@ -96,86 +83,34 @@ public final class TravelSurfaceProjection {
     private static final class TravelPositionResolver {
 
         private static TravelPositionFacts resolve(
-                DungeonMap dungeonMap,
-                DungeonMapFacts mapFacts,
+                TravelAuthoredSurface authoredSurface,
                 @Nullable TravelPositionFacts preferredPosition
         ) {
-            DungeonCell preferredTile = preferredPosition == null
-                    ? null
-                    : TravelGeometryProjectionMapper.toWorldspaceCell(preferredPosition.tile());
             TravelHeading heading =
                     preferredPosition == null ? TravelHeading.defaultHeading() : preferredPosition.heading();
-            CellScan scan = CellScan.from(mapFacts);
-            if (preferredPosition != null && preferredTile != null && scan.contains(preferredTile)) {
+            if (preferredPosition != null && TravelAuthoredSurfaceQueries.contains(authoredSurface, preferredPosition.tile())) {
                 return new TravelPositionFacts(
-                        dungeonMap.metadata().mapId().value(),
+                        authoredSurface.header().mapId(),
                         preferredPosition.locationKind(),
                         preferredPosition.ownerId(),
-                        TravelGeometryProjectionMapper.toCoreCell(preferredTile),
+                        preferredPosition.tile(),
                         heading);
             }
-            DungeonCell fallback = scan.firstCell();
-            DungeonCell resolvedTile = fallback == null ? new DungeonCell(0, 0, 0) : fallback;
+            Cell fallback = TravelAuthoredSurfaceQueries.firstCell(authoredSurface);
+            Cell resolvedTile = fallback == null ? new Cell(0, 0, 0) : fallback;
             return new TravelPositionFacts(
-                    dungeonMap.metadata().mapId().value(),
+                    authoredSurface.header().mapId(),
                     TravelPositionFacts.LocationKind.TILE,
                     0L,
-                    TravelGeometryProjectionMapper.toCoreCell(resolvedTile),
+                    resolvedTile,
                     heading);
-        }
-
-        private record CellScan(Set<DungeonCell> cells, @Nullable DungeonCell firstCell) {
-            static CellScan from(DungeonMapFacts mapFacts) {
-                Set<DungeonCell> cells = new LinkedHashSet<>();
-                DungeonCell first = null;
-                if (mapFacts != null) {
-                    for (DungeonAreaFacts area : mapFacts.areas()) {
-                        first = appendCells(cells, first, area == null ? List.of() : area.cells());
-                    }
-                    for (DungeonFeatureFacts feature : mapFacts.features()) {
-                        first = appendCells(cells, first, feature == null ? List.of() : feature.cells());
-                    }
-                }
-                return new CellScan(Set.copyOf(cells), first);
-            }
-
-            boolean contains(DungeonCell cell) {
-                return cells.contains(cell);
-            }
-
-            private static @Nullable DungeonCell appendCells(
-                    Set<DungeonCell> cells,
-                    @Nullable DungeonCell first,
-                    List<DungeonCell> candidates
-            ) {
-                DungeonCell result = first;
-                for (DungeonCell cell : candidates == null ? List.<DungeonCell>of() : candidates) {
-                    if (cell == null) {
-                        continue;
-                    }
-                    cells.add(cell);
-                    if (result == null || compareCells(cell, result) < 0) {
-                        result = cell;
-                    }
-                }
-                return result;
-            }
-
-            private static int compareCells(DungeonCell left, DungeonCell right) {
-                int levelComparison = Integer.compare(left.level(), right.level());
-                if (levelComparison != 0) {
-                    return levelComparison;
-                }
-                int rowComparison = Integer.compare(left.r(), right.r());
-                return rowComparison != 0 ? rowComparison : Integer.compare(left.q(), right.q());
-            }
         }
     }
 
     private static final class SurfaceScopeResolver {
 
-        private static SurfaceScope resolve(DungeonMapFacts mapFacts, DungeonCell activeTile) {
-            DungeonAreaFacts area = areaAt(mapFacts, activeTile);
+        private static SurfaceScope resolve(TravelAuthoredSurface authoredSurface, Cell activeTile) {
+            AreaData area = TravelAuthoredSurfaceQueries.areaAt(authoredSurface, activeTile);
             if (area != null) {
                 return new SurfaceScope(
                         area,
@@ -184,7 +119,7 @@ public final class TravelSurfaceProjection {
                         "Bereich " + area.label(),
                         sameLevelCells(area.cells(), activeTile.level()));
             }
-            DungeonFeatureFacts feature = featureAt(mapFacts, activeTile);
+            FeatureData feature = TravelAuthoredSurfaceQueries.travelFeatureAt(authoredSurface, activeTile);
             if (feature != null) {
                 return new SurfaceScope(
                         null,
@@ -198,41 +133,14 @@ public final class TravelSurfaceProjection {
                     "Dungeon-Feld",
                     "Feld " + activeTile.q() + "," + activeTile.r(),
                     "",
-                    Set.of(TravelGeometryProjectionMapper.toCoreCell(activeTile)));
+                    Set.of(activeTile));
         }
 
-        private static @Nullable DungeonAreaFacts areaAt(DungeonMapFacts mapFacts, DungeonCell cell) {
-            if (mapFacts == null || cell == null) {
-                return null;
-            }
-            for (DungeonAreaFacts area : mapFacts.areas()) {
-                if (area != null && area.cells().contains(cell)) {
-                    return area;
-                }
-            }
-            return null;
-        }
-
-        private static @Nullable DungeonFeatureFacts featureAt(DungeonMapFacts mapFacts, DungeonCell cell) {
-            if (mapFacts == null || cell == null) {
-                return null;
-            }
-            for (DungeonFeatureFacts feature : mapFacts.features()) {
-                if (feature != null
-                        && (feature.kind() == DungeonFeatureType.STAIR
-                        || feature.kind() == DungeonFeatureType.TRANSITION)
-                        && feature.cells().contains(cell)) {
-                    return feature;
-                }
-            }
-            return null;
-        }
-
-        private static Set<Cell> sameLevelCells(List<DungeonCell> cells, int level) {
-            Set<Cell> result = new LinkedHashSet<>();
-            for (DungeonCell cell : cells == null ? List.<DungeonCell>of() : cells) {
+        private static Set<Cell> sameLevelCells(List<Cell> cells, int level) {
+            Set<Cell> result = new java.util.LinkedHashSet<>();
+            for (Cell cell : cells == null ? List.<Cell>of() : cells) {
                 if (cell != null && cell.level() == level) {
-                    result.add(TravelGeometryProjectionMapper.toCoreCell(cell));
+                    result.add(cell);
                 }
             }
             return Set.copyOf(result);
@@ -242,17 +150,16 @@ public final class TravelSurfaceProjection {
     private static final class TransitionActionProjector {
 
         private static List<TravelActionFacts> describe(
-                DungeonMap dungeonMap,
+                TravelAuthoredSurface authoredSurface,
                 SurfaceScope scope,
                 TravelPositionFacts position
         ) {
             List<TravelActionFacts> result = new ArrayList<>();
-            for (DungeonTransition transition : dungeonMap.connections().transitions()) {
-                DungeonCell anchor = transition.anchor();
-                DungeonCell authoredTile = TravelGeometryProjectionMapper.toWorldspaceCell(position.tile());
+            for (Transition transition : authoredSurface.transitions()) {
+                Cell anchor = transition.anchor();
                 if (anchor == null
-                        || anchor.level() != authoredTile.level()
-                        || !scope.cells().contains(TravelGeometryProjectionMapper.toCoreCell(anchor))) {
+                        || anchor.level() != position.tile().level()
+                        || !scope.cells().contains(anchor)) {
                     continue;
                 }
                 String destinationLabel = destinationLabel(transition.destination());
@@ -265,10 +172,10 @@ public final class TravelSurfaceProjection {
                                 ? transition.label() + " fuehrt zu " + destinationLabel + "."
                                 : transition.description(),
                         new TravelPositionFacts(
-                                dungeonMap.metadata().mapId().value(),
+                                authoredSurface.header().mapId(),
                                 TravelPositionFacts.LocationKind.TRANSITION,
                                 transition.transitionId(),
-                                TravelGeometryProjectionMapper.toCoreCell(anchor),
+                                anchor,
                                 position.heading()),
                         transitionTarget(transition.destination())));
             }
@@ -277,7 +184,7 @@ public final class TravelSurfaceProjection {
         }
 
         private static @Nullable TravelTransitionTarget transitionTarget(
-                @Nullable DungeonTransitionDestination destination
+                @Nullable TransitionDestination destination
         ) {
             if (destination == null) {
                 return null;
@@ -291,7 +198,7 @@ public final class TravelSurfaceProjection {
             return null;
         }
 
-        private static String destinationLabel(DungeonTransitionDestination destination) {
+        private static String destinationLabel(TransitionDestination destination) {
             if (destination == null) {
                 return "";
             }

@@ -15,11 +15,6 @@ final class TravelGeometryProjectionMapper {
         return cell == null ? new Cell(0, 0, 0) : new Cell(cell.q(), cell.r(), cell.level());
     }
 
-    static DungeonCell toWorldspaceCell(@Nullable Cell cell) {
-        Cell safeCell = cell == null ? new Cell(0, 0, 0) : cell;
-        return new DungeonCell(safeCell.q(), safeCell.r(), safeCell.level());
-    }
-
     static Edge toCoreEdge(@Nullable DungeonEdge edge) {
         return edge == null
                 ? new Edge(new Cell(0, 0, 0), new Cell(0, 0, 0))

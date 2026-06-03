@@ -3,10 +3,10 @@ package src.domain.dungeon.model.worldspace.repository;
 import java.util.List;
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
-import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorHandleFacts;
 import src.domain.dungeon.model.worldspace.DungeonCell;
 import src.domain.dungeon.model.worldspace.DungeonDerivedState;
 import src.domain.dungeon.model.worldspace.DungeonEdgeDirection;
+import src.domain.dungeon.model.worldspace.DungeonEditorHandleProjection;
 import src.domain.dungeon.model.worldspace.DungeonMapIdentity;
 
 public interface DungeonAuthoredPublishedStateRepository {
@@ -28,13 +28,13 @@ public interface DungeonAuthoredPublishedStateRepository {
     final class SnapshotPublication {
         private final String mapName;
         private final DungeonDerivedState derived;
-        private final List<DungeonEditorHandleFacts> editorHandles;
+        private final List<DungeonEditorHandleProjection> editorHandles;
         private final long revision;
 
         public SnapshotPublication(
                 String mapName,
                 DungeonDerivedState derived,
-                List<DungeonEditorHandleFacts> editorHandles,
+                List<DungeonEditorHandleProjection> editorHandles,
                 long revision
         ) {
             this.mapName = mapName == null || mapName.isBlank() ? "Dungeon" : mapName;
@@ -51,7 +51,7 @@ public interface DungeonAuthoredPublishedStateRepository {
             return derived;
         }
 
-        public List<DungeonEditorHandleFacts> editorHandles() {
+        public List<DungeonEditorHandleProjection> editorHandles() {
             return editorHandles;
         }
 
