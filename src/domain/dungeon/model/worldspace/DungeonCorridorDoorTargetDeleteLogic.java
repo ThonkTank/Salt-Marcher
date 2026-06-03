@@ -1,24 +1,27 @@
 package src.domain.dungeon.model.worldspace;
 
+import src.domain.dungeon.model.core.structure.corridor.Corridor;
+
 final class DungeonCorridorDoorTargetDeleteLogic {
     private static final long NO_ID = 0L;
     private static final DungeonCorridorDoorEndpointIndexAdapter ENDPOINT_INDEX_ADAPTER =
             new DungeonCorridorDoorEndpointIndexAdapter();
 
-    DungeonCorridor deleteDoor(
+    Corridor deleteDoor(
             DungeonMap dungeonMap,
             DungeonCorridor corridor,
+            Corridor current,
             long topologyRefId,
             long roomId
     ) {
         DungeonCorridorDoorBinding removed = removedDoorBinding(corridor, topologyRefId, roomId);
         if (removed == null) {
-            return corridor;
+            return current;
         }
         DungeonCorridorDoorEndpointIndexAdapter.EndpointIndexes endpointIndexes =
                 ENDPOINT_INDEX_ADAPTER.afterDoorRemoval(dungeonMap, corridor, removed);
-        return corridor.withoutDoorTarget(
-                removed,
+        return current.withoutDoorTarget(
+                removed.toCore(),
                 endpointIndexes.pruneWaypoints(),
                 endpointIndexes.firstEndpointIndex(),
                 endpointIndexes.secondEndpointIndex());

@@ -3,7 +3,6 @@ package src.domain.dungeon.model.core.structure.corridor;
 import java.util.List;
 import java.util.Objects;
 import src.domain.dungeon.model.core.component.CorridorDoorBinding;
-import src.domain.dungeon.model.core.component.CorridorWaypoint;
 
 public record Corridor(
         long corridorId,
@@ -64,12 +63,11 @@ public record Corridor(
     ) {
         Objects.requireNonNull(removedDoor);
         CorridorRoomSet nextRooms = rooms.without(removedDoor.roomId());
-        List<CorridorWaypoint> nextWaypoints = pruneRouteWaypoints
-                ? bindings.waypointsBetweenEndpointIndexes(firstEndpointIndex, secondEndpointIndex)
-                : bindings.waypoints();
-        CorridorBindings nextBindings = bindings
-                .withoutDoorBindingForRoom(removedDoor.roomId())
-                .withWaypoints(nextWaypoints);
+        CorridorBindings nextBindings = bindings.withoutDoorTarget(
+                removedDoor,
+                pruneRouteWaypoints,
+                firstEndpointIndex,
+                secondEndpointIndex);
         return new Corridor(corridorId, mapId, level, nextRooms, nextBindings);
     }
 

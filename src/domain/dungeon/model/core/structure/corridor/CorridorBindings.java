@@ -73,6 +73,19 @@ public record CorridorBindings(
         return new CorridorBindings(waypoints, updated, anchorBindings, anchorRefs);
     }
 
+    public CorridorBindings withoutDoorTarget(
+            CorridorDoorBinding removedDoor,
+            boolean pruneRouteWaypoints,
+            int firstEndpointIndex,
+            int secondEndpointIndex
+    ) {
+        Objects.requireNonNull(removedDoor);
+        List<CorridorWaypoint> nextWaypoints = pruneRouteWaypoints
+                ? waypointsBetweenEndpointIndexes(firstEndpointIndex, secondEndpointIndex)
+                : waypoints;
+        return withoutDoorBindingForRoom(removedDoor.roomId()).withWaypoints(nextWaypoints);
+    }
+
     public CorridorBindings withAnchorBinding(CorridorAnchor binding) {
         Objects.requireNonNull(binding);
         if (binding.anchorId() <= MISSING_ANCHOR_ID) {

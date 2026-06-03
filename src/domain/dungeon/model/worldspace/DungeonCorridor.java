@@ -52,45 +52,8 @@ public record DungeonCorridor(
         return withBindings(bindings.withAnchorRef(ref));
     }
 
-    public DungeonCorridor withoutDoorTarget(
-            DungeonCorridorDoorBinding removedDoor,
-            boolean pruneRouteWaypoints,
-            int firstEndpointIndex,
-            int secondEndpointIndex
-    ) {
-        if (removedDoor == null) {
-            return this;
-        }
-        Corridor updated = DungeonCorridorCoreAdapter.toCore(this).withoutDoorTarget(
-                removedDoor.toCore(),
-                pruneRouteWaypoints,
-                firstEndpointIndex,
-                secondEndpointIndex);
-        return DungeonCorridorCoreAdapter.fromCore(this, updated, null);
-    }
-
-    public DungeonCorridor withoutAnchorTarget(long topologyRefId) {
-        Corridor current = DungeonCorridorCoreAdapter.toCore(this);
-        Corridor updated = current.withoutAnchorTarget(topologyRefId);
-        return updated.equals(current)
-                ? this
-                : DungeonCorridorCoreAdapter.fromCore(this, updated, null);
-    }
-
-    public DungeonCorridor withoutWaypointTarget(int waypointIndex) {
-        Corridor current = DungeonCorridorCoreAdapter.toCore(this);
-        Corridor updated = current.withoutWaypointTarget(waypointIndex);
-        return updated.equals(current)
-                ? this
-                : DungeonCorridorCoreAdapter.fromCore(this, updated, null);
-    }
-
     public DungeonCorridor withBindings(DungeonCorridorBindings nextBindings) {
         return new DungeonCorridor(corridorId, mapId, level, roomIds, nextBindings);
-    }
-
-    public int endpointCount() {
-        return DungeonCorridorCoreAdapter.toCore(this).endpointCount();
     }
 
     private static CorridorBindings coreBindings(DungeonCorridorBindings bindings) {
