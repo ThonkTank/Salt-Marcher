@@ -8,6 +8,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import src.domain.dungeon.model.core.component.CorridorAnchorRef;
 
 final class DungeonCorridorEndpointResolver {
 
@@ -88,7 +89,7 @@ final class DungeonCorridorEndpointResolver {
             DungeonCorridor corridor,
             Map<DungeonTopologyRef, DungeonCorridorAnchorBinding> anchorsByRef
     ) {
-        for (DungeonCorridorAnchorRef anchorRef : corridor.bindings().anchorRefs()) {
+        for (CorridorAnchorRef anchorRef : corridor.bindings().anchorRefs()) {
             CorridorEndpoint endpoint = anchorEndpoint(anchorRef, anchorsByRef);
             if (endpoint != null) {
                 endpoints.add(endpoint);
@@ -97,13 +98,13 @@ final class DungeonCorridorEndpointResolver {
     }
 
     private static @Nullable CorridorEndpoint anchorEndpoint(
-            @Nullable DungeonCorridorAnchorRef anchorRef,
+            @Nullable CorridorAnchorRef anchorRef,
             Map<DungeonTopologyRef, DungeonCorridorAnchorBinding> anchorsByRef
     ) {
         if (anchorRef == null || !anchorRef.present()) {
             return null;
         }
-        DungeonCorridorAnchorBinding anchorBinding = anchorsByRef.get(anchorRef.topologyRef());
+        DungeonCorridorAnchorBinding anchorBinding = anchorsByRef.get(DungeonTopologyRef.corridorAnchor(anchorRef.anchorId()));
         if (anchorBinding == null) {
             return null;
         }

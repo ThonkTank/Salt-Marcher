@@ -144,22 +144,22 @@ public record DungeonMap(
         return null;
     }
 
-    public DungeonMap withMapLocalAuthoredTransitionLink(
-            long sourceMapId,
-            long sourceTransitionId,
-            long targetMapId,
-            long targetTransitionId,
-            boolean bidirectional
-    ) {
-        List<DungeonTransition> nextTransitions = DungeonTransitionCatalogCoreAdapter.withMapLocalAuthoredTransitionLink(
-                connections.transitions(),
-                DungeonTransitionCatalogCoreAdapter.authoredTransitionLink(
-                        sourceMapId,
-                        sourceTransitionId,
-                        targetMapId,
-                        targetTransitionId,
-                        bidirectional));
-        return nextTransitions.equals(connections.transitions()) ? this : withTransitions(nextTransitions);
+    public DungeonMap withTransitionConnections(ConnectionCatalog nextConnections) {
+        if (nextConnections == null
+                || nextConnections.equals(connections)
+                || !nextConnections.corridors().equals(connections.corridors())
+                || !nextConnections.stairs().equals(connections.stairs())) {
+            return this;
+        }
+        return new DungeonMap(
+                metadata,
+                topology,
+                null,
+                spaces,
+                rooms,
+                nextConnections,
+                features,
+                revision + 1L);
     }
 
     public DungeonMap deleteTransition(long transitionId) {
@@ -169,18 +169,6 @@ public record DungeonMap(
         List<DungeonTransition> nextTransitions = DungeonTransitionCatalogCoreAdapter.withoutTransition(
                 connections.transitions(),
                 transitionId);
-        return new DungeonMap(
-                metadata,
-                topology,
-                null,
-                spaces,
-                rooms,
-                new ConnectionCatalog(connections.corridors(), connections.stairs(), nextTransitions),
-                features,
-                revision + 1L);
-    }
-
-    private DungeonMap withTransitions(List<DungeonTransition> nextTransitions) {
         return new DungeonMap(
                 metadata,
                 topology,

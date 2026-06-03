@@ -6,8 +6,6 @@ import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.structure.transition.Transition;
 import src.domain.dungeon.model.core.structure.transition.TransitionCatalog;
 import src.domain.dungeon.model.core.structure.transition.TransitionCatalog.AuthoredTransitionLink;
-import src.domain.dungeon.model.core.structure.transition.TransitionCatalog.TransitionEndpoint;
-import src.domain.dungeon.model.core.structure.transition.TransitionCatalog.TransitionLinkDirectionality;
 
 final class DungeonTransitionCatalogCoreAdapter {
 
@@ -51,19 +49,6 @@ final class DungeonTransitionCatalogCoreAdapter {
             AuthoredTransitionLink link
     ) {
         return fromCoreCatalog(toCoreCatalog(transitions).withMapLocalAuthoredTransitionLink(link));
-    }
-
-    static AuthoredTransitionLink authoredTransitionLink(
-            long sourceMapId,
-            long sourceTransitionId,
-            long targetMapId,
-            long targetTransitionId,
-            boolean bidirectional
-    ) {
-        return new AuthoredTransitionLink(
-                new TransitionEndpoint(sourceMapId, sourceTransitionId),
-                new TransitionEndpoint(targetMapId, targetTransitionId),
-                bidirectional ? TransitionLinkDirectionality.BIDIRECTIONAL : TransitionLinkDirectionality.ONE_WAY);
     }
 
     private static TransitionCatalog toCoreCatalog(List<DungeonTransition> transitions) {

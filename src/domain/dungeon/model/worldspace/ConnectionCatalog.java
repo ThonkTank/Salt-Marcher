@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import org.jspecify.annotations.Nullable;
+import src.domain.dungeon.model.core.structure.transition.TransitionCatalog.AuthoredTransitionLink;
 
 /**
  * Authored map connections loaded from dungeon write-model truth.
@@ -223,6 +224,13 @@ public record ConnectionCatalog(
                 anchor,
                 transitionDestination(dungeonMapDestination, destinationMapId, destinationTileId, destinationTransitionId));
         return new ConnectionCatalog(corridors, stairs, nextTransitions);
+    }
+
+    public ConnectionCatalog withMapLocalAuthoredTransitionLink(AuthoredTransitionLink link) {
+        List<DungeonTransition> nextTransitions = DungeonTransitionCatalogCoreAdapter.withMapLocalAuthoredTransitionLink(
+                transitions,
+                link);
+        return nextTransitions.equals(transitions) ? this : new ConnectionCatalog(corridors, stairs, nextTransitions);
     }
 
     private boolean corridorBoundStairExists(long corridorId) {

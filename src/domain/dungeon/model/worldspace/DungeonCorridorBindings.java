@@ -1,6 +1,7 @@
 package src.domain.dungeon.model.worldspace;
 
 import java.util.List;
+import src.domain.dungeon.model.core.component.CorridorAnchorRef;
 import src.domain.dungeon.model.core.component.CorridorWaypoint;
 import src.domain.dungeon.model.core.structure.corridor.CorridorBindings;
 import src.domain.dungeon.model.core.structure.corridor.CorridorRoutePlan;
@@ -9,7 +10,7 @@ public record DungeonCorridorBindings(
         List<CorridorWaypoint> waypoints,
         List<DungeonCorridorDoorBinding> doorBindings,
         List<DungeonCorridorAnchorBinding> anchorBindings,
-        List<DungeonCorridorAnchorRef> anchorRefs
+        List<CorridorAnchorRef> anchorRefs
 ) {
 
     public DungeonCorridorBindings {
@@ -50,13 +51,13 @@ public record DungeonCorridorBindings(
                 anchorRefs);
     }
 
-    public DungeonCorridorBindings withAnchorRef(DungeonCorridorAnchorRef ref) {
+    public DungeonCorridorBindings withAnchorRef(CorridorAnchorRef ref) {
         if (ref == null || !ref.present()) {
             return this;
         }
-        List<DungeonCorridorAnchorRef> updated = new java.util.ArrayList<>();
-        for (DungeonCorridorAnchorRef existing : anchorRefs) {
-            if (existing != null && !existing.topologyRef().equals(ref.topologyRef())) {
+        List<CorridorAnchorRef> updated = new java.util.ArrayList<>();
+        for (CorridorAnchorRef existing : anchorRefs) {
+            if (existing != null && existing.anchorId() != ref.anchorId()) {
                 updated.add(existing);
             }
         }
@@ -65,17 +66,13 @@ public record DungeonCorridorBindings(
                 waypoints,
                 currentCore.doorBindings(),
                 currentCore.anchorBindings(),
-                DungeonCorridorAnchorTopologyRefAdapter.coreAnchorRefs(updated))
-                .withAnchorRef(ref.toCore());
-        updated.add(ref);
+                updated)
+                .withAnchorRef(ref);
         return new DungeonCorridorBindings(
                 waypoints,
                 doorBindings,
                 anchorBindings,
-                DungeonCorridorAnchorTopologyRefAdapter.worldspaceAnchorRefs(
-                        updatedCore.anchorRefs(),
-                        updated,
-                        List.of()));
+                updatedCore.anchorRefs());
     }
 
 

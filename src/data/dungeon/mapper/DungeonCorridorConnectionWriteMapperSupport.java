@@ -7,10 +7,10 @@ import src.data.dungeon.model.DungeonCorridorAnchorRefRecord;
 import src.data.dungeon.model.DungeonCorridorDoorBindingRecord;
 import src.data.dungeon.model.DungeonCorridorRecord;
 import src.data.dungeon.model.DungeonCorridorWaypointRecord;
+import src.domain.dungeon.model.core.component.CorridorAnchorRef;
 import src.domain.dungeon.model.core.component.CorridorWaypoint;
 import src.domain.dungeon.model.worldspace.DungeonCorridor;
 import src.domain.dungeon.model.worldspace.DungeonCorridorAnchorBinding;
-import src.domain.dungeon.model.worldspace.DungeonCorridorAnchorRef;
 import src.domain.dungeon.model.worldspace.DungeonCorridorDoorBinding;
 
 final class DungeonCorridorConnectionWriteMapperSupport {
@@ -91,14 +91,14 @@ final class DungeonCorridorConnectionWriteMapperSupport {
 
     private static List<DungeonCorridorAnchorRefRecord> toAnchorRefRecords(
             long corridorId,
-            List<DungeonCorridorAnchorRef> anchorRefs
+            List<CorridorAnchorRef> anchorRefs
     ) {
         List<DungeonCorridorAnchorRefRecord> result = new ArrayList<>();
-        for (DungeonCorridorAnchorRef ref : anchorRefs == null ? List.<DungeonCorridorAnchorRef>of() : anchorRefs) {
+        for (CorridorAnchorRef ref : anchorRefs == null ? List.<CorridorAnchorRef>of() : anchorRefs) {
             result.add(new DungeonCorridorAnchorRefRecord(
                     corridorId,
                     ref.hostCorridorId(),
-                    ref.topologyRef().present() ? ref.topologyRef().id() : null));
+                    ref.present() ? ref.anchorId() : null));
         }
         return List.copyOf(result);
     }

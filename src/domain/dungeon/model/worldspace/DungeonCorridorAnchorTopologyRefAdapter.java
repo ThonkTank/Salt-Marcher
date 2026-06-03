@@ -21,16 +21,6 @@ final class DungeonCorridorAnchorTopologyRefAdapter {
         return List.copyOf(result);
     }
 
-    static List<CorridorAnchorRef> coreAnchorRefs(List<DungeonCorridorAnchorRef> anchorRefs) {
-        List<CorridorAnchorRef> result = new ArrayList<>();
-        for (DungeonCorridorAnchorRef ref : anchorRefs == null ? List.<DungeonCorridorAnchorRef>of() : anchorRefs) {
-            if (ref != null && ref.present()) {
-                result.add(ref.toCore());
-            }
-        }
-        return List.copyOf(result);
-    }
-
     static List<DungeonCorridorAnchorBinding> worldspaceAnchorBindings(
             List<CorridorAnchor> coreAnchors,
             List<DungeonCorridorAnchorBinding> existingBindings
@@ -46,25 +36,25 @@ final class DungeonCorridorAnchorTopologyRefAdapter {
         return List.copyOf(result);
     }
 
-    static List<DungeonCorridorAnchorRef> worldspaceAnchorRefs(
+    static List<CorridorAnchorRef> routeAnchorRefs(
             List<CorridorAnchorRef> coreRefs,
-            List<DungeonCorridorAnchorRef> existingRefs,
+            List<CorridorAnchorRef> existingRefs,
             List<DungeonCorridorAnchorBinding> routeAnchors
     ) {
-        List<DungeonCorridorAnchorRef> remaining = nonNullAnchorRefs(existingRefs);
-        List<DungeonCorridorAnchorRef> result = new ArrayList<>();
+        List<CorridorAnchorRef> remaining = nonNullAnchorRefs(existingRefs);
+        List<CorridorAnchorRef> result = new ArrayList<>();
         for (CorridorAnchorRef coreRef : coreRefs) {
-            addIfNewTopologyRef(result, matchingExistingRef(coreRef, remaining, routeAnchors));
+            addIfNewAnchorId(result, matchingExistingRef(coreRef, remaining, routeAnchors));
         }
         return List.copyOf(result);
     }
 
-    private static void addIfNewTopologyRef(
-            List<DungeonCorridorAnchorRef> result,
-            DungeonCorridorAnchorRef candidate
+    private static void addIfNewAnchorId(
+            List<CorridorAnchorRef> result,
+            CorridorAnchorRef candidate
     ) {
-        for (DungeonCorridorAnchorRef existing : result) {
-            if (existing.topologyRef().equals(candidate.topologyRef())) {
+        for (CorridorAnchorRef existing : result) {
+            if (existing.anchorId() == candidate.anchorId()) {
                 return;
             }
         }
@@ -97,24 +87,22 @@ final class DungeonCorridorAnchorTopologyRefAdapter {
         return null;
     }
 
-    private static DungeonCorridorAnchorRef matchingExistingRef(
+    private static CorridorAnchorRef matchingExistingRef(
             CorridorAnchorRef coreRef,
-            List<DungeonCorridorAnchorRef> remaining,
+            List<CorridorAnchorRef> remaining,
             List<DungeonCorridorAnchorBinding> routeAnchors
     ) {
         for (int index = 0; index < remaining.size(); index++) {
-            DungeonCorridorAnchorRef candidate = remaining.get(index);
-            if (candidate.toCore().equals(coreRef)) {
+            CorridorAnchorRef candidate = remaining.get(index);
+            if (candidate.equals(coreRef)) {
                 return remaining.remove(index);
             }
         }
         DungeonCorridorAnchorBinding routeAnchor = routeAnchorFor(coreRef, routeAnchors);
         if (routeAnchor != null) {
-            return new DungeonCorridorAnchorRef(routeAnchor.hostCorridorId(), routeAnchor.topologyRef());
+            return new CorridorAnchorRef(routeAnchor.hostCorridorId(), routeAnchor.topologyRef().id());
         }
-        return new DungeonCorridorAnchorRef(
-                coreRef.hostCorridorId(),
-                DungeonTopologyRef.corridorAnchor(coreRef.anchorId()));
+        return coreRef;
     }
 
     private static DungeonCorridorAnchorBinding routeAnchorFor(
@@ -132,12 +120,11 @@ final class DungeonCorridorAnchorTopologyRefAdapter {
         return null;
     }
 
-    private static List<DungeonCorridorAnchorRef> nonNullAnchorRefs(
-            List<DungeonCorridorAnchorRef> existingRefs
+    private static List<CorridorAnchorRef> nonNullAnchorRefs(
+            List<CorridorAnchorRef> existingRefs
     ) {
-        List<DungeonCorridorAnchorRef> remaining = new ArrayList<>();
-        for (DungeonCorridorAnchorRef ref
-                : existingRefs == null ? List.<DungeonCorridorAnchorRef>of() : existingRefs) {
+        List<CorridorAnchorRef> remaining = new ArrayList<>();
+        for (CorridorAnchorRef ref : existingRefs == null ? List.<CorridorAnchorRef>of() : existingRefs) {
             if (ref != null) {
                 remaining.add(ref);
             }

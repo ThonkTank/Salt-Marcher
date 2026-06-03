@@ -10,7 +10,6 @@ import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.Direction;
 import src.domain.dungeon.model.worldspace.DungeonCell;
 import src.domain.dungeon.model.worldspace.DungeonCorridorAnchorBinding;
-import src.domain.dungeon.model.worldspace.DungeonCorridorAnchorRef;
 import src.domain.dungeon.model.worldspace.DungeonCorridorDoorBinding;
 import src.domain.dungeon.model.worldspace.DungeonEdgeDirection;
 import src.domain.dungeon.model.worldspace.DungeonStairExit;
@@ -41,7 +40,7 @@ final class DungeonComponentInvariantHarness {
                 results,
                 OWNER,
                 "DGI-CMP-003",
-                "Corridor binding components keep local door, waypoint, and anchor-ref values plus transitional adapter compatibility");
+                "Corridor binding components keep local door, waypoint, and anchor-ref values plus adapter compatibility");
     }
 
     private static void assertStairExitInvariants() {
@@ -191,14 +190,6 @@ final class DungeonComponentInvariantHarness {
         assertEquals(new DungeonCell(2, 3, 1), retainedDoor.relativeCell(), "adapter door relative cell");
         assertEquals(DungeonEdgeDirection.WEST, retainedDoor.direction(), "adapter door direction");
         assertTrue(retainedDoor.hasTopologyRef(), "adapter door topology ref present");
-
-        DungeonCorridorAnchorRef defaultedRef = new DungeonCorridorAnchorRef(-3L, null);
-        assertEquals(0L, defaultedRef.hostCorridorId(), "adapter anchor ref host lower bound");
-        assertEquals(DungeonTopologyRef.empty(), defaultedRef.topologyRef(), "adapter anchor ref null topology");
-        assertFalse(defaultedRef.present(), "adapter anchor ref missing topology");
-        DungeonCorridorAnchorRef retainedRef = new DungeonCorridorAnchorRef(5L, DungeonTopologyRef.corridorAnchor(6L));
-        assertEquals(5L, retainedRef.hostCorridorId(), "adapter anchor ref host preservation");
-        assertTrue(retainedRef.present(), "adapter anchor ref present");
 
         CorridorWaypoint defaultedWaypoint = corridorWaypoint(-9L, null, 2);
         assertEquals(0L, defaultedWaypoint.clusterId(), "adapter waypoint cluster lower bound");

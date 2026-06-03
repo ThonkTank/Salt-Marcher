@@ -4,6 +4,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import src.domain.dungeon.model.core.component.CorridorAnchorRef;
 import src.domain.dungeon.model.worldspace.DungeonCorridorEndpointResolutionLogic.ResolvedCorridorEndpoint;
 
 /**
@@ -30,7 +31,7 @@ public final class DungeonCorridorSemanticsRules {
         for (DungeonCorridorDoorBinding binding : corridor.bindings().doorBindings()) {
             result.add(CorridorEndpointSemantics.forDoor(binding));
         }
-        for (DungeonCorridorAnchorRef ref : corridor.bindings().anchorRefs()) {
+        for (CorridorAnchorRef ref : corridor.bindings().anchorRefs()) {
             if (ref != null && ref.present()) {
                 result.add(CorridorEndpointSemantics.forAnchor(ref));
             }
@@ -90,7 +91,7 @@ public final class DungeonCorridorSemanticsRules {
                     DungeonTopologyRef.empty());
         }
 
-        private static CorridorEndpointSemantics forAnchor(DungeonCorridorAnchorRef ref) {
+        private static CorridorEndpointSemantics forAnchor(CorridorAnchorRef ref) {
             return new CorridorEndpointSemantics(
                     ANCHOR,
                     0L,
@@ -98,7 +99,7 @@ public final class DungeonCorridorSemanticsRules {
                     emptyCell(),
                     DungeonEdgeDirection.NORTH,
                     ref.hostCorridorId(),
-                    ref.topologyRef());
+                    DungeonTopologyRef.corridorAnchor(ref.anchorId()));
         }
 
         private static DungeonCell emptyCell() {

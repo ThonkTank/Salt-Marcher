@@ -15,7 +15,7 @@ final class DungeonCorridorBindingsCoreAdapter {
                 source.waypoints(),
                 coreDoorBindings(source.doorBindings()),
                 DungeonCorridorAnchorTopologyRefAdapter.coreAnchorBindings(source.anchorBindings()),
-                DungeonCorridorAnchorTopologyRefAdapter.coreAnchorRefs(source.anchorRefs()));
+                source.anchorRefs());
     }
 
     static DungeonCorridorBindings fromCore(
@@ -29,10 +29,7 @@ final class DungeonCorridorBindingsCoreAdapter {
                 DungeonCorridorAnchorTopologyRefAdapter.worldspaceAnchorBindings(
                         coreBindings.anchorBindings(),
                         source.anchorBindings()),
-                DungeonCorridorAnchorTopologyRefAdapter.worldspaceAnchorRefs(
-                        coreBindings.anchorRefs(),
-                        source.anchorRefs(),
-                        List.of()));
+                coreBindings.anchorRefs());
     }
 
     static DungeonCorridorBindings fromCoreRoutePlan(
@@ -44,7 +41,7 @@ final class DungeonCorridorBindingsCoreAdapter {
                 planned.waypoints(),
                 source.doorBindings(),
                 source.anchorBindings(),
-                DungeonCorridorAnchorTopologyRefAdapter.worldspaceAnchorRefs(
+                DungeonCorridorAnchorTopologyRefAdapter.routeAnchorRefs(
                         planned.anchorRefs(),
                         source.anchorRefs(),
                         routeAnchors));

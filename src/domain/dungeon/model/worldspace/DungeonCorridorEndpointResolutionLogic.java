@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import org.jspecify.annotations.Nullable;
+import src.domain.dungeon.model.core.component.CorridorAnchorRef;
 
 /**
  * Owns authored corridor endpoint resolution and materialization.
@@ -178,14 +179,17 @@ public final class DungeonCorridorEndpointResolutionLogic {
     public record ResolvedCorridorEndpoint(
             @Nullable Long roomId,
             @Nullable DungeonCorridorDoorBinding doorBinding,
-            @Nullable DungeonCorridorAnchorRef anchorRef
+            @Nullable CorridorAnchorRef anchorRef
     ) {
         static ResolvedCorridorEndpoint forDoor(DungeonCorridorDoorBinding binding) {
             return new ResolvedCorridorEndpoint(binding.roomId(), binding, null);
         }
 
         static ResolvedCorridorEndpoint forAnchor(DungeonCorridorAnchorBinding binding) {
-            return new ResolvedCorridorEndpoint(null, null, new DungeonCorridorAnchorRef(binding.hostCorridorId(), binding.topologyRef()));
+            return new ResolvedCorridorEndpoint(
+                    null,
+                    null,
+                    new CorridorAnchorRef(binding.hostCorridorId(), binding.topologyRef().id()));
         }
 
         public DungeonCorridor applyTo(DungeonCorridor corridor) {

@@ -207,10 +207,8 @@ final class DungeonStructureInvariantHarness {
         assertEquals(List.of(replacement), replaced.anchorBindings(),
                 "adapter anchor replacement follows topology ref when anchor id differs");
 
-        src.domain.dungeon.model.worldspace.DungeonCorridorAnchorRef firstRef =
-                new src.domain.dungeon.model.worldspace.DungeonCorridorAnchorRef(12L, stableRef);
-        src.domain.dungeon.model.worldspace.DungeonCorridorAnchorRef replacementRef =
-                new src.domain.dungeon.model.worldspace.DungeonCorridorAnchorRef(20L, stableRef);
+        CorridorAnchorRef firstRef = new CorridorAnchorRef(12L, stableRef.id());
+        CorridorAnchorRef replacementRef = new CorridorAnchorRef(20L, stableRef.id());
         DungeonCorridorBindings refBindings =
                 new DungeonCorridorBindings(List.of(), List.of(), List.of(), List.of(firstRef));
         assertEquals(List.of(replacementRef), refBindings.withAnchorRef(replacementRef).anchorRefs(),
@@ -255,18 +253,18 @@ final class DungeonStructureInvariantHarness {
                         10L,
                         new Cell(0, 0, 0)),
                 List.of(splitAnchor));
-        assertEquals(List.of(new src.domain.dungeon.model.worldspace.DungeonCorridorAnchorRef(40L, splitAnchorRef)),
+        assertEquals(List.of(new CorridorAnchorRef(40L, splitAnchorRef.id())),
                 splitBindings.anchorRefs(),
                 "adapter route split preserves selected anchor topology ref");
         DungeonCorridorBindings existingCustomRef = DungeonCorridorBindings.empty().withAnchorRef(
-                new src.domain.dungeon.model.worldspace.DungeonCorridorAnchorRef(40L, splitAnchorRef));
+                new CorridorAnchorRef(40L, splitAnchorRef.id()));
         DungeonCorridorBindings deduplicatedSplitBindings = existingCustomRef.withInteriorRouteAnchors(
                 new CorridorRoutePlan(
                         List.of(new Cell(0, 0, 0), new Cell(1, 0, 0), new Cell(2, 0, 0)),
                         10L,
                         new Cell(0, 0, 0)),
                 List.of(splitAnchor));
-        assertEquals(List.of(new src.domain.dungeon.model.worldspace.DungeonCorridorAnchorRef(40L, splitAnchorRef)),
+        assertEquals(List.of(new CorridorAnchorRef(40L, splitAnchorRef.id())),
                 deduplicatedSplitBindings.anchorRefs(),
                 "adapter route split deduplicates existing custom topology ref");
     }
@@ -339,7 +337,7 @@ final class DungeonStructureInvariantHarness {
                         0)),
                 List.of(),
                 List.of(),
-                List.of(new src.domain.dungeon.model.worldspace.DungeonCorridorAnchorRef(12L, customAnchorRef)));
+                List.of(new CorridorAnchorRef(12L, customAnchorRef.id())));
         DungeonCorridor corridor = new DungeonCorridor(3L, 9L, 0, List.of(), bindings);
         DungeonCorridor withoutAnchor = corridor.withoutAnchorTarget(customAnchorRef.id());
         assertEquals(List.of(), withoutAnchor.bindings().anchorRefs(),
@@ -450,9 +448,7 @@ final class DungeonStructureInvariantHarness {
                         List.of(),
                         List.of(),
                         List.of(),
-                        List.of(new src.domain.dungeon.model.worldspace.DungeonCorridorAnchorRef(
-                                10L,
-                                stableRef))));
+                        List.of(new CorridorAnchorRef(10L, stableRef.id()))));
         src.domain.dungeon.model.worldspace.DungeonCorridorAnchorPruningRules pruningRules =
                 new src.domain.dungeon.model.worldspace.DungeonCorridorAnchorPruningRules();
 
@@ -619,7 +615,8 @@ final class DungeonStructureInvariantHarness {
         assertEquals(List.of(1L, 2L, 3L), worldspaceTransitionIds(map.deleteTransition(4L).connections().transitions()),
                 "worldspace transition adapter removes deletable transition through core catalog");
         src.domain.dungeon.model.worldspace.DungeonMap linkedMap =
-                map.withMapLocalAuthoredTransitionLink(4L, 1L, 4L, 3L, true);
+                map.withTransitionConnections(map.connections().withMapLocalAuthoredTransitionLink(
+                        bidirectionalLink(4L, 1L, 4L, 3L)));
         assertEquals(src.domain.dungeon.model.worldspace.DungeonTransitionDestination.dungeonMapDestination(4L, 3L),
                 linkedMap
                         .connections()

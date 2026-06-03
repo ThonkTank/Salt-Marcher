@@ -7,12 +7,12 @@ import src.data.dungeon.model.DungeonCorridorAnchorRefRecord;
 import src.data.dungeon.model.DungeonCorridorDoorBindingRecord;
 import src.data.dungeon.model.DungeonCorridorRecord;
 import src.data.dungeon.model.DungeonCorridorWaypointRecord;
+import src.domain.dungeon.model.core.component.CorridorAnchorRef;
 import src.domain.dungeon.model.core.component.CorridorWaypoint;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.worldspace.DungeonCorridor;
 import src.domain.dungeon.model.worldspace.DungeonCell;
 import src.domain.dungeon.model.worldspace.DungeonCorridorAnchorBinding;
-import src.domain.dungeon.model.worldspace.DungeonCorridorAnchorRef;
 import src.domain.dungeon.model.worldspace.DungeonCorridorBindings;
 import src.domain.dungeon.model.worldspace.DungeonCorridorDoorBinding;
 import src.domain.dungeon.model.worldspace.DungeonEdgeDirection;
@@ -88,18 +88,16 @@ final class DungeonCorridorConnectionReadMapperSupport {
         return List.copyOf(result);
     }
 
-    private static List<DungeonCorridorAnchorRef> toAnchorRefs(List<DungeonCorridorAnchorRefRecord> records) {
-        List<DungeonCorridorAnchorRef> result = new ArrayList<>();
+    private static List<CorridorAnchorRef> toAnchorRefs(List<DungeonCorridorAnchorRefRecord> records) {
+        List<CorridorAnchorRef> result = new ArrayList<>();
         for (DungeonCorridorAnchorRefRecord record
                 : records == null ? List.<DungeonCorridorAnchorRefRecord>of() : records) {
             if (record.topologyElementId() == null) {
                 continue;
             }
-            result.add(new DungeonCorridorAnchorRef(
+            result.add(new CorridorAnchorRef(
                     record.hostCorridorId(),
-                    new src.domain.dungeon.model.worldspace.DungeonTopologyRef(
-                            src.domain.dungeon.model.worldspace.DungeonTopologyElementKind.CORRIDOR_ANCHOR,
-                            record.topologyElementId())));
+                    record.topologyElementId()));
         }
         return List.copyOf(result);
     }
