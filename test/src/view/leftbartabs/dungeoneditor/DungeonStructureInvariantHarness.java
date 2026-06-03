@@ -11,6 +11,7 @@ import src.domain.dungeon.model.core.component.StairExit;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.Direction;
 import src.domain.dungeon.model.core.structure.corridor.Corridor;
+import src.domain.dungeon.model.core.structure.corridor.CorridorAnchorSnap;
 import src.domain.dungeon.model.core.structure.corridor.CorridorBindings;
 import src.domain.dungeon.model.core.structure.corridor.CorridorEndpointBinding;
 import src.domain.dungeon.model.core.structure.corridor.CorridorNetwork;
@@ -47,7 +48,8 @@ final class DungeonStructureInvariantHarness {
                 "DGI-STR-001",
                 "Corridor structure owns room-set normalization/removal, binding container rules, "
                         + "door removal by room, anchor binding/ref replacement by local anchor id, "
-                        + "and target-local waypoint or anchor-ref removal rules");
+                        + "anchor snapping to the nearest host cell with level/row/column tie-breaks "
+                        + "and fallback behavior, plus target-local waypoint or anchor-ref removal rules");
         assertWorldspaceAdapterPreservesTopologyRefIdentity();
         DungeonEditorBehaviorHarnessSupport.recordModelInvariant(
                 results,
@@ -150,6 +152,34 @@ final class DungeonStructureInvariantHarness {
         assertThrowsIllegalArgument(
                 () -> new ResolvedCorridorEndpoint(null, worldspaceDoor, CorridorEndpointBinding.forAnchor(firstRef)),
                 "resolved corridor endpoint rejects mismatched worldspace and core endpoint shape");
+        assertEquals(
+                new Cell(1, 2, 1),
+                CorridorAnchorSnap.nearestHostCell(
+                        new Cell(2, 2, 1),
+                        List.of(new Cell(0, 2, 1), new Cell(1, 2, 1))),
+                "corridor anchor snap selects nearest host cell");
+        assertEquals(
+                new Cell(2, 2, 0),
+                CorridorAnchorSnap.nearestHostCell(
+                        new Cell(2, 2, 1),
+                        List.of(new Cell(2, 2, 2), new Cell(2, 2, 0))),
+                "corridor anchor snap breaks distance ties by level");
+        assertEquals(
+                new Cell(2, 1, 1),
+                CorridorAnchorSnap.nearestHostCell(
+                        new Cell(2, 2, 1),
+                        List.of(new Cell(2, 3, 1), new Cell(2, 1, 1))),
+                "corridor anchor snap breaks distance ties by row");
+        assertEquals(
+                new Cell(1, 2, 1),
+                CorridorAnchorSnap.nearestHostCell(
+                        new Cell(2, 2, 1),
+                        List.of(new Cell(3, 2, 1), new Cell(1, 2, 1))),
+                "corridor anchor snap breaks distance ties by column");
+        assertEquals(
+                new Cell(0, 0, 0),
+                CorridorAnchorSnap.nearestHostCell(null, List.of()),
+                "corridor anchor snap keeps missing desired cell at origin");
         assertEquals(List.of(firstRef), withAnchors.withoutAnchorRef(5L).anchorRefs(), "anchor ref delete by id");
         assertEquals(List.of(), withAnchors.withoutAnchorRefAndRouteWaypoints(5L).waypoints(),
                 "anchor target delete clears route waypoints");

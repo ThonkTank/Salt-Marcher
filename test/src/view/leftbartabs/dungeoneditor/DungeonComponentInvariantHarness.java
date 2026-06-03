@@ -189,7 +189,7 @@ final class DungeonComponentInvariantHarness {
         assertEquals(14L, retainedDoor.clusterId(), "adapter door cluster id preservation");
         assertEquals(new DungeonCell(2, 3, 1), retainedDoor.relativeCell(), "adapter door relative cell");
         assertEquals(DungeonEdgeDirection.WEST, retainedDoor.direction(), "adapter door direction");
-        assertTrue(retainedDoor.hasTopologyRef(), "adapter door topology ref present");
+        assertTrue(retainedDoor.topologyRef().present(), "adapter door topology ref present");
 
         CorridorWaypoint defaultedWaypoint = corridorWaypoint(-9L, null, 2);
         assertEquals(0L, defaultedWaypoint.clusterId(), "adapter waypoint cluster lower bound");

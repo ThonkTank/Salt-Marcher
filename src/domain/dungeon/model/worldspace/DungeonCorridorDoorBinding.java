@@ -25,10 +25,6 @@ public record DungeonCorridorDoorBinding(
         topologyRef = topologyRef == null ? DungeonTopologyRef.empty() : topologyRef;
     }
 
-    public boolean hasTopologyRef() {
-        return topologyRef.present();
-    }
-
     CorridorDoorBinding toCore() {
         return new CorridorDoorBinding(roomId, clusterId, relativeCell.geometry(), direction.geometry());
     }

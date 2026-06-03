@@ -5,6 +5,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import src.domain.dungeon.model.core.geometry.Cell;
+import src.domain.dungeon.model.core.structure.corridor.CorridorAnchorSnap;
 
 /**
  * Owns normalized corridor-connection rebuilding for authored mutations.
@@ -55,16 +57,19 @@ public final class DungeonCorridorConnectionNormalizationLogic {
     }
 
     DungeonCell snapToHostCorridorCell(DungeonCell desired, List<DungeonCell> candidates) {
-        if (desired == null || candidates == null || candidates.isEmpty()) {
-            return desired == null ? new DungeonCell(0, 0, 0) : desired;
-        }
-        DungeonCell result = desired;
-        for (DungeonCell candidate : candidates) {
-            if (candidate != null && betterSnapCandidate(candidate, result, desired)) {
-                result = candidate;
+        return DungeonCell.fromGeometry(CorridorAnchorSnap.nearestHostCell(
+                desired == null ? null : desired.geometry(),
+                coreCells(candidates)));
+    }
+
+    private static List<Cell> coreCells(List<DungeonCell> cells) {
+        List<Cell> result = new ArrayList<>();
+        for (DungeonCell cell : cells == null ? List.<DungeonCell>of() : cells) {
+            if (cell != null) {
+                result.add(cell.geometry());
             }
         }
-        return result;
+        return List.copyOf(result);
     }
 
     private List<DungeonCorridor> snapOwnedAnchors(DungeonMap dungeonMap, List<DungeonCorridor> corridors) {
@@ -116,25 +121,4 @@ public final class DungeonCorridorConnectionNormalizationLogic {
         return Map.copyOf(result);
     }
 
-    private static int manhattan(DungeonCell left, DungeonCell right) {
-        return Math.abs(left.q() - right.q())
-                + Math.abs(left.r() - right.r())
-                + Math.abs(left.level() - right.level());
-    }
-
-    private static boolean betterSnapCandidate(DungeonCell candidate, DungeonCell current, DungeonCell desired) {
-        int distanceComparison = Integer.compare(manhattan(desired, candidate), manhattan(desired, current));
-        if (distanceComparison != 0) {
-            return distanceComparison < 0;
-        }
-        int levelComparison = Integer.compare(candidate.level(), current.level());
-        if (levelComparison != 0) {
-            return levelComparison < 0;
-        }
-        int rowComparison = Integer.compare(candidate.r(), current.r());
-        if (rowComparison != 0) {
-            return rowComparison < 0;
-        }
-        return candidate.q() < current.q();
-    }
 }

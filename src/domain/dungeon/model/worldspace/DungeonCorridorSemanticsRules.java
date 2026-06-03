@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import src.domain.dungeon.model.core.component.CorridorAnchorRef;
+import src.domain.dungeon.model.core.structure.corridor.CorridorEndpointSemantics;
 import src.domain.dungeon.model.worldspace.DungeonCorridorEndpointResolutionLogic.ResolvedCorridorEndpoint;
 
 /**
@@ -29,7 +30,7 @@ public final class DungeonCorridorSemanticsRules {
     private static Set<CorridorEndpointSemantics> explicitEndpointSemantics(DungeonCorridor corridor) {
         Set<CorridorEndpointSemantics> result = new LinkedHashSet<>();
         for (DungeonCorridorDoorBinding binding : corridor.bindings().doorBindings()) {
-            result.add(CorridorEndpointSemantics.forDoor(binding));
+            result.add(doorSemantics(binding));
         }
         for (CorridorAnchorRef ref : corridor.bindings().anchorRefs()) {
             if (ref != null && ref.present()) {
@@ -42,7 +43,7 @@ public final class DungeonCorridorSemanticsRules {
     private static CorridorEndpointSemantics semanticsOf(ResolvedCorridorEndpoint endpoint) {
         Objects.requireNonNull(endpoint, "endpoint");
         if (endpoint.doorBinding() != null) {
-            return CorridorEndpointSemantics.forDoor(endpoint.doorBinding());
+            return doorSemantics(endpoint.doorBinding());
         }
         if (endpoint.anchorRef() != null) {
             return CorridorEndpointSemantics.forAnchor(endpoint.anchorRef());
@@ -50,60 +51,13 @@ public final class DungeonCorridorSemanticsRules {
         throw new IllegalArgumentException("resolved endpoint must expose door or anchor semantics");
     }
 
-    private record CorridorEndpointSemantics(
-            String kind,
-            long roomId,
-            long clusterId,
-            DungeonCell relativeCell,
-            DungeonEdgeDirection direction,
-            long hostCorridorId,
-            DungeonTopologyRef topologyRef
-    ) {
-        private static final String DOOR_REF = "DOOR_REF";
-        private static final String DOOR_LOCATION = "DOOR_LOCATION";
-        private static final String ANCHOR = "ANCHOR";
+    private static CorridorEndpointSemantics doorSemantics(DungeonCorridorDoorBinding binding) {
+        return isDoorTopologyRef(binding.topologyRef())
+                ? CorridorEndpointSemantics.forStableDoor(binding.topologyRef().id())
+                : CorridorEndpointSemantics.forDoor(binding.toCore());
+    }
 
-        private CorridorEndpointSemantics {
-            kind = kind == null ? "" : kind;
-            relativeCell = relativeCell == null ? new DungeonCell(0, 0, 0) : relativeCell;
-            direction = direction == null ? DungeonEdgeDirection.NORTH : direction;
-            topologyRef = topologyRef == null ? DungeonTopologyRef.empty() : topologyRef;
-        }
-
-        private static CorridorEndpointSemantics forDoor(DungeonCorridorDoorBinding binding) {
-            if (binding.hasTopologyRef()) {
-                return new CorridorEndpointSemantics(
-                        DOOR_REF,
-                        0L,
-                        0L,
-                        emptyCell(),
-                        DungeonEdgeDirection.NORTH,
-                        0L,
-                        binding.topologyRef());
-            }
-            return new CorridorEndpointSemantics(
-                    DOOR_LOCATION,
-                    binding.roomId(),
-                    binding.clusterId(),
-                    binding.relativeCell(),
-                    binding.direction(),
-                    0L,
-                    DungeonTopologyRef.empty());
-        }
-
-        private static CorridorEndpointSemantics forAnchor(CorridorAnchorRef ref) {
-            return new CorridorEndpointSemantics(
-                    ANCHOR,
-                    0L,
-                    0L,
-                    emptyCell(),
-                    DungeonEdgeDirection.NORTH,
-                    ref.hostCorridorId(),
-                    DungeonTopologyRef.corridorAnchor(ref.anchorId()));
-        }
-
-        private static DungeonCell emptyCell() {
-            return new DungeonCell(0, 0, 0);
-        }
+    private static boolean isDoorTopologyRef(DungeonTopologyRef ref) {
+        return ref != null && ref.kind() == DungeonTopologyElementKind.DOOR && ref.id() > 0L;
     }
 }
