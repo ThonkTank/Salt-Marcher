@@ -28,10 +28,12 @@ final class DungeonCorridorCreationLogic {
         if (!validCreateEndpoints(start, end) || MUTATION_RULES.sameClusterOnly(dungeonMap, start, end)) {
             return dungeonMap;
         }
-        List<DungeonCell> routeCells = ROUTE_VALIDATION_SERVICE.routeCells(dungeonMap, start, end);
-        if (!ROUTE_VALIDATION_SERVICE.hasValidRoute(dungeonMap, start, end)) {
+        DungeonCorridorRouteValidationLogic.CorridorRouteValidation routeValidation =
+                ROUTE_VALIDATION_SERVICE.validateRoute(dungeonMap, start, end);
+        if (!routeValidation.hasValidRoute()) {
             return dungeonMap;
         }
+        List<DungeonCell> routeCells = routeValidation.routeCells();
         DungeonCorridorEndpointResolutionLogic.ResolvedEndpointResult startResolved =
                 ENDPOINT_RESOLUTION_SERVICE.resolve(dungeonMap, start);
         if (startResolved == null) {

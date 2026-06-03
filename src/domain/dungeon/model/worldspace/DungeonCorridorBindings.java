@@ -51,31 +51,6 @@ public record DungeonCorridorBindings(
                 anchorRefs);
     }
 
-    public DungeonCorridorBindings withAnchorRef(CorridorAnchorRef ref) {
-        if (ref == null || !ref.present()) {
-            return this;
-        }
-        List<CorridorAnchorRef> updated = new java.util.ArrayList<>();
-        for (CorridorAnchorRef existing : anchorRefs) {
-            if (existing != null && existing.anchorId() != ref.anchorId()) {
-                updated.add(existing);
-            }
-        }
-        CorridorBindings currentCore = DungeonCorridorBindingsCoreAdapter.toCore(this);
-        CorridorBindings updatedCore = new CorridorBindings(
-                waypoints,
-                currentCore.doorBindings(),
-                currentCore.anchorBindings(),
-                updated)
-                .withAnchorRef(ref);
-        return new DungeonCorridorBindings(
-                waypoints,
-                doorBindings,
-                anchorBindings,
-                updatedCore.anchorRefs());
-    }
-
-
     public DungeonCorridorBindings withInteriorRouteAnchors(
             CorridorRoutePlan routePlan,
             List<DungeonCorridorAnchorBinding> routeAnchors

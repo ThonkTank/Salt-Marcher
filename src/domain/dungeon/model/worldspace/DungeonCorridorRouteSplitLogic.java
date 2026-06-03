@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.core.geometry.Cell;
+import src.domain.dungeon.model.core.structure.corridor.CorridorEndpointBinding;
 import src.domain.dungeon.model.core.structure.corridor.CorridorRoutePlan;
 
 final class DungeonCorridorRouteSplitLogic {
@@ -20,7 +21,9 @@ final class DungeonCorridorRouteSplitLogic {
         if (routeCells.size() < MINIMUM_INTERIOR_SPLIT_ROUTE_CELLS) {
             return corridor;
         }
-        long waypointClusterId = waypointClusterId(startResolved.endpoint(), endResolved.endpoint());
+        long waypointClusterId = waypointClusterId(
+                startResolved.endpoint().binding(),
+                endResolved.endpoint().binding());
         DungeonCell clusterCenter = clusterCenter(dungeonMap, waypointClusterId);
         if (clusterCenter == null) {
             return corridor;
@@ -33,8 +36,8 @@ final class DungeonCorridorRouteSplitLogic {
     }
 
     private static long waypointClusterId(
-            DungeonCorridorEndpointResolutionLogic.ResolvedCorridorEndpoint start,
-            DungeonCorridorEndpointResolutionLogic.ResolvedCorridorEndpoint end
+            CorridorEndpointBinding start,
+            CorridorEndpointBinding end
     ) {
         if (start.doorBinding() != null) {
             return start.doorBinding().clusterId();

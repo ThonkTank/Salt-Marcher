@@ -12,6 +12,7 @@ import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.Direction;
 import src.domain.dungeon.model.core.structure.corridor.Corridor;
 import src.domain.dungeon.model.core.structure.corridor.CorridorBindings;
+import src.domain.dungeon.model.core.structure.corridor.CorridorEndpointBinding;
 import src.domain.dungeon.model.core.structure.corridor.CorridorNetwork;
 import src.domain.dungeon.model.core.structure.corridor.CorridorRoomSet;
 import src.domain.dungeon.model.core.structure.corridor.CorridorRoutePlan;
@@ -28,6 +29,7 @@ import src.domain.dungeon.model.worldspace.DungeonCell;
 import src.domain.dungeon.model.worldspace.DungeonCorridor;
 import src.domain.dungeon.model.worldspace.DungeonCorridorBindings;
 import src.domain.dungeon.model.worldspace.DungeonCorridorDoorBinding;
+import src.domain.dungeon.model.worldspace.DungeonCorridorEndpointResolutionLogic.ResolvedCorridorEndpoint;
 import src.domain.dungeon.model.worldspace.DungeonEdgeDirection;
 
 final class DungeonStructureInvariantHarness {
@@ -134,6 +136,20 @@ final class DungeonStructureInvariantHarness {
         CorridorAnchorRef replacementRef = new CorridorAnchorRef(20L, 3L);
         assertEquals(List.of(secondRef, replacementRef), withAnchors.withAnchorRef(replacementRef).anchorRefs(),
                 "anchor ref replacement by anchor id");
+        assertThrowsIllegalArgument(
+                () -> new CorridorEndpointBinding(null, null),
+                "corridor endpoint rejects empty shape");
+        assertThrowsIllegalArgument(
+                () -> new CorridorEndpointBinding(firstDoor, firstRef),
+                "corridor endpoint rejects combined door and anchor shape");
+        assertThrowsIllegalArgument(
+                () -> CorridorEndpointBinding.forAnchor(new CorridorAnchorRef(0L, 0L)),
+                "corridor endpoint rejects missing anchor ref shape");
+        DungeonCorridorDoorBinding worldspaceDoor =
+                new DungeonCorridorDoorBinding(4L, 10L, new DungeonCell(0, 1, 0), DungeonEdgeDirection.NORTH, null);
+        assertThrowsIllegalArgument(
+                () -> new ResolvedCorridorEndpoint(null, worldspaceDoor, CorridorEndpointBinding.forAnchor(firstRef)),
+                "resolved corridor endpoint rejects mismatched worldspace and core endpoint shape");
         assertEquals(List.of(firstRef), withAnchors.withoutAnchorRef(5L).anchorRefs(), "anchor ref delete by id");
         assertEquals(List.of(), withAnchors.withoutAnchorRefAndRouteWaypoints(5L).waypoints(),
                 "anchor target delete clears route waypoints");
@@ -208,10 +224,10 @@ final class DungeonStructureInvariantHarness {
 
         CorridorAnchorRef firstRef = new CorridorAnchorRef(12L, stableRef.id());
         CorridorAnchorRef replacementRef = new CorridorAnchorRef(20L, stableRef.id());
-        DungeonCorridorBindings refBindings =
-                new DungeonCorridorBindings(List.of(), List.of(), List.of(), List.of(firstRef));
+        CorridorBindings refBindings =
+                new CorridorBindings(List.of(), List.of(), List.of(), List.of(firstRef));
         assertEquals(List.of(replacementRef), refBindings.withAnchorRef(replacementRef).anchorRefs(),
-                "adapter anchor ref replacement follows topology ref when host id differs");
+                "core anchor ref replacement follows topology ref when host id differs");
 
         src.domain.dungeon.model.worldspace.DungeonTopologyRef splitAnchorRef =
                 src.domain.dungeon.model.worldspace.DungeonTopologyRef.corridorAnchor(70L);
@@ -230,8 +246,11 @@ final class DungeonStructureInvariantHarness {
         assertEquals(List.of(new CorridorAnchorRef(40L, splitAnchorRef.id())),
                 splitBindings.anchorRefs(),
                 "adapter route split preserves selected anchor topology ref");
-        DungeonCorridorBindings existingCustomRef = DungeonCorridorBindings.empty().withAnchorRef(
-                new CorridorAnchorRef(40L, splitAnchorRef.id()));
+        DungeonCorridorBindings existingCustomRef = new DungeonCorridorBindings(
+                List.of(),
+                List.of(),
+                List.of(),
+                List.of(new CorridorAnchorRef(40L, splitAnchorRef.id())));
         DungeonCorridorBindings deduplicatedSplitBindings = existingCustomRef.withInteriorRouteAnchors(
                 new CorridorRoutePlan(
                         List.of(new Cell(0, 0, 0), new Cell(1, 0, 0), new Cell(2, 0, 0)),
@@ -244,8 +263,7 @@ final class DungeonStructureInvariantHarness {
     }
 
     private static void assertWorldspaceCorridorRoomSetAdapterCompatibility() {
-        DungeonCorridorDoorBinding secondDoor = new DungeonCorridorDoorBinding(
-                6L, 11L, new DungeonCell(2, 3, 0), DungeonEdgeDirection.EAST, null);
+        CorridorDoorBinding secondDoor = new CorridorDoorBinding(6L, 11L, new Cell(2, 3, 0), Direction.EAST);
         DungeonCorridorBindings bindings = new DungeonCorridorBindings(
                 List.of(),
                 List.of(new DungeonCorridorDoorBinding(
@@ -257,8 +275,9 @@ final class DungeonStructureInvariantHarness {
         adapterRoomIds.add(1, null);
         DungeonCorridor corridor = new DungeonCorridor(3L, 5L, 0, adapterRoomIds, bindings);
         assertEquals(List.of(4L), corridor.roomIds(), "adapter corridor delegates room set normalization");
-        assertEquals(List.of(4L, 6L), corridor.withDoorBinding(secondDoor).roomIds(),
-                "adapter corridor adds door room through core room set");
+        Corridor coreCorridor = new Corridor(corridor.corridorId(), corridor.mapId(), corridor.level(), corridor.roomIds(), CorridorBindings.empty());
+        assertEquals(List.of(4L, 6L), coreCorridor.withDoorBinding(secondDoor).roomIds(),
+                "core corridor adds door room through core room set");
     }
 
     private static void assertCorridorTargetDeleteInvariants() {
@@ -629,6 +648,15 @@ final class DungeonStructureInvariantHarness {
         if (condition) {
             throw new IllegalStateException(label + " expected false");
         }
+    }
+
+    private static void assertThrowsIllegalArgument(Runnable action, String label) {
+        try {
+            action.run();
+        } catch (IllegalArgumentException expected) {
+            return;
+        }
+        throw new IllegalStateException(label + " expected IllegalArgumentException");
     }
 
     private static void assertEquals(Object expected, Object actual, String label) {

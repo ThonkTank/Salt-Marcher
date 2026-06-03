@@ -13,13 +13,15 @@ final class DungeonCorridorRouteValidationLogic {
             new DungeonCorridorConnectionNormalizationLogic();
     private static final DungeonMapLookupLogic LOOKUP_SERVICE = new DungeonMapLookupLogic();
 
-    boolean hasValidRoute(DungeonMap dungeonMap, DungeonCorridorEndpoint start, DungeonCorridorEndpoint end) {
+    CorridorRouteValidation validateRoute(
+            DungeonMap dungeonMap,
+            DungeonCorridorEndpoint start,
+            DungeonCorridorEndpoint end
+    ) {
         CorridorRoute route = route(dungeonMap, start, end);
-        return route.present() && !route.blockedBy(roomCells(dungeonMap));
-    }
-
-    List<DungeonCell> routeCells(DungeonMap dungeonMap, DungeonCorridorEndpoint start, DungeonCorridorEndpoint end) {
-        return worldspaceCells(route(dungeonMap, start, end).cells());
+        return new CorridorRouteValidation(
+                worldspaceCells(route.cells()),
+                route.present() && !route.blockedBy(roomCells(dungeonMap)));
     }
 
     private CorridorRoute route(DungeonMap dungeonMap, DungeonCorridorEndpoint start, DungeonCorridorEndpoint end) {
@@ -91,5 +93,11 @@ final class DungeonCorridorRouteValidationLogic {
             }
         }
         return List.copyOf(result);
+    }
+
+    record CorridorRouteValidation(List<DungeonCell> routeCells, boolean hasValidRoute) {
+        CorridorRouteValidation {
+            routeCells = routeCells == null ? List.of() : List.copyOf(routeCells);
+        }
     }
 }

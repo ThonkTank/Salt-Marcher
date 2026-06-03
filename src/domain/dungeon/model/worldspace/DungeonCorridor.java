@@ -2,7 +2,6 @@ package src.domain.dungeon.model.worldspace;
 
 
 import java.util.List;
-import src.domain.dungeon.model.core.component.CorridorAnchorRef;
 import src.domain.dungeon.model.core.structure.corridor.Corridor;
 import src.domain.dungeon.model.core.structure.corridor.CorridorBindings;
 
@@ -30,26 +29,11 @@ public record DungeonCorridor(
         return DungeonCorridorCoreAdapter.toCore(this).isReadable();
     }
 
-    public DungeonCorridor withDoorBinding(DungeonCorridorDoorBinding binding) {
-        if (binding == null) {
-            return this;
-        }
-        Corridor updated = DungeonCorridorCoreAdapter.toCore(this).withDoorBinding(binding.toCore());
-        return DungeonCorridorCoreAdapter.fromCore(this, updated, binding);
-    }
-
     public DungeonCorridor withAnchorBinding(DungeonCorridorAnchorBinding binding) {
         if (binding == null) {
             return this;
         }
         return withBindings(bindings.withAnchorBinding(binding));
-    }
-
-    public DungeonCorridor withAnchorRef(CorridorAnchorRef ref) {
-        if (ref == null || !ref.present()) {
-            return this;
-        }
-        return withBindings(bindings.withAnchorRef(ref));
     }
 
     public DungeonCorridor withBindings(DungeonCorridorBindings nextBindings) {
