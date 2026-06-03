@@ -27,7 +27,7 @@ public final class DungeonDerivedStateProjection {
                 roomProjection.clustersById(),
                 roomProjection.roomsById(),
                 roomProjection.allRoomCells(),
-                roomProjection.nextPrimitiveId(),
+                roomProjection.nextBoundaryId(),
                 roomProjection.boundaryIdsByKey());
         DungeonFeatureReadProjection.Result featureProjection = new DungeonFeatureReadProjection().project(
                 dungeonMap.connections().stairs(),
@@ -37,8 +37,6 @@ public final class DungeonDerivedStateProjection {
 
         List<DungeonState> aggregates = new ArrayList<>(roomProjection.aggregates());
         aggregates.addAll(corridorProjection.aggregates());
-        List<DungeonPrimitive> primitives = new ArrayList<>(roomProjection.primitives());
-        primitives.addAll(corridorProjection.primitives());
         List<DungeonAreaFacts> areas = new ArrayList<>(roomProjection.areas());
         areas.addAll(corridorProjection.areas());
         List<DungeonBoundaryFacts> boundaries = new ArrayList<>(roomProjection.boundaries());
@@ -58,7 +56,6 @@ public final class DungeonDerivedStateProjection {
         return new DungeonDerivedState(
                 map,
                 aggregates,
-                primitives,
                 new DungeonRelationGraph(containment, connections, featureRelations),
                 new DungeonTraversalLinkProjection().project(dungeonMap, map));
     }
@@ -73,7 +70,6 @@ public final class DungeonDerivedStateProjection {
                 List.of());
         return new DungeonDerivedState(
                 map,
-                List.of(),
                 List.of(),
                 new DungeonRelationGraph(List.of(), List.of()),
                 List.of());

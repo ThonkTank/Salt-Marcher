@@ -63,7 +63,7 @@ final class DungeonCorridorCreationLogic {
                     routeCells.getLast().q(),
                     routeCells.getLast().r(),
                     end.level());
-            nextConnections = nextConnections.withCorridorBoundStair(
+            nextConnections = nextConnections.stairOperations().withCorridorBoundStair(
                     stairId,
                     endResolved.map().metadata().mapId().value(),
                     corridor.corridorId(),

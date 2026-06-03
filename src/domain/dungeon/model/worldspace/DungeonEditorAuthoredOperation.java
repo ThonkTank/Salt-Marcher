@@ -62,7 +62,7 @@ public final class DungeonEditorAuthoredOperation {
     }
 
     public static DungeonEditorAuthoredOperation moveEditorHandle(
-            DungeonEditorHandle handle,
+            DungeonEditorHandleMovement handle,
             int deltaQ,
             int deltaR,
             int deltaLevel
@@ -194,19 +194,19 @@ public final class DungeonEditorAuthoredOperation {
     }
 
     public static final class MoveEditorHandle implements Variant {
-        private final DungeonEditorHandle handle;
+        private final DungeonEditorHandleMovement handle;
         private final int deltaQ;
         private final int deltaR;
         private final int deltaLevel;
 
-        private MoveEditorHandle(DungeonEditorHandle handle, int deltaQ, int deltaR, int deltaLevel) {
+        private MoveEditorHandle(DungeonEditorHandleMovement handle, int deltaQ, int deltaR, int deltaLevel) {
             this.handle = handle;
             this.deltaQ = deltaQ;
             this.deltaR = deltaR;
             this.deltaLevel = deltaLevel;
         }
 
-        public DungeonEditorHandle handle() {
+        public DungeonEditorHandleMovement handle() {
             return handle;
         }
 

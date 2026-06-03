@@ -1,4 +1,4 @@
-package src.domain.dungeon.model.worldspace;
+package src.domain.dungeon.model.runtime.editor.interaction;
 
 public final class DungeonEditorHandleType {
     public static final DungeonEditorHandleType CLUSTER_LABEL = new DungeonEditorHandleType("CLUSTER_LABEL");

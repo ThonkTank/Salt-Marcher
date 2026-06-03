@@ -59,7 +59,7 @@ public record DungeonMap(
     private static final DungeonCorridorMutationLogic CORRIDOR_MUTATION_SERVICE = new DungeonCorridorMutationLogic();
 
     public DungeonMap moveEditorHandle(
-            DungeonEditorHandle handle,
+            DungeonEditorHandleMovement handle,
             int deltaQ,
             int deltaR,
             int deltaLevel
@@ -108,7 +108,8 @@ public record DungeonMap(
         if (transitionId <= NO_TRANSITION_ID) {
             return this;
         }
-        ConnectionCatalog nextConnections = connections.withTransitionDescription(transitionId, description);
+        ConnectionCatalog nextConnections = connections.transitionOperations()
+                .withTransitionDescription(transitionId, description);
         return nextConnections.equals(connections)
                 ? this
                 : new DungeonMap(
@@ -123,7 +124,7 @@ public record DungeonMap(
     }
 
     public boolean canDeleteTransition(long transitionId) {
-        return connections.canDeleteTransition(transitionId);
+        return connections.transitionOperations().canDeleteTransition(transitionId);
     }
 
     public @Nullable DungeonTransition transitionById(long transitionId) {
@@ -157,7 +158,7 @@ public record DungeonMap(
         if (!canDeleteTransition(transitionId)) {
             return this;
         }
-        ConnectionCatalog nextConnections = connections.withoutTransition(transitionId);
+        ConnectionCatalog nextConnections = connections.transitionOperations().withoutTransition(transitionId);
         return new DungeonMap(
                 metadata,
                 topology,
@@ -170,7 +171,7 @@ public record DungeonMap(
     }
 
     public boolean canDeleteStair(long stairId) {
-        return stairId > NO_STAIR_ID && connections.canDeleteUnboundStair(stairId);
+        return stairId > NO_STAIR_ID && connections.stairOperations().canDeleteUnboundStair(stairId);
     }
 
     public DungeonMap deleteStair(long stairId) {
@@ -183,13 +184,13 @@ public record DungeonMap(
                 null,
                 spaces,
                 rooms,
-                connections.withoutStair(stairId),
+                connections.stairOperations().withoutStair(stairId),
                 features,
                 revision + 1L);
     }
 
     public DungeonMap createStair(long stairId, DungeonCell anchor, String shapeName) {
-        ConnectionCatalog nextConnections = connections.withStair(
+        ConnectionCatalog nextConnections = connections.stairOperations().withStair(
                 stairId,
                 metadata.mapId().value(),
                 anchor,
@@ -211,7 +212,7 @@ public record DungeonMap(
     }
 
     public boolean canCreateStair(DungeonCell anchor, String shapeName) {
-        return connections.canCreateStair(anchor, shapeName, topology, rooms);
+        return connections.stairOperations().canCreateStair(anchor, shapeName, topology, rooms);
     }
 
     public DungeonMap createTransition(
@@ -222,7 +223,7 @@ public record DungeonMap(
             long destinationTileId,
             @Nullable Long destinationTransitionId
     ) {
-        ConnectionCatalog nextConnections = connections.withTransition(
+        ConnectionCatalog nextConnections = connections.transitionOperations().withTransition(
                 transitionId,
                 metadata.mapId().value(),
                 anchor,
@@ -251,7 +252,7 @@ public record DungeonMap(
             long destinationTileId,
             @Nullable Long destinationTransitionId
     ) {
-        return connections.canCreateTransition(
+        return connections.transitionOperations().canCreateTransition(
                 anchor,
                 dungeonMapDestination,
                 destinationMapId,
@@ -266,7 +267,7 @@ public record DungeonMap(
             int dimension1,
             int dimension2
     ) {
-        return connections.canRecomputeStair(
+        return connections.stairOperations().canRecomputeStair(
                 stairId,
                 shapeName,
                 directionName,
@@ -286,7 +287,7 @@ public record DungeonMap(
         if (!canSaveStairGeometry(stairId, shapeName, directionName, dimension1, dimension2)) {
             return this;
         }
-        ConnectionCatalog nextConnections = connections.withRecomputedStair(
+        ConnectionCatalog nextConnections = connections.stairOperations().withRecomputedStair(
                 stairId,
                 shapeName,
                 directionName,

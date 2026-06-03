@@ -1,7 +1,7 @@
 package src.domain.dungeon.model.worldspace;
 
-public record DungeonEditorHandle(
-        DungeonEditorHandleType type,
+public record DungeonEditorHandleMovement(
+        DungeonEditorHandleMovementKind kind,
         DungeonTopologyRef topologyRef,
         long ownerId,
         long clusterId,
@@ -11,9 +11,8 @@ public record DungeonEditorHandle(
         DungeonCell cell,
         DungeonEdgeDirection direction
 ) {
-
-    public DungeonEditorHandle {
-        type = type == null ? DungeonEditorHandleType.CLUSTER_LABEL : type;
+    public DungeonEditorHandleMovement {
+        kind = kind == null ? DungeonEditorHandleMovementKind.defaultKind() : kind;
         topologyRef = topologyRef == null ? DungeonTopologyRef.empty() : topologyRef;
         ownerId = Math.max(0L, ownerId);
         clusterId = Math.max(0L, clusterId);
@@ -23,4 +22,5 @@ public record DungeonEditorHandle(
         cell = cell == null ? new DungeonCell(0, 0, 0) : cell;
         direction = direction == null ? DungeonEdgeDirection.NORTH : direction;
     }
+
 }

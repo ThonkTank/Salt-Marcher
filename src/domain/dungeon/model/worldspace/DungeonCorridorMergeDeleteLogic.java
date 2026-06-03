@@ -49,7 +49,7 @@ final class DungeonCorridorMergeDeleteLogic {
                         DungeonCorridorTopologyIdentityAdapter.fromCoreNetwork(
                                 dungeonMap.connections().corridors(),
                                 network.withoutCorridor(corridorId)),
-                        dungeonMap.connections().withoutCorridorBoundStairs(corridorId).stairs(),
+                        dungeonMap.connections().stairOperations().withoutCorridorBoundStairs(corridorId).stairs(),
                         dungeonMap.connections().transitions()));
     }
 }

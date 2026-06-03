@@ -17,42 +17,51 @@ public final class DungeonEditorHandleMovementLogic {
     private static final DungeonClusterCornerMoveLogic CLUSTER_CORNER_MOVEMENT_SERVICE =
             new DungeonClusterCornerMoveLogic();
 
-    public DungeonMap moveEditorHandle(DungeonMap dungeonMap, DungeonEditorHandle handle, int deltaQ, int deltaR, int deltaLevel) {
+    public DungeonMap moveEditorHandle(
+            DungeonMap dungeonMap,
+            DungeonEditorHandleMovement handle,
+            int deltaQ,
+            int deltaR,
+            int deltaLevel
+    ) {
         Objects.requireNonNull(dungeonMap, "dungeonMap");
         if (handle == null || isStationary(deltaQ, deltaR, deltaLevel)) {
+            return dungeonMap;
+        }
+        if (handle.kind().isUnknown()) {
             return dungeonMap;
         }
         if (roomHandle(handle)) {
             return moveRoomHandle(dungeonMap, handle, deltaQ, deltaR, deltaLevel);
         }
-        if (handle.type() == DungeonEditorHandleType.DOOR) {
+        if (handle.kind().isDoor()) {
             return moveDoorBinding(dungeonMap, handle, deltaQ, deltaR, deltaLevel);
         }
-        if (handle.type() == DungeonEditorHandleType.CORRIDOR_ANCHOR) {
+        if (handle.kind().isCorridorAnchor()) {
             return moveCorridorAnchor(dungeonMap, handle, deltaQ, deltaR, deltaLevel);
         }
-        if (handle.type() == DungeonEditorHandleType.CORRIDOR_WAYPOINT) {
+        if (handle.kind().isCorridorWaypoint()) {
             return moveCorridorWaypoint(dungeonMap, handle, deltaQ, deltaR, deltaLevel);
         }
-        if (handle.type() == DungeonEditorHandleType.STAIR_ANCHOR) {
+        if (handle.kind().isStairAnchor()) {
             return moveStairAnchor(dungeonMap, handle, deltaQ, deltaR, deltaLevel);
         }
         return dungeonMap;
     }
 
-    private static boolean roomHandle(DungeonEditorHandle handle) {
-        return handle.type() == DungeonEditorHandleType.CLUSTER_LABEL
-                || handle.type() == DungeonEditorHandleType.CLUSTER_CORNER;
+    private static boolean roomHandle(DungeonEditorHandleMovement handle) {
+        return handle.kind().isClusterLabel()
+                || handle.kind().isClusterCorner();
     }
 
     private static DungeonMap moveRoomHandle(
             DungeonMap dungeonMap,
-            DungeonEditorHandle handle,
+            DungeonEditorHandleMovement handle,
             int deltaQ,
             int deltaR,
             int deltaLevel
     ) {
-        if (handle.type() == DungeonEditorHandleType.CLUSTER_CORNER) {
+        if (handle.kind().isClusterCorner()) {
             return CLUSTER_CORNER_MOVEMENT_SERVICE.moveCorner(dungeonMap, handle, deltaQ, deltaR, deltaLevel);
         }
         long clusterId = handle.clusterId() > 0L
@@ -61,7 +70,13 @@ public final class DungeonEditorHandleMovementLogic {
         return TOPOLOGY_MOVEMENT_SERVICE.moveCluster(dungeonMap, clusterId, deltaQ, deltaR, deltaLevel);
     }
 
-    private static DungeonMap moveDoorBinding(DungeonMap dungeonMap, DungeonEditorHandle handle, int deltaQ, int deltaR, int deltaLevel) {
+    private static DungeonMap moveDoorBinding(
+            DungeonMap dungeonMap,
+            DungeonEditorHandleMovement handle,
+            int deltaQ,
+            int deltaR,
+            int deltaLevel
+    ) {
         List<DungeonCorridor> movedCorridors = new ArrayList<>();
         boolean changed = false;
         for (DungeonCorridor corridor : dungeonMap.connections().corridors()) {
@@ -105,7 +120,13 @@ public final class DungeonEditorHandleMovementLogic {
                 : dungeonMap;
     }
 
-    private static DungeonMap moveCorridorAnchor(DungeonMap dungeonMap, DungeonEditorHandle handle, int deltaQ, int deltaR, int deltaLevel) {
+    private static DungeonMap moveCorridorAnchor(
+            DungeonMap dungeonMap,
+            DungeonEditorHandleMovement handle,
+            int deltaQ,
+            int deltaR,
+            int deltaLevel
+    ) {
         List<DungeonCorridor> movedCorridors = new ArrayList<>();
         boolean changed = false;
         for (DungeonCorridor corridor : dungeonMap.connections().corridors()) {
@@ -135,7 +156,13 @@ public final class DungeonEditorHandleMovementLogic {
                 : dungeonMap;
     }
 
-    private static DungeonMap moveCorridorWaypoint(DungeonMap dungeonMap, DungeonEditorHandle handle, int deltaQ, int deltaR, int deltaLevel) {
+    private static DungeonMap moveCorridorWaypoint(
+            DungeonMap dungeonMap,
+            DungeonEditorHandleMovement handle,
+            int deltaQ,
+            int deltaR,
+            int deltaLevel
+    ) {
         List<DungeonCorridor> movedCorridors = new ArrayList<>();
         boolean changed = false;
         for (DungeonCorridor corridor : dungeonMap.connections().corridors()) {
@@ -175,7 +202,13 @@ public final class DungeonEditorHandleMovementLogic {
                 : dungeonMap;
     }
 
-    private static DungeonMap moveStairAnchor(DungeonMap dungeonMap, DungeonEditorHandle handle, int deltaQ, int deltaR, int deltaLevel) {
+    private static DungeonMap moveStairAnchor(
+            DungeonMap dungeonMap,
+            DungeonEditorHandleMovement handle,
+            int deltaQ,
+            int deltaR,
+            int deltaLevel
+    ) {
         List<DungeonStair> movedStairs = new ArrayList<>();
         boolean changed = false;
         for (DungeonStair stair : dungeonMap.connections().stairs()) {

@@ -2,9 +2,9 @@ package src.domain.dungeon.model.worldspace.usecase;
 
 import java.util.List;
 import java.util.Objects;
+import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorHandleFacts;
 import src.domain.dungeon.model.worldspace.DungeonMap;
 import src.domain.dungeon.model.worldspace.DungeonDerivedState;
-import src.domain.dungeon.model.worldspace.DungeonEditorHandleFacts;
 
 /**
  * Assembles committed dungeon snapshot data from authored truth and derived state.

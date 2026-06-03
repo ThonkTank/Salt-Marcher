@@ -3,10 +3,10 @@ package src.domain.dungeon.model.worldspace.repository;
 import java.util.List;
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
+import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorHandleFacts;
 import src.domain.dungeon.model.worldspace.DungeonCell;
 import src.domain.dungeon.model.worldspace.DungeonDerivedState;
 import src.domain.dungeon.model.worldspace.DungeonEdgeDirection;
-import src.domain.dungeon.model.worldspace.DungeonEditorHandleFacts;
 import src.domain.dungeon.model.worldspace.DungeonMapIdentity;
 
 public interface DungeonAuthoredPublishedStateRepository {

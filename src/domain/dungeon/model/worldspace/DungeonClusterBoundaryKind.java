@@ -12,11 +12,11 @@ public final class DungeonClusterBoundaryKind {
     public static final DungeonClusterBoundaryKind OPEN = new DungeonClusterBoundaryKind(OPEN_NAME, "open");
 
     private final String name;
-    private final String primitiveKind;
+    private final String boundaryKind;
 
-    private DungeonClusterBoundaryKind(String name, String primitiveKind) {
+    private DungeonClusterBoundaryKind(String name, String boundaryKind) {
         this.name = name;
-        this.primitiveKind = primitiveKind;
+        this.boundaryKind = boundaryKind;
     }
 
     public static DungeonClusterBoundaryKind parse(String value) {
@@ -33,8 +33,8 @@ public final class DungeonClusterBoundaryKind {
         return WALL;
     }
 
-    public String primitiveKind() {
-        return primitiveKind;
+    public String boundaryKind() {
+        return boundaryKind;
     }
 
     public String name() {

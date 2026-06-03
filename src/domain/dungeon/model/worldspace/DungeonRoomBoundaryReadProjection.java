@@ -30,7 +30,6 @@ final class DungeonRoomBoundaryReadProjection {
         DungeonBoundaryProjection boundaryProjection = state.toProjection();
         return new DungeonRoomBoundaryProjection(
                 aggregates,
-                boundaryProjection.primitives(),
                 areas,
                 boundaryProjection.boundaries(),
                 boundaryProjection.containment(),
@@ -39,7 +38,7 @@ final class DungeonRoomBoundaryReadProjection {
                 boundaryProjection.boundaryIdsByKey(),
                 roomsById,
                 clustersById,
-                boundaryProjection.nextPrimitiveId());
+                boundaryProjection.nextBoundaryId());
     }
 
     private static Map<Long, List<DungeonRoom>> roomsByCluster(List<DungeonRoom> rooms) {

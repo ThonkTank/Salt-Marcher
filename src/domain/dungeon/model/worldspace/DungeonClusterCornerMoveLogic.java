@@ -11,7 +11,13 @@ final class DungeonClusterCornerMoveLogic {
             new DungeonBoundaryStretchEditLogic();
     private static final DungeonRoomClusterWorkLogic WORK_SERVICE = new DungeonRoomClusterWorkLogic();
 
-    DungeonMap moveCorner(DungeonMap dungeonMap, DungeonEditorHandle handle, int deltaQ, int deltaR, int deltaLevel) {
+    DungeonMap moveCorner(
+            DungeonMap dungeonMap,
+            DungeonEditorHandleMovement handle,
+            int deltaQ,
+            int deltaR,
+            int deltaLevel
+    ) {
         if (dungeonMap == null || handle == null || deltaLevel != 0) {
             return dungeonMap;
         }

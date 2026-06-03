@@ -12,7 +12,6 @@ import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorInteract
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionValues;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues;
 import src.domain.dungeon.model.worldspace.DungeonBoundaryStretchValueTypes.StretchOrientation;
-import src.domain.dungeon.model.worldspace.DungeonEditorHandleType;
 import src.domain.dungeon.model.worldspace.DungeonTopologyElementKind;
 import src.domain.dungeon.model.worldspace.DungeonTopologyRef;
 

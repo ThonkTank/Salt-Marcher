@@ -12,13 +12,12 @@ final class DungeonRoomBoundaryProjectionState {
 
     private static final String DOOR_KIND = "door";
 
-    private final List<DungeonPrimitive> primitives = new ArrayList<>();
     private final List<DungeonBoundaryFacts> boundaries = new ArrayList<>();
     private final List<DungeonRelationGraph.ContainmentRelation> containment = new ArrayList<>();
     private final List<DungeonRelationGraph.ConnectionRelation> connections = new ArrayList<>();
     private final Set<DungeonBoundaryKey> seenBoundaries = new LinkedHashSet<>();
     private final Map<DungeonBoundaryKey, Long> boundaryIdsByKey = new LinkedHashMap<>();
-    private long nextPrimitiveId = 1_000L;
+    private long nextBoundaryId = 1_000L;
 
     void addAuthoredBoundaries(DungeonRoomCluster cluster, Map<Long, List<DungeonCell>> roomCells) {
         for (List<DungeonClusterBoundary> levelBoundaries : cluster.boundariesByLevel().values()) {
@@ -42,12 +41,11 @@ final class DungeonRoomBoundaryProjectionState {
 
     DungeonBoundaryProjection toProjection() {
         return new DungeonBoundaryProjection(
-                primitives,
                 boundaries,
                 containment,
                 connections,
                 boundaryIdsByKey,
-                nextPrimitiveId);
+                nextBoundaryId);
     }
 
     private void addCellPerimeter(
@@ -94,18 +92,16 @@ final class DungeonRoomBoundaryProjectionState {
             return;
         }
         long boundaryId = key.stableId();
-        nextPrimitiveId = Math.max(nextPrimitiveId, boundaryId + 1L);
-        String kind = boundary.kind().primitiveKind();
+        nextBoundaryId = Math.max(nextBoundaryId, boundaryId + 1L);
+        String kind = boundary.kind().boundaryKind();
         String label = boundary.kind() == DungeonClusterBoundaryKind.DOOR ? "Door" : "Wall";
         DungeonTopologyRef topologyRef = boundary.resolvedTopologyRef(cluster.center());
-        DungeonPrimitive primitive = new DungeonPrimitive(boundaryId, kind, label, edge);
-        primitives.add(primitive);
-        boundaries.add(new DungeonBoundaryFacts(kind, primitive.id(), primitive.label(), primitive.edge(), topologyRef));
-        boundaryIdsByKey.put(key, primitive.id());
+        boundaries.add(new DungeonBoundaryFacts(kind, boundaryId, label, edge, topologyRef));
+        boundaryIdsByKey.put(key, boundaryId);
 
         List<Long> touchingRoomIds = DungeonRoomBoundaryTouchSupport.touchingRoomIds(edge, roomCells);
         for (Long roomId : touchingRoomIds) {
-            containment.add(new DungeonRelationGraph.ContainmentRelation(roomId, primitive.id(), kind));
+            containment.add(new DungeonRelationGraph.ContainmentRelation(roomId, boundaryId, kind));
         }
         if (boundary.kind() == DungeonClusterBoundaryKind.DOOR && touchingRoomIds.size() >= 2) {
             connections.add(new DungeonRelationGraph.ConnectionRelation(

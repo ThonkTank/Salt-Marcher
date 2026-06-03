@@ -12,7 +12,8 @@ import src.domain.dungeon.model.worldspace.DungeonCorridorEndpoint;
 import src.domain.dungeon.model.worldspace.DungeonEdge;
 import src.domain.dungeon.model.worldspace.DungeonEdgeDirection;
 import src.domain.dungeon.model.worldspace.DungeonEditorAuthoredOperation;
-import src.domain.dungeon.model.worldspace.DungeonEditorHandle;
+import src.domain.dungeon.model.worldspace.DungeonEditorHandleMovementKind;
+import src.domain.dungeon.model.worldspace.DungeonEditorHandleMovement;
 import src.domain.dungeon.model.worldspace.DungeonRoomExitDescription;
 import src.domain.dungeon.model.worldspace.DungeonRoomNarration;
 import src.domain.dungeon.model.worldspace.DungeonTopologyRef;
@@ -51,7 +52,19 @@ public interface DungeonEditorAuthoredOperationHelper {
                             corridorDelete.waypointIndex());
             case DungeonEditorSessionValues.MoveHandlePreview moveHandle ->
                     DungeonEditorAuthoredOperation.moveEditorHandle(
-                            handle(moveHandle.handleRef()),
+                            new DungeonEditorHandleMovement(
+                                    DungeonEditorHandleMovementKind.fromName(moveHandle.handleRef().kind().name()),
+                                    moveHandle.handleRef().topologyRef(),
+                                    moveHandle.handleRef().ownerId(),
+                                    moveHandle.handleRef().clusterId(),
+                                    moveHandle.handleRef().corridorId(),
+                                    moveHandle.handleRef().roomId(),
+                                    moveHandle.handleRef().index(),
+                                    cell(moveHandle.handleRef().cell()),
+                                    moveHandle.handleRef().direction() == null
+                                            || moveHandle.handleRef().direction().isBlank()
+                                            ? DungeonEdgeDirection.NORTH
+                                            : DungeonEdgeDirection.parse(moveHandle.handleRef().direction())),
                             moveHandle.deltaQ(),
                             moveHandle.deltaR(),
                             moveHandle.deltaLevel());
@@ -112,24 +125,6 @@ public interface DungeonEditorAuthoredOperationHelper {
         return boundaryKind != null && boundaryKind.isDoor()
                 ? DungeonClusterBoundaryKind.DOOR
                 : DungeonClusterBoundaryKind.WALL;
-    }
-
-    static DungeonEditorHandle handle(DungeonEditorWorkspaceValues.HandleRef ref) {
-        DungeonEditorWorkspaceValues.HandleRef safeRef = ref == null
-                ? DungeonEditorWorkspaceValues.HandleRef.empty()
-                : ref;
-        return new DungeonEditorHandle(
-                safeRef.kind(),
-                safeRef.topologyRef(),
-                safeRef.ownerId(),
-                safeRef.clusterId(),
-                safeRef.corridorId(),
-                safeRef.roomId(),
-                safeRef.index(),
-                cell(safeRef.cell()),
-                safeRef.direction() == null || safeRef.direction().isBlank()
-                        ? DungeonEdgeDirection.NORTH
-                        : DungeonEdgeDirection.parse(safeRef.direction()));
     }
 
     static DungeonCorridorEndpoint corridorEndpoint(

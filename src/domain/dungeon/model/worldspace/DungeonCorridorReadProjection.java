@@ -16,11 +16,11 @@ public final class DungeonCorridorReadProjection {
             Map<Long, DungeonRoomCluster> clustersById,
             Map<Long, DungeonRoom> roomsById,
             Map<Long, List<DungeonCell>> roomCellsByRoom,
-            long primitiveId,
+            long boundaryIdCursor,
             Map<DungeonBoundaryKey, Long> existingDoorIdsByKey
     ) {
         DungeonCorridorProjectionAssembler result =
-                new DungeonCorridorProjectionAssembler(primitiveId, existingDoorIdsByKey);
+                new DungeonCorridorProjectionAssembler(boundaryIdCursor, existingDoorIdsByKey);
         Set<DungeonCell> allRoomCells = allRoomCells(roomCellsByRoom);
         Map<DungeonTopologyRef, DungeonCorridorAnchorBinding> anchorsByRef =
                 ENDPOINT_RESOLVER.anchorBindingsByRef(corridors);

@@ -3,7 +3,7 @@ package src.domain.dungeon.model.runtime.usecase;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorMainViewInput;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorMainViewPointerTarget;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues;
-import src.domain.dungeon.model.worldspace.DungeonEditorHandleType;
+import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorHandleType;
 import src.domain.dungeon.model.worldspace.DungeonTopologyElementKind;
 import src.domain.dungeon.model.worldspace.DungeonTopologyRef;
 

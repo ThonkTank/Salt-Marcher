@@ -3,7 +3,6 @@ package src.domain.dungeon.model.worldspace.usecase;
 import java.util.ArrayList;
 import java.util.List;
 import src.domain.dungeon.model.worldspace.DungeonState;
-import src.domain.dungeon.model.worldspace.DungeonPrimitive;
 import src.domain.dungeon.model.worldspace.DungeonAreaFacts;
 import src.domain.dungeon.model.worldspace.DungeonBoundaryFacts;
 import src.domain.dungeon.model.worldspace.DungeonDerivedState;
@@ -20,7 +19,6 @@ final class BuildDungeonSelectionFactsUseCase {
     private static final String AUTHORISED_AREA = "Authoriertes Dungeon-Areal.";
     private static final String AUTHORISED_BOUNDARY = "Authorisierte Dungeon-Grenze.";
     private static final String AGGREGATE_OWNER = "Aggregate owner in committed dungeon truth.";
-    private static final String PRIMITIVE_BOUNDARY = "Primitive boundary object.";
 
     LoadDungeonSnapshotUseCase.InspectorSnapshotData execute(
             DungeonDerivedState derived,
@@ -63,7 +61,7 @@ final class BuildDungeonSelectionFactsUseCase {
             if (selection != null) {
                 return selection;
             }
-            return primitiveSelection(derived.primitives(), topologyRef);
+            return null;
         }
 
         private static LoadDungeonSnapshotUseCase.InspectorSnapshotData areaSelection(
@@ -134,23 +132,6 @@ final class BuildDungeonSelectionFactsUseCase {
                                     SelectionFacts.factLine("id", aggregate.id()),
                                     SelectionFacts.factLine(FACT_KIND, topologyRef.kind()),
                                     SelectionFacts.factLine("label", aggregate.label())));
-                }
-            }
-            return null;
-        }
-
-        private static LoadDungeonSnapshotUseCase.InspectorSnapshotData primitiveSelection(
-                List<DungeonPrimitive> primitives,
-                DungeonTopologyRef topologyRef
-        ) {
-            for (DungeonPrimitive primitive : primitives) {
-                if (primitive.id() == topologyRef.id()) {
-                    return new LoadDungeonSnapshotUseCase.InspectorSnapshotData(
-                            "Primitive " + topologyRef.id(),
-                            PRIMITIVE_BOUNDARY,
-                            List.of(
-                                    SelectionFacts.factLine("id", primitive.id()),
-                                    SelectionFacts.factLine(FACT_KIND, topologyRef.kind())));
                 }
             }
             return null;

@@ -18,6 +18,17 @@ final class DungeonStairGeometryValues {
         return shape == null ? null : DungeonStairShape.parse(shape.name());
     }
 
+    static @Nullable DungeonEdgeDirection supportedCardinalDirection(String value) {
+        String normalized = value == null ? "" : value.trim().toUpperCase(java.util.Locale.ROOT);
+        return switch (normalized) {
+            case "NORTH" -> DungeonEdgeDirection.NORTH;
+            case "EAST" -> DungeonEdgeDirection.EAST;
+            case "SOUTH" -> DungeonEdgeDirection.SOUTH;
+            case "WEST" -> DungeonEdgeDirection.WEST;
+            default -> null;
+        };
+    }
+
     static List<DungeonCell> uniquePath(List<DungeonCell> source) {
         return worldspaceCells(new Stair(
                 0L,
@@ -82,6 +93,10 @@ final class DungeonStairGeometryValues {
             }
         }
         return List.copyOf(result);
+    }
+
+    static @Nullable DungeonCell worldspaceCell(@Nullable Cell cell) {
+        return cell == null ? null : DungeonCell.fromGeometry(cell);
     }
 
     static List<StairExit> coreExits(List<DungeonStairExit> source) {
