@@ -5,12 +5,12 @@ import java.util.Map;
 import java.util.Set;
 import src.domain.dungeon.model.worldspace.helper.DungeonEditorBoundaryClusterCellsHelper;
 import src.domain.dungeon.model.worldspace.helper.DungeonEditorBoundaryEdgesHelper;
-import src.domain.dungeon.model.worldspace.model.interaction.model.DungeonEditorInteractionValues;
-import src.domain.dungeon.model.worldspace.model.interaction.model.DungeonEditorInteractionValues.CellKey;
-import src.domain.dungeon.model.worldspace.model.interaction.model.DungeonEditorInteractionValues.VertexKey;
-import src.domain.dungeon.model.worldspace.model.interaction.model.DungeonEditorInteractionValues.VertexTarget;
-import src.domain.dungeon.model.worldspace.model.interaction.model.DungeonEditorMainViewInteractionValues.EdgeKey;
-import src.domain.dungeon.model.worldspace.model.workspace.model.DungeonEditorWorkspaceValues;
+import src.domain.dungeon.model.worldspace.interaction.model.DungeonEditorInteractionValues;
+import src.domain.dungeon.model.worldspace.interaction.model.DungeonEditorInteractionValues.CellKey;
+import src.domain.dungeon.model.worldspace.interaction.model.DungeonEditorInteractionValues.VertexKey;
+import src.domain.dungeon.model.worldspace.interaction.model.DungeonEditorInteractionValues.VertexTarget;
+import src.domain.dungeon.model.worldspace.interaction.model.DungeonEditorMainViewInteractionValues.EdgeKey;
+import src.domain.dungeon.model.worldspace.workspace.model.DungeonEditorWorkspaceValues;
 
 final class DungeonEditorBoundaryVertexUseCase {
     private final DungeonEditorBoundaryClusterCellsHelper clusterCells = new DungeonEditorBoundaryClusterCellsHelper();

@@ -1,6 +1,6 @@
 package src.domain.encounter;
 
-import src.domain.encounter.model.session.model.EncounterSessionPublicationData;
+import src.domain.encounter.model.session.EncounterSessionPublicationData;
 import src.domain.encounter.model.session.repository.EncounterSessionPublishedStateRepository;
 import src.domain.encounter.published.EncounterBuilderInputs;
 import src.domain.encounter.published.EncounterStateSnapshot;

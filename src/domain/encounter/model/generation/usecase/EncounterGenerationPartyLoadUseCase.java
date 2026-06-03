@@ -3,8 +3,8 @@ package src.domain.encounter.model.generation.usecase;
 import java.util.List;
 import org.jspecify.annotations.Nullable;
 import src.domain.encounter.model.generation.helper.EncounterDifficultyMathHelper;
-import src.domain.encounter.model.generation.model.EncounterDifficultyThresholds;
-import src.domain.encounter.model.session.model.PartyBudgetFacts;
+import src.domain.encounter.model.generation.EncounterDifficultyThresholds;
+import src.domain.encounter.model.session.PartyBudgetFacts;
 import src.domain.encounter.model.session.repository.EncounterPartyFactsRepository;
 
 final class EncounterGenerationPartyLoadUseCase {

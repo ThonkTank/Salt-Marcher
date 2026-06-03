@@ -2,7 +2,7 @@ package src.domain.encounter.model.plan.usecase;
 
 import java.util.Objects;
 import java.util.Optional;
-import src.domain.encounter.model.plan.model.EncounterPlan;
+import src.domain.encounter.model.plan.EncounterPlan;
 import src.domain.encounter.model.plan.repository.EncounterPlanRepository;
 
 public final class LoadSavedEncounterPlanUseCase {

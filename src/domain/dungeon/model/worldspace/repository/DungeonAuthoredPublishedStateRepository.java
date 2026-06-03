@@ -3,13 +3,11 @@ package src.domain.dungeon.model.worldspace.repository;
 import java.util.List;
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
-import src.domain.dungeon.model.worldspace.model.DungeonCell;
-import src.domain.dungeon.model.worldspace.model.DungeonDerivedState;
-import src.domain.dungeon.model.worldspace.model.DungeonEdgeDirection;
-import src.domain.dungeon.model.worldspace.model.DungeonEditorHandleFacts;
-import src.domain.dungeon.model.worldspace.model.DungeonMapIdentity;
-import src.domain.dungeon.model.worldspace.model.DungeonTravelMoveFacts;
-import src.domain.dungeon.model.worldspace.model.DungeonTravelSurfaceFacts;
+import src.domain.dungeon.model.worldspace.DungeonCell;
+import src.domain.dungeon.model.worldspace.DungeonDerivedState;
+import src.domain.dungeon.model.worldspace.DungeonEdgeDirection;
+import src.domain.dungeon.model.worldspace.DungeonEditorHandleFacts;
+import src.domain.dungeon.model.worldspace.DungeonMapIdentity;
 
 public interface DungeonAuthoredPublishedStateRepository {
 
@@ -26,10 +24,6 @@ public interface DungeonAuthoredPublishedStateRepository {
     void publishRenamed(MapMutationPublication mutation);
 
     void publishDeleted(MapMutationPublication mutation);
-
-    void publishSurface(DungeonTravelSurfaceFacts surface);
-
-    void publishMove(DungeonTravelMoveFacts move);
 
     final class SnapshotPublication {
         private final String mapName;

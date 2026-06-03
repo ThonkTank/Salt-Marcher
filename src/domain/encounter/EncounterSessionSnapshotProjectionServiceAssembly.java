@@ -1,13 +1,13 @@
 package src.domain.encounter;
 
 import java.util.List;
-import src.domain.encounter.model.session.model.BuilderStateData;
-import src.domain.encounter.model.session.model.CombatProjectionData;
-import src.domain.encounter.model.session.model.EncounterSessionPublicationData;
-import src.domain.encounter.model.session.model.EncounterSessionSnapshotData;
-import src.domain.encounter.model.session.model.Mode;
-import src.domain.encounter.model.session.model.PartyMemberData;
-import src.domain.encounter.model.session.model.ResultStateData;
+import src.domain.encounter.model.session.BuilderStateData;
+import src.domain.encounter.model.session.CombatProjectionData;
+import src.domain.encounter.model.session.EncounterSessionPublicationData;
+import src.domain.encounter.model.session.EncounterSessionSnapshotData;
+import src.domain.encounter.model.session.Mode;
+import src.domain.encounter.model.session.PartyMemberData;
+import src.domain.encounter.model.session.ResultStateData;
 import src.domain.encounter.published.EncounterStateSnapshot;
 
 final class EncounterSessionSnapshotProjectionServiceAssembly {

@@ -9,7 +9,7 @@ public final class DomainRoleTopologySupport {
 
     private static final Set<String> ROOT_TECHNICAL_BUCKETS = Set.of("published", "application", "model");
     private static final Set<String> TARGET_ROLE_PACKAGES =
-            Set.of("model", "constants", "helper", "port", "repository", "usecase");
+            Set.of("constants", "helper", "port", "repository", "usecase");
     private static final Set<String> LEGACY_ROLE_PACKAGES =
             Set.of("aggregate", "entity", "value", "policy", "factory", "service", "event", "specification");
     private static final Set<String> FORBIDDEN_MODEL_SUBTREE_TECHNICAL_BUCKETS = Set.of(
@@ -125,6 +125,20 @@ public final class DomainRoleTopologySupport {
         return Optional.of(segments.get(5));
     }
 
+    public static boolean isInternalModelSource(SourceFile sourceFile) {
+        return isInternalModelSource(sourceFile.relativeSegments());
+    }
+
+    public static boolean isInternalModelSource(List<String> segments) {
+        if (!isModelRootSource(segments) || segments.size() < 6) {
+            return false;
+        }
+        if (segments.size() == 6) {
+            return true;
+        }
+        return !isAllowedTargetDomainRolePackage(segments.get(5));
+    }
+
     public static boolean isModelRoleDirectFile(List<String> segments, String role) {
         return isModelRoleSource(segments, role) && segments.size() == 7;
     }
@@ -134,6 +148,9 @@ public final class DomainRoleTopologySupport {
     }
 
     public static boolean isModelRoleSource(List<String> segments, String role) {
+        if ("model".equals(role)) {
+            return isInternalModelSource(segments);
+        }
         return isModelRootSource(segments)
                 && segments.size() >= 7
                 && role.equals(segments.get(5));

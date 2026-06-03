@@ -1,7 +1,7 @@
 package src.domain.sessionplanner.model.session.usecase;
 
 import java.util.Objects;
-import src.domain.sessionplanner.model.session.model.SessionPlan;
+import src.domain.sessionplanner.model.session.SessionPlan;
 import src.domain.sessionplanner.model.session.repository.SessionPlanRepository;
 import src.domain.sessionplanner.model.session.repository.SessionPlannerPublishedStateRepository;
 

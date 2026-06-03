@@ -64,20 +64,20 @@ import shell.host.AppShell;
 import src.data.dungeon.model.DungeonPersistenceSchema;
 import src.data.dungeon.repository.SqliteDungeonMapRepository;
 import src.domain.dungeon.DungeonServiceContribution;
-import src.domain.dungeon.model.worldspace.model.DungeonBoundaryKey;
-import src.domain.dungeon.model.worldspace.model.DungeonCell;
-import src.domain.dungeon.model.worldspace.model.DungeonEdge;
-import src.domain.dungeon.model.worldspace.model.DungeonEdgeDirection;
-import src.domain.dungeon.model.worldspace.model.DungeonMap;
-import src.domain.dungeon.model.worldspace.model.DungeonMapIdentity;
-import src.domain.dungeon.model.worldspace.model.DungeonRoomCellProjection;
-import src.domain.dungeon.model.worldspace.model.DungeonRoomCluster;
-import src.domain.dungeon.model.worldspace.model.session.model.TravelDungeonActiveState;
-import src.domain.dungeon.model.worldspace.model.session.model.TravelDungeonSessionMovement;
-import src.domain.dungeon.model.worldspace.model.session.model.TravelDungeonSessionSurface;
-import src.domain.dungeon.model.worldspace.model.session.model.TravelDungeonSessionValues;
+import src.domain.dungeon.model.worldspace.DungeonBoundaryKey;
+import src.domain.dungeon.model.worldspace.DungeonCell;
+import src.domain.dungeon.model.worldspace.DungeonEdge;
+import src.domain.dungeon.model.worldspace.DungeonEdgeDirection;
+import src.domain.dungeon.model.worldspace.DungeonMap;
+import src.domain.dungeon.model.worldspace.DungeonMapIdentity;
+import src.domain.dungeon.model.worldspace.DungeonRoomCellProjection;
+import src.domain.dungeon.model.worldspace.DungeonRoomCluster;
+import src.domain.dungeon.model.runtime.travel.session.TravelDungeonActiveState;
+import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionSurface;
+import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionValues;
+import src.domain.dungeon.model.runtime.repository.TravelPartyStateRepository;
+import src.domain.dungeon.model.runtime.repository.TravelPartyPositionRepository;
 import src.domain.dungeon.model.worldspace.repository.DungeonMapRepository;
-import src.domain.dungeon.model.worldspace.repository.TravelDungeonSessionRepository;
 import src.domain.dungeon.published.DungeonEditorControlsModel;
 import src.domain.dungeon.published.DungeonEditorControlsSnapshot;
 import src.domain.dungeon.published.DungeonEditorMapSurfaceModel;
@@ -2189,7 +2189,8 @@ final class DungeonEditorBehaviorHarnessSupport {
             database.clearDungeonData();
             ServiceRegistry.Builder builder = new ServiceRegistry.Builder();
             builder.register(DungeonMapRepository.class, new SqliteDungeonMapRepository());
-            builder.register(TravelDungeonSessionRepository.class, new EmptyTravelDungeonSessionRepository());
+            builder.register(TravelPartyStateRepository.class, new EmptyTravelPartyStateRepository());
+            builder.register(TravelPartyPositionRepository.class, new EmptyTravelPartyPositionRepository());
             new DungeonServiceContribution().register(builder);
             ServiceRegistry registry = builder.build();
             return new HarnessRuntime(
@@ -2218,35 +2219,20 @@ final class DungeonEditorBehaviorHarnessSupport {
         }
     }
 
-    static final class EmptyTravelDungeonSessionRepository implements TravelDungeonSessionRepository {
+    static final class EmptyTravelPartyStateRepository implements TravelPartyStateRepository {
         @Override
         public TravelDungeonActiveState.ActiveTravelStateData loadActiveTravelState() {
             return new TravelDungeonActiveState.ActiveTravelStateData(List.of(), null);
         }
+    }
 
+    static final class EmptyTravelPartyPositionRepository implements TravelPartyPositionRepository {
         @Override
-        public TravelDungeonSessionSurface.SurfaceData loadDungeonSurface(
-                TravelDungeonSessionSurface.PositionData position
-        ) {
-            return TravelDungeonSessionSurface.outsideDungeonSurface(0L);
-        }
-
-        @Override
-        public TravelDungeonSessionMovement.MoveResultData moveDungeonAction(
-                TravelDungeonSessionSurface.PositionData position,
-                String actionId
-        ) {
-            return new TravelDungeonSessionMovement.MoveResultData(
-                    TravelDungeonSessionValues.MoveStatus.NO_MAP,
-                    TravelDungeonSessionSurface.outsideDungeonSurface(0L),
-                    null);
-        }
-
-        @Override
-        public void saveDungeonPosition(
+        public boolean saveDungeonPosition(
                 TravelDungeonSessionSurface.PositionData position,
                 List<Long> characterIds
         ) {
+            return false;
         }
 
         @Override

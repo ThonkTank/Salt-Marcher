@@ -9,7 +9,7 @@ final class DungeonEditorControlsProjectionServiceAssembly {
     }
 
     static src.domain.dungeon.published.DungeonEditorControlsSnapshot snapshot(
-            src.domain.dungeon.model.worldspace.model.session.model.DungeonEditorSessionSnapshot.SnapshotData snapshot,
+            src.domain.dungeon.model.worldspace.session.model.DungeonEditorSessionSnapshot.SnapshotData snapshot,
             DungeonEditorSurfaceContextServiceAssembly.SurfaceContext surfaceContext
     ) {
         return new src.domain.dungeon.published.DungeonEditorControlsSnapshot(
@@ -25,22 +25,22 @@ final class DungeonEditorControlsProjectionServiceAssembly {
     }
 
     private static List<src.domain.dungeon.published.DungeonMapSummary> publishedMapSummaries(
-            List<src.domain.dungeon.model.worldspace.model.workspace.model.DungeonEditorWorkspaceValues.MapSummary> maps
+            List<src.domain.dungeon.model.worldspace.workspace.model.DungeonEditorWorkspaceValues.MapSummary> maps
     ) {
         List<src.domain.dungeon.published.DungeonMapSummary> result = new ArrayList<>();
-        for (src.domain.dungeon.model.worldspace.model.workspace.model.DungeonEditorWorkspaceValues.MapSummary map
-                : maps == null ? List.<src.domain.dungeon.model.worldspace.model.workspace.model.DungeonEditorWorkspaceValues.MapSummary>of() : maps) {
+        for (src.domain.dungeon.model.worldspace.workspace.model.DungeonEditorWorkspaceValues.MapSummary map
+                : maps == null ? List.<src.domain.dungeon.model.worldspace.workspace.model.DungeonEditorWorkspaceValues.MapSummary>of() : maps) {
             result.add(toPublishedMapSummary(map));
         }
         return List.copyOf(result);
     }
 
     private static src.domain.dungeon.published.DungeonMapSummary toPublishedMapSummary(
-            src.domain.dungeon.model.worldspace.model.workspace.model.DungeonEditorWorkspaceValues.MapSummary map
+            src.domain.dungeon.model.worldspace.workspace.model.DungeonEditorWorkspaceValues.MapSummary map
     ) {
-        src.domain.dungeon.model.worldspace.model.workspace.model.DungeonEditorWorkspaceValues.MapSummary safeMap = map == null
-                ? new src.domain.dungeon.model.worldspace.model.workspace.model.DungeonEditorWorkspaceValues.MapSummary(
-                        new src.domain.dungeon.model.worldspace.model.workspace.model.DungeonEditorWorkspaceValues.MapId(1L),
+        src.domain.dungeon.model.worldspace.workspace.model.DungeonEditorWorkspaceValues.MapSummary safeMap = map == null
+                ? new src.domain.dungeon.model.worldspace.workspace.model.DungeonEditorWorkspaceValues.MapSummary(
+                        new src.domain.dungeon.model.worldspace.workspace.model.DungeonEditorWorkspaceValues.MapId(1L),
                         "Dungeon Map",
                         0L)
                 : map;
@@ -51,7 +51,7 @@ final class DungeonEditorControlsProjectionServiceAssembly {
     }
 
     private static src.domain.dungeon.published.DungeonMapId toPublishedMapId(
-            src.domain.dungeon.model.worldspace.model.workspace.model.DungeonEditorWorkspaceValues.MapId mapId
+            src.domain.dungeon.model.worldspace.workspace.model.DungeonEditorWorkspaceValues.MapId mapId
     ) {
         return mapId == null ? null : new src.domain.dungeon.published.DungeonMapId(mapId.value());
     }

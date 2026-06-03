@@ -3,9 +3,9 @@ package src.domain.dungeon.model.worldspace.usecase;
 import java.util.Locale;
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
-import src.domain.dungeon.model.worldspace.model.DungeonCell;
-import src.domain.dungeon.model.worldspace.model.DungeonTransitionDestination;
-import src.domain.dungeon.model.worldspace.model.session.model.DungeonEditorSessionWorkflow;
+import src.domain.dungeon.model.worldspace.DungeonCell;
+import src.domain.dungeon.model.worldspace.DungeonTransitionDestination;
+import src.domain.dungeon.model.worldspace.session.model.DungeonEditorSessionWorkflow;
 import src.domain.dungeon.model.worldspace.usecase.BuildDungeonEditorMainViewInputUseCase.MainViewInput;
 
 public final class ApplyDungeonEditorCreateTransitionUseCase {

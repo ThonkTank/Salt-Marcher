@@ -1,8 +1,8 @@
 package src.domain.sessionplanner.model.session.helper;
 
 import java.util.List;
-import src.domain.sessionplanner.model.session.model.EncounterDays;
-import src.domain.sessionplanner.model.session.model.SessionPlan;
+import src.domain.sessionplanner.model.session.EncounterDays;
+import src.domain.sessionplanner.model.session.SessionPlan;
 
 public final class SessionPlanSeedHelper {
 

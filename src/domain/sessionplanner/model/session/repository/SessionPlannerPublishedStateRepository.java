@@ -1,6 +1,6 @@
 package src.domain.sessionplanner.model.session.repository;
 
-import src.domain.sessionplanner.model.session.model.SessionPlan;
+import src.domain.sessionplanner.model.session.SessionPlan;
 
 public interface SessionPlannerPublishedStateRepository {
 

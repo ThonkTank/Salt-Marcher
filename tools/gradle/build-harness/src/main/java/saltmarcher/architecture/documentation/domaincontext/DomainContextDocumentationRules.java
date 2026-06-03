@@ -299,7 +299,7 @@ public final class DomainContextDocumentationRules implements ArchitectureRule {
                 violations.add(documentPath, "domain-context-aggregate-root-marker-shape",
                         "Declared aggregate root '" + aggregateRoot
                                 + "' must exist as a Java type under src/domain/" + featureName
-                                + "/model/<family>/model/** or, while legacy topology remains, under src/domain/"
+                                + "/model/<family>/** or, while legacy topology remains, under src/domain/"
                                 + featureName
                                 + "/<named-domain-module>/<role>/. It must not live under published/, application/, or the feature root.");
             }

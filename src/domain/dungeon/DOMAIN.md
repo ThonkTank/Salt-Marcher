@@ -19,15 +19,15 @@ Context Name: Dungeon
   is defined by `docs/dungeon/domain/domain-dungeon.md`
 - `DungeonMap` is the aggregate root for one authored map
 - authored committed snapshots, authored operation results, authored selection
-  inspectors, and raw travel surfaces are projections over the same authored
-  dungeon write model
+  inspectors, and runtime travel session surfaces are projections over the same
+  authored dungeon write model
 - render-oriented display models and runtime editor-session policy are not
   dungeon-owned output
 
 ## Published Language
 
 `published/` owns public dungeon commands, queries, results, IDs, statuses,
-authored map facts, authored operation results, and raw travel facts.
+authored map facts, authored operation results, and runtime travel facts.
 
 Published dungeon carriers must not own:
 
@@ -38,19 +38,24 @@ Published dungeon carriers must not own:
 
 ## Application Boundary
 
-Application Service: DungeonTravelApplicationService
 Application Service: DungeonEditorMapApplicationService
 Application Service: DungeonEditorProjectionApplicationService
 Application Service: DungeonEditorPointerApplicationService
 Application Service: DungeonEditorNarrationApplicationService
+Application Service: DungeonEditorStairApplicationService
+Application Service: DungeonEditorTransitionApplicationService
 Application Service: DungeonTravelRuntimeApplicationService
 
 `application/` coordinates authored dungeon load, mutate, save, search, and
-raw travel-surface queries through the domain-owned ports. The root
-application-service family maps authored dungeon truth and derived results
-into `published/` carriers while editor runtime and travel runtime remain
-same-context dungeon runtime state as defined by the canonical dungeon domain
-document. Render ownership stays in the view layer.
+runtime travel-session publication through domain-owned repositories and
+searches. Travel runtime reads party travel state through the dungeon-owned
+`TravelPartyStateRepository` and writes party travel position through the
+dungeon-owned `TravelPartyPositionRepository`; party roster truth and persisted
+party travel position remain party-owned. The root application-service family
+maps authored dungeon truth and derived results into `published/` carriers
+while editor runtime and travel runtime remain same-context dungeon runtime
+state as defined by the canonical dungeon domain document. Render ownership
+stays in the view layer.
 
 ## Aggregate Model
 
@@ -82,10 +87,11 @@ Core invariants:
 ## Cross-Context Boundary
 
 - `dungeon` publishes authored `DungeonSnapshot`,
-  `DungeonOperationResult`, `DungeonInspectorSnapshot`, raw travel surfaces,
-  and travel-action results rooted in authored dungeon truth
+  `DungeonOperationResult`, `DungeonInspectorSnapshot`, runtime travel session
+  surfaces, and travel-action results rooted in authored dungeon truth
 - dungeon runtime travel consumes party-owned travel-position facts only through
-  dungeon-owned ports over party published state
+  dungeon-owned external boundaries over party published state, currently
+  `TravelPartyStateRepository` and `TravelPartyPositionRepository`
 - canonical dungeon documentation owns target model-family placement for
   authored truth, editor runtime composition, and travel runtime composition
 - `dungeon` does not own party roster truth or persisted party travel position

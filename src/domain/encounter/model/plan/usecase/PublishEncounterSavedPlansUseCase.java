@@ -1,7 +1,7 @@
 package src.domain.encounter.model.plan.usecase;
 
 import org.jspecify.annotations.Nullable;
-import src.domain.encounter.model.plan.model.SavedEncounterPlansLoadResult;
+import src.domain.encounter.model.plan.SavedEncounterPlansLoadResult;
 import src.domain.encounter.model.plan.repository.EncounterPlanPublishedStateRepository;
 
 public final class PublishEncounterSavedPlansUseCase {

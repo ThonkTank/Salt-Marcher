@@ -1,7 +1,7 @@
 package src.domain.creatures;
 
 import java.util.List;
-import src.domain.creatures.model.catalog.model.CreatureCatalogData;
+import src.domain.creatures.model.catalog.CreatureCatalogData;
 import src.domain.creatures.model.catalog.repository.CreaturesPublishedStateRepository;
 import src.domain.creatures.published.CreatureLookupStatus;
 import src.domain.creatures.published.CreatureQueryStatus;

@@ -20,7 +20,7 @@ final class DungeonAuthoredReadProjectionServiceAssembly {
         if (snapshot == null) {
             return DungeonPublishedMapProjectionServiceAssembly.defaultSnapshot();
         }
-        src.domain.dungeon.model.worldspace.model.DungeonDerivedState derived = snapshot.derived();
+        src.domain.dungeon.model.worldspace.DungeonDerivedState derived = snapshot.derived();
         return new src.domain.dungeon.published.DungeonSnapshot(
                 snapshot.mapName(),
                 src.domain.dungeon.published.DungeonMapMode.EDITOR,
@@ -40,7 +40,7 @@ final class DungeonAuthoredReadProjectionServiceAssembly {
                 roomNarrations(inspector));
     }
 
-    private static String aggregateSummary(src.domain.dungeon.model.worldspace.model.DungeonState aggregate) {
+    private static String aggregateSummary(src.domain.dungeon.model.worldspace.DungeonState aggregate) {
         return aggregate.label() + " #" + aggregate.id();
     }
 

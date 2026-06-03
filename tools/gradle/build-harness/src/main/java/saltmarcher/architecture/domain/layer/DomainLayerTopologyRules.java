@@ -100,19 +100,17 @@ public final class DomainLayerTopologyRules implements ArchitectureRule {
         }
 
         if (segments.size() == 6) {
-            violations.add(sourceFile.relativePath(), "domain-layer-model-family-role-subpackage-required",
-                    "Model families must place Java files under src/domain/<context>/model/<family>/<role>/.");
             return;
         }
 
-        String role = segments.get(5);
-        if (!DomainRoleTopologySupport.isAllowedTargetDomainRolePackage(role)) {
-            violations.add(sourceFile.relativePath(), "domain-layer-model-role-package-name-allowlist",
-                    "Model-family role packages must be one of: model, usecase, helper, constants, port, repository.");
+        String roleOrSubpackage = segments.get(5);
+        if ("model".equals(roleOrSubpackage)) {
+            violations.add(sourceFile.relativePath(), "domain-layer-obsolete-model-role-marker",
+                    "Internal model files now live directly under src/domain/<context>/model/<family>/; remove the obsolete model/ role marker.");
             return;
         }
 
-        if ("model".equals(role)) {
+        if (!DomainRoleTopologySupport.isAllowedTargetDomainRolePackage(roleOrSubpackage)) {
             validateModelSubtree(sourceFile, violations);
             return;
         }
@@ -125,11 +123,11 @@ public final class DomainLayerTopologyRules implements ArchitectureRule {
 
     private void validateModelSubtree(SourceFile sourceFile, ViolationSink violations) {
         List<String> segments = sourceFile.relativeSegments();
-        for (int index = 6; index < segments.size() - 1; index++) {
+        for (int index = 5; index < segments.size() - 1; index++) {
             String segment = segments.get(index);
             if (DomainRoleTopologySupport.isForbiddenModelSubtreeTechnicalBucket(segment)) {
                 violations.add(sourceFile.relativePath(), "domain-layer-model-subtree-no-technical-buckets",
-                        "Nested technical buckets are forbidden inside src/domain/<context>/model/<family>/model/**. Use only semantic subpackages for subordinate models.");
+                        "Nested technical buckets are forbidden inside src/domain/<context>/model/<family>/**. Use only semantic subpackages for subordinate models.");
                 return;
             }
         }

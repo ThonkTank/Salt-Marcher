@@ -1,6 +1,6 @@
 package src.domain.encounter.model.reference.repository;
 
-import src.domain.encounter.model.reference.model.EncounterCreatureCandidateCriteria;
+import src.domain.encounter.model.reference.EncounterCreatureCandidateCriteria;
 
 public interface EncounterCreatureRepository {
 

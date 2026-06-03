@@ -4,7 +4,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
-import src.domain.creatures.model.catalog.model.CreatureCatalogData;
+import src.domain.creatures.model.catalog.CreatureCatalogData;
 import src.domain.creatures.model.catalog.port.CreatureCatalogPort;
 import src.domain.creatures.model.catalog.repository.CreaturesPublishedStateRepository;
 

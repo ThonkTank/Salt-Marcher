@@ -2,17 +2,17 @@ package src.domain.encounter.model.session.repository;
 
 import java.util.List;
 import java.util.Optional;
-import src.domain.encounter.model.generation.model.EncounterGenerationRequest;
-import src.domain.encounter.model.plan.model.EncounterPlan;
+import src.domain.encounter.model.generation.EncounterGenerationRequest;
+import src.domain.encounter.model.plan.EncounterPlan;
 import src.domain.encounter.model.reference.repository.EncounterCreatureRepository;
-import src.domain.encounter.model.session.model.EncounterSession;
-import src.domain.encounter.model.session.model.AwardXpOutcome;
-import src.domain.encounter.model.session.model.BudgetData;
-import src.domain.encounter.model.session.model.CreatureDetailData;
-import src.domain.encounter.model.session.model.GenerationResultData;
-import src.domain.encounter.model.session.model.ListPlansOutcome;
-import src.domain.encounter.model.session.model.PartyMemberData;
-import src.domain.encounter.model.session.model.PlanOutcome;
+import src.domain.encounter.model.session.EncounterSession;
+import src.domain.encounter.model.session.AwardXpOutcome;
+import src.domain.encounter.model.session.BudgetData;
+import src.domain.encounter.model.session.CreatureDetailData;
+import src.domain.encounter.model.session.GenerationResultData;
+import src.domain.encounter.model.session.ListPlansOutcome;
+import src.domain.encounter.model.session.PartyMemberData;
+import src.domain.encounter.model.session.PlanOutcome;
 
 public final class EncounterSessionRepository implements EncounterSession.SessionRepository {
 

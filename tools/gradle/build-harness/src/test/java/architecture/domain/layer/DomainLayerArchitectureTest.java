@@ -126,8 +126,7 @@ public final class DomainLayerArchitectureTest {
     @ArchTest
     static final ArchRule domainInternalModelsMustOnlyDependOnModelsAndConstants =
             classes()
-                    .that()
-                    .resideInAPackage("src.domain..model..model..")
+                    .that(isInternalModelClass())
                     .should(onlyDependOnAllowedDomainPackages(
                             "same-context model and constants only",
                             DomainLayerArchitectureTest::isAllowedForModel));
@@ -472,6 +471,9 @@ public final class DomainLayerArchitectureTest {
     }
 
     private static boolean isSameFeatureModelRolePackage(String packageName, String feature, String role) {
+        if ("model".equals(role)) {
+            return isSameFeatureInternalModelPackage(packageName, feature);
+        }
         String rolePackagePrefix = "src.domain." + feature + ".model.";
         if (!packageName.startsWith(rolePackagePrefix)) {
             return false;
@@ -483,6 +485,31 @@ public final class DomainLayerArchitectureTest {
         }
         String afterFamily = remainder.substring(familySeparator + 1);
         return afterFamily.equals(role) || afterFamily.startsWith(role + ".");
+    }
+
+    private static DescribedPredicate<JavaClass> isInternalModelClass() {
+        return DescribedPredicate.describe(
+                "reside in a same-context internal model package",
+                javaClass -> {
+                    String feature = domainFeatureName(javaClass.getPackageName());
+                    return feature != null && isSameFeatureInternalModelPackage(javaClass.getPackageName(), feature);
+                });
+    }
+
+    private static boolean isSameFeatureInternalModelPackage(String packageName, String feature) {
+        String familyPrefix = "src.domain." + feature + ".model.";
+        if (!packageName.startsWith(familyPrefix)) {
+            return false;
+        }
+        String remainder = packageName.substring(familyPrefix.length());
+        int familySeparator = remainder.indexOf('.');
+        if (familySeparator < 0) {
+            return !remainder.isBlank();
+        }
+        String firstAfterFamily = remainder.substring(familySeparator + 1);
+        int roleSeparator = firstAfterFamily.indexOf('.');
+        String segment = roleSeparator < 0 ? firstAfterFamily : firstAfterFamily.substring(0, roleSeparator);
+        return !Set.of("usecase", "helper", "constants", "port", "repository").contains(segment);
     }
 
     private static boolean isForeignRootPackage(String packageName, String sourceFeature) {

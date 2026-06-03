@@ -1,6 +1,6 @@
 package src.domain.party;
 
-import src.domain.party.model.roster.model.PartyAdventuringDayProgressEvent;
+import src.domain.party.model.roster.PartyAdventuringDayProgressEvent;
 import src.domain.party.published.AdventuringDayProgressEvent;
 import src.domain.party.published.AdventuringDayProgressEventType;
 
@@ -10,7 +10,7 @@ final class PartyAdventuringDayProgressProjectionServiceAssembly {
     }
 
     static src.domain.party.published.AdventuringDayLevelProgress mapLevelProgress(
-            src.domain.party.model.roster.model.PartyAdventuringDayLevelProgress progress
+            src.domain.party.model.roster.PartyAdventuringDayLevelProgress progress
     ) {
         return new src.domain.party.published.AdventuringDayLevelProgress(
                 progress.startLevel(),

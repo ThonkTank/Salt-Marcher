@@ -1,14 +1,14 @@
 package src.domain.dungeon.model.worldspace.helper;
 
-import src.domain.dungeon.model.worldspace.model.interaction.model.DungeonEditorInteractionValues.VertexTarget;
-import src.domain.dungeon.model.worldspace.model.interaction.model.DungeonEditorMainViewInteractionValues.BoundaryTarget;
-import src.domain.dungeon.model.worldspace.model.interaction.model.DungeonEditorMainViewInteractionValues.HandleTarget;
-import src.domain.dungeon.model.worldspace.model.interaction.model.DungeonEditorMainViewInteractionValues.HitTarget;
-import src.domain.dungeon.model.worldspace.model.interaction.model.DungeonEditorMainViewInteractionValues.HitKind;
-import src.domain.dungeon.model.worldspace.model.interaction.model.DungeonEditorMainViewInteractionValues.PointerState;
-import src.domain.dungeon.model.worldspace.model.session.model.DungeonEditorMainViewPointerTarget;
-import src.domain.dungeon.model.worldspace.model.workspace.model.DungeonEditorWorkspaceValues;
-import src.domain.dungeon.model.worldspace.model.DungeonTopologyElementKind;
+import src.domain.dungeon.model.worldspace.interaction.model.DungeonEditorInteractionValues.VertexTarget;
+import src.domain.dungeon.model.worldspace.interaction.model.DungeonEditorMainViewInteractionValues.BoundaryTarget;
+import src.domain.dungeon.model.worldspace.interaction.model.DungeonEditorMainViewInteractionValues.HandleTarget;
+import src.domain.dungeon.model.worldspace.interaction.model.DungeonEditorMainViewInteractionValues.HitTarget;
+import src.domain.dungeon.model.worldspace.interaction.model.DungeonEditorMainViewInteractionValues.HitKind;
+import src.domain.dungeon.model.worldspace.interaction.model.DungeonEditorMainViewInteractionValues.PointerState;
+import src.domain.dungeon.model.worldspace.session.model.DungeonEditorMainViewPointerTarget;
+import src.domain.dungeon.model.worldspace.workspace.model.DungeonEditorWorkspaceValues;
+import src.domain.dungeon.model.worldspace.DungeonTopologyElementKind;
 
 public final class DungeonEditorMainViewInputBoundaryTranslationHelper {
     private static final double VERTEX_SNAP_DISTANCE = 0.22;
@@ -139,12 +139,12 @@ public final class DungeonEditorMainViewInputBoundaryTranslationHelper {
         return HitKind.EMPTY;
     }
 
-    private static src.domain.dungeon.model.worldspace.model.interaction.model.DungeonEditorInteractionValues.CellTarget toCellTarget(
+    private static src.domain.dungeon.model.worldspace.interaction.model.DungeonEditorInteractionValues.CellTarget toCellTarget(
             DungeonEditorWorkspaceValues.Cell cell
     ) {
         DungeonEditorWorkspaceValues.Cell safeCell =
                 cell == null ? DungeonEditorWorkspaceValues.Cell.empty() : cell;
-        return new src.domain.dungeon.model.worldspace.model.interaction.model.DungeonEditorInteractionValues.CellTarget(
+        return new src.domain.dungeon.model.worldspace.interaction.model.DungeonEditorInteractionValues.CellTarget(
                 safeCell.q(),
                 safeCell.r(),
                 safeCell.level());

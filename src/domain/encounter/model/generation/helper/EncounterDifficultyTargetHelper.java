@@ -1,7 +1,7 @@
 package src.domain.encounter.model.generation.helper;
 
-import src.domain.encounter.model.generation.model.EncounterDifficultyBandModel;
-import src.domain.encounter.model.generation.model.EncounterDifficultyThresholds;
+import src.domain.encounter.model.generation.EncounterDifficultyBandModel;
+import src.domain.encounter.model.generation.EncounterDifficultyThresholds;
 
 public final class EncounterDifficultyTargetHelper {
 

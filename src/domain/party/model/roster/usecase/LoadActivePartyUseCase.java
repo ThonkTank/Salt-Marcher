@@ -1,6 +1,6 @@
 package src.domain.party.model.roster.usecase;
 
-import src.domain.party.model.roster.model.PartyCharacter;
+import src.domain.party.model.roster.PartyCharacter;
 import src.domain.party.model.roster.repository.PartyRosterRepository;
 
 import java.util.List;

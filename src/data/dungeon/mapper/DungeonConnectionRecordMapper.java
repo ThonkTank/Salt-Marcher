@@ -4,7 +4,7 @@ import src.data.dungeon.model.DungeonCorridorRecord;
 import src.data.dungeon.model.DungeonMapRecord;
 import src.data.dungeon.model.DungeonStairRecord;
 import src.data.dungeon.model.DungeonTransitionRecord;
-import src.domain.dungeon.model.worldspace.model.ConnectionCatalog;
+import src.domain.dungeon.model.worldspace.ConnectionCatalog;
 
 import java.util.List;
 

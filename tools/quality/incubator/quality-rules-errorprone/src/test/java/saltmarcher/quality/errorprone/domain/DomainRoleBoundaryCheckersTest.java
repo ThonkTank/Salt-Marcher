@@ -11,6 +11,7 @@ import saltmarcher.quality.errorprone.DomainConstantsRoleBoundaryChecker;
 import saltmarcher.quality.errorprone.DomainHelperRoleBoundaryChecker;
 import saltmarcher.quality.errorprone.DomainModelRoleBoundaryChecker;
 import saltmarcher.quality.errorprone.DomainPortRoleBoundaryChecker;
+import saltmarcher.quality.errorprone.DomainRepositoryPublishedStateBoundaryChecker;
 import saltmarcher.quality.errorprone.DomainRepositoryRoleBoundaryChecker;
 import saltmarcher.quality.errorprone.DomainRootUseCaseCrossModelFamilyBoundaryChecker;
 import saltmarcher.quality.errorprone.DomainUseCaseRoleBoundaryChecker;
@@ -410,8 +411,8 @@ public final class DomainRoleBoundaryCheckersTest {
                 .addSourceLines(
                         "src/domain/foo/FooSelectionApplicationService.java",
                         "package src.domain.foo;",
-                        "import src.domain.foo.model.selection.model.SelectionState;",
-                        "// BUG: Diagnostic contains: references forbidden domain concern src.domain.foo.model.selection.model.SelectionState",
+                        "import src.domain.foo.model.selection.SelectionState;",
+                        "// BUG: Diagnostic contains: references forbidden domain concern src.domain.foo.model.selection.SelectionState",
                         "public final class FooSelectionApplicationService {",
                         "  private final SelectionState state;",
                         "  public FooSelectionApplicationService(SelectionState state) {",
@@ -419,8 +420,8 @@ public final class DomainRoleBoundaryCheckersTest {
                         "  }",
                         "}")
                 .addSourceLines(
-                        "src/domain/foo/model/selection/model/SelectionState.java",
-                        "package src.domain.foo.model.selection.model;",
+                        "src/domain/foo/model/selection/SelectionState.java",
+                        "package src.domain.foo.model.selection;",
                         "public final class SelectionState { }")
                 .doTest();
     }
@@ -523,7 +524,7 @@ public final class DomainRoleBoundaryCheckersTest {
                         "import src.domain.bar.BarApplicationService;",
                         "import src.domain.foo.model.selection.constants.SelectionConstants;",
                         "import src.domain.foo.model.selection.helper.SelectionHelper;",
-                        "import src.domain.foo.model.selection.model.SelectionState;",
+                        "import src.domain.foo.model.selection.SelectionState;",
                         "import src.domain.foo.model.selection.port.SelectionPort;",
                         "import src.domain.foo.model.selection.repository.SelectionRepository;",
                         "import src.domain.foo.model.selection.usecase.ApplySelectionUseCase;",
@@ -557,8 +558,8 @@ public final class DomainRoleBoundaryCheckersTest {
                         "package src.domain.foo.model.selection.usecase;",
                         "public final class ApplySelectionUseCase { }")
                 .addSourceLines(
-                        "src/domain/foo/model/selection/model/SelectionState.java",
-                        "package src.domain.foo.model.selection.model;",
+                        "src/domain/foo/model/selection/SelectionState.java",
+                        "package src.domain.foo.model.selection;",
                         "public final class SelectionState { }")
                 .addSourceLines(
                         "src/domain/foo/model/selection/helper/SelectionHelper.java",
@@ -661,6 +662,23 @@ public final class DomainRoleBoundaryCheckersTest {
     }
 
     @Test
+    public void useCaseRejectsLocalExecutableProtocolMechanics() {
+        CompilationTestHelper.newInstance(DomainUseCaseRoleBoundaryChecker.class, getClass())
+                .addSourceLines(
+                        "src/domain/foo/application/ApplySelectionUseCase.java",
+                        "package src.domain.foo.application;",
+                        "import java.util.function.Function;",
+                        "// BUG: Diagnostic contains: references executable protocol type java.util.function.Function",
+                        "final class ApplySelectionUseCase {",
+                        "  int apply(int value) {",
+                        "    Function<Integer, Integer> local = input -> input + 1;",
+                        "    return local.apply(value);",
+                        "  }",
+                        "}")
+                .doTest();
+    }
+
+    @Test
     public void rootUseCaseRejectsSameContextRootUseCaseChain() {
         CompilationTestHelper.newInstance(DomainUseCaseRoleBoundaryChecker.class, getClass())
                 .addSourceLines(
@@ -710,8 +728,8 @@ public final class DomainRoleBoundaryCheckersTest {
                 .addSourceLines(
                         "src/domain/foo/application/ApplyWorkspaceUseCase.java",
                         "package src.domain.foo.application;",
-                        "import src.domain.foo.model.grid.model.GridState;",
-                        "import src.domain.foo.model.selection.model.SelectionState;",
+                        "import src.domain.foo.model.grid.GridState;",
+                        "import src.domain.foo.model.selection.SelectionState;",
                         "final class ApplyWorkspaceUseCase {",
                         "  private final GridState grid;",
                         "  private final SelectionState selection;",
@@ -725,14 +743,14 @@ public final class DomainRoleBoundaryCheckersTest {
                         "  }",
                         "}")
                 .addSourceLines(
-                        "src/domain/foo/model/grid/model/GridState.java",
-                        "package src.domain.foo.model.grid.model;",
+                        "src/domain/foo/model/grid/GridState.java",
+                        "package src.domain.foo.model.grid;",
                         "public final class GridState {",
                         "  public void apply() { }",
                         "}")
                 .addSourceLines(
-                        "src/domain/foo/model/selection/model/SelectionState.java",
-                        "package src.domain.foo.model.selection.model;",
+                        "src/domain/foo/model/selection/SelectionState.java",
+                        "package src.domain.foo.model.selection;",
                         "public final class SelectionState {",
                         "  public void apply() { }",
                         "}")
@@ -775,13 +793,94 @@ public final class DomainRoleBoundaryCheckersTest {
     }
 
     @Test
+    public void rootUseCaseAllowsSemanticSubpackageModelInvocationAsFamilyWork() {
+        CompilationTestHelper.newInstance(DomainRootUseCaseCrossModelFamilyBoundaryChecker.class, getClass())
+                .addSourceLines(
+                        "src/domain/foo/application/ApplyWorkspaceUseCase.java",
+                        "package src.domain.foo.application;",
+                        "import src.domain.foo.model.grid.snapshot.GridSnapshot;",
+                        "import src.domain.foo.model.selection.state.SelectionState;",
+                        "final class ApplyWorkspaceUseCase {",
+                        "  private final GridSnapshot grid;",
+                        "  private final SelectionState selection;",
+                        "  ApplyWorkspaceUseCase(GridSnapshot grid, SelectionState selection) {",
+                        "    this.grid = grid;",
+                        "    this.selection = selection;",
+                        "  }",
+                        "  void apply() {",
+                        "    grid.apply();",
+                        "    selection.apply();",
+                        "  }",
+                        "}")
+                .addSourceLines(
+                        "src/domain/foo/model/grid/snapshot/GridSnapshot.java",
+                        "package src.domain.foo.model.grid.snapshot;",
+                        "public final class GridSnapshot {",
+                        "  public void apply() { }",
+                        "}")
+                .addSourceLines(
+                        "src/domain/foo/model/selection/state/SelectionState.java",
+                        "package src.domain.foo.model.selection.state;",
+                        "public final class SelectionState {",
+                        "  public void apply() { }",
+                        "}")
+                .doTest();
+    }
+
+    @Test
+    public void rootUseCaseDoesNotCountTechnicalRoleBucketInvocationAsModelFamilyWork() {
+        CompilationTestHelper.newInstance(DomainRootUseCaseCrossModelFamilyBoundaryChecker.class, getClass())
+                .addSourceLines(
+                        "src/domain/foo/application/ApplyWorkspaceUseCase.java",
+                        "package src.domain.foo.application;",
+                        "import src.domain.foo.model.grid.helper.GridHelper;",
+                        "import src.domain.foo.model.grid.repository.GridRepository;",
+                        "import src.domain.foo.model.selection.state.SelectionState;",
+                        "// BUG: Diagnostic contains: invoked model families [selection]",
+                        "final class ApplyWorkspaceUseCase {",
+                        "  private final GridHelper helper;",
+                        "  private final GridRepository repository;",
+                        "  private final SelectionState selection;",
+                        "  ApplyWorkspaceUseCase(GridHelper helper, GridRepository repository, SelectionState selection) {",
+                        "    this.helper = helper;",
+                        "    this.repository = repository;",
+                        "    this.selection = selection;",
+                        "  }",
+                        "  void apply() {",
+                        "    helper.apply();",
+                        "    repository.apply();",
+                        "    selection.apply();",
+                        "  }",
+                        "}")
+                .addSourceLines(
+                        "src/domain/foo/model/grid/helper/GridHelper.java",
+                        "package src.domain.foo.model.grid.helper;",
+                        "public final class GridHelper {",
+                        "  public void apply() { }",
+                        "}")
+                .addSourceLines(
+                        "src/domain/foo/model/grid/repository/GridRepository.java",
+                        "package src.domain.foo.model.grid.repository;",
+                        "public final class GridRepository {",
+                        "  public void apply() { }",
+                        "}")
+                .addSourceLines(
+                        "src/domain/foo/model/selection/state/SelectionState.java",
+                        "package src.domain.foo.model.selection.state;",
+                        "public final class SelectionState {",
+                        "  public void apply() { }",
+                        "}")
+                .doTest();
+    }
+
+    @Test
     public void rootUseCaseRejectsPassiveMultiModelFamilyReferences() {
         CompilationTestHelper.newInstance(DomainRootUseCaseCrossModelFamilyBoundaryChecker.class, getClass())
                 .addSourceLines(
                         "src/domain/foo/application/ApplyWorkspaceUseCase.java",
                         "package src.domain.foo.application;",
-                        "import src.domain.foo.model.grid.model.GridState;",
-                        "import src.domain.foo.model.selection.model.SelectionState;",
+                        "import src.domain.foo.model.grid.GridState;",
+                        "import src.domain.foo.model.selection.SelectionState;",
                         "// BUG: Diagnostic contains: invoked model families []",
                         "final class ApplyWorkspaceUseCase {",
                         "  private final GridState grid;",
@@ -792,12 +891,12 @@ public final class DomainRoleBoundaryCheckersTest {
                         "  }",
                         "}")
                 .addSourceLines(
-                        "src/domain/foo/model/grid/model/GridState.java",
-                        "package src.domain.foo.model.grid.model;",
+                        "src/domain/foo/model/grid/GridState.java",
+                        "package src.domain.foo.model.grid;",
                         "public final class GridState { }")
                 .addSourceLines(
-                        "src/domain/foo/model/selection/model/SelectionState.java",
-                        "package src.domain.foo.model.selection.model;",
+                        "src/domain/foo/model/selection/SelectionState.java",
+                        "package src.domain.foo.model.selection;",
                         "public final class SelectionState { }")
                 .doTest();
     }
@@ -808,7 +907,7 @@ public final class DomainRoleBoundaryCheckersTest {
                 .addSourceLines(
                         "src/domain/foo/application/ApplySelectionUseCase.java",
                         "package src.domain.foo.application;",
-                        "import src.domain.foo.model.selection.model.SelectionState;",
+                        "import src.domain.foo.model.selection.SelectionState;",
                         "// BUG: Diagnostic contains: must orchestrate at least two same-context model families",
                         "final class ApplySelectionUseCase {",
                         "  private final SelectionState selection;",
@@ -820,8 +919,8 @@ public final class DomainRoleBoundaryCheckersTest {
                         "  }",
                         "}")
                 .addSourceLines(
-                        "src/domain/foo/model/selection/model/SelectionState.java",
-                        "package src.domain.foo.model.selection.model;",
+                        "src/domain/foo/model/selection/SelectionState.java",
+                        "package src.domain.foo.model.selection;",
                         "public final class SelectionState {",
                         "  public void apply() { }",
                         "}")
@@ -834,8 +933,8 @@ public final class DomainRoleBoundaryCheckersTest {
                 .addSourceLines(
                         "src/domain/foo/application/ApplySelectionUseCase.java",
                         "package src.domain.foo.application;",
-                        "import src.domain.bar.model.grid.model.GridState;",
-                        "import src.domain.foo.model.selection.model.SelectionState;",
+                        "import src.domain.bar.model.grid.GridState;",
+                        "import src.domain.foo.model.selection.SelectionState;",
                         "// BUG: Diagnostic contains: invoked model families [selection]",
                         "final class ApplySelectionUseCase {",
                         "  private final GridState grid;",
@@ -850,14 +949,14 @@ public final class DomainRoleBoundaryCheckersTest {
                         "  }",
                         "}")
                 .addSourceLines(
-                        "src/domain/bar/model/grid/model/GridState.java",
-                        "package src.domain.bar.model.grid.model;",
+                        "src/domain/bar/model/grid/GridState.java",
+                        "package src.domain.bar.model.grid;",
                         "public final class GridState {",
                         "  public void apply() { }",
                         "}")
                 .addSourceLines(
-                        "src/domain/foo/model/selection/model/SelectionState.java",
-                        "package src.domain.foo.model.selection.model;",
+                        "src/domain/foo/model/selection/SelectionState.java",
+                        "package src.domain.foo.model.selection;",
                         "public final class SelectionState {",
                         "  public void apply() { }",
                         "}")
@@ -868,12 +967,12 @@ public final class DomainRoleBoundaryCheckersTest {
     public void modelAllowsSameContextModelConstantsAndPassivePlatformTypes() {
         CompilationTestHelper.newInstance(DomainModelRoleBoundaryChecker.class, getClass())
                 .addSourceLines(
-                        "src/domain/foo/model/grid/model/GridCoordinate.java",
-                        "package src.domain.foo.model.grid.model;",
+                        "src/domain/foo/model/grid/GridCoordinate.java",
+                        "package src.domain.foo.model.grid;",
                         "import java.time.LocalDate;",
                         "import java.util.List;",
                         "import src.domain.foo.model.grid.constants.GridConstants;",
-                        "import src.domain.foo.model.selection.model.SelectionState;",
+                        "import src.domain.foo.model.selection.SelectionState;",
                         "final class GridCoordinate {",
                         "  private final SelectionState selection;",
                         "  private final List<LocalDate> dates;",
@@ -893,9 +992,58 @@ public final class DomainRoleBoundaryCheckersTest {
                         "  private GridConstants() { }",
                         "}")
                 .addSourceLines(
-                        "src/domain/foo/model/selection/model/SelectionState.java",
-                        "package src.domain.foo.model.selection.model;",
+                        "src/domain/foo/model/selection/SelectionState.java",
+                        "package src.domain.foo.model.selection;",
                         "public final class SelectionState { }")
+                .doTest();
+    }
+
+    @Test
+    public void modelAllowsLocalFunctionalCollectionMechanics() {
+        CompilationTestHelper.newInstance(DomainModelRoleBoundaryChecker.class, getClass())
+                .addSourceLines(
+                        "src/domain/foo/model/grid/GridCoordinate.java",
+                        "package src.domain.foo.model.grid;",
+                        "import java.util.ArrayList;",
+                        "import java.util.LinkedHashMap;",
+                        "import java.util.List;",
+                        "import java.util.Map;",
+                        "final class GridCoordinate {",
+                        "  private final List<Integer> values;",
+                        "  GridCoordinate(List<Integer> values) {",
+                        "    this.values = values == null ? List.of() : List.copyOf(values);",
+                        "  }",
+                        "  Map<Integer, List<Integer>> grouped() {",
+                        "    Map<Integer, List<Integer>> result = new LinkedHashMap<>();",
+                        "    for (Integer value : values) {",
+                        "      result.computeIfAbsent(value % 2, ignored -> new ArrayList<>()).add(value);",
+                        "    }",
+                        "    return Map.copyOf(result);",
+                        "  }",
+                        "  List<String> labels() {",
+                        "    return values.stream().map(value -> \"cell-\" + value).toList();",
+                        "  }",
+                        "}")
+                .doTest();
+    }
+
+    @Test
+    public void modelAllowsLocalExecutableProtocolImplementationDetails() {
+        CompilationTestHelper.newInstance(DomainModelRoleBoundaryChecker.class, getClass())
+                .addSourceLines(
+                        "src/domain/foo/model/grid/GridCoordinate.java",
+                        "package src.domain.foo.model.grid;",
+                        "import java.util.concurrent.Callable;",
+                        "final class GridCoordinate {",
+                        "  int normalized(int value) {",
+                        "    Callable<Integer> local = () -> Math.max(0, value);",
+                        "    try {",
+                        "      return local.call();",
+                        "    } catch (Exception ex) {",
+                        "      return 0;",
+                        "    }",
+                        "  }",
+                        "}")
                 .doTest();
     }
 
@@ -903,8 +1051,8 @@ public final class DomainRoleBoundaryCheckersTest {
     public void modelRejectsHelperConcernAndExecutableProtocol() {
         CompilationTestHelper.newInstance(DomainModelRoleBoundaryChecker.class, getClass())
                 .addSourceLines(
-                        "src/domain/foo/model/grid/model/GridCoordinate.java",
-                        "package src.domain.foo.model.grid.model;",
+                        "src/domain/foo/model/grid/GridCoordinate.java",
+                        "package src.domain.foo.model.grid;",
                         "import java.util.function.Function;",
                         "import src.domain.foo.model.grid.helper.GridMathHelper;",
                         "// BUG: Diagnostic contains: references executable protocol type java.util.function.Function; references forbidden domain concern src.domain.foo.model.grid.helper.GridMathHelper",
@@ -924,11 +1072,134 @@ public final class DomainRoleBoundaryCheckersTest {
     }
 
     @Test
+    public void modelRejectsExecutableProtocolOnMethodContractSurface() {
+        CompilationTestHelper.newInstance(DomainModelRoleBoundaryChecker.class, getClass())
+                .addSourceLines(
+                        "src/domain/foo/model/grid/GridCoordinate.java",
+                        "package src.domain.foo.model.grid;",
+                        "import java.util.concurrent.Callable;",
+                        "import java.util.function.Function;",
+                        "// BUG: Diagnostic matches: executable-contract-surface",
+                        "final class GridCoordinate {",
+                        "  Function<Integer, Integer> functionView() {",
+                        "    return value -> value;",
+                        "  }",
+                        "  <T extends RuntimeException & Callable<Integer>> void failWith(T failure) throws T {",
+                        "    throw failure;",
+                        "  }",
+                        "}")
+                .expectErrorMessage("executable-contract-surface", containsAll(
+                        "references executable protocol type java.util.function.Function",
+                        "references executable protocol type java.util.concurrent.Callable"))
+                .doTest();
+    }
+
+    @Test
+    public void modelRejectsExecutableProtocolConstructorParameter() {
+        CompilationTestHelper.newInstance(DomainModelRoleBoundaryChecker.class, getClass())
+                .addSourceLines(
+                        "src/domain/foo/model/grid/GridCoordinate.java",
+                        "package src.domain.foo.model.grid;",
+                        "import java.util.function.Function;",
+                        "// BUG: Diagnostic contains: references executable protocol type java.util.function.Function",
+                        "final class GridCoordinate {",
+                        "  GridCoordinate(Function<Integer, Integer> normalizer) {",
+                        "    normalizer.apply(1);",
+                        "  }",
+                        "}")
+                .doTest();
+    }
+
+    @Test
+    public void modelRejectsExecutableProtocolConstructorThrowsAndTypeParameterBound() {
+        CompilationTestHelper.newInstance(DomainModelRoleBoundaryChecker.class, getClass())
+                .addSourceLines(
+                        "src/domain/foo/model/grid/GridCoordinate.java",
+                        "package src.domain.foo.model.grid;",
+                        "import java.util.concurrent.Callable;",
+                        "// BUG: Diagnostic contains: references executable protocol type java.util.concurrent.Callable",
+                        "final class GridCoordinate {",
+                        "  <T extends Exception & Callable<Integer>> GridCoordinate() throws T {",
+                        "  }",
+                        "}")
+                .doTest();
+    }
+
+    @Test
+    public void modelRejectsExecutableProtocolClassTypeParameterBound() {
+        CompilationTestHelper.newInstance(DomainModelRoleBoundaryChecker.class, getClass())
+                .addSourceLines(
+                        "src/domain/foo/model/grid/GridCoordinate.java",
+                        "package src.domain.foo.model.grid;",
+                        "import java.util.concurrent.Callable;",
+                        "// BUG: Diagnostic contains: references executable protocol type java.util.concurrent.Callable",
+                        "final class GridCoordinate<T extends Callable<Integer>> {",
+                        "  int value() {",
+                        "    return 1;",
+                        "  }",
+                        "}")
+                .doTest();
+    }
+
+    @Test
+    public void modelRejectsExecutableProtocolOnNestedTypeContractSurface() {
+        CompilationTestHelper.newInstance(DomainModelRoleBoundaryChecker.class, getClass())
+                .addSourceLines(
+                        "src/domain/foo/model/grid/GridCoordinate.java",
+                        "package src.domain.foo.model.grid;",
+                        "import java.util.concurrent.Callable;",
+                        "import java.util.function.Function;",
+                        "// BUG: Diagnostic matches: nested-executable-contract-surface",
+                        "final class GridCoordinate {",
+                        "  static final class CallbackBox<T extends Callable<Integer>> {",
+                        "    private final Function<Integer, Integer> normalizer;",
+                        "    CallbackBox(Function<Integer, Integer> normalizer) {",
+                        "      this.normalizer = normalizer;",
+                        "    }",
+                        "    Function<Integer, Integer> normalizer() {",
+                        "      return normalizer;",
+                        "    }",
+                        "  }",
+                        "}")
+                .expectErrorMessage("nested-executable-contract-surface", containsAll(
+                        "references executable protocol type java.util.concurrent.Callable",
+                        "references executable protocol type java.util.function.Function"))
+                .doTest();
+    }
+
+    @Test
+    public void modelRejectsExecutableProtocolClassSupertypes() {
+        CompilationTestHelper.newInstance(DomainModelRoleBoundaryChecker.class, getClass())
+                .addSourceLines(
+                        "src/domain/foo/model/grid/GridCoordinate.java",
+                        "package src.domain.foo.model.grid;",
+                        "import java.util.concurrent.Callable;",
+                        "import java.util.function.Function;",
+                        "import java.util.Observable;",
+                        "// BUG: Diagnostic matches: executable-class-supertypes",
+                        "final class GridCoordinate extends Observable implements Callable<Integer> {",
+                        "  static final class NestedFunctionBox implements Function<Integer, Integer> {",
+                        "    public Integer apply(Integer value) {",
+                        "      return value;",
+                        "    }",
+                        "  }",
+                        "  public Integer call() {",
+                        "    return 1;",
+                        "  }",
+                        "}")
+                .expectErrorMessage("executable-class-supertypes", containsAll(
+                        "references executable protocol type java.util.concurrent.Callable",
+                        "references executable protocol type java.util.Observable",
+                        "references executable protocol type java.util.function.Function"))
+                .doTest();
+    }
+
+    @Test
     public void modelRejectsRepositoryPortUseCasePublishedAndRootServiceConcerns() {
         CompilationTestHelper.newInstance(DomainModelRoleBoundaryChecker.class, getClass())
                 .addSourceLines(
-                        "src/domain/foo/model/grid/model/GridCoordinate.java",
-                        "package src.domain.foo.model.grid.model;",
+                        "src/domain/foo/model/grid/GridCoordinate.java",
+                        "package src.domain.foo.model.grid;",
                         "import src.domain.foo.FooGridApplicationService;",
                         "import src.domain.foo.application.ApplyGridUseCase;",
                         "import src.domain.foo.model.grid.port.GridPort;",
@@ -976,8 +1247,8 @@ public final class DomainRoleBoundaryCheckersTest {
     public void modelRejectsNonFinalShape() {
         CompilationTestHelper.newInstance(DomainModelRoleBoundaryChecker.class, getClass())
                 .addSourceLines(
-                        "src/domain/foo/model/grid/model/GridCoordinate.java",
-                        "package src.domain.foo.model.grid.model;",
+                        "src/domain/foo/model/grid/GridCoordinate.java",
+                        "package src.domain.foo.model.grid;",
                         "// BUG: Diagnostic contains: uses non-final Model class shape",
                         "class GridCoordinate { }")
                 .doTest();
@@ -992,7 +1263,7 @@ public final class DomainRoleBoundaryCheckersTest {
                         "import java.math.BigDecimal;",
                         "import java.util.Optional;",
                         "import src.domain.foo.model.grid.constants.GridConstants;",
-                        "import src.domain.foo.model.grid.model.GridCoordinate;",
+                        "import src.domain.foo.model.grid.GridCoordinate;",
                         "final class GridMathHelper {",
                         "  Optional<BigDecimal> score(GridCoordinate coordinate) {",
                         "    return Optional.of(BigDecimal.valueOf(coordinate.row() + GridConstants.MAX_SIZE));",
@@ -1006,8 +1277,8 @@ public final class DomainRoleBoundaryCheckersTest {
                         "  private GridConstants() { }",
                         "}")
                 .addSourceLines(
-                        "src/domain/foo/model/grid/model/GridCoordinate.java",
-                        "package src.domain.foo.model.grid.model;",
+                        "src/domain/foo/model/grid/GridCoordinate.java",
+                        "package src.domain.foo.model.grid;",
                         "public record GridCoordinate(int row) { }")
                 .doTest();
     }
@@ -1111,12 +1382,12 @@ public final class DomainRoleBoundaryCheckersTest {
                         "import java.util.function.Supplier;",
                         "import src.domain.foo.FooGridApplicationService;",
                         "import src.domain.foo.model.grid.helper.GridMathHelper;",
-                        "import src.domain.foo.model.grid.model.GridCoordinate;",
+                        "import src.domain.foo.model.grid.GridCoordinate;",
                         "import src.domain.foo.model.grid.port.GridPort;",
                         "import src.domain.foo.model.grid.repository.GridRepository;",
                         "import src.domain.foo.model.grid.usecase.NormalizeGridUseCase;",
                         "import src.domain.foo.published.GridModel;",
-                        "// BUG: Diagnostic contains: references executable protocol type java.util.function.Supplier; references forbidden domain concern src.domain.foo.FooGridApplicationService; references forbidden domain concern src.domain.foo.model.grid.helper.GridMathHelper; references forbidden domain concern src.domain.foo.model.grid.model.GridCoordinate; references forbidden domain concern src.domain.foo.model.grid.port.GridPort; references forbidden domain concern src.domain.foo.model.grid.repository.GridRepository; references forbidden domain concern src.domain.foo.model.grid.usecase.NormalizeGridUseCase; references forbidden domain concern src.domain.foo.published.GridModel",
+                        "// BUG: Diagnostic contains: references executable protocol type java.util.function.Supplier; references forbidden domain concern src.domain.foo.FooGridApplicationService; references forbidden domain concern src.domain.foo.model.grid.helper.GridMathHelper; references forbidden domain concern src.domain.foo.model.grid.GridCoordinate; references forbidden domain concern src.domain.foo.model.grid.port.GridPort; references forbidden domain concern src.domain.foo.model.grid.repository.GridRepository; references forbidden domain concern src.domain.foo.model.grid.usecase.NormalizeGridUseCase; references forbidden domain concern src.domain.foo.published.GridModel",
                         "final class GridConstants {",
                         "  static final Supplier<Integer> SUPPLIER = () -> 1;",
                         "  static final Class<?> SERVICE = FooGridApplicationService.class;",
@@ -1137,8 +1408,8 @@ public final class DomainRoleBoundaryCheckersTest {
                         "package src.domain.foo.model.grid.helper;",
                         "public final class GridMathHelper { }")
                 .addSourceLines(
-                        "src/domain/foo/model/grid/model/GridCoordinate.java",
-                        "package src.domain.foo.model.grid.model;",
+                        "src/domain/foo/model/grid/GridCoordinate.java",
+                        "package src.domain.foo.model.grid;",
                         "public record GridCoordinate(int row) { }")
                 .addSourceLines(
                         "src/domain/foo/model/grid/port/GridPort.java",
@@ -1183,7 +1454,7 @@ public final class DomainRoleBoundaryCheckersTest {
                         "package src.domain.foo.model.grid.port;",
                         "import src.domain.bar.published.BarSnapshot;",
                         "import src.domain.foo.model.grid.constants.GridConstants;",
-                        "import src.domain.foo.model.grid.model.GridCoordinate;",
+                        "import src.domain.foo.model.grid.GridCoordinate;",
                         "import src.domain.foo.model.grid.usecase.NormalizeGridUseCase;",
                         "interface GridPort {",
                         "  void receive(BarSnapshot snapshot, GridCoordinate fallback, NormalizeGridUseCase followUp);",
@@ -1203,8 +1474,8 @@ public final class DomainRoleBoundaryCheckersTest {
                         "  private GridConstants() { }",
                         "}")
                 .addSourceLines(
-                        "src/domain/foo/model/grid/model/GridCoordinate.java",
-                        "package src.domain.foo.model.grid.model;",
+                        "src/domain/foo/model/grid/GridCoordinate.java",
+                        "package src.domain.foo.model.grid;",
                         "public record GridCoordinate(int row) { }")
                 .addSourceLines(
                         "src/domain/foo/model/grid/usecase/NormalizeGridUseCase.java",
@@ -1261,7 +1532,7 @@ public final class DomainRoleBoundaryCheckersTest {
                         "package src.domain.foo.model.grid.repository;",
                         "import src.domain.bar.BarGridApplicationService;",
                         "import src.domain.foo.model.grid.constants.GridConstants;",
-                        "import src.domain.foo.model.grid.model.GridCoordinate;",
+                        "import src.domain.foo.model.grid.GridCoordinate;",
                         "final class GridRepository {",
                         "  private final BarGridApplicationService foreignService;",
                         "  private final GridAuditRepository auditRepository;",
@@ -1292,8 +1563,8 @@ public final class DomainRoleBoundaryCheckersTest {
                         "  private GridConstants() { }",
                         "}")
                 .addSourceLines(
-                        "src/domain/foo/model/grid/model/GridCoordinate.java",
-                        "package src.domain.foo.model.grid.model;",
+                        "src/domain/foo/model/grid/GridCoordinate.java",
+                        "package src.domain.foo.model.grid;",
                         "public record GridCoordinate(int row) { }")
                 .doTest();
     }
@@ -1320,22 +1591,22 @@ public final class DomainRoleBoundaryCheckersTest {
     }
 
     @Test
-    public void repositoryRejectsForeignPublishedConcern() {
+    public void repositoryRejectsForeignPublishedModelConcern() {
         CompilationTestHelper.newInstance(DomainRepositoryRoleBoundaryChecker.class, getClass())
                 .addSourceLines(
                         "src/domain/foo/model/grid/repository/GridRepository.java",
                         "package src.domain.foo.model.grid.repository;",
-                        "import src.domain.bar.published.BarSnapshot;",
-                        "// BUG: Diagnostic contains: references forbidden domain concern src.domain.bar.published.BarSnapshot",
+                        "import src.domain.bar.published.BarModel;",
+                        "// BUG: Diagnostic contains: references forbidden domain concern src.domain.bar.published.BarModel",
                         "final class GridRepository {",
-                        "  BarSnapshot load() {",
+                        "  BarModel load() {",
                         "    return null;",
                         "  }",
                         "}")
                 .addSourceLines(
-                        "src/domain/bar/published/BarSnapshot.java",
+                        "src/domain/bar/published/BarModel.java",
                         "package src.domain.bar.published;",
-                        "public record BarSnapshot(int row) { }")
+                        "public interface BarModel { }")
                 .doTest();
     }
 
@@ -1363,6 +1634,58 @@ public final class DomainRoleBoundaryCheckersTest {
                 .expectErrorMessage("repository-outer-callback-matrix", containsAll(
                         "references outer-layer type src.data.foo.GridRecord",
                         "references executable protocol type java.util.concurrent.Callable"))
+                .doTest();
+    }
+
+    @Test
+    public void publishedStateRepositoryAllowsDirectFamilyRootInternalPayload() {
+        CompilationTestHelper.newInstance(DomainRepositoryPublishedStateBoundaryChecker.class, getClass())
+                .addSourceLines(
+                        "src/domain/foo/model/grid/repository/GridPublishedStateRepository.java",
+                        "package src.domain.foo.model.grid.repository;",
+                        "import src.domain.foo.model.grid.GridPublication;",
+                        "final class GridPublishedStateRepository {",
+                        "  public void publishGrid(GridPublication publication) { }",
+                        "}")
+                .addSourceLines(
+                        "src/domain/foo/model/grid/GridPublication.java",
+                        "package src.domain.foo.model.grid;",
+                        "public record GridPublication(int row) { }")
+                .doTest();
+    }
+
+    @Test
+    public void publishedStateRepositoryAllowsSemanticInternalSubpackagePayload() {
+        CompilationTestHelper.newInstance(DomainRepositoryPublishedStateBoundaryChecker.class, getClass())
+                .addSourceLines(
+                        "src/domain/foo/model/grid/repository/GridPublishedStateRepository.java",
+                        "package src.domain.foo.model.grid.repository;",
+                        "import src.domain.foo.model.grid.snapshot.GridPublication;",
+                        "final class GridPublishedStateRepository {",
+                        "  public void publishGrid(GridPublication publication) { }",
+                        "}")
+                .addSourceLines(
+                        "src/domain/foo/model/grid/snapshot/GridPublication.java",
+                        "package src.domain.foo.model.grid.snapshot;",
+                        "public record GridPublication(int row) { }")
+                .doTest();
+    }
+
+    @Test
+    public void publishedStateRepositoryRejectsTechnicalRoleBucketPayload() {
+        CompilationTestHelper.newInstance(DomainRepositoryPublishedStateBoundaryChecker.class, getClass())
+                .addSourceLines(
+                        "src/domain/foo/model/grid/repository/GridPublishedStateRepository.java",
+                        "package src.domain.foo.model.grid.repository;",
+                        "import src.domain.foo.model.grid.helper.GridPublicationHelper;",
+                        "// BUG: Diagnostic contains: accepts non-internal publication payload src.domain.foo.model.grid.helper.GridPublicationHelper",
+                        "final class GridPublishedStateRepository {",
+                        "  public void publishGrid(GridPublicationHelper publication) { }",
+                        "}")
+                .addSourceLines(
+                        "src/domain/foo/model/grid/helper/GridPublicationHelper.java",
+                        "package src.domain.foo.model.grid.helper;",
+                        "public final class GridPublicationHelper { }")
                 .doTest();
     }
 

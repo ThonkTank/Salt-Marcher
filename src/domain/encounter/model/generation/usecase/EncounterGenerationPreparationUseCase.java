@@ -2,8 +2,8 @@ package src.domain.encounter.model.generation.usecase;
 
 import java.util.List;
 import org.jspecify.annotations.Nullable;
-import src.domain.encounter.model.generation.model.EncounterDraft;
-import src.domain.encounter.model.generation.model.EncounterGenerationDiagnosticsData;
+import src.domain.encounter.model.generation.EncounterDraft;
+import src.domain.encounter.model.generation.EncounterGenerationDiagnosticsData;
 
 public record EncounterGenerationPreparationUseCase(
         boolean success,

@@ -1,11 +1,11 @@
 package src.view.leftbartabs.dungeoneditor;
 
 import java.util.List;
-import src.domain.dungeon.model.core.model.geometry.Cell;
-import src.domain.dungeon.model.core.model.geometry.CellOrdering;
-import src.domain.dungeon.model.core.model.geometry.Direction;
-import src.domain.dungeon.model.core.model.geometry.Edge;
-import src.domain.dungeon.model.core.model.geometry.Route;
+import src.domain.dungeon.model.core.geometry.Cell;
+import src.domain.dungeon.model.core.geometry.CellOrdering;
+import src.domain.dungeon.model.core.geometry.Direction;
+import src.domain.dungeon.model.core.geometry.Edge;
+import src.domain.dungeon.model.core.geometry.Route;
 
 final class DungeonGeometryInvariantHarness {
 

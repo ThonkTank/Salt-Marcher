@@ -4,10 +4,10 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import src.domain.encounter.model.generation.model.EncounterCandidateProfile;
-import src.domain.encounter.model.generation.model.EncounterGenerationRequest;
-import src.domain.encounter.model.plan.model.EncounterPlanCreature;
-import src.domain.encounter.model.reference.model.EncounterCreatureReference;
+import src.domain.encounter.model.generation.EncounterCandidateProfile;
+import src.domain.encounter.model.generation.EncounterGenerationRequest;
+import src.domain.encounter.model.plan.EncounterPlanCreature;
+import src.domain.encounter.model.reference.EncounterCreatureReference;
 import src.domain.encounter.model.reference.port.ApplicationEncounterCreatureCatalogPort;
 import src.domain.encounter.model.reference.repository.EncounterCreatureRepository;
 

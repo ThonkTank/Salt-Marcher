@@ -44,16 +44,12 @@ invariants.
   inspector, status, and other non-canvas projection state, but must not
   mirror dungeon map render projection as a second render path
 - the optional active-root dungeon `IntentHandler` owns input interpretation
-- `DungeonTravelApplicationService` is the callable authored-dungeon backend
-  boundary for raw travel surfaces
 - the `DungeonEditor*ApplicationService` root family is the callable runtime
   dungeon-editor backend boundary and owns editor read, catalog change,
   projection, narration, preview, and apply orchestration over authored
   dungeon truth
 - `DungeonTravelRuntimeApplicationService` is the only callable runtime dungeon-travel
-  backend boundary
-- dungeon `published/**` owns dungeon-native authored carriers and raw travel
-  surface carriers
+  backend boundary for travel-session publication over authored dungeon truth
 - dungeon `published/**` owns the authored map, editor-session, and
   travel-session readback carriers consumed by the dungeon workspaces
 - `PartyApplicationService` owns persisted party travel position outside

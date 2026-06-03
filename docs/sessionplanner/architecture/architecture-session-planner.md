@@ -42,7 +42,7 @@ creature-detail truth, or loot truth.
   `SessionPlannerParticipantsModel`,
   `SessionPlannerEncountersModel`, and
   `SessionPlannerStatePanelModel`
-- `src/domain/sessionplanner/model/session/model/SessionPlan`
+- `src/domain/sessionplanner/model/session/SessionPlan`
   is the authored aggregate root for persisted session truth
 - `src/data/sessionplanner/SessionPlannerServiceContribution.java`
   is the target feature-owned runtime entrypoint for planner persistence and

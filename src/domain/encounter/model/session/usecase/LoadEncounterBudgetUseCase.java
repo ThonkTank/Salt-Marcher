@@ -2,8 +2,8 @@ package src.domain.encounter.model.session.usecase;
 
 import java.util.Objects;
 import src.domain.encounter.model.generation.helper.EncounterDifficultyMathHelper;
-import src.domain.encounter.model.generation.model.EncounterBudgetSummary;
-import src.domain.encounter.model.session.model.PartyBudgetFacts;
+import src.domain.encounter.model.generation.EncounterBudgetSummary;
+import src.domain.encounter.model.session.PartyBudgetFacts;
 import src.domain.encounter.model.session.repository.EncounterPartyFactsRepository;
 
 public final class LoadEncounterBudgetUseCase {

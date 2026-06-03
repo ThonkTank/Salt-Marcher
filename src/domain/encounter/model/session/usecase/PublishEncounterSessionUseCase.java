@@ -1,8 +1,8 @@
 package src.domain.encounter.model.session.usecase;
 
 import org.jspecify.annotations.Nullable;
-import src.domain.encounter.model.session.model.EncounterSession;
-import src.domain.encounter.model.session.model.EncounterSessionPublicationData;
+import src.domain.encounter.model.session.EncounterSession;
+import src.domain.encounter.model.session.EncounterSessionPublicationData;
 import src.domain.encounter.model.session.repository.EncounterSessionPublishedStateRepository;
 
 public final class PublishEncounterSessionUseCase {

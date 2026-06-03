@@ -5,7 +5,7 @@ import java.util.Objects;
 import src.domain.creatures.CreaturesApplicationService;
 import src.domain.creatures.published.RefreshCreatureEncounterCandidatesCommand;
 import src.domain.creatures.published.SelectCreatureDetailCommand;
-import src.domain.encounter.model.reference.model.EncounterCreatureCandidateCriteria;
+import src.domain.encounter.model.reference.EncounterCreatureCandidateCriteria;
 import src.domain.encounter.model.reference.repository.EncounterCreatureRepository;
 
 final class EncounterCreatureRequestServiceAssembly implements EncounterCreatureRepository {

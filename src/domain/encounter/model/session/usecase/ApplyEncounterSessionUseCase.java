@@ -1,8 +1,8 @@
 package src.domain.encounter.model.session.usecase;
 
 import java.util.Objects;
-import src.domain.encounter.model.session.model.EncounterSession;
-import src.domain.encounter.model.session.model.EncounterSessionCommand;
+import src.domain.encounter.model.session.EncounterSession;
+import src.domain.encounter.model.session.EncounterSessionCommand;
 
 public final class ApplyEncounterSessionUseCase {
 

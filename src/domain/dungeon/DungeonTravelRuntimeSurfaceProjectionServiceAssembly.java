@@ -1,17 +1,19 @@
 package src.domain.dungeon;
 
+import src.domain.dungeon.model.core.geometry.Cell;
+
 final class DungeonTravelRuntimeSurfaceProjectionServiceAssembly {
 
     private DungeonTravelRuntimeSurfaceProjectionServiceAssembly() {
     }
 
     static src.domain.dungeon.published.TravelDungeonSnapshot snapshot(
-            src.domain.dungeon.model.worldspace.model.session.model.TravelDungeonSessionSnapshot.SnapshotData snapshot
+            src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionSnapshot.SnapshotData snapshot
     ) {
         if (snapshot == null) {
             return src.domain.dungeon.published.TravelDungeonSnapshot.empty();
         }
-        src.domain.dungeon.model.worldspace.model.session.model.TravelDungeonSessionSurface.SurfaceData surface = snapshot.surface();
+        src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionSurface.SurfaceData surface = snapshot.surface();
         return new src.domain.dungeon.published.TravelDungeonSnapshot(
                 workspaceState(surface),
                 surfaceSnapshot(surface),
@@ -20,10 +22,10 @@ final class DungeonTravelRuntimeSurfaceProjectionServiceAssembly {
     }
 
     private static src.domain.dungeon.published.DungeonOverlaySettings overlaySettings(
-            src.domain.dungeon.model.worldspace.model.session.model.TravelDungeonSessionValues.TravelOverlayState overlayState
+            src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionValues.TravelOverlayState overlayState
     ) {
-        src.domain.dungeon.model.worldspace.model.session.model.TravelDungeonSessionValues.TravelOverlayState safeOverlay = overlayState == null
-                ? src.domain.dungeon.model.worldspace.model.session.model.TravelDungeonSessionValues.TravelOverlayState.defaults()
+        src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionValues.TravelOverlayState safeOverlay = overlayState == null
+                ? src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionValues.TravelOverlayState.defaults()
                 : overlayState;
         return new src.domain.dungeon.published.DungeonOverlaySettings(
                 safeOverlay.modeKey(),
@@ -33,7 +35,7 @@ final class DungeonTravelRuntimeSurfaceProjectionServiceAssembly {
     }
 
     private static src.domain.dungeon.published.TravelDungeonWorkspaceState workspaceState(
-            src.domain.dungeon.model.worldspace.model.session.model.TravelDungeonSessionSurface.SurfaceData surface
+            src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionSurface.SurfaceData surface
     ) {
         if (surface == null) {
             return null;
@@ -49,7 +51,7 @@ final class DungeonTravelRuntimeSurfaceProjectionServiceAssembly {
     }
 
     private static src.domain.dungeon.published.DungeonTravelSurfaceSnapshot surfaceSnapshot(
-            src.domain.dungeon.model.worldspace.model.session.model.TravelDungeonSessionSurface.SurfaceData surface
+            src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionSurface.SurfaceData surface
     ) {
         if (surface == null) {
             return null;
@@ -70,7 +72,7 @@ final class DungeonTravelRuntimeSurfaceProjectionServiceAssembly {
     }
 
     private static src.domain.dungeon.published.DungeonTravelPosition travelPosition(
-            src.domain.dungeon.model.worldspace.model.session.model.TravelDungeonSessionSurface.PositionData position
+            src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionSurface.PositionData position
     ) {
         if (position == null) {
             return new src.domain.dungeon.published.DungeonTravelPosition(
@@ -84,23 +86,31 @@ final class DungeonTravelRuntimeSurfaceProjectionServiceAssembly {
                 new src.domain.dungeon.published.DungeonMapId(position.mapId()),
                 src.domain.dungeon.published.DungeonTravelLocationKind.valueOf(position.locationKind().name()),
                 position.ownerId(),
-                DungeonPublishedMapProjectionServiceAssembly.cell(position.tile()),
+                cell(position.tile()),
                 src.domain.dungeon.published.DungeonTravelHeading.valueOf(position.headingToken()));
     }
 
+    private static src.domain.dungeon.published.DungeonCellRef cell(Cell cell) {
+        Cell safeCell = cell == null ? new Cell(0, 0, 0) : cell;
+        return new src.domain.dungeon.published.DungeonCellRef(
+                safeCell.q(),
+                safeCell.r(),
+                safeCell.level());
+    }
+
     private static src.domain.dungeon.published.DungeonTravelActionSnapshot surfaceAction(
-            src.domain.dungeon.model.worldspace.model.session.model.TravelDungeonSessionSurface.AvailableAction action
+            src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionSurface.AvailableAction action
     ) {
         return new src.domain.dungeon.published.DungeonTravelActionSnapshot(
                 action.id(),
-                src.domain.dungeon.published.DungeonTravelActionKind.TRAVERSAL,
-                action.displayLabel(),
-                "",
+                src.domain.dungeon.published.DungeonTravelActionKind.valueOf(action.kind().name()),
+                action.label(),
+                action.destinationLabel(),
                 action.helpText());
     }
 
     private static src.domain.dungeon.published.TravelDungeonAction workspaceAction(
-            src.domain.dungeon.model.worldspace.model.session.model.TravelDungeonSessionSurface.AvailableAction action
+            src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionSurface.AvailableAction action
     ) {
         return new src.domain.dungeon.published.TravelDungeonAction(
                 action.id(),

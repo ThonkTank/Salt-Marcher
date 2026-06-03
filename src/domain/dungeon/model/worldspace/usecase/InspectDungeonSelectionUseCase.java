@@ -2,9 +2,9 @@ package src.domain.dungeon.model.worldspace.usecase;
 
 import java.util.List;
 import java.util.Objects;
-import src.domain.dungeon.model.worldspace.model.DungeonMap;
-import src.domain.dungeon.model.worldspace.model.DungeonDerivedState;
-import src.domain.dungeon.model.worldspace.model.DungeonTopologyRef;
+import src.domain.dungeon.model.worldspace.DungeonMap;
+import src.domain.dungeon.model.worldspace.DungeonDerivedState;
+import src.domain.dungeon.model.worldspace.DungeonTopologyRef;
 
 /**
  * Builds dungeon inspector snapshots from authored truth and selection context.

@@ -155,7 +155,7 @@ public final class DomainRepositoryPublishedStateBoundaryChecker extends BugChec
         if (containsForbiddenPublishedStatePayload(type)) {
             return false;
         }
-        return typeName.startsWith(repositoryContext.modelPrefix())
+        return repositoryContext.isInternalModelPayload(typeName)
                 || typeName.startsWith(repositoryContext.useCasePrefix())
                 || typeName.startsWith(repositoryContext.repositoryPrefix())
                 || typeName.startsWith(repositoryContext.repositoryNestedPrefix());
@@ -199,8 +199,15 @@ public final class DomainRepositoryPublishedStateBoundaryChecker extends BugChec
             return "src.domain." + context + ".model." + family;
         }
 
-        private String modelPrefix() {
-            return familyPrefix() + ".model.";
+        private boolean isInternalModelPayload(String typeName) {
+            String prefix = familyPrefix() + ".";
+            if (!typeName.startsWith(prefix)) {
+                return typeName.equals(familyPrefix());
+            }
+            String suffix = typeName.substring(prefix.length());
+            int separator = suffix.indexOf('.');
+            String segment = separator < 0 ? suffix : suffix.substring(0, separator);
+            return !List.of("usecase", "helper", "constants", "port", "repository").contains(segment);
         }
 
         private String useCasePrefix() {

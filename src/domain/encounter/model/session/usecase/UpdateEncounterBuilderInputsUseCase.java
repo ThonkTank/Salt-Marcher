@@ -3,11 +3,11 @@ package src.domain.encounter.model.session.usecase;
 import java.util.ArrayList;
 import java.util.List;
 import org.jspecify.annotations.Nullable;
-import src.domain.encounter.model.generation.model.EncounterGenerationInputs;
-import src.domain.encounter.model.generation.model.EncounterRequestedDifficulty;
-import src.domain.encounter.model.generation.model.EncounterTuningIntent;
-import src.domain.encounter.model.session.model.EncounterSession;
-import src.domain.encounter.model.session.model.EncounterSessionCommand;
+import src.domain.encounter.model.generation.EncounterGenerationInputs;
+import src.domain.encounter.model.generation.EncounterRequestedDifficulty;
+import src.domain.encounter.model.generation.EncounterTuningIntent;
+import src.domain.encounter.model.session.EncounterSession;
+import src.domain.encounter.model.session.EncounterSessionCommand;
 
 public final class UpdateEncounterBuilderInputsUseCase {
 

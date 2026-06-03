@@ -1,7 +1,7 @@
 package src.domain.encounter;
 
 import java.util.List;
-import src.domain.encounter.model.session.model.EncounterTuningPreviewData;
+import src.domain.encounter.model.session.EncounterTuningPreviewData;
 import src.domain.encounter.published.EncounterGenerationStatus;
 import src.domain.encounter.published.EncounterTuningPreviewLabels;
 import src.domain.encounter.published.EncounterTuningPreviewResult;

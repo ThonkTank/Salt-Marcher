@@ -1,7 +1,7 @@
 package src.data.creatures.mapper;
 
 import src.data.creatures.model.CreatureFilterValuesRecord;
-import src.domain.creatures.model.catalog.model.CreatureCatalogData;
+import src.domain.creatures.model.catalog.CreatureCatalogData;
 
 public final class CreatureFilterValuesMapper {
 

@@ -4,18 +4,18 @@ import java.util.ArrayList;
 import java.util.List;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.worldspace.helper.DungeonEditorClusterHandleProjectionHelper;
-import src.domain.dungeon.model.worldspace.model.DungeonMap;
-import src.domain.dungeon.model.worldspace.model.DungeonCorridor;
-import src.domain.dungeon.model.worldspace.model.DungeonRoomCluster;
-import src.domain.dungeon.model.worldspace.model.DungeonStair;
-import src.domain.dungeon.model.worldspace.model.DungeonCell;
-import src.domain.dungeon.model.worldspace.model.DungeonEditorHandle;
-import src.domain.dungeon.model.worldspace.model.DungeonEditorHandleFacts;
-import src.domain.dungeon.model.worldspace.model.DungeonEditorHandleType;
-import src.domain.dungeon.model.worldspace.model.DungeonEdgeDirection;
-import src.domain.dungeon.model.worldspace.model.DungeonStairExit;
-import src.domain.dungeon.model.worldspace.model.DungeonTopologyElementKind;
-import src.domain.dungeon.model.worldspace.model.DungeonTopologyRef;
+import src.domain.dungeon.model.worldspace.DungeonMap;
+import src.domain.dungeon.model.worldspace.DungeonCorridor;
+import src.domain.dungeon.model.worldspace.DungeonRoomCluster;
+import src.domain.dungeon.model.worldspace.DungeonStair;
+import src.domain.dungeon.model.worldspace.DungeonCell;
+import src.domain.dungeon.model.worldspace.DungeonEditorHandle;
+import src.domain.dungeon.model.worldspace.DungeonEditorHandleFacts;
+import src.domain.dungeon.model.worldspace.DungeonEditorHandleType;
+import src.domain.dungeon.model.worldspace.DungeonEdgeDirection;
+import src.domain.dungeon.model.worldspace.DungeonStairExit;
+import src.domain.dungeon.model.worldspace.DungeonTopologyElementKind;
+import src.domain.dungeon.model.worldspace.DungeonTopologyRef;
 
 /**
  * Publishes authored editor handles from one dungeon map snapshot.

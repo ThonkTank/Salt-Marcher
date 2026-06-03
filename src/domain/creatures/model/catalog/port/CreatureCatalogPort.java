@@ -2,8 +2,8 @@ package src.domain.creatures.model.catalog.port;
 
 import java.util.List;
 import org.jspecify.annotations.Nullable;
-import src.domain.creatures.model.catalog.model.CreatureCatalogData;
-import src.domain.creatures.model.catalog.model.CreatureCatalogData.CreatureProfile;
+import src.domain.creatures.model.catalog.CreatureCatalogData;
+import src.domain.creatures.model.catalog.CreatureCatalogData.CreatureProfile;
 
 public interface CreatureCatalogPort {
 

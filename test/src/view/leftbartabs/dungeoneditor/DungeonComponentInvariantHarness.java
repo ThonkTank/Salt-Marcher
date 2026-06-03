@@ -1,21 +1,21 @@
 package src.view.leftbartabs.dungeoneditor;
 
 import java.util.List;
-import src.domain.dungeon.model.core.model.component.CorridorAnchor;
-import src.domain.dungeon.model.core.model.component.CorridorAnchorRef;
-import src.domain.dungeon.model.core.model.component.CorridorDoorBinding;
-import src.domain.dungeon.model.core.model.component.CorridorWaypoint;
-import src.domain.dungeon.model.core.model.component.StairExit;
-import src.domain.dungeon.model.core.model.geometry.Cell;
-import src.domain.dungeon.model.core.model.geometry.Direction;
-import src.domain.dungeon.model.worldspace.model.DungeonCell;
-import src.domain.dungeon.model.worldspace.model.DungeonCorridorAnchorBinding;
-import src.domain.dungeon.model.worldspace.model.DungeonCorridorAnchorRef;
-import src.domain.dungeon.model.worldspace.model.DungeonCorridorDoorBinding;
-import src.domain.dungeon.model.worldspace.model.DungeonCorridorWaypoint;
-import src.domain.dungeon.model.worldspace.model.DungeonEdgeDirection;
-import src.domain.dungeon.model.worldspace.model.DungeonStairExit;
-import src.domain.dungeon.model.worldspace.model.DungeonTopologyRef;
+import src.domain.dungeon.model.core.component.CorridorAnchor;
+import src.domain.dungeon.model.core.component.CorridorAnchorRef;
+import src.domain.dungeon.model.core.component.CorridorDoorBinding;
+import src.domain.dungeon.model.core.component.CorridorWaypoint;
+import src.domain.dungeon.model.core.component.StairExit;
+import src.domain.dungeon.model.core.geometry.Cell;
+import src.domain.dungeon.model.core.geometry.Direction;
+import src.domain.dungeon.model.worldspace.DungeonCell;
+import src.domain.dungeon.model.worldspace.DungeonCorridorAnchorBinding;
+import src.domain.dungeon.model.worldspace.DungeonCorridorAnchorRef;
+import src.domain.dungeon.model.worldspace.DungeonCorridorDoorBinding;
+import src.domain.dungeon.model.worldspace.DungeonCorridorWaypoint;
+import src.domain.dungeon.model.worldspace.DungeonEdgeDirection;
+import src.domain.dungeon.model.worldspace.DungeonStairExit;
+import src.domain.dungeon.model.worldspace.DungeonTopologyRef;
 
 final class DungeonComponentInvariantHarness {
 

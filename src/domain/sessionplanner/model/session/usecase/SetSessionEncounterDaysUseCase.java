@@ -1,7 +1,7 @@
 package src.domain.sessionplanner.model.session.usecase;
 
 import java.math.BigDecimal;
-import src.domain.sessionplanner.model.session.model.EncounterDays;
+import src.domain.sessionplanner.model.session.EncounterDays;
 
 public final class SetSessionEncounterDaysUseCase {
 

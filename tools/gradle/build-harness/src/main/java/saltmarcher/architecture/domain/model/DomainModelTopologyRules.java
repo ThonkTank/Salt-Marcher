@@ -21,14 +21,14 @@ public final class DomainModelTopologyRules implements ArchitectureRule {
     }
 
     private static boolean isDomainModelSource(List<String> segments) {
-        return DomainRoleTopologySupport.isModelRoleSource(segments, "model");
+        return DomainRoleTopologySupport.isInternalModelSource(segments);
     }
 
     private static void validateTreePlacement(SourceFile sourceFile, ViolationSink violations) {
         String family = DomainRoleTopologySupport.modelFamily(sourceFile.relativeSegments()).orElse("");
         if (!DomainRoleTopologySupport.isValidModelFamilyName(family)) {
             violations.add(sourceFile.relativePath(), "domain-model-tree-placement",
-                    "Internal model types must live under src/domain/<context>/model/<family>/model/ with a lower-case family name.");
+                    "Internal model types must live under src/domain/<context>/model/<family>/ with a lower-case family name.");
         }
     }
 }

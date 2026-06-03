@@ -1,21 +1,31 @@
 package src.view.leftbartabs.dungeoneditor;
 
 import java.util.List;
-import src.domain.dungeon.model.core.model.component.CorridorAnchor;
-import src.domain.dungeon.model.core.model.component.CorridorAnchorRef;
-import src.domain.dungeon.model.core.model.component.CorridorDoorBinding;
-import src.domain.dungeon.model.core.model.component.CorridorWaypoint;
-import src.domain.dungeon.model.core.model.geometry.Cell;
-import src.domain.dungeon.model.core.model.geometry.Direction;
-import src.domain.dungeon.model.core.model.structure.Corridor;
-import src.domain.dungeon.model.core.model.structure.CorridorBindings;
-import src.domain.dungeon.model.core.model.structure.CorridorRoomSet;
-import src.domain.dungeon.model.core.model.structure.CorridorRoutePlan;
-import src.domain.dungeon.model.worldspace.model.DungeonCell;
-import src.domain.dungeon.model.worldspace.model.DungeonCorridor;
-import src.domain.dungeon.model.worldspace.model.DungeonCorridorBindings;
-import src.domain.dungeon.model.worldspace.model.DungeonCorridorDoorBinding;
-import src.domain.dungeon.model.worldspace.model.DungeonEdgeDirection;
+import java.util.Objects;
+import java.util.Set;
+import src.domain.dungeon.model.core.component.CorridorAnchor;
+import src.domain.dungeon.model.core.component.CorridorAnchorRef;
+import src.domain.dungeon.model.core.component.CorridorDoorBinding;
+import src.domain.dungeon.model.core.component.CorridorWaypoint;
+import src.domain.dungeon.model.core.component.StairExit;
+import src.domain.dungeon.model.core.geometry.Cell;
+import src.domain.dungeon.model.core.geometry.Direction;
+import src.domain.dungeon.model.core.structure.corridor.Corridor;
+import src.domain.dungeon.model.core.structure.corridor.CorridorBindings;
+import src.domain.dungeon.model.core.structure.corridor.CorridorNetwork;
+import src.domain.dungeon.model.core.structure.corridor.CorridorRoomSet;
+import src.domain.dungeon.model.core.structure.corridor.CorridorRoutePlan;
+import src.domain.dungeon.model.core.structure.stair.Stair;
+import src.domain.dungeon.model.core.structure.stair.StairGeometrySpec;
+import src.domain.dungeon.model.core.structure.stair.StairShape;
+import src.domain.dungeon.model.core.structure.transition.Transition;
+import src.domain.dungeon.model.core.structure.transition.TransitionCatalog;
+import src.domain.dungeon.model.core.structure.transition.TransitionDestination;
+import src.domain.dungeon.model.worldspace.DungeonCell;
+import src.domain.dungeon.model.worldspace.DungeonCorridor;
+import src.domain.dungeon.model.worldspace.DungeonCorridorBindings;
+import src.domain.dungeon.model.worldspace.DungeonCorridorDoorBinding;
+import src.domain.dungeon.model.worldspace.DungeonEdgeDirection;
 
 final class DungeonStructureInvariantHarness {
 
@@ -54,6 +64,27 @@ final class DungeonStructureInvariantHarness {
                 "DGI-STR-004",
                 "Corridor structure owns target-local door, anchor, and waypoint delete behavior while topology "
                         + "identity remains adapter-owned");
+        assertCorridorNetworkDeleteInvariants();
+        DungeonEditorBehaviorHarnessSupport.recordModelInvariant(
+                results,
+                OWNER,
+                "DGI-STR-005",
+                "Corridor network owns protected corridor delete and detached-anchor pruning while the transitional "
+                        + "adapter preserves topology-ref identity");
+        assertStairStructureInvariants();
+        DungeonEditorBehaviorHarnessSupport.recordModelInvariant(
+                results,
+                OWNER,
+                "DGI-STR-006",
+                "Stair structure owns editor shape support, dimensions, generated path/exits, readability, "
+                        + "recompute, and room-interior geometry predicates");
+        assertTransitionStructureInvariants();
+        DungeonEditorBehaviorHarnessSupport.recordModelInvariant(
+                results,
+                OWNER,
+                "DGI-STR-007",
+                "Transition structure owns destination normalization, labels, replacement, reverse-link cleanup, "
+                        + "and protected delete policy");
     }
 
     private static void assertCorridorStructureInvariants() {
@@ -153,16 +184,16 @@ final class DungeonStructureInvariantHarness {
     }
 
     private static void assertWorldspaceAdapterPreservesTopologyRefIdentity() {
-        src.domain.dungeon.model.worldspace.model.DungeonTopologyRef stableRef =
-                src.domain.dungeon.model.worldspace.model.DungeonTopologyRef.corridorAnchor(30L);
-        src.domain.dungeon.model.worldspace.model.DungeonCorridorAnchorBinding first =
-                new src.domain.dungeon.model.worldspace.model.DungeonCorridorAnchorBinding(
+        src.domain.dungeon.model.worldspace.DungeonTopologyRef stableRef =
+                src.domain.dungeon.model.worldspace.DungeonTopologyRef.corridorAnchor(30L);
+        src.domain.dungeon.model.worldspace.DungeonCorridorAnchorBinding first =
+                new src.domain.dungeon.model.worldspace.DungeonCorridorAnchorBinding(
                         3L,
                         12L,
                         new DungeonCell(1, 1, 0),
                         stableRef);
-        src.domain.dungeon.model.worldspace.model.DungeonCorridorAnchorBinding replacement =
-                new src.domain.dungeon.model.worldspace.model.DungeonCorridorAnchorBinding(
+        src.domain.dungeon.model.worldspace.DungeonCorridorAnchorBinding replacement =
+                new src.domain.dungeon.model.worldspace.DungeonCorridorAnchorBinding(
                         5L,
                         12L,
                         new DungeonCell(2, 2, 0),
@@ -173,10 +204,10 @@ final class DungeonStructureInvariantHarness {
         assertEquals(List.of(replacement), replaced.anchorBindings(),
                 "adapter anchor replacement follows topology ref when anchor id differs");
 
-        src.domain.dungeon.model.worldspace.model.DungeonCorridorAnchorRef firstRef =
-                new src.domain.dungeon.model.worldspace.model.DungeonCorridorAnchorRef(12L, stableRef);
-        src.domain.dungeon.model.worldspace.model.DungeonCorridorAnchorRef replacementRef =
-                new src.domain.dungeon.model.worldspace.model.DungeonCorridorAnchorRef(20L, stableRef);
+        src.domain.dungeon.model.worldspace.DungeonCorridorAnchorRef firstRef =
+                new src.domain.dungeon.model.worldspace.DungeonCorridorAnchorRef(12L, stableRef);
+        src.domain.dungeon.model.worldspace.DungeonCorridorAnchorRef replacementRef =
+                new src.domain.dungeon.model.worldspace.DungeonCorridorAnchorRef(20L, stableRef);
         DungeonCorridorBindings refBindings =
                 new DungeonCorridorBindings(List.of(), List.of(), List.of(), List.of(firstRef));
         assertEquals(List.of(replacementRef), refBindings.withAnchorRef(replacementRef).anchorRefs(),
@@ -187,13 +218,13 @@ final class DungeonStructureInvariantHarness {
                 10L,
                 new DungeonCell(0, 1, 0),
                 DungeonEdgeDirection.NORTH,
-                src.domain.dungeon.model.worldspace.model.DungeonTopologyRef.door(40L));
+                src.domain.dungeon.model.worldspace.DungeonTopologyRef.door(40L));
         DungeonCorridorDoorBinding survivingDoor = new DungeonCorridorDoorBinding(
                 6L,
                 11L,
                 new DungeonCell(2, 3, 0),
                 DungeonEdgeDirection.EAST,
-                src.domain.dungeon.model.worldspace.model.DungeonTopologyRef.door(60L));
+                src.domain.dungeon.model.worldspace.DungeonTopologyRef.door(60L));
         DungeonCorridorBindings doorBindings =
                 new DungeonCorridorBindings(List.of(), List.of(removedDoor, survivingDoor), List.of(), List.of());
         DungeonCorridorBindings afterDoorRemoval = new DungeonCorridor(
@@ -207,10 +238,10 @@ final class DungeonStructureInvariantHarness {
         assertEquals(List.of(survivingDoor), afterDoorRemoval.doorBindings(),
                 "adapter door removal preserves surviving door topology ref");
 
-        src.domain.dungeon.model.worldspace.model.DungeonTopologyRef splitAnchorRef =
-                src.domain.dungeon.model.worldspace.model.DungeonTopologyRef.corridorAnchor(70L);
-        src.domain.dungeon.model.worldspace.model.DungeonCorridorAnchorBinding splitAnchor =
-                new src.domain.dungeon.model.worldspace.model.DungeonCorridorAnchorBinding(
+        src.domain.dungeon.model.worldspace.DungeonTopologyRef splitAnchorRef =
+                src.domain.dungeon.model.worldspace.DungeonTopologyRef.corridorAnchor(70L);
+        src.domain.dungeon.model.worldspace.DungeonCorridorAnchorBinding splitAnchor =
+                new src.domain.dungeon.model.worldspace.DungeonCorridorAnchorBinding(
                         7L,
                         40L,
                         new DungeonCell(1, 0, 0),
@@ -221,18 +252,18 @@ final class DungeonStructureInvariantHarness {
                         10L,
                         new Cell(0, 0, 0)),
                 List.of(splitAnchor));
-        assertEquals(List.of(new src.domain.dungeon.model.worldspace.model.DungeonCorridorAnchorRef(40L, splitAnchorRef)),
+        assertEquals(List.of(new src.domain.dungeon.model.worldspace.DungeonCorridorAnchorRef(40L, splitAnchorRef)),
                 splitBindings.anchorRefs(),
                 "adapter route split preserves selected anchor topology ref");
         DungeonCorridorBindings existingCustomRef = DungeonCorridorBindings.empty().withAnchorRef(
-                new src.domain.dungeon.model.worldspace.model.DungeonCorridorAnchorRef(40L, splitAnchorRef));
+                new src.domain.dungeon.model.worldspace.DungeonCorridorAnchorRef(40L, splitAnchorRef));
         DungeonCorridorBindings deduplicatedSplitBindings = existingCustomRef.withInteriorRouteAnchors(
                 new CorridorRoutePlan(
                         List.of(new Cell(0, 0, 0), new Cell(1, 0, 0), new Cell(2, 0, 0)),
                         10L,
                         new Cell(0, 0, 0)),
                 List.of(splitAnchor));
-        assertEquals(List.of(new src.domain.dungeon.model.worldspace.model.DungeonCorridorAnchorRef(40L, splitAnchorRef)),
+        assertEquals(List.of(new src.domain.dungeon.model.worldspace.DungeonCorridorAnchorRef(40L, splitAnchorRef)),
                 deduplicatedSplitBindings.anchorRefs(),
                 "adapter route split deduplicates existing custom topology ref");
     }
@@ -296,16 +327,16 @@ final class DungeonStructureInvariantHarness {
     }
 
     private static void assertWorldspaceCorridorTargetDeleteAdapterCompatibility() {
-        src.domain.dungeon.model.worldspace.model.DungeonTopologyRef customAnchorRef =
-                src.domain.dungeon.model.worldspace.model.DungeonTopologyRef.corridorAnchor(70L);
+        src.domain.dungeon.model.worldspace.DungeonTopologyRef customAnchorRef =
+                src.domain.dungeon.model.worldspace.DungeonTopologyRef.corridorAnchor(70L);
         DungeonCorridorBindings bindings = new DungeonCorridorBindings(
-                List.of(new src.domain.dungeon.model.worldspace.model.DungeonCorridorWaypoint(
+                List.of(new src.domain.dungeon.model.worldspace.DungeonCorridorWaypoint(
                         7L,
                         new DungeonCell(1, 2, 0),
                         0)),
                 List.of(),
                 List.of(),
-                List.of(new src.domain.dungeon.model.worldspace.model.DungeonCorridorAnchorRef(12L, customAnchorRef)));
+                List.of(new src.domain.dungeon.model.worldspace.DungeonCorridorAnchorRef(12L, customAnchorRef)));
         DungeonCorridor corridor = new DungeonCorridor(3L, 9L, 0, List.of(), bindings);
         DungeonCorridor withoutAnchor = corridor.withoutAnchorTarget(customAnchorRef.id());
         assertEquals(List.of(), withoutAnchor.bindings().anchorRefs(),
@@ -318,13 +349,13 @@ final class DungeonStructureInvariantHarness {
                 10L,
                 new DungeonCell(0, 1, 0),
                 DungeonEdgeDirection.NORTH,
-                src.domain.dungeon.model.worldspace.model.DungeonTopologyRef.door(40L));
+                src.domain.dungeon.model.worldspace.DungeonTopologyRef.door(40L));
         DungeonCorridorDoorBinding secondDoor = new DungeonCorridorDoorBinding(
                 6L,
                 11L,
                 new DungeonCell(2, 3, 0),
                 DungeonEdgeDirection.EAST,
-                src.domain.dungeon.model.worldspace.model.DungeonTopologyRef.door(60L));
+                src.domain.dungeon.model.worldspace.DungeonTopologyRef.door(60L));
         DungeonCorridor doorCorridor = new DungeonCorridor(
                 4L,
                 9L,
@@ -334,6 +365,296 @@ final class DungeonStructureInvariantHarness {
         assertEquals(List.of(secondDoor),
                 doorCorridor.withoutDoorTarget(firstDoor, false, -1, -1).bindings().doorBindings(),
                 "adapter door target delete preserves surviving topology ref");
+    }
+
+    private static void assertCorridorNetworkDeleteInvariants() {
+        CorridorAnchor ownedAnchor = new CorridorAnchor(70L, 10L, new Cell(6, 5, 0));
+        CorridorAnchor detachedAnchor = new CorridorAnchor(71L, 10L, new Cell(6, 6, 0));
+        Corridor owner = new Corridor(
+                10L,
+                3L,
+                0,
+                List.of(),
+                new CorridorBindings(List.of(), List.of(), List.of(ownedAnchor, detachedAnchor), List.of()));
+        Corridor dependent = new Corridor(
+                20L,
+                3L,
+                0,
+                List.of(),
+                new CorridorBindings(List.of(), List.of(), List.of(), List.of(new CorridorAnchorRef(10L, 70L))));
+        Corridor orphanRef = new Corridor(
+                30L,
+                3L,
+                0,
+                List.of(),
+                new CorridorBindings(List.of(), List.of(), List.of(), List.of(new CorridorAnchorRef(99L, 99L))));
+        CorridorNetwork network = new CorridorNetwork(List.of(owner, dependent, orphanRef));
+
+        assertFalse(network.canDeleteCorridor(10L), "core network protects referenced owner corridor");
+        assertTrue(network.canDeleteCorridor(20L), "core network allows deleting dependent corridor");
+        assertEquals(List.of(10L, 20L, 30L), corridorIds(network.withoutCorridor(10L)),
+                "protected owner corridor remains in core network");
+        assertEquals(List.of(10L, 30L), corridorIds(network.withoutCorridor(20L)),
+                "deletable corridor is removed from core network");
+        CorridorNetwork prunedNetwork = network.withoutDetachedAnchors();
+        Corridor prunedOwner = prunedNetwork.corridors().getFirst();
+        Corridor prunedOrphanRef = prunedNetwork.corridors().get(2);
+        assertEquals(List.of(ownedAnchor), prunedOwner.bindings().anchorBindings(),
+                "core network prunes detached owned anchors");
+        assertEquals(List.of(), prunedOrphanRef.bindings().anchorRefs(),
+                "core network prunes refs to missing hosted anchors");
+
+        assertWorldspaceCorridorNetworkAdapterCompatibility();
+    }
+
+    private static List<Long> corridorIds(CorridorNetwork network) {
+        List<Long> result = new java.util.ArrayList<>();
+        for (Corridor corridor : network.corridors()) {
+            result.add(corridor.corridorId());
+        }
+        return List.copyOf(result);
+    }
+
+    private static void assertWorldspaceCorridorNetworkAdapterCompatibility() {
+        src.domain.dungeon.model.worldspace.DungeonTopologyRef stableRef =
+                src.domain.dungeon.model.worldspace.DungeonTopologyRef.corridorAnchor(70L);
+        src.domain.dungeon.model.worldspace.DungeonTopologyRef detachedRef =
+                src.domain.dungeon.model.worldspace.DungeonTopologyRef.corridorAnchor(71L);
+        src.domain.dungeon.model.worldspace.DungeonCorridorAnchorBinding referencedAnchor =
+                new src.domain.dungeon.model.worldspace.DungeonCorridorAnchorBinding(
+                        7L,
+                        10L,
+                        new DungeonCell(6, 5, 0),
+                        stableRef);
+        src.domain.dungeon.model.worldspace.DungeonCorridorAnchorBinding detachedAnchor =
+                new src.domain.dungeon.model.worldspace.DungeonCorridorAnchorBinding(
+                        8L,
+                        10L,
+                        new DungeonCell(6, 6, 0),
+                        detachedRef);
+        DungeonCorridor owner = new DungeonCorridor(
+                10L,
+                3L,
+                0,
+                List.of(),
+                new DungeonCorridorBindings(List.of(), List.of(), List.of(referencedAnchor, detachedAnchor), List.of()));
+        DungeonCorridor dependent = new DungeonCorridor(
+                20L,
+                3L,
+                0,
+                List.of(),
+                new DungeonCorridorBindings(
+                        List.of(),
+                        List.of(),
+                        List.of(),
+                        List.of(new src.domain.dungeon.model.worldspace.DungeonCorridorAnchorRef(
+                                10L,
+                                stableRef))));
+        src.domain.dungeon.model.worldspace.DungeonCorridorAnchorPruningRules pruningRules =
+                new src.domain.dungeon.model.worldspace.DungeonCorridorAnchorPruningRules();
+
+        assertEquals(List.of(referencedAnchor),
+                pruningRules.pruneDetachedAnchors(List.of(owner, dependent)).getFirst().bindings().anchorBindings(),
+                "adapter pruning preserves referenced anchor by topology ref");
+    }
+
+    private static void assertStairStructureInvariants() {
+        assertEquals(StairShape.STRAIGHT, StairShape.supportedEditorShape("straight"),
+                "core stair accepts supported editor shape");
+        assertEquals(null, StairShape.supportedEditorShape("ladder"),
+                "core stair rejects unsupported editor shape");
+        assertTrue(StairShape.STRAIGHT.supportsEditorDimensions(1, 1),
+                "core stair straight shape accepts minimum editor dimensions");
+        assertFalse(StairShape.STRAIGHT.supportsEditorDimensions(0, 1),
+                "core stair straight shape rejects missing length");
+        assertFalse(StairShape.STRAIGHT.supportsEditorDimensions(1, 0),
+                "core stair shape rejects missing level span");
+        assertFalse(StairShape.STRAIGHT.supportsEditorDimensions(1, 13),
+                "core stair shape rejects oversized level span");
+        assertFalse(StairShape.CIRCULAR.supportsEditorDimensions(32, 1),
+                "core stair circular shape rejects oversized radius");
+
+        StairGeometrySpec straightSpec =
+                new StairGeometrySpec(StairShape.STRAIGHT, new Cell(0, 0, 0), Direction.EAST, 3, 2);
+        assertEquals(List.of(new Cell(0, 0, 0), new Cell(1, 0, 0), new Cell(2, 0, 0)),
+                straightSpec.generatedPath(),
+                "core stair straight path follows direction");
+        assertEquals(List.of(
+                        new StairExit(11L, new Cell(0, 0, 0), ""),
+                        new StairExit(12L, new Cell(1, 0, 1), ""),
+                        new StairExit(13L, new Cell(2, 0, 2), "")),
+                straightSpec.generatedExits(List.of(
+                        new StairExit(11L, new Cell(0, 0, 0), "old"),
+                        new StairExit(12L, new Cell(9, 9, 1), "old"),
+                        new StairExit(13L, new Cell(9, 9, 2), "old"))),
+                "core stair generated exits preserve existing ids by level offset");
+        assertFalse(straightSpec.avoidsRoomInteriors(Set.of(new Cell(1, 0, 0))),
+                "core stair rejects path through room interior");
+        assertTrue(straightSpec.avoidsRoomInteriors(Set.of(new Cell(0, 0, 0))),
+                "core stair allows room touch at generated exit");
+        assertEquals(5,
+                new StairGeometrySpec(StairShape.CIRCULAR, new Cell(5, 5, 0), Direction.NORTH, 4, 1)
+                        .dimension1(),
+                "core stair circular dimension normalizes to odd value");
+
+        Stair stair = Stair.authored(8L, 2L, straightSpec);
+        assertTrue(stair.isReadable(), "core stair with generated exits is readable");
+        assertEquals(Set.of(new Cell(0, 0, 0), new Cell(1, 0, 0), new Cell(2, 0, 0),
+                        new Cell(1, 0, 1), new Cell(2, 0, 2)),
+                stair.occupiedCells(),
+                "core stair occupied cells include path and exits");
+        assertEquals(new Cell(2, 1, 0),
+                stair.withMovedHandle(1, 1, 1, 0).path().get(1),
+                "core stair handle movement updates path cell");
+        Stair recomputed = stair.withRecomputedGeometry(
+                new StairGeometrySpec(StairShape.SQUARE, new Cell(4, 4, 0), Direction.SOUTH, 2, 1));
+        assertEquals(StairShape.SQUARE, recomputed.shape(), "core stair recompute replaces shape");
+        assertEquals(8L, recomputed.stairId(), "core stair recompute preserves stair id");
+        assertEquals(2L, recomputed.mapId(), "core stair recompute preserves map id");
+        assertEquals(stair.name(), recomputed.name(), "core stair recompute preserves authored name");
+        assertEquals(List.of(new Cell(4, 4, 0), new Cell(4, 5, 0), new Cell(3, 5, 0), new Cell(3, 4, 0)),
+                recomputed.path(),
+                "core stair recompute replaces generated path");
+
+        Stair corridorBound = Stair.corridorBound(
+                9L,
+                2L,
+                30L,
+                List.of(new Cell(0, 0, 0), new Cell(0, 1, 0)),
+                new Cell(0, 1, 2));
+        assertEquals(30L, corridorBound.corridorId(), "core stair keeps corridor binding");
+        assertEquals(List.of(
+                        new StairExit(0L, new Cell(0, 0, 0), ""),
+                        new StairExit(0L, new Cell(0, 1, 1), ""),
+                        new StairExit(0L, new Cell(0, 1, 2), "")),
+                corridorBound.exits(),
+                "core stair corridor-bound construction creates level-spanning exits");
+    }
+
+    private static void assertTransitionStructureInvariants() {
+        TransitionDestination dungeonDestination = TransitionDestination.dungeonMap(12L, 20L);
+        TransitionDestination overworldDestination = TransitionDestination.overworldTile(5L, 9L);
+        assertTrue(dungeonDestination.isValid(), "core transition dungeon destination validates map id");
+        assertEquals("Dungeon 12 / Übergang 20", dungeonDestination.label(),
+                "core transition dungeon destination label includes target transition");
+        assertTrue(overworldDestination.isValid(), "core transition overworld destination validates map and tile");
+        assertEquals("Overworld-Feld 9", overworldDestination.label(),
+                "core transition overworld destination label uses tile");
+
+        Transition source = new Transition(1L, 4L, " source ", new Cell(0, 0, 0), dungeonDestination, 2L);
+        Transition target = new Transition(2L, 4L, "", new Cell(1, 0, 0), overworldDestination, null);
+        Transition remoteReference = new Transition(
+                3L,
+                4L,
+                "",
+                new Cell(2, 0, 0),
+                TransitionDestination.dungeonMap(14L, 2L),
+                null);
+        TransitionCatalog catalog = new TransitionCatalog(List.of(source, target, remoteReference));
+
+        assertEquals("source", source.description(), "core transition trims description");
+        assertFalse(catalog.canDelete(1L), "core transition protects selected transition with link");
+        assertFalse(catalog.canDelete(2L), "core transition protects transition referenced elsewhere");
+        assertTrue(catalog.canDelete(3L), "core transition allows unreferenced transition delete");
+        assertEquals(List.of(1L, 2L), transitionIds(catalog.withoutTransition(3L)),
+                "core transition catalog removes deletable transition");
+        assertEquals(List.of(1L, 2L, 3L), transitionIds(catalog.withoutTransition(2L)),
+                "core transition catalog keeps protected transition");
+
+        TransitionCatalog withoutReverseLink = catalog.withoutReverseLinksTo(2L);
+        assertEquals(null, withoutReverseLink.transitions().getFirst().linkedTransitionId(),
+                "core transition catalog clears reverse linked id");
+        assertFalse(withoutReverseLink.canDelete(2L),
+                "core transition destination reference still protects transition after reverse link cleanup");
+        assertEquals("updated",
+                catalog.withTransition(source.withDescription("updated")).transitions().getFirst().description(),
+                "core transition catalog replaces transition by id");
+        assertWorldspaceTransitionAdapterCompatibility();
+    }
+
+    private static void assertWorldspaceTransitionAdapterCompatibility() {
+        src.domain.dungeon.model.worldspace.DungeonTransition source =
+                new src.domain.dungeon.model.worldspace.DungeonTransition(
+                        1L,
+                        4L,
+                        " source ",
+                        new DungeonCell(0, 0, 0),
+                        src.domain.dungeon.model.worldspace.DungeonTransitionDestination.dungeonMapDestination(4L, 2L),
+                        2L);
+        src.domain.dungeon.model.worldspace.DungeonTransition target =
+                new src.domain.dungeon.model.worldspace.DungeonTransition(
+                        2L,
+                        4L,
+                        "",
+                        new DungeonCell(1, 0, 0),
+                        src.domain.dungeon.model.worldspace.DungeonTransitionDestination.overworldTileDestination(5L, 9L),
+                        null);
+        src.domain.dungeon.model.worldspace.DungeonTransition remoteReference =
+                new src.domain.dungeon.model.worldspace.DungeonTransition(
+                        3L,
+                        4L,
+                        "",
+                        new DungeonCell(2, 0, 0),
+                        src.domain.dungeon.model.worldspace.DungeonTransitionDestination.dungeonMapDestination(14L, 2L),
+                        null);
+        src.domain.dungeon.model.worldspace.DungeonMap map = transitionMap(source, target, remoteReference);
+
+        assertFalse(map.canDeleteTransition(1L),
+                "worldspace transition adapter preserves source linked-transition delete protection");
+        assertFalse(map.canDeleteTransition(2L),
+                "worldspace transition adapter preserves referenced-transition delete protection");
+        assertEquals(List.of(1L, 2L), worldspaceTransitionIds(map.deleteTransition(3L).connections().transitions()),
+                "worldspace transition adapter removes deletable transition through core catalog");
+        assertEquals(null,
+                map.withoutReverseLinksToTransition(2L)
+                        .connections()
+                        .transitions()
+                        .getFirst()
+                        .linkedTransitionId(),
+                "worldspace transition adapter clears reverse linked transition through core catalog");
+        assertEquals("updated",
+                map.withTransition(source.withDescription("updated"))
+                        .connections()
+                        .transitions()
+                        .getFirst()
+                        .description(),
+                "worldspace transition adapter replaces transition through core catalog");
+    }
+
+    private static List<Long> transitionIds(TransitionCatalog catalog) {
+        List<Long> result = new java.util.ArrayList<>();
+        for (Transition transition : catalog.transitions()) {
+            result.add(transition.transitionId());
+        }
+        return List.copyOf(result);
+    }
+
+    private static List<Long> worldspaceTransitionIds(
+            List<src.domain.dungeon.model.worldspace.DungeonTransition> transitions
+    ) {
+        List<Long> result = new java.util.ArrayList<>();
+        for (src.domain.dungeon.model.worldspace.DungeonTransition transition : transitions) {
+            result.add(transition.transitionId());
+        }
+        return List.copyOf(result);
+    }
+
+    private static src.domain.dungeon.model.worldspace.DungeonMap transitionMap(
+            src.domain.dungeon.model.worldspace.DungeonTransition... transitions
+    ) {
+        return new src.domain.dungeon.model.worldspace.DungeonMap(
+                new src.domain.dungeon.model.worldspace.DungeonMapMetadata(
+                        new src.domain.dungeon.model.worldspace.DungeonMapIdentity(4L),
+                        "transition proof map"),
+                src.domain.dungeon.model.worldspace.SpatialTopology.empty(),
+                src.domain.dungeon.model.worldspace.SpaceCatalog.empty(),
+                src.domain.dungeon.model.worldspace.RoomCatalog.empty(),
+                new src.domain.dungeon.model.worldspace.ConnectionCatalog(
+                        List.of(),
+                        List.of(),
+                        List.of(transitions)),
+                src.domain.dungeon.model.worldspace.FeatureCatalog.empty(),
+                0L);
     }
 
     private static void assertTrue(boolean condition, String label) {
@@ -349,7 +670,7 @@ final class DungeonStructureInvariantHarness {
     }
 
     private static void assertEquals(Object expected, Object actual, String label) {
-        if (!expected.equals(actual)) {
+        if (!Objects.equals(expected, actual)) {
             throw new IllegalStateException(label + " expected " + expected + " but was " + actual);
         }
     }

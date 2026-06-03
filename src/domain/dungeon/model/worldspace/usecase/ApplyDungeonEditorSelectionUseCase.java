@@ -1,8 +1,8 @@
 package src.domain.dungeon.model.worldspace.usecase;
 
 import java.util.Objects;
-import src.domain.dungeon.model.worldspace.model.session.model.DungeonEditorSessionWorkflow;
-import src.domain.dungeon.model.worldspace.model.workspace.model.DungeonEditorWorkspaceValues.MapSnapshot;
+import src.domain.dungeon.model.worldspace.session.model.DungeonEditorSessionWorkflow;
+import src.domain.dungeon.model.worldspace.workspace.model.DungeonEditorWorkspaceValues.MapSnapshot;
 import src.domain.dungeon.model.worldspace.usecase.BuildDungeonEditorMainViewInputUseCase.MainViewInput;
 import src.domain.dungeon.model.worldspace.usecase.InterpretDungeonEditorMainViewInputUseCase.PointerAction;
 

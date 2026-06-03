@@ -9,7 +9,7 @@ final class DungeonEditorMapSurfaceProjectionServiceAssembly {
     }
 
     static src.domain.dungeon.published.DungeonEditorMapSurfaceSnapshot snapshot(
-            src.domain.dungeon.model.worldspace.model.session.model.DungeonEditorSessionSnapshot.SnapshotData snapshot,
+            src.domain.dungeon.model.worldspace.session.model.DungeonEditorSessionSnapshot.SnapshotData snapshot,
             @Nullable DungeonEditorSurface surface
     ) {
         return new src.domain.dungeon.published.DungeonEditorMapSurfaceSnapshot(

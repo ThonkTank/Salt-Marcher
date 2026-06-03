@@ -2,11 +2,11 @@ package src.domain.dungeon.model.worldspace.usecase;
 
 import java.util.Set;
 import src.domain.dungeon.model.worldspace.helper.DungeonEditorBoundaryClusterResolutionHelper;
-import src.domain.dungeon.model.worldspace.model.interaction.model.DungeonEditorInteractionValues.CellKey;
-import src.domain.dungeon.model.worldspace.model.interaction.model.DungeonEditorInteractionValues.VertexTarget;
-import src.domain.dungeon.model.worldspace.model.interaction.model.DungeonEditorMainViewInteractionValues.PointerState;
-import src.domain.dungeon.model.worldspace.model.session.model.DungeonEditorSessionValues;
-import src.domain.dungeon.model.worldspace.model.workspace.model.DungeonEditorWorkspaceValues;
+import src.domain.dungeon.model.worldspace.interaction.model.DungeonEditorInteractionValues.CellKey;
+import src.domain.dungeon.model.worldspace.interaction.model.DungeonEditorInteractionValues.VertexTarget;
+import src.domain.dungeon.model.worldspace.interaction.model.DungeonEditorMainViewInteractionValues.PointerState;
+import src.domain.dungeon.model.worldspace.session.model.DungeonEditorSessionValues;
+import src.domain.dungeon.model.worldspace.workspace.model.DungeonEditorWorkspaceValues;
 
 final class DungeonEditorBoundaryClusterUseCase {
     private final DungeonEditorBoundaryClusterResolutionHelper clusterResolver = new DungeonEditorBoundaryClusterResolutionHelper();

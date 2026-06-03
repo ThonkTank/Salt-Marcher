@@ -3,14 +3,14 @@ package src.domain.dungeon.model.worldspace.usecase;
 import src.domain.dungeon.model.worldspace.helper.DungeonEditorCorridorTargetHelper;
 import src.domain.dungeon.model.worldspace.helper.DungeonEditorCorridorFacingTargetHelper;
 import src.domain.dungeon.model.worldspace.helper.DungeonEditorCorridorRoutePreviewValidationHelper;
-import src.domain.dungeon.model.worldspace.model.interaction.model.DungeonEditorMainViewEffect;
-import src.domain.dungeon.model.worldspace.model.interaction.model.DungeonEditorMainViewInteractionValues.CorridorDraft;
-import src.domain.dungeon.model.worldspace.model.interaction.model.DungeonEditorMainViewInteractionValues.InteractionState;
-import src.domain.dungeon.model.worldspace.model.interaction.model.DungeonEditorMainViewInterpretation;
-import src.domain.dungeon.model.worldspace.model.interaction.model.DungeonEditorMainViewInteractionValues.PendingCorridorTarget;
-import src.domain.dungeon.model.worldspace.model.interaction.model.DungeonEditorMainViewInteractionValues.PointerState;
-import src.domain.dungeon.model.worldspace.model.session.model.DungeonEditorSessionValues;
-import src.domain.dungeon.model.worldspace.model.workspace.model.DungeonEditorWorkspaceValues;
+import src.domain.dungeon.model.worldspace.interaction.model.DungeonEditorMainViewEffect;
+import src.domain.dungeon.model.worldspace.interaction.model.DungeonEditorMainViewInteractionValues.CorridorDraft;
+import src.domain.dungeon.model.worldspace.interaction.model.DungeonEditorMainViewInteractionValues.InteractionState;
+import src.domain.dungeon.model.worldspace.interaction.model.DungeonEditorMainViewInterpretation;
+import src.domain.dungeon.model.worldspace.interaction.model.DungeonEditorMainViewInteractionValues.PendingCorridorTarget;
+import src.domain.dungeon.model.worldspace.interaction.model.DungeonEditorMainViewInteractionValues.PointerState;
+import src.domain.dungeon.model.worldspace.session.model.DungeonEditorSessionValues;
+import src.domain.dungeon.model.worldspace.workspace.model.DungeonEditorWorkspaceValues;
 
 final class DungeonEditorCorridorInteractionUseCase {
     private final DungeonEditorCorridorTargetHelper targetService = new DungeonEditorCorridorTargetHelper();

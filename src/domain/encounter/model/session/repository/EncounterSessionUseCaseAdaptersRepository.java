@@ -4,19 +4,19 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import org.jspecify.annotations.Nullable;
-import src.domain.encounter.model.generation.model.EncounterBudgetSummary;
-import src.domain.encounter.model.generation.model.EncounterGeneratedAlternative;
-import src.domain.encounter.model.generation.model.EncounterGenerationRequest;
-import src.domain.encounter.model.generation.model.EncounterGenerationResult;
-import src.domain.encounter.model.plan.model.EncounterPlan;
-import src.domain.encounter.model.plan.model.EncounterPlanCreature;
-import src.domain.encounter.model.plan.model.SavedEncounterPlansLoadResult;
-import src.domain.encounter.model.session.model.BudgetData;
-import src.domain.encounter.model.session.model.GeneratedEncounterData;
-import src.domain.encounter.model.session.model.GenerationResultData;
-import src.domain.encounter.model.session.model.ListPlansOutcome;
-import src.domain.encounter.model.session.model.PartyBudgetFacts;
-import src.domain.encounter.model.session.model.PlanOutcome;
+import src.domain.encounter.model.generation.EncounterBudgetSummary;
+import src.domain.encounter.model.generation.EncounterGeneratedAlternative;
+import src.domain.encounter.model.generation.EncounterGenerationRequest;
+import src.domain.encounter.model.generation.EncounterGenerationResult;
+import src.domain.encounter.model.plan.EncounterPlan;
+import src.domain.encounter.model.plan.EncounterPlanCreature;
+import src.domain.encounter.model.plan.SavedEncounterPlansLoadResult;
+import src.domain.encounter.model.session.BudgetData;
+import src.domain.encounter.model.session.GeneratedEncounterData;
+import src.domain.encounter.model.session.GenerationResultData;
+import src.domain.encounter.model.session.ListPlansOutcome;
+import src.domain.encounter.model.session.PartyBudgetFacts;
+import src.domain.encounter.model.session.PlanOutcome;
 
 public final class EncounterSessionUseCaseAdaptersRepository {
 

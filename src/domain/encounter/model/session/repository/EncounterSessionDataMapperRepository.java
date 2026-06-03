@@ -4,18 +4,18 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import org.jspecify.annotations.Nullable;
-import src.domain.encounter.model.generation.model.EncounterBudgetSummary;
-import src.domain.encounter.model.generation.model.EncounterDifficultyIntent;
-import src.domain.encounter.model.generation.model.EncounterGeneratedAlternative;
-import src.domain.encounter.model.generation.model.EncounterGenerationDiagnosticsData;
-import src.domain.encounter.model.generation.model.EncounterTuningIntent;
-import src.domain.encounter.model.generation.model.GeneratedEncounterCreatureData;
+import src.domain.encounter.model.generation.EncounterBudgetSummary;
+import src.domain.encounter.model.generation.EncounterDifficultyIntent;
+import src.domain.encounter.model.generation.EncounterGeneratedAlternative;
+import src.domain.encounter.model.generation.EncounterGenerationDiagnosticsData;
+import src.domain.encounter.model.generation.EncounterTuningIntent;
+import src.domain.encounter.model.generation.GeneratedEncounterCreatureData;
 import src.domain.encounter.model.reference.repository.EncounterCreatureRepository;
-import src.domain.encounter.model.session.model.BudgetData;
-import src.domain.encounter.model.session.model.CreatureDetailData;
-import src.domain.encounter.model.session.model.EncounterCreatureData;
-import src.domain.encounter.model.session.model.GeneratedEncounterData;
-import src.domain.encounter.model.session.model.GenerationDiagnosticsData;
+import src.domain.encounter.model.session.BudgetData;
+import src.domain.encounter.model.session.CreatureDetailData;
+import src.domain.encounter.model.session.EncounterCreatureData;
+import src.domain.encounter.model.session.GeneratedEncounterData;
+import src.domain.encounter.model.session.GenerationDiagnosticsData;
 
 final class EncounterSessionDataMapperRepository {
 

@@ -1,9 +1,9 @@
 package src.domain.dungeon.model.worldspace.usecase;
 
 import java.util.Objects;
-import src.domain.dungeon.model.worldspace.model.workspace.model.DungeonEditorWorkspaceValues.MapId;
-import src.domain.dungeon.model.worldspace.model.DungeonMapIdentity;
-import src.domain.dungeon.model.worldspace.model.DungeonTopologyRef;
+import src.domain.dungeon.model.worldspace.workspace.model.DungeonEditorWorkspaceValues.MapId;
+import src.domain.dungeon.model.worldspace.DungeonMapIdentity;
+import src.domain.dungeon.model.worldspace.DungeonTopologyRef;
 
 public final class LoadDungeonEditorAuthoredMapUseCase {
 

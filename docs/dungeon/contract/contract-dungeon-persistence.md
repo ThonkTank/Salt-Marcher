@@ -13,7 +13,7 @@ adapters.
 
 Owners:
 
-- provider: dungeon domain outbound ports
+- provider: dungeon domain outbound repositories and searches
 - consumers: dungeon SQLite adapters
 
 It owns stored truth, adapter boundaries, schema ownership, and stability

@@ -1,7 +1,7 @@
 package src.domain.encounter.model.plan.usecase;
 
 import java.util.Objects;
-import src.domain.encounter.model.plan.model.SavedEncounterPlansLoadResult;
+import src.domain.encounter.model.plan.SavedEncounterPlansLoadResult;
 import src.domain.encounter.model.plan.repository.EncounterPlanRepository;
 
 public final class ListSavedEncounterPlansUseCase {

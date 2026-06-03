@@ -1,7 +1,7 @@
 package src.domain.encounter.model.plan.repository;
 
-import src.domain.encounter.model.plan.model.EncounterPlanBudgetLoadResult;
-import src.domain.encounter.model.plan.model.SavedEncounterPlansLoadResult;
+import src.domain.encounter.model.plan.EncounterPlanBudgetLoadResult;
+import src.domain.encounter.model.plan.SavedEncounterPlansLoadResult;
 
 public interface EncounterPlanPublishedStateRepository {
 

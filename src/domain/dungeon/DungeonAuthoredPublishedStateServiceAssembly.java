@@ -10,16 +10,12 @@ final class DungeonAuthoredPublishedStateServiceAssembly implements src.domain.d
             new DungeonPublishedChannelServiceAssembly<>(DungeonAuthoredMutationProjectionServiceAssembly.defaultMutation());
     private final DungeonPublishedChannelServiceAssembly<src.domain.dungeon.published.DungeonMapCatalogResponse> mapCatalog =
             new DungeonPublishedChannelServiceAssembly<>(new src.domain.dungeon.published.DungeonMapCatalogResponse.MapList(List.of()));
-    private final DungeonPublishedChannelServiceAssembly<src.domain.dungeon.published.DungeonTravelResponse> travel =
-            new DungeonPublishedChannelServiceAssembly<>(DungeonAuthoredTravelProjectionServiceAssembly.defaultTravel());
     final src.domain.dungeon.published.DungeonAuthoredReadModel authoredReadModel =
             new src.domain.dungeon.published.DungeonAuthoredReadModel(authoredRead::current, authoredRead::subscribe);
     final src.domain.dungeon.published.DungeonAuthoredMutationModel authoredMutationModel =
             new src.domain.dungeon.published.DungeonAuthoredMutationModel(authoredMutation::current, authoredMutation::subscribe);
     final src.domain.dungeon.published.DungeonMapCatalogModel mapCatalogModel =
             new src.domain.dungeon.published.DungeonMapCatalogModel(mapCatalog::current, mapCatalog::subscribe);
-    final src.domain.dungeon.published.DungeonTravelModel travelModel =
-            new src.domain.dungeon.published.DungeonTravelModel(travel::current, travel::subscribe);
 
     void registerModels(shell.api.ServiceRegistry.Builder services) {
         services.registerFactory(
@@ -31,9 +27,6 @@ final class DungeonAuthoredPublishedStateServiceAssembly implements src.domain.d
         services.registerFactory(
                 src.domain.dungeon.published.DungeonMapCatalogModel.class,
                 registry -> mapCatalogModel);
-        services.registerFactory(
-                src.domain.dungeon.published.DungeonTravelModel.class,
-                registry -> travelModel);
     }
 
     @Override
@@ -85,17 +78,4 @@ final class DungeonAuthoredPublishedStateServiceAssembly implements src.domain.d
                 mutation.mapId()));
     }
 
-    @Override
-    public void publishSurface(src.domain.dungeon.model.worldspace.model.DungeonTravelSurfaceFacts surface) {
-        if (surface != null) {
-            travel.publish(DungeonAuthoredTravelProjectionServiceAssembly.surface(surface));
-        }
-    }
-
-    @Override
-    public void publishMove(src.domain.dungeon.model.worldspace.model.DungeonTravelMoveFacts move) {
-        if (move != null) {
-            travel.publish(DungeonAuthoredTravelProjectionServiceAssembly.move(move));
-        }
-    }
 }

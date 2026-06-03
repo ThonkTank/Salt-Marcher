@@ -9,9 +9,9 @@ import src.domain.party.published.AdventuringDayCalculationResult;
 import src.domain.party.published.AdventuringDayPlanningSummary;
 import src.domain.party.published.PartyMemberSummary;
 import src.domain.party.published.ReadStatus;
-import src.domain.sessionplanner.model.session.model.SessionAdventuringDayBudgetFact;
-import src.domain.sessionplanner.model.session.model.SessionActivePartyMembersFact;
-import src.domain.sessionplanner.model.session.model.SessionPartyMemberProfile;
+import src.domain.sessionplanner.model.session.SessionAdventuringDayBudgetFact;
+import src.domain.sessionplanner.model.session.SessionActivePartyMembersFact;
+import src.domain.sessionplanner.model.session.SessionPartyMemberProfile;
 import src.domain.sessionplanner.model.session.port.SessionPartyFactsPort;
 
 final class SessionPlannerPartyFactsReadbackServiceAssembly implements SessionPartyFactsPort {

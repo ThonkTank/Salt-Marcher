@@ -19,6 +19,8 @@ import java.util.regex.Pattern;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
+import javax.lang.model.element.TypeParameterElement;
+import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 
 final class DomainRoleConcernSupport {
@@ -61,8 +63,10 @@ final class DomainRoleConcernSupport {
 
     private static final Pattern ROOT_PACKAGE = Pattern.compile("^src\\.domain\\.([^.]+)$");
     private static final Pattern ROOT_APPLICATION_PACKAGE = Pattern.compile("^src\\.domain\\.([^.]+)\\.application(\\..*)?$");
-    private static final Pattern MODEL_ROLE_PACKAGE =
-            Pattern.compile("^src\\.domain\\.([^.]+)\\.model\\.([^.]+)\\.(model|usecase|helper|constants|port|repository)(\\..*)?$");
+    private static final Pattern MODEL_TECHNICAL_ROLE_PACKAGE =
+            Pattern.compile("^src\\.domain\\.([^.]+)\\.model\\.([^.]+)\\.(usecase|helper|constants|port|repository)(\\..*)?$");
+    private static final Pattern INTERNAL_MODEL_PACKAGE =
+            Pattern.compile("^src\\.domain\\.([^.]+)\\.model\\.([^.]+)(?:\\.(.*))?$");
     private static final Pattern PUBLISHED_PACKAGE = Pattern.compile("^src\\.domain\\.([^.]+)\\.published(\\..*)?$");
     private static final Pattern DOMAIN_APPLICATION_SERVICE_TYPE =
             Pattern.compile("^src\\.domain\\.([^.]+)\\.[^.]+ApplicationService$");
@@ -71,7 +75,9 @@ final class DomainRoleConcernSupport {
     private static final Pattern DOMAIN_ROOT_APPLICATION_USECASE_OWNED_TYPE =
             Pattern.compile("^src\\.domain\\.([^.]+)\\.application\\.[^.]+UseCase(?:[.$].*)?$");
     private static final Pattern DOMAIN_MODEL_ROLE_TYPE =
-            Pattern.compile("^src\\.domain\\.([^.]+)\\.model\\.([^.]+)\\.(model|usecase|helper|constants|port|repository)\\..+");
+            Pattern.compile("^src\\.domain\\.([^.]+)\\.model\\.([^.]+)\\.(usecase|helper|constants|port|repository)\\..+");
+    private static final Pattern DOMAIN_INTERNAL_MODEL_TYPE =
+            Pattern.compile("^src\\.domain\\.([^.]+)\\.model\\.([^.]+)(?:\\.(.*))?$");
     private static final Pattern DOMAIN_PUBLISHED_TYPE =
             Pattern.compile("^src\\.domain\\.([^.]+)\\.published\\..+");
     private static final Pattern DOMAIN_PUBLISHED_MODEL_TYPE =
@@ -123,10 +129,16 @@ final class DomainRoleConcernSupport {
 
     static Set<String> boundaryViolations(SourceRole sourceRole, CompilationUnitTree tree) {
         Set<String> violations = new LinkedHashSet<>();
+        if (sourceRole.role() == Role.MODEL) {
+            collectExecutableProtocolSurfaceViolations(tree, violations);
+        }
         for (String referencedType : DataArchitectureSupport.collectReferencedTypes(tree)) {
             if (referencedType == null
                     || referencedType.isBlank()
                     || isOwnTopLevelOrNestedTypeReference(sourceRole, referencedType)) {
+                continue;
+            }
+            if (isExecutableProtocolType(referencedType) && sourceRole.role() == Role.MODEL) {
                 continue;
             }
             if (isExecutableProtocolType(referencedType)) {
@@ -191,7 +203,7 @@ final class DomainRoleConcernSupport {
         if (rootMatcher.matches()) {
             return new SourceRole(Role.USECASE, rootMatcher.group(1), null, packageName, topLevelQualifiedName);
         }
-        Matcher modelMatcher = MODEL_ROLE_PACKAGE.matcher(packageName);
+        Matcher modelMatcher = MODEL_TECHNICAL_ROLE_PACKAGE.matcher(packageName);
         if (!modelMatcher.matches() || !"usecase".equals(modelMatcher.group(3))) {
             return null;
         }
@@ -199,12 +211,15 @@ final class DomainRoleConcernSupport {
     }
 
     private static SourceRole describeModelRole(String packageName, String topLevelQualifiedName, Role role) {
-        Matcher matcher = MODEL_ROLE_PACKAGE.matcher(packageName);
-        if (!matcher.matches()) {
-            return null;
+        if (role == Role.MODEL) {
+            Matcher matcher = INTERNAL_MODEL_PACKAGE.matcher(packageName);
+            if (!matcher.matches() || isTechnicalModelRoleSegment(matcher.group(3))) {
+                return null;
+            }
+            return new SourceRole(role, matcher.group(1), matcher.group(2), packageName, topLevelQualifiedName);
         }
-        String packageRole = matcher.group(3);
-        if (!packageRole.equals(role.name().toLowerCase())) {
+        Matcher matcher = MODEL_TECHNICAL_ROLE_PACKAGE.matcher(packageName);
+        if (!matcher.matches() || !matcher.group(3).equals(role.name().toLowerCase())) {
             return null;
         }
         return new SourceRole(role, matcher.group(1), matcher.group(2), packageName, topLevelQualifiedName);
@@ -244,6 +259,85 @@ final class DomainRoleConcernSupport {
     private static boolean isExecutableProtocolType(String referencedType) {
         return referencedType.startsWith("java.util.function.")
                 || EXECUTABLE_PROTOCOL_TYPES.contains(referencedType);
+    }
+
+    private static void collectExecutableProtocolSurfaceViolations(
+            CompilationUnitTree tree,
+            Set<String> violations
+    ) {
+        ClassTree topLevelClass = topLevelClass(tree);
+        if (topLevelClass == null) {
+            return;
+        }
+        collectExecutableProtocolClassSurfaceViolations(topLevelClass, violations);
+    }
+
+    private static void collectExecutableProtocolClassSurfaceViolations(
+            ClassTree classTree,
+            Set<String> violations
+    ) {
+        TypeElement typeElement = ASTHelpers.getSymbol(classTree);
+        if (typeElement != null) {
+            for (TypeParameterElement typeParameter : typeElement.getTypeParameters()) {
+                collectExecutableProtocolViolations(typeParameter.asType(), violations);
+            }
+            TypeMirror superclass = typeElement.getSuperclass();
+            if (superclass != null && superclass.getKind() != TypeKind.NONE) {
+                collectExecutableProtocolViolations(superclass, violations);
+            }
+            for (TypeMirror interfaceType : typeElement.getInterfaces()) {
+                collectExecutableProtocolViolations(interfaceType, violations);
+            }
+        }
+        for (Tree member : classTree.getMembers()) {
+            if (member instanceof VariableTree variableTree) {
+                Symbol symbol = ASTHelpers.getSymbol(variableTree);
+                if (symbol != null) {
+                    collectExecutableProtocolViolations(symbol.asType(), violations);
+                }
+                continue;
+            }
+            if (member instanceof MethodTree methodTree) {
+                collectExecutableProtocolMethodViolations(methodTree, violations);
+                continue;
+            }
+            if (member instanceof ClassTree nestedClassTree) {
+                collectExecutableProtocolClassSurfaceViolations(nestedClassTree, violations);
+            }
+        }
+    }
+
+    private static void collectExecutableProtocolMethodViolations(
+            MethodTree methodTree,
+            Set<String> violations
+    ) {
+        Symbol.MethodSymbol methodSymbol = ASTHelpers.getSymbol(methodTree);
+        if (methodSymbol == null) {
+            return;
+        }
+        if (!methodSymbol.isConstructor()) {
+            collectExecutableProtocolViolations(methodSymbol.getReturnType(), violations);
+        }
+        for (TypeMirror thrownType : methodSymbol.getThrownTypes()) {
+            collectExecutableProtocolViolations(thrownType, violations);
+        }
+        for (Symbol.TypeVariableSymbol typeParameter : methodSymbol.getTypeParameters()) {
+            collectExecutableProtocolViolations(typeParameter.asType(), violations);
+        }
+        for (Symbol.VarSymbol parameter : methodSymbol.getParameters()) {
+            collectExecutableProtocolViolations(parameter.asType(), violations);
+        }
+    }
+
+    private static void collectExecutableProtocolViolations(
+            TypeMirror typeMirror,
+            Set<String> violations
+    ) {
+        for (String referencedType : collectTypeReferences(typeMirror)) {
+            if (isExecutableProtocolType(referencedType)) {
+                violations.add("references executable protocol type " + referencedType);
+            }
+        }
     }
 
     private static boolean isOuterLayerType(String referencedType) {
@@ -327,10 +421,25 @@ final class DomainRoleConcernSupport {
     }
 
     private static boolean isSameFeatureModelRoleType(String referencedType, String feature, String role) {
+        if ("model".equals(role)) {
+            Matcher matcher = DOMAIN_INTERNAL_MODEL_TYPE.matcher(referencedType);
+            return matcher.matches()
+                    && feature.equals(matcher.group(1))
+                    && !isTechnicalModelRoleSegment(matcher.group(3));
+        }
         Matcher matcher = DOMAIN_MODEL_ROLE_TYPE.matcher(referencedType);
         return matcher.matches()
                 && feature.equals(matcher.group(1))
                 && role.equals(matcher.group(3));
+    }
+
+    private static boolean isTechnicalModelRoleSegment(String suffix) {
+        if (suffix == null || suffix.isBlank()) {
+            return false;
+        }
+        int separator = suffix.indexOf('.');
+        String segment = separator < 0 ? suffix : suffix.substring(0, separator);
+        return Set.of("usecase", "helper", "constants", "port", "repository").contains(segment);
     }
 
     private static boolean isForeignPublishedType(String referencedType, String sourceFeature) {

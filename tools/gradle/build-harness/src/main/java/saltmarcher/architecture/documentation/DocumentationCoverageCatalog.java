@@ -377,7 +377,7 @@ public final class DocumentationCoverageCatalog {
                             row("domain-layer-model-root-family-directories-only", "Enforced",
                                     List.of("domain-layer bundle build-harness", "DomainLayerTopologyRules"),
                                     List.of("./gradlew checkDomainEnforcement")),
-                            row("domain-layer-model-family-role-subpackage-required", "Enforced",
+                            row("domain-layer-obsolete-model-role-marker", "Enforced",
                                     List.of("domain-layer bundle build-harness", "DomainLayerTopologyRules"),
                                     List.of("./gradlew checkDomainEnforcement")),
                             row("domain-layer-model-role-package-name-allowlist", "Enforced",

@@ -3,7 +3,7 @@ package src.domain.encounter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import src.domain.encounter.model.reference.model.EncounterTableCandidateCriteria;
+import src.domain.encounter.model.reference.EncounterTableCandidateCriteria;
 import src.domain.encounter.model.reference.repository.EncounterTableCandidateRepository;
 import src.domain.encountertable.EncounterTableApplicationService;
 import src.domain.encountertable.published.RefreshEncounterTableCandidatesCommand;

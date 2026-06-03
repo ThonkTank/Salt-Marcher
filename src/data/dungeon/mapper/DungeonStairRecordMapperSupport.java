@@ -5,11 +5,11 @@ import java.util.List;
 import src.data.dungeon.model.DungeonStairExitRecord;
 import src.data.dungeon.model.DungeonStairPathNodeRecord;
 import src.data.dungeon.model.DungeonStairRecord;
-import src.domain.dungeon.model.worldspace.model.DungeonStair;
-import src.domain.dungeon.model.worldspace.model.DungeonCell;
-import src.domain.dungeon.model.worldspace.model.DungeonEdgeDirection;
-import src.domain.dungeon.model.worldspace.model.DungeonStairExit;
-import src.domain.dungeon.model.worldspace.model.DungeonStairShape;
+import src.domain.dungeon.model.worldspace.DungeonStair;
+import src.domain.dungeon.model.worldspace.DungeonCell;
+import src.domain.dungeon.model.worldspace.DungeonEdgeDirection;
+import src.domain.dungeon.model.worldspace.DungeonStairExit;
+import src.domain.dungeon.model.worldspace.DungeonStairShape;
 
 final class DungeonStairRecordMapperSupport {
 

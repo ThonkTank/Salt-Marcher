@@ -3,10 +3,10 @@ package src.domain.dungeon.model.worldspace.usecase;
 import java.util.Objects;
 import java.util.Optional;
 import org.jspecify.annotations.Nullable;
-import src.domain.dungeon.model.worldspace.model.DungeonMap;
-import src.domain.dungeon.model.worldspace.model.DungeonMapAuthoring;
+import src.domain.dungeon.model.worldspace.DungeonMap;
+import src.domain.dungeon.model.worldspace.DungeonMapAuthoring;
 import src.domain.dungeon.model.worldspace.repository.DungeonMapRepository;
-import src.domain.dungeon.model.worldspace.model.DungeonMapIdentity;
+import src.domain.dungeon.model.worldspace.DungeonMapIdentity;
 
 /**
  * Loads authored dungeon maps through the dungeon repository.

@@ -1,6 +1,6 @@
 package src.domain.sessionplanner.model.session.repository;
 
-import src.domain.sessionplanner.model.session.model.SessionEncounterPlanFact;
+import src.domain.sessionplanner.model.session.SessionEncounterPlanFact;
 
 public interface SessionEncounterFactsRepository {
 

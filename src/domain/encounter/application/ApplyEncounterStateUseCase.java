@@ -4,11 +4,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import org.jspecify.annotations.Nullable;
-import src.domain.encounter.model.generation.model.EncounterGenerationInputs;
+import src.domain.encounter.model.generation.EncounterGenerationInputs;
 import src.domain.encounter.model.plan.usecase.PublishEncounterSavedPlansUseCase;
-import src.domain.encounter.model.session.model.EncounterInitiativeInput;
-import src.domain.encounter.model.session.model.EncounterSession;
-import src.domain.encounter.model.session.model.EncounterSessionCommand;
+import src.domain.encounter.model.session.EncounterInitiativeInput;
+import src.domain.encounter.model.session.EncounterSession;
+import src.domain.encounter.model.session.EncounterSessionCommand;
 import src.domain.encounter.model.session.usecase.ApplyEncounterSessionUseCase;
 import src.domain.encounter.model.session.usecase.PublishEncounterSessionUseCase;
 

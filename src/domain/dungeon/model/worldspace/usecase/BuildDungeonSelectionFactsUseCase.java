@@ -2,14 +2,14 @@ package src.domain.dungeon.model.worldspace.usecase;
 
 import java.util.ArrayList;
 import java.util.List;
-import src.domain.dungeon.model.worldspace.model.DungeonState;
-import src.domain.dungeon.model.worldspace.model.DungeonPrimitive;
-import src.domain.dungeon.model.worldspace.model.DungeonAreaFacts;
-import src.domain.dungeon.model.worldspace.model.DungeonBoundaryFacts;
-import src.domain.dungeon.model.worldspace.model.DungeonDerivedState;
-import src.domain.dungeon.model.worldspace.model.DungeonFeatureFacts;
-import src.domain.dungeon.model.worldspace.model.DungeonTopologyElementKind;
-import src.domain.dungeon.model.worldspace.model.DungeonTopologyRef;
+import src.domain.dungeon.model.worldspace.DungeonState;
+import src.domain.dungeon.model.worldspace.DungeonPrimitive;
+import src.domain.dungeon.model.worldspace.DungeonAreaFacts;
+import src.domain.dungeon.model.worldspace.DungeonBoundaryFacts;
+import src.domain.dungeon.model.worldspace.DungeonDerivedState;
+import src.domain.dungeon.model.worldspace.DungeonFeatureFacts;
+import src.domain.dungeon.model.worldspace.DungeonTopologyElementKind;
+import src.domain.dungeon.model.worldspace.DungeonTopologyRef;
 
 final class BuildDungeonSelectionFactsUseCase {
 

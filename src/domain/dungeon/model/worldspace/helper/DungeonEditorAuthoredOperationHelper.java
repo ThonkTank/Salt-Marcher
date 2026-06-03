@@ -3,19 +3,19 @@ package src.domain.dungeon.model.worldspace.helper;
 import java.util.ArrayList;
 import java.util.List;
 import org.jspecify.annotations.Nullable;
-import src.domain.dungeon.model.worldspace.model.session.model.DungeonEditorRoomNarrationInput;
-import src.domain.dungeon.model.worldspace.model.session.model.DungeonEditorSessionValues;
-import src.domain.dungeon.model.worldspace.model.workspace.model.DungeonEditorWorkspaceValues;
-import src.domain.dungeon.model.worldspace.model.DungeonCell;
-import src.domain.dungeon.model.worldspace.model.DungeonClusterBoundaryKind;
-import src.domain.dungeon.model.worldspace.model.DungeonCorridorEndpoint;
-import src.domain.dungeon.model.worldspace.model.DungeonEdge;
-import src.domain.dungeon.model.worldspace.model.DungeonEdgeDirection;
-import src.domain.dungeon.model.worldspace.model.DungeonEditorAuthoredOperation;
-import src.domain.dungeon.model.worldspace.model.DungeonEditorHandle;
-import src.domain.dungeon.model.worldspace.model.DungeonRoomExitDescription;
-import src.domain.dungeon.model.worldspace.model.DungeonRoomNarration;
-import src.domain.dungeon.model.worldspace.model.DungeonTopologyRef;
+import src.domain.dungeon.model.worldspace.session.model.DungeonEditorRoomNarrationInput;
+import src.domain.dungeon.model.worldspace.session.model.DungeonEditorSessionValues;
+import src.domain.dungeon.model.worldspace.workspace.model.DungeonEditorWorkspaceValues;
+import src.domain.dungeon.model.worldspace.DungeonCell;
+import src.domain.dungeon.model.worldspace.DungeonClusterBoundaryKind;
+import src.domain.dungeon.model.worldspace.DungeonCorridorEndpoint;
+import src.domain.dungeon.model.worldspace.DungeonEdge;
+import src.domain.dungeon.model.worldspace.DungeonEdgeDirection;
+import src.domain.dungeon.model.worldspace.DungeonEditorAuthoredOperation;
+import src.domain.dungeon.model.worldspace.DungeonEditorHandle;
+import src.domain.dungeon.model.worldspace.DungeonRoomExitDescription;
+import src.domain.dungeon.model.worldspace.DungeonRoomNarration;
+import src.domain.dungeon.model.worldspace.DungeonTopologyRef;
 
 public interface DungeonEditorAuthoredOperationHelper {
 

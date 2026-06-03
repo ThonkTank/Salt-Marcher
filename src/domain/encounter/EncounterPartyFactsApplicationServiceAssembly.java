@@ -7,16 +7,16 @@ import src.domain.party.published.AwardPartyXpCommand;
 
 final class EncounterPartyFactsApplicationServiceAssembly implements EncounterPartyFactsRepository {
 
-    private final java.util.function.Supplier<src.domain.encounter.model.session.model.PartyBudgetFacts>
+    private final java.util.function.Supplier<src.domain.encounter.model.session.PartyBudgetFacts>
             partyBudgetFacts;
-    private final java.util.function.Supplier<List<src.domain.encounter.model.session.model.PartyMemberData>>
+    private final java.util.function.Supplier<List<src.domain.encounter.model.session.PartyMemberData>>
             activeParty;
     private final src.domain.party.PartyApplicationService party;
     private final java.util.function.BooleanSupplier xpAwardSucceeded;
 
     EncounterPartyFactsApplicationServiceAssembly(
-            java.util.function.Supplier<src.domain.encounter.model.session.model.PartyBudgetFacts> partyBudgetFacts,
-            java.util.function.Supplier<List<src.domain.encounter.model.session.model.PartyMemberData>> activeParty,
+            java.util.function.Supplier<src.domain.encounter.model.session.PartyBudgetFacts> partyBudgetFacts,
+            java.util.function.Supplier<List<src.domain.encounter.model.session.PartyMemberData>> activeParty,
             src.domain.party.PartyApplicationService party,
             java.util.function.BooleanSupplier xpAwardSucceeded
     ) {
@@ -27,12 +27,12 @@ final class EncounterPartyFactsApplicationServiceAssembly implements EncounterPa
     }
 
     @Override
-    public src.domain.encounter.model.session.model.PartyBudgetFacts loadPartyBudgetFacts() {
+    public src.domain.encounter.model.session.PartyBudgetFacts loadPartyBudgetFacts() {
         return partyBudgetFacts.get();
     }
 
     @Override
-    public List<src.domain.encounter.model.session.model.PartyMemberData> loadActiveParty() {
+    public List<src.domain.encounter.model.session.PartyMemberData> loadActiveParty() {
         return List.copyOf(activeParty.get());
     }
 

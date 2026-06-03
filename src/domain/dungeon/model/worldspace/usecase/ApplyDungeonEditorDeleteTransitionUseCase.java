@@ -1,11 +1,11 @@
 package src.domain.dungeon.model.worldspace.usecase;
 
 import java.util.Objects;
-import src.domain.dungeon.model.worldspace.model.DungeonTopologyElementKind;
-import src.domain.dungeon.model.worldspace.model.DungeonTopologyRef;
-import src.domain.dungeon.model.worldspace.model.interaction.model.DungeonEditorMainViewEffect;
-import src.domain.dungeon.model.worldspace.model.session.model.DungeonEditorMainViewPointerTarget;
-import src.domain.dungeon.model.worldspace.model.session.model.DungeonEditorSessionWorkflow;
+import src.domain.dungeon.model.worldspace.DungeonTopologyElementKind;
+import src.domain.dungeon.model.worldspace.DungeonTopologyRef;
+import src.domain.dungeon.model.worldspace.interaction.model.DungeonEditorMainViewEffect;
+import src.domain.dungeon.model.worldspace.session.model.DungeonEditorMainViewPointerTarget;
+import src.domain.dungeon.model.worldspace.session.model.DungeonEditorSessionWorkflow;
 import src.domain.dungeon.model.worldspace.usecase.BuildDungeonEditorMainViewInputUseCase.MainViewInput;
 
 public final class ApplyDungeonEditorDeleteTransitionUseCase {

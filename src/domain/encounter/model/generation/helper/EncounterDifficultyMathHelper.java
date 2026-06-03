@@ -1,8 +1,8 @@
 package src.domain.encounter.model.generation.helper;
 
 import java.util.List;
-import src.domain.encounter.model.generation.model.EncounterBudgetSummary;
-import src.domain.encounter.model.generation.model.EncounterDifficultyThresholds;
+import src.domain.encounter.model.generation.EncounterBudgetSummary;
+import src.domain.encounter.model.generation.EncounterDifficultyThresholds;
 
 public final class EncounterDifficultyMathHelper {
 

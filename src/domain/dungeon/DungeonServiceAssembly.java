@@ -10,14 +10,9 @@ final class DungeonServiceAssembly {
             new DungeonAuthoredPublishedStateServiceAssembly();
     private final DungeonEditorRuntimeServiceAssembly editorRuntime =
             new DungeonEditorRuntimeServiceAssembly(editorPublishedState);
-    private final DungeonTravelApplicationServiceAssembly travelApplication =
-            new DungeonTravelApplicationServiceAssembly();
     private final DungeonTravelRuntimeServiceAssembly travelRuntime = new DungeonTravelRuntimeServiceAssembly();
 
     void register(ServiceRegistry.Builder services) {
-        services.registerFactory(
-                DungeonTravelApplicationService.class,
-                registry -> travelApplication.create(registry, authoredPublishedState));
         services.registerFactory(DungeonTravelRuntimeApplicationService.class, travelRuntime::service);
         authoredPublishedState.registerModels(services);
         services.registerFactory(src.domain.dungeon.published.TravelDungeonModel.class, travelRuntime::travelModel);

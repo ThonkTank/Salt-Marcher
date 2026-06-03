@@ -1,7 +1,7 @@
 package src.domain.party;
 
 import org.jspecify.annotations.Nullable;
-import src.domain.party.model.roster.model.PartyTravelLocation;
+import src.domain.party.model.roster.PartyTravelLocation;
 import src.domain.party.model.roster.usecase.LoadPartyTravelPositionsUseCase;
 import src.domain.party.published.PartyDungeonTravelLocationSnapshot;
 import src.domain.party.published.PartyOverworldTravelLocationSnapshot;
@@ -57,13 +57,13 @@ final class PartyTravelProjectionServiceAssembly {
     }
 
     private static src.domain.party.published.PartyDungeonTravelLocationKind toPublishedDungeonLocationKind(
-            src.domain.party.model.roster.model.PartyDungeonTravelLocationKind locationKind
+            src.domain.party.model.roster.PartyDungeonTravelLocationKind locationKind
     ) {
         return src.domain.party.published.PartyDungeonTravelLocationKind.valueOf(locationKind.name());
     }
 
     private static src.domain.party.published.PartyTravelHeading toPublishedHeading(
-            src.domain.party.model.roster.model.PartyTravelHeading heading
+            src.domain.party.model.roster.PartyTravelHeading heading
     ) {
         return src.domain.party.published.PartyTravelHeading.valueOf(heading.name());
     }

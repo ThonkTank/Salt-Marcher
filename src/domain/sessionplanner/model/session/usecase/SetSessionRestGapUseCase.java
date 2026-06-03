@@ -1,6 +1,6 @@
 package src.domain.sessionplanner.model.session.usecase;
 
-import src.domain.sessionplanner.model.session.model.SessionRestPlacement;
+import src.domain.sessionplanner.model.session.SessionRestPlacement;
 
 public final class SetSessionRestGapUseCase {
 

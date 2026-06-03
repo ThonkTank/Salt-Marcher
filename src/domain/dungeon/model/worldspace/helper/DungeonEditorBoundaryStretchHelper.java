@@ -7,17 +7,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.jspecify.annotations.Nullable;
-import src.domain.dungeon.model.worldspace.model.DungeonBoundaryStretchValueTypes.StretchOrientation;
-import src.domain.dungeon.model.worldspace.model.DungeonTopologyRef;
-import src.domain.dungeon.model.worldspace.model.interaction.model.DungeonEditorBoundaryTouchGeometry;
-import src.domain.dungeon.model.worldspace.model.interaction.model.DungeonEditorInteractionValues.CellKey;
-import src.domain.dungeon.model.worldspace.model.interaction.model.DungeonEditorMainViewInteractionValues;
-import src.domain.dungeon.model.worldspace.model.interaction.model.DungeonEditorMainViewInteractionValues.BoundaryStretchSession;
-import src.domain.dungeon.model.worldspace.model.interaction.model.DungeonEditorMainViewInteractionValues.BoundaryStretchSide;
-import src.domain.dungeon.model.worldspace.model.interaction.model.DungeonEditorMainViewInteractionValues.BoundaryTarget;
-import src.domain.dungeon.model.worldspace.model.interaction.model.DungeonEditorMainViewInteractionValues.PointerState;
-import src.domain.dungeon.model.worldspace.model.session.model.DungeonEditorSessionValues;
-import src.domain.dungeon.model.worldspace.model.workspace.model.DungeonEditorWorkspaceValues;
+import src.domain.dungeon.model.worldspace.DungeonBoundaryStretchValueTypes.StretchOrientation;
+import src.domain.dungeon.model.worldspace.DungeonTopologyRef;
+import src.domain.dungeon.model.worldspace.interaction.model.DungeonEditorBoundaryTouchGeometry;
+import src.domain.dungeon.model.worldspace.interaction.model.DungeonEditorInteractionValues.CellKey;
+import src.domain.dungeon.model.worldspace.interaction.model.DungeonEditorMainViewInteractionValues;
+import src.domain.dungeon.model.worldspace.interaction.model.DungeonEditorMainViewInteractionValues.BoundaryStretchSession;
+import src.domain.dungeon.model.worldspace.interaction.model.DungeonEditorMainViewInteractionValues.BoundaryStretchSide;
+import src.domain.dungeon.model.worldspace.interaction.model.DungeonEditorMainViewInteractionValues.BoundaryTarget;
+import src.domain.dungeon.model.worldspace.interaction.model.DungeonEditorMainViewInteractionValues.PointerState;
+import src.domain.dungeon.model.worldspace.session.model.DungeonEditorSessionValues;
+import src.domain.dungeon.model.worldspace.workspace.model.DungeonEditorWorkspaceValues;
 
 public final class DungeonEditorBoundaryStretchHelper {
     private final StretchStarter starter = new StretchStarter();

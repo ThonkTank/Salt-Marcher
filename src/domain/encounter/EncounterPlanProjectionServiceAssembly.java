@@ -1,6 +1,6 @@
 package src.domain.encounter;
 
-import src.domain.encounter.model.plan.model.EncounterPlanSummary;
+import src.domain.encounter.model.plan.EncounterPlanSummary;
 
 final class EncounterPlanProjectionServiceAssembly {
 

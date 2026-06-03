@@ -1,8 +1,8 @@
 package src.domain.encounter.model.generation.usecase;
 
 import org.jspecify.annotations.Nullable;
-import src.domain.encounter.model.generation.model.EncounterDifficultyThresholds;
-import src.domain.encounter.model.generation.model.EncounterGenerationRequest;
+import src.domain.encounter.model.generation.EncounterDifficultyThresholds;
+import src.domain.encounter.model.generation.EncounterGenerationRequest;
 import src.domain.encounter.model.reference.port.ApplicationEncounterCreatureCatalogPort;
 import src.domain.encounter.model.reference.port.ApplicationEncounterTableCandidatePort;
 import src.domain.encounter.model.reference.repository.EncounterCreatureRepository;

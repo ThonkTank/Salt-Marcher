@@ -3,7 +3,7 @@ package src.domain.creatures.model.catalog.usecase;
 import java.util.List;
 import java.util.Objects;
 import src.domain.creatures.model.catalog.helper.CreatureCatalogTextHelper;
-import src.domain.creatures.model.catalog.model.CreatureCatalogData;
+import src.domain.creatures.model.catalog.CreatureCatalogData;
 import src.domain.creatures.model.catalog.port.CreatureCatalogPort;
 import src.domain.creatures.model.catalog.repository.CreaturesPublishedStateRepository;
 

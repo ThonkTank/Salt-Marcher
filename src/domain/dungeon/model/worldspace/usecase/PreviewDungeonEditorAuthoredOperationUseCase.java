@@ -2,10 +2,10 @@ package src.domain.dungeon.model.worldspace.usecase;
 
 import java.util.Objects;
 import src.domain.dungeon.model.worldspace.helper.DungeonEditorAuthoredOperationHelper;
-import src.domain.dungeon.model.worldspace.model.session.model.DungeonEditorSessionValues;
-import src.domain.dungeon.model.worldspace.model.workspace.model.DungeonEditorWorkspaceValues.MapId;
-import src.domain.dungeon.model.worldspace.model.DungeonEditorAuthoredOperation;
-import src.domain.dungeon.model.worldspace.model.DungeonMapIdentity;
+import src.domain.dungeon.model.worldspace.session.model.DungeonEditorSessionValues;
+import src.domain.dungeon.model.worldspace.workspace.model.DungeonEditorWorkspaceValues.MapId;
+import src.domain.dungeon.model.worldspace.DungeonEditorAuthoredOperation;
+import src.domain.dungeon.model.worldspace.DungeonMapIdentity;
 
 public final class PreviewDungeonEditorAuthoredOperationUseCase {
 

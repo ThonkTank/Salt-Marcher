@@ -4,7 +4,7 @@ import java.util.List;
 import java.util.Objects;
 import src.domain.party.PartyApplicationService;
 import src.domain.party.published.CalculateAdventuringDayCommand;
-import src.domain.sessionplanner.model.session.model.SessionAdventuringDayBudgetFact;
+import src.domain.sessionplanner.model.session.SessionAdventuringDayBudgetFact;
 import src.domain.sessionplanner.model.session.port.SessionPartyFactsPort;
 import src.domain.sessionplanner.model.session.repository.SessionPartyFactsRepository;
 

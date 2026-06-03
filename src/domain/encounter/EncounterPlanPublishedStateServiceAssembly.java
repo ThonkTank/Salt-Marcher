@@ -1,7 +1,7 @@
 package src.domain.encounter;
 
-import src.domain.encounter.model.plan.model.EncounterPlanBudgetLoadResult;
-import src.domain.encounter.model.plan.model.SavedEncounterPlansLoadResult;
+import src.domain.encounter.model.plan.EncounterPlanBudgetLoadResult;
+import src.domain.encounter.model.plan.SavedEncounterPlansLoadResult;
 import src.domain.encounter.model.plan.repository.EncounterPlanPublishedStateRepository;
 import src.domain.encounter.published.EncounterPlanBudgetResult;
 import src.domain.encounter.published.SavedEncounterPlanListResult;

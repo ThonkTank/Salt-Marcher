@@ -2,8 +2,8 @@ package src.domain.party.model.roster.usecase;
 
 import java.util.ArrayList;
 import java.util.List;
-import src.domain.party.model.roster.model.PartyAdventuringDayBudget;
-import src.domain.party.model.roster.model.PartyCharacter;
+import src.domain.party.model.roster.PartyAdventuringDayBudget;
+import src.domain.party.model.roster.PartyCharacter;
 import src.domain.party.model.roster.repository.PartyRosterRepository;
 
 public final class LoadAdventuringDaySummaryUseCase {

@@ -5,10 +5,10 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.SplittableRandom;
-import src.domain.encounter.model.generation.model.EncounterDifficultyIntent;
-import src.domain.encounter.model.generation.model.EncounterDraft;
-import src.domain.encounter.model.generation.model.EncounterGenerationAttempt;
-import src.domain.encounter.model.generation.model.EncounterTuningIntent;
+import src.domain.encounter.model.generation.EncounterDifficultyIntent;
+import src.domain.encounter.model.generation.EncounterDraft;
+import src.domain.encounter.model.generation.EncounterGenerationAttempt;
+import src.domain.encounter.model.generation.EncounterTuningIntent;
 
 public final class EncounterAutoTuningHelper {
 

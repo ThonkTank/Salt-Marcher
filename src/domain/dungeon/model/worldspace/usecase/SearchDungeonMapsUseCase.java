@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
-import src.domain.dungeon.model.worldspace.model.DungeonMapIdentity;
+import src.domain.dungeon.model.worldspace.DungeonMapIdentity;
 import src.domain.dungeon.model.worldspace.repository.DungeonMapRepository;
 
 /**

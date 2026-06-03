@@ -7,11 +7,11 @@ import java.util.Map;
 import src.data.dungeon.model.DungeonClusterBoundaryRecord;
 import src.data.dungeon.model.DungeonRoomClusterRecord;
 import src.data.dungeon.model.DungeonRoomClusterVertexRecord;
-import src.domain.dungeon.model.worldspace.model.DungeonRoomCluster;
-import src.domain.dungeon.model.worldspace.model.DungeonCell;
-import src.domain.dungeon.model.worldspace.model.DungeonClusterBoundary;
-import src.domain.dungeon.model.worldspace.model.DungeonClusterBoundaryKind;
-import src.domain.dungeon.model.worldspace.model.DungeonEdgeDirection;
+import src.domain.dungeon.model.worldspace.DungeonRoomCluster;
+import src.domain.dungeon.model.worldspace.DungeonCell;
+import src.domain.dungeon.model.worldspace.DungeonClusterBoundary;
+import src.domain.dungeon.model.worldspace.DungeonClusterBoundaryKind;
+import src.domain.dungeon.model.worldspace.DungeonEdgeDirection;
 
 final class DungeonClusterRecordMapperSupport {
 

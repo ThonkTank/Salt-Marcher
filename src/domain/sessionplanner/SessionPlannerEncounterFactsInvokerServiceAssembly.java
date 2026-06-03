@@ -3,7 +3,7 @@ package src.domain.sessionplanner;
 import java.util.Objects;
 import src.domain.encounter.EncounterApplicationService;
 import src.domain.encounter.published.RefreshEncounterPlanBudgetCommand;
-import src.domain.sessionplanner.model.session.model.SessionEncounterPlanFact;
+import src.domain.sessionplanner.model.session.SessionEncounterPlanFact;
 import src.domain.sessionplanner.model.session.port.SessionEncounterFactsPort;
 import src.domain.sessionplanner.model.session.repository.SessionEncounterFactsRepository;
 

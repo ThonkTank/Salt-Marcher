@@ -1,7 +1,7 @@
 package src.domain.sessionplanner.model.session.port;
 
-import src.domain.sessionplanner.model.session.model.SessionActivePartyMembersFact;
-import src.domain.sessionplanner.model.session.model.SessionAdventuringDayBudgetFact;
+import src.domain.sessionplanner.model.session.SessionActivePartyMembersFact;
+import src.domain.sessionplanner.model.session.SessionAdventuringDayBudgetFact;
 
 public interface SessionPartyFactsPort {
 

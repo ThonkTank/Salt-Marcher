@@ -1,7 +1,7 @@
 package src.domain.sessionplanner.model.session.repository;
 
 import java.util.List;
-import src.domain.sessionplanner.model.session.model.SessionAdventuringDayBudgetFact;
+import src.domain.sessionplanner.model.session.SessionAdventuringDayBudgetFact;
 
 public interface SessionPartyFactsRepository {
 

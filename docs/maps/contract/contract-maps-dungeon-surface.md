@@ -20,7 +20,7 @@ Owners:
   `DungeonEditorProjectionApplicationService`,
   `DungeonEditorPointerApplicationService`,
   `DungeonEditorNarrationApplicationService`,
-  `DungeonTravelApplicationService`, and `DungeonTravelRuntimeApplicationService`
+  and `DungeonTravelRuntimeApplicationService`
 - consumers: dungeon editor and travel view roots,
   and any future runtime-workspace context that needs authored dungeon map
   facts
@@ -30,11 +30,11 @@ Owners:
 - committed dungeon map read and selection inspection MUST enter through the
   owning editor or travel runtime boundary for that workspace
 - preview and apply MUST reuse the authored map operation vocabulary owned by
-  `dungeon/model/worldspace/model/DungeonEditorAuthoredOperation` and applied
+  `dungeon/model/worldspace/DungeonEditorAuthoredOperation` and applied
   through the authored dungeon mutation use case
 - map catalog work MUST use one catalog request and response family
-- travel surface reads and travel moves MUST use one travel request and
-  response family
+- runtime travel surface reads and travel moves MUST use one travel session
+  command and snapshot family
 - `DungeonSnapshot` remains the committed authored map read payload root
 - `DungeonOperationResult` remains the authored preview and apply payload root
 - catalog behavior remains separate from authored read, authored mutation, and
@@ -76,16 +76,21 @@ reconstruct a second authored edit body.
 
 ### Travel
 
-- `DungeonTravelCommand.LoadSurface`
-- `DungeonTravelCommand.MoveAction`
+- `ApplyTravelDungeonSessionCommand` with action `REFRESH`
+- `ApplyTravelDungeonSessionCommand` with action `ACTION`
+- `ApplyTravelDungeonSessionCommand` with action `SET_PROJECTION_LEVEL`
+- `ApplyTravelDungeonSessionCommand` with action `SET_OVERLAY`
 
 Required fields:
 
-- chosen action id for move
+- chosen action id for `ACTION`
+- projection level for `SET_PROJECTION_LEVEL`
+- overlay settings for `SET_OVERLAY`
 
 Optional fields:
 
-- current travel position context for raw travel reads and travel moves
+- action id for `REFRESH`
+- projection level and overlay settings for `REFRESH` or `ACTION`
 
 ## Outbound Payload Families
 
@@ -119,19 +124,19 @@ Payload roots:
 
 ### Travel Response
 
-- `DungeonTravelResponse.Surface`
-- `DungeonTravelResponse.Move`
+- `TravelDungeonSnapshot`
 
 Payload roots:
 
-- `DungeonTravelSurfaceSnapshot`
-- `DungeonTravelMoveResult`
+- `TravelDungeonSnapshot`
 
 ## Validation And Error Behavior
 
 - invalid edit attempts MUST return a non-committing result represented
   through `DungeonOperationResult` messages and unchanged committed truth
-- invalid travel attempts MUST return a non-committing `DungeonTravelMoveResult`
+- invalid travel attempts MUST publish a non-committing
+  `TravelDungeonSnapshot` backed by runtime travel session move facts and
+  unchanged authored dungeon truth
 - preview MUST NOT persist authored truth
 - committed snapshot, inspector, preview result, and travel result reads MUST
   remain representable without inventing a second editor-colored top-level

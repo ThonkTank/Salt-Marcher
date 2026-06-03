@@ -16,7 +16,4 @@ public record DungeonTravelActionSnapshot(
         description = description == null ? "" : description.trim();
     }
 
-    public String displayLabel() {
-        return destinationLabel.isBlank() ? label : label + ": " + destinationLabel;
-    }
 }

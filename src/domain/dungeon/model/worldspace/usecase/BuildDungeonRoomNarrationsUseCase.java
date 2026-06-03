@@ -5,18 +5,18 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import src.domain.dungeon.model.worldspace.model.DungeonMap;
-import src.domain.dungeon.model.worldspace.model.DungeonRoom;
-import src.domain.dungeon.model.worldspace.model.DungeonAreaFacts;
-import src.domain.dungeon.model.worldspace.model.DungeonAreaType;
-import src.domain.dungeon.model.worldspace.model.DungeonCell;
-import src.domain.dungeon.model.worldspace.model.DungeonDerivedState;
-import src.domain.dungeon.model.worldspace.model.DungeonEdgeDirection;
-import src.domain.dungeon.model.worldspace.model.DungeonRoomExitDescription;
-import src.domain.dungeon.model.worldspace.model.DungeonTopologyElementKind;
-import src.domain.dungeon.model.worldspace.model.DungeonTopologyRef;
-import src.domain.dungeon.model.worldspace.model.DungeonTraversalEndpoint;
-import src.domain.dungeon.model.worldspace.model.DungeonTraversalLink;
+import src.domain.dungeon.model.worldspace.DungeonMap;
+import src.domain.dungeon.model.worldspace.DungeonRoom;
+import src.domain.dungeon.model.worldspace.DungeonAreaFacts;
+import src.domain.dungeon.model.worldspace.DungeonAreaType;
+import src.domain.dungeon.model.worldspace.DungeonCell;
+import src.domain.dungeon.model.worldspace.DungeonDerivedState;
+import src.domain.dungeon.model.worldspace.DungeonEdgeDirection;
+import src.domain.dungeon.model.worldspace.DungeonRoomExitDescription;
+import src.domain.dungeon.model.worldspace.DungeonTopologyElementKind;
+import src.domain.dungeon.model.worldspace.DungeonTopologyRef;
+import src.domain.dungeon.model.worldspace.DungeonTraversalEndpoint;
+import src.domain.dungeon.model.worldspace.DungeonTraversalLink;
 
 final class BuildDungeonRoomNarrationsUseCase {
 

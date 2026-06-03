@@ -1,7 +1,7 @@
 package src.domain.dungeon;
 
 final class DungeonTravelRuntimePublishedStateServiceAssembly
-        implements src.domain.dungeon.model.worldspace.repository.TravelDungeonSessionPublishedStateRepository {
+        implements src.domain.dungeon.model.runtime.repository.TravelDungeonSessionPublishedStateRepository {
 
     private final DungeonPublishedChannelServiceAssembly<src.domain.dungeon.published.TravelDungeonSnapshot> snapshots =
             new DungeonPublishedChannelServiceAssembly<>(src.domain.dungeon.published.TravelDungeonSnapshot.empty());
@@ -13,7 +13,7 @@ final class DungeonTravelRuntimePublishedStateServiceAssembly
     }
 
     @Override
-    public void publishCurrentSession(src.domain.dungeon.model.worldspace.model.session.model.TravelDungeonSessionSnapshot.SnapshotData snapshot) {
+    public void publishCurrentSession(src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionSnapshot.SnapshotData snapshot) {
         snapshots.publish(DungeonTravelRuntimeSurfaceProjectionServiceAssembly.snapshot(snapshot));
     }
 }

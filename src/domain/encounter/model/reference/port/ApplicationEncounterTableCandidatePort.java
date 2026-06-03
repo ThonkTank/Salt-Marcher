@@ -1,7 +1,7 @@
 package src.domain.encounter.model.reference.port;
 
 import java.util.List;
-import src.domain.encounter.model.generation.model.EncounterCandidateProfile;
+import src.domain.encounter.model.generation.EncounterCandidateProfile;
 
 public interface ApplicationEncounterTableCandidatePort {
 

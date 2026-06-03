@@ -1,6 +1,6 @@
 package src.domain.sessionplanner;
 
-import src.domain.sessionplanner.model.session.model.SessionPlan;
+import src.domain.sessionplanner.model.session.SessionPlan;
 import src.domain.sessionplanner.model.session.port.SessionEncounterFactsPort;
 import src.domain.sessionplanner.model.session.port.SessionPartyFactsPort;
 import src.domain.sessionplanner.model.session.repository.SessionEncounterFactsRepository;

@@ -168,7 +168,7 @@ registration`
 - owns internal dynamic work state such as current encounter plans, loaded
   maps, active editor session state, or authored aggregates
 - is created, read, and edited by `UseCase`
-- lives under `model/<family>/model/`, where a family MAY add deeper semantic
+- lives under `model/<family>/`, where a family MAY add deeper semantic
   subpackages for subordinate models of that same family
 - may depend only on same-context `Model`, same-context `Constants`, and
   passive platform types
@@ -268,7 +268,8 @@ src/domain/<context>/
     *UseCase.java
   model/
     <family>/
-      model/
+      <Model>.java
+      <semantic-model-subpackage>/
       usecase/
       helper/
       constants/
@@ -284,21 +285,24 @@ Rules:
 - `application/` is reserved for root-level cross-model orchestration use
   cases; model-local operations live under `model/<family>/usecase/`
 - `model/` is the primary home of context-owned dynamic state
-- `model/<family>/model/` is the internal model subtree; it MAY contain direct
-  model files or deeper semantic subpackages for subordinate models of the
-  same family
-- nested subpackages inside `model/<family>/model/**` stay semantic; technical
-  buckets such as `published`, `application`, `usecase`, `helper`,
+- `model/<family>/` is the family zone; direct Java files and deeper semantic
+  subpackages are internal model subtrees unless the first segment is a role
+  bucket
+- nested internal model subpackages below `model/<family>/` stay semantic;
+  technical buckets such as `published`, `application`, `usecase`, `helper`,
   `constants`, `port`, `repository`, and rejected legacy role names are
   illegal there
-- `usecase/`, `helper/`, `constants/`, `port/`, and `repository/` are the
-  only non-model subordinate role buckets under a model family
+- `model/worldspace/session/model/` is semantic; `model/worldspace/model/` is
+  the obsolete direct model role marker and is illegal
+- non-model subordinate role buckets are `usecase/`, `helper/`, `constants/`,
+  `port/`, and `repository/`
 - non-model role buckets stay direct-file only
 - direct root Java files under `src/domain/<context>/` are limited to
   `*ApplicationService.java`, `*ServiceContribution.java`, and package-private
   `*ServiceAssembly.java`
-- direct Java files under named model families are forbidden; Java files belong
-  in an explicit role package
+- direct Java files under named model families are internal `Model` files;
+  Java files under non-model role buckets belong directly in the matching role
+  package
 - reserved role suffixes are path-owned: `*ApplicationService`, `*UseCase`,
   `*Helper`, `*Constants`, `*Port`, and `*Repository` may appear only in their
   canonical buckets
@@ -334,17 +338,13 @@ Rules:
   `core`; editor and travel runtime composition live in `runtime` over the same
   authored map facts.
   Editor session state, preview, selection, overlay, projection level, pointer
-  interpretation, travel overlay, travel projection level, and overworld
-  fallback remain transient runtime state and never become authored dungeon
-  persistence. Party-owned travel-position facts reach dungeon runtime travel
-  only through dungeon-owned ports over party published state, not by making
-  party truth dungeon-owned.
+  interpretation, travel overlay, travel projection level, and overworld fallback
+  remain transient runtime state and never become authored dungeon persistence.
+  Party-owned travel-position facts reach dungeon runtime travel only through
+  dungeon-owned external boundaries over party published state, including runtime
+  repositories for synchronous reads/writes; party truth stays party-owned.
 - `sessionplanner`: `Roster Truth Context`; consumes `party` and `encounter`
   published state through own ports to persist one session plan for participant
   references, encounter order, allocations, rest placement, placeholders, and
   selected encounter context.
-
-## References
-- [Layering Architecture Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/layering-architecture.md:1)
-- [Domain Layer Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/domain-layer-enforcement.md:1)
-- [Domain Context Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/domain-context-enforcement.md:1)
+References: [Layering Architecture Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/layering-architecture.md:1), [Domain Layer Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/domain-layer-enforcement.md:1), [Domain Context Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/domain-context-enforcement.md:1)

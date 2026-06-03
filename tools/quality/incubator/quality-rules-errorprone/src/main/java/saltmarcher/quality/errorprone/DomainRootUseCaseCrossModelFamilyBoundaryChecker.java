@@ -24,7 +24,7 @@ public final class DomainRootUseCaseCrossModelFamilyBoundaryChecker extends BugC
         implements BugChecker.CompilationUnitTreeMatcher {
 
     private static final Pattern SAME_CONTEXT_MODEL_OR_USECASE_TYPE =
-            Pattern.compile("^src\\.domain\\.([^.]+)\\.model\\.([^.]+)\\.(model|usecase)\\..+");
+            Pattern.compile("^src\\.domain\\.([^.]+)\\.model\\.([^.]+)(?:\\.(.*))?$");
 
     @Override
     public Description matchCompilationUnit(CompilationUnitTree tree, VisitorState state) {
@@ -71,8 +71,18 @@ public final class DomainRootUseCaseCrossModelFamilyBoundaryChecker extends BugC
             return;
         }
         Matcher matcher = SAME_CONTEXT_MODEL_OR_USECASE_TYPE.matcher(ownerType.getQualifiedName().toString());
-        if (matcher.matches() && sourceFeature.equals(matcher.group(1))) {
+        if (matcher.matches()
+                && sourceFeature.equals(matcher.group(1))
+                && (matcher.group(3) == null
+                || matcher.group(3).startsWith("usecase.")
+                || !isTechnicalNonUseCaseRole(matcher.group(3)))) {
             modelFamilies.add(matcher.group(2));
         }
+    }
+
+    private static boolean isTechnicalNonUseCaseRole(String suffix) {
+        int separator = suffix.indexOf('.');
+        String segment = separator < 0 ? suffix : suffix.substring(0, separator);
+        return Set.of("helper", "constants", "port", "repository").contains(segment);
     }
 }

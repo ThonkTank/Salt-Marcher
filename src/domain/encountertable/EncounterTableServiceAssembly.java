@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
 import shell.api.ServiceRegistry;
-import src.domain.encountertable.model.catalog.model.EncounterTableCandidateData;
+import src.domain.encountertable.model.catalog.EncounterTableCandidateData;
 import src.domain.encountertable.model.catalog.port.EncounterTableCatalogPort;
 import src.domain.encountertable.model.catalog.repository.EncounterTablePublishedStateRepository;
 import src.domain.encountertable.model.catalog.usecase.LoadEncounterTableCandidatesUseCase;

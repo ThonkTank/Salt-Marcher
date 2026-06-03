@@ -53,13 +53,13 @@ The authored write model is the persisted party roster and character state:
 
 Aggregate Root: PartyRoster
 
-`model/roster/model/PartyRoster` is the transaction boundary for one party
+`model/roster/PartyRoster` is the transaction boundary for one party
 roster. It owns the character collection, next character identity, membership
 assignment, XP awards and corrections, and rest-driven progression
 transitions.
 
-`model/roster/model/PartyCharacter` is an identity-bearing child model.
-`model/roster/model/**` owns identity, progress, combat profile, membership,
+`model/roster/PartyCharacter` is an identity-bearing child model.
+`model/roster/**` owns identity, progress, combat profile, membership,
 rest type, travel position, and mutation status vocabulary. Pure roster work
 steps live under `model/roster/helper/`, and outbound collaborators live under
 `model/roster/repository/`.
@@ -117,7 +117,7 @@ sharing roster internals.
 
 Current state:
 
-- party roster production code now lives under `model/roster/model/`,
+- party roster production code now lives under `model/roster/`,
   `model/roster/helper/`, and `model/roster/repository/`.
 - `application/` coordinates roster persistence and party published-state
   refresh through separate repository roles.

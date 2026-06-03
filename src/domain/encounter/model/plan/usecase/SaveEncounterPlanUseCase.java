@@ -2,9 +2,9 @@ package src.domain.encounter.model.plan.usecase;
 
 import java.util.List;
 import java.util.Objects;
-import src.domain.encounter.model.plan.model.EncounterPlan;
+import src.domain.encounter.model.plan.EncounterPlan;
 import src.domain.encounter.model.plan.repository.EncounterPlanRepository;
-import src.domain.encounter.model.plan.model.EncounterPlanCreature;
+import src.domain.encounter.model.plan.EncounterPlanCreature;
 
 public final class SaveEncounterPlanUseCase {
 

@@ -1,8 +1,8 @@
 package src.domain.encounter.model.generation.helper;
 
 import java.util.List;
-import src.domain.encounter.model.generation.model.EncounterDraft;
-import src.domain.encounter.model.generation.model.EncounterDraftGenerationModel;
+import src.domain.encounter.model.generation.EncounterDraft;
+import src.domain.encounter.model.generation.EncounterDraftGenerationModel;
 
 public final class EncounterDraftAssemblyHelper {
 

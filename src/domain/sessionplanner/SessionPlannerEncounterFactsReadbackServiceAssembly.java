@@ -10,9 +10,9 @@ import src.domain.encounter.published.SavedEncounterPlanListModel;
 import src.domain.encounter.published.SavedEncounterPlanListResult;
 import src.domain.encounter.published.SavedEncounterPlanStatus;
 import src.domain.encounter.published.SavedEncounterPlanSummary;
-import src.domain.sessionplanner.model.session.model.SessionEncounterPlanFact;
-import src.domain.sessionplanner.model.session.model.SessionEncounterPlanListFact;
-import src.domain.sessionplanner.model.session.model.SessionSavedEncounterPlanFact;
+import src.domain.sessionplanner.model.session.SessionEncounterPlanFact;
+import src.domain.sessionplanner.model.session.SessionEncounterPlanListFact;
+import src.domain.sessionplanner.model.session.SessionSavedEncounterPlanFact;
 import src.domain.sessionplanner.model.session.port.SessionEncounterFactsPort;
 
 final class SessionPlannerEncounterFactsReadbackServiceAssembly implements SessionEncounterFactsPort {

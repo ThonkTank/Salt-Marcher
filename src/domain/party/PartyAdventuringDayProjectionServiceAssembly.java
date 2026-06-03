@@ -1,9 +1,9 @@
 package src.domain.party;
 
 import java.util.List;
-import src.domain.party.model.roster.model.PartyAdventuringDayCalculation;
-import src.domain.party.model.roster.model.PartyAdventuringDayPlan;
-import src.domain.party.model.roster.model.PartyAdventuringDayProgress;
+import src.domain.party.model.roster.PartyAdventuringDayCalculation;
+import src.domain.party.model.roster.PartyAdventuringDayPlan;
+import src.domain.party.model.roster.PartyAdventuringDayProgress;
 import src.domain.party.model.roster.usecase.LoadAdventuringDaySummaryUseCase;
 import src.domain.party.published.AdventuringDayBudget;
 import src.domain.party.published.AdventuringDayCalculationResult;

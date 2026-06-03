@@ -49,12 +49,19 @@ Any work on covered surfaces must use that skill first.
 SaltMarcher keeps review instructions in global skills, not in this standard.
 
 - Implementing agents read
-  `/home/aaron/.codex/skills/local/adversarial-review/SKILL.md` before
-  starting the mandatory adversarial review step.
+  `/home/aaron/.codex/skills/local/coord-adversarial-review/SKILL.md` before
+  starting the mandatory adversarial review step and use
+  `/home/aaron/.codex/skills/local/coord-main-overview/SKILL.md` when launching
+  the Overview coordinator.
 - For implementation handoff, the implementing agent must launch one Overview
-  coordinator subagent that reads
-  `/home/aaron/.codex/skills/local/adversarial-review-agent/SKILL.md` first and
-  then applies `/home/aaron/.codex/skills/local/review-overview/SKILL.md`.
+  coordinator subagent. That Overview coordinator first reads
+  `/home/aaron/.codex/skills/local/lens-adversarial-review-agent/SKILL.md`,
+  then uses `/home/aaron/.codex/skills/local/coord-adversarial-review/SKILL.md`
+  and `/home/aaron/.codex/skills/local/lens-coordinator/SKILL.md` before
+  applying the Main-assigned coordinator lens, normally
+  `/home/aaron/.codex/skills/local/lens-coordinator-handoff/SKILL.md`.
+  Before launching specialist reviewers, the Overview coordinator uses
+  `/home/aaron/.codex/skills/local/coord-overview-reviewer/SKILL.md`.
 - The Overview coordinator returns the reviewability decision, responsibility
   slices, required specialist skills, specialist review outcomes, scoped
   follow-up fix outcomes, and the final clean-or-blocked result.
@@ -63,8 +70,15 @@ SaltMarcher keeps review instructions in global skills, not in this standard.
   reviewable or remains blocked, the pass remains WIP until the named blocker
   is fixed and Overview is rerun.
 - Specialist review subagents read
-  `/home/aaron/.codex/skills/local/adversarial-review-agent/SKILL.md` before
-  reviewing.
+  `/home/aaron/.codex/skills/local/lens-adversarial-review-agent/SKILL.md`
+  before applying assigned `lens-*` skills.
+- Proof ownership follows the global `coord-adversarial-review` skill and the
+  repository verification routing. Required proof tools run at the top-level
+  handoff layer. Overview coordinators and specialist reviewers inspect
+  provided literal results and report missing or stale proof instead of
+  rerunning those tools. The top-level handoff agent must keep reviewed paths
+  and behavior stable while review is running, or rerun the required proof and
+  launch a fresh coordinator when the tested surface changes.
 - The global review specialist skills remain external supplementary lenses; do
   not create repo-local copies unless the user explicitly asks for a
   SaltMarcher-owned fork.
@@ -85,7 +99,7 @@ contracts, architecture, domain truth, or verification policy.
 - Nested specialist reviewers remain read-only. They must not write files
   directly; they include pass-log evidence and trend observations in their
   reviewer output.
-- The required review pass log is an aggregated Overview review-cycle log. The
+- The required review pass log is an aggregated Overview review cycle log. The
   main handoff agent writes it after each completed Overview review cycle from
   the Overview result and reviewer outputs. If nested review orchestration is
   unavailable and the main agent runs the top-level fallback review route, the
@@ -196,7 +210,7 @@ When a covered artifact changes, reviewers must check:
 - Did the change introduce duplicate or conflicting truth across covered
   surfaces?
 - Does the chosen verification path match the actual changed surfaces?
-- Did the implementing agent obtain a completed global `review-overview`
+- Did the implementing agent obtain a completed global `lens-coordinator-handoff`
   coordinator result before handoff?
 - Did any specialist review skill used for the pass remain a read-only review
   lens instead of becoming a competing repo-owned workflow?
@@ -212,9 +226,12 @@ When a covered artifact changes, reviewers must check:
 - [Agent Context Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/agent-context.md:1)
 - [Layering Architecture Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/layering-architecture.md:1)
 - [Global Agent Instruction Engineering Skill](/home/aaron/.codex/skills/local/agent-instruction-engineering/SKILL.md:1)
-- [Global Review Overview Skill](/home/aaron/.codex/skills/local/review-overview/SKILL.md:1)
-- [Global Adversarial Review Caller Skill](/home/aaron/.codex/skills/local/adversarial-review/SKILL.md:1)
-- [Global Adversarial Review Agent Skill](/home/aaron/.codex/skills/local/adversarial-review-agent/SKILL.md:1)
-- [Global Performance Review Skill](/home/aaron/.codex/skills/local/review-performance/SKILL.md:1)
-- [Global Code Quality Review Skill](/home/aaron/.codex/skills/local/review-quality/SKILL.md:1)
-- [Global Architecture Review Skill](/home/aaron/.codex/skills/local/review-architecture/SKILL.md:1)
+- [Global Main To Overview Coordination Skill](/home/aaron/.codex/skills/local/coord-main-overview/SKILL.md:1)
+- [Global Overview To Reviewer Coordination Skill](/home/aaron/.codex/skills/local/coord-overview-reviewer/SKILL.md:1)
+- [Global Coordinator Lens](/home/aaron/.codex/skills/local/lens-coordinator/SKILL.md:1)
+- [Global Handoff Coordinator Lens](/home/aaron/.codex/skills/local/lens-coordinator-handoff/SKILL.md:1)
+- [Global Adversarial Review Caller Skill](/home/aaron/.codex/skills/local/coord-adversarial-review/SKILL.md:1)
+- [Global Adversarial Review Agent Skill](/home/aaron/.codex/skills/local/lens-adversarial-review-agent/SKILL.md:1)
+- [Global Performance Review Skill](/home/aaron/.codex/skills/local/lens-performance/SKILL.md:1)
+- [Global Code Quality Review Skill](/home/aaron/.codex/skills/local/lens-quality/SKILL.md:1)
+- [Global Architecture Review Skill](/home/aaron/.codex/skills/local/lens-architecture/SKILL.md:1)

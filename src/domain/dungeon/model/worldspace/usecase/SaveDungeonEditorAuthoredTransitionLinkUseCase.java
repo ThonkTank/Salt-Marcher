@@ -1,20 +1,18 @@
 package src.domain.dungeon.model.worldspace.usecase;
 
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import org.jspecify.annotations.Nullable;
-import src.domain.dungeon.model.worldspace.model.ConnectionCatalog;
-import src.domain.dungeon.model.worldspace.model.DungeonDerivedState;
-import src.domain.dungeon.model.worldspace.model.DungeonMap;
-import src.domain.dungeon.model.worldspace.model.DungeonMapIdentity;
-import src.domain.dungeon.model.worldspace.model.DungeonTransition;
-import src.domain.dungeon.model.worldspace.model.DungeonTransitionDestination;
+import src.domain.dungeon.model.worldspace.DungeonDerivedState;
+import src.domain.dungeon.model.worldspace.DungeonMap;
+import src.domain.dungeon.model.worldspace.DungeonMapIdentity;
+import src.domain.dungeon.model.worldspace.DungeonTransition;
+import src.domain.dungeon.model.worldspace.DungeonTransitionDestination;
 import src.domain.dungeon.model.worldspace.repository.DungeonMapRepository;
-import src.domain.dungeon.model.worldspace.model.workspace.model.DungeonEditorWorkspaceValues.MapId;
+import src.domain.dungeon.model.worldspace.workspace.model.DungeonEditorWorkspaceValues.MapId;
 
 public final class SaveDungeonEditorAuthoredTransitionLinkUseCase {
 
@@ -63,9 +61,9 @@ public final class SaveDungeonEditorAuthoredTransitionLinkUseCase {
                         DungeonTransitionDestination.dungeonMapDestination(targetMapId, targetTransitionId)));
         clearReverseLinksToSource(pendingMaps, loaded.sourceTransition().transitionId());
         if (bidirectional) {
-            DungeonTransition pendingTargetTransition = transitionById(
-                    Objects.requireNonNull(pendingMaps.get(loaded.targetIdentity().value()), "targetMap"),
-                    targetTransitionId);
+            DungeonTransition pendingTargetTransition = Objects.requireNonNull(
+                    pendingMaps.get(loaded.targetIdentity().value()),
+                    "targetMap").transitionById(targetTransitionId);
             replacePendingTransition(
                     pendingMaps,
                     loaded.targetIdentity().value(),
@@ -106,34 +104,12 @@ public final class SaveDungeonEditorAuthoredTransitionLinkUseCase {
         if (sourceMap == null || targetMap == null) {
             return null;
         }
-        DungeonTransition sourceTransition = transitionById(sourceMap, sourceTransitionId);
-        DungeonTransition targetTransition = transitionById(targetMap, targetTransitionId);
+        DungeonTransition sourceTransition = sourceMap.transitionById(sourceTransitionId);
+        DungeonTransition targetTransition = targetMap.transitionById(targetTransitionId);
         if (sourceTransition == null || targetTransition == null) {
             return null;
         }
         return new LoadedTransitionLink(sourceIdentity, targetIdentity, sourceMap, targetMap, sourceTransition);
-    }
-
-    private static DungeonMap withTransition(DungeonMap map, DungeonTransition replacement) {
-        List<DungeonTransition> nextTransitions = new ArrayList<>();
-        boolean changed = false;
-        for (DungeonTransition transition : map.connections().transitions()) {
-            if (transition.transitionId() == replacement.transitionId()) {
-                nextTransitions.add(replacement);
-                changed = true;
-            } else {
-                nextTransitions.add(transition);
-            }
-        }
-        return changed ? new DungeonMap(
-                map.metadata(),
-                map.topology(),
-                null,
-                map.spaces(),
-                map.rooms(),
-                new ConnectionCatalog(map.connections().corridors(), map.connections().stairs(), nextTransitions),
-                map.features(),
-                map.revision() + 1L) : map;
     }
 
     private Map<Long, DungeonMap> loadedMaps(
@@ -154,52 +130,36 @@ public final class SaveDungeonEditorAuthoredTransitionLinkUseCase {
         return pendingMaps;
     }
 
-    private static long previousLinkedMapId(DungeonTransitionDestination previousDestination) {
+    private long previousLinkedMapId(DungeonTransitionDestination previousDestination) {
         return previousDestination.isDungeonMapDestination() && previousDestination.transitionId() != null
                 ? previousDestination.mapId()
                 : 0L;
     }
 
-    private static void replacePendingTransition(
+    private void replacePendingTransition(
             Map<Long, DungeonMap> pendingMaps,
             long mapId,
             DungeonTransition replacement
     ) {
         DungeonMap map = pendingMaps.get(mapId);
         if (map != null) {
-            pendingMaps.put(mapId, withTransition(map, replacement));
+            pendingMaps.put(mapId, map.withTransition(replacement));
         }
     }
 
-    private static void clearReverseLinksToSource(Map<Long, DungeonMap> pendingMaps, long sourceTransitionId) {
+    private void clearReverseLinksToSource(Map<Long, DungeonMap> pendingMaps, long sourceTransitionId) {
         for (Map.Entry<Long, DungeonMap> entry : pendingMaps.entrySet()) {
-            DungeonMap nextMap = entry.getValue();
-            for (DungeonTransition transition : entry.getValue().connections().transitions()) {
-                Long linkedTransitionId = transition.linkedTransitionId();
-                if (linkedTransitionId != null && linkedTransitionId == sourceTransitionId) {
-                    nextMap = withTransition(nextMap, transition.withLinkedTransitionId(null));
-                }
-            }
-            entry.setValue(nextMap);
+            entry.setValue(entry.getValue().withoutReverseLinksToTransition(sourceTransitionId));
         }
     }
 
-    private static DungeonMap savedSourceMap(List<DungeonMap> savedMaps, long sourceMapId) {
+    private DungeonMap savedSourceMap(List<DungeonMap> savedMaps, long sourceMapId) {
         for (DungeonMap map : savedMaps) {
             if (map.metadata().mapId().value() == sourceMapId) {
                 return map;
             }
         }
         throw new IllegalStateException("Atomic transition link save did not return the source map.");
-    }
-
-    private static @Nullable DungeonTransition transitionById(DungeonMap map, long transitionId) {
-        for (DungeonTransition transition : map.connections().transitions()) {
-            if (transition.transitionId() == transitionId) {
-                return transition;
-            }
-        }
-        return null;
     }
 
     private record LoadedTransitionLink(

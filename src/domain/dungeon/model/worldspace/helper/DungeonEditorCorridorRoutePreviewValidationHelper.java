@@ -4,12 +4,12 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import org.jspecify.annotations.Nullable;
-import src.domain.dungeon.model.core.model.geometry.Cell;
-import src.domain.dungeon.model.core.model.geometry.Route;
-import src.domain.dungeon.model.worldspace.model.interaction.model.DungeonEditorInteractionValues.CellKey;
-import src.domain.dungeon.model.worldspace.model.interaction.model.DungeonEditorInteractionValues.TravelHeading;
-import src.domain.dungeon.model.worldspace.model.interaction.model.DungeonEditorMainViewInteractionValues.PendingCorridorTarget;
-import src.domain.dungeon.model.worldspace.model.workspace.model.DungeonEditorWorkspaceValues;
+import src.domain.dungeon.model.core.geometry.Cell;
+import src.domain.dungeon.model.core.geometry.Route;
+import src.domain.dungeon.model.worldspace.interaction.model.DungeonEditorInteractionValues.CellKey;
+import src.domain.dungeon.model.worldspace.interaction.model.DungeonEditorInteractionValues.TravelHeading;
+import src.domain.dungeon.model.worldspace.interaction.model.DungeonEditorMainViewInteractionValues.PendingCorridorTarget;
+import src.domain.dungeon.model.worldspace.workspace.model.DungeonEditorWorkspaceValues;
 
 public final class DungeonEditorCorridorRoutePreviewValidationHelper {
 

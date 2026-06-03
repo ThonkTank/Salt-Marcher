@@ -5,15 +5,15 @@ import java.util.Objects;
 import java.util.Optional;
 import src.domain.encounter.model.generation.helper.EncounterDifficultyMathHelper;
 import src.domain.encounter.model.generation.helper.EncounterDifficultyTargetHelper;
-import src.domain.encounter.model.generation.model.EncounterDifficultyThresholds;
-import src.domain.encounter.model.plan.model.EncounterPlan;
-import src.domain.encounter.model.plan.model.EncounterPlanBudgetLoadResult;
-import src.domain.encounter.model.plan.model.EncounterPlanBudgetSummaryData;
+import src.domain.encounter.model.generation.EncounterDifficultyThresholds;
+import src.domain.encounter.model.plan.EncounterPlan;
+import src.domain.encounter.model.plan.EncounterPlanBudgetLoadResult;
+import src.domain.encounter.model.plan.EncounterPlanBudgetSummaryData;
 import src.domain.encounter.model.plan.repository.EncounterPlanRepository;
-import src.domain.encounter.model.plan.model.EncounterPlanCreature;
+import src.domain.encounter.model.plan.EncounterPlanCreature;
 import src.domain.encounter.model.reference.port.ApplicationEncounterCreatureCatalogPort;
 import src.domain.encounter.model.reference.repository.EncounterCreatureRepository;
-import src.domain.encounter.model.session.model.PartyBudgetFacts;
+import src.domain.encounter.model.session.PartyBudgetFacts;
 import src.domain.encounter.model.session.repository.EncounterPartyFactsRepository;
 
 public final class LoadEncounterPlanBudgetUseCase {
@@ -74,7 +74,7 @@ public final class LoadEncounterPlanBudgetUseCase {
         int total = 0;
         for (EncounterPlanCreature creature : creaturesInPlan == null ? List.<EncounterPlanCreature>of() : creaturesInPlan) {
             creatures.requestCreature(creature.creatureId());
-            Optional<src.domain.encounter.model.reference.model.EncounterCreatureReference> reference =
+            Optional<src.domain.encounter.model.reference.EncounterCreatureReference> reference =
                     creatureCatalog.loadCreature();
             if (reference.isEmpty()) {
                 throw new IllegalStateException("Creature detail could not be loaded for plan budget.");

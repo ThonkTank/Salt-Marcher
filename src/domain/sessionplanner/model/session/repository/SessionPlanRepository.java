@@ -1,7 +1,7 @@
 package src.domain.sessionplanner.model.session.repository;
 
 import java.util.Optional;
-import src.domain.sessionplanner.model.session.model.SessionPlan;
+import src.domain.sessionplanner.model.session.SessionPlan;
 
 public interface SessionPlanRepository {
 

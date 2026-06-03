@@ -1,7 +1,7 @@
 package src.domain.dungeon.model.worldspace.usecase;
 
 import java.util.Objects;
-import src.domain.dungeon.model.worldspace.model.session.model.DungeonEditorSessionWorkflow;
+import src.domain.dungeon.model.worldspace.session.model.DungeonEditorSessionWorkflow;
 
 public final class ShiftDungeonEditorProjectionLevelUseCase {
     private final DungeonEditorSessionWorkflow workflow;

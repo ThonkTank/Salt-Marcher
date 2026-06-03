@@ -2,7 +2,7 @@ package src.domain.creatures.model.catalog.usecase;
 
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
-import src.domain.creatures.model.catalog.model.CreatureCatalogData.CreatureProfile;
+import src.domain.creatures.model.catalog.CreatureCatalogData.CreatureProfile;
 import src.domain.creatures.model.catalog.port.CreatureCatalogPort;
 import src.domain.creatures.model.catalog.repository.CreaturesPublishedStateRepository;
 

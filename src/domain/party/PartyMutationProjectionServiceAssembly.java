@@ -1,6 +1,6 @@
 package src.domain.party;
 
-import src.domain.party.model.roster.model.PartyMutationStatus;
+import src.domain.party.model.roster.PartyMutationStatus;
 import src.domain.party.published.MutationResult;
 import src.domain.party.published.MutationStatus;
 

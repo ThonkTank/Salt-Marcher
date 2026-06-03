@@ -1,7 +1,7 @@
 package src.data.party.mapper;
 
 import src.data.party.model.PartyRosterRecord;
-import src.domain.party.model.roster.model.PartyRoster;
+import src.domain.party.model.roster.PartyRoster;
 
 public final class PartyRosterMapper {
 

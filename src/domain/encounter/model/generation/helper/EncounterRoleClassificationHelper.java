@@ -1,7 +1,7 @@
 package src.domain.encounter.model.generation.helper;
 
-import src.domain.encounter.model.generation.model.EncounterCreatureFacts;
-import src.domain.encounter.model.generation.model.EncounterRoleClassification;
+import src.domain.encounter.model.generation.EncounterCreatureFacts;
+import src.domain.encounter.model.generation.EncounterRoleClassification;
 
 public final class EncounterRoleClassificationHelper {
 

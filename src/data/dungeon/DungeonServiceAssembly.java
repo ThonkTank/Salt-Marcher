@@ -1,12 +1,12 @@
 package src.data.dungeon;
 
 import shell.api.ServiceRegistry;
-import src.data.dungeon.repository.ApplicationTravelDungeonSessionRepository;
+import src.data.dungeon.repository.ApplicationTravelPartyPositionRepository;
+import src.data.dungeon.repository.ApplicationTravelPartyStateRepository;
 import src.data.dungeon.repository.SqliteDungeonMapRepository;
-import src.domain.dungeon.DungeonTravelApplicationService;
+import src.domain.dungeon.model.runtime.repository.TravelPartyStateRepository;
+import src.domain.dungeon.model.runtime.repository.TravelPartyPositionRepository;
 import src.domain.dungeon.model.worldspace.repository.DungeonMapRepository;
-import src.domain.dungeon.model.worldspace.repository.TravelDungeonSessionRepository;
-import src.domain.dungeon.published.DungeonTravelModel;
 import src.domain.party.PartyApplicationService;
 import src.domain.party.published.ActivePartyModel;
 import src.domain.party.published.PartyMutationModel;
@@ -17,17 +17,22 @@ final class DungeonServiceAssembly {
     void register(ServiceRegistry.Builder services) {
         services.register(DungeonMapRepository.class, new SqliteDungeonMapRepository());
         services.registerFactory(
-                TravelDungeonSessionRepository.class,
-                this::travelDungeonSessionRepository);
+                TravelPartyStateRepository.class,
+                this::travelPartyStateRepository);
+        services.registerFactory(
+                TravelPartyPositionRepository.class,
+                this::travelPartyPositionRepository);
     }
 
-    private TravelDungeonSessionRepository travelDungeonSessionRepository(ServiceRegistry registry) {
-        return new ApplicationTravelDungeonSessionRepository(
-                registry.require(PartyApplicationService.class),
+    private TravelPartyStateRepository travelPartyStateRepository(ServiceRegistry registry) {
+        return new ApplicationTravelPartyStateRepository(
                 registry.require(ActivePartyModel.class),
-                registry.require(PartyTravelPositionsModel.class),
-                registry.require(PartyMutationModel.class),
-                registry.require(DungeonTravelApplicationService.class),
-                registry.require(DungeonTravelModel.class));
+                registry.require(PartyTravelPositionsModel.class));
+    }
+
+    private TravelPartyPositionRepository travelPartyPositionRepository(ServiceRegistry registry) {
+        return new ApplicationTravelPartyPositionRepository(
+                registry.require(PartyApplicationService.class),
+                registry.require(PartyMutationModel.class));
     }
 }

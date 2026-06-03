@@ -3,10 +3,10 @@ package src.domain.dungeon.model.worldspace.helper;
 import java.util.ArrayList;
 import java.util.List;
 import org.jspecify.annotations.Nullable;
-import src.domain.dungeon.model.worldspace.model.DungeonCell;
-import src.domain.dungeon.model.worldspace.model.DungeonEditorHandle;
-import src.domain.dungeon.model.worldspace.model.DungeonEditorHandleFacts;
-import src.domain.dungeon.model.worldspace.model.workspace.model.DungeonEditorWorkspaceValues;
+import src.domain.dungeon.model.worldspace.DungeonCell;
+import src.domain.dungeon.model.worldspace.DungeonEditorHandle;
+import src.domain.dungeon.model.worldspace.DungeonEditorHandleFacts;
+import src.domain.dungeon.model.worldspace.workspace.model.DungeonEditorWorkspaceValues;
 
 public final class DungeonEditorWorkspaceHandleProjectionHelper {
     public List<DungeonEditorWorkspaceValues.Handle> project(List<DungeonEditorHandleFacts> handles) {

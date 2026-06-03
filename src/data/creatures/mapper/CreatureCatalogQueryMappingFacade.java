@@ -9,8 +9,8 @@ import src.data.creatures.model.CreatureDetailRecord;
 import src.data.creatures.model.CreatureFilterValuesRecord;
 import src.data.creatures.model.EncounterCandidateCriteriaRecord;
 import src.data.creatures.model.EncounterCandidateRecord;
-import src.domain.creatures.model.catalog.model.CreatureCatalogData;
-import src.domain.creatures.model.catalog.model.CreatureCatalogData.CreatureProfile;
+import src.domain.creatures.model.catalog.CreatureCatalogData;
+import src.domain.creatures.model.catalog.CreatureCatalogData.CreatureProfile;
 
 public final class CreatureCatalogQueryMappingFacade {
 

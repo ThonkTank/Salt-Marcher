@@ -1,7 +1,7 @@
 package src.domain.encountertable.model.catalog.repository;
 
 import java.util.List;
-import src.domain.encountertable.model.catalog.model.EncounterTableSummaryData;
+import src.domain.encountertable.model.catalog.EncounterTableSummaryData;
 
 public interface EncounterTablePublishedStateRepository {
 
@@ -32,11 +32,11 @@ public interface EncounterTablePublishedStateRepository {
 
     final class CandidatesPublication {
         private final String status;
-        private final List<src.domain.encountertable.model.catalog.model.EncounterTableCandidateData> candidates;
+        private final List<src.domain.encountertable.model.catalog.EncounterTableCandidateData> candidates;
 
         public CandidatesPublication(
                 String status,
-                List<src.domain.encountertable.model.catalog.model.EncounterTableCandidateData> candidates
+                List<src.domain.encountertable.model.catalog.EncounterTableCandidateData> candidates
         ) {
             this.status = status == null ? STORAGE_ERROR : status;
             this.candidates = candidates == null ? List.of() : List.copyOf(candidates);
@@ -46,7 +46,7 @@ public interface EncounterTablePublishedStateRepository {
             return status;
         }
 
-        public List<src.domain.encountertable.model.catalog.model.EncounterTableCandidateData> candidates() {
+        public List<src.domain.encountertable.model.catalog.EncounterTableCandidateData> candidates() {
             return List.copyOf(candidates);
         }
     }

@@ -2,13 +2,13 @@ package src.domain.dungeon.model.worldspace.usecase;
 
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
-import src.domain.dungeon.model.worldspace.model.interaction.model.DungeonEditorMainViewEffect;
-import src.domain.dungeon.model.worldspace.model.session.model.DungeonEditorDungeonFacts;
-import src.domain.dungeon.model.worldspace.model.session.model.DungeonEditorDungeonState;
-import src.domain.dungeon.model.worldspace.model.session.model.DungeonEditorSessionSnapshot;
-import src.domain.dungeon.model.worldspace.model.session.model.DungeonEditorSessionValues;
-import src.domain.dungeon.model.worldspace.model.session.model.DungeonEditorSessionWorkflow;
-import src.domain.dungeon.model.worldspace.model.workspace.model.DungeonEditorWorkspaceValues;
+import src.domain.dungeon.model.worldspace.interaction.model.DungeonEditorMainViewEffect;
+import src.domain.dungeon.model.worldspace.session.model.DungeonEditorDungeonFacts;
+import src.domain.dungeon.model.worldspace.session.model.DungeonEditorDungeonState;
+import src.domain.dungeon.model.worldspace.session.model.DungeonEditorSessionSnapshot;
+import src.domain.dungeon.model.worldspace.session.model.DungeonEditorSessionValues;
+import src.domain.dungeon.model.worldspace.session.model.DungeonEditorSessionWorkflow;
+import src.domain.dungeon.model.worldspace.workspace.model.DungeonEditorWorkspaceValues;
 
 public final class ApplyDungeonEditorSessionEffectUseCase {
     private final DungeonEditorSessionWorkflow workflow;

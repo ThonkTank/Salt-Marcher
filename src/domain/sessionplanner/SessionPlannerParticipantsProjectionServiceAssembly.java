@@ -2,9 +2,9 @@ package src.domain.sessionplanner;
 
 import java.util.ArrayList;
 import java.util.List;
-import src.domain.sessionplanner.model.session.model.SessionActivePartyMembersFact;
-import src.domain.sessionplanner.model.session.model.SessionPartyMemberProfile;
-import src.domain.sessionplanner.model.session.model.SessionPlan;
+import src.domain.sessionplanner.model.session.SessionActivePartyMembersFact;
+import src.domain.sessionplanner.model.session.SessionPartyMemberProfile;
+import src.domain.sessionplanner.model.session.SessionPlan;
 import src.domain.sessionplanner.model.session.port.SessionPartyFactsPort;
 import src.domain.sessionplanner.published.SessionPlannerParticipantsProjection;
 

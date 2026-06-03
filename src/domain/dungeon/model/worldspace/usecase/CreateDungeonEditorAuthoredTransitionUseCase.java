@@ -1,11 +1,11 @@
 package src.domain.dungeon.model.worldspace.usecase;
 
 import java.util.Objects;
-import src.domain.dungeon.model.worldspace.model.DungeonCell;
-import src.domain.dungeon.model.worldspace.model.DungeonMapIdentity;
-import src.domain.dungeon.model.worldspace.model.DungeonTransitionDestination;
+import src.domain.dungeon.model.worldspace.DungeonCell;
+import src.domain.dungeon.model.worldspace.DungeonMapIdentity;
+import src.domain.dungeon.model.worldspace.DungeonTransitionDestination;
 import src.domain.dungeon.model.worldspace.repository.DungeonMapRepository;
-import src.domain.dungeon.model.worldspace.model.workspace.model.DungeonEditorWorkspaceValues.MapId;
+import src.domain.dungeon.model.worldspace.workspace.model.DungeonEditorWorkspaceValues.MapId;
 
 public final class CreateDungeonEditorAuthoredTransitionUseCase {
 

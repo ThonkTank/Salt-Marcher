@@ -1,8 +1,8 @@
 package src.domain.encounter;
 
-import src.domain.encounter.model.generation.model.EncounterGenerationInputs;
-import src.domain.encounter.model.generation.model.EncounterRequestedDifficulty;
-import src.domain.encounter.model.generation.model.EncounterTuningIntent;
+import src.domain.encounter.model.generation.EncounterGenerationInputs;
+import src.domain.encounter.model.generation.EncounterRequestedDifficulty;
+import src.domain.encounter.model.generation.EncounterTuningIntent;
 import src.domain.encounter.published.EncounterBuilderInputs;
 import src.domain.encounter.published.EncounterStateSnapshot;
 

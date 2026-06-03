@@ -1,9 +1,9 @@
 package src.domain.party;
 
 import java.util.List;
-import src.domain.party.model.roster.model.PartyCharacter;
-import src.domain.party.model.roster.model.PartyCharacterProgress;
-import src.domain.party.model.roster.model.PartyMembership;
+import src.domain.party.model.roster.PartyCharacter;
+import src.domain.party.model.roster.PartyCharacterProgress;
+import src.domain.party.model.roster.PartyMembership;
 import src.domain.party.model.roster.usecase.LoadActivePartyCompositionUseCase;
 import src.domain.party.model.roster.usecase.LoadPartySnapshotUseCase;
 import src.domain.party.published.ActivePartyComposition;

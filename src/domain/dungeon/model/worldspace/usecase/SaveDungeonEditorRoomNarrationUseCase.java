@@ -2,9 +2,9 @@ package src.domain.dungeon.model.worldspace.usecase;
 
 import java.util.List;
 import java.util.Objects;
-import src.domain.dungeon.model.worldspace.model.session.model.DungeonEditorRoomNarrationInput;
-import src.domain.dungeon.model.worldspace.model.session.model.DungeonEditorSessionWorkflow;
-import src.domain.dungeon.model.worldspace.model.workspace.model.DungeonEditorWorkspaceValues;
+import src.domain.dungeon.model.worldspace.session.model.DungeonEditorRoomNarrationInput;
+import src.domain.dungeon.model.worldspace.session.model.DungeonEditorSessionWorkflow;
+import src.domain.dungeon.model.worldspace.workspace.model.DungeonEditorWorkspaceValues;
 
 public final class SaveDungeonEditorRoomNarrationUseCase {
     private final DungeonEditorSessionWorkflow workflow;

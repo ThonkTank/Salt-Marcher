@@ -3,7 +3,7 @@ package src.domain.dungeon;
 import java.util.ArrayList;
 import java.util.List;
 import org.jspecify.annotations.Nullable;
-import src.domain.dungeon.model.worldspace.model.session.model.DungeonEditorSessionSnapshot;
+import src.domain.dungeon.model.worldspace.session.model.DungeonEditorSessionSnapshot;
 import src.domain.dungeon.published.DungeonEditorSurface;
 
 final class DungeonEditorMapProjectionServiceAssembly {
@@ -24,10 +24,10 @@ final class DungeonEditorMapProjectionServiceAssembly {
     }
 
     private static src.domain.dungeon.published.DungeonEditorMapSnapshot map(
-            src.domain.dungeon.model.worldspace.model.workspace.model.DungeonEditorWorkspaceValues.MapSnapshot map
+            src.domain.dungeon.model.worldspace.workspace.model.DungeonEditorWorkspaceValues.MapSnapshot map
     ) {
-        src.domain.dungeon.model.worldspace.model.workspace.model.DungeonEditorWorkspaceValues.MapSnapshot safeMap = map == null
-                ? src.domain.dungeon.model.worldspace.model.workspace.model.DungeonEditorWorkspaceValues.MapSnapshot.empty()
+        src.domain.dungeon.model.worldspace.workspace.model.DungeonEditorWorkspaceValues.MapSnapshot safeMap = map == null
+                ? src.domain.dungeon.model.worldspace.workspace.model.DungeonEditorWorkspaceValues.MapSnapshot.empty()
                 : map;
         return new src.domain.dungeon.published.DungeonEditorMapSnapshot(
                 safeMap.topology().name(),
@@ -40,18 +40,18 @@ final class DungeonEditorMapProjectionServiceAssembly {
     }
 
     private static List<src.domain.dungeon.published.DungeonEditorMapSnapshot.Area> areas(
-            List<src.domain.dungeon.model.worldspace.model.workspace.model.DungeonEditorWorkspaceValues.Area> areas
+            List<src.domain.dungeon.model.worldspace.workspace.model.DungeonEditorWorkspaceValues.Area> areas
     ) {
         List<src.domain.dungeon.published.DungeonEditorMapSnapshot.Area> result = new ArrayList<>();
-        for (src.domain.dungeon.model.worldspace.model.workspace.model.DungeonEditorWorkspaceValues.Area area
-                : areas == null ? List.<src.domain.dungeon.model.worldspace.model.workspace.model.DungeonEditorWorkspaceValues.Area>of() : areas) {
+        for (src.domain.dungeon.model.worldspace.workspace.model.DungeonEditorWorkspaceValues.Area area
+                : areas == null ? List.<src.domain.dungeon.model.worldspace.workspace.model.DungeonEditorWorkspaceValues.Area>of() : areas) {
             result.add(area(area));
         }
         return List.copyOf(result);
     }
 
     private static src.domain.dungeon.published.DungeonEditorMapSnapshot.Area area(
-            src.domain.dungeon.model.worldspace.model.workspace.model.DungeonEditorWorkspaceValues.@Nullable Area area
+            src.domain.dungeon.model.worldspace.workspace.model.DungeonEditorWorkspaceValues.@Nullable Area area
     ) {
         if (area == null) {
             return new src.domain.dungeon.published.DungeonEditorMapSnapshot.Area(
@@ -72,18 +72,18 @@ final class DungeonEditorMapProjectionServiceAssembly {
     }
 
     private static List<src.domain.dungeon.published.DungeonEditorMapSnapshot.Boundary> boundaries(
-            List<src.domain.dungeon.model.worldspace.model.workspace.model.DungeonEditorWorkspaceValues.Boundary> boundaries
+            List<src.domain.dungeon.model.worldspace.workspace.model.DungeonEditorWorkspaceValues.Boundary> boundaries
     ) {
         List<src.domain.dungeon.published.DungeonEditorMapSnapshot.Boundary> result = new ArrayList<>();
-        for (src.domain.dungeon.model.worldspace.model.workspace.model.DungeonEditorWorkspaceValues.Boundary boundary
-                : boundaries == null ? List.<src.domain.dungeon.model.worldspace.model.workspace.model.DungeonEditorWorkspaceValues.Boundary>of() : boundaries) {
+        for (src.domain.dungeon.model.worldspace.workspace.model.DungeonEditorWorkspaceValues.Boundary boundary
+                : boundaries == null ? List.<src.domain.dungeon.model.worldspace.workspace.model.DungeonEditorWorkspaceValues.Boundary>of() : boundaries) {
             result.add(boundary(boundary));
         }
         return List.copyOf(result);
     }
 
     private static src.domain.dungeon.published.DungeonEditorMapSnapshot.Boundary boundary(
-            src.domain.dungeon.model.worldspace.model.workspace.model.DungeonEditorWorkspaceValues.@Nullable Boundary boundary
+            src.domain.dungeon.model.worldspace.workspace.model.DungeonEditorWorkspaceValues.@Nullable Boundary boundary
     ) {
         if (boundary == null) {
             return new src.domain.dungeon.published.DungeonEditorMapSnapshot.Boundary(
@@ -102,18 +102,18 @@ final class DungeonEditorMapProjectionServiceAssembly {
     }
 
     private static List<src.domain.dungeon.published.DungeonEditorMapSnapshot.Feature> features(
-            List<src.domain.dungeon.model.worldspace.model.workspace.model.DungeonEditorWorkspaceValues.Feature> features
+            List<src.domain.dungeon.model.worldspace.workspace.model.DungeonEditorWorkspaceValues.Feature> features
     ) {
         List<src.domain.dungeon.published.DungeonEditorMapSnapshot.Feature> result = new ArrayList<>();
-        for (src.domain.dungeon.model.worldspace.model.workspace.model.DungeonEditorWorkspaceValues.Feature feature
-                : features == null ? List.<src.domain.dungeon.model.worldspace.model.workspace.model.DungeonEditorWorkspaceValues.Feature>of() : features) {
+        for (src.domain.dungeon.model.worldspace.workspace.model.DungeonEditorWorkspaceValues.Feature feature
+                : features == null ? List.<src.domain.dungeon.model.worldspace.workspace.model.DungeonEditorWorkspaceValues.Feature>of() : features) {
             result.add(feature(feature));
         }
         return List.copyOf(result);
     }
 
     private static src.domain.dungeon.published.DungeonEditorMapSnapshot.Feature feature(
-            src.domain.dungeon.model.worldspace.model.workspace.model.DungeonEditorWorkspaceValues.@Nullable Feature feature
+            src.domain.dungeon.model.worldspace.workspace.model.DungeonEditorWorkspaceValues.@Nullable Feature feature
     ) {
         if (feature == null) {
             return new src.domain.dungeon.published.DungeonEditorMapSnapshot.Feature(
@@ -136,18 +136,18 @@ final class DungeonEditorMapProjectionServiceAssembly {
     }
 
     private static List<src.domain.dungeon.published.DungeonEditorHandleSnapshot> handles(
-            List<src.domain.dungeon.model.worldspace.model.workspace.model.DungeonEditorWorkspaceValues.Handle> handles
+            List<src.domain.dungeon.model.worldspace.workspace.model.DungeonEditorWorkspaceValues.Handle> handles
     ) {
         List<src.domain.dungeon.published.DungeonEditorHandleSnapshot> result = new ArrayList<>();
-        for (src.domain.dungeon.model.worldspace.model.workspace.model.DungeonEditorWorkspaceValues.Handle handle
-                : handles == null ? List.<src.domain.dungeon.model.worldspace.model.workspace.model.DungeonEditorWorkspaceValues.Handle>of() : handles) {
+        for (src.domain.dungeon.model.worldspace.workspace.model.DungeonEditorWorkspaceValues.Handle handle
+                : handles == null ? List.<src.domain.dungeon.model.worldspace.workspace.model.DungeonEditorWorkspaceValues.Handle>of() : handles) {
             result.add(handle(handle));
         }
         return List.copyOf(result);
     }
 
     private static src.domain.dungeon.published.DungeonEditorHandleSnapshot handle(
-            src.domain.dungeon.model.worldspace.model.workspace.model.DungeonEditorWorkspaceValues.@Nullable Handle handle
+            src.domain.dungeon.model.worldspace.workspace.model.DungeonEditorWorkspaceValues.@Nullable Handle handle
     ) {
         if (handle == null) {
             return new src.domain.dungeon.published.DungeonEditorHandleSnapshot(

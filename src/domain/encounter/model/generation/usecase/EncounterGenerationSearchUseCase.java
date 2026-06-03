@@ -6,13 +6,13 @@ import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 import src.domain.encounter.model.generation.helper.EncounterAutoTuningHelper;
 import src.domain.encounter.model.generation.helper.EncounterDraftAssemblyHelper;
-import src.domain.encounter.model.generation.model.EncounterCandidateProfile;
-import src.domain.encounter.model.generation.model.EncounterDifficultyThresholds;
-import src.domain.encounter.model.generation.model.EncounterDraft;
-import src.domain.encounter.model.generation.model.EncounterDraftGenerationModel;
-import src.domain.encounter.model.generation.model.EncounterGenerationAttempt;
-import src.domain.encounter.model.generation.model.EncounterGenerationDiagnosticsData;
-import src.domain.encounter.model.generation.model.EncounterGenerationRequest;
+import src.domain.encounter.model.generation.EncounterCandidateProfile;
+import src.domain.encounter.model.generation.EncounterDifficultyThresholds;
+import src.domain.encounter.model.generation.EncounterDraft;
+import src.domain.encounter.model.generation.EncounterDraftGenerationModel;
+import src.domain.encounter.model.generation.EncounterGenerationAttempt;
+import src.domain.encounter.model.generation.EncounterGenerationDiagnosticsData;
+import src.domain.encounter.model.generation.EncounterGenerationRequest;
 
 final class EncounterGenerationSearchUseCase {
 

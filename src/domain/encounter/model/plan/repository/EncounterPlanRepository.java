@@ -2,8 +2,8 @@ package src.domain.encounter.model.plan.repository;
 
 import java.util.List;
 import java.util.Optional;
-import src.domain.encounter.model.plan.model.EncounterPlan;
-import src.domain.encounter.model.plan.model.EncounterPlanSummary;
+import src.domain.encounter.model.plan.EncounterPlan;
+import src.domain.encounter.model.plan.EncounterPlanSummary;
 
 public interface EncounterPlanRepository {
 

@@ -13,9 +13,9 @@ import src.domain.creatures.published.CreatureEncounterCandidatesModel;
 import src.domain.creatures.published.CreatureEncounterCandidatesResult;
 import src.domain.creatures.published.CreatureLookupStatus;
 import src.domain.creatures.published.CreatureQueryStatus;
-import src.domain.encounter.model.generation.model.EncounterCandidateProfile;
-import src.domain.encounter.model.generation.model.EncounterCreatureFacts;
-import src.domain.encounter.model.reference.model.EncounterCreatureReference;
+import src.domain.encounter.model.generation.EncounterCandidateProfile;
+import src.domain.encounter.model.generation.EncounterCreatureFacts;
+import src.domain.encounter.model.reference.EncounterCreatureReference;
 import src.domain.encounter.model.reference.port.ApplicationEncounterCreatureCatalogPort;
 
 final class EncounterCreatureCatalogServiceAssembly implements ApplicationEncounterCreatureCatalogPort {

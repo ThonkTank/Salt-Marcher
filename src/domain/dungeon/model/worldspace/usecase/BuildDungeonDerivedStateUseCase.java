@@ -1,8 +1,8 @@
 package src.domain.dungeon.model.worldspace.usecase;
 
-import src.domain.dungeon.model.worldspace.model.DungeonMap;
-import src.domain.dungeon.model.worldspace.model.DungeonDerivedStateProjection;
-import src.domain.dungeon.model.worldspace.model.DungeonDerivedState;
+import src.domain.dungeon.model.worldspace.DungeonMap;
+import src.domain.dungeon.model.worldspace.DungeonDerivedStateProjection;
+import src.domain.dungeon.model.worldspace.DungeonDerivedState;
 
 /**
  * Rebuilds render and lookup state from committed dungeon truth.

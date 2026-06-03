@@ -4,9 +4,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
-import src.domain.dungeon.model.worldspace.model.session.model.DungeonEditorDungeonState;
-import src.domain.dungeon.model.worldspace.model.workspace.model.DungeonEditorWorkspaceValues;
-import src.domain.dungeon.model.worldspace.model.DungeonCell;
+import src.domain.dungeon.model.worldspace.session.model.DungeonEditorDungeonState;
+import src.domain.dungeon.model.worldspace.workspace.model.DungeonEditorWorkspaceValues;
+import src.domain.dungeon.model.worldspace.DungeonCell;
 import src.domain.dungeon.model.worldspace.repository.DungeonAuthoredPublishedStateRepository;
 
 public final class PublishDungeonEditorAuthoredInspectorUseCase {

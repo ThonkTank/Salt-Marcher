@@ -3,8 +3,8 @@ package src.data.encountertable.mapper;
 import org.jspecify.annotations.Nullable;
 import src.data.encountertable.model.EncounterTableCandidateRecord;
 import src.data.encountertable.model.EncounterTableSummaryRecord;
-import src.domain.encountertable.model.catalog.model.EncounterTableCandidateData;
-import src.domain.encountertable.model.catalog.model.EncounterTableSummaryData;
+import src.domain.encountertable.model.catalog.EncounterTableCandidateData;
+import src.domain.encountertable.model.catalog.EncounterTableSummaryData;
 
 public final class EncounterTableMapper {
 

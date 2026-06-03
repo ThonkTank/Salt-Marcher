@@ -1,9 +1,9 @@
 package src.domain.dungeon.model.worldspace.usecase;
 
 import java.util.Objects;
-import src.domain.dungeon.model.worldspace.model.DungeonMap;
-import src.domain.dungeon.model.worldspace.model.DungeonMapAuthoring;
-import src.domain.dungeon.model.worldspace.model.DungeonMapIdentity;
+import src.domain.dungeon.model.worldspace.DungeonMap;
+import src.domain.dungeon.model.worldspace.DungeonMapAuthoring;
+import src.domain.dungeon.model.worldspace.DungeonMapIdentity;
 import src.domain.dungeon.model.worldspace.repository.DungeonMapRepository;
 
 /**

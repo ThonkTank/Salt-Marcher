@@ -1,7 +1,7 @@
 package src.domain.encounter;
 
 import java.util.List;
-import src.domain.encounter.model.plan.model.SavedEncounterPlansLoadResult;
+import src.domain.encounter.model.plan.SavedEncounterPlansLoadResult;
 import src.domain.encounter.published.SavedEncounterPlanListResult;
 import src.domain.encounter.published.SavedEncounterPlanStatus;
 

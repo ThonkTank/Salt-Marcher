@@ -42,7 +42,8 @@ Before changing domain code:
    context's `DOMAIN.md` before making placement decisions.
 2. Assign every touched type one domain-layer role before refactoring:
    family `*ApplicationService`, `published/**`, root `application/**`,
-   `model/<family>/model/**`, or one explicit subordinate role package.
+   direct internal model files under `model/<family>/`, a semantic internal
+   model subpackage, or one explicit subordinate role package.
 3. If the task touches a governed role doc under
    `docs/project/architecture/enforcement/`, keep architectural truth in
    `domain-layer.md` and keep the role doc limited to role-local enforcement
@@ -80,7 +81,8 @@ Before changing domain code:
 ### `model/`
 
 - treat `model/` as the primary home of current domain work state
-- the internal model subtree is `model/<family>/model/`
+- the internal model area is direct family-root model files plus semantic
+  subpackages below `model/<family>/`, excluding subordinate role buckets
 - model-local work operations belong under `model/<family>/usecase/`
 - pure work steps belong under `helper/`; shared immutable values belong under
   `constants/`
@@ -100,7 +102,7 @@ Before changing domain code:
 - non-model role buckets under a family are only `usecase/`, `helper/`,
   `constants/`, `port/`, and `repository/`
 - non-model role buckets stay direct-file only
-- `model/<family>/model/` may add deeper semantic subpackages for subordinate
+- `model/<family>/` may add deeper semantic subpackages for subordinate
   models of that same family
 
 ## Review Focus
@@ -113,7 +115,7 @@ When reviewing domain-layer work, look for:
 - `Context Role:` declarations matching the domain-layer standard
 - no named modules at context root outside `published/`, `application/`, and
   `model/`
-- no direct Java files under `model/<family>/`
+- direct Java files under `model/<family>/` are internal Model files
 - no forbidden technical buckets under domain roots or model families
 - reserved role suffixes only in their canonical buckets
 - repositories and ports stated in domain language without data-source, shell,

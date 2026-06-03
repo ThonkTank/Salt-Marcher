@@ -16,7 +16,7 @@ final class DungeonAuthoredCatalogProjectionServiceAssembly {
 
     static src.domain.dungeon.published.DungeonMapCatalogResponse mapMutation(
             src.domain.dungeon.published.DungeonMapCatalogResponse.MutationKind kind,
-            src.domain.dungeon.model.worldspace.model.DungeonMapIdentity mapId
+            src.domain.dungeon.model.worldspace.DungeonMapIdentity mapId
     ) {
         return new src.domain.dungeon.published.DungeonMapCatalogResponse.MapMutation(kind, id(mapId));
     }
@@ -44,7 +44,7 @@ final class DungeonAuthoredCatalogProjectionServiceAssembly {
     }
 
     private static src.domain.dungeon.published.DungeonMapId id(
-            src.domain.dungeon.model.worldspace.model.DungeonMapIdentity identity
+            src.domain.dungeon.model.worldspace.DungeonMapIdentity identity
     ) {
         return new src.domain.dungeon.published.DungeonMapId(identity == null ? 1L : identity.value());
     }

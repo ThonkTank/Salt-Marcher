@@ -7,18 +7,18 @@ import java.util.Set;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.worldspace.helper.DungeonEditorBoundaryClusterResolutionHelper;
 import src.domain.dungeon.model.worldspace.helper.DungeonEditorBoundaryEdgesHelper;
-import src.domain.dungeon.model.worldspace.model.interaction.model.DungeonEditorInteractionValues;
-import src.domain.dungeon.model.worldspace.model.interaction.model.DungeonEditorInteractionValues.VertexKey;
-import src.domain.dungeon.model.worldspace.model.interaction.model.DungeonEditorInteractionValues.VertexTarget;
-import src.domain.dungeon.model.worldspace.model.interaction.model.DungeonEditorMainViewEffect;
-import src.domain.dungeon.model.worldspace.model.interaction.model.DungeonEditorMainViewInteractionValues.BoundaryDraft;
-import src.domain.dungeon.model.worldspace.model.interaction.model.DungeonEditorMainViewInteractionValues.BoundaryTarget;
-import src.domain.dungeon.model.worldspace.model.interaction.model.DungeonEditorMainViewInteractionValues.EdgeKey;
-import src.domain.dungeon.model.worldspace.model.interaction.model.DungeonEditorMainViewInteractionValues.InteractionState;
-import src.domain.dungeon.model.worldspace.model.interaction.model.DungeonEditorMainViewInteractionValues.PointerState;
-import src.domain.dungeon.model.worldspace.model.interaction.model.DungeonEditorMainViewInterpretation;
-import src.domain.dungeon.model.worldspace.model.session.model.DungeonEditorSessionValues;
-import src.domain.dungeon.model.worldspace.model.workspace.model.DungeonEditorWorkspaceValues;
+import src.domain.dungeon.model.worldspace.interaction.model.DungeonEditorInteractionValues;
+import src.domain.dungeon.model.worldspace.interaction.model.DungeonEditorInteractionValues.VertexKey;
+import src.domain.dungeon.model.worldspace.interaction.model.DungeonEditorInteractionValues.VertexTarget;
+import src.domain.dungeon.model.worldspace.interaction.model.DungeonEditorMainViewEffect;
+import src.domain.dungeon.model.worldspace.interaction.model.DungeonEditorMainViewInteractionValues.BoundaryDraft;
+import src.domain.dungeon.model.worldspace.interaction.model.DungeonEditorMainViewInteractionValues.BoundaryTarget;
+import src.domain.dungeon.model.worldspace.interaction.model.DungeonEditorMainViewInteractionValues.EdgeKey;
+import src.domain.dungeon.model.worldspace.interaction.model.DungeonEditorMainViewInteractionValues.InteractionState;
+import src.domain.dungeon.model.worldspace.interaction.model.DungeonEditorMainViewInteractionValues.PointerState;
+import src.domain.dungeon.model.worldspace.interaction.model.DungeonEditorMainViewInterpretation;
+import src.domain.dungeon.model.worldspace.session.model.DungeonEditorSessionValues;
+import src.domain.dungeon.model.worldspace.workspace.model.DungeonEditorWorkspaceValues;
 
 final class DungeonEditorDirectWallDeleteUseCase {
     private final DungeonEditorBoundaryClusterResolutionHelper clusterResolver =

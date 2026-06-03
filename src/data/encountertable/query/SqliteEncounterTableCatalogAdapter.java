@@ -5,8 +5,8 @@ import java.util.Objects;
 import java.util.ArrayList;
 import src.data.encountertable.gateway.local.SqliteEncounterTableLocalGateway;
 import src.data.encountertable.mapper.EncounterTableMapper;
-import src.domain.encountertable.model.catalog.model.EncounterTableCandidateData;
-import src.domain.encountertable.model.catalog.model.EncounterTableSummaryData;
+import src.domain.encountertable.model.catalog.EncounterTableCandidateData;
+import src.domain.encountertable.model.catalog.EncounterTableSummaryData;
 import src.domain.encountertable.model.catalog.port.EncounterTableCatalogPort;
 
 public final class SqliteEncounterTableCatalogAdapter implements EncounterTableCatalogPort {

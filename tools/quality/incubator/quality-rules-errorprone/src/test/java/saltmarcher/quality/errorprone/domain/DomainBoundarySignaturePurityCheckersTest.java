@@ -96,15 +96,15 @@ public final class DomainBoundarySignaturePurityCheckersTest {
                 .addSourceLines(
                         "src/domain/foo/published/FooInternalSnapshot.java",
                         "package src.domain.foo.published;",
-                        "import src.domain.foo.model.grid.model.GridState;",
+                        "import src.domain.foo.model.grid.GridState;",
                         "final class FooInternalSnapshot {",
                         "  public GridState state() {",
                         "    return null;",
                         "  }",
                         "}")
                 .addSourceLines(
-                        "src/domain/foo/model/grid/model/GridState.java",
-                        "package src.domain.foo.model.grid.model;",
+                        "src/domain/foo/model/grid/GridState.java",
+                        "package src.domain.foo.model.grid;",
                         "public final class GridState { }")
                 .doTest();
     }
@@ -115,15 +115,15 @@ public final class DomainBoundarySignaturePurityCheckersTest {
                 .addSourceLines(
                         "src/notdomain/foo/published/FooSnapshot.java",
                         "package src.notdomain.foo.published;",
-                        "import src.domain.foo.model.grid.model.GridState;",
+                        "import src.domain.foo.model.grid.GridState;",
                         "public final class FooSnapshot {",
                         "  public GridState state() {",
                         "    return null;",
                         "  }",
                         "}")
                 .addSourceLines(
-                        "src/domain/foo/model/grid/model/GridState.java",
-                        "package src.domain.foo.model.grid.model;",
+                        "src/domain/foo/model/grid/GridState.java",
+                        "package src.domain.foo.model.grid;",
                         "public final class GridState { }")
                 .doTest();
     }

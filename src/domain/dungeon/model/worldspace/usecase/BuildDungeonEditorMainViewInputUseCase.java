@@ -1,11 +1,11 @@
 package src.domain.dungeon.model.worldspace.usecase;
 
-import src.domain.dungeon.model.worldspace.model.session.model.DungeonEditorMainViewInput;
-import src.domain.dungeon.model.worldspace.model.session.model.DungeonEditorMainViewPointerTarget;
-import src.domain.dungeon.model.worldspace.model.workspace.model.DungeonEditorWorkspaceValues;
-import src.domain.dungeon.model.worldspace.model.DungeonEditorHandleType;
-import src.domain.dungeon.model.worldspace.model.DungeonTopologyElementKind;
-import src.domain.dungeon.model.worldspace.model.DungeonTopologyRef;
+import src.domain.dungeon.model.worldspace.session.model.DungeonEditorMainViewInput;
+import src.domain.dungeon.model.worldspace.session.model.DungeonEditorMainViewPointerTarget;
+import src.domain.dungeon.model.worldspace.workspace.model.DungeonEditorWorkspaceValues;
+import src.domain.dungeon.model.worldspace.DungeonEditorHandleType;
+import src.domain.dungeon.model.worldspace.DungeonTopologyElementKind;
+import src.domain.dungeon.model.worldspace.DungeonTopologyRef;
 
 public final class BuildDungeonEditorMainViewInputUseCase {
 

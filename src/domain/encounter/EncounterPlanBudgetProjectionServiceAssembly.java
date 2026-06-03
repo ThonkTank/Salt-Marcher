@@ -1,8 +1,8 @@
 package src.domain.encounter;
 
 import org.jspecify.annotations.Nullable;
-import src.domain.encounter.model.plan.model.EncounterPlanBudgetLoadResult;
-import src.domain.encounter.model.plan.model.EncounterPlanBudgetSummaryData;
+import src.domain.encounter.model.plan.EncounterPlanBudgetLoadResult;
+import src.domain.encounter.model.plan.EncounterPlanBudgetSummaryData;
 import src.domain.encounter.published.EncounterPlanBudgetStatus;
 import src.domain.encounter.published.EncounterPlanBudgetSummary;
 

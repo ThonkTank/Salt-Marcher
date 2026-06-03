@@ -2,7 +2,7 @@ package src.domain.party;
 
 import java.util.List;
 import java.util.Objects;
-import src.domain.party.model.roster.model.PartyMutationStatus;
+import src.domain.party.model.roster.PartyMutationStatus;
 import src.domain.party.model.roster.repository.PartyPublishedStateRepository;
 import src.domain.party.model.roster.repository.PartyRosterRepository;
 import src.domain.party.published.MutationResult;
